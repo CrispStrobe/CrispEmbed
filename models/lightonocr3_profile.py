@@ -20,7 +20,7 @@ STOP_IDS = (151645, 151643)
 SPECIAL_IDS = tuple(range(151643, 151657))
 REFERENCE_PACKAGES = {"torch": "2.13.0+cpu", "torchvision": "0.28.0+cpu", "numpy": "2.3.5",
                       "pillow": "12.0.0", "gguf": "0.19.0", "safetensors": "0.8.0",
-                      "huggingface-hub": "2.4.0", "tokenizers": "0.23.1", "jinja2": "3.1.6"}
+                      "huggingface-hub": "1.31.0", "tokenizers": "0.23.1", "jinja2": "3.1.6"}
 PROMPT_IDS = {
     "transcription": ([151644, 8948, 151645, 198, 151644, 872, 198], [151645, 198, 151644, 77091, 198]),
     "grounding": ([151644, 8948, 151645, 198, 151644, 872, 198], [1951, 287, 198, 151645, 198, 151644, 77091, 198]),
@@ -34,6 +34,16 @@ def manifest():
     if pins.get("model_id") != MODEL_ID or pins.get("revision") != REVISION or pins.get("profile") != PROFILE:
         raise ValueError("Source manifest is not the reviewed LightOnOCR-3-1B checkpoint")
     return pins
+
+
+def canonical_checkpoint_name(name):
+    """The 1B snapshot retains its pre-migration Qwen text prefix."""
+    prefix = "language_model.model."
+    if name.startswith(prefix):
+        return "model.language_model." + name[len(prefix):]
+    if name == "lm_head.weight" or name.startswith(("model.vision_encoder.", "model.vision_projection.")):
+        return name
+    raise ValueError("Unexpected LightOn3 checkpoint namespace: " + name)
 
 
 def trace_shapes(image_size, mode, steps):

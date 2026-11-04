@@ -18,6 +18,8 @@
   "weights_bytes": 2011367464,
   "transformers_revision": "3568df44fff52979f1f9cecc7f729713e940d277",
   "transformers_modules": {
+    "transformers.conversion_mapping": "631ad0cfd89b6541c53f13ca593cf0507cbbd34a40c574b07b7be923f1aaef0b",
+    "transformers.modeling_utils": "b2e144826a2fb18ec29968306a82fc92f55ddfeee0326d254e71e423b2fab57b",
     "transformers.models.lighton_ocr.modeling_lighton_ocr": "b7419e43defa022b3edf1a17e121e561678043f8f86ecebcb765a7e1e1ddb8e2",
     "transformers.models.lighton_ocr.processing_lighton_ocr": "3bd0e19f778809931abe45ee1bc66460b77d9651d532364768ca2c12305662a0",
     "transformers.models.lighton_ocr.configuration_lighton_ocr": "54d5c0ae3816653015cec91f756233741424efcb06d21d9e487d28312f6b30d7",

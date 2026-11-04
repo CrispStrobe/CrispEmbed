@@ -1,4 +1,8 @@
-# OCR benchmark expansion — 3 November 2026
+# OCR benchmark expansion — 4 November 2026
+
+The [current4 November qualification continuation](ocr-qualification-2026-11-04.md)
+supersedes historical queued/running states and dispatch tables below. It records
+actual completed panels, the Pixtral epsilon bug, current A/B and pending gates.
 
 This is the owner-authorized implementation follow-up to the current
 OmniParseBench / OmniDocBench model review. Source support, port fidelity,
@@ -13,10 +17,100 @@ including the full native desktop/mobile build, both WASM builds and existing
 browser smoke checks, Rust, and the expanded model-free controls. The
 [CI record](../tests/results/ocr-benchmark-expansion/source-ci-7ac5b594.json)
 retains exact run/source identities and earlier failures. All162 focused OCR
-Python controls pass. The new checkpoint profiles have not yet run their
-original/native model qualifications; ordinary CI does not substitute for those
-manual jobs. The implemented code and prepared jobs are in
-[draft PR138](https://github.com/CrispStrobe/CrispEmbed/pull/138).
+Python controls pass. The implementation was merged through
+[PR138](https://github.com/CrispStrobe/CrispEmbed/pull/138) as `2f1bbdb1`.
+The first five manual jobs have run; ordinary CI does not substitute for those
+model-specific checks, and no new model is qualified yet.
+
+## First hosted results
+
+The [initial-run receipt](../tests/results/ocr-benchmark-expansion/initial-hosted-20261104.json)
+records the five jobs at the same merge source, their immutable artifact
+identities and the original failures. Artifacts expire on18 November2026.
+
+| Lane | Observed result | Next action |
+|---|---|---|
+| MinerU2605 | Run41810161887 failed; detailed reports remain in its745MB archive | Extraction41869721715 authenticates the reports: receipt F32/F16/Q8 pass their final-logit bars; Q4 rejects144 undeclared Q4_0 fallbacks. Aligned Q4_K/Q8 retry41871894063 is running |
+| LightOn3-1B | Run41810166994 failed dependency resolution before inference | Correct the incompatible Hub/tokenizers pins; rerun the same F32/F16 protocol |
+| Xiaomi0 | Run41810171225 passed package checks, failed processor metadata validation | Correct list/tuple representation handling while preserving exact numeric settings; rerun metadata before inference |
+| LightOn3-0.8B | Run41810175624 completed the original capture, failed frozen-original reproduction before native execution | Extraction41869721715 finds1759 exact differences:1510 CPU-control fields,248 selected probabilities and the mean. IDs/text/other fields match. Preserve the negative guard; scope a retained-capture continuation before more inference |
+| Nemotron frontend | Run41810180035 passed11/11 exact geometry/packing cases and9/9 negative controls | Completed bounded milestone; native resize, positions and the neural backend remain separate |
+
+## Reviewed retained reports and further repairs
+
+[Extraction41869721715](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869721715)
+completed successfully at `15c48029d`. Both original ZIPs were authenticated on
+hosted CI; all84 selected text members were independently rehashed during review.
+The690,326-byte small artifact13344312377 is SHA256
+`583828f2a02c14757af2598997b81d718deddaafb07901e26202a82cb475ed6e`.
+The [extraction receipt](../tests/results/ocr-benchmark-expansion/retained-extraction-41869721715.json),
+[independent numerical review](../tests/results/ocr-benchmark-expansion/retained-review-20261104.json)
+and [all1759 LightOn differences](../tests/results/ocr-benchmark-expansion/lighton08-original-diff-41810175624.json)
+are retained publicly. No original inference was repeated by extraction.
+
+- MinerU's receipt covers208 complete original generated positions. F32 minimum
+  final-logit cosine is0.9999999999961997, F16 is0.9999999999974624 and Q8 is
+  0.9993957618183006; all three native decodes match the request. Strict failures
+  remain: first F32/F16 `vis_layer_31` max0.135742188/0.1875 and first Q8
+  `vis_layer_0` max0.169651985; worst Q8 stage cosine0.399607867. F16's measured
+  warm latency is1.331x original on this run. Same-neural-backend helper comparison
+  passes exact JSON/Markdown for8 blocks/9 requests; it is separate from original
+  Python neural parity. Q4 stops before its native execution: the C quantizer
+  emits144 Q4_0 fallbacks for896-wide rows, correctly rejected by the declared
+  parser. Correction `1bb0ddb1d` explicitly uses Q8 for those matrices, retaining24
+  genuine Q4_K down projections,273 Q8 and384 F32 tensors. Every role is checked;
+  the parser still rejects Q4_0. The same bounded receipt retry is
+  [41871894063](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41871894063).
+  Review it before dispatching the other seven frozen cases.
+- LightOn0.8's original exact guard remains negative. All reference fields other
+  than CPU-control metrics and selected/mean probabilities match. Maximum selected
+  probability delta is0.0000017289565493738834; mean delta is about1.034e-8.
+  Native never ran. Do not add ignored fields or repeat the original blindly.
+  Next design a separate native-only continuation against the retained905 arrays,
+  authenticating archive, source, image, prompts, caps, IDs and full score coverage.
+  It must record the failed historical exact guard and keep existing original/gold
+  records immutable. If old-original numerical reproduction itself is required,
+  scope CPU/backend attribution with retained values before any new reference run.
+- Xiaomi's processor correction passes on actual installed packages. The first
+  retry [41869734698](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869734698)
+  exposes reversed dimensions in the test caller, not production preprocessing.
+  Correction `f505b242a` (format-only successor `3a5a9a1dc`) passes actual
+  [metadata/frontend41870593556](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41870593556):
+  all4 task streams,270336 resized values and540672 patch values match exactly,
+  with zero image errors at the unchanged1.2e-7 patch budget. Separate two-image
+  F32/F16 [inference41871383235](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41871383235)
+  completed successfully. The [full report](../tests/results/ocr-benchmark-expansion/xiaomi0-inference-41871383235.json)
+  and [independent review](../tests/results/ocr-benchmark-expansion/xiaomi0-inference-review-41871383235.json)
+  preserve all4 arms/160 stage comparisons and16 full248320-wide logit rows per
+  arm. Minimum final cosines are0.9999999999994335/0.9999999999999927 at F32 and
+  0.9999999999999366/0.9999999999999754 at F16, with exact IDs/text/stops.
+  Six strict stages fail: first `vision.layer.11` in every arm (max0.03125–0.0518799)
+  plus `decoder.norm` in the text arms (max0.013526/0.008469). Both originals and
+  all native arms hit the declared16-token cap; full-document/publication flags
+  remain false. Freeze a separately reviewed EOS/document/precision protocol
+  before extending caps, adding Q8/Q4 or publishing an alias.
+- LightOn1B [41869728304](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869728304)
+  passes dependency checks and builds but rejects loading before any forward:
+ 311 missing/310 unexpected keys. The pinned framework aliases config type
+  `mistral3` to LLaVA and inserts an unwanted language-model namespace. Correction
+  `5297c4cc8` first suppressed that alias but its strict inventory check rejected
+  the actual saved text prefix, before any forward. Inspecting the71712-byte
+  checkpoint header establishes532 tensors:310 under `language_model.model.*`
+  and222 vision/projection tensors under `model.*`. The exact header fixture
+  SHA is028ca2de0140abe05988620d440826309657747b2387767fe6b592dc74340cfe.
+  Successor `4476be6eb` maps only the saved text prefix to `model.language_model.*`
+  through the framework's class-specific registration API and the candidate
+  converter, preserves the vision names, and rejects unknown namespaces/collisions.
+  Strict complete-loading checks and the declared tied-head exception remain.
+  Both loader sources are SHA-pinned;22 controls pass. No checkpoint value or model
+  equation changes. Actual F32/F16 retry
+  [41873656972](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41873656972)
+  remains executing; review it before any further run.
+
+These are bounded case results and executing jobs, not new registry aliases or
+publication. Query each exact run before retrying it; preserve every initial
+negative report. Large original archives still require preservation before
+18 November2026 if the raw capture is needed beyond that deadline.
 
 ## Priority and implementation lanes
 
@@ -99,12 +193,65 @@ consumer validation. Source implementation does not upgrade the immutable app
 runtime or imply browser/WASM support for large VLMs. Release/tag/default work
 stays in its existing lanes.
 
+## Corrected dispatch continuation — 4 November 2026
+
+GitHub CLI authentication works. Dispatching the original PR141 head
+`4d18bd178f48a8382bee6e8c163042343dab4c26` exposed a separate workflow defect:
+GitHub returned HTTP422 before creating any of the three manual runs because
+`runner.temp` is unavailable in job-level `env`. The zero-job push failure
+[41860949379](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41860949379)
+also belongs to that invalid workflow source, not model inference.
+
+Correction `15c48029d` initializes the two evidence directories in a runner step
+through `GITHUB_ENV`. It changes no model code, package, protocol, archive pin or
+qualification threshold. `actionlint`1.7.7 and the26 extraction controls pass.
+All three hosted jobs now exist on that exact correction source:
+
+| Job | Run | Review gate |
+|---|---|---|
+| Retained MinerU/LightOn0.8 reports | [41869721715](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869721715) | Verify complete extraction and small-file hashes, diagnose the first failed stage/changed fields before another model run |
+| LightOn3-1B F32/F16 | [41869728304](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869728304) | Dependency/source/native controls, original-first full panel and explicit precision/decoded results |
+| Xiaomi0 metadata/frontend | [41869734698](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869734698) | Review actual metadata and frontend before dispatching separate `--inference` |
+
+Do not duplicate these runs. Re-query their status; dispatch acceptance or green
+model-free CI is not model qualification. Large archives and model execution stay
+on hosted runners. The initial failure archives still expire18 November2026.
+
 ## Hosted execution queue
 
 All commands below use the existing manual `heavy-cpu.yml` workflow and the
-reviewable `feat/ocr-benchmark-integration` branch. Start with the declared
-bounded input, retain unsuccessful evidence, then complete the frozen panel.
+reviewed correction source on `fix/ocr-qualification-nov4`. The original batch
+already ran; dispatch only the corrected lanes after reviewing the retained
+failure evidence. Start with the declared bounded input, retain unsuccessful
+evidence, then complete the frozen panel.
 No command publishes models or changes runtime defaults.
+
+The correction source fixes LightOn1B's dependency intersection with exact
+Hub1.31.0 and adds resolver/freeze/pip-check evidence. Xiaomi's image processor
+now compares exact channel values across the original list-to-tuple
+normalization, records actual container types and checks the pinned base-class
+source. Twenty LightOn controls,29 Xiaomi controls and26 archive/diagnostic
+controls pass. Actual hosted retry results remain pending.
+
+Dispatch these three bounded jobs first, with `build_mode=portable`,
+`runner=ubuntu-latest`, empty extra `pip`, and the correction branch selected:
+
+| Order | Script | Arguments | Completion needed |
+|---|---|---|---|
+| 1 | `tools/ci-heavy/extract_ocr_nov4_evidence.py` | Empty | Both frozen ZIPs verified and small reports copied; review MinerU's failure and LightOn0.8's exact changed fields |
+| 2 | `tools/ci-heavy/lightonocr3_1b.sh` | `--formats f32,f16` | Dependency check, original/native full panel and explicit precision results |
+| 3 | `tools/ci-heavy/xiaomi0_reference.py` | Empty | Actual metadata and native frontend success before the separate `--inference` job |
+
+The extraction selector enters a dedicated Actions-read job, with no model
+secrets, package installation, model execution or native build. It accepts only
+the two recorded producer runs/artifacts, checks full archive size/SHA-256 and
+retains bounded text members in `ocr-nov4-retained-text-<run_id>` for90 days.
+Its LightOn diagnostic uses the existing exact equality and sole
+`generation_seconds` exclusion; it cannot change the frozen guard or verdict.
+MinerU and LightOn0.8 should not be rerun until these reports justify the next
+experiment. Nemotron's completed processor job needs no duplicate execution.
+
+The model protocols below define the remaining panel inputs after those gates:
 
 | Lane | Script | Initial arguments | Scope |
 |---|---|---|---|

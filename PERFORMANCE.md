@@ -1,3 +1,107 @@
+## LightOn3 cache precision, complete first case —4 November2026
+
+[Reused10 +new2 native calls](tests/results/lightonocr3-1b/cache-ab-v1/completed-first-review-41901879295.json)
+prove the same binary/source and retain every original receipt. F32 cache restores
+both F32/F16 form-transcription free outputs, including the prior language change.
+Minimum cosines0.999999999939971/0.9999999999249204; step6 max errors
+0.0129647255→0.0001430511 and0.0133957267→0.0001006126. Original2918-minus3377
+margin0.0024375916 had reversed to-0.0006361008 at old-cache F16; the corrected
+path gives0.0024681091. No weight bytes changed. Strict28/38 failures and the
+original128-token cap remain. The other5 cases run separately; no full-panel,
+default, annotated-quality or speed claim follows from this first result.
+
+## Complete MinerU and LightOn epsilon verdicts —4 November2026
+
+MinerU's [8-case panel](tests/results/mineru2605/aligned-panel-20261104/eight-case-review.json)
+passes all32 numerical arms/6192 full-vocabulary positions. Per-format worst
+cosines F32/F16/Q8/Q4-mix are0.9999999999678552/0.9999999999673693/
+0.9985343305283868/0.9902117584412018. F32/F16 free outputs match8/8; Q8/Q4 match6/8.
+All requests reach EOS without cap; strict errors and quantized layout-label/
+geometry changes remain. These are bounded original comparisons, not annotated
+benchmark or cross-host speed claims.
+
+The [complete epsilon A/B](tests/results/lightonocr3-1b/epsilon-ab-v1/full-review-41889499814.json)
+is negative despite12 numerical-bar passes and6/6 F32 output matches. F16
+form-transcription first changes at token6, ID2918→3377, switching description
+language. At that forced prefix maximum error is0.0129647 F32/0.0133957 F16,
+with F16 cosine0.9999998276; other11 corrected free outputs match. First-norm
+improvements do not override this decoded result. Persistent F16 K/V is a
+separately gated attribution experiment, still pending; no default flip.
+
+## MinerU rotated layout —4 November2026
+
+[Rotated550-position panel](tests/results/mineru2605/aligned-panel-20261104/rotated-case-review.json)
+passes F32/F16/Q8/Q4 final-logit bars. F32/F16 decodes are exact. Q8 minimum
+cosine0.9991275124 changes two coordinates (max ordinal delta0.015). Q4 minimum
+0.9934669563 changes5 labels/14 of25 ordinal regions (max delta0.172), with
+65 character/25 word edits, despite all outputs reaching EOS. These are original
+comparison metrics, not annotated layout scores. Preserve this negative
+structured-output evidence; a new critical-tensor recipe needs separate
+calibration/held-out evaluation.
+
+## LightOn3 corrected vision epsilon, first case —4 November2026
+
+[First retained-reference A/B41885702781](tests/results/lightonocr3-1b/epsilon-ab-v1/first-review-41885702781.json)
+passes exact old-path tensor/decoded replay and restores original form-grounding
+F32/F16 free outputs. First-norm max7.3313713e-5→2.9355288e-6;
+vision-layer23 max4898.416/4901.8125→6.53125/5.42578125. Final minimum cosine
+0.9999982037/0.9999984228;155/165 strict failures and capped128-token outputs
+remain. The other five cases run separately; gate stays default-off.
+
+[Five more MinerU cases](tests/results/mineru2605/aligned-panel-20261104/five-case-review.json)
+pass all20 numerical bars;18 free outputs match. Layout-page Q8/Q4 each change
+one box digit by0.001 on the normalized grid; original/native all reach EOS.
+Component/final cosine does not hide these exact-output failures. Combined
+with the receipt,24 numerical arms and22 decoded arms pass across six cases.
+
+## LightOn3 actual initial panel and MinerU aligned receipt —4 November2026
+
+LightOn3-1B run41873656972 passes12 full-vocabulary final-logit arms, worst cosine
+0.999959896795152. Only10 free decodes match; form-grounding differs at both
+precisions, and8 arms hit128 tokens. A vision RMSNorm epsilon mismatch is
+identified; [gated A/B](docs/lighton3-pixtral-epsilon-ab-v1.md) remains pending.
+High component/final cosine does not establish decoded or document-quality parity.
+
+Aligned MinerU receipt41871894063 passes208 positions at all four precisions,
+minimum cosines F32/F16/Q8/Q4-mix0.9999999999966631/0.9999999999964981/
+0.9993957644539981/0.9916272908500863. All request outputs are exact and EOS-ended;
+helper JSON/Markdown agree. Q4-mix size1,278,646,496 bytes,384 F32/273 Q8/24 Q4_K.
+Same-run native/original warm ratios are0.5822/0.9733/0.3906/0.3910 respectively;
+these are one-case measurements, not cross-host or corpus speed claims. Strict
+intermediate failures remain, worst cosine0.399606049. Full eight-case review and
+standard-metadata publication/readback remain open. [Receipt](tests/results/ocr-benchmark-expansion/mineru2605-aligned-review-41871894063.json).
+
+## Xiaomi bounded F32/F16 neural comparison — 4 November 2026
+
+[Reviewed41871383235](tests/results/ocr-benchmark-expansion/xiaomi0-inference-review-41871383235.json)
+compares two owned images at16 generated tokens, four F32/F16 native arms and
+all248320 vocabulary values at every generated position. Worst final-logit
+cosine0.9999999999994335, maximum final absolute error0.000743865967; IDs/text/stops
+match. This covers capped outputs, not EOS-completed document quality. Six of160
+strict stage comparisons fail; first vision-layer11 maxima0.03125–0.0518799,
+text final-norm maxima0.008469–0.013526. Raw strict budgets and negative flags
+remain unchanged. No Q8/Q4, full-document, benchmark, publication or speed claim.
+
+## OCR qualification review — 4 November 2026
+
+The [retained MinerU2605 receipt review](tests/results/ocr-benchmark-expansion/retained-review-20261104.json)
+covers one page/208 original generated positions, not a full document benchmark.
+F32/F16/Q8 minimum final-logit cosine is0.9999999999961997/0.9999999999974624/
+0.9993957618183006, with matching decoded requests. F32/F16 first strict failure
+is `vis_layer_31`, max0.135742188/0.1875 at reference norm84826.1953; Q8 first
+strict failure is `vis_layer_0`, max0.169651985, and worst stage row cosine is
+0.399607867 at `vis_layer_30`. Preserve these diagnostics beside the current
+owner acceptance bars. Warm native/original latency ratios are0.7481 F32,
+1.3313 F16 and0.5815 Q8 on the original paired run. These are bounded same-run
+measurements; no general speedup or full-panel qualification follows.
+
+Xiaomi's [corrected metadata/frontend41870593556](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41870593556)
+compares270336 original resized values and540672 patches with zero errors, plus
+four exact task streams. This is weight-free frontend evidence, not neural parity.
+LightOn0.8's old exact-original replay still fails with maximum selected-probability
+delta1.72895655e-6 and unchanged IDs/text; no native timing or precision verdict
+was produced by that failed run. Initial failures remain retained.
+
 ## Josev quantized storage timing (3 November 2026, hosted CPU AMD EPYC 9V74, portable, 2 threads)
 
 Four frozen cases (319/…-token requests), one process each run, including model load.

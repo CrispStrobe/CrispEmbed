@@ -1,5 +1,60 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
+## State on 4 November 2026 — reviewed OCR execution
+
+Main includes release-record PR142 at `2f748825f`. Published native/WASM assets
+remain0.17.14 and the application still pins0.17.12; pub.dev remains unqualified.
+PR141 carries further source/workflow repairs and a default-off LightOn3 vision
+norm correction, with0.17.15 development versions, **unreleased**.
+
+Read [the current executable continuation](ocr-qualification-2026-11-04.md),
+[PLAN](../PLAN.md) and [completed receipts](../HISTORY.md) first. Re-query every
+exact live run before dispatching; old queued/running snapshots below are historical.
+
+- **Xiaomi0:** exact metadata/frontend; all4 F32/F16 final-logit/decoded arms pass,
+  but all outputs hit16 tokens and6 strict intermediate comparisons fail. No
+  EOS/document, Q8/Q4 or publication qualification.
+- **MinerU2605:** all8 cases reviewed,32 numerical arms pass,28 decodes exact;
+  F32/F16 match8/8 each. Q8/Q4 match6/8 each, with layout differences; rotated Q4
+  changes5 labels/geometry despite cosine0.99347. The frozen request/helper panel
+  is complete. Quantized layout quality, public consumers and artifact publication
+  remain open.
+- **LightOn3-1B:** actual initial panel passes12 final bars but only10 decodes.
+  Pinned Pixtral vision epsilon1e-5 versus native1e-6 is diagnosed. First
+  retained-reference A/B41885702781 passes exact old tensor/decoded replay and
+  corrected F32/F16 outputs, first-norm max7.33e-5→2.94e-6. Full
+  phase41889499814 is negative: F32 matches6/6, F16 matches5/6; form-transcription
+  changes English→French at token6. Separate default-off CPU F32 cache
+  first completion41901879295 passes with10 retained+2 new calls, minimum cosine
+  above0.99999999992 and exact corrected outputs. Remaining5-case/60-call
+  41905258340 is running; no new originals, alias/publication or default flip.
+- **LightOn0.8:** historical exact guard remains failed (1759 CPU/probability
+  differences, all other fields exact). The [native-only continuation](lighton08-retained-native-continuation.md)
+  scopes the retained first case and905-array barrier. Old other-case producers
+  expose no raw artifacts; a separate current-CPU capture protocol is pending.
+- **Nemotron:**11/11 geometry/packing and9/9 negative controls pass; native
+  resize/positions and the neural backend remain separate work.
+
+Hosted model-free controls pass267 tests. Native/mobile/WASM/Rust and scheduled
+OCR/main-health checks provide bounded regression evidence, not all-model parity.
+Earlier Apple capacity cancellations and the M1 preflight pressure stop remain
+historical evidence. Actual Build41899765931 at**ea2edb5bf** and all ordinary
+checks now pass, including macOS/iOS; no more M1 work is needed for compilation.
+CrispSorter PR20 at0af4c34 separately reports its successful0.17.12 Metal-feature
+cargo check and backfill; it remains open. Native compilation does not establish
+model-inference parity on every platform.
+
+All8 MinerU original ZIPs plus both initial failure archives now have verified
+90-day remote copy/readback through2 February2027. The current
+[executable continuation](ocr-qualification-2026-11-04.md) binds their artifacts,
+inner hashes and pending transport adaptations; large files stay remote.
+
+The old MoEdern Q8 source closure rejects the later mixed-Q4 engine change (7/8
+controls); preserve that frozen experiment and declare a separate current-source
+closure before reuse. This is a qualification gap, not a demonstrated numerical
+regression. No expensive shared-host work, new model publication, tag, default
+flip or app upgrade follows from these bounded reports.
+
 ## State on 3 November 2026
 
 Start with [the 3 November handoff](handoff-2026-11-03.md) and the index table at the top of

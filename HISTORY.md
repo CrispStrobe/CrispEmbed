@@ -1,3 +1,261 @@
+## 4 November 2026 — Xiaomi bounded neural panel passes; exact LightOn namespace repair
+
+[Xiaomi41871383235](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41871383235)
+at3a5a9a1dc completes2 originals/4 native arms, with16 full248320-wide final-logit
+rows per arm and exact IDs/text/stops. Minimum final cosine exceeds0.9999999999994
+in every F32/F16 arm. All160 stage comparisons are retained, including6 strict
+failures; first `vision.layer.11` max0.03125–0.0518799 and text `decoder.norm`
+max0.008469–0.013526. All outputs hit the declared16-token cap, so no full-document
+or publication qualification follows. The [report](tests/results/ocr-benchmark-expansion/xiaomi0-inference-41871383235.json)
+and [independent review](tests/results/ocr-benchmark-expansion/xiaomi0-inference-review-41871383235.json)
+are public. Extraction41873946415 verified the full224953251-byte archive remotely;
+all22 small members and the88306-byte output ZIP were independently rehashed.
+Large arrays remained remote.
+
+LightOn's identity-only loader5297c4cc8/41871466965 rejected the actual saved text
+namespace before inference. Checkpoint-header inspection establishes532 tensors,
+310 text tensors under `language_model.model.*`; the222 vision tensors already
+have `model.*` names. Correction4476be6eb maps the exact text prefix consistently
+in the framework loader and the candidate GGUF converter, keeps vision unchanged,
+and checks unknown names/collisions, tied-head handling and complete loading.
+The71712-byte header fixture is retained;22 controls pass. Actual retry41873656972
+is executing; no successful model comparison is claimed yet.
+
+Main has advanced through release-record PR142 as2f748825f, merged into this branch
+without executable conflicts. All11 native jobs passed at merge2f1bbdb1; scheduled
+OCR regression41823109685 passes all6 jobs and main-health41848426718 passes its
+recorded-status/metadata controls. Their coverage is bounded; old MoEdern Q8 source
+closure still rejects current main as recorded in PLAN. No all-model regression
+claim follows from green CI.
+
+## 4 November 2026 — cache causality confirmed on first case; preservation and Apple build complete
+
+[Two-call completion41901879295](tests/results/lightonocr3-1b/cache-ab-v1/completed-first-review-41901879295.json)
+reproduces the original native executable byte-for-byte (SHA7d4b027f…), retains
+ten old native executions and runs only the two missing F16 free calls. Original
+forwards remain0. Corrected F32/F16 free IDs/text now match the retained English
+original, minimum full-position cosines0.999999999939971/0.9999999999249204.
+Step6 maximum errors fall0.0129647→0.000143051 and0.0133957→0.000100613;
+original token margin0.00243759 is restored to0.00246811 by F16/F32-cache.
+Strict28/38 failures and128-token caps remain. The first classification failure
+is preserved: postdecode generated IDs were incorrectly included in prefill.
+The new controller fixes that phase classification while retaining all decoded,
+byte, full-vocabulary and source/binary gates. No old execution is relabelled.
+The authenticated remaining5-case/60-call panel41905258340 is running; no full
+cache-model/default/publication claim yet.
+
+Both [nine-ZIP preservation41894992782](tests/results/ocr-benchmark-expansion/raw-preservation-41894992782.json)
+and [German-only41897911047](tests/results/ocr-benchmark-expansion/raw-preservation-41897911047.json)
+complete remote readback of every original ZIP. All8 MinerU captures and both
+initial failed MinerU/LightOn0.8 archives keep identical bytes through2 February2027,
+without new model/build calls. Small receipt ZIPs and producer/inner-hash chains
+were independently reviewed; large files stayed remote.
+
+Hosted Apple capacity returns: Build41899765931 at**ea2edb5bf** and all ordinary
+checks pass, including macOS/iOS/WASM/Rust/native/mobile and279 model-free
+controls. Current native code is unchanged from that tested source. The M1
+preflight stop remains correctly recorded without any build; it is no longer
+a compilation blocker. Model-inference/platform/task qualification remains
+separate, and published0.17.14/application0.17.12 remain unchanged.
+
+## 4 November 2026 — MinerU panel complete; epsilon full verdict negative; cache precision isolated
+
+[All8 MinerU cases](tests/results/mineru2605/aligned-panel-20261104/eight-case-review.json)
+at1bb0ddb1d complete32 numerical arms/6192 full151936-wide native logit positions,
+covering1548 original positions. All original/native requests reach EOS uncapped;
+all8 same-native helper JSON/Markdown pairs match. F32/F16 are decoded-exact8/8;
+Q8/Q4 are6/8, preserving both layout negatives. Worst cosines are
+0.9999999999678552/0.9999999999673693/0.9985343305283868/0.9902117584412018.
+German41877132652 completes392 positions, all4 decodes exact. Final extraction
+41895937896 and all80 members are independently verified; large arrays stayed
+remote. This completes the frozen request/helper numerical panel, not annotated
+layout quality, publication or all public consumers.
+
+[Full LightOn epsilon41889499814](tests/results/lightonocr3-1b/epsilon-ab-v1/full-review-41889499814.json)
+completes24 rows/72 native requests including its first phase, zero original
+forwards. All legacy tensor/decoded replay controls, all12 corrected numerical
+bars and all first-norm improvements pass. Corrected F32 decodes match6/6, F16
+5/6: form-transcription differs at token6 (2918→3377), generating French instead
+of English. This negative acceptance result supersedes the positive first case;
+no epsilon default flip follows. Complete strict/capped/decoded failures remain.
+
+Source inspection identifies persistent native F16 K/V versus the original
+float32 cached decode. A separate default-off CPU/new-profile-only F32 cache
+path and real GGML cache-stride/copy controls are implemented; cache0, legacy and
+GPU behavior remain F16. [First-only causal A/B](docs/lighton3-kv-f32-ab-v1.md)
+41897136488 at3e82a1205 is executing, with unchanged GGUFs, fixed corrected
+epsilon and no new original calls. Its outcome is not yet claimed. Existing
+v1 source closures remain immutable; current-source controls use the KV protocol.
+
+The M1 preflight reports a stop before all builds/style/inference on memory
+pressure (8180 new swapout pages, about16GB swap in use); only the4 owned hashes/
+11 protected objects at0473dd5e8 are reported exact. Current Apple compilation
+remains unverified. [CrispSorter20](https://github.com/CrispStrobe/CrispSorter/pull/20#issuecomment-6639976078)
+at0af4c34 separately reports a successful27m53s Metal-feature `cargo check`
+against the real0.17.12 pin, fixes the old wrong-sibling API diagnosis, and adds
+image-indexing backfill. The PR remains open with Windows/live-OCR limitations;
+this is bounded consumer type-check evidence, not new0.17.15 native qualification.
+
+## 4 November 2026 — rotated MinerU case exposes quantized layout limits
+
+Run41877141270 completes550 original positions at all four precisions. Remote
+extraction41891577778 and all80 small members are independently verified.
+F32/F16 free outputs match exactly. Q8 minimum cosine0.9991275124 changes two
+box coordinates (three digits), largest ordinal coordinate delta0.015.
+Q4 minimum0.9934669563 passes its numerical bar but changes14 of25 ordinal
+regions, including5 labels; largest ordinal coordinate delta0.172. It produces
+551 versus550 tokens,65 character/25 word edits. Every output reaches EOS.
+These comparisons are to original outputs by ordinal, not annotated quality or
+optimal region matching. [Full report](tests/results/mineru2605/aligned-panel-20261104/rotated-case-review.json)
+retains strict stages, model/array hashes, complete comparisons and decoded
+strings. Across seven cases28 numerical arms pass,24 free decodes match; German
+is still executing. No new mixed recipe, artifact publication or layout-quality
+claim follows. A separate calibration/held-out precision lane is scoped in PLAN.
+
+## 4 November 2026 — first LightOn epsilon A/B positive; five more MinerU cases reviewed
+
+[LightOn first-stage41885702781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41885702781)
+passes all12 native requests with zero new original forwards. Gate0 reproduces all
+188 forced/188 observed-free tensors per precision and decoded traces. Corrected
+F32/F16 free IDs/text now match the original form-grounding capture. First-norm
+max7.33e-5→2.94e-6, layer23 max4898.416/4901.8125→6.53125/5.42578125;
+minimum final cosine improves to0.9999982037/0.9999984228. Strict155/165 failures
+and128-token caps remain. The authenticated remaining phase41889499814 is running;
+default remains off. [Full first-stage receipt](tests/results/lightonocr3-1b/epsilon-ab-v1/first-review-41885702781.json).
+
+MinerU extraction41889185669 verifies five original archives remotely and all400
+small members independently. Formula/Japanese/Arabic/table outputs are exact at
+all four precisions. Layout-page F32/F16 are exact; Q8 and Q4 each change one
+coordinate digit by0.001 on the normalized grid. All20 numerical bars pass, but
+only18 exact decoded controls pass. [All20 full precision reports and review](tests/results/mineru2605/aligned-panel-20261104/five-case-review.json)
+retain both coordinate differences, strict failures and artifact/candidate hashes.
+German/rotated cases remain pending; no full-panel or publication claim.
+
+## 4 November 2026 — aligned MinerU receipt; actual LightOn full-panel defect diagnosed
+
+[Aligned MinerU41871894063](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41871894063)
+at1bb0ddb1d passes all208 positions at F32/F16/Q8/Q4-mix, exact EOS-ended request
+outputs and helper JSON/Markdown. Minimum final cosines are
+0.9999999999966631/0.9999999999964981/0.9993957644539981/0.9916272908500863.
+The1,278,646,496-byte mix has384 F32/273 Q8/24 Q4_K tensors; undeclared Q4_0 stays
+rejected. Strict vision failures remain, worst row cosine0.399606049. The other
+seven immutable cases were dispatched separately at the same executable source;
+review remains active in [the current continuation](docs/ocr-qualification-2026-11-04.md).
+
+[LightOn41873656972](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41873656972)
+at4476be6eb completes all12 F32/F16 arms and all final-logit bars. Ten decodes
+match; both form-grounding decodes differ, and8 arms are capped at128 tokens.
+The pinned Pixtral vision norms use1e-5 while native uses1e-6. Pixel equality,
+first-norm error7.33e-5 and vision-layer23 max4898.416 precede the changed box/text.
+A source-correct new-profile-only path is implemented behind a default-off gate,
+with actual GGML/scalar norm controls and a retained-reference byte/decoded A/B.
+The first shallow-checkout failure had zero original/native model calls; corrected
+first-stage run41885702781 is pending review. No default flip or model promotion.
+Runtime candidate versions are0.17.15 development, unreleased; published0.17.14
+and app0.17.12 remain unchanged. [Evidence and exact next gates](docs/lighton3-pixtral-epsilon-ab-v1.md).
+
+A CPU-only Kaggle capacity probe verified network and separate scratch/output
+filesystems for that worker, with zero model/build work. The optional MinerU CPU
+adapter conservatively reserves all four GGUFs. No duplicate model batch was
+launched while hosted GitHub cases were active; the M1 fallback remains scoped.
+
+## 4 November 2026 — Retained OCR failures diagnosed; Xiaomi frontend exact
+
+[Hosted extraction41869721715](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869721715)
+authenticates both original archives and preserves84 small text members. The
+small artifact SHA and every selected member were independently verified;
+all1759 LightOn0.8 exact differences were independently recomputed. Public
+[review](tests/results/ocr-benchmark-expansion/retained-review-20261104.json),
+[extraction receipt](tests/results/ocr-benchmark-expansion/retained-extraction-41869721715.json)
+and [complete original differences](tests/results/ocr-benchmark-expansion/lighton08-original-diff-41810175624.json)
+retain the evidence without copying large arrays to Git.
+
+MinerU2605's receipt already passes208/208 final-logit positions at F32/F16/Q8
+(minimum0.9999999999961997/0.9999999999974624/0.9993957618183006) and decoded
+request parity. Strict vision failures remain, including Q8 row cosine0.399607867;
+F16 latency is1.331x original on that run. Same-neural helper JSON/Markdown agree
+on8 blocks/9 requests, separately from original neural parity. Q4 never ran:
+144 unaligned matrices silently became Q4_0, rejected by the declared storage
+contract. The aligned Q4_K/Q8 successor preserves that rejection and explicitly
+checks every matrix role; actual retry41871894063 remains pending review.
+
+LightOn0.8 differs only in1510 CPU-control fields,248 selected probabilities
+and mean confidence. All other original fields, including IDs/text/inputs/stops,
+are exact. Maximum selected-probability difference is1.72895655e-6. The old exact
+guard remains failed and no native forward is claimed.
+
+Xiaomi metadata passes its list/tuple repair, then exposes reversed height/width
+in the frontend test caller. Production preprocessing already uses the correct
+order. Corrected [41870593556](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41870593556)
+passes all4 task streams and exact270336 resized pixels/540672 patches, both
+maximum errors0. The subsequent two-image F32/F16 inference41871383235 is distinct.
+
+LightOn1B dependency/source/build controls pass; original loading rejects311
+missing/310 unexpected keys before inference. Its config's `mistral3` label selects
+an unrelated LLaVA migration in the pinned framework. The class-specific identity
+registration in5297c4cc8 preserves actual model equations/checkpoint values and
+requires exact native checkpoint names, declared tied-head handling and complete
+loading. Loader sources are additionally pinned;21 source controls pass. Actual
+retry41871466965 remains pending review. Checksum-pinned actionlint1.7.7 is now
+part of hosted controls, including triggers on manual-workflow changes.
+
+## 4 November 2026 — OCR workflow dispatch repaired
+
+PR141's hosted controls were green, but its manual workflow could not parse:
+`runner.temp` was used in job-level `env`, where GitHub disallows that context.
+All three attempted dispatches returned HTTP422 without creating runs.
+Correction `15c48029d` moves directory initialization into an allocated-runner
+step. `actionlint`1.7.7 and all26 extraction controls pass. The corrected
+[extraction41869721715](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869721715),
+[LightOn1B41869728304](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869728304),
+and [Xiaomi metadata41869734698](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869734698)
+were accepted and started; results must be reviewed separately. No C++ runtime,
+model protocol, frozen original, precision threshold or publication changed.
+
+## 4 November 2026 — first OCR hosted qualification batch reviewed
+
+The five prepared jobs ran on merge source
+`2f1bbdb11c3612acf7399e31b33ac715027f3184`, all with the portable build input.
+The [initial-run receipt](tests/results/ocr-benchmark-expansion/initial-hosted-20261104.json)
+retains exact runs, sources, archive identities/digests and the 18 November
+artifact expiry. The original run outcomes remain unchanged:
+
+- [MinerU2605 41810161887](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41810161887)
+  fails; its 745,003,580-byte artifact retains the detailed reports. The precise
+  failed stage and any completed precision arms remain unreviewed until extraction.
+- [LightOn3-1B 41810166994](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41810166994)
+  stops in dependency resolution: pinned Hub2.4.0 conflicts with tokenizers0.23.1's
+  Hub<2.0 requirement. No original/native inference ran.
+- [Xiaomi0 41810171225](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41810171225)
+  passes bootstrap/pip-check, then fails the image-processor metadata guard.
+  This was the metadata-only job; both inference result objects remain empty.
+- [LightOn0.8 41810175624](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41810175624)
+  completes original anchor/document captures, then fails exact frozen-original
+  reproduction before native execution. The 3,459,070,891-byte archive must be
+  inspected for the exact differing field; no anchor, prompt, cap or gate changes.
+- [Nemotron frontend 41810180035](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41810180035)
+  passes all11 geometry/packing cases: 16,665,600 values, zero changed values and
+  max absolute error0 in every case. All9 negative controls pass. The preserved
+  [comparison](tests/results/nemotron-parse/frontend-parity-41810180035.json)
+  hashes the original receipt; that receipt hash was independently verified.
+  CMake records both native CPU flags OFF. Raw arrays stay in the hosted artifact.
+
+Nemotron evidence covers the size decision and normalized patch packing of
+**original-resized** RGB/grayscale bytes. Native resize, learned positions,
+neural inference, model qualification and publication remain false. None of the
+five jobs creates an alias, changes a default or reproduces a benchmark score.
+
+The `fix/ocr-qualification-nov4` follow-up corrects LightOn1B's incompatible
+dependency pin with Hub1.31.0, records pip's resolver/freeze/check evidence,
+and corrects Xiaomi's list/tuple metadata comparison without changing any
+numeric processor setting. The source diagnosis is separately retained in
+[the Xiaomi standardizer proof](tests/results/ocr-benchmark-expansion/xiaomi0-standardizer-proof.json).
+The dedicated, read-only report-extraction job validates the two original ZIPs
+and emits bounded text plus an exact LightOn frozen-reference difference report.
+All75 focused controls pass: LightOn20, Xiaomi29, extraction26. Source-pin and
+whitespace checks pass. These are source repairs and diagnostics; the corrected
+hosted jobs have not yet executed.
+
 ## 4 November 2026 — v0.17.14 release gate closed; OCR integration merged
 
 The open queue is empty. `#135` (honest main-health reporting) merged as `58f303a3`;

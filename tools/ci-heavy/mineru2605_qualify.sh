@@ -87,7 +87,16 @@ PY
             f16)
                 python models/convert-mineru25-pro-to-gguf.py --checkpoint 2605 --model "$S/checkpoint" --dtype f16 --output "$S/gguf/f16.gguf" > "$OUT/conversion-f16.log" 2>&1
                 cp "$S/gguf/f16.gguf.json" "$OUT/conversion-f16.json" ;;
-            q8_0|q4_k) "$QUANT" "$S/gguf/f32.gguf" "$S/gguf/$tier.gguf" "$tier" > "$OUT/quantize-$tier.log" 2>&1 ;;
+            q8_0) "$QUANT" "$S/gguf/f32.gguf" "$S/gguf/$tier.gguf" "$tier" > "$OUT/quantize-$tier.log" 2>&1 ;;
+            q4_k)
+                # The 896-wide decoder rows cannot store 256-wide Q4_K blocks.
+                # Declare Q8_0 explicitly rather than silently producing Q4_0.
+                # The 4864-wide down projections remain genuine Q4_K; existing
+                # vision/embedding/norm safeguards are unchanged.
+                "$QUANT" "$S/gguf/f32.gguf" "$S/gguf/$tier.gguf" q4_k \
+                    --tensor-type 'l.blk.*.attn_*.weight=q8_0' \
+                    --tensor-type 'l.blk.*.ffn_gate.weight=q8_0' \
+                    --tensor-type 'l.blk.*.ffn_up.weight=q8_0' > "$OUT/quantize-$tier.log" 2>&1 ;;
         esac
         python tools/qwen2vl_quant_census.py census "$S/gguf/$tier.gguf" "$OUT/$tier-tensor-census.json"
         python - "$S/gguf/$tier.gguf" "$OUT/$tier-model.json" "$tier" <<'PY'

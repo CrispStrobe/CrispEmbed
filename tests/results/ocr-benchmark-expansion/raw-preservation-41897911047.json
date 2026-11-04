@@ -1,0 +1,50 @@
+{
+  "schema": "crispembed.ocr-nov4.archive-preservation.v1",
+  "run": 41897911047,
+  "source": "ce51dbabb1466a9bd21e3cd93561c89d7251bee1",
+  "completed": true,
+  "complete_readback": true,
+  "original_forward_calls": 0,
+  "native_forward_calls": 0,
+  "builds": 0,
+  "model_qualified": false,
+  "publication_qualified": false,
+  "small_artifact": {
+    "id": 13357453771,
+    "bytes": 2699,
+    "sha256": "a5f462b7528bc9e125f05314d761f84df842ae55dd8f7d7f569c4cfbe0a6951b"
+  },
+  "small_zip_verified": true,
+  "raw_artifact": {
+    "id": 13357368062,
+    "name": "ocr-nov4-original-zips-41897911047",
+    "size_in_bytes": 2543809832,
+    "digest": "sha256:36f78190bb14412005f47b5dffefc2ff712d6b1e596c540003542a2c95bba77a",
+    "expires_at": "2027-02-02T19:32:28Z"
+  },
+  "outer_archive": {
+    "bytes": 2543809832,
+    "sha256": "36f78190bb14412005f47b5dffefc2ff712d6b1e596c540003542a2c95bba77a"
+  },
+  "targets": [
+    {
+      "label": "mineru2605-german",
+      "run_id": 41877132652,
+      "artifact_id": 13355531707,
+      "bytes": 2543809676,
+      "sha256": "3ad000ba9da8bbb7155a6770e231d00d25357ab2d4eba8e374a1f3d867f4fd3f",
+      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+      "branch": "audit/mineru2605-aligned-q4-20261104",
+      "conclusion": "success"
+    }
+  ],
+  "readback": [
+    {
+      "label": "mineru2605-german",
+      "bytes": 2543809676,
+      "sha256": "3ad000ba9da8bbb7155a6770e231d00d25357ab2d4eba8e374a1f3d867f4fd3f"
+    }
+  ],
+  "raw_archives_downloaded_locally": false,
+  "method": "hosted authenticated whole-ZIP copy; uploaded outer ZIP downloaded remotely and every inner original ZIP streamed through exact byte/hash checks; review-sized receipt independently authenticated"
+}

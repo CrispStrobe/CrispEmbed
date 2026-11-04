@@ -40,8 +40,15 @@ RGB8/grayscale8 pixels already resized by the original processor.
 `tools/nemotron_parse_frontend.py` captures the original processor's resized
 pixels and packed outputs on eleven frozen positive cases plus negative
 aspect-ratio controls. Hosted native compilation and the model-free `self`
-controls pass at the reviewed PR138 source; the original-processor comparison
-still awaits its manual hosted job. This does not establish native Pillow-resize equivalence, learned
+controls pass at the reviewed PR138 source. The
+[manual processor job41810180035](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41810180035)
+at merge source `2f1bbdb1` now passes all11 cases exactly: zero changed values
+among16,665,600 packed values, max absolute error0, and all9 negative controls
+pass. The [preserved comparison](../tests/results/nemotron-parse/frontend-parity-41810180035.json)
+retains each input/output hash and numerical result; the original receipt hash
+was independently checked. Both portable CPU flags were OFF. This completes
+the bounded size/packing milestone and does not require a duplicate run.
+It does not establish native Pillow-resize equivalence, learned
 positional interpolation, neural model parity, an OCR engine ID, or publication
 qualification. Applicable NVIDIA copyright, OpenMDW-1.1 license and adaptation
 notices are retained under `licenses/`.

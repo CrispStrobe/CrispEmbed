@@ -1,4 +1,4 @@
-# CrispEmbed plan — open work (updated 3 November 2026)
+# CrispEmbed plan — open work (updated 4 November 2026)
 
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
@@ -9,10 +9,8 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Lane | State | Next action | Done when |
 |---|---|---|---|
 | Q4_K_MIX publications (MiniCPM-OCR, Unlimited-OCR-2, MoEdern 27M/115M, Josev, UltraBERT) | Recipes and receipts on main. TeleOCR and MinerU Q4_K_MIX are already published and registered (`teleocr-q4_k-mix`, `mineru25-pro-q4_k-mix`, PR #116); the rest are not | Coordinator dispatches the cosine-gated publication per model (sections below); Josev needs a quantized branch in `josev_publish.py`, MoEdern needs SciFact/client panels first | Hub upload, empty-cache readback, registry alias with SHA-256 |
-| Main CI green at head | Build/Lint queued for hours on recent main; Windows compiler-cache fix `93209b32` and `sibling-crispasr` unconfirmed | Handoff 3 Nov lane A | Build+Lint+WASM green on one main commit |
 | `env_gate.h` false/off/no lockstep | CrispASR #572 open (46 checks pass); CrispEmbed side not written | Handoff 3 Nov lane B | Identical header in both repos, tests in CI, sibling sync green |
 | OXR native-doc parity | Rerun 41664201815 failed again (`native=fail`, not the trace-key bug) | Handoff 3 Nov lane C | Five-case parity receipt or scoped runtime bug |
-| Q4_K_MIX publications (MiniCPM-OCR, Unlimited-OCR-2, TeleOCR, MinerU, MoEdern 27M/115M, Josev, UltraBERT) | Recipes and receipts on main; nothing published | Coordinator dispatches the cosine-gated publication per model (sections below); Josev needs a quantized branch in `josev_publish.py`, MoEdern needs SciFact/client panels first | Hub upload, empty-cache readback, registry alias with SHA-256 |
 | Unlimited-OCR-2 Q8_0 on CUDA | 0.9555 < 0.97 (CPU 0.9739) | Search a CUDA-qualifying Q8_0 mix (F16 shared experts/attention) | ≥ 0.97 on CPU and CUDA |
 | GOT-OCR2 Q4_K drift | F16-r2 exact vs original; Q4_K diverges at 83/20; no final-logit cosine measured, so the 1 November precision policy cannot yet be applied | Teacher-forced final-logit cosine of the published Q4_K vs the F16-r2 pipeline (as for Unlimited/MiniCPM), then a mixed search only if < 0.94. Owner: the model is research-licensed (Tongyi), so whether a Q4_K is worth more compute is an owner call (handoff "Owner decisions") | Cosine > 0.94 recorded, or 3/3 token-exact, or owner accepts/declines |
 | Server load control (PR124) | Merged, gates default-off | Live A/B with a real GGUF; concurrent latency; chat-route parity | Receipts per item in the section below |
@@ -20,12 +18,12 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | CUDA / Metal audit follow-ups | Matrices in `docs/gpu-support-matrix.md` | One gated GPU path or A/B at a time | Measured A/B before any default flip |
 | Ovis, Josev, MoEdern, UltraBERT, LFM2.5, EmbeddingGemma precision | See the 29 October table below | One bounded protocol at a time | Per-row gates in that table |
 | Issue 71 inpainting | Engines published (default-off); stream merged | Representative subtitle/video quality, MI-GAN512 Q4_K caveat (0.9019) | Owner-reviewed quality panel |
-| Releases / pub.dev / app pin | VERSION 0.17.14 dev, app on 0.17.12 | Qualified assets and fresh consumers first | Release procedure in the pub.dev section |
+| Releases / pub.dev / app pin | v0.17.14 published, pub.dev unqualified, app on 0.17.12 | Qualified assets and fresh consumers first | Release procedure in the pub.dev section |
 | OXR-1.0 quantized + GPU | Q8_0-large / Q4_K-head pass the owner bar (cos ≥ 0.998 vs F16, CPU/Metal/CUDA); German diverges 1 token from decode-step activation quantization | Opt-in F32-activation decode A/B (the recipes are already published and registered as `oxr-1.0-q8_0` / `oxr-1.0-q4_k-head`, PR #97) | A/B receipt; German page token-exact or the divergence attributed |
 | OXR native document route / D-FINE | Hosted helpers/replay/native pass (41249898971), `dfine` stage failed there; D-FINE regions match original 5/5 but 2.6x slower | Re-run `oxr_native_doc.sh` `dfine native` stages on main; encoder per-op profile | Hosted parity on all five cases; profile receipt |
 | MinerU2.5-Pro full native doc route | 8/8 model-backed cases identical (41251475795); default-off | Owner: default-on or not (handoff "Owner decisions"); image-bearing-table fixture | Decision recorded; fixture receipt |
 | Marker-style pipeline / TeleOCR | Implemented and bounded-validated, default-off; TeleOCR strict numerics false at every precision | Representative licensed multilingual/layout gold corpus (needs owner-provided licensed annotations) | Corpus frozen; CER/WER/order receipts |
-| Model-weight licences in apps | Registry/cards/gates corrected (31 October) | CrispSorter/CrispCalc must require the Qwen/Tongyi acknowledgement before offering those models | Downstream PRs merged |
+| Model-weight licences in apps | Registry/cards/gates corrected; CrispSorter PR20 at0af4c34 adds fail-closed OCR consent, typed Gemma terms, real0.17.12 pin and image backfill. Its reported Metal-feature cargo check passes; PR18 remains draft | Review/integrate [CrispSorter20](https://github.com/CrispStrobe/CrispSorter/pull/20) alongside18; retain Windows-helper/live-OCR gaps. Check CrispCalc consent separately. No vendor/app pin upgrade | Downstream acknowledgement PRs merged and actual consumer checks recorded |
 | **Release v0.17.14** (owner: release once every PR is resolved and main is green) | **Published 4 November 2026** from `9c790c81`; 16 assets (all platform archives, both WASM bundles, CUDA/Vulkan extras); macOS archive checks `0.17.14` and unversioned `@rpath` install names. Downstream apps still pin prebuilt libs to 0.17.12 via `CRISPEMBED_PREBUILT_VERSION` (PR #132) | Section "Release v0.17.14" below: only step 4 remains — tell downstream to drop the override | Downstream told to drop the override; app pins updated by their owners |
 | CI selection after PR #134 | Merged; docs/evidence-only pushes run nothing, so the main head may have no Build run | Before tagging: `gh workflow run build.yml --ref main` (and build-wasm, build-wasm-embed, rust-crates, inpaint-cli); confirm the dynamic desktop matrix in build.yml evaluates on hosted runners | One full green Build on the main head |
 | Failing main workflows owned by the integration session | Recorded as non-release-blocking on 4 November 2026 (HISTORY): `MoEdern real padded Q4_K diagnostic` stops at authenticated input preparation (run 41587641989), and `Layer0 attention op-by-op same-input replay v1` is a manual experiment with no main run | Re-run only if the authenticated inputs are authorized; otherwise no release action | Recorded; re-run or leave closed |
@@ -35,19 +33,55 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Big-LaMa (research only) | Weights' rights unclear; kept on `feat/issue71-lama-research`, private Hub copy only | Nothing until the owner clarifies the weight licence | Licence clarified (then publish) or lane closed |
 | Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
 
-## Main-health recorded CI status — 3 November 2026
+## Regression review and OCR continuation — 4 November 2026
 
-Owner: CI audit maintainer; branch `fix/main-health-status`, based on
-`dd465a44290dca2cdefd45caf8831d7be55d5b4c`. The old probe reported cancelled checks
-as green. The replacement reports bounded, owned-main outcomes and exact validation
-SHAs; pending/cancelled/missing/API results remain unverified, while older successes
-are explicitly historical. All 18 focused offline regressions pass.
+The [current executable qualification continuation](docs/ocr-qualification-2026-11-04.md)
+records reviewed evidence, exact live run IDs, preservation and remaining acceptance
+gates. It supersedes historical queued/dispatch language. Heavy execution stays
+hosted. PR141 includes a source-correct, default-off LightOn3 vision epsilon
+experiment; development0.17.15 is unreleased, published assets remain0.17.14.
 
-Next: review the exact-path hosted controls and first scheduled/manual report.
-Done when both have run IDs and the report preserves these evidence limits.
-No additional native build or model qualification is required for this reporting change.
+A bounded review against main `9c790c81a` found that
+`tests/test_moedern_q8_profile.py` passes7/8 controls and rejects its old source
+closure: `src/moedern_family_engine.cpp` expected
+`e3c95c082a3e8ca4325829dcb2d153664ea017c6eb583a486392df013ca4fc9e`,
+current SHA256 `410c27ea7179b346debbabf5257d5b0fc159f026d0f8c7b4274520e3e3641cf3`.
+Later mixed-Q4 source `ff1b8bbaf` changed that file. Preserve the frozen protocol
+`docs/moedern-q8-f32-critical-v1.json` and its historical evidence. This is a
+current-source qualification gap, not evidence of an F32/Q8 inference regression.
+Before reusing this harness on current main, review the complete source delta,
+declare a separate versioned closure/driver and run hosted authored profile,
+operator, storage and gate controls, then original/native vectors, retrieval and
+public consumers as required by the model lane. Do not simply replace its hash
+or weaken the frozen guard. The base13 MoEdern controls,51 UltraBERT controls,
+13 Josev controls (one additional test skipped) and18 main-health controls pass.
+These checks and green ordinary CI do not establish all-model numerical parity.
 
-## Active work in flight — benchmark OCR expansion, 3 November 2026
+PR141's actual native compilation milestone is now complete: all ordinary
+checks at**ea2edb5bf** are green, including macOS/iOS Build41899765931 and279
+model-free controls. Earlier Apple capacity cancellations and the M1 pressure
+stop remain in HISTORY; no further work is needed on that M1 for compilation.
+This does not establish Apple model-inference quality or release new assets.
+The separately staged completion/remaining controllers add focused controls;
+observe their actual final-head CI before integrating them.
+
+### Current bounded OCR execution and completion gates
+
+See the [reviewed reports and repairs](docs/ocr-benchmark-expansion.md#reviewed-retained-reports-and-further-repairs)
+for exact source commits, artifacts, initial failures and error magnitudes.
+
+| Lane | Current evidence / job | Exact next action and completion gate |
+|---|---|---|
+| MinerU2605 artifact/public-consumer qualification | Complete8-case panel:32 numerical arms pass,28 decodes exact; F32/F16 all8 exact. Q8/Q4 differ on the2 layout cases. [Complete review](tests/results/mineru2605/aligned-panel-20261104/eight-case-review.json) | All10 raw ZIPs now have verified90d preservation through2 February2027; retain quantized layout negatives. Before any publication finish required task quality/public surfaces, export standard GGUF metadata with per-tensor payload proof, empty-cache Hub readback and SHA-pinned consumers. No repeat panel or promotion from cosine alone |
+| LightOn3-1B CPU KV precision A/B | Full epsilon A/B41889499814 is negative: all12 bars pass, F32 all6 exact, F16 form-transcription changes language at ID6. Persistent native K/V is F16 versus float32 original | [Two-call completion41901879295](docs/lighton3-kv-complete-first-v1.md) passes using10 retained calls and the byte-identical binary. Corrected F32/F16 minimum cosine exceeds0.99999999992 and free outputs match. Remaining5-case/60-call41905258340 at558825720 is running; authenticate24 final rows/72 total calls, all old-path bytes, original full logits/free outputs and strict/cap flags. No duplicate first case, default or weight fitting |
+| LightOn3-1B corrected-default decision | Full epsilon verdict remains negative; first cache proof is positive and remaining panel is running, both gates default-off; actual Apple compilation now passes | After positive complete cache/decoded panel and actual Apple evidence, follow [the separate default scope](docs/lighton3-pixtral-epsilon-ab-v1.md#subsequent-default-decision-is-separate): preserve old closures, literal0 old paths/legacy isolation, new source controls and actual unset-vs-corrected1 output replay for all6 modes×2 formats. No new originals or capped-document/publication claims |
+| LightOn3-1B EOS/document scope | Current six request modes use cap128;8/12 original outputs are capped, even if corrected native IDs match | Freeze a separate licensed document/EOS protocol. The current `tests/lightonocr3_trace.cpp` and generation validation hard-limit256 tokens: stay within256 or version the harness/comparer with explicit memory/time bounds before a larger cap. Preserve128-token receipts and strict failures; require complete EOS-ended original/native outputs, full-position logits and independent plain generation before document claims |
+| MinerU2605 quantized layout quality | Existing aligned recipe passes numerical bars but Q8 changes rotated box coordinates and Q4 changes5 region labels/14 ordinal records (max coordinate delta0.172) | Preserve original eight-case evaluation. Freeze a separate licensed calibration/held-out corpus; use Python dumps and native same-input intermediates/crispembed-diff to locate additional Q4-vs-Q8 error before choosing higher-precision down projections or vision roles. Record every retained tensor's type/payload hash, C-quantizer recipe, full-position logits and free structured outputs. New recipe requires independent held-out layout/EOS/quality/public-consumer evidence; do not fit on the frozen negative cases or replace their verdicts |
+| Xiaomi0 | Metadata/frontend41870593556 passes exact pixels/patches; inference41871383235 at3a5a9a1dc passes all4 arms and exact IDs/text at the16-token cap | Bounded two-case integration complete. Preserve6 strict stage failures and capped outputs; freeze separate EOS/document and Q8/Q4 protocols before expanded precision/publication. External detector composition remains a separate experiment |
+| LightOn3-0.8B | Extraction diagnoses1759 float-metric/probability differences; IDs/text/all other original fields exact; no native calls | Preserve the old guard failure. Implement/review the [exact retained-capture continuation](docs/lighton08-retained-native-continuation.md), authenticating all905 arrays and old source/input/score identities; no blind original rerun or ignored-field broadening. Keep the first source result and all three-case requirements distinct |
+| Nemotron frontend | Actual11/11 geometry/packing and9/9 negatives pass | Bounded milestone complete. Native resize/positions and neural backend remain separate work in the model document |
+
+## Active work in flight — benchmark OCR expansion, 4 November 2026
 
 Owner-authorized follow-up to the OmniParseBench / OmniDocBench review. Isolated
 implementation lanes start from current main; each preserves existing negative evidence
@@ -55,13 +89,14 @@ and model defaults. New registry aliases require qualified immutable artifacts.
 
 | Lane / branch | Scope | Completion gate |
 |---|---|---|
+| `fix/ocr-qualification-nov4` | Owns the first hosted-run review, LightOn1B dependency repair, Xiaomi processor representation repair and bounded extraction of retained failure reports | Reviewed exact failures; corrected bounded jobs at one recorded source, with original guards and negative evidence retained |
 | `feat/ocr-mineru2605` | Exact 2605 profile and original-first portable job integrated into PR138; 21 new/17 preserved conversion controls pass | Full-position F32/F16/Q8/Q4 comparisons and symmetric complete 2.0.7/native helper traces across the frozen eight cases |
 | `feat/ocr-lighton3-1b` | Exact transcription/grounding profile, actual GGUF/source census and portable original-first trace job; 19 controls pass | Hosted original/native pixels, stages, full-vocabulary logits, free generation and structured output; old profile behavior preserved |
 | `feat/ocr-xiaomi0` | Format-4 profile, public task/cap admission, original external PP-DocLayoutV3 producer, strict OTSL and bounded document assembly; 26 controls pass | Hosted metadata/frontend and two-case F32/F16 execution, then a separately frozen document experiment; detector remains external |
 | `feat/ocr-benchmark-integration` | Shared document evaluation and candidate/license matrix; 32 document controls pass | Hosted source checks, original-first qualification and representative licensed document quality before alias/publication work |
 | LightOn3-0.8B portable replay | Separate current-source F16/Q8 job preserves the old three cases, prompt, 1024 cap, recipes and receipts; 8 portable/6 retained-review controls pass | All three one-case jobs at one reviewed commit; complete final-logit coverage, completion, text differences and explicit precision decision |
 | `feat/ocr-ovis3-task-audit` | Separate pinned Markdown task/source and cleanup audit; 14 controls pass and the old plain-OCR failure is preserved | Independent licensed input/gold, actual original Markdown captures, then distinct native task admission; no old gate is changed |
-| `feat/ocr-nemotron-geometry` | Gated geometry/patch prototype and original-processor comparator; 510-tensor census, 7 source/12 frontend controls pass | Hosted 11-case processor comparison; native resize and the complete neural backend remain separate |
+| `feat/ocr-nemotron-geometry` | Hosted processor comparison41810180035 passes all11 cases exactly and all9 negative controls | Native resize, learned position interpolation and the complete neural backend remain separate |
 
 Checkpoint: [integration PR #138](https://github.com/CrispStrobe/CrispEmbed/pull/138)
 contains the reviewed source at `7ac5b594e63a34b53a753d9520fccff4ceb888d0`.
@@ -70,9 +105,15 @@ All 162 focused OCR controls pass locally and the
 pass. All15 workflows are green, including all11 native-build jobs and both WASM
 workflows. [The CI record](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/ocr-benchmark-expansion/source-ci-7ac5b594.json)
 preserves the source identities and earlier invocation/setup/WASM-link failures
-with their corrections. The source PR merged on 4 November 2026; model execution
-remains pending. Model inference/qualification is still pending; the concrete queue is in
-[PR138's expansion guide](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/ocr-benchmark-expansion.md).
+with their corrections. The source PR merged on 4 November 2026. The
+[first five hosted jobs](tests/results/ocr-benchmark-expansion/initial-hosted-20261104.json)
+ran at `2f1bbdb1`: Nemotron's bounded frontend passes; LightOn1B dependency
+resolution and Xiaomi metadata validation fail before inference. LightOn0.8
+executes the original capture but fails its frozen-original guard before native
+execution. MinerU's exact failed stage still needs its retained reports extracted.
+No new model is qualified. The next jobs and evidence gates are in
+[the expansion guide](docs/ocr-benchmark-expansion.md); do not repeat the original
+batch or infer precision failure from a setup failure.
 
 This work does not adopt restricted terms or change the immutable app runtime.
 OvisOCR3's frozen capped-page failure and all old strict LightOnOCR-3-0.8B verdicts

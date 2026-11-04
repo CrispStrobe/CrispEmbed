@@ -13,6 +13,8 @@ REPORT = Path(__file__).resolve().parents[1] / "tests/results/qwen35-ocr/xiaomi0
 MISSING_FILES = ["generation_config.json", "preprocessor_config.json"]
 MAIN_SCHEMA_SHA256 = "589578cf5234bba4a1ee2f1c20c1d660bdaf214403a3f54c50fa504348cac71f"
 MAIN_SCHEMA = REPORT.parents[2] / "fixtures/xiaomi0-source/main-tensor-schema.json"
+# The pinned 5.17.0 base class turns JSON mean/std lists into runtime tuples.
+IMAGE_PROCESSOR_BASE_SHA256 = "3328a0e2b38e272e824cad64a50d3e84206dab13d31b96104afa6459e149f7c1"
 
 
 def file_sha256(path):
@@ -134,11 +136,41 @@ def rendered_prompt(task="document", *, order="image-first"):
     return "<|im_start|>user\n" + content + "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
 
 
+def validate_image_processor(image):
+    """Compare exact preprocessing values, allowing only list/tuple serialization."""
+    expected = {
+        "size": {"shortest_edge": 65536, "longest_edge": 16777216},
+        "patch_size": 16, "temporal_patch_size": 2, "merge_size": 2,
+        "image_mean": [0.5] * 3, "image_std": [0.5] * 3,
+        "do_resize": True, "do_rescale": True, "do_normalize": True, "do_convert_rgb": True,
+        "resample": 3, "rescale_factor": 1 / 255,
+    }
+    actual = {name: getattr(image, name, None) for name in expected}
+    runtime_types = {name: type(actual[name]).__name__ for name in ("size", "image_mean", "image_std")}
+    # SizeDict's mapping contains only set fields; keep extra active dimensions so
+    # a conflicting size setting cannot disappear during serialization.
+    try:
+        actual["size"] = dict(actual["size"])
+    except (TypeError, ValueError):
+        pass  # The complete mismatch is reported below, before any model weights.
+    for name in ("image_mean", "image_std"):
+        if isinstance(actual[name], (list, tuple)):
+            actual[name] = list(actual[name])
+    differing = [name for name, value in expected.items()
+                 if actual[name] != value or (isinstance(value, bool) and type(actual[name]) is not bool)]
+    record = {"parameters": actual, "runtime_types": runtime_types}
+    if differing:
+        raise ValueError("Xiaomi original image processor differs: " + json.dumps(
+            {"fields": differing, "expected": expected, **record}, sort_keys=True, default=str))
+    return record
+
+
 def validate_runtime_metadata(model_dir):
     """Run on a hosted producer before weights; reject tokenizer/backend/source drift."""
     import inspect
     import transformers
     from transformers import AutoConfig, AutoProcessor, GenerationConfig, Qwen3_5ForConditionalGeneration
+    from transformers.image_processing_utils import BaseImageProcessor
     from transformers.tokenization_utils_tokenizers import TokenizersBackend
     from transformers.models.qwen2.tokenization_qwen2 import Qwen2Tokenizer
 
@@ -151,9 +183,14 @@ def validate_runtime_metadata(model_dir):
                "models/qwen2_vl/image_processing_qwen2_vl.py": type(processor.image_processor),
                "models/qwen2/tokenization_qwen2.py": Qwen2Tokenizer,
                "tokenization_utils_tokenizers.py": TokenizersBackend,
-               "generation/configuration_utils.py": GenerationConfig}
+               "generation/configuration_utils.py": GenerationConfig,
+               "image_processing_utils.py": BaseImageProcessor}
+    framework_sources = {**report["framework"]["source_files"],
+                         "image_processing_utils.py": IMAGE_PROCESSOR_BASE_SHA256}
+    loaded_sources = {}
     for name, cls in classes.items():
-        if file_sha256(inspect.getfile(cls)) != report["framework"]["source_files"][name]:
+        loaded_sources[name] = file_sha256(inspect.getfile(cls))
+        if loaded_sources[name] != framework_sources[name]:
             raise ValueError("Xiaomi loaded framework source differs: " + name)
     effective = json.loads(processor.tokenizer.backend_tokenizer.to_str())
     pattern = effective["pre_tokenizer"]["pretokenizers"][0]["pattern"]["Regex"]
@@ -165,13 +202,7 @@ def validate_runtime_metadata(model_dir):
         raise ValueError("Xiaomi original generation defaults differ")
     if processor.tokenizer.eos_token_id != 248046 or processor.tokenizer.pad_token_id != 248044:
         raise ValueError("Xiaomi tokenizer stop/pad differs")
-    image = processor.image_processor
-    if (image.size != {"shortest_edge": 65536, "longest_edge": 16777216}
-            or image.patch_size != 16 or image.temporal_patch_size != 2 or image.merge_size != 2
-            or image.image_mean != [0.5] * 3 or image.image_std != [0.5] * 3
-            or not all((image.do_resize, image.do_rescale, image.do_normalize, image.do_convert_rgb))
-            or int(image.resample) != 3):
-        raise ValueError("Xiaomi original image processor differs")
+    image_metadata = validate_image_processor(processor.image_processor)
     rendered = {}
     for task, prompt in report["prompts"].items():
         messages = [{"role": "user", "content": [{"type": "image"}, {"type": "text", "text": prompt}]}]
@@ -180,5 +211,6 @@ def validate_runtime_metadata(model_dir):
             raise ValueError("Xiaomi rendered prompt differs: " + task)
     return {"transformers": transformers.__version__, "effective_regex": pattern,
             "eos_token_id": generation.eos_token_id, "pad_token_id": generation.pad_token_id,
+            "loaded_source_sha256": loaded_sources, "image_processor": image_metadata,
             "rendered_prompts": rendered, "mtp_policy": "exact15-excluded-nonspeculative",
             "numerical_qualification": False, "document_qualification": False}

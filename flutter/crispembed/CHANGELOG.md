@@ -1,3 +1,12 @@
+## 0.17.15 (unreleased)
+
+- Add a default-off LightOnOCR-3-1B experiment using the original Pixtral vision
+  norm epsilon. Existing profiles, text/projector norms and default behavior
+  remain unchanged. Hosted retained-reference A/B qualification is pending.
+- Correct the LightOn3 loader/converter checkpoint namespace and OCR audit setup;
+  retain original failures and bounded precision/decoded results separately.
+- No new runtime assets, model aliases, application pin or pub.dev publication.
+
 ## 0.17.14
 
 - Native libraries track the v0.17.14 release. Downstream apps can drop

@@ -9,6 +9,38 @@ records the original metadata, tensor header, framework sources, task prompts,
 and layout dependency. No original/native model inference was performed while
 preparing this source-only change.
 
+## Initial hosted metadata failure — 4 November 2026
+
+[Run 41810171225](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41810171225)
+at `2f1bbdb11c3612acf7399e31b33ac715027f3184` installed the exact dependencies
+and passed `pip check`, then stopped at the image-processor metadata guard.
+It ran without `--inference`; no checkpoint, native build, or model forward was
+reached. Its original worker log and result remain negative evidence.
+
+The initial artifact does not retain the processor's individual attributes.
+Review and bounded stdlib execution of the pinned Transformers 5.17.0
+[`BaseImageProcessor._standardize_kwargs`](https://github.com/huggingface/transformers/blob/v5.17.0/src/transformers/image_processing_utils.py)
+establish a deterministic guard defect: it converts the checkpoint's channel
+mean/std lists into tuples, while the guard required Python list equality.
+Both numeric sequences remain exactly `(0.5, 0.5, 0.5)`; the original check
+rejects them solely because tuple and list equality is false. The upstream
+`SizeDict` explicitly supports dictionary equality and is not that defect.
+
+The correction compares the complete mean/std sequences by value, retains their
+runtime container types, and preserves exact geometry, patch sizes, resize,
+normalization and RGB settings. It additionally checks the original `1/255`
+rescaling factor, requires real boolean processing flags, and pins the loaded
+base-processor source bytes. A failure reports every differing field with its
+expected and observed values; successful metadata records those settings and
+the verified framework hashes. Three new model-free controls cover tuple/list
+equivalence, 18 distinct incorrect settings, and retained failure details;
+all 29 Xiaomi controls pass locally.
+
+This is a source correction, not a successful hosted metadata or frontend
+receipt. Rerun metadata on the reviewed correction source first. The frozen
+two-image inference protocol and the independent document experiment remain
+subsequent gates.
+
 ## Exact source and reuse boundary
 
 The [official checkpoint](https://huggingface.co/xiaomi-research/Xiaomi-OCR-0/tree/bbd8cf8d21f256b3644b44cb860f3a7cecb93c30)

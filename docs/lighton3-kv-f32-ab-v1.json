@@ -1,0 +1,61 @@
+{
+  "schema": "crispembed.lighton3.kv-f32-ab.v1",
+  "baseline_source": "0473dd5e813fdf48d2bafbd16811271cf6c42599",
+  "original_artifact": {
+    "run_id": 41889499814,
+    "artifact_id": 13355422898,
+    "bytes": 8831289731,
+    "sha256": "b57f2b906da12f20fc1ef5462c4800b801a5349ed38eee790b3ecdbf1b057078",
+    "source": "0473dd5e813fdf48d2bafbd16811271cf6c42599",
+    "branch": "fix/ocr-qualification-nov4",
+    "conclusion": "failure"
+  },
+  "owned_sha256": {
+    "src/lightonocr.cpp": "f1099cac986d24b4befc390dd89ee3b97f2562285071cdb5b907b27d5f5435b1",
+    "src/lightonocr3_profile.h": "e5fe7d98faf15c471c12083f225484d7560248ba53f6fd5e5350da522c68395e",
+    "tests/test_lightonocr3_contract.cpp": "0e60180a5698e1f8ed90ad5999cef74cdd7aefb6c2d49509a8e041c55937318a",
+    "tools/ci-heavy/lighton3_kv_f32_ab.py": "e2d45ac8a404e2a2f220a17ee5ee91cdb27e472d001b8cb2268a8debea400b0d"
+  },
+  "protected_git_objects": {
+    "ggml": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+    "CMakeLists.txt": "d7bfbb7e53f532c748b9b84e0cfea115cf154c61",
+    "tests/lightonocr3_trace.cpp": "ea704747943f331e0cac5e3ff99921e2f47a2654",
+    "tools/compare_lightonocr3.py": "4c63b15ae4a497c44c59e835b8ff7f21e9d77fb6",
+    "models/convert-lightonocr-to-gguf.py": "f030bc1093fa846b0ac568d66b8b27991a2fcd6e",
+    "models/lightonocr3_profile.py": "2e87fb9359fb6a83cd7a84f4f43dbd4edd4390dd",
+    "models/lightonocr3-1b-source.json": "b7fd5fe27c22674d94964b96a71f9a214262b9ce",
+    "models/requirements-lightonocr3-reference.txt": "6b2d478fd34686da4b0445678836aafc812ccb73",
+    "tests/fixtures/lightonocr3/qualification.json": "4d4dcf76568117d6187705176507692268f6f547",
+    "tools/ci-heavy/extract_ocr_nov4_evidence.py": "030011254c8a216e820552352b9eb889bcd73133",
+    "tools/ci_process.py": "983a72fb3e8f7f212dd3be04d1560f157c7a57e4",
+    "tools/ci-heavy/lighton3_pixtral_eps_ab.py": "c250fc164be1407afdada65c4d3b8456cf106fe0",
+    "tests/test_lighton3_pixtral_eps_ab.py": "426ea45a800855083453f63b63d0e9e87ada8e58",
+    "docs/lighton3-pixtral-epsilon-ab-v1.json": "97a6d3177ccce326272c5f7059854bfc31b0e234"
+  },
+  "models": {
+    "f32": {
+      "bytes": 4025219872,
+      "sha256": "2d628ad47bd31ab78c654501d52fe996ffe7834d11644d69f715ba7b567af83c"
+    },
+    "f16": {
+      "bytes": 2326526752,
+      "sha256": "6d51c59f2c5a74100cba608759e18328059650070051cf27e58fedb86628589c"
+    }
+  },
+  "fixture": {
+    "image": "tests/regression/images/cc0/simple_form.png",
+    "sha256": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc"
+  },
+  "case": "form-transcription",
+  "epsilon_gate": "CRISPEMBED_LIGHTONOCR3_PIXTRAL_EPS",
+  "epsilon_value": "1",
+  "cache_gate": "CRISPEMBED_LIGHTONOCR3_KV_F32",
+  "cpu_only": true,
+  "default_off": true,
+  "original_forward_calls": 0,
+  "native_request_processes": 12,
+  "max_new_tokens": 128,
+  "strict_budgets_unchanged": true,
+  "full_panel_authorized_by_first_only_protocol": false,
+  "publication_qualified": false
+}

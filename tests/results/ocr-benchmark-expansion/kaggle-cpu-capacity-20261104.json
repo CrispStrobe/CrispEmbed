@@ -1,0 +1,54 @@
+{
+  "schema": "crispembed.ocr-cpu-provider-capacity.v1",
+  "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "cpus": 4,
+  "python": "3.13.18",
+  "available_memory_bytes": 32684990464,
+  "filesystems": {
+    "output": {
+      "device": 1794,
+      "free_bytes": 20940562432,
+      "total_bytes": 20957446144
+    },
+    "scratch": {
+      "device": 53,
+      "free_bytes": 1038219137024,
+      "total_bytes": 8758385086464
+    }
+  },
+  "mineru_plan": {
+    "schema": "crispembed.mineru2605.resources.v1",
+    "cases_per_dispatch": 1,
+    "tiers": [
+      "f32",
+      "f16",
+      "q8_0",
+      "q4_k"
+    ],
+    "positions_upper": 2048,
+    "logit_bytes_upper": 6223298560,
+    "stage_and_extra_dump_bytes_upper": 3489660928,
+    "scratch_bytes_required": 13853769141,
+    "output_bytes_required": 11860443136,
+    "available_memory_bytes_required": 12884901888,
+    "policy": "one case; F32 plus one temporary candidate GGUF; raw arrays retained directly in uploaded output",
+    "qualification": false,
+    "resource_bounds_are_not_runtime_measurements": true
+  },
+  "model_forward_calls": 0,
+  "build_calls": 0,
+  "completed": true,
+  "shared_filesystem": false,
+  "unchanged_mineru_contract_fits": true,
+  "public_config_network_probe": {
+    "bytes": 2871,
+    "sha256": "f91cad3c52a3d8f1d420b51459455b27d792db28bf5d1d08097ae96bf1c44730",
+    "expected_sha256": "f91cad3c52a3d8f1d420b51459455b27d792db28bf5d1d08097ae96bf1c44730",
+    "verified": true
+  },
+  "probe_source_sha256": "4c39e1d936f1e0319e5087731154d4e3f8823358122fa77403d60fc73335d9dc",
+  "version_label": "v1",
+  "exact_get_status_and_output_listing_verified": true,
+  "operator_binding_not_public": true
+}

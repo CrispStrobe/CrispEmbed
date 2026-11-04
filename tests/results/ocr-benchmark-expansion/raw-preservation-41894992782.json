@@ -1,0 +1,170 @@
+{
+  "schema": "crispembed.ocr-nov4.archive-preservation.v1",
+  "run": 41894992782,
+  "source": "3dcb87b572630513f2b0b5808d2e13234c8be439",
+  "completed": true,
+  "complete_readback": true,
+  "original_forward_calls": 0,
+  "native_forward_calls": 0,
+  "builds": 0,
+  "model_qualified": false,
+  "publication_qualified": false,
+  "small_artifact": {
+    "id": 13356409198,
+    "bytes": 7314,
+    "sha256": "1f641958e00672f54a83325b8a3786eba998d3973a5926e256eed42a60966f35"
+  },
+  "small_zip_verified": true,
+  "raw_artifact": {
+    "id": 13355747765,
+    "name": "ocr-nov4-original-zips-41894992782",
+    "size_in_bytes": 9919709356,
+    "digest": "sha256:43f955f22569f20557075612943ba6f9f6fa1c1427b3ee7f860b7b762cb77ab0",
+    "expires_at": "2027-02-02T19:14:19Z"
+  },
+  "outer_archive": {
+    "bytes": 9919709356,
+    "sha256": "43f955f22569f20557075612943ba6f9f6fa1c1427b3ee7f860b7b762cb77ab0"
+  },
+  "targets": [
+    {
+      "label": "mineru2605-receipt",
+      "run_id": 41871894063,
+      "artifact_id": 13345908772,
+      "bytes": 858185387,
+      "sha256": "4a8053631886ae78df4bbc131785d702c08b306b62d19e9b930480f85bfdb403",
+      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+      "branch": "fix/ocr-qualification-nov4",
+      "conclusion": "success"
+    },
+    {
+      "label": "mineru2605-formula",
+      "run_id": 41877117676,
+      "artifact_id": 13347927913,
+      "bytes": 136053962,
+      "sha256": "7a052a5a73b47d90431c9fabdcea9af10ada9239a105ecd642d21d98a8d0705e",
+      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+      "branch": "audit/mineru2605-aligned-q4-20261104",
+      "conclusion": "success"
+    },
+    {
+      "label": "mineru2605-japanese",
+      "run_id": 41877121416,
+      "artifact_id": 13348396823,
+      "bytes": 249816387,
+      "sha256": "8919d773dc544e30084d3b3da14519fdd884297548bdf5e91d08d993688a868d",
+      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+      "branch": "audit/mineru2605-aligned-q4-20261104",
+      "conclusion": "success"
+    },
+    {
+      "label": "mineru2605-arabic",
+      "run_id": 41877125216,
+      "artifact_id": 13348311566,
+      "bytes": 68835208,
+      "sha256": "fad1d207c52c1b37e0c6f65c10ac10a701e31b4cec84c0392f85792d42a3ae95",
+      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+      "branch": "audit/mineru2605-aligned-q4-20261104",
+      "conclusion": "success"
+    },
+    {
+      "label": "mineru2605-table",
+      "run_id": 41877129385,
+      "artifact_id": 13347724003,
+      "bytes": 386986678,
+      "sha256": "1efd735469a8956aa6364e6fbd9587acf9f93958a48c39ad6a51393edf1164b5",
+      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+      "branch": "audit/mineru2605-aligned-q4-20261104",
+      "conclusion": "success"
+    },
+    {
+      "label": "mineru2605-layout-page",
+      "run_id": 41877137082,
+      "artifact_id": 13350809558,
+      "bytes": 1549053766,
+      "sha256": "701decb5245cc0bdf5e1993370eec2da95fa66e96e94043ac594c3947989aba4",
+      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+      "branch": "audit/mineru2605-aligned-q4-20261104",
+      "conclusion": "success"
+    },
+    {
+      "label": "mineru2605-layout-rot90",
+      "run_id": 41877141270,
+      "artifact_id": 13353650933,
+      "bytes": 2466702003,
+      "sha256": "4474b74df3b369e2d0f3c4f6f204d88f6de2ac7612605cbaa7f846444e3aa212",
+      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+      "branch": "audit/mineru2605-aligned-q4-20261104",
+      "conclusion": "success"
+    },
+    {
+      "label": "lighton08-inventory-table",
+      "run_id": 41810175624,
+      "artifact_id": 13312356863,
+      "bytes": 3459070891,
+      "sha256": "7517525e72d29d1e535257458cc11942d3df360a6fb7b1ab0182ce8fff2138da",
+      "source": "2f1bbdb11c3612acf7399e31b33ac715027f3184",
+      "branch": "main",
+      "conclusion": "failure"
+    },
+    {
+      "label": "mineru2605-receipt-initial-failure",
+      "run_id": 41810161887,
+      "artifact_id": 13313715962,
+      "bytes": 745003580,
+      "sha256": "36fc4d014373c8b116d48afd1105f3e3a55f9869c4bea8e8af2785c8b3f52c16",
+      "source": "2f1bbdb11c3612acf7399e31b33ac715027f3184",
+      "branch": "main",
+      "conclusion": "failure"
+    }
+  ],
+  "readback": [
+    {
+      "label": "lighton08-inventory-table",
+      "bytes": 3459070891,
+      "sha256": "7517525e72d29d1e535257458cc11942d3df360a6fb7b1ab0182ce8fff2138da"
+    },
+    {
+      "label": "mineru2605-arabic",
+      "bytes": 68835208,
+      "sha256": "fad1d207c52c1b37e0c6f65c10ac10a701e31b4cec84c0392f85792d42a3ae95"
+    },
+    {
+      "label": "mineru2605-formula",
+      "bytes": 136053962,
+      "sha256": "7a052a5a73b47d90431c9fabdcea9af10ada9239a105ecd642d21d98a8d0705e"
+    },
+    {
+      "label": "mineru2605-japanese",
+      "bytes": 249816387,
+      "sha256": "8919d773dc544e30084d3b3da14519fdd884297548bdf5e91d08d993688a868d"
+    },
+    {
+      "label": "mineru2605-layout-page",
+      "bytes": 1549053766,
+      "sha256": "701decb5245cc0bdf5e1993370eec2da95fa66e96e94043ac594c3947989aba4"
+    },
+    {
+      "label": "mineru2605-layout-rot90",
+      "bytes": 2466702003,
+      "sha256": "4474b74df3b369e2d0f3c4f6f204d88f6de2ac7612605cbaa7f846444e3aa212"
+    },
+    {
+      "label": "mineru2605-receipt-initial-failure",
+      "bytes": 745003580,
+      "sha256": "36fc4d014373c8b116d48afd1105f3e3a55f9869c4bea8e8af2785c8b3f52c16"
+    },
+    {
+      "label": "mineru2605-receipt",
+      "bytes": 858185387,
+      "sha256": "4a8053631886ae78df4bbc131785d702c08b306b62d19e9b930480f85bfdb403"
+    },
+    {
+      "label": "mineru2605-table",
+      "bytes": 386986678,
+      "sha256": "1efd735469a8956aa6364e6fbd9587acf9f93958a48c39ad6a51393edf1164b5"
+    }
+  ],
+  "raw_archives_downloaded_locally": false,
+  "method": "hosted authenticated whole-ZIP copy; uploaded outer ZIP downloaded remotely and every inner original ZIP streamed through exact byte/hash checks; review-sized receipt independently authenticated"
+}

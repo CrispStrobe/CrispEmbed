@@ -1,0 +1,182 @@
+{
+  "schema": "crispembed.mineru2605.document-helpers.v1",
+  "model": "opendatalab/MinerU2.5-Pro-2605-1.2B",
+  "revision": "08aaea840498d49ce16247b6263196cf02814885",
+  "official_helper": "mineru-vl-utils==2.0.7",
+  "native_helper_blueprint": "c9797cde8f54cc48306196fc6aebe73ea31dd4a3",
+  "scope": "single page; both helper arms use the same native neural inference",
+  "requests": {
+    "official_requests": 19,
+    "native_requests": 19,
+    "official_complete": true,
+    "native_complete": true,
+    "requests_exact": true,
+    "comparisons": [
+      {
+        "index": 0,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 1,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 2,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 3,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 4,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 5,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 6,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 7,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 8,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 9,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 10,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 11,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 12,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 13,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 14,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 15,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 16,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 17,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 18,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      }
+    ],
+    "errors": []
+  },
+  "json_exact": true,
+  "markdown_exact": true,
+  "reference_reached_eos": true,
+  "native_reached_eos": true,
+  "helper_parity_pass": true,
+  "text_metrics": {
+    "exact": true,
+    "reference_chars": 1027,
+    "native_chars": 1027,
+    "reference_lines": 39,
+    "native_lines": 39,
+    "character_errors": 0,
+    "word_errors": 0,
+    "cer": 0.0,
+    "wer": 0.0
+  },
+  "official_blocks": 18,
+  "native_blocks": 18,
+  "official_requests": 19,
+  "original_python_neural_parity": "separate per-request qualification required",
+  "cross_page_table_merge_qualified": false,
+  "benchmark_qualified": false,
+  "image_sha256": "c87f6ebcb31d554f2b97debe51d7b1354ff8ddf7b980694bba2f248491d781d4",
+  "gguf_sha256": "2e0c196e059714acbe451182a205b1401d8d5f2ad0c1dfd907c98736e5c54794",
+  "threads": 4,
+  "table_token_seed": 2605,
+  "timing_s": {
+    "official_helper_first": 266.5114690289993,
+    "native_helper_second": 266.847939796,
+    "comparable_warm_speed": false
+  }
+}

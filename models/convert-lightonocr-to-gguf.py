@@ -131,6 +131,9 @@ def main():
 
             # Map HF names to GGUF names
             gguf_name = name
+            if args.profile == "lightonocr3-1b":
+                from lightonocr3_profile import canonical_checkpoint_name
+                gguf_name = canonical_checkpoint_name(gguf_name)
             # Strip model. prefix
             if gguf_name.startswith("model."):
                 gguf_name = gguf_name[6:]

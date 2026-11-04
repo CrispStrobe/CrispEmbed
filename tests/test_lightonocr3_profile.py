@@ -19,6 +19,37 @@ from lightonocr3_output import parse_grounding
 
 
 class ProfileTests(unittest.TestCase):
+    def test_actual_checkpoint_header_namespace_is_complete_and_collision_free(self):
+        from lightonocr3_profile import canonical_checkpoint_name
+        from dump_lightonocr3_reference import checkpoint_key_contract
+        path = ROOT / "tests/fixtures/lightonocr3/weight-header.json"
+        self.assertEqual(sha256(path), "028ca2de0140abe05988620d440826309657747b2387767fe6b592dc74340cfe")
+        header = json.loads(path.read_text())
+        names = [name for name in header if name != "__metadata__"]
+        expected = {canonical_checkpoint_name(name) for name in names} | {"lm_head.weight"}
+        self.assertEqual(len(names), 532)
+        record = checkpoint_key_contract(names, expected)
+        self.assertEqual(record["renamed_keys"], 310)
+        self.assertEqual(record["omitted_tied_keys"], ["lm_head.weight"])
+        self.assertEqual(header["language_model.model.embed_tokens.weight"]["shape"], [151936, 1024])
+        self.assertTrue(all(canonical_checkpoint_name(name) == name for name in names if name.startswith("model.")))
+
+    def test_checkpoint_loading_requires_native_keys_and_only_the_declared_tie(self):
+        from dump_lightonocr3_reference import checkpoint_key_contract
+        embedding = "model.language_model.embed_tokens.weight"
+        layer = "model.language_model.layers.0.self_attn.q_proj.weight"
+        expected = {embedding, layer, "lm_head.weight"}
+        saved_embedding = "language_model.model.embed_tokens.weight"
+        saved_layer = "language_model.model.layers.0.self_attn.q_proj.weight"
+        self.assertEqual(checkpoint_key_contract({saved_embedding, saved_layer, "lm_head.weight"}, expected)["omitted_tied_keys"], [])
+        self.assertEqual(checkpoint_key_contract({saved_embedding, saved_layer}, expected)["omitted_tied_keys"], ["lm_head.weight"])
+        for actual in ({saved_embedding}, {saved_layer}, {saved_embedding, saved_layer, "extra.weight"},
+                       {saved_embedding, layer}, [saved_embedding, saved_embedding, saved_layer]):
+            with self.subTest(actual=actual), self.assertRaises(ValueError):
+                checkpoint_key_contract(actual, expected)
+        with self.assertRaises(ValueError):
+            checkpoint_key_contract(set(), set())
+
     def setUp(self):
         self.fixture = ROOT / "tests/fixtures/lightonocr3"
         self.config, self.processor, self.generation = [json.loads((self.fixture / n).read_text()) for n in
@@ -31,6 +62,20 @@ class ProfileTests(unittest.TestCase):
             if path.name in pins["files"]:
                 self.assertEqual(sha256(path), pins["files"][path.name], path.name)
         validate_config(self.config, self.processor, self.generation)
+
+    def test_reference_recipe_satisfies_pinned_hub_dependencies(self):
+        requirements = (ROOT / "models/requirements-lightonocr3-reference.txt").read_text().splitlines()
+        declared = dict(line.split("==", 1) for line in requirements if "==" in line and not line.startswith("#"))
+        self.assertEqual(declared, REFERENCE_PACKAGES)
+        self.assertIn("transformers @ git+https://github.com/huggingface/transformers.git@"
+                      + manifest()["transformers_revision"], requirements)
+        # Upstream setup.py at 3568df44 requires hub>=1.31.0,<3.0;
+        # tokenizers v0.23.1 bindings/python/pyproject.toml requires >=0.16.4,<2.0.
+        # The initial hosted job selected hub2.4.0 and failed before inference.
+        self.assertEqual(declared["tokenizers"], "0.23.1")
+        hub = tuple(map(int, declared["huggingface-hub"].split(".")))
+        self.assertGreaterEqual(hub, (1, 31, 0))
+        self.assertLess(hub, (2, 0, 0))
 
     def test_incompatible_backbones_rejected(self):
         for mutate in (
