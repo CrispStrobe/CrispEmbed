@@ -13,9 +13,9 @@ import extract_ocr_nov4_evidence as archive
 SELECTOR = "tools/ci-heavy/extract_ocr_followup_evidence.py"
 HELPER_SHA256 = "5b52a1b14eb8658c3371fff920fade76c2df1346c0659b2d372322144bab84e6"
 TARGETS = (
-    {"label": "xiaomi0-inference", "run_id": 41871383235, "artifact_id": 13345371804,
-     "bytes": 224953251, "sha256": "453cd50bbdfc5b2e0a2732670886dff19c886d801b50d80ca4912ee29e49b3ca",
-     "source": "3a5a9a1dc519a624db58a09078060e388b61e43d", "conclusion": "success"},
+    {"label": "mineru2605-aligned-q4", "run_id": 41871894063, "artifact_id": 13345908772,
+     "bytes": 858185387, "sha256": "4a8053631886ae78df4bbc131785d702c08b306b62d19e9b930480f85bfdb403",
+     "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6", "conclusion": "success"},
 )
 
 
