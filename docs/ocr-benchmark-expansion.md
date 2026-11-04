@@ -113,6 +113,30 @@ consumer validation. Source implementation does not upgrade the immutable app
 runtime or imply browser/WASM support for large VLMs. Release/tag/default work
 stays in its existing lanes.
 
+## Corrected dispatch continuation — 4 November 2026
+
+GitHub CLI authentication works. Dispatching the original PR141 head
+`4d18bd178f48a8382bee6e8c163042343dab4c26` exposed a separate workflow defect:
+GitHub returned HTTP422 before creating any of the three manual runs because
+`runner.temp` is unavailable in job-level `env`. The zero-job push failure
+[41860949379](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41860949379)
+also belongs to that invalid workflow source, not model inference.
+
+Correction `15c48029d` initializes the two evidence directories in a runner step
+through `GITHUB_ENV`. It changes no model code, package, protocol, archive pin or
+qualification threshold. `actionlint`1.7.7 and the26 extraction controls pass.
+All three hosted jobs now exist on that exact correction source:
+
+| Job | Run | Review gate |
+|---|---|---|
+| Retained MinerU/LightOn0.8 reports | [41869721715](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869721715) | Verify complete extraction and small-file hashes, diagnose the first failed stage/changed fields before another model run |
+| LightOn3-1B F32/F16 | [41869728304](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869728304) | Dependency/source/native controls, original-first full panel and explicit precision/decoded results |
+| Xiaomi0 metadata/frontend | [41869734698](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869734698) | Review actual metadata and frontend before dispatching separate `--inference` |
+
+Do not duplicate these runs. Re-query their status; dispatch acceptance or green
+model-free CI is not model qualification. Large archives and model execution stay
+on hosted runners. The initial failure archives still expire18 November2026.
+
 ## Hosted execution queue
 
 All commands below use the existing manual `heavy-cpu.yml` workflow and the

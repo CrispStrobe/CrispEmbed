@@ -1,3 +1,16 @@
+## 4 November 2026 — OCR workflow dispatch repaired
+
+PR141's hosted controls were green, but its manual workflow could not parse:
+`runner.temp` was used in job-level `env`, where GitHub disallows that context.
+All three attempted dispatches returned HTTP422 without creating runs.
+Correction `15c48029d` moves directory initialization into an allocated-runner
+step. `actionlint`1.7.7 and all26 extraction controls pass. The corrected
+[extraction41869721715](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869721715),
+[LightOn1B41869728304](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869728304),
+and [Xiaomi metadata41869734698](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869734698)
+were accepted and started; results must be reviewed separately. No C++ runtime,
+model protocol, frozen original, precision threshold or publication changed.
+
 ## 4 November 2026 — first OCR hosted qualification batch reviewed
 
 The five prepared jobs ran on merge source

@@ -47,6 +47,30 @@ Next: review the exact-path hosted controls and first scheduled/manual report.
 Done when both have run IDs and the report preserves these evidence limits.
 No additional native build or model qualification is required for this reporting change.
 
+## Regression review and OCR continuation — 4 November 2026
+
+The current OCR manual runs and their acceptance gates are listed in the
+[expansion continuation](docs/ocr-benchmark-expansion.md#corrected-dispatch-continuation--4-november-2026).
+Use the three exact run IDs there before dispatching anything else. PR141's
+workflow-context correction is `15c48029d`; all75 focused OCR controls pass,
+including the actual20+29+26 tests. Heavy execution stays hosted.
+
+A bounded review against main `9c790c81a` found that
+`tests/test_moedern_q8_profile.py` passes7/8 controls and rejects its old source
+closure: `src/moedern_family_engine.cpp` expected
+`e3c95c082a3e8ca4325829dcb2d153664ea017c6eb583a486392df013ca4fc9e`,
+current SHA256 `410c27ea7179b346debbabf5257d5b0fc159f026d0f8c7b4274520e3e3641cf3`.
+Later mixed-Q4 source `ff1b8bbaf` changed that file. Preserve the frozen protocol
+`docs/moedern-q8-f32-critical-v1.json` and its historical evidence. This is a
+current-source qualification gap, not evidence of an F32/Q8 inference regression.
+Before reusing this harness on current main, review the complete source delta,
+declare a separate versioned closure/driver and run hosted authored profile,
+operator, storage and gate controls, then original/native vectors, retrieval and
+public consumers as required by the model lane. Do not simply replace its hash
+or weaken the frozen guard. The base13 MoEdern controls,51 UltraBERT controls,
+13 Josev controls (one additional test skipped) and18 main-health controls pass.
+These checks and green ordinary CI do not establish all-model numerical parity.
+
 ## Active work in flight — benchmark OCR expansion, 4 November 2026
 
 Owner-authorized follow-up to the OmniParseBench / OmniDocBench review. Isolated
