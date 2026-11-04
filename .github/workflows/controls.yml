@@ -399,9 +399,13 @@ jobs:
           python-version: '3.12'
       - name: Prepare isolated pinned CPU reference environment
         run: |
+          mkdir -p "$RUNNER_TEMP/lighton4b-reference/environment"
           python -m venv "$RUNNER_TEMP/lighton4b-reference-venv"
           "$RUNNER_TEMP/lighton4b-reference-venv/bin/python" -m pip install \
-            --disable-pip-version-check -r tools/lighton4b-gdn-requirements.txt
+            --disable-pip-version-check --report "$RUNNER_TEMP/lighton4b-reference/environment/resolution.json" \
+            -r tools/lighton4b-gdn-requirements.txt
+          "$RUNNER_TEMP/lighton4b-reference-venv/bin/python" -m pip check | tee "$RUNNER_TEMP/lighton4b-reference/environment/pip-check.txt"
+          "$RUNNER_TEMP/lighton4b-reference-venv/bin/python" -m pip freeze > "$RUNNER_TEMP/lighton4b-reference/environment/installed.txt"
       - name: Observe actual original 4B meta schema without checkpoint weights
         env:
           HF_HUB_OFFLINE: '1'
