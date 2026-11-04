@@ -878,6 +878,12 @@ target_include_directories(test-no-repeat-ngram PRIVATE src)
 add_executable(test-env-gate tests/test_env_gate.cpp)
 target_include_directories(test-env-gate PRIVATE src)
 
+# Metadata-only, no model allocation or inference admission. Consumes a hosted
+# schema derived from the immutable original LightOn4B checkpoint header.
+add_executable(test-lighton4b-text-owner tests/test_lighton4b_text_owner.cpp)
+target_include_directories(test-lighton4b-text-owner PRIVATE src)
+target_link_libraries(test-lighton4b-text-owner PRIVATE ggml ggml-base)
+
 # Hermetic: core/low_memory.h — automatic skip of optional F32 weight copies
 # (MiniCPM-OCR, Unlimited-OCR-2) when available memory is short.
 add_executable(test-low-memory tests/test_low_memory.cpp)

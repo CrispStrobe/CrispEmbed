@@ -1,5 +1,18 @@
 # CrispEmbed plan — open work (updated 4 November 2026)
 
+The bounded default-off `qwen35_lighton4b_text.h` component maps only the exact
+426 text tensors from immutable LightOn4B source
+`b71010f095dc3735de7ee6b9969bff8f8f50b39a`: 32 layers, full-attention and
+16-key/32-value-head recurrent geometry, tied head and strict shape/type/identity
+ownership. It leaves the old mapper, source closures and format-5 admission
+unchanged. Hosted `tools/ci-heavy/lighton4b_text_owner.py` must compare all owner
+identities against the independently captured original checkpoint header and
+reject per-tensor shape/type/contiguity/missing/alias drift, with no payload
+allocation. This is metadata ownership only. Vision mapping, actual composed
+decoder dispatch/cache behavior, bounded full-vocabulary projection, original
+intermediates/decoded outputs, tokenizer and public inference remain separate
+gates; no native model support or quality claim follows.
+
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
 [the 3 November handoff](docs/handoff-2026-11-03.md) and

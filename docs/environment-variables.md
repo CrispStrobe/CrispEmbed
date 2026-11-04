@@ -222,7 +222,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-427 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+428 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -976,6 +976,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_OVISOCR2_LARGE_IMAGES` | on | off | bool | default-off experimental / opt-in | `src/qwen35_image_bounds.h` |  |
+
+### qwen35_lighton4b_text
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER` | on | off | bool | default-off experimental / opt-in | `src/qwen35_lighton4b_text.h` | Experimental, default off; borrowed tensor metadata only, never inference admission. |
 
 ### qwen35_linear
 
