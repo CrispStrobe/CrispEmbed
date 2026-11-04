@@ -8,7 +8,10 @@ ownership. It leaves the old mapper, source closures and format-5 admission
 unchanged. Hosted `tools/ci-heavy/lighton4b_text_owner.py` must compare all owner
 identities against the independently captured original checkpoint header and
 reject per-tensor shape/type/contiguity/missing/alias drift, with no payload
-allocation. This is metadata ownership only. Vision mapping, actual composed
+allocation. Actual [hosted41929343665](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41929343665)
+at `291b0a171` passes all3,498 controls; independent review verifies426 unique
+original rows,249 matrices/177 protected tensors and the exact control census.
+This is metadata ownership only. Vision mapping, actual composed
 decoder dispatch/cache behavior, bounded full-vocabulary projection, original
 intermediates/decoded outputs, tokenizer and public inference remain separate
 gates; no native model support or quality claim follows.

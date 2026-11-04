@@ -1,3 +1,19 @@
+## 4 November 2026 — LightOn4B exact text ownership component
+
+[Hosted41929343665](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41929343665)
+at `291b0a171d6ed75e2248cb27626ada4367c0491b` passes all3,498 model-free
+controls for the separate default-off text owner. Independent small-artifact
+review verifies all426 unique original-header rows (249 matrices/177 protected
+tensors), the schema digest and the recomputed control census. Tests cover
+every mapped pointer, per-tensor missing/axis/type/stride rejection, stored-head
+and pointer aliases, gate unset/empty/zero, F16 matrices and all-F32 ownership.
+[The receipt](tests/results/qwen35-ocr/lightonocr3-4b-text-owner.json) retains
+exact source/header/binary/artifact identities. No weight payload was allocated;
+format-5 admission and model inference remain false. This closes only borrowed
+text-tensor ownership, not composed decoder, tokenizer, vision, vocabulary
+projection, decoded quality or publication qualification. Existing mapper and
+source closures remain unchanged.
+
 ## 4 November 2026 — LightOn4B grouped-head component and original-reference CI
 
 The additive `linear_grouped_core_cpu`/`linear_grouped_cpu` APIs keep compact
