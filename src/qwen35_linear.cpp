@@ -14,6 +14,7 @@
 #include <cstring>
 #include <exception>
 #include <memory>
+#include <limits>
 #include <new>
 #include <thread>
 
@@ -248,18 +249,19 @@ bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int
     if (!std::all_of(hidden, hidden + size_t(width) * tokens, [](float x) { return std::isfinite(x); }))
         return false;
     try {
-    // Preserve calibration identity: observe the original named matrix once,
-    // then suppress tile callbacks while retaining all old-path behavior.
-    if (observer && core_env::on("CRISPEMBED_QWEN35_IMATRIX") &&
-        !observer(ggml_get_name(matrix), hidden, width, tokens, observer_user))
-        return false;
-    struct observer_restore {
-        projection_observer saved = observer;
-        observer_restore() { observer = nullptr; }
-        ~observer_restore() { observer = saved; }
-    } restore;
+        // Preserve calibration identity: observe the original named matrix once,
+        // then suppress tile callbacks while retaining all old-path behavior.
+        if (observer && core_env::on("CRISPEMBED_QWEN35_IMATRIX") &&
+            !observer(ggml_get_name(matrix), hidden, width, tokens, observer_user))
+            return false;
+        struct observer_restore {
+            projection_observer saved = observer;
+            observer_restore() { observer = nullptr; }
+            ~observer_restore() { observer = saved; }
+        } restore;
         const size_t rows = size_t(matrix->ne[1]);
         const size_t row_bytes = ggml_row_size(matrix->type, width);
+        if (rows > std::numeric_limits<size_t>::max() / row_bytes) return false;
         std::vector<float> complete(rows * tokens);
         std::vector<uint8_t> raw(row_bytes * size_t(tile_rows));
         // Only one bounded tile lives in this context. project_cpu owns a
