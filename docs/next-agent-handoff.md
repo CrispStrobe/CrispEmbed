@@ -22,12 +22,12 @@ transport and the905-array admission barrier are linked; missing-other-case raw
 arrays require a separate current-CPU capture protocol, not a blind old rerun.
 
 [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143) continues after all
-seven selected workflows passed at `19531b88`. The feature branch now integrates
-main `17c96639`, preserving 294 existing controls plus 23 new profile controls,
-selector coverage and completed OCR status. Combined hosted checks remain the
-integration gate. Its next bounded slice owns the original GDN component
-reference, default-off unequal-head native primitives and explicit 4B conversion
-contract. Preserve existing equal-head callers, old source guards and precision
+seven selected workflows passed at integrated `91b24764`, preserving main
+`17c96639` and completed PR141 evidence; all 317 controls in 27 suites pass.
+The explicit 4B converter and 24-layer precision recipe are implemented with
+unqualified format 5. Hosted export controls and original meta-schema proof
+remain; the next native slice owns the original GDN component reference and
+default-off unequal-head primitives. Preserve existing equal-head callers, old source guards and precision
 recipes; source/component success does not qualify native4B. The exact boundaries
 and next acceptance gates are in PLAN and [the 4B handoff](lightonocr3-4b.md).
 

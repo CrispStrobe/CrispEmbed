@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "subject": "LightOnOCR-3-4B feature integration with merged PR141",
+  "head_commit": "91b24764c2b6a89fcbc1d95d0ebed578f414c95d",
+  "tree": "d7c510ec4030704b319970600e4da0db3e2a3d56",
+  "main_parent": "17c96639a5507c4cee51898b9eeb05ad58d2ebdc",
+  "observed_utc": "2026-11-04",
+  "controls": {
+    "run_id": 41916906725,
+    "job_id": 126878877664,
+    "suites": 27,
+    "tests": 317,
+    "suite_counts": [
+      14,
+      11,
+      15,
+      4,
+      7,
+      32,
+      26,
+      4,
+      7,
+      7,
+      6,
+      8,
+      14,
+      22,
+      6,
+      17,
+      22,
+      2,
+      6,
+      8,
+      7,
+      8,
+      23,
+      10,
+      10,
+      9,
+      12
+    ],
+    "declared_skips": 0,
+    "checkout_commit": "c0a3a1001a7524f6ccd4279c177723f17edda17b"
+  },
+  "workflows": [
+    {
+      "id": 41916906931,
+      "name": "Secret scan",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41916906931"
+    },
+    {
+      "id": 41916906725,
+      "name": "Model-free controls",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41916906725"
+    },
+    {
+      "id": 41916906729,
+      "name": "Rust crates",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41916906729"
+    },
+    {
+      "id": 41916906714,
+      "name": "Build",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41916906714"
+    },
+    {
+      "id": 41916906764,
+      "name": "Inpainting CLI and image contracts",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41916906764"
+    },
+    {
+      "id": 41916906744,
+      "name": "Build WASM",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41916906744"
+    },
+    {
+      "id": 41916906793,
+      "name": "Build WASM (text embeddings)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41916906793"
+    }
+  ],
+  "scope": "Combined source/ordinary CI only. Synthetic component/native-model/export/document qualification not exercised.",
+  "native_qualified": false,
+  "export_qualified": false,
+  "full_document_qualified": false
+}

@@ -1,13 +1,15 @@
-# LightOnOCR-3-4B — pinned source preflight
+# LightOnOCR-3-4B — pinned source and explicit export path
 
 Updated 4 November 2026. Implementation lane:
 [`feat/ocr-next-models-20261104` / PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143).
 
-**Status: source preflight and hosted controls pass; native inference and export remain unqualified.**
-The first slice verifies the original metadata, the actual safetensors header and
-bounded tokenizer-prefix evidence. It does not load model weights, run a framework,
-produce GGUF, change native admission or publish a registry alias. The existing
-LightOn1B/0.8B qualification and cache work remain in PR141.
+**Status: source preflight and integration CI pass; the explicit converter is implemented but has not produced a qualified export.**
+The source preflight verifies the original metadata, actual safetensors header
+and bounded tokenizer-prefix evidence without loading weights. A separate,
+explicit converter now requires the full pinned tokenizer and checkpoint bytes
+plus the original meta-model schema before writing format 5. Its execution,
+GGUF readback, native inference and document quality remain open. PR141's
+LightOn1B/0.8B evidence is merged and preserved.
 
 This is the next new checkpoint in the [OCR expansion roadmap](ocr-benchmark-expansion.md).
 Its upstream difficult-text results motivate evaluation; no benchmark number is a
@@ -154,6 +156,61 @@ still select ordinary validation, and adding a source fixture cannot suppress
 runtime dependencies. Changing the selector itself still selects the full
 ordinary CI lanes. Hosted results are recorded separately from local syntax and
 bounded CLI checks; neither establishes model quality.
+
+All seven selected integration workflows pass at `91b24764`, after main
+`17c96639` was merged. The combined controls job passes 317 tests in 27 suites.
+The [integration receipt](../tests/results/lightonocr3-4b/integration-ci-91b24764.json)
+records each run and the actual PR checkout. This is ordinary CI evidence,
+not execution of the new converter or native model.
+
+## Explicit 4B export contract
+
+The shared converter accepts this checkpoint only with
+`--profile lightonocr3-4b`, its exact model ID and immutable revision. An implicit
+generic conversion of the 4B model is rejected before filesystem or network
+access. The command below is a future hosted conversion entry point; it has not
+been executed as part of the source/control milestone:
+
+```bash
+python models/convert-qwen35-ocr-to-gguf.py \
+  --model lightonai/LightOnOCR-3-4B \
+  --revision b71010f095dc3735de7ee6b9969bff8f8f50b39a \
+  --profile lightonocr3-4b \
+  --dtype f16 \
+  --precision-recipe lightonocr3-4b-vision-f32 \
+  --output lightonocr3-4b-vision-f32.gguf
+```
+
+Admission verifies six exact metadata files and the complete tokenizer before
+the checkpoint download. Conversion then checks the original header/schema,
+streams the whole checkpoint SHA-256, verifies the loaded Transformers 5.5.4
+model/config source hashes, and compares the original meta-device model's
+724 state-dict entries against all 723 stored tensors plus the tied output-head
+alias. There is no MTP exclusion or additional stored head. Each exported tensor
+records its source shape/BF16 payload hash and converted shape/type/payload hash;
+the Conv3D patch tensor alone is flattened to `[1024, 1536]` for GGUF.
+
+| Export | F16 tensors | F32 tensors | Meaning |
+|---|---:|---:|---|
+| `--dtype f32` | 0 | 723 | Full F32 baseline |
+| F16, `original-f16` | 349 | 374 | Matrices in F16; norms, convolution and recurrent coefficients remain F32 |
+| F16, `lightonocr3-4b-vision-f32` | 249 | 474 | Separately named 24-layer recipe, retaining 100 vision matrices in F32 |
+
+The historical `vision-f32` recipe still means exactly 52 matrices across
+12 vision layers. It is rejected for 4B; the new recipe is rejected for other
+profiles. The 4B writer emits **format 5**, which current native format 1–4
+admission rejects. It includes the distinct tokenizer settings, head geometry,
+vision dimensions and both EOS declarations. Every native/export/document/
+alias qualification flag remains false, and `gguf_roundtrip_verified` remains
+false until a separate actual serialization/readback run proves it.
+
+Sixteen stdlib export controls are registered in the existing controls workflow.
+They check source identity, metadata/schema rejection, precision membership,
+dispatch ordering and explicit unqualified flags. Full-tokenizer admission is
+mocked only where a test needs to reach later metadata logic; those controls do
+not claim payload or framework execution. The next bounded hosted probe will
+instantiate the pinned original model on the meta device without downloading
+checkpoint weights, then validate the actual schema and tied identity.
 
 ## Native implementation sequence and acceptance gates
 

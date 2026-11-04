@@ -239,7 +239,7 @@ consumer validation. Source implementation does not upgrade the immutable app
 runtime or imply browser/WASM support for large VLMs. Release/tag/default work
 stays in its existing lanes.
 
-## Active source-only implementation lane
+## Active source and component implementation lane
 
 Branch `feat/ocr-next-models-20261104` / [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143)
 begins with LightOnOCR-3-4B. The [executable source preflight](lightonocr3-4b.md)
@@ -250,17 +250,22 @@ prefix evidence. Native support, export, document quality and publication remain
 unqualified. Small-file and header acquisition is distinguished from full
 checkpoint hashing or model inference. [Hosted source controls](../tests/results/lightonocr3-4b/source-ci-c41469b2.json)
 pass at `c41469b2`: 23 new cases, 236 tests in the full controls job and 51 CI
-selection tests. Original runtime capture is the next gate.
+selection tests. After integrating main `17c96639`, all seven workflows pass at
+`91b24764`, including 317 controls in 27 suites. The explicit format-5 converter
+and separate 24-layer vision precision recipe are now implemented; actual export
+execution/readback remain unqualified. Hosted original meta-schema and grouped-head
+component checks are the next gates; see the [4B technical guide](lightonocr3-4b.md).
 
 The current [Qwen3.5 runtime](../src/qwen35_ocr.cpp) assumes 473 tensors,
 24 decoder / 12 vision layers and 1024-wide text features. 4B needs 32 decoder /
 24 vision layers and width 2560. Its linear attention has 16 key heads and
 32 value heads, while the existing linear/delta code assumes equal head counts.
 The 248320-by-2560 vocabulary matrix also exceeds `project_cpu`'s existing
-element limit. The converter's historical `vision-f32` recipe covers only
-12 vision layers. Parameterization, grouped-head recurrence, bounded vocabulary
-projection and a distinct precision recipe require separate implementation and
-original-module evidence; increasing limits or exposing an alias is insufficient.
+element limit. The converter's historical `vision-f32` recipe still covers only
+12 vision layers; the new `lightonocr3-4b-vision-f32` recipe covers 24 and is
+explicitly separate. Parameterization, grouped-head recurrence and bounded
+vocabulary projection require implementation and original-module evidence;
+increasing limits or exposing an alias is insufficient.
 
 This bounded lane can prepare source contracts and hosted control jobs without
 occupying the model-qualification lane. Full builds, original/native captures,

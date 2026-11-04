@@ -43,6 +43,7 @@ on:
       - 'docs/lighton3-pixtral-epsilon-ab-v1.json'
       - 'tests/fixtures/lightonocr3/**'
       - 'tests/test_lightonocr3_4b_profile.py'
+      - 'tests/test_lightonocr3_4b_export.py'
       - 'tests/fixtures/lightonocr3-4b-source/**'
       - 'models/qwen35_xiaomi0_profile.py'
       - 'models/convert-qwen35-ocr-to-gguf.py'
@@ -149,6 +150,7 @@ on:
       - 'docs/lighton3-pixtral-epsilon-ab-v1.json'
       - 'tests/fixtures/lightonocr3/**'
       - 'tests/test_lightonocr3_4b_profile.py'
+      - 'tests/test_lightonocr3_4b_export.py'
       - 'tests/fixtures/lightonocr3-4b-source/**'
       - 'models/qwen35_xiaomi0_profile.py'
       - 'models/convert-qwen35-ocr-to-gguf.py'
@@ -311,9 +313,11 @@ jobs:
           python tests/test_lighton3_kv_remaining.py -v
           python tests/test_validate_lighton3_eps_first.py -v
 
-      - name: LightOnOCR-3-4B source preflight controls
+      - name: LightOnOCR-3-4B source and export controls
         if: ${{ !cancelled() }}
-        run: python tests/test_lightonocr3_4b_profile.py -v
+        run: |
+          python tests/test_lightonocr3_4b_profile.py -v
+          python tests/test_lightonocr3_4b_export.py -v
 
       - name: Xiaomi OCR0 exact source, task and layout controls
         if: ${{ !cancelled() }}

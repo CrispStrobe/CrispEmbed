@@ -1,3 +1,24 @@
+## 4 November 2026 — LightOn4B explicit conversion contract; integrated CI passes
+
+All seven selected workflows on integrated `91b24764c2b6a89fcbc1d95d0ebed578f414c95d`
+pass, including [controls41916906725](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41916906725)
+(317 tests in 27 suites) and [Build41916906714](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41916906714).
+The [receipt](tests/results/lightonocr3-4b/integration-ci-91b24764.json) records
+the exact PR checkout and all seven run IDs. This closes the combined integration
+check after merging main `17c96639`; historical pending statements below retain
+their original checkpoint meaning.
+
+The explicit `--profile lightonocr3-4b` conversion path now requires the exact
+model/revision, six small source files, full tokenizer and checkpoint SHA-256,
+original Transformers 5.5.4 implementation and 724-key meta schema. It exports
+723 tensors with source/converted hashes, retaining the tied head once. The new
+24-layer `lightonocr3-4b-vision-f32` recipe protects 100 matrices and leaves the
+old 52-matrix `vision-f32` recipe unchanged. Format 5 remains rejected by current
+native admission; all model/export/document/publication qualification flags stay
+false. Sixteen stdlib controls are added to the existing workflow; hosted execution,
+meta-schema observation, actual conversion and GGUF readback remain separate gates.
+No model weights were downloaded or executed locally.
+
 ## 4 November 2026 — LightOn4B continuation integrates current main
 
 The owner requested continued implementation and incremental pushes on
