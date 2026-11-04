@@ -21,6 +21,13 @@ preservation41894992782/41897911047 is complete with verified readback through
 transport and the905-array admission barrier are linked; missing-other-case raw
 arrays require a separate current-CPU capture protocol, not a blind old rerun.
 
+New draft [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143) at19531b886
+adds LightOn3-4B source preflight on an older base. Its checks pass there; it
+still needs current-main integration review, preserving294 existing+23 new
+profile controls, selector coverage and completed OCR status. Do not overwrite
+its owned implementation or mistake source-header qualification for native4B.
+The exact integration/native boundaries are in PLAN.
+
 Candidate0.17.15 is unreleased; published assets0.17.14/app0.17.12 stay unchanged.
 Read [the 3 November handoff](handoff-2026-11-03.md) for the broader non-OCR queue.
 Older sections below are source-specific history; do not replay their old

@@ -52,6 +52,13 @@ closure before reuse. This is a qualification gap, not a demonstrated numerical
 regression. No expensive shared-host work, new model publication, tag, default
 flip or app upgrade follows from these bounded reports.
 
+New draft [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143),
+head19531b886, adds723-tensor LightOn3-4B source preflight and23 profile controls.
+Its ordinary checks pass on its older base. Current-main rebase/integration and
+combined controls are still required; keep its owned implementation intact and
+preserve the complete PR141 receipts. It does not load weights, export GGUF or
+admit native4B. PLAN scopes both integration and the separate native effort.
+
 ## State on 3 November 2026
 
 Start with [the 3 November handoff](handoff-2026-11-03.md) and the index table at the top of
