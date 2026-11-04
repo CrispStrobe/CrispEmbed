@@ -1,3 +1,20 @@
+## 0.17.14
+
+- Native libraries track the v0.17.14 release. Downstream apps can drop
+  `CRISPEMBED_PREBUILT_VERSION`; Android builds from `main` fetch matching
+  libraries again.
+- macOS artifacts install `CrispEmbed`/`ggml` dylibs under unversioned install
+  names, so bundled binaries resolve without `DYLD_*` overrides.
+- Measured default flips since 0.17.12 (EasyOCR state/line recovery, GOT-OCR2
+  pipeline parity, SPM space collapse, XLM-R pair layout, position-table
+  truncation, CLIP EOS, qualified CUDA/Metal engine defaults, MiniCPM-OCR and
+  Unlimited-OCR-2 speed paths) each keep a `=0` opt-out documented in
+  `docs/environment-variables.md`.
+- New MinerU2.5-Pro-2605, LightOnOCR-3-1B and Xiaomi-OCR-0 profiles are
+  default-off and unqualified; the app-facing engine set is unchanged.
+- Server: usage/metrics accounting, request limits (429) and an opt-in
+  OpenAI-shaped `POST /v1/chat/completions` + `GET /v1/models` surface.
+
 ## 0.17.9
 
 - Add native MOST Embed DE support with exact Tekken tokenization, bidirectional
