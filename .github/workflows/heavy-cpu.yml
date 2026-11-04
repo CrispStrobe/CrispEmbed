@@ -294,6 +294,8 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
+      - name: Fetch the exact retained baseline for the source delta guard
+        run: git fetch --no-tags --depth=1 origin 4476be6eb21ecacc3c001ed4e02928d0a98be0ea
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
