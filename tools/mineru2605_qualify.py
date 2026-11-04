@@ -15,6 +15,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 
@@ -61,8 +62,22 @@ def candidate_contract(parsed, precision):
     allowed, required = {"f32": ({0}, 0), "f16": ({0, 1}, 1), "q8_0": ({0, 1, 8}, 8),
                          "q4_k": ({0, 1, 8, 12}, 12)}[precision]
     require(set(counts) <= allowed and required in counts, "declared precision differs from actual tensor storage")
+    if precision == "q4_k":
+        # Explicit aligned recipe v1: the original plain request produced
+        # 144 Q4_0 fallbacks, which remain rejected. Do not broaden the parser.
+        require(counts == {0: 384, 8: 273, 12: 24}, "aligned Q4_K/Q8_0 recipe counts differ")
+        for name, row in tensors.items():
+            expected_type = 0
+            if re.fullmatch(r"l\.blk\.\d+\.ffn_down\.weight", name):
+                expected_type = 12
+            elif (name == "l.embed_tokens.weight"
+                  or re.fullmatch(r"v\.blk\.\d+\.(attn_qkv|attn_proj|ffn_fc1|ffn_fc2)\.weight", name)
+                  or re.fullmatch(r"l\.blk\.\d+\.(attn_[qkvo]|ffn_gate|ffn_up)\.weight", name)):
+                expected_type = 8
+            require(row["type"] == expected_type, "aligned Q4_K role differs: " + name)
     return {"source": expected, "source_file_sha256": hashes, "tensor_count": len(tensors),
-            "stored_type_counts": dict(counts), "precision": precision, "file_bytes": parsed["bytes"]}
+            "stored_type_counts": dict(counts), "precision": precision, "file_bytes": parsed["bytes"],
+            "recipe": "aligned-q4k-q8-v1" if precision == "q4_k" else precision}
 
 
 def validate_reference(reference):

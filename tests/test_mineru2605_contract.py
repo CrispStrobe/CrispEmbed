@@ -59,6 +59,29 @@ class SourceContract(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "shape"):
             qualification.candidate_contract(changed, "f32")
 
+    def test_aligned_q4_recipe_rejects_observed_legacy_fallback_and_role_swaps(self):
+        data = self.candidate()
+        tensors = data["tensors"]
+        tensors["l.embed_tokens.weight"]["type"] = 8
+        for i in range(32):
+            for role in ("attn_qkv", "attn_proj", "ffn_fc1", "ffn_fc2"):
+                tensors[f"v.blk.{i}.{role}.weight"]["type"] = 8
+        for i in range(24):
+            for role in ("attn_q", "attn_k", "attn_v", "attn_o", "ffn_gate", "ffn_up"):
+                tensors[f"l.blk.{i}.{role}.weight"]["type"] = 8
+            tensors[f"l.blk.{i}.ffn_down.weight"]["type"] = 12
+        self.assertEqual(qualification.candidate_contract(data, "q4_k")["stored_type_counts"],
+                         {0: 384, 8: 273, 12: 24})
+        fallback = copy.deepcopy(data)
+        fallback["tensors"]["l.blk.0.attn_q.weight"]["type"] = 2
+        with self.assertRaisesRegex(ValueError, "storage"):
+            qualification.candidate_contract(fallback, "q4_k")
+        swapped = copy.deepcopy(data)
+        swapped["tensors"]["l.blk.0.ffn_down.weight"]["type"] = 8
+        swapped["tensors"]["l.blk.0.ffn_gate.weight"]["type"] = 12
+        with self.assertRaisesRegex(ValueError, "role"):
+            qualification.candidate_contract(swapped, "q4_k")
+
     def test_distinct_profiles_preserve_2604_default(self):
         old, new = converter.PROFILES["2604"], converter.PROFILES["2605"]
         self.assertEqual(old.repository, converter.MODEL_ID)
