@@ -1,3 +1,32 @@
+## 4 November 2026 — OCR roadmap rechecked; LightOn4B source preflight implemented
+
+The owner requested the updated missing-model recommendations in the repository,
+then an environment-appropriate implementation slice with incremental feature-branch
+pushes. [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143), branch
+`feat/ocr-next-models-20261104`, begins from main `2f748825`. The initial roadmap
+checkpoint is [`6b7b78dd`](https://github.com/CrispStrobe/CrispEmbed/commit/6b7b78dd89063ea8eb2647aae80feaa46d4c9bd7).
+PLAN and the expansion guide now distinguish implemented/qualified/public models,
+the completed PR141 panels and exact-version weight terms. LightOnOCR-3-4B is the
+first new source lane; Qianfan and conditional Logics V3/dots.mocr remain planned.
+
+The [4B preflight and technical handoff](docs/lightonocr3-4b.md) pin HF revision
+`b71010f095dc3735de7ee6b9969bff8f8f50b39a`, preserve actual original metadata/header
+bytes, independently derive the tensor schema and validate 723 BF16 tensors /
+4,539,265,536 parameters. Contiguous offsets imply 9,078,531,072 payload bytes;
+with the 89,456-byte header and eight-byte prefix this matches the declared
+9,078,620,536-byte file. The checkpoint payload was not downloaded or hashed.
+Separate exact 65,536-byte tokenizer prefixes confirm 4B/0.8B regex and ByteLevel
+differences; full tokenizer contents and tokenizer execution remain unverified.
+The exact official Apache license and distinct checkpoint-card declaration are retained.
+
+Local syntax and bounded positive/negative CLI checks pass. Hosted regression
+results are pending at this implementation checkpoint; they are not represented
+as model parity. Native source review identifies fixed small-model dimensions,
+16-key/32-value-head support, the full-vocabulary projection bound and the old
+12-layer precision recipe as blockers. Native/export/publication flags remain
+false. No runtime defaults, source pins, version metadata or model aliases changed;
+PR141 retains the existing-model qualification and LightOn1B norm/cache lane.
+
 ## 4 November 2026 — v0.17.14 release gate closed; OCR integration merged
 
 The open queue is empty. `#135` (honest main-health reporting) merged as `58f303a3`;

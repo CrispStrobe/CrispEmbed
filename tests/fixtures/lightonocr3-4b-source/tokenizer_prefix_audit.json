@@ -1,0 +1,823 @@
+{
+  "schema_version": 1,
+  "retrieved_at": "2026-11-04T20:25:26.889666+00:00",
+  "scope": "Source metadata audit only. Two exact 65536-byte tokenizer prefixes were acquired using HTTP 206 ranges. No full tokenizer or weight payload was downloaded, no tokenizer implementation executed, and no native/framework parity inferred. Prefix hashes verify acquired prefixes only, not full tokenizer payloads.",
+  "tokenizer_prefixes": {
+    "LightOnOCR-3-4B": {
+      "repository": "lightonai/LightOnOCR-3-4B",
+      "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+      "source_url": "https://huggingface.co/lightonai/LightOnOCR-3-4B/resolve/b71010f095dc3735de7ee6b9969bff8f8f50b39a/tokenizer.json",
+      "source_file": "tokenizer.json",
+      "source_total_bytes_from_content_range": 19989343,
+      "requested_bytes": 65536,
+      "raw_prefix_bytes": 65536,
+      "raw_prefix_sha256": "e8b90f9bd9bd80d18d67933ed34e562e89da5ab4f11ada2651f444aa77b9146d",
+      "stored_file": "LightOnOCR-3-4B-tokenizer.prefix.txt",
+      "stored_file_bytes": 65536,
+      "stored_file_sha256": "e8b90f9bd9bd80d18d67933ed34e562e89da5ab4f11ada2651f444aa77b9146d",
+      "stored_encoding": "utf-8; exact original bytes, no newline added",
+      "transport": {
+        "http_status": 206,
+        "requested_range": "bytes=0-65535",
+        "content_range": "bytes 0-65535/19989343",
+        "content_length": "65536",
+        "etag": "\"458bcbf483ed805b4297af928f717e64bd00c633a07be5fae5717cacbd48e2ef\""
+      },
+      "model_section_byte_offset_in_prefix": 7191,
+      "derived_fields": {
+        "version": "1.0",
+        "truncation": null,
+        "padding": null,
+        "added_tokens": [
+          {
+            "id": 248044,
+            "content": "<|endoftext|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248045,
+            "content": "<|im_start|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248046,
+            "content": "<|im_end|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248047,
+            "content": "<|object_ref_start|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248048,
+            "content": "<|object_ref_end|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248049,
+            "content": "<|box_start|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248050,
+            "content": "<|box_end|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248051,
+            "content": "<|quad_start|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248052,
+            "content": "<|quad_end|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248053,
+            "content": "<|vision_start|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248054,
+            "content": "<|vision_end|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248055,
+            "content": "<|vision_pad|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248056,
+            "content": "<|image_pad|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248057,
+            "content": "<|video_pad|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248058,
+            "content": "<tool_call>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248059,
+            "content": "</tool_call>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248060,
+            "content": "<|fim_prefix|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248061,
+            "content": "<|fim_middle|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248062,
+            "content": "<|fim_suffix|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248063,
+            "content": "<|fim_pad|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248064,
+            "content": "<|repo_name|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248065,
+            "content": "<|file_sep|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248066,
+            "content": "<tool_response>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248067,
+            "content": "</tool_response>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248068,
+            "content": "<think>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248069,
+            "content": "</think>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248070,
+            "content": "<|audio_start|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248071,
+            "content": "<|audio_end|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248072,
+            "content": "<tts_pad>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248073,
+            "content": "<tts_text_bos>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248074,
+            "content": "<tts_text_eod>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248075,
+            "content": "<tts_text_bos_single>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248076,
+            "content": "<|audio_pad|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          }
+        ],
+        "normalizer": {
+          "type": "NFC"
+        },
+        "pre_tokenizer": {
+          "type": "Sequence",
+          "pretokenizers": [
+            {
+              "type": "Split",
+              "pattern": {
+                "Regex": "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?[\\p{L}\\p{M}]+|\\p{N}| ?[^\\s\\p{L}\\p{M}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
+              },
+              "behavior": "Isolated",
+              "invert": false
+            },
+            {
+              "type": "ByteLevel",
+              "add_prefix_space": false,
+              "trim_offsets": false,
+              "use_regex": false
+            }
+          ]
+        },
+        "post_processor": {
+          "type": "ByteLevel",
+          "add_prefix_space": false,
+          "trim_offsets": false,
+          "use_regex": false
+        },
+        "decoder": {
+          "type": "ByteLevel",
+          "add_prefix_space": false,
+          "trim_offsets": false,
+          "use_regex": false
+        }
+      },
+      "derivation": "Parsed the complete top-level tokenizer fields preceding the model object from the original bounded prefix. A temporary closing brace was added only to parse this derived metadata object; the stored original prefix bytes were not modified. The model vocabulary/merges section is not parsed or claimed complete."
+    },
+    "LightOnOCR-3-0.8B": {
+      "repository": "lightonai/LightOnOCR-3-0.8B",
+      "revision": "36d8636925327c671bd8e479c517a004f7566bd9",
+      "source_url": "https://huggingface.co/lightonai/LightOnOCR-3-0.8B/resolve/36d8636925327c671bd8e479c517a004f7566bd9/tokenizer.json",
+      "source_file": "tokenizer.json",
+      "source_total_bytes_from_content_range": 19989325,
+      "requested_bytes": 65536,
+      "raw_prefix_bytes": 65536,
+      "raw_prefix_sha256": "c8313ed70439374e2d12178f4293a49f2285467cd1948841ae9ac44e7ad300aa",
+      "stored_file": "LightOnOCR-3-0.8B-tokenizer.prefix.txt",
+      "stored_file_bytes": 65536,
+      "stored_file_sha256": "c8313ed70439374e2d12178f4293a49f2285467cd1948841ae9ac44e7ad300aa",
+      "stored_encoding": "utf-8; exact original bytes, no newline added",
+      "transport": {
+        "http_status": 206,
+        "requested_range": "bytes=0-65535",
+        "content_range": "bytes 0-65535/19989325",
+        "content_length": "65536",
+        "etag": "\"777bcaa63794fa47b8f53680be9d6d176f1fcbd7ba03cdc6c3bae2b3d76b323f\""
+      },
+      "model_section_byte_offset_in_prefix": 7173,
+      "derived_fields": {
+        "version": "1.0",
+        "truncation": null,
+        "padding": null,
+        "added_tokens": [
+          {
+            "id": 248044,
+            "content": "<|endoftext|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248045,
+            "content": "<|im_start|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248046,
+            "content": "<|im_end|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248047,
+            "content": "<|object_ref_start|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248048,
+            "content": "<|object_ref_end|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248049,
+            "content": "<|box_start|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248050,
+            "content": "<|box_end|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248051,
+            "content": "<|quad_start|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248052,
+            "content": "<|quad_end|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248053,
+            "content": "<|vision_start|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248054,
+            "content": "<|vision_end|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248055,
+            "content": "<|vision_pad|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248056,
+            "content": "<|image_pad|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248057,
+            "content": "<|video_pad|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248058,
+            "content": "<tool_call>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248059,
+            "content": "</tool_call>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248060,
+            "content": "<|fim_prefix|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248061,
+            "content": "<|fim_middle|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248062,
+            "content": "<|fim_suffix|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248063,
+            "content": "<|fim_pad|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248064,
+            "content": "<|repo_name|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248065,
+            "content": "<|file_sep|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248066,
+            "content": "<tool_response>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248067,
+            "content": "</tool_response>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248068,
+            "content": "<think>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248069,
+            "content": "</think>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": false
+          },
+          {
+            "id": 248070,
+            "content": "<|audio_start|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248071,
+            "content": "<|audio_end|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248072,
+            "content": "<tts_pad>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248073,
+            "content": "<tts_text_bos>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248074,
+            "content": "<tts_text_eod>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248075,
+            "content": "<tts_text_bos_single>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          },
+          {
+            "id": 248076,
+            "content": "<|audio_pad|>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+          }
+        ],
+        "normalizer": {
+          "type": "NFC"
+        },
+        "pre_tokenizer": {
+          "type": "Sequence",
+          "pretokenizers": [
+            {
+              "type": "Split",
+              "pattern": {
+                "Regex": "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
+              },
+              "behavior": "Isolated",
+              "invert": false
+            },
+            {
+              "type": "ByteLevel",
+              "add_prefix_space": false,
+              "trim_offsets": true,
+              "use_regex": false
+            }
+          ]
+        },
+        "post_processor": {
+          "type": "ByteLevel",
+          "add_prefix_space": false,
+          "trim_offsets": false,
+          "use_regex": false
+        },
+        "decoder": {
+          "type": "ByteLevel",
+          "add_prefix_space": true,
+          "trim_offsets": true,
+          "use_regex": true
+        }
+      },
+      "derivation": "Parsed the complete top-level tokenizer fields preceding the model object from the original bounded prefix. A temporary closing brace was added only to parse this derived metadata object; the stored original prefix bytes were not modified. The model vocabulary/merges section is not parsed or claimed complete."
+    }
+  },
+  "derived_comparison": {
+    "normalizer_equal": true,
+    "added_tokens_equal": true,
+    "added_token_count": 33,
+    "differing_top_level_metadata_fields": {
+      "decoder": {
+        "LightOnOCR-3-4B": {
+          "type": "ByteLevel",
+          "add_prefix_space": false,
+          "trim_offsets": false,
+          "use_regex": false
+        },
+        "LightOnOCR-3-0.8B": {
+          "type": "ByteLevel",
+          "add_prefix_space": true,
+          "trim_offsets": true,
+          "use_regex": true
+        }
+      },
+      "pre_tokenizer": {
+        "LightOnOCR-3-4B": {
+          "type": "Sequence",
+          "pretokenizers": [
+            {
+              "type": "Split",
+              "pattern": {
+                "Regex": "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?[\\p{L}\\p{M}]+|\\p{N}| ?[^\\s\\p{L}\\p{M}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
+              },
+              "behavior": "Isolated",
+              "invert": false
+            },
+            {
+              "type": "ByteLevel",
+              "add_prefix_space": false,
+              "trim_offsets": false,
+              "use_regex": false
+            }
+          ]
+        },
+        "LightOnOCR-3-0.8B": {
+          "type": "Sequence",
+          "pretokenizers": [
+            {
+              "type": "Split",
+              "pattern": {
+                "Regex": "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
+              },
+              "behavior": "Isolated",
+              "invert": false
+            },
+            {
+              "type": "ByteLevel",
+              "add_prefix_space": false,
+              "trim_offsets": true,
+              "use_regex": false
+            }
+          ]
+        }
+      }
+    },
+    "selected_control_token_ids": {
+      "<|endoftext|>": 248044,
+      "<|im_start|>": 248045,
+      "<|im_end|>": 248046,
+      "<|vision_start|>": 248053,
+      "<|vision_end|>": 248054,
+      "<|image_pad|>": 248056,
+      "<think>": 248068,
+      "</think>": 248069
+    }
+  },
+  "license": {
+    "repository": "lightonai/LightOnOCR",
+    "revision": "36755d461be079737860a5f03ae0c803501269e9",
+    "source_file": "LICENSE",
+    "source_url": "https://raw.githubusercontent.com/lightonai/LightOnOCR/36755d461be079737860a5f03ae0c803501269e9/LICENSE",
+    "git_blob_sha1": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+    "git_blob_verified_from_acquired_bytes": true,
+    "stored_file": "LightOnOCR-Apache-2.0-LICENSE.txt",
+    "bytes": 11358,
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "encoding": "utf-8; exact original bytes",
+    "transport": {
+      "http_status": 200,
+      "content_length": "11358",
+      "etag": "\"ea7695ebe191574f243f2d0da593df55f90669d28366f85d2d8070743095da31\""
+    },
+    "scope": "Official LightOnOCR repository Apache-2.0 LICENSE retained verbatim. The model checkpoint separately declares Apache-2.0 in its pinned README; it has no standalone LICENSE file. This file is not represented as having been present in the Hugging Face checkpoint."
+  },
+  "existing_audit_manifest_unchanged": {
+    "path": "tests/fixtures/lightonocr3-4b-source/audit_manifest.json",
+    "sha256_before": "d7a6fc3398a35004e81271bd08ea36f0b7dce6b1285f92c1bb237cd799005a09",
+    "sha256_after": "d7a6fc3398a35004e81271bd08ea36f0b7dce6b1285f92c1bb237cd799005a09"
+  }
+}

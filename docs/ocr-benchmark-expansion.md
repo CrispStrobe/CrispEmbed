@@ -36,7 +36,7 @@ The `lightonocr` alias remains LightOnOCR-2-1B; published MinerU aliases target
 | Priority | Model | Why it merits work | Next bounded action / gate |
 |---|---|---|---|
 | Finish existing | MinerU2605, LightOn3-1B/0.8B, Xiaomi, Ovis3 | Convert the existing implementation/evidence into accurately bounded support | Follow the exact outstanding protocols above; PR141 retains ownership of its current norm/cache work |
-| Next new checkpoint; active | LightOnOCR-3-4B | Apache-2.0 difficult-text/handwriting/math/degraded-scan option | Source/config/tensor preflight first; current small-model runtime requires real dimension, grouped-head and memory changes |
+| Next new checkpoint; active | LightOnOCR-3-4B | Apache-2.0 difficult-text/handwriting/math/degraded-scan option | [Pinned source preflight implemented](lightonocr3-4b.md); hosted controls next, then original runtime capture and explicit dimension, grouped-head, tokenizer and memory changes |
 | Highest conditional new capability | Logics-Parsing-V3 | 0.8B Qwen3.5 model with multi-page hierarchy, continuation and document state | Explicit publisher weight grant first; its Apache-2.0 code permits a separate document-state/DSL contract without loading weights |
 | Next permissive custom backend | Qianfan-OCR | Document understanding, key information extraction, layout reasoning and charts | Audit its Qwen3 decoder, custom vision/projector and conflicting processor defaults; not a stock Qwen3-VL alias |
 | Conditional quality/multilingual candidate | dots.mocr | Strong missing document quality candidate | Decide on actual supplemental terms, then custom Dots vision/processor plus Qwen2 decoder work |
@@ -46,7 +46,7 @@ The `lightonocr` alias remains LightOnOCR-2-1B; published MinerU aliases target
 | Optional restricted | Chandra-OCR-2 / Surya2.5 | Separate licensed product options | Resolve commercial/competition terms; `surya-det` is not Surya2.5 recognition/document OCR |
 
 The implemented lanes have separate protocols: [MinerU 2605](mineru25-pro-2605.md),
-[LightOn3-1B](lightonocr3-1b.md), [Xiaomi-OCR-0](xiaomi-ocr0.md), and
+[LightOn3-1B](lightonocr3-1b.md), [LightOn3-4B source preflight](lightonocr3-4b.md), [Xiaomi-OCR-0](xiaomi-ocr0.md), and
 [Nemotron frontend](nemotron-parse.md).
 Every profile retains its existing family behavior and has a separate source
 identity. A shape-compatible checkpoint is not automatically admitted as another
@@ -128,12 +128,14 @@ stays in its existing lanes.
 
 ## Active source-only implementation lane
 
-Branch `feat/ocr-next-models-20261104` begins with LightOnOCR-3-4B. The first
-deliverable is an immutable source/config/tensor inventory and an executable
-preflight with meaningful identity, shape and unsupported-feature negatives.
-It must report native support, numerical parity, document quality and publication
-as unqualified. Small-file and header acquisition must be distinguished from
-full checkpoint hashing or model inference.
+Branch `feat/ocr-next-models-20261104` / [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143)
+begins with LightOnOCR-3-4B. The [executable source preflight](lightonocr3-4b.md)
+now checks the actual 723 BF16 tensors, independently derived names/shapes and
+contiguous byte intervals, with identity/shape/unsupported-feature negatives.
+It retains the exact original metadata/header plus separate bounded tokenizer
+prefix evidence. Native support, export, document quality and publication remain
+unqualified. Small-file and header acquisition is distinguished from full
+checkpoint hashing or model inference; hosted controls are the next gate.
 
 The current [Qwen3.5 runtime](../src/qwen35_ocr.cpp) assumes 473 tensors,
 24 decoder / 12 vision layers and 1024-wide text features. 4B needs 32 decoder /

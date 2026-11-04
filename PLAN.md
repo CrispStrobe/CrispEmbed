@@ -8,7 +8,7 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 
 | Lane | State | Next action | Done when |
 |---|---|---|---|
-| OCR model gaps / LightOnOCR-3-4B (`feat/ocr-next-models-20261104`) | Owner-authorized 4 Nov recheck; current coverage, exact checkpoint rights and new-model priorities are in [the expansion guide](docs/ocr-benchmark-expansion.md). Source audit/bootstrap is the active bounded lane; PR141 owns existing model qualification | Pin 4B metadata/tensor schema and implement a model-free preflight. Then address hard-coded small-model shapes, unequal linear-attention head groups, vocabulary projection memory and the 12-layer precision recipe under a separate native protocol | Immutable source/tensor inventory and hosted positive/negative controls first; native support remains false until complete original/native F32/F16 and document evidence, then separate precision/publication gates |
+| OCR model gaps / LightOnOCR-3-4B (`feat/ocr-next-models-20261104`, [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143)) | Revised priorities and rights are in [the expansion guide](docs/ocr-benchmark-expansion.md). The separate [4B source preflight](docs/lightonocr3-4b.md) now verifies the actual 723-tensor header and tokenizer-prefix evidence; hosted controls are pending. PR141 owns existing model qualification | Finish hosted positive/negative controls, then freeze the original runtime protocol before addressing fixed small-model shapes, unequal linear-attention heads, vocabulary projection memory and the 12-layer precision recipe | Native support remains false until complete original/native F32/F16 and document evidence, followed by separate precision/publication gates |
 | Q4_K_MIX publications (MiniCPM-OCR, Unlimited-OCR-2, MoEdern 27M/115M, Josev, UltraBERT) | Recipes and receipts on main. TeleOCR and MinerU Q4_K_MIX are already published and registered (`teleocr-q4_k-mix`, `mineru25-pro-q4_k-mix`, PR #116); the rest are not | Coordinator dispatches the cosine-gated publication per model (sections below); Josev needs a quantized branch in `josev_publish.py`, MoEdern needs SciFact/client panels first | Hub upload, empty-cache readback, registry alias with SHA-256 |
 | Main CI green at head | Build/Lint queued for hours on recent main; Windows compiler-cache fix `93209b32` and `sibling-crispasr` unconfirmed | Handoff 3 Nov lane A | Build+Lint+WASM green on one main commit |
 | `env_gate.h` false/off/no lockstep | CrispASR #572 open (46 checks pass); CrispEmbed side not written | Handoff 3 Nov lane B | Identical header in both repos, tests in CI, sibling sync green |
@@ -56,7 +56,7 @@ and model defaults. New registry aliases require qualified immutable artifacts.
 
 | Lane / branch | Scope | Completion gate |
 |---|---|---|
-| `feat/ocr-next-models-20261104` | Refresh current model coverage and priorities; begin the separate LightOnOCR-3-4B source/config/tensor preflight. Existing Qwen3.5 code hard-codes the small model and cannot run 4B by adding an alias | Exact provenance and fail-closed source controls; native admission, conversion qualification, full document quality and publication remain separate |
+| `feat/ocr-next-models-20261104` / [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143) | Roadmap refreshed; separate LightOnOCR-3-4B metadata/header/tokenizer preflight implemented with exact-source positive/negative controls in the existing hosted workflow. See [the native work sequence](docs/lightonocr3-4b.md#native-implementation-sequence-and-acceptance-gates) | Hosted source controls first; original framework capture and the explicit grouped-head/dimension/projection work next. Native admission, conversion, document quality and publication remain separate |
 | `fix/ocr-qualification-nov4` / PR141 | Existing MinerU2605, LightOn3-1B/0.8B and Xiaomi qualification. Follow its [4 Nov continuation](https://github.com/CrispStrobe/CrispEmbed/blob/ea2edb5bff53629c31804437af2f0e21796fd040/docs/ocr-qualification-2026-11-04.md), not the superseded first-run queue | Resolve retained numerical/decoded/layout failures, completion caps and precision-specific publication gates; coordinate with this lane before changing its probes or runtime |
 | OvisOCR3 document task | Separate pinned Markdown task/source and cleanup audit exists; the old plain-OCR capped-page failure is preserved | Independent licensed input/gold, actual original task captures and distinct native task admission; upstream two-call Markdown/layout scores are not plain-OCR evidence |
 | Nemotron 3.5 Parse | Source census and bounded geometry/packing frontend exist; full OCR engine is absent | Native resize/positions, C-RADIO/compression/causal mBART, full original/native evidence and public surfaces before publication |
@@ -70,6 +70,15 @@ F16 language-change failure, and LightOn0.8's exact replay guard remains failed.
 These are remaining qualification tasks, not absent implementations. Retain
 the exact linked reviews and their negative results; do not repeat completed
 panels merely because the older guide said execution was pending.
+
+LightOn4B's next native slice must start from the pinned original protocol. The
+source preflight leaves every native/export/publication qualification false.
+Implement the 16-key/32-value-head path with independent intermediate evidence,
+then explicit 32-layer text/24-layer vision ownership and bounded full-vocabulary
+projection. Preserve the old 12-layer precision recipe; a new 24-layer recipe and
+actual F32/F16 document/EOS/memory results are separate gates. Exact tokenizer
+prefixes already show combining-mark/ByteLevel differences from 0.8B, so reusing
+the small checkpoint's frontend identity is not an accepted shortcut.
 
 This work does not adopt restricted terms or change the immutable app runtime.
 OvisOCR3's frozen capped-page failure and all old strict LightOnOCR-3-0.8B verdicts

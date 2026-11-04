@@ -21,6 +21,8 @@ on:
       - 'tools/ci-heavy/lightonocr3_1b.*'
       - 'tests/test_lightonocr3_profile.py'
       - 'tests/fixtures/lightonocr3/**'
+      - 'tests/test_lightonocr3_4b_profile.py'
+      - 'tests/fixtures/lightonocr3-4b-source/**'
       - 'models/qwen35_xiaomi0_profile.py'
       - 'models/convert-qwen35-ocr-to-gguf.py'
       - 'tools/xiaomi0*.py'
@@ -102,6 +104,8 @@ on:
       - 'tools/ci-heavy/lightonocr3_1b.*'
       - 'tests/test_lightonocr3_profile.py'
       - 'tests/fixtures/lightonocr3/**'
+      - 'tests/test_lightonocr3_4b_profile.py'
+      - 'tests/fixtures/lightonocr3-4b-source/**'
       - 'models/qwen35_xiaomi0_profile.py'
       - 'models/convert-qwen35-ocr-to-gguf.py'
       - 'tools/xiaomi0*.py'
@@ -236,6 +240,10 @@ jobs:
         if: ${{ !cancelled() }}
         run: python tests/test_lightonocr3_profile.py -v
 
+      - name: LightOnOCR-3-4B source preflight controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_lightonocr3_4b_profile.py -v
+
       - name: Xiaomi OCR0 exact source, task and layout controls
         if: ${{ !cancelled() }}
         run: |
@@ -246,3 +254,4 @@ jobs:
       - name: Nemotron processor-reference receipt controls
         if: ${{ !cancelled() }}
         run: python tests/test_nemotron_parse_frontend.py -v
+
