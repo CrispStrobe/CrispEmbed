@@ -71,7 +71,7 @@ FALSE_QUALIFICATIONS = (
     "quantization_qualified", "public_alias_qualified",
 )
 COMMON_CONTROLS = (
-    "source_contract", "gate_group_unset", "gate_group_empty", "gate_group_zero", "gate_ocr_zero",
+    "source_contract", "empty_cache_is_null", "gate_group_unset", "gate_group_empty", "gate_group_zero", "gate_ocr_zero",
     "reject_key_zero", "reject_key_nondivisor", "reject_tokens_over_limit", "reject_width_over_limit",
     "reject_missing_qkv", "reject_bad_norm_epsilon", "reject_nonfinite_norm",
     "reject_missing_hidden", "reject_nonfinite_hidden", "reject_quantized_weight",

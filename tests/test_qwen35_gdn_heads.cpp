@@ -74,7 +74,7 @@ bool empty(const qwen35_ocr::projected_linear_outputs & value) {
     return value.qkv.empty() && value.z.empty() && value.a.empty() && value.b.empty() && value.attention.empty() &&
            empty(value.core);
 }
-const float * data(const std::vector<float> & value) {
+const float * optional_data(const std::vector<float> & value) {
     return value.empty() ? nullptr : value.data();
 }
 
@@ -240,7 +240,12 @@ static int crispembed_test_main(int argc, char ** argv) {
     } else
         source_ok = false;
     if (!control("source_contract", source_ok)) return 2;
-    bool ok = true;
+    // A cleared vector may retain a nonnull allocation. Unqualified data(v)
+    // would select std::data(v) by ADL instead of a const-reference helper.
+    std::vector<float> cleared_state(128, 1.0f);
+    cleared_state.clear();
+    bool ok = control("empty_cache_is_null", optional_data(cleared_state) == nullptr);
+
     const auto & first = inputs.front();
     const auto raw_rejects = [&](const qwen35_ocr::linear_inputs & input, int key_heads) {
         qwen35_ocr::linear_outputs out{ { 1 }, { 1 }, { 1 } };
@@ -328,14 +333,14 @@ static int crispembed_test_main(int argc, char ** argv) {
         qwen35_ocr::linear_outputs current_core;
         std::vector<float> delta_output, delta_state;
         auto raw = input.core;
-        raw.conv_history = data(previous_core.conv_history);
-        raw.state = data(previous_core.state);
+        raw.conv_history = optional_data(previous_core.conv_history);
+        raw.state = optional_data(previous_core.state);
         const bool projected_ok =
             qwen35_ocr::linear_grouped_cpu(weights, keys, input.hidden, input.batch, input.tokens, threads,
-                                           data(previous.core.conv_history), data(previous.core.state), current);
+                                           optional_data(previous.core.conv_history), optional_data(previous.core.state), current);
         const bool raw_ok = qwen35_ocr::linear_grouped_core_cpu(raw, keys, current_core);
         const bool delta_ok =
-            qwen35_ocr::delta_cpu(input.q, input.k, input.v, input.g, input.beta, data(previous_delta), input.batch,
+            qwen35_ocr::delta_cpu(input.q, input.k, input.v, input.g, input.beta, optional_data(previous_delta), input.batch,
                                   input.tokens, heads, width, threads, delta_output, delta_state);
         if (!control("execute_" + input.name, projected_ok && raw_ok && delta_ok)) return 1;
         if (keys == heads) {
@@ -344,7 +349,7 @@ static int crispembed_test_main(int argc, char ** argv) {
             qwen35_ocr::linear_outputs legacy_core;
             const bool legacy_ok =
                 qwen35_ocr::linear_cpu(weights, input.hidden, input.batch, input.tokens, threads,
-                                       data(previous.core.conv_history), data(previous.core.state), legacy);
+                                       optional_data(previous.core.conv_history), optional_data(previous.core.state), legacy);
             const bool legacy_core_ok = qwen35_ocr::linear_core_cpu(raw, legacy_core);
             ok &= control("equal_projected_" + input.name, legacy_ok && same(current, legacy));
             ok &= control("equal_core_" + input.name, legacy_core_ok && same(current_core, legacy_core));
