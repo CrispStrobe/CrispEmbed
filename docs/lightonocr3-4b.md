@@ -3,7 +3,7 @@
 Updated 4 November 2026. Implementation lane:
 [`feat/ocr-next-models-20261104` / PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143).
 
-**Status: source preflight implemented; native inference and export remain unqualified.**
+**Status: source preflight and hosted controls pass; native inference and export remain unqualified.**
 The first slice verifies the original metadata, the actual safetensors header and
 bounded tokenizer-prefix evidence. It does not load model weights, run a framework,
 produce GGUF, change native admission or publish a registry alias. The existing
@@ -138,6 +138,16 @@ The existing [controls workflow](../.github/workflows/controls.yml) runs:
 ```bash
 python tests/test_lightonocr3_4b_profile.py -v
 ```
+
+At implementation commit `c41469b24cb7835b4fe2706835b59db583392c76`,
+[hosted controls run 41908139315](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41908139315)
+passes all 23 new cases and all 236 tests across 18 unittest executions.
+[Static guards](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41908139236/job/126848192178)
+also pass all 51 CI-selection cases, including the five new routing/workflow
+checks. The jobs checked out PR merge `34fcb32e`, whose tree exactly equals the
+implementation tree. See the [machine-readable receipt](../tests/results/lightonocr3-4b/source-ci-c41469b2.json).
+This is source/control evidence; the overall platform Build was still in flight
+when the receipt was recorded.
 
 Routing lists reviewed source fixtures explicitly. New unknown fixture files
 still select ordinary validation, and adding a source fixture cannot suppress

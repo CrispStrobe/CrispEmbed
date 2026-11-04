@@ -1,4 +1,4 @@
-## 4 November 2026 — OCR roadmap rechecked; LightOn4B source preflight implemented
+## 4 November 2026 — OCR roadmap rechecked; LightOn4B source preflight passes hosted controls
 
 The owner requested the updated missing-model recommendations in the repository,
 then an environment-appropriate implementation slice with incremental feature-branch
@@ -19,9 +19,16 @@ Separate exact 65,536-byte tokenizer prefixes confirm 4B/0.8B regex and ByteLeve
 differences; full tokenizer contents and tokenizer execution remain unverified.
 The exact official Apache license and distinct checkpoint-card declaration are retained.
 
-Local syntax and bounded positive/negative CLI checks pass. Hosted regression
-results are pending at this implementation checkpoint; they are not represented
-as model parity. Native source review identifies fixed small-model dimensions,
+Local syntax and bounded positive/negative CLI checks pass. At implementation
+[`c41469b2`](https://github.com/CrispStrobe/CrispEmbed/commit/c41469b24cb7835b4fe2706835b59db583392c76),
+[controls run 41908139315](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41908139315)
+passes all 23 new LightOn4B cases and all 236 tests across 18 unittest executions.
+[Static guards job 126848192178](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41908139236/job/126848192178)
+passes all 51 CI-selection tests, including the five new routing/workflow controls.
+The actual PR merge checkout `34fcb32e` has the identical implementation tree;
+the [receipt](tests/results/lightonocr3-4b/source-ci-c41469b2.json) records both identities.
+Other platform Build jobs were still running or queued at observation. These
+source/control results are not model parity. Native source review identifies fixed small-model dimensions,
 16-key/32-value-head support, the full-vocabulary projection bound and the old
 12-layer precision recipe as blockers. Native/export/publication flags remain
 false. No runtime defaults, source pins, version metadata or model aliases changed;

@@ -36,7 +36,7 @@ The `lightonocr` alias remains LightOnOCR-2-1B; published MinerU aliases target
 | Priority | Model | Why it merits work | Next bounded action / gate |
 |---|---|---|---|
 | Finish existing | MinerU2605, LightOn3-1B/0.8B, Xiaomi, Ovis3 | Convert the existing implementation/evidence into accurately bounded support | Follow the exact outstanding protocols above; PR141 retains ownership of its current norm/cache work |
-| Next new checkpoint; active | LightOnOCR-3-4B | Apache-2.0 difficult-text/handwriting/math/degraded-scan option | [Pinned source preflight implemented](lightonocr3-4b.md); hosted controls next, then original runtime capture and explicit dimension, grouped-head, tokenizer and memory changes |
+| Next new checkpoint; active | LightOnOCR-3-4B | Apache-2.0 difficult-text/handwriting/math/degraded-scan option | [Pinned source preflight passes hosted controls](lightonocr3-4b.md); next are original runtime capture and explicit dimension, grouped-head, tokenizer and memory changes |
 | Highest conditional new capability | Logics-Parsing-V3 | 0.8B Qwen3.5 model with multi-page hierarchy, continuation and document state | Explicit publisher weight grant first; its Apache-2.0 code permits a separate document-state/DSL contract without loading weights |
 | Next permissive custom backend | Qianfan-OCR | Document understanding, key information extraction, layout reasoning and charts | Audit its Qwen3 decoder, custom vision/projector and conflicting processor defaults; not a stock Qwen3-VL alias |
 | Conditional quality/multilingual candidate | dots.mocr | Strong missing document quality candidate | Decide on actual supplemental terms, then custom Dots vision/processor plus Qwen2 decoder work |
@@ -135,7 +135,9 @@ contiguous byte intervals, with identity/shape/unsupported-feature negatives.
 It retains the exact original metadata/header plus separate bounded tokenizer
 prefix evidence. Native support, export, document quality and publication remain
 unqualified. Small-file and header acquisition is distinguished from full
-checkpoint hashing or model inference; hosted controls are the next gate.
+checkpoint hashing or model inference. [Hosted source controls](../tests/results/lightonocr3-4b/source-ci-c41469b2.json)
+pass at `c41469b2`: 23 new cases, 236 tests in the full controls job and 51 CI
+selection tests. Original runtime capture is the next gate.
 
 The current [Qwen3.5 runtime](../src/qwen35_ocr.cpp) assumes 473 tensors,
 24 decoder / 12 vision layers and 1024-wide text features. 4B needs 32 decoder /
