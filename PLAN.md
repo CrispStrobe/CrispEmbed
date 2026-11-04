@@ -35,6 +35,17 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Big-LaMa (research only) | Weights' rights unclear; kept on `feat/issue71-lama-research`, private Hub copy only | Nothing until the owner clarifies the weight licence | Licence clarified (then publish) or lane closed |
 | Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
 
+## Main-health recorded CI status — 3 November 2026
+
+Owner: CI audit maintainer; branch `fix/main-health-status`, based on
+`dd465a44290dca2cdefd45caf8831d7be55d5b4c`. The old probe reported cancelled checks
+as green. The replacement reports bounded, owned-main outcomes and exact validation
+SHAs; pending/cancelled/missing/API results remain unverified, while older successes
+are explicitly historical. All 18 focused offline regressions pass.
+
+Next: review the exact-path hosted controls and first scheduled/manual report.
+Done when both have run IDs and the report preserves these evidence limits.
+No additional native build or model qualification is required for this reporting change.
 
 ## Active work in flight — benchmark OCR expansion, 3 November 2026
 
