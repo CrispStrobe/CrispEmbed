@@ -49,3 +49,14 @@ lives in `src/lighton4b_vision_owner.cpp`; `src/qwen35_vision.cpp` is restored
 byte-for-byte to the main implementation. Historical receipts and source-pin
 chains are unchanged. Fresh hosted contracts/builds must validate this source
 placement correction; the earlier passing matrix remains source-specific.
+
+The final isolated source `2b248c9cb` passes complete hosted Build
+[41928227750](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928227750):
+all3 desktops, iOS, Android3, sibling, Flutter bundle and aggregate result. Its
+[Linux job](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928227750/job/126918372423)
+explicitly compiles/runs the297-tensor ownership controls successfully.
+At docs-only successor `daf5e5a28`, the previously failing
+[OvisOCR2 contracts41928385929](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928385929),
+[decoded controls41928385638](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928385638)
+and [lint41928384905](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928384905)
+all pass. Historical source-pin contracts remain unchanged.
