@@ -409,7 +409,7 @@ list(APPEND CRISPEMBED_SOURCES src/bert_ner.cpp)
 list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lfm2_vl_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lightonocr.cpp)
-list(APPEND CRISPEMBED_SOURCES src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/lighton4b_vision_owner.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
 # Experimental MiniCPM-OCR-1.0 (default-off: CRISPEMBED_MINICPM_OCR); reuses the qwen35 decoder.
 list(APPEND CRISPEMBED_SOURCES src/minicpm_ocr_vision.cpp src/minicpm_ocr.cpp src/qwen35_graph_decoder.cpp
      src/qwen35_graph_kv_decoder.cpp)
@@ -897,7 +897,7 @@ target_link_libraries(test-lfm2-shortconv PRIVATE crispembed)
 
 # Experimental Qwen3.5 recurrence boundary, independently testable before the
 # full OCR engine is wired. No production C ABI or registry exposure yet.
-add_library(crispembed-qwen35-delta STATIC src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
+add_library(crispembed-qwen35-delta STATIC src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/lighton4b_vision_owner.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
 target_include_directories(crispembed-qwen35-delta PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 # qwen35_linear.cpp uses std::thread; older manylinux glibc needs explicit pthread linkage.
 target_link_libraries(crispembed-qwen35-delta PUBLIC ggml ggml-base ggml-cpu crispembed-core Threads::Threads)

@@ -9,9 +9,7 @@
 #include "qwen35_math.h"
 #define vision_cpu vision_audit_copy_cpu
 #define map_small_vision vision_audit_copy_map
-#define map_lighton4b_vision vision_audit_copy_map_lighton4b
 #include "../src/qwen35_vision.cpp"
-#undef map_lighton4b_vision
 #undef map_small_vision
 #undef vision_cpu
 namespace qwen35_ocr {

@@ -42,3 +42,10 @@ compiles the target and runs it successfully, printing `PASS LightOn4B vision
 ownership, 297 tensors and per-tensor malformed controls`. This proves the
 metadata-only ownership controls, not model inference. The full dispatch also passes Windows/macOS, iOS, all3 Android legs, sibling,
 Flutter bundle and the aggregate Build result.
+
+Contract [41928007006](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928007006)
+subsequently rejected historical vision source drift. The additive mapper now
+lives in `src/lighton4b_vision_owner.cpp`; `src/qwen35_vision.cpp` is restored
+byte-for-byte to the main implementation. Historical receipts and source-pin
+chains are unchanged. Fresh hosted contracts/builds must validate this source
+placement correction; the earlier passing matrix remains source-specific.
