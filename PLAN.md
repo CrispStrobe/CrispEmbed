@@ -28,7 +28,7 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Model-weight licences in apps | Registry/cards/gates corrected (31 October) | CrispSorter/CrispCalc must require the Qwen/Tongyi acknowledgement before offering those models | Downstream PRs merged |
 | **Release v0.17.14** (owner: release once every PR is resolved and main is green) | No open PRs; VERSION/pubspec 0.17.14; latest release v0.17.12. Downstream apps currently pin prebuilt libs to 0.17.12 via `CRISPEMBED_PREBUILT_VERSION` (PR #132) | Section "Release v0.17.14" below: dispatch the full build on the main head, confirm green, run the pub.dev preflight, tag | Release assets for every platform published; downstream told to drop the override |
 | CI selection after PR #134 | Merged; docs/evidence-only pushes run nothing, so the main head may have no Build run | Before tagging: `gh workflow run build.yml --ref main` (and build-wasm, build-wasm-embed, rust-crates, inpaint-cli); confirm the dynamic desktop matrix in build.yml evaluates on hosted runners | One full green Build on the main head |
-| Failing main workflows owned by the integration session | `MoEdern real padded Q4_K diagnostic` and `Layer0 attention op-by-op same-input replay v1` (both manual experiments) | Owner of those lanes fixes or records them as non-blocking diagnostics in HISTORY | Green, or explicitly marked non-release-blocking |
+| Failing main workflows owned by the integration session | Recorded as non-release-blocking on 4 November 2026 (HISTORY): `MoEdern real padded Q4_K diagnostic` stops at authenticated input preparation (run 41587641989), and `Layer0 attention op-by-op same-input replay v1` is a manual experiment with no main run | Re-run only if the authenticated inputs are authorized; otherwise no release action | Recorded; re-run or leave closed |
 | Embedder/tokenizer residuals (CUDA audit, PR #115/#122) | Fixed: SPM space collapse, XLM-R pair layout, 512 truncation | `xlmr-ner-hrl` GGUF has no Unigram scores (reconvert with scores); `paraphrase-multilingual` native truncates at 512, original at 128 (honour `max_seq_length`); Ettin reranker unchecked (tokenizer needs transformers 5) | Each matches the original on the 77-text panel |
 | EasyOCR residuals (PR #100/#110) | x86 line drops fixed; Python-parity work merged | `scan_page_pd` page output differs between Apple arm64 and x86/CUDA (first diverging region/stage); remaining punctuation/spacing differences vs Python EasyOCR on low-confidence lines | Attributed and fixed, or documented as a float-order tie |
 | MI-GAN256 Metal/Q4_K | Metal F32/F16/Q8_0 pass; Q4_K fails (masked 0.81); GPU default off | Q4_K probes with sensitive layers at Q8_0 (`CRISPEMBED_QUANTIZE_MIGAN_Q8`); flip to the padded-K Metal path only after measuring delivery-5 CPU kernels on Apple CPU | Q4_K ≥ 0.94 masked or declined; A/B before any default flip |
@@ -80,10 +80,16 @@ remain recorded. A separate review of complete retained logits finds F16/Q8 clea
 the current owner numerical bars; Q4 does not. Fresh current-source portable
 qualification is still required. See PR138's `docs/lighton08-precision-next.md`.
 
-## Release v0.17.14 — 3 November 2026
+## Release v0.17.14 — 4 November 2026
 
 Owner decision: cut the next release once every PR is resolved and main is green. Nothing is
 tagged until then.
+
+Gate status (4 November 2026): **met**. The open-PR queue is empty (#135, #138 and #139 merged),
+`main` at `2f1bbdb1` has all 16 workflows green including all 11 native build jobs, and the two
+manual diagnostics are recorded non-release-blocking below and in HISTORY. Versions agree on
+0.17.14; `tests/test_pubdev_release_gate.py` passes; the changelog entry and
+`RELEASE_NOTES_v0.17.14.md` are in this change.
 
 1. **Gate.** `gh pr list --state open` is empty (or the owner excludes the rest). On the current
    main head, dispatch the full set because docs-only pushes no longer start Build (PR #134):

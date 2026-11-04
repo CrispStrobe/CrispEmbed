@@ -1,3 +1,27 @@
+## 4 November 2026 — v0.17.14 release gate closed; OCR integration merged
+
+The open queue is empty. `#135` (honest main-health reporting) merged as `58f303a3`;
+`#139` (OCR source-validation receipt) merged into the integration branch as `c4fb7e17`;
+`#138` (gated MinerU2605, LightOnOCR-3-1B, Xiaomi-OCR-0, Nemotron frontend and the structured
+document evaluator) merged as `2f1bbdb1`. Each merge resolved only `HISTORY.md`/`PLAN.md`
+append conflicts; no executable file was changed outside the reviewed PR contents.
+
+`main` at `2f1bbdb1` has all 16 workflows green, including all 11 native build jobs, both WASM
+builds and the browser end-to-end smoke test. Versions agree on 0.17.14 (`VERSION`,
+`flutter/crispembed/pubspec.yaml`, `python/pyproject.toml`, `crispembed-sys/Cargo.toml`) and
+`tests/test_pubdev_release_gate.py` passes (7 tests). The package changelog entry and
+`RELEASE_NOTES_v0.17.14.md` are added with this entry.
+
+Two manual diagnostics are recorded as **non-release-blocking**: `MoEdern real padded Q4_K
+diagnostic` (run 41587641989, source `a3560772`) stops in authenticated-input preparation and
+retains its public-pin rejection receipt rather than reducing its protocol, and `Layer0
+attention op-by-op same-input replay v1` is an owner-run experiment with no `main` run. Neither
+is a regression of a shipped default.
+
+No inference has been run for the new OCR profiles: their hosted qualification jobs remain
+prepared-not-executed, so no alias, publication, default flip or quality claim follows from this
+release. Model qualification is still the next substantive step.
+
 ## 3 November 2026 — Main-health outcomes retain their evidence limits
 
 The CI audit found [Main health 41654954696](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41654954696)
