@@ -26,7 +26,7 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | MinerU2.5-Pro full native doc route | 8/8 model-backed cases identical (41251475795); default-off | Owner: default-on or not (handoff "Owner decisions"); image-bearing-table fixture | Decision recorded; fixture receipt |
 | Marker-style pipeline / TeleOCR | Implemented and bounded-validated, default-off; TeleOCR strict numerics false at every precision | Representative licensed multilingual/layout gold corpus (needs owner-provided licensed annotations) | Corpus frozen; CER/WER/order receipts |
 | Model-weight licences in apps | Registry/cards/gates corrected (31 October) | CrispSorter/CrispCalc must require the Qwen/Tongyi acknowledgement before offering those models | Downstream PRs merged |
-| **Release v0.17.14** (owner: release once every PR is resolved and main is green) | No open PRs; VERSION/pubspec 0.17.14; latest release v0.17.12. Downstream apps currently pin prebuilt libs to 0.17.12 via `CRISPEMBED_PREBUILT_VERSION` (PR #132) | Section "Release v0.17.14" below: dispatch the full build on the main head, confirm green, run the pub.dev preflight, tag | Release assets for every platform published; downstream told to drop the override |
+| **Release v0.17.14** (owner: release once every PR is resolved and main is green) | **Published 4 November 2026** from `9c790c81`; 16 assets (all platform archives, both WASM bundles, CUDA/Vulkan extras); macOS archive checks `0.17.14` and unversioned `@rpath` install names. Downstream apps still pin prebuilt libs to 0.17.12 via `CRISPEMBED_PREBUILT_VERSION` (PR #132) | Section "Release v0.17.14" below: only step 4 remains — tell downstream to drop the override | Downstream told to drop the override; app pins updated by their owners |
 | CI selection after PR #134 | Merged; docs/evidence-only pushes run nothing, so the main head may have no Build run | Before tagging: `gh workflow run build.yml --ref main` (and build-wasm, build-wasm-embed, rust-crates, inpaint-cli); confirm the dynamic desktop matrix in build.yml evaluates on hosted runners | One full green Build on the main head |
 | Failing main workflows owned by the integration session | Recorded as non-release-blocking on 4 November 2026 (HISTORY): `MoEdern real padded Q4_K diagnostic` stops at authenticated input preparation (run 41587641989), and `Layer0 attention op-by-op same-input replay v1` is a manual experiment with no main run | Re-run only if the authenticated inputs are authorized; otherwise no release action | Recorded; re-run or leave closed |
 | Embedder/tokenizer residuals (CUDA audit, PR #115/#122) | Fixed: SPM space collapse, XLM-R pair layout, 512 truncation | `xlmr-ner-hrl` GGUF has no Unigram scores (reconvert with scores); `paraphrase-multilingual` native truncates at 512, original at 128 (honour `max_seq_length`); Ettin reranker unchecked (tokenizer needs transformers 5) | Each matches the original on the 77-text panel |
@@ -110,6 +110,21 @@ manual diagnostics are recorded non-release-blocking below and in HISTORY. Versi
    Windows assets. The pub.dev publisher job stays disabled (PR #91 follow-ups).
 4. **After.** Tell downstream apps to drop `CRISPEMBED_PREBUILT_VERSION`; Android builds from
    main fetch matching libraries again. App pin updates are separate owner decisions.
+
+Published 4 November 2026 from `9c790c81` (tag `v0.17.14`): 16 assets, including every required
+platform archive, both WASM bundles, the JS/WASM files and the CUDA/Vulkan extras. The macOS
+archive was downloaded and inspected: `crispembed` and `crispembed-quantize` plus the dylibs are
+present, install names are unversioned `@rpath/lib*.dylib`, and `libcrispembed.dylib` reports
+current version 0.17.14. Only step 4 (downstream switch) is still open; the pub.dev publish job
+stayed skipped because that package is not qualified (PR #91 follow-ups).
+
+Operational note for the next cut: pushes of `v*` tags start no workflow in this repository, so
+both `release.yml` and `release-wasm.yml` must be dispatched at the tag ref
+(`gh workflow run release.yml --ref vX.Y.Z` and the same for `release-wasm.yml` with
+`-f tag=vX.Y.Z`). `release.yml` creates the release with an empty body, so attach the notes with
+`gh release edit vX.Y.Z --notes-file RELEASE_NOTES_vX.Y.Z.md`. Its `Create GitHub Release` step
+can fail transiently while uploading the multi-hundred-MB CUDA bundles; rerun the failed jobs
+once the release exists instead of re-cutting the tag.
 
 ## Quantizer changes and the OCR quality contract
 
