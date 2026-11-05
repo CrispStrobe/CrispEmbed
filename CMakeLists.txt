@@ -1699,3 +1699,7 @@ target_link_libraries(test-lighton4b-decoder-upstream PRIVATE crispembed-qwen35-
 # Standalone post-inference score archive comparison; no production model code.
 add_executable(crispembed-diff-lighton4b-document tests/lighton4b_document_diff.cpp)
 target_include_directories(crispembed-diff-lighton4b-document PRIVATE src)
+
+# Test-only retained checkpoint layer0 attribution; never linked into production.
+add_executable(lighton4b-layer0-source-fed tests/lighton4b_layer0_source_fed.cpp)
+target_link_libraries(lighton4b-layer0-source-fed PRIVATE crispembed-qwen35-delta crispembed-core)

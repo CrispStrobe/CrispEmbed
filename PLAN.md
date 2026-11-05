@@ -1098,3 +1098,20 @@ candidates remain unqualified. Only PR155/runtime and PR157/evidence remain open
 The separately authorized lean mixed calibration42013855293 covers table/Arabic
 only; its outputs and heldout qualification remain pending, with receipt source-
 completion and logo/handwriting-coverage limitations unchanged.
+
+### LightOn4B retained-input layer0 attribution — 5 November 2026
+
+Isolated `audit/lighton4b-layer0-source-fed-20261105` adds a test-only native
+layer0 runner and hosted protocol. It authenticates retained original154-token
+input/layer0 arrays, reads only the official immutable BF16 layer0 byte interval,
+and requires exact original BF16 layer0 reproduction before attribution. The
+whole9GB checkpoint is not rehashed by this bounded range fetch; source revision,
+header/range/tensor hashes and the frozen original anchor are recorded separately.
+A same-weight F32 diagnostic compares original/native operators on those weights.
+For each rejected immutable Q8/Q4 candidate, independent `gguf` dequantization
+feeds the original layer; native quantized and native dequantized-F32 arms use
+identical retained original input. All nine intermediate stages plus conv/state
+retain absolute errors, magnitudes and unchanged strict flags. BF16 backend
+settings and original hook neutrality are checked explicitly. No image/full-model
+forward, logits, generation, new reference gold, budget/default change or quality
+qualification follows. Hosted compilation/inference remains pending; no new PR.
