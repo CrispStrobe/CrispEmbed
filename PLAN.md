@@ -1162,3 +1162,12 @@ and environment-doc freshness. No model inference or broad CI is requested.
 Source-fed QKV selected-dot42030085653 is positive on2,378 positions, including
 all171 historical differences, but a linear runtime change needs full operator
 validation before another composed smoke. It is not part of this norm change.
+
+
+Initial assembled[42031440977](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42031440977)
+atb75e722a7 stops before artifact transfer/build/model execution because this
+branch's generic heavy job does not expose its read-only actions token. The
+[initial failure](tests/results/qwen35-ocr/lightonocr3-4b-vision-norm-integration-initial.json)
+remains. The scoped workflow repair adds only read-only actions permission and
+`GH_TOKEN` to that existing job, preserving calibration-native exclusions/jobs.
+Runtime source and budgets stay unchanged; only the targeted assembled job retries.
