@@ -68,9 +68,13 @@ tokens with EOS, diverging at token 9 from the original 177-token output; raw
 reference-text character error rate was 0.2134. Q4_K generated 256 tokens without
 EOS, producing a truncated table; raw reference-text character error rate was
 0.8277. These are fidelity to the original model's generated text, not OCR
-accuracy against human ground truth. Full-score comparison is pending in
-[Q8](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42011236969) and
-[Q4_K](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42011206392).
+accuracy against human ground truth. The first full-score jobs failed before
+comparison due to a missing standalone reader in the consolidated branch.
+After repair, the [Q8](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42012564139)
+and [Q4_K](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42012559942)
+replays each compared all 177 rows of 248,320 finite scores; all rows failed
+the strict budget. Q8 maximum absolute error was 2.93674088 and minimum row
+cosine 0.958800077; Q4_K maximum was 11.067977 and minimum cosine 0.666163504.
 A separate BF16 prefill capture localizes the earliest stage.
 That capture's first score is byte-identical to the earlier BF16 capture, and
 [the hosted stage comparison](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42002886215)
