@@ -15,7 +15,7 @@ hashes; it never fetches a model or regenerates the reference. Remote artifacts
 may be retrieved directly on the hosted worker; no shared-host model is needed.
 
 A future actual producer must write `native.json` with schema
-`lighton4b-bf16-quant-native/v1`, precision `q8_0` or `q4_k_m`, this protocol's
+`lighton4b-bf16-quant-native/v1`, precision `q8_0` or `q4_k`, this protocol's
 SHA256, `original_capture_sha256`, exact `teacher_forced_ids`, `scores`,
 `free_generation_independent=true`, independent `generated_ids`, `decoded`,
 `stop`, `cap_hit`, `native_forward_executed=true`, `producer_source_sha`,
@@ -61,3 +61,10 @@ while queued after the public-path/forged-producer control amendment; no model
 ran in either workflow. The initial transient Git push rejection and absent
 new-workflow default-branch dispatch404 preceded the successful exact-source
 existing `heavy-cpu.yml` dispatch. Native parity remains pending.
+
+The Q4 candidate is the actual plain `q4_k` recipe, not a Q4_K_M mixture:
+`lightonocr3-4b-q4_k-vision-f32.gguf`, SHA256
+`f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91`.
+The prior preparatory `q4_k_m` label remains in Git history; it was never an
+admitted or executed native producer. Receipt-digest binding was added before
+any native admission. Current protocol digest must be used by future captures.

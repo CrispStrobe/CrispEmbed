@@ -2490,7 +2490,7 @@
   "native_producers": [],
   "precisions": [
     "q8_0",
-    "q4_k_m"
+    "q4_k"
   ],
   "max_abs": 0.002,
   "min_row_cosine": 0.99999,
