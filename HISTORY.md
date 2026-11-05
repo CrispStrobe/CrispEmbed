@@ -20707,3 +20707,14 @@ format-5 Q8/Q4 payload owner. The
 retains initial41997019110's missing standalone matrix-helper declaration and
 corrected41997125120. No actual model payload was read; native decoded and
 intermediate quality remains unverified. Public API/release defaults are unchanged.
+
+###5 November2026 — BF16 vision boundary candidate remains negative
+
+Source891d07da3 Q8/Q4 smokes complete; actual42006413571 authenticates all stage
+arrays. Position is exact; patch improves to20 discrepancies/max0.00390625, but
+deep merged RMS worsens0.0112389→0.0223861 and Q8 first-score RMS worsens
+0.130495→0.200537. Q4 still emits`<table>` rather than the original`<figure`
+prefix. [All measured results](docs/lighton4b-vision-bf16-candidate.md) remain
+preserved behind the default-off gate; no quality/speed/default promotion.
+The initial768-only norm-guard failures remain retained. New attribution/CI is
+paused for user-requested consolidation; exact source branches remain intact.
