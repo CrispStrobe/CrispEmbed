@@ -97,6 +97,15 @@ values reduced the activation difference to 2.38419e-7. The specific kernel or
 reduction-order cause remains unknown. Preserve all original budgets and the
 negative 290/291 full-decoder result.
 
+The retained-input [dense projection trace](https://github.com/CrispStrobe/CrispEmbed/pull/152)
+observed two native llamafile calls with exact operands in
+[41984176263](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41984176263).
+All 18,432 native outputs match the eight-lane fused reconstruction exactly;
+the first original/native difference is 4.76837e-7 and the largest is 2.14577e-6.
+The initial trace did not observe the shared-library route and remains retained.
+Torch's internal GEMM order is unobserved, so no disabling-FMA correction or
+decoder-parity claim follows. The original full-decoder result remains negative.
+
 The separate [document protocol and harness](https://github.com/CrispStrobe/CrispEmbed/blob/958ff9fd8b386e6f3faaae92b6322a519200cc9a/docs/lighton4b-document-parity-v1.json)
 freezes one public-domain form, empty prompt, cap256 and all-position full-vocabulary
 comparison. The initial and hardened synthetic controls passed at
