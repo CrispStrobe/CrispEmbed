@@ -1545,3 +1545,16 @@ Q8 receipts contain exact sources, both historical baselines, complete artifact
 hashes / 90-day retention, performance and limitations. All defaults, release and
 app pin stay unchanged. This PR157 follow-up changes only receipts and plan/
 history; runtime and generated asset remain in PR155.
+
+### Corrected native mixed form diagnostic
+
+The scoped [corrected mixed smoke42107457845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42107457845)
+completed at9e24c7c16. All29 vision stages and five prepared inputs are original-exact.
+Independent IDs27,17251 decode `<figure`, matching the first2 original IDs.
+First-score versus original BF16: max1.48261547, RMS0.284899447, cosine0.992588001;
+versus independently captured BF16 mixed recipe: max0.163356781, RMS0.0274295614,
+cosine0.999928425. Both strict numerical comparisons fail. Native time141.19s,
+peak RSS5,179,695,104B. This separates the remaining runtime residual from recipe
+loss without establishing a full decoded result; no EOS/full/heldout claim.
+[Complete report and receipt](tests/results/qwen35-ocr/lightonocr3-4b-corrected-mixed-form/native-report.json)
+preserve exact model/table/profile/reference hashes and active/disabled gates.

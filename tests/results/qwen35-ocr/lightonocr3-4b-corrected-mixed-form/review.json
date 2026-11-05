@@ -1,0 +1,13 @@
+{
+  "schema": "lighton4b-corrected-mixed-form-review/v1",
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42107457845",
+  "source_sha": "9e24c7c16fa760f42ab3e8001d3a1a1cb9f50c39",
+  "artifact_id": 13452134835,
+  "archive_bytes": 78665894,
+  "archive_service_sha256": "6f8c62e95c86859274ba34f6ed4c2cbf75bce9147cbda03fdf035e6a4156c6a4",
+  "report_sha256": "dfdac84124b52fbddca264464980c921e20ebf43d5d3ad288edf7d83d27e201f",
+  "review_transport": "ZIP range read; member CRC and SHA checked; full archive hash service-declared, not locally rehashed",
+  "range_bytes_read": 12896,
+  "quality_qualified": false,
+  "scope": "one original prefix score and two independent greedy tokens; no EOS, document or heldout qualification"
+}
