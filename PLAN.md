@@ -62,8 +62,16 @@ with cosine 0.976987541. These compare the BF16 generation score against native
 scores, not independently captured original raw logits. Full teacher-forced and
 independent free-generation panels are running in
 [Q8](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001328483) and
-[Q4_K](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001333207);
-a separate BF16 prefill capture is intended to localize the earliest stage.
+[Q4_K](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001333207)
+completed 177 teacher-forced rows and independent decoding. Q8 generated 160
+tokens with EOS, diverging at token 9 from the original 177-token output; raw
+reference-text character error rate was 0.2134. Q4_K generated 256 tokens without
+EOS, producing a truncated table; raw reference-text character error rate was
+0.8277. These are fidelity to the original model's generated text, not OCR
+accuracy against human ground truth. Full-score comparison is pending in
+[Q8](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42011236969) and
+[Q4_K](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42011206392).
+A separate BF16 prefill capture localizes the earliest stage.
 That capture's first score is byte-identical to the earlier BF16 capture, and
 [the hosted stage comparison](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42002886215)
 finds the earliest native divergence in vision patch projection: maximum
