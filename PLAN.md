@@ -1144,3 +1144,17 @@ promotion follows. Next: same-input normalization moments/affine contraction
 isolation using retained13414500337, before more ordinary full-model smokes.
 Initial42022655060 stopped before build/model access on obsolete Kaggle1.8.3
 authentication; known-working2.2.2 corrects only the producer dependency.
+
+### Rejected linear-block BF16 activation candidate — 5 November 2026
+
+The first separately gated linear BF16-boundary candidate42026091939/f201bc8c9
+is independently rejected: earliest input norm max0.015625, then QKV0.0625 and
+hidden official/Q80.03125/Q40.015625 against the original activation oracle.
+All legacy recovery hashes remain exact. Its wrapper's green conclusion is a
+reporting defect (retained stage flags fail); successor aggregation returns
+nonzero for local failures. Pure same-input original F32 quantization separately
+starts at QKV: Q80.08341026/Q40.90670824 against magnitude24.30494, reaching
+hidden0.01743889/0.15934277. These are actual original-code candidate losses,
+not native implementation proof. Bounded norm-only42027758298 at28e4180b8
+compares existing sequential/precise RMS and BF16 rounding before any new full
+candidate or decoded claim; source/cache-mode controls remain isolated.
