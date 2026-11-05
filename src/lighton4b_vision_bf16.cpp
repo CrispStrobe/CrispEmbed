@@ -7,6 +7,7 @@
 #include <array>
 #include <cmath>
 #include <string>
+#include <thread>
 
 namespace qwen35_ocr {
 // Scalar RowwiseMoments adaptation from qwen35_norm.cpp; PyTorch BSD-3-Clause
@@ -149,8 +150,77 @@ static bool bias(std::vector<float> & x, ggml_tensor * b, int width) {
     for (size_t i = 0; i < x.size(); ++i) x[i] += values[i % width];
     return finite(x);
 }
+// Scalar adaptation of PyTorch v2.13 BF16 dot fallback. Eight float
+// registers of eight lanes consume64 operands, then reduce in the source tree.
+// PyTorch BSD notice: core/third_party/pytorch/LICENSE; ggml MIT: ggml/LICENSE.
+template <bool safe_products> static float source_bf16_dot(const float * x, const float * w, int width) {
+    std::array<std::array<float, 8>, 8> sums{};
+    for (int block = 0; block < width; block += 64)
+        for (int reg = 0; reg < 8; ++reg)
+            for (int lane = 0; lane < 8; ++lane) {
+                const int at = block + reg * 8 + lane;
+                if constexpr (safe_products)
+                    sums[reg][lane] = sums[reg][lane] + x[at] * w[at];
+                else
+                    sums[reg][lane] = std::fma(x[at], w[at], sums[reg][lane]);
+            }
+    for (int offset = 4; offset; offset /= 2)
+        for (int reg = 0; reg < offset; ++reg)
+            for (int lane = 0; lane < 8; ++lane) sums[reg][lane] += sums[reg + offset][lane];
+    const auto & z = sums[0];
+    const float dot = ((z[0] + z[4]) + (z[2] + z[6])) + ((z[1] + z[5]) + (z[3] + z[7]));
+    return dot + 0.0f; // Source adds the empty vector-tail reduction too.
+}
+static bool source_bf16_linear(ggml_tensor * w, ggml_tensor * b, const std::vector<float> & x, int width, int rows,
+                               int threads, std::vector<float> & y) {
+    if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !w || width < 1 || width > 4096 || width % 64 || rows < 1 ||
+        rows > 4096 || threads < 1 || threads > 256 || w->ne[0] != width || w->ne[1] < 1 || w->ne[1] > 8192 ||
+        w->ne[2] != 1 || w->ne[3] != 1 || !shape(b, int(w->ne[1]), 1) || x.size() != size_t(rows) * width)
+        return false;
+    const int output_width = int(w->ne[1]);
+    std::vector<float> weights(size_t(width) * output_width), biases(output_width);
+    if (!tensor_floats(w, weights.data()) || !tensor_floats(b, biases.data())) return false;
+    bool safe_products = true;
+    auto operand = [&](float value) {
+        if (!std::isfinite(value) || lighton4b_bf16(value) != value) return false;
+        // BF16 products have at most16 significant bits. In this normal range
+        // the float product is exact, so separate multiply/add equals FMA.
+        const float magnitude = std::abs(value);
+        if (magnitude && (magnitude < 0x1p-63f || magnitude > 0x1p63f)) safe_products = false;
+        return true;
+    };
+    if (!std::all_of(x.begin(), x.end(), operand) || !std::all_of(weights.begin(), weights.end(), operand) ||
+        !std::all_of(biases.begin(), biases.end(), [](float v) { return std::isfinite(v) && lighton4b_bf16(v) == v; }))
+        return false;
+    y.resize(size_t(rows) * output_width);
+    const int workers = std::min({ threads, 8, int(y.size()) });
+    auto work = [&](int worker) {
+        const size_t first = y.size() * size_t(worker) / size_t(workers);
+        const size_t end = y.size() * size_t(worker + 1) / size_t(workers);
+        for (size_t at = first; at < end; ++at) {
+            const int token = int(at / output_width), output = int(at % output_width);
+            const float * input = x.data() + size_t(token) * width;
+            const float * weight = weights.data() + size_t(output) * width;
+            const float dot = safe_products ? source_bf16_dot<true>(input, weight, width)
+                                            : source_bf16_dot<false>(input, weight, width);
+            y[at] = lighton4b_bf16(dot + biases[output]);
+        }
+    };
+    std::vector<std::thread> jobs;
+    try {
+        for (int worker = 1; worker < workers; ++worker) jobs.emplace_back(work, worker);
+    } catch (...) {
+        for (auto & job : jobs) job.join();
+        return false;
+    }
+    work(0);
+    for (auto & job : jobs) job.join();
+    return finite(y);
+}
 static bool linear(ggml_tensor * w, ggml_tensor * b, const std::vector<float> & x, int width, int rows, int threads,
                    std::vector<float> & y) {
+    if (core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR"))
+        return source_bf16_linear(w, b, x, width, rows, threads, y);
     std::vector<std::vector<float>> projections;
     if (!project_cpu({ w }, x.data(), width, rows, threads, projections)) return false;
     y = std::move(projections[0]);

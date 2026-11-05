@@ -1197,3 +1197,23 @@ preserves positions, magnitudes and original SHA controls. Next: a default-off
 source-order BF16 linear candidate with full source-fed operator validation,
 then composed image/decoded tests only if the full operator materially improves.
 No selected, component or speed result qualifies the model or changes defaults.
+
+
+### Source-order BF16 vision linear candidate — pending full operator proof
+
+The selected-dot42030085653 source blueprint becomes a separate default-off
+`CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR` alternative. It keeps original ggml
+projection intact, validates exact finite BF16 operands and fixed64-divisible
+shapes, and uses eight registers/eight lanes with the original reduction tree.
+Normal BF16 products are exactly representable in F32, so separate multiply/add
+matches source FMA; extreme operands retain explicit FMA. Output bias/rounding
+follows original BF16 semantics. Per-output ownership keeps thread scheduling
+out of the reduction order. No calibration, quantization or quality promotion.
+
+One targeted hosted `tools/ci-heavy/lighton4b_vision_linear_operators.py` consumes
+only retained13414500337 arrays. Four actual original F.linear calls must match
+all source QKV/out/up/down arrays byte-for-byte before actual production-helper
+runs with1/4 threads and unset/empty/0 old-path controls. Every old output must
+retain its historical SHA; dtype/nonfinite rejection controls execute too.
+Patch1536 and merger composition are explicitly unverified at this gate.
+No model download/forward or full smoke follows until full operators improve.
