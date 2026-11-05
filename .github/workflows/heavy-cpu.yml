@@ -78,7 +78,7 @@ concurrency:
 
 jobs:
   run:
-    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_attribution.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_upstream.py' && inputs.script != 'tools/ci-heavy/lighton4b_dense_trace.py' && inputs.script != 'tools/ci-heavy/lighton4b_prefill_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_smoke_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_full_compare.py'
+    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_attribution.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_upstream.py' && inputs.script != 'tools/ci-heavy/lighton4b_dense_trace.py' && inputs.script != 'tools/ci-heavy/lighton4b_prefill_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_smoke_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_full_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_corrected_mixed_full_compare.py'
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 350
     env:
@@ -614,7 +614,7 @@ jobs:
           retention-days: 90
 
   lighton4b_reference_compare:
-    if: inputs.script == 'tools/ci-heavy/lighton4b_prefill_compare.py' || inputs.script == 'tools/ci-heavy/lighton4b_smoke_compare.py' || inputs.script == 'tools/ci-heavy/lighton4b_full_compare.py'
+    if: inputs.script == 'tools/ci-heavy/lighton4b_prefill_compare.py' || inputs.script == 'tools/ci-heavy/lighton4b_smoke_compare.py' || inputs.script == 'tools/ci-heavy/lighton4b_full_compare.py' || inputs.script == 'tools/ci-heavy/lighton4b_corrected_mixed_full_compare.py'
     permissions:
       contents: read
       actions: read

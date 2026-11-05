@@ -1558,3 +1558,19 @@ peak RSS5,179,695,104B. This separates the remaining runtime residual from recip
 loss without establishing a full decoded result; no EOS/full/heldout claim.
 [Complete report and receipt](tests/results/qwen35-ocr/lightonocr3-4b-corrected-mixed-form/native-report.json)
 preserve exact model/table/profile/reference hashes and active/disabled gates.
+
+
+### Corrected mixed form full177 comparison — prepared, waiting for native output
+
+Native job42109519607/source189fc91bb is still in progress. One bounded
+read-only comparator is prepared against the unchanged frozen177-row original
+BF16 protocol and actual crispembed-diff target. It requires independently
+reviewed complete artifact/producer/normalized-receipt hashes, fixed mixed model
+provenance, all5 input and29 raw vision controls, all177 native row hashes and
+independent full greedy IDs/text/EOS. The normalized receipt is explicitly
+comparer-derived; no mixed-to-Q4 relabeling or frozen protocol/budget change.
+[Exact admission, resource bounds and dispatch prerequisites](docs/lighton4b-corrected-mixed-full-comparison.md).
+Four new admission controls and existing model-free controls pass; actual Ref
+controls run inside the single hosted comparison. No dispatch before native
+completion; observed form remains exploratory, not held-out quality selection.
+No native/original inference, model upload, runtime/default/release change or newPR.

@@ -52,12 +52,20 @@ def candidate(b,a,p,synthetic=False,receipt_sha256=None):
         identity={'capture_sha256':receipt_sha256,'source_sha':b['producer_source_sha'],'run_url':b['producer_run_url'],'weights_sha256':b['weights_sha256'],'precision':b['precision']}
         require(identity in p['native_producers'],'native producer/weights not admitted')
 
-def compare(original_root,native_root,binary,output,synthetic=False):
+def compare(original_root,native_root,binary,output,synthetic=False,admitted_protocol=None):
     require(os.environ.get('GITHUB_ACTIONS')=='true' or Path('/kaggle/working').is_dir(),'hosted comparison required')
     out=Path(output);require(not out.exists(),'fresh output required');out.mkdir(parents=True)
     r={'schema':'lighton4b-bf16-quant-comparison/v1','status':'blocked','native_execution_admitted':False,'quality_qualified':False,'synthetic_control':synthetic,'original_forward_executed_by_comparer':False,'native_forward_executed_by_comparer':False,'earliest_observed_score_difference':None,'earliest_score_budget_failure':None,'internal_stage_attribution_available':False}
     try:
-        p=protocol();a=original(original_root,p);b=json.loads((Path(native_root)/'native.json').read_text());candidate(b,a,p,synthetic,sha(Path(native_root)/'native.json'))
+        p=protocol()
+        if admitted_protocol is not None:
+            # A retained corrected-mixed producer uses a comparer-derived receipt.
+            # Extend admission only; all frozen reference data and budgets stay exact.
+            require(not synthetic and admitted_protocol['precisions']==p['precisions']+['lighton4b-q4k-mixers-q8-v1'],'closed mixed admission extension required')
+            require({k:v for k,v in admitted_protocol.items()if k not in('precisions','native_producers')}=={k:v for k,v in p.items()if k not in('precisions','native_producers')},'mixed admission changed frozen reference or budgets')
+            require(admitted_protocol['native_producers'][:-1]==p['native_producers']and len(admitted_protocol['native_producers'])==len(p['native_producers'])+1,'exactly one additive mixed admission required')
+            p=admitted_protocol
+        a=original(original_root,p);b=json.loads((Path(native_root)/'native.json').read_text());candidate(b,a,p,synthetic,sha(Path(native_root)/'native.json'))
         r.update(original_decoded=a['decoded'],native_decoded=b['decoded'],original_generated_ids=a['generated_ids'],native_generated_ids=b['generated_ids'],native_precision=b['precision'],protocol_sha256=sha(PROTOCOL),binary_sha256=sha(binary),native_execution_admitted=not synthetic)
         readers=[LocalReader(original_root),LocalReader(native_root)];numerical=True;rows=[]
         with tempfile.TemporaryDirectory(prefix='bf16-quant-row-') as folder:
