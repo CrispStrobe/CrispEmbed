@@ -230,6 +230,36 @@ image stripes(int phase) {
             for (int c = 0; c < 3; c++) rgb[(y * W + x) * 3 + c] = uint8_t(50 + 150 * ((x + phase) % 2));
     return rgb;
 }
+// textured(0) with deterministic per-frame grain of up to +-amplitude levels.
+image grainy(int frame, int amplitude) {
+    image rgb = textured(0);
+    uint32_t state = 2654435761u * uint32_t(frame + 1);
+    for (auto & v : rgb) {
+        state = state * 1664525u + 1013904223u;
+        v = uint8_t(std::clamp(int(v) + int(state >> 24) % (2 * amplitude + 1) - amplitude, 0, 255));
+    }
+    return rgb;
+}
+
+void grain_on_a_still_shot_still_propagates() {
+    engine e;
+    inpaint_temporal::stream s(W, H, with_window(3), e.fn());
+    sequence outputs;
+    const auto mask = bar_mask();
+    const image donor = grainy(0, 5);
+    feed(s, donor, nullptr, outputs);
+    for (int t = 1; t < 4; t++) feed(s, burn(grainy(t, 5), mask), &mask, outputs);
+    flush(s, outputs);
+    bool from_donor = outputs.size() == 4;
+    for (size_t i = 1; i < outputs.size(); i++)
+        for (int y = 40; y < 52; y++)
+            for (int x = 20; x < 76; x++)
+                for (int c = 0; c < 3; c++)
+                    from_donor = from_donor && outputs[i][(y * W + x) * 3 + c] == donor[(y * W + x) * 3 + c];
+    check(from_donor && e.calls == 0 && s.counters().px_propagated == 3 * 12 * 56,
+          "grain (+-5 levels) on a still shot propagates the real background");
+}
+
 void moving_texture_cannot_cancel_inside_cells() {
     const auto mask = bar_mask();
     for (bool clean_donor : { false, true }) {
@@ -517,6 +547,7 @@ static int crispembed_test_main() {
     static_span_reuse_and_small_noise();
     cumulative_drift_refreshes_the_fill();
     moving_texture_cannot_cancel_inside_cells();
+    grain_on_a_still_shot_still_propagates();
     moving_background_calls_the_engine();
     flat_background_needs_no_engine();
     equal_luma_colour_texture_is_not_flat();

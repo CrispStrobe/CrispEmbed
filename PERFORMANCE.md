@@ -1,3 +1,20 @@
+## Issue 71 stream: grain no longer blocks propagation (5 November 2026, Apple M1 Metal, `fix/inpaint-stream-grain`)
+
+Same harness and settings as "Issue 71 video stream with temporal consistency" (MI-GAN512 F16, `--gpu-backend auto`,
+`--inpaint-temporal 15`, `CRISPEMBED_INPAINT_GRAPH=1 CRISPEMBED_INPAINT_FAST=1`). v0.17.14's pixel-residual guard
+counted half of all per-pixel change, so normal grain (~3 levels per pixel between clean frames of the static clip)
+exceeded propagation's 1.5 limit on every frame. The guard now counts only the excess over 6 levels.
+
+| Clip | Build | PSNR in mask | Full frame | Flicker | Propagated / reused / engine frames |
+| --- | --- | ---: | ---: | ---: | --- |
+| Static shot (100) | v0.17.14 (`17c96639`) | 27.15 dB | 41.70 dB | 3.27 | 0.0% / 98.4% / 1 |
+| Static shot (100) | this fix | 34.57 dB | 43.84 dB | 3.19 | 49.2% / 50.8% / 0 |
+| Moving shot (180) | v0.17.14 | 29.29 dB | 45.38 dB | 3.30 | 22.9% / 23.8% / 56 |
+| Moving shot (180) | this fix | 29.28 dB | 45.38 dB | 3.32 | 22.9% / 24.8% / 55 |
+
+On par on the moving shot; the static shot is back to the pre-v0.17.14 result. Real film clip (241 frames, no ground
+truth): 171 engine frames, 0% propagated (the subtitle never leaves the shot), unchanged in practice.
+
 ## LightOn3 complete CPU cache+epsilon panel —4 November2026
 
 [All6 cases×2 precisions](tests/results/lightonocr3-1b/cache-ab-v1/full-review-41905258340.json)

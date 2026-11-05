@@ -232,7 +232,9 @@ and fills each masked frame in this order ([`src/inpaint_temporal.h`](../src/inp
    is unchanged and the ring moved only a little (less shimmer).
 
 The static test combines 8×8 cell means with a pixel-residual guard, so fine
-moving texture cannot cancel out within each cell. Flat fill requires low
+moving texture cannot cancel out within each cell. The guard ignores up to 6
+levels of per-pixel difference, so film grain and compression noise on a still
+shot still allow propagation and reuse. Flat fill requires low
 variation in each RGB channel as well as luma; equal-luma color texture is not
 treated as flat. Harmonic relaxation is capped at 20 million pixel updates per
 frame, excluding initialization and other analysis work.

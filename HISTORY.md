@@ -2,6 +2,15 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 5 November 2026 — Issue 71 stream: film grain no longer blocks propagation
+
+`ring_static` (src/inpaint_temporal.cpp) took half the per-pixel residual into every cell difference (80fb7e73), so
+ordinary grain on a still shot vetoed propagation from frames without a subtitle; the subtitle area then got an
+engine fill reused across the shot (static clip 34.57 -> 27.15 dB inside the mask). The guard now keeps half of
+the residual above a 6-level noise allowance: grain passes, one-pixel motion of fine texture (150 levels per pixel in
+`moving_texture_cannot_cancel_inside_cells`) is still rejected. New model-free check
+`grain_on_a_still_shot_still_propagates` (+-5 levels of grain; fails on v0.17.14). Numbers in PERFORMANCE.md.
+
 ## 4 November 2026 — complete LightOn cache panel passes; final regression matrix green
 
 [Complete cache+epsilon41905258340](tests/results/lightonocr3-1b/cache-ab-v1/full-review-41905258340.json)
