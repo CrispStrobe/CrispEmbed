@@ -20,7 +20,6 @@ static int run(int argc,char ** argv) {
     auto ids_write=[&](const std::string &name,const std::vector<int>&v) {
         std::ofstream f(out+"/"+name+".ids");for(auto id:v)f<<id<<'\n';
     };
-    auto context=lighton4b_native_context::open(argv[1]);if(!context)return 3;
     auto *meta=core_gguf::open_metadata(argv[1]);lighton4b::frontend_tokenizer tokenizer;
     if(!meta||!tokenizer.load(meta))return 4;core_gguf::free_metadata(meta);
     std::ifstream file(argv[2],std::ios::binary);std::vector<uint8_t>rgb((std::istreambuf_iterator<char>(file)),{});
@@ -30,6 +29,7 @@ static int run(int argc,char ** argv) {
     std::vector<int>ids,mods;std::string rendered;
     if(!tokenizer.image_prompt("",image.grid[1]*image.grid[2]/4,ids,mods,rendered))return 7;
     ids_write("prompt",ids);ids_write("modalities",mods);std::ofstream(out+"/rendered.txt")<<rendered;
+    auto context=lighton4b_native_context::open(argv[1]);if(!context)return 3;
     const auto &model=context->model();vision_outputs vision;
     if(!lighton4b_image_vision_cpu(model.vision,model.vision_parameters,image,threads,vision))return 8;
     emit("vision.patch",vision.patch);emit("vision.position",vision.position);emit("vision.embedded",vision.embedded);

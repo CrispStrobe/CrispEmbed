@@ -95,7 +95,8 @@ def main():
       if row.startswith(('VmHWM:','VmRSS:')):peak=max(peak,int(row.split()[1])*1024)
     except FileNotFoundError:pass
     time.sleep(0.5)
-   report['native_peak_rss_bytes']=peak;report['memory_after_native']=memory()
+   report['seconds']=time.monotonic()-start
+   report['native_peak_rss_bytes']=peak;report['memory_after_native']=memory();report['native_returncode']=process.returncode
    if process.returncode:raise RuntimeError(f'native process failed: exit {process.returncode}')
   report['seconds']=time.monotonic()-start;report['native']=json.loads((native/'native-summary.json').read_text())
   report['artifacts']={x.name:{'bytes':x.stat().st_size,'sha256':sha(x)} for x in native.iterdir() if x.is_file()}
@@ -120,6 +121,9 @@ def main():
    (native/'native.json').write_text(json.dumps(receipt,indent=2)+'\n')
    report['native_receipt_sha256']=sha(native/'native.json')
   report['status']='completed'
+ except Exception as error:
+  report['error_type']=type(error).__name__;report['error']=str(error).replace(str(ROOT),'[repository]').replace(str(scratch),'[scratch]')
+  raise
  finally:
   (out/'native-document.json').write_text(json.dumps(report,indent=2)+'\n')
 if __name__=='__main__':main()
