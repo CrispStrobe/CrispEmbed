@@ -275,3 +275,62 @@ complete accumulation hypotheses precede any dot fix. The earlier native produce
 omitted native payload SHA fields, so reproduction of its old native QKV payload
 bytes is not claimed. No expanded decoder or default promotion precedes actual
 operator evidence and decoded acceptance.
+
+## Real Q8 QKV dot: tiny pre-round error crosses BF16 boundaries
+
+[42036721968](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42036721968)
+atf62b28879 executes one source-fed Q8 projection, with no decoder/GDN/full-model
+forward. Frozen source BF16-normalized inputs and the original rounded Q8
+projection hashes reproduce exactly. The
+[complete dot report](../tests/results/qwen35-ocr/lightonocr3-4b-layer0-qkv-dot-v1.json)
+records all1,261,568 outputs, actual native source/library hashes and selected
+operand/product traces. Its red exit is a completed numerical rejection.
+
+Validation-only shared-library interposition observes20 actual native llamafile
+calls, all accepted. Every complete F32 matrix/input byte sequence matches
+independently dequantized Q8 weights and source-normalized inputs; no fallback
+vec-dot call occurs. Plain versus observed outputs and the selected-trace repeat
+are bit-exact, so observation changes no output. Native composed payload SHA
+was absent from the older producer; reproduction of that old native payload is
+not claimed by this fresh controlled projection.
+
+| Actual native vs original F32 linear operator | Maximum absolute error | RMS | Original magnitude |
+| --- | ---: | ---: | ---: |
+| Pre-round F32 QKV |0.0000267029 |0.000000738513 |24.2978497 |
+| BF16-rounded QKV |0.03125 |0.0000753585 |24.25 |
+
+The pre-round comparison passes unchanged0.002/0.99999; the rounded output has
+841 differences and fails0.002 despite minimum row cosine0.999999975. The first
+rounded difference is token0/row437. At the maximum rounded difference,
+token2/row2129 (flat18513), original7.890624523162842 and native7.890625476837158
+straddle the BF16 midpoint7.890625. They round to7.875 and7.90625, a0.03125
+change from9.53674e-7 pre-round error. F64 products/fsum is7.8906255900801625,
+on the native side of that midpoint; greater precision is not replacement gold.
+
+| Complete projection arithmetic hypothesis | Exact native F32 outputs | Exact original F32 outputs | Original BF16 output differences |
+| --- | ---: | ---: | ---: |
+| Eight-lane FMA |1,261,568 |73,425 |841 |
+| Sixty-four-lane FMA |100,621 |111,643 |564 |
+| Sixty-four-lane separate multiply/add |100,253 |111,530 |568 |
+| F64 products/sum rounded to F32 |87,460 |123,511 |502 |
+
+Every alternative still reaches BF16 maximum0.03125. Standalone native/original
+rounded products agree for all2560 entries of both selected rows. The eight-lane
+FMA model reproduces the complete actual native output. Its first fused versus
+unfused update traces are diagnostic native recurrences, not observed Torch
+GEMM partial sums; the original GEMM internal reduction remains unobserved.
+No tested alternate dot is a proven correction, and none is integrated.
+
+This separates identical-input/dequantization correctness from accumulation and
+BF16 rounding amplification. It does not remove intrinsic quantization loss or
+qualify recognition. Legacy Q8's160-ID EOS output still differs from the177-ID
+original, Q4 still caps256/noEOS with incomplete HTML, and the separate mixed
+calibration remains unqualified. No default/alias/release/app-pin changes follow.
+Raw46,684,813-byte artifact13418767187 stays remote; only its16KB report was
+range-read locally.
+
+Verified default-off boundary/RMS code alone is integrated into existing PR155
+at7d1e73464, preserving the old path and this known next-QKV failure. Reference
+probes and all dot hypotheses stay outside production. Model-free assembled
+controls and vision integration remain separate; no full decoder/decoded or
+platform qualification is inferred from this scoped code integration.

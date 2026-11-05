@@ -20815,3 +20815,11 @@ pass. The complete report now records numerical rejection before its red exit;
 no decoder expansion or decoded-quality claim follows. Focused source-fed QKV dot
 attribution is a separate operator scope; [all measured limits and earlier
 failures](docs/lighton4b-layer0-attribution-results.md) remain preserved.
+
+Real Q8 source-fed QKV42036721968/f62b28879 completes with20 observed accepted
+F32 calls and full independent matrix/input matches. Eight-lane FMA reconstructs
+all1,261,568 native values. Tiny pre-round errors pass, but841 BF16 differences
+reach0.03125; all tested wider/F64 alternatives remain negative. Observer/repeat
+neutrality and selected product operands are exact. No dot fix/default is promoted;
+known full decoded failures remain. [The complete dot evidence](docs/lighton4b-layer0-attribution-results.md)
+stays separate from default-off verified RMS integration7d1e73464 in PR155.
