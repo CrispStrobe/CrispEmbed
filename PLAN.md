@@ -1098,3 +1098,20 @@ candidates remain unqualified. Only PR155/runtime and PR157/evidence remain open
 The separately authorized lean mixed calibration42013855293 covers table/Arabic
 only; its outputs and heldout qualification remain pending, with receipt source-
 completion and logo/handwriting-coverage limitations unchanged.
+
+### Reviewed checkpoint layer0 same-input attribution — 5 November 2026
+
+[The bounded layer0 attribution](docs/lighton4b-layer0-attribution-results.md)
+retains exact source-environment BF16 hidden reproduction (394,240 values),
+initial hosted one-ULP failure42022722133, and explicit unanchored operator
+run42023499031. All80 same-input/same-weight native stage checks pass unchanged
+budgets; no local layer0 implementation defect is identified. Original Python
+with dequantized Q8/Q4 weights itself reaches hidden max0.03973293/0.18586349
+against frozen BF16, versus official same-weight F32 max0.03580666. These are
+single-layer F32 operator diagnostics, not new model references or pure quant-only
+errors. BF16 original source rounds activations at boundaries that native keeps
+F32, including Q/K normalization before F32 recurrence. Keep full decoded Q8/Q4
+rejections and hosted BF16 replay failures unchanged. A separately gated BF16
+boundary candidate requires an original same-input oracle, local operator
+measurements and actual decoded A/B before any runtime/default/quality decision.
+No production source, VERSION, ggml, reference, budget or application pin changed.

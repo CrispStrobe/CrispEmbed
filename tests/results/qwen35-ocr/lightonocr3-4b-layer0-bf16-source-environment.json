@@ -1,0 +1,331 @@
+{
+  "arms": {
+    "official-bf16": {
+      "deterministic_algorithms": false,
+      "dtype": "torch.bfloat16",
+      "hidden_vs_frozen_bf16": {
+        "actual_l2": 84.30621328637889,
+        "actual_max_abs": 8.5625,
+        "cos_global": 1.0,
+        "cos_min": 1.0,
+        "elements": 394240,
+        "finite": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "passed": true,
+        "reference_l2": 84.30621328637889,
+        "reference_max_abs": 8.5625,
+        "rms": 0.0,
+        "shape": [
+          1,
+          154,
+          2560
+        ]
+      },
+      "mkldnn_enabled": true,
+      "observer_neutral": true,
+      "stages": {
+        "a": {
+          "abs_max": 20.625,
+          "sha256": "4dc4fb25a3769c21130cb7531e301adc5ba34a41adf33d7d66e3243f481f5093",
+          "shape": [
+            1,
+            154,
+            32
+          ]
+        },
+        "activation": {
+          "abs_max": 3.796875,
+          "sha256": "28c91b61a7db85a93f4a3a422e2d45b78bc4719d50aaa26bffb21783bf6d8be4",
+          "shape": [
+            1,
+            154,
+            9216
+          ]
+        },
+        "attention": {
+          "abs_max": 3.96875,
+          "sha256": "634d9f895ff3335045a4cf0ad248c7a3c1279934aee05e260632675ebd5298ea",
+          "shape": [
+            1,
+            154,
+            2560
+          ]
+        },
+        "attention_residual": {
+          "abs_max": 9.3125,
+          "sha256": "ab2a38ef0b9e1f2ab6f8e7bbc4b58b3e5c2a7ccada2e62a55f8b9a6c7e3ef82e",
+          "shape": [
+            1,
+            154,
+            2560
+          ]
+        },
+        "b": {
+          "abs_max": 5.9375,
+          "sha256": "2d85b582e6cb81747888ca1e3d2312c9ebb996022b980d9de644d72dec8e7f84",
+          "shape": [
+            1,
+            154,
+            32
+          ]
+        },
+        "conv": {
+          "abs_max": 24.25,
+          "sha256": "fa6d2297b6911bf0be029926a4e23aa5d947bd03bf1829fb45764917d4d08241",
+          "shape": [
+            1,
+            8192,
+            4
+          ]
+        },
+        "down": {
+          "abs_max": 2.0,
+          "sha256": "8d4b900b7fd545199345bc4c0481c561834af2e75dc1229f32d08ad39236bb1a",
+          "shape": [
+            1,
+            154,
+            2560
+          ]
+        },
+        "gate": {
+          "abs_max": 6.71875,
+          "sha256": "9999ac87f9aa3bdd37c1dd7108ddb38640ab324b56a3711cfdf719c446de6c55",
+          "shape": [
+            1,
+            154,
+            9216
+          ]
+        },
+        "gdn_norm": {
+          "abs_max": 7.375,
+          "sha256": "6c77f521b3ee6578bb8df79205341bc3a193d80c1fe9560f8ad2fc49da0f4441",
+          "shape": [
+            1,
+            154,
+            32,
+            128
+          ]
+        },
+        "hidden": {
+          "abs_max": 8.5625,
+          "sha256": "0b8a30a3b0113aa83d3bcc6ebd1433c6fce11e4c5ba38cfee529ab7751283b92",
+          "shape": [
+            1,
+            154,
+            2560
+          ]
+        },
+        "input_norm": {
+          "abs_max": 63.75,
+          "sha256": "1a5baef778e9b7546bfe2cf6d3b6101007548ae6e179e9054e76c353ea3ef7a6",
+          "shape": [
+            1,
+            154,
+            2560
+          ]
+        },
+        "post_norm": {
+          "abs_max": 6.9375,
+          "sha256": "fb9d3079721293c50eb18dd3f56a9763d729d7cefee0a80ab2caa38a11befa6f",
+          "shape": [
+            1,
+            154,
+            2560
+          ]
+        },
+        "qkv": {
+          "abs_max": 24.25,
+          "sha256": "86e4410ff31dbd803d6258df17c6f704e4dbdb08152e1a91b1ea758f02e959b5",
+          "shape": [
+            1,
+            154,
+            8192
+          ]
+        },
+        "recurrent": {
+          "abs_max": 4.75,
+          "sha256": "e29e047b275ef9ce2c87559651a0eb3ca3b728d6c6a01745dc4002c30f17f333",
+          "shape": [
+            1,
+            32,
+            128,
+            128
+          ]
+        },
+        "up": {
+          "abs_max": 4.0625,
+          "sha256": "33439f2245f50e39d3d971eec35c62a381b185e421657b88ce74beead1375cf0",
+          "shape": [
+            1,
+            154,
+            9216
+          ]
+        },
+        "z": {
+          "abs_max": 13.5625,
+          "sha256": "8e14e8cb8d948cdec6ba0ecda555362a48dc6cebe0f1137f532d1cc5100d95a8",
+          "shape": [
+            1,
+            154,
+            4096
+          ]
+        }
+      }
+    }
+  },
+  "bf16_only": true,
+  "frozen_bf16_hidden_exact": true,
+  "frozen_bf16_parity_qualified": false,
+  "full_model_forward_executed": false,
+  "gates": {
+    "CRISPEMBED_BUILD_MODE": "portable",
+    "CRISPEMBED_LIGHTON4B_LINEAR_BLOCK": "1",
+    "CRISPEMBED_LIGHTON4B_QUANT": "1",
+    "CRISPEMBED_QWEN35_GDN_GROUPED_HEADS": "1",
+    "CRISPEMBED_QWEN35_IMATRIX": "0",
+    "CRISPEMBED_QWEN35_OCR": "1",
+    "CRISPEMBED_QWEN35_PRECISE_RMS": "0",
+    "CRISPEMBED_QWEN35_QUANT": "1",
+    "CRISPEMBED_QWEN35_WEIGHT_CACHE": "0"
+  },
+  "generation_executed": false,
+  "hosted_provider": "kaggle",
+  "input": {
+    "manifest_sha256": "036a936cdbd360208b5cf54c2604d671b9a919f1c8777bc7cf97b2585b010a78",
+    "sha256": "51856cd6bcfc7685dad05a0241465f0cae258042494a27cf8aac6e41fd129bc7",
+    "shape": [
+      1,
+      154,
+      2560
+    ]
+  },
+  "official_layer0": {
+    "range": [
+      1271487864,
+      1497335544
+    ],
+    "range_sha256": "36c14e371a41ec294d036ec149143c619a77fd59d4ababfe814a97dfc6e42d4e",
+    "repository": "lightonai/LightOnOCR-3-4B",
+    "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+    "tensor_sha256": {
+      "input_layernorm.weight": "09fcd11987c8065ea924b806b826355cde732d6dc9da87ff4fee0c8bf7a25edb",
+      "linear_attn.A_log": "d82b19b39f9b33bd1d6270bbf204c7eb1f0c234ec5c96ab05300b35ad4f98b70",
+      "linear_attn.conv1d.weight": "c2357a2e4410962ec225623bcd38b1e4e7f11a781989889470d5925f4f1cea32",
+      "linear_attn.dt_bias": "afc85b0f4dc7657519a56183cdb9c5aead223e779e9a5d1a05bf79d1260fd550",
+      "linear_attn.in_proj_a.weight": "35ea0fed6c3b4dc226df3165db13618eaf55dd5857fa9c094ca526d6de3bb525",
+      "linear_attn.in_proj_b.weight": "c8a09edb0de457af75cbc629531afbd16963e2ebcd19bbe44ece52e78c61cb64",
+      "linear_attn.in_proj_qkv.weight": "64847c9e62ecd8f500d88837f7fa5b7106eacd312abd59e2b3a9bc8deae574a6",
+      "linear_attn.in_proj_z.weight": "1e12f6141ac36028174632d39a236b7694444a06c6d268411645e244ccc555c3",
+      "linear_attn.norm.weight": "65461d766b7eac74f206daddeab6b1271ecdaed1999fe756b8f1eb4f9ead3f0c",
+      "linear_attn.out_proj.weight": "e2660751fb5de174aa8c1f593ea37840deba6d8a43aa044849b842078f34935b",
+      "mlp.down_proj.weight": "1217c77600ac0c78a05fb067708e255e08b737b1e4287eb43f337162678d698a",
+      "mlp.gate_proj.weight": "494c5c051bd6d20d36334464b92b2402cb2c67f16cb032df77d2ff7612eab928",
+      "mlp.up_proj.weight": "2ef2f5094c65cc0d479585531fb89d5c4bcc425584e947cb26fa72230e4adc7c",
+      "post_attention_layernorm.weight": "c6182d3a3f5f6b6b8b886e58a1d62cd4f33c33ca987a3394abf6ef9c66c315a9"
+    },
+    "whole_checkpoint_rehashed": false
+  },
+  "preflight": {
+    "free_bytes": 1036629839872,
+    "memory": {
+      "available_bytes": 29431894016,
+      "cgroup_current_bytes": 2780360704,
+      "cgroup_limit_bytes": 32212254720,
+      "host_available_bytes": 32331751424
+    }
+  },
+  "protocol": "v1",
+  "quality_qualified": false,
+  "runtime": {
+    "cache_class": "transformers.cache_utils.DynamicCache",
+    "commit": "75d3bdcd4b3ba70cee21287218d9764f33da41f0",
+    "deterministic_algorithms": true,
+    "device": "cpu",
+    "dtype": "float32",
+    "executed_function_sha256": {
+      "Qwen3_5GatedDeltaNet.forward": "7c437c5a9ee098edde2f984305f843ec927c5222448411487dd5155ed610f5e8",
+      "Qwen3_5RMSNormGated.forward": "9e4a919ddd7afcb4301dd2bdaab79f193dd5c0732482e8ac1dae510c3bf2ded9",
+      "l2norm": "6bfc53d1a491d0ae3856b85cb7fde1ea2198d5e3ed427953652cf2ede696e6fd",
+      "torch_causal_conv1d_update": "3e69946e91492dea1d3650f62d88566ba654c3f954894d6079e0ed0cb6ef106c",
+      "torch_chunk_gated_delta_rule": "3cf91cd1d7af6970672f5b78dd7889b54b24568c16326e73259e57bc32a4a361",
+      "torch_recurrent_gated_delta_rule": "0764d99b2091eb050b0d8009d97167a4b0f67f7452a3530b6c8cbc49f530e28e"
+    },
+    "float32_matmul_precision": "highest",
+    "installed_distributions": [
+      "Jinja2==3.1.6",
+      "MarkupSafe==3.0.4",
+      "PyYAML==6.0.3",
+      "Pygments==2.21.0",
+      "annotated-doc==0.0.5",
+      "anyio==4.16.0",
+      "certifi==2026.10.23",
+      "charset-normalizer==3.5.2",
+      "click==8.5.0",
+      "filelock==4.2.9",
+      "fsspec==2026.9.0",
+      "gguf==0.19.0",
+      "h11==0.16.0",
+      "hf-xet==1.8.0",
+      "httpcore==1.0.9",
+      "httpx==0.28.1",
+      "huggingface_hub==1.31.0",
+      "idna==3.20",
+      "markdown-it-py==4.2.0",
+      "mdurl==0.1.2",
+      "mpmath==1.3.0",
+      "networkx==3.7",
+      "numpy==2.3.5",
+      "packaging==26.3",
+      "pillow==12.0.0",
+      "regex==2026.9.29",
+      "requests==2.34.2",
+      "rich==15.0.0",
+      "safetensors==0.8.0",
+      "setuptools==84.2.1",
+      "shellingham==1.5.4",
+      "sympy==1.14.0",
+      "tokenizers==0.22.2",
+      "torch==2.13.0+cpu",
+      "tqdm==4.70.1",
+      "transformers==5.5.4",
+      "typer==0.27.3",
+      "typing_extensions==4.16.0",
+      "urllib3==2.8.0"
+    ],
+    "interop_threads": 1,
+    "mkldnn_enabled": false,
+    "optional_fast_kernels": false,
+    "packages": {
+      "gguf": "0.19.0",
+      "huggingface-hub": "1.31.0",
+      "jinja2": "3.1.6",
+      "numpy": "2.3.5",
+      "pillow": "12.0.0",
+      "safetensors": "0.8.0",
+      "tokenizers": "0.22.2",
+      "torch": "2.13.0+cpu",
+      "transformers": "5.5.4"
+    },
+    "repository": "huggingface/transformers",
+    "source_files": {
+      "transformers/cache_utils.py": {
+        "bytes": 74556,
+        "sha256": "a51d2cd525f4458941a20cb5b3b8a8d989d8ca5bcd451855a27bb41743fed586"
+      },
+      "transformers/models/qwen3_5/configuration_qwen3_5.py": {
+        "bytes": 7542,
+        "sha256": "cbea1f42a949edb6b9b001109df68cbf7cff04c96d3fe8a8e96602cb017b5a36"
+      },
+      "transformers/models/qwen3_5/modeling_qwen3_5.py": {
+        "bytes": 96220,
+        "sha256": "aee59d55ee4e8ce0e50bf0e279796b85c2c66a28dfae55c3fcbb62fa9bcba048"
+      }
+    },
+    "threads": 2,
+    "version": "5.5.4"
+  },
+  "schema": "lighton4b-layer0-source-fed/v1",
+  "source_sha": "4498559a22bba3465b4292e1cc67b1315e7d9331",
+  "status": "bf16-layer-anchored"
+}
