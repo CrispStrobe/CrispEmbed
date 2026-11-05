@@ -20791,3 +20791,11 @@ remain different. Full operator/runtime linear and decoded proof remain open.
 All complete small receipts are under`tests/results/qwen35-ocr/`; large raw arrays
 remain remote. The verified norm correction is default-off on the vision branch;
 this qualification handoff changes evidence only, not runtime or releases.
+
+LightOn4B mean-order42029945232/215f463bc authenticates pinned Torch source and
+reproduces all154 original means/scales plus394,240 F32/BF16 norm outputs with
+source-derived eight-lane grouping. Wider-vector and precision-only alternatives
+remain negative; old failures are preserved with red job conclusion. The scoped
+production-helper candidate remains default-off and separately unqualified.
+[The retained measured order](docs/lighton4b-layer0-attribution-results.md) does
+not upgrade complete quantized OCR/decoded quality.

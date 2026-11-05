@@ -176,3 +176,33 @@ are executing in42029945232 at215f463bc, with exact source hashes and mean-vecto
 comparison. This is a measured operator continuation, not an observed assembly
 route or a new production reduction/default. Raw100,408,910-byte artifact
 13414434567 remains remote; only the37KB producer report was range-read.
+
+## Exact source-derived mean order at the retained boundary
+
+[42029945232](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42029945232)
+at215f463bc authenticates the exact Torch sum/mean/AVX2 source hashes and compares
+source-derived reduction orders before any production change. The
+[full grouped-order report](../tests/results/qwen35-ocr/lightonocr3-4b-layer0-norm-source-tree-v1.json)
+retains exact original reconstruction, identical checkpoint interval/input and
+passing legacy layer/cache controls. Small-report SHA is
+f2da425824223efff8c5aa0175ac4ea145075fbdb6d93c77f5da089235933d71.
+
+| Native test-only mean order | Means/scales | F32 norm | BF16 norm |
+| --- | --- | --- | --- |
+| Eight-lane, four-stream, sixteen-row grouping |All154 bit-exact |All394,240 bit-exact |All394,240 bit-exact |
+| Sixteen-lane grouping |Not exact |131,753 differences |3 differences/max0.00390625 |
+| F64 sum rounded to F32 before F32 mean |Not exact |90,777 differences |2 differences/max0.00390625 |
+
+The eight-lane reconstruction embeds no original tensor values; its grouping
+comes from the pinned real CPU reduction blueprint. This is actual identical-input
+output evidence, not proof of a recorded assembly dispatch. Both wider-vector
+and precision-only alternatives remain negative under unchanged budgets. The
+job is red for preserved old rejected alternatives, not a missing/failed capture.
+Raw106,800,638-byte artifact13415577818 remains remote; only its46KB report was
+range-read locally. No model/decoded qualification follows.
+
+Source5ba80426d applies the measured order only inside the default-off linear
+BF16 candidate, retaining shared legacy RMS. Actual-helper42031297677 separately
+checks2560-wide input norm and128-wide original GDN pre-norm data before another
+composed layer0 replay. No expanded decoder/default promotion follows while that
+operator and the remaining projection/decoded gates are unresolved.
