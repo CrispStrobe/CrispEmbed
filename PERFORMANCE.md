@@ -7946,3 +7946,11 @@ all remain above0.002. All112 legacy same-weight stages and same-process/cache
 controls pass. Defaults remain unchanged; full decoder/decoded/platform gates are
 open. [Complete raw reports and comparison limits](docs/lighton4b-layer0-attribution-results.md)
 separate same-weight implementation error, precision and quantization loss.
+
+Real Q8 dot attribution42036721968/f62b28879 measures pre-round maximum
+2.67029e-5/RMS7.38513e-7 versus source magnitude24.29785, then BF16 maximum0.03125/
+RMS7.53585e-5 with841 differences. All1,261,568 native values match eight-lane FMA;
+64-lane fused/unfused and F64 alternatives still differ at564/568/502 BF16 values,
+all maximum0.03125. These are bounded arithmetic measurements, not speed/decoded
+quality claims; [all route/operand controls and limits](docs/lighton4b-layer0-attribution-results.md)
+remain independently recorded and defaults unchanged.

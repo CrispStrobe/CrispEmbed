@@ -1255,3 +1255,18 @@ source normalized/projection bytes and observes actual F32 operands/route before
 pre/post-BF16 accumulation hypotheses; no decoder/GDN/model forward is repeated.
 Only verified default-off RMS/BF16-block code is a candidate for scoped PR155
 integration; QKV/full-block/decoded/platform/release gates remain open.
+
+### Completed real Q8 QKV accumulation attribution — 5 November2026
+
+Focused42036721968/f62b28879 observes20 accepted actual native F32 llamafile
+calls with full independent weight/input byte matches and exact observer/repeat
+neutrality. All1,261,568 native outputs match eight-lane FMA. Pre-round error
+max2.67029e-5/RMS7.38513e-7 passes; BF16 rounding creates841 differences/max0.03125.
+At flat18513, source7.890624523 and native7.890625477 cross midpoint7.890625.
+Sixty-four-lane FMA/unfused/F64 alternatives retain564/568/502 BF16 differences,
+all max0.03125; none is a proven dot fix. Original GEMM partial sums remain
+unobserved. [Complete route/operand/hypothesis evidence](docs/lighton4b-layer0-attribution-results.md#real-q8-qkv-dot-tiny-pre-round-error-crosses-bf16-boundaries)
+retains all strict and decoded failures. Only already-verified default-off RMS/
+linear-boundary code is integrated into existing PR155 at7d1e73464; old path,
+quantized storage and known QKV failure remain. Assembled model-free/vision and
+full decoder/decoded/platform/release checks remain separate; no default change.
