@@ -38,4 +38,8 @@ bool linear_grouped_core_cpu(const linear_inputs & input, int key_heads, linear_
 bool delta_cpu(const float * q, const float * k, const float * v, const float * g, const float * beta,
                const float * initial_state, int batch, int tokens, int heads, int width, int threads,
                std::vector<float> & output, std::vector<float> & final_state);
+// Caller has already applied its explicitly scoped Q/K normalization.
+bool delta_pre_normalized_cpu(const float * q, const float * k, const float * v, const float * g, const float * beta,
+               const float * initial_state, int batch, int tokens, int heads, int width, int threads,
+               std::vector<float> & output, std::vector<float> & final_state);
 } // namespace qwen35_ocr

@@ -1,6 +1,7 @@
 #pragma once
 #include "qwen35_lighton4b_text.h"
 #include "qwen35_math.h"
+#include "lighton4b_bf16_linear.h"
 #include <algorithm>
 #include <cmath>
 #include <set>
@@ -46,9 +47,11 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
         !shape(w.linear.out, 4096, 2560, 1, true) || !shape(w.linear.conv, 4, 1, 8192) || !shape(w.linear.a_log, 32) ||
         !shape(w.linear.dt_bias, 32) || !shape(w.linear.norm, 128))
         return false;
+    const bool bf16=lighton4b_bf16_linear_enabled();
     lighton4b_linear_block_outputs candidate;
     candidate.hidden.assign(input, input + size_t(tokens) * 2560);
     if (!finite(candidate.hidden)) return false;
+    if (bf16) lighton4b_bf16_round(candidate.hidden);
     auto rms = [&](const std::vector<float> & x, ggml_tensor * norm, std::vector<float> & y) {
         std::vector<float> weights(2560);
         if (!tensor_floats(norm, weights.data()) || !finite(weights)) return false;
@@ -58,32 +61,39 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
             const float scale = rms_scale_cpu(x.data() + base, 2560, 1e-6f);
             for (int i = 0; i < 2560; ++i) y[base + i] = (x[base + i] * scale) * (1.0f + weights[i]);
         }
+        if (bf16) lighton4b_bf16_round(y);
         return finite(y);
     };
     if (!rms(candidate.hidden, w.input_norm, candidate.input_norm)) return false;
     projected_linear_outputs linear;
-    if (!linear_grouped_cpu(w.linear, 16, candidate.input_norm.data(), 1, tokens, threads,
-                            previous ? previous->conv.data() : nullptr, previous ? previous->recurrent.data() : nullptr,
-                            linear))
-        return false;
+    const bool linear_ok = bf16 ? lighton4b_bf16_grouped_cpu(w.linear,candidate.input_norm.data(),tokens,threads,
+                            previous ? previous->conv.data() : nullptr,previous ? previous->recurrent.data() : nullptr,linear) :
+                        linear_grouped_cpu(w.linear,16,candidate.input_norm.data(),1,tokens,threads,
+                            previous ? previous->conv.data() : nullptr,previous ? previous->recurrent.data() : nullptr,linear);
+    if (!linear_ok) return false;
     candidate.attention = std::move(linear.attention);
     if (candidate.attention.size() != candidate.hidden.size() || !finite(candidate.attention)) return false;
     for (size_t i = 0; i < candidate.hidden.size(); ++i) candidate.hidden[i] += candidate.attention[i];
+    if (bf16) lighton4b_bf16_round(candidate.hidden);
     candidate.attention_residual = candidate.hidden;
     if (!rms(candidate.hidden, w.post_norm, candidate.post_norm)) return false;
     std::vector<std::vector<float>> projections;
     if (!project_cpu({ w.gate, w.up }, candidate.post_norm.data(), 2560, tokens, threads, projections)) return false;
     candidate.gate = std::move(projections[0]);
     candidate.up = std::move(projections[1]);
+    if (bf16) {lighton4b_bf16_round(candidate.gate);lighton4b_bf16_round(candidate.up);}
     candidate.activation.resize(candidate.gate.size());
     for (size_t i = 0; i < candidate.gate.size(); ++i) {
         const float gate = candidate.gate[i];
-        candidate.activation[i] = (gate / (1.0f + std::exp(-gate))) * candidate.up[i];
+        const float activated=gate / (1.0f + std::exp(-gate));
+        candidate.activation[i] = bf16 ? lighton4b_bf16_round(lighton4b_bf16_round(activated)*candidate.up[i]) : activated*candidate.up[i];
     }
     projections.clear();
     if (!project_cpu({ w.down }, candidate.activation.data(), 9216, tokens, threads, projections)) return false;
     candidate.down = std::move(projections[0]);
+    if (bf16) lighton4b_bf16_round(candidate.down);
     for (size_t i = 0; i < candidate.hidden.size(); ++i) candidate.hidden[i] += candidate.down[i];
+    if (bf16) lighton4b_bf16_round(candidate.hidden);
     if (!finite(candidate.hidden)) return false;
     candidate.cache.tokens = past + tokens;
     candidate.cache.conv = std::move(linear.core.conv_history);

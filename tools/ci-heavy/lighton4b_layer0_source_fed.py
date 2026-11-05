@@ -21,6 +21,7 @@ def digest(data):return hashlib.sha256(data).hexdigest()
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--protocol',choices=('v1','v2-unanchored-diagnostic'),default='v1')
+    parser.add_argument('--bf16-boundaries',action='store_true',help='Also compare gated quant-preserving BF16 activation oracle')
     parser.add_argument('--bf16-only',action='store_true',help='Official retained-input layer0 only; no native build or candidate')
     parser.add_argument('--retained-root',type=Path,help='Mounted original stage directory; exact manifest and payload hashes required')
     args=parser.parse_args()
@@ -66,13 +67,26 @@ def main():
         env.update({k:'0' for k in ('CRISPEMBED_QWEN35_PRECISE_RMS','CRISPEMBED_QWEN35_IMATRIX','CRISPEMBED_QWEN35_WEIGHT_CACHE')})
         report['gates']={k:v for k,v in env.items() if k.startswith('CRISPEMBED_')}
         if not args.bf16_only:report['binary_sha256']=native.sha(binary)
-        def original_arm(label,weights,dtype):
+        def original_arm(label,weights,dtype,boundary=False):
             # Frozen BF16 capture used the default CPU backend; component F32
             # diagnostics retain the audited fallback setup. Record both.
-            torch.backends.mkldnn.enabled = dtype == torch.bfloat16
-            torch.use_deterministic_algorithms(dtype != torch.bfloat16)
+            torch.backends.mkldnn.enabled = dtype == torch.bfloat16 and not boundary
+            torch.use_deterministic_algorithms(dtype != torch.bfloat16 or boundary)
             with torch.device('meta'):block=original.Qwen3_5DecoderLayer(config,0)
-            block.load_state_dict({k:torch.from_numpy(v.copy()).to(dtype)for k,v in weights.items()},assign=True,strict=True);block.eval()
+            block.load_state_dict({k:torch.from_numpy(v.copy()).to(torch.float32 if boundary else dtype)for k,v in weights.items()},assign=True,strict=True);block.eval()
+            if boundary:
+                import types
+                import torch.nn.functional as F
+                def linear(module,value):return F.linear(value.float(),module.weight.float(),module.bias).to(torch.bfloat16)
+                for module in block.modules():
+                    if isinstance(module,torch.nn.Linear):module.forward=types.MethodType(linear,module)
+                def convolution(module,value):return module._conv_forward(value.float(),module.weight.float(),module.bias).to(torch.bfloat16)
+                block.linear_attn.conv1d.forward=types.MethodType(convolution,block.linear_attn.conv1d)
+                def gated_norm(module,value,gate=None):
+                    value=value.float();normalized=value*torch.rsqrt(value.square().mean(-1,keepdim=True)+module.variance_epsilon)
+                    weighted=(normalized.bfloat16().float()*module.weight.float()).bfloat16()
+                    return (weighted.float()*F.silu(gate.float())).bfloat16()
+                block.linear_attn.norm.forward=types.MethodType(gated_norm,block.linear_attn.norm)
             stages={};handles=[]
             def put(name,t):stages[name]=np.ascontiguousarray(t.detach().float().numpy()).copy()
             def hook(name):
@@ -100,17 +114,21 @@ def main():
             require(digest(ordinary.float().numpy().tobytes())==digest(stages['hidden'].tobytes()),'observer changed layer hidden')
             folder=out/label;folder.mkdir()
             for name,value in stages.items():(folder/(name+'.f32')).write_bytes(value.astype('<f4').tobytes())
-            report['arms'][label]={'dtype':str(dtype),'mkldnn_enabled':torch.backends.mkldnn.enabled,'deterministic_algorithms':torch.are_deterministic_algorithms_enabled(),'observer_neutral':True,'hidden_vs_frozen_bf16':ref.metrics(stages['hidden'],frozen,np),
+            report['arms'][label]={'dtype':str(dtype),'quant_preserving_bf16_activation_oracle':boundary,'mkldnn_enabled':torch.backends.mkldnn.enabled,'deterministic_algorithms':torch.are_deterministic_algorithms_enabled(),'observer_neutral':True,'hidden_vs_frozen_bf16':ref.metrics(stages['hidden'],frozen,np),
                 'stages':{k:{'shape':list(v.shape),'sha256':digest(v.tobytes()),'abs_max':float(np.abs(v).max())}for k,v in stages.items()}}
+            baseline=out/'official-same-weight-f32-diagnostic'
+            if baseline.is_dir() and label!='official-same-weight-f32-diagnostic':
+                report['arms'][label]['vs_official_same_input_f32']=[{'stage':name,**ref.metrics(value,np.fromfile(baseline/(name+'.f32'),dtype='<f4').reshape(value.shape),np)}for name,value in stages.items()]
             del block,cache,cache2;gc.collect();save();return stages
-        def native_arm(label,path,expected):
-            folder=out/label;folder.mkdir();run(label,[binary,path,retained/'prefill.input.f32',folder],env)
+        def native_arm(label,path,expected,boundary=False):
+            local_env=env.copy();local_env['CRISPEMBED_LIGHTON4B_BF16_LINEAR']='1' if boundary else '0'
+            folder=out/label;folder.mkdir();run(label,[binary,path,retained/'prefill.input.f32',folder],local_env)
             metrics=[]
             for name in STAGES:
                 value=np.fromfile(folder/(name+'.f32'),dtype='<f4').reshape(expected[name].shape)
                 metrics.append({'stage':name,**ref.metrics(value,expected[name],np),
                     'original_abs_max':float(np.abs(expected[name]).max()),'native_abs_max':float(np.abs(value).max())})
-            report['arms'][label]={'same_input_same_weights':True,'stages':metrics,'earliest_failure':next((r['stage']for r in metrics if not r['passed']),None)};save()
+            report['arms'][label]={'bf16_boundary_gate':boundary,'same_input_same_weights':True,'stages':metrics,'earliest_failure':next((r['stage']for r in metrics if not r['passed']),None)};save()
         # Read only the immutable official layer0 interval, not the9GB model.
         header_path=policy.FIXTURE/policy.HEADER_FILE;raw_header=header_path.read_bytes()
         require(digest(raw_header)==policy.HEADER_SHA256,'checkpoint header differs')
@@ -147,6 +165,10 @@ def main():
         source_f32=original_arm('official-same-weight-f32-diagnostic',weights,torch.float32)
         ref.write_gguf(scratch/'official-layer0.gguf',weights,gguf)
         native_arm('native-official-f32',scratch/'official-layer0.gguf',source_f32)
+        if args.bf16_boundaries:
+            oracle=original_arm('official-bf16-boundary-oracle',weights,torch.bfloat16,True)
+            native_arm('native-official-bf16-boundary',scratch/'official-layer0.gguf',oracle,True)
+            del oracle
         del weights,bf16,source_f32;gc.collect()
         for recipe,(filename,expected,size)in native.CANDIDATES.items():
             model=scratch/filename;native.download(f'https://huggingface.co/{native.MODEL_REPO}/resolve/{native.MODEL_REVISION}/{filename}',model)
@@ -164,6 +186,14 @@ def main():
             native_arm(recipe+'-native-quant',quant_path,expected_stages)
             ref.write_gguf(scratch/'dequant.gguf',weights,gguf)
             native_arm(recipe+'-native-dequant-f32',scratch/'dequant.gguf',expected_stages)
+            if args.bf16_boundaries:
+                oracle=original_arm(recipe+'-bf16-boundary-oracle',weights,torch.bfloat16,True)
+                native_arm(recipe+'-native-bf16-boundary',quant_path,oracle,True)
+                # Gate-on calls must not alter a later legacy result or cache.
+                native_arm(recipe+'-native-legacy-recovery',quant_path,expected_stages)
+                for stage in STAGES:
+                    require(native.sha(out/(recipe+'-native-legacy-recovery')/(stage+'.f32'))==native.sha(out/(recipe+'-native-quant')/(stage+'.f32')),'gated call changed legacy output')
+                del oracle
             del tensors,reader,weights,expected_stages;gc.collect();model.unlink()
         report['status']='compared' if report['frozen_bf16_hidden_exact'] else 'diagnostic-compared-unanchored'
     except Exception as error:

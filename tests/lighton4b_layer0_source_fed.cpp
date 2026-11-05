@@ -7,6 +7,11 @@
 #include <map>
 static int run(int argc, char ** argv) {
     if (argc != 4) return 2;
+    // RNE tie cases distinguish BF16 from truncation and FP16 conversion.
+    if (qwen35_ocr::lighton4b_bf16_round(1.00390625f)!=1.0f ||
+        qwen35_ocr::lighton4b_bf16_round(1.01171875f)!=1.015625f ||
+        qwen35_ocr::lighton4b_bf16_round(-1.00390625f)!=-1.0f ||
+        qwen35_ocr::lighton4b_bf16_round(0.0f)!=0.0f) return 6;
     auto backend = ggml_backend_cpu_init();
     core_gguf::WeightLoad weights;
     if (!backend || !core_gguf::load_weights(argv[1], backend, "layer0-source-fed", weights)) return 2;
@@ -29,8 +34,12 @@ static int run(int argc, char ** argv) {
                 offset ? &cache : nullptr,b)) return 3;
         auto append = [&](const char * name,const std::vector<float> & v) { auto & target=stages[name]; target.insert(target.end(),v.begin(),v.end()); };
         qwen35_ocr::projected_linear_outputs linear;
-        if (!qwen35_ocr::linear_grouped_cpu(w.linear,16,b.input_norm.data(),1,std::min(16,154-offset),2,
-                offset ? cache.conv.data() : nullptr,offset ? cache.recurrent.data() : nullptr,linear) ||
+        const bool replay=qwen35_ocr::lighton4b_bf16_linear_enabled() ?
+            qwen35_ocr::lighton4b_bf16_grouped_cpu(w.linear,b.input_norm.data(),std::min(16,154-offset),2,
+                offset ? cache.conv.data() : nullptr,offset ? cache.recurrent.data() : nullptr,linear) :
+            qwen35_ocr::linear_grouped_cpu(w.linear,16,b.input_norm.data(),1,std::min(16,154-offset),2,
+                offset ? cache.conv.data() : nullptr,offset ? cache.recurrent.data() : nullptr,linear);
+        if (!replay ||
                 linear.attention != b.attention || linear.core.state != b.cache.recurrent ||
                 linear.core.conv_history != b.cache.conv) return 5;
         append("input_norm",b.input_norm); append("qkv",linear.qkv); append("z",linear.z);

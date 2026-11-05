@@ -79,3 +79,25 @@ hashes also differ. The initial replay additionally enabled deterministic
 algorithms; the v2 hosted replay matches original OFF to separate that setup
 factor from cross-host BF16 GEMM arithmetic. No rounding/default/budget change
 is justified by the anchor alone.
+
+## Default-off linear-block BF16 activation candidate
+
+`CRISPEMBED_LIGHTON4B_BF16_LINEAR=1` separately rounds LightOn4B linear-block
+activations at the source's BF16 boundaries while retaining all quantized matrix
+bytes and F32 dequantization. It covers input/post RMSNorm, QKV/z/a/b projections,
+causal convolution then SiLU, beta, Q/K BF16 L2 normalization before F32 delta
+recurrence, gated normalization, output/FFN projections, activation products and
+residual sums. Recurrent state stays F32. The explicit pre-normalized delta entry
+preserves the old delta entry's F32 normalization unchanged. Unset/empty/0 keep
+the existing path; full-attention blocks and final decoder norm remain separate.
+This is a bounded linear-block candidate, not full BF16 decoder admission.
+
+`--bf16-boundaries` adds a same-input original Python activation oracle: original
+block/GDN/cache code and unmodified quant-dequant weight values are retained;
+linear/conv operators compute with F32 weights and return BF16 activations,
+and gated norm follows the source's two BF16 rounding boundaries. The oracle is
+explicitly a new diagnostic arm, never replacement BF16 gold. Native comparison
+retains all16 stages and gate-on→legacy recovery checks, plus rounding ties.
+Same-precision candidate-versus-official F32 stage metrics separately quantify
+quantization. Hosted compilation/operator checks are pending. Real decoded A/B
+and remaining attention/final-norm semantics remain required before promotion.

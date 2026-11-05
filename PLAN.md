@@ -1132,3 +1132,11 @@ observer neutrality. Source/range/input/module evidence is in
 forward occurred. Initial GHA input-layernorm hash matches this anchored replay,
 but first QKV/z/a/b projections differ. Corrected deterministicOFF v2 hosted
 operator diagnostic42023499031 remains executing; initial failed anchor stays red.
+
+The separately gated `CRISPEMBED_LIGHTON4B_BF16_LINEAR` candidate preserves
+quantized weight bytes and legacy execution unless explicitly enabled. It
+implements source BF16 activation boundaries for the linear block only, including
+BF16 Q/K L2 normalization before F32 recurrence and source gated-norm cast order.
+Actual full-attention/final-norm/decoded integration is separate. Hosted same-input
+original quant-preserving BF16 activation oracle, rounding-tie and legacy recovery
+checks are prepared; no corrected numerical or decoded result is claimed yet.
