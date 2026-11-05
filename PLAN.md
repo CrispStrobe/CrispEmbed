@@ -1021,3 +1021,18 @@ retain the exact initial source/hash/gates/preflight. The corrected adapter
 matches the exported`lightonocr3-4b` profile. Corrected smoke waits for its hosted
 metadata/tokenizer controls. Initial subsecond sampledRSS is not a true process
 peak; corrected workers use GNU time child rusage for peakRSS/CPU/wall timing.
+
+Corrected actual smoke at`fd150b98f` is complete: Q8
+[41999580781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999580781)
+and Q4[41999584163](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999584163)
+each execute native154-token image prefill, one full-vocabulary score and two
+independent greedy tokens. Q8 yields`[27,17251]`/`<figure`, matching the original
+prefix; Q4 yields`[20353,29]`/`<table>` and already fails at the first token.
+[Reviewed receipts/resources](tests/results/qwen35-ocr/lightonocr3-4b-native-smoke-review.json)
+preserve all exact sources and initial profile failures. No EOS/full-document
+quality follows. Guarded original first-score comparisons are pending as
+[Q8 42000741513](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42000741513)
+and[Q4 42000808436](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42000808436);
+then execute full177 teacher positions and independent cap256 generation for
+both candidates, preserving the Q4 regression. Original BF16 internal tracing
+is a separate continuation; current original capture contains scores only.
