@@ -39,7 +39,7 @@ try:
     if (out/'decoded.txt').read_text()!=reference['decoded']:raise ValueError('all177 original generated IDs decoded text differs')
     protocol=json.loads((ROOT/'docs/lighton4b-bf16-freegen-v1.json').read_text())
     if (out/'rendered.txt').read_text()!=protocol['case']['rendered_prompt']:raise ValueError('frozen original rendered prompt differs')
-    r.update(status='passed',original_prompt_ids_exact=True,original_modalities_exact=True,original_decoded_text_exact=True,original_generated_ids=177,original_prompt_ids=154,negative_controls=7,tokenizer_payload_sha256=digest(model/'tokenizer.json'))
+    r.update(status='passed',original_prompt_ids_exact=True,original_modalities_exact=True,original_decoded_text_exact=True,original_generated_ids=177,original_prompt_ids=154,negative_controls=6,tokenizer_payload_sha256=digest(model/'tokenizer.json'))
 except Exception as error:
     r.update(error_type=type(error).__name__,error=str(error).replace(str(ROOT),'[repository]').replace(str(scratch),'[scratch]').replace(str(out),'[report]'));raise
 finally:
