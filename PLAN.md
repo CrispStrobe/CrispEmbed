@@ -978,3 +978,12 @@ free IDs/text/EOS and held-out documents remain required. The historical negativ
 290/291 synthetic decoder receipt and its exact thresholds remain unchanged;
 it is evidence to preserve, not a prerequisite requiring an F32 model run.
 No native quality or release qualification follows from structural admission.
+### LightOn4B image composition — 5 November
+
+`feat/lighton4b-image-compose-20261105` composes the PR146 mapped vision geometry,
+shared still-image processor and2560-wide image-prefill/positions behind a new
+default-off gate. Existing shared engine sources and historical closures remain
+unchanged. [Component scope](docs/lighton4b-image-compose.md) records the exact
+source and1024-patch limit. Model-free hosted controls are prepared; actual native
+processor/vision arrays, quantized full inference/logits and EOS parity remain
+open. No Q8/Q4 qualification or public model admission follows from composition.

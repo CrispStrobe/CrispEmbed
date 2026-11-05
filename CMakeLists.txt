@@ -1590,6 +1590,8 @@ target_link_libraries(test-lighton4b-attention-block PRIVATE crispembed-qwen35-d
 
 add_executable(test-lighton4b-linear-block tests/test_lighton4b_linear_block.cpp)
 target_link_libraries(test-lighton4b-linear-block PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-lighton4b-image-compose tests/test_lighton4b_image_compose.cpp)
+target_link_libraries(test-lighton4b-image-compose PRIVATE crispembed-qwen35-delta crispembed-core)
 
 add_executable(test-lighton4b-model-owner tests/test_lighton4b_model_owner.cpp)
 target_link_libraries(test-lighton4b-model-owner PRIVATE crispembed-qwen35-delta crispembed-core)

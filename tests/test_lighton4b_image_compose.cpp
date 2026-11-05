@@ -1,0 +1,80 @@
+#include "lighton4b_image_compose.h"
+#include <cstdlib>
+#include <iostream>
+#include <limits>
+
+using namespace qwen35_ocr;
+static int checks = 0;
+static void environment(const char * name, const char * value) {
+#ifdef _WIN32
+    _putenv_s(name, value ? value : "");
+#else
+    if (value)
+        setenv(name, value, 1);
+    else
+        unsetenv(name);
+#endif
+}
+#define CHECK(x)                                                                                                       \
+    do {                                                                                                               \
+        ++checks;                                                                                                      \
+        if (!(x)) {                                                                                                    \
+            std::cerr << "failed line " << __LINE__ << '\n';                                                           \
+            return 1;                                                                                                  \
+        }                                                                                                              \
+    } while (0)
+int main() {
+    environment("CRISPEMBED_QWEN35_OCR", "1");
+    environment("CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE", "1");
+    std::vector<float> text(6 * 2560), visual(4 * 2560);
+    for (size_t i = 0; i < text.size(); ++i) text[i] = float(i);
+    for (size_t i = 0; i < visual.size(); ++i) visual[i] = -float(i + 1);
+    const std::vector<int> modalities{ 0, 1, 1, 1, 1, 0 }, grid{ 1, 4, 4 };
+    lighton4b_image_prefill out;
+    CHECK(lighton4b_image_prefill_cpu(text, modalities, grid, visual, out));
+    CHECK(std::equal(text.begin(), text.begin() + 2560, out.hidden.begin()));
+    CHECK(std::equal(visual.begin(), visual.end(), out.hidden.begin() + 2560));
+    CHECK(std::equal(text.begin() + 5 * 2560, text.end(), out.hidden.begin() + 5 * 2560));
+    CHECK(out.positions.axes == std::vector<float>({ 0, 1, 1, 1, 1, 3, 0, 1, 1, 2, 2, 3, 0, 1, 2, 1, 2, 3 }));
+    CHECK(out.positions.rope_delta == -2);
+    for (const char * gate : { "CRISPEMBED_QWEN35_OCR", "CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE" }) {
+        for (const char * value : { "", "0" }) {
+            environment(gate, value);
+            out.hidden = { 42 };
+            CHECK(!lighton4b_image_prefill_cpu(text, modalities, grid, visual, out));
+            CHECK(out.hidden.empty() && out.positions.axes.empty());
+        }
+        environment(gate, nullptr);
+        CHECK(!lighton4b_image_prefill_cpu(text, modalities, grid, visual, out));
+        environment(gate, "1");
+    }
+    for (auto bad : { std::vector<int>{ 1, 4, 3 }, std::vector<int>{ 2, 4, 4 }, std::vector<int>{ 1, 4, 4, 1, 4, 4 },
+                      std::vector<int>{ 1, 64, 64 }, std::vector<int>{ 1, -2, 4 } })
+        CHECK(!lighton4b_image_prefill_cpu(text, modalities, bad, visual, out));
+    for (auto bad : { std::vector<int>{ 0, 1, 1, 0, 1, 1 }, std::vector<int>{ 0, 1, 1, 1, 0, 0 },
+                      std::vector<int>{ 0, 2, 1, 1, 1, 0 } })
+        CHECK(!lighton4b_image_prefill_cpu(text, bad, grid, visual, out));
+    auto nonfinite = visual;
+    nonfinite[123] = std::numeric_limits<float>::infinity();
+    CHECK(!lighton4b_image_prefill_cpu(text, modalities, grid, nonfinite, out));
+    nonfinite = text;
+    nonfinite[0] = std::numeric_limits<float>::quiet_NaN();
+    CHECK(!lighton4b_image_prefill_cpu(nonfinite, modalities, grid, visual, out));
+    visual.pop_back();
+    CHECK(!lighton4b_image_prefill_cpu(text, modalities, grid, visual, out));
+    text.pop_back();
+    CHECK(!lighton4b_image_prefill_cpu(text, modalities, grid, visual, out));
+    // Actual reusable resize/normalization/patch layout, no model or framework.
+    std::vector<uint8_t> rgb(256 * 256 * 3, 255);
+    image_inputs image;
+    CHECK(lighton4b_preprocess_rgb(rgb.data(), 256, 256, image));
+    CHECK(image.grid == std::vector<int>({ 1, 16, 16 }));
+    CHECK(image.patches.size() == 256 * 1536);
+    CHECK(std::all_of(image.patches.begin(), image.patches.end(), [](float x) { return x == 1; }));
+    CHECK(!lighton4b_preprocess_rgb(nullptr, 256, 256, image) && image.patches.empty());
+    vision_weights weights;
+    vision_config config;
+    vision_outputs result;
+    CHECK(!lighton4b_image_vision_cpu(weights, config, image, 1, result));
+    std::cout << "passed=1 checks=" << checks << " model_inference=0\n";
+}
