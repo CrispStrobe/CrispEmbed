@@ -1,6 +1,7 @@
 #include "lighton4b_image_compose.h"
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 #include <limits>
 
 using namespace qwen35_ocr;
@@ -23,7 +24,30 @@ static void environment(const char * name, const char * value) {
             return 1;                                                                                                  \
         }                                                                                                              \
     } while (0)
-int main() {
+int main(int argc, char ** argv) {
+    if (argc == 6) {
+        environment("CRISPEMBED_QWEN35_OCR", "1");
+        environment("CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE", "1");
+        const int height = std::atoi(argv[2]), width = std::atoi(argv[3]);
+        if (height < 1 || width < 1 || height > 32768 || width > 32768 || int64_t(height) * width > 16777216) return 2;
+        std::vector<uint8_t> rgb(size_t(height) * width * 3);
+        std::ifstream input(argv[1], std::ios::binary);
+        if (!input.read(reinterpret_cast<char *>(rgb.data()), std::streamsize(rgb.size())) || input.peek() != EOF)
+            return 2;
+        image_inputs image;
+        if (!lighton4b_preprocess_rgb(rgb.data(), height, width, image)) return 2;
+        const std::string prefix = argv[4];
+        std::ofstream patches(prefix + ".f32", std::ios::binary), resized(prefix + ".rgb", std::ios::binary);
+        patches.write(reinterpret_cast<const char *>(image.patches.data()),
+                      std::streamsize(image.patches.size() * sizeof(float)));
+        resized.write(reinterpret_cast<const char *>(image.resized_rgb.data()),
+                      std::streamsize(image.resized_rgb.size()));
+        if (!patches || !resized || std::string(argv[5]) != "dump") return 2;
+        std::cout << image.height << " " << image.width << " " << image.grid[0] << " " << image.grid[1] << " "
+                  << image.grid[2] << "\n";
+        return 0;
+    }
+    if (argc != 1) return 2;
     environment("CRISPEMBED_QWEN35_OCR", "1");
     environment("CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE", "1");
     std::vector<float> text(6 * 2560), visual(4 * 2560);
