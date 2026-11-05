@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Full retained source-fed vision linear operators; no model access/forward."""
+import argparse
+import shutil
 import hashlib
 import importlib.util
 import json
@@ -9,6 +11,7 @@ import subprocess
 import zipfile
 ROOT=Path(__file__).resolve().parents[2]
 def main():
+ parser=argparse.ArgumentParser();parser.add_argument('--preserve-source-archive',action='store_true');args=parser.parse_args()
  dispatch={'ATEN_CPU_CAPABILITY':'avx2','ONEDNN_MAX_CPU_ISA':'AVX2','DNNL_MAX_CPU_ISA':'AVX2','MKL_ENABLE_INSTRUCTIONS':'AVX2'};os.environ.update(dispatch)
  import numpy as np
  import torch
@@ -35,6 +38,10 @@ def main():
     filename=name+'.f32';raw=z.read('stages/'+filename);record=receipt['artifacts'][filename]
     if len(raw)!=record['bytes'] or hashlib.sha256(raw).hexdigest()!=record['sha256']:raise ValueError('retained array differs')
     (stages/filename).write_bytes(raw)
+  if args.preserve_source_archive:
+   preserved=out/'retained-source-13414500337.zip';shutil.copyfile(archive,preserved)
+   if sha(preserved)!='77682c5af6a8a89af78736eb70241fdb8706ee801776703ddbdf42000fb273ff':raise ValueError('preserved source archive differs')
+   report['preserved_source_archive']={'file':preserved.name,'bytes':preserved.stat().st_size,'sha256':sha(preserved),'source_run_id':42024288946,'source_artifact_id':13414500337}
   archive.unlink();torch.set_num_threads(2);torch.set_num_interop_threads(1);torch.manual_seed(0)
   report['original_controls']={}
   for name in ('qkv','out','up','down'):

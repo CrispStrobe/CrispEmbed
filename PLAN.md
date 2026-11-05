@@ -1280,3 +1280,16 @@ precedence over the preserved PATCH_LINEAR alternative; all old paths stay.
 Next operator-only production validation must match all original bytes at1/4
 threads, independently of NN/PATCH gates, and retain unset/empty/0 old bytes.
 No ordinary model or quality claim follows until this actual helper passes.
+
+
+[Actual Conv production42037359930](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42037359930)
+at72bc2825e matches every original patch bit with1 and4 threads and with NN/
+PATCH alternatives disabled; unset/empty/0 preserves prior34-difference bytes
+and old20-difference baseline remains unchanged. The
+[production receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-conv-production.json)
+closes actual-helper Conv math at this source/fixture. Current LINEAR applies
+only to true nn.Linear and CONV only to original Conv3D. Both defaults stay off.
+Final PR155 assembly will replay complete norm/linear/Conv controls together;
+one script-scoped90-day artifact will preserve exact source ZIP13414500337
+without changing unrelated workflow retention or regenerating original arrays.
+No new full quality claim follows from these exact operators.
