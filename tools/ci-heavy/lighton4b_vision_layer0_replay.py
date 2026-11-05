@@ -89,5 +89,7 @@ def main():
   report['status']='compared' if report['original_control_bit_exact'] else 'diagnostic-original-control-differs'
  except Exception as error:
   report['error_type']=type(error).__name__;report['error']='bounded hosted attribution failed; inspect retained logs';raise RuntimeError(report['error'])from None
- finally:(out/'vision-layer0.json').write_text(json.dumps(report,indent=2)+'\n')
+ finally:
+  (out/'vision-layer0.json').write_text(json.dumps(report,indent=2)+'\n')
+  print(json.dumps({k:v for k,v in report.items()if k!='artifacts'},indent=2),flush=True)
 if __name__=='__main__':main()

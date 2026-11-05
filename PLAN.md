@@ -1078,3 +1078,9 @@ accepting operator attribution. A differing composed original control makes the
 result diagnostic only; no budget changes or decoded-quality claim follow.
 One targeted hosted run is authorized. Full decoded evaluation remains required
 after an evidenced gated runtime correction; earlier Q4/Q8 negatives remain.
+
+Initial [42022655060](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42022655060)
+stopped before build/model access because legacy Kaggle1.8.3 does not support
+the workflow token environment. The corrected dependency is known-working
+Kaggle2.2.2 from retained comparison42006413571; this changes no arrays/operators.
+Preserve the initial hosted logs and artifact; the bounded retry remains pending.
