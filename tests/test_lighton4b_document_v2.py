@@ -35,14 +35,16 @@ class Controls(unittest.TestCase):
             self.assertEqual(len(a['stages']),1037);ready=v2.readiness(a)
             self.assertTrue(ready['synthetic_packaging_valid']);self.assertFalse(ready['actual_original_output_ready'])
             self.assertFalse(ready['actual_full_vocabulary_geometry'])
-            for change in('missing','duplicate','reorder','role','readiness','shape'):
+            for change in('missing','duplicate','reorder','role','readiness','shape','ids','text'):
                 p=copy.deepcopy(a)
                 if change=='missing':p['stages'].pop()
                 elif change=='duplicate':p['stages'].append(p['stages'][0])
                 elif change=='reorder':p['stages'][0],p['stages'][1]=p['stages'][1],p['stages'][0]
                 elif change=='role':p['role']='original-capture'
                 elif change=='readiness':p['actual_original_output_ready']=True
-                else:p['stages'][-1]['shape']=[1,248320]
+                elif change=='shape':p['stages'][-1]['shape']=[1,248320]
+                elif change=='ids':p['generated_ids']=[True,248046]
+                else:p['decoded']='x'*(2**20+1)
                 with self.subTest(change=change),self.assertRaises(ValueError):v2.validate(p)
     def test_source_hash_stage_missing_and_wrong_model_claim_reject(self):
         with tempfile.TemporaryDirectory()as folder,fixtures.service()as(remote,state):

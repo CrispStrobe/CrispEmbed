@@ -9,6 +9,7 @@ import hashlib
 import argparse
 import json
 import math
+import re
 from pathlib import Path
 import struct
 import subprocess
@@ -117,7 +118,9 @@ def package(root,source_manifest,side,output,role='synthetic-control',precision=
         'decoded':observer.get('decoded','synthetic fixture'),'eos_completed':observer['eos_completed'],'cap_hit':observer['cap_hit'],
         'stages':records,'original_execution_admitted':False,'native_execution_admitted':False,
         'large_retention_qualified':False,'actual_original_output_ready':False,'quality_qualified':False}
-    validate(result);output.write_bytes(transport.encoded(result));return result
+    validate(result);payload=transport.encoded(result)
+    require(len(payload)<=16*2**20,'v2 manifest byte bound')
+    output.write_bytes(payload);return result
 
 
 def validate(package):
@@ -129,13 +132,22 @@ def validate(package):
         require(package[flag]is False,'synthetic package cannot assert real readiness/admission')
     expected=ordered_stages(package['positions']);rows=package['stages']
     require([(r['name'],r['kind'])for r in rows]==expected,'exact stage coverage/order differs')
-    ids=package['generated_ids'];require(len(ids)>=1 and ids[-1]==248046 and package['eos_completed']is True and package['cap_hit']is False,'complete EOS output required')
-    require(len(package['teacher_forced_ids'])==package['positions'],'all original-position scores required')
+    ids=package['generated_ids'];require(isinstance(ids,list)and 1<=len(ids)<=256 and
+        all(type(x)is int and 0<=x<248320 for x in ids)and ids[-1]==248046 and 248046 not in ids[:-1]and
+        package['eos_completed']is True and package['cap_hit']is False,'complete EOS output required')
+    require(isinstance(package['decoded'],str)and len(package['decoded'].encode())<=2**20,'bounded decoded text required')
+    forced=package['teacher_forced_ids']
+    require(isinstance(forced,list)and len(forced)==package['positions']and all(type(x)is int and 0<=x<248320 for x in forced),'all original-position scores required')
+    if package['side']=='original':require(forced==ids,'original generated/score positions differ')
+    require(isinstance(package['source_file_sha256'],dict)and len(package['source_file_sha256'])<=67*256+4,'source file table bound')
+    for file,digest in package['source_file_sha256'].items():
+        transport.safe_name(file);require(isinstance(digest,str)and re.fullmatch('[0-9a-f]{64}',digest)is not None,'source file SHA differs')
     for row in rows:
         transport.safe_name(row['file']);shape=row['shape']
         require(isinstance(shape,list)and 1<=len(shape)<=4 and all(type(x)is int and x>0 for x in shape),'stage shape differs')
         require(type(row['offset'])is int and row['offset']>=0 and row['bytes']==math.prod(shape)*4 and 0<row['bytes']<=MAX_STAGE_BYTES,'stage range bound')
         require(row['file']in package['source_file_sha256'],'stage file outside frozen source')
+        require(isinstance(row['sha256'],str)and re.fullmatch('[0-9a-f]{64}',row['sha256'])is not None,'stage SHA differs')
     return package
 
 
