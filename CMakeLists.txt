@@ -1707,3 +1707,10 @@ target_link_libraries(lighton4b-vision-conv-operators PRIVATE crispembed-qwen35-
 
 add_executable(lighton4b-vision-attention-probe tests/lighton4b_vision_attention_probe.cpp)
 target_link_libraries(lighton4b-vision-attention-probe PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Bounded hosted source-expression observer; excluded from normal target graphs.
+if(LIGHTON4B_BOUNDARY_GENERATED_DIR)
+    add_executable(lighton4b-vision-boundary-probe tests/lighton4b_vision_boundary_probe.cpp)
+    target_include_directories(lighton4b-vision-boundary-probe PRIVATE ${LIGHTON4B_BOUNDARY_GENERATED_DIR})
+    target_link_libraries(lighton4b-vision-boundary-probe PRIVATE crispembed-qwen35-delta crispembed-core)
+endif()

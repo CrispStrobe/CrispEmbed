@@ -1367,3 +1367,5 @@ those on retained identical inputs before any further correction.
 Full numerical/decoded/resource receipt: `tests/results/qwen35-ocr/lightonocr3-4b-softmax-composed-negative.json`.
 Artifact `13430388075`, SHA `1e45293758c7c914da4d40d8c96bb4a67a3b3af4a33cd4eaab50a4db201f264b`,
 retained 90 days. Two-token smoke is not EOS or full-document qualification.
+
+Bounded retained-only next attribution prepares verbatim extracted production rotary/GELU expression helpers, original installed AVX2 Gelu.h controls (strict/contracted), and four first-block compositions (original, native rotary, native activation, both). Require original bytes and combined reproduction of retained actual 40-difference candidate before attribution. No model download/full-model smoke, production correction or gate change. Reference target is excluded unless its generated-source directory is explicitly supplied.
