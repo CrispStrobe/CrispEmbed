@@ -1008,3 +1008,11 @@ prompt/modality NPY hashes,177-ID decoded text and seven official tokenizer
 cases plus six negatives. Initial41997631447 and41997789387 were cancelled
 before execution after source/control amendments. No model forward or runtime
 qualification follows until actual native Q8/Q4 score/free-generation evidence.
+
+Actual corrected LightOn4B tokenizer41999152372 at `9ba48e388` passes original154
+prompt/modality IDs,177-ID decoded text, seven official Unicode/added-token
+cases and six negatives. Independent downloaded NPY hashes/text verify; see
+[receipt](tests/results/qwen35-ocr/lightonocr3-4b-tokenizer-controls.json).
+Preserve initial41997924479 probe-link failure and41998489041 export-profile
+rejection separately. This closes only frontend controls; actual model parity
+remains separate and no release/default/alias change follows.
