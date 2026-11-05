@@ -222,7 +222,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-431 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+432 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -552,7 +552,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_JOSEV_BACKBONE` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/qwen35_decoder.cpp` |  |
 | `CRISPEMBED_JOSEV_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/josev2b_text_frontend.cpp` |  |
-| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +16 | 'minicpm-ocr' registry alias (same default as the HTTP server). The decoder reuses the qwen35 kernels, so both gates are still required. |
+| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +17 | 'minicpm-ocr' registry alias (same default as the HTTP server). The decoder reuses the qwen35 kernels, so both gates are still required. |
 | `CRISPEMBED_QWEN35_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/qwen35_linear.cpp` |  |
 
 ### josev2b_composed
@@ -624,6 +624,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_ACCEPT_LFM_LICENSE` | on | off | bool | default-off experimental / opt-in | `src/lfm2_vl_ocr.cpp` | License gate |
+
+### lighton4b_attention_block
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_ATTENTION_BLOCK` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_attention_block.h` |  |
 
 ### lighton4b_linear_block
 
