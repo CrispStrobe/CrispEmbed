@@ -987,3 +987,15 @@ unchanged. [Component scope](docs/lighton4b-image-compose.md) records the exact
 source and1024-patch limit. Model-free hosted controls are prepared; actual native
 processor/vision arrays, quantized full inference/logits and EOS parity remain
 open. No Q8/Q4 qualification or public model admission follows from composition.
+
+### Actual LightOn4B native document assembly — 5 November 2026
+
+`feat/lighton4b-native-document-20261105` assembles the tested quantized owner,
+image composition, separate format-5 tokenizer and exact quantized streamed-head
+function from`eb6b9cb40`. The test-only binary takes source RGB pixels, dimensions
+and teacher token IDs; it computes processor patches, native vision/tokenizer,
+embedding splice, all32 decoder layers and vocabulary logits. It retains all177
+teacher-forced positions separately from independent greedy generation. No
+original hidden state or logit is accepted as native input. Initial hosted build
+controls precede actual Q8/Q4 smoke and full original BF16 comparison. No synthetic
+F32 correction or F32 checkpoint is required to execute that separate experiment.

@@ -1665,3 +1665,9 @@ add_executable(crispembed-test-lighton4b-tokenizer EXCLUDE_FROM_ALL
     tests/lighton4b_tokenizer.cpp src/lighton4b_tokenizer.cpp)
 target_include_directories(crispembed-test-lighton4b-tokenizer PRIVATE src)
 target_link_libraries(crispembed-test-lighton4b-tokenizer PRIVATE ggml)
+
+add_executable(test-qwen35-stream-projection tests/test_qwen35_stream_projection.cpp)
+target_link_libraries(test-qwen35-stream-projection PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(lighton4b-native-document tests/lighton4b_native_document.cpp src/lighton4b_tokenizer.cpp)
+target_link_libraries(lighton4b-native-document PRIVATE crispembed-qwen35-delta crispembed-core)

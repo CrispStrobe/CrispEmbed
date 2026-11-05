@@ -222,7 +222,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-438 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+439 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -1004,7 +1004,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_QWEN35_IMATRIX` | on | off | bool | default-off experimental / opt-in | `src/qwen35_graph_decoder.cpp`, `src/qwen35_linear.cpp` |  |
+| `CRISPEMBED_QWEN35_IMATRIX` | on | off | bool | default-off experimental / opt-in | `src/qwen35_graph_decoder.cpp`, `src/qwen35_linear.cpp` | Preserve calibration identity: observe the original named matrix once, then suppress tile callbacks while retaining all old-path behavior. |
 
 ### qwen35_graph_kv_decoder
 
@@ -1023,6 +1023,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_QWEN35_PARALLEL_F16` | on | off | bool | default-off experimental / opt-in | `src/qwen35_linear.cpp` |  |
+| `CRISPEMBED_QWEN35_STREAM_PROJECTION` | on | off | bool | default-off experimental / opt-in | `src/qwen35_linear.cpp` |  |
 | `CRISPEMBED_QWEN35_WEIGHT_CACHE_BYTES` | value | unset | value | tuning / config | `src/qwen35_linear.cpp` |  |
 
 ### qwen35_math
