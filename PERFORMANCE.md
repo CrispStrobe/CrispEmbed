@@ -7882,3 +7882,12 @@ batching. Original vLLM BF16 quality/throughput and D-FINE service performance
 remain separate, unmeasured scopes. The optional 256-slot decode graph, GPU path,
 mixed-F16 quality/performance and Q8/Q4 recipes remain unqualified. See
 [the guide](docs/oxr.md) and [actual checks](tests/results/oxr/implementation-validation.json).
+
+Actual full native Q842001328483 spends3553.092370462 seconds and peaks at
+6,334,291,968 bytes for177 teacher scores plus160 independently generated
+IDs/EOS. Q442001333207 spends3099.35016714 seconds and peaks at4,538,085,376
+bytes for177 teacher scores plus256 independently generated IDs/cap/noEOS.
+These include different workloads/hosts from original BF16's177-token free
+capture; they are diagnostic resource measurements, not precision speedups.
+Both final texts differ from original; exact receipts/limits are in
+[the qualification umbrella](docs/lighton4b-qualification-consolidation.md).

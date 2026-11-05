@@ -1,0 +1,358 @@
+{
+  "schema": "lighton4b-qualification-consolidation/v1",
+  "runtime_spine": {
+    "pr": 155,
+    "source": "8eec65b865003c643a848af8aa8dd2fe3143be1f",
+    "policy": "Preserve every src/ byte and ggml gitlink; old runtime branches are retained only as source provenance.",
+    "src_tree_sha": "3634c5289a2bd24323d8433ecda4a8d4c3407464"
+  },
+  "folded_prs": {
+    "152": "849ac027fb8c6316c247bcf59cb367d34276a167",
+    "157": "473c5fc55f9a081f79815406b7072251ab0a39e6",
+    "161": "42e5ce6f9bc6bd01865ac4f21d2157c98d3475f1"
+  },
+  "additional_source_heads": {
+    "parity": "f66e186e91744402f692ef9b465e4d04e01c788a",
+    "mixed": "e2beb641773c649394bd4e36526ff50c665f84cb",
+    "negative_bf16_vision": "2a62e29e771eb747bee7e867789c147f8a36ec28",
+    "tokenizer": "7f5d8878b99e196787b9c24a9d9f7b650df7100f",
+    "full_native_review": "8d4245e27266492defc40a8e531fcf53934da7b7"
+  },
+  "preserved_files": [
+    {
+      "source": "849ac027fb8c6316c247bcf59cb367d34276a167",
+      "path": "docs/lighton4b-dense-trace.md",
+      "sha256": "5cac7d0b1b96e06cf67b392a31fbf95bf97654ae40511b427eb4e6082159b9f4"
+    },
+    {
+      "source": "849ac027fb8c6316c247bcf59cb367d34276a167",
+      "path": "docs/lighton4b-upstream-drift.md",
+      "sha256": "8d2bd385fe0006dadbef96572904b45e13ca752bca582ca2cddfaa81f2b51cbc"
+    },
+    {
+      "source": "849ac027fb8c6316c247bcf59cb367d34276a167",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-dense-trace.json",
+      "sha256": "c3122a3441b400cb92306c56ffce628d101f0d99b52ce690c4b82b0e15ba1fee"
+    },
+    {
+      "source": "849ac027fb8c6316c247bcf59cb367d34276a167",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-upstream-drift.json",
+      "sha256": "e504b1e531898d7733c1bd1c13a97beeb6377dfe324a18e65e1f5778800771a4"
+    },
+    {
+      "source": "849ac027fb8c6316c247bcf59cb367d34276a167",
+      "path": "tests/test_lighton4b_decoder_upstream.cpp",
+      "sha256": "cd28bc12b3bb1e7f821030899e081b6213f3e6947db2299e24e356a78f794399"
+    },
+    {
+      "source": "849ac027fb8c6316c247bcf59cb367d34276a167",
+      "path": "tests/test_lighton4b_dense_trace.cpp",
+      "sha256": "efdf1da0bc17b35e8fe9ccc6a22a84761a8adc01060a89c87124b27c2b217ba3"
+    },
+    {
+      "source": "849ac027fb8c6316c247bcf59cb367d34276a167",
+      "path": "tools/ci-heavy/lighton4b_decoder_upstream.py",
+      "sha256": "300af8c0e5287df57cf16ea2252fd8e551950bb480c45cb37d58dbcceb3117c2"
+    },
+    {
+      "source": "849ac027fb8c6316c247bcf59cb367d34276a167",
+      "path": "tools/ci-heavy/lighton4b_dense_trace.py",
+      "sha256": "72d5db1bf70dc51cba298dfacf71537998e6227ede62f557d6f254a5ad4e1ab4"
+    },
+    {
+      "source": "473c5fc55f9a081f79815406b7072251ab0a39e6",
+      "path": "docs/lighton4b-bf16-prefill.md",
+      "sha256": "e70bb86ba9ad5da4285d42abef753438fc04d05a5952089022f94fc5442a1a26"
+    },
+    {
+      "source": "473c5fc55f9a081f79815406b7072251ab0a39e6",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-bf16-native-stages-review.json",
+      "sha256": "e2a75866c07f4b40daa66f02fda4ac8426e658e3478fcb027a7db6ed7799d235"
+    },
+    {
+      "source": "473c5fc55f9a081f79815406b7072251ab0a39e6",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-bf16-native-stages.json",
+      "sha256": "bd693cc20222b09b2088b99ebc2cd4b9f823ad3556deca7a4104559b7c296f70"
+    },
+    {
+      "source": "473c5fc55f9a081f79815406b7072251ab0a39e6",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-bf16-prefill-review.json",
+      "sha256": "71e33476a9e8a8b6c79004dc3001d3b8f5b347605c820409ed959720aed5fec3"
+    },
+    {
+      "source": "473c5fc55f9a081f79815406b7072251ab0a39e6",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-bf16-prefill.json",
+      "sha256": "036a936cdbd360208b5cf54c2604d671b9a919f1c8777bc7cf97b2585b010a78"
+    },
+    {
+      "source": "473c5fc55f9a081f79815406b7072251ab0a39e6",
+      "path": "tools/ci-heavy/lighton4b_prefill_compare.py",
+      "sha256": "0d0b989fc943e39a4537ece252bfcfdf14aaf79352ce58fa221be15becb46be1"
+    },
+    {
+      "source": "473c5fc55f9a081f79815406b7072251ab0a39e6",
+      "path": "tools/lighton4b_bf16_prefill.py",
+      "sha256": "1291459ce0d714521b3e2a744a833653424b86538589bad424a7502794e5a4a5"
+    },
+    {
+      "source": "42e5ce6f9bc6bd01865ac4f21d2157c98d3475f1",
+      "path": "tools/lighton4b_fourcase_bf16.py",
+      "sha256": "ddcd75dc07d0d334be94d35c270283c89acda2705d724225fa2e2d40323a35a3"
+    },
+    {
+      "source": "2a62e29e771eb747bee7e867789c147f8a36ec28",
+      "path": "docs/lighton4b-vision-bf16-candidate.md",
+      "sha256": "8873bcc103867b4bfd5454cf23c7b1b348e0c4ef1ddabf934bd872f605a89915"
+    },
+    {
+      "source": "2a62e29e771eb747bee7e867789c147f8a36ec28",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-vision-bf16-review.json",
+      "sha256": "df0ed21b5bc2b677f89f0982400e865d841676485ced414ba8077c6dad041649"
+    },
+    {
+      "source": "2a62e29e771eb747bee7e867789c147f8a36ec28",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-vision-bf16-stages.json",
+      "sha256": "8df06fd24ab29c9006b37443a4e2017018aaeebfac690d8031551e8119592c73"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": ".github/workflows/lighton4b-bf16-quant-controls.yml",
+      "sha256": "418e7ba5955df32163b41054de52f8a3015d959263ffcd047f26aceeaf88bb03"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "docs/lighton4b-bf16-quant-v1.json",
+      "sha256": "4d2a738a8df75947f5a8e269799c8b3a27af19bfafb82653802a7531b7c928bc"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "docs/lighton4b-bf16-quant.md",
+      "sha256": "1bbf8795ba7072c19467e87f4fc941eb589307e09f0e6834da811e6c752bf686"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-bf16-quant-controls-final.json",
+      "sha256": "ebf4cf473a773cf0fd8a8f2f9de73674670eb7da0c6f24bba2696efdae5008e2"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-bf16-quant-controls.json",
+      "sha256": "4efd60a17e352b26bffb3990c17279cce6eb63c0b7007cec1d6d104a623646db"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-bf16-quant-registry-controls.json",
+      "sha256": "7159b178f80d1f8e2c62055d82d29b3fdd4a7eea0efaf751063a760fb2c40476"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-q4-bf16vision-firstscore.json",
+      "sha256": "966c21250566e2c2b7b9c152b21c1886e1a57ad039723b40d3fe651ed8fa7f2c"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-q4-direct-firstscore.json",
+      "sha256": "18308d3376ce6cd9ce270f4b5e6bc540987b36f52b4f00354b32634098d48137"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-q4-firstscore-initial.json",
+      "sha256": "73195eed0f30e7870023571156bd6ab016a748a73e2eac63c2841b99ec6b33b7"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-q4-firstscore-version-initial.json",
+      "sha256": "8661c8622e6871ec05a25508d58ad6d162bcf2d6f3cf0bad3d26de35e8254cff"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-q4-firstscore.json",
+      "sha256": "5b42292cd01040e2757324ae05ef41078457eeb9b48224b23aba3c4a2af6a493"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-q4-score-patterns.json",
+      "sha256": "13d839692cb89b821f983f414764d999843f8358bd5236b6a1cf7a6456bcfee6"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-q8-bf16vision-firstscore.json",
+      "sha256": "9487ca0fe695f353e38b8081f07c8184d5482dee04b73181c7296687f0ce5922"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-q8-direct-firstscore.json",
+      "sha256": "9a3005d38b7627bfee5ad580c48ec4fa19473e5dd8206b2f8bce47e67968c075"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-q8-firstscore-initial.json",
+      "sha256": "73195eed0f30e7870023571156bd6ab016a748a73e2eac63c2841b99ec6b33b7"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-q8-firstscore-version-initial.json",
+      "sha256": "8661c8622e6871ec05a25508d58ad6d162bcf2d6f3cf0bad3d26de35e8254cff"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-q8-firstscore.json",
+      "sha256": "1dfbefbcb7054d7c99082e795933c2cd6d4d54a550fff5c7233238e07b3ead06"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-q8-score-patterns.json",
+      "sha256": "c54a0b0a8ddb4223cbe4d49dc00d580b698cf57c62a452f40fa2c02e3f6394c5"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/test_lighton4b_bf16_quant.py",
+      "sha256": "eeae3f2a471dc3112ef6eabd2f3aee33db88ffcdab19640f82ea92cc872e85a9"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tests/test_lighton4b_score_patterns.py",
+      "sha256": "5194abe87b7c75176b9817954498239998a5df1efbd224a5610c9fd5f17d5636"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tools/ci-heavy/lighton4b_bf16_quant_controls.py",
+      "sha256": "b27bcc5e4bc19aa53d26cf3d61fc8ed7ba98ae9dbb06dcf81b77c7648832ec47"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tools/ci-heavy/lighton4b_full_compare.py",
+      "sha256": "7214182e100429aa8f2b224584d7ba0c6ad6a79b28dc84c064b48e7d00325a8d"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tools/ci-heavy/lighton4b_smoke_compare.py",
+      "sha256": "701e56eb3362199f441320ffd0031f79100056204d1e7c70b416533400db772e"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tools/lighton4b_bf16_quant.py",
+      "sha256": "07b96d184b034239aea1d15f27e734fd4d35b095253fd9c5ec06f6c430899244"
+    },
+    {
+      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
+      "path": "tools/lighton4b_score_patterns.py",
+      "sha256": "cb491f4a3b84fe0feb51ae31e013fbfb2be768ec92455381540681d9f2e100c1"
+    },
+    {
+      "source": "e2beb641773c649394bd4e36526ff50c665f84cb",
+      "path": "docs/lighton4b-mixed-calibration-v1.json",
+      "sha256": "3a1738c26cf5a34680fea1468bea07c06ee26659f7ddb7e249299677746ba36d"
+    },
+    {
+      "source": "e2beb641773c649394bd4e36526ff50c665f84cb",
+      "path": "docs/lighton4b-mixed-calibration.md",
+      "sha256": "c2f0d356cd417ced49dc0b31ce97c7964ae67cae676f7386cdfe1967d0141298"
+    },
+    {
+      "source": "e2beb641773c649394bd4e36526ff50c665f84cb",
+      "path": "docs/lighton4b-mixed-packing-v1.json",
+      "sha256": "0af828aeabb4119f38111d80f17fac63dbba52e824ff5eacb79eb93f531884a6"
+    },
+    {
+      "source": "e2beb641773c649394bd4e36526ff50c665f84cb",
+      "path": "tests/regression/lighton4b-mixed-v1/README.md",
+      "sha256": "68af115f5fa0643f10463854de45631154e306e55dd7ef81398002e1aaf0bc2d"
+    },
+    {
+      "source": "e2beb641773c649394bd4e36526ff50c665f84cb",
+      "path": "tests/regression/lighton4b-mixed-v1/arabic_printed_line/input.png",
+      "sha256": "b132a9516f83949f1a31058f24ce6292b84d5e0f44cf099f97888e4934e01a3b"
+    },
+    {
+      "source": "e2beb641773c649394bd4e36526ff50c665f84cb",
+      "path": "tests/regression/lighton4b-mixed-v1/frozen-inputs.json",
+      "sha256": "a07af76028a0d53c8bfc0ccafedac348eaeb725c8c8c55e3136906f202b8f65d"
+    },
+    {
+      "source": "e2beb641773c649394bd4e36526ff50c665f84cb",
+      "path": "tests/regression/lighton4b-mixed-v1/handwritten_letter/input.png",
+      "sha256": "82e1e234909ed296b5db6a425c9469a8c280b6565b47c7997f72a4e38162e5f6"
+    },
+    {
+      "source": "e2beb641773c649394bd4e36526ff50c665f84cb",
+      "path": "tests/regression/lighton4b-mixed-v1/receipt_example/input.png",
+      "sha256": "8f7b96c28c1a96774bb088699dc5122c54df57f27029ed44113e443101a016c9"
+    },
+    {
+      "source": "e2beb641773c649394bd4e36526ff50c665f84cb",
+      "path": "tests/regression/lighton4b-mixed-v1/simple_table/input.png",
+      "sha256": "8dc41570c6544efb134d1fa798c75cc48dde821bc31f49d819279583f3467c2d"
+    },
+    {
+      "source": "e2beb641773c649394bd4e36526ff50c665f84cb",
+      "path": "tests/test_lighton4b_mixed_pack.py",
+      "sha256": "9c4436c0cda6b5f5faf32c68d50a150970cbc1d5198bc0a857fe6f78e217bf22"
+    },
+    {
+      "source": "e2beb641773c649394bd4e36526ff50c665f84cb",
+      "path": "tools/ci-heavy/lighton4b_mixed_pack.py",
+      "sha256": "534e417a80f52c96acf455a006234214525ef26650bbdc606e75da92061ae5e0"
+    },
+    {
+      "source": "e2beb641773c649394bd4e36526ff50c665f84cb",
+      "path": "tools/ci-heavy/lighton4b_mixed_prepare_inputs.py",
+      "sha256": "b7ca462abd29f8c5e83465583d16ec3e2b9c01bbe3104e05938af46d7a91d3c0"
+    },
+    {
+      "source": "e2beb641773c649394bd4e36526ff50c665f84cb",
+      "path": "tools/lighton4b_mixed_pack.py",
+      "sha256": "efe84dd47faa56a0a63d54f2953bbc9efb3b034a7976b2fde7060c8e8edfbcb8"
+    },
+    {
+      "source": "7f5d8878b99e196787b9c24a9d9f7b650df7100f",
+      "path": "docs/lighton4b-tokenizer-reference-v1.json",
+      "sha256": "ee4d8e02f81a7ac22fbd9d87dbf2370fac5f6e44bf1b8ada3ec3b8a9b2c29dd2"
+    },
+    {
+      "source": "7f5d8878b99e196787b9c24a9d9f7b650df7100f",
+      "path": "docs/lighton4b-tokenizer.md",
+      "sha256": "40575fd498b15ef43fd5c6281b2f96242d1c7fbb4d446d90ca691ba0002c18e2"
+    },
+    {
+      "source": "7f5d8878b99e196787b9c24a9d9f7b650df7100f",
+      "path": "tests/lighton4b_tokenizer.cpp",
+      "sha256": "547ee6d4eadf7b577576c64a48a64646346bb8fe9cb5c4b736e01440ffcc0beb"
+    },
+    {
+      "source": "7f5d8878b99e196787b9c24a9d9f7b650df7100f",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-tokenizer-controls.json",
+      "sha256": "a722005039846a2ae8f145c63439a3dae25913a62acafb91e91fd331e453c885"
+    },
+    {
+      "source": "7f5d8878b99e196787b9c24a9d9f7b650df7100f",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-tokenizer-initial.json",
+      "sha256": "95b68da71207016d96fba9648bd118e2f32487d9fead25c00b0152d5618d986a"
+    },
+    {
+      "source": "7f5d8878b99e196787b9c24a9d9f7b650df7100f",
+      "path": "tests/results/qwen35-ocr/lightonocr3-4b-tokenizer-profile-initial.json",
+      "sha256": "88b480f5347672d3731013e013779aaa26ca73ec5e748e7499b5e4a7d6ecb2c7"
+    },
+    {
+      "source": "7f5d8878b99e196787b9c24a9d9f7b650df7100f",
+      "path": "tools/ci-heavy/lighton4b_tokenizer_controls.py",
+      "sha256": "79cccc71f3878bffe4c71c29245b2445affe3ab3bff905c7861ee614283e2a6a"
+    }
+  ],
+  "ci_pause": "User requested no new CI dispatch or PR. Combined-tree CI remains pending; existing producer jobs keep their exact source SHAs.",
+  "reviewed_updates": [
+    {
+      "path": "docs/lighton4b-bf16-quant-admissions-v1.json",
+      "reason": "Admit only authenticated full Q4 execution for comparison after independent report/native-receipt/177-row metadata review; cap256/noEOS and decoded mismatch remain negative. Frozen protocol SHA unchanged.",
+      "native_run": 42001333207,
+      "native_receipt_sha256": "7d01e82a8ef9cbf0b895b102009d55e6111dfb3951b3f4c82eb60cf37b97f2cf"
+    },
+    {
+      "path": "docs/lighton4b-bf16-quant-admissions-v1.json",
+      "reason": "Admit authenticated full Q8 execution for diagnostic comparison only;160EOS IDs differ from177 original; first differing ID9. Frozen protocol unchanged.",
+      "native_run": 42001328483,
+      "native_receipt_sha256": "a0b9ed6cb7c55fa274993e42ee3f8f275b064bbcff09e2ce78542043f8be52b2"
+    }
+  ]
+}

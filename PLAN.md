@@ -1048,3 +1048,25 @@ waiver. Smoke's127/133-second prefill/two-token measurements suggest a potential
 long full autoregressive panel; no full timing or completion is inferred yet.
 Retain partial/failure artifacts and the Q4 first-token rejection even if later
 positions improve. Final paired full-vocabulary/decoded review remains pending.
+
+### LightOn4B qualification consolidation and completed captures — 5 November 2026
+
+[The qualification umbrella](docs/lighton4b-qualification-consolidation.md)
+folds source/evidencePR152/157/161 into a child of runtimePR155 without changing
+any runtime `src/` byte, ggml gitlink or VERSION. Exact source heads, raw
+receipts, initial failures and local2a62 candidate-negative evidence remain
+preserved. No old runtime branch was merged over current source. Existing
+producer branches/jobs remain immutable; close supersededPR152/161 only without
+deleting their source refs. No new PR or unrelated CI is authorized.
+
+Both actual plain captures completed at exactfd150b98 source: Q842001328483
+retains177 teacher rows and160 independently decoded IDs/EOS, differing from
+original177-ID French figure at ID9; Q442001333207 retains177 teacher rows and
+256 independently decoded IDs, cap/noEOS, incomplete HTML table ending `<td`.
+Their exact native receipt hashes are separately admitted for comparison only;
+quality remains negative/unqualified. Targeted177-position Ref comparisons are
+the next specifically authorized jobs after one consolidation push. Original
+reference, prompt/cap, thresholds, defaults, release and app pin stay unchanged.
+Independent four-case BF16 capture remains executing; mixed candidate bytes are
+packed/readback-verified, but no new native panel jobs are dispatched while the
+user-requested general queue pause remains active.

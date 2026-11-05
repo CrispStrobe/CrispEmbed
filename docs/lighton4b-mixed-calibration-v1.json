@@ -1,0 +1,187 @@
+{
+  "schema": "lighton4b-mixed-calibration/v1",
+  "status": "predeclared-before-panel-outputs",
+  "original_precision": "bfloat16",
+  "original_model": "lightonai/LightOnOCR-3-4B",
+  "original_revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+  "candidate_recipe": "lighton4b-q4k-mixers-q8-v1",
+  "recipe_frozen_before_all_panel_outputs": true,
+  "rules": [
+    {
+      "select": "all rank2 l.layers.0..31.(linear_attn|self_attn).* weights",
+      "action": "copy exact retained Q8 candidate tensor payload, require target type Q8_0 or identical protected payload"
+    },
+    {
+      "select": "all other tensors",
+      "action": "copy exact plain Q4_K candidate payload"
+    }
+  ],
+  "preserved_shared_embedding_tied_head": {
+    "type": "Q8_0",
+    "payload_sha256": "7c892766529120dc488c658c9f96376b2aa623c6e97d1a526be042ea3440a5a8"
+  },
+  "preserved_vision": "exact F32 payloads; no vision recipe change",
+  "candidate_inputs": {
+    "repository": "cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
+    "revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+    "q8_0": {
+      "file": "lightonocr3-4b-q8_0-vision-f32.gguf",
+      "bytes": 5815503232,
+      "sha256": "5888532207f0d98590cc028cbf92366f8a41ec925568f0c308bd69d9af6342f1"
+    },
+    "q4_k": {
+      "file": "lightonocr3-4b-q4_k-vision-f32.gguf",
+      "bytes": 4030957952,
+      "sha256": "f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91"
+    }
+  },
+  "cases": [
+    {
+      "id": "simple_table",
+      "split": "calibration",
+      "source": "tests/regression/images/cc0/simple_table.jpg",
+      "source_sha256": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Table_Example.jpg",
+      "license": "Public-Domain",
+      "transform": {
+        "mode": "RGB",
+        "resize_width_height": null,
+        "resample": "Pillow11.3.0 BICUBIC",
+        "strip_metadata_via_frombytes": true,
+        "png_compress_level": 6
+      },
+      "expected_grid": [
+        1,
+        12,
+        24
+      ],
+      "expected_patches": 288,
+      "expected_image_tokens": 72,
+      "expected_input_tokens": 86,
+      "prompt": "",
+      "max_new_tokens": 256,
+      "do_sample": false,
+      "eos_ids": [
+        248046
+      ],
+      "seed": 0
+    },
+    {
+      "id": "arabic_printed_line",
+      "split": "calibration",
+      "source": "tests/regression/images/cc0/arabic_printed_line.png",
+      "source_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Example_of_Arabic_text.png",
+      "license": "CC0-1.0",
+      "transform": {
+        "mode": "RGB",
+        "resize_width_height": null,
+        "resample": "Pillow11.3.0 BICUBIC",
+        "strip_metadata_via_frombytes": true,
+        "png_compress_level": 6
+      },
+      "expected_grid": [
+        1,
+        8,
+        34
+      ],
+      "expected_patches": 272,
+      "expected_image_tokens": 68,
+      "expected_input_tokens": 82,
+      "prompt": "",
+      "max_new_tokens": 256,
+      "do_sample": false,
+      "eos_ids": [
+        248046
+      ],
+      "seed": 0
+    },
+    {
+      "id": "receipt_example",
+      "split": "heldout",
+      "source": "tests/regression/images/cc0/receipt_example.png",
+      "source_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Example_Reciept_001.png",
+      "license": "CC0-1.0",
+      "transform": {
+        "mode": "RGB",
+        "resize_width_height": [
+          352,
+          448
+        ],
+        "resample": "Pillow11.3.0 BICUBIC",
+        "strip_metadata_via_frombytes": true,
+        "png_compress_level": 6
+      },
+      "expected_grid": [
+        1,
+        28,
+        22
+      ],
+      "expected_patches": 616,
+      "expected_image_tokens": 154,
+      "expected_input_tokens": 168,
+      "prompt": "",
+      "max_new_tokens": 256,
+      "do_sample": false,
+      "eos_ids": [
+        248046
+      ],
+      "seed": 0
+    },
+    {
+      "id": "handwritten_letter",
+      "split": "heldout",
+      "source": "tests/regression/images/cc0/handwritten_letter.jpg",
+      "source_sha256": "a2bf46ca2b3a6e8c8069e782751424bb986be155f828dc0be69b94c9af2a2123",
+      "source_page": "https://commons.wikimedia.org/wiki/File:A_Letter_LZNQBD.jpg",
+      "license": "CC0-1.0",
+      "transform": {
+        "mode": "RGB",
+        "resize_width_height": [
+          448,
+          320
+        ],
+        "resample": "Pillow11.3.0 BICUBIC",
+        "strip_metadata_via_frombytes": true,
+        "png_compress_level": 6
+      },
+      "expected_grid": [
+        1,
+        20,
+        28
+      ],
+      "expected_patches": 560,
+      "expected_image_tokens": 140,
+      "expected_input_tokens": 154,
+      "prompt": "",
+      "max_new_tokens": 256,
+      "do_sample": false,
+      "eos_ids": [
+        248046
+      ],
+      "seed": 0
+    }
+  ],
+  "excluded_observed_case": "tests/regression/images/cc0/simple_form.png",
+  "input_admission": "No model forward before separately reviewed frozen rendered PNG/RGB hashes; official processor grid/token/hash preflight precedes model load.",
+  "selection_policy": "Architecture-only fixed recipe. Never select tensors, budgets or cases from the observed form or heldout outputs. Calibration findings may reject this candidate but may not mutate v1; any new candidate requires a fresh predeclared protocol and genuinely new heldout data.",
+  "acceptance": {
+    "max_abs": 0.002,
+    "min_row_cosine": 0.99999,
+    "full_teacher_forcing_all_original_positions": true,
+    "independent_generation": true,
+    "exact_decoded_ids_text_eos_required": true,
+    "original_completion_required": true,
+    "quality_qualified": false,
+    "limits": "Small independent development diagnostic, not representative quality or publication qualification."
+  },
+  "resource_guards": {
+    "packer_min_free_disk_bytes": 25769803776,
+    "packer_max_stream_chunk_bytes": 8388608,
+    "native_min_available_ram_bytes": 8589934592,
+    "original_min_available_ram_bytes": 23622320128,
+    "models_local_to_shared_host": false,
+    "large_artifacts_remote_only": true
+  }
+}

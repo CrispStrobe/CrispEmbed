@@ -1,0 +1,2127 @@
+{
+  "schema": "lighton4b-bf16-quant-native/v1",
+  "precision": "q8_0",
+  "protocol_sha256": "4d2a738a8df75947f5a8e269799c8b3a27af19bfafb82653802a7531b7c928bc",
+  "original_capture_sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a",
+  "teacher_forced_ids": [
+    27,
+    17251,
+    29,
+    198,
+    13962,
+    18464,
+    1317,
+    19409,
+    401,
+    60549,
+    627,
+    401,
+    44064,
+    198,
+    9,
+    900,
+    25,
+    45176,
+    9,
+    271,
+    43,
+    74595,
+    185058,
+    5992,
+    3622,
+    83537,
+    9462,
+    909,
+    68100,
+    401,
+    60549,
+    627,
+    1778,
+    909,
+    2519,
+    13,
+    43798,
+    93057,
+    22198,
+    200265,
+    4755,
+    208232,
+    909,
+    42278,
+    20912,
+    632,
+    65673,
+    11,
+    632,
+    94596,
+    11,
+    5992,
+    2321,
+    11,
+    632,
+    3724,
+    401,
+    37520,
+    11,
+    1778,
+    909,
+    4886,
+    3656,
+    1027,
+    8762,
+    13,
+    271,
+    22969,
+    177328,
+    228295,
+    17860,
+    11344,
+    535,
+    328,
+    2425,
+    487,
+    328,
+    1138,
+    68,
+    487,
+    328,
+    2742,
+    487,
+    328,
+    1851,
+    487,
+    328,
+    4720,
+    487,
+    328,
+    64,
+    2306,
+    487,
+    328,
+    1058,
+    29280,
+    54971,
+    487,
+    328,
+    27165,
+    2361,
+    2306,
+    487,
+    328,
+    59418,
+    4052,
+    487,
+    328,
+    8861,
+    1867,
+    487,
+    328,
+    47358,
+    487,
+    328,
+    9957,
+    16,
+    487,
+    328,
+    9957,
+    17,
+    487,
+    328,
+    9957,
+    18,
+    487,
+    328,
+    2010,
+    2396,
+    487,
+    328,
+    1787,
+    4990,
+    487,
+    328,
+    1787,
+    487,
+    328,
+    1512,
+    487,
+    328,
+    674,
+    8762,
+    8762,
+    45279,
+    328,
+    33262,
+    324,
+    82458,
+    487,
+    328,
+    12343,
+    73161,
+    487,
+    328,
+    1138,
+    68,
+    487,
+    328,
+    27287,
+    487,
+    328,
+    17370,
+    321,
+    5758,
+    13684,
+    487,
+    328,
+    25128,
+    68,
+    13684,
+    3158,
+    198,
+    510,
+    17251,
+    29,
+    248046
+  ],
+  "free_generation_independent": true,
+  "generated_ids": [
+    27,
+    17251,
+    29,
+    198,
+    13962,
+    18464,
+    1317,
+    19409,
+    401,
+    91617,
+    198,
+    9,
+    900,
+    25,
+    45176,
+    9,
+    271,
+    43,
+    74595,
+    185058,
+    5992,
+    3622,
+    401,
+    91617,
+    9462,
+    20466,
+    68100,
+    1778,
+    2519,
+    13,
+    43798,
+    93057,
+    22198,
+    200265,
+    4755,
+    6327,
+    261,
+    909,
+    42278,
+    187832,
+    5724,
+    81492,
+    624,
+    13,
+    271,
+    22969,
+    177328,
+    228295,
+    17860,
+    11344,
+    535,
+    328,
+    2425,
+    487,
+    328,
+    1138,
+    68,
+    487,
+    328,
+    2742,
+    487,
+    328,
+    1851,
+    487,
+    328,
+    4720,
+    487,
+    328,
+    64,
+    2306,
+    487,
+    328,
+    1058,
+    29280,
+    54971,
+    487,
+    328,
+    27165,
+    2361,
+    2306,
+    487,
+    328,
+    59418,
+    4052,
+    1,
+    9462,
+    909,
+    2519,
+    328,
+    8861,
+    1867,
+    487,
+    328,
+    47358,
+    487,
+    328,
+    9957,
+    16,
+    487,
+    328,
+    9957,
+    17,
+    487,
+    328,
+    9957,
+    18,
+    487,
+    328,
+    2010,
+    2396,
+    487,
+    328,
+    1787,
+    4990,
+    487,
+    328,
+    1787,
+    487,
+    328,
+    1512,
+    487,
+    328,
+    674,
+    8762,
+    8762,
+    487,
+    328,
+    33262,
+    324,
+    82458,
+    487,
+    328,
+    12343,
+    73161,
+    487,
+    328,
+    1138,
+    68,
+    487,
+    328,
+    27287,
+    1,
+    9462,
+    328,
+    17370,
+    321,
+    5758,
+    13684,
+    1,
+    1778,
+    328,
+    25128,
+    68,
+    13684,
+    3158,
+    198,
+    510,
+    17251,
+    29,
+    248046
+  ],
+  "decoded": "<figure>\n### Figure \u2013 Interface de formulaire\n*Type: autre*\n\nL'image montre une interface de formulaire avec divers champs et options. Elle semble \u00eatre utilis\u00e9e pour collecter des informations personnelles ou professionnelles.\n\nLes \u00e9l\u00e9ments visibles incluent : \"Input\", \"Texte\", \"Number\", \"Date\", \"Password\", \"a label\", \"ANOTHER LABEL\", \"Yet another label\", \"combo suggest\" avec des options \"Finland\", \"France\", \"checkbox1\", \"checkbox2\", \"checkbox3\", \"CodeLabel\", \"code fill\", \"code\", \"Button\", \"Rechercher\", \"Modifier l'utilisateur\", \"TEXTAREA\", \"Texte\", \"Radio\" avec \"Drag and drop frames\" et \"Fixe frames\".\n</figure>",
+  "stop": "eos",
+  "cap_hit": false,
+  "native_forward_executed": true,
+  "producer_source_sha": "fd150b98f488a6884a6e8d8127e7dfb263cab237",
+  "producer_run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001328483",
+  "weights_sha256": "5888532207f0d98590cc028cbf92366f8a41ec925568f0c308bd69d9af6342f1",
+  "scores": [
+    {
+      "position": 0,
+      "file": "teacher.0.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "ae1eae4fc4eacf48d1bfe74e2beadb8d2f1cc41fa7fb3e959e27fd8cff1e8ed4"
+    },
+    {
+      "position": 1,
+      "file": "teacher.1.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "13df90f4cb11ca78517c41db93ba15ef954d9e2de01bdffbdc3afe169665c375"
+    },
+    {
+      "position": 2,
+      "file": "teacher.2.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "f0e94a27fa3ebdfc83a557941a11c6c2550a5d24ebf55f90cb1035ebfe94362d"
+    },
+    {
+      "position": 3,
+      "file": "teacher.3.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "443a465c3c08d4d9859c8b67c7bbaf281d29b2f5e4134a08f2d43e1aca86d85f"
+    },
+    {
+      "position": 4,
+      "file": "teacher.4.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "a4a2341ec1d55db7ef5dd29a25a964a5a1cb4ba33feb453cb5bef6de5f80c633"
+    },
+    {
+      "position": 5,
+      "file": "teacher.5.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "aa9225eb9b3783986b592677f5d6a4ec752d48d89c6b7b43819badd45d15bf10"
+    },
+    {
+      "position": 6,
+      "file": "teacher.6.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "10ac461842e915d3deffc56283f2dc3155d5c99acc69c6b7517e2ff04f06be05"
+    },
+    {
+      "position": 7,
+      "file": "teacher.7.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "369324aa1169e22ec82454f22a2059ccae67ef2baf10df2224be54c101fd138f"
+    },
+    {
+      "position": 8,
+      "file": "teacher.8.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "9c395f2d4111da90bf2f50d13d537a258c545453f4e66d565235798edea96018"
+    },
+    {
+      "position": 9,
+      "file": "teacher.9.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "c4a0b305a7e986f04b6784ccdfb829ecdd92f8e58c243b62cd7209fb779701b9"
+    },
+    {
+      "position": 10,
+      "file": "teacher.10.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "5c215d7dc78c3043b4283b75486452122888b785c12ee8fc2102f9b58168fe94"
+    },
+    {
+      "position": 11,
+      "file": "teacher.11.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "53052ffc26572e0ae011b43d5025962e2ec25fcb81867a562aa1e59a38c8adcc"
+    },
+    {
+      "position": 12,
+      "file": "teacher.12.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "6da4eca21912bcd813d1e99093fa1692e146ac1a0bbbbb3b092b3a7dc2a534a1"
+    },
+    {
+      "position": 13,
+      "file": "teacher.13.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "14462ade0ad7aeb42753d2ceb2eab880412ce3713442bbf929f82c9f3d637356"
+    },
+    {
+      "position": 14,
+      "file": "teacher.14.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "3d54ea91579d27bfa6305954b96e6d5bc225f2d74af8e70d9f8551901c447ab1"
+    },
+    {
+      "position": 15,
+      "file": "teacher.15.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "1a063235d0a0aa0bbb5cff309a8c2a4df003d215205c10d4c4373df63f2ea147"
+    },
+    {
+      "position": 16,
+      "file": "teacher.16.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "ab34236738759ec69ecea841e347f70706acfdf9a65a9a038af999acd64186ab"
+    },
+    {
+      "position": 17,
+      "file": "teacher.17.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "0e332e69368c2ae71eda69a338cb9ce881c10005fd0d9a91755f59248921b7a5"
+    },
+    {
+      "position": 18,
+      "file": "teacher.18.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "53c88fcfc58858509525e1970a7d157e0864cb9de905f01baa5ffc977ca7957e"
+    },
+    {
+      "position": 19,
+      "file": "teacher.19.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "f313d19ba571a1f10d3648ae539a9c901f9279f1a40a456f6946e2ac2117abce"
+    },
+    {
+      "position": 20,
+      "file": "teacher.20.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "29188d08be3685110d950ba276db504e930f2534b08f4d76601c5089e7bea5a7"
+    },
+    {
+      "position": 21,
+      "file": "teacher.21.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "0d6d762ed5ca2c83a1763b45611435f104251db010b4e771dd9e8d6989c4c08e"
+    },
+    {
+      "position": 22,
+      "file": "teacher.22.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "08741deac90f5f20fbe163a4f81e7574e5bc7796572e00f2ef1a3b3dee6f1012"
+    },
+    {
+      "position": 23,
+      "file": "teacher.23.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "46a6389003bd854e1328e2b3bd8deba0432c2021ebe7270d56169911b0c4bda2"
+    },
+    {
+      "position": 24,
+      "file": "teacher.24.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "5a6c38194e762cd8402f3ade6f386dcde2904b4c3b59f0ba5e37d464667b0e54"
+    },
+    {
+      "position": 25,
+      "file": "teacher.25.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "4c7c57c64731c904cd957810a9b9ea703c5fd1f073dee5dca1fedb3192dd85fc"
+    },
+    {
+      "position": 26,
+      "file": "teacher.26.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "db181b1a7db63a4030350f948dedb5c3f4fdb7fc8d54bc3f68e2d5383b036b51"
+    },
+    {
+      "position": 27,
+      "file": "teacher.27.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "facd24e981615ff5ca1e01e1f596a8c26cd34d8e28d98dd193bd669731dca701"
+    },
+    {
+      "position": 28,
+      "file": "teacher.28.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "40f79edb3ca1320f832d164c5808da2ea819e49feab2335d9bcafd65d53e1482"
+    },
+    {
+      "position": 29,
+      "file": "teacher.29.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "7144c4ed8fd7e7d114cad013f12e6425bef95bb440b83bcbe5d53ac89336622f"
+    },
+    {
+      "position": 30,
+      "file": "teacher.30.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "5641dda4a2a723bb71be2e8719d54dfebadd8b7846694068e71bd186b3f85574"
+    },
+    {
+      "position": 31,
+      "file": "teacher.31.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "b520ebc4448caad97d766e60f04de235905c9b790fa1c9efd225138b90f777b4"
+    },
+    {
+      "position": 32,
+      "file": "teacher.32.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "6286fdbf512b86a95d26c4787b16ad39e8d88e244d345a4cc9c38fe4d8e0fe15"
+    },
+    {
+      "position": 33,
+      "file": "teacher.33.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "6276da7d383c25c09ae0da7cebd3341a99093d096ce1c81f1f4214a45c7f1954"
+    },
+    {
+      "position": 34,
+      "file": "teacher.34.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "2f20b350cae9072afe522b69e645063770c5995b4190be00742e17f9d1dc0708"
+    },
+    {
+      "position": 35,
+      "file": "teacher.35.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "b054b15084a7d027aff72b93d771488c883423d4c84576ae90458036633b63c9"
+    },
+    {
+      "position": 36,
+      "file": "teacher.36.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "bee7b5d4eca41d45dc0ed4fade69f1c42c2fc54cee5e72fe45bfa01cd40d351c"
+    },
+    {
+      "position": 37,
+      "file": "teacher.37.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "3ec6b796b5a09cd5dbf2133fe3a95c078316455a5501a131fbee01b1b987a40c"
+    },
+    {
+      "position": 38,
+      "file": "teacher.38.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "abdb995566d6f51fb241d5d74c2356742efd3be1cfb8deb8b2adc6080981e160"
+    },
+    {
+      "position": 39,
+      "file": "teacher.39.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "561c64960bff2242d1b79df622d6c708ca04938dbb6d52297f5b5ef22bfca3ec"
+    },
+    {
+      "position": 40,
+      "file": "teacher.40.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "c37d0f317c99383c90f9094f15a4c358710c32530ba8f23d52815466e58c206e"
+    },
+    {
+      "position": 41,
+      "file": "teacher.41.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "04ffa0537b5ae96d6d4ab4c3e44de58a7965b1d0b0b11ed2218b383237d041ec"
+    },
+    {
+      "position": 42,
+      "file": "teacher.42.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "ab1bf5838467b900affa2658cb609428dfc4cfc1dc37564d3a4e872a0dae82ec"
+    },
+    {
+      "position": 43,
+      "file": "teacher.43.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "0d6e567ca38296af1bdb83cf07cfab669fcd9679f42685b0e02b1a833abfb5d2"
+    },
+    {
+      "position": 44,
+      "file": "teacher.44.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "0fde32e0cb7d64674ba895744439e48ab509f2b0368609e6b87dd3c40c991856"
+    },
+    {
+      "position": 45,
+      "file": "teacher.45.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "dc5bc2adc1dc45411589ba76f6d0e6b07305859d05d3a98f722965c55737a594"
+    },
+    {
+      "position": 46,
+      "file": "teacher.46.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "13834b6b118406ad18be4cdab34186c2cb7d3ada2b7313066bd8ee11705c96e3"
+    },
+    {
+      "position": 47,
+      "file": "teacher.47.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "fe7b29f51d34b7f37f0dcec66f4fdbe009c205ce7b8550e6eb4d014fcd04fd95"
+    },
+    {
+      "position": 48,
+      "file": "teacher.48.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "6deb50c8d7d27d24219666a00c98197ca54ebe138e4c6d342200b8399f744889"
+    },
+    {
+      "position": 49,
+      "file": "teacher.49.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "fb5443edf29d6e47eac4cf9f6fb9bdcb7a0f588a405d254ff84f41eb50dcbafc"
+    },
+    {
+      "position": 50,
+      "file": "teacher.50.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "4eb1b6770f83f78d069c7ddeb22e6abc7c265d88b9f430f38d8295284eba35b5"
+    },
+    {
+      "position": 51,
+      "file": "teacher.51.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "5e0b52b067e56cfa5583eed76cbc75f9d5a35a046e657a78ae635106d6c078e8"
+    },
+    {
+      "position": 52,
+      "file": "teacher.52.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "4d6f09c8e7de470f65d0e2b36a6bad9c568bc97de3d5975baba8b96a6ced29c7"
+    },
+    {
+      "position": 53,
+      "file": "teacher.53.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "e4b41cc31218a01ec820a34dcfc1e6bdb880053bfe9a09450db3a0a4a588eca8"
+    },
+    {
+      "position": 54,
+      "file": "teacher.54.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "49aa2732f3a0e0187d80b4a8b591d387cc45a7f3f11285836dd6a9cbeae2141f"
+    },
+    {
+      "position": 55,
+      "file": "teacher.55.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "bf73665d7f7673a25ac89064835ae2da39e1c4b429668ea49f9c3a52f6333af1"
+    },
+    {
+      "position": 56,
+      "file": "teacher.56.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "876c8b005ae607c07c895420fbb3f2cb1e3dd26903aae6a471bea654ddc638f9"
+    },
+    {
+      "position": 57,
+      "file": "teacher.57.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "bad7be82d23878f26ca57a5482c7f4d7dc4f2f0644e5ec1ecdbadc6f97435377"
+    },
+    {
+      "position": 58,
+      "file": "teacher.58.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "8470b235abad58eb02526655f354b2f54dc82b68e8d1b6868fbf876c0c76b7d0"
+    },
+    {
+      "position": 59,
+      "file": "teacher.59.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "583cdc2ee3ce28ad1671d82a596b32fd61a072d77b749785350a1ba54ea7f4ac"
+    },
+    {
+      "position": 60,
+      "file": "teacher.60.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "d9d20bd76e8c18c121edada5e747cb7e70945c45fec2584a3d8d25147dcf4d95"
+    },
+    {
+      "position": 61,
+      "file": "teacher.61.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "7a12768b0f2d56bc7ddd2f4e256a6902daeba1737f59c9174b6035ab455d59f1"
+    },
+    {
+      "position": 62,
+      "file": "teacher.62.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "980b2f86ca6f4cf5bf011636f94c30f71f0615cbe0c143823c632e99492c34a3"
+    },
+    {
+      "position": 63,
+      "file": "teacher.63.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "8b1f43ccfe1252304df23d357878240d5bf807a07b22bf8e9c0021181a25a7d0"
+    },
+    {
+      "position": 64,
+      "file": "teacher.64.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "fd07c576e48ac4d4ea5e0b3d578a9dad8259bd2263a967886638ff9791969933"
+    },
+    {
+      "position": 65,
+      "file": "teacher.65.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "01b590a6314eaf018eaa173c15d45b57de624d3f71d4bf5c28740e352c95a948"
+    },
+    {
+      "position": 66,
+      "file": "teacher.66.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "d1a70700d7dde02378fb22c10c9e1e30a8c3e2908120b234ad48ec1455d14120"
+    },
+    {
+      "position": 67,
+      "file": "teacher.67.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "925a33878c768778adc19eb5a3b9519868237bf3b57d0faddc187b3532f01ecf"
+    },
+    {
+      "position": 68,
+      "file": "teacher.68.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "41324fa27085ab1b6d66ef65f368980ef96de19f304ad8984f8704defdb78f84"
+    },
+    {
+      "position": 69,
+      "file": "teacher.69.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "0c8bd31e62b7262f09c70e9e286d087e1c2cc68ecebfb1a97486a781266a561b"
+    },
+    {
+      "position": 70,
+      "file": "teacher.70.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "aafe21ffc2e9a0054f8610e9a89db0d8e78b221f33edbbdd6a41d89e8635f759"
+    },
+    {
+      "position": 71,
+      "file": "teacher.71.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "514fed2cf853d03689392322760ce39a605a0100cd963a68ad0c41fa4a8ef060"
+    },
+    {
+      "position": 72,
+      "file": "teacher.72.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "fdbbb0239e6e39e788459a2e89f9ccd1a9c190118aa1cb30bbc62f213b0561c7"
+    },
+    {
+      "position": 73,
+      "file": "teacher.73.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "0ccd7e9bcc1b125b17a6dc344fc20d68f44fdcfeabbbb812bfe7d1ee2fb86a11"
+    },
+    {
+      "position": 74,
+      "file": "teacher.74.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "670a253f6f0ff36c5176fc704a7d031a251f67925e6fe1df85067378f3f6fb10"
+    },
+    {
+      "position": 75,
+      "file": "teacher.75.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "4dc7087c161a8da3044c756e0a12bbf4efabec50b513d8e75fade9129488cac4"
+    },
+    {
+      "position": 76,
+      "file": "teacher.76.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "fe680d22ae542bce7a407bdb6e306acbc1c069a33b399c5cf7c1ed510f40940e"
+    },
+    {
+      "position": 77,
+      "file": "teacher.77.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "fa30cdc343ca4d9f786d121785dc2370fb14f4f9b3cd00a3f7d3e11303beb144"
+    },
+    {
+      "position": 78,
+      "file": "teacher.78.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "654f1f068fd614cadb50a18cf6377a046061695b847838bf9b9491065536ead6"
+    },
+    {
+      "position": 79,
+      "file": "teacher.79.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "9a1f9982704a562522912379e7cf265c0d64bfc700325e213d3442ec68d3c968"
+    },
+    {
+      "position": 80,
+      "file": "teacher.80.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "1996bc6dedd69170d192ed54401ed0bbc5c4f6d1fe2f1164e8efd10b48d43353"
+    },
+    {
+      "position": 81,
+      "file": "teacher.81.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "6b2479a666c15db927ef0494f3701842c17b15551eb5772408e3164bd5e23ea0"
+    },
+    {
+      "position": 82,
+      "file": "teacher.82.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "9cc41452ce3565424042f92d938863f842e19b1e4bb2f389d4a5b6e8c1751b2b"
+    },
+    {
+      "position": 83,
+      "file": "teacher.83.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "bdea523956a2001fcd00ed2f80a48e5f3a43288607353c00ddedec67dda0a6d6"
+    },
+    {
+      "position": 84,
+      "file": "teacher.84.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "6fb3e06f8e7660416744da59b474ed41f051c5a3d7776877b664a148837e55b8"
+    },
+    {
+      "position": 85,
+      "file": "teacher.85.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "43804bcf666d61d2ba612f54a985ffb5d89a695fcfd0ebe1decf2e6818ded0a2"
+    },
+    {
+      "position": 86,
+      "file": "teacher.86.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "c19ff161076fd507b35f4a7679aef792b2bf603de3cfe4b3a9e15418e7d99ebb"
+    },
+    {
+      "position": 87,
+      "file": "teacher.87.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "a05bf4eb690769ab672374aea4cd4b25a4669f95dfee147bcf7d677833b91bc9"
+    },
+    {
+      "position": 88,
+      "file": "teacher.88.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "c4f185372af9e733a50031096452418f2f315206bad7f990e52d497519e99c31"
+    },
+    {
+      "position": 89,
+      "file": "teacher.89.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "bcd6f6581c44b509bceac4b2281e11373ea3c9042f0df6fd36c635dfb171a5b3"
+    },
+    {
+      "position": 90,
+      "file": "teacher.90.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "0da44c9281f1662bd56bc6909cb2876f790b1a8f5457831e186e18d7e5312652"
+    },
+    {
+      "position": 91,
+      "file": "teacher.91.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "55d736cdcbc8d94ab3c5abcbf70c2bff1f703164451289b53cea1e547c66281e"
+    },
+    {
+      "position": 92,
+      "file": "teacher.92.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "31e71e67a145972ff26d9e2c5f81fae50344808ad629e2306eebd963b6ce3c69"
+    },
+    {
+      "position": 93,
+      "file": "teacher.93.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "14362263df4f881cacfdf63d608b63cfbf45e8de7f96ee7765349631752acb68"
+    },
+    {
+      "position": 94,
+      "file": "teacher.94.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "763205ffd024cae19f7a720bc6232c5c634d755948ee2b249aa62f0e9c518b28"
+    },
+    {
+      "position": 95,
+      "file": "teacher.95.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "346b65acc60f1b5494a24f02326cdc6dd9d0c50b2f17e05eb13d0c2f93366cd0"
+    },
+    {
+      "position": 96,
+      "file": "teacher.96.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "ea669cc4ca279e3eb6c1367212a71e562c913900cb12eb76dace025a4efaa5f9"
+    },
+    {
+      "position": 97,
+      "file": "teacher.97.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "a8997ed770e34767b410931d2706dd1a653da022dc03b5660be9b978d6613ec4"
+    },
+    {
+      "position": 98,
+      "file": "teacher.98.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "1bab9034d581f1d6e46f36c833a62be8cec650ab44566154fcd011f6a1e27d35"
+    },
+    {
+      "position": 99,
+      "file": "teacher.99.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "f6043fbbbd08490032a3f024f2a14671986d50d1d685bca1481bff05c7dbc867"
+    },
+    {
+      "position": 100,
+      "file": "teacher.100.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "efbaabad21bb95bdb26c9bb19bd2039c2be52db91a59d6cdfff7bd0f272b7a68"
+    },
+    {
+      "position": 101,
+      "file": "teacher.101.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "1d081b10ad44a7247d044a69f68062f075206d3b8c812e475120ccde0142d354"
+    },
+    {
+      "position": 102,
+      "file": "teacher.102.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "35454b2a37a125ced69d3c2d022e7fb12a965a0495c455e211fe2db44d87ed92"
+    },
+    {
+      "position": 103,
+      "file": "teacher.103.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "a421b8731a83a9545b459b20cc10c18ae2ad7fa56ccd86292d2ce4c9237dd459"
+    },
+    {
+      "position": 104,
+      "file": "teacher.104.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "83e3e04e439ef6a2e17fb9fa831562ac5b629be1666870018dbb76ad30619c50"
+    },
+    {
+      "position": 105,
+      "file": "teacher.105.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "2f2d6cd8a92127c77a7babf7f2bf9e630d03525523981a9a47083d5e7d7c929b"
+    },
+    {
+      "position": 106,
+      "file": "teacher.106.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "a984398e142c9774d7ff0b00058f2f2602c49b709842b230b5fd61d82b448f67"
+    },
+    {
+      "position": 107,
+      "file": "teacher.107.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "a9dcb3ecdcd2b3b7fa03f5a62452c9fdb58866503d1e1e8c9d25c1f8e9469a1b"
+    },
+    {
+      "position": 108,
+      "file": "teacher.108.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "365b3961e39cee14ce168b5597b036ff5c6952126f306d2b533a518548b40811"
+    },
+    {
+      "position": 109,
+      "file": "teacher.109.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "47d861eb31b178d979ebdfba3be9371287124b0796944aeeddbe496f63931d94"
+    },
+    {
+      "position": 110,
+      "file": "teacher.110.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "5a55fa66ac9095a37f6dd78275108bfefd14ae21acfcdef1b76dfa9b126637bc"
+    },
+    {
+      "position": 111,
+      "file": "teacher.111.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "fe074f825742d3cd3de8f647cf5e03e53db587afd41e622442f3f9616c3d5ee0"
+    },
+    {
+      "position": 112,
+      "file": "teacher.112.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "421261d27dbb7263c817a61a08a8b174488bb0478e1bba47226850292cc91c77"
+    },
+    {
+      "position": 113,
+      "file": "teacher.113.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "35250b317cbcc90bbfdc9ae250ca5730a9b4f1f9113c997c7ea337097f7ad4a0"
+    },
+    {
+      "position": 114,
+      "file": "teacher.114.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "453de01e2bd269ecbdfe572b6a73982a3b7bbcbb79d54658f876ce88f0842020"
+    },
+    {
+      "position": 115,
+      "file": "teacher.115.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "050b96e0d3651b5be50dfb1478dbc3abba6cbec4633a14512045941a3d7eeda0"
+    },
+    {
+      "position": 116,
+      "file": "teacher.116.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "2b797ba2b4ebcceed068caea6563c4a386096ebdb08036a99976b86b3e403622"
+    },
+    {
+      "position": 117,
+      "file": "teacher.117.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "7639c893f09d333b5e34969dcdba1096948f87b48817b673610f2d2d54a58070"
+    },
+    {
+      "position": 118,
+      "file": "teacher.118.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "fcb4e05e7d4823dcdd3bdeefa457ade1a3ee382693860b41201ed36724b35748"
+    },
+    {
+      "position": 119,
+      "file": "teacher.119.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "2781788da70eb858ad8993e2324230414d1c1ee0c4f931a7895e95468d8c4409"
+    },
+    {
+      "position": 120,
+      "file": "teacher.120.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "6fbb97d491ac4d6700771538c9f5278a53c24583ccb53d6dda1892016fea2ac4"
+    },
+    {
+      "position": 121,
+      "file": "teacher.121.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "35400347be855e8d620b735f6a3b78281f4e6f188b84b6035df703f6ccae1efb"
+    },
+    {
+      "position": 122,
+      "file": "teacher.122.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "aa097a916ce9251bdff2ef7359030f1adfc05f391fedb275c032f25988b5b498"
+    },
+    {
+      "position": 123,
+      "file": "teacher.123.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "150a0e48d4e56d34656edd4656add19807f53df4913568a85d8c34d2fb28329f"
+    },
+    {
+      "position": 124,
+      "file": "teacher.124.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "0a7dd0c6399992fa2b724ade7c585d4b407b36c4d92893c48f31981bd819a3a3"
+    },
+    {
+      "position": 125,
+      "file": "teacher.125.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "a433520fd16ae3e81087de7edc6d935df06f623890bc62eb5810c53e1afdc4aa"
+    },
+    {
+      "position": 126,
+      "file": "teacher.126.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "a8ec5754dc38a6a7cce1ac15b84e9a0fe6823b14adc50e5635ee688e0328a75a"
+    },
+    {
+      "position": 127,
+      "file": "teacher.127.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "6a6813dfc5940120a2d0654844e2b8e9ca034c64dab0dc85724c19d1305a6dda"
+    },
+    {
+      "position": 128,
+      "file": "teacher.128.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "ec189581537b413b93e6a602e18a8d3b818cdf495f1866c571a3cc891c081a42"
+    },
+    {
+      "position": 129,
+      "file": "teacher.129.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "6d3f3b4fd1cc1a0963f8fec1a835cbbeaae92e2bdd0590ae150f0c4d4752a4b3"
+    },
+    {
+      "position": 130,
+      "file": "teacher.130.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "ce8e1c29f181ff595b9cde16705d6a8d6eabe2def10736956290b4db88d8f16e"
+    },
+    {
+      "position": 131,
+      "file": "teacher.131.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "9a429d0934e3eab8dd82cad9eb1d24585ea299c6d0126ed91bbd7c4c3e2b334d"
+    },
+    {
+      "position": 132,
+      "file": "teacher.132.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "60b02878506de8e346158a6eb4b35882743bf8ffadf921afa273b84db4b07e9b"
+    },
+    {
+      "position": 133,
+      "file": "teacher.133.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "f3c87804b88916c9cd4838f96ca8b30f8b5bab53b93daf73325f792235a0387d"
+    },
+    {
+      "position": 134,
+      "file": "teacher.134.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "d43cde262081a7d4a93748b5848eb3f7539e5aacfd90e0a05f5c175ffbb8ed5d"
+    },
+    {
+      "position": 135,
+      "file": "teacher.135.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "0f2aa25168dbae7f61368bf5287372d853c34efc5f06a3d85aee0f9802484ec4"
+    },
+    {
+      "position": 136,
+      "file": "teacher.136.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "f1dbb4acd380053a6eec8e06bace66e29613b3dc67f536baaf765fc72733d1b4"
+    },
+    {
+      "position": 137,
+      "file": "teacher.137.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "e0175695f3abcee805e3f14d9f2254d0f69038825c2ff773e131bd70ef156c27"
+    },
+    {
+      "position": 138,
+      "file": "teacher.138.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "14aa55f5ae1f2ec5043172570795d8084084ce14a23baa45e2b4710a330c1500"
+    },
+    {
+      "position": 139,
+      "file": "teacher.139.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "23d5968b4eda3439ab3d9bf50b5d9b4a61206f46b99142f10450114c224eb63a"
+    },
+    {
+      "position": 140,
+      "file": "teacher.140.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "241ee08c3e73280a9e586414e0427c838f0999e51bd2c06374b0062d4ce70560"
+    },
+    {
+      "position": 141,
+      "file": "teacher.141.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "259cad9b20f9dba7a852cad7a1a82b43d56703e3fd80a4c776911935e6f6c103"
+    },
+    {
+      "position": 142,
+      "file": "teacher.142.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "d102b48ed9ae4249eaa9a5cde6d7251100d03b29e60b3fab5b3571468d44050c"
+    },
+    {
+      "position": 143,
+      "file": "teacher.143.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "7e18f05064b02311fdc3e24faf21624ff92945002ab1e0464aab9105fbd13c28"
+    },
+    {
+      "position": 144,
+      "file": "teacher.144.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "f9879acb43e5e65cb5edfc3a4e865c9cc8916cb625cbf91e46d55230f6dcdab5"
+    },
+    {
+      "position": 145,
+      "file": "teacher.145.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "a7bc5ef7882b2a47ee163bb96dc0e0ff8dc199f9323c3e4228527a2e0bcd91ef"
+    },
+    {
+      "position": 146,
+      "file": "teacher.146.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "5b66aef49b4685099e2c4a8a79a792c2da5f5cec83dad25654f3e9b36500c442"
+    },
+    {
+      "position": 147,
+      "file": "teacher.147.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "bb17c8f717ee0ce554ad6d5f6db2e0f3d0125b36d3244881c3566dafae0b05fc"
+    },
+    {
+      "position": 148,
+      "file": "teacher.148.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "191ef1a120d3360d37dc232cb844aeb196b3672ea438e5cd1d5ab46935a3ad16"
+    },
+    {
+      "position": 149,
+      "file": "teacher.149.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "4408fbea2c271e165b3d0b4ee35be85f7b92e1c7a6a441c20cf9058d3f493228"
+    },
+    {
+      "position": 150,
+      "file": "teacher.150.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "426d02309ec54be1a44367a8b7f599a6cd48979f83e9cbc2051ff63a6f11525e"
+    },
+    {
+      "position": 151,
+      "file": "teacher.151.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "b2551de68b99c75945b06708c64106d7cfa9d54ee02a89122fa94a66bf5aa88e"
+    },
+    {
+      "position": 152,
+      "file": "teacher.152.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "e7c1ad1b06c708f9d068c7f44ef24f42e5f2214de45f09f2945a69f4db26fd83"
+    },
+    {
+      "position": 153,
+      "file": "teacher.153.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "0be69348d145f3a4a3182e28f93676d4446ab7cef610e55764476a804581e254"
+    },
+    {
+      "position": 154,
+      "file": "teacher.154.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "fbdf12af2cbee2964496e0715c51350c84b40259939467334c0d5934e0cb3520"
+    },
+    {
+      "position": 155,
+      "file": "teacher.155.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "9ceeff39ecf9b36b5fa107b727bedf0dbcf7c76e680a1cbf06cc3e517d8ff021"
+    },
+    {
+      "position": 156,
+      "file": "teacher.156.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "82966ca4c331daf3d5dc78f0825a393f4990d5f8da8eb2c54f555e1c503eb6d0"
+    },
+    {
+      "position": 157,
+      "file": "teacher.157.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "7d0d09dd7d227b9fefd69da23ffdd748cfe6e103042cdde32618cf0d4de32fa8"
+    },
+    {
+      "position": 158,
+      "file": "teacher.158.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "72b2deaf856b1512dbb70d677e3c3b29ce698c1105af9d4be7aeae65ea160afa"
+    },
+    {
+      "position": 159,
+      "file": "teacher.159.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "10722149fcf5d783c838dd272de752c6c6b10752d43ed973e87420f3de34aa66"
+    },
+    {
+      "position": 160,
+      "file": "teacher.160.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "e2e6b7123c49e13dab213d6e78e2d6bd2842cae3316706ac78ee9098701f777d"
+    },
+    {
+      "position": 161,
+      "file": "teacher.161.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "e687d78444248b948d9ba3d2a28c224589a871b0da877337ffce8acb85452f8d"
+    },
+    {
+      "position": 162,
+      "file": "teacher.162.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "9cbd890b537409c98c83edf845181c8a54a06d3abf9aee59199ccb621c8c304d"
+    },
+    {
+      "position": 163,
+      "file": "teacher.163.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "6a17eb03bdc872feec81c64d78fc868b36c9726b00e58bf3346a3cf25da5db99"
+    },
+    {
+      "position": 164,
+      "file": "teacher.164.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "4b76ca3688d9595dd0a044c52e08fcfbae1a73cc4dca00ecc58c4d13f3b5b3b2"
+    },
+    {
+      "position": 165,
+      "file": "teacher.165.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "df56f5cc294777e4f0cfa5b756bcd5ad4a003fc32d0bb7640db7eb858b7a608f"
+    },
+    {
+      "position": 166,
+      "file": "teacher.166.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "5d1f8cc56dc76df4089450e0741558c41a3fcd11aa4fa1b930649098893a3da4"
+    },
+    {
+      "position": 167,
+      "file": "teacher.167.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "32d927322ca4c46853ece4d0c9fc30a7b3a623d786e235365df619e4ffec33ab"
+    },
+    {
+      "position": 168,
+      "file": "teacher.168.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "3504b3da90a58a2f29a36f1bdb343fe628d27a14166c834c9ade8b2d5f47f98b"
+    },
+    {
+      "position": 169,
+      "file": "teacher.169.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "61705b482174f5d1cb6a67705ff70bcf0f31eb39f7ee55b89a3884a789a5fc0d"
+    },
+    {
+      "position": 170,
+      "file": "teacher.170.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "317a0588172c903953528f4509e78651361035720cc18eb6c46ba17637064021"
+    },
+    {
+      "position": 171,
+      "file": "teacher.171.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "055dc5fdca10c7f4172c416cec38317aead61f410428b9e55b4cb9656db2d369"
+    },
+    {
+      "position": 172,
+      "file": "teacher.172.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "4dd721f03a569b10f6cfd0b52df827c36b1d2355ebf811972dd8c228f288b1d7"
+    },
+    {
+      "position": 173,
+      "file": "teacher.173.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "1e01f5ae33342eadfafdd7a85148e7eebf689e83620e5001802c919c6281e437"
+    },
+    {
+      "position": 174,
+      "file": "teacher.174.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "d58f5b4173dad19aa01185ba35b67bca1a4ae89519e2de09e9639bb5d786b4f1"
+    },
+    {
+      "position": 175,
+      "file": "teacher.175.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "258b929b7e91b53d8bf48db48a42bf0d164ee51d2d15372310e00af32dac2713"
+    },
+    {
+      "position": 176,
+      "file": "teacher.176.logits.f32",
+      "shape": [
+        1,
+        248320
+      ],
+      "bytes": 993280,
+      "sha256": "c8fa8837e977f7388c48ec54edf17a0f24bacad1be8a4fe704c797378658a648"
+    }
+  ]
+}

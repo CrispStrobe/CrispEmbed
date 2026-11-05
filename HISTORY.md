@@ -20707,3 +20707,15 @@ format-5 Q8/Q4 payload owner. The
 retains initial41997019110's missing standalone matrix-helper declaration and
 corrected41997125120. No actual model payload was read; native decoded and
 intermediate quality remains unverified. Public API/release defaults are unchanged.
+
+### 5 November 2026 — Complete native Q8/Q4 decoded negatives and consolidated evidence
+
+Exactfd150b98 native Q842001328483 completes177 teacher positions and160 free
+IDs/EOS, with different French figure text (first differing ID9). PlainQ4
+42001333207 completes177 teacher positions but free decoding caps256/noEOS,
+leaving an incomplete HTML table. Raw native receipts and fidelity metrics are
+retained; no decoded or numerical parity promotion follows. DensePR152,
+BF16-prefillPR157, four-case sourcePR161 and gated candidate negatives are
+consolidated as a child of runtimePR155, retaining exact source refs and all
+runtime bytes. [The evidence umbrella](docs/lighton4b-qualification-consolidation.md)
+records existing checks and pending combined-source/full-comparison gates.
