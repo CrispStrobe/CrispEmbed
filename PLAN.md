@@ -1141,3 +1141,24 @@ it has no invented `requested_dtype` field. Reviewed source42e5ce6f9 and batch
 metadata fix BF16. Reused binaries require exact source/build-receipt/executable
 hashes. Local transfer-overrun/hash/source/binary-tamper and selector controls
 pass; no broad CI or new PR is required.
+
+
+### PR155 bounded gated BF16 vision norm integration — 5 November 2026
+
+Preserve all existing mixed-policy/preflight/inspection targets and legacy shared
+vision. The gated BF16 vision owner now retains both previous norm alternatives
+and `CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM`, whose actual source-fed operators
+match original AVX2 bytes in42027253266. All gates remain default-off. The
+[candidate guide](docs/lighton4b-vision-norm-candidate.md) records exact sources
+and **negative decoded qualification**: composed42028668863 improves merged
+RMS0.0223861→0.00973525 but worsens Q4 first-logit RMS0.545670→0.560135 and
+keeps incorrect`<table>` output. No release, default or app pin changes.
+
+Required assembled-source gate is the single targeted hosted
+`tools/ci-heavy/lighton4b_vision_norm_integration.py`: actual production norm/raw
+SHA/mean-rstd and unset/empty/0 controls, finite/tie BF16 rounding, native-context
+and image-compose controls, compiled ordinary native runner argument rejection
+and environment-doc freshness. No model inference or broad CI is requested.
+Source-fed QKV selected-dot42030085653 is positive on2,378 positions, including
+all171 historical differences, but a linear runtime change needs full operator
+validation before another composed smoke. It is not part of this norm change.
