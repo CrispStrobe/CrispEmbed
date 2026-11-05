@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import sys
 ROOT=Path(__file__).resolve().parents[2]
+NORM_GATES=('CRISPEMBED_LIGHTON4B_VISION_BF16_NORM',)
 def load(name,path):
  s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
 def main():
@@ -88,9 +89,11 @@ def main():
    report['operators'][name]=comparison.compare(a,b)
   report['first_differing_operator']=next((n for n,v in report['operators'].items()if v['different_values']),None)
   for path in stages.glob('native.*.f32'):path.rename(path.with_name(path.name.replace('native.','baseline.',1)))
-  env['CRISPEMBED_LIGHTON4B_VISION_BF16_NORM']='1'
+  env.update({gate:'1'for gate in NORM_GATES})
+  report['normalization_candidate_gates']={gate:'1'for gate in NORM_GATES}
   run('corrected-replay',[binary,model,stages,'replay'],env)
   report['corrected_operators']={name:comparison.compare(np.fromfile(stages/('source.'+name+'.f32'),dtype='<f4'),np.fromfile(stages/('native.'+name+'.f32'),dtype='<f4'))for name in report['operators']}
+  if 'CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM'in NORM_GATES and any(report['corrected_operators'][n]['different_values']for n in ('norm1','norm2')):raise ValueError('contracted source-fed norm control differs')
   # Same immutable model and image, independent ordinary native document paths.
   # No source intermediate is passed into either composed inference call.
   download_original=native.download
@@ -105,8 +108,8 @@ def main():
    frozen=json.loads((ROOT/'tests/results/qwen35-ocr/lightonocr3-4b-vision-bf16-stages.json').read_text())['recipes']['q4_k']['stages']
    for label,corrected in (('baseline',False),('corrected',True)):
     arm=out/label;arm.mkdir();os.environ['HEAVY_OUT']=str(arm)
-    native.GATES=base_gates+(('CRISPEMBED_LIGHTON4B_VISION_BF16_NORM',)if corrected else ())
-    os.environ.pop('CRISPEMBED_LIGHTON4B_VISION_BF16_NORM',None)
+    native.GATES=base_gates+(NORM_GATES if corrected else ())
+    for gate in NORM_GATES:os.environ.pop(gate,None)
     sys.argv=[str(ROOT/'tools/ci-heavy/lighton4b_native_document.py'),'--recipe','q4_k','--mode','smoke','--threads','4']
     native.main();result=json.loads((arm/'native-document.json').read_text())
     row={'decoded':result['decoded'],'stages':{}}

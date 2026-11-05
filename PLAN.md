@@ -1141,3 +1141,15 @@ contraction to final scalar moment merging and both affine operations, preservin
 the previous norm gate and shared768 path. Next is operator-only production-helper
 validation and unset/empty/0 old-path byte controls. Only a material operator
 improvement permits another ordinary composed smoke; no default is promoted.
+
+
+[Production-helper42027253266](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42027253266)
+at9c11a924c passes exact source-fed norm1/norm2:573,440 values each and all
+1,120 mean/rstd entries per norm are bit-exact to source-fast controls. All
+unset/empty/0 controls preserve the previous norm gate bytes. The
+[operator receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-fma-norm-operators.json)
+records this material operator improvement separately from decoded quality.
+The explicit `tools/ci-heavy/lighton4b_vision_fma_norm_ab.py` wrapper now permits
+one ordinary composed Q4 baseline/corrected vision/logit/two-token decode A/B,
+rechecking source-fed norms first and preserving all frozen baseline stage hashes.
+The earlier separate-affine norm A/B protocol and negative result remain intact.
