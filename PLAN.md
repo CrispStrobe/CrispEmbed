@@ -997,3 +997,14 @@ Q8/Q4 recipes, then admit exact source/run/weights and execute both native arms
 on hosted resources. Preserve strict numerical failures and decoded outputs;
 first observed score divergence is not internal-stage attribution. Hosted
 model-free actualRef controls are prepared; queued work is not parity evidence.
+
+### Distinct LightOn4B frontend continuation — 5 November 2026
+
+[The separate4B frontend](docs/lighton4b-tokenizer.md) preserves historical
+`src/qwen35_tokenizer.cpp` and adds gated format5 metadata validation, pinned
+Unicode-mark BPE, image-only prompt expansion and original EOS semantics.
+Hosted final-source controls41997924479 at `71624fd91` are pending: actual154
+prompt/modality NPY hashes,177-ID decoded text and seven official tokenizer
+cases plus six negatives. Initial41997631447 and41997789387 were cancelled
+before execution after source/control amendments. No model forward or runtime
+qualification follows until actual native Q8/Q4 score/free-generation evidence.
