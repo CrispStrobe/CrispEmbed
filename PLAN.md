@@ -1153,3 +1153,14 @@ The explicit `tools/ci-heavy/lighton4b_vision_fma_norm_ab.py` wrapper now permit
 one ordinary composed Q4 baseline/corrected vision/logit/two-token decode A/B,
 rechecking source-fed norms first and preserving all frozen baseline stage hashes.
 The earlier separate-affine norm A/B protocol and negative result remain intact.
+
+
+Initial contracted-norm composed[42028040544](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42028040544)
+atfd102fa25 stopped safely before native candidate/ordinary prefills: a new
+AVX512 runner makes reconstructed original layer0 differ3,965 values/max0.015625
+(RMS0.000218127). The prior exact original controls used AVX2. The
+[negative receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-fma-norm-avx512-initial.json)
+is preserved. Targeted retry pins ATen/oneDNN/MKL dispatch to original AVX2
+before Torch import; the exact original-layer barrier and portable native frozen
+baseline hashes remain mandatory. This is bounded AVX2 source parity, not an
+AVX512/ARM/cross-platform qualification, and no numerical budget is changed.

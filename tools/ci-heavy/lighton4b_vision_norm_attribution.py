@@ -9,6 +9,9 @@ import subprocess
 import zipfile
 ROOT=Path(__file__).resolve().parents[2]
 def main():
+ # Freeze actual original AVX2 operator dispatch on heterogeneous hosted CPUs.
+ dispatch={'ATEN_CPU_CAPABILITY':'avx2','ONEDNN_MAX_CPU_ISA':'AVX2','DNNL_MAX_CPU_ISA':'AVX2','MKL_ENABLE_INSTRUCTIONS':'AVX2'}
+ os.environ.update(dispatch)
  import numpy as np
  import torch
  from torch.utils.cpp_extension import include_paths,library_paths
@@ -16,7 +19,7 @@ def main():
  if torch.__version__!='2.13.0+cpu' or np.__version__!='2.3.5':raise RuntimeError('original pins differ')
  spec=importlib.util.spec_from_file_location('comparison',ROOT/'tools/ci-heavy/lighton4b_vision_bf16_compare.py');comparison=importlib.util.module_from_spec(spec);spec.loader.exec_module(comparison)
  out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH'])/'norm-attribution';scratch.mkdir();stages=out/'stages';stages.mkdir();build=scratch/'build'
- report={'schema':'lighton4b-vision-norm-attribution/v1','status':'failed','model_downloaded':False,'model_forward_executed':False,'quality_qualified':False,'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'torch_version':torch.__version__,'torch_cpu_capability':torch.backends.cpu.get_cpu_capability(),'torch_build_config':torch.__config__.show()}
+ report={'schema':'lighton4b-vision-norm-attribution/v1','status':'failed','model_downloaded':False,'model_forward_executed':False,'quality_qualified':False,'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'cpu_dispatch':dispatch,'torch_version':torch.__version__,'torch_cpu_capability':torch.backends.cpu.get_cpu_capability(),'torch_build_config':torch.__config__.show()}
  def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
  def run(name,argv):
   with (out/(name+'.log')).open('w')as f:subprocess.run([str(v)for v in argv],cwd=ROOT,stdout=f,stderr=subprocess.STDOUT,check=True)

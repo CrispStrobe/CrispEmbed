@@ -11,6 +11,9 @@ NORM_GATES=('CRISPEMBED_LIGHTON4B_VISION_BF16_NORM',)
 def load(name,path):
  s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
 def main():
+ # Freeze actual original AVX2 operator dispatch on heterogeneous hosted CPUs.
+ dispatch={'ATEN_CPU_CAPABILITY':'avx2','ONEDNN_MAX_CPU_ISA':'AVX2','DNNL_MAX_CPU_ISA':'AVX2','MKL_ENABLE_INSTRUCTIONS':'AVX2'}
+ os.environ.update(dispatch)
  import numpy as np
  import torch
  from torch.nn import functional as F
@@ -23,7 +26,7 @@ def main():
  stages=out/'stages';stages.mkdir();build=scratch/'build'
  report={'schema':'lighton4b-vision-layer0-source-fed/v1','status':'failed','quality_qualified':False,
   'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
-  'torch_version':torch.__version__,'torch_cpu_capability':torch.backends.cpu.get_cpu_capability(),
+  'cpu_dispatch':dispatch,'torch_version':torch.__version__,'torch_cpu_capability':torch.backends.cpu.get_cpu_capability(),
   'decoded_scope':'No decoder execution; preserves original decoded <figure prefix and earlier negative Q4/Q8 smokes.'}
  def run(name,args,env=None):
   with (out/(name+'.log')).open('w')as f:subprocess.run([str(x)for x in args],cwd=ROOT,stdout=f,stderr=subprocess.STDOUT,check=True,env=env)
