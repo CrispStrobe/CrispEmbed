@@ -49,6 +49,8 @@ def main():
   if sha(source)!='3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc':raise RuntimeError('source PNG differs')
   from PIL import Image
   image=Image.open(source).convert('RGB');rgb=scratch/'source.rgb';rgb.write_bytes(image.tobytes())
+  report['image']={'source':'tests/regression/images/cc0/simple_form.png','sha256':sha(source),
+   'rgb_sha256':sha(rgb),'height':image.height,'width':image.width,'decoder':'Pillow '+Image.__version__}
   capture=scratch/'original-capture.json'
   download('https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/26fe41e35/tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture.json',capture)
   if sha(capture)!='170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a':raise RuntimeError('original capture differs')
@@ -57,6 +59,8 @@ def main():
   ids=scratch/'teacher.ids';ids.write_text(''.join(f'{x}\n' for x in teacher))
   native=out/args.recipe;native.mkdir();binary=scratch/'native-document-build/lighton4b-native-document'
   env=os.environ.copy();env.update({key:'1' for key in GATES})
+  env.update({'CRISPEMBED_QWEN35_PRECISE_RMS':'0','CRISPEMBED_QWEN35_IMATRIX':'0','CRISPEMBED_QWEN35_WEIGHT_CACHE':'0'})
+  report['gates']={key:env[key] for key in GATES};report['threads']=args.threads
   start=time.monotonic()
   with (out/'native.log').open('w') as log:
    subprocess.run([str(binary),str(model),str(rgb),str(image.height),str(image.width),str(ids),str(native),
