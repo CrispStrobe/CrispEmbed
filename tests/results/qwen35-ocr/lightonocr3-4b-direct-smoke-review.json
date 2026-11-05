@@ -1,0 +1,52 @@
+{
+  "q8": {
+    "max_abs": 0.3038206100463867,
+    "mean_abs": 0.051998433951944346,
+    "rms": 0.06302273324120423,
+    "cosine": 0.9996505187794308,
+    "baseline_norm": 1078.9866141648115,
+    "direct_norm": 1065.4681760922606,
+    "argmax_baseline": 27,
+    "argmax_direct": 27,
+    "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42003514836",
+    "artifact_id": 13403178898,
+    "receipt_sha256": "7ed32c87382671dfe741cf479bd0e787fd5e84d965fbc99f6892ca91ee58a2fa",
+    "github_declared_archive_sha256": "93c13d735f833761bb0b0d65fda5cb681f185f912e2c2fa55bcfea950e4d9a75",
+    "generated_ids": [
+      27,
+      17251
+    ],
+    "decoded": "<figure",
+    "baseline_wall_seconds": 127.69,
+    "direct_wall_seconds": 29.93,
+    "baseline_peak_rss_bytes": 6316945408,
+    "direct_peak_rss_bytes": 6092525568
+  },
+  "q4": {
+    "max_abs": 0.5956339836120605,
+    "mean_abs": 0.07738829312315594,
+    "rms": 0.09840259735893127,
+    "cosine": 0.9992605340180083,
+    "baseline_norm": 1238.5872890326898,
+    "direct_norm": 1249.3552233868547,
+    "argmax_baseline": 20353,
+    "argmax_direct": 20353,
+    "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42003519076",
+    "artifact_id": 13403517325,
+    "receipt_sha256": "8af0c7bc78c0ebe9a86681a26396f8d3ee105ccd1b8d6acf26697c1a7b6e7b52",
+    "github_declared_archive_sha256": "5573b4e99392eda0778196abaaf336530c1e0b349e6f324c2eb6a407bef7642b",
+    "generated_ids": [
+      20353,
+      29
+    ],
+    "decoded": "<table>",
+    "baseline_wall_seconds": 133.35,
+    "direct_wall_seconds": 52.01,
+    "baseline_peak_rss_bytes": 4516601856,
+    "direct_peak_rss_bytes": 4310065152
+  },
+  "schema": "lighton4b-direct-smoke-review/v1",
+  "quality_qualified": false,
+  "source_sha": "6d94fd9b4cbd82d930e18695c9e0f9b57fe5c68b",
+  "limits": "One teacher position and two independent greedy tokens; cap2,no EOS. Different hosted workers and single measurements; observed timing reductions are diagnostic, not a controlled full-model speed claim. Full177 positions, complete decoded QoI, unchanged original BF16 score budgets and held-out quality are required before promotion."
+}

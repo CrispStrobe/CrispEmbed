@@ -1058,3 +1058,14 @@ and ordered timings. Max errors0.01083–0.01780 exceed strict0.002 despite
 cosines0.99999084–0.99999340; keep the extra activation quantization visible and
 default-off. Independent native decoded/timing A/B is next, never a substitute
 for these numerical failures or the frozen complete Q8/Q4 panels.
+
+Actual gated direct[Q8 42003514836](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42003514836)
+and[Q4 42003519076](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42003519076)
+complete the same154-token prefill/one-score/two-free-token smoke. Both partial
+decodes remain unchanged: Q8`<figure`, Q4`<table>` (the existing negative).
+[Reviewed timing/score receipts](tests/results/qwen35-ocr/lightonocr3-4b-direct-smoke-review.json)
+show29.93/52.01 seconds versus retained127.69/133.35-second runs on separate
+workers; no controlled model-speed claim. Full-model first-score changes versus
+the old native path reach0.30382/0.59563 max absolute error, exceeding unchanged
+strict budgets. Original BF16 score comparison and complete independent decoded
+QoI remain required. Keep default-off and preserve active`fd150b98f` full panels.
