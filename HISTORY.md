@@ -20967,3 +20967,69 @@ held-out calibration or architecture-quality selection claim. Complete receipts,
 protected474/tie checks, capacity bounds and joint native/precision residuals are
 in [the evidence report](docs/lighton4b-bf16-mixed-first-score-results.md).
 No runtime/default/release/app-pin change or model upload.
+
+
+### 2026-11-05: complete configured rotary arithmetic, vision raw parity and Q8 score improvement
+
+PR155 evidence/runtime handoff is `269ed8dbf993ed5e60dfef2bddc79e6066abcbed`.
+The complete rotary asset is configuration-defined arithmetic, not captured
+image/activation outputs: source width 1024 / heads 16 gives 16 frequencies, original
+default theta 10000, native axes bounded 1024 gives coordinates 0..1023. All
+coordinates/frequencies/functions occupy 128 KiB. Public reproducible generator,
+source config/default-function pins, exact raw/text hashes and MIT/generated
+arithmetic plus Apache2 config provenance are retained in PR155. No MKL code,
+binary or product dependency is introduced. Separate ROTARY_TABLE gate is off
+by default and preserves old/rejected alternatives and unsupported fallbacks.
+
+Domain proof 42096520795 at `79fbff4e74ba084c35804ba96178a15d2e3e2da0` checks
+independent regeneration, all 32768 direct original MKL values and compiled
+bytes. Production integration 42098420346 at
+`7648267c79453b277b6ae3f8c43aa54769903264` repeats 681,459,712 F32 values over
+3,873 layouts, all 3,280 admitted single-frame h/w pair and 1,024 total-token
+counts plus temporal/multigrid edges. Mathematical coordinate-domain coverage
+is complete; finite packing cases are not a claim of enumerating all combined
+grids. All 22 reader/production fallback/precedence controls, source tables,
+attention and full first-block bytes, native/context builds, context 9, decoder 20
+and environment docs pass. Raw bank SHA is
+`30ea508c92d92a8400604e276fac161a1a85f7e89cd79877f227684a6d330e0c`.
+Reference generator/code remains outside product artifacts; only the configured
+constant bank and reader enter the gated runtime.
+
+Q4 ordinary 42099925931 at `a1bb8c924607e2631435a973512aeee94ea5f0be` and
+independent retained-only hash audit 42102908743 establish all 29 emitted
+processor/vision stages SHA-identical to original for one image. All 66 shared
+float files and 30 fixed baseline hashes were independently checked. Five
+original-only intermediates (merger norm/up/activation and rotary cos/sin) are
+not emitted by ordinary runner; they have separate operator controls. Position
+raw layouts differ (original chronology+THW, native THW), so raw inequality there
+is not alone a position-math failure. First downstream shared mismatch is text
+embedding: 391,330/394,240 values, max 0.000380992889, RMS 6.30394e-5; later error
+is not attributed solely to embedding. Q4 first-logit RMS worsens 0.5601347910 to
+0.5879641585 (max 2.38528 to 2.44462), and both decodes remain wrong `<table>` /
+[20353,29] versus source [27,17251] `<figure` prefix. Native elapsed baseline/
+candidate 130.86/153.89 s, peaks 4,524,945,408/4,510,699,520 bytes: diagnostic
+one-case measurements, not throughput claims.
+
+One corrected Q8 smoke 42104609427 at
+`f120d61a97a82acc7d3e4a2f2e02a5a1354e5ee4` passes immutable 5,815,503,232-byte
+model SHA, 10 GiB available-RAM / 12 GiB scratch guards, all 5 original canonical
+prepared-input hashes and 29 raw vision hashes. Decoder candidate and rejected
+SLEEF rotary remain 0, caches off. Original first-row RMS/max is now
+0.0742289135 / 0.460906029. Compare both same-model/same-image historical sources:
+fd150 original F32-vision smoke approximately 0.130495042 / 0.568259001 (independent
+float64 review RMS 0.1304950347489), and 891d early BF16 candidate
+0.2005369525 / 1.092198968. Source commits and hosted workers differ; no same-source
+A/B, table-only causal or speed claim. All three Q8 prefixes were already correct
+[27,17251], `<figure`, so no new-prefix win is claimed. Current Q8 native elapsed
+139.13 s, user/system 134.01/57.80 s, peak 6,317,207,552 bytes; fd150 127.69 s /
+6,316,945,408 bytes, 891d 105.43 s / 6,317,084,672 bytes, diagnostic across hosts.
+
+Full 177-token/EOS and whole-document quality remain untested in this lane. All
+248,320 Q8 logits still differ from BF16; Q4 prefix remains incorrect. Future
+observer now separates exact_original_prefix_ids from full exact_original_ids;
+the latter cannot test a two-token prefix against 177-token source completion.
+Independent prefix audit protects current evidence. Raw/profile/integration/Q4/
+Q8 receipts contain exact sources, both historical baselines, complete artifact
+hashes / 90-day retention, performance and limitations. All defaults, release and
+app pin stay unchanged. This PR157 follow-up changes only receipts and plan/
+history; runtime and generated asset remain in PR155.
