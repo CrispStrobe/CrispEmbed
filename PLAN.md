@@ -1463,3 +1463,16 @@ No further model jobs authorized in this lane. The earliest remaining first-
 block mismatch is confirmed MKL rotary; another bounded operator-only option is
 retained same-input merger GELU/erf attribution, which must not obscure that
 backend dependency or claim decoded improvement.
+
+### 2026-11-05: bounded retained same-input merger/erf attribution
+
+Next one operator-only job uses retained original and actual layer 23/merged
+arrays, plus only the 54.5 MB pinned original merger-parameter range. Require
+complete original BF16 merger bytes and complete actual native merged bytes
+before attribution; actual GGUF weights are not separately downloaded, so record
+that parameter-compatibility limitation explicitly. Reconstruct only norm/up/
+activation/down for the merger, not the vision model or decoder. Compare native
+verbatim std::erf expression and installed original Gelu.h on identical up inputs.
+A test-only source erf polynomial/exp alternative may be measured, but no
+production change or quality claim before actual/source controls pass. Preserve
+all reports/arrays remotely for 90 days; unrelated workflow retention unchanged.
