@@ -64,6 +64,16 @@ independent free-generation panels are running in
 [Q8](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001328483) and
 [Q4_K](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001333207);
 a separate BF16 prefill capture is intended to localize the earliest stage.
+That capture's first score is byte-identical to the earlier BF16 capture, and
+[the hosted stage comparison](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42002886215)
+finds the earliest native divergence in vision patch projection: maximum
+absolute error 0.0126757622, RMS 0.000805617467, cosine 0.9999986088, against
+original absolute maximum 4.3125. Native Q8 and Q4_K arrays are byte-identical
+through the vision path and decoder prefill input; their first recipe-specific
+difference occurs at decoder layer 0. The original uses BF16 vision arithmetic
+where this native path uses F32, so arithmetic attribution and any candidate
+correction require separate checks. Component agreement alone is not decoded
+quality evidence.
 The separate Q8/Q4 bounded
 vocabulary projection passed [41996887406](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41996887406).
 
