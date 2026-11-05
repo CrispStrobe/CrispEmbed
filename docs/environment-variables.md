@@ -222,7 +222,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-430 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+431 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -552,7 +552,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_JOSEV_BACKBONE` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/qwen35_decoder.cpp` |  |
 | `CRISPEMBED_JOSEV_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/josev2b_text_frontend.cpp` |  |
-| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +15 | 'minicpm-ocr' registry alias (same default as the HTTP server). The decoder reuses the qwen35 kernels, so both gates are still required. |
+| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +16 | 'minicpm-ocr' registry alias (same default as the HTTP server). The decoder reuses the qwen35 kernels, so both gates are still required. |
 | `CRISPEMBED_QWEN35_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/qwen35_linear.cpp` |  |
 
 ### josev2b_composed
@@ -625,17 +625,14 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_ACCEPT_LFM_LICENSE` | on | off | bool | default-off experimental / opt-in | `src/lfm2_vl_ocr.cpp` | License gate |
 
-### lighton4b_model_owner
+### lighton4b_gguf_inspection
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_model_owner.h` |  |
-
-### lighton4b_vision_owner
-
-| Variable | Kind | Default | Type | Status | Where | Hint |
-|---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_VISION_OWNER` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_owner.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_GGUF_INSPECTION` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gguf_inspection.h` |  |
+| `CRISPEMBED_LIGHTON4B_VISION_OWNER` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gguf_inspection.h`, `src/lighton4b_vision_owner.cpp` |  |
+| `CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gguf_inspection.h`, `src/lighton4b_model_owner.h` |  |
+| `CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gguf_inspection.h`, `src/qwen35_lighton4b_text.h` | Experimental, default off; borrowed tensor metadata only, never inference admission. |
 
 ### lightonocr
 
@@ -988,12 +985,6 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_OVISOCR2_LARGE_IMAGES` | on | off | bool | default-off experimental / opt-in | `src/qwen35_image_bounds.h` |  |
-
-### qwen35_lighton4b_text
-
-| Variable | Kind | Default | Type | Status | Where | Hint |
-|---|---|---|---|---|---|---|
-| `CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER` | on | off | bool | default-off experimental / opt-in | `src/qwen35_lighton4b_text.h` | Experimental, default off; borrowed tensor metadata only, never inference admission. |
 
 ### qwen35_linear
 
