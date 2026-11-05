@@ -1,0 +1,27 @@
+name: LightOn4B BF16 quant comparison controls
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: mkdir -p "$RUNNER_TEMP/reports" "$RUNNER_TEMP/scratch"
+      - run: python tools/ci-heavy/lighton4b_bf16_quant_controls.py
+        env:
+          CRISPEMBED_BUILD_MODE: portable
+          HEAVY_OUT: ${{ runner.temp }}/reports
+          HEAVY_SCRATCH: ${{ runner.temp }}/scratch
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighton4b-bf16-quant-controls
+          path: ${{ runner.temp }}/reports

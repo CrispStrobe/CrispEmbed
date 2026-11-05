@@ -983,3 +983,17 @@ runs on exactdd592, not the integrated tree; no assertion or source gate was
 weakened to claim combined-source qualification. Final source declarations and
 actual composite/runtime/platform gates remain required.
 
+
+### Separate BF16-original Q8/Q4 diagnostic — 5 November 2026
+
+[The BF16 quantized protocol](docs/lighton4b-bf16-quant.md) freezes completed
+original177-position all-vocabulary scores/IDs/text/EOS separately from historical
+F32 document-v1/v2. Its consumer requires teacher-forced native scores at every
+original prefix and independent free generation; there is no F32 prerequisite.
+Native producer admission remains empty. Current source rejects format5 and
+larger-model tokenizer/ownership, and converter recipes remain F32/F16 only.
+Next implement actual gated4B runtime ownership/frontend/projection and reviewed
+Q8/Q4 recipes, then admit exact source/run/weights and execute both native arms
+on hosted resources. Preserve strict numerical failures and decoded outputs;
+first observed score divergence is not internal-stage attribution. Hosted
+model-free actualRef controls are prepared; queued work is not parity evidence.
