@@ -1,5 +1,6 @@
 #pragma once
 #include "qwen35_decoder.h"
+#include "qwen35_math.h"
 #include "core/env_gate.h"
 #include <set>
 #include <string>
