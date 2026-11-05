@@ -51,7 +51,7 @@ bool frontend_tokenizer::load(gguf_context* meta) {
         core_gguf::kv_u32(meta,"qwen35_ocr.format_version",0)!=5 ||
         core_gguf::kv_str(meta,"general.source.huggingface.repository","")!="lightonai/LightOnOCR-3-4B" ||
         core_gguf::kv_str(meta,"general.source.huggingface.revision","")!="b71010f095dc3735de7ee6b9969bff8f8f50b39a" ||
-        core_gguf::kv_str(meta,"qwen35_ocr.profile","")!="lightonocr3-4b-source-only" ||
+        core_gguf::kv_str(meta,"qwen35_ocr.profile","")!="lightonocr3-4b" ||
         core_gguf::kv_str(meta,"qwen35_ocr.checkpoint_sha256","")!="6b0dab74a2dab02d5b10ca56322255024ed8dca35c02746b42e9f296aaeb4e67" ||
         core_gguf::kv_str(meta,"qwen35_ocr.tokenizer_sha256","")!="87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4" ||
         core_gguf::kv_str(meta,"tokenizer.ggml.pre","")!="qwen35" ||
