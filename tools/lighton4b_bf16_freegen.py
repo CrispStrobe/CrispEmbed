@@ -85,7 +85,7 @@ class Monitor:
         self.sample()
 
 
-def score_files(scores,ids,output):
+def score_files(scores,ids,output,on_row=None):
     import numpy as np
     require(1<=len(ids)<=256 and len(scores)==len(ids),'all generated score positions required')
     rows=[]
@@ -99,6 +99,7 @@ def score_files(scores,ids,output):
         shifted=value.astype(np.float64)-float(value.max());confidence=float(1.0/np.exp(shifted).sum())
         rows.append(dict(position=index,file=path.name,shape=[1,248320],bytes=value.nbytes,sha256=digest(path),
             selected_id=token,selected_probability=confidence,score_dtype='float32'))
+        if on_row:on_row(rows[-1])
     return rows
 
 
@@ -119,7 +120,7 @@ def main(argv=None):
     report={'schema':'lighton4b-bf16-freegen-capture/v1','status':'running','stage':'initializing','source_sha':actual,
         'driver_sha256':digest(__file__),'protocol_sha256':digest(PROTOCOL),'requested_device':'cpu','requested_dtype':'bfloat16',
         'original_forward_executed':False,'native_forward_executed':False,'native_qualified':False,'model_qualified':False,
-        'f32_reference_unchanged':True,'observer_off_replay_observed':False,'scores':[]}
+        'f32_reference_unchanged':True,'observer_off_replay_observed':False,'scores':[],'model_forward_calls':0}
     lock=threading.RLock();started=time.monotonic();monitor=Monitor()
     def save():
         with lock:
@@ -128,14 +129,18 @@ def main(argv=None):
             atomic(a.output/'capture.json',report)
     def stage(name):
         report['stage']=name;monitor.sample();save();print(json.dumps({'stage':name,'elapsed_seconds':time.monotonic()-started}),flush=True)
-    monitor.start(save)
+    def heartbeat():
+        with monitor.lock:peaks=dict(monitor.peaks);latest=dict(monitor.latest)
+        atomic(a.output/'heartbeat.json',dict(stage=report.get('stage'),elapsed_seconds=time.monotonic()-started,
+            model_forward_calls=report.get('model_forward_calls',0),memory_latest=latest,measured_memory_peaks=peaks))
+    monitor.start(heartbeat)
     try:
         protocol=json.loads(PROTOCOL.read_text());case=protocol['case']
         require(protocol['schema']=='lighton4b-bf16-freegen/v1'and protocol['precision']=='bfloat16','distinct BF16 protocol required')
         for name,sha in protocol['source_sha256'].items():require(digest(ROOT/name)==sha,'frozen source/helper changed')
         require(digest(ROOT/case['file'])==case['sha256']and case['max_new_tokens']==256 and case['prompt']=='','frozen source/request differs')
         checkpoint_bytes=9078620536;output_needed=protocol['guards']['max_score_bytes']+32*2**20+2**30
-        scratch_needed=(0 if a.prepare_only else2*checkpoint_bytes)+19989343+4*2**30
+        scratch_needed=(0 if a.prepare_only else 2*checkpoint_bytes)+19989343+4*2**30
         disks={name:dict(free_bytes=shutil.disk_usage(path).free,device=path.stat().st_dev)for name,path in(('scratch',a.scratch),('output',a.output))}
         report['disk_preflight']=dict(paths=disks,required_scratch_bytes=scratch_needed,required_output_bytes=output_needed)
         if disks['scratch']['device']==disks['output']['device']:
@@ -200,15 +205,21 @@ def main(argv=None):
             actual_parameter_bytes=sum(p.numel()*p.element_size()for p in parameters),generation_config=model.generation_config.to_dict(),
             mkldnn_enabled=torch.backends.mkldnn.enabled)
         require(model.generation_config.eos_token_id in(248046,[248046])and model.generation_config.pad_token_id==248044,'actual official generation stop policy differs')
-        stage('official-generate');generation_started=time.monotonic();report['original_forward_executed']=True;save()
-        with torch.inference_mode():generated=model.generate(**inputs,max_new_tokens=256,do_sample=False,use_cache=True,
-            return_dict_in_generate=True,output_scores=True)
+        stage('official-generate');generation_started=time.monotonic()
+        def observed_forward(module,args):
+            report['model_forward_calls']+=1;report['original_forward_executed']=True
+        handle=model.register_forward_pre_hook(observed_forward)
+        try:
+            with torch.inference_mode():generated=model.generate(**inputs,max_new_tokens=256,do_sample=False,use_cache=True,
+                return_dict_in_generate=True,output_scores=True)
+        finally:handle.remove()
         ids=generated.sequences[:,inputs['input_ids'].shape[1]:].reshape(-1).tolist()
         report.update(generation_seconds=time.monotonic()-generation_started,generated_ids=ids,
             decoded=processor.batch_decode(generated.sequences[:,inputs['input_ids'].shape[1]:],skip_special_tokens=True)[0],
             eos_completed=bool(ids and ids[-1]==248046),cap_hit=bool(len(ids)==256 and ids[-1]!=248046))
         stage('persist-full-vocabulary-scores')
-        report['scores']=score_files(generated.scores,ids,a.output)
+        def persisted(row):report['scores'].append(row);save()
+        score_files(generated.scores,ids,a.output,on_row=persisted)
         require(sum(row['bytes']for row in report['scores'])<=protocol['guards']['max_score_bytes'],'score storage bound')
         report.update(status='captured',stop='eos'if report['eos_completed']else'max_tokens')
         stage('complete');return 0
