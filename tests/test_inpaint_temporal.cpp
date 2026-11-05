@@ -242,22 +242,111 @@ image grainy(int frame, int amplitude) {
 }
 
 void grain_on_a_still_shot_still_propagates() {
-    engine e;
-    inpaint_temporal::stream s(W, H, with_window(3), e.fn());
-    sequence outputs;
     const auto mask = bar_mask();
-    const image donor = grainy(0, 5);
-    feed(s, donor, nullptr, outputs);
-    for (int t = 1; t < 4; t++) feed(s, burn(grainy(t, 5), mask), &mask, outputs);
+    for (bool future : { false, true }) {
+        engine e;
+        inpaint_temporal::stream s(W, H, with_window(3), e.fn());
+        sequence inputs, outputs;
+        const int clean = future ? 3 : 0;
+        const image donor = grainy(clean, 5);
+        for (int t = 0; t < 4; t++) {
+            inputs.push_back(t == clean ? donor : burn(grainy(t, 5), mask));
+            feed(s, inputs.back(), t == clean ? nullptr : &mask, outputs);
+        }
+        flush(s, outputs);
+        sequence expected = inputs;
+        for (int t = 0; t < 4; t++)
+            if (t != clean)
+                for (size_t i = 0; i < mask.size(); i++)
+                    if (mask[i])
+                        for (int c = 0; c < 3; c++) expected[t][i * 3 + c] = donor[i * 3 + c];
+        check(outputs == expected && e.calls == 0 && s.counters().px_propagated == 3 * 12 * 56,
+              "grain (+-5 levels) copies past/future donor pixels and preserves current known pixels");
+    }
+}
+
+void grain_on_a_still_shot_still_reuses() {
+    engine e;
+    e.alternate = true;
+    inpaint_temporal::stream s(W, H, with_window(2), e.fn());
+    const auto mask = bar_mask();
+    sequence inputs, outputs;
+    for (int t = 0; t < 8; t++) {
+        inputs.push_back(burn(grainy(t, 5), mask));
+        feed(s, inputs.back(), &mask, outputs);
+    }
     flush(s, outputs);
-    bool from_donor = outputs.size() == 4;
-    for (size_t i = 1; i < outputs.size(); i++)
-        for (int y = 40; y < 52; y++)
-            for (int x = 20; x < 76; x++)
-                for (int c = 0; c < 3; c++)
-                    from_donor = from_donor && outputs[i][(y * W + x) * 3 + c] == donor[(y * W + x) * 3 + c];
-    check(from_donor && e.calls == 0 && s.counters().px_propagated == 3 * 12 * 56,
-          "grain (+-5 levels) on a still shot propagates the real background");
+    sequence expected = inputs;
+    for (auto & rgb : expected) rgb = burn(std::move(rgb), mask, 100);
+    check(outputs == expected && e.calls == 1 && s.counters().px_reused == 7 * 12 * 56 &&
+              s.counters().px_propagated == 0 && s.counters().px_blended == 0,
+          "independent grain reuses one engine fill without touching current known pixels");
+}
+
+void residual_noise_keeps_motion_thresholds() {
+    const auto mask = bar_mask();
+    // Balanced stripes keep every usable cell mean identical. The residual alone
+    // must enforce propagation <= 9, reuse <= 12, and blending < 30 RGB levels.
+    for (int contrast : { 6, 9, 10, 12, 13, 29, 30 })
+        for (bool clean_donor : { false, true }) {
+            image a(W * H * 3), b(a.size());
+            for (int y = 0; y < H; y++)
+                for (int x = 0; x < W; x++)
+                    for (int c = 0; c < 3; c++) {
+                        a[(y * W + x) * 3 + c] = uint8_t(50 + contrast * (x % 2));
+                        b[(y * W + x) * 3 + c] = uint8_t(50 + contrast * ((x + 1) % 2));
+                    }
+            engine e;
+            e.alternate = true;
+            auto options = with_window(1);
+            options.flat_fill = false;
+            inpaint_temporal::stream s(W, H, options, e.fn());
+            sequence outputs;
+            feed(s, clean_donor ? a : burn(a, mask), clean_donor ? nullptr : &mask, outputs);
+            feed(s, burn(b, mask), &mask, outputs);
+            flush(s, outputs);
+            const bool propagated = clean_donor && contrast <= 9;
+            const bool reused = !clean_donor && contrast <= 12;
+            const bool blended = !clean_donor && !reused && contrast < 30;
+            const auto & st = s.counters();
+            check(e.calls == (clean_donor ? int(!propagated)
+                              : reused    ? 1
+                                          : 2) &&
+                      st.px_propagated == (propagated ? 12 * 56 : 0) && st.px_reused == (reused ? 12 * 56 : 0) &&
+                      st.px_blended == (blended ? 12 * 56 : 0),
+                  "noise allowance retains distinct propagation, reuse and blend boundaries");
+            check(outputs.size() == 2 && known_unchanged(b, mask, outputs[1]),
+                  "residual threshold decisions preserve known pixels");
+            if (!blended) {
+                image expected = burn(b, mask, clean_donor || reused ? 100 : 200);
+                if (propagated)
+                    for (size_t i = 0; i < mask.size(); i++)
+                        if (mask[i])
+                            for (int c = 0; c < 3; c++) expected[i * 3 + c] = a[i * 3 + c];
+                check(outputs.size() == 2 && outputs[1] == expected,
+                      "motion boundary selects exact donor, reused or engine pixels");
+            }
+        }
+}
+
+void noise_allowance_does_not_hide_brightness_changes() {
+    const auto mask = bar_mask();
+    for (bool clean_donor : { false, true }) {
+        engine e;
+        auto options = with_window(1);
+        options.flat_fill = false;
+        options.blend_threshold = 0;
+        inpaint_temporal::stream s(W, H, options, e.fn());
+        sequence outputs;
+        feed(s, clean_donor ? textured(0) : burn(textured(0), mask), clean_donor ? nullptr : &mask, outputs);
+        const auto changed = textured(0, clean_donor ? 2 : 4);
+        feed(s, burn(changed, mask), &mask, outputs);
+        flush(s, outputs);
+        check(e.calls == (clean_donor ? 1 : 2) && s.counters().px_propagated == 0 && s.counters().px_reused == 0,
+              "coherent brightness changes below the noise allowance still reject copying");
+        check(outputs.size() == 2 && outputs[1] == burn(changed, mask, 200),
+              "brightness change uses the engine and preserves known pixels");
+    }
 }
 
 void moving_texture_cannot_cancel_inside_cells() {
@@ -548,6 +637,9 @@ static int crispembed_test_main() {
     cumulative_drift_refreshes_the_fill();
     moving_texture_cannot_cancel_inside_cells();
     grain_on_a_still_shot_still_propagates();
+    grain_on_a_still_shot_still_reuses();
+    residual_noise_keeps_motion_thresholds();
+    noise_allowance_does_not_hide_brightness_changes();
     moving_background_calls_the_engine();
     flat_background_needs_no_engine();
     equal_luma_colour_texture_is_not_flat();

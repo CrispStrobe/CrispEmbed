@@ -1,5 +1,13 @@
 ## Issue 71 stream: grain no longer blocks propagation (5 November 2026, Apple M1 Metal, `fix/inpaint-stream-grain`)
 
+Author-reported [PR162](https://github.com/CrispStrobe/CrispEmbed/pull/162)
+measurements at `23f4ad05ad7f689122edd8e586ee3a343de53f57`, baseline
+`17c96639a5507c4cee51898b9eeb05ad58d2ebdc`. These model-backed measurements
+were not independently replayed during integration; the PR supplies screenshots
+but no archived machine-readable A/B report. Model-free hosted contracts are
+separate evidence. The allowance below is applied to each cell's average absolute
+RGB residual; it is not a per-pixel error bound.
+
 Same harness and settings as "Issue 71 video stream with temporal consistency" (MI-GAN512 F16, `--gpu-backend auto`,
 `--inpaint-temporal 15`, `CRISPEMBED_INPAINT_GRAPH=1 CRISPEMBED_INPAINT_FAST=1`). v0.17.14's pixel-residual guard
 counted half of all per-pixel change, so normal grain (~3 levels per pixel between clean frames of the static clip)

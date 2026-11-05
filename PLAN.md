@@ -33,6 +33,27 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Big-LaMa (research only) | Weights' rights unclear; kept on `feat/issue71-lama-research`, private Hub copy only | Nothing until the owner clarifies the weight licence | Licence clarified (then publish) or lane closed |
 | Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
 
+### PR162 bounded temporal-grain review — 5 November 2026
+
+Review lane: [PR162](https://github.com/CrispStrobe/CrispEmbed/pull/162), original
+source `23f4ad05ad7f689122edd8e586ee3a343de53f57`, against main
+`17c96639a5507c4cee51898b9eeb05ad58d2ebdc`. The change corrects the residual
+score in the opt-in `--inpaint-temporal` stream; neural inference is unchanged.
+Original hosted [inpainting contracts42058381772](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42058381772)
+pass270 temporal checks on Linux/macOS/Windows. Original lint42058381900 has a
+cancelled style job; it is not a passing gate.
+
+Acceptance: exact past/future donor pixels and current known pixels under grain,
+grainy engine-fill reuse, residual-only propagation/reuse/blend boundaries, and
+coherent brightness-change rejection. Run the expanded contracts and ordinary
+selected CI on hosted runners, then merge only the checked head and inspect main
+checks. Keep unrelated OCR branches and artifact sources intact. The author's
+Apple model-backed PSNR/flicker numbers in PERFORMANCE are reported evidence,
+not independently replayed here; no real-film ground truth or broad video quality
+qualification follows. The six-level allowance applies to a cell average and
+does not bound every copied pixel's error. Development0.17.15 remains unreleased;
+published0.17.14 and app0.17.12 are unchanged. Final evidence belongs in HISTORY.
+
 ## Regression review and OCR continuation — 4 November 2026
 
 The [current executable qualification continuation](docs/ocr-qualification-2026-11-04.md)

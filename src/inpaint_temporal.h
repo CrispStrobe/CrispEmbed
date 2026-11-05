@@ -16,7 +16,7 @@
 //   4. the engine fills the rest; with the same mask and only a moderate ring
 //      change, its fill is blended with the previous output (less shimmer).
 // "Static" compares 8x8 cell means of the ring (unmasked pixels within 24 px of
-// the mask), guarded by half the per-pixel absolute residual above a 6-level noise
+// the mask), guarded by half each cell's mean absolute RGB residual above a 6-level noise
 // allowance, so moving fine texture cannot cancel within a cell while film grain
 // on a still shot does not count as motion. Mean difference <= static_threshold and
 // 90th percentile <= twice that; small noise can still reuse. Analysis is limited
