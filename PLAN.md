@@ -954,3 +954,23 @@ Active isolated `feat/lighton4b-decoder-compose-20261105`, stacked on PR149 `a65
 Initial composition [41979168300](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41979168300) at `bf6a7f930` is retained negative: all347 controls and290/291 comparisons pass, but prefill layer21 recurrent minimum row cosine0.999980919 fails unchanged0.99999. State max error1.0477379e-7 versus magnitude0.01271605; worst row1326 has magnitude9.5542184e-8, L2=2.2861583e-7 and error5.6026082e-9. Upstream hidden20 error9.6082687e-5 versus24.0699482; final norm errors remain1.88e-5–2.21e-5. Exact retained-input block21 attribution uses a dedicated read-only Actions artifact job, regenerates and checks all26 synthetic weight hashes, replays only original/native block21 on source/native hidden20 plus a test-only source-normalized GDN boundary. No32-layer forward repeat, runtime/budget change or qualification promotion.
 
 Retained attribution [41980636649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41980636649) at `fbab5cf9f` verifies26 regenerated weight hashes and all6 original/native frozen anchors byte-exact.22 same-input block21 comparisons+4 source-normalized GDN comparisons pass unchanged budgets; recurrent same-input cosines0.9999998702/0.9999998445. Original block21 supplied only the retained native hidden20 input reproduces strict cache rejection (max1.0617077e-7,cos0.9999773187), establishing accumulated upstream input drift as sufficient cause rather than a localized GDN mismatch. The original32-layer panel remains negative290/291; no full decoder/original rerun, runtime/budget change or model qualification. [Scope and exact limits](docs/lighton4b-decoder-compose.md), [source-verified combined receipt](tests/results/qwen35-ocr/lightonocr3-4b-decoder-compose-attribution.json). Scoped PR workflow-prefix guard failure41980642106 is repaired by appending the same selector exclusion after existing conditions; old security tests unchanged.
+
+### LightOn4B quantized payload-owner continuation — 5 November 2026
+
+The bounded `feat/lighton4b-gguf-decoder-20261105` lane connects the immutable
+format-5 inspector to a CPU payload owner, admits only the frozen Q8_0 or
+Q4_K-with-Q8-embedding text recipes, and retains protected vision/norm/recurrent
+storage. `CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT` and
+`CRISPEMBED_LIGHTON4B_QUANT` are default-off in addition to the existing component
+and quant gates. Grouped projections and both decoder block validators now admit
+those gated quantized matrices; existing F32/F16 paths remain available.
+Chunked prefill preserves the old sixteen-token component boundary and uses
+independent layer caches up to the existing4096-token context ceiling.
+
+Next gate: hosted model-free compilation/type/negative controls, then actual
+Q8/Q4 payload admission and native document inference against the pinned original
+BF16 execution. Full-position logits, earliest differing stage with magnitudes,
+free IDs/text/EOS and held-out documents remain required. The historical negative
+290/291 synthetic decoder receipt and its exact thresholds remain unchanged;
+it is evidence to preserve, not a prerequisite requiring an F32 model run.
+No native quality or release qualification follows from structural admission.

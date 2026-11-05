@@ -283,9 +283,15 @@ bool linear_grouped_cpu(const linear_weights & weights, int key_heads, const flo
         threads > 256)
         return false;
     for (auto * tensor : { weights.qkv, weights.z, weights.a, weights.b, weights.out, weights.conv, weights.a_log,
-                           weights.dt_bias, weights.norm })
-        if (!tensor || (tensor->type != GGML_TYPE_F32 && tensor->type != GGML_TYPE_F16) || !ggml_is_contiguous(tensor))
-            return false;
+                           weights.dt_bias, weights.norm }) {
+        const bool projection = tensor == weights.qkv || tensor == weights.z || tensor == weights.a ||
+                                tensor == weights.b || tensor == weights.out;
+        const bool quant = projection && core_env::on("CRISPEMBED_LIGHTON4B_QUANT") && tensor &&
+                           (tensor->type == GGML_TYPE_Q8_0 || tensor->type == GGML_TYPE_Q4_K) &&
+                           matrix_type_supported(tensor);
+        if (!tensor || (!quant && tensor->type != GGML_TYPE_F32 && tensor->type != GGML_TYPE_F16) ||
+            !ggml_is_contiguous(tensor)) return false;
+    }
     const int64_t heads = weights.a_log->ne[0], width = weights.norm->ne[0], hidden_width = weights.qkv->ne[0];
     const int64_t kernel = weights.conv->ne[0];
     if (heads < key_heads || heads > 128 || heads % key_heads || width < 1 || width > 256 || hidden_width < 1 ||

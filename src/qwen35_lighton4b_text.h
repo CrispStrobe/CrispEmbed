@@ -10,6 +10,11 @@ namespace qwen35_ocr {
 // checkpoint schema. The caller retains tensor/backend lifetime. This component
 // does not admit format 5, map vision, execute a decoder, or qualify a model.
 // Pass only the text subset: exactly 426 stored tensors, with no lm_head alias.
+inline bool lighton4b_matrix_type(const ggml_tensor * t) {
+    return t && (t->type == GGML_TYPE_F32 || t->type == GGML_TYPE_F16 ||
+        (core_env::on("CRISPEMBED_LIGHTON4B_QUANT") && core_env::on("CRISPEMBED_QWEN35_QUANT") &&
+         (t->type == GGML_TYPE_Q8_0 || t->type == GGML_TYPE_Q4_K) && matrix_type_supported(t)));
+}
 struct lighton4b_text_owner {
     decoder_weights decoder;
     attention_config attention;
@@ -30,7 +35,7 @@ inline bool map_lighton4b_text(const core_gguf::tensor_map & text, lighton4b_tex
         auto * tensor = found->second;
         if (!tensor || tensor->ne[0] != a || tensor->ne[1] != b || tensor->ne[2] != c || tensor->ne[3] != 1 ||
             !ggml_is_contiguous(tensor) ||
-            (matrix ? tensor->type != GGML_TYPE_F32 && tensor->type != GGML_TYPE_F16 : tensor->type != GGML_TYPE_F32) ||
+            (matrix ? !lighton4b_matrix_type(tensor) : tensor->type != GGML_TYPE_F32) ||
             !identities.insert(tensor).second || !consumed.insert(name).second)
             return nullptr;
         return tensor;

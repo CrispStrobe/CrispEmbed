@@ -1,5 +1,5 @@
 #pragma once
-#include "qwen35_decoder.h"
+#include "qwen35_lighton4b_text.h"
 #include "qwen35_math.h"
 #include <algorithm>
 #include <cmath>
@@ -37,7 +37,7 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     auto shape = [&](ggml_tensor * t, int a, int b = 1, int c = 1, bool matrix = false) {
         return t && t->ne[0] == a && t->ne[1] == b && t->ne[2] == c && t->ne[3] == 1 && ggml_is_contiguous(t) &&
                t->data && identities.insert(t).second &&
-               (matrix ? t->type == GGML_TYPE_F32 || t->type == GGML_TYPE_F16 : t->type == GGML_TYPE_F32);
+               (matrix ? lighton4b_matrix_type(t) : t->type == GGML_TYPE_F32);
     };
     if (!shape(w.input_norm, 2560) || !shape(w.post_norm, 2560) || !shape(w.gate, 2560, 9216, 1, true) ||
         !shape(w.up, 2560, 9216, 1, true) || !shape(w.down, 9216, 2560, 1, true) ||
