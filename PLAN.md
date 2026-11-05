@@ -2,8 +2,9 @@
 
 The gated LightOn4B row-streamed vocabulary component now accepts Q8_0 and
 Q4_K rows when the existing quant gate is enabled. It retains bounded tile
-conversion and full logits; hosted quantized seam, gate and dot-product controls
-are pending. This is not model admission, original parity or decoded quality.
+conversion and full logits; [hosted 41996887406](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41996887406)
+passed quantized seam, gate and independent dot-product controls. This is not
+model admission, original parity or decoded quality.
 
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with

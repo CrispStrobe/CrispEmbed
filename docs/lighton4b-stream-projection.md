@@ -22,8 +22,9 @@ are allocation bounds, not a measured RSS claim. Each tile repeats graph setup
 and input copy; no speed improvement is claimed. Quantized source tensors are
 accepted only for Q8_0 or Q4_K with `CRISPEMBED_QWEN35_QUANT=1` and a
 block-aligned row width. Each quantized tile is dequantized and projected with
-the same bounded F32 path. This support is a source change awaiting hosted
-controls and actual model logits; it is not a quantized quality result.
+the same bounded F32 path. Hosted [41996887406](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41996887406)
+passes the full build matrix and the Linux independent dot-product and tile-seam
+controls for both quantized types. Actual model logits and quality remain untested.
 
 Calibration observes the original named matrix once with the original hidden
 input; internal tiles suppress callbacks. Output is committed only after every
