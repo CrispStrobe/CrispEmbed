@@ -99,6 +99,15 @@ unchanged. Its conservative 40 GiB RAM/48 GiB disk bounds reject the observed
 implementation, measured peak and original-trace equivalence, not relaxed guards.
 No original model forward was run by these controls.
 
+The separately versioned [sharded transport](https://github.com/CrispStrobe/CrispEmbed/blob/f99b5b618cdf8438f29a655790993a6aef95e8cd/docs/lighton4b-original-sharded-transport-v1.md)
+passed initial and hardened fixture controls in [41977694403](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41977694403)
+and [41977934618](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41977934618).
+These check immutable multipart upload, independent cold restoration and failure
+handling against a hosted HTTP fixture. Actual Hub provider acceptance and
+retention are unverified; capture remains disabled and the old document-v1
+archive limit remains intact. Full cold restore needs source size plus one part
+and 1 GiB free, potentially on a separate host from the original capture.
+
 | Lane | State | Next action | Done when |
 |---|---|---|---|
 | OCR model gaps / LightOnOCR-3-4B (`feat/ocr-next-models-20261104`, [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143)) | Main `17c96639`/PR141 evidence is integrated; all seven workflows pass at `91b24764`. Explicit converter has 16 passing export controls at `aa661568` (333 total); its inline workflow-contract regression is repaired. [Default-off grouped-head APIs and pinned original/meta protocols](docs/lightonocr3-4b.md#default-off-grouped-head-component-and-hosted-reference) are implemented | Review hosted meta construction, 208 original/native component stages and cache controls, plus combined regression CI. Then add bounded vocabulary projection and explicit larger-model ownership | Native support remains false until complete original/native F32/F16 and document evidence, followed by separate precision/publication gates |
