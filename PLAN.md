@@ -1422,3 +1422,19 @@ keeps original rotary path, verifies first-block parity against original GELU
 with native rotary, builds native/context and runs model-free gate controls.
 Only after this passes may one ordinary Q4 A/B enable GELU. Prior quality remains
 negative; rejected ROTARY_AVX2 gate stays off.
+
+GELU-only integration [42064278334](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42064278334)
+at `9da1757cd3103180cfa809406452719e2368a87e` passes all 2,293,760 activation
+bytes, old gate controls, and exact first-block reproduction of original GELU
+with native rotary (32 differences remain, attributed to rotary). Native/context
+builds pass, context 9 + decoder 20 controls pass, env docs current. Rejected
+ROTARY_AVX2 stays explicitly 0 in the next ordinary Q4 A/B; decoder candidate 0.
+
+Actual backend control is now confirmed: original CPU build has oneMKL 2024.2
+(build 20240605), AVX2. Direct reference-only vmsCos/vmsSin HA mode calls on all
+2,000 finite grid angles match Torch exactly, while installed SLEEF vector
+headers do not. No MKL/Torch dependency is added to product. Retain this as a
+rotary backend dependency, not permission to import closed-source math or a
+reference lookup table. All exact source/config/control and artifact identities
+are in `tests/results/qwen35-ocr/lightonocr3-4b-gelu-integration-mkl-control.json`.
+Quality remains negative pending the authorized GELU-only composed Q4 A/B.
