@@ -1,3 +1,13 @@
+## LightOn4B BF16 CPU original capture — 5 November 2026
+
+On one admitted Kaggle CPU worker, the original BF16 model generated 177 tokens
+including EOS in 567.890 seconds for the frozen form request. Parameter bytes were
+9,078,531,072. Measured process high-water RSS was 9,908,559,872 bytes (9.228
+GiB); worker cgroup peak was 19,794,493,440 bytes (18.435 GiB), including page
+cache and other worker memory. This is one observed request, not an upper bound,
+benchmark or native/quantized speed result. [The review](tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture-review.json)
+records the exact source, scope and remaining checks.
+
 ## LightOn3 complete CPU cache+epsilon panel —4 November2026
 
 [All6 cases×2 precisions](tests/results/lightonocr3-1b/cache-ab-v1/full-review-41905258340.json)

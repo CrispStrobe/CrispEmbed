@@ -1,3 +1,19 @@
+## 5 November 2026 — Actual original BF16 CPU generation
+
+The source-pinned Kaggle CPU run `07543dcc80ebcecad644815d9397be2570a51dd4`
+loaded the full verified original 4B checkpoint with all 723 parameter objects in
+BF16, retaining the single tied head. The frozen form/empty-prompt request used
+official Transformers generation, 154 input tokens and cap256; 177 generated
+tokens ended in EOS after 567.890 seconds. The [original report](tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture.json)
+and [independent review](tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture-review.json)
+retain exact sources, checkpoint/tokenizer identity, decoded output, scores and
+measured memory. All 177 score objects remain on remote worker output; their names
+were independently enumerated and only first/last rows were downloaded and hash/
+finite/argmax checked. Python reported missing `wrapt` in `sitecustomize`;
+execution continued and pip check found no broken requirements. This is a separate
+BF16 CPU original output, not F32 equivalence, observer-off neutrality,
+native/quantized parity or document-quality qualification.
+
 ## 5 November 2026 — Separate original BF16 capture preparation
 
 Hosted [41992437849](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41992437849)

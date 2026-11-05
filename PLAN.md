@@ -1,15 +1,23 @@
 # CrispEmbed plan — open work (updated 4 November 2026)
 
 The separate [CPU BF16 free-generation lane](docs/lighton4b-bf16-freegen.md)
-is ready for an experimental resource-admitted hosted capture at exact source
+completed an experimental Kaggle capture at exact source
 `07543dcc80ebcecad644815d9397be2570a51dd4`. Corrected hosted41993030552
-passes5 synthetic methods and actual official-processor preparation; the
-[receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-preflight.json) preserves
-initial41992437849's missing-torchvision failure. Actual grid is `[1,20,28]`,
-pixels `[560,1536]`, IDs `[1,154]`. This proves preparation only: no checkpoint
-or original/native forward occurred. The separate22GiB BF16 admission does not
-alter F32's40GiB/48GiB guards, hard capture default, v1/v2 producer admissions,
-or the256-token cap. Actual generation, EOS/output and peak memory remain pending.
+first passed5 synthetic methods and actual official-processor preparation; the
+[preflight receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-preflight.json)
+preserves initial41992437849's missing-torchvision failure. The subsequent
+[actual capture and review](tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture-review.json)
+verify the full original checkpoint/tokenizer, BF16 parameter census, 177 original
+forward calls and 177 generated IDs ending in EOS. It recorded 9,908,559,872-byte
+process peak RSS and 19,794,493,440-byte worker cgroup peak; the latter includes
+file cache and other worker memory. The 177 score objects remain remote; their
+names were enumerated and the first/last independently read back. The remaining
+175 were not independently downloaded. The separate 22GiB BF16 admission does not
+alter F32's 40GiB/48GiB guards, hard capture default, v1/v2 producer admissions
+or the 256-token cap. The output is a French figure-style description of the form;
+verbatim transcription quality, observer-off replay, F32 equivalence and all
+native/quantized comparisons remain open. Scores are official generation scores,
+not independently observed raw logits.
 
 The separate [document-v2 packaging/admission contract](docs/lighton4b-document-v2.md)
 maps970 base plus67 fields per generated position into authenticated stage ranges
