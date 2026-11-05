@@ -1346,3 +1346,24 @@ app-pin promotion. Exact source, artifact identities and 90-day expiry are in
 `tests/results/qwen35-ocr/lightonocr3-4b-softmax-{vector-initial,vector-source,production}.json`.
 
 Final focused integration [42055105090](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42055105090) at `102994438f5b25db1d40dfc6b452da9c4b3102ca` passed all exact source F32 probability/reciprocal/pooling checks, preserved old gates, checked no invalid/divide-by-zero exception on the exact path, built native/context and passed context 9 + decoder 20 model-free controls and env docs. Artifact `13429762220`, SHA `d74896b641020d77bd326179763d4cd9ca4412b81ec989d3a0f161b2f45c078b`, retained 90 days. Next: one ordinary Q4 composed first-score/two-token A/B with decoder candidate explicitly 0, all vision corrections enabled only in candidate, and all 30 fixed-baseline hashes required. Runtime-generated rotary and decoded quality remain unqualified until measured.
+
+### 2026-11-05: exact-attention candidate Q4 quality remains negative
+
+Ordinary [42056882067](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42056882067)
+at `88aa296dc653c87c493f1357605196df1799f0e9` passes all 30 fixed baseline hashes
+and source-fed norms/QKV/pooling/out/up/down byte controls. With decoder candidate
+explicitly 0 and all verified vision gates enabled, patch/position/embedded match
+original bytes. Layer 0 differences fall 35,896 to 40, RMS 0.000691054 to
+0.0000239534 (max 0.03125 to 0.0078125). This is still not composed parity.
+
+Merged RMS worsens 0.00973525 to 0.01839050 (max 1.21094 to 2.57422), and first-logit
+RMS worsens 0.56013479 to 0.59042975 (max 2.38528 to 2.55264). Both independent
+smokes still decode `[20353,29]`, `<table>`, against original `<figure`. **Quality
+remains negative and unqualified; all correction gates stay off.** Source-fed
+activation still has 14,029 small F32 differences (max 1.5367e-7), and runtime
+rotary generation remains a separate boundary. Next bounded job must isolate
+those on retained identical inputs before any further correction.
+
+Full numerical/decoded/resource receipt: `tests/results/qwen35-ocr/lightonocr3-4b-softmax-composed-negative.json`.
+Artifact `13430388075`, SHA `1e45293758c7c914da4d40d8c96bb4a67a3b3af4a33cd4eaab50a4db201f264b`,
+retained 90 days. Two-token smoke is not EOS or full-document qualification.
