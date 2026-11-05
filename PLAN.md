@@ -1673,3 +1673,14 @@ controls, prefix/completion distinction, capacity and timing are retained in
 `tests/results/qwen35-ocr/lightonocr3-4b-rotary-table-q8-smoke.json`. Artifact
 `13450873762`, SHA `9a16e85ba59ca254a2d2d509cf21f0864fe7da4911b49c8312d6afdd2e461c09`,
 retained through 2027-02-03. No default, release or app-pin promotion follows.
+
+### Corrected native mixed form diagnostic
+
+One hosted first-score/two-token smoke uses the immutable mixed candidate from
+[42006450732](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42006450732),
+the complete rotary table and all verified vision gates. It authenticates the
+original BF16 prefill and independently captured BF16 mixed-recipe first score,
+and requires all29 vision stages and five prepared inputs to match the original
+bytes. This observed form is excluded from calibration/heldout qualification;
+two prefix IDs cannot establish document completion or EOS parity. Decoder BF16
+rounding, direct quantization and rejected rotary alternatives remain off.
