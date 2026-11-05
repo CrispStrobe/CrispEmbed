@@ -65,6 +65,24 @@ def main():
   report['artifacts']={x.name:{'bytes':x.stat().st_size,'sha256':sha(x)} for x in native.iterdir() if x.is_file()}
   generated=[int(x) for x in (native/'generated.ids').read_text().split()]
   report['decoded']={'ids':generated,'text':(native/'generated.txt').read_text(),'exact_original_ids':generated==teacher}
+  if args.mode=='full':
+   protocol=ROOT/'docs/lighton4b-bf16-quant-v1.json'
+   if sha(protocol)!='4d2a738a8df75947f5a8e269799c8b3a27af19bfafb82653802a7531b7c928bc':raise RuntimeError('parity protocol differs')
+   eos=generated[-1]==248046
+   receipt={'schema':'lighton4b-bf16-quant-native/v1','precision':args.recipe,
+    'protocol_sha256':sha(protocol),'original_capture_sha256':sha(capture),
+    'teacher_forced_ids':teacher,'free_generation_independent':True,
+    'generated_ids':generated,'decoded':report['decoded']['text'],'stop':'eos' if eos else 'max_tokens',
+    'cap_hit':not eos and len(generated)==256,'native_forward_executed':True,
+    'producer_source_sha':report['source_sha'],
+    'producer_run_url':'https://github.com/'+os.environ['GITHUB_REPOSITORY']+'/actions/runs/'+os.environ['GITHUB_RUN_ID'],
+    'weights_sha256':expected,'scores':[]}
+   for i in range(177):
+    name=f'teacher.{i}.logits.f32';record=report['artifacts'][name]
+    if record['bytes']!=993280:raise RuntimeError('full vocabulary row differs')
+    receipt['scores'].append({'position':i,'file':name,'shape':[1,248320],**record})
+   (native/'native.json').write_text(json.dumps(receipt,indent=2)+'\n')
+   report['native_receipt_sha256']=sha(native/'native.json')
   report['status']='completed'
  finally:
   (out/'native-document.json').write_text(json.dumps(report,indent=2)+'\n')
