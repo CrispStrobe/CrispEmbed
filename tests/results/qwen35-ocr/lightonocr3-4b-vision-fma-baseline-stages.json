@@ -1,0 +1,159 @@
+{
+  "schema": "lighton4b-vision-fma-baseline-stages/v1",
+  "run_id": 42028668863,
+  "artifact_id": 13415940980,
+  "native_report_member": "corrected/native-document.json",
+  "native_report_sha256": "7a1a74ddbeaf1eaa1e916f091ab38a5895e59f7eb04165972a36ae8d4cb1ae14",
+  "source_sha": "6c3cb6ed979c2bccd3f515c20c1543a96f578026",
+  "gates": {
+    "CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT": "1",
+    "CRISPEMBED_LIGHTON4B_QUANT": "1",
+    "CRISPEMBED_QWEN35_QUANT": "1",
+    "CRISPEMBED_LIGHTON4B_GGUF_INSPECTION": "1",
+    "CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER": "1",
+    "CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_OWNER": "1",
+    "CRISPEMBED_QWEN35_OCR": "1",
+    "CRISPEMBED_LIGHTON4B_DECODER_COMPOSE": "1",
+    "CRISPEMBED_LIGHTON4B_LINEAR_BLOCK": "1",
+    "CRISPEMBED_LIGHTON4B_ATTENTION_BLOCK": "1",
+    "CRISPEMBED_QWEN35_GDN_GROUPED_HEADS": "1",
+    "CRISPEMBED_QWEN35_STREAM_PROJECTION": "1",
+    "CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE": "1",
+    "CRISPEMBED_LIGHTON4B_FRONTEND": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_NORM": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM": "1"
+  },
+  "decoded": {
+    "ids": [
+      20353,
+      29
+    ],
+    "text": "<table>",
+    "exact_original_ids": false
+  },
+  "stages": {
+    "processor.patches": {
+      "bytes": 3440640,
+      "sha256": "d623c64f184a10b6964aedeb3cd90f5a4e2e7aa39f7c480a9f474757776b8d8d"
+    },
+    "vision.patch": {
+      "bytes": 2293760,
+      "sha256": "856c5492dba4e042fb52d0de9d26fabbfc2b5a05610db70ce857aebcdad020b3"
+    },
+    "vision.position": {
+      "bytes": 2293760,
+      "sha256": "647228a912dfd3d0f0f2fb40a9fc48e9220cd43b25bb5b008540ae70da1c53ce"
+    },
+    "vision.embedded": {
+      "bytes": 2293760,
+      "sha256": "364cf6e4d8bfcd5f26a9ed62e016301c8b10809e73350257e04d46c5d4819e5f"
+    },
+    "vision.layer.0": {
+      "bytes": 2293760,
+      "sha256": "34a5cd48f97f9e3141e4003573dd13422a52a54d72948c08c006809c653e7f1e"
+    },
+    "vision.layer.1": {
+      "bytes": 2293760,
+      "sha256": "c25367fdab2d76d4ef155f2ce941a6ac5e0fbeaa29d5aadb7f988fc6e74e8f5c"
+    },
+    "vision.layer.2": {
+      "bytes": 2293760,
+      "sha256": "9333e3c204e7a2733aefddb82b5a51ba01932797287705906cf4224d7e2c0ac1"
+    },
+    "vision.layer.3": {
+      "bytes": 2293760,
+      "sha256": "f33f634aab2c5af24103dbf70e337a68dfe112d7b00e33b64cdbb693bc7ac54a"
+    },
+    "vision.layer.4": {
+      "bytes": 2293760,
+      "sha256": "97cf76e99a53437c49746c0ce1ba0fbada5a03fee7652ccf4407d76327be385d"
+    },
+    "vision.layer.5": {
+      "bytes": 2293760,
+      "sha256": "8470a955b1050b4d4a61a7d6e8bc4bc87bcbd508a10a8ce52bdb890ff653b03e"
+    },
+    "vision.layer.6": {
+      "bytes": 2293760,
+      "sha256": "7d32c34e26b9bd9156faf890c0b8f86f6f6d9db5079c7433ef211d995fd0d6f1"
+    },
+    "vision.layer.7": {
+      "bytes": 2293760,
+      "sha256": "c26a90050d563cc2884d17450521126c33723f1816f0083ea85b2cf35f714124"
+    },
+    "vision.layer.8": {
+      "bytes": 2293760,
+      "sha256": "14f389b85d32d7ec7c930abe38e19600fd8f8d45b9941a276216ace2718b2e7b"
+    },
+    "vision.layer.9": {
+      "bytes": 2293760,
+      "sha256": "0f1c786a63574bb73dc0d9162ea8cdf24b77d75bb64f79d6ab8d9db22c03a92c"
+    },
+    "vision.layer.10": {
+      "bytes": 2293760,
+      "sha256": "6724759a4307aade95ccb8f4636558a56360e3e93a9c67b03a0d380df86cc452"
+    },
+    "vision.layer.11": {
+      "bytes": 2293760,
+      "sha256": "cd9ad6bc49676cabb064ab4d9cc22447105b45145f6bc30e1c373d6a0b9f095a"
+    },
+    "vision.layer.12": {
+      "bytes": 2293760,
+      "sha256": "e828c5de9d4f01ac0577ce651e4685b09354aeae583f83246b64ad3818451e3e"
+    },
+    "vision.layer.13": {
+      "bytes": 2293760,
+      "sha256": "0d25cab07bdf27590a45ed81f575a4f49eb7a7e93d3b06de8b66e551978bb3d4"
+    },
+    "vision.layer.14": {
+      "bytes": 2293760,
+      "sha256": "b227786eed7ee67ed760ec106aee1619e31d20fcd8b6d160e037bd48fab07643"
+    },
+    "vision.layer.15": {
+      "bytes": 2293760,
+      "sha256": "11dd3ee69ae321b22ce747b2a1dcb3fb1386a06620d75911a0ba40ffe347fdcc"
+    },
+    "vision.layer.16": {
+      "bytes": 2293760,
+      "sha256": "135f58c8a3024b8d4a1a2f185e1bded80dd9b2215b7995c18e1a597559f952dd"
+    },
+    "vision.layer.17": {
+      "bytes": 2293760,
+      "sha256": "523ebc95f6a4db6ce842617a740d2cb6ad1198a9187a15c9ec215f4ce807408e"
+    },
+    "vision.layer.18": {
+      "bytes": 2293760,
+      "sha256": "ae9a7b3a8f54ed381d7dee924f8139d6127f6d5f709f0bcb376c8842dd9294a9"
+    },
+    "vision.layer.19": {
+      "bytes": 2293760,
+      "sha256": "2946a045abda1b3678826590ef0e3a98ba1c2d7b0bcc9c94bb949d065d2c4d14"
+    },
+    "vision.layer.20": {
+      "bytes": 2293760,
+      "sha256": "b7e95fad335fda607907a3312f559256e59497c6fffaa57075003a1d73849ac2"
+    },
+    "vision.layer.21": {
+      "bytes": 2293760,
+      "sha256": "5bcace2ea2203cd4372b0bde181c98091d60fc53cac65099e6894152918f9e17"
+    },
+    "vision.layer.22": {
+      "bytes": 2293760,
+      "sha256": "c1f8269b92a7cda614a774cee4ed4e9b41b3b6927bd9168b5a13c59d59161ecb"
+    },
+    "vision.layer.23": {
+      "bytes": 2293760,
+      "sha256": "a1d0eca5de41e2afe074858a5e8db08fcacf5de2c08e202b6bd7ca3f4ab8d0f8"
+    },
+    "vision.merged": {
+      "bytes": 1433600,
+      "sha256": "d466a802f945b585452d1c6642d8b45ffd18df20f46ba1299710e0f77ced36c4"
+    },
+    "prefill.logits": {
+      "bytes": 993280,
+      "sha256": "b1a00ef6809bbe4cab0101e5ba4b21ae4c3f571b5633c4ffb7bc62ca4094f5d4"
+    }
+  },
+  "review_scope": "Small native report retrieved via ZIP range requests; no raw stage arrays downloaded."
+}

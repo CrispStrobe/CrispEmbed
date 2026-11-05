@@ -1270,3 +1270,40 @@ retains all strict and decoded failures. Only already-verified default-off RMS/
 linear-boundary code is integrated into existing PR155 at7d1e73464; old path,
 quantized storage and known QKV failure remain. Assembled model-free/vision and
 full decoder/decoded/platform/release checks remain separate; no default change.
+
+
+### LightOn4B actual vision operators integrated, Q4 decoded negative — 5 November2026
+
+PR155 preserves all earlier alternatives/defaults and decoder source. Full
+original/actual source-fed nn.Linear QKV/out/up/down bytes match at1/4 threads
+in42032345547. Original Conv3D42036525469 identifies four partial sums reduced
+left-associatively; actual separate gated Conv42037359930 matches all573,440
+patch bits at1/4 threads and independently of NN/PATCH alternatives. The earlier
+wrong Conv-as-linear path remains separately gated and its negative42033651799
+receipt is preserved. No matrix algebra/precision/cosine shortcut is promoted.
+
+[Assembled42038802495](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42038802495)
+atedbd2b782 passes actual norm/full NN/full Conv/gate/native build controls and
+decoder20 controls. Exact source ZIP13414500337 is preserved in artifact13420770687
+member`linear/retained-source-13414500337.zip`, SHA77682c5a,238,129,493 bytes,
+expiring3 February2027. Only task-owned script retention changes; no bulk local
+arrays, original regeneration or runtime release. All receipts are under
+`tests/results/qwen35-ocr/`.
+
+Initial final-smoke42040210848 stops before ordinary execution on an unnecessary
+missing historical norm-off receipt, despite complete norm-only overrides. Its
+negative is retained; the scoped fallback repair changes no source vector/budget.
+[Actual42041219151](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42041219151)
+at3a0c7ffc6 then preserves all30 fixed old baseline hashes with decoder gate0.
+Patch/position/embedded match original raw SHA values. Layer0 RMS improves
+0.000691054→0.000141771 (35,896→1,466 differences); merged RMS improves
+0.00973525→0.00866825 but max worsens1.21094→1.67969. First-logit RMS worsens
+0.560135→0.568348/max2.38528→2.45592. Both independent two-token decodes remain
+wrong`<table>` (20353,29), versus source`<figure`. The complete30-stage smoke
+receipt preserves this real quality negative despite intermediate improvements.
+All gates stay off; no model/EOS/document/quant/publication/release/app promotion.
+
+Next is one retained-only source-fed attention pooling probe (65 values/max0.00390625),
+with exact original and actual-native byte controls before rotation/QK/softmax/PV
+attribution. Tiny GELU tails remain separate. This commit imports evidence only;
+actual runtime stays in existing PR155.
