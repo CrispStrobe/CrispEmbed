@@ -47,12 +47,13 @@ def main():
    x=x.float();half=torch.cat((-x[...,32:],x[...,:32]),dim=-1);return(x*co[:,None,:]+half*si[:,None,:]).to(torch.bfloat16)
   q,k=rotate(q),rotate(k)
   scores=(q.transpose(0,1)@k.transpose(0,1).transpose(1,2))*0.125
-  prob=torch.nn.functional.softmax(scores,dim=-1,dtype=torch.float32).to(torch.bfloat16)
+  prob_float=torch.nn.functional.softmax(scores,dim=-1,dtype=torch.float32);prob=prob_float.to(torch.bfloat16)
   pooled=(prob@v.transpose(0,1)).transpose(0,1).reshape(560,1024).float().numpy().reshape(-1)
   original=np.fromfile(stages/'source.pooled.f32',dtype='<f4');report['original_pool_control']=compare(original,pooled)
   if not report['original_pool_control']['bit_exact']:raise ValueError('original actual pooled bytes differ')
   def emit(name,x):x.float().contiguous().numpy().astype('<f4').tofile(stages/('source.'+name+'.f32'))
-  emit('qrot',q);emit('krot',k);emit('scores',scores);emit('prob',prob);sf=scores.float();emit('exp',(sf-sf.amax(dim=-1,keepdim=True)).exp())
+  emit('qrot',q);emit('krot',k);emit('scores',scores);emit('prob',prob);emit('prob_float',prob_float);sf=scores.float();emit('exp',(sf-sf.amax(dim=-1,keepdim=True)).exp())
+  inverse=prob_float.reshape(-1,560).gather(1,sf.reshape(-1,560).argmax(dim=1,keepdim=True)).reshape(-1).numpy();inverse.astype('<f4').tofile(stages/'source.inverse.f32')
   run('configure',['cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_CUDA=OFF','-DGGML_VULKAN=OFF']);run('build',['cmake','--build',build,'--target','lighton4b-vision-attention-probe','--parallel','2']);run('probe',[build/'lighton4b-vision-attention-probe',stages])
   actual=np.fromfile(stages/'actual.pooled.f32',dtype='<f4');old=np.fromfile(stages/'baseline.pooled.f32',dtype='<f4');trace=np.fromfile(stages/'trace.pooled.f32',dtype='<f4')
   report['actual_matches_retained']=compare(old,actual);report['trace_matches_actual']=compare(actual,trace);report['native_pooled_vs_original']=compare(original,actual)
@@ -60,6 +61,37 @@ def main():
   report['operators']={}
   for source_name,targets in (('qrot',('native.qrot',)),('krot',('native.krot',)),('scores',('native.scores','sourcefed.dot8','sourcefed.dot4','sourcefed.dotdouble')),('prob',('native.prob','sourcefed.softmax_std_double','sourcefed.softmax_std_vec8','sourcefed.softmax_sourceexp_vec8')),('pooled',('sourcefed.pv4','sourcefed.pv8','sourcefed.pvdouble'))):
    a=np.fromfile(stages/('source.'+source_name+'.f32'),dtype='<f4');report['operators'][source_name]={name:compare(a,np.fromfile(stages/(name+'.f32'),dtype='<f4'))for name in targets}
+  report['production_qk_pv']={'corrected':compare(original,np.fromfile(stages/'actual.corrected_pooled.f32',dtype='<f4')),'observer':compare(np.fromfile(stages/'actual.corrected_pooled.f32',dtype='<f4'),np.fromfile(stages/'trace.corrected_pooled.f32',dtype='<f4')),'disabled':{g:compare(old,np.fromfile(stages/('disabled.'+g+'.f32'),dtype='<f4'))for g in ('empty','zero')}}
+  if not report['production_qk_pv']['observer']['bit_exact']or not all(v['bit_exact']for v in report['production_qk_pv']['disabled'].values()):raise ValueError('production attention gate/observer differs')
+  report['torch_git_version']=torch.version.git_version
+  expected=prob.float().numpy().reshape(-1);prob_ref=prob_float.numpy().reshape(-1)
+  def bf16(x):
+   bits=np.asarray(x,dtype='<f4').copy().view('<u4');bits+=0x7fff+((bits>>16)&1);bits&=0xffff0000;return bits.view('<f4')
+  source_exp=np.fromfile(stages/'source.exp.f32',dtype='<f4').reshape(-1,560);std_exp=np.fromfile(stages/'sourcefed.std_exp.f32',dtype='<f4').reshape(-1,560)
+  report['softmax_forced_original_inverse']={label:compare(expected,bf16(exp*inverse[:,None]).reshape(-1))for label,exp in (('source_exp',source_exp),('std_exp',std_exp))}
+  report['softmax_reductions']={}
+  for lanes in (4,8,16):
+   for registers in (1,2,4,8):
+    for register_order in ('tree','left'):
+     accum=np.zeros((8960,registers,lanes),dtype='<f4')
+     for block in range(0,560,lanes):accum[:,(block//lanes)%registers,:]+=source_exp[:,block:block+lanes]
+     if register_order=='tree':
+      sums=accum.copy();offset=registers//2
+      while offset:sums[:,:offset,:]+=sums[:,offset:2*offset,:];offset//=2
+      sums=sums[:,0,:]
+     else:
+      sums=accum[:,0,:].copy()
+      for reg in range(1,registers):sums+=accum[:,reg,:]
+     for lane_order in ('tree','left'):
+      if lane_order=='tree':
+       reduced=sums.copy();offset=lanes//2
+       while offset:reduced[:,:offset]+=reduced[:,offset:2*offset];offset//=2
+       total=reduced[:,0]
+      else:
+       total=sums[:,0].copy()
+       for lane in range(1,lanes):total+=sums[:,lane]
+      inv=np.float32(1)/total;result=bf16(source_exp*inv[:,None]).reshape(-1);label=f'lanes{lanes}-regs{registers}-{register_order}-{lane_order}'
+      report['softmax_reductions'][label]={'inverse_bit_differences':int(np.count_nonzero(inv.view('<u4')!=inverse.view('<u4'))),'inverse_max_abs':float(np.max(np.abs(inv-inverse))),'probability_bit_differences':int(np.count_nonzero(result.view('<u4')!=expected.view('<u4')))}
   report['artifacts']={p.name:{'bytes':p.stat().st_size,'sha256':sha(p)}for p in stages.iterdir()};report['status']='compared'
  except Exception as e:
   report['error_type']=type(e).__name__;report['error']='bounded retained attention attribution failed; inspect logs';raise RuntimeError(report['error'])from None

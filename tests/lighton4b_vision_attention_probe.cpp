@@ -26,7 +26,25 @@ int main(int argc, char ** argv) {
     vision_config c;
     c.width = W;
     c.heads = H;
+    auto gate = [](const char * value) {
+#ifdef _WIN32
+        _putenv_s("CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION", value ? value : "");
+#else
+        if (value)
+            setenv("CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION", value, 1);
+        else
+            unsetenv("CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION");
+#endif
+    };
+    gate(nullptr);
     emit("actual.pooled", attention(qkv, c, N, { 0, N }, co, si));
+    for (const char * value : { "", "0" }) {
+        gate(value);
+        emit(std::string("disabled.") + (value[0] ? "zero" : "empty"), attention(qkv, c, N, { 0, N }, co, si));
+    }
+    gate("1");
+    emit("actual.corrected_pooled", attention(qkv, c, N, { 0, N }, co, si));
+    gate(nullptr);
     std::vector<float> q(N * W), k(N * W), v(N * W);
     for (int t = 0; t < N; ++t)
         for (int h = 0; h < H; ++h) {
@@ -128,6 +146,15 @@ int main(int argc, char ** argv) {
         return y;
     };
     emit("trace.pooled", pool(np, 0));
+    emit("trace.corrected_pooled", pool(softmax(os, false, nullptr), 4));
+    std::vector<float> std_exp(os.size());
+    for (int r = 0; r < H * N; ++r) {
+        size_t base = size_t(r) * N;
+        float maximum = -INFINITY;
+        for (int j = 0; j < N; ++j) maximum = std::max(maximum, os[base + j]);
+        for (int j = 0; j < N; ++j) std_exp[base + j] = std::exp(os[base + j] - maximum);
+    }
+    emit("sourcefed.std_exp", std_exp);
     auto op = read("source.prob", size_t(H) * N * N);
     emit("sourcefed.pv4", pool(op, 4));
     emit("sourcefed.pv8", pool(op, 8));

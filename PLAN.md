@@ -1304,3 +1304,22 @@ Then original-input QK eight-register/four-partial/double dot orders, softmax
 normalization/exp alternatives, and PV accumulation orders are compared separately.
 Only test sources/CMake/tooling change; no runtime attention candidate or model
 forward. This probe alone retains raw artifacts90 days on this feature branch.
+
+
+[Attention42044794137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42044794137)
+at7f074c70f verifies exact original pool, actual old pool and observer bytes,
+plus full remote readback of preserved ZIPs. Q/K rotation is exact. First mismatch
+is QK scores:33 values/max0.125; source eight-register dot matches all scores,
+while four-partial differs49. Original-input PV four-partial accumulation matches
+all outputs, versus eight-register19/double16 differences. Native probabilities
+differ116; with original scores, double softmax differs48 and vector-eight
+normalization15, including source-exp input. The
+[full primitive receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-attention-attribution.json)
+keeps these causes distinct; no model/quality promotion.
+
+A new default-off ATTENTION gate applies only evidenced QK/PV orders, retaining
+the old full path and current softmax. Next targeted production/observer/gate
+checks also isolate exact softmax reciprocals from F32 probability at the row
+maximum (exp0=1), then compare lane/register/reduction trees and forced original
+reciprocals/exp. Do not assume the remaining15 values are exp or reduction until
+these independent controls establish it. No full model batch at this gate.

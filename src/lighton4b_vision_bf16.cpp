@@ -378,8 +378,17 @@ static std::vector<float> attention(const std::vector<float> & qkv, const vision
         }
     const float scale = 1.0f / std::sqrt(float(d));
     const bool precise = true;
+    const bool source_order = core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION");
+    const auto normal_operand = [](float x) {
+        const float a = std::abs(x);
+        return a == 0 || (a >= 0x1p-63f && a <= 0x1p63f);
+    };
+    const bool safe_qk =
+        std::all_of(q.begin(), q.end(), normal_operand) && std::all_of(k.begin(), k.end(), normal_operand);
+    if (source_order && d % 64) return {};
     for (size_t frame = 1; frame < offsets.size(); ++frame) {
         const int first = offsets[frame - 1], end = offsets[frame];
+        if (source_order && (end - first) % 4) return {};
         std::vector<float> scores(size_t(end - first));
         for (int t = first; t < end; ++t)
             for (int head = 0; head < c.heads; ++head) {
@@ -388,7 +397,11 @@ static std::vector<float> attention(const std::vector<float> & qkv, const vision
                 for (int s = first; s < end; ++s) {
                     float dot = 0;
                     for (int i = 0; i < d; ++i) dot += q[base + i] * k[size_t(s) * width + head * d + i];
-                    if (precise) {
+                    if (source_order) {
+                        const float * key = k.data() + size_t(s) * width + head * d;
+                        dot = safe_qk ? source_bf16_dot<true>(q.data() + base, key, d)
+                                      : source_bf16_dot<false>(q.data() + base, key, d);
+                    } else if (precise) {
                         double exact = 0;
                         for (int i = 0; i < d; ++i)
                             exact += double(q[base + i]) * double(k[size_t(s) * width + head * d + i]);
@@ -410,7 +423,16 @@ static std::vector<float> attention(const std::vector<float> & qkv, const vision
                     float result = 0;
                     for (int s = first; s < end; ++s)
                         result += (scores[s - first] / sum) * values[size_t(s) * width + head * d + i];
-                    if (precise) {
+                    if (source_order) {
+                        std::array<float, 4> partial{};
+                        for (int s = first; s < end; s += 4)
+                            for (int lane = 0; lane < 4; ++lane) {
+                                const float p = lighton4b_bf16(scores[s + lane - first] * inverse);
+                                partial[lane] =
+                                    std::fma(p, values[size_t(s + lane) * width + head * d + i], partial[lane]);
+                            }
+                        result = ((partial[0] + partial[1]) + partial[2]) + partial[3];
+                    } else if (precise) {
                         double exact = 0;
                         for (int s = first; s < end; ++s) {
                             const float probability = lighton4b_bf16(scores[s - first] * inverse);
