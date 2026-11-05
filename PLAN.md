@@ -1293,3 +1293,14 @@ Final PR155 assembly will replay complete norm/linear/Conv controls together;
 one script-scoped90-day artifact will preserve exact source ZIP13414500337
 without changing unrelated workflow retention or regenerating original arrays.
 No new full quality claim follows from these exact operators.
+
+
+One retained-only attention probe now reads back exact preserved artifact13420770687
+and nested original ZIP13414500337, checking both complete ZIP SHA values on
+hosted resources. Original QKV/cos/sin must reproduce original pooled bytes; the
+actual production attention output must retain its65-difference bytes, and a
+test-only observer must match that actual output byte-for-byte before tracing.
+Then original-input QK eight-register/four-partial/double dot orders, softmax
+normalization/exp alternatives, and PV accumulation orders are compared separately.
+Only test sources/CMake/tooling change; no runtime attention candidate or model
+forward. This probe alone retains raw artifacts90 days on this feature branch.
