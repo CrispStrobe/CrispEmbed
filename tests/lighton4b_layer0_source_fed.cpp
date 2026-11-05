@@ -6,7 +6,7 @@
 #include <iterator>
 #include <map>
 static int run(int argc, char ** argv) {
-    if (argc != 4 && argc != 5) return 2;
+    if (argc != 4 && argc != 5 && argc != 7) return 2;
     // RNE tie cases distinguish BF16 from truncation and FP16 conversion.
     if (qwen35_ocr::lighton4b_bf16_round(1.00390625f) != 1.0f ||
         qwen35_ocr::lighton4b_bf16_round(1.01171875f) != 1.015625f ||
@@ -37,7 +37,7 @@ static int run(int argc, char ** argv) {
     stream.seekg(0);
     stream.read(reinterpret_cast<char *>(input.data()), input.size() * 4);
     if (!stream) return 2;
-    if (argc == 5) {
+    if (argc == 5 || argc == 7) {
         if (std::string(argv[4]) != "norm-only") return 2;
         std::vector<float> norm(2560);
         if (!qwen35_ocr::tensor_floats(w.input_norm, norm.data())) return 2;
@@ -64,6 +64,42 @@ static int run(int argc, char ** argv) {
                                      std::ios::binary);
                 output.write(reinterpret_cast<const char *>(values.data()), values.size() * 4);
                 if (!output) return 4;
+            }
+        }
+        if (argc == 7) {
+            std::vector<float> source_means(154), source_scales(154);
+            auto read = [&](const char * path, std::vector<float> & values) {
+                std::ifstream f(path, std::ios::binary | std::ios::ate);
+                if (!f || f.tellg() != 154 * 4) return false;
+                f.seekg(0);
+                f.read(reinterpret_cast<char *>(values.data()), values.size() * 4);
+                return bool(f);
+            };
+            if (!read(argv[5], source_means) || !read(argv[6], source_scales)) return 2;
+            for (const char * variant : { "mean-f32-sqrt", "mean-f64-rsqrt", "scale" }) {
+                std::vector<float> values(input.size()), scales(154);
+                for (int token = 0; token < 154; ++token) {
+                    const float denominator = source_means[token] + 1e-6f;
+                    const float scale = std::string(variant) == "scale" ? source_scales[token]
+                                        : std::string(variant) == "mean-f64-rsqrt"
+                                            ? float(1.0 / std::sqrt(double(denominator)))
+                                            : 1.0f / std::sqrt(denominator);
+                    scales[token] = scale;
+                    const size_t base = size_t(token) * 2560;
+                    for (int lane = 0; lane < 2560; ++lane)
+                        values[base + lane] = input[base + lane] * scale * (1.0f + norm[lane]);
+                }
+                std::ofstream scale_file(std::string(argv[3]) + "/norm-source-" + variant + ".scale.f32",
+                                         std::ios::binary);
+                scale_file.write(reinterpret_cast<const char *>(scales.data()), scales.size() * 4);
+                if (!scale_file) return 4;
+                for (const char * dtype : { "f32", "bf16" }) {
+                    if (std::string(dtype) == "bf16") qwen35_ocr::lighton4b_bf16_round(values);
+                    std::ofstream output(std::string(argv[3]) + "/norm-source-" + variant + "." + dtype + ".f32",
+                                         std::ios::binary);
+                    output.write(reinterpret_cast<const char *>(values.data()), values.size() * 4);
+                    if (!output) return 4;
+                }
             }
         }
         core_gguf::free_weights(weights);

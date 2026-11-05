@@ -21,11 +21,13 @@ def digest(data):return hashlib.sha256(data).hexdigest()
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--protocol',choices=('v1','v2-unanchored-diagnostic'),default='v1')
+    parser.add_argument('--norm-source-isolation',action='store_true',help='Feed original means/scales to isolate normalization stages')
     parser.add_argument('--norm-only',action='store_true',help='Compare retained-input RMS reduction alternatives; no candidates')
     parser.add_argument('--bf16-boundaries',action='store_true',help='Also compare gated quant-preserving BF16 activation oracle')
     parser.add_argument('--bf16-only',action='store_true',help='Official retained-input layer0 only; no native build or candidate')
     parser.add_argument('--retained-root',type=Path,help='Mounted original stage directory; exact manifest and payload hashes required')
     args=parser.parse_args()
+    if args.norm_source_isolation:args.norm_only=True
     require((os.environ.get('GITHUB_ACTIONS')=='true' or (args.bf16_only and Path('/kaggle/working').is_dir() and Path('/kaggle/input').is_dir())) and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','hosted portable only')
     import lighton4b_gdn_reference as ref
     import lighton4b_native_document as native
@@ -35,6 +37,7 @@ def main():
     out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH'])/'layer0';scratch.mkdir()
     report={'schema':'lighton4b-layer0-source-fed/v1','status':'failed','quality_qualified':False,
         'full_model_forward_executed':False,'generation_executed':False,'runtime':runtime,
+        'torch_git_version':torch.version.git_version,'torch_cpu_capability':torch.backends.cpu.get_cpu_capability(),
         'protocol':args.protocol,'bf16_only':args.bf16_only,'hosted_provider':'github-actions' if os.environ.get('GITHUB_ACTIONS')=='true' else 'kaggle',
         'frozen_bf16_parity_qualified':False,
         'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'arms':{}}
@@ -172,9 +175,19 @@ def main():
             del oracle
         if args.norm_only:
             folder=out/'norm-attribution';folder.mkdir()
-            run('norm-attribution',[binary,scratch/'official-layer0.gguf',retained/'prefill.input.f32',folder,'norm-only'],env)
+            original_input=torch.from_numpy(x.copy())
+            means=original_input.pow(2).mean(-1,keepdim=True)
+            source_scales=torch.rsqrt(means+1e-6)
+            reconstructed=(original_input*source_scales)*(1.0+torch.from_numpy(weights['input_layernorm.weight']))
+            require(digest(reconstructed.numpy().tobytes())==digest(source_f32['input_norm'].tobytes()),'original input norm reconstruction differs')
+            report['original_norm_reconstruction_exact']=True
+            means.numpy().astype('<f4').tofile(scratch/'original-means.f32')
+            source_scales.numpy().astype('<f4').tofile(scratch/'original-scales.f32')
+            command=[binary,scratch/'official-layer0.gguf',retained/'prefill.input.f32',folder,'norm-only']
+            if args.norm_source_isolation:command.extend([scratch/'original-means.f32',scratch/'original-scales.f32'])
+            run('norm-attribution',command,env)
             report['norm_attribution']=[]
-            scales=torch.rsqrt(torch.from_numpy(x.copy()).square().mean(-1)+1e-6).numpy()
+            scales=source_scales.numpy().reshape(1,154)
             report['norm_scale_attribution']=[]
             for precise in ('0','1'):
                 actual_scales=np.fromfile(folder/f'norm-precise{precise}.scale.f32',dtype='<f4').reshape(scales.shape)
@@ -188,8 +201,21 @@ def main():
                         'original_f32_at_worst':float(source_f32['input_norm'].reshape(-1)[worst]),
                         'native_f32_at_worst':float(np.fromfile(folder/f'norm-precise{precise}.f32.f32',dtype='<f4')[worst]),
                         'byte_exact':digest(actual.tobytes())==digest(target.tobytes()),**ref.metrics(actual,target,np)})
+            if args.norm_source_isolation:
+                report['norm_source_isolation']=[]
+                for variant in ('mean-f32-sqrt','mean-f64-rsqrt','scale'):
+                    actual_scales=np.fromfile(folder/f'norm-source-{variant}.scale.f32',dtype='<f4').reshape(scales.shape)
+                    row={'variant':variant,'scale_byte_exact':digest(actual_scales.tobytes())==digest(scales.tobytes()),
+                        'scale_metrics':ref.metrics(actual_scales,scales,np),'outputs':[]}
+                    for dtype,target in (('f32',source_f32['input_norm']),('bf16',bf16['input_norm'])):
+                        actual=np.fromfile(folder/f'norm-source-{variant}.{dtype}.f32',dtype='<f4').reshape(target.shape)
+                        row['outputs'].append({'dtype':dtype,'byte_exact':digest(actual.tobytes())==digest(target.tobytes()),
+                            'different_values':int(np.count_nonzero(actual!=target)),**ref.metrics(actual,target,np)})
+                    report['norm_source_isolation'].append(row)
+            report['status']='norm-source-isolation-compared' if args.norm_source_isolation else 'norm-attribution-compared'
             require(not report['arms']['native-official-f32']['earliest_failure'],'legacy official F32 control failed')
-            report['status']='norm-attribution-compared';return
+            require(all(row['passed']for row in report['norm_attribution']),'normalization comparison retains numerical rejection')
+            return
         del weights,bf16,source_f32;gc.collect()
         for recipe,(filename,expected,size)in native.CANDIDATES.items():
             model=scratch/filename;native.download(f'https://huggingface.co/{native.MODEL_REPO}/resolve/{native.MODEL_REVISION}/{filename}',model)

@@ -117,3 +117,21 @@ legacy same-weight layer0 control with newly tagged cache precision modes;
 incompatible legacy/BF16 caches must reject before execution. No quantized model
 or full-model reference is downloaded by this norm-only scope. Production default
 and all strict budgets stay unchanged.
+
+Norm-only42027758298 at28e4180b8 completes actual legacy/cache controls and
+unchanged sequential/precise RMS comparisons. Precise F32 maximum improves
+0.0001449585→0.00000762939; BF16 maximum improves0.015625→0.00390625 but still
+fails0.002. At flat330868, native pre-round0.587890625 is exactly a BF16 midpoint
+and rounds to0.5859375; original0.5878906846046448 lies one F32 ULP above and
+rounds to0.58984375. No precise-RMS default or corrected BF16 claim follows.
+The diagnostic completion wrapper also omitted norm-row failure aggregation;
+its small report remains negative and the successor returns nonzero while
+retaining every comparison.
+
+`--norm-source-isolation` reconstructs original input norm from original means,
+scales and weights and requires exact output identity. It then feeds original
+means to native F32-sqrt/reciprocal and F64-rsqrt diagnostic alternatives, and
+feeds exact original scales to the ordinary multiplication/affine path. This
+separates reduction, reciprocal-square-root and multiply/rounding effects without
+another quantized candidate transfer or any expanded decoder execution. Original
+mean/scale inputs are test-only; no production source consumes reference vectors.

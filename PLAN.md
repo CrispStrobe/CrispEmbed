@@ -1151,3 +1151,12 @@ and reaches hidden Q80.01743889/Q40.15934277. Follow earliest norm reduction wit
 bounded `--norm-only` existing precise-RMS A/B and source-normalized projections;
 no decoded/full-attention claim follows yet. Cache precision tags and rejection
 control are prepared, preserving all old default paths.
+
+Norm attribution42027758298/28e4180b8 retains a partial improvement, not a fix:
+precise RMS F32 max0.0001449585→0.00000762939, BF16 max0.015625→0.00390625,
+still over0.002. Flat330868 crosses a BF16 midpoint on one F32 ULP:
+native0.587890625→0.5859375, original0.5878906846→0.58984375. Legacy same-weight
+layer/cache-mode controls pass. Preserve diagnostic wrapper's missing norm-row
+exit aggregation separately. Next bounded source mean/scale isolation requires
+exact original norm reconstruction, then source-fed native rsqrt/affine variants;
+no new full decoder, model transfer or default change before that evidence.
