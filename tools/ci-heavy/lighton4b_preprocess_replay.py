@@ -84,6 +84,7 @@ def main():
         report['status']='passed' if report['processor_gate_passed'] else 'numerical-difference'
     except Exception as error:
         report['error_type']=type(error).__name__
+        if isinstance(error,ModuleNotFoundError):report['missing_module']=error.name
         # Provider exception strings may include private locators or signed URLs.
         report['error']='retained input replay failed; inspect authenticated hosted logs privately'
         raise RuntimeError(report['error']) from None
