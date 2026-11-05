@@ -1,3 +1,32 @@
+## 5 November 2026 — Bounded LightOn4B document comparer preparation
+
+The separate [document protocol](docs/lighton4b-document-parity-v1.md) freezes
+one existing public-domain form,452×317 RGB/template/source hashes, empty prompt,
+cap256 and EOS248046 before model outputs. Actual hosted
+[initial41974416327](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41974416327)
+at `26fa7c94f` passes6 controls and replays the exact source RGB and template.
+Its [receipt](tests/results/qwen35-ocr/lightonocr3-4b-document-controls-initial.json)
+is preserved separately; it does not qualify later admission/dimension changes.
+[Hardened41974795749](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41974795749)
+at `32bc40fe76719f287203b765b8219676b75b8375` also passes all6 controls with
+no skips. Independent small-artifact review verifies all6 recorded source hashes,
+protocol/RGB/template hashes and six actual standalone `crispembed_diff::Ref`
+executions: one positive and five intentionally rejected corrupt/missing/short
+cases. A retained synthetic vision difference has max0.0100002289,
+mean0.00250005722, RMS0.00500011444 and cosine0.999999225, with
+reference/native norms5.47722578/5.48453283; the unchanged absolute budget rejects
+it and identifies the first divergent stage.
+[The exact-source receipt](tests/results/qwen35-ocr/lightonocr3-4b-document-controls.json)
+retains binary/source/artifact identities and raw-log digest.
+
+No original/native model forward, checkpoint acquisition or actual document
+parity ran. Producer admission remains empty. Actual processor geometry, the
+source-admitted final-norm/all-position original adapter, native format5 context,
+tokenizer/cache/vocabulary projection and real F32/F16 decoded/intermediate
+comparisons remain dependencies. These diagnostic executables are not installed
+as production artifacts; no quality, quantization, public alias or release claim
+follows. PR145 and historical helpers/source guards remain untouched.
+
 ## 4 November 2026 — LightOn4B grouped-head component and original-reference CI
 
 The additive `linear_grouped_core_cpu`/`linear_grouped_cpu` APIs keep compact

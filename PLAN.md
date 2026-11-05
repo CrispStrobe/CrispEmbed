@@ -7,8 +7,12 @@ The separate executable comparer uses actual `crispembed_diff::Ref`, fixed stric
 budgets, every original-position vocabulary logit and independent decoded/EOS
 checks. It admits no producer source yet: original final-norm/processor capture
 and native format5 composition/tokenizer/projection require separately reviewed
-adapters first. Hosted synthetic comparer/input controls must run; no original
-forward or document parity is claimed. Preserve all prior source/quality failures.
+adapters first. Actual hosted initial41974416327 and hardened41974795749
+pass all6 scoped controls at their distinct sources; independent review verifies
+source/RGB/template hashes and retains all five intended negative comparer
+outputs. The [receipt](tests/results/qwen35-ocr/lightonocr3-4b-document-controls.json)
+closes only executable comparer preparation. No original forward or actual
+document parity is claimed. Preserve all prior source/quality failures.
 
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with

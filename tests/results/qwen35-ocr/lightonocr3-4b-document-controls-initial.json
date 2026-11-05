@@ -1,0 +1,27 @@
+{
+  "artifact": {
+    "archive_sha256": "bda51893f6584b427cf014bdddab58760f4ea1993451b3f2234f5657e2efe5ef",
+    "bytes": 3089,
+    "id": 13391226949,
+    "name": "heavy-41974416327"
+  },
+  "executable_sha256": "214a632fac41e0d1f18c21cc4638a4f03b0b7fd56f5e02df6022b0427efe27a6",
+  "independent_review": {
+    "controls": 6,
+    "protocol_hash_matches_exact_initial_source": true,
+    "rgb_and_template_hashes_match_frozen_case": true,
+    "scope": "Initial26fa7c94f only; later32bc40fe7 admission/dimension hardening requires its separate run.",
+    "skips": 0
+  },
+  "model_payload_bytes": 0,
+  "native_forward_executed": false,
+  "original_forward_executed": false,
+  "protocol_sha256": "afee0e1fbebc73b9ded744343ee9e2ae467f3b214ab3682e9fb0e8fd733ad674",
+  "quality_qualified": false,
+  "run_id": "41974416327",
+  "schema": "lighton4b-document-controls/v1",
+  "source_rgb_sha256": "f29f48e94fd623b16bbe203f6c5918cdd5b08c9bc8926a1cc9659e5e67ff0a22",
+  "source_sha": "26fa7c94f8185f8050aaad5d1edbc2a0fade867c",
+  "status": "passed",
+  "template_render_sha256": "21fd8cc4612fbd94949828961222d4880685692d710fbe36d95c5a30e48467a2"
+}
