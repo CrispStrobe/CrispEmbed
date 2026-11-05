@@ -1182,3 +1182,14 @@ print success, followed by undefined execution/spurious line98 failure. The
 is retained. Add only explicit helper `return0` and clearer failed-control
 metadata; preserve every assertion, runtime byte and numerical gate. Retry only
 the same targeted assembled-source job.
+
+
+[Assembled42033147414](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42033147414)
+at43b2d2c35 passes actual production norm/source-SHA/moments/gate controls,
+BF16 finite/tie rounding, native-context9 and image-compose45 controls, ordinary
+native-runner compilation/bad-argument rejection and environment-doc freshness.
+The [complete integration receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-norm-integration.json)
+pins all seven relevant runtime hashes; BF16 source09394e54 and shared768 norm
+remain unchanged by this evidence-only update. Both initial workflow/test-helper
+failures remain preserved. Gated norm integration build/control gate is closed;
+model/decoded quality remains negative and every new default remains off.

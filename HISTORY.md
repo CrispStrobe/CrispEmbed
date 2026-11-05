@@ -20751,3 +20751,13 @@ original rerun occurred; decoded Q8/Q4 parity remains open. The
 [reviewed receipt](tests/results/qwen35-ocr/lightonocr3-4b-preprocess-replay.json)
 retains exact source/input hashes. Initial41998232116/41998761159 provider import
 failures remain archived; the second identifies the undeclared`six` dependency.
+
+
+### 2026-11-05 — PR155 assembled default-off vision norm controls pass
+
+Targeted42033147414 at43b2d2c35 verifies actual complete source-fed norm/raw-SHA,
+mean/rstd and unset/empty/0 controls, BF16 finite/tie round controls,9 native-context
+and45 image-compose controls, compiled ordinary native runner and environment
+documentation. Initial missing workflow read-token42031440977 and renamed test
+helper fallthrough42032227007 remain retained. Runtime defaults and published
+release/app pins stay unchanged; ordinary Q4 decoded quality remains negative.

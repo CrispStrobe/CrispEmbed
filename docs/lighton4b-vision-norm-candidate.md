@@ -34,3 +34,14 @@ BF16 finite/tie rounding, native-context/image-compose negatives and environment
 documentation. It downloads retained operator vectors only, with no model
 inference. Full model results from the feature producer do not substitute for
 this assembled-source check or for future decoded qualification.
+
+
+The assembled-source gate passes in
+[42033147414](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42033147414)
+at43b2d2c35: exact norm/raw-SHA/moments/gate checks, finite/tie rounding, native
+context9 and image-compose45 controls, compiled ordinary runner argument checks
+and fresh environment documentation. The
+[integration receipt](../tests/results/qwen35-ocr/lightonocr3-4b-vision-norm-integration.json)
+pins runtime bytes. Initial missing read-token and test-helper fallthrough failures
+remain separate. This closes compilation/component controls only; decoded quality
+is still negative and all defaults stay off.
