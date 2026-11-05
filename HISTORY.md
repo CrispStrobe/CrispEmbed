@@ -20814,3 +20814,11 @@ GELU Q4 42065352208 preserves fixed baseline hashes and reduces merged RMS to 0.
 Retained merger 42069010152 passes original and actual bytes, isolates native std::erf at 33/26 activation and 84/58 output differences, and verifies source-derived erf exactly. Separate default-off production correction is prepared for focused gate/build validation; no model smoke or quality promotion.
 
 Final merger-erf integration 42069996673 passes full original/actual/production bytes, gate/guard controls, native/context builds and decoder controls. Separate default-off correction is validated; final ordinary Q4 impact remains pending.
+
+Final verified-vision Q4 42070806605 at e7730d91e reproduces all 30 baseline
+hashes and closes all eight source-fed first-block operators. Ordinary runtime
+retains 32 known rotary differences; merged RMS 0.0077542505 improves baseline,
+but first-logit RMS 0.5643236502 still exceeds baseline 0.5601347910, and both
+decodes remain wrong `<table>`. Baseline/candidate native elapsed 105.17/115.84 s
+and complete limits are retained. Defaults, release and quality stay unchanged;
+no further runs in this lane.

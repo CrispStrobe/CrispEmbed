@@ -1500,3 +1500,35 @@ identities, retained 90 days. Operator success still does not qualify quality.
 One final authorized ordinary Q4 A/B now includes all verified vision corrections,
 with rejected rotary explicitly 0 and decoder candidate 0, all 30 fixed baseline
 hashes required, first scores/independent two-token decodes and native timings.
+
+### 2026-11-05: final verified-vision Q4 result remains decoded-negative
+
+Final ordinary [42070806605](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42070806605)
+at `e7730d91e7b7b6f9bec5c59b33c612ddcc97254b` includes norm, true Linear,
+Conv3D, attention, tanh GELU and measured merger-erf corrections. Rejected rotary
+and decoder candidates are explicitly 0 in the wrapper. All 30 fixed baseline
+hashes reproduce; corrected source-fed layer 0 has zero differences for all
+eight observed operators, with the replay activation observer now corrected.
+Ordinary inference is independent of those source-fed arrays.
+
+Actual layer 0 retains the 32 attributed MKL-rotary differences (RMS 2.28155e-5,
+max 0.0078125). Merged RMS improves baseline 0.0097352499 to 0.0077542505
+(max 1.21094 to 0.734375). First-logit RMS is 0.5643236502 against baseline
+0.5601347910 (max 2.48687124 against 2.38527584); it is only slightly better
+than prior GELU candidate 0.5643268159. Both native outputs remain `[20353,29]`,
+`<table>`, unlike the original `<figure` prefix. **Decoded quality remains
+negative and unqualified. All correction gates stay off by default.**
+
+Same-run native elapsed: baseline 105.17 s, candidate 115.84 s; user/system CPU
+75.42/56.22 s versus 100.42/55.81 s; peak RSS 4,524,982,272 versus 4,510,666,752
+bytes. These are one-case measurements, not a throughput benchmark. Two-token
+smoke does not qualify EOS/full-document behavior. Actual merger parameters were
+not independently fetched from GGUF, but complete original and actual merged
+byte controls establish compatibility of the bounded original parameter range.
+
+Full source/operator/stage/decoded/timing/limit receipt:
+`tests/results/qwen35-ocr/lightonocr3-4b-merger-erf-composed-negative.json`.
+Artifact `13436852207`, SHA `1165cfd00895e99840e939f79fc6aa00c730f3aa57316f132c70dec386f1e4e8`,
+retained through 2027-02-03. No further work or runs in this lane; remaining
+MKL rotary dependency is explicit and no source lookup table or new product
+Torch/MKL dependency has been introduced. No release or app-pin change.

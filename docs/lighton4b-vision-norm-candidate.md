@@ -120,3 +120,16 @@ smokes still decode wrong `<table>`. Quality remains negative. Its test-only
 activation replay still evaluated legacy GELU; the independently verified
 production helper and ordinary native quality path are separate. The observer
 is corrected for future runs without changing runtime or repeating this smoke.
+
+The final all-verified-vision
+[Q4 run 42070806605](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42070806605)
+includes merger erf and the corrected source-fed activation observer. All eight
+source-fed first-block operators now have zero differences, and all 30 fixed
+baseline hashes reproduce. Ordinary runtime still has the known 32 rotary
+differences. Merged RMS is 0.0077542505 against baseline 0.0097352499; first-logit
+RMS 0.5643236502 is still worse than baseline 0.5601347910, and both outputs
+remain `<table>` against the original `<figure` prefix. Native elapsed is
+105.17 s baseline / 115.84 s candidate for this single sample. This is neither
+full-document quality nor a throughput benchmark. Complete source, timings and
+limits are retained in the final merger-erf negative receipt. Gates remain off;
+no release or app-pin promotion follows.
