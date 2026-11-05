@@ -54,7 +54,7 @@ def main(argv=None):
         with monitor.lock:report['memory_latest']=dict(monitor.latest);report['measured_memory_peaks']=dict(monitor.peaks)
         core.atomic(a.output/'batch.json',report)
     def stage(name):report['stage']=name;monitor.sample();save();print('SOURCE_STAGE',name,flush=True)
-    def heartbeat():core.atomic(a.output/'heartbeat.json',{'stage':report.get('stage'),'elapsed_seconds':time.monotonic()-started,'cases_completed':sum(x.get('status')=='captured'for x in report['cases'].values())})
+    def heartbeat():core.atomic(a.output/'heartbeat.json',{'stage':report.get('stage'),'elapsed_seconds':time.monotonic()-started,'cases_completed':sum(x.get('status')=='captured'for x in list(report['cases'].values()))})
     monitor.start(heartbeat)
     try:
         protocol=json.loads(PROTOCOL.read_text());frozen=json.loads(INPUTS.read_text());baseline=json.loads((ROOT/'docs/lighton4b-bf16-freegen-v1.json').read_text())
@@ -122,7 +122,8 @@ def main(argv=None):
         report.update(model_loads=1,parameter_dtype_counts=dict(Counter(str(p.dtype)for p in parameters)),actual_parameter_bytes=sum(p.numel()*p.element_size()for p in parameters),mkldnn_enabled=torch.backends.mkldnn.enabled)
         for ident,inputs in prepared.items():
             stage('official-generate-'+ident);destination=a.output/ident;case=case_rows[ident];calls=[0];begin=time.monotonic()
-            def count(module,args):calls[0]+=1
+            def count(module,args):
+                calls[0]+=1;report['original_forward_executed']=True;report['current_case_forward_calls']=calls[0]
             handle=model.register_forward_pre_hook(count)
             try:
                 torch.manual_seed(0)
