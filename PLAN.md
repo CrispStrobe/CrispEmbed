@@ -1232,3 +1232,33 @@ hash, then compares patch/position/embedded/all24 hidden layers/merged/full firs
 logits and independent two-token text. Baseline pins come from the small retained
 42028668863 native report; no raw arrays are downloaded for local review.
 All gates remain off; no component result qualifies decoded quality.
+
+
+[Combined42033651799](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42033651799)
+atb3bc9b020 passes source-fed norm/linear bytes and every30-stage norm-only
+baseline hash, but remains decoded-negative`<table>`. Merged RMS improves
+0.00973525→0.00772041/max1.21094→0.640625, while first-score RMS worsens
+0.560135→0.568035/max2.38528→2.45181. Earliest regression is Conv3D patch:
+applying nn.Linear dot order changes20→34 patch differences, embedded7→13 and
+layer0 RMS0.000691054→0.000751239. The
+[complete combined receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-linear-ab.json)
+retains all24 layers, magnitudes and exact sources.
+
+Scope `CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR` to actual nn.Linear operators.
+Conv3D's previous dot alternative remains separately default-off under
+`CRISPEMBED_LIGHTON4B_VISION_BF16_PATCH_LINEAR`; enabling both retains the tested
+combined negative path. Do not treat algebraic flattening as an operator proof.
+Next is original source-fed F.conv3d with exact retained patches and range-fetched
+immutable original BF16 patch parameters, validating the original full output
+before testing four-partial Conv3D/nn.Linear/general precision alternatives.
+No new full smoke precedes material Conv3D operator evidence.
+
+The bounded Conv3D attribution uses the original audited SF header SHAa1e36638
+and only its3,147,776-byte BF16 patch weight/bias range, not the9GB full file.
+The whole-model HF SHA is a declaration, not an independently verified download.
+Original F.conv3d must reproduce all573,440 frozen patch values byte-for-byte
+before actual old/patch-linear gate checks and four-partial GEMM sum probes.
+The source is PyTorch2.13 `BlasKernel.cpp` reduced-type non-transposed GEMM,
+which differs from nn.Linear's transposed eight-register dot. Both prior patch
+output hashes (20 versus34 differences) must remain exact. No production Conv3D
+candidate is introduced before this same-input evidence; no full smoke dispatch.

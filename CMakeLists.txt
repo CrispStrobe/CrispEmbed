@@ -1683,3 +1683,5 @@ add_executable(lighton4b-vision-norm-variants tests/lighton4b_vision_norm_varian
 target_link_libraries(lighton4b-vision-norm-variants PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(lighton4b-vision-linear-operators tests/lighton4b_vision_linear_operators.cpp)
 target_link_libraries(lighton4b-vision-linear-operators PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(lighton4b-vision-conv-operators tests/lighton4b_vision_conv_operators.cpp)
+target_link_libraries(lighton4b-vision-conv-operators PRIVATE crispembed-qwen35-delta crispembed-core)

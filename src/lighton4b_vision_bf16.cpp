@@ -218,9 +218,10 @@ static bool source_bf16_linear(ggml_tensor * w, ggml_tensor * b, const std::vect
     return finite(y);
 }
 static bool linear(ggml_tensor * w, ggml_tensor * b, const std::vector<float> & x, int width, int rows, int threads,
-                   std::vector<float> & y) {
-    if (core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR"))
-        return source_bf16_linear(w, b, x, width, rows, threads, y);
+                   std::vector<float> & y, bool is_linear = true) {
+    const bool source_order = is_linear ? core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR")
+                                        : core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_PATCH_LINEAR");
+    if (source_order) return source_bf16_linear(w, b, x, width, rows, threads, y);
     std::vector<std::vector<float>> projections;
     if (!project_cpu({ w }, x.data(), width, rows, threads, projections)) return false;
     y = std::move(projections[0]);
@@ -425,7 +426,7 @@ bool lighton4b_vision_bf16_cpu(const vision_weights & w, const vision_config & c
     if (!geometry(c, tokens, grid, rows, columns, offsets, heights, widths)) return false;
     std::vector<float> input(patches, patches + size_t(tokens) * c.patch_width);
     round_bf16(input);
-    if (!linear(w.patch, w.patch_bias, input, c.patch_width, tokens, threads, output.patch)) return false;
+    if (!linear(w.patch, w.patch_bias, input, c.patch_width, tokens, threads, output.patch, false)) return false;
     std::vector<float> table(size_t(c.position_side) * c.position_side * width);
     if (!tensor_floats(w.position, table.data())) return false;
     if (!interpolate_position(table, c, rows, columns, heights, widths, output.position)) return false;
