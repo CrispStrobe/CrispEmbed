@@ -24,7 +24,7 @@ position, file, shape `[1,248320]`, bytes993280 and SHA256. Teacher forcing must
 consume the original prompt and original IDs before that position, never its
 own free-generation prefix. Independent generation starts afresh with the
 frozen image-only prompt, cache, greedy decoding, EOS248046 and cap256.
-A separately reviewed source/run/weight/precision tuple must first be added to
+A separately reviewed native-receipt-SHA256/source/run/weight/precision tuple must first be added to
 `native_producers`; arbitrary producer claims and synthetic fixtures fail closed.
 
 On hosted CI, build target `crispembed-diff-lighton4b-document`, then run:

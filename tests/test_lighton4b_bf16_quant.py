@@ -30,6 +30,10 @@ class Controls(unittest.TestCase):
                 with self.subTest(field=field),self.assertRaises(ValueError):q.candidate(dict(b,**{field:value}),a,p,True)
             forged=dict(b,synthetic_control=False,native_forward_executed=True,producer_source_sha='0'*40,producer_run_url='https://github.com/example/run',weights_sha256='0'*64)
             with self.assertRaisesRegex(ValueError,'not admitted'):q.candidate(forged,a,p)
+            identity=dict(capture_sha256='1'*64,source_sha='0'*40,run_url='https://github.com/example/run',weights_sha256='0'*64,precision='q8_0')
+            admitted=dict(p,native_producers=[identity])
+            q.candidate(forged,a,admitted,receipt_sha256='1'*64)
+            with self.assertRaisesRegex(ValueError,'not admitted'):q.candidate(forged,a,admitted,receipt_sha256='2'*64)
             self.assertEqual(q.protocol()['native_producers'],[])
     @unittest.skipUnless(os.environ.get('LIGHTON4B_DOCUMENT_DIFF'),'hosted actual Ref binary required')
     def test_actual_ref_equal_changed_and_tampered(self):

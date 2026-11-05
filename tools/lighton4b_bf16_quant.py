@@ -26,7 +26,7 @@ def original(root,p):
     require(a['scores']==p['score_records'],'original score inventory differs')
     return a
 
-def candidate(b,a,p,synthetic=False):
+def candidate(b,a,p,synthetic=False,receipt_sha256=None):
     require(b['schema']=='lighton4b-bf16-quant-native/v1','native schema differs')
     require(b['precision'] in p['precisions'],'undeclared quantization')
     require(b['original_capture_sha256']==p['original_capture_sha256'] and b['protocol_sha256']==sha(PROTOCOL),'reference/protocol identity differs')
@@ -43,7 +43,7 @@ def candidate(b,a,p,synthetic=False):
     if synthetic:require(b.get('synthetic_control') is True,'explicit synthetic fixture required')
     else:
         require(b.get('synthetic_control') is not True and b.get('native_forward_executed') is True,'actual native execution required')
-        identity={'source_sha':b['producer_source_sha'],'run_url':b['producer_run_url'],'weights_sha256':b['weights_sha256'],'precision':b['precision']}
+        identity={'capture_sha256':receipt_sha256,'source_sha':b['producer_source_sha'],'run_url':b['producer_run_url'],'weights_sha256':b['weights_sha256'],'precision':b['precision']}
         require(identity in p['native_producers'],'native producer/weights not admitted')
 
 def compare(original_root,native_root,binary,output,synthetic=False):
@@ -51,7 +51,7 @@ def compare(original_root,native_root,binary,output,synthetic=False):
     out=Path(output);require(not out.exists(),'fresh output required');out.mkdir(parents=True)
     r={'schema':'lighton4b-bf16-quant-comparison/v1','status':'blocked','native_execution_admitted':False,'quality_qualified':False,'synthetic_control':synthetic,'original_forward_executed_by_comparer':False,'native_forward_executed_by_comparer':False,'earliest_observed_score_difference':None,'earliest_score_budget_failure':None,'internal_stage_attribution_available':False}
     try:
-        p=protocol();a=original(original_root,p);b=json.loads((Path(native_root)/'native.json').read_text());candidate(b,a,p,synthetic)
+        p=protocol();a=original(original_root,p);b=json.loads((Path(native_root)/'native.json').read_text());candidate(b,a,p,synthetic,sha(Path(native_root)/'native.json'))
         r.update(original_decoded=a['decoded'],native_decoded=b['decoded'],original_generated_ids=a['generated_ids'],native_generated_ids=b['generated_ids'],native_precision=b['precision'],protocol_sha256=sha(PROTOCOL),binary_sha256=sha(binary),native_execution_admitted=not synthetic)
         readers=[LocalReader(original_root),LocalReader(native_root)];numerical=True;rows=[]
         with tempfile.TemporaryDirectory(prefix='bf16-quant-row-') as folder:
