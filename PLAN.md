@@ -1333,3 +1333,11 @@ input is separately measured rather than assumed equivalent. Exp0, full F32/BF16
 probabilities, exact reciprocal and exp-versus-Torch.exp arrays distinguish the
 remaining kernel behavior. No guessed method enters production; one hosted job,
 no model forward, and source matrices stay remote.
+
+
+Initial vector-header42050508555 stops before source transfer at the first
+reference-helper compile: `reduce_all`/`map` are outer `at::vec` functions, not
+inside its ISA namespace. Vectorized ISA type remains correct. The
+[initial receipt](tests/results/qwen35-ocr/lightonocr3-4b-softmax-vector-initial.json)
+is preserved. Correct only qualifiers and repeat the same bounded job; no
+algorithm, flags, source arrays, runtime or quality claim changes.

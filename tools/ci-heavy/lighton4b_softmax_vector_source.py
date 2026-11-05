@@ -19,6 +19,7 @@ def main():
  report={'schema':'lighton4b-softmax-vector-source/v1','status':'failed','model_forward_executed':False,'quality_qualified':False,'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'torch_version':torch.__version__,'torch_git_version':torch.version.git_version,'cpu_dispatch':dispatch}
  def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
  def run(name,args):
+  report['last_phase']=name
   with(out/(name+'.log')).open('w')as f:subprocess.run([str(v)for v in args],cwd=ROOT,stdout=f,stderr=subprocess.STDOUT,check=True)
  def compare(a,b):
   row=comparison.compare(a,b);row['bit_different_values']=int(np.count_nonzero(a.view('<u4')!=b.view('<u4')));row['bit_exact']=row['bit_different_values']==0;return row

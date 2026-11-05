@@ -22,11 +22,12 @@ int main(int argc, char ** argv) {
     for (int r = 0; r < rows; ++r) {
         const float * input = x.data() + r * width;
         float * output = exps.data() + r * width;
-        float maximum = vx::reduce_all<float>([](V a, V b) { return vx::maximum(a, b); }, input, width);
-        vx::map<float>([maximum](V a) { return (a - V(maximum)).exp(); }, output, input, width);
-        sum[r] = vx::reduce_all<float>([](V a, V b) { return a + b; }, output, width);
+        float maximum = at::vec::reduce_all<float>([](V a, V b) { return vx::maximum(a, b); }, input, width);
+        at::vec::map<float>([maximum](V a) { return (a - V(maximum)).exp(); }, output, input, width);
+        sum[r] = at::vec::reduce_all<float>([](V a, V b) { return a + b; }, output, width);
         inverse[r] = 1.0f / sum[r];
-        vx::map<float>([factor = inverse[r]](V a) { return a * V(factor); }, prob.data() + r * width, output, width);
+        at::vec::map<float>([factor = inverse[r]](V a) { return a * V(factor); }, prob.data() + r * width, output,
+                            width);
     }
     auto emit = [&](const std::string & suffix, const std::vector<float> & y) {
         std::ofstream out(dir + "/" + name + "." + suffix + ".f32", std::ios::binary);
