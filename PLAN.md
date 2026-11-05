@@ -1115,3 +1115,27 @@ rejections and hosted BF16 replay failures unchanged. A separately gated BF16
 boundary candidate requires an original same-input oracle, local operator
 measurements and actual decoded A/B before any runtime/default/quality decision.
 No production source, VERSION, ggml, reference, budget or application pin changed.
+
+
+### Reviewed LightOn4B same-input vision attribution — 5 November 2026
+
+[Operator42023264258](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42023264258)
+atf9a14c1be reconstructs all573,440 original layer0 values bit-exactly with
+original torch2.13.0+cpu/numpy2.3.5/two-thread settings. Source-fed norm1 first
+differs at87 values/max0.001953125/RMS4.82146e-6; independent QKV/attention/MLP
+differences remain. See [complete operator metrics](tests/results/qwen35-ocr/lightonocr3-4b-vision-layer0-source-fed.json).
+
+[Mixed-type norm A/B42024288946](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42024288946)
+at3b194f40b preserves exact original reconstruction and all frozen baseline
+composed hashes, but is negative for promotion: norm1 differences87→52, norm2
+73→76; merged RMS0.0223861→0.0199821 while first-logit RMS worsens
+0.545670→0.591688 (max2.61007→2.67622). Both independent ordinary Q4 arms
+decode`<table>` (IDs20353,29), versus source`<figure` prefix. The
+[full negative A/B receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-norm-ab.json)
+retains magnitudes/errors and source/artifact pins. Experimental norm code remains
+on the existing vision feature branch; this qualification update imports evidence
+only. Both experimental gates remain default-off and no quality/release/default
+promotion follows. Next: same-input normalization moments/affine contraction
+isolation using retained13414500337, before more ordinary full-model smokes.
+Initial42022655060 stopped before build/model access on obsolete Kaggle1.8.3
+authentication; known-working2.2.2 corrects only the producer dependency.
