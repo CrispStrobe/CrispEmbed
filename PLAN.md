@@ -1140,3 +1140,14 @@ BF16 Q/K L2 normalization before F32 recurrence and source gated-norm cast order
 Actual full-attention/final-norm/decoded integration is separate. Hosted same-input
 original quant-preserving BF16 activation oracle, rounding-tie and legacy recovery
 checks are prepared; no corrected numerical or decoded result is claimed yet.
+
+First BF16 activation-boundary run42026091939/f201bc8c9 is rejected: earliest
+input norm max0.015625, QKV0.0625, hidden official/Q80.03125/Q40.015625.
+Legacy recovery hashes are exact. The historical wrapper exits0 despite recorded
+native flags; successor aggregates local failures into nonzero exit. Keep the
+red stage result regardless of workflow conclusion. Same-input pure F32
+quantization error starts at QKV (Q80.08341026/Q40.90670824 against magnitude24.30494)
+and reaches hidden Q80.01743889/Q40.15934277. Follow earliest norm reduction with
+bounded `--norm-only` existing precise-RMS A/B and source-normalized projections;
+no decoded/full-attention claim follows yet. Cache precision tags and rejection
+control are prepared, preserving all old default paths.

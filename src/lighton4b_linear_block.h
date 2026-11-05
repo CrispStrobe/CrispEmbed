@@ -9,6 +9,7 @@
 namespace qwen35_ocr {
 struct lighton4b_linear_cache {
     int tokens = 0;
+    bool bf16_activations = false;
     std::vector<float> conv, recurrent;
 };
 struct lighton4b_linear_block_outputs {
@@ -29,16 +30,16 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     auto finite = [](const std::vector<float> & v) {
         return std::all_of(v.begin(), v.end(), [](float x) { return std::isfinite(x); });
     };
+    const bool bf16 = lighton4b_bf16_linear_enabled();
     const int past = previous ? previous->tokens : 0;
     if (past < 0 || past > 4096 - tokens ||
-        (previous && (past == 0 || previous->conv.size() != 32768 || previous->recurrent.size() != 524288 ||
-                      !finite(previous->conv) || !finite(previous->recurrent))))
+        (previous && (previous->bf16_activations != bf16 || past == 0 || previous->conv.size() != 32768 ||
+                      previous->recurrent.size() != 524288 || !finite(previous->conv) || !finite(previous->recurrent))))
         return false;
     std::set<ggml_tensor *> identities;
     auto shape = [&](ggml_tensor * t, int a, int b = 1, int c = 1, bool matrix = false) {
         return t && t->ne[0] == a && t->ne[1] == b && t->ne[2] == c && t->ne[3] == 1 && ggml_is_contiguous(t) &&
-               t->data && identities.insert(t).second &&
-               (matrix ? lighton4b_matrix_type(t) : t->type == GGML_TYPE_F32);
+               t->data && identities.insert(t).second && (matrix ? lighton4b_matrix_type(t) : t->type == GGML_TYPE_F32);
     };
     if (!shape(w.input_norm, 2560) || !shape(w.post_norm, 2560) || !shape(w.gate, 2560, 9216, 1, true) ||
         !shape(w.up, 2560, 9216, 1, true) || !shape(w.down, 9216, 2560, 1, true) ||
@@ -47,7 +48,6 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
         !shape(w.linear.out, 4096, 2560, 1, true) || !shape(w.linear.conv, 4, 1, 8192) || !shape(w.linear.a_log, 32) ||
         !shape(w.linear.dt_bias, 32) || !shape(w.linear.norm, 128))
         return false;
-    const bool bf16=lighton4b_bf16_linear_enabled();
     lighton4b_linear_block_outputs candidate;
     candidate.hidden.assign(input, input + size_t(tokens) * 2560);
     if (!finite(candidate.hidden)) return false;
@@ -66,10 +66,12 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     };
     if (!rms(candidate.hidden, w.input_norm, candidate.input_norm)) return false;
     projected_linear_outputs linear;
-    const bool linear_ok = bf16 ? lighton4b_bf16_grouped_cpu(w.linear,candidate.input_norm.data(),tokens,threads,
-                            previous ? previous->conv.data() : nullptr,previous ? previous->recurrent.data() : nullptr,linear) :
-                        linear_grouped_cpu(w.linear,16,candidate.input_norm.data(),1,tokens,threads,
-                            previous ? previous->conv.data() : nullptr,previous ? previous->recurrent.data() : nullptr,linear);
+    const bool linear_ok = bf16 ? lighton4b_bf16_grouped_cpu(w.linear, candidate.input_norm.data(), tokens, threads,
+                                                             previous ? previous->conv.data() : nullptr,
+                                                             previous ? previous->recurrent.data() : nullptr, linear)
+                                : linear_grouped_cpu(w.linear, 16, candidate.input_norm.data(), 1, tokens, threads,
+                                                     previous ? previous->conv.data() : nullptr,
+                                                     previous ? previous->recurrent.data() : nullptr, linear);
     if (!linear_ok) return false;
     candidate.attention = std::move(linear.attention);
     if (candidate.attention.size() != candidate.hidden.size() || !finite(candidate.attention)) return false;
@@ -81,12 +83,16 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     if (!project_cpu({ w.gate, w.up }, candidate.post_norm.data(), 2560, tokens, threads, projections)) return false;
     candidate.gate = std::move(projections[0]);
     candidate.up = std::move(projections[1]);
-    if (bf16) {lighton4b_bf16_round(candidate.gate);lighton4b_bf16_round(candidate.up);}
+    if (bf16) {
+        lighton4b_bf16_round(candidate.gate);
+        lighton4b_bf16_round(candidate.up);
+    }
     candidate.activation.resize(candidate.gate.size());
     for (size_t i = 0; i < candidate.gate.size(); ++i) {
         const float gate = candidate.gate[i];
-        const float activated=gate / (1.0f + std::exp(-gate));
-        candidate.activation[i] = bf16 ? lighton4b_bf16_round(lighton4b_bf16_round(activated)*candidate.up[i]) : activated*candidate.up[i];
+        const float activated = gate / (1.0f + std::exp(-gate));
+        candidate.activation[i] = bf16 ? lighton4b_bf16_round(lighton4b_bf16_round(activated) * candidate.up[i])
+                                       : activated * candidate.up[i];
     }
     projections.clear();
     if (!project_cpu({ w.down }, candidate.activation.data(), 9216, tokens, threads, projections)) return false;
@@ -96,6 +102,7 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     if (bf16) lighton4b_bf16_round(candidate.hidden);
     if (!finite(candidate.hidden)) return false;
     candidate.cache.tokens = past + tokens;
+    candidate.cache.bf16_activations = bf16;
     candidate.cache.conv = std::move(linear.core.conv_history);
     candidate.cache.recurrent = std::move(linear.core.state);
     output = std::move(candidate);

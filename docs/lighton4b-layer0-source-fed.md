@@ -101,3 +101,19 @@ retains all16 stages and gate-on→legacy recovery checks, plus rounding ties.
 Same-precision candidate-versus-official F32 stage metrics separately quantify
 quantization. Hosted compilation/operator checks are pending. Real decoded A/B
 and remaining attention/final-norm semantics remain required before promotion.
+
+Actual first boundary candidate42026091939 atf201bc8c9 is numerically negative:
+first input norm max0.015625, then QKV max0.0625 and final hidden official/Q8
+max0.03125, Q4 max0.015625 against the activation oracle. Legacy recovery hashes
+remain exact. The producer records all strict failures, but its then-existing
+wrapper incorrectly exits0 despite local numerical failures; successor aggregation
+returns nonzero on those failures. The result is rejected regardless of green
+workflow conclusion. No full decoded run is justified by this component result.
+
+The next `--norm-only` probe authenticates the same official layer/input and
+compares existing sequential/precise RMS reduction alternatives, F32 scales and
+BF16 outputs against original Torch on the identical input. It also runs the
+legacy same-weight layer0 control with newly tagged cache precision modes;
+incompatible legacy/BF16 caches must reject before execution. No quantized model
+or full-model reference is downloaded by this norm-only scope. Production default
+and all strict budgets stay unchanged.

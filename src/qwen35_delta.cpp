@@ -188,8 +188,8 @@ bool linear_grouped_core_cpu(const linear_inputs & in, int key_heads, linear_out
 }
 
 static bool delta_cpu_impl(const float * q, const float * k, const float * v, const float * g, const float * beta,
-               const float * initial_state, int batch, int tokens, int heads, int width, int threads,
-               std::vector<float> & output, std::vector<float> & final_state, bool pre_normalized) {
+                           const float * initial_state, int batch, int tokens, int heads, int width, int threads,
+                           std::vector<float> & output, std::vector<float> & final_state, bool pre_normalized) {
     output.clear();
     final_state.clear();
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !q || !k || !v || !g || !beta || batch < 1 || tokens < 1 ||
@@ -259,13 +259,15 @@ static bool delta_cpu_impl(const float * q, const float * k, const float * v, co
 bool delta_cpu(const float * q, const float * k, const float * v, const float * g, const float * beta,
                const float * initial_state, int batch, int tokens, int heads, int width, int threads,
                std::vector<float> & output, std::vector<float> & final_state) {
-    return delta_cpu_impl(q,k,v,g,beta,initial_state,batch,tokens,heads,width,threads,output,final_state,false);
+    return delta_cpu_impl(q, k, v, g, beta, initial_state, batch, tokens, heads, width, threads, output, final_state,
+                          false);
 }
 // Explicit pre-normalized entry for the gated LightOn4B BF16 boundary candidate.
 // Existing delta_cpu callers retain their original F32 normalization unchanged.
 bool delta_pre_normalized_cpu(const float * q, const float * k, const float * v, const float * g, const float * beta,
-               const float * initial_state, int batch, int tokens, int heads, int width, int threads,
-               std::vector<float> & output, std::vector<float> & final_state) {
-    return delta_cpu_impl(q,k,v,g,beta,initial_state,batch,tokens,heads,width,threads,output,final_state,true);
+                              const float * initial_state, int batch, int tokens, int heads, int width, int threads,
+                              std::vector<float> & output, std::vector<float> & final_state) {
+    return delta_cpu_impl(q, k, v, g, beta, initial_state, batch, tokens, heads, width, threads, output, final_state,
+                          true);
 }
 } // namespace qwen35_ocr

@@ -21,6 +21,7 @@ def digest(data):return hashlib.sha256(data).hexdigest()
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--protocol',choices=('v1','v2-unanchored-diagnostic'),default='v1')
+    parser.add_argument('--norm-only',action='store_true',help='Compare retained-input RMS reduction alternatives; no candidates')
     parser.add_argument('--bf16-boundaries',action='store_true',help='Also compare gated quant-preserving BF16 activation oracle')
     parser.add_argument('--bf16-only',action='store_true',help='Official retained-input layer0 only; no native build or candidate')
     parser.add_argument('--retained-root',type=Path,help='Mounted original stage directory; exact manifest and payload hashes required')
@@ -169,6 +170,26 @@ def main():
             oracle=original_arm('official-bf16-boundary-oracle',weights,torch.bfloat16,True)
             native_arm('native-official-bf16-boundary',scratch/'official-layer0.gguf',oracle,True)
             del oracle
+        if args.norm_only:
+            folder=out/'norm-attribution';folder.mkdir()
+            run('norm-attribution',[binary,scratch/'official-layer0.gguf',retained/'prefill.input.f32',folder,'norm-only'],env)
+            report['norm_attribution']=[]
+            scales=torch.rsqrt(torch.from_numpy(x.copy()).square().mean(-1)+1e-6).numpy()
+            report['norm_scale_attribution']=[]
+            for precise in ('0','1'):
+                actual_scales=np.fromfile(folder/f'norm-precise{precise}.scale.f32',dtype='<f4').reshape(scales.shape)
+                report['norm_scale_attribution'].append({'precise_rms':precise,**ref.metrics(actual_scales,scales,np)})
+                for dtype,target in (('f32',source_f32['input_norm']),('bf16',bf16['input_norm'])):
+                    path=folder/f'norm-precise{precise}.{dtype}.f32'
+                    actual=np.fromfile(path,dtype='<f4').reshape(target.shape)
+                    worst=int(np.argmax(np.abs(actual.astype(np.float64)-target.astype(np.float64))))
+                    report['norm_attribution'].append({'precise_rms':precise,'output_dtype':dtype,
+                        'worst_flat_index':worst,'original_at_worst':float(target.reshape(-1)[worst]),'native_at_worst':float(actual.reshape(-1)[worst]),
+                        'original_f32_at_worst':float(source_f32['input_norm'].reshape(-1)[worst]),
+                        'native_f32_at_worst':float(np.fromfile(folder/f'norm-precise{precise}.f32.f32',dtype='<f4')[worst]),
+                        'byte_exact':digest(actual.tobytes())==digest(target.tobytes()),**ref.metrics(actual,target,np)})
+            require(not report['arms']['native-official-f32']['earliest_failure'],'legacy official F32 control failed')
+            report['status']='norm-attribution-compared';return
         del weights,bf16,source_f32;gc.collect()
         for recipe,(filename,expected,size)in native.CANDIDATES.items():
             model=scratch/filename;native.download(f'https://huggingface.co/{native.MODEL_REPO}/resolve/{native.MODEL_REVISION}/{filename}',model)
@@ -195,6 +216,8 @@ def main():
                     require(native.sha(out/(recipe+'-native-legacy-recovery')/(stage+'.f32'))==native.sha(out/(recipe+'-native-quant')/(stage+'.f32')),'gated call changed legacy output')
                 del oracle
             del tensors,reader,weights,expected_stages;gc.collect();model.unlink()
+        report['failed_native_arms']=[label for label,row in report['arms'].items() if row.get('earliest_failure')]
+        require(not report['failed_native_arms'],'same-input native operator comparison failed: '+','.join(report['failed_native_arms']))
         report['status']='compared' if report['frozen_bf16_hidden_exact'] else 'diagnostic-compared-unanchored'
     except Exception as error:
         report['error_type']=type(error).__name__
