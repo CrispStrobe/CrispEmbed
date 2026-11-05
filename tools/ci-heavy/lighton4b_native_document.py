@@ -5,6 +5,8 @@ import hashlib
 import importlib.util
 import json
 import os
+import shutil
+from importlib.metadata import version
 from pathlib import Path
 import subprocess
 import time
@@ -29,6 +31,17 @@ def sha(path):
 def download(url,path):
  with urllib.request.urlopen(url,timeout=120) as response,path.open('wb') as f:
   while block:=response.read(8*1024*1024):f.write(block)
+def memory():
+ host={}
+ for row in Path('/proc/meminfo').read_text().splitlines():
+  key,value=row.split(':',1);host[key]=int(value.strip().split()[0])*1024
+ limit=Path('/sys/fs/cgroup/memory.max');used=Path('/sys/fs/cgroup/memory.current')
+ maximum=limit.read_text().strip() if limit.exists() else 'max'
+ current=int(used.read_text()) if used.exists() else 0
+ available=host['MemAvailable']
+ if maximum!='max':available=min(available,max(0,int(maximum)-current))
+ return {'host_available_bytes':host['MemAvailable'],'cgroup_limit_bytes':None if maximum=='max' else int(maximum),
+  'cgroup_current_bytes':current,'available_bytes':available}
 def main():
  p=argparse.ArgumentParser();p.add_argument('--recipe',choices=CANDIDATES,required=True)
  p.add_argument('--mode',choices=('smoke','full'),default='smoke');p.add_argument('--threads',type=int,default=4)
@@ -42,6 +55,16 @@ def main():
   spec=importlib.util.spec_from_file_location('build',ROOT/'tools/ci-heavy/lighton4b_native_document_build.py')
   builder=importlib.util.module_from_spec(spec);spec.loader.exec_module(builder);builder.main()
   filename,expected,size=CANDIDATES[args.recipe];model=scratch/filename
+  if version('Pillow')!='11.3.0':raise RuntimeError('Pillow 11.3.0 required for source RGB decoding')
+  report['source_sha256']={str(x.relative_to(ROOT)):sha(x) for x in sorted(set(
+   list((ROOT/'src').glob('lighton4b*'))+list((ROOT/'src').glob('qwen35*'))+
+   [ROOT/'tests/lighton4b_native_document.cpp',ROOT/'tools/ci-heavy/lighton4b_native_document.py',ROOT/'CMakeLists.txt'])) if x.is_file()}
+  report['preflight']={'memory':memory(),'scratch_free_bytes':shutil.disk_usage(scratch).free,
+   'output_free_bytes':shutil.disk_usage(out).free}
+  required_ram=(8 if args.recipe=='q8_0' else 6)*1024**3
+  if report['preflight']['memory']['available_bytes']<required_ram:raise RuntimeError('insufficient available RAM for bounded native candidate')
+  if report['preflight']['scratch_free_bytes']<size+2*1024**3 or report['preflight']['output_free_bytes']<1024**3:
+   raise RuntimeError('insufficient free disk for candidate and preserved arrays')
   download(f'https://huggingface.co/{MODEL_REPO}/resolve/{MODEL_REVISION}/{filename}',model)
   if model.stat().st_size!=size or sha(model)!=expected:raise RuntimeError('immutable candidate differs')
   report['model']={'repository':MODEL_REPO,'revision':MODEL_REVISION,'file':filename,'sha256':expected,'bytes':size}
@@ -63,8 +86,17 @@ def main():
   report['gates']={key:env[key] for key in GATES};report['threads']=args.threads
   start=time.monotonic()
   with (out/'native.log').open('w') as log:
-   subprocess.run([str(binary),str(model),str(rgb),str(image.height),str(image.width),str(ids),str(native),
-    '2' if args.mode=='smoke' else '256',str(args.threads),args.mode],env=env,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,check=True)
+   process=subprocess.Popen([str(binary),str(model),str(rgb),str(image.height),str(image.width),str(ids),str(native),
+    '2' if args.mode=='smoke' else '256',str(args.threads),args.mode],env=env,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT)
+   peak=0
+   while process.poll() is None:
+    try:
+     for row in Path(f'/proc/{process.pid}/status').read_text().splitlines():
+      if row.startswith(('VmHWM:','VmRSS:')):peak=max(peak,int(row.split()[1])*1024)
+    except FileNotFoundError:pass
+    time.sleep(0.5)
+   report['native_peak_rss_bytes']=peak;report['memory_after_native']=memory()
+   if process.returncode:raise RuntimeError(f'native process failed: exit {process.returncode}')
   report['seconds']=time.monotonic()-start;report['native']=json.loads((native/'native-summary.json').read_text())
   report['artifacts']={x.name:{'bytes':x.stat().st_size,'sha256':sha(x)} for x in native.iterdir() if x.is_file()}
   generated=[int(x) for x in (native/'generated.ids').read_text().split()]
