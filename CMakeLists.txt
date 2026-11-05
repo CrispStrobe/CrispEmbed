@@ -1695,3 +1695,7 @@ endif()
 
 add_executable(test-lighton4b-decoder-upstream tests/test_lighton4b_decoder_upstream.cpp)
 target_link_libraries(test-lighton4b-decoder-upstream PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Standalone post-inference score archive comparison; no production model code.
+add_executable(crispembed-diff-lighton4b-document tests/lighton4b_document_diff.cpp)
+target_include_directories(crispembed-diff-lighton4b-document PRIVATE src)

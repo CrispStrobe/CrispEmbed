@@ -16,7 +16,8 @@
     "mixed": "e2beb641773c649394bd4e36526ff50c665f84cb",
     "negative_bf16_vision": "2a62e29e771eb747bee7e867789c147f8a36ec28",
     "tokenizer": "7f5d8878b99e196787b9c24a9d9f7b650df7100f",
-    "full_native_review": "8d4245e27266492defc40a8e531fcf53934da7b7"
+    "full_native_review": "8d4245e27266492defc40a8e531fcf53934da7b7",
+    "fourcase_review": "b05ff20325e113eefb27c2a59def235d00df22f0"
   },
   "preserved_files": [
     {
@@ -216,23 +217,8 @@
     },
     {
       "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
-      "path": "tools/ci-heavy/lighton4b_bf16_quant_controls.py",
-      "sha256": "b27bcc5e4bc19aa53d26cf3d61fc8ed7ba98ae9dbb06dcf81b77c7648832ec47"
-    },
-    {
-      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
       "path": "tools/ci-heavy/lighton4b_full_compare.py",
       "sha256": "7214182e100429aa8f2b224584d7ba0c6ad6a79b28dc84c064b48e7d00325a8d"
-    },
-    {
-      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
-      "path": "tools/ci-heavy/lighton4b_smoke_compare.py",
-      "sha256": "701e56eb3362199f441320ffd0031f79100056204d1e7c70b416533400db772e"
-    },
-    {
-      "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
-      "path": "tools/lighton4b_bf16_quant.py",
-      "sha256": "07b96d184b034239aea1d15f27e734fd4d35b095253fd9c5ec06f6c430899244"
     },
     {
       "source": "f66e186e91744402f692ef9b465e4d04e01c788a",
@@ -353,6 +339,17 @@
       "reason": "Admit authenticated full Q8 execution for diagnostic comparison only;160EOS IDs differ from177 original; first differing ID9. Frozen protocol unchanged.",
       "native_run": 42001328483,
       "native_receipt_sha256": "a0b9ed6cb7c55fa274993e42ee3f8f275b064bbcff09e2ce78542043f8be52b2"
+    },
+    {
+      "paths": [
+        "CMakeLists.txt",
+        "tests/lighton4b_document_diff.cpp",
+        "tools/ci-heavy/lighton4b_bf16_quant_controls.py",
+        "tools/ci-heavy/lighton4b_smoke_compare.py",
+        "tools/lighton4b_bf16_io.py",
+        "tools/lighton4b_bf16_quant.py"
+      ],
+      "reason": "Repair standalone post-inference dependency closure after observed import failures; keep legacy protocols unimported and exact Ref source/encoding unchanged."
     }
   ]
 }

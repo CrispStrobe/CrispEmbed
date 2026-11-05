@@ -55,3 +55,20 @@ Do not broaden credential forwarding or treat old producer results as new
 combined-source qualification. After the single `[skip ci]` consolidation push,
 only the specifically authorized Q4 and Q8 full comparers may be dispatched;
 all unrelated CI and new PRs remain paused.
+
+The initial targeted full-comparison jobs42011206392/42011236969 stopped before
+`main()` with an omitted legacy I/O import, comparing zero positions and
+emitting no artifact. A reviewed failure record preserves that distinction
+from numerical rejection. The scoped repair extracts only bounded standard-
+library score I/O, preserving the exact diagnostic GGUF encoding, and restores
+the exact standalone Ref C++ file/target. Both comparer CLI import/help checks
+then succeed without a model, suite or CI matrix; all runtime bytes stay intact.
+Only targeted retries are authorized.
+
+The completed independent BF16 batch is retained from local evidence
+`b05ff20325e113eefb27c2a59def235d00df22f0`: table222/EOS, Arabic6/EOS,
+receipt256/cap/noEOS and logo65/EOS (549 score rows,545,310,720 bytes remotely).
+The frozen case named `handwritten_letter` is actually a red serif A logo;
+it does not cover handwriting. Both this input limitation and heldout receipt
+completion failure remain explicit. Frozen cases, prompts and caps are not
+changed after observing outputs; no new native panel jobs were dispatched.

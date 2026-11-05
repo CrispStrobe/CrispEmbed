@@ -20719,3 +20719,11 @@ BF16-prefillPR157, four-case sourcePR161 and gated candidate negatives are
 consolidated as a child of runtimePR155, retaining exact source refs and all
 runtime bytes. [The evidence umbrella](docs/lighton4b-qualification-consolidation.md)
 records existing checks and pending combined-source/full-comparison gates.
+
+Independent four-case BF16 evidence from source42e5ce6f9 completes one model
+load and549 scores after the all-input hash barrier. Table222/Arabic6/logo65
+reach EOS; heldout receipt caps256/noEOS. Frozen `handwritten_letter` is a
+red serif A logo, not handwriting; limits remain recorded without replacing
+inputs. Initial full comparers42011206392/42011236969 compared zero positions
+because consolidation omitted a standalone I/O dependency; the failure and
+scoped exact-Ref/stdlib-I/O repair remain separate from quality rejection.

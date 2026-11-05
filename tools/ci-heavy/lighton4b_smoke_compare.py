@@ -10,7 +10,7 @@ import sys
 import urllib.request
 import zipfile
 ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'tools'))
-from lighton4b_document_v2 import tiny_archive
+from lighton4b_bf16_io import tiny_archive
 from lighton4b_score_patterns import patterns
 
 def require(ok,why):

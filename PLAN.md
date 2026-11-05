@@ -1070,3 +1070,13 @@ reference, prompt/cap, thresholds, defaults, release and app pin stay unchanged.
 Independent four-case BF16 capture remains executing; mixed candidate bytes are
 packed/readback-verified, but no new native panel jobs are dispatched while the
 user-requested general queue pause remains active.
+
+Scoped full-comparer retries are required after42011206392/42011236969 stopped
+at a missing diagnostic I/O import before any comparison. The repair imports
+no old protocol/runtime tree: it restores bounded score I/O plus the exact
+standalone Ref source/target, with successful import/help checks. Preserve the
+reviewed zero-position failure record; do not call it numerical rejection.
+Completed independent BF16 reference cases retain549 scores: table222EOS,
+Arabic6EOS, receipt256cap/noEOS and65EOS for the frozen `handwritten_letter`
+case, which is actually a red serif A logo. Receipt completion and handwriting-
+coverage limitations block broad qualification; never replace/tune frozen cases.

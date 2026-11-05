@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
-from lighton4b_document_v2 import LocalReader, tiny_archive
+from lighton4b_bf16_io import LocalReader, tiny_archive
 
 ROOT=Path(__file__).resolve().parents[1]
 PROTOCOL=ROOT/'docs/lighton4b-bf16-quant-v1.json'
