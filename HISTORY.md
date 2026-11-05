@@ -20751,3 +20751,14 @@ red result is numerical/decoded rejection, not a cap, timeout or execution error
 retain source/model/report hashes and per-position magnitudes. No new job or
 reference/model rerun is needed to read this evidence. Heldout source completion
 and handwriting-coverage limitations remain; no model/default/release promotion.
+
+### 5 November2026 — bounded LightOn4B decoder norm attribution
+
+Retained-input norm-only42027758298 at28e4180b8 measures existing sequential and
+precise RMS independently. Precise F32 error improves to7.62939e-6, but BF16
+rounding still exceeds0.002 at0.00390625; an observed one-F32-ULP midpoint crossing
+is retained exactly. Legacy full layer/cache-mode controls pass. The producer's
+missing norm-row exit aggregation is preserved separately from its red numerical
+report. Source mean/scale isolation remains a distinct pending operator scope;
+no source/default/release promotion follows. See
+[the complete measured limits](docs/lighton4b-layer0-attribution-results.md).

@@ -111,3 +111,35 @@ this supports quantization loss at this boundary, not a local native decoder bug
 The GDN normalized minimum row cosines include nearly zero/sign-changing rows;
 retain their absolute errors and tensor magnitudes rather than treating those
 cosines alone as evidence. Full decoded Q8/Q4 rejections stay unchanged.
+
+## Earliest input-normalization reduction: precise alone remains negative
+
+[42027758298](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42027758298)
+at28e4180b8 isolates original154-token input norm, using only the226MB official
+layer interval and retained original input. No quantized candidate is transferred.
+The [complete norm report](../tests/results/qwen35-ocr/lightonocr3-4b-layer0-norm-attribution-v1.json)
+retains scales, magnitudes, maximum-error locations and all original/legacy
+controls. Existing sequential and precise RMS are compared before BF16 rounding:
+
+| Existing RMS reduction | F32 maximum / RMS | BF16 maximum / RMS | BF16 strict result |
+| --- | ---: | ---: | --- |
+| Sequential/default |0.0001449585 /0.00000202514 |0.015625 /0.0000894558 |Fail |
+| Precise opt-in |0.00000762939 /0.0000000834215 |0.00390625 /0.00000695560 |Fail |
+
+At flat330868, native precise pre-round value0.587890625 is exactly a BF16
+midpoint and rounds to0.5859375; original0.5878906846046448 is one F32 ULP above
+and rounds to0.58984375. The resulting0.00390625 exceeds unchanged0.002. Precise
+RMS improves the local error but is not a valid exact correction or reason to
+promote a BF16 decoder. Native same-weight F32 layer and incompatible-cache-mode
+rejection controls pass.
+
+The producer's completion wrapper omits norm-row failure aggregation; its green
+workflow does not turn either failed BF16 comparison into parity. The successor
+returns nonzero on failed norm comparisons while retaining all arms. Raw
+artifact13415470128 is93,989,965 bytes; only its31KB report was range-read locally.
+
+Bounded source mean/scale isolation42028839817 atbdefd15c4 now requires exact
+original norm reconstruction, then compares source-mean native reciprocal-square-
+root alternatives and source-scale native multiply/affine output. Reference
+inputs remain test-only. No broader decoder or decoded claim is made while that
+first-operator evidence is pending.

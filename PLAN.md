@@ -1158,3 +1158,16 @@ hidden0.01743889/0.15934277. These are actual original-code candidate losses,
 not native implementation proof. Bounded norm-only42027758298 at28e4180b8
 compares existing sequential/precise RMS and BF16 rounding before any new full
 candidate or decoded claim; source/cache-mode controls remain isolated.
+
+### LightOn4B decoder norm operator continuation — 5 November 2026
+
+Norm-only42027758298/28e4180b8 completes: precise RMS reduces F32 maximum
+0.0001449585→0.00000762939 and BF16 maximum0.015625→0.00390625, still failing
+0.002. At flat330868, native0.587890625 is a BF16 midpoint rounding down while
+original0.5878906846 is one F32 ULP above and rounds up. Preserve both red
+comparisons and wrapper aggregation limitation; native legacy/cache-mode controls
+pass. [The report and limits](docs/lighton4b-layer0-attribution-results.md#earliest-input-normalization-reduction-precise-alone-remains-negative)
+remain distinct from runtime qualification. Source mean/scale isolation42028839817
+atbdefd15c4 is executing with exact original norm reconstruction required before
+source-fed rsqrt/affine alternatives. No expanded decoder or new quality/default
+claim follows before these actual first-operator results.
