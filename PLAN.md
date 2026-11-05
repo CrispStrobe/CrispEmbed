@@ -8,8 +8,9 @@ historical false roundtrip flag. Initial source is `295fc0ec9`; original model
 revision remains `b71010f095dc3735de7ee6b9969bff8f8f50b39a`.
 The actual CPU conversion, Q8/Q4 tensor audits, experimental upload and independent
 empty-cache worker readback are complete, as recorded in [the review](tests/results/qwen35-ocr/lightonocr3-4b-kaggle-conversion-review.json).
-Original/native decoded and intermediate comparisons remain blocked by unsupported
-format-5 inference; no native quality, model alias or runtime release follows.
+Experimental format-5 native inference now runs; initial Q8 and Q4_K comparisons
+fail the score tolerance and Q4_K differs at the first decoded token. No native
+quality, model alias or runtime release follows.
 
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
@@ -38,8 +39,8 @@ execution continued and `pip check` reported no broken requirements. The user
 explicitly selects the captured BF16 original reference; an F32 reference is
 not a prerequisite. Continue with Q8_0 and Q4_K native teacher-forced scores,
 independent free decoding and `crispembed-diff`, then evaluate changes on distinct
-calibration and held-out documents. No 4B native inference or decoded quality
-has yet been established.
+calibration and held-out documents. Full-document parity and decoded quality
+have not been established.
 
 The actual BF16 original preprocessing replay [41999219551](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999219551)
 matches all 860,160 pixel values and the `[1,20,28]` grid bit-for-bit; the
@@ -48,7 +49,22 @@ matches all 154 prompt IDs/modalities and decodes all 177 original IDs exactly.
 The first native Q8/Q4 smoke attempts stopped before inference on a tokenizer
 profile mismatch; corrected smokes [41999580781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999580781)
 and [41999584163](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999584163)
-must be re-queried and independently reviewed. The separate Q8/Q4 bounded
+ran native vision and decoder inference at `fd150b98f488a6884a6e8d8127e7dfb263cab237`.
+Q8's first two tokens `[27,17251]` match the BF16 original; Q4_K's
+`[20353,29]` decode to `<table>` rather than the original `<figure` prefix.
+The independently executed `crispembed-diff` first-score comparisons for
+[Q8](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001979476) and
+[Q4_K](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001983230)
+both fail the numerical budget at position zero, over 248,320 finite values.
+Q8 maximum/mean/RMS absolute errors are 0.568259001/0.108710214/0.130495042,
+with cosine 0.99846971; Q4_K errors are 2.49422884/0.466762543/0.571912766,
+with cosine 0.976987541. These compare the BF16 generation score against native
+scores, not independently captured original raw logits. Full teacher-forced and
+independent free-generation panels are running in
+[Q8](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001328483) and
+[Q4_K](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001333207);
+a separate BF16 prefill capture is intended to localize the earliest stage.
+The separate Q8/Q4 bounded
 vocabulary projection passed [41996887406](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41996887406).
 
 Three separately gated owner preparations are available as draft PRs: [vision
