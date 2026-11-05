@@ -1,0 +1,651 @@
+{
+  "build_jobs": [
+    {
+      "conclusion": "success",
+      "name": "Static guards",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927624385"
+    },
+    {
+      "conclusion": "success",
+      "name": "sibling-crispasr (shared libs)",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927847782"
+    },
+    {
+      "conclusion": "success",
+      "name": "linux-x86_64",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927847880"
+    },
+    {
+      "conclusion": "success",
+      "name": "ios-arm64",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927847893"
+    },
+    {
+      "conclusion": "success",
+      "name": "macos-arm64",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927847915"
+    },
+    {
+      "conclusion": "success",
+      "name": "android-armeabi-v7a",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927847970"
+    },
+    {
+      "conclusion": "success",
+      "name": "windows-x86_64",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927848018"
+    },
+    {
+      "conclusion": "success",
+      "name": "android-arm64-v8a",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927848022"
+    },
+    {
+      "conclusion": "success",
+      "name": "android-x86_64",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927848028"
+    },
+    {
+      "conclusion": "success",
+      "name": "Bundle Flutter plugin",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126929314193"
+    },
+    {
+      "conclusion": "success",
+      "name": "Build result",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126929510036"
+    }
+  ],
+  "checks": [
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954654/job/126930401451",
+      "name": "Embedding WASM result",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954677/job/126929530980",
+      "name": "OCR WASM result",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126929510036",
+      "name": "Build result",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126929314193",
+      "name": "Bundle Flutter plugin",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954658/job/126928530623",
+      "name": "Inpainting result",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954654/job/126928359960",
+      "name": "build",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954654/job/126928230450",
+      "name": "Select necessary CI",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954705/job/126928051380",
+      "name": "Rust crates result",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954672/job/126927882873",
+      "name": "LightOn4B original meta schema and GDN components",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927848022",
+      "name": "android-arm64-v8a",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927847970",
+      "name": "android-armeabi-v7a",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927848028",
+      "name": "android-x86_64",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927847880",
+      "name": "linux-x86_64",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927847893",
+      "name": "ios-arm64",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927847915",
+      "name": "macos-arm64",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927847782",
+      "name": "sibling-crispasr (shared libs)",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927848018",
+      "name": "windows-x86_64",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954672/job/126927675000",
+      "name": "controls",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954677/job/126927662370",
+      "name": "build-wasm",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667/job/126927624385",
+      "name": "Static guards",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927592779",
+      "name": "ultrabert-rope",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593760",
+      "name": "frontend",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594813",
+      "name": "weight-cache-reanalysis",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594811",
+      "name": "preserve-evidence",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594177",
+      "name": "final-integrated-v1",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593875",
+      "name": "position-probe",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594439",
+      "name": "successor-consumer",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593999",
+      "name": "successor-corpus",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593770",
+      "name": "successor-apple-only",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927595342",
+      "name": "profile",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927595009",
+      "name": "consumer",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593937",
+      "name": "lighton-fixture",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593970",
+      "name": "metadata",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594762",
+      "name": "position-replay",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593854",
+      "name": "successor-wasm-trace",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594847",
+      "name": "ultrabert-scifact",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594956",
+      "name": "model",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593401",
+      "name": "export",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593505",
+      "name": "replay",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594897",
+      "name": "successor-wasm-rounding-controls",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594212",
+      "name": "josev-wheel-metadata",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594451",
+      "name": "first-ffn",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954705/job/126927567530",
+      "name": "ARM64 wrapper C ABI types",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594104",
+      "name": "moedern-native-v2",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594158",
+      "name": "ovisocr3-native14",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594357",
+      "name": "migan-reference",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593934",
+      "name": "migan-native",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593793",
+      "name": "moedern-original-1p5m",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927592983",
+      "name": "attribution-2048",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593309",
+      "name": "vision",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593380",
+      "name": "public",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594179",
+      "name": "quality",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593641",
+      "name": "publish",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927592841",
+      "name": "quant-raw",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593862",
+      "name": "current-replay",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593543",
+      "name": "large-inputs",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594311",
+      "name": "ovisocr3-publish",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594187",
+      "name": "ovisocr3-consumer",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593921",
+      "name": "final-integrated-v2",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594509",
+      "name": "ovisocr3-public",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593677",
+      "name": "ovisocr3-quality",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593682",
+      "name": "ovisocr3-quality-f16",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594835",
+      "name": "ovisocr3-reference",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927594009",
+      "name": "ovisocr3-metadata",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927593820",
+      "name": "position-quality",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954705/job/126927565886",
+      "name": "package",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954658/job/126927519404",
+      "name": "contracts (macos-14)",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954658/job/126927519490",
+      "name": "contracts (ubuntu-24.04)",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954658/job/126927519452",
+      "name": "contracts (windows-2022)",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954677/job/126927514054",
+      "name": "Select necessary CI",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927477232",
+      "name": "systemone-consumers",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954656/job/126927389640",
+      "name": "clang-format (style)",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954679/job/126927390764",
+      "name": "profile-counters (macos-latest)",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954773/job/126927402047",
+      "name": "quantize-overrides",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954705/job/126927401845",
+      "name": "Select necessary CI",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954689/job/126927390558",
+      "name": "contract",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927392125",
+      "name": "controls",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954679/job/126927390772",
+      "name": "profile-counters (windows-latest)",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954679/job/126927390799",
+      "name": "controls",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954679/job/126927390338",
+      "name": "profile-counters (ubuntu-latest)",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954656/job/126927390111",
+      "name": "environment variables documented",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954658/job/126927391001",
+      "name": "Select necessary CI",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954665/job/126927391257",
+      "name": "outlier-activations",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954660/job/126927389355",
+      "name": "scan",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927394372",
+      "name": "moedern-publish",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927394444",
+      "name": "josev-packed-build",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927393729",
+      "name": "systemone-api-build",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927394700",
+      "name": "josev-publish",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927394896",
+      "name": "moedern-unigram",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927395038",
+      "name": "moedern-text-composed",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927395039",
+      "name": "josev-composed-build",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927394941",
+      "name": "josev-composed",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874/job/126927394818",
+      "name": "moedern-public-consumers",
+      "state": "SKIPPED"
+    }
+  ],
+  "historical_source_guards_changed": false,
+  "native_model_qualified": false,
+  "pr": 145,
+  "review_date": "2026-11-05",
+  "schema": "lighton4b-text-owner-final-source-ci/v1",
+  "scope": "Source/platform CI and previously retained model-free text ownership only; no format-5 admission, full-model inference or decoded OCR quality qualification",
+  "source_sha": "2d36eeb9492d4c241040411fb5340b6368a6b6f2",
+  "status": "passed",
+  "workflows": [
+    {
+      "conclusion": "success",
+      "databaseId": 41930954654,
+      "headSha": "2d36eeb9492d4c241040411fb5340b6368a6b6f2",
+      "name": "Build WASM (text embeddings)",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954654"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41930954660,
+      "headSha": "2d36eeb9492d4c241040411fb5340b6368a6b6f2",
+      "name": "Secret scan",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954660"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41930954656,
+      "headSha": "2d36eeb9492d4c241040411fb5340b6368a6b6f2",
+      "name": "Lint",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954656"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41930954773,
+      "headSha": "2d36eeb9492d4c241040411fb5340b6368a6b6f2",
+      "name": "Quantizer precision overrides",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954773"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41930954705,
+      "headSha": "2d36eeb9492d4c241040411fb5340b6368a6b6f2",
+      "name": "Rust crates",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954705"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41930954679,
+      "headSha": "2d36eeb9492d4c241040411fb5340b6368a6b6f2",
+      "name": "Qwen3.5 decoded audit controls",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954679"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41930954658,
+      "headSha": "2d36eeb9492d4c241040411fb5340b6368a6b6f2",
+      "name": "Inpainting CLI and image contracts",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954658"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41930954672,
+      "headSha": "2d36eeb9492d4c241040411fb5340b6368a6b6f2",
+      "name": "Model-free controls",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954672"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41930954665,
+      "headSha": "2d36eeb9492d4c241040411fb5340b6368a6b6f2",
+      "name": "LFM2 precise arithmetic fixture",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954665"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41930954667,
+      "headSha": "2d36eeb9492d4c241040411fb5340b6368a6b6f2",
+      "name": "Build",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41930954677,
+      "headSha": "2d36eeb9492d4c241040411fb5340b6368a6b6f2",
+      "name": "Build WASM",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954677"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41930954874,
+      "headSha": "2d36eeb9492d4c241040411fb5340b6368a6b6f2",
+      "name": "OvisOCR2 metadata, export, frontend and fixture audits",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954874"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41930954689,
+      "headSha": "2d36eeb9492d4c241040411fb5340b6368a6b6f2",
+      "name": "OCR quality contract",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954689"
+    }
+  ]
+}

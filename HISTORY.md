@@ -1,3 +1,19 @@
+## 5 November 2026 — PR145 complete final-source CI
+
+Re-query at `2d36eeb9492d4c241040411fb5340b6368a6b6f2` finds all13
+selected workflows completed successfully. The actual
+[Build41930954667](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667)
+aggregate and Static guards now pass;
+[Lint41930954656](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954656),
+model-free/decoded/Ovis controls and the macOS/Linux/Windows contracts pass.
+[The final CI receipt](tests/results/qwen35-ocr/lightonocr3-4b-text-owner-ci.json)
+retains every workflow and check identity plus actual build-job conclusions.
+No further scoped source repair was needed. Earlier initial style/static/fixture
+failures and superseded cancellations remain historical; original source gates
+stay unchanged. This closes the text-owner PR source-CI follow-up only. The
+3498 owner/36 Python component evidence remains separate from full-model
+inference, decoded quality, publication, aliases and runtime-release gates.
+
 ## 4 November 2026 — LightOn4B text-owner initial PR checks retained
 
 Initial PR145 checks at `16dac27f6` failed independently of the positive

@@ -14,7 +14,10 @@ original rows,249 matrices/177 protected tensors and the exact control census.
 The [repaired hosted41930138239](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930138239)
 also passes3498 owner and36 Python protocol/closure controls after clean-exit,
 formatting and synthetic historical-fixture corrections; original source guards
-remain unchanged and every initial PR failure is retained in HISTORY.
+remain unchanged and every initial PR failure is retained in HISTORY. Final-source
+CI at `2d36eeb94` now passes all13 selected workflows, including actual Build
+aggregate41930954667; the [receipt](tests/results/qwen35-ocr/lightonocr3-4b-text-owner-ci.json)
+closes the initial source-CI follow-up without changing historical guards.
 This is metadata ownership only. Vision mapping, actual composed
 decoder dispatch/cache behavior, bounded full-vocabulary projection, original
 intermediates/decoded outputs, tokenizer and public inference remain separate
