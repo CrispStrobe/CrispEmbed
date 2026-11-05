@@ -1103,3 +1103,14 @@ will replay both source-fed norms and ordinary composed Q4 vision/first-logits/
 two-token decode against frozen original and byte-exact old candidate controls.
 No reference arrays enter either ordinary composed arm. Numerical improvement
 alone cannot establish full decoded quality; all runtime defaults stay off.
+
+
+[Norm A/B42024288946](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42024288946)
+at3b194f40b is complete and negative for promotion. Exact original reconstruction
+and all old candidate composed hashes pass. Norm1 differences87→52, norm2
+73→76; merged RMS0.0223861→0.0199821 but first-logit RMS0.545670→0.591688,
+with unchanged wrong`<table>` two-token output. Both gates remain off.
+The [full receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-norm-ab.json)
+and candidate guide preserve this limit. Continue same-input reduction/affine
+contraction isolation using retained raw13414500337; defer more full smokes
+until the operator materially improves. No quality/release/default promotion.
