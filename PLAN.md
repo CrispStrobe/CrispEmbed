@@ -1036,3 +1036,15 @@ and[Q4 42000808436](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42000
 then execute full177 teacher positions and independent cap256 generation for
 both candidates, preserving the Q4 regression. Original BF16 internal tracing
 is a separate continuation; current original capture contains scores only.
+
+The user-requested full runs now execute on the exact reviewed smoke source
+`fd150b98f488a6884a6e8d8127e7dfb263cab237`, preserved as
+`audit/lighton4b-native-full-fd150-20261105`: [Q8 42001328483](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001328483)
+and [Q4 42001333207](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001333207).
+Each retains all177 original-prefix score rows and independent greedy generation
+at unchanged cap256 with a180-minute hosted bound. Scalar teacher/cache stepping
+is unchanged from smoke; no new batching, reference precision or threshold
+waiver. Smoke's127/133-second prefill/two-token measurements suggest a potentially
+long full autoregressive panel; no full timing or completion is inferred yet.
+Retain partial/failure artifacts and the Q4 first-token rejection even if later
+positions improve. Final paired full-vocabulary/decoded review remains pending.
