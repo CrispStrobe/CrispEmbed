@@ -51,3 +51,13 @@ at position1 and tampered bytes; contract negatives reject missing prefixes,
 missing scores, independent-generation omission, wrong precision and stops.
 Synthetic controls retain `native_execution_admitted=false` and cannot admit
 weights or native execution. Large artifacts stay remote.
+
+Actual [hosted41997183136](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41997183136)
+at `a5b005b368e6f47530eea01bdc81d07df4aadf44` passes both control methods,
+including actualRef equal/error/tamper and contract-negative subcases. The
+[receipt](../tests/results/qwen35-ocr/lightonocr3-4b-bf16-quant-controls.json)
+retains exact source and executable hashes. Initial41997070623 was cancelled
+while queued after the public-path/forged-producer control amendment; no model
+ran in either workflow. The initial transient Git push rejection and absent
+new-workflow default-branch dispatch404 preceded the successful exact-source
+existing `heavy-cpu.yml` dispatch. Native parity remains pending.

@@ -997,3 +997,9 @@ Q8/Q4 recipes, then admit exact source/run/weights and execute both native arms
 on hosted resources. Preserve strict numerical failures and decoded outputs;
 first observed score divergence is not internal-stage attribution. Hosted
 model-free actualRef controls are prepared; queued work is not parity evidence.
+
+Actual hosted BF16 quantized consumer controls41997183136 at `a5b005b36` pass
+both methods with actualRef equal/error/tamper and contract negatives; see
+[receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-quant-controls.json).
+Initial41997070623 was cancelled while queued after a source amendment. No
+model forward/native admission follows from these synthetic control results.
