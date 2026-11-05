@@ -1323,3 +1323,13 @@ checks also isolate exact softmax reciprocals from F32 probability at the row
 maximum (exp0=1), then compare lane/register/reduction trees and forced original
 reciprocals/exp. Do not assume the remaining15 values are exp or reduction until
 these independent controls establish it. No full model batch at this gate.
+
+
+The next exact softmax vector-header job compiles installed original PyTorch
+headers at AVX2/default dispatch, with strict contraction/contracted/fast-math
+controls. Linkage must pass before retained116MiB source transfer. Original
+BF16-input/F32-output softmax must reproduce all retained F32 bytes; direct F32
+input is separately measured rather than assumed equivalent. Exp0, full F32/BF16
+probabilities, exact reciprocal and exp-versus-Torch.exp arrays distinguish the
+remaining kernel behavior. No guessed method enters production; one hosted job,
+no model forward, and source matrices stay remote.
