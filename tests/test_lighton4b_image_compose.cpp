@@ -119,6 +119,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     vision_outputs result;
     CHECK(!lighton4b_image_vision_cpu(weights, config, image, 1, result));
     std::cout << "passed=1 checks=" << checks << " model_inference=0\n";
+    return 0;
 }
 
 int main(int argc, char ** argv) {

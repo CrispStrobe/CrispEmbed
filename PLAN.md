@@ -1171,3 +1171,14 @@ branch's generic heavy job does not expose its read-only actions token. The
 remains. The scoped workflow repair adds only read-only actions permission and
 `GH_TOKEN` to that existing job, preserving calibration-native exclusions/jobs.
 Runtime source and budgets stay unchanged; only the targeted assembled job retries.
+
+
+[Assembled retry42032227007](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42032227007)
+at16b849573 passes exact norm/source/raw-SHA/moments/gate controls and builds
+all four targets. Native-context9 controls pass. It exposes an existing renamed
+image-compose test helper falling through without `return0`:45 passing assertions
+print success, followed by undefined execution/spurious line98 failure. The
+[second initial receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-norm-integration-test-initial.json)
+is retained. Add only explicit helper `return0` and clearer failed-control
+metadata; preserve every assertion, runtime byte and numerical gate. Retry only
+the same targeted assembled-source job.

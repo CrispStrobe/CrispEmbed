@@ -13,7 +13,9 @@ def main():
  def run(name,args,expected=0):
   with (out/(name+'.log')).open('w')as f:
    result=subprocess.run([str(x)for x in args],cwd=ROOT,stdout=f,stderr=subprocess.STDOUT)
-  if result.returncode!=expected:raise ValueError('targeted control failed: '+name)
+  if result.returncode!=expected:
+   report['failed_control']=name;report['failed_returncode']=result.returncode
+   raise ValueError('targeted control failed: '+name)
  try:
   spec=importlib.util.spec_from_file_location('operators',ROOT/'tools/ci-heavy/lighton4b_vision_norm_attribution.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);module.main()
   operators=json.loads((out/'norm-attribution.json').read_text())
