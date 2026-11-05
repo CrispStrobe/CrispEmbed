@@ -65,10 +65,21 @@ comparison. The initial and hardened synthetic controls passed at
 [41974416327](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41974416327)
 and [41974795749](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41974795749).
 Its predicted 560 patches and 140 image tokens are not observed processor outputs;
-both original and native producer admissions remain empty. Original generated-position final-norm/cache and full-logit capture, plus composed
-native format-5 context, tokenizer, cache and projection, are required before running it on the model. Current Kaggle GPU quota
+both original and native producer admissions remain empty. Original generated-position
+final-norm/cache and full-logit capture, plus composed native format-5 context,
+tokenizer, cache and projection, are required before running it on the model.
+Current Kaggle GPU quota
 was exhausted on 5 November; the service reported its next refresh for
 7 November 2026. Re-query before scheduling; do not start a non-GPU job on GPU.
+
+The separately source-bound [original generated-position adapter](https://github.com/CrispStrobe/CrispEmbed/blob/d6896b154b6705881b8005ed455e443d5b5d1597/docs/lighton4b-original-adapter-v1.md)
+passed five synthetic controls in [41976285821](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41976285821).
+Its capture remains hard-disabled pending an independently reviewed large-shard
+transport; document-v1's 2 GiB archive limit and empty producer admissions remain
+unchanged. Its conservative 40 GiB RAM/48 GiB disk bounds reject the observed
+32 GB Kaggle worker. A lower-memory sequential capture would require its own
+implementation, measured peak and original-trace equivalence, not relaxed guards.
+No original model forward was run by these controls.
 
 | Lane | State | Next action | Done when |
 |---|---|---|---|
