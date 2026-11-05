@@ -59,7 +59,7 @@ def execute():
         report['exact_regenerated_weight_records']=len(weights)
         linear_weights={name:np.ascontiguousarray(p.detach().numpy()) for name,p in prototypes[False].named_parameters()}
         reference.write_gguf(scratch/'weights.gguf',linear_weights,gguf)
-        # Genuine layer21, but no full TextModel is constructed or executed.
+        # Genuine layer1, but no full TextModel is constructed or executed.
         with torch.device('meta'):block=original.Qwen3_5DecoderLayer(config,1)
         block.load_state_dict(prototypes[False].state_dict(),assign=True);block.eval()
         def load(lane,name):

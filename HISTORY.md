@@ -20696,3 +20696,14 @@ it sufficiently to accumulated upstream hidden drift. Preserve the original
 negative panel; no gate/default/release/model-support promotion. Exact magnitudes,
 source pins, dependencies and limits are in [the scope](docs/lighton4b-decoder-compose.md)
 and [combined review receipt](tests/results/qwen35-ocr/lightonocr3-4b-decoder-compose-attribution.json).
+
+### 5 November2026 — retained earliest upstream drift diagnostic
+
+[41981848201](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41981848201)
+replays only layer1 on preserved layer0 outputs.26 synthetic weight hashes and
+six frozen anchors match exactly;22+4+8 block/boundary comparisons pass. Source-fed
+FFN operators isolate persistent dense-projection discrepancies and much smaller
+activation-only error, without a particular CPU/reduction-cause claim. The frozen
+32-layer progression first grows most in relative terms at layer0→1 (+29.84%);
+its full numerical gate remains negative. No full forward rerun or threshold/
+runtime/default change. [Scope and measurements](docs/lighton4b-upstream-drift.md).
