@@ -72,7 +72,10 @@ def compare(original_root,native_root,binary,output,synthetic=False):
                 if run.returncode and r['earliest_observed_score_difference'] is None:r['earliest_observed_score_difference']=i
         r.update(compared_positions=len(rows),metrics=rows,numerical_passed=numerical,decoded_and_ids_exact=a['generated_ids']==b['generated_ids'] and a['decoded']==b['decoded'],native_eos_completed=b['stop']=='eos' and not b['cap_hit'])
         r['status']='passed' if numerical and r['decoded_and_ids_exact'] and r['native_eos_completed'] else 'failed'
-    except Exception as e:r.update(error_type=type(e).__name__,error=str(e).replace(str(ROOT),'[repository]'))
+    except Exception as e:
+        message=str(e)
+        for path,label in ((ROOT,'[repository]'),(original_root,'[original]'),(native_root,'[native]'),(output,'[report]'),(binary,'[binary]')):message=message.replace(str(path),label)
+        r.update(error_type=type(e).__name__,error=message)
     (out/'comparison.json').write_text(json.dumps(r,indent=2)+'\n')
     return 0 if r['status']=='passed' else 2 if r['status']=='blocked' else 1
 

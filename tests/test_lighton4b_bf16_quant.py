@@ -28,6 +28,8 @@ class Controls(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'actual native'):q.candidate(b,a,p)
             for field,value in [('teacher_forced_ids',[1]),('free_generation_independent',False),('scores',b['scores'][:1]),('precision','f32'),('cap_hit',True)]:
                 with self.subTest(field=field),self.assertRaises(ValueError):q.candidate(dict(b,**{field:value}),a,p,True)
+            forged=dict(b,synthetic_control=False,native_forward_executed=True,producer_source_sha='0'*40,producer_run_url='https://github.com/example/run',weights_sha256='0'*64)
+            with self.assertRaisesRegex(ValueError,'not admitted'):q.candidate(forged,a,p)
             self.assertEqual(q.protocol()['native_producers'],[])
     @unittest.skipUnless(os.environ.get('LIGHTON4B_DOCUMENT_DIFF'),'hosted actual Ref binary required')
     def test_actual_ref_equal_changed_and_tampered(self):
