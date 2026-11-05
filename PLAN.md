@@ -1113,3 +1113,16 @@ records initial runs and limits. All713 formatting checks,264 clean-exit mains,
 three case contracts,13 quality-audit controls and15 git-verified source pins
 pass locally; no model inference/build or new CI dispatch is implied. Repairs
 are held locally for the coordinated queue-preserving push.
+
+Both exact`fd150b98f` full native captures completed: Q8
+[42001328483](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001328483)
+and Q4[42001333207](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001333207)
+retain all177 original-prefix score rows. Independent Q8 generates160 IDs and
+EOS but differs from the original177 IDs at position9; raw original-output
+CER0.2134146/WER0.3888889. Q4 generates256 IDs, reaches the unchanged cap without
+EOS and truncates an HTML table; CER0.8277439/WER0.9888889. These are explicit
+decoded-parity negatives, not quality qualification.
+[Exact reviewed receipts/resources](tests/results/qwen35-ocr/lightonocr3-4b-full-native-review.json)
+retain remote archive/source/weight/protocol identities and limits. Full177-row
+numerical comparison is a separately controlled continuation; no reference, cap,
+prompt or strict budget changes. Large arrays stay remote.
