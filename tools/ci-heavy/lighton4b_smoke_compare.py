@@ -58,18 +58,21 @@ def main():
         Get=KaggleApi.kernels_pull.__globals__['ApiGetKernelRequest'];List=KaggleApi.kernels_output.__globals__['ApiListKernelSessionOutputRequest']
         owner=os.environ['KAGGLE_ACCOUNT'];slug='lightonocr-4b-bf16-cpu-capture-v1';urls={};page_token=None
         with kaggle.build_kaggle_client()as client:
-            request=Get();request.user_name=owner;request.kernel_slug=slug;request.version_label='1'
+            request=Get();request.user_name=owner;request.kernel_slug=slug;request.version_label='v1'
+            report['stage']='authenticate-original-version-v1'
             metadata=json.loads(str(client.kernels.kernels_api_client.get_kernel(request)))
             require(digest(metadata['blob']['source'].encode())=='c370b097a45c2d8158343fa1a3a3c510f9bea3b84912565e896b5ded37fd93f6','original submitted bootstrap source differs')
             while True:
-                request=List();request.user_name=owner;request.kernel_slug=slug;request.version_label='1';request.page_size=100
+                request=List();request.user_name=owner;request.kernel_slug=slug;request.version_label='v1';request.page_size=100
                 if page_token:request.page_token=page_token
+                report['stage']='list-original-version-v1'
                 page=client.kernels.kernels_api_client.list_kernel_session_output(request)
                 for item in page.files or []:
                     require(item.file_name not in urls,'duplicate original output member');urls[item.file_name]=item.url
                 page_token=page.next_page_token
                 if not page_token:break
         member='lighton4b-bf16-freegen/scores-000.f32';require(member in urls,'frozen original score missing')
+        report['stage']='download-frozen-original-row'
         try:
             with urllib.request.urlopen(urls[member],timeout=90)as response:original_bytes=response.read(pin['bytes']+1)
         except Exception:raise ValueError('authenticated bounded original transfer failed')from None
@@ -86,7 +89,7 @@ def main():
         (out/'crispembed-diff.log').write_text(result.stdout+result.stderr)
         stages=[line for line in result.stdout.splitlines()if line.startswith('STAGE ')];require(len(stages)==1 and result.returncode in(0,1),'complete actualRef first-score result required')
         metrics=dict(item.split('=',1)for item in stages[0].split()[2:]if '='in item)
-        report.update(status='compared',numerical_passed=result.returncode==0,compared_positions=1,metrics=metrics,earliest_observed_score_difference=0 if float(metrics['max_abs'])>0 else None,earliest_score_budget_failure=0 if result.returncode else None,original_row_sha256=pin['sha256'],native_row_sha256=row['sha256'],native_precision=args.recipe,native_run=args.native_run,native_source=args.native_source,native_receipt_sha256=args.receipt_sha256,native_artifact={k:artifact[k]for k in('id','digest','size_in_bytes','expires_at')},original_provider={'service':'Kaggle','kernel_slug':slug,'version_label':'1'},original_first_id=protocol['original_generated_ids'][0],original_decoded=protocol['original_decoded'],native_smoke_decoded=native['decoded'],binary_sha256=digest(binary.read_bytes()))
+        report.update(status='compared',numerical_passed=result.returncode==0,compared_positions=1,metrics=metrics,earliest_observed_score_difference=0 if float(metrics['max_abs'])>0 else None,earliest_score_budget_failure=0 if result.returncode else None,original_row_sha256=pin['sha256'],native_row_sha256=row['sha256'],native_precision=args.recipe,native_run=args.native_run,native_source=args.native_source,native_receipt_sha256=args.receipt_sha256,native_artifact={k:artifact[k]for k in('id','digest','size_in_bytes','expires_at')},original_provider={'service':'Kaggle','kernel_slug':slug,'version_label':'v1'},original_first_id=protocol['original_generated_ids'][0],original_decoded=protocol['original_decoded'],native_smoke_decoded=native['decoded'],binary_sha256=digest(binary.read_bytes()))
     except Exception as error:
         # Do not serialize credential, signed service URLs or private account names.
         message=str(error) if isinstance(error,ValueError) else 'hosted source retrieval or comparison failed'
@@ -94,6 +97,8 @@ def main():
             if str(value):message=message.replace(str(value),label)
         report.update(error_type=type(error).__name__,error=message[:1000])
         if isinstance(error,ModuleNotFoundError):report['missing_module']=error.name
+        code=getattr(error,'code',None)or getattr(getattr(error,'response',None),'status_code',None)
+        if isinstance(code,int):report['http_status']=code
         return 1
     finally:(out/'first-score-comparison.json').write_text(json.dumps(report,indent=2)+'\n')
 if __name__=='__main__':raise SystemExit(main())
