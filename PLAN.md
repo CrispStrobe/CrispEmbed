@@ -1124,3 +1124,20 @@ source control with contraction off/fast and testing all four affine FMA
 combinations. Both source-header outputs must be judged against frozen original
 norm outputs; do not infer compiler contraction merely from Python/C++ syntax.
 This attribution precedes any new runtime candidate or full-model smoke.
+
+
+[Operator-only42026490991](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42026490991)
+atd7415c4db identifies actual contraction semantics: installed original PyTorch
+headers compiled with `-ffp-contract=fast` reproduce both573,440-value norms
+bit-exactly; `off` reproduces the rejected52/76-value candidate differences.
+Paired8 scalar stats match source-off exactly; source-fast final scalar moments
+differ at20/27 of1,120 entries. Source-fast stats plus two explicit affine FMAs
+match both originals exactly. The
+[complete operator receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-norm-operator-attribution.json)
+retains every tested reduction/affine alternative; no model was downloaded or run.
+
+New default-off `CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM` adds explicit
+contraction to final scalar moment merging and both affine operations, preserving
+the previous norm gate and shared768 path. Next is operator-only production-helper
+validation and unset/empty/0 old-path byte controls. Only a material operator
+improvement permits another ordinary composed smoke; no default is promoted.

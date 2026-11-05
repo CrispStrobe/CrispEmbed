@@ -53,12 +53,19 @@ def main():
   report['variants']={};report['stats']={}
   for n in ('norm1','norm2'):
    a=np.fromfile(stages/('source.'+n+'.f32'),dtype='<f4');report['variants'][n]={}
-   for mode in ('old4','bf16_8','source_off','source_fast'):
+   for mode in ('old4','bf16_8','bf16_8_fma','source_off','source_fast'):
     for first in (0,1):
      for second in (0,1):
       label=mode+'.'+n+'.fma'+str(first)+str(second)
       report['variants'][n][label]=comparison.compare(a,np.fromfile(stages/(label+'.f32'),dtype='<f4'))
-   report['stats'][n]={mode:comparison.compare(np.fromfile(stages/('source_off.'+n+'.stats.f32'),dtype='<f4'),np.fromfile(stages/(mode+'.'+n+'.stats.f32'),dtype='<f4'))for mode in ('old4','bf16_8','source_fast')}
+   report['stats'][n]={mode:comparison.compare(np.fromfile(stages/('source_off.'+n+'.stats.f32'),dtype='<f4'),np.fromfile(stages/(mode+'.'+n+'.stats.f32'),dtype='<f4'))for mode in ('old4','bf16_8','bf16_8_fma','source_fast')}
+  report['production_controls']={}
+  for n in ('norm1','norm2'):
+   ref=np.fromfile(stages/('source.'+n+'.f32'),dtype='<f4');old=np.fromfile(stages/('production.'+n+'.unset.f32'),dtype='<f4')
+   report['production_controls'][n]={'candidate':comparison.compare(ref,np.fromfile(stages/('production.'+n+'.1.f32'),dtype='<f4')),'old_gate_controls':{g:comparison.compare(old,np.fromfile(stages/('production.'+n+'.'+g+'.f32'),dtype='<f4'))for g in ('empty','0')}}
+  report['candidate_operator_bit_exact']=all(v['candidate']['different_values']==0 for v in report['production_controls'].values())
+  if any(c['different_values'] for v in report['production_controls'].values()for c in v['old_gate_controls'].values()):raise ValueError('old gate controls differ')
+  report['corrected_stats_to_source_fast']={n:comparison.compare(np.fromfile(stages/('source_fast.'+n+'.stats.f32'),dtype='<f4'),np.fromfile(stages/('bf16_8_fma.'+n+'.stats.f32'),dtype='<f4'))for n in ('norm1','norm2')}
   report['artifacts']={p.name:{'bytes':p.stat().st_size,'sha256':sha(p)}for p in stages.iterdir()}
   report['status']='compared'
  except Exception as e:

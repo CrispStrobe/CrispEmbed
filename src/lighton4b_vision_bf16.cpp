@@ -73,7 +73,7 @@ static std::pair<float, float> row(const float * x, int width, float eps) {
 }
 // PyTorch v2.13.0 reduced-type RowwiseMoments: AVX2 BF16 vectors
 // convert to two eight-lane float vectors, each merged successively.
-static std::pair<float, float> row_bf16_avx2(const float * x, int width, float eps) {
+static std::pair<float, float> row_bf16_avx2(const float * x, int width, float eps, bool scalar_fma = false) {
     constexpr int lanes = 8, vector_width = 2 * lanes;
     const int vectors = width / vector_width, chunks = (vectors + 15) / 16;
     int depth = 0;
@@ -109,7 +109,20 @@ static std::pair<float, float> row_bf16_avx2(const float * x, int width, float e
         total.mean += delta / float(total.count);
         total.square += delta * (x[i] - total.mean);
     }
-    for (int lane = 0; lane < lanes; ++lane) merge(total, stack[0][lane], false);
+    for (int lane = 0; lane < lanes; ++lane) {
+        const auto & value = stack[0][lane];
+        if (!scalar_fma) {
+            merge(total, value, false);
+        } else {
+            const int count = total.count + value.count;
+            const float ratio = count ? float(value.count) / float(count) : 0.0f;
+            const float delta = value.mean - total.mean;
+            total.mean = std::fma(ratio, delta, total.mean);
+            const float correction = (delta * delta) * ratio;
+            total.square += std::fma(correction, float(total.count), value.square);
+            total.count = count;
+        }
+    }
     return { total.mean, 1.0f / std::sqrt(total.square / float(width) + eps) };
 }
 // ATen vectorized mixed-type second pass uses separate multiply/add operators.
@@ -151,9 +164,10 @@ static bool layer_norm(const std::vector<float> & x, ggml_tensor * w, ggml_tenso
     std::vector<float> weights(width), biases(width);
     if (!tensor_floats(w, weights.data()) || !tensor_floats(b, biases.data())) return false;
     y.resize(x.size());
-    const bool source_bf16 = core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_NORM");
+    const bool contracted_bf16 = core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM");
+    const bool source_bf16 = contracted_bf16 || core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_NORM");
     for (int token = 0; token < int(x.size() / width); ++token) {
-        const auto stats = source_bf16 ? row_bf16_avx2(x.data() + size_t(token) * width, width, eps)
+        const auto stats = source_bf16 ? row_bf16_avx2(x.data() + size_t(token) * width, width, eps, contracted_bf16)
                                        : row(x.data() + size_t(token) * width, width, eps);
         for (int i = 0; i < width; ++i) {
             const size_t at = size_t(token) * width + i;
@@ -163,6 +177,10 @@ static bool layer_norm(const std::vector<float> & x, ggml_tensor * w, ggml_tenso
                 const float bias = -stats.second * stats.first;
                 const float shifted = multiply_separately(x[at], stats.second) + bias;
                 y[at] = multiply_separately(shifted, weights[i]) + biases[i];
+                if (contracted_bf16) {
+                    const float normalized_fma = std::fma(x[at], stats.second, bias);
+                    y[at] = std::fma(normalized_fma, weights[i], biases[i]);
+                }
             }
         }
     }

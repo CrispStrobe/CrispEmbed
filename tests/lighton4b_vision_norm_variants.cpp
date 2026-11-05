@@ -1,8 +1,19 @@
 // Test-only normalization attribution, consuming retained inputs and weights.
 #include "lighton4b_vision_bf16.cpp"
 #include <fstream>
+#include "ggml-cpu.h"
 #include <iostream>
 using namespace qwen35_ocr;
+static void env(const char * name, const char * value) {
+#ifdef _WIN32
+    _putenv_s(name, value ? value : "");
+#else
+    if (value)
+        setenv(name, value, 1);
+    else
+        unsetenv(name);
+#endif
+}
 int main(int argc, char ** argv) {
     if (argc != 2) return 2;
     const std::string dir = argv[1];
@@ -22,14 +33,37 @@ int main(int argc, char ** argv) {
     for (const std::string norm : { "norm1", "norm2" }) {
         auto x = read(norm == "norm1" ? "source.embedded" : "source.residual1", tokens * width);
         auto w = read("weight." + norm + ".weight", width), b = read("weight." + norm + ".bias", width);
-        for (const std::string mode : { "old4", "bf16_8", "source_off", "source_fast" }) {
+        auto * ctx = ggml_init({ 1024 * 1024, nullptr, true });
+        auto * tw = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, width);
+        auto * tb = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, width);
+        auto * backend = ggml_backend_cpu_init();
+        auto * buffer = ggml_backend_alloc_ctx_tensors(ctx, backend);
+        if (!ctx || !backend || !buffer) return 3;
+        ggml_backend_tensor_set(tw, w.data(), 0, w.size() * 4);
+        ggml_backend_tensor_set(tb, b.data(), 0, b.size() * 4);
+        env("CRISPEMBED_LIGHTON4B_VISION_BF16_NORM", "1");
+        for (const char * gate : { "unset", "empty", "0", "1" }) {
+            env("CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM", std::string(gate) == "unset"   ? nullptr
+                                                             : std::string(gate) == "empty" ? ""
+                                                                                            : gate);
+            std::vector<float> actual;
+            if (!layer_norm(x, tw, tb, width, 1e-6f, actual)) return 4;
+            emit(std::string("production.") + norm + "." + gate, actual);
+        }
+        env("CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM", nullptr);
+        env("CRISPEMBED_LIGHTON4B_VISION_BF16_NORM", nullptr);
+        ggml_backend_buffer_free(buffer);
+        ggml_backend_free(backend);
+        ggml_free(ctx);
+
+        for (const std::string mode : { "old4", "bf16_8", "bf16_8_fma", "source_off", "source_fast" }) {
             std::vector<float> stats(tokens * 2);
             if (mode.rfind("source_", 0) == 0)
                 stats = read(mode + "." + norm + ".stats", tokens * 2);
             else
                 for (int t = 0; t < tokens; ++t) {
                     auto p = mode == "old4" ? row(x.data() + t * width, width, 1e-6f)
-                                            : row_bf16_avx2(x.data() + t * width, width, 1e-6f);
+                                            : row_bf16_avx2(x.data() + t * width, width, 1e-6f, mode == "bf16_8_fma");
                     stats[t * 2] = p.first;
                     stats[t * 2 + 1] = p.second;
                 }
