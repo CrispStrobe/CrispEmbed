@@ -40,6 +40,16 @@ full-position logits and free decoded output; then evaluate the frozen Q8/Q4
 candidates on distinct calibration and held-out documents. No 4B native
 inference or decoded quality has been established.
 
+Three separately gated owner preparations are available as draft PRs: [vision
+PR144](https://github.com/CrispStrobe/CrispEmbed/pull/144), [text PR145](https://github.com/CrispStrobe/CrispEmbed/pull/145)
+and stacked [combined PR146](https://github.com/CrispStrobe/CrispEmbed/pull/146).
+The combined owner passes [5,281 metadata controls and 36 protocol checks](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41973787198)
+at `8ea8f4d03`; its initial gate-expectation failure is retained in its branch.
+These are borrowed tensor ownership controls, not an admitted 723-tensor GGUF
+context or a composed image/decoder path. Preserve the original source guards,
+wire actual format-5 ownership and the grouped heads, cache, vocabulary projection
+and tokenizer, then capture the pinned original before native comparisons.
+
 | Lane | State | Next action | Done when |
 |---|---|---|---|
 | OCR model gaps / LightOnOCR-3-4B (`feat/ocr-next-models-20261104`, [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143)) | Main `17c96639`/PR141 evidence is integrated; all seven workflows pass at `91b24764`. Explicit converter has 16 passing export controls at `aa661568` (333 total); its inline workflow-contract regression is repaired. [Default-off grouped-head APIs and pinned original/meta protocols](docs/lightonocr3-4b.md#default-off-grouped-head-component-and-hosted-reference) are implemented | Review hosted meta construction, 208 original/native component stages and cache controls, plus combined regression CI. Then add bounded vocabulary projection and explicit larger-model ownership | Native support remains false until complete original/native F32/F16 and document evidence, followed by separate precision/publication gates |
