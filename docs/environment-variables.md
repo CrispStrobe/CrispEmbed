@@ -222,7 +222,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-449 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+451 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -687,9 +687,11 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
 | `CRISPEMBED_LIGHTON4B_VISION_BF16_CONV` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
 | `CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
 | `CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
 | `CRISPEMBED_LIGHTON4B_VISION_BF16_NORM` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
 | `CRISPEMBED_LIGHTON4B_VISION_BF16_PATCH_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
 | `CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
 
 ### lightonocr

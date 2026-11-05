@@ -38,6 +38,18 @@ int main(int argc, char ** argv) {
     output.rotary_cos.resize(tokens * d);
     output.rotary_sin.resize(tokens * d);
     production_rotary(c, tokens, d, rows, columns, output);
+    std::vector<float> inverse(16), trig_cos(125 * 16), trig_sin(trig_cos.size());
+    for (int f = 0; f < 16; ++f) {
+        inverse[f] = 1.0f / std::pow(10000.0f, float(2 * f) / 32.0f);
+        for (int coordinate = 0; coordinate < 125; ++coordinate) {
+            float angle = inverse[f] * float(coordinate);
+            trig_cos[coordinate * 16 + f] = lighton4b_avx2_math::trig(angle, true);
+            trig_sin[coordinate * 16 + f] = lighton4b_avx2_math::trig(angle, false);
+        }
+    }
+    emit("native.inverse_frequency", inverse);
+    emit("helper.cos_grid", trig_cos);
+    emit("helper.sin_grid", trig_sin);
     emit("native.cos", output.rotary_cos);
     emit("native.sin", output.rotary_sin);
     auto qkv = read("source.qkv", tokens * 3072);

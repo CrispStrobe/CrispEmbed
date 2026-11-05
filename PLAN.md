@@ -1387,3 +1387,12 @@ is inferred without equivalent self-contained math and old-gate verification.
 Prior combined Q4 quality remains negative. Receipt and artifact identity are in
 `tests/results/qwen35-ocr/lightonocr3-4b-first-block-boundaries.json` (artifact
 `13432171897`, SHA `77fac62ebb8f4e3bb073984927cc0158ec8977e38788b34fe24f808399ca32ac`, 90 days).
+
+Prepared source-derived default-off GELU_AVX2 and ROTARY_AVX2 helpers: pinned
+SLEEF double-float tanh plus original GELU cube grouping, and small-range u35
+sin/cos. Nonfused operations retain explicit F32 rounding; Boost 1.0 retained.
+Eligibility remains x86_64 AVX2/FMA and nearest rounding; rotary supports fixed
+64-dim/theta10000 with coordinates below125, otherwise old path. Pending bounded
+operator checks include full supported trig grid/inv-frequency, all retained
+activation bytes, original/old-gate controls and corrected composed first block.
+No production math is promoted before those checks or ordinary decoded A/B.

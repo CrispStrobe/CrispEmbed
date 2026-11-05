@@ -1,5 +1,6 @@
 #include "qwen35_image_bounds.h"
 #include "lighton4b_vision_bf16.h"
+#include "lighton4b_vision_avx2_math.h"
 #include "qwen35_math.h"
 #include "qwen35_norm.h"
 #include "core/env_gate.h"
@@ -526,6 +527,10 @@ bool lighton4b_vision_bf16_cpu(const vision_weights & w, const vision_config & c
     if (!interpolate_position(table, c, rows, columns, heights, widths, output.position)) return false;
     output.rotary_cos.resize(size_t(tokens) * d);
     output.rotary_sin.resize(output.rotary_cos.size());
+    const bool source_rotary = core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2") &&
+                               source_avx2_softmax_supported() && d == 64 && c.theta == 10000.0f &&
+                               std::all_of(rows.begin(), rows.end(), [](int x) { return x >= 0 && x < 125; }) &&
+                               std::all_of(columns.begin(), columns.end(), [](int x) { return x >= 0 && x < 125; });
     for (int t = 0; t < tokens; ++t) {
         for (int i = 0; i < d / 2; ++i) {
             const int axis = i / (d / 4), frequency = i % (d / 4);
@@ -533,8 +538,8 @@ bool lighton4b_vision_bf16_cpu(const vision_weights & w, const vision_config & c
             const float angle = inv * (axis == 0 ? rows[t] : columns[t]);
             for (int half = 0; half < 2; ++half) {
                 const size_t at = size_t(t) * d + i + half * (d / 2);
-                output.rotary_cos[at] = std::cos(angle);
-                output.rotary_sin[at] = std::sin(angle);
+                output.rotary_cos[at] = source_rotary ? lighton4b_avx2_math::trig(angle, true) : std::cos(angle);
+                output.rotary_sin[at] = source_rotary ? lighton4b_avx2_math::trig(angle, false) : std::sin(angle);
             }
         }
     }
@@ -572,8 +577,11 @@ bool lighton4b_vision_bf16_cpu(const vision_weights & w, const vision_config & c
             probe.norm2 = normalized;
             probe.up = projected;
         }
+        const bool source_gelu = core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2") &&
+                                 source_avx2_softmax_supported() && finite(projected);
         for (float & x : projected)
-            x = 0.5f * x * (1.0f + std::tanh(0.7978845608028654f * (x + 0.044715f * x * x * x)));
+            x = source_gelu ? lighton4b_avx2_math::gelu(x)
+                            : 0.5f * x * (1.0f + std::tanh(0.7978845608028654f * (x + 0.044715f * x * x * x)));
         round_bf16(projected);
         if (capture) probe.activation = projected;
         if (!linear(layer.down, layer.down_bias, projected, c.intermediate, tokens, threads, mixed)) return false;

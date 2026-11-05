@@ -25,9 +25,10 @@ def main():
   report['last_phase']=name
   with(out/(name+'.log')).open('w')as f:subprocess.run([str(x)for x in args],cwd=ROOT,stdout=f,stderr=subprocess.STDOUT,check=True)
  try:
+  os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2']='0';os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2']='0'
   # Compile verbatim production expression blocks, preserving their operation order.
-  text=(ROOT/'src/lighton4b_vision_bf16.cpp').read_text();start=text.index('    for (int t = 0; t < tokens; ++t) {',text.index('output.rotary_sin.resize'));end=text.index('    output.embedded = output.patch;',start);rotary=text[start:end]
-  start=text.index('        for (float & x : projected)');end=text.index('        round_bf16(projected);',start);activation=text[start:end]
+  text=(ROOT/'src/lighton4b_vision_bf16.cpp').read_text();start=text.index('    const bool source_rotary =',text.index('output.rotary_sin.resize'));end=text.index('    output.embedded = output.patch;',start);rotary=text[start:end]
+  start=text.index('        const bool source_gelu =');end=text.index('        round_bf16(projected);',start);activation=text[start:end]
   generated='static void production_rotary(const vision_config &c,int tokens,int d,const std::vector<int>&rows,const std::vector<int>&columns,vision_outputs &output) {\n'+rotary+'}\nstatic void production_activation(std::vector<float>&projected) {\n'+activation+'}\n'
   (scratch/'vision_boundary_expressions.inc').write_text(generated);report['production_expressions']={'rotary_sha256':hashlib.sha256(rotary.encode()).hexdigest(),'activation_sha256':hashlib.sha256(activation.encode()).hexdigest(),'runtime_sha256':sha(ROOT/'src/lighton4b_vision_bf16.cpp'),'verbatim_extracted':True}
   args=['c++','-O2','-std=c++17','-mavx2','-mfma','-DCPU_CAPABILITY=AVX2','-DCPU_CAPABILITY_AVX2','-D_GLIBCXX_USE_CXX11_ABI='+str(int(torch._C._GLIBCXX_USE_CXX11_ABI)),'-fno-math-errno','-fno-trapping-math','-ffp-contract=off'];args+=['-I'+p for p in include_paths()];args +=[ROOT/'tests/lighton4b_gelu_vector_source.cpp','-o',scratch/'source-gelu']
@@ -83,6 +84,23 @@ def main():
    residual=embedded+linear('out',pool,1024,1024);u=linear('up',norm('norm2',residual),4096,1024);a=gelu_native(u,'gelu_'+label)if native_gelu else F.gelu(u,approximate='tanh');final=residual+linear('down',a,1024,4096);emit('layer0.'+label,final)
    report['first_block'][label]={'vs_original':compare(array('source.layer0'),final.float().numpy()),'vs_actual_candidate':compare(array('actual.layer0'),final.float().numpy())}
   if not report['first_block']['original']['vs_original']['bit_exact']or not report['first_block']['both']['vs_actual_candidate']['bit_exact']:raise ValueError('composed first-block attribution control differs')
+  report['disabled_corrections']={}
+  for label,value in (('unset',None),('empty',''),('zero','0')):
+   for gate in ('CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2','CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2'):
+    if value is None:os.environ.pop(gate,None)
+    else:os.environ[gate]=value
+   run('disabled-rotary-'+label,[build/'lighton4b-vision-boundary-probe',stages,'rotary']);act=gelu_native(up,'disabled-gelu-'+label)
+   report['disabled_corrections'][label]={'cosine':compare(native_cos.numpy(),array('native.cos')),'sine':compare(native_sin.numpy(),array('native.sin')),'activation':compare(native_activation.float().numpy(),act.float().numpy())}
+  if not all(v['bit_exact']for r in report['disabled_corrections'].values()for v in r.values()):raise ValueError('disabled correction bytes differ')
+  grid=torch.arange(125,dtype=torch.float32)[:,None]*inv
+  report['supported_trig_grid']={'inv_frequency':compare(inv.numpy(),array('native.inverse_frequency')),'cosine':compare(grid.cos().numpy(),array('helper.cos_grid')),'sine':compare(grid.sin().numpy(),array('helper.sin_grid'))}
+  if not all(r['bit_exact']for r in report['supported_trig_grid'].values()):raise ValueError('supported source trig range differs')
+  os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2']='1';os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2']='1'
+  run('corrected-rotary',[build/'lighton4b-vision-boundary-probe',stages,'rotary']);corrected_cos=torch.from_numpy(array('native.cos').copy()).reshape(560,64);corrected_sin=torch.from_numpy(array('native.sin').copy()).reshape(560,64)
+  corrected_activation=gelu_native(up,'corrected_activation')
+  pool=pooled(corrected_cos,corrected_sin);residual=embedded+linear('out',pool,1024,1024);u=linear('up',norm('norm2',residual),4096,1024);a=gelu_native(u,'corrected_composed_activation');final=residual+linear('down',a,1024,4096);emit('layer0.corrected',final)
+  report['production_corrections']={'cosine':compare(array('source.cos'),corrected_cos.numpy()),'sine':compare(array('source.sin'),corrected_sin.numpy()),'activation':compare(expected,corrected_activation.float().numpy()),'pooling':compare(array('source.pooled'),array('native.rotary_pooled')),'first_block':compare(array('source.layer0'),final.float().numpy())}
+  if not all(r['bit_exact']for r in report['production_corrections'].values()):raise ValueError('source-derived production correction differs')
   report['artifacts']={p.name:{'bytes':p.stat().st_size,'sha256':sha(p)}for p in stages.iterdir()};report['status']='attributed'
  except Exception as e:
   report['error_type']=type(e).__name__;report['error']='bounded same-input boundary attribution failed; inspect phase/logs';raise RuntimeError(report['error'])from None
