@@ -20945,3 +20945,14 @@ remains unresolved in the product; no reference table or Torch/MKL product
 dependency is added. Exact sources, raw-byte controls, observer scope, timings,
 90-day artifact identities and limitations are in the three merger-erf receipts
 under `tests/results/qwen35-ocr/`. No further work or runs in this lane.
+
+
+Genuine BF16 quant-weight oracle source `048fd683f` completed original/Q8/Q4
+one-position arms with exact original first-score SHA and complete723-tensor
+mapping/readbacks. Q8 retainsID27 but fails max0.47265625/RMS0.07158037; Q4
+changes toID20353 (`<table`) and fails max2.546875/RMS0.59156984. This proves the
+Q4 first-token reversal occurs in the original BF16 model with quantized weights,
+independently of native runtime. Explicit parameter BF16 rounding and prior
+native probability comparison remain recorded; no full decoded/EOS or held-out
+quality claim follows. [Complete receipts and limits](docs/lighton4b-bf16-quant-first-score-results.md).
+No runtime/default/release/app-pin change.

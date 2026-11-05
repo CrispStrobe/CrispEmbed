@@ -7954,3 +7954,13 @@ RMS7.53585e-5 with841 differences. All1,261,568 native values match eight-lane F
 all maximum0.03125. These are bounded arithmetic measurements, not speed/decoded
 quality claims; [all route/operand controls and limits](docs/lighton4b-layer0-attribution-results.md)
 remain independently recorded and defaults unchanged.
+
+
+The genuine BF16 quant-weight oracle at `048fd683f` completed three fresh
+one-position prefills in106.66–107.70s each; this is a diagnostic, not a
+throughput benchmark. ProcessHWM16,292,564,992 bytes and cgroup peak31,310,606,336
+of32,212,254,720 bytes include streaming/cache overhead. Q8/Q4 score error
+maxima0.47265625/2.546875 and RMS0.07158037/0.59156984 reject unchanged budgets;
+Q4's first-token flip exists in original BF16 inference.
+[Full precision, memory and decoded limits](docs/lighton4b-bf16-quant-first-score-results.md)
+preclude speed, model-quality or release promotion.

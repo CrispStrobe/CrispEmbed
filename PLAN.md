@@ -1429,3 +1429,32 @@ remains unresolved in the product; no reference table or Torch/MKL product
 dependency is added. Exact sources, raw-byte controls, observer scope, timings,
 90-day artifact identities and limitations are in the three merger-erf receipts
 under `tests/results/qwen35-ocr/`. No further work or runs in this lane.
+
+
+### Genuine BF16 quantized-weight first-position oracle — complete, rejected
+
+Source `048fd683f` completed the single bounded CPU worker against immutable
+original `8d3b2331`. The original full score SHA `a4bece2310…5ffd` is exact.
+All three arms use genuine BF16 parameters, one fresh image/text prefill each;
+no F32 model or native forward is run. Complete mapping/readbacks verify all
+723 tensors, 249 changed quantized text matrices and 474 protected originals,
+unchanged buffers and tied embedding/head. Q8 first ID27 stays `<` but score
+max/RMS error is0.47265625/0.07158037, cosine0.99953436. Q4 changes toID20353
+`<table` with max/RMS2.546875/0.59156984, cosine0.97588336. Both strict gates
+reject independently of native implementation. Dequantized weights are explicitly
+rounded to BF16 (maximum rounding Q8.0009689331/Q4.0018157959), distinct from the
+prior F32-dequant activation diagnostic. Original/native full decoded negatives,
+EOS policy and frozen177-position reference remain unchanged. Worker terminal
+error is intentional numerical rejection after complete capture, not an OOM;
+peak cgroup31,310,606,336 of32,212,254,720 bytes.
+[Full exact receipts and limits](docs/lighton4b-bf16-quant-first-score-results.md).
+No runtime/default/release/app-pin change follows.
+
+A possible subsequent source-BF16 mixed diagnostic is plan-only: Q8 embedding1,
+linear-attention120 and dense-attention32 matrices; Q4 FFN96; preserve474 originals.
+It would authenticate both full existing public files sequentially and stream
+selected BF16 subsets into one resident original model, without publishing a
+conversion. Freeze exact name sets, source/candidate hashes, one-position cap,
+prepared inputs and comparison gates before dispatch. This existing image is
+exploratory mechanism evidence after the Q4 observation, never new held-out
+calibration or architecture-quality selection. No mixed worker is dispatched.
