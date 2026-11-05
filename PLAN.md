@@ -77,6 +77,17 @@ original max magnitude 1.42996; the worst activation error was 5.72205e-6 agains
 magnitude 4.79096. Final hidden errors were at most 3.75510e-6. These are
 one-block synthetic data, not full-decoder, checkpoint or decoded-quality proof.
 
+The separate [32-layer synthetic decoder composition PR150](https://github.com/CrispStrobe/CrispEmbed/pull/150)
+is **negative**: [41979168300](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41979168300)
+passed 290/291 stage pairs and all 347 native controls; `prefill.cache.21.recurrent`
+failed the unchanged minimum row cosine with 0.999980919 and max absolute error
+1.04774e-7 versus original max magnitude 0.0127161. A retained-input block-only
+[attribution](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41980636649)
+passed on matched inputs and reproduced the failure in the original block using
+the retained native input, identifying upstream input drift as the cause at that
+boundary. No threshold or runtime change follows. Preserve the original negative
+and continue tracing prior layers before decoder qualification or decoded claims.
+
 The separate [document protocol and harness](https://github.com/CrispStrobe/CrispEmbed/blob/958ff9fd8b386e6f3faaae92b6322a519200cc9a/docs/lighton4b-document-parity-v1.json)
 freezes one public-domain form, empty prompt, cap256 and all-position full-vocabulary
 comparison. The initial and hardened synthetic controls passed at
