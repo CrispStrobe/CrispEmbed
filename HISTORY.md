@@ -20865,3 +20865,39 @@ contains exact source/artifact identity (13432171897, SHA
 `77fac62ebb8f4e3bb073984927cc0158ec8977e38788b34fe24f808399ca32ac`, 90-day retention).
 Prior combined Q4 decoded-quality negative remains; no runtime/default promotion
 in this evidence-only qualification commit.
+
+
+### 2026-11-05: verified GELU and actual MKL rotary backend, Q4 still negative
+
+PR155 head `fb94a5715` preserves all gates off. Initial source-math 42061899237
+at f0ea7ff1b is a retained numerical failure: inverse frequencies all exact,
+but fused SLEEF trig grid differs at 633 cosine and 237 sine values. Direct installed
+SLEEF headers in 42062871623 give those same differences and nonfused is also
+negative, so ROTARY_AVX2 is rejected and stays0 in quality candidates.
+
+Self-contained source-derived GELU matches all 2,293,760 activation bytes. Final
+integration 42064278334 at `9da1757cd3103180cfa809406452719e2368a87e` passes
+old/unset/empty/0, original/combined first-block controls, native/context builds,
+context 9 and decoder 20 plus env docs. Original build is oneMKL 2024.2 (20240605),
+AVX2; direct reference-only vmsCos/vmsSin HA calls match all 2,000 original grid
+angles bit-exact. No MKL/Torch product dependency or reference table is added.
+
+Ordinary Q4 GELU 42065352208 at `40c68f35f81c8403eb22b27b642037df3fd34c8d`
+preserves all 30 baseline hashes, decoder 0 and rejected rotary 0. Actual layer 0
+has 32 differences (RMS 2.28155e-5 / max 0.0078125), matching known rotary attribution.
+Merged RMS improves baseline 0.00973525 to 0.00775425 (max 1.21094 to 0.734375), much
+better than previous candidate 0.01839050. First-logit RMS 0.56432682 remains worse
+than baseline 0.56013479 (max 2.48687 versus 2.38528), though better than prior
+candidate 0.59042975. Both decodes remain wrong `[20353,29]`, `<table>`, against
+original `<figure>`. Quality stays negative/unqualified; no default/release/app
+promotion. Native elapsed 177.66 s, peak 4,510,707,712 bytes; not a speed claim.
+
+That run's test-only activation replay still hardcodes legacy GELU, so its 14,029
+activation differences do not observe the verified production helper. Actual
+native composed score/decoded path is unaffected. Observer is fixed in PR155
+for future runs, without runtime change or a duplicate model job. Complete
+source/failure/MKL/negative receipts and 90-day artifact identities are under
+`tests/results/qwen35-ocr/lightonocr3-4b-{source-trig-initial-negative,trig-dispatch-gelu-proof,gelu-integration-mkl-control,gelu-composed-negative}.json`.
+No further model jobs in this lane. A possible next bounded operator-only action
+is retained same-input merger GELU/erf attribution, keeping earliest MKL rotary
+dependency explicit. This qualification commit changes evidence only.
