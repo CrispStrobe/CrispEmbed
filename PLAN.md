@@ -1586,3 +1586,20 @@ the complete rotary profile, rejected SLEEF rotary0 and decoder candidate0.
 Require all 30 frozen baseline stage hashes, independent decoded outputs and
 first-score magnitudes, plus both native timings. No quality/default/release
 promotion from source/component parity alone; latest decoded result is negative.
+
+Ordinary Q4 table run 42099925931 at a1bb8c924 passes all 30 fixed baseline
+hashes; all 29 processor/vision stages have zero numerical differences through
+layer 23 and merged output. Raw-byte equality is not inferred from numerical
+zero: an independent report-only audit now verifies every archived shared float
+stage against the pinned original manifest, baseline against frozen hashes, and
+original two-token prefix separately from the full 177-token completion. It may
+fetch only the earliest downstream source float array for absolute/RMS error.
+No checkpoint load or inference is performed by that audit.
+
+Q4 decoded prefix remains wrong `<table>`/[20353,29] versus source [27,17251],
+and logit RMS 0.5879641585 remains worse than baseline 0.5601347910. Measured
+native elapsed is 130.86 s baseline / 153.89 s candidate; detailed final receipt
+follows raw audit. Correct future native observer metadata: `exact_original_ids`
+means full-completion equality, whereas smoke needs `exact_original_prefix_ids`
+and the compared source prefix. Earlier incorrect `<table>` conclusions remain
+valid, but a two-token smoke cannot equal the full 177-token ID sequence.
