@@ -361,7 +361,8 @@ bool linear_grouped_cpu(const linear_weights & weights, int key_heads, const flo
                            (tensor->type == GGML_TYPE_Q8_0 || tensor->type == GGML_TYPE_Q4_K) &&
                            matrix_type_supported(tensor);
         if (!tensor || (!quant && tensor->type != GGML_TYPE_F32 && tensor->type != GGML_TYPE_F16) ||
-            !ggml_is_contiguous(tensor)) return false;
+            !ggml_is_contiguous(tensor))
+            return false;
     }
     const int64_t heads = weights.a_log->ne[0], width = weights.norm->ne[0], hidden_width = weights.qkv->ne[0];
     const int64_t kernel = weights.conv->ne[0];

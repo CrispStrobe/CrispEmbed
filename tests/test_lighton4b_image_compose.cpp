@@ -1,3 +1,4 @@
+#include "core/clean_exit.h"
 #include "lighton4b_image_compose.h"
 #include <cstdlib>
 #include <iostream>
@@ -24,7 +25,7 @@ static void environment(const char * name, const char * value) {
             return 1;                                                                                                  \
         }                                                                                                              \
     } while (0)
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc == 6) {
         environment("CRISPEMBED_QWEN35_OCR", "1");
         environment("CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE", "1");
@@ -118,4 +119,8 @@ int main(int argc, char ** argv) {
     vision_outputs result;
     CHECK(!lighton4b_image_vision_cpu(weights, config, image, 1, result));
     std::cout << "passed=1 checks=" << checks << " model_inference=0\n";
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }
