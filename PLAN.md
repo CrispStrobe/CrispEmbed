@@ -50,6 +50,18 @@ context or a composed image/decoder path. Preserve the original source guards,
 wire actual format-5 ownership and the grouped heads, cache, vocabulary projection
 and tokenizer, then capture the pinned original before native comparisons.
 
+The separate [document protocol and harness](https://github.com/CrispStrobe/CrispEmbed/blob/958ff9fd8b386e6f3faaae92b6322a519200cc9a/docs/lighton4b-document-parity-v1.json)
+freezes one public-domain form, empty prompt, cap256 and all-position full-vocabulary
+comparison. The initial and hardened synthetic controls passed at
+[41974416327](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41974416327)
+and [41974795749](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41974795749).
+Its predicted 560 patches and 140 image tokens are not observed processor outputs;
+both original and native producer admissions remain empty. Original final-norm/
+all-position capture and composed native format-5 context, tokenizer, cache and
+projection are required before running it on the model. Current Kaggle GPU quota
+was exhausted on 5 November; the service reported its next refresh for
+7 November 2026. Re-query before scheduling; do not start a non-GPU job on GPU.
+
 | Lane | State | Next action | Done when |
 |---|---|---|---|
 | OCR model gaps / LightOnOCR-3-4B (`feat/ocr-next-models-20261104`, [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143)) | Main `17c96639`/PR141 evidence is integrated; all seven workflows pass at `91b24764`. Explicit converter has 16 passing export controls at `aa661568` (333 total); its inline workflow-contract regression is repaired. [Default-off grouped-head APIs and pinned original/meta protocols](docs/lightonocr3-4b.md#default-off-grouped-head-component-and-hosted-reference) are implemented | Review hosted meta construction, 208 original/native component stages and cache controls, plus combined regression CI. Then add bounded vocabulary projection and explicit larger-model ownership | Native support remains false until complete original/native F32/F16 and document evidence, followed by separate precision/publication gates |
