@@ -1080,3 +1080,21 @@ Completed independent BF16 reference cases retain549 scores: table222EOS,
 Arabic6EOS, receipt256cap/noEOS and65EOS for the frozen `handwritten_letter`
 case, which is actually a red serif A logo. Receipt completion and handwriting-
 coverage limitations block broad qualification; never replace/tune frozen cases.
+
+### Completed actual BF16/Q8/Q4 parity comparison — 5 November 2026
+
+Corrected targeted [Q842012564139](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42012564139)
+and [Q442012559942](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42012559942)
+complete every177 original-prefix248,320-score comparison. All rows finite,
+0/177 strict passes each, first observed/budget failure0. Q8max2.93674088/
+mincos0.958800077; Q4max11.067977/mincos0.666163504. Their red job conclusions
+are expected numerical/decoded rejection, with `status=compared` and no harness
+error. Q8 independently160IDs/EOS differs from177-ID original; Q4 caps256/noEOS
+and leaves incomplete HTML. [Exact reports/recomputed review](docs/lighton4b-qualification-consolidation.md)
+retain all sources, payload/report hashes, per-position errors/magnitudes and
+complete decoded outputs. Original BF16 `v1` remains frozen; no model/reference
+forward, F32 prerequisite or budget/default change was introduced. Both plain
+candidates remain unqualified. Only PR155/runtime and PR157/evidence remain open.
+The separately authorized lean mixed calibration42013855293 covers table/Arabic
+only; its outputs and heldout qualification remain pending, with receipt source-
+completion and logo/handwriting-coverage limitations unchanged.

@@ -28,8 +28,8 @@ original capture script. Local-only negative BF16-vision evidence from
 Exact native receipts and fidelity metrics are retained in
 [the full review](../tests/results/qwen35-ocr/lightonocr3-4b-full-native-review.json).
 Both authenticated captures are admitted only to diagnostic comparison. They
-are not quality qualified. Fixed0.002/0.99999 first-score numerical gates already
-fail; complete177-position Ref comparisons remain separate. The protocol SHA
+are not quality qualified. Fixed0.002/0.99999 numerical gates fail at every one of177 positions for both
+recipes; the complete authenticated Ref comparisons are recorded below. The protocol SHA
 `4d2a738a8df75947f5a8e269799c8b3a27af19bfafb82653802a7531b7c928bc`
 is unchanged. No F32 original is required and no working alternative/default,
 model alias, runtime release or app pin changes.
@@ -42,9 +42,9 @@ prompt IDs,177-ID decode, seven Unicode/added-token cases, six negatives),
 registry42001553561 (three methods with actualRef/digest/registry negatives),
 input freeze42004846562 (all four PNG/RGB hashes), and packing42006450732
 (two controls plus all723 persisted payload hashes). First-score and BF16
-candidate-stage failures remain explicit. The independent four-case original
-worker is still executing; no new native case jobs were dispatched after the
-user requested queue consolidation.
+candidate-stage failures remain explicit. The independent four-case original batch is complete, with the capped receipt
+and logo coverage limits retained. One separately authorized lean calibration
+job42013855293 now covers only table/Arabic; no heldout qualification is claimed.
 
 This combined tree received static Python AST/YAML, exact copied-file hashes,
 `src/`/ggml/VERSION identity and whitespace review. Combined-tree CI was not
@@ -72,3 +72,32 @@ The frozen case named `handwritten_letter` is actually a red serif A logo;
 it does not cover handwriting. Both this input limitation and heldout receipt
 completion failure remain explicit. Frozen cases, prompts and caps are not
 changed after observing outputs; no new native panel jobs were dispatched.
+
+## Complete authenticated177-position Ref results
+
+[Q8 replay42012564139](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42012564139)
+and [Q4 replay42012559942](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42012559942)
+complete successfully as comparers and intentionally return failure for the
+rejected numerical/decoded gates. Each authenticates the full immutable native
+archive, exact admitted native receipt, originalKaggle `v1` capture and every
+one of177 original/native score payloads. All43,952,640 value pairs per recipe
+are finite; neither comparer repeats model/reference inference.
+
+| Precision | Strict positions passed | Maximum absolute error | Minimum row cosine | First score failure | Final decoding |
+|---|---:|---:|---:|---:|---|
+|Q8_0|0/177|2.93674088 (position119)|0.958800077 (position123)|0|160 IDs/EOS; different text|
+|Q4_K|0/177|11.067977 (position5)|0.666163504 (position5)|0|256 IDs/cap/noEOS; incomplete table|
+
+The exact unchanged Ref executable SHA is
+`d6898491984110b0536dcd43ddb1091f6559495a79dfb23389baedb8dc4ae246`.
+Raw per-position errors, RMS, both magnitudes, complete ID arrays and full
+original/native decoded texts remain verbatim in the
+[Q8 comparison](../tests/results/qwen35-ocr/lightonocr3-4b-q8-full-comparison.json)
+and [Q4 comparison](../tests/results/qwen35-ocr/lightonocr3-4b-q4-full-comparison.json).
+[The independent review](../tests/results/qwen35-ocr/lightonocr3-4b-full-score-comparison-review.json)
+recomputes maxima/minima/counts and records source/report hashes. At the Q8
+maximum-error row reference/native norms are1213.35876/1152.56775; at the Q4
+maximum they are1030.22205/1185.22864. The separate initial capture review's
+reference-relative CER/WER is0.2134146/0.3888889 forQ8 and0.8277439/0.9888889
+forQ4; those are fidelity to the original output, not human OCR accuracy.
+Both candidates remain rejected for parity; no precision/model/default is promoted.

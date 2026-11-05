@@ -20727,3 +20727,14 @@ red serif A logo, not handwriting; limits remain recorded without replacing
 inputs. Initial full comparers42011206392/42011236969 compared zero positions
 because consolidation omitted a standalone I/O dependency; the failure and
 scoped exact-Ref/stdlib-I/O repair remain separate from quality rejection.
+
+### 5 November 2026 — All177 actual BF16/Q8/Q4 score rows independently reviewed
+
+Corrected Q842012564139 andQ442012559942 fully authenticate/recompare all177
+rows (43,952,640 finite value pairs each) using the unchanged actualRef binary.
+Both reject every strict row; maximum errors2.93674088/11.067977 and minimum
+cosines0.958800077/0.666163504. Both final decoded outputs differ; Q4 also caps
+without EOS. Initial zero-position import failures stay separately preserved.
+[Raw complete comparisons and source-bound review](docs/lighton4b-qualification-consolidation.md)
+record the completed negative result without rerunning reference/model inference
+or introducing F32 as a prerequisite. Consolidation reduces the stack to two PRs.

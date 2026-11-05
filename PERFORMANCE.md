@@ -7891,3 +7891,14 @@ These include different workloads/hosts from original BF16's177-token free
 capture; they are diagnostic resource measurements, not precision speedups.
 Both final texts differ from original; exact receipts/limits are in
 [the qualification umbrella](docs/lighton4b-qualification-consolidation.md).
+
+Complete actual BF16-versus-native teacher score replays42012564139/42012559942
+compare177 finite full-vocabulary rows each, with0 strict passes. Q8maxabs
+2.93674088 atposition119/mincos0.958800077 at123; Q4maxabs11.067977/mincos
+0.666163504 both at5. Q8 worst-error reference/native norms1213.35876/1152.56775;
+Q4 norms1030.22205/1185.22864. Averaging producer scalar rows gives Q8meanabs
+0.084779906/RMS0.125963946 andQ4meanabs0.338252101/RMS0.471901953; raw per-row
+metrics remain authoritative. Final output-fidelity CER/WER versus frozen BF16
+is0.2134146/0.3888889 forQ8 and0.8277439/0.9888889 forQ4, not human OCR accuracy.
+Both numerical and decoded parity are negative; see exact source/limit/report
+links in [the qualification evidence](docs/lighton4b-qualification-consolidation.md).

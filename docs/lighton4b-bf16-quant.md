@@ -3,10 +3,9 @@
 This separate protocol uses the completed original BF16 free-generation capture;
 there is no F32 prerequisite. It preserves document-v1/v2 and their admissions.
 The exact original receipt SHA, all177 IDs, decoded text and177 score payload
-hashes are frozen in [the protocol](lighton4b-bf16-quant-v1.json). Native admission
-is empty: the current runtime rejects4B format5, lacks larger-model ownership
-and frontend support, and has no admitted Q8/Q4 weight recipe. No actual native
-parity is claimed.
+hashes are frozen in [the protocol](lighton4b-bf16-quant-v1.json). The separate registry now admits the two authenticated complete native
+executions for diagnostic comparison only. Both fail full numerical and decoded
+parity; see the final results below. No model/precision quality is qualified.
 
 Retrieve the completed original capture from its retained hosted artifact into
 an empty directory, including `capture.json` and every `scores-NNN.f32` file.
@@ -179,3 +178,21 @@ its maximum error worsens. Local operator/component improvements are not a
 composed decoded-quality claim. Both new paths stay default-off; old full
 captures and every rejected result remain unchanged. These observed-form
 findings may not select tensors or tune a new heldout panel.
+
+
+## Final complete plain-Q8/Q4 comparison
+
+Actual [Q842012564139](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42012564139)
+and [Q442012559942](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42012559942)
+authenticate and compare every177 original-prefix row, all248,320 vocabulary
+scores per position. All rows are finite; both have0/177 strict passes and
+first observed/budget failure0. Q8 maximum absolute error is2.93674088 and
+minimum row cosine0.958800077; Q4 maximum11.067977 and minimum0.666163504.
+Q8 independently ends at160 IDs/EOS with changed French figure text; Q4 reaches
+cap256/noEOS with an incomplete table, versus original177/EOS. Exact raw
+scores/IDs/text proof, magnitudes, source pins and initial failed harness
+attempts are linked in [the final umbrella](lighton4b-qualification-consolidation.md).
+The retry workflows are red because numerical/decoded rejection is expected;
+their drivers explicitly report `status=compared`, not a harness failure.
+No original model forward was repeated, no F32 reference was required, and no
+threshold, source output, prompt, cap or default was changed to pass a gate.
