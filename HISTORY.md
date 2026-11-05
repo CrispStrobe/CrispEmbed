@@ -20901,3 +20901,47 @@ source/failure/MKL/negative receipts and 90-day artifact identities are under
 No further model jobs in this lane. A possible next bounded operator-only action
 is retained same-input merger GELU/erf attribution, keeping earliest MKL rotary
 dependency explicit. This qualification commit changes evidence only.
+
+
+### 2026-11-05: final measured merger correction, Q4 quality still negative
+
+PR155 final head `579aa53c1` preserves default-off corrections and alternatives.
+Merger attribution 42069010152 at `c398b710b34987b960ce54dddfb8feeed35a3b5d`
+passes complete original and actual merged byte controls using retained final
+vision-layer inputs and a bounded 54.5 MB original parameter range. Norm/up and
+installed original Gelu.h are exact. Native std::erf differs at 33 source-input
+and 26 actual-input activations (max 1.52588e-5), propagating to 84/58 merged
+values (max 0.00048828125). Source-derived FMA erf plus verified exp closes all
+573,440 activation and 358,400 merged values on each input to exact bytes.
+
+Focused production 42069996673 at `ca8e6dcade7fc85ec7adecb8dc904ee64c0db009`
+passes those complete original/actual controls and actual gated production
+outputs, unset/empty/0 preservation, nonfinite/unsupported-rounding guards,
+native/context builds, context 9, decoder 20 and environment docs. Separate
+MERGER_ERF_AVX2 gate remains off by default and uses the supported x86_64
+AVX2/FMA nearest-rounding profile; existing std::erf and fallback are preserved.
+Runtime and workflow changes remain in PR155 only, not this evidence commit.
+
+Final ordinary Q4 42070806605 at `e7730d91e7b7b6f9bec5c59b33c612ddcc97254b`
+uses all verified vision corrections, with rejected rotary and decoder gates
+explicitly 0. All 30 fixed baseline hashes reproduce; all eight source-fed
+first-block operators have zero differences, including the corrected activation
+observer. Ordinary native inference is independent of the source-fed arrays.
+Actual layer 0 retains exactly the 32 known MKL-rotary differences, RMS 2.28155e-5
+and max 0.0078125. Merged RMS improves baseline 0.0097352499 to 0.0077542505
+(max 1.21094 to 0.734375). First-logit RMS 0.5643236502 remains worse than
+baseline 0.5601347910 (max 2.48687124 versus 2.38527584), though slightly better
+than prior GELU candidate 0.5643268159. Both decodes remain wrong `[20353,29]`,
+`<table>`, unlike the original `<figure` prefix. Quality stays negative and
+unqualified; no default, release or app-pin promotion.
+
+Same-run native elapsed is 105.17 s baseline / 115.84 s candidate, user/system
+CPU 75.42/56.22 s versus 100.42/55.81 s, peak RSS 4,524,982,272 versus
+4,510,666,752 bytes. This is one Q4 image and two-token smoke, not a throughput
+benchmark, EOS or full-document qualification. Actual GGUF merger weights were
+not separately downloaded; complete actual merged byte control establishes
+compatibility of the original parameter range. The oneMKL rotary dependency
+remains unresolved in the product; no reference table or Torch/MKL product
+dependency is added. Exact sources, raw-byte controls, observer scope, timings,
+90-day artifact identities and limitations are in the three merger-erf receipts
+under `tests/results/qwen35-ocr/`. No further work or runs in this lane.
