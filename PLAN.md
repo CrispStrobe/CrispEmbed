@@ -1048,3 +1048,15 @@ waiver. Smoke's127/133-second prefill/two-token measurements suggest a potential
 long full autoregressive panel; no full timing or completion is inferred yet.
 Retain partial/failure artifacts and the Q4 first-token rejection even if later
 positions improve. Final paired full-vocabulary/decoded review remains pending.
+
+### LightOn4B BF16 vision semantics candidate —5 November
+
+Actual original-vs-native stage comparison42002886215 finds shared first vision
+patch max error0.0126757622, exact processor/position IDs and identical native
+vision inputs/outputs across Q8/Q4. Original BF16 casts pixels before Conv3D and
+rounds intermediate tensors; native legacy vision is F32. The isolated default-off
+`CRISPEMBED_LIGHTON4B_VISION_BF16` candidate preserves the shared legacy engine and
+adds source BF16 boundaries/interpolation/attention arithmetic. Source-fed
+patch/position attribution and actual Q8/Q4 candidate smoke/full-logit/decoded
+comparisons remain required. Keep all earlier first-score/document failures and
+immutable models; no weight modification or default flip.
