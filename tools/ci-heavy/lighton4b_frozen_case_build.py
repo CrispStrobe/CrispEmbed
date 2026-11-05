@@ -23,7 +23,7 @@ def main():
         run('controls',[str(binary)])
         run('stream-projection-controls',[str(build/'test-qwen35-stream-projection')])
         run('mixed-policy-controls',[str(build/'test-lighton4b-mixed-policy')])
-        for name in ('lighton4b-native-document','test-qwen35-stream-projection'):
+        for name in ('lighton4b-native-document','test-qwen35-stream-projection','lighton4b-native-case-preflight','test-lighton4b-mixed-policy'):
             report[name+'_sha256']=hashlib.sha256((build/name).read_bytes()).hexdigest()
         # Native binary has no model-free success mode; wrong arguments must fail.
         if subprocess.run([str(build/'lighton4b-native-document')],cwd=ROOT).returncode!=2:
