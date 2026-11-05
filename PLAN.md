@@ -1206,3 +1206,16 @@ is distinct from the earlier F32-weight activation oracle. No F32 model, native
 inference or full generation/reference is repeated. Six model-free structural/
 negative/AST controls pass. A single bounded32GiB original CPU worker may run only
 after source/resource review; no dispatch yet, and no quality/default promotion.
+
+
+### Fixed mixed original BF16 mechanism check — declared, not quality selection
+
+The Q4 first-token reversal prompted an explicitly exploratory check of the
+existing attention/embeddingQ8 + FFNQ4 architecture on the same diagnostic.
+[Exact immutable names, policy digests, provenance and capacity guards](docs/lighton4b-bf16-mixed-first-score.md)
+are declared before dispatch:153 Q8 matrices,96 Q4,474 protected original tensors.
+One baseline plus one mixed original BF16 prefill, no F32 model/native inference,
+no conversion upload. The previous three-arm evidence is preserved independently
+in PR157; this is not a new held-out calibration or decoded-quality gate.
+Chunks decrease to65,536 elements, completed file cache is advised away, and
+actual cgroup margin/effective RAM guards can reject rather than overrun capacity.
