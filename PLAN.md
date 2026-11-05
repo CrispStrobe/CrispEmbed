@@ -128,6 +128,22 @@ unchanged. Its conservative 40 GiB RAM/48 GiB disk bounds reject the observed
 implementation, measured peak and original-trace equivalence, not relaxed guards.
 No original model forward was run by these controls.
 
+For a smaller first reference, the separate BF16 CPU free-generation protocol
+at source `07543dcc80ebcecad644815d9397be2570a51dd4` uses the official original
+model with BF16 parameters, one `generate()` call, the frozen form/empty prompt
+and the unchanged 256-token cap. It retains all generated full-vocabulary
+scores but not per-layer cache snapshots or the F32 legacy trace dictionary.
+The first processor-only hosted attempt [41992437849](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41992437849)
+failed before checkpoint acquisition because Torchvision was absent. The
+corrected [41993030552](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41993030552)
+passed synthetic controls and verified the official processor's actual 560-patch,
+1×20×28 grid and 154-token input without model weights or a forward. A CPU-only
+Kaggle capture was submitted with bootstrap SHA-256
+`c370b097a45c2d8158343fa1a3a3c510f9bea3b84912565e896b5ded37fd93f6`;
+re-query its actual run and review memory, outputs, EOS/cap and errors before
+claiming capture success. This is a BF16 reference, not the F32 intermediate
+reference or a native/quantized parity result.
+
 The separately versioned [sharded transport](https://github.com/CrispStrobe/CrispEmbed/blob/f99b5b618cdf8438f29a655790993a6aef95e8cd/docs/lighton4b-original-sharded-transport-v1.md)
 passed initial and hardened fixture controls in [41977694403](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41977694403)
 and [41977934618](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41977934618).
