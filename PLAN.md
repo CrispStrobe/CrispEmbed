@@ -1684,3 +1684,14 @@ and requires all29 vision stages and five prepared inputs to match the original
 bytes. This observed form is excluded from calibration/heldout qualification;
 two prefix IDs cannot establish document completion or EOS parity. Decoder BF16
 rounding, direct quantization and rejected rotary alternatives remain off.
+
+The scoped [corrected mixed smoke42107457845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42107457845)
+completed at9e24c7c16. All29 vision stages and five prepared inputs are original-exact.
+Independent IDs27,17251 decode `<figure`, matching the first2 original IDs.
+First-score versus original BF16: max1.48261547, RMS0.284899447, cosine0.992588001;
+versus independently captured BF16 mixed recipe: max0.163356781, RMS0.0274295614,
+cosine0.999928425. Both strict numerical comparisons fail. Native time141.19s,
+peak RSS5,179,695,104B. This separates the remaining runtime residual from recipe
+loss without establishing a full decoded result; no EOS/full/heldout claim.
+[Complete report and receipt](tests/results/qwen35-ocr/lightonocr3-4b-corrected-mixed-form/native-report.json)
+preserve exact model/table/profile/reference hashes and active/disabled gates.
