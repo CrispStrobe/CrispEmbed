@@ -1046,3 +1046,13 @@ are comparison-only, never inputs to the native decoder. Source-capped cases
 remain negative diagnostics. The frozen cap256 and calibration/heldout split
 are unchanged. Actual mixed weights, original four-case admissions and decoded
 panels remain pending; no admission or quality is inferred from preparation.
+
+Final-source frozen worker[42006252927](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42006252927)
+at`84691b26494e61d82efcc436b083b48a1a639236` passes all three fixed-case
+contract tests,74 exact mixed/uniform storage controls, nine owner controls and
+old streamed projection controls; both actual native/preflight binaries compile.
+[Receipt](tests/results/qwen35-ocr/lightonocr3-4b-frozen-case-build.json) retains
+exact executable hashes. No model payload or source capture was consumed.
+The worker remains blocked on independently reviewed original per-case capture
+SHA256s and actual mixed pack SHA256; these are explicit input admissions rather
+than inferred quality. Preserve active full panels and all initial negatives.
