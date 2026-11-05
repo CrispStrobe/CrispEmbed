@@ -1,5 +1,7 @@
 ## 0.17.15 (unreleased)
 
+- Fix film grain blocking real-background propagation in the opt-in CLI temporal
+  inpainting stream; retain motion and brightness-change guards.
 - Add a default-off LightOnOCR-3-1B experiment using the original Pixtral vision
   norm epsilon. Existing profiles, text/projector norms and default behavior
   remain unchanged. Hosted retained-reference A/B qualification is pending.
