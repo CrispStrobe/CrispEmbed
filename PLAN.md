@@ -1114,3 +1114,13 @@ The [full receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-norm-ab.json)
 and candidate guide preserve this limit. Continue same-input reduction/affine
 contraction isolation using retained raw13414500337; defer more full smokes
 until the operator materially improves. No quality/release/default promotion.
+
+
+The operator-only `tools/ci-heavy/lighton4b_vision_norm_attribution.py` consumes
+exact ZIP13414500337 and only its retained norm inputs/weights. No model or new
+original forward is involved. It compares portable scalar four/eight-lane moments
+against installed original PyTorch2.13 header-fed AVX2 moments, compiling the
+source control with contraction off/fast and testing all four affine FMA
+combinations. Both source-header outputs must be judged against frozen original
+norm outputs; do not infer compiler contraction merely from Python/C++ syntax.
+This attribution precedes any new runtime candidate or full-model smoke.
