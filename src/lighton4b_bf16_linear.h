@@ -3,6 +3,7 @@
 #include "qwen35_math.h"
 #include <cstdint>
 #include <cstring>
+#include <limits>
 
 namespace qwen35_ocr {
 // Experimental activation semantics only. Quantized weight bytes and independent
@@ -20,6 +21,30 @@ inline float lighton4b_bf16_round(float value) {
 }
 inline void lighton4b_bf16_round(std::vector<float> & values) {
     for (auto & value : values) value = lighton4b_bf16_round(value);
+}
+// Pinned Torch CPU AVX2 mean order for the two LightOn4B RMS widths.
+// Squares are F32, then four eight-lane streams and sixteen-row groups;
+// the F32 sum is rounded before mean division. Legacy RMS remains unchanged.
+inline float lighton4b_bf16_rms_scale(const float * input, int width, float epsilon) {
+    if (!input || (width != 128 && width != 2560)) return std::numeric_limits<float>::quiet_NaN();
+    float partial[4][8]{};
+    const int rows = width / 32;
+    for (int first = 0; first < rows; first += 16) {
+        float block[4][8]{};
+        for (int row = first; row < std::min(rows, first + 16); ++row)
+            for (int stream = 0; stream < 4; ++stream)
+                for (int lane = 0; lane < 8; ++lane) {
+                    const float value = input[(row * 4 + stream) * 8 + lane];
+                    block[stream][lane] += value * value;
+                }
+        for (int stream = 0; stream < 4; ++stream)
+            for (int lane = 0; lane < 8; ++lane) partial[stream][lane] += block[stream][lane];
+    }
+    for (int stream = 1; stream < 4; ++stream)
+        for (int lane = 0; lane < 8; ++lane) partial[0][lane] += partial[stream][lane];
+    float sum = 0;
+    for (int lane = 0; lane < 8; ++lane) sum += partial[0][lane];
+    return 1.0f / std::sqrt(sum / float(width) + epsilon);
 }
 inline bool lighton4b_bf16_linear_enabled() {
     return core_env::on("CRISPEMBED_LIGHTON4B_BF16_LINEAR");
@@ -92,7 +117,7 @@ inline bool lighton4b_bf16_grouped_cpu(const linear_weights & w, const float * h
     out.core.values.resize(delta.size());
     for (int row = 0; row < tokens * heads; ++row) {
         const size_t base = size_t(row) * width;
-        const float scale = rms_scale_cpu(delta.data() + base, width, 1e-6f);
+        const float scale = lighton4b_bf16_rms_scale(delta.data() + base, width, 1e-6f);
         for (int lane = 0; lane < width; ++lane) {
             const size_t i = base + lane;
             const float normalized = lighton4b_bf16_round(delta[i] * scale);

@@ -28,12 +28,20 @@ static float diagnostic_tree_mean(const float * input, int lanes) {
     return sum / 2560.0f;
 }
 static int run(int argc, char ** argv) {
-    if (argc != 4 && argc != 5 && argc != 7) return 2;
+    if (argc != 4 && argc != 5 && argc != 7 && argc != 8) return 2;
     // RNE tie cases distinguish BF16 from truncation and FP16 conversion.
     if (qwen35_ocr::lighton4b_bf16_round(1.00390625f) != 1.0f ||
         qwen35_ocr::lighton4b_bf16_round(1.01171875f) != 1.015625f ||
         qwen35_ocr::lighton4b_bf16_round(-1.00390625f) != -1.0f || qwen35_ocr::lighton4b_bf16_round(0.0f) != 0.0f)
         return 6;
+    if (!qwen35_ocr::lighton4b_bf16_linear_enabled()) {
+        const float zero = 0;
+        std::vector<float> rejected_output{ 1 }, rejected_state{ 1 };
+        if (qwen35_ocr::delta_pre_normalized_cpu(&zero, &zero, &zero, &zero, &zero, nullptr, 1, 1, 1, 1, 1,
+                                                 rejected_output, rejected_state) ||
+            !rejected_output.empty() || !rejected_state.empty())
+            return 8;
+    }
     auto backend = ggml_backend_cpu_init();
     core_gguf::WeightLoad weights;
     if (!backend || !core_gguf::load_weights(argv[1], backend, "layer0-source-fed", weights)) return 2;
@@ -59,7 +67,7 @@ static int run(int argc, char ** argv) {
     stream.seekg(0);
     stream.read(reinterpret_cast<char *>(input.data()), input.size() * 4);
     if (!stream) return 2;
-    if (argc == 5 || argc == 7) {
+    if (argc == 5 || argc == 7 || argc == 8) {
         if (std::string(argv[4]) != "norm-only") return 2;
         std::vector<float> norm(2560);
         if (!qwen35_ocr::tensor_floats(w.input_norm, norm.data())) return 2;
@@ -88,7 +96,7 @@ static int run(int argc, char ** argv) {
                 if (!output) return 4;
             }
         }
-        if (argc == 7) {
+        if (argc == 7 || argc == 8) {
             std::vector<float> source_means(154), source_scales(154);
             auto read = [&](const char * path, std::vector<float> & values) {
                 std::ifstream f(path, std::ios::binary | std::ios::ate);
@@ -98,8 +106,8 @@ static int run(int argc, char ** argv) {
                 return bool(f);
             };
             if (!read(argv[5], source_means) || !read(argv[6], source_scales)) return 2;
-            for (const char * variant :
-                 { "mean-f32-sqrt", "mean-f64-rsqrt", "scale", "sum-round-mean", "sum-tree8", "sum-tree16" }) {
+            for (const char * variant : { "mean-f32-sqrt", "mean-f64-rsqrt", "scale", "sum-round-mean", "sum-tree8",
+                                          "sum-tree16", "candidate" }) {
                 std::vector<float> values(input.size()), scales(154), means(154);
                 for (int token = 0; token < 154; ++token) {
                     const size_t base = size_t(token) * 2560;
@@ -114,10 +122,11 @@ static int run(int argc, char ** argv) {
                     }
                     means[token] = mean;
                     const float denominator = mean + 1e-6f;
-                    const float scale = std::string(variant) == "scale" ? source_scales[token]
-                                        : std::string(variant) == "mean-f64-rsqrt"
-                                            ? float(1.0 / std::sqrt(double(denominator)))
-                                            : 1.0f / std::sqrt(denominator);
+                    const float scale =
+                        kind == "candidate" ? qwen35_ocr::lighton4b_bf16_rms_scale(input.data() + base, 2560, 1e-6f)
+                        : std::string(variant) == "scale"          ? source_scales[token]
+                        : std::string(variant) == "mean-f64-rsqrt" ? float(1.0 / std::sqrt(double(denominator)))
+                                                                   : 1.0f / std::sqrt(denominator);
                     scales[token] = scale;
                     for (int lane = 0; lane < 2560; ++lane)
                         values[base + lane] = input[base + lane] * scale * (1.0f + norm[lane]);
@@ -138,6 +147,23 @@ static int run(int argc, char ** argv) {
                     if (!output) return 4;
                 }
             }
+        }
+        if (argc == 8) {
+            std::vector<float> gdn(154 * 32 * 128);
+            std::ifstream f(argv[7], std::ios::binary | std::ios::ate);
+            if (!f || f.tellg() != std::streamoff(gdn.size() * 4)) return 2;
+            f.seekg(0);
+            f.read(reinterpret_cast<char *>(gdn.data()), gdn.size() * 4);
+            if (!f) return 2;
+            for (int row = 0; row < 154 * 32; ++row) {
+                const size_t base = size_t(row) * 128;
+                const float scale = qwen35_ocr::lighton4b_bf16_rms_scale(gdn.data() + base, 128, 1e-6f);
+                for (int lane = 0; lane < 128; ++lane)
+                    gdn[base + lane] = qwen35_ocr::lighton4b_bf16_round(gdn[base + lane] * scale);
+            }
+            std::ofstream output(std::string(argv[3]) + "/gdn-candidate-normalized.f32", std::ios::binary);
+            output.write(reinterpret_cast<const char *>(gdn.data()), gdn.size() * 4);
+            if (!output) return 4;
         }
         core_gguf::free_weights(weights);
         ggml_backend_free(backend);

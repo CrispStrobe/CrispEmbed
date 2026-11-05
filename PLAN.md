@@ -1169,3 +1169,12 @@ cause is now bounded to mean reduction. The source-derived test-only successor
 compares pinned Torchcf30153c4c13 eight-/sixteen-lane inner-sum grouping and
 separate sum→mean rounding before any production RMS change or decoder expansion.
 Old alternatives and their red exit/strict flags remain retained.
+
+Pinned grouped-order42029945232/215f463bc is positive for the eight-lane mean:
+all154 means/scales and394,240 F32/BF16 outputs bit-exact. Sixteen lanes and
+F64-sum→F32-mean remain negative (3/2 BF16 differences, max0.00390625). The
+source-derived eight-lane reduction is now scoped only to default-off BF16 linear
+RMS widths2560/128, preserving shared legacy RMS. Actual production-helper
+input/GDN norm replay is next before any expanded decoder; direct entry gates
+and incompatible-cache controls remain mandatory. All old alternatives/rejections
+and full decoded quality debt stay unchanged.

@@ -151,3 +151,18 @@ F64-sum→F32-sum→F32-mean rounding. It authenticates the exact Torch sum/mean
 source hashes and compares actual mean vectors before full norm outputs. No
 original values are embedded in the reconstruction and no production RMS path
 changes until this bounded source-derived alternative is measured.
+
+Grouped-order42029945232 at215f463bc measures the source-derived alternatives:
+eight-lane grouping reproduces all154 means/scales and394,240 F32/BF16 norm
+outputs bit-exactly. Sixteen-lane grouping leaves3 BF16 differences; F64 sum
+rounded to F32 before division leaves2, both max0.00390625. This positively
+identifies a source-derived order correction at this boundary rather than merely
+increasing precision. Exact Torch sum/mean/AVX2 source hashes are verified.
+
+The successor uses that eight-lane order only within the default-off linear BF16
+candidate for its2560- and128-wide RMS operations. Shared legacy RMS remains
+unchanged. A dedicated actual-helper comparison covers the full input norm and
+original-module GDN pre-norm tensor before another composed candidate replay.
+The new pre-normalized delta entry also rejects with cleared outputs unless its
+BF16 gate is enabled; cache precision tags reject mixed-mode continuation.
+No quality/default/release qualification follows from this bounded correction.

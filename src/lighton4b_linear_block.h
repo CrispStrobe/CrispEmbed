@@ -58,7 +58,8 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
         y.resize(x.size());
         for (int token = 0; token < tokens; ++token) {
             const size_t base = size_t(token) * 2560;
-            const float scale = rms_scale_cpu(x.data() + base, 2560, 1e-6f);
+            const float scale = bf16 ? lighton4b_bf16_rms_scale(x.data() + base, 2560, 1e-6f)
+                                     : rms_scale_cpu(x.data() + base, 2560, 1e-6f);
             for (int i = 0; i < 2560; ++i) y[base + i] = (x[base + i] * scale) * (1.0f + weights[i]);
         }
         if (bf16) lighton4b_bf16_round(y);

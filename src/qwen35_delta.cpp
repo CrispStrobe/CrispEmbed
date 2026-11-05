@@ -267,6 +267,11 @@ bool delta_cpu(const float * q, const float * k, const float * v, const float * 
 bool delta_pre_normalized_cpu(const float * q, const float * k, const float * v, const float * g, const float * beta,
                               const float * initial_state, int batch, int tokens, int heads, int width, int threads,
                               std::vector<float> & output, std::vector<float> & final_state) {
+    if (!core_env::on("CRISPEMBED_LIGHTON4B_BF16_LINEAR")) {
+        output.clear();
+        final_state.clear();
+        return false;
+    }
     return delta_cpu_impl(q, k, v, g, beta, initial_state, batch, tokens, heads, width, threads, output, final_state,
                           true);
 }

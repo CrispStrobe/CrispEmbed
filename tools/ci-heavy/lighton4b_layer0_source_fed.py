@@ -111,6 +111,8 @@ def main():
             for attr,name in (('in_proj_qkv','qkv'),('in_proj_z','z'),('in_proj_a','a'),('in_proj_b','b')):
                 handles.append(getattr(block.linear_attn,attr).register_forward_hook(hook(name)))
             def norm(module,args,result):put('gdn_norm',result.reshape(1,154,32,128))
+            def norm_input(module,args):put('gdn_input',args[0].reshape(1,154,32,128))
+            handles.append(block.linear_attn.norm.register_forward_pre_hook(norm_input))
             handles.append(block.linear_attn.norm.register_forward_hook(norm))
             def post(module,args,result):put('attention_residual',args[0]);put('post_norm',result)
             def down(module,args,result):put('activation',args[0]);put('down',result)
@@ -194,7 +196,9 @@ def main():
             means.numpy().astype('<f4').tofile(scratch/'original-means.f32')
             source_scales.numpy().astype('<f4').tofile(scratch/'original-scales.f32')
             command=[binary,scratch/'official-layer0.gguf',retained/'prefill.input.f32',folder,'norm-only']
-            if args.norm_source_isolation:command.extend([scratch/'original-means.f32',scratch/'original-scales.f32'])
+            if args.norm_source_isolation:
+                bf16['gdn_input'].astype('<f4').tofile(scratch/'original-gdn-input.f32')
+                command.extend([scratch/'original-means.f32',scratch/'original-scales.f32',scratch/'original-gdn-input.f32'])
             run('norm-attribution',command,env)
             report['norm_attribution']=[]
             scales=source_scales.numpy().reshape(1,154)
@@ -213,17 +217,23 @@ def main():
                         'byte_exact':digest(actual.tobytes())==digest(target.tobytes()),**ref.metrics(actual,target,np)})
             if args.norm_source_isolation:
                 report['norm_source_isolation']=[]
-                for variant in ('mean-f32-sqrt','mean-f64-rsqrt','scale','sum-round-mean','sum-tree8','sum-tree16'):
+                for variant in ('mean-f32-sqrt','mean-f64-rsqrt','scale','sum-round-mean','sum-tree8','sum-tree16','candidate'):
                     actual_scales=np.fromfile(folder/f'norm-source-{variant}.scale.f32',dtype='<f4').reshape(scales.shape)
                     actual_means=np.fromfile(folder/f'norm-source-{variant}.mean.f32',dtype='<f4').reshape(scales.shape)
-                    row={'variant':variant,'mean_byte_exact':digest(actual_means.tobytes())==digest(means.numpy().tobytes()),
-                        'mean_metrics':ref.metrics(actual_means,means.numpy().reshape(scales.shape),np),'scale_byte_exact':digest(actual_scales.tobytes())==digest(scales.tobytes()),
+                    row={'variant':variant,'mean_byte_exact':None if variant=='candidate' else digest(actual_means.tobytes())==digest(means.numpy().tobytes()),
+                        'mean_metrics':None if variant=='candidate' else ref.metrics(actual_means,means.numpy().reshape(scales.shape),np),'scale_byte_exact':digest(actual_scales.tobytes())==digest(scales.tobytes()),
                         'scale_metrics':ref.metrics(actual_scales,scales,np),'outputs':[]}
                     for dtype,target in (('f32',source_f32['input_norm']),('bf16',bf16['input_norm'])):
                         actual=np.fromfile(folder/f'norm-source-{variant}.{dtype}.f32',dtype='<f4').reshape(target.shape)
                         row['outputs'].append({'dtype':dtype,'byte_exact':digest(actual.tobytes())==digest(target.tobytes()),
                             'different_values':int(np.count_nonzero(actual!=target)),**ref.metrics(actual,target,np)})
                     report['norm_source_isolation'].append(row)
+            if args.norm_source_isolation:
+                gdn=torch.from_numpy(bf16['gdn_input'].copy()).float()
+                target=(gdn*torch.rsqrt(gdn.square().mean(-1,keepdim=True)+1e-6)).bfloat16().float().numpy()
+                actual=np.fromfile(folder/'gdn-candidate-normalized.f32',dtype='<f4').reshape(target.shape)
+                report['gdn_candidate_rms']={'byte_exact':digest(actual.tobytes())==digest(target.tobytes()),
+                    'different_values':int(np.count_nonzero(actual!=target)),**ref.metrics(actual,target,np)}
             report['status']='norm-source-isolation-compared' if args.norm_source_isolation else 'norm-attribution-compared'
             require(not report['arms']['native-official-f32']['earliest_failure'],'legacy official F32 control failed')
             require(all(row['passed']for row in report['norm_attribution']),'normalization comparison retains numerical rejection')
