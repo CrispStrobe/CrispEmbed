@@ -1164,3 +1164,23 @@ is preserved. Targeted retry pins ATen/oneDNN/MKL dispatch to original AVX2
 before Torch import; the exact original-layer barrier and portable native frozen
 baseline hashes remain mandatory. This is bounded AVX2 source parity, not an
 AVX512/ARM/cross-platform qualification, and no numerical budget is changed.
+
+
+[Pinned composed42028668863](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42028668863)
+at6c3cb6ed9 passes original layer0 and both source-fed corrected norms exactly,
+plus all historical portable baseline stage hashes. Contracted norm improves
+layer0 RMS0.000781620→0.000691054 and merged RMS0.0223861→0.00973525
+(max2.46484→1.21094), below legacy merged RMS0.0112389. Q4 first-logit RMS
+still worsens0.545670→0.560135 despite max2.61007→2.38528; both ordinary arms
+retain incorrect`<table>` (IDs20353,29) versus original`<figure` prefix.
+The [full pinned A/B](tests/results/qwen35-ocr/lightonocr3-4b-vision-fma-norm-ab.json)
+records this operator/component improvement separately from decoded rejection.
+Both old norm alternatives and all gates remain unchanged/default-off.
+
+Next authorized retained-only `tools/ci-heavy/lighton4b_vision_selected_dot.py`
+compares all171 same-input QKV differences plus deterministic positions against
+[original BF16 dot ordering](https://github.com/pytorch/pytorch/blob/v2.13.0/aten/src/ATen/native/cpu/ReducedPrecisionFloatGemvFastPathKernel.cpp),
+canonical double and serial float alternatives. A pinned original F.linear must
+match the entire retained QKV array byte-for-byte before selected attribution.
+No model is downloaded or forwarded; selected success is not full-operator or
+decoded qualification, and no runtime linear fix precedes this evidence.

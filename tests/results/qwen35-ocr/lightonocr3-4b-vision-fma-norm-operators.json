@@ -974,5 +974,18 @@
   },
   "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42027253266",
   "artifact_id": 13414078780,
-  "artifact_sha256": "475504c79fecc1f4e1f6e2ef9fa06c4e0be24b4052d17b2031c67cae3f26257d"
+  "artifact_sha256": "475504c79fecc1f4e1f6e2ef9fa06c4e0be24b4052d17b2031c67cae3f26257d",
+  "independent_byte_controls": {
+    "review_method": "HTTP ZIP range retrieval of small retained norm-attribution.json manifest only (12032 bytes transferred), no raw arrays downloaded",
+    "norm1": {
+      "source_sha256": "5c8b532d171c15e40cab5b10be3f16f957549288f5f073636cf2ada58404bbaf",
+      "production_sha256": "5c8b532d171c15e40cab5b10be3f16f957549288f5f073636cf2ada58404bbaf",
+      "bytes_each": 2293760
+    },
+    "norm2": {
+      "source_sha256": "2d7f56c18ffcd4c8ffa01455976c48f08a30f8c49b7b4aeee48bbda9250c5fc0",
+      "production_sha256": "2d7f56c18ffcd4c8ffa01455976c48f08a30f8c49b7b4aeee48bbda9250c5fc0",
+      "bytes_each": 2293760
+    }
+  }
 }

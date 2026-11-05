@@ -52,3 +52,21 @@ The [complete A/B receipt](../tests/results/qwen35-ocr/lightonocr3-4b-vision-nor
 retains all magnitudes/errors and controls. This alternative stays default-off
 and rejected for promotion. Next is same-input normalization reduction/affine
 contraction isolation; another full smoke depends on material operator progress.
+
+
+The [contracted-norm operator42027253266](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42027253266)
+at9c11a924c now matches both original source-fed norms and all mean/rstd
+entries exactly. Independent small-manifest review verifies equal raw hashes,
+including signed-zero bits. The correction requires paired BF16 moments, FMA
+in final scalar merging and both affine stages; the older separate-affine gate
+remains preserved.
+
+[Ordinary pinned A/B42028668863](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42028668863)
+improves merged RMS0.0223861→0.00973525 and maximum2.46484→1.21094, but Q4
+first-logit RMS worsens0.545670→0.560135 and both decodes remain`<table>`.
+See the [complete receipt](../tests/results/qwen35-ocr/lightonocr3-4b-vision-fma-norm-ab.json).
+All defaults remain off and decoded qualification stays false. The initial
+AVX512 original-control failure42028040544 is preserved separately; subsequent
+source replays explicitly pin original AVX2 ATen/oneDNN/MKL dispatch. This is
+bounded original-AVX2 proof, not cross-platform qualification. Next is retained
+same-input QKV dot attribution before another runtime candidate or full smoke.
