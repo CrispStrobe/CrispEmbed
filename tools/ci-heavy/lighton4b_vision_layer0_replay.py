@@ -30,7 +30,7 @@ def main():
  report={'schema':'lighton4b-vision-layer0-source-fed/v1','status':'failed','quality_qualified':False,
   'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
   'cpu_dispatch':dispatch,'torch_version':torch.__version__,'torch_cpu_capability':torch.backends.cpu.get_cpu_capability(),
-  'decoded_scope':'No decoder execution; preserves original decoded <figure prefix and earlier negative Q4/Q8 smokes.'}
+  'decoded_scope':'Independent ordinary native decoder smoke is compared in composed results; source-fed operator parity alone does not qualify decoded quality.'}
  def run(name,args,env=None):
   with (out/(name+'.log')).open('w')as f:subprocess.run([str(x)for x in args],cwd=ROOT,stdout=f,stderr=subprocess.STDOUT,check=True,env=env)
  try:

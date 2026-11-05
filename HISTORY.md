@@ -20800,3 +20800,5 @@ bytes. Separate default-off softmax gate preserves old paths and requires
 x86_64 AVX2/FMA with nearest rounding. Focused assembled verification and ordinary
 Q4 A/B remain pending; runtime rotary generation and decoded quality are separate
 boundaries. Previous negative quality evidence remains, with no release change.
+
+Focused softmax integration 42055105090 passes the final guarded production form, native/context builds, context 9 and decoder 20 controls. Source-fed attention is byte-exact; ordinary composed Q4 quality remains pending.

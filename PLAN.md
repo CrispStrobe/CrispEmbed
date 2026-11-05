@@ -1344,3 +1344,5 @@ is pending. Source-fed cosine/sine remain distinct from runtime-generated rotary
 tables. Prior negative decoded evidence remains; no quality, default, release or
 app-pin promotion. Exact source, artifact identities and 90-day expiry are in
 `tests/results/qwen35-ocr/lightonocr3-4b-softmax-{vector-initial,vector-source,production}.json`.
+
+Final focused integration [42055105090](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42055105090) at `102994438f5b25db1d40dfc6b452da9c4b3102ca` passed all exact source F32 probability/reciprocal/pooling checks, preserved old gates, checked no invalid/divide-by-zero exception on the exact path, built native/context and passed context 9 + decoder 20 model-free controls and env docs. Artifact `13429762220`, SHA `d74896b641020d77bd326179763d4cd9ca4412b81ec989d3a0f161b2f45c078b`, retained 90 days. Next: one ordinary Q4 composed first-score/two-token A/B with decoder candidate explicitly 0, all vision corrections enabled only in candidate, and all 30 fixed-baseline hashes required. Runtime-generated rotary and decoded quality remain unqualified until measured.
