@@ -1126,3 +1126,18 @@ decoded-parity negatives, not quality qualification.
 retain remote archive/source/weight/protocol identities and limits. Full177-row
 numerical comparison is a separately controlled continuation; no reference, cap,
 prompt or strict budget changes. Large arrays stay remote.
+
+### Single sequential mixed calibration job
+
+The reviewed mixed candidate is4,683,041,248 bytes, SHA256
+`d2eb57d1f98d5c455f46f95b6c6095f38521df19927d486848b668222e9fc474`,
+retained by pack42006450732/artifact13405370923. A single scoped hosted job
+stages this candidate once, builds once and runs only the two predeclared
+calibration cases sequentially, with original222/6 EOS-ended positions.
+[Scope and bounds](docs/lighton4b-native-calibration.md) preserve the heldout
+receipt's capped-without-EOS source failure and prohibit qualification.
+The actual four-case capture schema is bound by source/protocol/case hashes;
+it has no invented `requested_dtype` field. Reviewed source42e5ce6f9 and batch
+metadata fix BF16. Reused binaries require exact source/build-receipt/executable
+hashes. Local transfer-overrun/hash/source/binary-tamper and selector controls
+pass; no broad CI or new PR is required.

@@ -19,6 +19,7 @@ ROOT=Path(__file__).resolve().parents[2]
 PROTOCOL_SHA='3a1738c26cf5a34680fea1468bea07c06ee26659f7ddb7e249299677746ba36d'
 FROZEN_SHA='a07af76028a0d53c8bfc0ccafedac348eaeb725c8c8c55e3136906f202b8f65d'
 MIXED='lighton4b-q4k-mixers-q8-v1'
+ORIGINAL_SOURCE='42e5ce6f9bc6bd01865ac4f21d2157c98d3475f1'
 def sha(path):
  h=hashlib.sha256()
  with Path(path).open('rb') as stream:
@@ -37,11 +38,31 @@ def load_contract(case_id):
  case,record=cases[0],inputs[0]
  require(case['prompt']=='' and case['max_new_tokens']==256 and case['eos_ids']==[248046] and case['do_sample'] is False,'frozen generation differs')
  return p,case,record
+def validate_original(original,case):
+ require(original['schema']=='lighton4b-fourcase-bf16-capture/v1' and original['source_sha']==ORIGINAL_SOURCE and
+  original['case_id']==case['id'] and original['split']==case['split'] and original['protocol_sha256']==PROTOCOL_SHA and
+  original['input_manifest_sha256']==FROZEN_SHA and original['original_forward_executed'] is True,
+  'reviewed four-case BF16 capture identity differs')
+ require(original['source']['model']=='lightonai/LightOnOCR-3-4B' and
+  original['source']['revision']=='b71010f095dc3735de7ee6b9969bff8f8f50b39a','original source revision differs')
+ # The reviewed producer source fixes bfloat16 and binds its model_dtype in batch.json;
+ # its actual per-case schema has no requested_dtype field. Do not invent one.
+ if 'requested_dtype' in original:require(original['requested_dtype']=='bfloat16','original dtype differs')
+def validate_build(build,receipt_path,expected_sha,current_source):
+ require(sha(receipt_path)==expected_sha,'prebuilt receipt digest differs')
+ receipt=json.loads(receipt_path.read_text())
+ require(receipt['schema']=='lighton4b-frozen-case-build/v1' and receipt['status']=='passed' and
+  receipt['source_sha']==current_source and receipt['model_payload_bytes']==0,'prebuilt source/control identity differs')
+ for name in ('lighton4b-native-document','lighton4b-native-case-preflight','crispembed-diff-lighton4b-document'):
+  require((build/name).is_file() and sha(build/name)==receipt[name+'_sha256'],'prebuilt executable differs: '+name)
+ return receipt
+
 def main():
  parser=argparse.ArgumentParser();parser.add_argument('--case',required=True)
  parser.add_argument('--model',type=Path,required=True);parser.add_argument('--weights-sha256',required=True)
  parser.add_argument('--recipe',choices=('q8_0','q4_k',MIXED),required=True)
  parser.add_argument('--original-root',type=Path,required=True);parser.add_argument('--original-capture-sha256',required=True)
+ parser.add_argument('--prebuilt-build',type=Path);parser.add_argument('--build-receipt',type=Path);parser.add_argument('--build-receipt-sha256')
  parser.add_argument('--mode',choices=('smoke','full'),default='full');parser.add_argument('--threads',type=int,default=4)
  args=parser.parse_args()
  require(os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','hosted portable execution required')
@@ -64,8 +85,7 @@ def main():
   capture_path=args.original_root/'capture.json'
   require(sha(capture_path)==args.original_capture_sha256,'reviewed original capture differs')
   original=json.loads(capture_path.read_text())
-  require(original['source']['model']==protocol['original_model'] and original['source']['revision']==protocol['original_revision'] and
-   original['requested_dtype']=='bfloat16' and original['original_forward_executed'] is True,'original BF16 source differs')
+  validate_original(original,case)
   teacher=original['generated_ids']
   require(1<=len(teacher)<=256 and all(type(x)is int and 0<=x<248320 for x in teacher),'original IDs outside frozen bounds')
   require(248046 not in teacher[:-1] and original['eos_completed']==(teacher[-1]==248046) and
@@ -91,9 +111,17 @@ def main():
    'CRISPEMBED_LIGHTON4B_DIRECT_QUANT','CRISPEMBED_QWEN35_PRECISE_RMS','CRISPEMBED_QWEN35_IMATRIX','CRISPEMBED_QWEN35_WEIGHT_CACHE']
   report['gates']={x:env[x] for x in keys}
   builder=ROOT/'tools/ci-heavy/lighton4b_frozen_case_build.py';build_report=out/'build';build_report.mkdir()
-  build_env=os.environ.copy();build_env['HEAVY_OUT']=str(build_report)
-  command('build-helper',['python',builder],build_env)
-  build=Path(os.environ['HEAVY_SCRATCH'])/'frozen-case-build';preflight=out/'preflight';preflight.mkdir()
+  if args.prebuilt_build:
+   require(args.build_receipt is not None and args.build_receipt_sha256 is not None,'complete prebuilt admission required')
+   build=args.prebuilt_build
+   receipt=validate_build(build,args.build_receipt,args.build_receipt_sha256,report['producer_source_sha'])
+   (build_report/'validated-build.json').write_text(json.dumps(receipt,indent=2)+'\n')
+  else:
+   require(args.build_receipt is None and args.build_receipt_sha256 is None,'prebuilt admission without executable directory')
+   build_env=os.environ.copy();build_env['HEAVY_OUT']=str(build_report)
+   command('build-helper',['python',builder],build_env)
+   build=Path(os.environ['HEAVY_SCRATCH'])/'frozen-case-build'
+  preflight=out/'preflight';preflight.mkdir()
   command('native-input-preflight',[build/'lighton4b-native-case-preflight',args.model,rgb_path,image.height,image.width,preflight,args.recipe],env)
   report['binary_sha256']={name:sha(build/name) for name in ('lighton4b-native-document','lighton4b-native-case-preflight')}
   arrays={}

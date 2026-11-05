@@ -1683,3 +1683,6 @@ target_link_libraries(test-lighton4b-vision-owner PRIVATE crispembed-qwen35-delt
 
 add_executable(test-lighton4b-gguf-inspection tests/test_lighton4b_gguf_inspection.cpp)
 target_link_libraries(test-lighton4b-gguf-inspection PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(crispembed-diff-lighton4b-document tests/lighton4b_document_diff.cpp)
+target_include_directories(crispembed-diff-lighton4b-document PRIVATE src)
