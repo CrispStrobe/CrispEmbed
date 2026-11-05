@@ -49,7 +49,7 @@ def candidate(b,a,p,synthetic=False):
 def compare(original_root,native_root,binary,output,synthetic=False):
     require(os.environ.get('GITHUB_ACTIONS')=='true' or Path('/kaggle/working').is_dir(),'hosted comparison required')
     out=Path(output);require(not out.exists(),'fresh output required');out.mkdir(parents=True)
-    r={'schema':'lighton4b-bf16-quant-comparison/v1','status':'blocked','native_execution_admitted':False,'quality_qualified':False,'synthetic_control':synthetic,'original_forward_executed_by_comparer':False,'native_forward_executed_by_comparer':False,'earliest_observed_score_difference':None,'internal_stage_attribution_available':False}
+    r={'schema':'lighton4b-bf16-quant-comparison/v1','status':'blocked','native_execution_admitted':False,'quality_qualified':False,'synthetic_control':synthetic,'original_forward_executed_by_comparer':False,'native_forward_executed_by_comparer':False,'earliest_observed_score_difference':None,'earliest_score_budget_failure':None,'internal_stage_attribution_available':False}
     try:
         p=protocol();a=original(original_root,p);b=json.loads((Path(native_root)/'native.json').read_text());candidate(b,a,p,synthetic)
         r.update(original_decoded=a['decoded'],native_decoded=b['decoded'],original_generated_ids=a['generated_ids'],native_generated_ids=b['generated_ids'],native_precision=b['precision'],protocol_sha256=sha(PROTOCOL),binary_sha256=sha(binary),native_execution_admitted=not synthetic)
@@ -69,7 +69,9 @@ def compare(original_root,native_root,binary,output,synthetic=False):
                 stage=[x for x in run.stdout.splitlines() if x.startswith('STAGE ')]
                 require(len(stage)==1 and stage[0].split()[1]==name and run.returncode in (0,1),'actual Ref comparison incomplete')
                 rows.append(stage[0]); numerical &= run.returncode==0
-                if run.returncode and r['earliest_observed_score_difference'] is None:r['earliest_observed_score_difference']=i
+                metrics=dict(item.split('=',1) for item in stage[0].split()[2:] if '=' in item)
+                if float(metrics['max_abs'])>0 and r['earliest_observed_score_difference'] is None:r['earliest_observed_score_difference']=i
+                if run.returncode and r['earliest_score_budget_failure'] is None:r['earliest_score_budget_failure']=i
         r.update(compared_positions=len(rows),metrics=rows,numerical_passed=numerical,decoded_and_ids_exact=a['generated_ids']==b['generated_ids'] and a['decoded']==b['decoded'],native_eos_completed=b['stop']=='eos' and not b['cap_hit'])
         r['status']='passed' if numerical and r['decoded_and_ids_exact'] and r['native_eos_completed'] else 'failed'
     except Exception as e:
