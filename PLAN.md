@@ -59,6 +59,16 @@ were discarded; only the 10,010,976-byte header was retained and the native
 inspector read no weight payload. This header run did not rehash the whole file
 or tensors; the distinct completed worker readback above supplies that evidence.
 
+The separately gated [linear decoder block PR148](https://github.com/CrispStrobe/CrispEmbed/pull/148)
+passed 33 synthetic original/native stage comparisons and 52 native controls in
+[41976928016](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41976928016).
+The earliest difference was prefill input norm, max absolute error 3.57628e-7
+versus original max magnitude 1.42996; the largest block error was 2.86103e-6.
+Final hidden max errors were 1.90735e-6 for prefill/full-prefix and 1.31131e-6
+for cached decode. These are F32 one-block synthetic data, not checkpoint,
+logit or decoded-output evidence. Full-attention blocks, composition, caches,
+vocabulary projection and original document capture remain open.
+
 The separate [document protocol and harness](https://github.com/CrispStrobe/CrispEmbed/blob/958ff9fd8b386e6f3faaae92b6322a519200cc9a/docs/lighton4b-document-parity-v1.json)
 freezes one public-domain form, empty prompt, cap256 and all-position full-vocabulary
 comparison. The initial and hardened synthetic controls passed at
