@@ -7892,3 +7892,14 @@ batching. Original vLLM BF16 quality/throughput and D-FINE service performance
 remain separate, unmeasured scopes. The optional 256-slot decode graph, GPU path,
 mixed-F16 quality/performance and Q8/Q4 recipes remain unqualified. See
 [the guide](docs/oxr.md) and [actual checks](tests/results/oxr/implementation-validation.json).
+
+### LightOn4B actual BF16 versus quantized first score — 5 November 2026
+
+ActualRef first-position Q8_0/Q4_K comparisons42001979476/42001983230 fail
+unchanged0.002/0.99999: max absolute0.568259001/2.49422884, mean
+0.108710214/0.466762543, RMS0.130495042/0.571912766, cosine
+0.998469710/0.976987541. Reference norm1103.18604; native1078.98657/1238.58728.
+All248,320 scores are finite. Q8 matches original two-ID prefix `<figure`;
+plain Q4_K starts `<table>`. Two-token cap/noEOS is not final decoded parity.
+Full177-row independent-generation panels and original internal attribution
+remain separate; see [exact protocol and receipts](docs/lighton4b-bf16-quant.md).

@@ -113,3 +113,35 @@ comparison: the official SDK documents that historical version labels require
 `v1`, not bare `1`. Exact `v1` requests replace that spelling; no current-version
 fallback or source/hash substitution is permitted. All four initial blocked
 receipts remain preserved and are not numerical failures.
+
+## Actual first-position evidence
+
+Exact-version corrected [Q842001979476](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001979476)
+and [plain Q4_K42001983230](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001983230)
+compare all248,320 actual first-position scores against the authenticated
+original BF16 row. Both are finite and **fail** unchanged numerical gates:
+
+| Candidate | Maximum absolute error | Mean absolute error | RMS | Row cosine | Reference/native norm | Two-token smoke text |
+|---|---:|---:|---:|---:|---:|---|
+| Q8_0 |0.568259001|0.108710214|0.130495042|0.998469710|1103.18604/1078.98657|`<figure`|
+| Q4_K |2.49422884|0.466762543|0.571912766|0.976987541|1103.18604/1238.58728|`<table>`|
+
+Original first two IDs are `[27,17251]`; Q8 matches that prefix, whereas plain
+Q4_K emits `[20353,29]`. Both smokes intentionally cap at two tokens without
+EOS. Earliest observed score difference and numerical failure are position0;
+no original internal trace exists to attribute an earlier operator. Full177
+teacher-forced scores and complete independent generation remain separate.
+Successful workflow completion here means the diagnostic ran, not that parity
+passed. Exact receipts retain [Q8](../tests/results/qwen35-ocr/lightonocr3-4b-q8-firstscore.json)
+and [Q4_K](../tests/results/qwen35-ocr/lightonocr3-4b-q4-firstscore.json) source,
+artifact, row and executable hashes. No reference or model forward was repeated
+by either comparer. The native smoke producer source is
+`fd150b98f488a6884a6e8d8127e7dfb263cab237`.
+
+`tools/ci-heavy/lighton4b_full_compare.py` is prepared for the complete panels.
+It requires both reviewed report and native-receipt digests, an exact admitted
+native receipt tuple, immutable artifact/source/weight checks, original `v1`
+capture and all177 authenticated rows, then actualRef plus complete decoded/EOS
+comparison. It performs no inference, retains large inputs in hosted scratch,
+and rejects empty/unreviewed admission before transfer. The protocol remains
+byte-identical; source/run/weight/capture tuples belong in the separate registry.

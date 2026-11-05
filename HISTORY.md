@@ -20777,3 +20777,14 @@ OvisOCR3's frozen capped-page failure and all old strict LightOnOCR-3-0.8B verdi
 remain recorded. A separate review of complete retained logits finds F16/Q8 clear
 the current owner numerical bars; Q4 does not. Fresh current-source portable
 qualification is still required. See PR138's `docs/lighton08-precision-next.md`.
+
+### 5 November 2026 — Actual LightOn4B BF16/Q8/Q4 first-score diagnostics
+
+Exact-source native smoke41999580781/41999584163 and authenticated original
+BF16 version1 feed actualRef comparisons42001979476/42001983230. Both fail
+strict first-score numerical gates; Q8 preserves the first2 original IDs while
+plain Q4_K changes `<figure` to `<table>`. Full decoded parity remains pending.
+[Receipts and limits](docs/lighton4b-bf16-quant.md) preserve all score/source/
+artifact hashes, earlier missing-six and wrong-version harness failures,
+unchanged thresholds and empty full-native admission. No F32 prerequisite,
+reference recapture, release, alias, default or app-pin change follows.

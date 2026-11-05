@@ -1009,3 +1009,19 @@ pass both actualRef/control methods; see
 [final receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-quant-controls-final.json).
 The earlier41998345877 receipt-binding controls also pass. Superseded41998180454
 and41998220523 were cancelled before execution. Native admission remains empty.
+
+### Actual BF16-versus-native first-position result — 5 November 2026
+
+[Q842001979476](tests/results/qwen35-ocr/lightonocr3-4b-q8-firstscore.json) and
+[plain Q4_K42001983230](tests/results/qwen35-ocr/lightonocr3-4b-q4-firstscore.json)
+compare actual first-position248,320 scores: max errors0.568259001/2.49422884,
+row cosines0.998469710/0.976987541, reference norm1103.18604 and native
+norms1078.98657/1238.58728. Both numerical gates fail at position0. Q8's two
+IDs match original `[27,17251]` (`<figure`); Q4 emits `[20353,29]` (`<table>`).
+Smokes cap2/noEOS; no full decoded qualification follows. Original internal
+stages are absent, so earliest operator is unobserved. Preserve initial
+42000741513/42000808436 missing-six and42001333434/42001338099 provider-version
+failures as harness-only zero-position evidence. Exact `v1` spelling and explicit
+six dependency repair change no score/reference/budget. Full native177-position
+Q842001328483/Q442001333207 remain executing at exactfd150b98 source; full
+comparer is prepared and registry remains empty pending their actual receipts.

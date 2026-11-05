@@ -157,7 +157,7 @@ jobs:
 
       - name: Run ${{ inputs.script }}
         env:
-          GH_TOKEN: ${{ inputs.script == 'tools/ci-heavy/lighton4b_smoke_compare.py' && github.token || '' }}
+          GH_TOKEN: ${{ (inputs.script == 'tools/ci-heavy/lighton4b_smoke_compare.py' || inputs.script == 'tools/ci-heavy/lighton4b_full_compare.py') && github.token || '' }}
         run: |
           read -ra argv <<< "$ARGS"
           echo "runner: $RUNNER_OS/$RUNNER_ARCH  cpus: $(nproc 2>/dev/null || sysctl -n hw.ncpu)  commit: ${GITHUB_SHA::8}  build_mode: $CRISPEMBED_BUILD_MODE"
