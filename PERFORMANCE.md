@@ -7912,3 +7912,25 @@ not precision speedups or a same-case plain-Q4 comparison. Table text differs;
 Arabic's exact text coexists with failed numerical gates. See the
 [mixed review](tests/results/qwen35-ocr/lightonocr3-4b-mixed-calibration/review.json)
 for exact source/weight/artifact hashes and qualification limits.
+
+
+### LightOn4B BF16 vision norm — measured component improvement, decoded negative
+
+All rows below use the same immutable Q4 GGUF/image and original AVX2 BF16
+reference. Ordinary native runs use portable compilation; only the normalization
+alternative changes. Values are maximum absolute error / RMS error.
+
+| Vision normalization | Layer0 | Merged vision | First full logit vector | Independent two-token text |
+| --- | --- | --- | --- | --- |
+| BF16 candidate, norm gates off |0.03125 /0.000781620 |2.46484 /0.0223861 |2.61007 /0.545670 |`<table>` |
+| Separate-affine norm (rejected42024288946) |0.03125 /0.000744555 |2.58984 /0.0199821 |2.67622 /0.591688 |`<table>` |
+| Contracted norm (42028668863) |0.03125 /0.000691054 |1.21094 /0.00973525 |2.38528 /0.560135 |`<table>` |
+
+Original merged/first-logit absolute maxima are5.4375/22.875. Both source-fed
+contracted norms match573,440 original values each and all mean/rstd records
+exactly, including producer raw SHA controls. Merged RMS improves beyond the
+earlier shared-F32 RMS0.0112389; final first-logit RMS still regresses relative
+to the BF16 baseline, and source begins`<figure`. These bounded two-token runs
+do not test full completion/EOS/confidence/document quality. No speed, model
+quality, cross-platform, release or default promotion follows. Initial AVX512
+original-control failure remains retained; source dispatch is explicitly AVX2.

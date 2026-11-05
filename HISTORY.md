@@ -20770,3 +20770,24 @@ BF16 differences. Mean reduction is the bounded earliest unresolved operator.
 The job remains red for preserved old alternatives, with no decoder/default
 promotion; [the full source-fed split](docs/lighton4b-layer0-attribution-results.md)
 retains all negative and exact controls.
+
+
+### 2026-11-05 — LightOn4B first vision norms follow actual original FMA semantics
+
+Source-fed42023264258 reconstructs original layer0 byte-for-byte; the original
+SHAae4fcfbe is independently checked from small retained manifests. Initial
+separate-affine norm A/B42024288946 remains negative. Operator-only42026490991
+then identifies actual PyTorch2.13 contraction, and production-helper42027253266
+matches both original norms/raw SHA values plus all means/rstd entries, preserving
+unset/empty/0 controls. Initial composed42028040544 stops on AVX512 original
+control drift before native execution; corrected original-AVX2-pinned42028668863
+preserves every baseline hash and improves vision merged RMS, but Q4 first-logit
+RMS worsens and both two-token decodes remain wrong`<table>`.
+
+Retained-only selected-dot42030085653 reconstructs the complete original QKV
+array exactly; source eight-register/eight-lane reduction matches all2,378 tested
+positions, including every171 native difference. Double/serial alternatives
+remain different. Full operator/runtime linear and decoded proof remain open.
+All complete small receipts are under`tests/results/qwen35-ocr/`; large raw arrays
+remain remote. The verified norm correction is default-off on the vision branch;
+this qualification handoff changes evidence only, not runtime or releases.

@@ -161,5 +161,11 @@
   "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42023264258",
   "artifact_id": 13413220648,
   "artifact_sha256": "983c266c07df46b5336ae518c7f144114ae28db3d1de8be702a901b9dcfd8e9b",
-  "review_scope": "Small metrics extracted from complete hosted logs; large raw arrays retained remotely."
+  "review_scope": "Small metrics extracted from complete hosted logs; large raw arrays retained remotely.",
+  "independent_original_layer0_byte_control": {
+    "review_method": "Small retained42024288946 manifest range retrieval; compare reconstructed SHA to original473c5fc55 frozen prefill receipt",
+    "original_sha256": "ae4fcfbe1debb31e70dffca3be7cf36d7998228b40cebd1914758b50308c28f0",
+    "reconstructed_sha256": "ae4fcfbe1debb31e70dffca3be7cf36d7998228b40cebd1914758b50308c28f0",
+    "bytes_each": 2293760
+  }
 }

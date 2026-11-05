@@ -1180,3 +1180,49 @@ cause to mean reduction before rsqrt. Pinned Torchcf30153c4c13 sum/mean/AVX2 sou
 motivates test-only grouped-order alternatives42029945232/215f463bc, with no
 production RMS change until actual mean/output comparison. All prior strict and
 decoded rejections remain. See [the completed operator split](docs/lighton4b-layer0-attribution-results.md#source-meanscale-isolation-closes-rsqrt-and-affine).
+
+
+### LightOn4B verified vision math, bounded decoded negative — 5 November 2026
+
+The vision feature branch retains all default-off alternatives.
+[Source-header42026490991](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42026490991)
+atd7415c4db isolates compiler contraction: original PyTorch2.13 BF16 moments
+and affine code compiled with `-ffp-contract=fast` matches both frozen norms,
+while `off` reproduces the separate-affine negative.
+[Actual production-helper42027253266](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42027253266)
+at9c11a924c then matches both573,440-value norms and all1,120 mean/rstd entries
+per norm exactly. Unset/empty/0 retain prior bytes. Independent small-manifest
+range review confirms identical SHA values, including signed-zero bits; no large
+raw arrays were downloaded for review. See the
+[operator attribution](tests/results/qwen35-ocr/lightonocr3-4b-vision-norm-operator-attribution.json)
+and [production controls](tests/results/qwen35-ocr/lightonocr3-4b-vision-fma-norm-operators.json).
+
+Initial[42028040544](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42028040544)
+atfd102fa25 fails safely before native candidate/ordinary inference: an AVX512
+runner changes reconstructed original layer0 at3,965 values/max0.015625. Its
+[negative receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-fma-norm-avx512-initial.json)
+remains. Corrected[42028668863](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42028668863)
+at6c3cb6ed9 explicitly pins original AVX2 ATen/oneDNN/MKL dispatch, preserves
+exact original layer0 and both source-fed norms, and passes all frozen portable
+native baseline hashes. Contracted norm reduces layer0 RMS0.000781620→0.000691054
+and merged RMS0.0223861→0.00973525 (max2.46484→1.21094), below legacy shared
+F32 merged RMS0.0112389. Q4 first-logit RMS still worsens0.545670→0.560135
+despite max2.61007→2.38528. Both independent ordinary arms decode`<table>`
+(IDs20353,29), versus original`<figure` prefix.
+[Complete A/B](tests/results/qwen35-ocr/lightonocr3-4b-vision-fma-norm-ab.json)
+retains magnitudes, controls and source/artifact pins. This is a verified operator
+fix/component improvement with negative decoded selection, not model qualification
+or a cross-platform claim. Runtime defaults, release and app pin stay unchanged.
+
+The next independent boundary is source-fed QKV.
+[Retained-only42030085653](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42030085653)
+at403d94e21 reconstructs all1,720,320 original QKV values byte-exactly. Original
+eight-register/eight-lane reduction matches every171 native difference plus2,207
+controls (2,378 total) for both FMA and separate mul/add. Double variants still
+differ68/71 and serial FMA78; generic extra precision is not source math.
+[Selected receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-selected-dot.json)
+is selected-only evidence, not full-operator or decoded proof. Next: preserve
+the gated verified norm improvement in existing PR155, then gated source-order
+linear implementation and full source-fed operator validation before more ordinary
+smokes. Large vectors remain in pinned remote artifacts. This commit imports
+evidence only, with no runtime source changes.
