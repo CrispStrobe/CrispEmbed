@@ -1341,3 +1341,5 @@ inside its ISA namespace. Vectorized ISA type remains correct. The
 [initial receipt](tests/results/qwen35-ocr/lightonocr3-4b-softmax-vector-initial.json)
 is preserved. Correct only qualifiers and repeat the same bounded job; no
 algorithm, flags, source arrays, runtime or quality claim changes.
+
+- Softmax source attribution: targeted [42052003211](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42052003211), source `13909256012d8e85483a121e1c9c26db884dc3aa`, passed original BF16-input and F32-input controls. Installed AVX2 vector-header helper matches all 5,017,600 F32/BF16 probabilities and 8,960 reciprocals bit-exact for strict, contracted and fast-math controls; DEFAULT variants remain negative (36/62 BF16 differences). AVX2 softmax exp differs from standalone Torch.exp at 493,502 values (max 5.96e-8); retain exact vector-exp/reduction semantics for the next gated production correction. Artifact `13426439836` is retained for 90 days. No runtime or decoded-quality promotion. Receipt: `tests/results/qwen35-ocr/lightonocr3-4b-softmax-vector-source.json`.
