@@ -188,12 +188,18 @@ def main(argv=None):
         (a.output/'rendered-prompt.txt').write_text(rendered)
         report.update(prepared_inputs=prepared,processor_class=type(processor).__module__+'.'+type(processor).__name__,
             image_processor_class=type(processor.image_processor).__module__+'.'+type(processor.image_processor).__name__,
-            image_processor_backend=getattr(processor.image_processor,'backend',None),actual_grid=[[1,20,28]])
+            image_processor_backend=getattr(processor.image_processor,'backend',None),actual_grid=[[1,20,28]],
+            image_processor_source_sha256=digest(inspect.getfile(type(processor.image_processor))),
+            source_metadata_sha256=proof['source_metadata_verified'])
         if a.prepare_only:report['status']='prepared';stage('prepared-without-checkpoint-or-forward');return 0
         stage('acquire-verify-checkpoint')
         if a.model_dir is None:model_dir=Path(snapshot_download(policy.MODEL,revision=policy.REVISION,
             allow_patterns=list(converter.lighton4b_metadata_files())+['model.safetensors'],cache_dir=os.environ['HF_HUB_CACHE'],token=False))
         report['checkpoint']=converter.verify_lighton4b_checkpoint(model_dir/'model.safetensors',config)
+        if a.model_dir is None:
+            # Flush only this task-owned downloaded blob, so freshly dirty file
+            # cache is not confused with unreclaimable model RAM admission.
+            with(model_dir/'model.safetensors').open('rb')as stream:os.fsync(stream.fileno())
         require(memory()['available_bytes']>=protocol['guards']['minimum_available_ram_bytes'],'BF16 memory admission failed after checkpoint acquisition')
         stage('load-official-bf16-model');load_started=time.monotonic()
         model=Qwen3_5ForConditionalGeneration.from_pretrained(model_dir,local_files_only=True,trust_remote_code=False,

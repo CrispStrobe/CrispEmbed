@@ -1,0 +1,3 @@
+# Separate original BF16 processor/generation environment. Historical GDN pins stay unchanged.
+-r lighton4b-gdn-requirements.txt
+torchvision==0.28.0+cpu

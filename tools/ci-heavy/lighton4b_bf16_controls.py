@@ -16,7 +16,7 @@ r['source_sha256']={p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest()for p in(
 def run(label,args):
     with(out/(label+'.log')).open('w')as stream:subprocess.run([str(x)for x in args],cwd=ROOT,stdout=stream,stderr=subprocess.STDOUT,check=True)
 try:
-    run('dependencies',[sys.executable,'-m','pip','install','--no-cache-dir','--report',out/'pip-resolution.json','-r',ROOT/'tools/lighton4b-gdn-requirements.txt'])
+    run('dependencies',[sys.executable,'-m','pip','install','--no-cache-dir','--report',out/'pip-resolution.json','-r',ROOT/'tools/lighton4b-bf16-requirements.txt'])
     run('pip-check',[sys.executable,'-m','pip','check'])
     run('synthetic-controls',[sys.executable,ROOT/'tests/test_lighton4b_bf16_freegen.py','-v'])
     run('official-processor',[sys.executable,ROOT/'tools/lighton4b_bf16_freegen.py','--source-sha',r['source_sha'],
