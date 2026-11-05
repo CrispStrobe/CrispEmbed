@@ -135,3 +135,19 @@ feeds exact original scales to the ordinary multiplication/affine path. This
 separates reduction, reciprocal-square-root and multiply/rounding effects without
 another quantized candidate transfer or any expanded decoder execution. Original
 mean/scale inputs are test-only; no production source consumes reference vectors.
+
+Source-fed42028839817 atbdefd15c4 completes exact original norm reconstruction.
+Feeding original means to native F32 sqrt/reciprocal reproduces all154 scales and
+394,240 F32/BF16 outputs bit-exactly; exact source scales also reproduce all
+outputs. F64-rsqrt instead leaves three BF16 differences/max0.00390625. This
+isolates the remaining local discrepancy to mean reduction before rsqrt. Actual
+Torch source commit iscf30153c4c131c8164ee7798e5022d810682e2cb, CPU capabilityAVX2.
+The job exits red for preserved rejected sequential/precise alternatives while
+retaining completed source-fed controls.
+
+A test-only successor reconstructs the pinned CPU `SumKernel.cpp` inner reduction
+with eight- and sixteen-lane/four-stream/sixteen-row grouping, separately from
+F64-sum→F32-sum→F32-mean rounding. It authenticates the exact Torch sum/mean/vec
+source hashes and compares actual mean vectors before full norm outputs. No
+original values are embedded in the reconstruction and no production RMS path
+changes until this bounded source-derived alternative is measured.

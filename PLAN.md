@@ -1160,3 +1160,12 @@ layer/cache-mode controls pass. Preserve diagnostic wrapper's missing norm-row
 exit aggregation separately. Next bounded source mean/scale isolation requires
 exact original norm reconstruction, then source-fed native rsqrt/affine variants;
 no new full decoder, model transfer or default change before that evidence.
+
+Source mean/scale isolation42028839817/bdefd15c4 is complete: exact original
+norm reconstruction and source-mean native F32 sqrt/reciprocal yield bit-exact
+154 scales plus394,240 F32/BF16 outputs; source-scale affine is also exact.
+F64-rsqrt is negative (three BF16 differences/max0.00390625). Earliest local
+cause is now bounded to mean reduction. The source-derived test-only successor
+compares pinned Torchcf30153c4c13 eight-/sixteen-lane inner-sum grouping and
+separate sum→mean rounding before any production RMS change or decoder expansion.
+Old alternatives and their red exit/strict flags remain retained.

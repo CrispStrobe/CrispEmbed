@@ -5,6 +5,28 @@
 #include <fstream>
 #include <iterator>
 #include <map>
+// Diagnostic scalar reconstruction of the pinned Torch CPU inner-sum order.
+// No reference values are embedded; 8/16 lanes test the two source vector widths.
+static float diagnostic_tree_mean(const float * input, int lanes) {
+    float partial[4][16]{};
+    const int rows = 2560 / (4 * lanes);
+    for (int first = 0; first < rows; first += 16) {
+        float block[4][16]{};
+        for (int row = first; row < std::min(rows, first + 16); ++row)
+            for (int stream = 0; stream < 4; ++stream)
+                for (int lane = 0; lane < lanes; ++lane) {
+                    const float value = input[(row * 4 + stream) * lanes + lane];
+                    block[stream][lane] += value * value;
+                }
+        for (int stream = 0; stream < 4; ++stream)
+            for (int lane = 0; lane < lanes; ++lane) partial[stream][lane] += block[stream][lane];
+    }
+    for (int stream = 1; stream < 4; ++stream)
+        for (int lane = 0; lane < lanes; ++lane) partial[0][lane] += partial[stream][lane];
+    float sum = 0;
+    for (int lane = 0; lane < lanes; ++lane) sum += partial[0][lane];
+    return sum / 2560.0f;
+}
 static int run(int argc, char ** argv) {
     if (argc != 4 && argc != 5 && argc != 7) return 2;
     // RNE tie cases distinguish BF16 from truncation and FP16 conversion.
@@ -76,19 +98,34 @@ static int run(int argc, char ** argv) {
                 return bool(f);
             };
             if (!read(argv[5], source_means) || !read(argv[6], source_scales)) return 2;
-            for (const char * variant : { "mean-f32-sqrt", "mean-f64-rsqrt", "scale" }) {
-                std::vector<float> values(input.size()), scales(154);
+            for (const char * variant :
+                 { "mean-f32-sqrt", "mean-f64-rsqrt", "scale", "sum-round-mean", "sum-tree8", "sum-tree16" }) {
+                std::vector<float> values(input.size()), scales(154), means(154);
                 for (int token = 0; token < 154; ++token) {
-                    const float denominator = source_means[token] + 1e-6f;
+                    const size_t base = size_t(token) * 2560;
+                    float mean = source_means[token];
+                    const std::string kind(variant);
+                    if (kind == "sum-round-mean") {
+                        double sum = 0;
+                        for (int lane = 0; lane < 2560; ++lane) sum += double(input[base + lane] * input[base + lane]);
+                        mean = float(sum) / 2560.0f;
+                    } else if (kind == "sum-tree8" || kind == "sum-tree16") {
+                        mean = diagnostic_tree_mean(input.data() + base, kind == "sum-tree8" ? 8 : 16);
+                    }
+                    means[token] = mean;
+                    const float denominator = mean + 1e-6f;
                     const float scale = std::string(variant) == "scale" ? source_scales[token]
                                         : std::string(variant) == "mean-f64-rsqrt"
                                             ? float(1.0 / std::sqrt(double(denominator)))
                                             : 1.0f / std::sqrt(denominator);
                     scales[token] = scale;
-                    const size_t base = size_t(token) * 2560;
                     for (int lane = 0; lane < 2560; ++lane)
                         values[base + lane] = input[base + lane] * scale * (1.0f + norm[lane]);
                 }
+                std::ofstream mean_file(std::string(argv[3]) + "/norm-source-" + variant + ".mean.f32",
+                                        std::ios::binary);
+                mean_file.write(reinterpret_cast<const char *>(means.data()), means.size() * 4);
+                if (!mean_file) return 4;
                 std::ofstream scale_file(std::string(argv[3]) + "/norm-source-" + variant + ".scale.f32",
                                          std::ios::binary);
                 scale_file.write(reinterpret_cast<const char *>(scales.data()), scales.size() * 4);

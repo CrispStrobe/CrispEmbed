@@ -63,6 +63,16 @@ def main():
         x=np.fromfile(retained/'prefill.input.f32',dtype='<f4').reshape(1,154,2560)
         frozen=np.fromfile(retained/'prefill.layer.0.f32',dtype='<f4').reshape(1,154,2560)
         report['input']={'manifest_sha256':ORIGINAL_REPORT_SHA,'sha256':digest(x.tobytes()),'shape':list(x.shape)}
+        if args.norm_source_isolation:
+            require(torch.version.git_version=='cf30153c4c131c8164ee7798e5022d810682e2cb','original Torch source commit differs')
+            report['torch_mean_source_sha256']={}
+            for path,expected in {
+                'aten/src/ATen/native/cpu/SumKernel.cpp':'9b88aa14e626dd708e50816a5ca89acfc66798226dc82501cf1857caebe96f95',
+                'aten/src/ATen/native/ReduceOps.cpp':'5a844156d01e77864ec6f04ed3a498d261760cc5d4c6d92c0aa4e9ae36824236',
+                'aten/src/ATen/cpu/vec/vec256/vec256_float.h':'3f51eb28f65e46258f57795893e9f2f1ade127b749406bc28fbf08109ebed4c5'}.items():
+                with urllib.request.urlopen(f'https://raw.githubusercontent.com/pytorch/pytorch/{torch.version.git_version}/{path}',timeout=30)as response:data=response.read(2**20)
+                require(digest(data)==expected,'original Torch reduction/rsqrt source differs')
+                report['torch_mean_source_sha256'][path]=expected
         config=Config(**json.loads((policy.FIXTURE/'config.json').read_text())['text_config'])
         if not args.bf16_only:run('configure',['cmake','-S',ROOT,'-B',scratch/'build','-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_CUDA=OFF','-DGGML_VULKAN=OFF'])
         if not args.bf16_only:run('build',['cmake','--build',scratch/'build','--target','lighton4b-layer0-source-fed','--parallel','2'])
@@ -203,9 +213,11 @@ def main():
                         'byte_exact':digest(actual.tobytes())==digest(target.tobytes()),**ref.metrics(actual,target,np)})
             if args.norm_source_isolation:
                 report['norm_source_isolation']=[]
-                for variant in ('mean-f32-sqrt','mean-f64-rsqrt','scale'):
+                for variant in ('mean-f32-sqrt','mean-f64-rsqrt','scale','sum-round-mean','sum-tree8','sum-tree16'):
                     actual_scales=np.fromfile(folder/f'norm-source-{variant}.scale.f32',dtype='<f4').reshape(scales.shape)
-                    row={'variant':variant,'scale_byte_exact':digest(actual_scales.tobytes())==digest(scales.tobytes()),
+                    actual_means=np.fromfile(folder/f'norm-source-{variant}.mean.f32',dtype='<f4').reshape(scales.shape)
+                    row={'variant':variant,'mean_byte_exact':digest(actual_means.tobytes())==digest(means.numpy().tobytes()),
+                        'mean_metrics':ref.metrics(actual_means,means.numpy().reshape(scales.shape),np),'scale_byte_exact':digest(actual_scales.tobytes())==digest(scales.tobytes()),
                         'scale_metrics':ref.metrics(actual_scales,scales,np),'outputs':[]}
                     for dtype,target in (('f32',source_f32['input_norm']),('bf16',bf16['input_norm'])):
                         actual=np.fromfile(folder/f'norm-source-{variant}.{dtype}.f32',dtype='<f4').reshape(target.shape)
