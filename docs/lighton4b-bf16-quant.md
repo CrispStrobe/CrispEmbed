@@ -78,3 +78,19 @@ producer and changed receipt-digest negatives. The
 retains exact hashes. Earlier41998345877 independently passes receipt binding
 before the Q4 recipe-label amendment. Superseded41998180454 and41998220523
 were cancelled before execution. No actual native producer was admitted.
+
+A separate bounded first-score diagnostic is prepared in
+`tools/ci-heavy/lighton4b_smoke_compare.py`. Dispatch existing `heavy-cpu.yml`
+with explicit `--recipe q8_0` or `--recipe q4_k`, `--native-run`,
+`--native-source`, `--artifact-id`, `--artifact-sha256` and
+`--receipt-sha256` arguments after the successful native smoke receipt is
+reviewed. It authenticates exact run/attempt/source, artifact digest, native
+receipt and corresponding immutable candidate weight hash before reading one
+native row. Read-only provider credentials retrieve only original version1's
+993,280-byte first BF16 score row, whose frozen SHA is independently verified.
+No original forward is repeated and no model is acquired by this comparer.
+The unchanged actualRef report preserves raw errors/magnitudes and native
+partial decoded text. One-position evidence never admits a177-position producer
+or qualifies independent full decoded parity. Actions access is read-only and
+its token is supplied only for this exact script selector; no provider write
+operation is implemented.
