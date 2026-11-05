@@ -32,3 +32,21 @@ array I/O, not a decoder-only measurement. After a measured bottleneck, prepare
 one independently gated candidate (for example reusable graph/backend or bounded
 quantized execution) and run the same paired outputs/resources. No full-panel
 replacement or speed-based quality promotion is authorized by profiling alone.
+
+## Existing smoke measurements, independently reviewed
+
+The small `native-document.json` members were retrieved by bounded ZIP ranges
+and CRC-checked, without downloading110MB stage archives. Both use source
+fd150b98f488a6884a6e8d8127e7dfb263cab237,4 threads,154 prompt tokens,
+140 image tokens, one teacher position and two generated tokens:
+
+| Recipe/run | GNU wall seconds | User/system seconds | Peak RSS bytes |
+| --- | ---: | ---: | ---: |
+| Q4/41999584163 |133.35 |129.64/42.75 |4516601856 |
+| Q8/41999580781 |127.69 |116.85/50.78 |6316945408 |
+
+The [resource receipt](../tests/results/qwen35-ocr/lightonocr3-4b-smoke-resources.json)
+binds original small-report hashes. These separate-host end-to-end observations
+include file loading and stage output; they establish no phase bottleneck or
+paired optimization improvement. Both capped smoke outputs remain distinct from
+complete EOS/document quality.
