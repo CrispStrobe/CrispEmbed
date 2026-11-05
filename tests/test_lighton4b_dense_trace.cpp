@@ -4,6 +4,9 @@
 #include "qwen35_math.h"
 #include "ggml-cpu.h"
 #include <atomic>
+#ifdef CRISPEMBED_TRACE_SHARED
+#include <dlfcn.h>
+#endif
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -15,23 +18,44 @@ struct ggml_compute_params;
 static const float *expected_a = nullptr, *expected_b = nullptr;
 static std::atomic<int> vec_calls{ 0 }, llama_calls{ 0 }, llama_used{ 0 }, operand_matches{ 0 };
 extern "C" void __real_ggml_vec_dot_f32(int, float *, size_t, const float *, size_t, const float *, size_t, int);
-extern "C" void __wrap_ggml_vec_dot_f32(int n, float * s, size_t bs, const float * x, size_t bx, const float * y,
-                                        size_t by, int nrc) {
+#ifdef CRISPEMBED_TRACE_SHARED
+#define TRACE_VEC ggml_vec_dot_f32
+#else
+#define TRACE_VEC __wrap_ggml_vec_dot_f32
+#endif
+extern "C" void TRACE_VEC(int n, float * s, size_t bs, const float * x, size_t bx, const float * y, size_t by,
+                          int nrc) {
     ++vec_calls;
+#ifdef CRISPEMBED_TRACE_SHARED
+    static auto real = reinterpret_cast<decltype(&__real_ggml_vec_dot_f32)>(dlsym(RTLD_NEXT, "ggml_vec_dot_f32"));
+    if (!real) std::abort();
+    real(n, s, bs, x, bx, y, by, nrc);
+#else
     __real_ggml_vec_dot_f32(n, s, bs, x, bx, y, by, nrc);
+#endif
 }
 #ifdef CRISPEMBED_TRACE_LLAMAFILE
 extern "C" bool __real_llamafile_sgemm(const ggml_compute_params *, int64_t, int64_t, int64_t, const void *, int64_t,
                                        const void *, int64_t, void *, int64_t, int, int, int);
-extern "C" bool __wrap_llamafile_sgemm(const ggml_compute_params * p, int64_t m, int64_t n, int64_t k, const void * a,
-                                       int64_t lda, const void * b, int64_t ldb, void * c, int64_t ldc, int at, int bt,
-                                       int ct) {
+#ifdef CRISPEMBED_TRACE_SHARED
+#define TRACE_LLAMA llamafile_sgemm
+#else
+#define TRACE_LLAMA __wrap_llamafile_sgemm
+#endif
+extern "C" bool TRACE_LLAMA(const ggml_compute_params * p, int64_t m, int64_t n, int64_t k, const void * a, int64_t lda,
+                            const void * b, int64_t ldb, void * c, int64_t ldc, int at, int bt, int ct) {
     ++llama_calls;
     if (m == 9216 && n == 2 && k == 2560 && lda == 2560 && ldb == 2560 && at == GGML_TYPE_F32 && bt == GGML_TYPE_F32 &&
         expected_a && expected_b && !std::memcmp(a, expected_a, size_t(9216) * 2560 * 4) &&
         !std::memcmp(b, expected_b, size_t(2) * 2560 * 4))
         ++operand_matches;
+#ifdef CRISPEMBED_TRACE_SHARED
+    static auto real = reinterpret_cast<decltype(&__real_llamafile_sgemm)>(dlsym(RTLD_NEXT, "llamafile_sgemm"));
+    if (!real) std::abort();
+    const bool used = real(p, m, n, k, a, lda, b, ldb, c, ldc, at, bt, ct);
+#else
     const bool used = __real_llamafile_sgemm(p, m, n, k, a, lda, b, ldb, c, ldc, at, bt, ct);
+#endif
     if (used) ++llama_used;
     return used;
 }

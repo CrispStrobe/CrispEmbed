@@ -117,6 +117,9 @@ class SourceControls(unittest.TestCase):
     def test_current_workflow_routes_only_exact_selector_to_separate_permissions(self):
         workflow = (ROOT / ".github/workflows/heavy-cpu.yml").read_text()
         ordinary, selected = workflow.split("  ocr_evidence:\n", 1)
+        # Preserve the complete historical stdlib-only job span; the newer
+        # explicitly guarded native-attribution job has its own controls below.
+        selected = selected.split("  retained-block21:\n", 1)[0]
         self.assertIn("if: inputs.script != '" + evidence.SELECTOR + "'", ordinary)
         self.assertIn("if: inputs.script == '" + evidence.SELECTOR + "'", selected)
         self.assertNotIn("actions: read", ordinary)
@@ -133,6 +136,22 @@ class SourceControls(unittest.TestCase):
         self.assertNotIn("KAGGLE", selected)
         self.assertNotIn("pip install", selected)
         self.assertIn("cancel-in-progress: false", workflow)
+
+    def test_native_attribution_job_remains_separately_closed(self):
+        workflow = (ROOT / ".github/workflows/heavy-cpu.yml").read_text()
+        ordinary = workflow.split("  ocr_evidence:\n", 1)[0]
+        retained = workflow.split("  retained-block21:\n", 1)[1]
+        selectors = ("lighton4b_decoder_attribution.py", "lighton4b_decoder_upstream.py", "lighton4b_dense_trace.py")
+        expected = "    if: " + " || ".join("inputs.script == 'tools/ci-heavy/" + name + "'" for name in selectors)
+        self.assertIn(expected, retained)
+        for name in selectors:
+            self.assertIn("inputs.script != 'tools/ci-heavy/" + name + "'", ordinary)
+        self.assertIn("      contents: read\n      actions: read\n", retained)
+        self.assertIn("python -m pip install -r tools/lighton4b-gdn-requirements.txt", retained)
+        self.assertIn("run-id: 41979168300", retained)
+        self.assertIn("run-id: 41981848201", retained)
+        for forbidden in ("secrets.", "HF_TOKEN", "KAGGLE", "inputs.pip", "inputs.args"):
+            self.assertNotIn(forbidden, retained)
 
     def test_api_authentication_is_not_forwarded_on_redirects(self):
         request = evidence.api_request("/actions/runs/41810161887", "dummy")

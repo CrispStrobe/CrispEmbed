@@ -103,6 +103,10 @@ def execute():
             if re.match(r'(GGML_(NATIVE|AVX|AVX2|AVX512|FMA|LLAMAFILE|BLAS)|CRISPEMBED_NATIVE):',line)]
         command('native',[binary,scratch/'weights.gguf',scratch/'inputs.gguf',out])
         report['native_stdout']=(out/'native.log').read_text().replace(str(ROOT),'[repository]').replace(str(scratch),'[scratch]')
+        route=re.search(r'project_vec_calls=(\d+) project_llama_calls=(\d+) project_llama_used=(\d+) exact_operand_calls=(\d+)',report['native_stdout'])
+        if not route:raise ValueError('native route receipt missing')
+        vec,llama,used,matched=map(int,route.groups());report['observed_route']={'vec_calls':vec,'llama_calls':llama,'llama_used':used,'exact_operand_calls':matched}
+        if not (used>0 and matched==llama and vec==0):raise ValueError('exact native llamafile route not observed; trace remains unproven')
         actual=np.fromfile(out/'project.f32',dtype='<f4').reshape(gold.shape)
         report['native_projection_reproduced_bit_exact']=actual.tobytes()==native_gold.tobytes()
         if not report['native_projection_reproduced_bit_exact']:raise ValueError('native retained projection anchor changed')
@@ -125,7 +129,10 @@ def execute():
                 'scope':'Fixed2560-width native eight-lane recurrence reconstruction, not internal Torch GEMM partial sums.'})
         report['partial_traces']=trace
         dump=scratch/'disassembly.txt'
-        with dump.open('w') as stream:subprocess.run(['objdump','-d','--demangle',str(binary)],stdout=stream,check=True)
+        libraries=list((scratch/'build').rglob('libggml-cpu.so'))
+        native_object=libraries[0] if len(libraries)==1 else binary
+        report['native_arithmetic_object_sha256']=sha(native_object)
+        with dump.open('w') as stream:subprocess.run(['objdump','-d','--demangle',str(native_object)],stdout=stream,check=True)
         lines=dump.read_text().splitlines();snippets=[];active=False
         for line in lines:
             if line.endswith('>:'):active=('tinyBLAS<8' in line or 'ggml_vec_dot_f32' in line)
