@@ -941,6 +941,8 @@ Corrected atomic owner [41973787198](https://github.com/CrispStrobe/CrispEmbed/a
 shared still-image processor and2560-wide image-prefill/positions behind a new
 default-off gate. Existing shared engine sources and historical closures remain
 unchanged. [Component scope](docs/lighton4b-image-compose.md) records the exact
-source and1024-patch limit. Model-free hosted controls are prepared; actual native
-processor/vision arrays, quantized full inference/logits and EOS parity remain
-open. No Q8/Q4 qualification or public model admission follows from composition.
+source and1024-patch limit. Actual retained-original pixel replay41999219551 is
+bit-exact on all860,160 elements;45 hosted component controls pass. Continue at
+vision: native vision-stage arrays/errors, quantized full inference/logits and
+EOS parity remain open. Preserve both initial provider-import failure receipts.
+No Q8/Q4 qualification or public model admission follows from composition.

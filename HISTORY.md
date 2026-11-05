@@ -20680,3 +20680,17 @@ OvisOCR3's frozen capped-page failure and all old strict LightOnOCR-3-0.8B verdi
 remain recorded. A separate review of complete retained logits finds F16/Q8 clear
 the current owner numerical bars; Q4 does not. Fresh current-source portable
 qualification is still required. See PR138's `docs/lighton08-precision-next.md`.
+
+
+### 5 November2026 — LightOn4B native preprocessing matches retained original
+
+Actual hosted41999219551 at5f0ca990f authenticates original BF16 capture
+07543dcc80eb and all five prepared-input members, then processes the unchanged
+frozen simple-form image through native C++. All860,160[560,1536] values are
+bit-exact (max/mean/RMS error0, cosine1, L2 magnitudes831.4008051587742), with
+exact[1,20,28] grid and45 positive model-free controls. The observed original
+processor uses the torchvision backend. No checkpoint transfer/model forward or
+original rerun occurred; decoded Q8/Q4 parity remains open. The
+[reviewed receipt](tests/results/qwen35-ocr/lightonocr3-4b-preprocess-replay.json)
+retains exact source/input hashes. Initial41998232116/41998761159 provider import
+failures remain archived; the second identifies the undeclared`six` dependency.
