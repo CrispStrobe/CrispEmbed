@@ -78,7 +78,7 @@ concurrency:
 
 jobs:
   run:
-    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_attribution.py'
+    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_attribution.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_upstream.py'
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 350
     env:
@@ -566,7 +566,7 @@ jobs:
           if-no-files-found: warn
 
   retained-block21:
-    if: inputs.script == 'tools/ci-heavy/lighton4b_decoder_attribution.py'
+    if: inputs.script == 'tools/ci-heavy/lighton4b_decoder_attribution.py' || inputs.script == 'tools/ci-heavy/lighton4b_decoder_upstream.py'
     permissions:
       contents: read
       actions: read
@@ -588,18 +588,19 @@ jobs:
           run-id: 41979168300
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/retained-decoder
-      - name: Replay only retained block21 boundaries
+      - name: Replay only exact retained single-block boundaries
         env:
           CRISPEMBED_BUILD_MODE: portable
           HEAVY_OUT: ${{ runner.temp }}/decoder-attribution-out
           HEAVY_SCRATCH: ${{ runner.temp }}/decoder-attribution-scratch
           RETAINED_DECODER: ${{ runner.temp }}/retained-decoder
+          ATTRIBUTION_SCRIPT: ${{ inputs.script }}
         run: |
           mkdir -p "$HEAVY_OUT" "$HEAVY_SCRATCH"
-          python tools/ci-heavy/lighton4b_decoder_attribution.py
+          python "$ATTRIBUTION_SCRIPT"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: lighton4b-retained-block21-${{ github.run_id }}
+          name: lighton4b-retained-attribution-${{ github.run_id }}
           path: ${{ runner.temp }}/decoder-attribution-out/
           retention-days: 90

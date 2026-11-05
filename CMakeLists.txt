@@ -1579,6 +1579,9 @@ target_link_libraries(test-ovisocr2-ffn PRIVATE crispembed-qwen35-delta crispemb
 add_executable(test-qwen35-decoder tests/test_qwen35_decoder.cpp)
 target_link_libraries(test-qwen35-decoder PRIVATE crispembed-qwen35-delta crispembed-core)
 
+add_executable(test-lighton4b-decoder-upstream tests/test_lighton4b_decoder_upstream.cpp)
+target_link_libraries(test-lighton4b-decoder-upstream PRIVATE crispembed-qwen35-delta crispembed-core)
+
 add_executable(test-lighton4b-decoder-attribution tests/test_lighton4b_decoder_attribution.cpp)
 target_link_libraries(test-lighton4b-decoder-attribution PRIVATE crispembed-qwen35-delta crispembed-core)
 
