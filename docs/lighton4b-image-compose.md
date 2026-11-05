@@ -11,6 +11,11 @@ The pinned source is `lightonai/LightOnOCR-3-4B` revision
 in `tests/fixtures/lightonocr3-4b-source/processor_config.json` and
 `preprocessor_config.json`. The current native1024-patch bound remains; original
 max-pixel metadata is not a qualification of all original image sizes.
+The processor config names `Qwen2VLImageProcessor`, while the preprocessor config
+names `Qwen2VLImageProcessorFast`. This component reuses native torchvision-style
+uint8 bicubic. The actual original AutoProcessor implementation and resized/pixel
+arrays must be observed before claiming processor parity; metadata alone does
+not resolve slow/fast selection.
 
 All paths require `CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE=1` and
 `CRISPEMBED_QWEN35_OCR=1`; payload-backed vision additionally requires the owner
