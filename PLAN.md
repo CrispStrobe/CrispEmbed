@@ -934,3 +934,13 @@ Active bounded lane `feat/lighton4b-model-owner-20261105` stacks exact PR145 `88
 Initial hosted owner run [41973459077](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41973459077) builds successfully and runs5281 controls but fails: the new test incorrectly treated literal `false` as off, contrary to the unchanged shared helper contract (only unset, empty and literal0 are off). Correct the test to exercise unset/empty/0; preserve the runtime gate semantics and the negative run. No model payload or inference occurred.
 
 Corrected atomic owner [41973787198](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41973787198) at `8ea8f4d03` passes5281 header-derived controls and36 protocol/closure controls. Independent small-artifact review verifies12 recorded source digests, exact723-row schema hash,426/297 partition,197 protected vision vectors, inherited PR144/145 component identity and the control census. [Scope/evidence](docs/lighton4b-model-owner.md) and [receipt](tests/results/qwen35-ocr/lightonocr3-4b-model-owner.json) retain initial41973459077. Borrowed metadata only; no payload-backed native model, format5 admission or decoded parity. Draft stacked PR146 stays unmerged pending checks.
+
+### LightOn4B image composition — 5 November
+
+`feat/lighton4b-image-compose-20261105` composes the PR146 mapped vision geometry,
+shared still-image processor and2560-wide image-prefill/positions behind a new
+default-off gate. Existing shared engine sources and historical closures remain
+unchanged. [Component scope](docs/lighton4b-image-compose.md) records the exact
+source and1024-patch limit. Model-free hosted controls are prepared; actual native
+processor/vision arrays, quantized full inference/logits and EOS parity remain
+open. No Q8/Q4 qualification or public model admission follows from composition.
