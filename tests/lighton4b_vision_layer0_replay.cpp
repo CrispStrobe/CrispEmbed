@@ -65,8 +65,12 @@ static int run(int argc, char ** argv) {
     emit("native.norm2", value);
     project("up", w.up, w.up_bias, width);
     value = read("source.up", tokens * 4096);
+    const bool source_gelu =
+        core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2") && source_avx2_softmax_supported() && finite(value);
     for (float & x : value)
-        x = lighton4b_bf16(0.5f * x * (1.0f + std::tanh(0.7978845608028654f * (x + 0.044715f * x * x * x))));
+        x = lighton4b_bf16(source_gelu
+                               ? lighton4b_avx2_math::gelu(x)
+                               : 0.5f * x * (1.0f + std::tanh(0.7978845608028654f * (x + 0.044715f * x * x * x))));
     emit("native.activation", value);
     project("down", w.down, w.down_bias, 4096);
     return 0;

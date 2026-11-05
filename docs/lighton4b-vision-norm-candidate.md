@@ -73,3 +73,49 @@ records exact source ZIP preservation through3 February2027 and actual runtime
 hashes. A separate ordinary Q4 smoke now isolates these vision corrections with
 the decoder candidate explicitly off; operator success does not establish decoded
 quality, and every runtime gate remains off by default.
+
+The later attention lane preserves independent gates and source-fed controls:
+
+| Gate suffix after `CRISPEMBED_LIGHTON4B_VISION_BF16_` | Scope and evidence |
+| --- | --- |
+| `ATTENTION` | Original QK/PV reduction order; partial pooling differences 65 to 20. |
+| `SOFTMAX_AVX2` | Original vector exp/reduction, used with `ATTENTION`; all source-fed probability and pooling bytes exact. |
+| `GELU_AVX2` | Source-derived double-float tanh and original cube grouping; all 2,293,760 source activation bytes exact. |
+| `ROTARY_AVX2` | **Rejected alternative, keep off.** SLEEF trig differs from original MKL backend. |
+
+The `SOFTMAX_AVX2` and `GELU_AVX2` gates require x86_64 AVX2/FMA and nearest
+rounding. Unsupported
+platforms retain the preceding path. The rejected rotary alternative additionally
+limits its math to the fixed theta/dimension and coordinates below 125; that
+range restriction does not qualify its numerical result. Product code links
+neither Torch nor MKL. Source helpers remain under tests; runtime arithmetic
+adaptations retain the source licenses.
+
+[Exact-attention integration 42055105090](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42055105090)
+passes full source probability/reciprocal/pooling byte controls, old gates,
+native/context builds and decoder controls. Ordinary Q4
+[42056882067](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42056882067)
+is nevertheless decoded-negative: the candidate reduces first-block differences
+to 40 but worsens merged/first-logit error, and still produces `<table>` against
+original `<figure>`. These are two-token smokes, not complete-document validation.
+
+[Retained first-block attribution 42060487656](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42060487656)
+explains all 40 actual candidate differences: rotary alone 32, activation alone
+8, combined 40, with exact original and combined byte controls. Source-derived
+GELU then passes
+[final integration 42064278334](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42064278334),
+including old gates and the expected first block with original GELU and native
+rotary. Direct reference-only oneMKL 2024.2 `vmsCos`/`vmsSin` HA calls match all
+2,000 original grid angles; installed SLEEF vector trig and fused/nonfused scalar
+adaptations do not. This records the true backend dependency without shipping a
+reference lookup table or adding MKL to the product. A separate Q4 A/B enables
+verified GELU while explicitly disabling rejected rotary and decoder candidates.
+
+[Ordinary GELU Q4 42065352208](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42065352208)
+preserves all 30 fixed baseline hashes. The actual first block has the expected
+32 rotary differences; merged RMS improves to 0.00775425 from baseline 0.00973525,
+but first-logit RMS 0.56432682 remains worse than baseline 0.56013479 and both
+smokes still decode wrong `<table>`. Quality remains negative. Its test-only
+activation replay still evaluated legacy GELU; the independently verified
+production helper and ordinary native quality path are separate. The observer
+is corrected for future runs without changing runtime or repeating this smoke.

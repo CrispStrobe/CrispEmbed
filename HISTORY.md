@@ -20808,3 +20808,5 @@ Ordinary Q4 42056882067 preserves all 30 baseline stage hashes. Combined exact-a
 Retained first-block 42060487656 explains all 40 actual candidate differences: native rotary alone 32 and GELU alone 8. Original reconstruction and combined reproduction are byte-exact. Source vector GELU matches all original bytes; rotary is earliest remaining operator. No runtime correction or quality promotion follows this attribution alone.
 
 GELU-only integration 42064278334 passes actual activation bytes, old gates, native/context and decoder controls. Direct reference MKL HA trig matches Torch on all 2,000 angles, clearing the actual rotary backend; rejected SLEEF rotary stays off. Ordinary Q4 GELU quality pending.
+
+GELU Q4 42065352208 preserves fixed baseline hashes and reduces merged RMS to 0.00775425, but first-logit RMS 0.56432682 still exceeds baseline 0.56013479 and both decodes remain wrong `<table>`. All 32 first-block differences match the known rotary boundary. Full negative and legacy replay-observer limitation retained; production GELU proof remains independent and exact. Defaults and quality unqualified.

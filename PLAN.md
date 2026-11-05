@@ -1438,3 +1438,28 @@ rotary backend dependency, not permission to import closed-source math or a
 reference lookup table. All exact source/config/control and artifact identities
 are in `tests/results/qwen35-ocr/lightonocr3-4b-gelu-integration-mkl-control.json`.
 Quality remains negative pending the authorized GELU-only composed Q4 A/B.
+
+### 2026-11-05: verified GELU improves deep vision, decoded prefix still negative
+
+Ordinary [42065352208](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42065352208)
+at `40c68f35f81c8403eb22b27b642037df3fd34c8d` preserves all 30 fixed baseline
+hashes with decoder and rejected rotary candidates explicitly 0. Candidate
+first block has exactly the attributed 32 rotary differences, RMS 2.28155e-5,
+max 0.0078125. Merged RMS improves 0.00973525 to 0.00775425 (max 1.21094 to
+0.734375), also improving the prior exact-attention candidate RMS 0.01839050.
+First-logit RMS is 0.56432682 against baseline 0.56013479 (max 2.48687 against
+2.38528): better than prior candidate 0.59042975, still worse than baseline.
+Both independent smokes remain wrong `<table>` / `[20353,29]` against original
+`<figure>`. **Decoded quality remains negative and unqualified; defaults stay off.**
+
+The test-only replay in that run still hardcodes legacy GELU, so its 14,029
+activation differences are not a measurement of the gated production helper.
+Production GELU is independently byte-exact in 42064278334; actual native
+composed score/decoded paths use production and are unaffected. Fix the replay
+observer to use the actual gated math for future runs, with no runtime change
+and no duplicate model job. Full numerical/decoded/resource receipt and 90-day
+artifact identity: `tests/results/qwen35-ocr/lightonocr3-4b-gelu-composed-negative.json`.
+No further model jobs authorized in this lane. The earliest remaining first-
+block mismatch is confirmed MKL rotary; another bounded operator-only option is
+retained same-input merger GELU/erf attribution, which must not obscure that
+backend dependency or claim decoded improvement.
