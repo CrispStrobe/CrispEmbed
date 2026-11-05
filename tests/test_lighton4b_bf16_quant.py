@@ -34,7 +34,9 @@ class Controls(unittest.TestCase):
             admitted=dict(p,native_producers=[identity])
             q.candidate(forged,a,admitted,receipt_sha256='1'*64)
             with self.assertRaisesRegex(ValueError,'not admitted'):q.candidate(forged,a,admitted,receipt_sha256='2'*64)
-            self.assertEqual(q.protocol()['native_producers'],[])
+            self.assertIsInstance(q.protocol()['native_producers'],list)
+    def test_registry_protocol_identity(self):
+        with patch.object(q,'sha',return_value='0'*64),self.assertRaisesRegex(ValueError,'registry protocol'):q.protocol()
     @unittest.skipUnless(os.environ.get('LIGHTON4B_DOCUMENT_DIFF'),'hosted actual Ref binary required')
     def test_actual_ref_equal_changed_and_tampered(self):
         with tempfile.TemporaryDirectory() as d:

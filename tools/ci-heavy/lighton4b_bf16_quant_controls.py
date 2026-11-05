@@ -13,7 +13,7 @@ r={'schema':'lighton4b-bf16-quant-controls/v1','status':'failed','source_sha':su
     'original_forward_executed':False,'native_forward_executed':False,'model_payload_bytes':0,'real_provider_write_executed':False,
     'original_execution_admitted':False,'native_execution_admitted':False,'large_retention_qualified':False,'actual_original_output_ready':False}
 r['source_sha256']={p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest()for p in(
-    'tools/lighton4b_bf16_quant.py','tests/test_lighton4b_bf16_quant.py','docs/lighton4b-bf16-quant-v1.json','tools/ci-heavy/lighton4b_bf16_quant_controls.py',
+    'tools/lighton4b_bf16_quant.py','tests/test_lighton4b_bf16_quant.py','docs/lighton4b-bf16-quant-v1.json','docs/lighton4b-bf16-quant-admissions-v1.json','tools/ci-heavy/lighton4b_bf16_quant_controls.py',
     'tests/lighton4b_document_diff.cpp','src/crispembed_diff.h','tools/lighton4b_original_document.py','docs/lighton4b-document-parity-v1.json')}
 def run(label,args,env=None):
     with(out/(label+'.log')).open('w')as stream:subprocess.run([str(x)for x in args],cwd=ROOT,stdout=stream,stderr=subprocess.STDOUT,check=True,env=env)

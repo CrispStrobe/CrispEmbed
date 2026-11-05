@@ -25,7 +25,7 @@ consume the original prompt and original IDs before that position, never its
 own free-generation prefix. Independent generation starts afresh with the
 frozen image-only prompt, cache, greedy decoding, EOS248046 and cap256.
 A separately reviewed native-receipt-SHA256/source/run/weight/precision tuple must first be added to
-`native_producers`; arbitrary producer claims and synthetic fixtures fail closed.
+`native_producers` in [the separate registry](lighton4b-bf16-quant-admissions-v1.json); arbitrary producer claims and synthetic fixtures fail closed.
 
 On hosted CI, build target `crispembed-diff-lighton4b-document`, then run:
 
@@ -94,3 +94,10 @@ partial decoded text. One-position evidence never admits a177-position producer
 or qualifies independent full decoded parity. Actions access is read-only and
 its token is supplied only for this exact script selector; no provider write
 operation is implemented.
+
+Admission tuples live in the separate protocol-bound registry. The frozen
+protocol file remains byte-identical at SHA256
+`4d2a738a8df75947f5a8e269799c8b3a27af19bfafb82653802a7531b7c928bc`.
+This prevents a circular dependency: admitting a receipt digest must not change
+the protocol digest already embedded in that receipt. Empty registry remains
+fail-closed until actual complete native outputs are independently reviewed.

@@ -1,0 +1,5 @@
+{
+  "schema": "lighton4b-bf16-quant-admissions/v1",
+  "protocol_sha256": "4d2a738a8df75947f5a8e269799c8b3a27af19bfafb82653802a7531b7c928bc",
+  "native_producers": []
+}

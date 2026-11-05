@@ -17,7 +17,13 @@ PROTOCOL=ROOT/'docs/lighton4b-bf16-quant-v1.json'
 def require(ok,message):
     if not ok: raise ValueError(message)
 def sha(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-def protocol(): return json.loads(PROTOCOL.read_text())
+def protocol():
+    p=json.loads(PROTOCOL.read_text())
+    registry=json.loads((ROOT/'docs/lighton4b-bf16-quant-admissions-v1.json').read_text())
+    require(registry['schema']=='lighton4b-bf16-quant-admissions/v1' and registry['protocol_sha256']==sha(PROTOCOL),'admission registry protocol differs')
+    require(isinstance(registry['native_producers'],list),'admission registry tuple inventory differs')
+    p['native_producers']=registry['native_producers']
+    return p
 def original(root,p):
     root=Path(root);require(sha(root/'capture.json')==p['original_capture_sha256'],'original receipt hash differs')
     a=json.loads((root/'capture.json').read_text())
