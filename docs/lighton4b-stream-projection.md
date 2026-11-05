@@ -20,7 +20,10 @@ source tile storage at most 4 MiB, and converted tile storage at most 4 MiB,
 plus the separately bounded existing projector's graph/materialization. These
 are allocation bounds, not a measured RSS claim. Each tile repeats graph setup
 and input copy; no speed improvement is claimed. Quantized source tensors are
-rejected even when the independent quant gate is enabled.
+accepted only for Q8_0 or Q4_K with `CRISPEMBED_QWEN35_QUANT=1` and a
+block-aligned row width. Each quantized tile is dequantized and projected with
+the same bounded F32 path. This support is a source change awaiting hosted
+controls and actual model logits; it is not a quantized quality result.
 
 Calibration observes the original named matrix once with the original hidden
 input; internal tiles suppress callbacks. Output is committed only after every

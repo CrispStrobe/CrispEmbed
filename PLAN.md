@@ -1,5 +1,10 @@
 # CrispEmbed plan — open work (updated 4 November 2026)
 
+The gated LightOn4B row-streamed vocabulary component now accepts Q8_0 and
+Q4_K rows when the existing quant gate is enabled. It retains bounded tile
+conversion and full logits; hosted quantized seam, gate and dot-product controls
+are pending. This is not model admission, original parity or decoded quality.
+
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
 [the 3 November handoff](docs/handoff-2026-11-03.md) and

@@ -234,20 +234,22 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
 // Experimental row streaming keeps the original projection path and its limit
 // intact. Each tile uses the same F32 matmul, with contiguous source rows read
 // through the backend API (including non-host-backed weights).
-bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int tokens, int threads,
-                      int tile_rows, std::vector<float> & output) {
+bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int tokens, int threads, int tile_rows,
+                      std::vector<float> & output) {
     output.clear();
-    if (!core_env::on("CRISPEMBED_QWEN35_OCR") ||
-        !core_env::on("CRISPEMBED_QWEN35_STREAM_PROJECTION") || !matrix || !hidden ||
-        width < 1 || width > 32768 || tokens < 1 || tokens > 16 || threads < 1 || threads > 256 ||
-        tile_rows < 1 || tile_rows > 1024 || size_t(width) * tile_rows > 1048576 ||
-        matrix->ne[0] != width || matrix->ne[1] < 1 || matrix->ne[1] > 300000 ||
-        matrix->ne[2] != 1 || matrix->ne[3] != 1 || !matrix->data ||
+    if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !core_env::on("CRISPEMBED_QWEN35_STREAM_PROJECTION") || !matrix ||
+        !hidden || width < 1 || width > 32768 || tokens < 1 || tokens > 16 || threads < 1 || threads > 256 ||
+        tile_rows < 1 || tile_rows > 1024 || size_t(width) * tile_rows > 1048576 || matrix->ne[0] != width ||
+        matrix->ne[1] < 1 || matrix->ne[1] > 300000 || matrix->ne[2] != 1 || matrix->ne[3] != 1 || !matrix->data ||
         !(matrix->view_src ? matrix->view_src->buffer : matrix->buffer) || !ggml_is_contiguous(matrix) ||
-        (matrix->type != GGML_TYPE_F32 && matrix->type != GGML_TYPE_F16))
+        (matrix->type != GGML_TYPE_F32 && matrix->type != GGML_TYPE_F16 && matrix->type != GGML_TYPE_Q8_0 &&
+         matrix->type != GGML_TYPE_Q4_K))
         return false;
-    if (!std::all_of(hidden, hidden + size_t(width) * tokens, [](float x) { return std::isfinite(x); }))
+    if ((matrix->type == GGML_TYPE_Q8_0 || matrix->type == GGML_TYPE_Q4_K) &&
+        (!core_env::on("CRISPEMBED_QWEN35_QUANT") || width % ggml_blck_size(matrix->type) != 0 ||
+         !ggml_get_type_traits(matrix->type)->to_float))
         return false;
+    if (!std::all_of(hidden, hidden + size_t(width) * tokens, [](float x) { return std::isfinite(x); })) return false;
     try {
         // Preserve calibration identity: observe the original named matrix once,
         // then suppress tile callbacks while retaining all old-path behavior.
