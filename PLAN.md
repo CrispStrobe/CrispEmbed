@@ -1186,3 +1186,11 @@ Next composed layer0 replay preserves these exact helpers, adds true same-proces
 mode interleaving/immutable-cache controls (earlier recovery was fresh-process),
 and records all comparison results before aggregate numerical rejection. Remaining
 projection/GDN/FFN and actual decoded gates are still open; no decoder expansion.
+
+Composed exact-RMS42032626361/5b47ed44e is complete and rejected at QKV first
+after exact input norm: official0.015625, Q8/Q40.03125. Hidden improves to
+0.00390625/0.0078125/0.00390625 but stays over0.002. All112 legacy stages and
+true same-process mode/cache controls pass. Focused Q8 dot attribution now anchors
+original normalized/projection bytes, observes actual F32 native route/operands,
+and compares pre-round dot plus BF16 output with full-projection arithmetic
+hypotheses. No unproven dot fix or expanded decoder precedes those measurements.

@@ -1,0 +1,15 @@
+{
+  "schema": "lighton4b-qkv-dot/v1",
+  "scope": "One real Q8 layer0 QKV projection, identical source BF16-normalized input and independent F32 dequant weights; no decoder/model/generation",
+  "upstream_run": 42032626361,
+  "upstream_source": "5b47ed44e40602e26dd3c597ef0a44b919804e5a",
+  "upstream_report_sha256": "6a2ae02cf1d82fe25e587e990b2199f0f2c12f8ad057927baa947563a70e0861",
+  "original_manifest_sha256": "036a936cdbd360208b5cf54c2604d671b9a919f1c8777bc7cf97b2585b010a78",
+  "original_input_sha256": "51856cd6bcfc7685dad05a0241465f0cae258042494a27cf8aac6e41fd129bc7",
+  "original_bf16_norm_sha256": "1a5baef778e9b7546bfe2cf6d3b6101007548ae6e179e9054e76c353ea3ef7a6",
+  "original_q8_oracle_qkv_bf16_sha256": "e08cff9a80861cef7748e0ad1308b8a569d039d3fcc93c199ba46788302f67cf",
+  "native_composed_qkv_payload_sha256_available": false,
+  "max_abs": 0.002,
+  "min_cos": 0.99999,
+  "quality_qualified": false
+}

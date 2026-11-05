@@ -180,3 +180,21 @@ the same native process/weight owner, rejects mixed-mode cache resumption, and
 requires all legacy hidden/intermediate/cache values to reproduce exactly after
 the alternate call. All complete arms retain numerical status before an aggregate
 nonzero exit for any native failure. No expanded decoder or generation is run.
+
+Composed42032626361 at5b47ed44e retains exact input norm and improves hidden
+errors, but all three BF16 boundary arms remain negative at QKV first:
+official max0.015625, Q8/Q40.03125. Hidden official/Q4 max0.00390625,
+Q80.0078125. All112 legacy stage comparisons and actual same-process interleave,
+immutable-cache/mixed-mode rejection controls pass. The report preserves
+`comparison_completed=true` and `numerical_rejection=true` before its red exit.
+
+The separate `tools/ci-heavy/lighton4b_qkv_dot.py` scope executes only one real
+Q8 QKV projection from frozen original BF16-normalized inputs and independent
+F32-dequantized weights, with the actual four-projection graph/sixteen-token
+schedule. It anchors the retained original BF16 projection bytes, observes actual
+native shared-library routing and full operand bytes, checks plain/observed/repeat
+neutrality and records raw F32 versus BF16-rounded errors. Selected product traces
+and complete eight-/sixty-four-lane/F64 hypotheses diagnose accumulation without
+assuming a new kernel is correct. Native composed payload hashes were not
+recorded by the prior producer, so byte reproduction of that old native payload
+is not claimed. No decoder/GDN/model forward or generation occurs in this scope.
