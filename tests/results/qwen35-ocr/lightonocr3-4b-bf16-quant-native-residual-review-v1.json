@@ -1,0 +1,18 @@
+{
+  "q8_0": {
+    "max_abs": 0.46874570846557617,
+    "rms": 0.0930408485613505,
+    "cosine": 0.9991468834290451,
+    "legacy_native_row_sha256": "ae1eae4fc4eacf48d1bfe74e2beadb8d2f1cc41fa7fb3e959e27fd8cff1e8ed4",
+    "bf16_quant_row_sha256": "d620c91a169dc85b77fc81e2e0f615da4516ccd8dce21d0cc152674932d6c400",
+    "limit": "Joint runtime and effective-precision difference, not isolated implementation error or subtractable quant loss."
+  },
+  "q4_k": {
+    "max_abs": 0.7694075107574463,
+    "rms": 0.08628065617593918,
+    "cosine": 0.999422187127756,
+    "legacy_native_row_sha256": "0e046a3d880ec7d24a89588ad856f1ed3afa1ef671b0bacb0bfeae192c215fea",
+    "bf16_quant_row_sha256": "e59d6054c85e81fb1be7101c9899287fa3a1cdd23a3110c8e03d874992387a0d",
+    "limit": "Joint runtime and effective-precision difference, not isolated implementation error or subtractable quant loss."
+  }
+}

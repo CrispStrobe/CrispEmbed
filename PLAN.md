@@ -1458,3 +1458,24 @@ conversion. Freeze exact name sets, source/candidate hashes, one-position cap,
 prepared inputs and comparison gates before dispatch. This existing image is
 exploratory mechanism evidence after the Q4 observation, never new held-out
 calibration or architecture-quality selection. No mixed worker is dispatched.
+
+
+### Fixed mixed original BF16 exploratory mechanism check — complete, rejected
+
+Source `50307be7f` completed exactly two one-token original BF16 prefills under
+the predeclared153Q8 embedding/attention +96Q4 FFN policy. Original first-score
+SHA and all723 original parameter hashes agree with the prior oracle; all249
+final mixed hashes exactly match their corresponding earlier Q8/Q4 arm hashes.
+All474 protected originals and tied output head remain unchanged. Mixed selects
+ID27 (`<`) with probability0.76989954, but complete-score max1.578125/RMS0.28579991/
+cosine0.99251625 rejects unchanged gates. This existing-image experiment was
+declared after the Q4 first-token observation: it is exploratory mechanism
+evidence, not held-out calibration or architecture-quality selection. No native
+inference ran, and one token cannot qualify native/full-original decoding orEOS.
+Smaller chunks/cache advice pass capacity guards; cgroup peak29,645,406,208 bytes
+of32,212,254,720, no OOM/retry. [Full receipts and exact scope](docs/lighton4b-bf16-mixed-first-score-results.md).
+Two small authenticated legacy-native first rows also give joint native-versus-
+BF16-quant residual Q8 max0.46874571/RMS0.09304085, Q4 max0.76940751/RMS0.08628066.
+This mixes runtime and effective-weight precision, not isolated implementation
+error or subtractable quantization loss. No additional worker/runtime fix, model
+upload, default, alias, release or app-pin promotion follows.

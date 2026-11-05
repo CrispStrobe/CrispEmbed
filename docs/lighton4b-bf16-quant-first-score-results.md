@@ -50,6 +50,16 @@ ID 27 `0.2457003999`; the BF16 quant-weight oracle gives `0.5507267302` and
 This does not establish that native arithmetic is correct, quantify its separate
 contribution, or make the two architectures equivalent.
 
+Only the two needed legacy native 993,280-byte first-score rows were subsequently
+range-read from their retained ZIPs and verified against the existing row hashes.
+Native versus the BF16 quant-weight original gives Q8 maximum `0.4687457085`,
+RMS `0.0930408486`, cosine `0.9991468834`; Q4 maximum `0.7694075108`,
+RMS `0.0862806562`, cosine `0.9994221871`. This joint runtime and effective-weight
+precision residual remains a strict rejection, not an isolated implementation
+error or an error that can be subtracted from quantization loss.
+[Complete row identities and limits](../tests/results/qwen35-ocr/lightonocr3-4b-bf16-quant-native-residual-review-v1.json)
+are preserved without another native inference run.
+
 The effective/top-level EOS remains 248046 and source text EOS 248044. Each arm
 is deliberately capped at one token. The original adapter audit therefore says
 `stop=max_tokens`, `eos_completed=false`; its frozen generation configuration

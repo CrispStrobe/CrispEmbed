@@ -7964,3 +7964,12 @@ maxima0.47265625/2.546875 and RMS0.07158037/0.59156984 reject unchanged budgets;
 Q4's first-token flip exists in original BF16 inference.
 [Full precision, memory and decoded limits](docs/lighton4b-bf16-quant-first-score-results.md)
 preclude speed, model-quality or release promotion.
+
+
+The fixed mixed BF16 original mechanism worker `50307be7f` completes exactly
+one original and one mixed prefill in90.55/93.85s. ProcessHWM13,867,794,432 bytes,
+cgroup peak29,645,406,208 of32,212,254,720 bytes; reduced chunks and clean-cache
+advice pass predeclared capacity guards. This differs from the three-arm workload
+and is not a memory/throughput benchmark. FirstID27 is retained, but full score
+max1.578125/RMS0.28579991/cosine0.99251625 rejects. No native decoding or held-out
+quality qualification. [Full precision, resource and scope limits](docs/lighton4b-bf16-mixed-first-score-results.md).

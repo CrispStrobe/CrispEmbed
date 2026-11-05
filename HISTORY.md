@@ -20956,3 +20956,14 @@ independently of native runtime. Explicit parameter BF16 rounding and prior
 native probability comparison remain recorded; no full decoded/EOS or held-out
 quality claim follows. [Complete receipts and limits](docs/lighton4b-bf16-quant-first-score-results.md).
 No runtime/default/release/app-pin change.
+
+
+Fixed exploratory original-BF16 mixed policy `50307be7f` completed original+mixed
+one-token arms with exact baseline SHA, all723 original hashes and249 final
+parameter hashes verified.153 Q8 embedding/attention matrices plus96 Q4 FFN
+restore firstID27 on the previously observed image, but score max1.578125/
+RMS0.28579991/cosine0.99251625 rejects. No native inference, full decode/EOS,
+held-out calibration or architecture-quality selection claim. Complete receipts,
+protected474/tie checks, capacity bounds and joint native/precision residuals are
+in [the evidence report](docs/lighton4b-bf16-mixed-first-score-results.md).
+No runtime/default/release/app-pin change or model upload.
