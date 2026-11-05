@@ -15,7 +15,7 @@ def run(label,args):
     with(out/(label+'.log')).open('w')as stream:subprocess.run([str(x)for x in args],cwd=ROOT,stdout=stream,stderr=subprocess.STDOUT,check=True)
 def digest(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 try:
-    run('dependencies',[sys.executable,'-m','pip','install','numpy==2.3.4','gguf==0.17.1','huggingface_hub==0.36.0'])
+    run('dependencies',[sys.executable,'-m','pip','install','numpy==2.3.5','gguf==0.19.0','huggingface_hub==1.31.0','tokenizers==0.22.2'])
     import numpy as np
     import gguf
     from huggingface_hub import snapshot_download
@@ -27,11 +27,20 @@ try:
     writer.add_uint32('qwen35_ocr.format_version',5)
     for key,value in {'general.source.huggingface.repository':c.LIGHTON4B_MODEL,'general.source.huggingface.revision':c.LIGHTON4B_REVISION,'qwen35_ocr.profile':c.LIGHTON4B_PROFILE,'qwen35_ocr.checkpoint_sha256':c._lighton4b_profile().CHECKPOINT_SHA256,'qwen35_ocr.tokenizer_sha256':c._lighton4b_profile().TOKENIZER_SHA256}.items():writer.add_string(key,value)
     c.write_tokenizer_metadata(writer,tokenizer);writer.write_header_to_file();writer.write_kv_data_to_file();writer.write_tensors_to_file();writer.close()
+    from tokenizers import Tokenizer
+    official=Tokenizer.from_file(str(model/'tokenizer.json'))
+    cases=['e\u0301cole','a\u0301\u0323','नमस्ते','γειά','👩🏽‍💻','plain 1234 text','<|im_start|>user']
+    (out/'text-cases.txt').write_text('\n'.join(cases)+'\n')
     reference=json.loads((ROOT/'docs/lighton4b-tokenizer-reference-v1.json').read_text())
     (out/'generated.ids').write_text('\n'.join(map(str,reference['generated_ids']))+'\n')
     run('configure',['cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_CUDA=OFF'])
     run('build',['cmake','--build',build,'--target','crispembed-test-lighton4b-tokenizer','--parallel','2'])
     run('native',[build/'crispembed-test-lighton4b-tokenizer',metadata,out/'generated.ids',out])
+    observed=(out/'text-cases.ids').read_text().splitlines()
+    if len(observed)!=len(cases):raise ValueError('text case count differs')
+    for text,line in zip(cases,observed):
+        if [int(x) for x in line.split()]!=official.encode(text,add_special_tokens=False).ids:raise ValueError('Unicode/added-token encode differs')
+    r['unicode_added_token_cases_exact']=len(cases)
     for field,file in [('input_ids','prompt.ids'),('mm_token_type_ids','modalities.ids')]:
         values=[int(x)for x in (out/file).read_text().split()];array=np.asarray([values],dtype=np.int64);path=out/(field+'.npy');np.save(path,array,allow_pickle=False)
         expected=reference['prepared_inputs'][field]
