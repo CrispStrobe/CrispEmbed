@@ -20799,3 +20799,11 @@ remain negative; old failures are preserved with red job conclusion. The scoped
 production-helper candidate remains default-off and separately unqualified.
 [The retained measured order](docs/lighton4b-layer0-attribution-results.md) does
 not upgrade complete quantized OCR/decoded quality.
+
+Actual LightOn4B gated RMS helper42031297677/5ba80426d matches154 scales,
+394,240 input-norm F32/BF16 outputs and630,784 source GDN pre-weight BF16 norm
+values exactly. This closes both128/2560 helper widths against real module input;
+legacy/cache/direct-entry controls pass and old alternatives remain red. The
+separate composed layer0 continuation still carries projection/GDN/FFN/decoded
+debt. [The actual-helper receipt](docs/lighton4b-layer0-attribution-results.md)
+imports no runtime source or release/default change into qualification.
