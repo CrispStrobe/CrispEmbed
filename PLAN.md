@@ -1049,3 +1049,12 @@ shows two Q8 same-input cases already expose0.01436/0.01674 max errors, with exa
 direct-vs-stream results and faster ordered diagnostic calls. This is activation
 quantization debt, not decoded-quality or model-speed proof; complete controls
 and actual decoded A/B remain open.
+
+Corrected[42002939375](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42002939375)
+at`afe4682da` passes12 same-input cases, gate0 byte controls and bounded seams.
+[Receipt](tests/results/qwen35-ocr/lightonocr3-4b-direct-quant-controls.json)
+retains all measured max/RMS errors, magnitudes, raw-vector artifact identity
+and ordered timings. Max errors0.01083–0.01780 exceed strict0.002 despite
+cosines0.99999084–0.99999340; keep the extra activation quantization visible and
+default-off. Independent native decoded/timing A/B is next, never a substitute
+for these numerical failures or the frozen complete Q8/Q4 panels.
