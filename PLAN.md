@@ -1204,3 +1204,31 @@ no dot alternative/default/quality promotion is included. New model-free gate/
 rounding/delta-isolation controls require actual assembled hosted execution.
 Full attention/final norm, full decoded output and final platform/release checks
 remain separate; source-fed arrays/probes stay outside production artifacts.
+
+
+### PR155 scoped vision nn.Linear and Conv3D assembly — 5 November 2026
+
+Preserve decoder7d1e73464 and all earlier mixed-policy/preflight/inspection
+sources/targets. `CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR` now applies only to
+true nn.Linear. Four complete actual operators match original bytes at1/4
+threads in42032345547. Conv3D is a separate default-off
+`CRISPEMBED_LIGHTON4B_VISION_BF16_CONV` path with source four-partial/left-fold
+GEMM order:42037359930 matches all573,440 original patch values at1/4 threads
+and independently of NN/PATCH gates. Old F32 patch and rejected patch-as-linear
+remain behind existing/default-off `CRISPEMBED_LIGHTON4B_VISION_BF16_PATCH_LINEAR`.
+Unset/empty/0 controls preserve all historical bytes. Shared768 vision stays.
+
+Combined42033651799's negative remains in the full receipt: applying nn.Linear
+order to Conv3D changed20→34 patch values, while merged RMS improved
+0.00973525→0.00772041 but first-score RMS worsened0.560135→0.568035 and both
+ordinary Q4 arms still output wrong`<table>`. Those results do not qualify current
+NN-only/Conv-corrected composition. All runtime defaults remain off; no release,
+model/decoded/EOS/document/publication or app-pin promotion.
+
+Single targeted `tools/ci-heavy/lighton4b_vision_linear_integration.py` must replay
+complete actual norm/NN/Conv original-byte/gate controls, native builds/controls,
+and decoder20-control census on assembled source. It preserves exact original
+ZIP13414500337 (SHA77682c5a,238,129,493 bytes) remotely without regeneration.
+Only this script's artifact retention is90 days; all other workflow retention
+stays unchanged. Reference/source probes remain test-only, with no bulk local
+artifact download or model forward in this assembled gate.

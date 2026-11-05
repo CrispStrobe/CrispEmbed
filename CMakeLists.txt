@@ -1699,3 +1699,8 @@ target_link_libraries(lighton4b-vision-norm-variants PRIVATE crispembed-qwen35-d
 # Model-free decoder BF16 gate/rounding/isolation controls; no reference payload.
 add_executable(test-lighton4b-bf16-linear-controls tests/test_lighton4b_bf16_linear_controls.cpp)
 target_link_libraries(test-lighton4b-bf16-linear-controls PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(lighton4b-vision-linear-operators tests/lighton4b_vision_linear_operators.cpp)
+target_link_libraries(lighton4b-vision-linear-operators PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(lighton4b-vision-conv-operators tests/lighton4b_vision_conv_operators.cpp)
+target_link_libraries(lighton4b-vision-conv-operators PRIVATE crispembed-qwen35-delta crispembed-core)

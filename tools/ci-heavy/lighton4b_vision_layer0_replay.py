@@ -8,6 +8,9 @@ import subprocess
 import sys
 ROOT=Path(__file__).resolve().parents[2]
 NORM_GATES=('CRISPEMBED_LIGHTON4B_VISION_BF16_NORM',)
+BASELINE_NORM_GATES=()
+BASELINE_STAGE_OVERRIDES={}
+COMPOSED_STAGE_NAMES=('vision.layer.0','vision.merged','prefill.logits')
 def load(name,path):
  s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
 def main():
@@ -40,7 +43,7 @@ def main():
   if model.stat().st_size!=size or native.sha(model)!=digest:raise ValueError('immutable model differs')
   report['model']={'repository':native.MODEL_REPO,'revision':native.MODEL_REVISION,'file':filename,'sha256':digest}
   provider=KaggleApi();provider.authenticate()
-  provider.kernels_output(os.environ['KAGGLE_ACCOUNT']+'/lighton4b-bf16-targeted-original-cpu-prefill',str(scratch/'original'),file_pattern=r'^lighton4b-bf16-prefill/stages/(prefill\.json|vision\.(embedded|layer\.0|merged)\.f32|prefill\.logits\.f32)$',quiet=True)
+  provider.kernels_output(os.environ['KAGGLE_ACCOUNT']+'/lighton4b-bf16-targeted-original-cpu-prefill',str(scratch/'original'),file_pattern=r'^lighton4b-bf16-prefill/stages/(prefill\.json|(processor\.patches|vision\.(patch|position|embedded|layer\.[0-9]+|merged)|prefill\.logits)\.f32)$',quiet=True)
   original=scratch/'original/lighton4b-bf16-prefill/stages';manifest=original/'prefill.json'
   if native.sha(manifest)!=comparison.ORIGINAL_REPORT_SHA:raise ValueError('original receipt differs')
   receipt=json.loads(manifest.read_text())
@@ -50,6 +53,8 @@ def main():
    if path.stat().st_size!=row['bytes'] or native.sha(path)!=row['sha256']:raise ValueError('original stage differs')
    return torch.from_numpy(np.fromfile(path,dtype='<f4').copy()).reshape(-1,1024).to(torch.bfloat16)
   env=os.environ.copy();env.update({k:'1'for k in native.GATES});env['CRISPEMBED_LIGHTON4B_VISION_BF16']='1'
+  env.update({gate:'1'for gate in BASELINE_NORM_GATES})
+  report['baseline_normalization_gates']={gate:'1'for gate in BASELINE_NORM_GATES}
   binary=build/'lighton4b-vision-layer0-replay'
   run('export',[binary,model,stages,'export'],env)
   weights={}
@@ -97,6 +102,9 @@ def main():
   run('corrected-replay',[binary,model,stages,'replay'],env)
   report['corrected_operators']={name:comparison.compare(np.fromfile(stages/('source.'+name+'.f32'),dtype='<f4'),np.fromfile(stages/('native.'+name+'.f32'),dtype='<f4'))for name in report['operators']}
   if 'CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM'in NORM_GATES and any(report['corrected_operators'][n]['different_values']for n in ('norm1','norm2')):raise ValueError('contracted source-fed norm control differs')
+  if 'CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR'in NORM_GATES:
+   for n in ('qkv','out','up','down'):
+    if (stages/('source.'+n+'.f32')).read_bytes()!=(stages/('native.'+n+'.f32')).read_bytes():raise ValueError('source-fed linear bytes differ')
   # Same immutable model and image, independent ordinary native document paths.
   # No source intermediate is passed into either composed inference call.
   download_original=native.download
@@ -105,10 +113,11 @@ def main():
     if not path.exists():path.symlink_to(model)
    else:download_original(url,path)
   native.download=cached_download
-  base_gates=tuple(native.GATES)+('CRISPEMBED_LIGHTON4B_VISION_BF16',)
+  base_gates=tuple(native.GATES)+('CRISPEMBED_LIGHTON4B_VISION_BF16',)+BASELINE_NORM_GATES
   saved_args=sys.argv;report['composed']={}
   try:
    frozen=json.loads((ROOT/'tests/results/qwen35-ocr/lightonocr3-4b-vision-bf16-stages.json').read_text())['recipes']['q4_k']['stages']
+   frozen.update(BASELINE_STAGE_OVERRIDES)
    for label,corrected in (('baseline',False),('corrected',True)):
     arm=out/label;arm.mkdir();os.environ['HEAVY_OUT']=str(arm)
     native.GATES=base_gates+(NORM_GATES if corrected else ())
@@ -116,7 +125,7 @@ def main():
     sys.argv=[str(ROOT/'tools/ci-heavy/lighton4b_native_document.py'),'--recipe','q4_k','--mode','smoke','--threads','4']
     native.main();result=json.loads((arm/'native-document.json').read_text())
     row={'decoded':result['decoded'],'stages':{}}
-    for name in ('vision.layer.0','vision.merged','prefill.logits'):
+    for name in COMPOSED_STAGE_NAMES:
      reference=original/receipt['stages'][name]['file']
      if native.sha(reference)!=receipt['stages'][name]['sha256']:raise ValueError('original composed hash differs')
      candidate=arm/'q4_k'/(name+'.f32')

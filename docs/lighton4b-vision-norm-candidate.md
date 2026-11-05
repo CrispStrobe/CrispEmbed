@@ -2,7 +2,7 @@
 
 The experimental BF16 vision path and its normalization alternatives remain
 unqualified. Legacy shared vision stays unchanged. The new path requires
-`CRISPEMBED_LIGHTON4B_VISION_BF16=1`; all three vision gates use value parsing
+`CRISPEMBED_LIGHTON4B_VISION_BF16=1`; all vision gates use value parsing
 and default off. `CRISPEMBED_LIGHTON4B_VISION_BF16_NORM` preserves the rejected
 separate-affine alternative. `CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM` selects
 verified original AVX2 BF16 paired-vector moments, contracted final scalar
@@ -45,3 +45,21 @@ and fresh environment documentation. The
 pins runtime bytes. Initial missing read-token and test-helper fallthrough failures
 remain separate. This closes compilation/component controls only; decoded quality
 is still negative and all defaults stay off.
+
+
+The scoped linear correction applies only to actual nn.Linear: all complete
+QKV/out/up/down outputs match original bytes with1/4 threads in42032345547.
+Conv3D uses a separate source four-partial, left-associated accumulation under
+`CRISPEMBED_LIGHTON4B_VISION_BF16_CONV`; actual42037359930 verifies every573,440
+patch output bit with1/4 threads and independently of NN/PATCH alternatives.
+`CRISPEMBED_LIGHTON4B_VISION_BF16_PATCH_LINEAR` preserves the earlier rejected
+Conv-as-linear path; CONV takes precedence when explicitly enabled. All remain
+default-off, and old gate bytes remain tested.
+
+The retained combined42033651799 was decoded-negative: Conv-as-linear regressed
+patch20→34 values; merged RMS improved0.00973525→0.00772041, but first-score
+RMS worsened0.560135→0.568035 and both texts remained`<table>`. Exact operators
+do not establish current composed or decoded quality. The assembled control gate
+replays norm/linear/Conv and decoder controls together, preserving exact source
+ZIP13414500337 remotely for90 days in this script only; unrelated retention is
+unchanged. No source reference arrays are shipped in production artifacts.
