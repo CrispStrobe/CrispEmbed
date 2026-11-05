@@ -964,3 +964,17 @@ runs on exactdd592, not the integrated tree; no assertion or source gate was
 weakened to claim combined-source qualification. Final source declarations and
 actual composite/runtime/platform gates remain required.
 
+
+### LightOn4B BF16 targeted prefill attribution —5 November
+
+`audit/lighton4b-bf16-prefill-20261105` prepares one original CPU/BF16 prefill,
+reusing the unchanged07543dcc driver/runtime and original image/prompt/checkpoint.
+A single AST substitution limits official generation to one token; streaming
+hooks retain vision patch/position/embedded/all24 layers/merged, raw text
+embedding, combined decoder input/positions/all32 layers/norm and full first
+logits. Every stage is shape-validated and written separately under512MiB total.
+The observer must reproduce the retained original first score SHA and ID27
+exactly before arrays are admitted. No F32 model, GPU, full177-token repeat,
+cache dumps or native inference. Actual capture and earliest-stage comparison
+against native Q8/Q4 remain pending; original source and negative results stay
+unchanged.
