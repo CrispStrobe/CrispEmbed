@@ -1476,3 +1476,16 @@ verbatim std::erf expression and installed original Gelu.h on identical up input
 A test-only source erf polynomial/exp alternative may be measured, but no
 production change or quality claim before actual/source controls pass. Preserve
 all reports/arrays remotely for 90 days; unrelated workflow retention unchanged.
+
+Merger attribution [42069010152](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42069010152)
+at `c398b710b34987b960ce54dddfb8feeed35a3b5d` passes complete original and
+actual merged byte controls, norms/up and installed original Gelu.h. Native
+std::erf differs at 33 original-input and 26 actual-input activation values
+(max 1.52588e-5), propagating to 84/58 merged values (max 0.00048828125).
+Test-only source FMA erf + verified exp matches all 573,440 activation and
+358,400 merged values on both inputs exactly. A separate default-off
+`CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2` now adapts only this measured
+operator; unsupported platforms/rounding/nonfinite inputs retain the preceding
+path, and existing std::erf path is preserved. Source BSD/SLEEF notices remain.
+Focused source/actual/gate/guard/build verification pending. No full-model smoke
+or decoded-quality claim; latest ordinary Q4 result remains negative.

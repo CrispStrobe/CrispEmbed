@@ -50,6 +50,17 @@ int main(int argc, char ** argv) {
     auto * buffer = ggml_backend_alloc_ctx_tensors(ctx, backend);
     if (!backend || !buffer) return 4;
     for (auto & e : weights) ggml_backend_tensor_set(e.first, e.second.data(), 0, e.second.size() * 4);
+    auto gate = [](const char * value) {
+#ifdef _WIN32
+        _putenv_s("CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2", value ? value : "");
+#else
+        if (value)
+            setenv("CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2", value, 1);
+        else
+            unsetenv("CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2");
+#endif
+    };
+    gate(nullptr);
     for (const std::string label : { "source", "actual" }) {
         auto hidden = read(label + ".hidden", 560 * 1024);
         std::vector<float> norm, up, merged;
@@ -62,11 +73,33 @@ int main(int argc, char ** argv) {
         emit(label + ".native_activation", activation);
         if (!linear(down_w, down_b, activation, 4096, 140, 4, merged)) return 6;
         emit(label + ".native_merged", merged);
+        for (const char * setting : { "unset", "empty", "0" }) {
+            gate(std::string(setting) == "unset" ? nullptr : std::string(setting) == "empty" ? "" : setting);
+            auto disabled = up;
+            production_merger_activation(disabled);
+            emit(label + ".disabled_" + setting, disabled);
+        }
+        gate("1");
+        auto corrected = up;
+        production_merger_activation(corrected);
+        emit(label + ".production_erf_activation", corrected);
+        if (!linear(down_w, down_b, corrected, 4096, 140, 4, merged)) return 8;
+        emit(label + ".production_erf_merged", merged);
+        gate(nullptr);
         for (float & x : up) x = lighton4b_bf16((x * 0.5f) * (1.0f + source_erf(x * 0.7071067811865475f)));
         emit(label + ".source_erf_activation", up);
         if (!linear(down_w, down_b, up, 4096, 140, 4, merged)) return 7;
         emit(label + ".source_erf_merged", merged);
     }
+    gate("1");
+    auto invalid = std::vector<float>{ INFINITY };
+    if (source_avx2_merger_activation(invalid) || !std::isinf(invalid[0])) return 9;
+    const int rounding = std::fegetround();
+    std::fesetround(FE_DOWNWARD);
+    auto unsupported = std::vector<float>{ 1.0f };
+    if (source_avx2_merger_activation(unsupported) || unsupported[0] != 1.0f) return 10;
+    std::fesetround(rounding);
+    gate(nullptr);
     ggml_backend_buffer_free(buffer);
     ggml_backend_free(backend);
     ggml_free(ctx);

@@ -387,6 +387,27 @@ static bool source_avx2_softmax_supported() {
     return false;
 #endif
 }
+// PyTorch Vectorized<float>::erf adaptation; BSD-3-Clause notice remains in
+// core/third_party/pytorch/LICENSE. Its exp primitive is the verified SLEEF path.
+static float source_avx2_erf(float x) {
+    const float t = 1.0f / std::fma(0.3275911f, std::abs(x), 1.0f);
+    float r = std::fma(1.061405429f, t, -1.453152027f);
+    r = std::fma(r, t, 1.421413741f);
+    r = std::fma(r, t, -0.284496736f);
+    r = std::fma(r, t, 0.254829592f);
+    const float square = x * x;
+    const float negative_exp = -source_avx2_exp(-square);
+    const float partial = negative_exp * t;
+    const float result = std::fma(partial, r, 1.0f);
+    return std::signbit(x) ? -result : result;
+}
+static bool source_avx2_merger_activation(std::vector<float> & values) {
+    if (!core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2") || !source_avx2_softmax_supported() ||
+        !finite(values))
+        return false;
+    for (float & x : values) x = (x * 0.5f) * (1.0f + source_avx2_erf(x * 0.7071067811865475f));
+    return true;
+}
 // Supported source shape only. An unsupported request keeps the previous path.
 static bool source_avx2_softmax(float * scores, int count, float & inverse) {
     if (count < 8 || count % 8 || !source_avx2_softmax_supported()) return false;
@@ -595,7 +616,8 @@ bool lighton4b_vision_bf16_cpu(const vision_weights & w, const vision_config & c
                 output.merger_up))
         return false;
     output.merger_activation = output.merger_up;
-    for (float & x : output.merger_activation) x = 0.5f * x * (1.0f + std::erf(x * 0.7071067811865475f));
+    if (!source_avx2_merger_activation(output.merger_activation))
+        for (float & x : output.merger_activation) x = 0.5f * x * (1.0f + std::erf(x * 0.7071067811865475f));
     round_bf16(output.merger_activation);
     return linear(w.merger_down, w.merger_down_bias, output.merger_activation, width * group, tokens / group, threads,
                   output.merged);

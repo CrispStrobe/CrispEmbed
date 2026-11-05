@@ -20810,3 +20810,5 @@ Retained first-block 42060487656 explains all 40 actual candidate differences: n
 GELU-only integration 42064278334 passes actual activation bytes, old gates, native/context and decoder controls. Direct reference MKL HA trig matches Torch on all 2,000 angles, clearing the actual rotary backend; rejected SLEEF rotary stays off. Ordinary Q4 GELU quality pending.
 
 GELU Q4 42065352208 preserves fixed baseline hashes and reduces merged RMS to 0.00775425, but first-logit RMS 0.56432682 still exceeds baseline 0.56013479 and both decodes remain wrong `<table>`. All 32 first-block differences match the known rotary boundary. Full negative and legacy replay-observer limitation retained; production GELU proof remains independent and exact. Defaults and quality unqualified.
+
+Retained merger 42069010152 passes original and actual bytes, isolates native std::erf at 33/26 activation and 84/58 output differences, and verifies source-derived erf exactly. Separate default-off production correction is prepared for focused gate/build validation; no model smoke or quality promotion.

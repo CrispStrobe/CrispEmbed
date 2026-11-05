@@ -81,9 +81,10 @@ The later attention lane preserves independent gates and source-fed controls:
 | `ATTENTION` | Original QK/PV reduction order; partial pooling differences 65 to 20. |
 | `SOFTMAX_AVX2` | Original vector exp/reduction, used with `ATTENTION`; all source-fed probability and pooling bytes exact. |
 | `GELU_AVX2` | Source-derived double-float tanh and original cube grouping; all 2,293,760 source activation bytes exact. |
+| `MERGER_ERF_AVX2` | Source erf polynomial/exp for final merger only; measured original/actual merger byte correction, focused validation pending. |
 | `ROTARY_AVX2` | **Rejected alternative, keep off.** SLEEF trig differs from original MKL backend. |
 
-The `SOFTMAX_AVX2` and `GELU_AVX2` gates require x86_64 AVX2/FMA and nearest
+The `SOFTMAX_AVX2`, `GELU_AVX2` and `MERGER_ERF_AVX2` gates require x86_64 AVX2/FMA and nearest
 rounding. Unsupported
 platforms retain the preceding path. The rejected rotary alternative additionally
 limits its math to the fixed theta/dimension and coordinates below 125; that
