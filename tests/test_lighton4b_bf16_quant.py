@@ -40,6 +40,12 @@ class Controls(unittest.TestCase):
             with patch.object(q,'protocol',return_value=p),patch.object(q,'original',return_value=a):
                 self.assertEqual(q.compare(orig,native,os.environ['LIGHTON4B_DOCUMENT_DIFF'],root/'equal',True),0)
                 report=json.loads((root/'equal/comparison.json').read_text());self.assertFalse(report['native_execution_admitted']);self.assertEqual(report['compared_positions'],2)
+                b['scores']=[dict(x) for x in b['scores']]
+                first=native/b['scores'][0]['file'];saved=first.read_bytes();small=bytearray(saved);small[:4]=struct.pack('<f',1.001);first.write_bytes(small)
+                b['scores'][0]['sha256']=hashlib.sha256(small).hexdigest();(native/'native.json').write_text(json.dumps(b))
+                self.assertEqual(q.compare(orig,native,os.environ['LIGHTON4B_DOCUMENT_DIFF'],root/'small',True),0)
+                report=json.loads((root/'small/comparison.json').read_text());self.assertEqual(report['earliest_observed_score_difference'],0);self.assertIsNone(report['earliest_score_budget_failure'])
+                first.write_bytes(saved);b['scores'][0]['sha256']=hashlib.sha256(saved).hexdigest()
                 data=bytearray((native/b['scores'][1]['file']).read_bytes());data[:4]=struct.pack('<f',2.0);(native/b['scores'][1]['file']).write_bytes(data)
                 b['scores']=[dict(x) for x in b['scores']];b['scores'][1]['sha256']=hashlib.sha256(data).hexdigest();(native/'native.json').write_text(json.dumps(b))
                 self.assertEqual(q.compare(orig,native,os.environ['LIGHTON4B_DOCUMENT_DIFF'],root/'changed',True),1)
