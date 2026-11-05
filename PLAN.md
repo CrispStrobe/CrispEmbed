@@ -1025,3 +1025,15 @@ failures as harness-only zero-position evidence. Exact `v1` spelling and explici
 six dependency repair change no score/reference/budget. Full native177-position
 Q842001328483/Q442001333207 remain executing at exactfd150b98 source; full
 comparer is prepared and registry remains empty pending their actual receipts.
+
+### Predeclared architecture mixed-Q4 calibration — 5 November 2026
+
+[Mixed protocolv1](docs/lighton4b-mixed-calibration.md) freezes ALL decoder
+attention/linear-mixer matrices at exact retainedQ8 payloads and FFNplainQ4_K,
+with existing sharedQ8 embedding/tiedhead and F32vision. It is an architectural
+candidate, not layer31/form-fitted selection. Calibration simple-table/Arabic
+line and heldout receipt/letter hashes/transforms are fixed before any new
+outputs; hosted model-free inputPNG/RGB hash freeze is next. BF16 source
+references, unchanged strict numerical flags and independent full decoding are
+required. Both existing plainfull panels remain untouched. Any new selection
+needs fresh predeclaration and genuinely new heldout data; no alias/release claim.
