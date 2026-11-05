@@ -30,3 +30,12 @@ positions, gate isolation and malformed/nonfinite inputs. It does not execute
 model inference. Actual processor arrays, full vision stages and errors,
 quantized decoder composition, complete logits and decoded EOS output remain
 required before Q8/Q4 parity. Format5 recognition stays closed.
+
+Hosted [41996964796](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41996964796)
+passes34 controls at9de9011c2. Expanded
+[41997341624](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41997341624)
+passes45 controls at0d3ff8da6, including independently authored channel/time/merge
+coordinates and the document's452×317→560-patch geometry. The small downloaded
+receipts were independently reviewed and retained in
+`tests/results/qwen35-ocr/lightonocr3-4b-image-compose.json`. These controls execute
+preprocessing and synthetic image-token splicing, without model inference.
