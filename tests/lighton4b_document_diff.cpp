@@ -19,13 +19,23 @@ static int crispembed_test_main(int argc, char ** argv) {
     std::ifstream order(argv[3]);
     std::set<std::string> names;
     std::string name, kind, first;
+    int64_t axes[4];
     size_t count = 0;
     bool all = true;
-    while (order >> name >> kind) {
+    while (order >> name >> kind >> axes[0] >> axes[1] >> axes[2] >> axes[3]) {
         if (++count > 4096 || !names.insert(name).second || (kind != "exact" && kind != "float")) return 2;
+        size_t expected = 1;
+        for (int i = 0; i < 4; ++i) {
+            if (axes[i] < 1 || axes[i] > 64 * 1024 * 1024 || expected > (64 * 1024 * 1024) / size_t(axes[i])) return 2;
+            expected *= size_t(axes[i]);
+        }
         auto reference = original.get_f32(name), native = candidate.get_f32(name);
+        auto shape = original.shape(name);
+        if (shape.size() > 4) return 2;
+        shape.resize(4, 1);
         bool finite = reference.first && native.first && reference.second == native.second && reference.second > 0 &&
-                      reference.second <= 64 * 1024 * 1024 && original.shape(name) == candidate.shape(name);
+                      reference.second == expected && original.shape(name) == candidate.shape(name) &&
+                      std::equal(shape.begin(), shape.end(), axes);
         if (finite)
             for (size_t i = 0; i < reference.second; ++i)
                 finite &= std::isfinite(reference.first[i]) && std::isfinite(native.first[i]);

@@ -33,6 +33,11 @@ class Controls(unittest.TestCase):
         self.assertEqual(p['execution_admission']['original_producer_sources'],[])
         self.assertEqual(p['execution_admission']['native_producer_sources'],[])
         self.assertFalse(any(p['qualification'].values()))
+        for key,value in [('repository','lightonai/LightOnOCR-3-0.8B'),('format_version',1),('decoder_layers',24)]:
+            changed=json.loads(json.dumps(p));changed['model'][key]=value
+            with tempfile.TemporaryDirectory()as folder:
+                path=Path(folder)/'protocol.json';path.write_text(json.dumps(changed))
+                with mock.patch.object(driver,'PROTOCOL',path),self.assertRaises(ValueError):driver.protocol()
     def test_all32_decoder24_vision_caches_and_generation_positions(self):
         rows=driver.stages(2);names=[n for n,_ in rows]
         self.assertEqual(len(names),len(set(names)))
@@ -59,13 +64,16 @@ class Controls(unittest.TestCase):
     def test_actual_crispembed_diff_positive_earliest_exact_nonfinite_and_override(self):
         binary=os.environ['LIGHTON4B_DOCUMENT_DIFF']
         with tempfile.TemporaryDirectory()as folder:
-            root=Path(folder);order=root/'order.tsv';order.write_text('input.ids exact\nvision.0 float\ndecoder.0 float\n')
+            root=Path(folder);order=root/'order.tsv';order.write_text('input.ids exact 2 1 1 1\nvision.0 float 4 1 1 1\ndecoder.0 float 4 1 1 1\n')
             rows=[('input.ids',[248044.,248046.]),('vision.0',[1.,2.,3.,4.]),('decoder.0',[2.,4.,6.,8.])]
             original=root/'original.gguf';candidate=root/'candidate.gguf';tiny_gguf(original,rows)
             def run(changed):
                 tiny_gguf(candidate,changed)
-                return subprocess.run([binary,original,candidate,order],capture_output=True,text=True,
+                result=subprocess.run([binary,original,candidate,order],capture_output=True,text=True,
                     env=dict(os.environ,CRISPEMBED_DIFF_COS_THRESHOLD='0.1'))
+                print('SYNTHETIC_COMPARISON returncode='+str(result.returncode))
+                print(result.stdout,end='')
+                return result
             result=run(rows);self.assertEqual(result.returncode,0,result.stdout+result.stderr)
             self.assertIn('stages=3 first=none',result.stdout)
             changed=[rows[0],('vision.0',[1.,2.,3.,4.01]),('decoder.0',[2.,4.,6.,8.02])]
@@ -75,6 +83,9 @@ class Controls(unittest.TestCase):
             result=run([rows[0],('vision.0',[1.,2.,3.,float('nan')]),rows[2]])
             self.assertEqual(result.returncode,1);self.assertIn('finite=0',result.stdout)
             result=run(rows[:-1]);self.assertNotEqual(result.returncode,0)
+            order.write_text('input.ids exact 2 1 1 1\nvision.0 float 248320 1 1 1\ndecoder.0 float 4 1 1 1\n')
+            result=run(rows);self.assertNotEqual(result.returncode,0)
+            self.assertIn('first=vision.0',result.stdout)
 
 
 if __name__=='__main__':unittest.main()

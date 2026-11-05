@@ -13,6 +13,9 @@ if os.environ.get('GITHUB_ACTIONS')!='true' or os.environ.get('CRISPEMBED_BUILD_
 out=Path(os.environ['HEAVY_OUT']);build=Path(os.environ['HEAVY_SCRATCH'])/'lighton4b-document-build'
 report={'schema':'lighton4b-document-controls/v1','status':'failed','source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
     'original_forward_executed':False,'native_forward_executed':False,'model_payload_bytes':0,'quality_qualified':False}
+report['source_sha256']={name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest()for name in(
+    'docs/lighton4b-document-parity-v1.json','tests/lighton4b_document_diff.cpp','tests/test_lighton4b_document_parity.py',
+    'tools/lighton4b_document_parity.py','tools/ci-heavy/lighton4b_document_controls.py','src/crispembed_diff.h')}
 def command(label,argv,env=None):
     with (out/(label+'.log')).open('w')as stream:subprocess.run([str(x)for x in argv],cwd=ROOT,stdout=stream,stderr=subprocess.STDOUT,check=True,env=env)
 try:

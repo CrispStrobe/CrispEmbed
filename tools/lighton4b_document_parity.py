@@ -29,7 +29,11 @@ def require(condition,why):
 
 def protocol():
     p=json.loads(PROTOCOL.read_text())
-    require(p['schema']=='lighton4b-document-parity/v1' and p['model']['revision']=='b71010f095dc3735de7ee6b9969bff8f8f50b39a', 'pinned protocol identity differs')
+    require(p['schema']=='lighton4b-document-parity/v1' and
+            p['model']['repository']=='lightonai/LightOnOCR-3-4B' and
+            p['model']['revision']=='b71010f095dc3735de7ee6b9969bff8f8f50b39a' and
+            (p['model']['format_version'],p['model']['vision_layers'],p['model']['decoder_layers'],
+             p['model']['hidden_size'],p['model']['vocab_size'])==(5,24,32,2560,248320), 'pinned protocol identity differs')
     for name,digest in p['source_sha256'].items():require(sha(ROOT/name)==digest,'frozen capture/helper source differs: '+name)
     case=p['case']
     for name,key in (('file','sha256'),('source_manifest','source_manifest_sha256'),('annotation','annotation_sha256')):
@@ -111,7 +115,9 @@ def _compare_existing(original,candidate,binary,output):
     require(a['stage_shapes']==b['stage_shapes'],'original/native shapes differ')
     require(b['precision']in('f32','f16'),'quantized candidates require a separately closed F32/F16 and held-out protocol')
     output=Path(output)
-    manifest=output/'stage-order.tsv';manifest.write_text(''.join(n+' '+kind+'\n'for n,kind in order))
+    manifest=output/'stage-order.tsv'
+    manifest.write_text(''.join(n+' '+kind+' '+' '.join(str(x)for x in
+        (list(reversed(a['stage_shapes'][n]))+[1]*(4-len(a['stage_shapes'][n]))))+'\n'for n,kind in order))
     argv=[str(Path(binary).resolve()),str(Path(original)/'stages.gguf'),str(Path(candidate)/'stages.gguf'),str(manifest)]
     env=os.environ.copy();env.pop('CRISPEMBED_DIFF_COS_THRESHOLD',None);env.pop('CRISPEMBED_DIFF_DUMP_DIR',None)
     process=subprocess.run(argv,capture_output=True,text=True,env=env)
