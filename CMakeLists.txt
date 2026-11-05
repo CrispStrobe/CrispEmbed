@@ -1671,3 +1671,9 @@ target_link_libraries(test-qwen35-stream-projection PRIVATE crispembed-qwen35-de
 
 add_executable(lighton4b-native-document tests/lighton4b_native_document.cpp src/lighton4b_tokenizer.cpp)
 target_link_libraries(lighton4b-native-document PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(test-lighton4b-mixed-policy tests/test_lighton4b_mixed_policy.cpp)
+target_link_libraries(test-lighton4b-mixed-policy PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(lighton4b-native-case-preflight tests/lighton4b_native_case_preflight.cpp src/lighton4b_tokenizer.cpp)
+target_link_libraries(lighton4b-native-case-preflight PRIVATE crispembed-qwen35-delta crispembed-core)

@@ -1048,3 +1048,37 @@ waiver. Smoke's127/133-second prefill/two-token measurements suggest a potential
 long full autoregressive panel; no full timing or completion is inferred yet.
 Retain partial/failure artifacts and the Q4 first-token rejection even if later
 positions improve. Final paired full-vocabulary/decoded review remains pending.
+### Frozen-case runner and mixed storage admission — 5 November
+
+`feat/lighton4b-frozen-cases-20261105` extends the exact`fd150b98f` prototype in a
+separate isolated lane. The immutable active full panels remain unchanged. An
+explicit default-off`CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4` admits only the
+fixed policy: all96 FFN matrices Q4_K, all152 linear/full-attention matrices Q8_0,
+the same Q8_0 tied embedding/head, and the existing protected F32 vision/norm/
+recurrent tensors. Uniform old Q8/Q4 policies remain distinct and arbitrary
+mixed storage is rejected. Metadata-policy controls precede actual file use.
+The generalized worker will authenticate frozen image/cap/original-reference
+case manifests and weights; no source image, prompt, gold or budget tuning.
+
+Hosted[42005163384](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42005163384)
+at`7f49713bc` passes native preflight compilation,74 metadata-policy controls,
+old owner and streamed projection controls without model payload access.
+Subsequent source binds the mixed metadata key exactly and adds the generalized
+worker`tools/ci-heavy/lighton4b_frozen_case.py`. It authenticates the reviewed
+four-case protocol/PNG/RGB freeze and explicit original-capture/weight SHA256s,
+then compares native pixel/ID/modality/grid arrays exactly to authenticated
+original prepared inputs before any payload-backed inference. Original arrays
+are comparison-only, never inputs to the native decoder. Source-capped cases
+remain negative diagnostics. The frozen cap256 and calibration/heldout split
+are unchanged. Actual mixed weights, original four-case admissions and decoded
+panels remain pending; no admission or quality is inferred from preparation.
+
+Final-source frozen worker[42006252927](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42006252927)
+at`84691b26494e61d82efcc436b083b48a1a639236` passes all three fixed-case
+contract tests,74 exact mixed/uniform storage controls, nine owner controls and
+old streamed projection controls; both actual native/preflight binaries compile.
+[Receipt](tests/results/qwen35-ocr/lightonocr3-4b-frozen-case-build.json) retains
+exact executable hashes. No model payload or source capture was consumed.
+The worker remains blocked on independently reviewed original per-case capture
+SHA256s and actual mixed pack SHA256; these are explicit input admissions rather
+than inferred quality. Preserve active full panels and all initial negatives.
