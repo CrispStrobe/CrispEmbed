@@ -1115,3 +1115,15 @@ rejections and hosted BF16 replay failures unchanged. A separately gated BF16
 boundary candidate requires an original same-input oracle, local operator
 measurements and actual decoded A/B before any runtime/default/quality decision.
 No production source, VERSION, ggml, reference, budget or application pin changed.
+
+The first separately gated linear BF16-boundary candidate42026091939/f201bc8c9
+is independently rejected: earliest input norm max0.015625, then QKV0.0625 and
+hidden official/Q80.03125/Q40.015625 against the original activation oracle.
+All legacy recovery hashes remain exact. Its wrapper's green conclusion is a
+reporting defect (retained stage flags fail); successor aggregation returns
+nonzero for local failures. Pure same-input original F32 quantization separately
+starts at QKV: Q80.08341026/Q40.90670824 against magnitude24.30494, reaching
+hidden0.01743889/0.15934277. These are actual original-code candidate losses,
+not native implementation proof. Bounded norm-only42027758298 at28e4180b8
+compares existing sequential/precise RMS and BF16 rounding before any new full
+candidate or decoded claim; source/cache-mode controls remain isolated.

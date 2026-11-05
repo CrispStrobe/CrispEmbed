@@ -70,3 +70,44 @@ and compare the earliest changed operators and actual decoded output separately.
 Large arrays/models remain remote. The v2 raw artifact13413366893 is306,071,097
 bytes; only the86KB report was range-fetched for this review. No numerical gate,
 default, alias, release or application pin changes.
+
+## First default-off activation-boundary candidate: rejected
+
+[42026091939](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42026091939)
+atf201bc8c9 implements default-off BF16 activation boundaries for the linear block
+only, preserving quantized storage/dequantized weight values. Its original Python
+oracle retains original block/GDN/cache code while F32-weight linear/conv operators
+return BF16 activations. GDN Q/K products/sum/rsqrt/multiply precede F32 recurrence;
+state stays F32. The oracle is a distinct diagnostic, never replacement gold.
+Full attention and final norm remain outside this bounded candidate.
+
+The [complete report](../tests/results/qwen35-ocr/lightonocr3-4b-layer0-bf16-boundary-v1.json)
+is **numerically negative**. All three boundary arms first fail input norm:
+max0.015625, source BF16 norm magnitude63.75. QKV then reaches0.0625; final hidden
+is official/Q80.03125 and Q40.015625 against the corresponding activation oracle.
+The existing small F32 reduction differences can cross BF16 rounding boundaries;
+first follow the identical-input RMS operator before another arithmetic change.
+All legacy same-weight stages still pass and gate-on→legacy recovery output
+hashes are exact. No decoded quality or default promotion follows.
+
+The producer's then-existing wrapper exits0 even when native stage flags fail.
+Thus its green workflow conclusion is a reporting defect; the actual comparison
+is rejected. The successor aggregates local native failures into a nonzero exit
+while preserving every arm. Original BF16 cross-host failures also remain.
+Large raw artifact13414661349 is486,492,268 bytes; only its203KB report is locally
+range-fetched. Source heads and initial reports remain immutable.
+
+This same run independently quantifies **pure quantization** on identical original
+input in the original F32 layer, separating native logic and BF16 precision:
+
+| Candidate vs official F32 | First strict stage | QKV maximum / RMS | QKV original magnitude | Hidden maximum / RMS |
+| --- | --- | ---: | ---: | ---: |
+| Q8 |QKV |0.0834102631 /0.0056331582 |24.3049431 |0.0174388885 /0.0004315853 |
+| Q4 |QKV |0.906708241 /0.0727442667 |24.3049431 |0.159342766 /0.0056135881 |
+
+Input-normalization outputs are bit-exact across these original F32 arms. Both
+candidate changes are reproduced by original code without any native operator;
+this supports quantization loss at this boundary, not a local native decoder bug.
+The GDN normalized minimum row cosines include nearly zero/sign-changing rows;
+retain their absolute errors and tensor magnitudes rather than treating those
+cosines alone as evidence. Full decoded Q8/Q4 rejections stay unchanged.
