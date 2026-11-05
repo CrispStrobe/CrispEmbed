@@ -17,11 +17,12 @@ def main():
     try:
         run('configure',['cmake','-S',str(ROOT),'-B',str(build),'-DCMAKE_BUILD_TYPE=Release',
             '-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_CUDA=OFF','-DGGML_VULKAN=OFF'])
-        run('build',['cmake','--build',str(build),'--target','test-lighton4b-native-context','lighton4b-native-document','test-qwen35-stream-projection','--parallel','2'])
+        run('build',['cmake','--build',str(build),'--target','test-lighton4b-native-context','lighton4b-native-document','test-qwen35-stream-projection','test-lighton4b-bf16-round','--parallel','2'])
         binary=build/'test-lighton4b-native-context'
         report['executable_sha256']=hashlib.sha256(binary.read_bytes()).hexdigest()
         run('controls',[str(binary)])
         run('stream-projection-controls',[str(build/'test-qwen35-stream-projection')])
+        run('bf16-round-controls',[str(build/'test-lighton4b-bf16-round')])
         for name in ('lighton4b-native-document','test-qwen35-stream-projection'):
             report[name+'_sha256']=hashlib.sha256((build/name).read_bytes()).hexdigest()
         # Native binary has no model-free success mode; wrong arguments must fail.
