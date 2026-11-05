@@ -19,6 +19,7 @@ def api(path):return json.loads(subprocess.check_output(['gh','api','repos/Crisp
 def main():
     p=argparse.ArgumentParser()
     for name in ('native-run','native-source','artifact-id','artifact-sha256','receipt-sha256'):p.add_argument('--'+name,required=True)
+    p.add_argument('--recipe',choices=('q8_0','q4_k'),required=True)
     args=p.parse_args();out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH'])
     require(os.environ.get('GITHUB_ACTIONS')=='true'and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','hosted portable comparison required')
     report={'schema':'lighton4b-bf16-native-first-score/v1','status':'blocked','native_execution_admitted':False,'full_document_parity_qualified':False,'quality_qualified':False,'original_forward_executed':False,'native_forward_executed_by_comparer':False,'compared_positions':0,'internal_stage_attribution_available':False}
@@ -41,10 +42,11 @@ def main():
             hits=[n for n in names if n.endswith('native-document.json')];require(len(hits)==1,'native receipt missing/ambiguous')
             info=z.getinfo(hits[0]);require(info.file_size<=2**20,'native receipt bound')
             data=z.read(hits[0]);require(digest(data)==args.receipt_sha256,'reviewed native receipt differs');native=json.loads(data)
-            require(native['status']=='completed'and native['mode']=='smoke'and native['recipe']=='q8_0'and native['source_sha']==args.native_source,'actual native smoke scope differs')
-            require(native['model']['sha256']=='5888532207f0d98590cc028cbf92366f8a41ec925568f0c308bd69d9af6342f1'and native['native']['teacher_positions']==1,'native weights/position scope differs')
+            require(native['status']=='completed'and native['mode']=='smoke'and native['recipe']==args.recipeand native['source_sha']==args.native_source,'actual native smoke scope differs')
+            weights={'q8_0':'5888532207f0d98590cc028cbf92366f8a41ec925568f0c308bd69d9af6342f1','q4_k':'f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91'}
+            require(native['model']['sha256']==weights[args.recipe]and native['native']['teacher_positions']==1,'native weights/position scope differs')
             row=native['artifacts']['teacher.0.logits.f32'];require(row['bytes']==993280,'native vocabulary differs')
-            hits=[n for n in names if n.endswith('/q8_0/teacher.0.logits.f32')or n=='q8_0/teacher.0.logits.f32'];require(len(hits)==1 and z.getinfo(hits[0]).file_size==993280,'native score member differs')
+            hits=[n for n in names if n.endswith('/'+args.recipe+'/teacher.0.logits.f32')or n==args.recipe+'/teacher.0.logits.f32'];require(len(hits)==1 and z.getinfo(hits[0]).file_size==993280,'native score member differs')
             native_bytes=z.read(hits[0]);require(digest(native_bytes)==row['sha256'],'native score bytes differ')
         # Read only the1MiB frozen original row from explicitly pinned version1.
         report['stage']='retrieve-authenticated-original-row'
@@ -81,7 +83,7 @@ def main():
         (out/'crispembed-diff.log').write_text(result.stdout+result.stderr)
         stages=[line for line in result.stdout.splitlines()if line.startswith('STAGE ')];require(len(stages)==1 and result.returncode in(0,1),'complete actualRef first-score result required')
         metrics=dict(item.split('=',1)for item in stages[0].split()[2:]if '='in item)
-        report.update(status='compared',numerical_passed=result.returncode==0,compared_positions=1,metrics=metrics,earliest_observed_score_difference=0 if float(metrics['max_abs'])>0 else None,earliest_score_budget_failure=0 if result.returncode else None,original_row_sha256=pin['sha256'],native_row_sha256=row['sha256'],native_run=args.native_run,native_source=args.native_source,native_receipt_sha256=args.receipt_sha256,native_artifact={k:artifact[k]for k in('id','digest','size_in_bytes','expires_at')},original_provider={'service':'Kaggle','kernel_slug':slug,'version_label':'1'},original_first_id=protocol['original_generated_ids'][0],original_decoded=protocol['original_decoded'],native_smoke_decoded=native['decoded'],binary_sha256=digest(binary.read_bytes()))
+        report.update(status='compared',numerical_passed=result.returncode==0,compared_positions=1,metrics=metrics,earliest_observed_score_difference=0 if float(metrics['max_abs'])>0 else None,earliest_score_budget_failure=0 if result.returncode else None,original_row_sha256=pin['sha256'],native_row_sha256=row['sha256'],native_precision=args.recipe,native_run=args.native_run,native_source=args.native_source,native_receipt_sha256=args.receipt_sha256,native_artifact={k:artifact[k]for k in('id','digest','size_in_bytes','expires_at')},original_provider={'service':'Kaggle','kernel_slug':slug,'version_label':'1'},original_first_id=protocol['original_generated_ids'][0],original_decoded=protocol['original_decoded'],native_smoke_decoded=native['decoded'],binary_sha256=digest(binary.read_bytes()))
     except Exception as error:
         # Do not serialize credential, signed service URLs or private account names.
         message=str(error) if isinstance(error,ValueError) else 'hosted source retrieval or comparison failed'
