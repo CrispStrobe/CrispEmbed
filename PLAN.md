@@ -1332,3 +1332,20 @@ activation (14,029 F32 differences/max 1.5367e-7) are next attribution boundarie
 Full source/operator/negative receipts and 90-day artifact identities are under
 `tests/results/qwen35-ocr/lightonocr3-4b-{vision-attention,softmax}-*.json`.
 This qualification commit changes evidence only, not runtime or workflow.
+
+
+### 2026-11-05: remaining first-block differences fully attributed
+
+Retained-only 42060487656 at `915c1cd325a0bbe9e77885c17354d0c706e6a3bd`
+passes original byte controls and exactly reproduces actual candidate layer0
+from verbatim production rotary and GELU expressions. Rotary alone causes 32
+final differences; GELU alone 8; both 40. No unexplained first-block remainder.
+Native cosine differs at 2,488 and sine at 696 values (max 5.96e-8), leading to
+2 rotated-Q / 1 rotated-K differences and 5 pooled differences. Native GELU
+differs at 14,029 values (max 1.5367e-7), while installed AVX2 Gelu.h strict/
+contracted helpers match all original activation bytes. Rotary is earliest.
+Complete receipt `tests/results/qwen35-ocr/lightonocr3-4b-first-block-boundaries.json`
+contains exact source/artifact identity (13432171897, SHA
+`77fac62ebb8f4e3bb073984927cc0158ec8977e38788b34fe24f808399ca32ac`, 90-day retention).
+Prior combined Q4 decoded-quality negative remains; no runtime/default promotion
+in this evidence-only qualification commit.
