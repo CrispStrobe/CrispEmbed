@@ -1,0 +1,18 @@
+{
+  "schema": "lighton4b-tokenizer-controls/v1",
+  "status": "failed",
+  "source_sha": "71624fd91ba7a00f465a9ab403aa83458aa6b810",
+  "model_weights_downloaded": false,
+  "model_forward_executed": false,
+  "native_model_qualified": false,
+  "error_type": "CalledProcessError",
+  "error": "Command '['cmake', '--build', '[scratch]/tokenizer-build', '--target', 'crispembed-test-lighton4b-tokenizer', '--parallel', '2']' returned non-zero exit status 2.",
+  "source_sha256": {
+    "src/lighton4b_frontend.h": "4bd6be0459365cc5bafcc687666875f7980af5028beaad4b09e34f2949ccb2a2",
+    "src/lighton4b_tokenizer.cpp": "f26c1e5ea123e54f4f33ae0cc078d737aa46318ef6b4ef4baf796463c3bd90c2",
+    "src/qwen35_tokenizer.cpp": "b43702d4846c274778d927e219228da61e7865e80e1cdcf9d9ecd960b76677c2",
+    "tests/lighton4b_tokenizer.cpp": "547ee6d4eadf7b577576c64a48a64646346bb8fe9cb5c4b736e01440ffcc0beb",
+    "tools/ci-heavy/lighton4b_tokenizer_controls.py": "79cccc71f3878bffe4c71c29245b2445affe3ab3bff905c7861ee614283e2a6a",
+    "docs/lighton4b-tokenizer-reference-v1.json": "ee4d8e02f81a7ac22fbd9d87dbf2370fac5f6e44bf1b8ada3ec3b8a9b2c29dd2"
+  }
+}

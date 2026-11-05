@@ -1662,7 +1662,7 @@ add_executable(test-lighton4b-native-context tests/test_lighton4b_native_context
 target_link_libraries(test-lighton4b-native-context PRIVATE crispembed-qwen35-delta crispembed-core)
 # Separate format5 tokenizer probe; historical frontend remains unchanged.
 add_executable(crispembed-test-lighton4b-tokenizer EXCLUDE_FROM_ALL
-    tests/lighton4b_tokenizer.cpp src/lighton4b_tokenizer.cpp)
+    tests/lighton4b_tokenizer.cpp src/lighton4b_tokenizer.cpp src/core/gguf_loader.cpp)
 target_include_directories(crispembed-test-lighton4b-tokenizer PRIVATE src)
 target_link_libraries(crispembed-test-lighton4b-tokenizer PRIVATE ggml)
 
