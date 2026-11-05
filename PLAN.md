@@ -1284,3 +1284,21 @@ original pooled bytes, require actual candidate output to match retained old byt
 then compare Q/K rotation, BF16 QK matmul, F32 softmax and BF16 PV accumulation
 on identical original operands. Tiny GELU tail differences remain separate.
 No new full model batch or runtime attention fix precedes that attribution.
+
+
+### PR155 partial attention dot-order correction — softmax still incomplete
+
+Source-fed42044794137 establishes exact Q/K rotations, first QK mismatch33 values
+(max0.125), exact source eight-register QK, and exact four-partial PV. Gated
+production42047075420 reduces pooled65→20 differences, max0.00390625→0.001953125
+and RMS6.969e-6→3.994e-6, with actual/observer/disabled-gate byte controls exact.
+The default-off `CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION` applies these QK/PV
+orders only; previous attention and all earlier paths remain preserved.
+
+Whole attention is **not exact**. Even original softmax reciprocal plus source/std
+exp leaves12 probability differences; best vector normalization leaves15. No
+softmax guess, full-model quality or default promotion follows. Actual Q4 decoded
+quality remains negative from42041219151. Focused assembled
+`tools/ci-heavy/lighton4b_vision_attention_integration.py` must reproduce exact
+primitives, verified partial candidate bytes, old gates, native build/context and
+decoder controls. Reference probes stay test-only; no model forward at this gate.
