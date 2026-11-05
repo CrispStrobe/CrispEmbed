@@ -26,8 +26,11 @@ def main():
     def run(label,command):
         with(out/(label+'.log')).open('w')as log:subprocess.run([str(x)for x in command],cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,check=True)
     try:
-        run('dependencies',[sys.executable,'-m','pip','install','kaggle==2.2.5'])
+        run('dependencies',[sys.executable,'-m','pip','install','kaggle==2.2.5','six==1.17.0'])
         protocol=json.loads((ROOT/'docs/lighton4b-bf16-quant-v1.json').read_text());pin=protocol['score_records'][0]
+        # Kaggle's upload_file module imports six without declaring it.
+        # Import-only preflight precedes the bounded artifact transfer.
+        from kaggle.api.kaggle_api_extended import KaggleApi
         # Exact hosted run and artifact are supplied after independent receipt review.
         report['stage']='authenticate-native-artifact'
         service=api('actions/runs/'+args.native_run)
@@ -89,6 +92,8 @@ def main():
         message=str(error) if isinstance(error,ValueError) else 'hosted source retrieval or comparison failed'
         for value,label in ((ROOT,'[repository]'),(scratch,'[scratch]'),(out,'[report]'),(os.environ.get('KAGGLE_ACCOUNT',''),'[account]')):
             if str(value):message=message.replace(str(value),label)
-        report.update(error_type=type(error).__name__,error=message[:1000]);return 1
+        report.update(error_type=type(error).__name__,error=message[:1000])
+        if isinstance(error,ModuleNotFoundError):report['missing_module']=error.name
+        return 1
     finally:(out/'first-score-comparison.json').write_text(json.dumps(report,indent=2)+'\n')
 if __name__=='__main__':raise SystemExit(main())
