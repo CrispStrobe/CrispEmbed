@@ -1396,3 +1396,12 @@ Eligibility remains x86_64 AVX2/FMA and nearest rounding; rotary supports fixed
 operator checks include full supported trig grid/inv-frequency, all retained
 activation bytes, original/old-gate controls and corrected composed first block.
 No production math is promoted before those checks or ordinary decoded A/B.
+
+Production-math operator 42061899237 at f0ea7ff1b is **rejected**, before any quality
+smoke: old/unset/empty/0 and prior actual 40-difference controls pass; all 16
+inverse frequencies are exact. But fused u35 trig grid differs at 633 cosine and
+237 sine entries (max 1.19e-7 / 5.96e-8), so the new rotary gate is not qualified
+and stays off. GELU had not yet been evaluated when the strict trig guard stopped.
+Initial numerical failure receipt is retained. Next one bounded job compares
+installed vector-header trig and nonfused source alternative, and evaluates GELU
+independently even if trig remains negative; no smoke until exact correction.

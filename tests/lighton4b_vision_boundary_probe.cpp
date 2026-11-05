@@ -4,6 +4,24 @@
 #include <stdexcept>
 using namespace qwen35_ocr;
 #include "vision_boundary_expressions.inc"
+static float trig_nonfused(float angle, bool cosine) {
+    using namespace lighton4b_avx2_math;
+    float scaled = mul(angle, 0.31830988618379067154f);
+    int q = int(std::nearbyint(cosine ? sub(scaled, 0.5f) : scaled));
+    if (cosine) q = q * 2 + 1;
+    const float factor = cosine ? 0.5f : 1.0f;
+    float d = add(mul(float(q), mul(-3.1414794921875f, factor)), angle);
+    d = add(mul(float(q), mul(-0.00011315941810607910156f, factor)), d);
+    d = add(mul(float(q), mul(-1.9841872589410058936e-09f, factor)), d);
+    float square = mul(d, d);
+    if (cosine ? !(q & 2) : (q & 1)) d = -d;
+    float u = 2.6083159809786593541503e-06f;
+    u = add(mul(u, square), -0.0001981069071916863322258f);
+    u = add(mul(u, square), 0.00833307858556509017944336f);
+    u = add(mul(u, square), -0.166666597127914428710938f);
+    u = add(mul(square, mul(u, d)), d);
+    return !cosine && angle == 0 ? angle : u;
+}
 int main(int argc, char ** argv) {
     if (argc != 3) return 2;
     const std::string dir = argv[1], mode = argv[2];
@@ -38,18 +56,23 @@ int main(int argc, char ** argv) {
     output.rotary_cos.resize(tokens * d);
     output.rotary_sin.resize(tokens * d);
     production_rotary(c, tokens, d, rows, columns, output);
-    std::vector<float> inverse(16), trig_cos(125 * 16), trig_sin(trig_cos.size());
+    std::vector<float> inverse(16), trig_cos(125 * 16), trig_sin(trig_cos.size()), nonfused_cos(trig_cos.size()),
+        nonfused_sin(trig_cos.size());
     for (int f = 0; f < 16; ++f) {
         inverse[f] = 1.0f / std::pow(10000.0f, float(2 * f) / 32.0f);
         for (int coordinate = 0; coordinate < 125; ++coordinate) {
             float angle = inverse[f] * float(coordinate);
             trig_cos[coordinate * 16 + f] = lighton4b_avx2_math::trig(angle, true);
             trig_sin[coordinate * 16 + f] = lighton4b_avx2_math::trig(angle, false);
+            nonfused_cos[coordinate * 16 + f] = trig_nonfused(angle, true);
+            nonfused_sin[coordinate * 16 + f] = trig_nonfused(angle, false);
         }
     }
     emit("native.inverse_frequency", inverse);
     emit("helper.cos_grid", trig_cos);
     emit("helper.sin_grid", trig_sin);
+    emit("nonfused.cos_grid", nonfused_cos);
+    emit("nonfused.sin_grid", nonfused_sin);
     emit("native.cos", output.rotary_cos);
     emit("native.sin", output.rotary_sin);
     auto qkv = read("source.qkv", tokens * 3072);

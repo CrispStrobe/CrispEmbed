@@ -35,6 +35,8 @@ def main():
   for p in library_paths():args+=['-L'+p,'-Wl,-rpath,'+p]
   for contraction in ('off','fast'):
    variant=[v.replace('-ffp-contract=off','-ffp-contract='+contraction)if isinstance(v,str)else v for v in args];variant=[scratch/('source-gelu-'+contraction)if v==scratch/'source-gelu'else v for v in variant];run('compile-source-gelu-'+contraction,variant+['-ltorch_cpu','-lc10'])
+  trig_args=[v for v in args];trig_args=[ROOT/'tests/lighton4b_trig_vector_source.cpp'if v==ROOT/'tests/lighton4b_gelu_vector_source.cpp'else scratch/'source-trig'if v==scratch/'source-gelu'else v for v in trig_args]
+  run('compile-source-trig',trig_args+['-ltorch_cpu','-lc10'])
   run('configure',['cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_CUDA=OFF','-DGGML_VULKAN=OFF','-DLIGHTON4B_BOUNDARY_GENERATED_DIR='+str(scratch)])
   run('build',['cmake','--build',build,'--target','lighton4b-vision-boundary-probe','--parallel','2'])
   item=comparison.api('actions/artifacts/13430388075')
@@ -94,13 +96,15 @@ def main():
   if not all(v['bit_exact']for r in report['disabled_corrections'].values()for v in r.values()):raise ValueError('disabled correction bytes differ')
   grid=torch.arange(125,dtype=torch.float32)[:,None]*inv
   report['supported_trig_grid']={'inv_frequency':compare(inv.numpy(),array('native.inverse_frequency')),'cosine':compare(grid.cos().numpy(),array('helper.cos_grid')),'sine':compare(grid.sin().numpy(),array('helper.sin_grid'))}
-  if not all(r['bit_exact']for r in report['supported_trig_grid'].values()):raise ValueError('supported source trig range differs')
+  emit('source.angles',grid);run('source-trig',[scratch/'source-trig',stages/'source.angles.f32',stages/'header.cos_grid.f32',stages/'header.sin_grid.f32'])
+  report['trig_dispatch']={label:{'cosine':compare(grid.cos().numpy(),array(prefix+'.cos_grid')),'sine':compare(grid.sin().numpy(),array(prefix+'.sin_grid'))}for label,prefix in (('original_header','header'),('nonfused_source','nonfused'))}
+
   os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2']='1';os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2']='1'
   run('corrected-rotary',[build/'lighton4b-vision-boundary-probe',stages,'rotary']);corrected_cos=torch.from_numpy(array('native.cos').copy()).reshape(560,64);corrected_sin=torch.from_numpy(array('native.sin').copy()).reshape(560,64)
   corrected_activation=gelu_native(up,'corrected_activation')
   pool=pooled(corrected_cos,corrected_sin);residual=embedded+linear('out',pool,1024,1024);u=linear('up',norm('norm2',residual),4096,1024);a=gelu_native(u,'corrected_composed_activation');final=residual+linear('down',a,1024,4096);emit('layer0.corrected',final)
   report['production_corrections']={'cosine':compare(array('source.cos'),corrected_cos.numpy()),'sine':compare(array('source.sin'),corrected_sin.numpy()),'activation':compare(expected,corrected_activation.float().numpy()),'pooling':compare(array('source.pooled'),array('native.rotary_pooled')),'first_block':compare(array('source.layer0'),final.float().numpy())}
-  if not all(r['bit_exact']for r in report['production_corrections'].values()):raise ValueError('source-derived production correction differs')
+  report['production_candidate_qualified']=all(r['bit_exact']for r in report['production_corrections'].values())and all(r['bit_exact']for r in report['supported_trig_grid'].values())
   report['artifacts']={p.name:{'bytes':p.stat().st_size,'sha256':sha(p)}for p in stages.iterdir()};report['status']='attributed'
  except Exception as e:
   report['error_type']=type(e).__name__;report['error']='bounded same-input boundary attribution failed; inspect phase/logs';raise RuntimeError(report['error'])from None
