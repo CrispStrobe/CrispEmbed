@@ -20680,3 +20680,19 @@ OvisOCR3's frozen capped-page failure and all old strict LightOnOCR-3-0.8B verdi
 remain recorded. A separate review of complete retained logits finds F16/Q8 clear
 the current owner numerical bars; Q4 does not. Fresh current-source portable
 qualification is still required. See PR138's `docs/lighton08-precision-next.md`.
+
+### 5 November2026 — bounded LightOn4B decoder composition and retained attribution
+
+Draft PR150 adds a default-off exact32-layer hidden-state/cache orchestrator,
+preserving tested blocks and historical source closures. Synthetic original
+TextModel [41979168300](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41979168300)
+uses two explicitly shared full-width parameter sets across32 original modules:
+347 controls and290/291 numerical pairs pass, with one unchanged strict tiny-row
+recurrent-cache cosine failure. Retained block21-only
+[41980636649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41980636649)
+verifies26 weight hashes/six bit-exact anchors;22+4 same-input/boundary comparisons
+pass. Changing only the original block input reproduces the rejection, attributing
+it sufficiently to accumulated upstream hidden drift. Preserve the original
+negative panel; no gate/default/release/model-support promotion. Exact magnitudes,
+source pins, dependencies and limits are in [the scope](docs/lighton4b-decoder-compose.md)
+and [combined review receipt](tests/results/qwen35-ocr/lightonocr3-4b-decoder-compose-attribution.json).
