@@ -20738,3 +20738,16 @@ without EOS. Initial zero-position import failures stay separately preserved.
 [Raw complete comparisons and source-bound review](docs/lighton4b-qualification-consolidation.md)
 record the completed negative result without rerunning reference/model inference
 or introducing F32 as a prerequisite. Consolidation reduces the stack to two PRs.
+
+### 5 November 2026 — Completed mixed LightOn4B calibration rejects qualification
+
+[42013855293](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42013855293)
+completes both calibration cases on exacta3671602e with authenticated BF16 source
+references and native input equality. Both native generations reach EOS: table
+218 IDs differs from222 original IDs, while Arabic6 IDs/text are exact. All228
+actualRef score rows are finite but0/228 pass unchanged strict gates. Thus the
+red result is numerical/decoded rejection, not a cap, timeout or execution error.
+[Exact reports, decoded differences and limits](docs/lighton4b-qualification-consolidation.md#completed-sequential-mixed-calibration)
+retain source/model/report hashes and per-position magnitudes. No new job or
+reference/model rerun is needed to read this evidence. Heldout source completion
+and handwriting-coverage limitations remain; no model/default/release promotion.

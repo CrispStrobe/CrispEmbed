@@ -101,3 +101,42 @@ maximum they are1030.22205/1185.22864. The separate initial capture review's
 reference-relative CER/WER is0.2134146/0.3888889 forQ8 and0.8277439/0.9888889
 forQ4; those are fidelity to the original output, not human OCR accuracy.
 Both candidates remain rejected for parity; no precision/model/default is promoted.
+
+## Completed sequential mixed calibration
+
+[42013855293](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42013855293)
+at`a3671602edfadb44a86bc8785fff3d34f94acc02` completed both predeclared calibration
+cases sequentially with the exact attention-Q8/FFN-Q4 candidate. The red workflow
+is an **actual numerical/decoded rejection**, not a harness error or timeout.
+Both native input preflights matched the authenticated official pixels, tokens,
+modalities and grids before model loading; both independent generations reach EOS.
+All228 original-prefix score rows (56,616,960 value pairs) are finite, but none
+passes unchanged0.002/0.99999 numerical gates. The unchanged actualRef executable
+SHA remains`d6898491984110b0536dcd43ddb1091f6559495a79dfb23389baedb8dc4ae246`.
+
+| Case | Original/native IDs | Decoded result | Maximum absolute error | Minimum row cosine |
+|---|---:|---|---:|---:|
+|simple_table|222/218, both EOS|Different English/French figure descriptions; first ID difference7|5.72646046 at5|0.886965096 at14|
+|arabic_printed_line|6/6, both EOS|Exact IDs/text: `أبجدية عربية`|2.24062681 at0|0.978771031 at1|
+
+The table's raw reference-output CER/WER is0.6738056013/0.9622641509; Arabic is0/0.
+These compare frozen generated outputs, not human OCR transcriptions. The table
+changes language and numerical content; complete original/native strings, IDs,
+per-position metrics, hashes and limits are preserved in the
+[review](../tests/results/qwen35-ocr/lightonocr3-4b-mixed-calibration/review.json),
+[actual comparison](../tests/results/qwen35-ocr/lightonocr3-4b-mixed-calibration/comparison.json)
+and [decoded differences](../tests/results/qwen35-ocr/lightonocr3-4b-mixed-calibration/decoded-differences.json).
+At maximum table error, reference/native norms are1178.21594/1344.91064;
+Arabic's maximum-error norms are1052.64636/1064.06604.
+
+The exact4,683,041,248-byte mixed model SHA is
+`d2eb57d1f98d5c455f46f95b6c6095f38521df19927d486848b668222e9fc474`.
+Run artifact13413777229 retains599,197,464 bytes with GitHub-declared archive
+SHA`989e25be9af1d2ad280be8c76efc24f437258d4bd2d9767a548b1fb622d91d37`.
+Only792,422 ZIP-range bytes were fetched for small reports/text; arrays remain
+remote. There was no native heldout run. The heldout original receipt still caps
+without EOS, and the frozen logo case does not establish handwriting coverage.
+Arabic's small decoded success does not qualify this recipe or prove an improvement
+against plain Q4 on the same input. Original internal stages were not captured
+for this panel, so a score failure is not an earliest-operator diagnosis. No
+threshold, cap, prompt, default, alias or runtime release changes follow.

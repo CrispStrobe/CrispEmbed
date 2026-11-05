@@ -7902,3 +7902,13 @@ metrics remain authoritative. Final output-fidelity CER/WER versus frozen BF16
 is0.2134146/0.3888889 forQ8 and0.8277439/0.9888889 forQ4, not human OCR accuracy.
 Both numerical and decoded parity are negative; see exact source/limit/report
 links in [the qualification evidence](docs/lighton4b-qualification-consolidation.md).
+
+Completed mixed calibration42013855293 uses one hosted worker, with sequential
+case processes and the same4.683GB candidate: table222 teacher positions plus218
+free IDs/EOS takes4809.06s (user2504.59s/system3055.81s), peakRSS5,185,613,824B;
+Arabic6 teacher/free IDs/EOS takes186.42s (user114.72s/system112.47s), peak
+RSS5,141,336,064B. Neither case times out. These are workload/resource observations,
+not precision speedups or a same-case plain-Q4 comparison. Table text differs;
+Arabic's exact text coexists with failed numerical gates. See the
+[mixed review](tests/results/qwen35-ocr/lightonocr3-4b-mixed-calibration/review.json)
+for exact source/weight/artifact hashes and qualification limits.

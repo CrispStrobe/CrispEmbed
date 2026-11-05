@@ -1067,9 +1067,9 @@ Their exact native receipt hashes are separately admitted for comparison only;
 quality remains negative/unqualified. Targeted177-position Ref comparisons are
 the next specifically authorized jobs after one consolidation push. Original
 reference, prompt/cap, thresholds, defaults, release and app pin stay unchanged.
-Independent four-case BF16 capture remains executing; mixed candidate bytes are
-packed/readback-verified, but no new native panel jobs are dispatched while the
-user-requested general queue pause remains active.
+The independent four-case BF16 capture is complete, including the retained
+receipt cap/noEOS source failure. Mixed candidate bytes are packed/readback-
+verified; its separately authorized two-case calibration closeout is below.
 
 Scoped full-comparer retries are required after42011206392/42011236969 stopped
 at a missing diagnostic I/O import before any comparison. The repair imports
@@ -1095,9 +1095,14 @@ retain all sources, payload/report hashes, per-position errors/magnitudes and
 complete decoded outputs. Original BF16 `v1` remains frozen; no model/reference
 forward, F32 prerequisite or budget/default change was introduced. Both plain
 candidates remain unqualified. Only PR155/runtime and PR157/evidence remain open.
-The separately authorized lean mixed calibration42013855293 covers table/Arabic
-only; its outputs and heldout qualification remain pending, with receipt source-
-completion and logo/handwriting-coverage limitations unchanged.
+The separately authorized lean mixed calibration42013855293 is complete for
+table/Arabic only: both native generations reachEOS, table218 differs from222
+source IDs and Arabic6 IDs/text match. All228 score rows are finite,0 strict
+passes; red is actual rejection, not timeout/harness failure. See
+[completed calibration evidence](docs/lighton4b-qualification-consolidation.md#completed-sequential-mixed-calibration).
+Receipt source-completion and logo/handwriting-coverage limitations remain; no
+native heldout or model qualification follows. Next runtime claim requires
+same-input earliest-operator attribution, not another blind model batch.
 
 ### Reviewed checkpoint layer0 same-input attribution — 5 November 2026
 
