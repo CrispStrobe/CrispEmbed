@@ -1040,3 +1040,12 @@ raw outputs, gate0 byte controls, stream seams and diagnostic timing before any
 actual decoded A/B. The worker's`--direct-quant` flag is explicit and default-off.
 Actual full-position logits/independent decoded QoI remain mandatory; no default,
 model recipe, threshold or active full-run source changes.
+
+Initial direct-quant controls[42002242858](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42002242858)
+correctly rejected a harness tile128×9216 exceeding the unchanged1048576-element
+stream bound (exit9). Use64-row tiles; no runtime bound changes. The
+[retained partial receipt](tests/results/qwen35-ocr/lightonocr3-4b-direct-quant-initial.json)
+shows two Q8 same-input cases already expose0.01436/0.01674 max errors, with exact
+direct-vs-stream results and faster ordered diagnostic calls. This is activation
+quantization debt, not decoded-quality or model-speed proof; complete controls
+and actual decoded A/B remain open.

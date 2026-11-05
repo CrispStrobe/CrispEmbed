@@ -46,14 +46,14 @@ int main(int argc,char **argv) {
    gate("CRISPEMBED_LIGHTON4B_QUANT","1");gate("CRISPEMBED_LIGHTON4B_DIRECT_QUANT","0");
    if(!qwen35_ocr::project_cpu({w},x.data(),width,tokens,4,off)||off!=baseline)return 8;
    gate("CRISPEMBED_LIGHTON4B_DIRECT_QUANT","1");std::vector<float>stream;
-   if(!qwen35_ocr::project_rows_cpu(w,x.data(),width,tokens,4,128,stream)||stream.size()!=direct[0].size())return 9;
+   if(!qwen35_ocr::project_rows_cpu(w,x.data(),width,tokens,4,64,stream)||stream.size()!=direct[0].size())return 9;
    double error=0,squares=0,dot=0,aa=0,bb=0,mag=0,nmag=0,seam=0;
    for(size_t i=0;i<stream.size();++i) {
     double p=baseline[0][i],q=direct[0][i];if(!std::isfinite(q))return 10;
     error=std::max(error,std::abs(p-q));squares+=(p-q)*(p-q);dot+=p*q;aa+=p*p;bb+=q*q;
     mag=std::max(mag,std::abs(p));nmag=std::max(nmag,std::abs(q));
     // One-row tails intentionally retain old F32 arithmetic rather than invent a quant row.
-    if(i%rows!=size_t(rows-1)||rows%128!=1)seam=std::max(seam,std::abs(double(stream[i])-q));
+    if(i%rows!=size_t(rows-1)||rows%64!=1)seam=std::max(seam,std::abs(double(stream[i])-q));
    }
    const std::string label=std::string(ggml_type_name(type))+"-"+std::to_string(width)+"-"+std::to_string(rows)+"-"+std::to_string(tokens);
    for(auto item:{std::pair<const char*,const std::vector<float>*>{"baseline",&baseline[0]},{"direct",&direct[0]},{"stream",&stream}}) {

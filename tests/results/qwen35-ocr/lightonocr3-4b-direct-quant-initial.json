@@ -1,0 +1,15 @@
+{
+  "schema": "lighton4b-direct-quant-initial/v1",
+  "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42002242858",
+  "source_sha": "976af70248efcfa655314976bb2dfc6d565c0d3a",
+  "status": "failed",
+  "stage": "model-free stream seam control",
+  "exit_code": 9,
+  "cause": "Harness requested128 rows at width9216, exceeding the preserved1048576 tile-element bound. The runtime correctly rejected the request; use64-row tiles without changing the bound.",
+  "completed_cases": [
+    {"shape": [8192,2560], "tokens": 1, "type": "Q8_0", "max_abs": 0.014358162879943848, "rms_error": 0.0037648547123075647, "cosine": 0.9999923479438001, "baseline_max_abs": 5.06355094909668, "direct_max_abs": 5.061382293701172, "stream_max_abs": 0, "baseline_ms": 64.79992, "direct_ms": 1.403732},
+    {"shape": [8192,2560], "tokens": 16, "type": "Q8_0", "max_abs": 0.016740798950195312, "rms_error": 0.00374007823942202, "cosine": 0.9999925191071641, "baseline_max_abs": 8.03973388671875, "direct_max_abs": 8.037429809570312, "stream_max_abs": 0, "baseline_ms": 56.251586, "direct_ms": 6.182609}
+  ],
+  "limits": "Two synthetic same-input cases only. Timings are single ordered measurements, not a model speed claim. Direct quantized CPU dots change activation operand quantization; nonzero errors must remain visible. No decoded/model qualification.",
+  "quality_qualified": false
+}
