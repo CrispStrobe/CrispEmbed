@@ -88,6 +88,15 @@ the retained native input, identifying upstream input drift as the cause at that
 boundary. No threshold or runtime change follows. Preserve the original negative
 and continue tracing prior layers before decoder qualification or decoded claims.
 
+The [earlier-layer attribution](https://github.com/CrispStrobe/CrispEmbed/pull/151)
+used retained inputs in [41981848201](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41981848201).
+At the first observed amplification, layer 1, input RMS already differed by
+2.38419e-6 against original max magnitude 3.45225. Dense projections on exact
+matching inputs still differed by 2.15e-6–2.50e-6; using the original gate/up
+values reduced the activation difference to 2.38419e-7. The specific kernel or
+reduction-order cause remains unknown. Preserve all original budgets and the
+negative 290/291 full-decoder result.
+
 The separate [document protocol and harness](https://github.com/CrispStrobe/CrispEmbed/blob/958ff9fd8b386e6f3faaae92b6322a519200cc9a/docs/lighton4b-document-parity-v1.json)
 freezes one public-domain form, empty prompt, cap256 and all-position full-vocabulary
 comparison. The initial and hardened synthetic controls passed at
