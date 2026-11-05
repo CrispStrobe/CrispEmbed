@@ -20804,3 +20804,5 @@ boundaries. Previous negative quality evidence remains, with no release change.
 Focused softmax integration 42055105090 passes the final guarded production form, native/context builds, context 9 and decoder 20 controls. Source-fed attention is byte-exact; ordinary composed Q4 quality remains pending.
 
 Ordinary Q4 42056882067 preserves all 30 baseline stage hashes. Combined exact-attention vision candidate reduces layer 0 to 40 differences, but merged/first-logit errors worsen and both decodes remain wrong `<table>`. Full negative receipt retained; default-off and unqualified. Next lane isolates activation and generated rotary on identical retained inputs.
+
+Retained first-block 42060487656 explains all 40 actual candidate differences: native rotary alone 32 and GELU alone 8. Original reconstruction and combined reproduction are byte-exact. Source vector GELU matches all original bytes; rotary is earliest remaining operator. No runtime correction or quality promotion follows this attribution alone.

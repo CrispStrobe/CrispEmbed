@@ -1369,3 +1369,21 @@ Artifact `13430388075`, SHA `1e45293758c7c914da4d40d8c96bb4a67a3b3af4a33cd4eaab5
 retained 90 days. Two-token smoke is not EOS or full-document qualification.
 
 Bounded retained-only next attribution prepares verbatim extracted production rotary/GELU expression helpers, original installed AVX2 Gelu.h controls (strict/contracted), and four first-block compositions (original, native rotary, native activation, both). Require original bytes and combined reproduction of retained actual 40-difference candidate before attribution. No model download/full-model smoke, production correction or gate change. Reference target is excluded unless its generated-source directory is explicitly supplied.
+
+### 2026-11-05: all 40 remaining first-block differences attributed
+
+Retained-only [42060487656](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42060487656)
+at `915c1cd325a0bbe9e77885c17354d0c706e6a3bd` passes original controls and
+reproduces the actual combined candidate first-block bytes exactly from verbatim
+extracted production rotary + GELU expressions. Native rotary alone causes 32
+final differences; native GELU alone 8; combined 40. No first-block remainder.
+
+Native cosine differs at 2,488 and sine at 696 values (max 5.96e-8), producing 2
+rotated-Q and 1 rotated-K differences, then 5 pooled differences (max 0.00012207).
+This is the earliest remaining first-block mismatch. Native GELU differs at
+14,029 values (max 1.5367e-7), while installed original AVX2 Gelu.h strict and
+contracted helpers reproduce all source activation bytes. No production change
+is inferred without equivalent self-contained math and old-gate verification.
+Prior combined Q4 quality remains negative. Receipt and artifact identity are in
+`tests/results/qwen35-ocr/lightonocr3-4b-first-block-boundaries.json` (artifact
+`13432171897`, SHA `77fac62ebb8f4e3bb073984927cc0158ec8977e38788b34fe24f808399ca32ac`, 90 days).
