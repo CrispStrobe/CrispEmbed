@@ -1643,3 +1643,33 @@ vision stages, original first-row scores, two-token prefix and timings. Historic
 Q8 source `891d07da39e9c361a206f2ec4b40fe8339712e0f` already matched `<figure`
 prefix; its scores are compared with immutable report/ZIP hashes, explicitly
 not a same-source A/B or table-only effect. No 177-token run or broad CI.
+
+### 2026-11-05: corrected Q8 first-score improvement, two-token limit explicit
+
+Single corrected [Q8 42104609427](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42104609427)
+at `f120d61a97a82acc7d3e4a2f2e02a5a1354e5ee4` passes the complete immutable
+5,815,503,232-byte model SHA, 10 GiB available-RAM / 12 GiB disk guards, all five
+canonical original prepared-input hashes, and all 29 recorded processor/vision
+raw SHA identities. All verified vision gates and complete table are enabled;
+rejected SLEEF rotary and decoder candidate remain 0, caches off, four threads.
+
+Against original BF16 first-row logits, corrected Q8 RMS is 0.0742289135 and
+max absolute error 0.460906029. Compare both historical same-model/same-image
+receipts: original F32-vision `fd150b98f` smoke RMS approximately 0.13049504
+(published 0.130495042; pinned float64 stage review 0.1304950347489), max
+0.568259001; earlier BF16-vision `891d07da` RMS 0.2005369525, max 1.092198968.
+These are different runtime sources and hosted workers, not a same-source A/B,
+a table-only causal claim or a speed benchmark. All three Q8 runs already match
+the original two-token prefix `[27,17251]`, `<figure`; there is no new-prefix
+win. No full 177-token completion, EOS or full-document qualification is claimed.
+All 248,320 current logits still differ from BF16 original; downstream residual
+remains, and Q4 still generates the incorrect `<table>` prefix.
+
+Current Q8 native elapsed 139.13 s, user/system CPU 134.01/57.80 s, peak RSS
+6,317,207,552 bytes. Historical fd150 elapsed 127.69 s, peak 6,316,945,408;
+891d elapsed 105.43 s, peak 6,317,084,672. Timings are diagnostic across sources/
+hosts. Full source, original and both historical score comparisons, prompt/vision
+controls, prefix/completion distinction, capacity and timing are retained in
+`tests/results/qwen35-ocr/lightonocr3-4b-rotary-table-q8-smoke.json`. Artifact
+`13450873762`, SHA `9a16e85ba59ca254a2d2d509cf21f0864fe7da4911b49c8312d6afdd2e461c09`,
+retained through 2027-02-03. No default, release or app-pin promotion follows.

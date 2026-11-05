@@ -134,3 +134,13 @@ remain `<table>` against the original `<figure` prefix. Native elapsed is
 full-document quality nor a throughput benchmark. Complete source, timings and
 limits are retained in the final merger-erf negative receipt. Gates remain off;
 no release or app-pin promotion follows.
+
+
+Complete-table continuation now establishes all 29 recorded vision-stage byte
+identities on the one Q4/Q8 image. Q4 remains decoded-negative downstream;
+corrected Q8 first-logit RMS improves to 0.0742289135 against historical original
+F32-vision 0.13049504 and earlier BF16 candidate 0.2005369525, with source/host
+differences explicit. The Q8 `<figure` prefix was already correct historically.
+These are two-token observations, not full-document/EOS qualification. See the
+[complete rotary profile](lighton4b-rotary-arithmetic-profile.md) and its exact
+receipts for supported domain, source generation, fallback, raw hashes and limits.

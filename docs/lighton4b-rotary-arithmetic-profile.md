@@ -106,3 +106,17 @@ both outputs `<table>` versus source `<figure` prefix. Native elapsed is
 130.86/153.89 s for baseline/candidate on this case. Vision parity is not decoded
 quality; default gates remain off. A separate Q8 smoke compares first-score and
 prefix to original and a source-different historical Q8 baseline.
+
+
+[Corrected Q8 42104609427](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42104609427)
+at `f120d61a97a82acc7d3e4a2f2e02a5a1354e5ee4` verifies all five original
+prepared-input hashes and all 29 emitted vision-stage raw hashes. First-score
+RMS/max is 0.0742289135 / 0.460906029 against BF16 original, compared with
+historical F32-vision fd150 0.13049504 / 0.568259001 and earlier BF16-vision
+891d 0.2005369525 / 1.092198968. Runtime sources and hosted workers differ;
+this is not a table-only or controlled same-source A/B. All three Q8 runs have
+the correct `<figure` two-token prefix, so no new-prefix improvement is claimed.
+Current elapsed is 139.13 s and peak RSS 6,317,207,552 bytes, not a throughput
+benchmark. Full 177-token output/EOS remains untested. Q4 still has the wrong
+`<table>` prefix despite matched vision. Every correction remains default-off;
+no general quality, release or app-pin promotion follows these results.

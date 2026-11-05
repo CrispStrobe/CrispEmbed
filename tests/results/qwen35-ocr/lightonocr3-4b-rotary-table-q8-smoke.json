@@ -1,0 +1,486 @@
+{
+  "schema": "lighton4b-rotary-q8-smoke/v1",
+  "status": "measured",
+  "full_completion_executed": false,
+  "quality_qualified": false,
+  "source_sha": "f120d61a97a82acc7d3e4a2f2e02a5a1354e5ee4",
+  "recipe": "q8_0",
+  "source_vision_gates": [
+    "CRISPEMBED_LIGHTON4B_VISION_BF16",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_NORM",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_CONV",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_TABLE"
+  ],
+  "explicit_disabled_gates": {
+    "CRISPEMBED_LIGHTON4B_BF16_LINEAR": "0",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2": "0",
+    "CRISPEMBED_QWEN35_WEIGHT_CACHE": "0"
+  },
+  "preflight": {
+    "memory": {
+      "host_available_bytes": 15701741568,
+      "cgroup_limit_bytes": null,
+      "cgroup_current_bytes": 0,
+      "available_bytes": 15701741568
+    },
+    "load_average": [
+      1.11376953125,
+      0.4775390625,
+      0.18017578125
+    ],
+    "swap_total_bytes": 3221221376,
+    "swap_free_bytes": 3221221376,
+    "free_bytes": 114893733888,
+    "required_available_bytes": 10737418240,
+    "required_free_bytes": 12884901888,
+    "estimated_native_peak_bytes": 6400000000
+  },
+  "native_source_sha": "f120d61a97a82acc7d3e4a2f2e02a5a1354e5ee4",
+  "model": {
+    "repository": "cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
+    "revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+    "file": "lightonocr3-4b-q8_0-vision-f32.gguf",
+    "sha256": "5888532207f0d98590cc028cbf92366f8a41ec925568f0c308bd69d9af6342f1",
+    "bytes": 5815503232
+  },
+  "native_resources": {
+    "native_elapsed_seconds": 139.13,
+    "native_cpu_user_seconds": 134.01,
+    "native_cpu_system_seconds": 57.8,
+    "native_peak_rss_bytes": 6317207552
+  },
+  "original_capture_sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a",
+  "prepared_input_controls": {
+    "input_ids": {
+      "shape": [
+        1,
+        154
+      ],
+      "canonical_npy_sha256": "6f1b0a033c6d381c877956b6fbd215d8be4515d9a4ec733ad302b47a1743203d",
+      "source_npy_sha256": "6f1b0a033c6d381c877956b6fbd215d8be4515d9a4ec733ad302b47a1743203d",
+      "exact": true,
+      "scope": "actual native emitted payload canonically serialized"
+    },
+    "image_grid_thw": {
+      "shape": [
+        1,
+        3
+      ],
+      "canonical_npy_sha256": "31db2f395670c65f1329ed36856025a4e28158dd158ffcae567a939151283278",
+      "source_npy_sha256": "31db2f395670c65f1329ed36856025a4e28158dd158ffcae567a939151283278",
+      "exact": true,
+      "scope": "actual native emitted payload canonically serialized"
+    },
+    "mm_token_type_ids": {
+      "shape": [
+        1,
+        154
+      ],
+      "canonical_npy_sha256": "f5036a7310cca98c52e7846682523e02b245fbfb823ecf78fb59fe20832ae723",
+      "source_npy_sha256": "f5036a7310cca98c52e7846682523e02b245fbfb823ecf78fb59fe20832ae723",
+      "exact": true,
+      "scope": "actual native emitted payload canonically serialized"
+    },
+    "pixel_values": {
+      "shape": [
+        560,
+        1536
+      ],
+      "canonical_npy_sha256": "4475c40a09fc35f429c104c6899a1d7a29e124d1327f893411c7d1699c09512b",
+      "source_npy_sha256": "4475c40a09fc35f429c104c6899a1d7a29e124d1327f893411c7d1699c09512b",
+      "exact": true,
+      "scope": "actual native emitted payload canonically serialized"
+    },
+    "attention_mask": {
+      "shape": [
+        1,
+        154
+      ],
+      "canonical_npy_sha256": "bf86c53fad0078f2c0b8ae6ebcc0bc1fad1469287a5fd2ce76c45558c45defe2",
+      "source_npy_sha256": "bf86c53fad0078f2c0b8ae6ebcc0bc1fad1469287a5fd2ce76c45558c45defe2",
+      "exact": true,
+      "scope": "unpadded native sequence mask contract"
+    }
+  },
+  "decoded": {
+    "ids": [
+      27,
+      17251
+    ],
+    "text": "<figure",
+    "exact_original_ids": false,
+    "original_completion_tokens": 177,
+    "original_prefix_ids": [
+      27,
+      17251
+    ],
+    "exact_original_prefix_ids": true
+  },
+  "raw_vision_controls": {
+    "processor.patches": {
+      "bytes": 3440640,
+      "source_sha256": "d623c64f184a10b6964aedeb3cd90f5a4e2e7aa39f7c480a9f474757776b8d8d",
+      "native_sha256": "d623c64f184a10b6964aedeb3cd90f5a4e2e7aa39f7c480a9f474757776b8d8d",
+      "bit_exact": true
+    },
+    "vision.patch": {
+      "bytes": 2293760,
+      "source_sha256": "84fb1258261ba9051d9f7f8055a5b8d18a21a7b039df5ead4a499f15eaf7ead9",
+      "native_sha256": "84fb1258261ba9051d9f7f8055a5b8d18a21a7b039df5ead4a499f15eaf7ead9",
+      "bit_exact": true
+    },
+    "vision.position": {
+      "bytes": 2293760,
+      "source_sha256": "647228a912dfd3d0f0f2fb40a9fc48e9220cd43b25bb5b008540ae70da1c53ce",
+      "native_sha256": "647228a912dfd3d0f0f2fb40a9fc48e9220cd43b25bb5b008540ae70da1c53ce",
+      "bit_exact": true
+    },
+    "vision.embedded": {
+      "bytes": 2293760,
+      "source_sha256": "e43ce63ebd84d6cadfd73df027faea09022b1bb977c6b4e62bf8324eb243b7af",
+      "native_sha256": "e43ce63ebd84d6cadfd73df027faea09022b1bb977c6b4e62bf8324eb243b7af",
+      "bit_exact": true
+    },
+    "vision.layer.0": {
+      "bytes": 2293760,
+      "source_sha256": "ae4fcfbe1debb31e70dffca3be7cf36d7998228b40cebd1914758b50308c28f0",
+      "native_sha256": "ae4fcfbe1debb31e70dffca3be7cf36d7998228b40cebd1914758b50308c28f0",
+      "bit_exact": true
+    },
+    "vision.layer.1": {
+      "bytes": 2293760,
+      "source_sha256": "0b5a797c76422c1b650433e525ce0eb29773d4a06c979fe46e84881f8ccd10f4",
+      "native_sha256": "0b5a797c76422c1b650433e525ce0eb29773d4a06c979fe46e84881f8ccd10f4",
+      "bit_exact": true
+    },
+    "vision.layer.2": {
+      "bytes": 2293760,
+      "source_sha256": "9447966375aefdafb6e677d44e45e477d59a4aaed70963c079fe6d171ca69a6d",
+      "native_sha256": "9447966375aefdafb6e677d44e45e477d59a4aaed70963c079fe6d171ca69a6d",
+      "bit_exact": true
+    },
+    "vision.layer.3": {
+      "bytes": 2293760,
+      "source_sha256": "9b5759f9a9cd0878ce7e1f9dd5061ad869c614565299a644fdefdab0ba521735",
+      "native_sha256": "9b5759f9a9cd0878ce7e1f9dd5061ad869c614565299a644fdefdab0ba521735",
+      "bit_exact": true
+    },
+    "vision.layer.4": {
+      "bytes": 2293760,
+      "source_sha256": "8775ecf40750a3bce614fb43bd8a47e9538b089f673d1765ffd9932c7ed67389",
+      "native_sha256": "8775ecf40750a3bce614fb43bd8a47e9538b089f673d1765ffd9932c7ed67389",
+      "bit_exact": true
+    },
+    "vision.layer.5": {
+      "bytes": 2293760,
+      "source_sha256": "e97f1f2b57f1420b88a266e530fc14a7eb98d5f342f7b4d6c6b797e7aabc68c6",
+      "native_sha256": "e97f1f2b57f1420b88a266e530fc14a7eb98d5f342f7b4d6c6b797e7aabc68c6",
+      "bit_exact": true
+    },
+    "vision.layer.6": {
+      "bytes": 2293760,
+      "source_sha256": "930ce563b0462dead0f7ef99af1c43a51088209877590e79a7ca796c2d4acc66",
+      "native_sha256": "930ce563b0462dead0f7ef99af1c43a51088209877590e79a7ca796c2d4acc66",
+      "bit_exact": true
+    },
+    "vision.layer.7": {
+      "bytes": 2293760,
+      "source_sha256": "dd903bc60f123f3d07e83c6b11163e8e27a3af940c2be3038c38d8489a605e79",
+      "native_sha256": "dd903bc60f123f3d07e83c6b11163e8e27a3af940c2be3038c38d8489a605e79",
+      "bit_exact": true
+    },
+    "vision.layer.8": {
+      "bytes": 2293760,
+      "source_sha256": "ca0aa1d6628ab08a84a41446f3b1cc2a0f4f1db49118c68ad73070d7b54474b7",
+      "native_sha256": "ca0aa1d6628ab08a84a41446f3b1cc2a0f4f1db49118c68ad73070d7b54474b7",
+      "bit_exact": true
+    },
+    "vision.layer.9": {
+      "bytes": 2293760,
+      "source_sha256": "d8bd6a8556827f1fbae6f5c4b2d8880c77211f8d197af68744d2430033c5ef37",
+      "native_sha256": "d8bd6a8556827f1fbae6f5c4b2d8880c77211f8d197af68744d2430033c5ef37",
+      "bit_exact": true
+    },
+    "vision.layer.10": {
+      "bytes": 2293760,
+      "source_sha256": "5467a1f8174061e9e5696921a5ea445c6e8dbdaaa45c47babccbf98c633d659c",
+      "native_sha256": "5467a1f8174061e9e5696921a5ea445c6e8dbdaaa45c47babccbf98c633d659c",
+      "bit_exact": true
+    },
+    "vision.layer.11": {
+      "bytes": 2293760,
+      "source_sha256": "6cac940c74f7ab035f811aae28540d8effe627fcc78995dcba8df656f0c932da",
+      "native_sha256": "6cac940c74f7ab035f811aae28540d8effe627fcc78995dcba8df656f0c932da",
+      "bit_exact": true
+    },
+    "vision.layer.12": {
+      "bytes": 2293760,
+      "source_sha256": "8d7a5a2111c5c467a4727e4d5ef9c0f4e145ec76e5cd7b3b600ed87d9f936205",
+      "native_sha256": "8d7a5a2111c5c467a4727e4d5ef9c0f4e145ec76e5cd7b3b600ed87d9f936205",
+      "bit_exact": true
+    },
+    "vision.layer.13": {
+      "bytes": 2293760,
+      "source_sha256": "9282b27dc18244ee76df0320b7c39c43fc764453d033f6c2d58da0c7ba1e12e6",
+      "native_sha256": "9282b27dc18244ee76df0320b7c39c43fc764453d033f6c2d58da0c7ba1e12e6",
+      "bit_exact": true
+    },
+    "vision.layer.14": {
+      "bytes": 2293760,
+      "source_sha256": "6d0cc9c444a1dca9ebe570033327e63a215528b720e294e54bc983a727039183",
+      "native_sha256": "6d0cc9c444a1dca9ebe570033327e63a215528b720e294e54bc983a727039183",
+      "bit_exact": true
+    },
+    "vision.layer.15": {
+      "bytes": 2293760,
+      "source_sha256": "c34c335ae2543cfd088b758f6123e2ec8d4b04c14c18b5d0486db00605444b6f",
+      "native_sha256": "c34c335ae2543cfd088b758f6123e2ec8d4b04c14c18b5d0486db00605444b6f",
+      "bit_exact": true
+    },
+    "vision.layer.16": {
+      "bytes": 2293760,
+      "source_sha256": "2c9c850b8e28fcb4eb2e03ab904c845a0655549c53f1297b8decd3ab4c1645d6",
+      "native_sha256": "2c9c850b8e28fcb4eb2e03ab904c845a0655549c53f1297b8decd3ab4c1645d6",
+      "bit_exact": true
+    },
+    "vision.layer.17": {
+      "bytes": 2293760,
+      "source_sha256": "0ed2c52676908f44cd84b802eafe9691b72f4dd921b8be1c098664f4f75fc48b",
+      "native_sha256": "0ed2c52676908f44cd84b802eafe9691b72f4dd921b8be1c098664f4f75fc48b",
+      "bit_exact": true
+    },
+    "vision.layer.18": {
+      "bytes": 2293760,
+      "source_sha256": "04754666e48c63c8975db7be5ea97707a50d1b2cd0d9dbaa6e1637356973e8e1",
+      "native_sha256": "04754666e48c63c8975db7be5ea97707a50d1b2cd0d9dbaa6e1637356973e8e1",
+      "bit_exact": true
+    },
+    "vision.layer.19": {
+      "bytes": 2293760,
+      "source_sha256": "1b46eb0d55445acddf6329fa411d5f8812af3427be15c91d5524390f4af37b5b",
+      "native_sha256": "1b46eb0d55445acddf6329fa411d5f8812af3427be15c91d5524390f4af37b5b",
+      "bit_exact": true
+    },
+    "vision.layer.20": {
+      "bytes": 2293760,
+      "source_sha256": "8e0f7285b206316ee6b62cd5a02cf0f4819613a72bd93eb2a2819a916b9de6a9",
+      "native_sha256": "8e0f7285b206316ee6b62cd5a02cf0f4819613a72bd93eb2a2819a916b9de6a9",
+      "bit_exact": true
+    },
+    "vision.layer.21": {
+      "bytes": 2293760,
+      "source_sha256": "c86934e708da75b4768103298fb3f1c5f9f2038c46e17632d6db88fdd568f125",
+      "native_sha256": "c86934e708da75b4768103298fb3f1c5f9f2038c46e17632d6db88fdd568f125",
+      "bit_exact": true
+    },
+    "vision.layer.22": {
+      "bytes": 2293760,
+      "source_sha256": "0efce3d436990576c57049f0f773009216fcbe27088792fa019f332e7e6e4517",
+      "native_sha256": "0efce3d436990576c57049f0f773009216fcbe27088792fa019f332e7e6e4517",
+      "bit_exact": true
+    },
+    "vision.layer.23": {
+      "bytes": 2293760,
+      "source_sha256": "513553a1c03228e5ba3f980ea96df9ad9b02680242825f2fa607a1d5e3302699",
+      "native_sha256": "513553a1c03228e5ba3f980ea96df9ad9b02680242825f2fa607a1d5e3302699",
+      "bit_exact": true
+    },
+    "vision.merged": {
+      "bytes": 1433600,
+      "source_sha256": "056f887230abc6adc0837cefd6866b42c0a69c70f02906786409c5622e0683ea",
+      "native_sha256": "056f887230abc6adc0837cefd6866b42c0a69c70f02906786409c5622e0683ea",
+      "bit_exact": true
+    }
+  },
+  "first_logits_vs_original": {
+    "elements": 248320,
+    "max_abs": 0.4609060287475586,
+    "mean_abs": 0.062233426729466204,
+    "rms_error": 0.07422891352805688,
+    "cosine": 0.9995197870293053,
+    "original_l2": 1103.1859987344499,
+    "native_l2": 1088.526481746377,
+    "original_abs_max": 22.875,
+    "native_abs_max": 22.81121063232422,
+    "different_values": 248320,
+    "first_differing_flat_index": 0,
+    "raw_strict_flag": true,
+    "first_original": 11.5625,
+    "first_native": 11.508710861206055
+  },
+  "historical_q8": {
+    "run_id": 42005430424,
+    "source_sha": "891d07da39e9c361a206f2ec4b40fe8339712e0f",
+    "artifact_id": 13403459726,
+    "zip_sha256": "0b57e702aff9a81c747498fef65c8b61e0e626a8b901ded3ef561d6e9e600c00",
+    "report_sha256": "6f2a355e7bdb14515d178e4dad0d50ed0f76c93df2088586a4dbb1ffbba813e6",
+    "same_model_and_image": true,
+    "same_runtime_source": false,
+    "controlled_same_source_AB": false,
+    "decoded": {
+      "ids": [
+        27,
+        17251
+      ],
+      "text": "<figure",
+      "exact_original_ids": false
+    },
+    "exact_original_prefix_ids": true,
+    "first_logits_vs_original": {
+      "elements": 248320,
+      "max_abs": 1.0921989679336548,
+      "mean_abs": 0.16613653086125252,
+      "rms_error": 0.20053695248870412,
+      "cosine": 0.9964006229792578,
+      "original_l2": 1103.1859987344499,
+      "native_l2": 1063.9880936730508,
+      "original_abs_max": 22.875,
+      "native_abs_max": 22.786006927490234,
+      "different_values": 248320,
+      "first_differing_flat_index": 0,
+      "raw_strict_flag": true,
+      "first_original": 11.5625,
+      "first_native": 11.264050483703613
+    },
+    "native_resources": {
+      "native_elapsed_seconds": 105.43,
+      "native_cpu_user_seconds": 77.14,
+      "native_cpu_system_seconds": 55.29,
+      "native_peak_rss_bytes": 6317084672
+    },
+    "enabled_gates": {
+      "CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT": "1",
+      "CRISPEMBED_LIGHTON4B_QUANT": "1",
+      "CRISPEMBED_QWEN35_QUANT": "1",
+      "CRISPEMBED_LIGHTON4B_GGUF_INSPECTION": "1",
+      "CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER": "1",
+      "CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER": "1",
+      "CRISPEMBED_LIGHTON4B_VISION_OWNER": "1",
+      "CRISPEMBED_QWEN35_OCR": "1",
+      "CRISPEMBED_LIGHTON4B_DECODER_COMPOSE": "1",
+      "CRISPEMBED_LIGHTON4B_LINEAR_BLOCK": "1",
+      "CRISPEMBED_LIGHTON4B_ATTENTION_BLOCK": "1",
+      "CRISPEMBED_QWEN35_GDN_GROUPED_HEADS": "1",
+      "CRISPEMBED_QWEN35_STREAM_PROJECTION": "1",
+      "CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE": "1",
+      "CRISPEMBED_LIGHTON4B_FRONTEND": "1",
+      "CRISPEMBED_LIGHTON4B_VISION_BF16": "1"
+    },
+    "scope": "Historical legacy-BF16 vision runtime; new source includes all verified norm/Linear/Conv/attention/GELU/merger/rotary fixes and other gated integration work. No claim of a table-only or same-source speed/quality effect."
+  },
+  "candidate_vs_historical_logits": {
+    "elements": 248320,
+    "max_abs": 1.0902732014656067,
+    "mean_abs": 0.12934690578239094,
+    "rms_error": 0.16087204028668206,
+    "cosine": 0.9974855606631325,
+    "original_l2": 1063.9880936730508,
+    "native_l2": 1088.526481746377,
+    "original_abs_max": 22.786006927490234,
+    "native_abs_max": 22.81121063232422,
+    "different_values": 248320,
+    "first_differing_flat_index": 0,
+    "raw_strict_flag": true,
+    "first_original": 11.264050483703613,
+    "first_native": 11.508710861206055
+  },
+  "workflow_run": 42104609427,
+  "artifact": {
+    "id": 13450873762,
+    "bytes": 78636172,
+    "sha256": "9a16e85ba59ca254a2d2d509cf21f0864fe7da4911b49c8312d6afdd2e461c09",
+    "expires_at": "2027-02-03T20:34:24Z"
+  },
+  "historical_original_q8_fd150": {
+    "source_sha": "fd150b98f488a6884a6e8d8127e7dfb263cab237",
+    "run_id": 41999580781,
+    "artifact_id": 13401793576,
+    "zip_bytes": 109882190,
+    "github_declared_zip_sha256": "87fd8ff834a95de1971a4874a57b85141828b505198fe494b0a0c0d1c835ff42",
+    "native_report_sha256": "a949c71bc59b61d96778f2d324b7da104ea54f98004bf9e1100167dd7d16e3eb",
+    "native_report_current_range_hash_crc_verified": true,
+    "stage_review_source": "CrispStrobe/CrispEmbed@d6e3eae3a:tests/results/qwen35-ocr/lightonocr3-4b-bf16-native-stages.json",
+    "stage_review_sha256": "bd693cc20222b09b2088b99ebc2cd4b9f823ad3556deca7a4104559b7c296f70",
+    "first_logits_vs_original": {
+      "comparison_shape": [
+        1,
+        248320
+      ],
+      "cosine": 0.9984697347296062,
+      "different_values": 248320,
+      "elements": 248320,
+      "first_differing_flat_index": 0,
+      "first_native": 11.601579666137695,
+      "first_original": 11.5625,
+      "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+      "max_abs": 0.5682590007781982,
+      "mean_abs": 0.10871021402638212,
+      "native_abs_max": 22.854671478271484,
+      "native_elements": 248320,
+      "native_l2": 1078.986614164811,
+      "native_sha256": "ae1eae4fc4eacf48d1bfe74e2beadb8d2f1cc41fa7fb3e959e27fd8cff1e8ed4",
+      "original_abs_max": 22.875,
+      "original_dtype": "torch.float32",
+      "original_l2": 1103.1859987344499,
+      "original_sha256": "a4bece2310050081b502a3910a19469e47016829d74abebb29861739f3205ffd",
+      "original_shape": [
+        1,
+        248320
+      ],
+      "raw_strict_flag": true,
+      "rms_error": 0.13049503474892132
+    },
+    "published_rounded_rms": 0.130495042,
+    "metrics_scope": "Reused pinned independent float64 stage review; native report independently range-read/hash/CRC verified now. Original raw logits were not reprocessed by the new Q8 model job.",
+    "decoded": {
+      "ids": [
+        27,
+        17251
+      ],
+      "text": "<figure",
+      "exact_original_ids": false
+    },
+    "exact_original_prefix_ids": true,
+    "same_model_and_image": true,
+    "same_runtime_source": false,
+    "controlled_same_source_AB": false,
+    "native_resources": {
+      "native_elapsed_seconds": 127.69,
+      "native_cpu_user_seconds": 116.85,
+      "native_cpu_system_seconds": 50.78,
+      "native_peak_rss_bytes": 6316945408
+    },
+    "enabled_gates": {
+      "CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT": "1",
+      "CRISPEMBED_LIGHTON4B_QUANT": "1",
+      "CRISPEMBED_QWEN35_QUANT": "1",
+      "CRISPEMBED_LIGHTON4B_GGUF_INSPECTION": "1",
+      "CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER": "1",
+      "CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER": "1",
+      "CRISPEMBED_LIGHTON4B_VISION_OWNER": "1",
+      "CRISPEMBED_QWEN35_OCR": "1",
+      "CRISPEMBED_LIGHTON4B_DECODER_COMPOSE": "1",
+      "CRISPEMBED_LIGHTON4B_LINEAR_BLOCK": "1",
+      "CRISPEMBED_LIGHTON4B_ATTENTION_BLOCK": "1",
+      "CRISPEMBED_QWEN35_GDN_GROUPED_HEADS": "1",
+      "CRISPEMBED_QWEN35_STREAM_PROJECTION": "1",
+      "CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE": "1",
+      "CRISPEMBED_LIGHTON4B_FRONTEND": "1"
+    },
+    "vision_policy": "Original F32 vision route, BF16 candidate gate not enabled."
+  },
+  "comparative_limits": [
+    "Single image and two independent greedy tokens, not full177-token/EOS or full-document quality.",
+    "Historical fd150 original F32 vision and891d earlier BF16 candidate already matched the same two-token prefix; no new prefix win is claimed.",
+    "Current, fd150 and891d use different runtime sources and hosted workers; not a controlled same-source A/B, table-only effect or throughput benchmark.",
+    "Five canonical prepared inputs and all29 emitted vision stage hashes match original in the corrected Q8 run; other model geometries are covered only by the separate arithmetic profile proof, not by full-model inference.",
+    "All248320 current first-row logit values still differ from original; decoder/quantization residual remains.",
+    "All gates remain default-off, unsupported arithmetic profiles fall back, no release/app-pin/default or general quality promotion."
+  ]
+}

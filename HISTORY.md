@@ -20826,3 +20826,10 @@ no further runs in this lane.
 Complete configured rotary production 42098420346 passes full-domain/regeneration/22 fallback controls, native dependencies/builds and decoder controls. Source-fed original tables, attention and first block are now byte-exact, with preceding bytes preserved. Ordinary Q4 quality with the table remains pending; gate remains off.
 
 Complete rotary Q4 42099925931 plus independent raw audit 42102908743 establish 29 recorded processor/vision SHA identities for one image. First downstream difference is text embedding; first scores and `<table>` prefix remain worse/incorrect. Full raw and timing limits retained, prefix observer corrected. One guarded corrected Q8 smoke is authorized; prior Q8 already had the correct two-token prefix, so no new-prefix claim from an unchanged result.
+
+Corrected Q8 42104609427 passes immutable model/prepared-input and 29 raw vision
+controls. First-logit RMS 0.0742289135 / max 0.460906029 improves historical
+fd150 0.13049504 / 0.568259001 and891d 0.2005369525 / 1.092198968; sources and
+hosts differ. Prefix `<figure` is preserved and was already correct before.
+Two-token only, no EOS/body qualification or speed/default/release promotion.
+Current native elapsed 139.13 s and peak 6,317,207,552 bytes are retained.
