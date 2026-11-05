@@ -166,3 +166,17 @@ original-module GDN pre-norm tensor before another composed candidate replay.
 The new pre-normalized delta entry also rejects with cleared outputs unless its
 BF16 gate is enabled; cache precision tags reject mixed-mode continuation.
 No quality/default/release qualification follows from this bounded correction.
+
+Actual-helper42031297677 at5ba80426d reproduces154 scales and all394,240
+input-norm F32/BF16 values exactly, plus all630,784 normalized BF16 values from
+the original module's real128-wide GDN pre-norm tensor. Legacy layer, direct-entry
+gate and incompatible-cache checks pass. Old rejected alternatives correctly keep
+the overall job red. Both production-helper RMS widths are now bounded positives;
+this does not qualify the next projections or composed decoder.
+
+The next composed layer0 replay uses the exact measured helper. Earlier recovery
+arms were fresh processes; the successor additionally interleaves both modes in
+the same native process/weight owner, rejects mixed-mode cache resumption, and
+requires all legacy hidden/intermediate/cache values to reproduce exactly after
+the alternate call. All complete arms retain numerical status before an aggregate
+nonzero exit for any native failure. No expanded decoder or generation is run.

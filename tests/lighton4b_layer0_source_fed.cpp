@@ -27,6 +27,13 @@ static float diagnostic_tree_mean(const float * input, int lanes) {
     for (int lane = 0; lane < lanes; ++lane) sum += partial[0][lane];
     return sum / 2560.0f;
 }
+static void bf16_gate(bool enabled) {
+#ifdef _WIN32
+    _putenv_s("CRISPEMBED_LIGHTON4B_BF16_LINEAR", enabled ? "1" : "0");
+#else
+    setenv("CRISPEMBED_LIGHTON4B_BF16_LINEAR", enabled ? "1" : "0", 1);
+#endif
+}
 static int run(int argc, char ** argv) {
     if (argc != 4 && argc != 5 && argc != 7 && argc != 8) return 2;
     // RNE tie cases distinguish BF16 from truncation and FP16 conversion.
@@ -181,6 +188,27 @@ static int run(int argc, char ** argv) {
             target.insert(target.end(), v.begin(), v.end());
         };
         if (offset == 0) {
+            const bool initial_mode = qwen35_ocr::lighton4b_bf16_linear_enabled();
+            const auto untouched_cache = b.cache;
+            bf16_gate(!initial_mode);
+            qwen35_ocr::lighton4b_linear_block_outputs alternate, rejected_mode;
+            if (!qwen35_ocr::lighton4b_linear_block_cpu(w, input.data(), 16, 2, nullptr, alternate) ||
+                qwen35_ocr::lighton4b_linear_block_cpu(w, input.data(), 1, 2, &b.cache, rejected_mode) ||
+                !rejected_mode.hidden.empty())
+                return 9;
+            bf16_gate(initial_mode);
+            qwen35_ocr::lighton4b_linear_block_outputs repeated;
+            if (!qwen35_ocr::lighton4b_linear_block_cpu(w, input.data(), 16, 2, nullptr, repeated) ||
+                repeated.input_norm != b.input_norm || repeated.attention != b.attention ||
+                repeated.attention_residual != b.attention_residual || repeated.post_norm != b.post_norm ||
+                repeated.gate != b.gate || repeated.up != b.up || repeated.activation != b.activation ||
+                repeated.down != b.down || repeated.hidden != b.hidden || repeated.cache.conv != b.cache.conv ||
+                repeated.cache.recurrent != b.cache.recurrent || repeated.cache.tokens != b.cache.tokens ||
+                repeated.cache.bf16_activations != b.cache.bf16_activations ||
+                untouched_cache.tokens != b.cache.tokens ||
+                untouched_cache.bf16_activations != b.cache.bf16_activations || untouched_cache.conv != b.cache.conv ||
+                untouched_cache.recurrent != b.cache.recurrent)
+                return 9;
             auto incompatible = b.cache;
             incompatible.bf16_activations = !incompatible.bf16_activations;
             qwen35_ocr::lighton4b_linear_block_outputs rejected;

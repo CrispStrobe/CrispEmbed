@@ -144,7 +144,7 @@ def main():
                 value=np.fromfile(folder/(name+'.f32'),dtype='<f4').reshape(expected[name].shape)
                 metrics.append({'stage':name,**ref.metrics(value,expected[name],np),
                     'original_abs_max':float(np.abs(expected[name]).max()),'native_abs_max':float(np.abs(value).max())})
-            report['arms'][label]={'bf16_boundary_gate':boundary,'same_input_same_weights':True,'stages':metrics,'earliest_failure':next((r['stage']for r in metrics if not r['passed']),None)};save()
+            report['arms'][label]={'same_process_mode_interleave_exact':True,'mixed_mode_cache_rejected':True,'bf16_boundary_gate':boundary,'same_input_same_weights':True,'stages':metrics,'earliest_failure':next((r['stage']for r in metrics if not r['passed']),None)};save()
         # Read only the immutable official layer0 interval, not the9GB model.
         header_path=policy.FIXTURE/policy.HEADER_FILE;raw_header=header_path.read_bytes()
         require(digest(raw_header)==policy.HEADER_SHA256,'checkpoint header differs')
@@ -264,9 +264,11 @@ def main():
                     require(native.sha(out/(recipe+'-native-legacy-recovery')/(stage+'.f32'))==native.sha(out/(recipe+'-native-quant')/(stage+'.f32')),'gated call changed legacy output')
                 del oracle
             del tensors,reader,weights,expected_stages;gc.collect();model.unlink()
-        report['failed_native_arms']=[label for label,row in report['arms'].items() if row.get('earliest_failure')]
-        require(not report['failed_native_arms'],'same-input native operator comparison failed: '+','.join(report['failed_native_arms']))
+        report['comparison_completed']=True
         report['status']='compared' if report['frozen_bf16_hidden_exact'] else 'diagnostic-compared-unanchored'
+        report['failed_native_arms']=[label for label,row in report['arms'].items() if row.get('earliest_failure')]
+        report['numerical_rejection']=bool(report['failed_native_arms'])
+        require(not report['failed_native_arms'],'same-input native operator comparison failed: '+','.join(report['failed_native_arms']))
     except Exception as error:
         report['error_type']=type(error).__name__
         # Avoid signed URLs, credentials and provider exception bodies.

@@ -1178,3 +1178,11 @@ RMS widths2560/128, preserving shared legacy RMS. Actual production-helper
 input/GDN norm replay is next before any expanded decoder; direct entry gates
 and incompatible-cache controls remain mandatory. All old alternatives/rejections
 and full decoded quality debt stay unchanged.
+
+Actual gated RMS helper42031297677/5ba80426d is exact on154 scales and394,240
+input-norm F32/BF16 values, plus630,784 real original GDN128 normalized BF16
+values. Legacy/cache/direct-entry controls pass; old alternatives remain red.
+Next composed layer0 replay preserves these exact helpers, adds true same-process
+mode interleaving/immutable-cache controls (earlier recovery was fresh-process),
+and records all comparison results before aggregate numerical rejection. Remaining
+projection/GDN/FFN and actual decoded gates are still open; no decoder expansion.
