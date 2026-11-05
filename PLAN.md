@@ -1217,3 +1217,18 @@ runs with1/4 threads and unset/empty/0 old-path controls. Every old output must
 retain its historical SHA; dtype/nonfinite rejection controls execute too.
 Patch1536 and merger composition are explicitly unverified at this gate.
 No model download/forward or full smoke follows until full operators improve.
+
+
+[Full linear42032345547](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42032345547)
+at8e2083cf6 passes all original and actual production QKV/out/up/down outputs
+byte-for-byte with1 and4 threads; old unset/empty/0 outputs retain all historical
+bytes and both invalid-dtype/nonfinite controls reject correctly. The
+[full operator receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-linear-operators.json)
+closes selected-only debt for these four operators, not patch/merger composition.
+One ordinary `tools/ci-heavy/lighton4b_vision_linear_ab.py` now compares the
+verified norm-only baseline against norm+linear on the same immutable Q4/image.
+It rechecks all source-fed bytes and every30-stage frozen norm-only baseline
+hash, then compares patch/position/embedded/all24 hidden layers/merged/full first
+logits and independent two-token text. Baseline pins come from the small retained
+42028668863 native report; no raw arrays are downloaded for local review.
+All gates remain off; no component result qualifies decoded quality.
