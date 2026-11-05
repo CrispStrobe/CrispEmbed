@@ -108,6 +108,7 @@ def layout(rows,part_bytes):
         safe_name(row['file']);left=row['bytes'];offset=0
         require(type(left)is int and left>0,'nonempty file required')
         while left:
+            require(index<4096 and len(segments)<24000,'bounded part/segment inventory exceeded')
             take=min(left,part_bytes-used)
             segments.append(dict(file=row['file'],file_offset=offset,part=f'part-{index:05d}.bin',part_offset=used,bytes=take))
             used+=take;left-=take;offset+=take

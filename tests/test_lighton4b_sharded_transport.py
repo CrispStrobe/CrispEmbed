@@ -128,6 +128,7 @@ class Controls(unittest.TestCase):
         self.assertEqual(p['execution_admission']['native_producer_sources'],[])
         for size in(0,True,t.MAX_PART+1):
             with self.assertRaises(ValueError):t.layout([dict(file='safe',bytes=4)],size)
+        with self.assertRaisesRegex(ValueError,'inventory'):t.layout([dict(file='safe',bytes=t.MAX_TOTAL)],4)
 
 
 if __name__=='__main__':unittest.main()
