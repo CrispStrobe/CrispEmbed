@@ -1099,3 +1099,17 @@ branch; it is not added to this spine. Original full runs42001328483/42001333207
 continue on exact`fd150b98f`; no run is cancelled, repinned or interpreted as
 complete. New model dispatches and new PRs are paused while the user-requested
 PR/CI consolidation proceeds. No new runtime release or quality promotion.
+
+Consolidated`cf1e7248c` automatic checks exposed four missing test clean-exit
+routes and owned-file clang18 style violations; both are repaired locally.
+Aggregate red/skipped build jobs followed failed static prerequisites and are
+not execution evidence of a platform/numerical regression. The source-pin failure
+for`qwen35_linear.cpp`/`qwen35_math.h` predates consolidation: their pre-merge
+bytes were unchanged from PR155. Reviewed exact-byte amendments use the existing
+append-only journal and leave every frozen receipt/hash/budget intact. Four old
+mathematical function bodies remain byte-identical to main.
+[Static repair record](tests/results/qwen35-ocr/lightonocr3-4b-consolidation-static-repair.json)
+records initial runs and limits. All713 formatting checks,264 clean-exit mains,
+three case contracts,13 quality-audit controls and15 git-verified source pins
+pass locally; no model inference/build or new CI dispatch is implied. Repairs
+are held locally for the coordinated queue-preserving push.

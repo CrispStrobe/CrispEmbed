@@ -31,6 +31,18 @@
             "5197e86d2ee8dea30f566e1c01cad3d409be8d5d Add bounded decoder weight reuse behind an explicit opt-in (#81)"
           ],
           "reason": "PR #81 (5197e86d) forward-declares converted_weight_cache and adds a defaulted 'converted_weight_cache * = nullptr' parameter to project_cpu. Declaration-only; default callers pass nullptr, so the frozen arithmetic is unchanged."
+        },
+        {
+          "from_sha256": "0696f1781ce2cb49fc639dcc405262ffc1beb63bd1549aa571391f6b30e06d96",
+          "to_sha256": "cd48a69b83620b7c386890b0233c1cb57b6b9ee2735208a52e2821bf70b045f6",
+          "to_blob": "2d6d3bdd27fc866dbb01eb60cf930c7f4eb2024c",
+          "recorded_at_commit": "eb4c67cb2ab3cbf15b00d718404696ca0c71b7ab",
+          "recorded": "2026-11-05",
+          "changed_by": [
+            "eb4c67cb2ab3cbf15b00d718404696ca0c71b7ab Fix consolidated test exit routing and format owned LightOn sources",
+            "ca8d8fd405b2e90c554a1d1c51caa14947bb2fec Assemble quantized LightOn4B native image and cached document runner"
+          ],
+          "reason": "The integrated LightOn4B prototype adds only the default-off streamed vocabulary projection declaration and scoped clang18 formatting. Original RMS helpers and existing declarations retain behavior; frozen receipts and budgets are unchanged. This records exact current source bytes, not model qualification or a replacement reference."
         }
       ]
     },
@@ -62,6 +74,20 @@
           "recorded": "2026-11-04",
           "changed_by": [],
           "reason": "Add the separate linear_grouped_cpu component API for LightOnOCR-3-4B compact unequal key/value heads. Both CRISPEMBED_QWEN35_OCR and CRISPEMBED_QWEN35_GDN_GROUPED_HEADS must be enabled through core_env::on; unset, empty and literal 0 disable the new entry. Existing project_cpu, linear_cpu and their default callers are byte-identical to main 17c96639; equal-head calls delegate unchanged. F32/F16 admission only, no decoder/context/model admission. Native original-module synthetic comparison is a separate pending hosted component protocol; historical model/quantization receipts and their qualification remain unchanged."
+        },
+        {
+          "from_sha256": "5a11b9f0ff8b8a823b198460706c9c414c6c80216f50c23605362317b01ed63a",
+          "to_sha256": "da0734e9eab94064dba1d9940483a358364d3c8c8f1c9b4739a3d2bf9108b212",
+          "to_blob": "3fa8b69748f0b8e2b573458ba7150a16540afd16",
+          "recorded_at_commit": "eb4c67cb2ab3cbf15b00d718404696ca0c71b7ab",
+          "recorded": "2026-11-05",
+          "changed_by": [
+            "eb4c67cb2ab3cbf15b00d718404696ca0c71b7ab Fix consolidated test exit routing and format owned LightOn sources",
+            "ca8d8fd405b2e90c554a1d1c51caa14947bb2fec Assemble quantized LightOn4B native image and cached document runner",
+            "c61e561789190f395cb3c3089e0e1e9707ef5096 Add gated quantized LightOn4B payload owner and decoder access",
+            "52caee899795a724b9e7e1e59a3e0d641af65586 Add gated grouped-head OCR components and original reference CI"
+          ],
+          "reason": "The integrated LightOn4B prototype adds separately gated Q8/Q4 row-streamed vocabulary projection and permits grouped projection matrices only with explicit LIGHTON4B_QUANT plus QWEN35_QUANT. The existing matrix_type_supported, tensor_floats, project_cpu and linear_cpu bodies are byte-identical to main. The new row path requires STREAM_PROJECTION; grouped paths require their existing default-off gate. Scoped clang18 formatting changes no arithmetic. Original receipts, old default paths, budgets and negative outcomes remain unchanged; no composed quality or release qualification follows."
         }
       ]
     },
