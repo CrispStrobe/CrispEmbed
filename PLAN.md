@@ -1,5 +1,17 @@
 # CrispEmbed plan — open work (updated 4 November 2026)
 
+The separate [original4B sharded transport](docs/lighton4b-original-sharded-transport-v1.md)
+implements bounded immutable parts, final-manifest publication and independent
+whole-file reconstruction with failure receipts. Hosted synthetic HTTP-service
+controls41977694403 and hardened41977934618 each pass all6 methods with zero
+skips; independent review verifies exact source hashes and68 whole-file cold
+restores. The [receipt](tests/results/qwen35-ocr/lightonocr3-4b-transport-controls.json)
+closes only fixture transport mechanics. Actual external-provider acceptance/retention and
+cache budgeting remain separate. Original transport/capture admission stays false,
+document-v1 empty producers/2GiB and40GiB RAM/48GiB disk gates stay unchanged.
+Before any original forward, independently review source/provider proof and an
+explicit capture-admission change; do not infer32GB feasibility or GPU quota use.
+
 The separate [original4B generated observer](docs/lighton4b-original-adapter-v1.md)
 adds source-bound observation to the frozen dumper without changing its bytes:
 every generated final norm/position,248320 logits and64 cache fields are streamed

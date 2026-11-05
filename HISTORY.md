@@ -1,3 +1,31 @@
+## 5 November 2026 — Versioned original-cache sharded transport controls
+
+Initial [41977694403](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41977694403)
+at `a6469f7dd` passes all6 hosted synthetic transport controls; its separate
+[receipt](tests/results/qwen35-ocr/lightonocr3-4b-transport-controls-initial.json)
+preserves that exact initial scope. After explicit4096-part/24000-segment
+allocation caps, [41977934618](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41977934618)
+at `2a9e03b194ee636b3dac57338e81387fc573505e` also passes all6 controls,
+zero skips. Independent review verifies all5 recorded source hashes and the log
+digest. The independent immutable-revision HTTP service fixture uploads bounded
+parts, restores all68 synthetic files (67 generated fields plus observer
+metadata) into a cold directory and verifies their original bytes/SHA values.
+Negative cases reject source corruption, incomplete fields/EOS, original relabel,
+prefix collision, partial HTTP500 upload, missing/truncated/corrupt remote parts,
+wrong manifest SHA, overlap/path traversal and excessive part inventory. Partial
+uploads retain failed receipts and have no committed completed manifest.
+
+[The final receipt](tests/results/qwen35-ocr/lightonocr3-4b-transport-controls.json)
+records exact source/artifact identities. The optional real Hugging Face backend
+is implemented but external service acceptance, durable retention, cache budgeting
+and real provider cold readback remain unverified. No model bytes, original/native
+forward or GPU use occurred. Original transport/capture gates remain false, the
+document-v1 archive bound stays2GiB and producer lists stay empty; the40GiB RAM/
+48GiB disk capture requirements are unchanged. Full restored data may need a
+separate appropriately provisioned hosted reader. Review actual provider evidence
+and a separate source-bound capture admission before any original forward.
+See [the transport contract](docs/lighton4b-original-sharded-transport-v1.md).
+
 ## 5 November 2026 — Original4B generated-observer implementation controls
 
 [41976285821](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41976285821)

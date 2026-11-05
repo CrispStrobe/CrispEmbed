@@ -1,0 +1,43 @@
+{
+  "artifact": {
+    "archive_sha256": "9b0129df3cb6dd358c6af5b11aa41ae69f538971f4c0975f2c4a26418c876639",
+    "bytes": 1399,
+    "id": 13392861288,
+    "name": "heavy-41977934618"
+  },
+  "capture_enabled": false,
+  "controls_log_sha256": "5fe9c96f464b88503f6bd92077d02da997d3cf268be6cdcd0f689566e0a8c2a6",
+  "external_provider_retention_verified": false,
+  "external_provider_write_executed": false,
+  "independent_review": {
+    "generated_field_files": 67,
+    "independent_fixture_readback_files": 68,
+    "log_hash_verified": true,
+    "max_manifest_bytes": 16777216,
+    "max_part_bytes": 536870912,
+    "max_parts": 4096,
+    "max_segments": 24000,
+    "max_total_bytes": 51539607552,
+    "remote_service_scope": "Independent immutable-revision HTTP fixture only. Actual external provider acceptance, retention, cache budgeting and real provider readback remain unverified.",
+    "skips": 0,
+    "source_hashes_verified": 5,
+    "tests": 6,
+    "v1_and_original_capture_guards_unchanged": true
+  },
+  "model_payload_bytes": 0,
+  "native_forward_executed": false,
+  "original_forward_executed": false,
+  "original_transport_admitted": false,
+  "quality_qualified": false,
+  "run_id": "41977934618",
+  "schema": "lighton4b-sharded-transport-controls/v1",
+  "source_sha": "2a9e03b194ee636b3dac57338e81387fc573505e",
+  "source_sha256": {
+    "docs/lighton4b-document-parity-v1.json": "afee0e1fbebc73b9ded744343ee9e2ae467f3b214ab3682e9fb0e8fd733ad674",
+    "tests/test_lighton4b_sharded_transport.py": "cf22a9661585b11ffc5c94065d98a9e13473964071d4d5840cb22c00a60ae9d0",
+    "tools/ci-heavy/lighton4b_transport_controls.py": "f8944e7059b143d981e18356bf164f0ae00ca7115436c9c4c2ea74431b5a0419",
+    "tools/lighton4b_original_document.py": "241fa5f288ca3a2f48b9011edf5e89bfc477f9aec8803f0e9d05b3ef21eb3174",
+    "tools/lighton4b_sharded_transport.py": "0ca7485879ea70b5b1440aa1c1db10e0dbea340b50c23089a26cbc23794504f0"
+  },
+  "status": "passed"
+}

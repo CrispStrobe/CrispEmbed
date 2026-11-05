@@ -1,0 +1,36 @@
+{
+  "admitted_original_producers": [],
+  "capture_disk_admission_unchanged_bytes": 51539607552,
+  "capture_ram_admission_unchanged_bytes": 42949672960,
+  "document_v1_archive_limit_unchanged_bytes": 2147483648,
+  "document_v1_protocol_sha256": "afee0e1fbebc73b9ded744343ee9e2ae467f3b214ab3682e9fb0e8fd733ad674",
+  "external_provider_verified": false,
+  "integrity": [
+    "source regular contained files with whole-file SHA256",
+    "deterministic contiguous byte-range parts and SHA256",
+    "immutable unique session prefix, no overwrite",
+    "immediate empty-cache per-part readback",
+    "manifest committed only after all parts and unchanged-source verification",
+    "independent cold restore validates manifest hash, canonical ranges, every part and every complete source file",
+    "reconstructed67-field/EOS/observer-neutral semantic inventory"
+  ],
+  "manifest_schema": "lighton4b-original-sharded-transport/v1",
+  "max_files": 17156,
+  "max_generated_bytes": 25769803776,
+  "max_legacy_file_bytes": 9663676416,
+  "max_manifest_bytes": 16777216,
+  "max_part_bytes": 536870912,
+  "max_parts": 4096,
+  "max_positions": 256,
+  "max_segments": 24000,
+  "max_total_source_bytes": 51539607552,
+  "original_capture_enabled": false,
+  "original_transport_admitted": false,
+  "providers": {
+    "http_fixture": "Independent hosted loopback HTTP service with immutable version snapshots, synthetic bytes only; not external-provider retention proof.",
+    "hugging_face": "Optional implemented backend; caller-authorized existing repo, parent commit writes, immutable40-hex readback; external-provider acceptance/retention/cache budgeting remains unverified."
+  },
+  "required_generated_fields_per_position": 67,
+  "schema": "lighton4b-original-sharded-transport-contract/v1",
+  "status": "implemented-synthetic-controls-only"
+}
