@@ -5,9 +5,12 @@
 #include <fstream>
 static void gate(const char * name, const char * value) {
 #ifdef _WIN32
-    _putenv_s(name, value);
+    _putenv_s(name, value ? value : "");
 #else
-    setenv(name, value, 1);
+    if (value)
+        setenv(name, value, 1);
+    else
+        unsetenv(name);
 #endif
 }
 static int run(int argc, char ** argv) {
@@ -33,6 +36,7 @@ static int run(int argc, char ** argv) {
     bool ok = true;
     auto check = [&](bool value) {
         ++checks;
+        if (!value) std::printf("FAIL control=%zu\n", checks);
         ok &= value;
     };
     auto map = [&] { return qwen35_ocr::map_lighton4b_model(tensors, owner); };
@@ -46,7 +50,7 @@ static int run(int argc, char ** argv) {
           owner.vision_parameters.width == 1024 && owner.text.linear_key_heads == 16 &&
           owner.text.linear_value_heads == 32);
     for (auto * g : gates) {
-        for (auto * value : { "", "0", "false" }) {
+        for (auto * value : { static_cast<const char *>(nullptr), "", "0" }) {
             gate(g, value);
             check(reject());
         }

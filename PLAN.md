@@ -930,3 +930,5 @@ actual composite/runtime/platform gates remain required.
 ## Atomic LightOn4B model ownership — 5 November 2026
 
 Active bounded lane `feat/lighton4b-model-owner-20261105` stacks exact PR145 `882b8dded` text/grouped/export dependencies with unchanged PR144 `84e19504e` vision source/header. Adds atomic723-tensor borrowed ownership behind a separate default-off gate, globally rejects pointer alias/strides/unknown prefixes and preserves protected F32 norms/biases. Hosted header-derived controls only; no checkpoint payload, format5 admission, frontend, decoder execution, release or decoded parity claim. Grouped execution and streamed projection remain separate dependencies for future composed inference.
+
+Initial hosted owner run [41973459077](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41973459077) builds successfully and runs5281 controls but fails: the new test incorrectly treated literal `false` as off, contrary to the unchanged shared helper contract (only unset, empty and literal0 are off). Correct the test to exercise unset/empty/0; preserve the runtime gate semantics and the negative run. No model payload or inference occurred.
