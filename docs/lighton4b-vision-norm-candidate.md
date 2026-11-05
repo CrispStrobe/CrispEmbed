@@ -82,7 +82,7 @@ The later attention lane preserves independent gates and source-fed controls:
 | `SOFTMAX_AVX2` | Original vector exp/reduction, used with `ATTENTION`; all source-fed probability and pooling bytes exact. |
 | `GELU_AVX2` | Source-derived double-float tanh and original cube grouping; all 2,293,760 source activation bytes exact. |
 | `MERGER_ERF_AVX2` | Source erf polynomial/exp for final merger only; original/actual merger byte correction and focused gate/build validation passed. |
-| `ROTARY_TABLE` | Complete 128 KiB configured coordinate/frequency arithmetic, generated without images or activations; complete-domain proof passed, production integration pending. |
+| `ROTARY_TABLE` | Complete 128 KiB configured coordinate/frequency arithmetic, generated without images or activations; complete-domain and actual production/fallback/source-first-block controls passed. |
 | `ROTARY_AVX2` | **Rejected alternative, keep off.** SLEEF trig differs from original MKL backend. |
 
 The `SOFTMAX_AVX2`, `GELU_AVX2` and `MERGER_ERF_AVX2` gates require x86_64 AVX2/FMA and nearest

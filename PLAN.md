@@ -1569,3 +1569,20 @@ Focused integration will regenerate committed data, repeat the whole domain
 through the actual private production helper, verify new fallback/precedence
 controls, source tables and first-block bytes, native/context builds and decoder
 controls. No quality claim before actual composed inference is measured.
+
+Production table integration [42098420346](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42098420346)
+at `7648267c79453b277b6ae3f8c43aa54769903264` passes full committed-asset
+regeneration and the actual private runtime helper: 681,459,712 F32 values across
+3,873 layouts, all 3,280 h/w pairs and 1,024 token counts, remain bit-exact.
+All 22 reader/production fallback and precedence controls pass; native reader
+links no Torch/MKL. Retained source controls now match all original cosine/sine,
+pooled attention and complete first-block bytes, closing the 32 rotary
+mismatches. Preceding first-block bytes are preserved when table disabled.
+Native/context builds, context 9, decoder 20 and env docs pass. Exact generator
+manifest is updated from the actual qualified run, not manually recomputed data.
+
+One source-pinned ordinary Q4 A/B now enables every verified vision gate plus
+the complete rotary profile, rejected SLEEF rotary0 and decoder candidate0.
+Require all 30 frozen baseline stage hashes, independent decoded outputs and
+first-score magnitudes, plus both native timings. No quality/default/release
+promotion from source/component parity alone; latest decoded result is negative.

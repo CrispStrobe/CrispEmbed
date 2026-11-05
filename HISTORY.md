@@ -20822,3 +20822,5 @@ but first-logit RMS 0.5643236502 still exceeds baseline 0.5601347910, and both
 decodes remain wrong `<table>`. Baseline/candidate native elapsed 105.17/115.84 s
 and complete limits are retained. Defaults, release and quality stay unchanged;
 no further runs in this lane.
+
+Complete configured rotary production 42098420346 passes full-domain/regeneration/22 fallback controls, native dependencies/builds and decoder controls. Source-fed original tables, attention and first block are now byte-exact, with preceding bytes preserved. Ordinary Q4 quality with the table remains pending; gate remains off.

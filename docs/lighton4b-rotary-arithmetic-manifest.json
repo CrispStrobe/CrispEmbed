@@ -13,10 +13,11 @@
   "raw_bytes": 131072,
   "raw_sha256": "30ea508c92d92a8400604e276fac161a1a85f7e89cd79877f227684a6d330e0c",
   "header_sha256": "9f52f11eff527011693a3dcae1cafe9cfbff85c7c146453f8c41b54d90ed6d0e",
-  "generator_sha256": "fc9b16208ea41c21957447ab8a9d6685323e5853a5c37042417ca1d5013af262",
+  "generator_sha256": "7232a8aa5d797cc14e88e0fcbf2349185b40579c08bc629fecc1ac180c812c7f",
   "torch_version": "2.13.0+cpu",
   "torch_git_version": "cf30153c4c131c8164ee7798e5022d810682e2cb",
   "numpy_version": "2.3.5",
+  "reference_os": "Linux x86_64",
   "mkl_profile": "2024.2 build20240605 AVX2 VML_HA",
   "cpu_dispatch": {
     "ATEN_CPU_CAPABILITY": "avx2",

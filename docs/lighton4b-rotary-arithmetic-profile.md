@@ -3,7 +3,7 @@
 This lane reproduces fixed model arithmetic from configuration and the pinned
 original CPU math backend. It does not read images, checkpoints, reference
 activations or OCR outputs. Complete-domain source/reader proof passed; the default-off production integration
-now awaits focused source-fed/fallback/build verification. The rejected SLEEF
+passes focused source-fed/fallback/build verification. The rejected SLEEF
 rotary alternative remains off.
 
 The source configuration is
@@ -82,3 +82,13 @@ checks ordinary/unsupported fallback and precedence over rejected SLEEF, then
 checks retained same-input original tables and first-block output. No image is
 used in generation; retained neural inputs are verification only. A full model
 forward and decoded quality remain separate qualifications.
+
+
+[Production integration 42098420346](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42098420346)
+at `7648267c79453b277b6ae3f8c43aa54769903264` regenerates the committed asset
+and repeats every domain case through the actual runtime helper. All values and
+22 fallback/precedence checks pass; native dependencies remain clear. Original
+source cosine/sine, pooled attention and complete first-block output now match
+bytes, while the preceding disabled path is preserved. Native/context/decoder
+controls pass. Ordinary Q4 inference will separately measure actual stage,
+first-score, decoded and timing impact; no quality claim follows yet.
