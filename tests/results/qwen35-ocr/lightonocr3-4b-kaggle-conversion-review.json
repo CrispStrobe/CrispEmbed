@@ -5,6 +5,24 @@
   "environment_warning": "Python sitecustomize raised ModuleNotFoundError for wrapt at startup; execution continued and pip check reported no broken requirements.",
   "hub_repo": "https://huggingface.co/cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
   "hub_revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+  "initial_attempts": [
+    {
+      "attempt": 1,
+      "diagnostics_sha256": "8739c76e681f900923b900c9df0ef75cf421d39cabb54650c4b9ad19b6a76d85",
+      "failure": "GitHub credential unavailable or ambiguous on worker",
+      "network_preflight": "passed",
+      "script_sha256": "7c5d99a29ba71976eb90ccb50fe6f1688b9f2eb64487642499edf0d5699972c6",
+      "status": "failed-before-checkpoint"
+    },
+    {
+      "attempt": 2,
+      "diagnostics_sha256": "c6d7d0ad99d6f973997c11207c101a23f9f66241877e65453ac9bfb9fcd8e98f",
+      "failure": "Python virtual environment creation failed",
+      "network_preflight": "passed",
+      "script_sha256": "2f877daa77112160dc0f52c04850c07d17259f8088a4dadcd03c0d2efbd54427",
+      "status": "failed-before-checkpoint"
+    }
+  ],
   "meta_status": "passed",
   "model_revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
   "native_inference_observed": false,
