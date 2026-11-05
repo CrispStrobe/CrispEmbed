@@ -1244,3 +1244,14 @@ is bounded normalization proof, not complete GDN/decoder quality. Composed
 same-input layer0 replay42032626361/5b47ed44e now measures the next projection,
 with actual same-process mode interleaving and immutable/mixed-mode cache checks.
 No decoder expansion/default or decoded-quality promotion precedes that result.
+
+Composed exact-RMS42032626361/5b47ed44e completes all arms and is correctly red:
+input norm exact, first remaining QKV max official0.015625/Q8-Q40.03125. Hidden
+improves to official/Q40.00390625 and Q80.0078125, still over0.002. All112 legacy
+stages plus genuine same-process mode interleave/immutable/mixed-cache controls
+pass. [Complete composed limits](docs/lighton4b-layer0-attribution-results.md#composed-layer0-after-exact-rms-next-qkv-failure-retained)
+preserve every old rejection. Focused Q8 dot42036721968/f62b28879 now anchors
+source normalized/projection bytes and observes actual F32 operands/route before
+pre/post-BF16 accumulation hypotheses; no decoder/GDN/model forward is repeated.
+Only verified default-off RMS/BF16-block code is a candidate for scoped PR155
+integration; QKV/full-block/decoded/platform/release gates remain open.

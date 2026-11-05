@@ -238,3 +238,40 @@ process/weight owner, rejects mixed-mode cache continuation, and requires every
 legacy intermediate/hidden/cache to reproduce exactly after the alternate call.
 No expanded decoder or generation is run, and no corrected decoded result is
 claimed while the next differing projection is under measurement.
+
+## Composed layer0 after exact RMS: next QKV failure retained
+
+[42032626361](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42032626361)
+at5b47ed44e completes all original/native arms and correctly exits red with
+`comparison_completed=true`, `numerical_rejection=true`. The
+[complete composed report](../tests/results/qwen35-ocr/lightonocr3-4b-layer0-bf16-boundary-exact-rms-v2.json)
+retains the exact-RMS candidate and all previous alternatives. Input norm is now
+exact in every BF16 activation arm; the next first failure is QKV:
+
+| Candidate vs corresponding quant-preserving BF16 activation oracle | Input norm max | QKV max | Hidden max before→after exact RMS |
+| --- | ---: | ---: | ---: |
+| Official weights |0 |0.015625 |0.03125→0.00390625 |
+| Q8 weights |0 |0.03125 |0.03125→0.0078125 |
+| Q4 weights |0 |0.03125 |0.015625→0.00390625 |
+
+All hidden errors still exceed unchanged0.002. Source QKV magnitudes are about
+24.25; numerical improvement does not establish full-block or decoded parity.
+Recurrent-state and later FFN flags remain recorded. Existing source quantization
+loss and complete legacy Q8/Q4 decoded rejections remain unchanged.
+
+All112 stage checks across seven legacy same-weight/recovery arms pass. Every
+native arm also passes actual **same-process** interleaving: the alternate mode
+uses the same native weight owner, incompatible cache continuation rejects, and
+all original intermediates/hidden/cache values reproduce exactly after restoring
+the mode. Earlier fresh-process recovery remains separately limited. No reference
+arrays are consumed by production code and no full decoder or generation runs.
+Raw498,725,772-byte artifact13417242200 remains remote; only its209KB report was
+range-read locally.
+
+Focused Q8 QKV dot42036721968 atf62b28879 now preserves the original normalized
+input and rounded-projection hashes, observes actual native F32 route/complete
+operands and compares pre-round F32 with BF16-rounded output. Selected traces and
+complete accumulation hypotheses precede any dot fix. The earlier native producer
+omitted native payload SHA fields, so reproduction of its old native QKV payload
+bytes is not claimed. No expanded decoder or default promotion precedes actual
+operator evidence and decoded acceptance.
