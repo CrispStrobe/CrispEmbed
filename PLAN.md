@@ -1695,3 +1695,10 @@ peak RSS5,179,695,104B. This separates the remaining runtime residual from recip
 loss without establishing a full decoded result; no EOS/full/heldout claim.
 [Complete report and receipt](tests/results/qwen35-ocr/lightonocr3-4b-corrected-mixed-form/native-report.json)
 preserve exact model/table/profile/reference hashes and active/disabled gates.
+
+The next single scoped corrected mixed form capture preserves177 teacher-score
+rows plus independent greedy output up to256 tokens, using the same immutable
+model, original BF16 source and independent mixed BF16 first row. All prepared
+input/29 vision-stage controls remain mandatory. Expected CPU duration60–100min;
+180min cap, retained failure diagnostics, no new PR or broad CI. The first-row
+comparison does not substitute for the subsequent complete177-row replay.

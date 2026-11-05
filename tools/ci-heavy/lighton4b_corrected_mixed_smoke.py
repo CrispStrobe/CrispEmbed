@@ -59,7 +59,7 @@ def retrieve_prefill(scratch,comparison,mixed_control=False):
  (scratch/'original-prefill.json').write_bytes(raw);(scratch/'original-first-score.f32').write_bytes(score)
  return manifest,score
 
-def main():
+def main(full=False):
  require(os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','hosted portable smoke required')
  import numpy as np
  from PIL import Image
@@ -71,7 +71,7 @@ def main():
  comparison=load('source_compare',ROOT/'tools/ci-heavy/lighton4b_vision_bf16_compare.py')
  report={'schema':'lighton4b-corrected-mixed-native-smoke/v1','status':'failed','quality_qualified':False,'full_completion_executed':False,
   'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'recipe':'lighton4b-q4k-mixers-q8-v1',
-  'scope':'observed simple_form first-score/two-token runtime diagnostic; excluded from calibration/heldout qualification',
+  'scope':('observed simple_form full177 teacher scores and independent greedy cap256; excluded from calibration/heldout qualification' if full else 'observed simple_form first-score/two-token runtime diagnostic; excluded from calibration/heldout qualification'),
   'vision_gates':control.VISION_GATES,'disabled_gates':{'CRISPEMBED_LIGHTON4B_BF16_LINEAR':'0','CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2':'0','CRISPEMBED_LIGHTON4B_DIRECT_QUANT':'0','CRISPEMBED_QWEN35_WEIGHT_CACHE':'0','CRISPEMBED_QWEN35_PRECISE_RMS':'0','CRISPEMBED_QWEN35_IMATRIX':'0'},
   'rotary_table_sha256':TABLE_SHA,'complete_rotary_profile_sha256':PROFILE_SHA,'original_forward_executed':False}
  def run(label,argv,env=None):
@@ -95,10 +95,11 @@ def main():
   binary=build/'lighton4b-native-document';report['binary_sha256']=native.sha(binary)
   env=os.environ.copy();env.update({x:'1' for x in tuple(native.GATES)+tuple(control.VISION_GATES)})
   env.update(report['disabled_gates']);env['CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4']='1';report['enabled_gates']={x:env[x] for x in tuple(native.GATES)+tuple(control.VISION_GATES)+('CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4',)}
-  candidate=out/'mixed';candidate.mkdir();resource=out/'native-resources.txt';report['stage']='native-first-score-two-token';start=time.monotonic()
-  run('native',['/usr/bin/time','-q','-f','%U %S %e %M','-o',resource,binary,model,rgb,image.height,image.width,teacher,candidate,2,4,'smoke'],env)
+  candidate=out/'mixed';candidate.mkdir();resource=out/'native-resources.txt';report['stage']='native-full177-greedy256' if full else 'native-first-score-two-token';start=time.monotonic()
+  report['requested_teacher_positions']=177 if full else 1;report['requested_generation_cap']=256 if full else 2
+  run('native',['/usr/bin/time','-q','-f','%U %S %e %M','-o',resource,binary,model,rgb,image.height,image.width,teacher,candidate,256 if full else 2,4,'full' if full else 'smoke'],env)
   user,system,elapsed,rss=resource.read_text().strip().split();report['resources']={'wall_seconds':float(elapsed),'user_seconds':float(user),'system_seconds':float(system),'peak_rss_bytes':int(rss)*1024,'measured_seconds':time.monotonic()-start}
-  report['native_summary']=json.loads((candidate/'native-summary.json').read_text());require(report['native_summary']['teacher_positions']==1 and report['native_summary']['cap']==2,'bounded smoke scope differs')
+  report['native_summary']=json.loads((candidate/'native-summary.json').read_text());require(report['native_summary']['teacher_positions']==(177 if full else 1) and report['native_summary']['cap']==(256 if full else 2),'bounded smoke scope differs')
   ids=lambda name:np.array([int(x)for x in (candidate/name).read_text().split()],dtype='<i8')
   prompt=ids('prompt.ids');values={'input_ids':prompt.reshape(1,-1),'image_grid_thw':ids('processor.grid.ids').reshape(1,3),'mm_token_type_ids':ids('modalities.ids').reshape(1,-1),'pixel_values':np.fromfile(candidate/'processor.patches.f32',dtype='<f4').reshape(560,1536),'attention_mask':np.ones((1,len(prompt)),dtype='<i8')};report['prepared_controls']={}
   for name,value in values.items():
@@ -112,10 +113,13 @@ def main():
   actual=np.fromfile(candidate/'prefill.logits.f32',dtype='<f4');require(actual.size==248320,'complete first score required')
   report['first_score_vs_original_bf16']=comparison.compare(np.frombuffer(original_logits,dtype='<f4'),actual)
   report['first_score_vs_independent_bf16_mixed']=comparison.compare(np.frombuffer(mixed_logits,dtype='<f4'),actual)
-  generated=ids('generated.ids').tolist();report['decoded']={'ids':generated,'text':(candidate/'generated.txt').read_text(),'exact_original_prefix_ids':generated==reference['generated_ids'][:len(generated)],'original_prefix_ids':reference['generated_ids'][:len(generated)],'original_completion_tokens':177}
+  generated=ids('generated.ids').tolist();report['decoded']={'ids':generated,'text':(candidate/'generated.txt').read_text(),'exact_original_prefix_ids':generated==reference['generated_ids'][:len(generated)],'exact_original_complete_ids':generated==reference['generated_ids'],'native_eos':report['native_summary']['eos'],'first_differing_id':next((i for i,(a,b) in enumerate(zip(generated,reference['generated_ids'])) if a!=b),min(len(generated),len(reference['generated_ids'])) if len(generated)!=len(reference['generated_ids']) else None),'original_prefix_ids':reference['generated_ids'][:len(generated)],'original_completion_tokens':177}
+  if full:
+   require(all((candidate/f'teacher.{i}.logits.f32').stat().st_size==993280 for i in range(177)),'full177 teacher rows required')
+   report['full_teacher_score_comparison_executed']=False
   report['artifacts']={p.name:{'bytes':p.stat().st_size,'sha256':native.sha(p)}for p in candidate.iterdir() if p.is_file()}
-  report['status']='measured'
+  report['status']='measured';report['full_completion_executed']=full
  except Exception as error:
   report['error_type']=type(error).__name__;report['error']='bounded corrected mixed smoke/control failed; inspect native/build/staging logs';raise RuntimeError(report['error'])from None
- finally:(out/'corrected-mixed-smoke.json').write_text(json.dumps(report,indent=2)+'\n')
+ finally:(out/('corrected-mixed-full.json' if full else 'corrected-mixed-smoke.json')).write_text(json.dumps(report,indent=2)+'\n')
 if __name__=='__main__':main()
