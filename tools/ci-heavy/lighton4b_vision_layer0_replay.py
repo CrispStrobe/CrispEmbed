@@ -116,8 +116,11 @@ def main():
   base_gates=tuple(native.GATES)+('CRISPEMBED_LIGHTON4B_VISION_BF16',)+BASELINE_NORM_GATES
   saved_args=sys.argv;report['composed']={}
   try:
-   frozen=json.loads((ROOT/'tests/results/qwen35-ocr/lightonocr3-4b-vision-bf16-stages.json').read_text())['recipes']['q4_k']['stages']
-   frozen.update(BASELINE_STAGE_OVERRIDES)
+   if set(COMPOSED_STAGE_NAMES).issubset(BASELINE_STAGE_OVERRIDES):
+    frozen={name:BASELINE_STAGE_OVERRIDES[name]for name in COMPOSED_STAGE_NAMES}
+   else:
+    frozen=json.loads((ROOT/'tests/results/qwen35-ocr/lightonocr3-4b-vision-bf16-stages.json').read_text())['recipes']['q4_k']['stages']
+    frozen.update(BASELINE_STAGE_OVERRIDES)
    for label,corrected in (('baseline',False),('corrected',True)):
     arm=out/label;arm.mkdir();os.environ['HEAVY_OUT']=str(arm)
     native.GATES=base_gates+(NORM_GATES if corrected else ())

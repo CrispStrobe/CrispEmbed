@@ -1252,3 +1252,15 @@ stage hashes before judging candidate first logits/independent two-token text.
 Source/operator rechecks remain required; no default/quality/release promotion.
 Only the two task-owned integration/final-smoke scripts retain artifacts90 days;
 all unrelated workflow retention stays unchanged.
+
+
+Initial final-smoke[42040210848](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42040210848)
+at80a553c7b passes original layer0 and source-fed corrected operators, then
+stops before ordinary inference on an unnecessary absent historical norm-off
+receipt. Complete fixed norm-only30-stage overrides were already supplied. The
+[initial failure](tests/results/qwen35-ocr/lightonocr3-4b-vision-linear-conv-smoke-initial.json)
+remains. The scoped driver repair uses complete explicit overrides directly and
+retains the old fallback protocol otherwise; no runtime, hashes, gold or budgets
+change. Retry only the same targeted Q4/legacy-decoder smoke. Previous actual
+source-order native candidate42033651799 completed in180.3s/4.51GB peak RSS;
+this diagnostic is not a speed claim or current whole-source qualification.
