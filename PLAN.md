@@ -1037,3 +1037,16 @@ outputs; hosted model-free inputPNG/RGB hash freeze is next. BF16 source
 references, unchanged strict numerical flags and independent full decoding are
 required. Both existing plainfull panels remain untouched. Any new selection
 needs fresh predeclaration and genuinely new heldout data; no alias/release claim.
+
+### Frozen four-case original BF16 source panel —5 November
+
+`audit/lighton4b-fourcase-bf16-20261105` uses the independently reviewed4555b791c
+four PNGs and input manifest SHAa07af76028a0d53c8bfc0ccafedac348eaeb725c8c8c55e3136906f202b8f65d,
+predeclared protocol3a1738c26cf5a34680fea1468bea07c06ee26659f7ddb7e249299677746ba36d.
+The runner authenticates all four actual PNG/RGB/processor/grid/token streams
+before one CPU/BF16 model load, then independent empty-prompt256-cap generations
+with every full-vocabulary score, IDs/text/EOS and source-capped failures retained.
+The original177-token form baseline is excluded and never rerun. Exact runtime,
+model/checkpoint/tokenizer and resource guards match the proven BF16 lane.
+Actual outputs/source-completion review and native plain/mixed comparisons remain
+pending; no candidate selection or quality claim follows from preparation.
