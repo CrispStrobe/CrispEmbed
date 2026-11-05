@@ -20771,3 +20771,13 @@ builds/controls and decoder20 controls pass. Exact original238,129,493-byte ZIP
 13414500337 is copied without regeneration into artifact13420770687, expiring
 3 February2027. Earlier combined wrong-Conv/score/decoded negatives remain; this
 is operator/build evidence, with actual composed quality still unqualified.
+
+
+### 2026-11-05 — Real Q4 vision corrections close frontend bytes, decoded negative retained
+
+Final42041219151 at3a0c7ffc6 passes original/source-fed controls and every30-stage
+old baseline hash with decoder candidate explicitly0. Patch/position/embedded are
+raw-byte exact; layer0 and merged RMS improve, but first-logit RMS worsens and
+both independent decodes remain wrong`<table>`. The complete numerical/decoded
+receipt and prior unused-receipt failure42040210848 remain retained. Attention
+pooling is the next actual source-fed mismatch. No quality or default promotion.

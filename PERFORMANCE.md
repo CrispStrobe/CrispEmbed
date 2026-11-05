@@ -7882,3 +7882,22 @@ batching. Original vLLM BF16 quality/throughput and D-FINE service performance
 remain separate, unmeasured scopes. The optional 256-slot decode graph, GPU path,
 mixed-F16 quality/performance and Q8/Q4 recipes remain unqualified. See
 [the guide](docs/oxr.md) and [actual checks](tests/results/oxr/implementation-validation.json).
+
+
+### LightOn4B verified vision norm/NN/Conv — final Q4 smoke remains negative
+
+[42041219151](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42041219151)
+uses decoder legacy explicitly, same immutable Q4/image and all30 fixed baseline
+hashes. Patch/position/embedded match original raw SHA values exactly.
+
+| Metric against original BF16 | Fixed norm-only baseline | Norm+NN+Conv candidate |
+| --- | --- | --- |
+| Layer0 RMS / differing values |0.000691054 /35,896 |0.000141771 /1,466 |
+| Merged RMS / max absolute |0.00973525 /1.21094 |0.00866825 /1.67969 |
+| First-logit RMS / max absolute |0.560135 /2.38528 |0.568348 /2.45592 |
+| Independent two-token output |`<table>` |`<table>` |
+
+Original prefix is`<figure`. Intermediate improvement does not qualify decoded
+quality; first-score RMS regresses. All gates remain default-off, with no speed,
+EOS/full-document, release or model-publication claim. Source-fed attention
+pooling65 differences and tiny GELU tails remain the next operator boundaries.

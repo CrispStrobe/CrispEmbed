@@ -1264,3 +1264,23 @@ retains the old fallback protocol otherwise; no runtime, hashes, gold or budgets
 change. Retry only the same targeted Q4/legacy-decoder smoke. Previous actual
 source-order native candidate42033651799 completed in180.3s/4.51GB peak RSS;
 this diagnostic is not a speed claim or current whole-source qualification.
+
+
+[Final Q4 vision smoke42041219151](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42041219151)
+at3a0c7ffc6 completes with decoder candidate explicitly0 and all30 fixed
+baseline hashes preserved. Actual patch/position/embedded now equal original
+SHA bytes exactly. Layer0 RMS improves0.000691054→0.000141771 and differing
+values35,896→1,466 (max0.03125→0.015625). Merged RMS improves
+0.00973525→0.00866825 but max worsens1.21094→1.67969; first-logit RMS worsens
+0.560135→0.568348/max2.38528→2.45592. Both independent outputs remain
+incorrect`<table>` (20353,29) versus original`<figure` prefix. The
+[complete30-stage receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-linear-conv-smoke.json)
+retains absolute magnitudes/errors, sources and actual90-day raw artifact expiry.
+Quality remains negative/unqualified; no defaults, budget, release or app change.
+
+Next bounded operator lane uses retained QKV/cos/sin/pool arrays to isolate first
+remaining source-fed attention-pooling mismatch:65 values/max0.00390625. Recreate
+original pooled bytes, require actual candidate output to match retained old bytes,
+then compare Q/K rotation, BF16 QK matmul, F32 softmax and BF16 PV accumulation
+on identical original operands. Tiny GELU tail differences remain separate.
+No new full model batch or runtime attention fix precedes that attribution.
