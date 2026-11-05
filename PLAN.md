@@ -1171,3 +1171,12 @@ remain distinct from runtime qualification. Source mean/scale isolation420288398
 atbdefd15c4 is executing with exact original norm reconstruction required before
 source-fed rsqrt/affine alternatives. No expanded decoder or new quality/default
 claim follows before these actual first-operator results.
+
+Source mean/scale isolation42028839817/bdefd15c4 completes exact original norm
+reconstruction: original means fed to native F32 sqrt/reciprocal yield all154
+scales and394,240 F32/BF16 outputs bit-exact; source-scale affine also exact.
+F64-rsqrt is negative (3 BF16 differences/max0.00390625). This narrows the local
+cause to mean reduction before rsqrt. Pinned Torchcf30153c4c13 sum/mean/AVX2 source
+motivates test-only grouped-order alternatives42029945232/215f463bc, with no
+production RMS change until actual mean/output comparison. All prior strict and
+decoded rejections remain. See [the completed operator split](docs/lighton4b-layer0-attribution-results.md#source-meanscale-isolation-closes-rsqrt-and-affine).

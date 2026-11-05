@@ -143,3 +143,36 @@ original norm reconstruction, then compares source-mean native reciprocal-square
 root alternatives and source-scale native multiply/affine output. Reference
 inputs remain test-only. No broader decoder or decoded claim is made while that
 first-operator evidence is pending.
+
+## Source mean/scale isolation closes rsqrt and affine
+
+[42028839817](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42028839817)
+atbdefd15c4 reconstructs the original F32 input-normalization output bit-exactly
+from original means/scales/weights before any native comparison. The
+[complete producer](../tests/results/qwen35-ocr/lightonocr3-4b-layer0-norm-source-isolation-v1.json)
+records actual Torch commitcf30153c4c131c8164ee7798e5022d810682e2cb and CPU capability
+AVX2. The job ends red for unchanged rejected sequential/precise BF16 alternatives;
+all source-fed controls complete before that expected numerical rejection.
+
+| Native operator supplied original inputs | Scale exactness | F32 norm exactness | BF16 norm exactness |
+| --- | --- | --- | --- |
+| Original mean → F32 sqrt/reciprocal |154/154 bit-exact |394,240/394,240 |394,240/394,240 |
+| Original mean → F64-rsqrt alternative |Not exact; max7.62939e-6 |110,275 differing values |3 differences; max0.00390625 |
+| Original scale → multiply/affine |154/154 bit-exact |394,240/394,240 |394,240/394,240 |
+
+Thus source-fed reciprocal square root, affine multiplications and RNE conversion
+are exact at this boundary. The earliest remaining local discrepancy lies in
+mean reduction before rsqrt, not those downstream operators. This is bounded to
+the exact original154×2560 input and does not establish full decoder/quality parity.
+Original vector inputs stay in the test-only probe.
+
+The [pinned CPU mean source](https://github.com/pytorch/pytorch/blob/cf30153c4c131c8164ee7798e5022d810682e2cb/aten/src/ATen/native/ReduceOps.cpp)
+uses sum followed by division; the
+[inner-sum source](https://github.com/pytorch/pytorch/blob/cf30153c4c131c8164ee7798e5022d810682e2cb/aten/src/ATen/native/cpu/SumKernel.cpp)
+groups stream/lane partial sums, while
+[AVX2 rsqrt](https://github.com/pytorch/pytorch/blob/cf30153c4c131c8164ee7798e5022d810682e2cb/aten/src/ATen/cpu/vec/vec256/vec256_float.h)
+uses sqrt then reciprocal division. Source-derived test-only order alternatives
+are executing in42029945232 at215f463bc, with exact source hashes and mean-vector
+comparison. This is a measured operator continuation, not an observed assembly
+route or a new production reduction/default. Raw100,408,910-byte artifact
+13414434567 remains remote; only the37KB producer report was range-read.

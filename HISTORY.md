@@ -20762,3 +20762,11 @@ missing norm-row exit aggregation is preserved separately from its red numerical
 report. Source mean/scale isolation remains a distinct pending operator scope;
 no source/default/release promotion follows. See
 [the complete measured limits](docs/lighton4b-layer0-attribution-results.md).
+
+Source-fed LightOn4B norm42028839817/bdefd15c4 completes exact original norm
+reconstruction and bit-exact native original-mean→F32-rsqrt→affine output for all
+394,240 F32/BF16 values. Source-scale affine is also exact; F64-rsqrt leaves3
+BF16 differences. Mean reduction is the bounded earliest unresolved operator.
+The job remains red for preserved old alternatives, with no decoder/default
+promotion; [the full source-fed split](docs/lighton4b-layer0-attribution-results.md)
+retains all negative and exact controls.
