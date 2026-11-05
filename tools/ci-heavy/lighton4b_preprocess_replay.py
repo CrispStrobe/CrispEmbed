@@ -25,7 +25,7 @@ def main():
     require(os.environ.get('GITHUB_ACTIONS')=='true','hosted-only execution')
     import numpy as np
     from PIL import Image
-    out=ROOT/'replay-report';out.mkdir(exist_ok=False)
+    out=Path(os.environ['HEAVY_OUT']);out.mkdir(exist_ok=True)
     scratch=Path(tempfile.mkdtemp(prefix='lighton4b-input-'))
     report={'schema':'lighton4b-retained-preprocess/v1','status':'failed',
         'native_source':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
