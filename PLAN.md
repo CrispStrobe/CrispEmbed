@@ -1,5 +1,21 @@
 # CrispEmbed plan — open work (updated 4 November 2026)
 
+The separate [original4B generated observer](docs/lighton4b-original-adapter-v1.md)
+adds source-bound observation to the frozen dumper without changing its bytes:
+every generated final norm/position,248320 logits and64 cache fields are streamed
+with an independent same-model observer-off ID/all-logit replay. It is partial
+preparation: capture transport is hard-disabled, document-v1 admissions stay empty,
+and no original forward is claimed. Actual hosted41976285821 at `953800bde`
+passes all5 synthetic controls; independent review verifies all6 source hashes
+and the complete67-field synthetic cache event. The transport proposal remains
+unreviewed/unimplemented and cannot enable capture.
+Before original execution, independently review the24GiB shard transport and
+40GiB RAM/48GiB disk admission, then use a suitable high-memory hosted worker.
+The observed32GB worker remains rejected. A sequential lower-retention alternative
+needs separate implementation, frozen-trace parity and measured cold peak RAM;
+do not lower caps/dtypes/budgets by projection alone. Native document parity remains
+dependent on the exact original run and native format5 composition.
+
 The bounded [LightOn4B document protocol](docs/lighton4b-document-parity-v1.md)
 freezes one existing public-domain form, exact source/RGB/template hashes,
 image-only prompt,256-token cap and source-derived geometry before model outputs.

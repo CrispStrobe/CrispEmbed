@@ -1,0 +1,39 @@
+{
+  "artifact": {
+    "archive_sha256": "c5e9fcaf3ee8ac5002107c191bfc3c4fb61fb265dbe5b147153dec0f5ac6a405",
+    "bytes": 1405,
+    "id": 13391199556,
+    "name": "heavy-41976285821"
+  },
+  "capture_transport_admitted": false,
+  "controls_log_sha256": "26ddabd75786426fd8cd379d5895d379fb4136b76dae4fbcd5a8ab509d6df1a1",
+  "document_bundle_admitted": false,
+  "independent_review": {
+    "actual_original_model_forward": false,
+    "log_hash_verified": true,
+    "observer_injection_sites": 4,
+    "scope": "Synthetic NumPy tensor/cache events only; exact model geometry and replay guards exercised without Torch or checkpoint acquisition.",
+    "skips": 0,
+    "source_hashes_verified": 6,
+    "synthetic_cache_fields": 64,
+    "synthetic_cache_layers": 32,
+    "synthetic_total_fields": 67,
+    "tests": 5
+  },
+  "model_payload_bytes": 0,
+  "native_forward_executed": false,
+  "original_forward_executed": false,
+  "quality_qualified": false,
+  "run_id": "41976285821",
+  "schema": "lighton4b-original-adapter-controls/v1",
+  "source_sha": "953800bde3bbe4251329bdc7e174c2fba82b3e0f",
+  "source_sha256": {
+    "docs/lighton4b-document-parity-v1.json": "afee0e1fbebc73b9ded744343ee9e2ae467f3b214ab3682e9fb0e8fd733ad674",
+    "tests/test_lighton4b_original_document.py": "5b86936d97ab1d2e21effcc770d58fb65cee41a5b5914416e75a04d027d1a19f",
+    "tools/ci-heavy/lighton4b_original_adapter_controls.py": "779d6ebceb623d38cc7a5b2b5709b06b425440b35b2aeecdac81e2a6b15dbc95",
+    "tools/dump_qwen35_ocr_reference.py": "66dfd47906d4648b1b6141460d204770d844cbbb0bb6eb2b7482f65e22022267",
+    "tools/lighton4b_document_parity.py": "7320620e9f8b96f470f13e47e86bb18f517b762b9ea1a29220e454a2b02c9ded",
+    "tools/lighton4b_original_document.py": "241fa5f288ca3a2f48b9011edf5e89bfc477f9aec8803f0e9d05b3ef21eb3174"
+  },
+  "status": "passed"
+}

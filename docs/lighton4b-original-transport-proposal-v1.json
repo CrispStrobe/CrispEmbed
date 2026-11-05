@@ -1,0 +1,29 @@
+{
+  "capture_transport_admitted": false,
+  "document_protocol_sha256": "afee0e1fbebc73b9ded744343ee9e2ae467f3b214ab3682e9fb0e8fd733ad674",
+  "document_v1_unchanged": true,
+  "execution_admitted": false,
+  "generated_records_per_position": 67,
+  "generated_shard_payload_bound_bytes": 25769803776,
+  "implemented_uploader": false,
+  "independent_full_readback_verified": false,
+  "max_positions": 256,
+  "max_transport_part_bytes": 536870912,
+  "producer_sources": [],
+  "ram_admission_bytes": 42949672960,
+  "raw_dtype": "little-endian-float32",
+  "requirements": [
+    "Freeze original source/packages/inputs and observer-off exact IDs/all-position logits before native dispatch.",
+    "Manifest every generated norm/position/logit and64 cache fields with original shape/byte/SHA plus finite-value proof.",
+    "Split complete files or explicit bounded byte ranges into immutable parts; hash both each part and original reassembled file.",
+    "Require all67 records at every position, exact source EOS/cap policy, no extra/duplicate/out-of-range records.",
+    "Retain legacy prefill/cached/full-prefix arrays separately and bind their representations to the same source/observer manifest.",
+    "Keep original failures and partial manifests; never mark incomplete capture or partial upload archived/passed.",
+    "Use an authorized remote artifact service with pinned run/version and actual bounded restore/readback controls. No storage-only Kaggle datasets.",
+    "Retain large outputs remotely; download only small reports for shared-host review.",
+    "A separately reviewed admitted transport implementation and high-memory source replay are required; this proposal cannot enable the current hard-disabled capture."
+  ],
+  "schema": "lighton4b-original-transport/proposal-v1",
+  "status": "unreviewed-proposal",
+  "total_diagnostic_storage_admission_bytes": 51539607552
+}

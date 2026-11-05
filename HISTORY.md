@@ -1,3 +1,29 @@
+## 5 November 2026 — Original4B generated-observer implementation controls
+
+[41976285821](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41976285821)
+at `953800bde3bbe4251329bdc7e174c2fba82b3e0f` passes all5 synthetic
+observer controls with zero skips. Independent review verifies all6 source
+hashes and the raw-log digest. The source-bound adapter adds exactly four
+observation sites to a separately compiled AST of the SHA-pinned original
+helper, leaving the old file and model arithmetic unchanged. A synthetic
+32-layer event streams64 cache fields plus final norm/positions/full-vocabulary
+logits (67 fields), checks read-only source arrays, rejects changed observer-off
+IDs/scores, and cleans up hooks. Duplicate/nonfinite/byte-budget/input/transport
+negative controls pass. [The receipt](tests/results/qwen35-ocr/lightonocr3-4b-original-adapter-controls.json)
+retains exact source/artifact identities.
+
+No Torch model, checkpoint bytes or original/native forward ran in these tests.
+Capture remains hard-disabled pending a separately reviewed larger-shard
+transport; the48GiB disk/40GiB RAM reservations are enforced arithmetic bounds,
+not measured peak memory. The observed32GB CPU worker remains inadmissible.
+[The adapter guide](docs/lighton4b-original-adapter-v1.md) derives those bounds
+and describes the unimplemented single-model sequential alternative and required
+measurements. [The transport proposal](docs/lighton4b-original-transport-proposal-v1.json)
+remains unreviewed/unimplemented with empty admitted producers; the original
+2GiB document protocol and all historical source gates stay unchanged. Actual
+original capture/neutrality, native format5 context/tokenizer/vocabulary/cache
+composition, document packaging and real decoded/intermediate parity remain open.
+
 ## 5 November 2026 — Bounded LightOn4B document comparer preparation
 
 The separate [document protocol](docs/lighton4b-document-parity-v1.md) freezes
