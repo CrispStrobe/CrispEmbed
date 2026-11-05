@@ -1235,3 +1235,12 @@ retains source hashes, unchanged budgets and all old negatives. Measured order i
 now scoped only to default-off BF16 linear RMS in5ba80426d; actual-helper
 42031297677 covers widths2560/128 before composed layer0 or expanded decoder.
 No qualified runtime/source/default/alias/release or app-pin change is implied.
+
+Actual gated-helper42031297677/5ba80426d is complete: all154 input scales,
+394,240 F32/BF16 input-norm outputs and630,784 real original GDN128 pre-weight
+normalized BF16 values are bit-exact. Legacy/cache/direct-entry controls pass;
+old alternatives remain red. [Complete helper evidence](docs/lighton4b-layer0-attribution-results.md#actual-gated-rms-helper-both-widths-exact)
+is bounded normalization proof, not complete GDN/decoder quality. Composed
+same-input layer0 replay42032626361/5b47ed44e now measures the next projection,
+with actual same-process mode interleaving and immutable/mixed-mode cache checks.
+No decoder expansion/default or decoded-quality promotion precedes that result.

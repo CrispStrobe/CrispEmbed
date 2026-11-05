@@ -206,3 +206,35 @@ BF16 candidate, retaining shared legacy RMS. Actual-helper42031297677 separately
 checks2560-wide input norm and128-wide original GDN pre-norm data before another
 composed layer0 replay. No expanded decoder/default promotion follows while that
 operator and the remaining projection/decoded gates are unresolved.
+
+## Actual gated RMS helper: both widths exact
+
+[42031297677](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42031297677)
+at5ba80426d executes the actual default-off candidate RMS helper, separately from
+the earlier test-only reconstruction. The
+[complete actual-helper report](../tests/results/qwen35-ocr/lightonocr3-4b-layer0-gated-rms-helper-v1.json)
+retains exact input norm reconstruction and original model pre-hook input for the
+128-wide GDN normalization. No original values enter the production helper.
+
+| Actual helper boundary | Values checked | Maximum/RMS error | Exactness |
+| --- | ---: | ---: | --- |
+|2560-wide input norm scales |154 |0/0 |Bit-exact |
+|2560-wide input norm F32 output |394,240 |0/0 |Bit-exact |
+|2560-wide input norm BF16 output |394,240 |0/0 |Bit-exact |
+|128-wide original GDN pre-weight normalization, BF16 |630,784 |0/0 |Bit-exact |
+
+The GDN result covers normalization before norm-weight/gate multiplications,
+not the complete GDN operator. Original input norm magnitude is63.75; GDN
+normalized magnitude11.3125. All row/global cosines are1. Legacy full-layer and
+incompatible-cache/direct-entry gate controls pass. The overall job correctly
+remains red for old rejected RMS alternatives. This validates the bounded actual
+helper; full decoder, quantized output and decoded qualification remain open.
+Raw113,846,599-byte artifact13416283193 remains remote; only49KB was range-read.
+
+Composed layer0 replay42032626361 at5b47ed44e now uses the exact helper with the
+original quant-preserving activation oracle. Earlier recovery arms used fresh
+processes. This successor additionally interleaves both modes in one native
+process/weight owner, rejects mixed-mode cache continuation, and requires every
+legacy intermediate/hidden/cache to reproduce exactly after the alternate call.
+No expanded decoder or generation is run, and no corrected decoded result is
+claimed while the next differing projection is under measurement.
