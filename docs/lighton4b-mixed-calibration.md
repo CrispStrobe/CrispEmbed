@@ -22,3 +22,12 @@ independent decoded IDs/text/EOS. Calibration may reject this fixed candidate;
 it may not tune v1, its thresholds or heldout cases. Another recipe requires a
 new predeclared protocol and fresh heldout data. This small panel cannot qualify
 representative task quality, model publication, defaults or an application pin.
+
+Actual [model-free input freeze42004846562](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42004846562)
+at `98e4b7d71` prepares all four cases without a model. Independent review
+rehashes every PNG and rawRGB output, preserving the exact producer manifest.
+The [frozen inputs](../tests/regression/lighton4b-mixed-v1/frozen-inputs.json)
+and small opaque RGB PNGs are committed before any new reference/candidate
+forward. Model workers decode these exact PNGs and authenticate RGB SHA,
+expected grid and token count before model load; they do not rerender/rescale
+source images. RawRGB and large future arrays remain remote.
