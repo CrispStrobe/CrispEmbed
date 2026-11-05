@@ -30,3 +30,29 @@ differing stage and absolute errors/magnitudes, then use identical-input/weight
 operator controls before changing arithmetic. Numerical/decode/EOS and Q8/Q4
 qualification remain open; one-token observer neutrality proves no document
 completion or speed improvement.
+
+## Actual retained Q8/Q4 stage comparison
+
+[Hosted42002886215](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42002886215)
+authenticates all71 original payloads and both existing native smoke archives
+before comparison. No original/native forward is repeated. Source image pixels
+and THW positions are exact. Both native recipes have byte-identical vision,
+raw text embedding and decoder input; their first recipe-specific difference is
+`prefill.layer.0`.
+
+The first shared difference is`vision.patch`: max absolute0.0126757622,
+RMS0.000805617467, cosine0.999998609; original/native L2 are364.6366634/364.5889670
+and absolute maxima4.3125/4.29982424. Position max absolute0.0263156891;
+embedded0.0322451591. Vision layer23 reaches max1963.4453125/RMS8.26713570/
+cosine0.994490075 against original absolute magnitude5728. Merged image
+features have max1.67908716/RMS0.0112389284/cosine0.994596081. This shared
+precision discrepancy precedes either quantized decoder.
+
+First logits remain negative: Q8 max0.568259001/cosine0.998469735; Q4
+max2.49422884/cosine0.976987556. Q8 smoke begins`<figure`, Q4`<table>`;
+these two-token caps establish no EOS completion. Preserve all raw strict flags.
+The [full comparison](../tests/results/qwen35-ocr/lightonocr3-4b-bf16-native-stages.json)
+and [review](../tests/results/qwen35-ocr/lightonocr3-4b-bf16-native-stages-review.json)
+retain every stage's magnitudes/errors/source/payload hashes. The separate
+BF16-vision semantics candidate requires actual stage and decoded replay before
+any correction or quality claim.

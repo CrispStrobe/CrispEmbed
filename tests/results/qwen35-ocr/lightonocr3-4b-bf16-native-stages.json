@@ -1,0 +1,4019 @@
+{
+  "decoded_parity_qualified": false,
+  "model_bytes_downloaded": 0,
+  "native_forward_executed": false,
+  "original": {
+    "bytes": 130163104,
+    "manifest_sha256": "036a936cdbd360208b5cf54c2604d671b9a919f1c8777bc7cf97b2585b010a78",
+    "observer_first_score_bit_exact": true,
+    "source_sha": "8d3b2331d1b57e285f7ba348fc1eacd689b79aa8",
+    "stages": 71
+  },
+  "original_forward_executed": false,
+  "recipes": {
+    "q4_k": {
+      "artifact_id": 13401573855,
+      "first_differing_stage": "vision.patch",
+      "first_raw_strict_stage": "vision.patch",
+      "native_decoded": {
+        "exact_original_ids": false,
+        "ids": [
+          20353,
+          29
+        ],
+        "text": "<table>"
+      },
+      "native_first_id": 20353,
+      "native_report_sha256": "862f4be15fc64e9b14d4b26e5ee7862366435059fb0a828226bc351fae0607a1",
+      "original_first_id": 27,
+      "run_id": 41999584163,
+      "source_sha": "fd150b98f488a6884a6e8d8127e7dfb263cab237",
+      "stages": {
+        "prefill.input": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9946046973815503,
+          "different_values": 394129,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.03394293785095215,
+          "first_original": 0.033935546875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.6790871620178223,
+          "mean_abs": 0.004250632506531852,
+          "native_abs_max": 5.431203842163086,
+          "native_elements": 394240,
+          "native_l2": 64.76964184365899,
+          "native_sha256": "093a5a7413850e7525e14a32e8843fc6fe00b0f5672d45d9ee5bde43260b7ec0",
+          "original_abs_max": 5.4375,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 64.77421668736883,
+          "original_sha256": "51856cd6bcfc7685dad05a0241465f0cae258042494a27cf8aac6e41fd129bc7",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.010715920729727595
+        },
+        "prefill.layer.0": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9944523854816076,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 2.8046445846557617,
+          "first_original": 2.859375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.7755918502807617,
+          "mean_abs": 0.007091888795897618,
+          "native_abs_max": 8.512369155883789,
+          "native_elements": 394240,
+          "native_l2": 83.9301081784871,
+          "native_sha256": "094800c51e300a7463da005dfb01a5957a4c82aef5e56b08b2243cad073feed4",
+          "original_abs_max": 8.5625,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 84.30621328637889,
+          "original_sha256": "0b8a30a3b0113aa83d3bcc6ebd1433c6fce11e4c5ba38cfee529ab7751283b92",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.014124314457206346
+        },
+        "prefill.layer.1": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9932360912261626,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 3.4938204288482666,
+          "first_original": 3.515625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.8632779121398926,
+          "mean_abs": 0.008738273236544749,
+          "native_abs_max": 8.824679374694824,
+          "native_elements": 394240,
+          "native_l2": 85.92569915640894,
+          "native_sha256": "be95b633df4418a3865331d3926577cf18feb18c0de529d75c8a4bb8edcdd5c8",
+          "original_abs_max": 8.875,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 86.22384603965781,
+          "original_sha256": "984d90f524070bc5ebfa2f95ab6562cb0dc7d327eb69cdeda8e863c7f6e6d4a5",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.015951490301084535
+        },
+        "prefill.layer.10": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9829930715314893,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.01946387067437172,
+          "first_original": 0.1728515625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.2408270835876465,
+          "mean_abs": 0.02461648073324016,
+          "native_abs_max": 32.0413932800293,
+          "native_elements": 394240,
+          "native_l2": 128.63924887950068,
+          "native_sha256": "90d2c6d99205187cb775cc647701d478ce606da1415a7776deb77b314ad9c73e",
+          "original_abs_max": 32.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 128.67807540922018,
+          "original_sha256": "3d8e5bf2eb5077923883826337cfba7b159c1c20dcf85594b75a5654df783480",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.03779089738554675
+        },
+        "prefill.layer.11": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.977847953655559,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.7753570079803467,
+          "first_original": -0.58203125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.2764267921447754,
+          "mean_abs": 0.027889266146924562,
+          "native_abs_max": 30.991722106933594,
+          "native_elements": 394240,
+          "native_l2": 129.3205479357674,
+          "native_sha256": "4529896bc2b67604a2d8ecc3ae034d1f63b2053600a3cb2162685cafd482ebb9",
+          "original_abs_max": 31.375,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 129.07257722879038,
+          "original_sha256": "b8b5c0fd5a758c8474707ab55d0dc2586f08c758899e3a7a40f38ea7e0fb9c3b",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.043312214987241374
+        },
+        "prefill.layer.12": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9770999383996163,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.7476673722267151,
+          "first_original": -0.61328125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.5079727172851562,
+          "mean_abs": 0.028243783619227424,
+          "native_abs_max": 30.545446395874023,
+          "native_elements": 394240,
+          "native_l2": 129.15573130703032,
+          "native_sha256": "eedd9fc5a19889487909518f04563e6e3428fea98f1b2d080b3a3dcf619c0d9b",
+          "original_abs_max": 30.875,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 129.47183880441972,
+          "original_sha256": "f47525ffb97ea2fce263155e092ed961b8e9f243ee48922bd7198ff5e89f3d80",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.044078398716983345
+        },
+        "prefill.layer.13": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.97673012906181,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.7630985379219055,
+          "first_original": -0.6015625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.2058959007263184,
+          "mean_abs": 0.029140093137740613,
+          "native_abs_max": 30.269357681274414,
+          "native_elements": 394240,
+          "native_l2": 131.76427567508293,
+          "native_sha256": "8e4548ac6cd5d24e87affa9280df050f2c2d91d41fe654dcec6e7e61cc85dc83",
+          "original_abs_max": 30.625,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 132.30075476870758,
+          "original_sha256": "2e3cc5b33b5951b5cf629768bd4bddc22f9abff140081e8598c30a79ce40278f",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.04537207712458336
+        },
+        "prefill.layer.14": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9782314175802763,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.5657390356063843,
+          "first_original": 0.81640625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.1450119018554688,
+          "mean_abs": 0.031076553361025935,
+          "native_abs_max": 31.213293075561523,
+          "native_elements": 394240,
+          "native_l2": 145.27528580863608,
+          "native_sha256": "9c58854530ed03a249f80333d4575554c56f7f19f670be7295bc061de71dfb14",
+          "original_abs_max": 31.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 146.24248353952515,
+          "original_sha256": "6428999a711ee72db62d1c8399542d1d297f339a13e035386573d1ab61847337",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.048462060772514234
+        },
+        "prefill.layer.15": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9747571606500364,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.128268301486969,
+          "first_original": 0.03125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.286487102508545,
+          "mean_abs": 0.03410304656315091,
+          "native_abs_max": 27.316877365112305,
+          "native_elements": 394240,
+          "native_l2": 150.61866103356218,
+          "native_sha256": "6d40c80ceafdd655e1cd42c9f63e443d0c34a77efa43455e7934e272df3682a0",
+          "original_abs_max": 27.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 151.9190361226098,
+          "original_sha256": "ce30da889a9f0ff1660e3f71013463b291bc23cbd308d598197738c61ef4036e",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.05417100226104792
+        },
+        "prefill.layer.16": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9736210538501918,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.06248609721660614,
+          "first_original": 0.2333984375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.0136990547180176,
+          "mean_abs": 0.03587159792537613,
+          "native_abs_max": 25.774032592773438,
+          "native_elements": 394240,
+          "native_l2": 155.6355410986576,
+          "native_sha256": "ea0f4b9fcef51e559a52bb7ec3abc9d20ac4f2381aad859a2b416c7655c54940",
+          "original_abs_max": 26.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 156.76443829496492,
+          "original_sha256": "6a550efac914401585e42e955c0dd10e1013c13f9093c707ce9337bd091a7f57",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.057168450984410334
+        },
+        "prefill.layer.17": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9740237516491309,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.4806405305862427,
+          "first_original": -0.388671875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.1617326736450195,
+          "mean_abs": 0.03719771963755039,
+          "native_abs_max": 24.797073364257812,
+          "native_elements": 394240,
+          "native_l2": 161.36445873095445,
+          "native_sha256": "9605f22fc523ee1e5c8d025cf4bf7b81f482876e167a754dc2e37fb7dd19ee15",
+          "original_abs_max": 25.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 162.5868795615299,
+          "original_sha256": "57c446dd26041c41e95c1d312c045dd02a6d21d5dc00b512d8d4b9146c200871",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.05883117118990437
+        },
+        "prefill.layer.18": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9743429448092064,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 4.534026622772217,
+          "first_original": 4.875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.36155366897583,
+          "mean_abs": 0.04065579558707993,
+          "native_abs_max": 40.92767333984375,
+          "native_elements": 394240,
+          "native_l2": 177.416893108851,
+          "native_sha256": "eb0b88dea2e46bd15204e2bcc42efdd15c22c97d8f31bcdd55f8643376b670e7",
+          "original_abs_max": 41.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 179.74472551654773,
+          "original_sha256": "14220e46c9f43654c80b43743ac5424a3fcac842a8299827476bb6708e3c320e",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.06453294742709792
+        },
+        "prefill.layer.19": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9669347098116936,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.846706748008728,
+          "first_original": -0.39453125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 4.378653526306152,
+          "mean_abs": 0.05172379302673946,
+          "native_abs_max": 13.828959465026855,
+          "native_elements": 394240,
+          "native_l2": 206.35216960466536,
+          "native_sha256": "3c505141e8a0b1b07bfb442cdf886a4c0d8a97406b8eb4ce84fdbc9abfdb7cc5",
+          "original_abs_max": 14.0625,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 207.74844350990531,
+          "original_sha256": "2c64d17c3cf1b566bd3e09f99a7cdaf89092554b23f00912f2252147e8851d71",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.08482883673382238
+        },
+        "prefill.layer.2": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9894454293363424,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 6.907435417175293,
+          "first_original": 6.9375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.2870097160339355,
+          "mean_abs": 0.010547746913489066,
+          "native_abs_max": 7.787260055541992,
+          "native_elements": 394240,
+          "native_l2": 79.056151167086,
+          "native_sha256": "41ec00faad40405021d8bd55f01e9f91ac9ebe4b5c3a0520f1775df16aac109f",
+          "original_abs_max": 7.8125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 79.17353545093458,
+          "original_sha256": "67b91f5133131e55184f1698dd546ac7b4d298909460896b52adcbc34aefcc95",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.018307769592666837
+        },
+        "prefill.layer.20": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9663544425385636,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 1.1532233953475952,
+          "first_original": 1.6796875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 4.874938488006592,
+          "mean_abs": 0.05600185598381264,
+          "native_abs_max": 15.448563575744629,
+          "native_elements": 394240,
+          "native_l2": 222.52166390112527,
+          "native_sha256": "15bced20ae64d68815fe83b48d9883f930bb86ac4ba7d87ac02238b03b6f3219",
+          "original_abs_max": 15.8125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 224.41321848749774,
+          "original_sha256": "d7d1d514852d9f770486b02b5dcf1186bf700f34adb403f27ef551fb67fd9db5",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.09237192115468126
+        },
+        "prefill.layer.21": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.967176155542232,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 1.6261454820632935,
+          "first_original": 1.8359375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 4.945026397705078,
+          "mean_abs": 0.06208421554739088,
+          "native_abs_max": 18.06227684020996,
+          "native_elements": 394240,
+          "native_l2": 248.56456711702683,
+          "native_sha256": "fdf235c62a63033a7a2a561ee9cd88f6b1c66bc337aff0b4d1b953e44f4d80e8",
+          "original_abs_max": 18.375,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 250.8029251955196,
+          "original_sha256": "b42b741889ba1bc6c4a076c0d570ad1e9b6483ad6474aa8fb9aa5cdaef0e6370",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.10194852929697952
+        },
+        "prefill.layer.22": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9671347010358234,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 10.802806854248047,
+          "first_original": 8.375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 7.167903423309326,
+          "mean_abs": 0.07005680362891716,
+          "native_abs_max": 53.258487701416016,
+          "native_elements": 394240,
+          "native_l2": 286.6704371646686,
+          "native_sha256": "fc6511d9e396298e73cc2b9e1861a2311bad1d11e5755e7e8a3283dfcc7fdbbe",
+          "original_abs_max": 53.25,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 288.5594457316417,
+          "original_sha256": "e55791dbf1bf868184dcba60e4f171038737ea9ae20f6b143703874fa6cac691",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.1174775851411656
+        },
+        "prefill.layer.23": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9623735517325104,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 8.32986831665039,
+          "first_original": 7.46875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 9.22102665901184,
+          "mean_abs": 0.07986823460152026,
+          "native_abs_max": 23.525320053100586,
+          "native_elements": 394240,
+          "native_l2": 304.2132189473735,
+          "native_sha256": "428ab06b52ba57f96b9b9d3cae4dff01ee2eba6f1f9a44d78f7d7d23d6ac8ca9",
+          "original_abs_max": 23.375,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 305.5244373669538,
+          "original_sha256": "532f5c6385b2bff4bbf3679397eb625746faa4277b2ed7abe292c11ea711c50f",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.13321301427875798
+        },
+        "prefill.layer.24": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9638219488417917,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 9.069945335388184,
+          "first_original": 7.96875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 11.374011993408203,
+          "mean_abs": 0.08384371762856783,
+          "native_abs_max": 24.93425178527832,
+          "native_elements": 394240,
+          "native_l2": 324.89874877152096,
+          "native_sha256": "62f48958ae6f3daf29317b551abd6cfe61f999559d7f60f61396ca4dac1d098e",
+          "original_abs_max": 25.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 326.707822043967,
+          "original_sha256": "25c4148ec6cf4692bcbb51d7a5cdee3641bd4cfd276c0cbbe5e724a56d2c5c81",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.13960582365744215
+        },
+        "prefill.layer.25": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9633242606214812,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 10.290302276611328,
+          "first_original": 8.75,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 13.33428180217743,
+          "mean_abs": 0.08827338666933665,
+          "native_abs_max": 30.079023361206055,
+          "native_elements": 394240,
+          "native_l2": 339.98146124196325,
+          "native_sha256": "931a04ff1f78500044f445e884f6be79e611ca20695194d4c1b5306a4d0c4d79",
+          "original_abs_max": 30.375,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 342.29009357655565,
+          "original_sha256": "e3015282c244d9f4f58f90232cb06a7eb4f00d8a36f8d1468f1086c51911e289",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.14719207158765701
+        },
+        "prefill.layer.26": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9627156861414244,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 18.367908477783203,
+          "first_original": 10.0625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 16.18267822265625,
+          "mean_abs": 0.0963435064155809,
+          "native_abs_max": 109.03417205810547,
+          "native_elements": 394240,
+          "native_l2": 382.4708021496944,
+          "native_sha256": "af2fb2132f43ba518d1868c120d3b8236da1397371783e5d543f29b68f31d65a",
+          "original_abs_max": 110.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 382.34452472622286,
+          "original_sha256": "3f5859af94bf51a0155f9d317212ffc20c43827981eeb0abd7a3d539a1fad9d9",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.16631240005826892
+        },
+        "prefill.layer.27": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9540952715511226,
+          "different_values": 394239,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 7.451223373413086,
+          "first_original": 5.0625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 16.1751492023468,
+          "mean_abs": 0.11507907340945332,
+          "native_abs_max": 25.349044799804688,
+          "native_elements": 394240,
+          "native_l2": 393.6324451500682,
+          "native_sha256": "5c954d3fead35138261ced8670e1e4804bb42e01851ca5b7e627c574a0246cce",
+          "original_abs_max": 25.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 396.79854385582985,
+          "original_sha256": "02eddef57485ad083d34f2a25f5027952b0521396fe91871ebae1c8ed66f4002",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.1907855972730341
+        },
+        "prefill.layer.28": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9542952256145619,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 2.51841402053833,
+          "first_original": 0.71875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 18.635109424591064,
+          "mean_abs": 0.1285400447074714,
+          "native_abs_max": 26.690166473388672,
+          "native_elements": 394240,
+          "native_l2": 442.67331374772476,
+          "native_sha256": "2487ccb473fe6ef4c814c1d11249f4048dd8fa9bbf8c6b1da2c60c75447c45d1",
+          "original_abs_max": 27.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 446.045998863053,
+          "original_sha256": "62ef5fb86fa9b7188cc4de061e5d2f052afcabd42a2cce4ff1e3795f7e02a660",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.21403448067474212
+        },
+        "prefill.layer.29": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9526889940685207,
+          "different_values": 394239,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.8234035968780518,
+          "first_original": -0.5390625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 16.8308048248291,
+          "mean_abs": 0.14654799090942766,
+          "native_abs_max": 26.43575096130371,
+          "native_elements": 394240,
+          "native_l2": 491.1366452164428,
+          "native_sha256": "c418e951b7cb87cf40a5d453cb8066daa34cb6b8d7d7e5b671e2481aa48d57d7",
+          "original_abs_max": 26.75,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 494.1817878046623,
+          "original_sha256": "804187f9c00daf0caa0721a5056b56e8cf2279618efec1eb6b70beb93b71fe1b",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.24140593521587764
+        },
+        "prefill.layer.3": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9900184200349116,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 4.283392906188965,
+          "first_original": 4.34375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.341283082962036,
+          "mean_abs": 0.012631747669967525,
+          "native_abs_max": 8.479921340942383,
+          "native_elements": 394240,
+          "native_l2": 91.6682778416155,
+          "native_sha256": "7536162b4ce3d064094e5ac7bcec1f7cb07c76b76d20e178779a5b48ada49beb",
+          "original_abs_max": 8.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 91.80441119134768,
+          "original_sha256": "6853b1e94950f23e8c8b236cdf0acad1b554ef77bf5744af9f018e3c52dee990",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.02064427155777248
+        },
+        "prefill.layer.30": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9423808717789524,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 5.8891987800598145,
+          "first_original": 4.0,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 12.82132625579834,
+          "mean_abs": 0.17370791621659057,
+          "native_abs_max": 29.00247573852539,
+          "native_elements": 394240,
+          "native_l2": 525.670044448336,
+          "native_sha256": "03b4a894f276b935457e6371e8a4de515b310f5ef5496ce09e2f6fe84361239d",
+          "original_abs_max": 31.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 526.9646086548787,
+          "original_sha256": "88faec7d7e2ca77ae22f9c41dd441537588b94fae658f9c6f02ecd1e9e2c139c",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.28456188896380263
+        },
+        "prefill.layer.31": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9295378036547779,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 76.80534362792969,
+          "first_original": 85.0,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 23.935304641723633,
+          "mean_abs": 0.23605930394878905,
+          "native_abs_max": 76.80534362792969,
+          "native_elements": 394240,
+          "native_l2": 646.310773917227,
+          "native_sha256": "442c188bba6e89be2835ea4ded06b85228b8ed2c8291b0f9b190cadd3d587cc4",
+          "original_abs_max": 85.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 636.9314247533957,
+          "original_sha256": "59c21f0363422e856ad26bd26295dd4e0c816e940e98e8b95ab696a74595412a",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.3838917864173115
+        },
+        "prefill.layer.4": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.989491899155987,
+          "different_values": 394239,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 3.511302947998047,
+          "first_original": 3.53125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.994502067565918,
+          "mean_abs": 0.014124630655262033,
+          "native_abs_max": 7.760927200317383,
+          "native_elements": 394240,
+          "native_l2": 95.72421286927575,
+          "native_sha256": "eb74ef133a73f8555b3faf20191288616cd88ba06e681154112f69d916034f03",
+          "original_abs_max": 7.875,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 96.09712466205391,
+          "original_sha256": "6531f6f571c41ec7e003d8a8dafb57f9e8af1270b1050ab064be84e5ad0fc4fb",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.022152309618724476
+        },
+        "prefill.layer.5": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9882837588875137,
+          "different_values": 394239,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 2.2506723403930664,
+          "first_original": 2.28125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.5060296058654785,
+          "mean_abs": 0.01574421834901776,
+          "native_abs_max": 7.038207054138184,
+          "native_elements": 394240,
+          "native_l2": 99.23427986734265,
+          "native_sha256": "1b083120b6db4fbe660bf20c3ce98c7823cede96ad61970608ef1a98ad0d6fc6",
+          "original_abs_max": 7.28125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 99.7721661714387,
+          "original_sha256": "f7ab6b7894eae6e960bb9ee225ff2d3fd7d156809097d9d1c3454c548a3530ca",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.024273645020102843
+        },
+        "prefill.layer.6": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9876269002004284,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 4.224762439727783,
+          "first_original": 4.375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.314013957977295,
+          "mean_abs": 0.01850335544712474,
+          "native_abs_max": 29.78250503540039,
+          "native_elements": 394240,
+          "native_l2": 113.76916507502241,
+          "native_sha256": "188c59c78106626e60fd175fb07a58c1d433baac4af98ae39e14e3db87ff5ddb",
+          "original_abs_max": 29.75,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 114.1385410337815,
+          "original_sha256": "1e6d6c4e846cf9032565e5f452937b66898a7727415dcf5cfcf3972d0f838f14",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0285558134443925
+        },
+        "prefill.layer.7": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9835471942076138,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.9749702215194702,
+          "first_original": 1.0625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.8879704475402832,
+          "mean_abs": 0.021418629156959787,
+          "native_abs_max": 27.296031951904297,
+          "native_elements": 394240,
+          "native_l2": 113.41913849861015,
+          "native_sha256": "cd1ee07757a7e3117b103da457c3c96704235605a08de730be1a2aed65f8f0df",
+          "original_abs_max": 27.25,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 113.74025091369363,
+          "original_sha256": "0888658b08fa6ed63a0531999c638694a98ab1212aabb17c219d0731e16785e3",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.032817662482472504
+        },
+        "prefill.layer.8": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9833588992937929,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.40054064989089966,
+          "first_original": 0.416015625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.5377559661865234,
+          "mean_abs": 0.021841894291108402,
+          "native_abs_max": 27.128713607788086,
+          "native_elements": 394240,
+          "native_l2": 115.15244558312645,
+          "native_sha256": "568f1504f90178a6a6ef43142de832dba605efaafb4d5cda30d5f7206ebb8a74",
+          "original_abs_max": 27.125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 115.27429572904659,
+          "original_sha256": "d04f1d09bf2ffa72d90b982898999739a50a6a30dd1176b0a4660111ad3a27c0",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.03347617260928263
+        },
+        "prefill.layer.9": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9828107529093005,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.3340262770652771,
+          "first_original": -0.3203125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.4276137351989746,
+          "mean_abs": 0.022974808557251866,
+          "native_abs_max": 26.994089126586914,
+          "native_elements": 394240,
+          "native_l2": 119.36443058924873,
+          "native_sha256": "c631c1ba5bc37ebe030db88889c2b2e5b44d86462a809e8e7b57ce63c2f9c1c5",
+          "original_abs_max": 27.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 119.5964352755063,
+          "original_sha256": "76bba7a87b50484992b51209f56054e7e01807997514eb39a085a8a389d2552e",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.035284460344510604
+        },
+        "prefill.logits": {
+          "comparison_shape": [
+            1,
+            248320
+          ],
+          "cosine": 0.9769875556835798,
+          "different_values": 248320,
+          "elements": 248320,
+          "first_differing_flat_index": 0,
+          "first_native": 12.112508773803711,
+          "first_original": 11.5625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.4942288398742676,
+          "mean_abs": 0.4667625544235991,
+          "native_abs_max": 21.93735122680664,
+          "native_elements": 248320,
+          "native_l2": 1238.5872890326898,
+          "native_sha256": "0e046a3d880ec7d24a89588ad856f1ed3afa1ef671b0bacb0bfeae192c215fea",
+          "original_abs_max": 22.875,
+          "original_dtype": "torch.float32",
+          "original_l2": 1103.1859987344499,
+          "original_sha256": "a4bece2310050081b502a3910a19469e47016829d74abebb29861739f3205ffd",
+          "original_shape": [
+            1,
+            248320
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.5719127825344374
+        },
+        "prefill.norm": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9217602634565462,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 22.988170623779297,
+          "first_original": 24.0,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 29.17146587371826,
+          "mean_abs": 0.7708343217702156,
+          "native_abs_max": 41.68871307373047,
+          "native_elements": 394240,
+          "native_l2": 1930.265807313024,
+          "native_sha256": "274a77070064adc077fd7547fe82e74778d40c24c87eb90c1230ce73315854f0",
+          "original_abs_max": 44.25,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 1947.4521656480165,
+          "original_sha256": "f62abc16013222a21c012665d25aed977fac45024409a2d3cb4ba76952caaa73",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 1.2217977307667376
+        },
+        "prefill.positions": {
+          "comparison_shape": [
+            3,
+            154
+          ],
+          "cosine": 1.0,
+          "different_values": 0,
+          "elements": 462,
+          "first_differing_flat_index": null,
+          "layout_mapping": "verified4-axis original chronology plane0 removed; THW axes retained",
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "native_abs_max": 27.0,
+          "native_elements": 462,
+          "native_l2": 216.09488656606385,
+          "native_sha256": "007b6bc39e71ffd2c3f6813808f4455a129e5aafd6fda1f186f084ac46573729",
+          "original_abs_max": 27.0,
+          "original_dtype": "torch.int64",
+          "original_l2": 216.09488656606385,
+          "original_sha256": "d5d81e7a063e2c22de08bee865e7a40d48cc45cfa03376a0e7a0482549c78e37",
+          "original_shape": [
+            4,
+            1,
+            154
+          ],
+          "raw_strict_flag": false,
+          "rms_error": 0.0
+        },
+        "processor.patches": {
+          "comparison_shape": [
+            560,
+            1536
+          ],
+          "cosine": 1.0,
+          "different_values": 0,
+          "elements": 860160,
+          "first_differing_flat_index": null,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "native_abs_max": 1.0,
+          "native_elements": 860160,
+          "native_l2": 831.4008051587742,
+          "native_sha256": "d623c64f184a10b6964aedeb3cd90f5a4e2e7aa39f7c480a9f474757776b8d8d",
+          "original_abs_max": 1.0,
+          "original_dtype": "torch.float32",
+          "original_l2": 831.4008051587742,
+          "original_sha256": "d623c64f184a10b6964aedeb3cd90f5a4e2e7aa39f7c480a9f474757776b8d8d",
+          "original_shape": [
+            560,
+            1536
+          ],
+          "raw_strict_flag": false,
+          "rms_error": 0.0
+        },
+        "text.embedded": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.999977031000271,
+          "different_values": 391330,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.03394293785095215,
+          "first_original": 0.033935546875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.0003809928894042969,
+          "mean_abs": 4.8021947393910474e-05,
+          "native_abs_max": 0.09768056869506836,
+          "native_elements": 394240,
+          "native_l2": 5.8395026028823835,
+          "native_sha256": "b3cd4f114b0b998d921083b80545830b5dd00b071b2ffbd38df47845113a7a59",
+          "original_abs_max": 0.09765625,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 5.838879357311831,
+          "original_sha256": "9d3f61b0ca1a89831a68d62b18bfce5a486919ae62cea7f716ece454adf4dd2d",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 6.303942159835645e-05
+        },
+        "vision.embedded": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999969327175916,
+          "different_values": 573432,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.2269601821899414,
+          "first_original": -0.228515625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.03224515914916992,
+          "mean_abs": 0.0007801994006524435,
+          "native_abs_max": 9.131999969482422,
+          "native_elements": 573440,
+          "native_l2": 370.1400078469841,
+          "native_sha256": "e65c52707e195351ad48c66a070111490a1987bb1530d694305519d4d6566100",
+          "original_abs_max": 9.125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 370.2165144735527,
+          "original_sha256": "e43ce63ebd84d6cadfd73df027faea09022b1bb977c6b4e62bf8324eb243b7af",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0012149699585761048
+        },
+        "vision.layer.0": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.999989545690209,
+          "different_values": 573434,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.7893905639648438,
+          "first_original": -0.7890625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.049695491790771484,
+          "mean_abs": 0.002175365975702854,
+          "native_abs_max": 7.739726543426514,
+          "native_elements": 573440,
+          "native_l2": 493.39158244771454,
+          "native_sha256": "43a976069e52153c5bc0d6c15fd8d23c152a7b088608f4b486e300d864f6c434",
+          "original_abs_max": 7.75,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 493.5227171233101,
+          "original_sha256": "ae4fcfbe1debb31e70dffca3be7cf36d7998228b40cebd1914758b50308c28f0",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0029846975962533355
+        },
+        "vision.layer.1": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999672423918649,
+          "different_values": 573434,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.9987537860870361,
+          "first_original": -1.0,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.05060315132141113,
+          "mean_abs": 0.002942919714405434,
+          "native_abs_max": 5.279741287231445,
+          "native_elements": 573440,
+          "native_l2": 368.5820449475464,
+          "native_sha256": "c6761b6e8e94a116ff337dba4f4c22181daf80db6ac8b07b7ac4affefa49495e",
+          "original_abs_max": 5.3125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 368.6896012870256,
+          "original_sha256": "0b5a797c76422c1b650433e525ce0eb29773d4a06c979fe46e84881f8ccd10f4",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0039428168361740346
+        },
+        "vision.layer.10": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9977845126488547,
+          "different_values": 573438,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.315277099609375,
+          "first_original": -0.3125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 18.25677490234375,
+          "mean_abs": 0.003751165868188114,
+          "native_abs_max": 94.89753723144531,
+          "native_elements": 573440,
+          "native_l2": 368.31728383883495,
+          "native_sha256": "554650693fc202210278df73c73d929fa8592bab2a31e4431a34f315d7cc816e",
+          "original_abs_max": 93.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 365.8954787594917,
+          "original_sha256": "5467a1f8174061e9e5696921a5ea445c6e8dbdaaa45c47babccbf98c633d659c",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.03242781067280124
+        },
+        "vision.layer.11": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9980661137815491,
+          "different_values": 573438,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.26943862438201904,
+          "first_original": -0.267578125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.509506225585938,
+          "mean_abs": 0.0040317015504618735,
+          "native_abs_max": 150.62521362304688,
+          "native_elements": 573440,
+          "native_l2": 443.51954484369526,
+          "native_sha256": "a3cee91e15f555907d2bd6cc62ea02ec8c30d29f426670ac8008afb31864f149",
+          "original_abs_max": 149.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 440.260869944897,
+          "original_sha256": "6cac940c74f7ab035f811aae28540d8effe627fcc78995dcba8df656f0c932da",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.036545154855870496
+        },
+        "vision.layer.12": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9979843230902791,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.0316891074180603,
+          "first_original": 0.03515625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.981536865234375,
+          "mean_abs": 0.004833894625716896,
+          "native_abs_max": 152.02391052246094,
+          "native_elements": 573440,
+          "native_l2": 455.9910634299228,
+          "native_sha256": "8172fbe84a2a1a1b97fb01c5dc6f4509236be1d8dbed99e685f520b5eec51d05",
+          "original_abs_max": 150.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 452.3818695935509,
+          "original_sha256": "8d7a5a2111c5c467a4727e4d5ef9c0f4e145ec76e5cd7b3b600ed87d9f936205",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.03837843828015009
+        },
+        "vision.layer.13": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.997843374790661,
+          "different_values": 573436,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.16864141821861267,
+          "first_original": -0.16796875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.416748046875,
+          "mean_abs": 0.006718041637831058,
+          "native_abs_max": 153.32281494140625,
+          "native_elements": 573440,
+          "native_l2": 481.90080661070715,
+          "native_sha256": "f77937bbb37dcc4d69f2e5bce11e5a2c43f6acd4190bb2930fb4f2b84d1a957d",
+          "original_abs_max": 152.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 479.06765849546355,
+          "original_sha256": "9282b27dc18244ee76df0320b7c39c43fc764453d033f6c2d58da0c7ba1e12e6",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.04183877556756724
+        },
+        "vision.layer.14": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9979435500476286,
+          "different_values": 573440,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.13797257840633392,
+          "first_original": -0.1357421875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.347854614257812,
+          "mean_abs": 0.00818746620445836,
+          "native_abs_max": 159.36395263671875,
+          "native_elements": 573440,
+          "native_l2": 520.5832407997614,
+          "native_sha256": "f86559beda540fc72006d278000053ab8547949785e7d60776cb6da9978ef526",
+          "original_abs_max": 158.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 517.8105673626643,
+          "original_sha256": "6d0cc9c444a1dca9ebe570033327e63a215528b720e294e54bc983a727039183",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.044122604668289614
+        },
+        "vision.layer.15": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.997978807592529,
+          "different_values": 573437,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.014645799994468689,
+          "first_original": -0.0126953125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 18.77911376953125,
+          "mean_abs": 0.009256149346638917,
+          "native_abs_max": 170.02874755859375,
+          "native_elements": 573440,
+          "native_l2": 541.0332022661023,
+          "native_sha256": "7fec1b85e1702583e299c405c7be7e92673d69966a2b7d0f206d5015fd949b9f",
+          "original_abs_max": 169.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 538.7553999909696,
+          "original_sha256": "c34c335ae2543cfd088b758f6123e2ec8d4b04c14c18b5d0486db00605444b6f",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.045429366294632484
+        },
+        "vision.layer.16": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9979917857648559,
+          "different_values": 573438,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.3852754235267639,
+          "first_original": 0.38671875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 18.707077026367188,
+          "mean_abs": 0.010865627208240117,
+          "native_abs_max": 170.922607421875,
+          "native_elements": 573440,
+          "native_l2": 567.2573602777978,
+          "native_sha256": "02d87070b725dd3abbe0972260f09c184ae1217c83d59cd7428413171ef96e29",
+          "original_abs_max": 170.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 565.1705213252302,
+          "original_sha256": "2c9c850b8e28fcb4eb2e03ab904c845a0655549c53f1297b8decd3ab4c1645d6",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.047466696529348984
+        },
+        "vision.layer.17": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.998019289159545,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.4378325343132019,
+          "first_original": 0.443359375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 18.581405639648438,
+          "mean_abs": 0.014032271808145782,
+          "native_abs_max": 170.75607299804688,
+          "native_elements": 573440,
+          "native_l2": 639.468686347841,
+          "native_sha256": "6cabe198b550fa3a699bb6f4ac0121ecd837aecfd354f1ba0a01010ac2e5bac6",
+          "original_abs_max": 170.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 637.6929398940563,
+          "original_sha256": "0ed2c52676908f44cd84b802eafe9691b72f4dd921b8be1c098664f4f75fc48b",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.053127630822939115
+        },
+        "vision.layer.18": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9977980316952859,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.4227053225040436,
+          "first_original": 0.421875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 18.884902954101562,
+          "mean_abs": 0.01658359950043616,
+          "native_abs_max": 172.13116455078125,
+          "native_elements": 573440,
+          "native_l2": 663.6134309095366,
+          "native_sha256": "3b1b377dbdca9b5f98882f8900420e7435b673e442972d8bceb1ddc7a3ddc858",
+          "original_abs_max": 172.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 662.1877647027138,
+          "original_sha256": "04754666e48c63c8975db7be5ea97707a50d1b2cd0d9dbaa6e1637356973e8e1",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.05812361794969365
+        },
+        "vision.layer.19": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.997713236940692,
+          "different_values": 573440,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.03474274277687073,
+          "first_original": -0.033203125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 18.527999877929688,
+          "mean_abs": 0.018225587390843755,
+          "native_abs_max": 177.7887420654297,
+          "native_elements": 573440,
+          "native_l2": 688.7947694551153,
+          "native_sha256": "b1ad29767e922f6df1c3692dc140dadfb42cbd762cfb2a8ba46e484b7a2ce5b2",
+          "original_abs_max": 178.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 687.7553184427321,
+          "original_sha256": "1b46eb0d55445acddf6329fa411d5f8812af3427be15c91d5524390f4af37b5b",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.06148253302860438
+        },
+        "vision.layer.2": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999494604068545,
+          "different_values": 573438,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.2936652898788452,
+          "first_original": -0.296875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.20777606964111328,
+          "mean_abs": 0.0034228950839178653,
+          "native_abs_max": 18.484891891479492,
+          "native_elements": 573440,
+          "native_l2": 344.3068877447012,
+          "native_sha256": "ff3c0348925f171f21faea1f5ab1e8a4e4295bdda1337846e3337ef045a6b59a",
+          "original_abs_max": 18.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 344.41352259579,
+          "original_sha256": "9447966375aefdafb6e677d44e45e477d59a4aaed70963c079fe6d171ca69a6d",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.004574100797237091
+        },
+        "vision.layer.20": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9977807172923291,
+          "different_values": 573436,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.22055107355117798,
+          "first_original": 0.2392578125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.110671997070312,
+          "mean_abs": 0.02072566302191977,
+          "native_abs_max": 178.4276123046875,
+          "native_elements": 573440,
+          "native_l2": 755.8456513655063,
+          "native_sha256": "11ff491b15bf28eadd5c9a7776dd76b8b3d338b6cf11bfdd2d59c0548bae52e2",
+          "original_abs_max": 179.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 754.9288912504605,
+          "original_sha256": "8e0f7285b206316ee6b62cd5a02cf0f4819613a72bd93eb2a2819a916b9de6a9",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0664689700646206
+        },
+        "vision.layer.21": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9976166241587845,
+          "different_values": 573440,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.1321502923965454,
+          "first_original": 0.1494140625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.21728515625,
+          "mean_abs": 0.025078952302643693,
+          "native_abs_max": 179.44015502929688,
+          "native_elements": 573440,
+          "native_l2": 795.4378506579986,
+          "native_sha256": "b1d4121760ab49356ebf321f2cb4f85495afe852c4c498e7c9f2220a76dc49e0",
+          "original_abs_max": 180.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 794.2733159130507,
+          "original_sha256": "c86934e708da75b4768103298fb3f1c5f9f2038c46e17632d6db88fdd568f125",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.07248583488536872
+        },
+        "vision.layer.22": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9971715537828962,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.569673478603363,
+          "first_original": 0.578125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.253005981445312,
+          "mean_abs": 0.03188553628072311,
+          "native_abs_max": 177.55433654785156,
+          "native_elements": 573440,
+          "native_l2": 824.4050008011695,
+          "native_sha256": "b7b7ebf6af0407cb471d04006f4bb0aaceb6cc896ca053fbd8c148dc694a26c9",
+          "original_abs_max": 178.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 823.1997897393572,
+          "original_sha256": "0efce3d436990576c57049f0f773009216fcbe27088792fa019f332e7e6e4517",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.08183706518883702
+        },
+        "vision.layer.23": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9944900748649455,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.6484936475753784,
+          "first_original": 0.61328125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1963.4453125,
+          "mean_abs": 0.626205167811174,
+          "native_abs_max": 5707.98974609375,
+          "native_elements": 573440,
+          "native_l2": 59570.100786929936,
+          "native_sha256": "38b48fbf2b3a380b2586398a244359da84c20d1e252113b075c22c2632171449",
+          "original_abs_max": 5728.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 59683.22250795514,
+          "original_sha256": "513553a1c03228e5ba3f980ea96df9ad9b02680242825f2fa607a1d5e3302699",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 8.267135701585374
+        },
+        "vision.layer.3": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999405645092091,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.28884756565093994,
+          "first_original": -0.291015625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.35884976387023926,
+          "mean_abs": 0.003631244291126125,
+          "native_abs_max": 22.04013442993164,
+          "native_elements": 573440,
+          "native_l2": 337.63932210931927,
+          "native_sha256": "7b07fad6cf32bbd9442a68bd662b2d4e96a9f12c2ec730707f0a632c696c307e",
+          "original_abs_max": 22.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 337.72092965581885,
+          "original_sha256": "9b5759f9a9cd0878ce7e1f9dd5061ad869c614565299a644fdefdab0ba521735",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.004863020444598408
+        },
+        "vision.layer.4": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999398535015358,
+          "different_values": 573438,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.1844673454761505,
+          "first_original": 0.18359375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.4038107395172119,
+          "mean_abs": 0.0037301667724900004,
+          "native_abs_max": 22.709625244140625,
+          "native_elements": 573440,
+          "native_l2": 342.9479816708176,
+          "native_sha256": "85d5f01743da7828378b573d1546c0018d44558067da3540df96e5a8b1732235",
+          "original_abs_max": 22.625,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 343.03155916913136,
+          "original_sha256": "8775ecf40750a3bce614fb43bd8a47e9538b089f673d1765ffd9932c7ed67389",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.004968948579693482
+        },
+        "vision.layer.5": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999289379783475,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.10721322149038315,
+          "first_original": -0.10693359375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.4030625820159912,
+          "mean_abs": 0.0038644873803670115,
+          "native_abs_max": 21.39889144897461,
+          "native_elements": 573440,
+          "native_l2": 325.0816760744039,
+          "native_sha256": "90b4ecdb4de43125cc03cba0064382aeb0295ba73a8b841dfb88fe044cafd71b",
+          "original_abs_max": 21.375,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 325.1965915451992,
+          "original_sha256": "e97f1f2b57f1420b88a266e530fc14a7eb98d5f342f7b4d6c6b797e7aabc68c6",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.005120941267339448
+        },
+        "vision.layer.6": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999345039994351,
+          "different_values": 573438,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.32890886068344116,
+          "first_original": -0.330078125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.3384753465652466,
+          "mean_abs": 0.0036428400889316694,
+          "native_abs_max": 18.338117599487305,
+          "native_elements": 573440,
+          "native_l2": 319.4731330353594,
+          "native_sha256": "ca2d8a31a4336ed96d8c8f30f9a61f889c2e091849fb0bd57823309327510348",
+          "original_abs_max": 18.25,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 319.58199285087727,
+          "original_sha256": "930ce563b0462dead0f7ef99af1c43a51088209877590e79a7ca796c2d4acc66",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.004831467275197516
+        },
+        "vision.layer.7": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999399152278284,
+          "different_values": 573436,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.1288260519504547,
+          "first_original": -0.1298828125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.30561792850494385,
+          "mean_abs": 0.0034898008790638156,
+          "native_abs_max": 15.349870681762695,
+          "native_elements": 573440,
+          "native_l2": 322.4725856873705,
+          "native_sha256": "a8b0394621e4e072c7a8d9bad0fea0c17248cd58f0769b95cd76b1740949c3d1",
+          "original_abs_max": 15.25,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 322.5614794197376,
+          "original_sha256": "dd903bc60f123f3d07e83c6b11163e8e27a3af940c2be3038c38d8489a605e79",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.004670281946358616
+        },
+        "vision.layer.8": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999410949639702,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.11095218360424042,
+          "first_original": -0.1123046875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.248449444770813,
+          "mean_abs": 0.003294401823919608,
+          "native_abs_max": 14.201579093933105,
+          "native_elements": 573440,
+          "native_l2": 315.1848458717481,
+          "native_sha256": "46ac01a186377e9fbfcfe71879d73a4130e2e4989c80bc1693352a7c901409f2",
+          "original_abs_max": 14.125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 315.27912193718265,
+          "original_sha256": "ca0aa1d6628ab08a84a41446f3b1cc2a0f4f1db49118c68ad73070d7b54474b7",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0045200400862988495
+        },
+        "vision.layer.9": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999382607106198,
+          "different_values": 573435,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.311906635761261,
+          "first_original": -0.3125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.394059419631958,
+          "mean_abs": 0.003172264604527949,
+          "native_abs_max": 13.642955780029297,
+          "native_elements": 573440,
+          "native_l2": 318.66086197167573,
+          "native_sha256": "0a3a55c8571c25ed3d275d41ddad4cd32092c07f2b1c27950ccfd3bf0387bbe2",
+          "original_abs_max": 13.5625,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 318.7447982648097,
+          "original_sha256": "d8bd6a8556827f1fbae6f5c4b2d8880c77211f8d197af68744d2430033c5ef37",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0046779942299396875
+        },
+        "vision.merged": {
+          "comparison_shape": [
+            140,
+            2560
+          ],
+          "cosine": 0.9945960806751912,
+          "different_values": 358399,
+          "elements": 358400,
+          "first_differing_flat_index": 0,
+          "first_native": 2.5854876041412354,
+          "first_original": 2.546875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.6790871620178223,
+          "mean_abs": 0.0046697488229847295,
+          "native_abs_max": 5.431203842163086,
+          "native_elements": 358400,
+          "native_l2": 64.71783592705306,
+          "native_sha256": "6795ec5f3c82fcac8c7942110ab315ba7399389aab72e2fa1766a595553c4a3f",
+          "original_abs_max": 5.4375,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 64.72242271089294,
+          "original_sha256": "056f887230abc6adc0837cefd6866b42c0a69c70f02906786409c5622e0683ea",
+          "original_shape": [
+            140,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.011238928356155892
+        },
+        "vision.patch": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999986088016238,
+          "different_values": 573436,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.2528390884399414,
+          "first_original": -0.25390625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.012675762176513672,
+          "mean_abs": 0.0005561223356770435,
+          "native_abs_max": 4.299824237823486,
+          "native_elements": 573440,
+          "native_l2": 364.5889669628411,
+          "native_sha256": "fa466c3acdccd7d949ae96b278b7443328cef984316b25b31a9b3368e4bd180b",
+          "original_abs_max": 4.3125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 364.63666341484964,
+          "original_sha256": "84fb1258261ba9051d9f7f8055a5b8d18a21a7b039df5ead4a499f15eaf7ead9",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0008056174669999586
+        },
+        "vision.position": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999962845208347,
+          "different_values": 568048,
+          "elements": 573440,
+          "first_differing_flat_index": 1024,
+          "first_native": -0.027976708486676216,
+          "first_original": -0.0279541015625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.026315689086914062,
+          "mean_abs": 0.00014350866315145135,
+          "native_abs_max": 6.1529645919799805,
+          "native_elements": 573440,
+          "native_l2": 103.91631006579813,
+          "native_sha256": "acc08bbf7ace182e08cdd064b3755198ecaec80c03c760122c76a6b8b18224c1",
+          "original_abs_max": 6.15625,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 104.05239152219451,
+          "original_sha256": "647228a912dfd3d0f0f2fb40a9fc48e9220cd43b25bb5b008540ae70da1c53ce",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.00041522366549320546
+        }
+      }
+    },
+    "q8_0": {
+      "artifact_id": 13401793576,
+      "first_differing_stage": "vision.patch",
+      "first_raw_strict_stage": "vision.patch",
+      "native_decoded": {
+        "exact_original_ids": false,
+        "ids": [
+          27,
+          17251
+        ],
+        "text": "<figure"
+      },
+      "native_first_id": 27,
+      "native_report_sha256": "a949c71bc59b61d96778f2d324b7da104ea54f98004bf9e1100167dd7d16e3eb",
+      "original_first_id": 27,
+      "run_id": 41999580781,
+      "source_sha": "fd150b98f488a6884a6e8d8127e7dfb263cab237",
+      "stages": {
+        "prefill.input": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9946046973815503,
+          "different_values": 394129,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.03394293785095215,
+          "first_original": 0.033935546875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.6790871620178223,
+          "mean_abs": 0.004250632506531852,
+          "native_abs_max": 5.431203842163086,
+          "native_elements": 394240,
+          "native_l2": 64.76964184365899,
+          "native_sha256": "093a5a7413850e7525e14a32e8843fc6fe00b0f5672d45d9ee5bde43260b7ec0",
+          "original_abs_max": 5.4375,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 64.77421668736883,
+          "original_sha256": "51856cd6bcfc7685dad05a0241465f0cae258042494a27cf8aac6e41fd129bc7",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.010715920729727595
+        },
+        "prefill.layer.0": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9953312590902462,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 2.861220598220825,
+          "first_original": 2.859375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.7277004718780518,
+          "mean_abs": 0.004677009346102289,
+          "native_abs_max": 8.592720985412598,
+          "native_elements": 394240,
+          "native_l2": 84.33654791744519,
+          "native_sha256": "c3898aa80575ce22f8569082c7d363fcf2365bc00b51cc7896a294b7314ee8e4",
+          "original_abs_max": 8.5625,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 84.30621328637889,
+          "original_sha256": "0b8a30a3b0113aa83d3bcc6ebd1433c6fce11e4c5ba38cfee529ab7751283b92",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.012977028334536244
+        },
+        "prefill.layer.1": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9946822936572427,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 3.49946928024292,
+          "first_original": 3.515625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.8189377784729004,
+          "mean_abs": 0.005455686835388075,
+          "native_abs_max": 8.915231704711914,
+          "native_elements": 394240,
+          "native_l2": 86.17849122042506,
+          "native_sha256": "7a21bf7f9fc86fa24650e6bdb3b15c9ece9e78fe0d705e697ea1a79bb77ae5ef",
+          "original_abs_max": 8.875,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 86.22384603965781,
+          "original_sha256": "984d90f524070bc5ebfa2f95ab6562cb0dc7d327eb69cdeda8e863c7f6e6d4a5",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.014158447047874013
+        },
+        "prefill.layer.10": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9890344604152459,
+          "different_values": 394239,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.15745210647583008,
+          "first_original": 0.1728515625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.1274056434631348,
+          "mean_abs": 0.013624395499816758,
+          "native_abs_max": 32.535682678222656,
+          "native_elements": 394240,
+          "native_l2": 129.04732047839988,
+          "native_sha256": "fba7655b2e45bfd3b8c1f8d17b1503ce18e88df8d11819640d56b5c937f15c57",
+          "original_abs_max": 32.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 128.67807540922018,
+          "original_sha256": "3d8e5bf2eb5077923883826337cfba7b159c1c20dcf85594b75a5654df783480",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.030398889117613757
+        },
+        "prefill.layer.11": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9854695472146138,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.5974686741828918,
+          "first_original": -0.58203125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.271268367767334,
+          "mean_abs": 0.015553891429367646,
+          "native_abs_max": 31.47096061706543,
+          "native_elements": 394240,
+          "native_l2": 129.32950428955377,
+          "native_sha256": "948c10f4a965d180337c43f07463235efd0ea5693f599a74b0463392fa0ac181",
+          "original_abs_max": 31.375,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 129.07257722879038,
+          "original_sha256": "b8b5c0fd5a758c8474707ab55d0dc2586f08c758899e3a7a40f38ea7e0fb9c3b",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.03508080675495969
+        },
+        "prefill.layer.12": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9847259118237717,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.6261002421379089,
+          "first_original": -0.61328125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.5721921920776367,
+          "mean_abs": 0.015980262888249903,
+          "native_abs_max": 31.024158477783203,
+          "native_elements": 394240,
+          "native_l2": 129.75850800684668,
+          "native_sha256": "dc86b21866ed1a8ad3f1d7bc66a9514f9609136bfc9870b403e7e3053d304537",
+          "original_abs_max": 30.875,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 129.47183880441972,
+          "original_sha256": "f47525ffb97ea2fce263155e092ed961b8e9f243ee48922bd7198ff5e89f3d80",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.03608300093402392
+        },
+        "prefill.layer.13": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9845646226790973,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.6144688129425049,
+          "first_original": -0.6015625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.2347908020019531,
+          "mean_abs": 0.01648138903460056,
+          "native_abs_max": 30.739273071289062,
+          "native_elements": 394240,
+          "native_l2": 132.48199716316276,
+          "native_sha256": "ab407fd764fe7ae59f3f72218ea0c34965aaefd15cad750e01d280f575b86e26",
+          "original_abs_max": 30.625,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 132.30075476870758,
+          "original_sha256": "2e3cc5b33b5951b5cf629768bd4bddc22f9abff140081e8598c30a79ce40278f",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.037048109916589654
+        },
+        "prefill.layer.14": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9856717793362624,
+          "different_values": 394239,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.7972712516784668,
+          "first_original": 0.81640625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.9813189506530762,
+          "mean_abs": 0.017508376181625887,
+          "native_abs_max": 31.677448272705078,
+          "native_elements": 394240,
+          "native_l2": 146.59658023320912,
+          "native_sha256": "0e3e24d7e5201dd99edc13f842653ac1055a3a11eb2db06065149743afd9bbe5",
+          "original_abs_max": 31.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 146.24248353952515,
+          "original_sha256": "6428999a711ee72db62d1c8399542d1d297f339a13e035386573d1ab61847337",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.03947969558082253
+        },
+        "prefill.layer.15": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9834394519974947,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.021246016025543213,
+          "first_original": 0.03125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.095895290374756,
+          "mean_abs": 0.01911242357660155,
+          "native_abs_max": 27.717288970947266,
+          "native_elements": 394240,
+          "native_l2": 151.91167862426786,
+          "native_sha256": "43d19337b523041c03c73dc784e2d46bdaefb28d31129bacc710850faa063c27",
+          "original_abs_max": 27.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 151.9190361226098,
+          "original_sha256": "ce30da889a9f0ff1660e3f71013463b291bc23cbd308d598197738c61ef4036e",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.04403253627623196
+        },
+        "prefill.layer.16": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.982442964187553,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.2199905961751938,
+          "first_original": 0.2333984375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.907700538635254,
+          "mean_abs": 0.020157009252367273,
+          "native_abs_max": 26.165443420410156,
+          "native_elements": 394240,
+          "native_l2": 156.82008257797793,
+          "native_sha256": "292f9f19c3565b3d1384c1cd5dd6389c300a338c45238fcff815f60f93c0d3ea",
+          "original_abs_max": 26.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 156.76443829496492,
+          "original_sha256": "6a550efac914401585e42e955c0dd10e1013c13f9093c707ce9337bd091a7f57",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0467935124295983
+        },
+        "prefill.layer.17": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9825846707005216,
+          "different_values": 394239,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.3980642855167389,
+          "first_original": -0.388671875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.07096004486084,
+          "mean_abs": 0.02094362671342282,
+          "native_abs_max": 25.164735794067383,
+          "native_elements": 394240,
+          "native_l2": 162.7087205553438,
+          "native_sha256": "f85de59552363ee1971f7601a5a01f79ebca1a2283a77ffdd3561d796ec36602",
+          "original_abs_max": 25.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 162.5868795615299,
+          "original_sha256": "57c446dd26041c41e95c1d312c045dd02a6d21d5dc00b512d8d4b9146c200871",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.048345066465150965
+        },
+        "prefill.layer.18": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9829701348425345,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 4.871086120605469,
+          "first_original": 4.875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.5048274993896484,
+          "mean_abs": 0.022655559997294947,
+          "native_abs_max": 41.56772232055664,
+          "native_elements": 394240,
+          "native_l2": 180.1638382615018,
+          "native_sha256": "d91936bd08e18ef548b91d28b5ec659067983e4c92f9145f899fa21ccc08a5ef",
+          "original_abs_max": 41.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 179.74472551654773,
+          "original_sha256": "14220e46c9f43654c80b43743ac5424a3fcac842a8299827476bb6708e3c320e",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.052897692671013165
+        },
+        "prefill.layer.19": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9773691122675612,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.4281665086746216,
+          "first_original": -0.39453125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 4.342432975769043,
+          "mean_abs": 0.028695739264691968,
+          "native_abs_max": 13.94865608215332,
+          "native_elements": 394240,
+          "native_l2": 207.83222025884047,
+          "native_sha256": "3e21ac98432c920dd0e391f50cf1c30ad2c7609d2f59ad2b922a15acf9e32fea",
+          "original_abs_max": 14.0625,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 207.74844350990531,
+          "original_sha256": "2c64d17c3cf1b566bd3e09f99a7cdaf89092554b23f00912f2252147e8851d71",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.07040630580383511
+        },
+        "prefill.layer.2": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9920057808236507,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 6.912696838378906,
+          "first_original": 6.9375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.170769453048706,
+          "mean_abs": 0.006300817432425996,
+          "native_abs_max": 7.8048553466796875,
+          "native_elements": 394240,
+          "native_l2": 79.02881925625415,
+          "native_sha256": "27d1acbc9377c6e933f018c24895de206a39898196b62ee9ad5334256506cfd9",
+          "original_abs_max": 7.8125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 79.17353545093458,
+          "original_sha256": "67b91f5133131e55184f1698dd546ac7b4d298909460896b52adcbc34aefcc95",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.01593128842077709
+        },
+        "prefill.layer.20": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9764680936527238,
+          "different_values": 394239,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 1.6524710655212402,
+          "first_original": 1.6796875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 4.820243239402771,
+          "mean_abs": 0.031237043725640987,
+          "native_abs_max": 15.728014945983887,
+          "native_elements": 394240,
+          "native_l2": 224.54360041598122,
+          "native_sha256": "dba00a8de7fd26ad40421c3ea065da736069dcd487195a1525c1b7ddb8ca5ccd",
+          "original_abs_max": 15.8125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 224.41321848749774,
+          "original_sha256": "d7d1d514852d9f770486b02b5dcf1186bf700f34adb403f27ef551fb67fd9db5",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0775602722920497
+        },
+        "prefill.layer.21": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9770361805758748,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 1.8259179592132568,
+          "first_original": 1.8359375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 4.740447044372559,
+          "mean_abs": 0.0346009226290051,
+          "native_abs_max": 18.438295364379883,
+          "native_elements": 394240,
+          "native_l2": 251.08996491179983,
+          "native_sha256": "e52e32c051010ad1cc5173151755638e8669566feac04ea928222ded80a73a40",
+          "original_abs_max": 18.375,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 250.8029251955196,
+          "original_sha256": "b42b741889ba1bc6c4a076c0d570ad1e9b6483ad6474aa8fb9aa5cdaef0e6370",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.08565325641642468
+        },
+        "prefill.layer.22": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9765424712166907,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 8.294384956359863,
+          "first_original": 8.375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 7.451305866241455,
+          "mean_abs": 0.03917139940146874,
+          "native_abs_max": 53.09275436401367,
+          "native_elements": 394240,
+          "native_l2": 288.80666175778435,
+          "native_sha256": "46f71a08984a220974c43a50398cba8a96b1ac982e4c1a93bcf29da12cc13765",
+          "original_abs_max": 53.25,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 288.5594457316417,
+          "original_sha256": "e55791dbf1bf868184dcba60e4f171038737ea9ae20f6b143703874fa6cac691",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.09958649075203294
+        },
+        "prefill.layer.23": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9736660999838369,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 7.446736812591553,
+          "first_original": 7.46875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 9.36146330833435,
+          "mean_abs": 0.04390276556681453,
+          "native_abs_max": 22.98751449584961,
+          "native_elements": 394240,
+          "native_l2": 305.812931927478,
+          "native_sha256": "563cce7a2b8f0b9cb5d0382e436959f4b2e4a10528061ba23c9fbfa6de7bd3f7",
+          "original_abs_max": 23.375,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 305.5244373669538,
+          "original_sha256": "532f5c6385b2bff4bbf3679397eb625746faa4277b2ed7abe292c11ea711c50f",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.11172408802459162
+        },
+        "prefill.layer.24": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9748215066009481,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 7.9459919929504395,
+          "first_original": 7.96875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 10.555813550949097,
+          "mean_abs": 0.045921389916937,
+          "native_abs_max": 24.58686637878418,
+          "native_elements": 394240,
+          "native_l2": 327.05910980028375,
+          "native_sha256": "d0b738d697f5a86e1cbf26c178c856ca7923ef45503a03c94b4ccbbf82e83b5e",
+          "original_abs_max": 25.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 326.707822043967,
+          "original_sha256": "25c4148ec6cf4692bcbb51d7a5cdee3641bd4cfd276c0cbbe5e724a56d2c5c81",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.11682812214485597
+        },
+        "prefill.layer.25": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.974260723402249,
+          "different_values": 394239,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 8.756702423095703,
+          "first_original": 8.75,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 12.043197870254517,
+          "mean_abs": 0.048246270502306,
+          "native_abs_max": 30.08282470703125,
+          "native_elements": 394240,
+          "native_l2": 342.96794353775675,
+          "native_sha256": "984d0ecd77b40d1e1f5e10d44c8c5e780033ba20169265d63fd3ca1c123ffd07",
+          "original_abs_max": 30.375,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 342.29009357655565,
+          "original_sha256": "e3015282c244d9f4f58f90232cb06a7eb4f00d8a36f8d1468f1086c51911e289",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.12381500010221091
+        },
+        "prefill.layer.26": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.974069604898447,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 10.13851261138916,
+          "first_original": 10.0625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 13.6990966796875,
+          "mean_abs": 0.052506511759393464,
+          "native_abs_max": 109.92141723632812,
+          "native_elements": 394240,
+          "native_l2": 383.4362336002591,
+          "native_sha256": "2500db4f2a34106c5e927510737fc91103341e379bd1418f58d4de61ddf5a29d",
+          "original_abs_max": 110.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 382.34452472622286,
+          "original_sha256": "3f5859af94bf51a0155f9d317212ffc20c43827981eeb0abd7a3d539a1fad9d9",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.1388824186539556
+        },
+        "prefill.layer.27": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9683817672358785,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 5.07835054397583,
+          "first_original": 5.0625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 15.547014713287354,
+          "mean_abs": 0.06170095909167437,
+          "native_abs_max": 25.439279556274414,
+          "native_elements": 394240,
+          "native_l2": 397.5996925660214,
+          "native_sha256": "eb6afe761186539c2cb5c43e92bc5e9d959feebc36308b5d080fc7a47c5378a2",
+          "original_abs_max": 25.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 396.79854385582985,
+          "original_sha256": "02eddef57485ad083d34f2a25f5027952b0521396fe91871ebae1c8ed66f4002",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.1590836237927239
+        },
+        "prefill.layer.28": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9682651766020893,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.7661457061767578,
+          "first_original": 0.71875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 18.03072762489319,
+          "mean_abs": 0.06910283026190941,
+          "native_abs_max": 26.99615478515625,
+          "native_elements": 394240,
+          "native_l2": 447.1075882219213,
+          "native_sha256": "93c1cbba09f6493c851dac28ea745059be8c43231d1dcb5dac232257da0106d4",
+          "original_abs_max": 27.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 446.045998863053,
+          "original_sha256": "62ef5fb86fa9b7188cc4de061e5d2f052afcabd42a2cce4ff1e3795f7e02a660",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.1791916937971945
+        },
+        "prefill.layer.29": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9683672898056219,
+          "different_values": 394239,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.5191580653190613,
+          "first_original": -0.5390625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 16.71964931488037,
+          "mean_abs": 0.07750173477603761,
+          "native_abs_max": 27.140668869018555,
+          "native_elements": 394240,
+          "native_l2": 495.0356240687919,
+          "native_sha256": "8fec1627d285c9d31e3e3ee17ada065781daabdfca5072408f7667a6b6231e64",
+          "original_abs_max": 26.75,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 494.1817878046623,
+          "original_sha256": "804187f9c00daf0caa0721a5056b56e8cf2279618efec1eb6b70beb93b71fe1b",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.19814114984904077
+        },
+        "prefill.layer.3": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9929843929899403,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 4.304930686950684,
+          "first_original": 4.34375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 2.3849620819091797,
+          "mean_abs": 0.00716364625004644,
+          "native_abs_max": 8.469608306884766,
+          "native_elements": 394240,
+          "native_l2": 91.6024454109322,
+          "native_sha256": "3bc0b878f8e9a19c8f00eb736d03799ac73dc23e696b2c066b06af6cc287aed8",
+          "original_abs_max": 8.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 91.80441119134768,
+          "original_sha256": "6853b1e94950f23e8c8b236cdf0acad1b554ef77bf5744af9f018e3c52dee990",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.017303248431368663
+        },
+        "prefill.layer.30": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.964002905366134,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 4.080055236816406,
+          "first_original": 4.0,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 15.095326900482178,
+          "mean_abs": 0.08942613518631404,
+          "native_abs_max": 31.47967529296875,
+          "native_elements": 394240,
+          "native_l2": 528.1402882037127,
+          "native_sha256": "7737962ef2d6ed8c851ddcb562c73fe2e066e0fb608ce6741dc66225aceb7d24",
+          "original_abs_max": 31.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 526.9646086548787,
+          "original_sha256": "88faec7d7e2ca77ae22f9c41dd441537588b94fae658f9c6f02ecd1e9e2c139c",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.2254492174809003
+        },
+        "prefill.layer.31": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9613595762463337,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 84.76179504394531,
+          "first_original": 85.0,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.653470993041992,
+          "mean_abs": 0.11507406639843852,
+          "native_abs_max": 84.76179504394531,
+          "native_elements": 394240,
+          "native_l2": 638.8684312051614,
+          "native_sha256": "7330441482ddac15de303522eefc43df1829a2e840eb435af955ba2bc62c7943",
+          "original_abs_max": 85.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 636.9314247533957,
+          "original_sha256": "59c21f0363422e856ad26bd26295dd4e0c816e940e98e8b95ab696a74595412a",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.28244478109175625
+        },
+        "prefill.layer.4": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9931125182117904,
+          "different_values": 394239,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 3.48516845703125,
+          "first_original": 3.53125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.938464641571045,
+          "mean_abs": 0.007815007391838201,
+          "native_abs_max": 7.807136058807373,
+          "native_elements": 394240,
+          "native_l2": 95.86648651488807,
+          "native_sha256": "132e995915bc33f71af6a5e8dd1df2b77b2d2aa90e6f022ba3a59937e2cbf877",
+          "original_abs_max": 7.875,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 96.09712466205391,
+          "original_sha256": "6531f6f571c41ec7e003d8a8dafb57f9e8af1270b1050ab064be84e5ad0fc4fb",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.017945042533626866
+        },
+        "prefill.layer.5": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9925094780440814,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 2.2611019611358643,
+          "first_original": 2.28125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.533163070678711,
+          "mean_abs": 0.00858682042458576,
+          "native_abs_max": 7.17594575881958,
+          "native_elements": 394240,
+          "native_l2": 99.66032816326546,
+          "native_sha256": "5e26f89e22fa3b57ab9d6fe47e1e2ec9f89ada5425564fabe7fd9f0340509f16",
+          "original_abs_max": 7.28125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 99.7721661714387,
+          "original_sha256": "f7ab6b7894eae6e960bb9ee225ff2d3fd7d156809097d9d1c3454c548a3530ca",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.019439038720914837
+        },
+        "prefill.layer.6": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9920100542545599,
+          "different_values": 394239,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 4.3618974685668945,
+          "first_original": 4.375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.4240038394927979,
+          "mean_abs": 0.010059067477785394,
+          "native_abs_max": 29.80770492553711,
+          "native_elements": 394240,
+          "native_l2": 114.12225039425387,
+          "native_sha256": "36f59bfba2a04c7d3890991548e442af63e68d8eff005dcd8f53bada9a7dfc91",
+          "original_abs_max": 29.75,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 114.1385410337815,
+          "original_sha256": "1e6d6c4e846cf9032565e5f452937b66898a7727415dcf5cfcf3972d0f838f14",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.022977785382775236
+        },
+        "prefill.layer.7": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9895450254955925,
+          "different_values": 394239,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 1.0555005073547363,
+          "first_original": 1.0625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.7207441329956055,
+          "mean_abs": 0.011539102006288696,
+          "native_abs_max": 27.33926010131836,
+          "native_elements": 394240,
+          "native_l2": 113.77348495721155,
+          "native_sha256": "bdf72d4e3d235e8a2e7efc9d22ceade15addf7ed5ba9121def16f1e0cfde8cef",
+          "original_abs_max": 27.25,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 113.74025091369363,
+          "original_sha256": "0888658b08fa6ed63a0531999c638694a98ab1212aabb17c219d0731e16785e3",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.02619839293913473
+        },
+        "prefill.layer.8": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9892771661714173,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.40152353048324585,
+          "first_original": 0.416015625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.559896469116211,
+          "mean_abs": 0.011941584067541314,
+          "native_abs_max": 27.172574996948242,
+          "native_elements": 394240,
+          "native_l2": 115.36767900022711,
+          "native_sha256": "d73be5499612a6d3ad272bed54b3d62897b8267cd984c42894921edd96c9ff78",
+          "original_abs_max": 27.125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 115.27429572904659,
+          "original_sha256": "d04f1d09bf2ffa72d90b982898999739a50a6a30dd1176b0a4660111ad3a27c0",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.02689703441021088
+        },
+        "prefill.layer.9": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9888219201856211,
+          "different_values": 394239,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": -0.33287468552589417,
+          "first_original": -0.3203125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.4362330436706543,
+          "mean_abs": 0.012709222950927626,
+          "native_abs_max": 27.042659759521484,
+          "native_elements": 394240,
+          "native_l2": 119.77641088782876,
+          "native_sha256": "9e5361eb4a610cac4af09063a47aec38bd6e178219d94799f172ff570b7acb83",
+          "original_abs_max": 27.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 119.5964352755063,
+          "original_sha256": "76bba7a87b50484992b51209f56054e7e01807997514eb39a085a8a389d2552e",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.028502633280797777
+        },
+        "prefill.logits": {
+          "comparison_shape": [
+            1,
+            248320
+          ],
+          "cosine": 0.9984697347296062,
+          "different_values": 248320,
+          "elements": 248320,
+          "first_differing_flat_index": 0,
+          "first_native": 11.601579666137695,
+          "first_original": 11.5625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.5682590007781982,
+          "mean_abs": 0.10871021402638212,
+          "native_abs_max": 22.854671478271484,
+          "native_elements": 248320,
+          "native_l2": 1078.986614164811,
+          "native_sha256": "ae1eae4fc4eacf48d1bfe74e2beadb8d2f1cc41fa7fb3e959e27fd8cff1e8ed4",
+          "original_abs_max": 22.875,
+          "original_dtype": "torch.float32",
+          "original_l2": 1103.1859987344499,
+          "original_sha256": "a4bece2310050081b502a3910a19469e47016829d74abebb29861739f3205ffd",
+          "original_shape": [
+            1,
+            248320
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.13049503474892132
+        },
+        "prefill.norm": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.9550595166376484,
+          "different_values": 394240,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 24.032264709472656,
+          "first_original": 24.0,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 29.242483139038086,
+          "mean_abs": 0.38226934143626123,
+          "native_abs_max": 43.84650802612305,
+          "native_elements": 394240,
+          "native_l2": 1945.8976735135536,
+          "native_sha256": "26502651feb618b3dc2796ef2d5f56835bf268178b41dddcccb79a5db500975e",
+          "original_abs_max": 44.25,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 1947.4521656480165,
+          "original_sha256": "f62abc16013222a21c012665d25aed977fac45024409a2d3cb4ba76952caaa73",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.9294980090785778
+        },
+        "prefill.positions": {
+          "comparison_shape": [
+            3,
+            154
+          ],
+          "cosine": 1.0,
+          "different_values": 0,
+          "elements": 462,
+          "first_differing_flat_index": null,
+          "layout_mapping": "verified4-axis original chronology plane0 removed; THW axes retained",
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "native_abs_max": 27.0,
+          "native_elements": 462,
+          "native_l2": 216.09488656606385,
+          "native_sha256": "007b6bc39e71ffd2c3f6813808f4455a129e5aafd6fda1f186f084ac46573729",
+          "original_abs_max": 27.0,
+          "original_dtype": "torch.int64",
+          "original_l2": 216.09488656606385,
+          "original_sha256": "d5d81e7a063e2c22de08bee865e7a40d48cc45cfa03376a0e7a0482549c78e37",
+          "original_shape": [
+            4,
+            1,
+            154
+          ],
+          "raw_strict_flag": false,
+          "rms_error": 0.0
+        },
+        "processor.patches": {
+          "comparison_shape": [
+            560,
+            1536
+          ],
+          "cosine": 1.0,
+          "different_values": 0,
+          "elements": 860160,
+          "first_differing_flat_index": null,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "native_abs_max": 1.0,
+          "native_elements": 860160,
+          "native_l2": 831.4008051587742,
+          "native_sha256": "d623c64f184a10b6964aedeb3cd90f5a4e2e7aa39f7c480a9f474757776b8d8d",
+          "original_abs_max": 1.0,
+          "original_dtype": "torch.float32",
+          "original_l2": 831.4008051587742,
+          "original_sha256": "d623c64f184a10b6964aedeb3cd90f5a4e2e7aa39f7c480a9f474757776b8d8d",
+          "original_shape": [
+            560,
+            1536
+          ],
+          "raw_strict_flag": false,
+          "rms_error": 0.0
+        },
+        "text.embedded": {
+          "comparison_shape": [
+            1,
+            154,
+            2560
+          ],
+          "cosine": 0.999977031000271,
+          "different_values": 391330,
+          "elements": 394240,
+          "first_differing_flat_index": 0,
+          "first_native": 0.03394293785095215,
+          "first_original": 0.033935546875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.0003809928894042969,
+          "mean_abs": 4.8021947393910474e-05,
+          "native_abs_max": 0.09768056869506836,
+          "native_elements": 394240,
+          "native_l2": 5.8395026028823835,
+          "native_sha256": "b3cd4f114b0b998d921083b80545830b5dd00b071b2ffbd38df47845113a7a59",
+          "original_abs_max": 0.09765625,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 5.838879357311831,
+          "original_sha256": "9d3f61b0ca1a89831a68d62b18bfce5a486919ae62cea7f716ece454adf4dd2d",
+          "original_shape": [
+            1,
+            154,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 6.303942159835645e-05
+        },
+        "vision.embedded": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999969327175916,
+          "different_values": 573432,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.2269601821899414,
+          "first_original": -0.228515625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.03224515914916992,
+          "mean_abs": 0.0007801994006524435,
+          "native_abs_max": 9.131999969482422,
+          "native_elements": 573440,
+          "native_l2": 370.1400078469841,
+          "native_sha256": "e65c52707e195351ad48c66a070111490a1987bb1530d694305519d4d6566100",
+          "original_abs_max": 9.125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 370.2165144735527,
+          "original_sha256": "e43ce63ebd84d6cadfd73df027faea09022b1bb977c6b4e62bf8324eb243b7af",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0012149699585761048
+        },
+        "vision.layer.0": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.999989545690209,
+          "different_values": 573434,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.7893905639648438,
+          "first_original": -0.7890625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.049695491790771484,
+          "mean_abs": 0.002175365975702854,
+          "native_abs_max": 7.739726543426514,
+          "native_elements": 573440,
+          "native_l2": 493.39158244771454,
+          "native_sha256": "43a976069e52153c5bc0d6c15fd8d23c152a7b088608f4b486e300d864f6c434",
+          "original_abs_max": 7.75,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 493.5227171233101,
+          "original_sha256": "ae4fcfbe1debb31e70dffca3be7cf36d7998228b40cebd1914758b50308c28f0",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0029846975962533355
+        },
+        "vision.layer.1": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999672423918649,
+          "different_values": 573434,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.9987537860870361,
+          "first_original": -1.0,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.05060315132141113,
+          "mean_abs": 0.002942919714405434,
+          "native_abs_max": 5.279741287231445,
+          "native_elements": 573440,
+          "native_l2": 368.5820449475464,
+          "native_sha256": "c6761b6e8e94a116ff337dba4f4c22181daf80db6ac8b07b7ac4affefa49495e",
+          "original_abs_max": 5.3125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 368.6896012870256,
+          "original_sha256": "0b5a797c76422c1b650433e525ce0eb29773d4a06c979fe46e84881f8ccd10f4",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0039428168361740346
+        },
+        "vision.layer.10": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9977845126488547,
+          "different_values": 573438,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.315277099609375,
+          "first_original": -0.3125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 18.25677490234375,
+          "mean_abs": 0.003751165868188114,
+          "native_abs_max": 94.89753723144531,
+          "native_elements": 573440,
+          "native_l2": 368.31728383883495,
+          "native_sha256": "554650693fc202210278df73c73d929fa8592bab2a31e4431a34f315d7cc816e",
+          "original_abs_max": 93.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 365.8954787594917,
+          "original_sha256": "5467a1f8174061e9e5696921a5ea445c6e8dbdaaa45c47babccbf98c633d659c",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.03242781067280124
+        },
+        "vision.layer.11": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9980661137815491,
+          "different_values": 573438,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.26943862438201904,
+          "first_original": -0.267578125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.509506225585938,
+          "mean_abs": 0.0040317015504618735,
+          "native_abs_max": 150.62521362304688,
+          "native_elements": 573440,
+          "native_l2": 443.51954484369526,
+          "native_sha256": "a3cee91e15f555907d2bd6cc62ea02ec8c30d29f426670ac8008afb31864f149",
+          "original_abs_max": 149.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 440.260869944897,
+          "original_sha256": "6cac940c74f7ab035f811aae28540d8effe627fcc78995dcba8df656f0c932da",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.036545154855870496
+        },
+        "vision.layer.12": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9979843230902791,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.0316891074180603,
+          "first_original": 0.03515625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.981536865234375,
+          "mean_abs": 0.004833894625716896,
+          "native_abs_max": 152.02391052246094,
+          "native_elements": 573440,
+          "native_l2": 455.9910634299228,
+          "native_sha256": "8172fbe84a2a1a1b97fb01c5dc6f4509236be1d8dbed99e685f520b5eec51d05",
+          "original_abs_max": 150.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 452.3818695935509,
+          "original_sha256": "8d7a5a2111c5c467a4727e4d5ef9c0f4e145ec76e5cd7b3b600ed87d9f936205",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.03837843828015009
+        },
+        "vision.layer.13": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.997843374790661,
+          "different_values": 573436,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.16864141821861267,
+          "first_original": -0.16796875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.416748046875,
+          "mean_abs": 0.006718041637831058,
+          "native_abs_max": 153.32281494140625,
+          "native_elements": 573440,
+          "native_l2": 481.90080661070715,
+          "native_sha256": "f77937bbb37dcc4d69f2e5bce11e5a2c43f6acd4190bb2930fb4f2b84d1a957d",
+          "original_abs_max": 152.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 479.06765849546355,
+          "original_sha256": "9282b27dc18244ee76df0320b7c39c43fc764453d033f6c2d58da0c7ba1e12e6",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.04183877556756724
+        },
+        "vision.layer.14": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9979435500476286,
+          "different_values": 573440,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.13797257840633392,
+          "first_original": -0.1357421875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.347854614257812,
+          "mean_abs": 0.00818746620445836,
+          "native_abs_max": 159.36395263671875,
+          "native_elements": 573440,
+          "native_l2": 520.5832407997614,
+          "native_sha256": "f86559beda540fc72006d278000053ab8547949785e7d60776cb6da9978ef526",
+          "original_abs_max": 158.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 517.8105673626643,
+          "original_sha256": "6d0cc9c444a1dca9ebe570033327e63a215528b720e294e54bc983a727039183",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.044122604668289614
+        },
+        "vision.layer.15": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.997978807592529,
+          "different_values": 573437,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.014645799994468689,
+          "first_original": -0.0126953125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 18.77911376953125,
+          "mean_abs": 0.009256149346638917,
+          "native_abs_max": 170.02874755859375,
+          "native_elements": 573440,
+          "native_l2": 541.0332022661023,
+          "native_sha256": "7fec1b85e1702583e299c405c7be7e92673d69966a2b7d0f206d5015fd949b9f",
+          "original_abs_max": 169.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 538.7553999909696,
+          "original_sha256": "c34c335ae2543cfd088b758f6123e2ec8d4b04c14c18b5d0486db00605444b6f",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.045429366294632484
+        },
+        "vision.layer.16": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9979917857648559,
+          "different_values": 573438,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.3852754235267639,
+          "first_original": 0.38671875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 18.707077026367188,
+          "mean_abs": 0.010865627208240117,
+          "native_abs_max": 170.922607421875,
+          "native_elements": 573440,
+          "native_l2": 567.2573602777978,
+          "native_sha256": "02d87070b725dd3abbe0972260f09c184ae1217c83d59cd7428413171ef96e29",
+          "original_abs_max": 170.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 565.1705213252302,
+          "original_sha256": "2c9c850b8e28fcb4eb2e03ab904c845a0655549c53f1297b8decd3ab4c1645d6",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.047466696529348984
+        },
+        "vision.layer.17": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.998019289159545,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.4378325343132019,
+          "first_original": 0.443359375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 18.581405639648438,
+          "mean_abs": 0.014032271808145782,
+          "native_abs_max": 170.75607299804688,
+          "native_elements": 573440,
+          "native_l2": 639.468686347841,
+          "native_sha256": "6cabe198b550fa3a699bb6f4ac0121ecd837aecfd354f1ba0a01010ac2e5bac6",
+          "original_abs_max": 170.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 637.6929398940563,
+          "original_sha256": "0ed2c52676908f44cd84b802eafe9691b72f4dd921b8be1c098664f4f75fc48b",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.053127630822939115
+        },
+        "vision.layer.18": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9977980316952859,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.4227053225040436,
+          "first_original": 0.421875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 18.884902954101562,
+          "mean_abs": 0.01658359950043616,
+          "native_abs_max": 172.13116455078125,
+          "native_elements": 573440,
+          "native_l2": 663.6134309095366,
+          "native_sha256": "3b1b377dbdca9b5f98882f8900420e7435b673e442972d8bceb1ddc7a3ddc858",
+          "original_abs_max": 172.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 662.1877647027138,
+          "original_sha256": "04754666e48c63c8975db7be5ea97707a50d1b2cd0d9dbaa6e1637356973e8e1",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.05812361794969365
+        },
+        "vision.layer.19": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.997713236940692,
+          "different_values": 573440,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.03474274277687073,
+          "first_original": -0.033203125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 18.527999877929688,
+          "mean_abs": 0.018225587390843755,
+          "native_abs_max": 177.7887420654297,
+          "native_elements": 573440,
+          "native_l2": 688.7947694551153,
+          "native_sha256": "b1ad29767e922f6df1c3692dc140dadfb42cbd762cfb2a8ba46e484b7a2ce5b2",
+          "original_abs_max": 178.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 687.7553184427321,
+          "original_sha256": "1b46eb0d55445acddf6329fa411d5f8812af3427be15c91d5524390f4af37b5b",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.06148253302860438
+        },
+        "vision.layer.2": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999494604068545,
+          "different_values": 573438,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.2936652898788452,
+          "first_original": -0.296875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.20777606964111328,
+          "mean_abs": 0.0034228950839178653,
+          "native_abs_max": 18.484891891479492,
+          "native_elements": 573440,
+          "native_l2": 344.3068877447012,
+          "native_sha256": "ff3c0348925f171f21faea1f5ab1e8a4e4295bdda1337846e3337ef045a6b59a",
+          "original_abs_max": 18.5,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 344.41352259579,
+          "original_sha256": "9447966375aefdafb6e677d44e45e477d59a4aaed70963c079fe6d171ca69a6d",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.004574100797237091
+        },
+        "vision.layer.20": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9977807172923291,
+          "different_values": 573436,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.22055107355117798,
+          "first_original": 0.2392578125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.110671997070312,
+          "mean_abs": 0.02072566302191977,
+          "native_abs_max": 178.4276123046875,
+          "native_elements": 573440,
+          "native_l2": 755.8456513655063,
+          "native_sha256": "11ff491b15bf28eadd5c9a7776dd76b8b3d338b6cf11bfdd2d59c0548bae52e2",
+          "original_abs_max": 179.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 754.9288912504605,
+          "original_sha256": "8e0f7285b206316ee6b62cd5a02cf0f4819613a72bd93eb2a2819a916b9de6a9",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0664689700646206
+        },
+        "vision.layer.21": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9976166241587845,
+          "different_values": 573440,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.1321502923965454,
+          "first_original": 0.1494140625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.21728515625,
+          "mean_abs": 0.025078952302643693,
+          "native_abs_max": 179.44015502929688,
+          "native_elements": 573440,
+          "native_l2": 795.4378506579986,
+          "native_sha256": "b1d4121760ab49356ebf321f2cb4f85495afe852c4c498e7c9f2220a76dc49e0",
+          "original_abs_max": 180.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 794.2733159130507,
+          "original_sha256": "c86934e708da75b4768103298fb3f1c5f9f2038c46e17632d6db88fdd568f125",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.07248583488536872
+        },
+        "vision.layer.22": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9971715537828962,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.569673478603363,
+          "first_original": 0.578125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 19.253005981445312,
+          "mean_abs": 0.03188553628072311,
+          "native_abs_max": 177.55433654785156,
+          "native_elements": 573440,
+          "native_l2": 824.4050008011695,
+          "native_sha256": "b7b7ebf6af0407cb471d04006f4bb0aaceb6cc896ca053fbd8c148dc694a26c9",
+          "original_abs_max": 178.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 823.1997897393572,
+          "original_sha256": "0efce3d436990576c57049f0f773009216fcbe27088792fa019f332e7e6e4517",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.08183706518883702
+        },
+        "vision.layer.23": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9944900748649455,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.6484936475753784,
+          "first_original": 0.61328125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1963.4453125,
+          "mean_abs": 0.626205167811174,
+          "native_abs_max": 5707.98974609375,
+          "native_elements": 573440,
+          "native_l2": 59570.100786929936,
+          "native_sha256": "38b48fbf2b3a380b2586398a244359da84c20d1e252113b075c22c2632171449",
+          "original_abs_max": 5728.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 59683.22250795514,
+          "original_sha256": "513553a1c03228e5ba3f980ea96df9ad9b02680242825f2fa607a1d5e3302699",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 8.267135701585374
+        },
+        "vision.layer.3": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999405645092091,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.28884756565093994,
+          "first_original": -0.291015625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.35884976387023926,
+          "mean_abs": 0.003631244291126125,
+          "native_abs_max": 22.04013442993164,
+          "native_elements": 573440,
+          "native_l2": 337.63932210931927,
+          "native_sha256": "7b07fad6cf32bbd9442a68bd662b2d4e96a9f12c2ec730707f0a632c696c307e",
+          "original_abs_max": 22.0,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 337.72092965581885,
+          "original_sha256": "9b5759f9a9cd0878ce7e1f9dd5061ad869c614565299a644fdefdab0ba521735",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.004863020444598408
+        },
+        "vision.layer.4": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999398535015358,
+          "different_values": 573438,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": 0.1844673454761505,
+          "first_original": 0.18359375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.4038107395172119,
+          "mean_abs": 0.0037301667724900004,
+          "native_abs_max": 22.709625244140625,
+          "native_elements": 573440,
+          "native_l2": 342.9479816708176,
+          "native_sha256": "85d5f01743da7828378b573d1546c0018d44558067da3540df96e5a8b1732235",
+          "original_abs_max": 22.625,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 343.03155916913136,
+          "original_sha256": "8775ecf40750a3bce614fb43bd8a47e9538b089f673d1765ffd9932c7ed67389",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.004968948579693482
+        },
+        "vision.layer.5": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999289379783475,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.10721322149038315,
+          "first_original": -0.10693359375,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.4030625820159912,
+          "mean_abs": 0.0038644873803670115,
+          "native_abs_max": 21.39889144897461,
+          "native_elements": 573440,
+          "native_l2": 325.0816760744039,
+          "native_sha256": "90b4ecdb4de43125cc03cba0064382aeb0295ba73a8b841dfb88fe044cafd71b",
+          "original_abs_max": 21.375,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 325.1965915451992,
+          "original_sha256": "e97f1f2b57f1420b88a266e530fc14a7eb98d5f342f7b4d6c6b797e7aabc68c6",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.005120941267339448
+        },
+        "vision.layer.6": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999345039994351,
+          "different_values": 573438,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.32890886068344116,
+          "first_original": -0.330078125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.3384753465652466,
+          "mean_abs": 0.0036428400889316694,
+          "native_abs_max": 18.338117599487305,
+          "native_elements": 573440,
+          "native_l2": 319.4731330353594,
+          "native_sha256": "ca2d8a31a4336ed96d8c8f30f9a61f889c2e091849fb0bd57823309327510348",
+          "original_abs_max": 18.25,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 319.58199285087727,
+          "original_sha256": "930ce563b0462dead0f7ef99af1c43a51088209877590e79a7ca796c2d4acc66",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.004831467275197516
+        },
+        "vision.layer.7": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999399152278284,
+          "different_values": 573436,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.1288260519504547,
+          "first_original": -0.1298828125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.30561792850494385,
+          "mean_abs": 0.0034898008790638156,
+          "native_abs_max": 15.349870681762695,
+          "native_elements": 573440,
+          "native_l2": 322.4725856873705,
+          "native_sha256": "a8b0394621e4e072c7a8d9bad0fea0c17248cd58f0769b95cd76b1740949c3d1",
+          "original_abs_max": 15.25,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 322.5614794197376,
+          "original_sha256": "dd903bc60f123f3d07e83c6b11163e8e27a3af940c2be3038c38d8489a605e79",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.004670281946358616
+        },
+        "vision.layer.8": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999410949639702,
+          "different_values": 573439,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.11095218360424042,
+          "first_original": -0.1123046875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.248449444770813,
+          "mean_abs": 0.003294401823919608,
+          "native_abs_max": 14.201579093933105,
+          "native_elements": 573440,
+          "native_l2": 315.1848458717481,
+          "native_sha256": "46ac01a186377e9fbfcfe71879d73a4130e2e4989c80bc1693352a7c901409f2",
+          "original_abs_max": 14.125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 315.27912193718265,
+          "original_sha256": "ca0aa1d6628ab08a84a41446f3b1cc2a0f4f1db49118c68ad73070d7b54474b7",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0045200400862988495
+        },
+        "vision.layer.9": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999382607106198,
+          "different_values": 573435,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.311906635761261,
+          "first_original": -0.3125,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.394059419631958,
+          "mean_abs": 0.003172264604527949,
+          "native_abs_max": 13.642955780029297,
+          "native_elements": 573440,
+          "native_l2": 318.66086197167573,
+          "native_sha256": "0a3a55c8571c25ed3d275d41ddad4cd32092c07f2b1c27950ccfd3bf0387bbe2",
+          "original_abs_max": 13.5625,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 318.7447982648097,
+          "original_sha256": "d8bd6a8556827f1fbae6f5c4b2d8880c77211f8d197af68744d2430033c5ef37",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0046779942299396875
+        },
+        "vision.merged": {
+          "comparison_shape": [
+            140,
+            2560
+          ],
+          "cosine": 0.9945960806751912,
+          "different_values": 358399,
+          "elements": 358400,
+          "first_differing_flat_index": 0,
+          "first_native": 2.5854876041412354,
+          "first_original": 2.546875,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 1.6790871620178223,
+          "mean_abs": 0.0046697488229847295,
+          "native_abs_max": 5.431203842163086,
+          "native_elements": 358400,
+          "native_l2": 64.71783592705306,
+          "native_sha256": "6795ec5f3c82fcac8c7942110ab315ba7399389aab72e2fa1766a595553c4a3f",
+          "original_abs_max": 5.4375,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 64.72242271089294,
+          "original_sha256": "056f887230abc6adc0837cefd6866b42c0a69c70f02906786409c5622e0683ea",
+          "original_shape": [
+            140,
+            2560
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.011238928356155892
+        },
+        "vision.patch": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999986088016238,
+          "different_values": 573436,
+          "elements": 573440,
+          "first_differing_flat_index": 0,
+          "first_native": -0.2528390884399414,
+          "first_original": -0.25390625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.012675762176513672,
+          "mean_abs": 0.0005561223356770435,
+          "native_abs_max": 4.299824237823486,
+          "native_elements": 573440,
+          "native_l2": 364.5889669628411,
+          "native_sha256": "fa466c3acdccd7d949ae96b278b7443328cef984316b25b31a9b3368e4bd180b",
+          "original_abs_max": 4.3125,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 364.63666341484964,
+          "original_sha256": "84fb1258261ba9051d9f7f8055a5b8d18a21a7b039df5ead4a499f15eaf7ead9",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.0008056174669999586
+        },
+        "vision.position": {
+          "comparison_shape": [
+            560,
+            1024
+          ],
+          "cosine": 0.9999962845208347,
+          "different_values": 568048,
+          "elements": 573440,
+          "first_differing_flat_index": 1024,
+          "first_native": -0.027976708486676216,
+          "first_original": -0.0279541015625,
+          "layout_mapping": "original contiguous tensor flattened; batch=1 axis removed only",
+          "max_abs": 0.026315689086914062,
+          "mean_abs": 0.00014350866315145135,
+          "native_abs_max": 6.1529645919799805,
+          "native_elements": 573440,
+          "native_l2": 103.91631006579813,
+          "native_sha256": "acc08bbf7ace182e08cdd064b3755198ecaec80c03c760122c76a6b8b18224c1",
+          "original_abs_max": 6.15625,
+          "original_dtype": "torch.bfloat16",
+          "original_l2": 104.05239152219451,
+          "original_sha256": "647228a912dfd3d0f0f2fb40a9fc48e9220cd43b25bb5b008540ae70da1c53ce",
+          "original_shape": [
+            560,
+            1024
+          ],
+          "raw_strict_flag": true,
+          "rms_error": 0.00041522366549320546
+        }
+      }
+    }
+  },
+  "schema": "lighton4b-prefill-stage-compare/v1",
+  "status": "compared"
+}
