@@ -51,6 +51,25 @@ int main(int argc, char ** argv) {
         if (!linear(tw, tb, x, width, tokens, 4, y, false)) return 4;
         emit(std::string("patch-linear.") + gate, y);
     }
+    for (const char * gate : { "unset", "empty", "0" }) {
+        set("CRISPEMBED_LIGHTON4B_VISION_BF16_CONV", std::string(gate) == "unset"   ? nullptr
+                                                     : std::string(gate) == "empty" ? ""
+                                                                                    : gate);
+        std::vector<float> y;
+        if (!linear(tw, tb, x, width, tokens, 4, y, false)) return 5;
+        emit(std::string("conv-gate.") + gate, y);
+    }
+    set("CRISPEMBED_LIGHTON4B_VISION_BF16_CONV", "1");
+    for (int threads : { 1, 4 }) {
+        std::vector<float> y;
+        if (!linear(tw, tb, x, width, tokens, threads, y, false)) return 6;
+        emit("production-conv.threads" + std::to_string(threads), y);
+    }
+    set("CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR", nullptr);
+    set("CRISPEMBED_LIGHTON4B_VISION_BF16_PATCH_LINEAR", nullptr);
+    std::vector<float> independent;
+    if (!linear(tw, tb, x, width, tokens, 4, independent, false)) return 7;
+    emit("production-conv.independent", independent);
     for (const std::string mode : { "partial4_fma", "partial4_muladd", "partial4_pairwise", "double" }) {
         std::vector<float> y(size_t(tokens) * outputs);
         for (int t = 0; t < tokens; ++t)

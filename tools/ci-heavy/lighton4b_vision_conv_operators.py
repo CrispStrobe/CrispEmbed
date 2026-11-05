@@ -59,6 +59,10 @@ def main():
   baseline=json.loads((ROOT/'tests/results/qwen35-ocr/lightonocr3-4b-vision-fma-baseline-stages.json').read_text())['stages']['vision.patch']['sha256'];prior=json.loads((ROOT/'tests/results/qwen35-ocr/lightonocr3-4b-vision-linear-ab.json').read_text())['composed']['corrected']['stages']['vision.patch']['sha256']
   if any(sha((stages/('patch-linear.'+g+'.f32')).read_bytes())!=baseline for g in ('unset','empty','0'))or sha((stages/'patch-linear.1.f32').read_bytes())!=prior:raise ValueError('patch gate preservation differs')
   report['old_patch_and_nn_linear_alternative_bytes_preserved']=True
+  if any(sha((stages/('conv-gate.'+g+'.f32')).read_bytes())!=prior for g in ('unset','empty','0')):raise ValueError('disabled Conv gate changed prior patch-linear path')
+  report['production_conv']={mode:compare(a,np.fromfile(stages/('production-conv.'+mode+'.f32'),dtype='<f4'))for mode in ('threads1','threads4','independent')}
+  report['candidate_production_conv_bit_exact']=all(v['bit_exact']for v in report['production_conv'].values())
+  report['conv_unset_empty_zero_preserves_patch_linear_bytes']=True
   report['artifacts']={p.name:{'bytes':p.stat().st_size,'sha256':sha(p.read_bytes())}for p in stages.iterdir()};report['status']='compared'
  except Exception as e:
   report['error_type']=type(e).__name__;report['error']='bounded Conv3D attribution failed; inspect retained logs';raise RuntimeError(report['error'])from None

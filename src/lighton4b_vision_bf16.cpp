@@ -171,13 +171,27 @@ template <bool safe_products> static float source_bf16_dot(const float * x, cons
     const float dot = ((z[0] + z[4]) + (z[2] + z[6])) + ((z[1] + z[5]) + (z[3] + z[7]));
     return dot + 0.0f; // Source adds the empty vector-tail reduction too.
 }
+// Original reduced-type non-transposed GEMM used by the Conv3D patch: four
+// independent accumulators, then the source's left-associated scalar reduction.
+template <bool safe_products> static float source_bf16_conv_dot(const float * x, const float * w, int width) {
+    std::array<float, 4> sums{};
+    for (int i = 0; i < width; i += 4)
+        for (int lane = 0; lane < 4; ++lane) {
+            if constexpr (safe_products)
+                sums[lane] = sums[lane] + x[i + lane] * w[i + lane];
+            else
+                sums[lane] = std::fma(x[i + lane], w[i + lane], sums[lane]);
+        }
+    return ((sums[0] + sums[1]) + sums[2]) + sums[3];
+}
 static bool source_bf16_linear(ggml_tensor * w, ggml_tensor * b, const std::vector<float> & x, int width, int rows,
-                               int threads, std::vector<float> & y) {
+                               int threads, std::vector<float> & y, bool convolution = false) {
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !w || width < 1 || width > 4096 || width % 64 || rows < 1 ||
         rows > 4096 || threads < 1 || threads > 256 || w->ne[0] != width || w->ne[1] < 1 || w->ne[1] > 8192 ||
         w->ne[2] != 1 || w->ne[3] != 1 || !shape(b, int(w->ne[1]), 1) || x.size() != size_t(rows) * width)
         return false;
     const int output_width = int(w->ne[1]);
+    if (convolution && (width != 1536 || output_width != 1024)) return false;
     std::vector<float> weights(size_t(width) * output_width), biases(output_width);
     if (!tensor_floats(w, weights.data()) || !tensor_floats(b, biases.data())) return false;
     bool safe_products = true;
@@ -201,8 +215,10 @@ static bool source_bf16_linear(ggml_tensor * w, ggml_tensor * b, const std::vect
             const int token = int(at / output_width), output = int(at % output_width);
             const float * input = x.data() + size_t(token) * width;
             const float * weight = weights.data() + size_t(output) * width;
-            const float dot = safe_products ? source_bf16_dot<true>(input, weight, width)
-                                            : source_bf16_dot<false>(input, weight, width);
+            const float dot = convolution ? (safe_products ? source_bf16_conv_dot<true>(input, weight, width)
+                                                           : source_bf16_conv_dot<false>(input, weight, width))
+                                          : (safe_products ? source_bf16_dot<true>(input, weight, width)
+                                                           : source_bf16_dot<false>(input, weight, width));
             y[at] = lighton4b_bf16(dot + biases[output]);
         }
     };
@@ -219,6 +235,8 @@ static bool source_bf16_linear(ggml_tensor * w, ggml_tensor * b, const std::vect
 }
 static bool linear(ggml_tensor * w, ggml_tensor * b, const std::vector<float> & x, int width, int rows, int threads,
                    std::vector<float> & y, bool is_linear = true) {
+    if (!is_linear && core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_CONV"))
+        return source_bf16_linear(w, b, x, width, rows, threads, y, true);
     const bool source_order = is_linear ? core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR")
                                         : core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_PATCH_LINEAR");
     if (source_order) return source_bf16_linear(w, b, x, width, rows, threads, y);

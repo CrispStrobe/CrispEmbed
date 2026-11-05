@@ -1262,3 +1262,21 @@ The source is PyTorch2.13 `BlasKernel.cpp` reduced-type non-transposed GEMM,
 which differs from nn.Linear's transposed eight-register dot. Both prior patch
 output hashes (20 versus34 differences) must remain exact. No production Conv3D
 candidate is introduced before this same-input evidence; no full smoke dispatch.
+
+
+[Original Conv3D42036525469](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42036525469)
+ata10db77fd matches every573,440 original patch value/byte (SHA84fb1258),
+using only audited header/3MiB original parameter ranges. Four partial sums
+with left-associated final reduction match all outputs exactly, for FMA and
+separate mul/add; pairwise still differs6, double25, BF16 F.linear34 and F32
+Conv3D49. Both old20-value and patch-linear34-value hashes are retained under
+all disabled-gate controls. The
+[full source-fed receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-conv-attribution.json)
+identifies actual Conv3D accumulation separately from nn.Linear.
+
+A new default-off `CRISPEMBED_LIGHTON4B_VISION_BF16_CONV` selects the evidenced
+four-partial source order for the fixed1536→1024 patch operator only. It takes
+precedence over the preserved PATCH_LINEAR alternative; all old paths stay.
+Next operator-only production validation must match all original bytes at1/4
+threads, independently of NN/PATCH gates, and retain unset/empty/0 old bytes.
+No ordinary model or quality claim follows until this actual helper passes.
