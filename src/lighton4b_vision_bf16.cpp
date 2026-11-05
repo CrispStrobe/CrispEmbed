@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cfenv>
 #include <string>
 #include <thread>
 
@@ -355,6 +356,53 @@ static bool geometry(const vision_config & c, int tokens, const std::vector<int>
     }
     return total == tokens;
 }
+// Adapted from SLEEF xexpf, revision 5a1d179df9cf652951b59010a2d2075372d67f68.
+// Copyright Naoki Shibata and contributors 2010 - 2024.
+// Boost Software License 1.0: core/third_party/sleef/LICENSE.txt.
+// Explicit scalar FMAs reproduce its AVX2 vector arithmetic; no Torch dependency.
+static float source_avx2_exp(float x) {
+    if (x < -104.0f) return 0.0f;
+    const float scaled = x * 1.442695040888963407359924681001892137426645954152985934135449406931f;
+    const int q = int(std::nearbyint(scaled));
+    float s = std::fma(float(q), -0.693145751953125f, x);
+    s = std::fma(float(q), -1.428606765330187045e-06f, s);
+    float u = 0.000198527617612853646278381f;
+    u = std::fma(u, s, 0.00139304355252534151077271f);
+    u = std::fma(u, s, 0.00833336077630519866943359f);
+    u = std::fma(u, s, 0.0416664853692054748535156f);
+    u = std::fma(u, s, 0.166666671633720397949219f);
+    u = std::fma(u, s, 0.5f);
+    const float square = s * s;
+    u = 1.0f + std::fma(square, u, s);
+    // Arithmetic right shift in the source is floor(q / 2), including negatives.
+    const int half = q >= 0 ? q / 2 : -((-q + 1) / 2);
+    u = u * std::ldexp(1.0f, half);
+    return u * std::ldexp(1.0f, q - half);
+}
+static bool source_avx2_softmax_supported() {
+#if (defined(__x86_64__) || defined(__i386__)) && (defined(__GNUC__) || defined(__clang__))
+    return __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma") && std::fegetround() == FE_TONEAREST;
+#else
+    return false;
+#endif
+}
+// Supported source shape only. An unsupported request keeps the previous path.
+static bool source_avx2_softmax(float * scores, int count, float & inverse) {
+    if (count < 8 || count % 8 || !source_avx2_softmax_supported()) return false;
+    float maximum = -INFINITY;
+    for (int i = 0; i < count; ++i) {
+        if (!std::isfinite(scores[i])) return false;
+        maximum = std::max(maximum, scores[i]);
+    }
+    std::array<float, 8> sum{};
+    for (int i = 0; i < count; ++i) {
+        scores[i] = source_avx2_exp(scores[i] - maximum);
+        sum[i % 8] = sum[i % 8] + scores[i];
+    }
+    const float total = ((sum[0] + sum[4]) + (sum[2] + sum[6])) + ((sum[1] + sum[5]) + (sum[3] + sum[7]));
+    inverse = 1.0f / total;
+    return true;
+}
 static std::vector<float> attention(const std::vector<float> & qkv, const vision_config & c, int tokens,
                                     const std::vector<int> & offsets, const std::vector<float> & cosine,
                                     const std::vector<float> & sine) {
@@ -410,15 +458,20 @@ static std::vector<float> attention(const std::vector<float> & qkv, const vision
                     scores[s - first] = lighton4b_bf16(lighton4b_bf16(dot) * scale);
                     maximum = std::max(maximum, scores[s - first]);
                 }
-                float sum = 0;
-                for (float & score : scores) {
-                    score = std::exp(score - maximum);
-                    sum += score;
+                float inverse = 0, sum = 0;
+                const bool exact_softmax = source_order &&
+                                           core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2") &&
+                                           source_avx2_softmax(scores.data(), int(scores.size()), inverse);
+                if (!exact_softmax) {
+                    for (float & score : scores) {
+                        score = std::exp(score - maximum);
+                        sum += score;
+                    }
+                    double exact_sum = 0;
+                    if (precise)
+                        for (float score : scores) exact_sum += double(score);
+                    inverse = precise ? 1.0f / float(exact_sum) : 0.0f;
                 }
-                double exact_sum = 0;
-                if (precise)
-                    for (float score : scores) exact_sum += double(score);
-                const float inverse = precise ? 1.0f / float(exact_sum) : 0.0f;
                 for (int i = 0; i < d; ++i) {
                     float result = 0;
                     for (int s = first; s < end; ++s)
