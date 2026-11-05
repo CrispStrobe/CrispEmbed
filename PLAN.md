@@ -138,11 +138,16 @@ failed before checkpoint acquisition because Torchvision was absent. The
 corrected [41993030552](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41993030552)
 passed synthetic controls and verified the official processor's actual 560-patch,
 1×20×28 grid and 154-token input without model weights or a forward. A CPU-only
-Kaggle capture was submitted with bootstrap SHA-256
+Kaggle capture completed with bootstrap SHA-256
 `c370b097a45c2d8158343fa1a3a3c510f9bea3b84912565e896b5ded37fd93f6`;
-re-query its actual run and review memory, outputs, EOS/cap and errors before
-claiming capture success. This is a BF16 reference, not the F32 intermediate
-reference or a native/quantized parity result.
+the [review](https://github.com/CrispStrobe/CrispEmbed/blob/26fe41e35/tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture-review.json)
+records 177 tokens, EOS, 567.890 seconds generation, 9.228 GiB process peak RSS
+and 18.435 GiB worker cgroup peak (including file cache and other worker memory).
+All 177 official generation-score objects remain remotely; their names were
+enumerated and only first/last rows independently downloaded and verified.
+The observed output was a French figure-style description of the form, not a
+demonstrated transcription. This is a BF16 reference, not the F32 intermediate
+reference, observer-off proof or a native/quantized parity result.
 
 The separately versioned [sharded transport](https://github.com/CrispStrobe/CrispEmbed/blob/f99b5b618cdf8438f29a655790993a6aef95e8cd/docs/lighton4b-original-sharded-transport-v1.md)
 passed initial and hardened fixture controls in [41977694403](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41977694403)
