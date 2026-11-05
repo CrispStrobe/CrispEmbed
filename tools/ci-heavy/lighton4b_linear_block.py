@@ -97,7 +97,7 @@ def execute():
         command('build',['cmake','--build',scratch/'build','--target','test-lighton4b-linear-block','--parallel','2'])
         binary=scratch/'build/test-lighton4b-linear-block';report['executable_sha256']=sha(binary)
         command('native',[binary,scratch/'weights.gguf',scratch/'reference.gguf',out/'native'])
-        report['native_stdout']=(out/'native.log').read_text()
+        report['native_stdout']=(out/'native.log').read_text().replace(str(ROOT),'[repository]').replace(str(scratch),'[scratch]')
         for phase in inputs:
             for stage in ('input_norm','attention','attention_residual','post_norm','gate','up','activation','down','hidden','conv','recurrent'):
                 name=phase+'.'+stage;actual=np.fromfile(out/'native'/(name+'.f32'),dtype='<f4').reshape(refs[name].shape)
