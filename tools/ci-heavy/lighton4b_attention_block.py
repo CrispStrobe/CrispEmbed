@@ -18,6 +18,8 @@ def execute():
         raise RuntimeError('hosted portable execution required')
     import lighton4b_gdn_reference as reference
     torch,np,gguf,original,Config,Cache,runtime=reference.load_original()
+    runtime['verified_auxiliary_function_sha256']=runtime.pop('executed_function_sha256')
+    runtime['auxiliary_verification_scope']='Inherited GDN source checks only; GDN functions are not executed by this attention case.'
     out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH'])/'lighton4b-attention-block'
     scratch.mkdir(parents=True,exist_ok=False);(out/'original').mkdir();(out/'native').mkdir()
     report={'schema':'lighton4b-attention-block/v1','status':'failed','full_model_inference_observed':False,
