@@ -78,10 +78,14 @@ concurrency:
 
 jobs:
   run:
+    permissions:
+      contents: read
+      actions: read
     if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py'
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 350
     env:
+      GH_TOKEN: ${{ github.token }}
       SCRIPT: ${{ inputs.script }}
       ARGS: ${{ inputs.args }}
       PIP_EXTRA: ${{ inputs.pip }}
