@@ -1194,3 +1194,15 @@ true same-process mode/cache controls pass. Focused Q8 dot attribution now ancho
 original normalized/projection bytes, observes actual F32 native route/operands,
 and compares pre-round dot plus BF16 output with full-projection arithmetic
 hypotheses. No unproven dot fix or expanded decoder precedes those measurements.
+
+### Genuine BF16 quant-weight first-score oracle — 5 November2026
+
+The separately reviewed [one-position protocol](docs/lighton4b-bf16-quant-first-score.md)
+loads the authentic BF16 original once, requires the frozen first-score anchor,
+then independently streams immutable Q8/Q4 matrices into BF16 parameter storage.
+Complete723 mapping,249 copied matrices,474 protected tensors and tied head are
+checked/readback-hashed for both sequential arms. Explicit dequant→BF16 rounding
+is distinct from the earlier F32-weight activation oracle. No F32 model, native
+inference or full generation/reference is repeated. Six model-free structural/
+negative/AST controls pass. A single bounded32GiB original CPU worker may run only
+after source/resource review; no dispatch yet, and no quality/default promotion.
