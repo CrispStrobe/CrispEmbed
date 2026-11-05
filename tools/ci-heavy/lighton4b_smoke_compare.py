@@ -11,6 +11,7 @@ import urllib.request
 import zipfile
 ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'tools'))
 from lighton4b_document_v2 import tiny_archive
+from lighton4b_score_patterns import patterns
 
 def require(ok,why):
     if not ok:raise ValueError(why)
@@ -28,6 +29,7 @@ def main():
     try:
         run('dependencies',[sys.executable,'-m','pip','install','kaggle==2.2.5','six==1.17.0'])
         protocol=json.loads((ROOT/'docs/lighton4b-bf16-quant-v1.json').read_text());pin=protocol['score_records'][0]
+        run('pattern-controls',[sys.executable,ROOT/'tests/test_lighton4b_score_patterns.py','-v'])
         # Kaggle's upload_file module imports six without declaring it.
         # Import-only preflight precedes the bounded artifact transfer.
         from kaggle.api.kaggle_api_extended import KaggleApi
@@ -77,6 +79,7 @@ def main():
             with urllib.request.urlopen(urls[member],timeout=90)as response:original_bytes=response.read(pin['bytes']+1)
         except Exception:raise ValueError('authenticated bounded original transfer failed')from None
         require(len(original_bytes)==pin['bytes']and digest(original_bytes)==pin['sha256'],'original row hash differs')
+        report['score_patterns']=patterns(original_bytes,native_bytes)
         for name,data in [('original',original_bytes),('native',native_bytes)]:tiny_archive(scratch/(name+'.gguf'),'generated.scores.0',[1,248320],data)
         order=scratch/'order.tsv';order.write_text('generated.scores.0 float 248320 1 1 1\n')
         report['stage']='build-actual-ref'
