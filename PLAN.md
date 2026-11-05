@@ -1,5 +1,15 @@
 # CrispEmbed plan — open work (updated 4 November 2026)
 
+The bounded [LightOn4B document protocol](docs/lighton4b-document-parity-v1.md)
+freezes one existing public-domain form, exact source/RGB/template hashes,
+image-only prompt,256-token cap and source-derived geometry before model outputs.
+The separate executable comparer uses actual `crispembed_diff::Ref`, fixed strict
+budgets, every original-position vocabulary logit and independent decoded/EOS
+checks. It admits no producer source yet: original final-norm/processor capture
+and native format5 composition/tokenizer/projection require separately reviewed
+adapters first. Hosted synthetic comparer/input controls must run; no original
+forward or document parity is claimed. Preserve all prior source/quality failures.
+
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
 [the 3 November handoff](docs/handoff-2026-11-03.md) and

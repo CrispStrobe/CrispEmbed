@@ -1,0 +1,115 @@
+{
+  "blocked": [
+    "No source-admitted original4B document adapter has captured final norm and all required teacher-forced logits/caches yet.",
+    "Native format5 composed inference/tokenizer/vocabulary projection and owned caches remain unqualified.",
+    "No original forward, model acquisition or native inference is authorized by this preparation command."
+  ],
+  "case": {
+    "add_generation_prompt": true,
+    "annotation": "tests/regression/images/cc0/ground_truth.json",
+    "annotation_limit": "Existing medium-confidence human annotation; checkbox1 occluded and code-lib separator ambiguous. No benchmark or exact-gold qualification.",
+    "annotation_sha256": "dd4ba6eff5922febe81c6ec71b6c70d1b0117d392e4ff3d581564a61caa82b4d",
+    "backend": "cpu-f32-eager",
+    "bytes": 6673,
+    "do_sample": false,
+    "enable_thinking": false,
+    "eos_ids": [
+      248046
+    ],
+    "expected_image_token_count": 140,
+    "expected_patch_count": 560,
+    "expected_processor_grid": [
+      1,
+      20,
+      28
+    ],
+    "file": "tests/regression/images/cc0/simple_form.png",
+    "geometry_status": "source-derived expectation; actual processor arrays not observed",
+    "id": "simple-form-pd-v1",
+    "license": "Public-Domain",
+    "max_new_tokens": 256,
+    "message_order": "image-only",
+    "original_rgb_sha256": "f29f48e94fd623b16bbe203f6c5918cdd5b08c9bc8926a1cc9659e5e67ff0a22",
+    "original_rgb_size": [
+      452,
+      317
+    ],
+    "pad_id": 248044,
+    "prompt": "",
+    "rendered_prompt": "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+    "rendered_prompt_sha256": "21fd8cc4612fbd94949828961222d4880685692d710fbe36d95c5a30e48467a2",
+    "seed": 0,
+    "sha256": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+    "source_manifest": "tests/regression/images/cc0/MANIFEST.json",
+    "source_manifest_sha256": "8263cb653a5a5560598aa00f9d09ae003258775cc5c53dfd874040332ffd302e",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Form.png",
+    "split": "development-diagnostic",
+    "threads": 2,
+    "use_cache": true
+  },
+  "comparison": {
+    "allow_threshold_environment_override": false,
+    "max_abs": 0.002,
+    "max_bundle_bytes": 2147483648,
+    "max_stage_elements": 67108864,
+    "min_row_cosine": 0.99999,
+    "precision_order": [
+      "f32",
+      "f16",
+      "q8_0",
+      "q4_k"
+    ],
+    "quantized_quality_qualified": false,
+    "require_complete_eos": true,
+    "require_generated_full_vocab_each_position": true
+  },
+  "execution_admission": {
+    "native_producer_sources": [],
+    "original_producer_sources": [],
+    "reason": "No source-admitted4B full-document capture or native context exists. A separately versioned reviewed protocol is required before model execution/comparison admission."
+  },
+  "model": {
+    "checkpoint_sha256": "6b0dab74a2dab02d5b10ca56322255024ed8dca35c02746b42e9f296aaeb4e67",
+    "decoder_layers": 32,
+    "format_version": 5,
+    "full_kv_heads": 4,
+    "full_query_heads": 16,
+    "hidden_size": 2560,
+    "linear_key_heads": 16,
+    "linear_value_heads": 32,
+    "repository": "lightonai/LightOnOCR-3-4B",
+    "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+    "tokenizer_sha256": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4",
+    "vision_layers": 24,
+    "vocab_size": 248320
+  },
+  "packages": {
+    "gguf": "0.19.0",
+    "numpy": "2.3.5",
+    "pillow": "12.0.0",
+    "tokenizers": "0.22.2",
+    "torch": "2.13.0+cpu",
+    "transformers": "5.5.4"
+  },
+  "qualification": {
+    "document_quality_qualified": false,
+    "native_qualified": false,
+    "native_supported": false,
+    "original_observed": false,
+    "publication_qualified": false
+  },
+  "schema": "lighton4b-document-parity/v1",
+  "source_baseline": "295fc0ec98a3c4e5b0bc2b8eee9a233316463588",
+  "source_sha256": {
+    "src/crispembed_diff.h": "6bef0b4e32b52af7fe6cd6702bfc937845dde85762477b08a82ff2a68388df94",
+    "tests/fixtures/lightonocr3-4b-source/chat_template.jinja": "d5ddb788d5f3df12e32244954037eb535409d24eeb48c2429d7588af4e7b69a7",
+    "tests/fixtures/lightonocr3-4b-source/config.json": "99b4c363a998c2d8c5ed5b3f3a40ec5cb97a156034df5002d0d789c74324f5f0",
+    "tests/fixtures/lightonocr3-4b-source/generation_config.json": "8ce51af0baac298c116b7db144efe1ebd78b0b792d084002634fd3ed63f4d515",
+    "tests/fixtures/lightonocr3-4b-source/preprocessor_config.json": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+    "tests/fixtures/lightonocr3-4b-source/processor_config.json": "d89ef49ce9cd37fbf510158e13c1ef063d9286411c1ec9049932dbe0487143b1",
+    "tools/dump_qwen35_ocr_page_reference.py": "5ddf86046bcc9bf7bbe008c02f3eda0ccdd10341ed5af976c012d06149d586e1",
+    "tools/dump_qwen35_ocr_reference.py": "66dfd47906d4648b1b6141460d204770d844cbbb0bb6eb2b7482f65e22022267",
+    "tools/qwen35_decode_reference.py": "6457ce7475dfff392449e12bf3a531ac256d59b264574c16858d673007598e92"
+  },
+  "status": "prepared-only"
+}

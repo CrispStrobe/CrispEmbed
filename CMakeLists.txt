@@ -878,6 +878,10 @@ target_include_directories(test-no-repeat-ngram PRIVATE src)
 add_executable(test-env-gate tests/test_env_gate.cpp)
 target_include_directories(test-env-gate PRIVATE src)
 
+# Standalone diagnostic archive comparator; no weights, model admission or forward.
+add_executable(crispembed-diff-lighton4b-document tests/lighton4b_document_diff.cpp)
+target_include_directories(crispembed-diff-lighton4b-document PRIVATE src)
+
 # Hermetic: core/low_memory.h — automatic skip of optional F32 weight copies
 # (MiniCPM-OCR, Unlimited-OCR-2) when available memory is short.
 add_executable(test-low-memory tests/test_low_memory.cpp)
