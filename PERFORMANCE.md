@@ -7973,3 +7973,13 @@ advice pass predeclared capacity guards. This differs from the three-arm workloa
 and is not a memory/throughput benchmark. FirstID27 is retained, but full score
 max1.578125/RMS0.28579991/cosine0.99251625 rejects. No native decoding or held-out
 quality qualification. [Full precision, resource and scope limits](docs/lighton4b-bf16-mixed-first-score-results.md).
+
+
+Corrected mixed full form source189fc91bb/run42109519607 measures2896.15s wall,
+1697.34s user/1760.77s systemCPU, peakRSS5,198,012,416 bytes for177 teacher rows
+and independent156-token EOS generation. This single diagnostic is not throughput
+qualification. Read-only Ref42118693149/957eb9513 rejects all177 rows (first
+max1.48261547/RMS0.284899443; worst max10.1740723/RMS1.51052773). Full decoded
+agreement rejects:156 versus177 tokens, divergence25, raw CER30.03049%/WER44.44444%
+against BF16 output. [Exact metrics, texts, controls and limits](docs/lighton4b-corrected-mixed-full-results.md).
+No speed or decoded-quality promotion; artifacts remain remotely preserved90days.

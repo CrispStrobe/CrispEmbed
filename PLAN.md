@@ -1574,3 +1574,24 @@ Four new admission controls and existing model-free controls pass; actual Ref
 controls run inside the single hosted comparison. No dispatch before native
 completion; observed form remains exploratory, not held-out quality selection.
 No native/original inference, model upload, runtime/default/release change or newPR.
+
+
+### Corrected mixed full form — complete numerical and decoded rejection
+
+Native42109519607/source189fc91bb completes177 teacher rows and independent
+greedy156 tokens/EOS248046, versus frozen BF16177 tokens. First differing ID is
+zero-based25. Single read-only comparison42118693149/source957eb9513 authenticates
+complete native/archive/producer/normalized receipt and original BF16 source
+identities; all5 inputs and29 vision raw-byte controls pass. All177 rows are finite
+and all177 fail unchanged0.002/0.99999 gates. First row max1.48261547/RMS0.284899443/
+cos0.992587984; worst row5 max10.1740723/RMS1.51052773/cos0.763862431. Earliest
+observed score difference and budget failure remain0. Exact independent IDs/text
+reject despiteEOS; raw BF16-agreement CER197/656=30.03049%, WER40/90=44.44444%
+(case/punctuation retained, Unicode whitespace words), not human-ground-truth OCR
+accuracy. [Complete receipts,177 metrics, texts, artifact identities and limits](docs/lighton4b-corrected-mixed-full-results.md).
+The comparer performs no inference and passes actual Ref equal/change/tamper
+controls; its red status is complete numerical/decoded rejection, not harness
+failure. Both artifacts remain remote90days. Existing observed form is not heldout
+or architecture-quality selection. First-position genuine-BF16 mixed oracle
+cannot partition full177-row/decoded errors into quantization versus runtime.
+No additional jobs, runtime/default/release/app-pin change, newPR or model upload.

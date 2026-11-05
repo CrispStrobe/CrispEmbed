@@ -1,4 +1,7 @@
-# Corrected mixed form: pending full177-row comparison
+# Corrected mixed form: full177-row comparison protocol
+
+Completed: [full numerical and decoded rejection, exact sources and receipts](lighton4b-corrected-mixed-full-results.md).
+The remainder preserves the pre-dispatch protocol and prerequisites.
 
 Prepare exactly one read-only hosted comparison after native run
 [42109519607](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42109519607)

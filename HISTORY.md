@@ -21033,3 +21033,13 @@ Q8 receipts contain exact sources, both historical baselines, complete artifact
 hashes / 90-day retention, performance and limitations. All defaults, release and
 app pin stay unchanged. This PR157 follow-up changes only receipts and plan/
 history; runtime and generated asset remain in PR155.
+
+
+Corrected mixed full native42109519607/189fc91bb reachesEOS156 tokens versus
+original177, with first ID divergence25. Read-only actual Ref42118693149/957eb9513
+compares all177 finite rows:0 pass, first max1.48261547/RMS0.284899443 and worst
+row5 max10.1740723/RMS1.51052773. All5 inputs/29 vision stages are source-byte-exact;
+that does not establish decoded parity. Raw BF16-output agreement CER30.03049%/
+WER44.44444%, with both full texts and definitions preserved.
+[Full authenticated evidence and90-day artifact identities](docs/lighton4b-corrected-mixed-full-results.md).
+No heldout/native-quality, default, release, app-pin or model-publication promotion.

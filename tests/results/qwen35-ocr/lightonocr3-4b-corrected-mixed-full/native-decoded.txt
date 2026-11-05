@@ -1,0 +1,8 @@
+<figure>
+### Figure – Interface de saisie de données
+*Type: autre*
+
+L'image montre une interface de saisie de données avec plusieurs champs et options. Elle semble être une partie d'une application ou d'un formulaire en ligne.
+
+Les éléments visibles incluent : "Input", "Texte", "Number", "Date", "Password", "a label", "ANOTHER LABEL", "Yet another label", "combo suggest", "Finland", "France", "checkbox1", "checkbox2", "checkbox3", "CodeLabel", "code fill", "code", "Button", "Researcher", "Visible button". Les options "Drag and drop frames" et "Fixe frames" sont également présentes.
+</figure>
