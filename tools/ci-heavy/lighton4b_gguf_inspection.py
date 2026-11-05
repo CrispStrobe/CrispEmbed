@@ -23,7 +23,7 @@ def execute():
     report={'schema':'lighton4b-gguf-inspection/v1','status':'failed','model_payload_bytes':0,
             'native_inference_observed':False,'format5_admitted':False,'quality_qualified':False,
             'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
-            'source_sha256':{p:sha(ROOT/p) for p in ('src/lighton4b_gguf_inspection.h', 'src/lighton4b_model_owner.h', 'src/qwen35_lighton4b_text.h', 'src/lighton4b_vision_owner.cpp', 'src/qwen35_vision.h',
+            'source_sha256':{p:sha(ROOT/p) for p in ('tools/ci-heavy/lighton4b_published_header.py', 'src/lighton4b_gguf_inspection.h', 'src/lighton4b_model_owner.h', 'src/qwen35_lighton4b_text.h', 'src/lighton4b_vision_owner.cpp', 'src/qwen35_vision.h',
                 'tests/test_lighton4b_gguf_inspection.cpp','tools/ci-heavy/lighton4b_gguf_inspection.py','CMakeLists.txt',
                 'tests/test_lighton4b_gdn_reference.py','tests/test_ovisocr2_native_replay.py',
                 'tests/test_ovisocr2_large_inputs.py',
@@ -90,6 +90,10 @@ def execute():
         text=(out/'controls.log').read_text()
         if 'passed=1 payload_bytes=0 model_inference=0' not in text:raise ValueError('component controls receipt missing')
         report['controls_stdout']=text
+        if sys.argv[1:]==['--published-header']:
+            from lighton4b_published_header import inspect_published
+            inspect_published(binary,out)
+        elif sys.argv[1:]:raise ValueError('unknown inspection arguments')
         report['status']='passed'
     except Exception as error:
         report['error_type']=type(error).__name__;report['error']=str(error).replace(str(ROOT),'[repository]').replace(str(scratch),'[scratch]')

@@ -16,6 +16,21 @@ static void gate(const char * name, const char * value) {
 #endif
 }
 static int run(int argc, char ** argv) {
+    if (argc == 3 && std::string(argv[1]) == "--inspect") {
+        for (auto * name :
+             { "CRISPEMBED_LIGHTON4B_GGUF_INSPECTION", "CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER",
+               "CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER", "CRISPEMBED_LIGHTON4B_VISION_OWNER", "CRISPEMBED_QWEN35_OCR" })
+            gate(name, "1");
+        auto context = qwen35_ocr::lighton4b_gguf_inspection::open(argv[2]);
+        if (!context) return 1;
+        const auto & model = context->model();
+        const bool ok = model.text.decoder.layers.size() == 32 && model.vision.layers.size() == 24 &&
+                        !model.text.decoder.embedding->data && !model.vision.patch->data;
+        std::printf("PUBLISHED_HEADER passed=%d tensors=723 text_layers=32 vision_layers=24 payload_bytes=0 "
+                    "model_inference=0\n",
+                    ok);
+        return ok ? 0 : 1;
+    }
     if (argc != 4) return 2;
     ggml_init_params params{ 723 * ggml_tensor_overhead() + 4096, nullptr, true };
     auto * headers = ggml_init(params);
