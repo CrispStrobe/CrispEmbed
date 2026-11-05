@@ -22,6 +22,8 @@ inline bool map_lighton4b_model(const core_gguf::tensor_map & tensors, lighton4b
             text.emplace(item);
         } else if (item.first.rfind("v.", 0) == 0) {
             // Converter stores all norms/biases in F32 in both F16 recipes.
+            // Frozen Q8/Q4 candidates protect every vision tensor as F32.
+            if (core_env::on("CRISPEMBED_LIGHTON4B_QUANT") && t->type != GGML_TYPE_F32) return false;
             const bool matrix = t->ne[0] > 1 && t->ne[1] > 1;
             if (matrix ? t->type != GGML_TYPE_F32 && t->type != GGML_TYPE_F16 : t->type != GGML_TYPE_F32) return false;
             vision.emplace(item);

@@ -648,12 +648,17 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gguf_inspection.h`, `src/lighton4b_model_owner.h` |  |
 | `CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gguf_inspection.h`, `src/qwen35_lighton4b_text.h` | Experimental, default off; borrowed tensor metadata only, never inference admission. |
 
+### lighton4b_model_owner
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_QUANT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_model_owner.h`, `src/lighton4b_native_context.h`, `src/qwen35_lighton4b_text.h` +1 | Converter stores all norms/biases in F32 in both F16 recipes. Frozen Q8/Q4 candidates protect every vision tensor as F32. |
+
 ### lighton4b_native_context
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
-| `CRISPEMBED_LIGHTON4B_QUANT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h`, `src/qwen35_lighton4b_text.h`, `src/qwen35_linear.cpp` |  |
 
 ### lightonocr
 
