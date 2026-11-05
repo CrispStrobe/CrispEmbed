@@ -1,0 +1,53 @@
+{
+  "actual_grid": [
+    [
+      1,
+      20,
+      28
+    ]
+  ],
+  "artifact_id": 13398857708,
+  "artifact_zip_sha256": "136b6519a1d81817f42c8a2ee48157b8b5326f7d0abf996549633efb0ddd1ef4",
+  "checkpoint_payload_acquired": false,
+  "image_processor_backend": "torchvision",
+  "image_processor_class": "transformers.models.qwen2_vl.image_processing_qwen2_vl.Qwen2VLImageProcessor",
+  "independent_review": {
+    "actual_pixel_shape": [
+      560,
+      1536
+    ],
+    "actual_token_shape": [
+      1,
+      154
+    ],
+    "exact_source_hashes_verified": true,
+    "saved_input_hashes_verified": true
+  },
+  "initial_failure": {
+    "artifact_id": 13399275302,
+    "artifact_zip_sha256": "bdb8e239f33f3671113e71f150e662fd27ffeaa20e592f0a25b91da107ddf8ce",
+    "reason": "Official Qwen3VLVideoProcessor required torchvision before checkpoint acquisition or forward; all five synthetic methods passed.",
+    "workflow_run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41992437849"
+  },
+  "limits": [
+    "Processor preparation and synthetic controls only; no checkpoint acquisition or original/native forward.",
+    "No decoded-quality or F32/native parity proof; no intermediate/cache capture or observer-off replay.",
+    "Real worker must pass fresh cgroup-aware RAM and filesystem guards."
+  ],
+  "model_qualified": false,
+  "native_forward_executed": false,
+  "original_model_forward_executed": false,
+  "processor_class": "transformers.models.qwen3_vl.processing_qwen3_vl.Qwen3VLProcessor",
+  "schema": "lighton4b-bf16-preflight-controls/v1",
+  "source_sha": "07543dcc80ebcecad644815d9397be2570a51dd4",
+  "source_sha256": {
+    "docs/lighton4b-bf16-freegen-v1.json": "f1c94192e87435f219c30f2b9b4f0e7298a56f4236eb90533f94a4c1d324b163",
+    "tests/test_lighton4b_bf16_freegen.py": "601d8d4d1cc6568ad9f4d1a740d20e8581b6c868d031d0d1b2a8ea76a81c4680",
+    "tools/ci-heavy/lighton4b_bf16_controls.py": "5082846f8f1e839693730e5c2d9dcbc8fad1185bed7b571aaaa27fe8accc8ca7",
+    "tools/lighton4b_bf16_freegen.py": "f19f63b832fdd91db61f4586fb5872333719411e1c30ee0f40d43433db7024fd"
+  },
+  "status": "passed",
+  "synthetic_methods_passed": 5,
+  "synthetic_methods_skipped": 0,
+  "workflow_run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41993030552"
+}

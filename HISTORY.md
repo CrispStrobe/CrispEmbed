@@ -1,3 +1,16 @@
+## 5 November 2026 — Separate original BF16 capture preparation
+
+Hosted [41992437849](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41992437849)
+passed all5 synthetic methods but failed before checkpoint acquisition/forward:
+the official processor also requires torchvision. The distinct BF16 requirements
+now pin torchvision0.28.0+cpu alongside torch2.13.0+cpu; historical F32 requirements
+are unchanged. Corrected [41993030552](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41993030552)
+at `07543dcc80ebcecad644815d9397be2570a51dd4` passes all5 methods and official
+processor preparation. Independent review verifies source and saved-input hashes,
+the torchvision backend, grid `[1,20,28]`, pixels `[560,1536]` F32 and IDs/mask/types
+`[1,154]` int64. The [receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-preflight.json)
+retains both runs. No checkpoint/model forward or decoded-quality claim is made.
+
 ## 5 November 2026 — Separate document-v2 packaging/consumption controls
 
 Initial [41981531300](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41981531300)

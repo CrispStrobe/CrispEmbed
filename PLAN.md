@@ -1,5 +1,16 @@
 # CrispEmbed plan — open work (updated 4 November 2026)
 
+The separate [CPU BF16 free-generation lane](docs/lighton4b-bf16-freegen.md)
+is ready for an experimental resource-admitted hosted capture at exact source
+`07543dcc80ebcecad644815d9397be2570a51dd4`. Corrected hosted41993030552
+passes5 synthetic methods and actual official-processor preparation; the
+[receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-preflight.json) preserves
+initial41992437849's missing-torchvision failure. Actual grid is `[1,20,28]`,
+pixels `[560,1536]`, IDs `[1,154]`. This proves preparation only: no checkpoint
+or original/native forward occurred. The separate22GiB BF16 admission does not
+alter F32's40GiB/48GiB guards, hard capture default, v1/v2 producer admissions,
+or the256-token cap. Actual generation, EOS/output and peak memory remain pending.
+
 The separate [document-v2 packaging/admission contract](docs/lighton4b-document-v2.md)
 maps970 base plus67 fields per generated position into authenticated stage ranges
 and supports bounded lazy remote consumption through the unchanged Ref comparer.
