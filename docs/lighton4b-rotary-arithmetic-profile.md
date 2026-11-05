@@ -92,3 +92,17 @@ source cosine/sine, pooled attention and complete first-block output now match
 bytes, while the preceding disabled path is preserved. Native/context/decoder
 controls pass. Ordinary Q4 inference will separately measure actual stage,
 first-score, decoded and timing impact; no quality claim follows yet.
+
+
+Ordinary [Q4 42099925931](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42099925931)
+and [independent raw audit 42102908743](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42102908743)
+confirm SHA identity for all 29 recorded processor/vision stages, including all
+24 layer outputs and merged image features, for this one image. All 66 shared
+F32 files and 30 baseline hashes were independently audited; five original-only
+vision intermediates are not emitted and retain separate operator controls.
+The first downstream shared mismatch is text embedding. Q4 logits and prefix
+still fail the original target: RMS 0.58796416 versus baseline 0.56013479 and
+both outputs `<table>` versus source `<figure` prefix. Native elapsed is
+130.86/153.89 s for baseline/candidate on this case. Vision parity is not decoded
+quality; default gates remain off. A separate Q8 smoke compares first-score and
+prefix to original and a source-different historical Q8 baseline.

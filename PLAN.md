@@ -1603,3 +1603,43 @@ follows raw audit. Correct future native observer metadata: `exact_original_ids`
 means full-completion equality, whereas smoke needs `exact_original_prefix_ids`
 and the compared source prefix. Earlier incorrect `<table>` conclusions remain
 valid, but a two-token smoke cannot equal the full 177-token ID sequence.
+
+### 2026-11-05: single-image ordinary vision raw parity, Q4 still decoded-negative
+
+Q4 [42099925931](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42099925931)
+at `a1bb8c924607e2631435a973512aeee94ea5f0be` closes every recorded ordinary
+processor/vision stage through all 24 layers and merged output. Independent
+report-only [42102908743](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42102908743)
+verifies the complete retained ZIP, every one of 66 shared F32 files, all 30
+frozen baseline hashes, and **29 processor/vision SHA identities** against the
+pinned original manifest. This is one image, not whole-model/corpus qualification.
+Five original-only vision intermediates (merger norm/up/activation and rotary
+cos/sin) are not emitted by ordinary runner; separate operator controls cover
+them. Position raw layouts differ (original chronology+THW, native THW), so that
+raw inequality is not alone a position-math failure.
+
+First downstream shared difference is text.embedded: 391,330/394,240 values,
+max absolute 0.000380992889, RMS 6.30394e-5. Later decoder/quantization errors
+are not attributed solely to embedding. First-logit RMS worsens baseline
+0.5601347910 to 0.5879641585 (max 2.38528 to 2.44462), and both Q4 prefixes
+remain wrong `<table>`/[20353,29] versus original [27,17251] (`<figure`). Full
+completion has 177 tokens; the old `exact_original_ids` field compares that full
+sequence and is not a smoke-prefix test. Independent prefix audit confirms the
+Q4 mismatch and future metadata now distinguishes prefix from completion.
+
+Same-run native elapsed baseline/candidate 130.86/153.89 s, user CPU
+104.36/143.37 s, system CPU 64.92/68.73 s, peak RSS 4,524,945,408/4,510,699,520
+bytes. This is not a throughput benchmark. Exact source, raw stages, first-score,
+decode, timing and limitations are in the rotary-table Q4 and raw-audit receipts.
+Defaults and quality remain unqualified, with no release/app-pin promotion.
+
+### 2026-11-05: one authorized corrected Q8 smoke
+
+Q8 immutable file is 5,815,503,232 bytes; prior observed native peak is
+6,317,084,672 bytes. Dedicated new smoke requires at least 10 GiB actual available
+RAM and 12 GiB free scratch, four threads and caches off. It loads only Q8 once,
+checks full model SHA, canonical original prepared-input hashes, all 29 raw
+vision stages, original first-row scores, two-token prefix and timings. Historical
+Q8 source `891d07da39e9c361a206f2ec4b40fe8339712e0f` already matched `<figure`
+prefix; its scores are compared with immutable report/ZIP hashes, explicitly
+not a same-source A/B or table-only effect. No 177-token run or broad CI.

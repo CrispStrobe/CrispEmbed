@@ -20824,3 +20824,5 @@ and complete limits are retained. Defaults, release and quality stay unchanged;
 no further runs in this lane.
 
 Complete configured rotary production 42098420346 passes full-domain/regeneration/22 fallback controls, native dependencies/builds and decoder controls. Source-fed original tables, attention and first block are now byte-exact, with preceding bytes preserved. Ordinary Q4 quality with the table remains pending; gate remains off.
+
+Complete rotary Q4 42099925931 plus independent raw audit 42102908743 establish 29 recorded processor/vision SHA identities for one image. First downstream difference is text embedding; first scores and `<table>` prefix remain worse/incorrect. Full raw and timing limits retained, prefix observer corrected. One guarded corrected Q8 smoke is authorized; prior Q8 already had the correct two-token prefix, so no new-prefix claim from an unchanged result.
