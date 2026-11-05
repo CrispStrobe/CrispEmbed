@@ -1011,3 +1011,13 @@ full177-position/complete greedy execution and paired BF16 score review remain
 separate. Sources/images/candidates are pinned; preflight uses effective
 cgroup/host available RAM and free disk, with peakRSS and timing retained.
 No model quality follows from building or launching these smoke runs.
+
+Initial Q8/Q4 smoke runs41998868478/41998910591 authenticated both full
+candidate hashes and completed resource preflight, then exited4 at tokenizer
+metadata admission before native vision/decoder execution: the adapter expected
+an obsolete source-only profile. [Q8](tests/results/qwen35-ocr/lightonocr3-4b-q8-native-smoke-initial.json)
+and [Q4](tests/results/qwen35-ocr/lightonocr3-4b-q4-native-smoke-initial.json)
+retain the exact initial source/hash/gates/preflight. The corrected adapter
+matches the exported`lightonocr3-4b` profile. Corrected smoke waits for its hosted
+metadata/tokenizer controls. Initial subsecond sampledRSS is not a true process
+peak; corrected workers use GNU time child rusage for peakRSS/CPU/wall timing.

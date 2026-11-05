@@ -86,17 +86,16 @@ def main():
   report['gates']={key:env[key] for key in GATES};report['threads']=args.threads
   start=time.monotonic()
   with (out/'native.log').open('w') as log:
-   process=subprocess.Popen([str(binary),str(model),str(rgb),str(image.height),str(image.width),str(ids),str(native),
+   resource_file=out/'native-resources.txt'
+   process=subprocess.run(['/usr/bin/time','-q','-f','%U %S %e %M','-o',str(resource_file),
+    str(binary),str(model),str(rgb),str(image.height),str(image.width),str(ids),str(native),
     '2' if args.mode=='smoke' else '256',str(args.threads),args.mode],env=env,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT)
-   peak=0
-   while process.poll() is None:
-    try:
-     for row in Path(f'/proc/{process.pid}/status').read_text().splitlines():
-      if row.startswith(('VmHWM:','VmRSS:')):peak=max(peak,int(row.split()[1])*1024)
-    except FileNotFoundError:pass
-    time.sleep(0.5)
+   user,system,elapsed,rss=resource_file.read_text().strip().split()
    report['seconds']=time.monotonic()-start
-   report['native_peak_rss_bytes']=peak;report['memory_after_native']=memory();report['native_returncode']=process.returncode
+   report['native_peak_rss_bytes']=int(rss)*1024
+   report['native_cpu_user_seconds']=float(user);report['native_cpu_system_seconds']=float(system)
+   report['native_elapsed_seconds']=float(elapsed);report['resource_measurement']='GNU time child rusage'
+   report['memory_after_native']=memory();report['native_returncode']=process.returncode
    if process.returncode:raise RuntimeError(f'native process failed: exit {process.returncode}')
   report['seconds']=time.monotonic()-start;report['native']=json.loads((native/'native-summary.json').read_text())
   report['artifacts']={x.name:{'bytes':x.stat().st_size,'sha256':sha(x)} for x in native.iterdir() if x.is_file()}
