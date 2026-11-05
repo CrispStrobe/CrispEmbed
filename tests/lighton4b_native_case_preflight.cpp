@@ -16,6 +16,8 @@ int main(int argc,char **argv) {
     else if(recipe=="lighton4b-q4k-mixers-q8-v1"&&core_env::on("CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4"))
         policy=lighton4b_quant_recipe::attention_q8_ffn_q4;
     else return 3;
+    const bool mixed=recipe=="lighton4b-q4k-mixers-q8-v1";
+    if(mixed?header->mixed_quant_recipe()!=recipe:!header->mixed_quant_recipe().empty())return 3;
     if(!lighton4b_quant_recipe_matches(header->model().text.decoder,policy))return 3;
     auto *meta=core_gguf::open_metadata(argv[1]);lighton4b::frontend_tokenizer tokenizer;
     if(!meta||!tokenizer.load(meta))return 4;core_gguf::free_metadata(meta);

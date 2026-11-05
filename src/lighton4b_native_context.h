@@ -54,6 +54,8 @@ public:
         if (!header) return nullptr;
         const auto & decoder = header->model().text.decoder;
         const bool mixed = core_env::on("CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4");
+        if (mixed ? header->mixed_quant_recipe() != "lighton4b-q4k-mixers-q8-v1" :
+                    !header->mixed_quant_recipe().empty()) return nullptr;
         const auto recipe = mixed ? lighton4b_quant_recipe::attention_q8_ffn_q4 :
                             decoder.layers.front().gate->type == GGML_TYPE_Q8_0 ? lighton4b_quant_recipe::q8_0 :
                             lighton4b_quant_recipe::q4_k;
