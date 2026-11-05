@@ -1,0 +1,115 @@
+{
+  "schema": "lighton4b-vision-attention-integration/v1",
+  "status": "passed",
+  "quality_qualified": false,
+  "whole_attention_bit_exact": false,
+  "model_forward_executed": false,
+  "default_off": true,
+  "source_sha": "c3abc6057a2fc823f85d26c8668752cd11e7beb4",
+  "pooled_before": {
+    "elements": 573440,
+    "max_abs": 0.00390625,
+    "mean_abs": 3.120452691161648e-08,
+    "rms_error": 6.96918186094335e-06,
+    "cosine": 0.9999999983728607,
+    "original_l2": 92.50925844204222,
+    "native_l2": 92.50921714694198,
+    "original_abs_max": 2.21875,
+    "native_abs_max": 2.21875,
+    "different_values": 65,
+    "first_differing_flat_index": 16162,
+    "raw_strict_flag": true,
+    "first_original": -0.000919342041015625,
+    "first_native": -0.00091552734375,
+    "bit_different_values": 65,
+    "bit_exact": false
+  },
+  "pooled_after": {
+    "elements": 573440,
+    "max_abs": 0.001953125,
+    "mean_abs": 1.4611785965306419e-08,
+    "rms_error": 3.993586956068926e-06,
+    "cosine": 0.9999999994656713,
+    "original_l2": 92.50925844204222,
+    "native_l2": 92.50924777365054,
+    "original_abs_max": 2.21875,
+    "native_abs_max": 2.21875,
+    "different_values": 20,
+    "first_differing_flat_index": 16162,
+    "raw_strict_flag": false,
+    "first_original": -0.000919342041015625,
+    "first_native": -0.00091552734375,
+    "bit_different_values": 20,
+    "bit_exact": false
+  },
+  "verified_candidate_bytes": {
+    "bytes": 2293760,
+    "sha256": "4de43a53811f70cc5677933a411becd38475678a22dd58f22aa44185e0f2a70b"
+  },
+  "softmax_incomplete": {
+    "best_probability_differences": 15,
+    "forced_original_inverse": {
+      "source_exp": {
+        "elements": 5017600,
+        "max_abs": 6.103515625e-05,
+        "mean_abs": 1.3007630346989144e-11,
+        "rms_error": 2.7261229878147828e-08,
+        "cosine": 0.9999999999981284,
+        "original_l2": 31.56287605426372,
+        "native_l2": 31.562876035698007,
+        "original_abs_max": 1.0,
+        "native_abs_max": 1.0,
+        "different_values": 12,
+        "first_differing_flat_index": 2975310,
+        "raw_strict_flag": false,
+        "first_original": 1.329183578491211e-05,
+        "first_native": 1.33514404296875e-05,
+        "bit_different_values": 12,
+        "bit_exact": false
+      },
+      "std_exp": {
+        "elements": 5017600,
+        "max_abs": 6.103515625e-05,
+        "mean_abs": 1.3007630346989144e-11,
+        "rms_error": 2.7261229878147828e-08,
+        "cosine": 0.9999999999981284,
+        "original_l2": 31.56287605426372,
+        "native_l2": 31.562876035698007,
+        "original_abs_max": 1.0,
+        "native_abs_max": 1.0,
+        "different_values": 12,
+        "first_differing_flat_index": 2975310,
+        "raw_strict_flag": false,
+        "first_original": 1.329183578491211e-05,
+        "first_native": 1.33514404296875e-05,
+        "bit_different_values": 12,
+        "bit_exact": false
+      }
+    }
+  },
+  "preservation_readback": {
+    "run_id": 42038802495,
+    "artifact_id": 13420770687,
+    "expires_at": "2027-02-03T13:46:53Z",
+    "outer_sha256": "6d6845c4cbe4ecfe0a9112b8ee88e8e79845a2256714713c46732c66abfcf2c5",
+    "source_sha256": "77682c5af6a8a89af78736eb70241fdb8706ee801776703ddbdf42000fb273ff",
+    "source_bytes": 238129493,
+    "exact_remote_readback_verified": true
+  },
+  "controls_stdout": {
+    "test-lighton4b-native-context": "gguf_init_from_file: failed to open GGUF file 'missing.gguf' (No such file or directory)\nnative-context controls=9 passed=1 model_payload=0\n",
+    "test-lighton4b-bf16-linear-controls": "LIGHTON4B_BF16_LINEAR_CONTROLS checks=20 passed=1 model_payload=0\n",
+    "environment-docs": "OK\n"
+  },
+  "runtime_sha256": {
+    "src/lighton4b_vision_bf16.cpp": "61ec3752dc427e5d438cf830b41e7fc2328316bec1143afa07be8a77165bdfbb",
+    "src/lighton4b_bf16_linear.h": "3c2d7a99bcd764c67a02c08a503ce3a44827bfe071b0933e24a9b93d3bbde587",
+    "src/lighton4b_linear_block.h": "2e58509e908437141ae8e56e37b785adb1cba32a4bae7592473bf17e181ebee2",
+    "src/qwen35_delta.cpp": "91129ef16d2e24e459eac664a0fa9e3918708db20dfd6c7b97feac69cb32fec7",
+    "src/qwen35_delta.h": "d70d77810a084f67994a550ba16653ac23ee1ab04f0dc4975a46263b754c843f"
+  },
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42048810358",
+  "artifact_id": 13425708751,
+  "artifact_sha256": "fd0e99a3ba487d8f60a103e2ce68c39d9def6a059260407d12b41c9128a16326",
+  "artifact_expires_at": "2027-02-03T14:49:52Z"
+}

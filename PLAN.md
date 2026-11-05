@@ -1302,3 +1302,20 @@ quality remains negative from42041219151. Focused assembled
 `tools/ci-heavy/lighton4b_vision_attention_integration.py` must reproduce exact
 primitives, verified partial candidate bytes, old gates, native build/context and
 decoder controls. Reference probes stay test-only; no model forward at this gate.
+
+
+[Focused assembled42048810358](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42048810358)
+atc3abc6057 passes exact QK/PV source primitives, original/actual/observer and
+disabled-gate controls, and the verified partial-candidate SHA4de43a53. Native
+runner/context build and decoder20 controls pass; environment docs are fresh.
+The [integration receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-attention-integration.json)
+preserves65→20 pooled differences (max0.00390625→0.001953125) explicitly as
+**incomplete whole attention**, with no new model run or decoded promotion.
+Softmax still has12 differences even under forced original reciprocal, and best
+reduction15; all new gates remain off. Runtime bytes do not change in this receipt.
+
+Prepared next attribution: original installed PyTorch vector-header softmax
+controls, compiled at original AVX2 and default dispatch with strict/contracted/
+fast-math flags, versus the retained full F32 softmax/probability/reciprocal bytes.
+Check actual header/git/library identities and exp0 before source inference; stop
+on linkage/original controls. No guessed exp approximation is imported into runtime.

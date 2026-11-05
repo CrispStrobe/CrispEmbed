@@ -20781,3 +20781,13 @@ raw-byte exact; layer0 and merged RMS improve, but first-logit RMS worsens and
 both independent decodes remain wrong`<table>`. The complete numerical/decoded
 receipt and prior unused-receipt failure42040210848 remain retained. Attention
 pooling is the next actual source-fed mismatch. No quality or default promotion.
+
+
+### 2026-11-05 — Gated vision QK/PV source ordering integrated, softmax incomplete
+
+Focused42048810358 atc3abc6057 passes exact source QK/PV primitives, actual/
+observer/old-gate bytes, native/context build and decoder20 controls. Pooled
+differences fall65→20, but whole attention remains inexact; original reciprocal
+plus source/std exp still leaves12 probability differences. Exact-vector-header
+softmax attribution is the next bounded lane. Prior Q4 decoded-negative evidence
+remains; no model run, quality, default, release or app-pin promotion follows.
