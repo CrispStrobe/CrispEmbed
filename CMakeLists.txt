@@ -1675,3 +1675,7 @@ target_link_libraries(lighton4b-native-document PRIVATE crispembed-qwen35-delta 
 
 add_executable(test-lighton4b-bf16-round tests/test_lighton4b_bf16_round.cpp)
 target_link_libraries(test-lighton4b-bf16-round PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Test-only source-fed vision replay; includes candidate implementation for private operators.
+add_executable(lighton4b-vision-layer0-replay tests/lighton4b_vision_layer0_replay.cpp)
+target_link_libraries(lighton4b-vision-layer0-replay PRIVATE crispembed-qwen35-delta crispembed-core)

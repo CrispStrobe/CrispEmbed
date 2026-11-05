@@ -1060,3 +1060,21 @@ adds source BF16 boundaries/interpolation/attention arithmetic. Source-fed
 patch/position attribution and actual Q8/Q4 candidate smoke/full-logit/decoded
 comparisons remain required. Keep all earlier first-score/document failures and
 immutable models; no weight modification or default flip.
+
+
+### LightOn4B bounded same-input vision layer0 continuation — 5 November 2026
+
+The retained BF16 candidate is negative: original/native patch differs at only20
+values, but layer0 max0.03125 and merged RMS0.0223860911 exceed the legacy merged
+RMS0.0112389284. Both paths remain gated and no default changes. The test-only
+`lighton4b-vision-layer0-replay` target source-feeds the original embedded tensor
+and each original-reconstructed operator input into unchanged candidate norm,
+QKV, attention, projection and MLP operators. Hosted
+`tools/ci-heavy/lighton4b_vision_layer0_replay.py` authenticates retained original
+manifest036a936c and immutable Q4 GGUFf873eb3d, requires all vision weights to be
+BF16-exact, uses original torch2.13.0+cpu/numpy2.3.5/two-thread settings, and checks
+the complete reconstructed original layer0 against its frozen array before
+accepting operator attribution. A differing composed original control makes the
+result diagnostic only; no budget changes or decoded-quality claim follow.
+One targeted hosted run is authorized. Full decoded evaluation remains required
+after an evidenced gated runtime correction; earlier Q4/Q8 negatives remain.
