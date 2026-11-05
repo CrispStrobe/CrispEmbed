@@ -61,3 +61,21 @@ source-environment replay using the original retained kernel output mount. It
 executes no native build, F32 operator or quantized candidate; exact source/input
 hashes and the same v1 BF16 anchor remain mandatory. The host provider is recorded
 explicitly. This bounded replay does not repeat original full-model inference.
+
+## Completed original-environment anchor
+
+The bounded BF16-only source-environment replay at4498559a22 completes without
+full-model or native execution. All394,240 original layer0 hidden values are
+bit-exact against the retained original: max/RMS0 and row/global cosine1.
+Original hooks remain exactly neutral. [Producer report](../tests/results/qwen35-ocr/lightonocr3-4b-layer0-bf16-source-environment.json)
+SHA6519caa2e53e6fd33eeb9dc540a26cab2ef4cec3fcbfb97a4f75835d73bd7b4f
+retains exact official range/input/module/package hashes and all intermediate
+stage declarations; large arrays remain remote. This validates the recovered
+checkpoint layer/input/blueprint, not complete decoder or decoded parity.
+
+Compared with initial hosted CPU replay, input-layernorm output hashes are exact
+but the first QKV/z/a/b projection hashes already differ. Later GDN/FFN output
+hashes also differ. The initial replay additionally enabled deterministic
+algorithms; the v2 hosted replay matches original OFF to separate that setup
+factor from cross-host BF16 GEMM arithmetic. No rounding/default/budget change
+is justified by the anchor alone.

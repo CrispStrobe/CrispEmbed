@@ -1124,3 +1124,11 @@ matches original BF16 deterministic-algorithms OFF separately from F32 diagnosti
 ON. V1 exact-anchor admission stays unchanged. Explicit v2 unanchored diagnostic
 may proceed with the original failure retained/parity false to isolate operators;
 it cannot redefine the frozen reference or justify a default/quality promotion.
+
+Original-environment BF16-only layer0 replay at4498559a22 is complete: all394,240
+retained hidden values match bit-exactly (max/RMS0, row/global cos1), with exact
+observer neutrality. Source/range/input/module evidence is in
+`lightonocr3-4b-layer0-bf16-source-environment.json`; no full model/native/F32
+forward occurred. Initial GHA input-layernorm hash matches this anchored replay,
+but first QKV/z/a/b projections differ. Corrected deterministicOFF v2 hosted
+operator diagnostic42023499031 remains executing; initial failed anchor stays red.
