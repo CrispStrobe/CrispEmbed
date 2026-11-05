@@ -1,0 +1,13 @@
+{
+  "schema": "lighton4b-native-document-build/v1",
+  "status": "passed",
+  "model_payload_bytes": 0,
+  "quality_qualified": false,
+  "source_sha": "ca8d8fd405b2e90c554a1d1c51caa14947bb2fec",
+  "executable_sha256": "c35e3fe6354e85d88b430791ed84aa91b83405a6ca8b64331942761723a57a5d",
+  "lighton4b-native-document_sha256": "9cb5bed8c308043e47a5a71808fc8d136718b7e15fe2a10a35c660cbae064fcc",
+  "test-qwen35-stream-projection_sha256": "ce01edf8cdb0c3466ae94d9ca5efc6a0dcb9ccf2669e2d11e476302ecdc957a6",
+  "stdout": "gguf_init_from_file: failed to open GGUF file 'missing.gguf' (No such file or directory)\nnative-context controls=9 passed=1 model_payload=0\n",
+  "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41998205271",
+  "stream_projection_controls_stdout": "STREAM_PROJECTION_CONTROLS pass=1 f32=1 f16=1 seams=1 independent_dot=1 legacy=1 gates=1 atomic_failure=1 observer=1\n"
+}

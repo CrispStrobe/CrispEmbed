@@ -999,3 +999,15 @@ teacher-forced positions separately from independent greedy generation. No
 original hidden state or logit is accepted as native input. Initial hosted build
 controls precede actual Q8/Q4 smoke and full original BF16 comparison. No synthetic
 F32 correction or F32 checkpoint is required to execute that separate experiment.
+
+Integrated hosted [build41998205271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41998205271)
+passes actual native-runner compilation, nine payload-owner controls and all
+streamed projection controls (including quantized dequant/dot/seam and gate
+checks). [Receipt](tests/results/qwen35-ocr/lightonocr3-4b-native-document-build.json).
+Actual separately bounded Q8 [smoke41998868478](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41998868478)
+and Q4 [smoke41998910591](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41998910591)
+are pending at`b34a07e82`. They use one teacher score and two free tokens only;
+full177-position/complete greedy execution and paired BF16 score review remain
+separate. Sources/images/candidates are pinned; preflight uses effective
+cgroup/host available RAM and free disk, with peakRSS and timing retained.
+No model quality follows from building or launching these smoke runs.
