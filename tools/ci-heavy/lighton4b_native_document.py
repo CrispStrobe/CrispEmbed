@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""Hosted actual Q8/Q4 native document execution; no reference arrays enter native."""
+import argparse
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import time
+import urllib.request
+ROOT=Path(__file__).resolve().parents[2]
+MODEL_REPO='cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2'
+MODEL_REVISION='a7ec2e54103165a96b8bb6dc3478a2887edd7459'
+CANDIDATES={
+ 'q8_0':('lightonocr3-4b-q8_0-vision-f32.gguf','5888532207f0d98590cc028cbf92366f8a41ec925568f0c308bd69d9af6342f1',5815503232),
+ 'q4_k':('lightonocr3-4b-q4_k-vision-f32.gguf','f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91',4030957952)}
+GATES=('CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT','CRISPEMBED_LIGHTON4B_QUANT','CRISPEMBED_QWEN35_QUANT',
+ 'CRISPEMBED_LIGHTON4B_GGUF_INSPECTION','CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER',
+ 'CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER','CRISPEMBED_LIGHTON4B_VISION_OWNER','CRISPEMBED_QWEN35_OCR',
+ 'CRISPEMBED_LIGHTON4B_DECODER_COMPOSE','CRISPEMBED_LIGHTON4B_LINEAR_BLOCK',
+ 'CRISPEMBED_LIGHTON4B_ATTENTION_BLOCK','CRISPEMBED_QWEN35_GDN_GROUPED_HEADS',
+ 'CRISPEMBED_QWEN35_STREAM_PROJECTION','CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE','CRISPEMBED_LIGHTON4B_FRONTEND')
+def sha(path):
+ h=hashlib.sha256()
+ with Path(path).open('rb') as f:
+  for block in iter(lambda:f.read(8*1024*1024),b''):h.update(block)
+ return h.hexdigest()
+def download(url,path):
+ with urllib.request.urlopen(url,timeout=120) as response,path.open('wb') as f:
+  while block:=response.read(8*1024*1024):f.write(block)
+def main():
+ p=argparse.ArgumentParser();p.add_argument('--recipe',choices=CANDIDATES,required=True)
+ p.add_argument('--mode',choices=('smoke','full'),default='smoke');p.add_argument('--threads',type=int,default=4)
+ args=p.parse_args()
+ if os.environ.get('GITHUB_ACTIONS')!='true' or os.environ.get('CRISPEMBED_BUILD_MODE')!='portable':
+  raise RuntimeError('hosted portable execution required')
+ out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH']);scratch.mkdir(exist_ok=True)
+ report={'schema':'lighton4b-native-document/v1','status':'failed','recipe':args.recipe,'mode':args.mode,
+  'quality_qualified':False,'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()}
+ try:
+  spec=importlib.util.spec_from_file_location('build',ROOT/'tools/ci-heavy/lighton4b_native_document_build.py')
+  builder=importlib.util.module_from_spec(spec);spec.loader.exec_module(builder);builder.main()
+  filename,expected,size=CANDIDATES[args.recipe];model=scratch/filename
+  download(f'https://huggingface.co/{MODEL_REPO}/resolve/{MODEL_REVISION}/{filename}',model)
+  if model.stat().st_size!=size or sha(model)!=expected:raise RuntimeError('immutable candidate differs')
+  report['model']={'repository':MODEL_REPO,'revision':MODEL_REVISION,'file':filename,'sha256':expected,'bytes':size}
+  source=ROOT/'tests/regression/images/cc0/simple_form.png'
+  if sha(source)!='3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc':raise RuntimeError('source PNG differs')
+  from PIL import Image
+  image=Image.open(source).convert('RGB');rgb=scratch/'source.rgb';rgb.write_bytes(image.tobytes())
+  capture=scratch/'original-capture.json'
+  download('https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/26fe41e35/tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture.json',capture)
+  if sha(capture)!='170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a':raise RuntimeError('original capture differs')
+  original=json.loads(capture.read_text());teacher=original['generated_ids']
+  if len(teacher)!=177:raise RuntimeError('original completion differs')
+  ids=scratch/'teacher.ids';ids.write_text(''.join(f'{x}\n' for x in teacher))
+  native=out/args.recipe;native.mkdir();binary=scratch/'native-document-build/lighton4b-native-document'
+  env=os.environ.copy();env.update({key:'1' for key in GATES})
+  start=time.monotonic()
+  with (out/'native.log').open('w') as log:
+   subprocess.run([str(binary),str(model),str(rgb),str(image.height),str(image.width),str(ids),str(native),
+    '2' if args.mode=='smoke' else '256',str(args.threads),args.mode],env=env,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,check=True)
+  report['seconds']=time.monotonic()-start;report['native']=json.loads((native/'native-summary.json').read_text())
+  report['artifacts']={x.name:{'bytes':x.stat().st_size,'sha256':sha(x)} for x in native.iterdir() if x.is_file()}
+  generated=[int(x) for x in (native/'generated.ids').read_text().split()]
+  report['decoded']={'ids':generated,'text':(native/'generated.txt').read_text(),'exact_original_ids':generated==teacher}
+  report['status']='completed'
+ finally:
+  (out/'native-document.json').write_text(json.dumps(report,indent=2)+'\n')
+if __name__=='__main__':main()
