@@ -380,7 +380,7 @@ static float source_avx2_exp(float x) {
     return u * std::ldexp(1.0f, q - half);
 }
 static bool source_avx2_softmax_supported() {
-#if (defined(__x86_64__) || defined(__i386__)) && (defined(__GNUC__) || defined(__clang__))
+#if defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
     return __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma") && std::fegetround() == FE_TONEAREST;
 #else
     return false;
@@ -474,8 +474,9 @@ static std::vector<float> attention(const std::vector<float> & qkv, const vision
                 }
                 for (int i = 0; i < d; ++i) {
                     float result = 0;
-                    for (int s = first; s < end; ++s)
-                        result += (scores[s - first] / sum) * values[size_t(s) * width + head * d + i];
+                    if (!exact_softmax)
+                        for (int s = first; s < end; ++s)
+                            result += (scores[s - first] / sum) * values[size_t(s) * width + head * d + i];
                     if (source_order) {
                         std::array<float, 4> partial{};
                         for (int s = first; s < end; s += 4)
