@@ -1048,3 +1048,13 @@ waiver. Smoke's127/133-second prefill/two-token measurements suggest a potential
 long full autoregressive panel; no full timing or completion is inferred yet.
 Retain partial/failure artifacts and the Q4 first-token rejection even if later
 positions improve. Final paired full-vocabulary/decoded review remains pending.
+
+### LightOn4B native profiling candidate —5 November
+
+`audit/lighton4b-native-profile-20261105` instruments only the separate diagnostic
+runner with the existing default-off profile session and phase timers. Active
+Q8/Q4 source closures are unchanged. [Profiling scope](docs/lighton4b-native-profiling.md)
+records970 streamed head tiles and repeated weight conversion as hypotheses,
+not measured bottlenecks. Hosted source-only build/negative controls precede a
+separate gate0/1 output-neutral resource pair; no speed claim or optimization
+default follows. Targeted original BF16 prefill capture remains higher priority.
