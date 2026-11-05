@@ -1,0 +1,43 @@
+{
+  "actual_original_output_ready": false,
+  "artifact": {
+    "archive_sha256": "efbfda94c08f0e3c38416688dbec734ad992a2302cb33e271a0f44e2a44061fc",
+    "bytes": 3395,
+    "id": 13393958457,
+    "name": "heavy-41981531300"
+  },
+  "controls_log_sha256": "047b92c6f1e55fec177fccef56abd6aee2b998075d5b733df77d6fac9ef670c4",
+  "executable_sha256": "d6898491984110b0536dcd43ddb1091f6559495a79dfb23389baedb8dc4ae246",
+  "independent_review": {
+    "actual_Ref_remote_positive_and_independent_decoded_negative_exercised": true,
+    "actual_original_model_forward": false,
+    "exact_stage_pairs_per_comparison": 1037,
+    "log_hash_verified": true,
+    "skips": 0,
+    "source_hashes_verified_at_exact_source": 7,
+    "source_part_slice_corruption_and_forged_real_readiness_rejected": true,
+    "synthetic_positions": 1,
+    "tests": 5,
+    "v1_capture_and_resource_guards_unchanged": true
+  },
+  "large_retention_qualified": false,
+  "model_payload_bytes": 0,
+  "native_execution_admitted": false,
+  "native_forward_executed": false,
+  "original_execution_admitted": false,
+  "original_forward_executed": false,
+  "real_provider_write_executed": false,
+  "run_id": "41981531300",
+  "schema": "lighton4b-document-v2-controls/v1",
+  "source_sha": "ab3a7dbc659d9e7a323048272b5edc4fae800041",
+  "source_sha256": {
+    "docs/lighton4b-document-parity-v1.json": "afee0e1fbebc73b9ded744343ee9e2ae467f3b214ab3682e9fb0e8fd733ad674",
+    "src/crispembed_diff.h": "6bef0b4e32b52af7fe6cd6702bfc937845dde85762477b08a82ff2a68388df94",
+    "tests/lighton4b_document_diff.cpp": "29b1ff32e5006f9b9c645416450a301be2433ca82ae98690323898d21c632b1c",
+    "tests/test_lighton4b_document_v2.py": "d51c362f55480c32fa679edb326ba3d69e25d25bff60069b128773804f506401",
+    "tools/ci-heavy/lighton4b_document_v2_controls.py": "c300b3ec01eb2fad68fcd80b40b059649ffdd8916dade16ba7996791b4d7b233",
+    "tools/lighton4b_document_v2.py": "fd6812f225732bb646de9c63e1b5f07b7a672837545ee8f9eaa3c3a25cf092f4",
+    "tools/lighton4b_original_document.py": "241fa5f288ca3a2f48b9011edf5e89bfc477f9aec8803f0e9d05b3ef21eb3174"
+  },
+  "status": "passed"
+}

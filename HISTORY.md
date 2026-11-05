@@ -1,3 +1,29 @@
+## 5 November 2026 — Separate document-v2 packaging/consumption controls
+
+Initial [41981531300](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41981531300)
+at `ab3a7dbc6` and bounded [41981959660](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41981959660)
+at `bb9f367a0fc3438a4ca4ab83909b462e2d2d7480` each pass all5 hosted methods,
+zero skips. Independent review verifies all7 exact-source hashes and both log
+digests. The synthetic one-position package has exactly1037 stages:970 base
+plus67 generated fields. Lazy immutable HTTP-part reads feed actual unchanged
+`crispembed_diff::Ref` comparisons, with a positive numerical pair and a separate
+independent decoded-text negative. Source/part/slice corruption, missing/extra/
+reordered stages, invalid IDs/text bounds, wrong full-vocabulary geometry and
+forged real-role/readiness claims reject. The original
+[initial receipt](tests/results/qwen35-ocr/lightonocr3-4b-document-v2-controls-initial.json)
+and [bounded receipt](tests/results/qwen35-ocr/lightonocr3-4b-document-v2-controls.json)
+retain their distinct source/artifact scopes.
+
+The new [v2 contract](docs/lighton4b-document-v2.md) does not alter v1, its2GiB
+archive limit or empty producer lists, original/capture hard defaults,40GiB/48GiB
+guards, existing parser or Ref code. V2 metadata is capped16MiB, text1MiB, each
+stage64Mi elements/256MiB, and total stage coverage18122 at cap256. The consumer
+caches one transport part per side and materializes one bounded stage pair, not
+two whole captures. Full selected/unused-file retention and actual original-output
+readiness are not established. No original/native model forward, learned model
+bytes, real provider write or GPU use occurred; actual producer/execution/large
+retention admissions remain empty/false.
+
 ## 5 November 2026 — Actual private Hub synthetic transport proof
 
 [41979390868](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41979390868)

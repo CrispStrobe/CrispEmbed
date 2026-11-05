@@ -1,0 +1,110 @@
+{
+  "admissions": {
+    "actual_original_output_ready": false,
+    "large_retention_qualified": false,
+    "native_execution": false,
+    "native_producers": [],
+    "original_execution": false,
+    "original_producers": []
+  },
+  "case": {
+    "add_generation_prompt": true,
+    "annotation": "tests/regression/images/cc0/ground_truth.json",
+    "annotation_limit": "Existing medium-confidence human annotation; checkbox1 occluded and code-lib separator ambiguous. No benchmark or exact-gold qualification.",
+    "annotation_sha256": "dd4ba6eff5922febe81c6ec71b6c70d1b0117d392e4ff3d581564a61caa82b4d",
+    "backend": "cpu-f32-eager",
+    "bytes": 6673,
+    "do_sample": false,
+    "enable_thinking": false,
+    "eos_ids": [
+      248046
+    ],
+    "expected_image_token_count": 140,
+    "expected_patch_count": 560,
+    "expected_processor_grid": [
+      1,
+      20,
+      28
+    ],
+    "file": "tests/regression/images/cc0/simple_form.png",
+    "geometry_status": "source-derived expectation; actual processor arrays not observed",
+    "id": "simple-form-pd-v1",
+    "license": "Public-Domain",
+    "max_new_tokens": 256,
+    "message_order": "image-only",
+    "original_rgb_sha256": "f29f48e94fd623b16bbe203f6c5918cdd5b08c9bc8926a1cc9659e5e67ff0a22",
+    "original_rgb_size": [
+      452,
+      317
+    ],
+    "pad_id": 248044,
+    "prompt": "",
+    "rendered_prompt": "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+    "rendered_prompt_sha256": "21fd8cc4612fbd94949828961222d4880685692d710fbe36d95c5a30e48467a2",
+    "seed": 0,
+    "sha256": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+    "source_manifest": "tests/regression/images/cc0/MANIFEST.json",
+    "source_manifest_sha256": "8263cb653a5a5560598aa00f9d09ae003258775cc5c53dfd874040332ffd302e",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Form.png",
+    "split": "development-diagnostic",
+    "threads": 2,
+    "use_cache": true
+  },
+  "comparison": {
+    "all_original_position_logits": 248320,
+    "engine": "unchanged crispembed_diff::Ref through bounded diagnostic GGUF pairs",
+    "exact_inputs_positions_ids": true,
+    "independent_free_decoded_ids_text_eos": true,
+    "max_abs": 0.002,
+    "min_row_cosine": 0.99999
+  },
+  "document_v1_sha256": "afee0e1fbebc73b9ded744343ee9e2ae467f3b214ab3682e9fb0e8fd733ad674",
+  "limits": {
+    "base_stages": 970,
+    "decoded_utf8_bytes": 1048576,
+    "generated_fields_per_position": 67,
+    "legacy_gguf_bytes": 8589934592,
+    "manifest_bytes": 16777216,
+    "max_stages": 18122,
+    "original_capture_disk_unchanged_bytes": 51539607552,
+    "original_capture_ram_unchanged_bytes": 42949672960,
+    "positions": 256,
+    "remote_parts_cached_per_side": 1,
+    "stage_bytes": 268435456
+  },
+  "model": {
+    "checkpoint_sha256": "6b0dab74a2dab02d5b10ca56322255024ed8dca35c02746b42e9f296aaeb4e67",
+    "decoder_layers": 32,
+    "format_version": 5,
+    "full_kv_heads": 4,
+    "full_query_heads": 16,
+    "hidden_size": 2560,
+    "linear_key_heads": 16,
+    "linear_value_heads": 32,
+    "repository": "lightonai/LightOnOCR-3-4B",
+    "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+    "tokenizer_sha256": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4",
+    "vision_layers": 24,
+    "vocab_size": 248320
+  },
+  "precision_order": [
+    "f32",
+    "f16"
+  ],
+  "quantized_admission": false,
+  "required_readiness": [
+    "Admitted actual original/native producer and source/package/checkpoint/input closure.",
+    "Actual observed processor geometry and complete original EOS output.",
+    "Complete970 base and67 generated-position fields, finite F32 values and authenticated shape/range/SHA.",
+    "Native teacher-forced scores/caches at every original-generated prefix plus independent free generation.",
+    "Separately proven large-output retention, scratch/provider-cache placement and suitable high-memory capture worker."
+  ],
+  "schema": "lighton4b-document-packaging-admission/v2",
+  "status": "synthetic-controls-only",
+  "tiny_provider_proof_scope": {
+    "fixture_bytes": 13239,
+    "large_capture_qualified": false,
+    "run_id": "41979390868"
+  },
+  "untouched_v1_and_defaults": true
+}

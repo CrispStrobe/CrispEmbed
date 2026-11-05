@@ -1,5 +1,15 @@
 # CrispEmbed plan — open work (updated 4 November 2026)
 
+The separate [document-v2 packaging/admission contract](docs/lighton4b-document-v2.md)
+maps970 base plus67 fields per generated position into authenticated stage ranges
+and supports bounded lazy remote consumption through the unchanged Ref comparer.
+Actual hosted initial41981531300 and bounded41981959660 each pass all5 methods;
+independent review verifies all7 source hashes, exact1037-stage synthetic remote
+consumption and independent decoded negatives. The [receipt](tests/results/qwen35-ocr/lightonocr3-4b-document-v2-controls.json)
+closes only packaging/consumer mechanics. Actual producer lists, execution and large-retention
+admissions stay empty/false; v1, hard capture default and40GiB/48GiB guards stay
+unchanged. No actual original forward or original-output readiness is claimed.
+
 Actual [real-provider41979390868](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41979390868)
 at `1447b6b0d` now passes tiny synthetic upload/immutable cold readback:13,239bytes,
 four parts,68 restored files,17 existing paths preserved and five fresh-prefix
