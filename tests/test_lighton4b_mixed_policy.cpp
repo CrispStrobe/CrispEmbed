@@ -1,5 +1,6 @@
 #include "lighton4b_native_context.h"
 #include <iostream>
+#include <cstdlib>
 using namespace qwen35_ocr;
 int main() {
     ggml_tensor q8{},q4{},f16{};q8.type=GGML_TYPE_Q8_0;q4.type=GGML_TYPE_Q4_K;f16.type=GGML_TYPE_F16;
