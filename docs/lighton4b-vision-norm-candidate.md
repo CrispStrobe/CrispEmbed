@@ -63,3 +63,13 @@ do not establish current composed or decoded quality. The assembled control gate
 replays norm/linear/Conv and decoder controls together, preserving exact source
 ZIP13414500337 remotely for90 days in this script only; unrelated retention is
 unchanged. No source reference arrays are shipped in production artifacts.
+
+
+[Final assembled42038802495](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42038802495)
+atedbd2b782 passes all norm/full NN/full Conv byte and old-gate controls, native
+builds/controls, and decoder20 controls. Its
+[receipt](../tests/results/qwen35-ocr/lightonocr3-4b-vision-linear-integration.json)
+records exact source ZIP preservation through3 February2027 and actual runtime
+hashes. A separate ordinary Q4 smoke now isolates these vision corrections with
+the decoder candidate explicitly off; operator success does not establish decoded
+quality, and every runtime gate remains off by default.

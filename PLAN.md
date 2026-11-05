@@ -1232,3 +1232,23 @@ ZIP13414500337 (SHA77682c5a,238,129,493 bytes) remotely without regeneration.
 Only this script's artifact retention is90 days; all other workflow retention
 stays unchanged. Reference/source probes remain test-only, with no bulk local
 artifact download or model forward in this assembled gate.
+
+
+[Assembled42038802495](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42038802495)
+atedbd2b782 passes exact norms, all four complete nn.Linear outputs at1/4
+threads, original Conv3D573,440 outputs at1/4/independent gates, old-path byte
+controls, native builds/controls and decoder20 controls. The
+[complete integration receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-linear-integration.json)
+pins nine actual runtime files. Exact source ZIP13414500337 is preserved as
+`linear/retained-source-13414500337.zip` in artifact13420770687, SHA77682c5a,
+238,129,493 bytes. Artifact API confirms expiry3 February2027; no original arrays
+were regenerated or bulk downloaded locally. This closes assembled operator/build
+controls, not full-model quality. Runtime bytes are unchanged by this receipt.
+
+Next single targeted Q4 `tools/ci-heavy/lighton4b_vision_linear_conv_ab.py` holds
+decoder candidate explicitly0 to isolate verified vision norm+NN+Conv changes.
+The paired ordinary baseline must match all30 fixed norm-only source42028668863
+stage hashes before judging candidate first logits/independent two-token text.
+Source/operator rechecks remain required; no default/quality/release promotion.
+Only the two task-owned integration/final-smoke scripts retain artifacts90 days;
+all unrelated workflow retention stays unchanged.

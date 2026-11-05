@@ -20761,3 +20761,13 @@ and45 image-compose controls, compiled ordinary native runner and environment
 documentation. Initial missing workflow read-token42031440977 and renamed test
 helper fallthrough42032227007 remain retained. Runtime defaults and published
 release/app pins stay unchanged; ordinary Q4 decoded quality remains negative.
+
+
+### 2026-11-05 — Assembled gated vision NN/Conv source math and preservation pass
+
+Actual42038802495 atedbd2b782 closes full norm, nn.Linear and Conv3D source-fed
+operator/raw-byte/gate controls on the combined PR155/decoder source. All native
+builds/controls and decoder20 controls pass. Exact original238,129,493-byte ZIP
+13414500337 is copied without regeneration into artifact13420770687, expiring
+3 February2027. Earlier combined wrong-Conv/score/decoded negatives remain; this
+is operator/build evidence, with actual composed quality still unqualified.
