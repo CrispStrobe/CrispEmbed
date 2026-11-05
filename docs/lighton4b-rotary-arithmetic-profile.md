@@ -2,8 +2,9 @@
 
 This lane reproduces fixed model arithmetic from configuration and the pinned
 original CPU math backend. It does not read images, checkpoints, reference
-activations or OCR outputs. Production integration is pending the complete-domain
-source/reader proof; the rejected SLEEF rotary alternative remains off.
+activations or OCR outputs. Complete-domain source/reader proof passed; the default-off production integration
+now awaits focused source-fed/fallback/build verification. The rejected SLEEF
+rotary alternative remains off.
 
 The source configuration is
 `lightonai/LightOnOCR-3-4B@b71010f095dc3735de7ee6b9969bff8f8f50b39a`,
@@ -33,7 +34,7 @@ python tools/generate_lighton4b_rotary_table.py \
   --manifest rotary-table-generation.json
 ```
 
-The generator enforces Torch `2.13.0+cpu`, Torch git
+The generator requires Linux x86_64 and enforces Torch `2.13.0+cpu`, Torch git
 `cf30153c4c131c8164ee7798e5022d810682e2cb`, NumPy `2.3.5`, oneMKL version/build,
 AVX2 dispatch and the source configuration hash. It emits integer encodings of
 F32 values to avoid compiler decimal conversion. The manifest records all raw
@@ -58,3 +59,26 @@ multigrid boundary packings. It also checks fallback/unsupported conditions and
 that the native reader links no Torch/MKL library. Geometry-domain coverage is
 mathematical; finite layout checks additionally guard against backend packing
 surprises. No model forward or decoded-quality claim follows from this proof.
+
+
+[Complete-domain proof 42096520795](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42096520795)
+at `79fbff4e74ba084c35804ba96178a15d2e3e2da0` passes duplicate generation,
+32,768 direct-MKL constant controls and compiled byte verification. Native reader
+and original source agree on all 681,459,712 F32 values across 3,873 layouts,
+including all 3,280 admitted single-frame h/w pairs, all 1,024 admitted total
+token counts, and temporal/multigrid boundaries. All 17 original reader fallback
+guards pass; no native Torch/MKL dependency is present. The 128 KiB raw asset SHA
+is `30ea508c92d92a8400604e276fac161a1a85f7e89cd79877f227684a6d330e0c`.
+The [generation manifest](lighton4b-rotary-arithmetic-manifest.json) records exact
+original generation sources; current generator additionally rejects other OS/
+architecture profiles, and must reproduce the same asset bytes.
+
+The separate `CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_TABLE` gate now selects
+these configured constants before preceding rotary alternatives. The complete
+reader was moved into production unchanged, and disabled/unsupported lookup
+leaves output vectors untouched before the original generator runs. A focused
+integration job repeats the whole domain through the actual production helper,
+checks ordinary/unsupported fallback and precedence over rejected SLEEF, then
+checks retained same-input original tables and first-block output. No image is
+used in generation; retained neural inputs are verification only. A full model
+forward and decoded quality remain separate qualifications.

@@ -13,7 +13,7 @@ def main():
  dispatch={'ATEN_CPU_CAPABILITY':'avx2','ONEDNN_MAX_CPU_ISA':'AVX2','DNNL_MAX_CPU_ISA':'AVX2','MKL_ENABLE_INSTRUCTIONS':'AVX2'};os.environ.update(dispatch)
  if os.environ.get('GITHUB_ACTIONS')!='true'or os.environ.get('CRISPEMBED_BUILD_MODE')!='portable':raise RuntimeError('hosted portable profile proof only')
  out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH'])/'rotary-table';scratch.mkdir();build=scratch/'build'
- report={'schema':'lighton4b-rotary-table-profile/v1','status':'failed','production_integrated':False,'images_read':False,'activations_read':False,'checkpoint_read':False,'model_forward_executed':False,'quality_qualified':False,'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'cpu_dispatch':dispatch}
+ report={'schema':'lighton4b-rotary-table-profile/v1','status':'failed','production_integrated':True,'images_read':False,'activations_read':False,'checkpoint_read':False,'model_forward_executed':False,'quality_qualified':False,'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'cpu_dispatch':dispatch}
  def sha(raw):return hashlib.sha256(raw).hexdigest()
  def run(name,args):
   report['last_phase']=name
@@ -31,6 +31,8 @@ def main():
   run('regenerate',['python',generator,'--output',scratch/'lighton4b_rotary_table_data.inc','--manifest',scratch/'regeneration.json'])
   if(out/'lighton4b_rotary_table_data.inc').read_bytes()!=(scratch/'lighton4b_rotary_table_data.inc').read_bytes():raise ValueError('regeneration bytes differ')
   report['generation']=json.loads((out/'rotary-table-generation.json').read_text());report['regeneration_bit_exact']=True
+  if(out/'lighton4b_rotary_table_data.inc').read_bytes()!=(ROOT/'src/lighton4b_rotary_table_data.inc').read_bytes():raise ValueError('committed model constants differ from full regeneration')
+  report['committed_asset_regenerated_exact']=True
   import numpy as np
   import torch
   from torch.utils.cpp_extension import library_paths

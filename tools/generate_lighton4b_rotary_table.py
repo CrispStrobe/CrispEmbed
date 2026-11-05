@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import os
+import platform
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 DISPATCH={'ATEN_CPU_CAPABILITY':'avx2','ONEDNN_MAX_CPU_ISA':'AVX2','DNNL_MAX_CPU_ISA':'AVX2','MKL_ENABLE_INSTRUCTIONS':'AVX2'}
@@ -16,6 +17,7 @@ CONFIG_SHA='99b4c363a998c2d8c5ed5b3f3a40ec5cb97a156034df5002d0d789c74324f5f0'
 TORCH_GIT='cf30153c4c131c8164ee7798e5022d810682e2cb'
 SOURCE='https://github.com/huggingface/transformers/blob/75d3bdcd4b3ba70cee21287218d9764f33da41f0/src/transformers/models/qwen3_5/modeling_qwen3_5.py'
 def generate(output,manifest):
+ if platform.system()!='Linux'or platform.machine().lower()not in ('x86_64','amd64'):raise RuntimeError('frozen Linux x86_64 source profile required')
  os.environ.update(DISPATCH)
  import numpy as np
  import torch
@@ -41,7 +43,7 @@ def generate(output,manifest):
  'inline constexpr std::array<uint32_t, 32768> rotary_bits = {{']
  for i in range(0,bits.size,8):lines.append('    '+', '.join('0x%08xu'%int(x)for x in bits[i:i+8])+',')
  lines+=['}};',''];output=Path(output);output.parent.mkdir(parents=True,exist_ok=True);output.write_text('\n'.join(lines))
- result={'schema':'lighton4b-rotary-arithmetic-table/v1','configuration_repository':'lightonai/LightOnOCR-3-4B','configuration_revision':'b71010f095dc3735de7ee6b9969bff8f8f50b39a','configuration_sha256':CONFIG_SHA,'transformers_source':SOURCE,'transformers_source_sha256':'aee59d55ee4e8ce0e50bf0e279796b85c2c66a28dfae55c3fcbb62fa9bcba048','theta':theta,'head_dimension':64,'rotary_dimension':dimension,'frequency_count':16,'coordinate_count':coordinates,'raw_bytes':bits.nbytes,'raw_sha256':hashlib.sha256(bits.tobytes()).hexdigest(),'header_sha256':hashlib.sha256(output.read_bytes()).hexdigest(),'generator_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'torch_version':torch.__version__,'torch_git_version':torch.version.git_version,'numpy_version':np.__version__,'mkl_profile':'2024.2 build20240605 AVX2 VML_HA','cpu_dispatch':DISPATCH,'license':'MIT generator and generated arithmetic constants; Apache-2.0 source configuration provenance; no MKL code/binary copied','images_read':False,'activations_read':False,'checkpoints_read':False}
+ result={'schema':'lighton4b-rotary-arithmetic-table/v1','configuration_repository':'lightonai/LightOnOCR-3-4B','configuration_revision':'b71010f095dc3735de7ee6b9969bff8f8f50b39a','configuration_sha256':CONFIG_SHA,'transformers_source':SOURCE,'transformers_source_sha256':'aee59d55ee4e8ce0e50bf0e279796b85c2c66a28dfae55c3fcbb62fa9bcba048','theta':theta,'head_dimension':64,'rotary_dimension':dimension,'frequency_count':16,'coordinate_count':coordinates,'raw_bytes':bits.nbytes,'raw_sha256':hashlib.sha256(bits.tobytes()).hexdigest(),'header_sha256':hashlib.sha256(output.read_bytes()).hexdigest(),'generator_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'torch_version':torch.__version__,'torch_git_version':torch.version.git_version,'numpy_version':np.__version__,'reference_os':'Linux x86_64','mkl_profile':'2024.2 build20240605 AVX2 VML_HA','cpu_dispatch':DISPATCH,'license':'MIT generator and generated arithmetic constants; Apache-2.0 source configuration provenance; no MKL code/binary copied','images_read':False,'activations_read':False,'checkpoints_read':False}
  Path(manifest).write_text(json.dumps(result,indent=2)+'\n');return result
 if __name__=='__main__':
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',required=True);parser.add_argument('--manifest',required=True);args=parser.parse_args();print(json.dumps(generate(args.output,args.manifest),indent=2))

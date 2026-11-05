@@ -1550,3 +1550,22 @@ frame/multigrid boundaries, tests disabled/unsupported/fallback output retention
 and checks no native MKL/Torch dependency. Unsupported profile/CPU/rounding or
 range must fall back. Scope and reproduction are in
 `docs/lighton4b-rotary-arithmetic-profile.md`. No fixture fitting or quality claim.
+
+Complete arithmetic profile [42096520795](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42096520795)
+at `79fbff4e74ba084c35804ba96178a15d2e3e2da0` is proved: independent duplicate
+generation, all 32,768 original MKL constants, compiled 128 KiB raw bytes, and
+681,459,712 source-vs-reader F32 values across 3,873 layouts are bit-exact.
+This includes all 3,280 admitted h/w pairs and all 1,024 total token counts plus
+frame/multigrid boundaries. All 17 reader fallback controls pass; native binary
+has no Torch/MKL dependency. No image, checkpoint or captured activation is read.
+Raw SHA `30ea508c92d92a8400604e276fac161a1a85f7e89cd79877f227684a6d330e0c`.
+
+The generated model-arithmetic bank and reader now enter production behind a
+separate default-off ROTARY_TABLE gate. Exact profile/CPU/rounding/length/range
+checks precede lookup; on rejection the original rotary generator remains.
+This is a complete configuration-derived arithmetic asset with explicit MIT /
+Apache2 configuration provenance, not a reference fixture or fitted image table.
+Focused integration will regenerate committed data, repeat the whole domain
+through the actual private production helper, verify new fallback/precedence
+controls, source tables and first-block bytes, native/context builds and decoder
+controls. No quality claim before actual composed inference is measured.

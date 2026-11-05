@@ -1,5 +1,5 @@
 #pragma once
-// Proposed model-arithmetic reader, test-only until complete-profile validation.
+// Complete configured model arithmetic, regenerated without images or activations.
 // SPDX-License-Identifier: MIT
 #include "qwen35_vision.h"
 #include "core/env_gate.h"
@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <vector>
 namespace qwen35_ocr {
 namespace lighton4b_rotary_profile {
 #include "lighton4b_rotary_table_data.inc"

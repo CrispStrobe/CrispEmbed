@@ -1,6 +1,7 @@
 #include "qwen35_image_bounds.h"
 #include "lighton4b_vision_bf16.h"
 #include "lighton4b_vision_avx2_math.h"
+#include "lighton4b_rotary_table.h"
 #include "qwen35_math.h"
 #include "qwen35_norm.h"
 #include "core/env_gate.h"
@@ -425,6 +426,31 @@ static bool source_avx2_softmax(float * scores, int count, float & inverse) {
     inverse = 1.0f / total;
     return true;
 }
+// Table is a complete configured arithmetic domain, not image-derived values.
+static void rotary_tables(const vision_config & c, int tokens, int d, const std::vector<int> & rows,
+                          const std::vector<int> & columns, vision_outputs & output) {
+    if (lighton4b_rotary_profile::lookup(c, tokens, rows, columns, source_avx2_softmax_supported(), output.rotary_cos,
+                                         output.rotary_sin))
+        return;
+    output.rotary_cos.resize(size_t(tokens) * d);
+    output.rotary_sin.resize(output.rotary_cos.size());
+    const bool source_rotary = core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2") &&
+                               source_avx2_softmax_supported() && d == 64 && c.theta == 10000.0f &&
+                               std::all_of(rows.begin(), rows.end(), [](int x) { return x >= 0 && x < 125; }) &&
+                               std::all_of(columns.begin(), columns.end(), [](int x) { return x >= 0 && x < 125; });
+    for (int t = 0; t < tokens; ++t) {
+        for (int i = 0; i < d / 2; ++i) {
+            const int axis = i / (d / 4), frequency = i % (d / 4);
+            const float inv = 1.0f / std::pow(c.theta, float(2 * frequency) / float(d / 2));
+            const float angle = inv * (axis == 0 ? rows[t] : columns[t]);
+            for (int half = 0; half < 2; ++half) {
+                const size_t at = size_t(t) * d + i + half * (d / 2);
+                output.rotary_cos[at] = source_rotary ? lighton4b_avx2_math::trig(angle, true) : std::cos(angle);
+                output.rotary_sin[at] = source_rotary ? lighton4b_avx2_math::trig(angle, false) : std::sin(angle);
+            }
+        }
+    }
+}
 static std::vector<float> attention(const std::vector<float> & qkv, const vision_config & c, int tokens,
                                     const std::vector<int> & offsets, const std::vector<float> & cosine,
                                     const std::vector<float> & sine) {
@@ -546,24 +572,7 @@ bool lighton4b_vision_bf16_cpu(const vision_weights & w, const vision_config & c
     std::vector<float> table(size_t(c.position_side) * c.position_side * width);
     if (!tensor_floats(w.position, table.data())) return false;
     if (!interpolate_position(table, c, rows, columns, heights, widths, output.position)) return false;
-    output.rotary_cos.resize(size_t(tokens) * d);
-    output.rotary_sin.resize(output.rotary_cos.size());
-    const bool source_rotary = core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2") &&
-                               source_avx2_softmax_supported() && d == 64 && c.theta == 10000.0f &&
-                               std::all_of(rows.begin(), rows.end(), [](int x) { return x >= 0 && x < 125; }) &&
-                               std::all_of(columns.begin(), columns.end(), [](int x) { return x >= 0 && x < 125; });
-    for (int t = 0; t < tokens; ++t) {
-        for (int i = 0; i < d / 2; ++i) {
-            const int axis = i / (d / 4), frequency = i % (d / 4);
-            const float inv = 1.0f / std::pow(c.theta, float(2 * frequency) / float(d / 2));
-            const float angle = inv * (axis == 0 ? rows[t] : columns[t]);
-            for (int half = 0; half < 2; ++half) {
-                const size_t at = size_t(t) * d + i + half * (d / 2);
-                output.rotary_cos[at] = source_rotary ? lighton4b_avx2_math::trig(angle, true) : std::cos(angle);
-                output.rotary_sin[at] = source_rotary ? lighton4b_avx2_math::trig(angle, false) : std::sin(angle);
-            }
-        }
-    }
+    rotary_tables(c, tokens, d, rows, columns, output);
     output.embedded = output.patch;
     for (size_t i = 0; i < output.embedded.size(); ++i)
         output.embedded[i] = lighton4b_bf16(output.embedded[i] + output.position[i]);

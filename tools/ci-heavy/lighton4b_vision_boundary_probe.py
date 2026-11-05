@@ -9,6 +9,7 @@ import subprocess
 import zipfile
 ROOT=Path(__file__).resolve().parents[2]
 CORRECT_ROTARY=True
+USE_ROTARY_TABLE=False
 def main():
  dispatch={'ATEN_CPU_CAPABILITY':'avx2','ONEDNN_MAX_CPU_ISA':'AVX2','DNNL_MAX_CPU_ISA':'AVX2','MKL_ENABLE_INSTRUCTIONS':'AVX2'};os.environ.update(dispatch)
  import numpy as np
@@ -26,9 +27,10 @@ def main():
   report['last_phase']=name
   with(out/(name+'.log')).open('w')as f:subprocess.run([str(x)for x in args],cwd=ROOT,stdout=f,stderr=subprocess.STDOUT,check=True)
  try:
+  os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_TABLE']='0'
   os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2']='0';os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2']='0'
   # Compile verbatim production expression blocks, preserving their operation order.
-  text=(ROOT/'src/lighton4b_vision_bf16.cpp').read_text();start=text.index('    const bool source_rotary =',text.index('output.rotary_sin.resize'));end=text.index('    output.embedded = output.patch;',start);rotary=text[start:end]
+  text=(ROOT/'src/lighton4b_vision_bf16.cpp').read_text();rotary='    rotary_tables(c,tokens,d,rows,columns,output);\n'
   start=text.index('        const bool source_gelu =');end=text.index('        round_bf16(projected);',start);activation=text[start:end]
   generated='static void production_rotary(const vision_config &c,int tokens,int d,const std::vector<int>&rows,const std::vector<int>&columns,vision_outputs &output) {\n'+rotary+'}\nstatic void production_activation(std::vector<float>&projected) {\n'+activation+'}\n'
   (scratch/'vision_boundary_expressions.inc').write_text(generated);report['production_expressions']={'rotary_sha256':hashlib.sha256(rotary.encode()).hexdigest(),'activation_sha256':hashlib.sha256(activation.encode()).hexdigest(),'runtime_sha256':sha(ROOT/'src/lighton4b_vision_bf16.cpp'),'verbatim_extracted':True}
@@ -102,6 +104,7 @@ def main():
 
   os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2']='1'if CORRECT_ROTARY else'0';os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2']='1'
   report['corrected_rotary_gate']=bool(CORRECT_ROTARY)
+  os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_TABLE']='1'if USE_ROTARY_TABLE else'0';report['corrected_rotary_table_gate']=bool(USE_ROTARY_TABLE)
   run('corrected-rotary',[build/'lighton4b-vision-boundary-probe',stages,'rotary']);corrected_cos=torch.from_numpy(array('native.cos').copy()).reshape(560,64);corrected_sin=torch.from_numpy(array('native.sin').copy()).reshape(560,64)
   corrected_activation=gelu_native(up,'corrected_activation')
   pool=pooled(corrected_cos,corrected_sin);residual=embedded+linear('out',pool,1024,1024);u=linear('up',norm('norm2',residual),4096,1024);a=gelu_native(u,'corrected_composed_activation');final=residual+linear('down',a,1024,4096);emit('layer0.corrected',final)
@@ -118,7 +121,7 @@ def main():
   headers=out/'reference-headers';headers.mkdir();report['reference_header_sha256']={}
   for name in ('ATen/cpu/vml.h','ATen/cpu/vec/vec256/vec256_float.h','ATen/native/cpu/Gelu.h','ATen/Config.h'):
    original=Path(include_paths()[0])/name;target=headers/(name.replace('/','_'));target.write_bytes(original.read_bytes());report['reference_header_sha256'][name]=sha(original)
-  report['production_candidate_qualified']=all(r['bit_exact']for r in report['production_corrections'].values())and all(r['bit_exact']for r in report['supported_trig_grid'].values())
+  report['production_candidate_qualified']=all(r['bit_exact']for r in report['production_corrections'].values())and(USE_ROTARY_TABLE or all(r['bit_exact']for r in report['supported_trig_grid'].values()))
   report['artifacts']={p.name:{'bytes':p.stat().st_size,'sha256':sha(p)}for p in stages.iterdir()};report['status']='attributed'
  except Exception as e:
   report['error_type']=type(e).__name__;report['error']='bounded same-input boundary attribution failed; inspect phase/logs';raise RuntimeError(report['error'])from None

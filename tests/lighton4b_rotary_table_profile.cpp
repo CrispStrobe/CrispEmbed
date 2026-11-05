@@ -1,6 +1,6 @@
 // Complete-profile model arithmetic proof; no checkpoint or activation input.
 #include "lighton4b_vision_bf16.cpp"
-#include "../tools/ci-heavy/reference/lighton4b_rotary_table_profile.h"
+#include "lighton4b_rotary_table.h"
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
@@ -64,9 +64,44 @@ int main(int argc, char ** argv) {
     rejected(c, 4, badrows, cols, true);
     rejected(c, 4, {}, cols, true);
     rejected(c, 4, rows, {}, true);
+    auto same = [](const vision_outputs & a, const vision_outputs & b) {
+        return a.rotary_cos.size() == b.rotary_cos.size() && a.rotary_sin.size() == b.rotary_sin.size() &&
+               std::memcmp(a.rotary_cos.data(), b.rotary_cos.data(), a.rotary_cos.size() * 4) == 0 &&
+               std::memcmp(a.rotary_sin.data(), b.rotary_sin.data(), a.rotary_sin.size() * 4) == 0;
+    };
+    gate("0");
+    vision_outputs baseline;
+    rotary_tables(c, 4, 64, rows, cols, baseline);
+    for (const char * value : { static_cast<const char *>(nullptr), "", "0" }) {
+        gate(value);
+        vision_outputs fallback;
+        rotary_tables(c, 4, 64, rows, cols, fallback);
+        if (!same(baseline, fallback)) throw std::runtime_error("disabled production fallback differs");
+        ++controls;
+    }
+    bad = c;
+    bad.theta = std::nextafter(10000.0f, INFINITY);
+    gate("0");
+    vision_outputs old_profile;
+    rotary_tables(bad, 4, 64, rows, cols, old_profile);
+    gate("1");
+    vision_outputs unsupported_profile;
+    rotary_tables(bad, 4, 64, rows, cols, unsupported_profile);
+    if (!same(old_profile, unsupported_profile))
+        throw std::runtime_error("unsupported production profile fallback differs");
+    ++controls;
     int rounding = std::fegetround();
     std::fesetround(FE_DOWNWARD);
     rejected(c, 4, rows, cols, true);
+    gate("0");
+    vision_outputs old_rounding;
+    rotary_tables(c, 4, 64, rows, cols, old_rounding);
+    gate("1");
+    vision_outputs unsupported_rounding;
+    rotary_tables(c, 4, 64, rows, cols, unsupported_rounding);
+    if (!same(old_rounding, unsupported_rounding))
+        throw std::runtime_error("unsupported rounding production fallback differs");
+    ++controls;
     std::fesetround(rounding);
 #ifdef _WIN32
     _putenv_s("CRISPEMBED_QWEN35_OCR", "1");
@@ -78,6 +113,11 @@ int main(int argc, char ** argv) {
                                "CRISPEMBED_OVISOCR2_LARGE_IMAGES" })
         setenv(name, "1", 1);
 #endif
+#ifdef _WIN32
+    _putenv_s("CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2", "1");
+#else
+    setenv("CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2", "1", 1);
+#endif
     std::ifstream cases(argv[1]);
     std::ofstream output(argv[2], std::ios::binary);
     int count = 0, tokens, triples;
@@ -88,9 +128,12 @@ int main(int argc, char ** argv) {
         std::vector<int> r, col, offsets, heights, widths;
         if (!geometry(c, tokens, grid, r, col, offsets, heights, widths))
             throw std::runtime_error("admitted geometry rejected");
-        std::vector<float> co, si;
-        if (!lighton4b_rotary_profile::lookup(c, tokens, r, col, true, co, si))
-            throw std::runtime_error("supported lookup rejected");
+        vision_outputs tables;
+        rotary_tables(c, tokens, 64, r, col, tables);
+        const auto & co = tables.rotary_cos;
+        const auto & si = tables.rotary_sin;
+        if (co.size() != size_t(tokens) * 64 || si.size() != co.size())
+            throw std::runtime_error("supported production rotary rejected");
         output.write(reinterpret_cast<const char *>(co.data()), co.size() * 4);
         output.write(reinterpret_cast<const char *>(si.data()), si.size() * 4);
         ++count;
