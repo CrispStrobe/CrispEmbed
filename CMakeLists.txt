@@ -1717,3 +1717,10 @@ if(LIGHTON4B_BOUNDARY_GENERATED_DIR)
     target_include_directories(lighton4b-vision-boundary-probe PRIVATE ${LIGHTON4B_BOUNDARY_GENERATED_DIR})
     target_link_libraries(lighton4b-vision-boundary-probe PRIVATE crispembed-qwen35-delta crispembed-core)
 endif()
+
+# Generated complete model-arithmetic constants are tested before integration.
+if(LIGHTON4B_ROTARY_TABLE_GENERATED_DIR)
+    add_executable(lighton4b-rotary-table-profile tests/lighton4b_rotary_table_profile.cpp)
+    target_include_directories(lighton4b-rotary-table-profile PRIVATE ${LIGHTON4B_ROTARY_TABLE_GENERATED_DIR})
+    target_link_libraries(lighton4b-rotary-table-profile PRIVATE crispembed-qwen35-delta crispembed-core)
+endif()

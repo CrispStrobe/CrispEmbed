@@ -1,0 +1,60 @@
+# Proposed complete LightOn4B rotary arithmetic profile
+
+This lane reproduces fixed model arithmetic from configuration and the pinned
+original CPU math backend. It does not read images, checkpoints, reference
+activations or OCR outputs. Production integration is pending the complete-domain
+source/reader proof; the rejected SLEEF rotary alternative remains off.
+
+The source configuration is
+`lightonai/LightOnOCR-3-4B@b71010f095dc3735de7ee6b9969bff8f8f50b39a`,
+SHA `99b4c363a998c2d8c5ed5b3f3a40ec5cb97a156034df5002d0d789c74324f5f0`.
+Its vision width 1024 and 16 heads yield head dimension 64. The pinned
+[Transformers implementation](https://github.com/huggingface/transformers/blob/75d3bdcd4b3ba70cee21287218d9764f33da41f0/src/transformers/models/qwen3_5/modeling_qwen3_5.py)
+constructs `VisionRotaryEmbedding(head_dim // 2)` with default theta 10000,
+so there are 16 inverse frequencies. It computes F32 outer products of integer
+coordinates and inverse frequencies, then F32 cosine/sine using oneMKL 2024.2
+build 20240605, AVX2, HA mode in the frozen Torch 2.13.0 CPU environment.
+
+Production `geometry` caps each axis size at 1024. Thus every emitted coordinate
+is in 0..1023. Merge size 2, per-frame area at most 1024 ordinarily or 2048 in
+the admitted experiment, total tokens at most 4096, up to 16 grid rows and 16
+frames per row do not increase that coordinate bound. Frames repeat the same
+two coordinate axes. A complete bank therefore contains
+`1024 coordinates * 16 frequencies * 2 functions * 4 bytes = 131072 bytes`.
+It covers the entire admitted axis domain, including extreme 1024-by-2 and
+2-by-1024 geometry. No image-dependent selection or fitted geometry is used.
+
+The published generator is [generate_lighton4b_rotary_table.py](../tools/generate_lighton4b_rotary_table.py).
+With the exact reference dependencies installed, it can be reproduced using:
+
+```sh
+python tools/generate_lighton4b_rotary_table.py \
+  --output lighton4b_rotary_table_data.inc \
+  --manifest rotary-table-generation.json
+```
+
+The generator enforces Torch `2.13.0+cpu`, Torch git
+`cf30153c4c131c8164ee7798e5022d810682e2cb`, NumPy `2.3.5`, oneMKL version/build,
+AVX2 dispatch and the source configuration hash. It emits integer encodings of
+F32 values to avoid compiler decimal conversion. The manifest records all raw
+and text hashes. The generator and generated numerical asset use this
+repository's MIT license; the existing source-configuration Apache-2.0 provenance
+is retained. No MKL implementation code or binary is copied or redistributed.
+The reference environment uses the separately distributed Torch/oneMKL software;
+no product Torch/MKL dependency is introduced.
+
+The proposed reader has a separate default-off gate and requires the exact
+width/head/merge/theta profile, supported x86_64 AVX2/FMA capability and nearest
+rounding, valid lengths and in-range coordinates. Unsupported or disabled
+requests leave output vectors unchanged, allowing the preceding runtime path
+to execute. The source profile is intentional; this is not generic libm parity
+or a cross-platform quality claim.
+
+The targeted proof regenerates the asset twice, checks every constant against
+the direct original MKL route, verifies compiled bytes, and compares the native
+reader to original Torch rotary construction for every admitted single-frame
+height/width pair and every admitted total token count, plus temporal and
+multigrid boundary packings. It also checks fallback/unsupported conditions and
+that the native reader links no Torch/MKL library. Geometry-domain coverage is
+mathematical; finite layout checks additionally guard against backend packing
+surprises. No model forward or decoded-quality claim follows from this proof.

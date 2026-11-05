@@ -1532,3 +1532,21 @@ Artifact `13436852207`, SHA `1165cfd00895e99840e939f79fc6aa00c730f3aa57316f132c7
 retained through 2027-02-03. No further work or runs in this lane; remaining
 MKL rotary dependency is explicit and no source lookup table or new product
 Torch/MKL dependency has been introduced. No release or app-pin change.
+
+### 2026-11-05: complete model-arithmetic rotary profile proof, before integration
+
+The next bounded lane generates configuration-defined rotary constants, not
+captured outputs: complete coordinates 0..1023, all 16 frequencies, sine/cosine,
+128 KiB raw. Native geometry caps h,w at 1024, so frames/multiple grids cannot
+escape that domain. Generator enforces source config SHA, Transformer default
+theta/head dimension, frozen Torch git/NumPy/oneMKL2024.2 AVX2 HA. No image,
+activation or checkpoint is read. MIT generator/output and existing Apache2
+config provenance, no vendor implementation or binary shipped.
+
+Production is unchanged pending proof. Targeted job regenerates twice, checks
+all constants against direct original MKL, compares compiled reader against all
+3280 admitted single-frame h/w pairs and every total token count4..4096 plus
+frame/multigrid boundaries, tests disabled/unsupported/fallback output retention,
+and checks no native MKL/Torch dependency. Unsupported profile/CPU/rounding or
+range must fall back. Scope and reproduction are in
+`docs/lighton4b-rotary-arithmetic-profile.md`. No fixture fitting or quality claim.
