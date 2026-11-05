@@ -50,6 +50,15 @@ context or a composed image/decoder path. Preserve the original source guards,
 wire actual format-5 ownership and the grouped heads, cache, vocabulary projection
 and tokenizer, then capture the pinned original before native comparisons.
 
+The separate [GGUF inspection PR147](https://github.com/CrispStrobe/CrispEmbed/pull/147)
+checks a metadata-owning format-5 context without enabling recognition. Its
+[actual published-header run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41975926521)
+verified all 723 names/shapes/types/offsets and 34 metadata fields. Three HTTP
+range responses fetched 12,582,912 bytes, including 2,571,936 weight bytes that
+were discarded; only the 10,010,976-byte header was retained and the native
+inspector read no weight payload. This header run did not rehash the whole file
+or tensors; the distinct completed worker readback above supplies that evidence.
+
 The separate [document protocol and harness](https://github.com/CrispStrobe/CrispEmbed/blob/958ff9fd8b386e6f3faaae92b6322a519200cc9a/docs/lighton4b-document-parity-v1.json)
 freezes one public-domain form, empty prompt, cap256 and all-position full-vocabulary
 comparison. The initial and hardened synthetic controls passed at
