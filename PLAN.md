@@ -33,6 +33,35 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Big-LaMa (research only) | Weights' rights unclear; kept on `feat/issue71-lama-research`, private Hub copy only | Nothing until the owner clarifies the weight licence | Licence clarified (then publish) or lane closed |
 | Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
 
+## Candidate v0.17.15 — release readiness, 5 November 2026
+
+[Candidate release notes](RELEASE_NOTES_v0.17.15.md) cover changes since
+[published v0.17.14](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.14)
+through `0b0af65e5914b6c50320147982caf4c204a50622`. A patch release is useful for
+the temporal-inpainting grain regression; most other changes are opt-in LightOn3
+corrections, converter/reference repairs and bounded OCR evidence. No new model
+or default promotion is needed for this patch.
+
+**Not yet ready to tag.** Draft PRs155/157 remain open and owned by their existing
+lane. Under the release policy below, merge/close them or obtain the owner's
+explicit exclusion before cutting a release. Do not include their unmerged
+LightOn4B work in the notes. Recent PR162/main checks pass the selected Build and
+three-platform inpainting contracts, but selectors skip unaffected platforms;
+they are not a full release matrix on the final candidate.
+
+Before publication, freeze the final main candidate; dispatch full `build.yml`,
+`build-wasm.yml`, `build-wasm-embed.yml`, `rust-crates.yml` and `inpaint-cli.yml`
+on that source and inspect every required leg. Check version/package/changelog
+consistency and the existing pub.dev preflight separately from actual publication.
+Then follow the tag/manual release dispatch and notes-attachment procedure below,
+review immutable assets and fresh consumers. Experimental OCR qualification and
+downstream app pins remain separate. This notes/cleanup task creates no tag,
+release assets or package publication; development versions stay0.17.15.
+
+Old tracked `RELEASE_NOTES_*.md` snapshots are removed; prior release bodies remain
+on [GitHub Releases](https://github.com/CrispStrobe/CrispEmbed/releases) and the
+deleted file versions remain in Git history. Keep the current candidate's notes.
+
 ## Regression review and OCR continuation — 4 November 2026
 
 The [current executable qualification continuation](docs/ocr-qualification-2026-11-04.md)
@@ -95,7 +124,8 @@ Gate status (4 November 2026): **met**. The open-PR queue is empty (#135, #138 a
 `main` at `2f1bbdb1` has all 16 workflows green including all 11 native build jobs, and the two
 manual diagnostics are recorded non-release-blocking below and in HISTORY. Versions agree on
 0.17.14; `tests/test_pubdev_release_gate.py` passes; the changelog entry and
-`RELEASE_NOTES_v0.17.14.md` are in this change.
+[published release notes](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.14)
+record that release. Its old Markdown snapshot was later removed during cleanup.
 
 1. **Gate.** `gh pr list --state open` is empty (or the owner excludes the rest). On the current
    main head, dispatch the full set because docs-only pushes no longer start Build (PR #134):
@@ -104,7 +134,7 @@ manual diagnostics are recorded non-release-blocking below and in HISTORY. Versi
    diagnostics in the index above must be green or recorded as non-blocking.
 2. **Preflight.** VERSION, `flutter/crispembed/pubspec.yaml`, crate/package versions and
    `flutter/crispembed/CHANGELOG.md` agree on 0.17.14; run `python tests/test_pubdev_release_gate.py`
-   (PR #91). Write `RELEASE_NOTES_v0.17.14.md` like the earlier release-notes files; it and the
+   (PR #91). Write `RELEASE_NOTES_vX.Y.Z.md` for the candidate; it and the
    changelog entry must list the default changes since 0.17.12 (EasyOCR LSTM state reset,
    GOT-OCR2 pipeline parity, SPM space collapse, XLM-R pair layout, position-table truncation,
    CLIP EOS keep, CUDA defaults for ESRGAN/InstructIR/PAN/Restormer/LightOnOCR, Metal defaults

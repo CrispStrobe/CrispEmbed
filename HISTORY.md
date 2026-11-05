@@ -2,6 +2,22 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 5 November 2026 — 0.17.15 candidate notes and old snapshot cleanup
+
+Compared published tag `v0.17.14` with main
+`0b0af65e5914b6c50320147982caf4c204a50622` and wrote
+[0.17.15 candidate notes](RELEASE_NOTES_v0.17.15.md). The patch's main user-facing
+change is PR162's temporal-grain correction; default-off LightOn3 epsilon/cache
+corrections, converter/reference repairs and completed OCR evidence are scoped
+separately from model qualification. Updated the unreleased package changelog's
+stale pending-panel statement. Removed all eight older tracked release-note
+Markdown snapshots with `git rm`; published release bodies and Git history retain
+the previous notes. Unrelated untracked workspace files were preserved.
+
+Development versions remain0.17.15. No tag, assets, package publication, admission
+gate/default or application pin changes. PLAN records the remaining open-draft
+policy decision and final-source full release-matrix/preflight requirements.
+
 ## 5 November 2026 — PR162 review and temporal regression coverage
 
 [PR162](https://github.com/CrispStrobe/CrispEmbed/pull/162) merged as
