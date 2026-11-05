@@ -1,4 +1,4 @@
-## 0.17.15 (unreleased)
+## 0.17.15
 
 - Fix film grain blocking real-background propagation in the opt-in CLI temporal
   inpainting stream; retain motion and brightness-change guards.
@@ -8,7 +8,7 @@
   Legacy profiles and runtime defaults remain unchanged.
 - Correct the LightOn3 loader/converter checkpoint namespace and OCR audit setup;
   retain original failures and bounded precision/decoded results separately.
-- No new runtime assets, model aliases, application pin or pub.dev publication.
+- No new model aliases, application pin changes or pub.dev publication.
 
 ## 0.17.14
 

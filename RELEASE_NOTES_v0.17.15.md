@@ -1,10 +1,10 @@
 # CrispEmbed v0.17.15
 
-Patch release candidate, unreleased. Changes since [v0.17.14](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.14),
+Patch release, 5 November 2026. Changes since [v0.17.14](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.14),
 reviewed through `0b0af65e5914b6c50320147982caf4c204a50622` on 5 November 2026.
 
 The main user-facing fix restores real-background propagation on grainy video
-when using CLI temporal inpainting. This candidate also adds opt-in LightOnOCR-3-1B
+when using CLI temporal inpainting. This release also adds opt-in LightOnOCR-3-1B
 numerical corrections, repairs its converter, and records the first completed
 qualification panels for the experimental OCR profiles introduced in 0.17.14.
 
@@ -22,7 +22,7 @@ qualification panels for the experimental OCR profiles introduced in 0.17.14.
 - The author's synthetic Apple MI-GAN512 benchmark reports masked PSNR improving
   from 27.15 to 34.57 dB on the static clip, with the moving clip essentially
   unchanged. Those model-backed figures were not independently replayed during
-  integration. See [PERFORMANCE](PERFORMANCE.md) for settings and limitations.
+  integration. See [PERFORMANCE](https://github.com/CrispStrobe/CrispEmbed/blob/v0.17.15/PERFORMANCE.md) for settings and limitations.
 - Temporal processing remains opt-in. The allowance applies to a cell average,
   so low-contrast motion can still be accepted; it does not bound the error of
   every copied pixel. Representative real-video quality remains open.
@@ -44,11 +44,11 @@ qualification panels for the experimental OCR profiles introduced in 0.17.14.
 - Both correction gates stay **off by default**. This does not change legacy
   LightOn profiles or qualify a GPU path. The existing
   `CRISPEMBED_LIGHTONOCR3=1` admission gate is still required. Gate details and
-  grounding admission are in [the environment reference](docs/environment-variables.md).
+  grounding admission are in [the environment reference](https://github.com/CrispStrobe/CrispEmbed/blob/v0.17.15/docs/environment-variables.md).
 
 ## Experimental OCR: completed evidence, remaining limits
 
-These profiles already existed in 0.17.14; this candidate adds execution evidence
+These profiles already existed in 0.17.14; this release adds execution evidence
 and audit repairs rather than a new set of qualified models.
 
 - **MinerU2.5-Pro-2605:** the complete eight-case, four-precision panel passes
@@ -66,9 +66,9 @@ and audit repairs rather than a new set of qualified models.
   retained-capture continuation. No successful current-source native replay is
   claimed by these notes.
 
-The [qualification continuation](docs/ocr-qualification-2026-11-04.md) links exact
+The [qualification continuation](https://github.com/CrispStrobe/CrispEmbed/blob/v0.17.15/docs/ocr-qualification-2026-11-04.md) links exact
 sources, reports, raw failures and outstanding gates. LightOn4B draft work in
-PRs #155 and #157 is not part of this candidate. No model alias, model publication,
+PRs #155 and #157 is not part of this release. No model alias, model publication,
 quantized-quality promotion or OCR default flip is added.
 
 ## Validation and release engineering
@@ -79,13 +79,12 @@ quantized-quality promotion or OCR default flip is added.
 - Expand hosted OCR controls, retained-reference comparison and artifact
   preservation tooling. PR141's compilation receipt records 294 model-free
   controls and actual native/mobile/Apple/WASM/Rust builds on its exact source.
-- These bounded results do not replace a full release matrix on the final
-  0.17.15 candidate. Resolve or explicitly exclude open draft PRs, validate the
-  version/package preflight and complete the release gates in [PLAN](PLAN.md)
-  before tagging or publishing assets.
-- Native/package development versions are already 0.17.15. Published assets
-  remain 0.17.14, downstream application pins remain 0.17.12, and pub.dev
-  publication remains separately unqualified. Writing these notes creates no
-  tag, release assets, package publication or application upgrade.
+- Full Build, OCR/embedding WASM, Rust and inpainting checks are required on the
+  frozen release source before tagging. Exact validation and publication records
+  belong in [PLAN](https://github.com/CrispStrobe/CrispEmbed/blob/main/PLAN.md) and
+  [HISTORY](https://github.com/CrispStrobe/CrispEmbed/blob/main/HISTORY.md).
+- Native/package source versions are 0.17.15. Downstream application pins remain
+  0.17.12, and pub.dev publication remains separately unqualified. No application
+  upgrade or pub.dev upload is included in this release.
 
-[Full comparison since v0.17.14](https://github.com/CrispStrobe/CrispEmbed/compare/v0.17.14...0b0af65e5914b6c50320147982caf4c204a50622).
+[Full comparison since v0.17.14](https://github.com/CrispStrobe/CrispEmbed/compare/v0.17.14...v0.17.15).

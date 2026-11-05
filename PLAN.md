@@ -33,7 +33,7 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Big-LaMa (research only) | Weights' rights unclear; kept on `feat/issue71-lama-research`, private Hub copy only | Nothing until the owner clarifies the weight licence | Licence clarified (then publish) or lane closed |
 | Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
 
-## Candidate v0.17.15 — release readiness, 5 November 2026
+## Release v0.17.15 — authorized execution, 5 November 2026
 
 [Candidate release notes](RELEASE_NOTES_v0.17.15.md) cover changes since
 [published v0.17.14](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.14)
@@ -42,12 +42,13 @@ the temporal-inpainting grain regression; most other changes are opt-in LightOn3
 corrections, converter/reference repairs and bounded OCR evidence. No new model
 or default promotion is needed for this patch.
 
-**Not yet ready to tag.** Draft PRs155/157 remain open and owned by their existing
-lane. Under the release policy below, merge/close them or obtain the owner's
-explicit exclusion before cutting a release. Do not include their unmerged
-LightOn4B work in the notes. Recent PR162/main checks pass the selected Build and
-three-platform inpainting contracts, but selectors skip unaffected platforms;
-they are not a full release matrix on the final candidate.
+The owner authorized this release after the readiness review. Draft PRs155/157
+are explicitly excluded from this cut and remain with their existing lane;
+none of their unmerged LightOn4B work is included. Release notes and the package
+changelog are prepared for publication. Freeze this preparation commit, run the
+five full hosted workflows below on its exact source, and tag only after every
+required check passes. Earlier selected PR162/main runs are complementary, not
+substitutes for the release matrix.
 
 Before publication, freeze the final main candidate; dispatch full `build.yml`,
 `build-wasm.yml`, `build-wasm-embed.yml`, `rust-crates.yml` and `inpaint-cli.yml`
@@ -55,8 +56,9 @@ on that source and inspect every required leg. Check version/package/changelog
 consistency and the existing pub.dev preflight separately from actual publication.
 Then follow the tag/manual release dispatch and notes-attachment procedure below,
 review immutable assets and fresh consumers. Experimental OCR qualification and
-downstream app pins remain separate. This notes/cleanup task creates no tag,
-release assets or package publication; development versions stay0.17.15.
+downstream app pins remain separate. The authorized cut publishes native/WASM 0.17.15 assets; pub.dev and downstream
+application upgrades remain separate. Record actual run IDs, tag and asset checks
+in HISTORY after publication, and keep old source/quality failures intact.
 
 Old tracked `RELEASE_NOTES_*.md` snapshots are removed; prior release bodies remain
 on [GitHub Releases](https://github.com/CrispStrobe/CrispEmbed/releases) and the
