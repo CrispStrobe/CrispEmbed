@@ -21,8 +21,10 @@ def digest(data):return hashlib.sha256(data).hexdigest()
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--protocol',choices=('v1','v2-unanchored-diagnostic'),default='v1')
+    parser.add_argument('--bf16-only',action='store_true',help='Official retained-input layer0 only; no native build or candidate')
+    parser.add_argument('--retained-root',type=Path,help='Mounted original stage directory; exact manifest and payload hashes required')
     args=parser.parse_args()
-    require(os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','hosted portable only')
+    require((os.environ.get('GITHUB_ACTIONS')=='true' or (args.bf16_only and Path('/kaggle/working').is_dir() and Path('/kaggle/input').is_dir())) and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','hosted portable only')
     import lighton4b_gdn_reference as ref
     import lighton4b_native_document as native
     from lighton4b_prefill_compare import ORIGINAL_REPORT_SHA
@@ -31,7 +33,8 @@ def main():
     out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH'])/'layer0';scratch.mkdir()
     report={'schema':'lighton4b-layer0-source-fed/v1','status':'failed','quality_qualified':False,
         'full_model_forward_executed':False,'generation_executed':False,'runtime':runtime,
-        'protocol':args.protocol,'frozen_bf16_parity_qualified':False,
+        'protocol':args.protocol,'bf16_only':args.bf16_only,'hosted_provider':'github-actions' if os.environ.get('GITHUB_ACTIONS')=='true' else 'kaggle',
+        'frozen_bf16_parity_qualified':False,
         'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'arms':{}}
     def save(): (out/'layer0-source-fed.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
     def run(label,args,env=None):
@@ -40,11 +43,14 @@ def main():
         import shutil
         report['preflight']={'memory':native.memory(),'free_bytes':shutil.disk_usage(scratch).free}
         require(report['preflight']['memory']['available_bytes']>=5*2**30 and report['preflight']['free_bytes']>=9*2**30,'resource headroom')
-        from kaggle.api.kaggle_api_extended import KaggleApi
-        provider=KaggleApi();provider.authenticate()
-        provider.kernels_output(os.environ['KAGGLE_ACCOUNT']+'/lighton4b-bf16-targeted-original-cpu-prefill',str(scratch/'retained'),
-            file_pattern=r'^lighton4b-bf16-prefill/stages/(prefill\.json|prefill\.(input|layer\.0)\.f32)$',quiet=True)
-        retained=scratch/'retained/lighton4b-bf16-prefill/stages';manifest=retained/'prefill.json'
+        retained=args.retained_root
+        if retained is None:
+            from kaggle.api.kaggle_api_extended import KaggleApi
+            provider=KaggleApi();provider.authenticate()
+            provider.kernels_output(os.environ['KAGGLE_ACCOUNT']+'/lighton4b-bf16-targeted-original-cpu-prefill',str(scratch/'retained'),
+                file_pattern=r'^lighton4b-bf16-prefill/stages/(prefill\.json|prefill\.(input|layer\.0)\.f32)$',quiet=True)
+            retained=scratch/'retained/lighton4b-bf16-prefill/stages'
+        manifest=retained/'prefill.json'
         require(native.sha(manifest)==ORIGINAL_REPORT_SHA,'original manifest differs')
         records=json.loads(manifest.read_text())['stages']
         for name in ('prefill.input','prefill.layer.0'):
@@ -53,13 +59,13 @@ def main():
         frozen=np.fromfile(retained/'prefill.layer.0.f32',dtype='<f4').reshape(1,154,2560)
         report['input']={'manifest_sha256':ORIGINAL_REPORT_SHA,'sha256':digest(x.tobytes()),'shape':list(x.shape)}
         config=Config(**json.loads((policy.FIXTURE/'config.json').read_text())['text_config'])
-        run('configure',['cmake','-S',ROOT,'-B',scratch/'build','-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_CUDA=OFF','-DGGML_VULKAN=OFF'])
-        run('build',['cmake','--build',scratch/'build','--target','lighton4b-layer0-source-fed','--parallel','2'])
+        if not args.bf16_only:run('configure',['cmake','-S',ROOT,'-B',scratch/'build','-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_CUDA=OFF','-DGGML_VULKAN=OFF'])
+        if not args.bf16_only:run('build',['cmake','--build',scratch/'build','--target','lighton4b-layer0-source-fed','--parallel','2'])
         binary=scratch/'build/lighton4b-layer0-source-fed'
         env=os.environ.copy();env.update({k:'1' for k in ('CRISPEMBED_LIGHTON4B_LINEAR_BLOCK','CRISPEMBED_QWEN35_OCR','CRISPEMBED_QWEN35_GDN_GROUPED_HEADS','CRISPEMBED_LIGHTON4B_QUANT','CRISPEMBED_QWEN35_QUANT')})
         env.update({k:'0' for k in ('CRISPEMBED_QWEN35_PRECISE_RMS','CRISPEMBED_QWEN35_IMATRIX','CRISPEMBED_QWEN35_WEIGHT_CACHE')})
         report['gates']={k:v for k,v in env.items() if k.startswith('CRISPEMBED_')}
-        report['binary_sha256']=native.sha(binary)
+        if not args.bf16_only:report['binary_sha256']=native.sha(binary)
         def original_arm(label,weights,dtype):
             # Frozen BF16 capture used the default CPU backend; component F32
             # diagnostics retain the audited fallback setup. Record both.
@@ -135,6 +141,9 @@ def main():
         # V2 preserves failed frozen BF16 replay as a blocking parity result,
         # but permits same-input/same-weight local operator diagnostics.
         save()
+        if args.bf16_only:
+            report['status']='bf16-layer-anchored' if report['frozen_bf16_hidden_exact'] else 'bf16-layer-unanchored'
+            return
         source_f32=original_arm('official-same-weight-f32-diagnostic',weights,torch.float32)
         ref.write_gguf(scratch/'official-layer0.gguf',weights,gguf)
         native_arm('native-official-f32',scratch/'official-layer0.gguf',source_f32)

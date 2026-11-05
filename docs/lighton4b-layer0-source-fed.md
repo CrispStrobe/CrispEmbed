@@ -55,3 +55,9 @@ selected `--protocol v2-unanchored-diagnostic` may execute local operator arms
 while retaining the frozen BF16 failure prominently and leaving parity false.
 Its status is `diagnostic-compared-unanchored` when BF16 differs. This does not
 waive the original numerical gate, create replacement gold or qualify a model.
+
+`--bf16-only --retained-root <mounted-stage-directory>` supports a CPU-only
+source-environment replay using the original retained kernel output mount. It
+executes no native build, F32 operator or quantized candidate; exact source/input
+hashes and the same v1 BF16 anchor remain mandatory. The host provider is recorded
+explicitly. This bounded replay does not repeat original full-model inference.
