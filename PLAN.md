@@ -1193,3 +1193,14 @@ pins all seven relevant runtime hashes; BF16 source09394e54 and shared768 norm
 remain unchanged by this evidence-only update. Both initial workflow/test-helper
 failures remain preserved. Gated norm integration build/control gate is closed;
 model/decoded quality remains negative and every new default remains off.
+
+### Scoped decoder BF16 linear-boundary integration — 5 November2026
+
+Existing PR155 receives only the verified default-off linear-block boundary path,
+source-order RMS and precision-tagged caches, preserving old F32 execution and
+both vision gates. [Scope and measured limits](docs/lighton4b-decoder-bf16-boundaries.md)
+retain exact input/GDN RMS controls and composed42032626361's first-QKV failure;
+no dot alternative/default/quality promotion is included. New model-free gate/
+rounding/delta-isolation controls require actual assembled hosted execution.
+Full attention/final norm, full decoded output and final platform/release checks
+remain separate; source-fed arrays/probes stay outside production artifacts.
