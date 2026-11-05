@@ -4,10 +4,75 @@
 #include "qwen35_norm.h"
 #include "core/env_gate.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <string>
 
 namespace qwen35_ocr {
+// Scalar RowwiseMoments adaptation from qwen35_norm.cpp; PyTorch BSD-3-Clause
+// notice remains in core/third_party/pytorch/LICENSE. The shared768-only
+// measured helper is unchanged; this isolated candidate owns its1024 shape.
+namespace {
+struct moments {
+    int count = 0;
+    float mean = 0, square = 0;
+};
+static void merge(moments & a, const moments & b, bool vector_lane) {
+    const int total = a.count + b.count;
+    const float ratio = total ? float(b.count) / float(total) : 0.0f;
+    const float delta = b.mean - a.mean;
+    if (vector_lane) {
+        const float correction = ratio * delta, accumulated_delta = delta * float(a.count);
+        a.mean = a.mean + correction;
+        a.square = std::fma(accumulated_delta, correction, a.square + b.square);
+    } else {
+        a.mean += ratio * delta;
+        a.square += b.square + delta * delta * ratio * float(a.count);
+    }
+    a.count = total;
+}
+static std::pair<float, float> row(const float * x, int width, float eps) {
+    float mean = 0, variance = 0;
+    const int lanes = 4, vectors = width / lanes, chunks = (vectors + 15) / 16;
+    int depth = 0;
+    while ((1 << depth) < chunks) ++depth;
+    std::array<std::array<moments, 16>, 16> stack{};
+    for (int chunk = 0; chunk < chunks; ++chunk) {
+        const int n = std::min(16, vectors - chunk * 16);
+        for (int lane = 0; lane < lanes; ++lane) {
+            moments value;
+            for (int j = 0; j < n; ++j) {
+                const float sample = x[(chunk * 16 + j) * lanes + lane];
+                const float delta = sample - value.mean;
+                value.mean = std::fma(1.0f / float(j + 1), delta, value.mean);
+                value.square = std::fma(delta, sample - value.mean, value.square);
+                ++value.count;
+            }
+            merge(stack[0][lane], value, true);
+        }
+        int mask = chunk + 1;
+        for (int d = 1; d < depth && !(mask & 1); ++d, mask >>= 1)
+            for (int lane = 0; lane < lanes; ++lane) {
+                merge(stack[d][lane], stack[d - 1][lane], true);
+                stack[d - 1][lane] = {};
+            }
+    }
+    for (int d = 1; d < depth; ++d)
+        for (int lane = 0; lane < lanes; ++lane) merge(stack[0][lane], stack[d][lane], true);
+    moments total;
+    for (int i = vectors * lanes; i < width; ++i) {
+        const float delta = x[i] - total.mean;
+        ++total.count;
+        total.mean += delta / float(total.count);
+        total.square += delta * (x[i] - total.mean);
+    }
+    for (int lane = 0; lane < lanes; ++lane) merge(total, stack[0][lane], false);
+    mean = total.mean;
+    variance = total.square / float(width);
+    return { mean, 1.0f / std::sqrt(variance + eps) };
+}
+} // namespace
+
 static void round_bf16(std::vector<float> & values) {
     for (float & value : values) value = lighton4b_bf16(value);
 }
@@ -39,8 +104,14 @@ static bool layer_norm(const std::vector<float> & x, ggml_tensor * w, ggml_tenso
     std::vector<float> weights(width), biases(width);
     if (!tensor_floats(w, weights.data()) || !tensor_floats(b, biases.data())) return false;
     y.resize(x.size());
-    if (!cascade_layer_norm(x.data(), int(x.size() / width), width, eps, weights.data(), biases.data(), y.data()))
-        return false;
+    for (int token = 0; token < int(x.size() / width); ++token) {
+        const auto stats = row(x.data() + size_t(token) * width, width, eps);
+        for (int i = 0; i < width; ++i) {
+            const size_t at = size_t(token) * width + i;
+            const float normalized = (x[at] - stats.first) * stats.second;
+            y[at] = std::fma(normalized, weights[i], biases[i]);
+        }
+    }
     round_bf16(y);
     return finite(y);
 }
