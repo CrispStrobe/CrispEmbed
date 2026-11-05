@@ -71,6 +71,53 @@ static std::pair<float, float> row(const float * x, int width, float eps) {
     variance = total.square / float(width);
     return { mean, 1.0f / std::sqrt(variance + eps) };
 }
+// PyTorch v2.13.0 reduced-type RowwiseMoments: AVX2 BF16 vectors
+// convert to two eight-lane float vectors, each merged successively.
+static std::pair<float, float> row_bf16_avx2(const float * x, int width, float eps) {
+    constexpr int lanes = 8, vector_width = 2 * lanes;
+    const int vectors = width / vector_width, chunks = (vectors + 15) / 16;
+    int depth = 0;
+    while ((1 << depth) < chunks) ++depth;
+    std::array<std::array<moments, lanes>, 16> stack{};
+    for (int chunk = 0; chunk < chunks; ++chunk) {
+        const int n = std::min(16, vectors - chunk * 16);
+        for (int half = 0; half < 2; ++half)
+            for (int lane = 0; lane < lanes; ++lane) {
+                moments value;
+                for (int j = 0; j < n; ++j) {
+                    const float sample = x[(chunk * 16 + j) * vector_width + half * lanes + lane];
+                    const float delta = sample - value.mean;
+                    value.mean = std::fma(delta, 1.0f / float(j + 1), value.mean);
+                    value.square = std::fma(delta, sample - value.mean, value.square);
+                    ++value.count;
+                }
+                merge(stack[0][lane], value, true);
+            }
+        int mask = chunk + 1;
+        for (int d = 1; d < depth && !(mask & 1); ++d, mask >>= 1)
+            for (int lane = 0; lane < lanes; ++lane) {
+                merge(stack[d][lane], stack[d - 1][lane], true);
+                stack[d - 1][lane] = {};
+            }
+    }
+    for (int d = 1; d < depth; ++d)
+        for (int lane = 0; lane < lanes; ++lane) merge(stack[0][lane], stack[d][lane], true);
+    moments total;
+    for (int i = vectors * vector_width; i < width; ++i) {
+        const float delta = x[i] - total.mean;
+        ++total.count;
+        total.mean += delta / float(total.count);
+        total.square += delta * (x[i] - total.mean);
+    }
+    for (int lane = 0; lane < lanes; ++lane) merge(total, stack[0][lane], false);
+    return { total.mean, 1.0f / std::sqrt(total.square / float(width) + eps) };
+}
+// ATen vectorized mixed-type second pass uses separate multiply/add operators.
+// Force those boundaries even under a compiler that permits contraction.
+static float multiply_separately(float a, float b) {
+    volatile float product = a * b;
+    return product;
+}
 } // namespace
 
 static void round_bf16(std::vector<float> & values) {
@@ -104,12 +151,19 @@ static bool layer_norm(const std::vector<float> & x, ggml_tensor * w, ggml_tenso
     std::vector<float> weights(width), biases(width);
     if (!tensor_floats(w, weights.data()) || !tensor_floats(b, biases.data())) return false;
     y.resize(x.size());
+    const bool source_bf16 = core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16_NORM");
     for (int token = 0; token < int(x.size() / width); ++token) {
-        const auto stats = row(x.data() + size_t(token) * width, width, eps);
+        const auto stats = source_bf16 ? row_bf16_avx2(x.data() + size_t(token) * width, width, eps)
+                                       : row(x.data() + size_t(token) * width, width, eps);
         for (int i = 0; i < width; ++i) {
             const size_t at = size_t(token) * width + i;
             const float normalized = (x[at] - stats.first) * stats.second;
             y[at] = std::fma(normalized, weights[i], biases[i]);
+            if (source_bf16) {
+                const float bias = -stats.second * stats.first;
+                const float shifted = multiply_separately(x[at], stats.second) + bias;
+                y[at] = multiply_separately(shifted, weights[i]) + biases[i];
+            }
         }
     }
     round_bf16(y);

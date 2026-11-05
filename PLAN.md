@@ -1084,3 +1084,22 @@ stopped before build/model access because legacy Kaggle1.8.3 does not support
 the workflow token environment. The corrected dependency is known-working
 Kaggle2.2.2 from retained comparison42006413571; this changes no arrays/operators.
 Preserve the initial hosted logs and artifact; the bounded retry remains pending.
+
+
+[Corrected attribution42023264258](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42023264258)
+atf9a14c1be reproduces all573,440 original layer0 values bit-exactly with
+original torch2.13.0+cpu/numpy2.3.5/two-thread settings (AVX2). The source-fed
+[first-operator receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-layer0-source-fed.json)
+finds norm1 first:87 values/max0.001953125/RMS4.82146247e-6. Independent QKV
+(max0.015625), attention(max0.00390625), norm2(max0.00390625) and MLP-up
+(max0.015625) differences remain. Existing quality rejections are unchanged.
+
+The new default-off `CRISPEMBED_LIGHTON4B_VISION_BF16_NORM` candidate follows
+[PyTorch2.13 BF16 moments](https://github.com/pytorch/pytorch/blob/v2.13.0/aten/src/ATen/native/cpu/moments_utils.h)
+and [mixed-type second pass](https://github.com/pytorch/pytorch/blob/v2.13.0/aten/src/ATen/native/cpu/layer_norm_kernel.cpp):
+paired eight-lane float accumulators and separate multiply/add affine operations.
+It preserves the old1024 candidate and shared768 paths. One targeted hosted A/B
+will replay both source-fed norms and ordinary composed Q4 vision/first-logits/
+two-token decode against frozen original and byte-exact old candidate controls.
+No reference arrays enter either ordinary composed arm. Numerical improvement
+alone cannot establish full decoded quality; all runtime defaults stay off.
