@@ -34,11 +34,22 @@ The third attempt completed conversion and all declared tensor audits, followed 
 The [complete per-tensor audit](tests/results/qwen35-ocr/lightonocr3-4b-conversion-tensor-audit.json)
 preserves the original converter's false roundtrip field as distinct from its
 independent readback. Python startup reported a missing `wrapt` in `sitecustomize`;
-execution continued and `pip check` reported no broken requirements. Continue
-with explicit format-5 ownership, actual F32/F16 original/native intermediates,
-full-position logits and free decoded output; then evaluate the frozen Q8/Q4
-candidates on distinct calibration and held-out documents. No 4B native
-inference or decoded quality has been established.
+execution continued and `pip check` reported no broken requirements. The user
+explicitly selects the captured BF16 original reference; an F32 reference is
+not a prerequisite. Continue with Q8_0 and Q4_K native teacher-forced scores,
+independent free decoding and `crispembed-diff`, then evaluate changes on distinct
+calibration and held-out documents. No 4B native inference or decoded quality
+has yet been established.
+
+The actual BF16 original preprocessing replay [41999219551](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999219551)
+matches all 860,160 pixel values and the `[1,20,28]` grid bit-for-bit; the
+tokenizer replay [41999152372](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999152372)
+matches all 154 prompt IDs/modalities and decodes all 177 original IDs exactly.
+The first native Q8/Q4 smoke attempts stopped before inference on a tokenizer
+profile mismatch; corrected smokes [41999580781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999580781)
+and [41999584163](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999584163)
+must be re-queried and independently reviewed. The separate Q8/Q4 bounded
+vocabulary projection passed [41996887406](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41996887406).
 
 Three separately gated owner preparations are available as draft PRs: [vision
 PR144](https://github.com/CrispStrobe/CrispEmbed/pull/144), [text PR145](https://github.com/CrispStrobe/CrispEmbed/pull/145)
