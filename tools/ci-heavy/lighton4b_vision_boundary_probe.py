@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import zipfile
 ROOT=Path(__file__).resolve().parents[2]
+CORRECT_ROTARY=True
 def main():
  dispatch={'ATEN_CPU_CAPABILITY':'avx2','ONEDNN_MAX_CPU_ISA':'AVX2','DNNL_MAX_CPU_ISA':'AVX2','MKL_ENABLE_INSTRUCTIONS':'AVX2'};os.environ.update(dispatch)
  import numpy as np
@@ -99,11 +100,24 @@ def main():
   emit('source.angles',grid);run('source-trig',[scratch/'source-trig',stages/'source.angles.f32',stages/'header.cos_grid.f32',stages/'header.sin_grid.f32'])
   report['trig_dispatch']={label:{'cosine':compare(grid.cos().numpy(),array(prefix+'.cos_grid')),'sine':compare(grid.sin().numpy(),array(prefix+'.sin_grid'))}for label,prefix in (('original_header','header'),('nonfused_source','nonfused'))}
 
-  os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2']='1';os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2']='1'
+  os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2']='1'if CORRECT_ROTARY else'0';os.environ['CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2']='1'
+  report['corrected_rotary_gate']=bool(CORRECT_ROTARY)
   run('corrected-rotary',[build/'lighton4b-vision-boundary-probe',stages,'rotary']);corrected_cos=torch.from_numpy(array('native.cos').copy()).reshape(560,64);corrected_sin=torch.from_numpy(array('native.sin').copy()).reshape(560,64)
   corrected_activation=gelu_native(up,'corrected_activation')
   pool=pooled(corrected_cos,corrected_sin);residual=embedded+linear('out',pool,1024,1024);u=linear('up',norm('norm2',residual),4096,1024);a=gelu_native(u,'corrected_composed_activation');final=residual+linear('down',a,1024,4096);emit('layer0.corrected',final)
   report['production_corrections']={'cosine':compare(array('source.cos'),corrected_cos.numpy()),'sine':compare(array('source.sin'),corrected_sin.numpy()),'activation':compare(expected,corrected_activation.float().numpy()),'pooling':compare(array('source.pooled'),array('native.rotary_pooled')),'first_block':compare(array('source.layer0'),final.float().numpy())}
+  # Reference-only MKL control; never linked into the product.
+  import ctypes
+  report['mkl_source_control']={'mkl_available':torch.backends.mkl.is_available(),'torch_build_config':torch.__config__.show(),'direct_symbols_available':False,'product_dependency_added':False}
+  lib=ctypes.CDLL(str(Path(library_paths()[0])/'libtorch_cpu.so'))
+  if all(hasattr(lib,n)for n in ('vmsCos','vmsSin')):
+   report['mkl_source_control']['direct_symbols_available']=True;angles=grid.numpy().astype('<f4').reshape(-1);pointer=ctypes.POINTER(ctypes.c_float);results={}
+   for name,reference in (('Cos',grid.cos().numpy()),('Sin',grid.sin().numpy())):
+    output=np.empty_like(angles);fn=getattr(lib,'vms'+name);fn.argtypes=[ctypes.c_int,pointer,pointer,ctypes.c_longlong];fn.restype=None;fn(len(angles),angles.ctypes.data_as(pointer),output.ctypes.data_as(pointer),2);output.tofile(stages/('mkl.'+name.lower()+'.f32'));results[name.lower()]=compare(reference,output)
+   report['mkl_source_control']['HA_mode_2_finite_normal_input']=results
+  headers=out/'reference-headers';headers.mkdir();report['reference_header_sha256']={}
+  for name in ('ATen/cpu/vml.h','ATen/cpu/vec/vec256/vec256_float.h','ATen/native/cpu/Gelu.h','ATen/Config.h'):
+   original=Path(include_paths()[0])/name;target=headers/(name.replace('/','_'));target.write_bytes(original.read_bytes());report['reference_header_sha256'][name]=sha(original)
   report['production_candidate_qualified']=all(r['bit_exact']for r in report['production_corrections'].values())and all(r['bit_exact']for r in report['supported_trig_grid'].values())
   report['artifacts']={p.name:{'bytes':p.stat().st_size,'sha256':sha(p)}for p in stages.iterdir()};report['status']='attributed'
  except Exception as e:

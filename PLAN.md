@@ -1405,3 +1405,20 @@ and stays off. GELU had not yet been evaluated when the strict trig guard stoppe
 Initial numerical failure receipt is retained. Next one bounded job compares
 installed vector-header trig and nonfused source alternative, and evaluates GELU
 independently even if trig remains negative; no smoke until exact correction.
+
+Operator 42062871623 at d6686c456 validates self-contained production GELU:
+all 2,293,760 retained activation values are bit-exact; original AVX2 Gelu.h and
+old/unset/empty/0 controls pass. Rotary remains rejected: direct installed AVX2
+sin/cos headers give the same 633/237 trig-grid differences as fused SLEEF,
+and nonfused SLEEF is also negative. Combined rejected rotary changes 67 first-
+block values, so it must not enter a quality candidate.
+
+Source inspection identifies a separate potential backend: UnaryOpsKernel.cpp
+uses at::vml::vcos/vsin, and vml.h specializes F32 to MKL vmsCos/vmsSin with HA,
+FTZDAZ_OFF and ERRMODE_IGNORE when MKL is enabled. Next focused integration
+confirms MKL build/symbol availability and a direct HA reference control if
+available, without adding any MKL dependency to product code. GELU-only candidate
+keeps original rotary path, verifies first-block parity against original GELU
+with native rotary, builds native/context and runs model-free gate controls.
+Only after this passes may one ordinary Q4 A/B enable GELU. Prior quality remains
+negative; rejected ROTARY_AVX2 gate stays off.
