@@ -4,6 +4,7 @@
 No full model, image forward, vocabulary projection, generation or quality claim.
 The F32 arms are local same-weight operator diagnostics, never new reference gold.
 """
+import argparse
 import gc
 import hashlib
 import json
@@ -18,6 +19,9 @@ def require(value,message):
     if not value:raise ValueError(message)
 def digest(data):return hashlib.sha256(data).hexdigest()
 def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--protocol',choices=('v1','v2-unanchored-diagnostic'),default='v1')
+    args=parser.parse_args()
     require(os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','hosted portable only')
     import lighton4b_gdn_reference as ref
     import lighton4b_native_document as native
@@ -27,6 +31,7 @@ def main():
     out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH'])/'layer0';scratch.mkdir()
     report={'schema':'lighton4b-layer0-source-fed/v1','status':'failed','quality_qualified':False,
         'full_model_forward_executed':False,'generation_executed':False,'runtime':runtime,
+        'protocol':args.protocol,'frozen_bf16_parity_qualified':False,
         'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'arms':{}}
     def save(): (out/'layer0-source-fed.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
     def run(label,args,env=None):
@@ -59,6 +64,7 @@ def main():
             # Frozen BF16 capture used the default CPU backend; component F32
             # diagnostics retain the audited fallback setup. Record both.
             torch.backends.mkldnn.enabled = dtype == torch.bfloat16
+            torch.use_deterministic_algorithms(dtype != torch.bfloat16)
             with torch.device('meta'):block=original.Qwen3_5DecoderLayer(config,0)
             block.load_state_dict({k:torch.from_numpy(v.copy()).to(dtype)for k,v in weights.items()},assign=True,strict=True);block.eval()
             stages={};handles=[]
@@ -88,7 +94,7 @@ def main():
             require(digest(ordinary.float().numpy().tobytes())==digest(stages['hidden'].tobytes()),'observer changed layer hidden')
             folder=out/label;folder.mkdir()
             for name,value in stages.items():(folder/(name+'.f32')).write_bytes(value.astype('<f4').tobytes())
-            report['arms'][label]={'dtype':str(dtype),'mkldnn_enabled':torch.backends.mkldnn.enabled,'observer_neutral':True,'hidden_vs_frozen_bf16':ref.metrics(stages['hidden'],frozen,np),
+            report['arms'][label]={'dtype':str(dtype),'mkldnn_enabled':torch.backends.mkldnn.enabled,'deterministic_algorithms':torch.are_deterministic_algorithms_enabled(),'observer_neutral':True,'hidden_vs_frozen_bf16':ref.metrics(stages['hidden'],frozen,np),
                 'stages':{k:{'shape':list(v.shape),'sha256':digest(v.tobytes()),'abs_max':float(np.abs(v).max())}for k,v in stages.items()}}
             del block,cache,cache2;gc.collect();save();return stages
         def native_arm(label,path,expected):
@@ -122,7 +128,13 @@ def main():
             'tensor_sha256':{k:digest(v.tobytes())for k,v in weights.items()}}
         del raw
         bf16=original_arm('official-bf16',weights,torch.bfloat16)
-        require(digest(bf16['hidden'].tobytes())==digest(frozen.tobytes()),'official BF16 layer0 anchor not exact')
+        report['frozen_bf16_hidden_exact']=digest(bf16['hidden'].tobytes())==digest(frozen.tobytes())
+        if not report['frozen_bf16_hidden_exact']:
+            report['frozen_bf16_control_failure']='official BF16 layer0 anchor not exact'
+            require(args.protocol=='v2-unanchored-diagnostic','official BF16 layer0 anchor not exact')
+        # V2 preserves failed frozen BF16 replay as a blocking parity result,
+        # but permits same-input/same-weight local operator diagnostics.
+        save()
         source_f32=original_arm('official-same-weight-f32-diagnostic',weights,torch.float32)
         ref.write_gguf(scratch/'official-layer0.gguf',weights,gguf)
         native_arm('native-official-f32',scratch/'official-layer0.gguf',source_f32)
@@ -144,7 +156,7 @@ def main():
             ref.write_gguf(scratch/'dequant.gguf',weights,gguf)
             native_arm(recipe+'-native-dequant-f32',scratch/'dequant.gguf',expected_stages)
             del tensors,reader,weights,expected_stages;gc.collect();model.unlink()
-        report['status']='compared'
+        report['status']='compared' if report['frozen_bf16_hidden_exact'] else 'diagnostic-compared-unanchored'
     except Exception as error:
         report['error_type']=type(error).__name__
         # Avoid signed URLs, credentials and provider exception bodies.

@@ -35,3 +35,23 @@ raw arrays remain hosted artifacts. No generation/image forward/full decoder or
 new gold is produced; no decoded-quality, publication or release claim follows.
 
 Hosted execution is pending. Production `src/`, ggml and VERSION are unchanged.
+
+## Initial exact-anchor replay and separate diagnostic continuation
+
+[Initial42022722133](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42022722133)
+at7b7cb1a84 compiles the actual native runner and authenticates input, original
+checkpoint interval and all source modules/packages, then stops as required at
+original BF16 layer0 hidden replay. Hooks preserve ordinary hidden output exactly,
+but the retained cross-host anchor differs: max0.0078125, RMS0.00009840313,
+minimum row cosine0.9999984685, original/replayed absolute magnitude8.5625. No
+Q8/Q4 arm executed. [Initial producer report](../tests/results/qwen35-ocr/lightonocr3-4b-layer0-source-fed-initial.json)
+preserves the failure; it is not candidate rejection or native implementation proof.
+The source environment also used default deterministic-algorithms OFF, while the
+component loader enables it. The successor explicitly matches original BF16 OFF
+and retains audited F32 diagnostic ON; exact effects require actual measurement.
+
+Protocol `v1` still stops on any original BF16 anchor difference. The separately
+selected `--protocol v2-unanchored-diagnostic` may execute local operator arms
+while retaining the frozen BF16 failure prominently and leaving parity false.
+Its status is `diagnostic-compared-unanchored` when BF16 differs. This does not
+waive the original numerical gate, create replacement gold or qualify a model.

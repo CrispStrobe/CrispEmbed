@@ -1115,3 +1115,12 @@ retain absolute errors, magnitudes and unchanged strict flags. BF16 backend
 settings and original hook neutrality are checked explicitly. No image/full-model
 forward, logits, generation, new reference gold, budget/default change or quality
 qualification follows. Hosted compilation/inference remains pending; no new PR.
+
+Initial layer0 source-fed42022722133 at7b7cb1a84 compiles the native runner but
+stops before any native/Q8/Q4 execution at frozen BF16 hidden mismatch:
+max0.0078125/RMS0.00009840313/mincos0.9999984685 against magnitude8.5625;
+original hook neutrality is exact. Initial producer JSON is retained. Successor
+matches original BF16 deterministic-algorithms OFF separately from F32 diagnostic
+ON. V1 exact-anchor admission stays unchanged. Explicit v2 unanchored diagnostic
+may proceed with the original failure retained/parity false to isolate operators;
+it cannot redefine the frozen reference or justify a default/quality promotion.
