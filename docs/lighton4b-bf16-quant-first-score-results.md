@@ -31,7 +31,9 @@ Both candidates verify the complete 723-tensor map using two readers: 249 change
 quantized text matrices, including the embedding, and 474 protected original
 tensors. Every copied BF16 chunk and whole parameter passes exact readback.
 Parameter identity, storage, shapes, dtype, unchanged buffers and tied output
-head are checked. Q4 overwrites the same entire 249-matrix set after Q8. Its
+head are checked. Actual JSON iteration runs Q4 then Q8; each overwrites the
+same entire 249-matrix set. This corrects the protocol prose saying Q8 then Q4.
+Q4's
 embedding remains Q8, with the identical effective BF16 embedding hash in both
 arms. Maximum dequantization-to-BF16 rounding is `0.00096893310546875` for Q8 and
 `0.0018157958984375` for Q4; the embedding maximum is `0.000244140625`.
