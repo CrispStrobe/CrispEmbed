@@ -103,10 +103,14 @@ The separately versioned [sharded transport](https://github.com/CrispStrobe/Cris
 passed initial and hardened fixture controls in [41977694403](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41977694403)
 and [41977934618](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41977934618).
 These check immutable multipart upload, independent cold restoration and failure
-handling against a hosted HTTP fixture. Actual Hub provider acceptance and
-retention are unverified; capture remains disabled and the old document-v1
-archive limit remains intact. Full cold restore needs source size plus one part
-and 1 GiB free, potentially on a separate host from the original capture.
+handling against a hosted HTTP fixture. A subsequent [tiny provider test](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41979390868)
+and independent cold readback verified four parts and 68 reconstructed files,
+preserving all existing destination files. [The reviewed receipt](https://github.com/CrispStrobe/CrispEmbed/blob/2e904e5856dacb7bd5e0c87046fc9e6f5eaddb53/tests/results/qwen35-ocr/lightonocr3-4b-real-provider-transport.json)
+contains only public-safe fingerprints. This is point-in-time evidence for a
+13,239-byte fixture, not large-capture or long-term retention qualification;
+capture remains disabled and the old document-v1 archive limit remains intact.
+Full cold restore needs source size plus one part and 1 GiB free, potentially on
+a separate host from the original capture.
 
 | Lane | State | Next action | Done when |
 |---|---|---|---|
