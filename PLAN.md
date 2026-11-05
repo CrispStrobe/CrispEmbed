@@ -43,6 +43,12 @@ Original hosted [inpainting contracts42058381772](https://github.com/CrispStrobe
 pass270 temporal checks on Linux/macOS/Windows. Original lint42058381900 has a
 cancelled style job; it is not a passing gate.
 
+Expanded head `8c125e599` passes396 temporal/48 CLI checks on Linux and Windows,
+but both attempts at inpainting42095238543 reject the retired `macos-14` runner
+before checkout. Use supported `macos-15` in this workflow per the
+[GitHub retirement notice](https://github.com/actions/runner-images); preserve
+the initial infrastructure failure separately from test outcomes.
+
 Acceptance: exact past/future donor pixels and current known pixels under grain,
 grainy engine-fill reuse, residual-only propagation/reuse/blend boundaries, and
 coherent brightness-change rejection. Run the expanded contracts and ordinary
