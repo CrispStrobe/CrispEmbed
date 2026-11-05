@@ -42,7 +42,7 @@ def main():
             hits=[n for n in names if n.endswith('native-document.json')];require(len(hits)==1,'native receipt missing/ambiguous')
             info=z.getinfo(hits[0]);require(info.file_size<=2**20,'native receipt bound')
             data=z.read(hits[0]);require(digest(data)==args.receipt_sha256,'reviewed native receipt differs');native=json.loads(data)
-            require(native['status']=='completed'and native['mode']=='smoke'and native['recipe']==args.recipeand native['source_sha']==args.native_source,'actual native smoke scope differs')
+            require(native['status']=='completed'and native['mode']=='smoke'and native['recipe']==args.recipe and native['source_sha']==args.native_source,'actual native smoke scope differs')
             weights={'q8_0':'5888532207f0d98590cc028cbf92366f8a41ec925568f0c308bd69d9af6342f1','q4_k':'f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91'}
             require(native['model']['sha256']==weights[args.recipe]and native['native']['teacher_positions']==1,'native weights/position scope differs')
             row=native['artifacts']['teacher.0.logits.f32'];require(row['bytes']==993280,'native vocabulary differs')
