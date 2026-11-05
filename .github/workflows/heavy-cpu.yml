@@ -78,6 +78,9 @@ concurrency:
 
 jobs:
   run:
+    permissions:
+      contents: read
+      actions: read
     if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py'
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 350
@@ -153,6 +156,8 @@ jobs:
           python -m pip list 2>/dev/null | grep -i -E "^(torch|transformers|numpy|onnx|huggingface)" || true
 
       - name: Run ${{ inputs.script }}
+        env:
+          GH_TOKEN: ${{ inputs.script == 'tools/ci-heavy/lighton4b_smoke_compare.py' && github.token || '' }}
         run: |
           read -ra argv <<< "$ARGS"
           echo "runner: $RUNNER_OS/$RUNNER_ARCH  cpus: $(nproc 2>/dev/null || sysctl -n hw.ncpu)  commit: ${GITHUB_SHA::8}  build_mode: $CRISPEMBED_BUILD_MODE"
