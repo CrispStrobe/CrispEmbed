@@ -1,0 +1,18 @@
+{
+  "schema": "lighton4b-native-context-controls/v1",
+  "status": "passed",
+  "model_payload_bytes": 0,
+  "quality_qualified": false,
+  "source_sha": "fe27027bb4ebbfa0d4d9c8600db30cd7192044a4",
+  "executable_sha256": "586ed1ec2740465b73bfcae2286c49c75d0369063ecad00ec181ac8194078eff",
+  "stdout": "gguf_init_from_file: failed to open GGUF file 'missing.gguf' (No such file or directory)\nnative-context controls=9 passed=1 model_payload=0\n",
+  "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41997276699",
+  "initial_failure": {
+    "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41997019110",
+    "source_sha": "c61e561789190f395cb3c3089e0e1e9707ef5096",
+    "stage": "native compilation",
+    "error": "matrix_type_supported declaration missing from standalone text-owner header",
+    "repair_source_sha": "730203254e817bd41ec567e63c5ecd1ca9c2f96b",
+    "repair_run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41997125120"
+  }
+}

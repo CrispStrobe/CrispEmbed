@@ -20696,3 +20696,14 @@ it sufficiently to accumulated upstream hidden drift. Preserve the original
 negative panel; no gate/default/release/model-support promotion. Exact magnitudes,
 source pins, dependencies and limits are in [the scope](docs/lighton4b-decoder-compose.md)
 and [combined review receipt](tests/results/qwen35-ocr/lightonocr3-4b-decoder-compose-attribution.json).
+
+### LightOn4B quantized payload owner controls — 5 November 2026
+
+[41997276699](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41997276699)
+at`fe27027bb4ebbfa0d4d9c8600db30cd7192044a4` passes hosted portable
+compilation and nine model-free gate/type/negative controls for the experimental
+format-5 Q8/Q4 payload owner. The
+[receipt](tests/results/qwen35-ocr/lightonocr3-4b-native-context-controls.json)
+retains initial41997019110's missing standalone matrix-helper declaration and
+corrected41997125120. No actual model payload was read; native decoded and
+intermediate quality remains unverified. Public API/release defaults are unchanged.

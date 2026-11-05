@@ -967,7 +967,11 @@ those gated quantized matrices; existing F32/F16 paths remain available.
 Chunked prefill preserves the old sixteen-token component boundary and uses
 independent layer caches up to the existing4096-token context ceiling.
 
-Next gate: hosted model-free compilation/type/negative controls, then actual
+Hosted portable [controls41997276699](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41997276699)
+pass native compilation and nine gate/type/negative controls at`fe27027bb`.
+The [receipt](tests/results/qwen35-ocr/lightonocr3-4b-native-context-controls.json)
+retains the initial missing-declaration compiler failure and corrected positive run.
+Next gate: actual
 Q8/Q4 payload admission and native document inference against the pinned original
 BF16 execution. Full-position logits, earliest differing stage with magnitudes,
 free IDs/text/EOS and held-out documents remain required. The historical negative
