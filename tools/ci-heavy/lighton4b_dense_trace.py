@@ -22,6 +22,8 @@ def execute():
         raise RuntimeError('hosted portable operator trace required')
     import lighton4b_gdn_reference as reference
     torch,np,gguf,original,Config,Cache,runtime=reference.load_original()
+    runtime['verified_auxiliary_function_sha256']=runtime.pop('executed_function_sha256')
+    runtime['auxiliary_verification_scope']='Inherited GDN function source checks only; no decoder/GDN forward is executed by this operator trace.'
     out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH']);retained=Path(os.environ['RETAINED_UPSTREAM'])
     old=json.loads((retained/'upstream-receipt.json').read_text())
     frozen=json.loads((ROOT/'tests/results/qwen35-ocr/lightonocr3-4b-decoder-compose-attribution.json').read_text())['initial_receipt']

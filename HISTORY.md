@@ -20707,3 +20707,14 @@ activation-only error, without a particular CPU/reduction-cause claim. The froze
 32-layer progression first grows most in relative terms at layer0→1 (+29.84%);
 its full numerical gate remains negative. No full forward rerun or threshold/
 runtime/default change. [Scope and measurements](docs/lighton4b-upstream-drift.md).
+
+### 5 November2026 — retained equal-input dense arithmetic trace
+
+[41984176263](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41984176263)
+observes actual F32 llamafile routing with exact operands and unchanged frozen
+outputs. Eight-lane FMA reconstruction matches all18432 native values;5120
+selected-row updates are independently verified with exact rational rounding.
+Original Torch GEMM's internal reduction remains unobserved and none of the
+alternate models reproduces all original values. Preserve initial41983685028's
+non-observing shared-library wrapper limitation. [Scope and exact errors](docs/lighton4b-dense-trace.md).
+No runtime/default/tolerance change, decoder rerun or model-quality promotion.
