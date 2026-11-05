@@ -20748,3 +20748,14 @@ OvisOCR3's frozen capped-page failure and all old strict LightOnOCR-3-0.8B verdi
 remain recorded. A separate review of complete retained logits finds F16/Q8 clear
 the current owner numerical bars; Q4 does not. Fresh current-source portable
 qualification is still required. See PR138's `docs/lighton08-precision-next.md`.
+
+###5 November2026 — bounded original BF16 prefill retained
+
+Actual8d3b2331d captures71 source-dtype stage records/130163104 bytes from one
+CPU/BF16 prefill, with all five prepared-input hashes and the full first score
+bit-exact against the retained observer-off07543dcc original (ID27). Source,
+shape/layout, magnitude and payload hashes are preserved in
+[the manifest](tests/results/qwen35-ocr/lightonocr3-4b-bf16-prefill.json) and
+[review](tests/results/qwen35-ocr/lightonocr3-4b-bf16-prefill-review.json).
+No full177-token repeat, GPU, F32 model or cache dump occurred. Native Q8/Q4
+stage comparison and decoded parity remain separate.
