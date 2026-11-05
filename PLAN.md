@@ -1226,3 +1226,12 @@ the gated verified norm improvement in existing PR155, then gated source-order
 linear implementation and full source-fed operator validation before more ordinary
 smokes. Large vectors remain in pinned remote artifacts. This commit imports
 evidence only, with no runtime source changes.
+
+The pinned mean-order comparison42029945232/215f463bc is complete: source-derived
+eight-lane grouping matches all154 means/scales and394,240 F32/BF16 norm values
+bit-exactly. Sixteen lanes and precision-only sum→mean rounding retain3/2 BF16
+differences at0.00390625. [Complete result](docs/lighton4b-layer0-attribution-results.md#exact-source-derived-mean-order-at-the-retained-boundary)
+retains source hashes, unchanged budgets and all old negatives. Measured order is
+now scoped only to default-off BF16 linear RMS in5ba80426d; actual-helper
+42031297677 covers widths2560/128 before composed layer0 or expanded decoder.
+No qualified runtime/source/default/alias/release or app-pin change is implied.
