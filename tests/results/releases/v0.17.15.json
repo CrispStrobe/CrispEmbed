@@ -1,0 +1,2287 @@
+{
+  "schema": "crispembed-release-verification-v1",
+  "tag": "v0.17.15",
+  "source_commit": "d28ca2ea43a95934d673d1a54177fdf721614ade",
+  "release_url": "https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.15",
+  "published_at": "2026-11-05T20:22:55Z",
+  "excluded_drafts": [
+    155,
+    157
+  ],
+  "full_candidate_checks": [
+    {
+      "workflow": "build.yml",
+      "id": 42101523884,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42101523884",
+      "event": "workflow_dispatch",
+      "status": "completed",
+      "conclusion": "success",
+      "source_commit": "d28ca2ea43a95934d673d1a54177fdf721614ade",
+      "jobs": [
+        {
+          "id": 127505258811,
+          "name": "Static guards",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "CI selection and aggregate-gate controls",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/ci-select",
+              "conclusion": "success"
+            },
+            {
+              "name": "Desktop matrix for the selected legs",
+              "conclusion": "success"
+            },
+            {
+              "name": "Test mains route through clean_exit",
+              "conclusion": "success"
+            },
+            {
+              "name": "Workflow toolchains are version-pinned",
+              "conclusion": "success"
+            },
+            {
+              "name": "Pin guard self-test",
+              "conclusion": "success"
+            },
+            {
+              "name": "GPU recipe process deadline controls (model-free)",
+              "conclusion": "success"
+            },
+            {
+              "name": "pub.dev release preflight contracts (model-free)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Unlimited-OCR-2 quantizer policy equals its measured recipe (model-free)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505489439,
+          "name": "ios-arm64",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505489588,
+          "name": "sibling-crispasr (shared libs)",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Clone CrispASR as a sibling",
+              "conclusion": "success"
+            },
+            {
+              "name": "Configure with the sibling defaults",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build the four shared libraries",
+              "conclusion": "success"
+            },
+            {
+              "name": "Mirrored files are in sync with CrispASR",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505489622,
+          "name": "macos-arm64",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Configure",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify portable CPU baseline",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build all native targets",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build delivered native targets for isolated CLI changes",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Smoke test (Unix)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Model-free tests (Unix)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Smoke test (Windows)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Smoke test (explicit Metal)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install (bundle native libs)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Flatten and verify macOS dylib set",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload shared library bundle",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505489650,
+          "name": "android-x86_64",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505489773,
+          "name": "linux-x86_64",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Configure",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify portable CPU baseline",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build all native targets",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build delivered native targets for isolated CLI changes",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Smoke test (Unix)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Model-free tests (Unix)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Smoke test (Windows)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Smoke test (explicit Metal)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Install (bundle native libs)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Flatten and verify macOS dylib set",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Upload shared library bundle",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505489810,
+          "name": "android-arm64-v8a",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505489840,
+          "name": "windows-x86_64",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Configure",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify portable CPU baseline",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build all native targets",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build delivered native targets for isolated CLI changes",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Smoke test (Unix)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Model-free tests (Unix)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Smoke test (Windows)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Smoke test (explicit Metal)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Install (bundle native libs)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Flatten and verify macOS dylib set",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Upload shared library bundle",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505489894,
+          "name": "android-armeabi-v7a",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127507617621,
+          "name": "Bundle Flutter plugin",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Download all artifacts",
+              "conclusion": "success"
+            },
+            {
+              "name": "Place artifacts in Flutter plugin dirs",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload bundled plugin",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127507842721,
+          "name": "Build result",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Require every selected build and reject unexpected skips",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workflow": "build-wasm.yml",
+      "id": 42101527815,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42101527815",
+      "event": "workflow_dispatch",
+      "status": "completed",
+      "conclusion": "success",
+      "source_commit": "d28ca2ea43a95934d673d1a54177fdf721614ade",
+      "jobs": [
+        {
+          "id": 127505272035,
+          "name": "Select necessary CI",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Selection and aggregate-gate controls",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/ci-select",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505420087,
+          "name": "build-wasm",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Checkout",
+              "conclusion": "success"
+            },
+            {
+              "name": "Setup emsdk",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build WASM",
+              "conclusion": "success"
+            },
+            {
+              "name": "Size report (largest sections, owners and functions)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify output",
+              "conclusion": "success"
+            },
+            {
+              "name": "Node smoke + wrapper unit tests (real WASM module)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Browser end-to-end test (headless Chromium, real model)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload artifacts",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Checkout",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127507250536,
+          "name": "OCR WASM result",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Require selected jobs and reject unexpected skips",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workflow": "build-wasm-embed.yml",
+      "id": 42101532360,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42101532360",
+      "event": "workflow_dispatch",
+      "status": "completed",
+      "conclusion": "success",
+      "source_commit": "d28ca2ea43a95934d673d1a54177fdf721614ade",
+      "jobs": [
+        {
+          "id": 127505288877,
+          "name": "Select necessary CI",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Selection and aggregate-gate controls",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/ci-select",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505413489,
+          "name": "build",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Set up Emscripten",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build WASM embed module",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload WASM artifacts",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127507410798,
+          "name": "Embedding WASM result",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Require selected jobs and reject unexpected skips",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workflow": "rust-crates.yml",
+      "id": 42101537877,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42101537877",
+      "event": "workflow_dispatch",
+      "status": "completed",
+      "conclusion": "success",
+      "source_commit": "d28ca2ea43a95934d673d1a54177fdf721614ade",
+      "jobs": [
+        {
+          "id": 127505305687,
+          "name": "Select necessary CI",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Selection and aggregate-gate controls",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/ci-select",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505442142,
+          "name": "ARM64 wrapper C ABI types",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "conclusion": "success"
+            },
+            {
+              "name": "Check platform C-char signatures without a native source build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505442311,
+          "name": "package",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run dtolnay/rust-toolchain@stable",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build the wrapper and the -sys crate",
+              "conclusion": "success"
+            },
+            {
+              "name": "build.rs honours a prebuilt without any sources",
+              "conclusion": "success"
+            },
+            {
+              "name": "Vendor the C/C++ sources",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify the packaged crate builds standalone",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127506454366,
+          "name": "Rust crates result",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Require selected jobs and reject unexpected skips",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workflow": "inpaint-cli.yml",
+      "id": 42101542663,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42101542663",
+      "event": "workflow_dispatch",
+      "status": "completed",
+      "conclusion": "success",
+      "source_commit": "d28ca2ea43a95934d673d1a54177fdf721614ade",
+      "jobs": [
+        {
+          "id": 127505322805,
+          "name": "Select necessary CI",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Selection and aggregate-gate controls",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/ci-select",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505441187,
+          "name": "contracts (ubuntu-24.04)",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-python@v5",
+              "conclusion": "success"
+            },
+            {
+              "name": "Model preparation and independent PNG controls",
+              "conclusion": "success"
+            },
+            {
+              "name": "Fetch native dependencies only for native changes",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Configure portable CPU build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build the small temporal and CLI driver targets first",
+              "conclusion": "success"
+            },
+            {
+              "name": "Fast temporal, stream and synthetic video controls",
+              "conclusion": "success"
+            },
+            {
+              "name": "Retain synthetic video regression reports",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build production CLI and remaining image contracts",
+              "conclusion": "success"
+            },
+            {
+              "name": "Native contracts and production CLI routing",
+              "conclusion": "success"
+            },
+            {
+              "name": "Reproduce the reviewed model without framework dependencies",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Production CLI synthetic model smoke",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Retain synthetic smoke evidence",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-python@v5",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505441274,
+          "name": "contracts (windows-2022)",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-python@v5",
+              "conclusion": "success"
+            },
+            {
+              "name": "Model preparation and independent PNG controls",
+              "conclusion": "success"
+            },
+            {
+              "name": "Fetch native dependencies only for native changes",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Configure portable CPU build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build the small temporal and CLI driver targets first",
+              "conclusion": "success"
+            },
+            {
+              "name": "Fast temporal, stream and synthetic video controls",
+              "conclusion": "success"
+            },
+            {
+              "name": "Retain synthetic video regression reports",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build production CLI and remaining image contracts",
+              "conclusion": "success"
+            },
+            {
+              "name": "Native contracts and production CLI routing",
+              "conclusion": "success"
+            },
+            {
+              "name": "Reproduce the reviewed model without framework dependencies",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Production CLI synthetic model smoke",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Retain synthetic smoke evidence",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-python@v5",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505441322,
+          "name": "contracts (macos-15)",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-python@v5",
+              "conclusion": "success"
+            },
+            {
+              "name": "Model preparation and independent PNG controls",
+              "conclusion": "success"
+            },
+            {
+              "name": "Fetch native dependencies only for native changes",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Configure portable CPU build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build the small temporal and CLI driver targets first",
+              "conclusion": "success"
+            },
+            {
+              "name": "Fast temporal, stream and synthetic video controls",
+              "conclusion": "success"
+            },
+            {
+              "name": "Retain synthetic video regression reports",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build production CLI and remaining image contracts",
+              "conclusion": "success"
+            },
+            {
+              "name": "Native contracts and production CLI routing",
+              "conclusion": "success"
+            },
+            {
+              "name": "Reproduce the reviewed model without framework dependencies",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Production CLI synthetic model smoke",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Retain synthetic smoke evidence",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run ./.github/actions/compiler-cache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-python@v5",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127506836712,
+          "name": "Inpainting result",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Require selected jobs and reject unexpected skips",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workflow": "lint",
+      "id": 42101523481,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42101523481",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "source_commit": "d28ca2ea43a95934d673d1a54177fdf721614ade",
+      "jobs": [
+        {
+          "id": 127505329204,
+          "name": "environment variables documented",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run python3 tests/test_env_vars_documented.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127505329787,
+          "name": "clang-format (style)",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install clang-format 18.1.8 (pinned, macOS wheel)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Check formatting (tools/format.sh --check)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workflow": "secret-scan",
+      "id": 42101523579,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42101523579",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "source_commit": "d28ca2ea43a95934d673d1a54177fdf721614ade",
+      "jobs": [
+        {
+          "id": 127505248403,
+          "name": "scan",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "No credentials in tracked files",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "release_workflows": [
+    {
+      "id": 42102421218,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42102421218",
+      "path": ".github/workflows/release.yml",
+      "event": "push",
+      "source_commit": "d28ca2ea43a95934d673d1a54177fdf721614ade",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "jobs": [
+        {
+          "id": 127508383384,
+          "name": "Build ios-arm64",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package complete static iOS dependency closure",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload to release",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127508383466,
+          "name": "Build android-arm64-v8a",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload to release",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127508383544,
+          "name": "Build windows-x86_64-vulkan",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install Vulkan SDK",
+              "conclusion": "success"
+            },
+            {
+              "name": "Configure",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify portable CPU baseline",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload to release",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127508383562,
+          "name": "Build android-armeabi-v7a",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload to release",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127508383612,
+          "name": "Build windows-x86_64",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Trust the workspace (container builds)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install build deps (Linux)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Prepare manylinux toolchain",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Configure",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify portable CPU baseline",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package (Unix)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Verify bundled dylib set (macOS)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Verify bundled dependencies (Linux)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Package (Windows)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload artifact",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload to release",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127508383655,
+          "name": "Build windows-x86_64-cuda",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install CUDA Toolkit 12.8.0",
+              "conclusion": "success"
+            },
+            {
+              "name": "Set up MSVC dev environment",
+              "conclusion": "success"
+            },
+            {
+              "name": "ccache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Configure + build (Ninja)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload to release",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post ccache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127508383695,
+          "name": "Build linux-x86_64",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Initialize containers",
+              "conclusion": "success"
+            },
+            {
+              "name": "Trust the workspace (container builds)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install build deps (Linux)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Prepare manylinux toolchain",
+              "conclusion": "success"
+            },
+            {
+              "name": "Configure",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify portable CPU baseline",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package (Unix)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify bundled dylib set (macOS)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Verify bundled dependencies (Linux)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package (Windows)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Upload artifact",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload to release",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Stop containers",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127508383728,
+          "name": "Build macos-arm64",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Trust the workspace (container builds)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install build deps (Linux)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Prepare manylinux toolchain",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Configure",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify portable CPU baseline",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package (Unix)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify bundled dylib set (macOS)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify bundled dependencies (Linux)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Package (Windows)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Upload artifact",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload to release",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127508383735,
+          "name": "Build linux-x86_64-cuda",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install patchelf",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install CUDA Toolkit 12.8.0",
+              "conclusion": "success"
+            },
+            {
+              "name": "ccache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Stage the CUDA driver stub",
+              "conclusion": "success"
+            },
+            {
+              "name": "Configure",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify portable CPU baseline",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package (CUDA runtime bundled)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify bundled dependencies (both CUDA archives)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload to release",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post ccache",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127508384193,
+          "name": "Build linux-arm64",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Initialize containers",
+              "conclusion": "success"
+            },
+            {
+              "name": "Trust the workspace (container builds)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Install build deps (Linux)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Prepare manylinux toolchain",
+              "conclusion": "success"
+            },
+            {
+              "name": "Configure",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify portable CPU baseline",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package (Unix)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify bundled dylib set (macOS)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Verify bundled dependencies (Linux)",
+              "conclusion": "success"
+            },
+            {
+              "name": "Package (Windows)",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Upload artifact",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload to release",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Stop containers",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127542956080,
+          "name": "Create GitHub Release",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Download all artifacts",
+              "conclusion": "success"
+            },
+            {
+              "name": "Hash complete dry-run candidate archives and members",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Create release",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127544202942,
+          "name": "Verify pub.dev release inputs",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Compare published assets to this workflow run",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v4",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "id": 127546646000,
+          "name": "Publish Flutter package to pub.dev (not yet qualified)",
+          "conclusion": "skipped",
+          "steps": []
+        }
+      ]
+    },
+    {
+      "id": 42102420486,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42102420486",
+      "path": ".github/workflows/release-wasm.yml",
+      "event": "push",
+      "source_commit": "d28ca2ea43a95934d673d1a54177fdf721614ade",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "jobs": [
+        {
+          "id": 127508381241,
+          "name": "build-and-attach",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Checkout",
+              "conclusion": "success"
+            },
+            {
+              "name": "Setup emsdk",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build OCR WASM",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify OCR output",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build Embedding WASM",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify Embedding output",
+              "conclusion": "success"
+            },
+            {
+              "name": "Create release archives",
+              "conclusion": "success"
+            },
+            {
+              "name": "Bind unpublished WASM candidates to source and member hashes",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Run actions/upload-artifact@v4",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Determine release tag",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload to release",
+              "conclusion": "success"
+            },
+            {
+              "name": "Upload build artifacts",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Checkout",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "asset_count": 16,
+  "assets": [
+    {
+      "name": "crispembed-android-arm64-v8a.tar.gz",
+      "id": 714874380,
+      "bytes": 32493243,
+      "sha256": "ba8ac0053d9cb239c5f199d189ff978dd0ddf00d56fa124e2c3bd76956b3b968",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-android-arm64-v8a.tar.gz",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed-android-armeabi-v7a.tar.gz",
+      "id": 714874365,
+      "bytes": 30608009,
+      "sha256": "4cc0e332933e25c33daed1573c80d9654aa9c495ab14367ea3086a143c5dd4b5",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-android-armeabi-v7a.tar.gz",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed-embed-wasm.tar.gz",
+      "id": 714707058,
+      "bytes": 525737,
+      "sha256": "e882d115760308d6a87c329a59a153f4ea8b28c11fec31448a9b2ef7eda18d8c",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-embed-wasm.tar.gz",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed-ios-arm64.tar.gz",
+      "id": 714874363,
+      "bytes": 6822634,
+      "sha256": "958c3136703e744f4d21cec7838d5c035bcb964d5a37e81fab1662fbc715ea77",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-ios-arm64.tar.gz",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed-linux-arm64.tar.gz",
+      "id": 714874371,
+      "bytes": 15762586,
+      "sha256": "c5c30444c1514adef14bd5b4d56fd45263f76f5a4c60a21085d94caf89b22b76",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-linux-arm64.tar.gz",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed-linux-x86_64-cuda-bundled.tar.gz",
+      "id": 714874367,
+      "bytes": 759646093,
+      "sha256": "af1d71cc68430e2c9df0798ae2843e2c79f53437bd3a9e314d176c8cb8516c71",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-linux-x86_64-cuda-bundled.tar.gz",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed-linux-x86_64-cuda.tar.gz",
+      "id": 714874374,
+      "bytes": 165282720,
+      "sha256": "ef32f8a5b19436abed95c73352deae71ba8a0f43603877dee2e0cc4397eaea4b",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-linux-x86_64-cuda.tar.gz",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed-linux-x86_64.tar.gz",
+      "id": 714874378,
+      "bytes": 18151060,
+      "sha256": "b247e6bbf50b1d576af69335cbb098a8b120cc61d738dd3139eda9ec9bac4ea7",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-linux-x86_64.tar.gz",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed-macos-arm64.tar.gz",
+      "id": 714874366,
+      "bytes": 13908566,
+      "sha256": "f13899f9bd5cb1b0a581f95f817325ed014ba9d0bb50f0b9c741b84ce607a9c2",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-macos-arm64.tar.gz",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed-ocr-wasm.tar.gz",
+      "id": 714707062,
+      "bytes": 984477,
+      "sha256": "fffddcec706f197d3fa25433ff45542f5c9fda722a6159f8d7c3b11a9e70c36a",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-ocr-wasm.tar.gz",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed-ocr.js",
+      "id": 714707054,
+      "bytes": 38402,
+      "sha256": "fbdb66dbd251a7ec6dbd3d03b6fc0edd315c3c5598fd5d3d86ef0f6fc9fb4347",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-ocr.js",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed-windows-x86_64-cuda.zip",
+      "id": 714874372,
+      "bytes": 681454113,
+      "sha256": "b8030d21ec76adc20ab909989dcc767eabfad84260a719172b0c9a1154dda8cf",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-windows-x86_64-cuda.zip",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed-windows-x86_64-vulkan.zip",
+      "id": 714874370,
+      "bytes": 28930889,
+      "sha256": "9a4f3b92f8f6f1dfa687c76260bc2a5841a4816cc74ece98d1050791d9da365e",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-windows-x86_64-vulkan.zip",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed-windows-x86_64.zip",
+      "id": 714874379,
+      "bytes": 12887275,
+      "sha256": "3bbf1d415d8796c49b3ffab61bd33b54a930824da2b77f219875986bb2426c67",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-windows-x86_64.zip",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed_ocr.js",
+      "id": 714707053,
+      "bytes": 67196,
+      "sha256": "fe5e667ce364e1be8b5283ada32b6c83fae3cf42436e6323b4c38902fc5da0bd",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed_ocr.js",
+      "state": "uploaded"
+    },
+    {
+      "name": "crispembed_ocr.wasm",
+      "id": 714707056,
+      "bytes": 2889097,
+      "sha256": "c67a6d104f6cc06f085bed7bc8291f66ab1004ad6b2ac9287e7b1a564a167717",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed_ocr.wasm",
+      "state": "uploaded"
+    }
+  ],
+  "native_empty_cache_public_readback_sha256": {
+    "crispembed-linux-x86_64.tar.gz": "b247e6bbf50b1d576af69335cbb098a8b120cc61d738dd3139eda9ec9bac4ea7",
+    "crispembed-linux-arm64.tar.gz": "c5c30444c1514adef14bd5b4d56fd45263f76f5a4c60a21085d94caf89b22b76",
+    "crispembed-macos-arm64.tar.gz": "f13899f9bd5cb1b0a581f95f817325ed014ba9d0bb50f0b9c741b84ce607a9c2",
+    "crispembed-windows-x86_64.zip": "3bbf1d415d8796c49b3ffab61bd33b54a930824da2b77f219875986bb2426c67",
+    "crispembed-android-arm64-v8a.tar.gz": "ba8ac0053d9cb239c5f199d189ff978dd0ddf00d56fa124e2c3bd76956b3b968",
+    "crispembed-android-armeabi-v7a.tar.gz": "4cc0e332933e25c33daed1573c80d9654aa9c495ab14367ea3086a143c5dd4b5",
+    "crispembed-ios-arm64.tar.gz": "958c3136703e744f4d21cec7838d5c035bcb964d5a37e81fab1662fbc715ea77"
+  },
+  "native_readback_matches_build_artifacts": true,
+  "release_notes_sha256": "8f5dcb2f9522059225ba96a946e99c8eb45c16c47ab08abad61e2ed129df11f7",
+  "new_model_quality_qualification": false,
+  "application_pin_changed": false,
+  "pubdev_published": false,
+  "pypi_published": false,
+  "preview_python_wheels": {
+    "id": 42102420721,
+    "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42102420721",
+    "head_sha": "d28ca2ea43a95934d673d1a54177fdf721614ade",
+    "status": "completed",
+    "conclusion": "success"
+  }
+}

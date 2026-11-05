@@ -1,4 +1,4 @@
-# CrispEmbed plan — open work (updated 4 November 2026)
+# CrispEmbed plan — open work (updated 5 November 2026)
 
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
@@ -18,13 +18,13 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | CUDA / Metal audit follow-ups | Matrices in `docs/gpu-support-matrix.md` | One gated GPU path or A/B at a time | Measured A/B before any default flip |
 | Ovis, Josev, MoEdern, UltraBERT, LFM2.5, EmbeddingGemma precision | See the 29 October table below | One bounded protocol at a time | Per-row gates in that table |
 | Issue 71 inpainting | Engines published (default-off); stream and grain correction [PR162](https://github.com/CrispStrobe/CrispEmbed/pull/162) merged | Representative subtitle/video quality, MI-GAN512 Q4_K caveat (0.9019) | Owner-reviewed quality panel |
-| Releases / pub.dev / app pin | v0.17.14 published, pub.dev unqualified, app on 0.17.12 | Qualified assets and fresh consumers first | Release procedure in the pub.dev section |
+| Releases / pub.dev / app pin | v0.17.15 published, pub.dev unqualified, app on 0.17.12 | Qualified assets and fresh consumers first | Release procedure in the pub.dev section |
 | OXR-1.0 quantized + GPU | Q8_0-large / Q4_K-head pass the owner bar (cos ≥ 0.998 vs F16, CPU/Metal/CUDA); German diverges 1 token from decode-step activation quantization | Opt-in F32-activation decode A/B (the recipes are already published and registered as `oxr-1.0-q8_0` / `oxr-1.0-q4_k-head`, PR #97) | A/B receipt; German page token-exact or the divergence attributed |
 | OXR native document route / D-FINE | Hosted helpers/replay/native pass (41249898971), `dfine` stage failed there; D-FINE regions match original 5/5 but 2.6x slower | Re-run `oxr_native_doc.sh` `dfine native` stages on main; encoder per-op profile | Hosted parity on all five cases; profile receipt |
 | MinerU2.5-Pro full native doc route | 8/8 model-backed cases identical (41251475795); default-off | Owner: default-on or not (handoff "Owner decisions"); image-bearing-table fixture | Decision recorded; fixture receipt |
 | Marker-style pipeline / TeleOCR | Implemented and bounded-validated, default-off; TeleOCR strict numerics false at every precision | Representative licensed multilingual/layout gold corpus (needs owner-provided licensed annotations) | Corpus frozen; CER/WER/order receipts |
 | Model-weight licences in apps | Registry/cards/gates corrected; CrispSorter PR20 at0af4c34 adds fail-closed OCR consent, typed Gemma terms, real0.17.12 pin and image backfill. Its reported Metal-feature cargo check passes; PR18 remains draft | Review/integrate [CrispSorter20](https://github.com/CrispStrobe/CrispSorter/pull/20) alongside18; retain Windows-helper/live-OCR gaps. Check CrispCalc consent separately. No vendor/app pin upgrade | Downstream acknowledgement PRs merged and actual consumer checks recorded |
-| **Release v0.17.14** (owner: release once every PR is resolved and main is green) | **Published 4 November 2026** from `9c790c81`; 16 assets (all platform archives, both WASM bundles, CUDA/Vulkan extras); macOS archive checks `0.17.14` and unversioned `@rpath` install names. Downstream apps still pin prebuilt libs to 0.17.12 via `CRISPEMBED_PREBUILT_VERSION` (PR #132) | Section "Release v0.17.14" below: only step 4 remains — tell downstream to drop the override | Downstream told to drop the override; app pins updated by their owners |
+| **Release v0.17.15** | **Published 5 November 2026** from `d28ca2ea4`; full candidate gates and all 16 native/WASM assets verified | Fresh downstream consumer checks and owner-controlled pin updates; package publication separate | Consumer upgrades reviewed against immutable 0.17.15 artifacts |
 | CI selection after PR #134 | Merged; docs/evidence-only pushes run nothing, so the main head may have no Build run | Before tagging: `gh workflow run build.yml --ref main` (and build-wasm, build-wasm-embed, rust-crates, inpaint-cli); confirm the dynamic desktop matrix in build.yml evaluates on hosted runners | One full green Build on the main head |
 | Failing main workflows owned by the integration session | Recorded as non-release-blocking on 4 November 2026 (HISTORY): `MoEdern real padded Q4_K diagnostic` stops at authenticated input preparation (run 41587641989), and `Layer0 attention op-by-op same-input replay v1` is a manual experiment with no main run | Re-run only if the authenticated inputs are authorized; otherwise no release action | Recorded; re-run or leave closed |
 | Embedder/tokenizer residuals (CUDA audit, PR #115/#122) | Fixed: SPM space collapse, XLM-R pair layout, 512 truncation | `xlmr-ner-hrl` GGUF has no Unigram scores (reconvert with scores); `paraphrase-multilingual` native truncates at 512, original at 128 (honour `max_seq_length`); Ettin reranker unchecked (tokenizer needs transformers 5) | Each matches the original on the 77-text panel |
@@ -33,36 +33,22 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Big-LaMa (research only) | Weights' rights unclear; kept on `feat/issue71-lama-research`, private Hub copy only | Nothing until the owner clarifies the weight licence | Licence clarified (then publish) or lane closed |
 | Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
 
-## Release v0.17.15 — authorized execution, 5 November 2026
+## Post-release v0.17.15 — 5 November 2026
 
-[Candidate release notes](RELEASE_NOTES_v0.17.15.md) cover changes since
-[published v0.17.14](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.14)
-through `0b0af65e5914b6c50320147982caf4c204a50622`. A patch release is useful for
-the temporal-inpainting grain regression; most other changes are opt-in LightOn3
-corrections, converter/reference repairs and bounded OCR evidence. No new model
-or default promotion is needed for this patch.
+[Native/WASM v0.17.15](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.15)
+is published from `d28ca2ea43a95934d673d1a54177fdf721614ade` after all full
+candidate gates. All 16 assets and seven full hosted native readbacks are verified
+in [the receipt](tests/results/releases/v0.17.15.json); completed sources/runs and
+limits are in HISTORY. Draft PRs #155/#157 were explicitly excluded from this release
+and remain unmerged with their owners. Preserve the tag and source receipts.
 
-The owner authorized this release after the readiness review. Draft PRs155/157
-are explicitly excluded from this cut and remain with their existing lane;
-none of their unmerged LightOn4B work is included. Release notes and the package
-changelog are prepared for publication. Freeze this preparation commit, run the
-five full hosted workflows below on its exact source, and tag only after every
-required check passes. Earlier selected PR162/main runs are complementary, not
-substitutes for the release matrix.
-
-Before publication, freeze the final main candidate; dispatch full `build.yml`,
-`build-wasm.yml`, `build-wasm-embed.yml`, `rust-crates.yml` and `inpaint-cli.yml`
-on that source and inspect every required leg. Check version/package/changelog
-consistency and the existing pub.dev preflight separately from actual publication.
-Then follow the tag/manual release dispatch and notes-attachment procedure below,
-review immutable assets and fresh consumers. Experimental OCR qualification and
-downstream app pins remain separate. The authorized cut publishes native/WASM 0.17.15 assets; pub.dev and downstream
-application upgrades remain separate. Record actual run IDs, tag and asset checks
-in HISTORY after publication, and keep old source/quality failures intact.
-
-Old tracked `RELEASE_NOTES_*.md` snapshots are removed; prior release bodies remain
-on [GitHub Releases](https://github.com/CrispStrobe/CrispEmbed/releases) and the
-deleted file versions remain in Git history. Keep the current candidate's notes.
+Remaining work is downstream consumer qualification and owner-controlled app pin
+updates; the application still pins 0.17.12. PyPI/pub.dev publication stays separate
+and disabled. Do not infer new model or precision qualification from a release
+build. Keep LightOn3 correction gates off unless explicitly enabled, and retain
+all prior capped/negative OCR evidence. The current release notes remain in
+[RELEASE_NOTES_v0.17.15.md](RELEASE_NOTES_v0.17.15.md); eight older tracked snapshots
+were removed while GitHub release bodies and Git history preserve their content.
 
 ## Regression review and OCR continuation — 4 November 2026
 
@@ -156,13 +142,14 @@ present, install names are unversioned `@rpath/lib*.dylib`, and `libcrispembed.d
 current version 0.17.14. Only step 4 (downstream switch) is still open; the pub.dev publish job
 stayed skipped because that package is not qualified (PR #91 follow-ups).
 
-Operational note for the next cut: pushes of `v*` tags start no workflow in this repository, so
-both `release.yml` and `release-wasm.yml` must be dispatched at the tag ref
-(`gh workflow run release.yml --ref vX.Y.Z` and the same for `release-wasm.yml` with
-`-f tag=vX.Y.Z`). `release.yml` creates the release with an empty body, so attach the notes with
-`gh release edit vX.Y.Z --notes-file RELEASE_NOTES_vX.Y.Z.md`. Its `Create GitHub Release` step
-can fail transiently while uploading the multi-hundred-MB CUDA bundles; rerun the failed jobs
-once the release exists instead of re-cutting the tag.
+Operational note for the next cut: v0.17.15's tag push automatically started
+`release.yml`, `release-wasm.yml` and preview Python wheels. Inspect exact tag/SHA
+runs before dispatching anything; do not duplicate a healthy automatic build.
+If a workflow genuinely did not start, dispatch it at the immutable tag ref
+(`gh workflow run release.yml --ref vX.Y.Z`, or `gh workflow run release-wasm.yml
+--ref vX.Y.Z -f tag=vX.Y.Z`). Attach the reviewed body with
+`gh release edit vX.Y.Z --notes-file RELEASE_NOTES_vX.Y.Z.md` and verify it survives
+uploads. Retry only failed transient upload jobs; never move/re-cut a public tag.
 
 ## Quantizer changes and the OCR quality contract
 

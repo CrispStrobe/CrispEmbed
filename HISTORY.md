@@ -2,6 +2,49 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 5 November 2026 — v0.17.15 published and verified
+
+[Release v0.17.15](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.15)
+is published from immutable source `d28ca2ea43a95934d673d1a54177fdf721614ade`.
+The owner authorized this cut and excluded unmerged LightOn4B draft PRs #155/#157;
+those lanes remain with their existing owners. Versions/package metadata and
+released changelog agree at 0.17.15. The release notes cover only merged changes.
+
+All five full candidate workflows, plus lint and secret scan, pass on the exact
+source: 29 successful jobs. Full Build
+[42101523884](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42101523884)
+includes all desktop/mobile/native legs, sibling linkage and Flutter packaging;
+OCR WASM 42101527815, embedding WASM 42101532360, Rust 42101537877 and three-platform
+inpainting 42101542663 pass. This is release/build evidence, not a new claim of
+all-model numerical parity. Existing capped outputs and negative quality receipts
+remain unchanged; both LightOn3 correction gates remain default-off.
+
+The tag push automatically started native
+[42102421218](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42102421218),
+WASM [42102420486](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42102420486)
+and preview Python wheels 42102420721. No duplicate manual release dispatch was
+made. Native and WASM release workflows pass, including CUDA/Vulkan packaging,
+portable CPU baselines, Linux dependency/glibc checks and the macOS extracted
+archive's regular dylibs/install names/signatures/CLI/library-load checks.
+
+All 16 expected uploaded assets have nonempty sizes and GitHub SHA-256 digests:
+seven required native/mobile archives, four GPU variants and five WASM assets.
+The hosted pub.dev preflight downloaded all seven required native archives from
+the public release and compared their full SHA-256 values against this run's
+build artifacts; all match, independently agreeing with the GitHub asset digests.
+[The verification receipt](tests/results/releases/v0.17.15.json) records exact
+runs/jobs/source, sizes/digests and seven readback hashes. Large payloads stayed
+remote; only metadata and needed logs/reports were reviewed during integration.
+Release notes are attached and verified against the committed notes file.
+
+This release fixes temporal-grain propagation and adds the already gated LightOn3
+corrections/converter repairs and OCR evidence described in the notes. No new
+model alias or precision qualification, pub.dev/PyPI upload, application pin or
+consumer upgrade follows. Preview Python wheels remain workflow artifacts.
+The application still pins 0.17.12; downstream upgrades require their own immutable
+asset/consumer review. This closing commit changes documentation and the receipt
+only, preserving the published tag and tested runtime/workflow bytes.
+
 ## 5 November 2026 — 0.17.15 candidate notes and old snapshot cleanup
 
 Compared published tag `v0.17.14` with main
