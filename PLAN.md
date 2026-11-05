@@ -1319,3 +1319,28 @@ controls, compiled at original AVX2 and default dispatch with strict/contracted/
 fast-math flags, versus the retained full F32 softmax/probability/reciprocal bytes.
 Check actual header/git/library identities and exp0 before source inference; stop
 on linkage/original controls. No guessed exp approximation is imported into runtime.
+
+### 2026-11-05: exact source-fed vision softmax integration
+
+Reference retry [42052003211](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42052003211)
+at `13909256012d8e85483a121e1c9c26db884dc3aa` reproduces all 5,017,600
+F32/BF16 probabilities and 8,960 reciprocals with the original AVX2 vector headers.
+The initial namespace-only compile failure 42050508555 is retained; no arrays or
+model were transferred before it failed. Standalone Torch.exp differs at 493,502
+values, so it cannot replace the original softmax vector exp.
+
+Production [42053439752](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42053439752)
+at `7284cec3e988bd302f1b8529bb08201ddea00abc` validates a self-contained adaptation
+of pinned SLEEF xexpf (Boost 1.0 notice retained), explicit FMAs and original
+8-lane reduction. All F32 probabilities, reciprocals and 573,440 actual pooled
+values match original bytes: old 65 differences, partial QK/PV 20, exact softmax 0.
+Empty/0 and ATTENTION-off preserve previous bytes. No Torch dependency is added.
+
+The separate default-off `CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2` requires
+ATTENTION and x86_64 AVX2/FMA with nearest rounding. Unsupported platforms,
+nonfinite input and unsupported shapes preserve the previous softmax. Integration
+also skips an unused legacy division on the new path; focused final verification
+is pending. Source-fed cosine/sine remain distinct from runtime-generated rotary
+tables. Prior negative decoded evidence remains; no quality, default, release or
+app-pin promotion. Exact source, artifact identities and 90-day expiry are in
+`tests/results/qwen35-ocr/lightonocr3-4b-softmax-{vector-initial,vector-source,production}.json`.

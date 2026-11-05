@@ -36,6 +36,17 @@ int main(int argc, char ** argv) {
             unsetenv("CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION");
 #endif
     };
+    auto softmax_gate = [](const char * value) {
+#ifdef _WIN32
+        _putenv_s("CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2", value ? value : "");
+#else
+        if (value)
+            setenv("CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2", value, 1);
+        else
+            unsetenv("CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2");
+#endif
+    };
+    softmax_gate(nullptr);
     gate(nullptr);
     emit("actual.pooled", attention(qkv, c, N, { 0, N }, co, si));
     for (const char * value : { "", "0" }) {
@@ -44,6 +55,17 @@ int main(int argc, char ** argv) {
     }
     gate("1");
     emit("actual.corrected_pooled", attention(qkv, c, N, { 0, N }, co, si));
+    if (!source_avx2_softmax_supported()) throw std::runtime_error("AVX2/FMA nearest rounding required");
+    for (const char * setting : { "", "0", "1" }) {
+        softmax_gate(setting);
+        if (setting[0] == '1') std::feclearexcept(FE_DIVBYZERO | FE_INVALID);
+        emit(std::string("actual.softmax_") + (setting[0] ? setting : "empty"), attention(qkv, c, N, { 0, N }, co, si));
+        if (setting[0] == '1' && std::fetestexcept(FE_DIVBYZERO | FE_INVALID))
+            throw std::runtime_error("exact softmax raised invalid/divide by zero");
+    }
+    gate("0");
+    emit("actual.softmax_attention_off", attention(qkv, c, N, { 0, N }, co, si));
+    softmax_gate(nullptr);
     gate(nullptr);
     std::vector<float> q(N * W), k(N * W), v(N * W);
     for (int t = 0; t < N; ++t)
@@ -107,6 +129,17 @@ int main(int argc, char ** argv) {
         }
         return y;
     };
+    std::vector<float> exact_prob(os), exact_exp(os), exact_inverse(H * N);
+    for (int r = 0; r < H * N; ++r) {
+        float inverse = 0;
+        if (!source_avx2_softmax(exact_exp.data() + size_t(r) * N, N, inverse))
+            throw std::runtime_error("exact softmax refused source");
+        exact_inverse[r] = inverse;
+        for (int i = 0; i < N; ++i) exact_prob[size_t(r) * N + i] = exact_exp[size_t(r) * N + i] * inverse;
+    }
+    emit("sourcefed.exact_prob_float", exact_prob);
+    emit("sourcefed.exact_exp", exact_exp);
+    emit("sourcefed.exact_inverse", exact_inverse);
     auto np = softmax(ns, false, nullptr);
     emit("native.prob", np);
     emit("sourcefed.softmax_std_double", softmax(os, false, nullptr));

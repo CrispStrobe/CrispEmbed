@@ -20791,3 +20791,12 @@ differences fall65→20, but whole attention remains inexact; original reciproca
 plus source/std exp still leaves12 probability differences. Exact-vector-header
 softmax attribution is the next bounded lane. Prior Q4 decoded-negative evidence
 remains; no model run, quality, default, release or app-pin promotion follows.
+
+### 2026-11-05 — Source-fed vision attention exactness behind an isolated gate
+
+Pinned AVX2 vector-header attribution and self-contained SLEEF-compatible exp /
+reduction now reproduce all source-fed F32 probabilities and pooled attention
+bytes. Separate default-off softmax gate preserves old paths and requires
+x86_64 AVX2/FMA with nearest rounding. Focused assembled verification and ordinary
+Q4 A/B remain pending; runtime rotary generation and decoded quality are separate
+boundaries. Previous negative quality evidence remains, with no release change.

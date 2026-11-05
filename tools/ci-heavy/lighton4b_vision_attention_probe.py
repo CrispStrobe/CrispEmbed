@@ -92,6 +92,9 @@ def main():
        for lane in range(1,lanes):total+=sums[:,lane]
       inv=np.float32(1)/total;result=bf16(source_exp*inv[:,None]).reshape(-1);label=f'lanes{lanes}-regs{registers}-{register_order}-{lane_order}'
       report['softmax_reductions'][label]={'inverse_bit_differences':int(np.count_nonzero(inv.view('<u4')!=inverse.view('<u4'))),'inverse_max_abs':float(np.max(np.abs(inv-inverse))),'probability_bit_differences':int(np.count_nonzero(result.view('<u4')!=expected.view('<u4')))}
+  report['production_exact_softmax']={'probability_f32':compare(prob_ref,np.fromfile(stages/'sourcefed.exact_prob_float.f32',dtype='<f4')),'inverse':compare(inverse,np.fromfile(stages/'sourcefed.exact_inverse.f32',dtype='<f4')),'pooled':compare(original,np.fromfile(stages/'actual.softmax_1.f32',dtype='<f4')),'disabled':{g:compare(np.fromfile(stages/'actual.corrected_pooled.f32',dtype='<f4'),np.fromfile(stages/('actual.softmax_'+g+'.f32'),dtype='<f4'))for g in ('empty','0')}}
+  checks=report['production_exact_softmax'];required=[checks['probability_f32'],checks['inverse'],checks['pooled'],compare(old,np.fromfile(stages/'actual.softmax_attention_off.f32',dtype='<f4')),*checks['disabled'].values()]
+  if not all(r['bit_exact']for r in required):raise ValueError('exact production softmax control differs')
   report['artifacts']={p.name:{'bytes':p.stat().st_size,'sha256':sha(p)}for p in stages.iterdir()};report['status']='compared'
  except Exception as e:
   report['error_type']=type(e).__name__;report['error']='bounded retained attention attribution failed; inspect logs';raise RuntimeError(report['error'])from None
