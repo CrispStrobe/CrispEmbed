@@ -1021,3 +1021,15 @@ retain the exact initial source/hash/gates/preflight. The corrected adapter
 matches the exported`lightonocr3-4b` profile. Corrected smoke waits for its hosted
 metadata/tokenizer controls. Initial subsecond sampledRSS is not a true process
 peak; corrected workers use GNU time child rusage for peakRSS/CPU/wall timing.
+
+### Frozen-case runner and mixed storage admission — 5 November
+
+`feat/lighton4b-frozen-cases-20261105` extends the exact`fd150b98f` prototype in a
+separate isolated lane. The immutable active full panels remain unchanged. An
+explicit default-off`CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4` admits only the
+fixed policy: all96 FFN matrices Q4_K, all152 linear/full-attention matrices Q8_0,
+the same Q8_0 tied embedding/head, and the existing protected F32 vision/norm/
+recurrent tensors. Uniform old Q8/Q4 policies remain distinct and arbitrary
+mixed storage is rejected. Metadata-policy controls precede actual file use.
+The generalized worker will authenticate frozen image/cap/original-reference
+case manifests and weights; no source image, prompt, gold or budget tuning.

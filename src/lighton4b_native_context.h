@@ -4,6 +4,31 @@
 #include "ggml-cpu.h"
 
 namespace qwen35_ocr {
+enum class lighton4b_quant_recipe { q8_0, q4_k, attention_q8_ffn_q4 };
+// Exact storage policy, separate from shape/source ownership and payload admission.
+inline bool lighton4b_quant_recipe_matches(const decoder_weights & decoder, lighton4b_quant_recipe recipe) {
+    if (recipe != lighton4b_quant_recipe::q8_0 && recipe != lighton4b_quant_recipe::q4_k &&
+        recipe != lighton4b_quant_recipe::attention_q8_ffn_q4) return false;
+    auto type = [](const ggml_tensor * t, ggml_type expected) { return t && t->type == expected; };
+    if (decoder.layers.size() != 32 || decoder.head != decoder.embedding ||
+        !type(decoder.embedding, GGML_TYPE_Q8_0)) return false;
+    const auto ffn = recipe == lighton4b_quant_recipe::q8_0 ? GGML_TYPE_Q8_0 : GGML_TYPE_Q4_K;
+    const auto attention = recipe == lighton4b_quant_recipe::q4_k ? GGML_TYPE_Q4_K : GGML_TYPE_Q8_0;
+    for (size_t i = 0; i < decoder.layers.size(); ++i) {
+        const auto & layer = decoder.layers[i];
+        if (layer.full_attention != (i % 4 == 3)) return false;
+        for (auto * t : { layer.gate, layer.up, layer.down }) if (!type(t, ffn)) return false;
+        if (layer.full_attention) {
+            for (auto * t : { layer.attention.q, layer.attention.k, layer.attention.v, layer.attention.out })
+                if (!type(t, attention)) return false;
+        } else {
+            for (auto * t : { layer.linear.qkv, layer.linear.z, layer.linear.a, layer.linear.b, layer.linear.out })
+                if (!type(t, attention)) return false;
+        }
+    }
+    return true;
+}
+
 // Experimental payload owner. Admission is structural, never quality qualification.
 // Uses the immutable format-5 source contract and frozen protected-vision recipe.
 class lighton4b_native_context {
@@ -28,21 +53,11 @@ public:
         auto header = lighton4b_gguf_inspection::open(path);
         if (!header) return nullptr;
         const auto & decoder = header->model().text.decoder;
-        const auto recipe = decoder.embedding->type;
-        if (recipe != GGML_TYPE_Q8_0) return nullptr;
-        const auto matrix_type = decoder.layers.front().gate->type;
-        if (matrix_type != GGML_TYPE_Q8_0 && matrix_type != GGML_TYPE_Q4_K) return nullptr;
-        for (const auto & layer : decoder.layers) {
-            for (auto * t : { layer.gate, layer.up, layer.down })
-                if (t->type != matrix_type) return nullptr;
-            if (layer.full_attention) {
-                for (auto * t : { layer.attention.q, layer.attention.k, layer.attention.v, layer.attention.out })
-                    if (t->type != matrix_type) return nullptr;
-            } else {
-                for (auto * t : { layer.linear.qkv, layer.linear.z, layer.linear.a, layer.linear.b, layer.linear.out })
-                    if (t->type != matrix_type) return nullptr;
-            }
-        }
+        const bool mixed = core_env::on("CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4");
+        const auto recipe = mixed ? lighton4b_quant_recipe::attention_q8_ffn_q4 :
+                            decoder.layers.front().gate->type == GGML_TYPE_Q8_0 ? lighton4b_quant_recipe::q8_0 :
+                            lighton4b_quant_recipe::q4_k;
+        if (!lighton4b_quant_recipe_matches(decoder, recipe)) return nullptr;
         auto candidate = std::unique_ptr<lighton4b_native_context>(new lighton4b_native_context);
         candidate->backend_ = ggml_backend_cpu_init();
         if (!candidate->backend_ ||
