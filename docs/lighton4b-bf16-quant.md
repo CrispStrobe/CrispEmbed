@@ -145,3 +145,37 @@ capture and all177 authenticated rows, then actualRef plus complete decoded/EOS
 comparison. It performs no inference, retains large inputs in hosted scratch,
 and rejects empty/unreviewed admission before transfer. The protocol remains
 byte-identical; source/run/weight/capture tuples belong in the separate registry.
+
+## Retained-score rank and gated-path diagnostics
+
+No inference was repeated by these comparers. Authenticated retained-vector
+[Q8 patterns42003109155](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42003109155)
+preserve all top8 ranks: original ID27 probability0.821857 becomes0.826126;
+ID20353 remains second. [Q4 patterns42003112983](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42003112983)
+reverse the two winners: ID20353 probability0.525659 versus ID27 probability
+0.245700; table-minus-figure gap changes from-2.125 to+0.760540. A positive
+affine fit (slope0.979528/intercept0.406107) leaves RMS0.428556/max2.468551
+residual, including winner residuals-1.635999/+1.206038. This rank reversal is
+not explained by a global positive scale or offset. Fitting is diagnostic;
+no logits, arrays, thresholds or inference were changed. Exact source/artifact/
+row proofs and top8 probabilities remain in the [Q8](../tests/results/qwen35-ocr/lightonocr3-4b-q8-score-patterns.json)
+and [Q4](../tests/results/qwen35-ocr/lightonocr3-4b-q4-score-patterns.json) receipts.
+
+| Retained native path | Q8 max/RMS/cosine | Q4 max/RMS/cosine |
+|---|---|---|
+| Legacy (`fd150b98`) |0.568259/0.130495/0.998469710|2.494229/0.571913/0.976987541|
+| Direct quant (`6d94fd9b`) |0.647667/0.170557/0.997532368|2.658515/0.606225/0.974644244|
+| BF16 vision (`891d07da`) |1.092199/0.200537/0.996400595|2.610071/0.545670/0.978054762|
+
+All six raw numerical results fail; each retains finite248,320-element scores
+and unchanged Q8 `<figure`/Q4 `<table>` two-token prefixes. Direct-quant
+[Q842004610956](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42004610956)
+and [Q442004615158](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42004615158)
+are numerically worse than legacy on this position. BF16-vision
+[Q842006393935](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42006393935)
+and [Q442006480602](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42006480602)
+do not establish strict parity or repair the Q4 prefix; Q4 RMS improves while
+its maximum error worsens. Local operator/component improvements are not a
+composed decoded-quality claim. Both new paths stay default-off; old full
+captures and every rejected result remain unchanged. These observed-form
+findings may not select tensors or tune a new heldout panel.

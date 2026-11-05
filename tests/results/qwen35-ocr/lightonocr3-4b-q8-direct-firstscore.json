@@ -1,0 +1,161 @@
+{
+  "schema": "lighton4b-bf16-native-first-score/v1",
+  "status": "compared",
+  "native_execution_admitted": false,
+  "full_document_parity_qualified": false,
+  "quality_qualified": false,
+  "original_forward_executed": false,
+  "native_forward_executed_by_comparer": false,
+  "compared_positions": 1,
+  "internal_stage_attribution_available": false,
+  "stage": "compare-first-score",
+  "score_patterns": {
+    "count": 248320,
+    "original_top": [
+      {
+        "id": 27,
+        "score": 22.875,
+        "probability": 0.8218573471814169
+      },
+      {
+        "id": 20353,
+        "score": 20.75,
+        "probability": 0.09815686246568853
+      },
+      {
+        "id": 2,
+        "score": 19.5,
+        "probability": 0.028122411941165708
+      },
+      {
+        "id": 8909,
+        "score": 18.875,
+        "probability": 0.015052842389027866
+      },
+      {
+        "id": 2425,
+        "score": 18.75,
+        "probability": 0.013284086783411194
+      },
+      {
+        "id": 248046,
+        "score": 17.75,
+        "probability": 0.004886942422354252
+      },
+      {
+        "id": 550,
+        "score": 17.375,
+        "probability": 0.003358743132952861
+      },
+      {
+        "id": 6164,
+        "score": 17.25,
+        "probability": 0.0029640804114081797
+      }
+    ],
+    "native_top": [
+      {
+        "id": 27,
+        "score": 22.819719314575195,
+        "probability": 0.8302400245863093
+      },
+      {
+        "id": 20353,
+        "score": 20.690807342529297,
+        "probability": 0.0987708848119939
+      },
+      {
+        "id": 2,
+        "score": 19.150165557861328,
+        "probability": 0.02116102589402104
+      },
+      {
+        "id": 8909,
+        "score": 18.794036865234375,
+        "probability": 0.014820811802911582
+      },
+      {
+        "id": 2425,
+        "score": 18.63408088684082,
+        "probability": 0.012630018706763438
+      },
+      {
+        "id": 248046,
+        "score": 17.82375717163086,
+        "probability": 0.005616747177432971
+      },
+      {
+        "id": 550,
+        "score": 17.180866241455078,
+        "probability": 0.002953118622476048
+      },
+      {
+        "id": 6164,
+        "score": 17.00006866455078,
+        "probability": 0.00246468545578494
+      }
+    ],
+    "original_winner_native_rank": 1,
+    "native_winner_original_rank": 1,
+    "native_minus_original_winner_gap": {
+      "original": 0.0,
+      "native": 0.0
+    },
+    "raw_max_abs": 0.6476669311523438,
+    "raw_rms": 0.17055705110844477,
+    "mean_shift": -0.13200394242759494,
+    "centered_delta_rms": 0.10800308730022863,
+    "affine_fit": {
+      "native_approximately_slope_times_original_plus_intercept": true,
+      "slope": 1.0026721325470973,
+      "intercept": -0.13578895077121778,
+      "residual_rms": 0.107907360706653,
+      "residual_max_abs": 0.7188191038831944,
+      "residual_at_original_winner": 0.019383233331563332,
+      "residual_at_native_winner": 0.019383233331563332
+    },
+    "limits": "Output-score diagnostic only; affine fitting changes no arrays, logits, thresholds or inference. No internal-stage attribution."
+  },
+  "numerical_passed": false,
+  "metrics": {
+    "passed": "0",
+    "finite": "1",
+    "count": "248320",
+    "max_abs": "0.647666931",
+    "mean_abs": "0.145691529",
+    "rms": "0.170557052",
+    "row_cos": "0.997532368",
+    "ref_norm": "1103.18604",
+    "native_norm": "1065.46814"
+  },
+  "earliest_observed_score_difference": 0,
+  "earliest_score_budget_failure": 0,
+  "original_row_sha256": "a4bece2310050081b502a3910a19469e47016829d74abebb29861739f3205ffd",
+  "native_row_sha256": "b841cb3d7f06072646390f5a227cb45f19ff7c963d2d29f91f978e0b48c2dc95",
+  "native_precision": "q8_0",
+  "native_run": "42003514836",
+  "native_source": "6d94fd9b4cbd82d930e18695c9e0f9b57fe5c68b",
+  "native_receipt_sha256": "7ed32c87382671dfe741cf479bd0e787fd5e84d965fbc99f6892ca91ee58a2fa",
+  "native_artifact": {
+    "id": 13403178898,
+    "digest": "sha256:93c13d735f833761bb0b0d65fda5cb681f185f912e2c2fa55bcfea950e4d9a75",
+    "size_in_bytes": 109882703,
+    "expires_at": "2026-11-19T09:38:53Z"
+  },
+  "original_provider": {
+    "service": "Kaggle",
+    "kernel_slug": "lightonocr-4b-bf16-cpu-capture-v1",
+    "version_label": "v1"
+  },
+  "original_first_id": 27,
+  "original_decoded": "<figure>\n### Figure \u2013 Interface de saisie de donn\u00e9es\n*Type: autre*\n\nL'image montre une interface utilisateur avec des champs de saisie et des options. Elle semble \u00eatre utilis\u00e9e pour entrer des informations comme un texte, un num\u00e9ro, une date, un mot de passe, et des cases \u00e0 cocher.\n\nLes \u00e9l\u00e9ments visibles incluent : \"Input\", \"Texte\", \"Number\", \"Date\", \"Password\", \"a label\", \"ANOTHER LABEL\", \"Yet another label\", \"combo suggest\", \"Finland\", \"France\", \"checkbox1\", \"checkbox2\", \"checkbox3\", \"CodeLabel\", \"code fill\", \"code\", \"Button\", \"Rechercher...\", \"Modifier l'utilisateur\", \"TEXTAREA\", \"Texte\", \"Radio\", \"Drag and drop frames\", \"Fixe frames\".\n</figure>",
+  "native_smoke_decoded": {
+    "ids": [
+      27,
+      17251
+    ],
+    "text": "<figure",
+    "exact_original_ids": false
+  },
+  "binary_sha256": "d6898491984110b0536dcd43ddb1091f6559495a79dfb23389baedb8dc4ae246"
+}

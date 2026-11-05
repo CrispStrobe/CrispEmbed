@@ -7903,3 +7903,11 @@ All248,320 scores are finite. Q8 matches original two-ID prefix `<figure`;
 plain Q4_K starts `<table>`. Two-token cap/noEOS is not final decoded parity.
 Full177-row independent-generation panels and original internal attribution
 remain separate; see [exact protocol and receipts](docs/lighton4b-bf16-quant.md).
+
+Gated direct-quant firstscore42004610956/42004615158 is worse versus original
+BF16: Q8/Q4 max0.647666931/2.65851498, RMS0.170557052/0.606224835,
+cosine0.997532368/0.974644244. BF16-vision42006393935/42006480602 yields
+max1.09219897/2.61007118, RMS0.200536951/0.545669734 and
+cosine0.996400595/0.978054762. All fail unchanged strict gates and retain
+Q8 `<figure`/Q4 `<table>` two-token prefixes. These source-pinned smoke paths
+are not full decoded parity or model qualification; both gates remain off.

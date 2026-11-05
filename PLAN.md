@@ -1025,3 +1025,13 @@ failures as harness-only zero-position evidence. Exact `v1` spelling and explici
 six dependency repair change no score/reference/budget. Full native177-position
 Q842001328483/Q442001333207 remain executing at exactfd150b98 source; full
 comparer is prepared and registry remains empty pending their actual receipts.
+
+Retained-score patterns42003109155/42003112983 preserve Q8top8 ranks, but Q4
+flips the first two candidates: table-minus-figure gap-2.125→+0.760540;
+positive-affine residualRMS0.428556 rules out a pure global scale/offset account.
+Exact raw reports are linked in [the protocol](docs/lighton4b-bf16-quant.md).
+Direct-quant firstscore42004610956/42004615158 is worse than legacy
+(max0.647667/2.658515); BF16-vision42006393935/42006480602 also fails
+(max1.092199/2.610071), with unchanged prefixes. No default promotion follows.
+Use the separately predeclared independent mixed panel; never tune its heldout
+cases from this observed form or from late-layer maxima.
