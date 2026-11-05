@@ -19,6 +19,9 @@ int main(int argc,char**argv) {
     std::ifstream generated(argv[2]);std::vector<int> generated_ids;int id;while(generated>>id)generated_ids.push_back(id);
     std::string decoded;if(!tokenizer.decode(generated_ids,decoded))return 6;
     std::ofstream(std::string(argv[3])+"/decoded.txt")<<decoded;
+    std::ifstream cases(std::string(argv[3])+"/text-cases.txt");
+    std::ofstream case_ids(std::string(argv[3])+"/text-cases.ids");std::string text;
+    while(std::getline(cases,text)) {std::vector<int> encoded;if(!tokenizer.encode(text,encoded))return 12;for(int token:encoded)case_ids<<token<<' ';case_ids<<'\n';}
     if(!tokenizer.is_stop(248046)||tokenizer.is_stop(248044))return 7;
     if(tokenizer.image_prompt("changed",140,ids,modalities,rendered))return 8;
     if(tokenizer.image_prompt("",0,ids,modalities,rendered))return 9;
