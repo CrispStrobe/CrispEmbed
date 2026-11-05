@@ -1003,3 +1003,9 @@ both methods with actualRef equal/error/tamper and contract negatives; see
 [receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-quant-controls.json).
 Initial41997070623 was cancelled while queued after a source amendment. No
 model forward/native admission follows from these synthetic control results.
+
+Final actual-Q4_K/receipt-bound comparison controls41998539516 at `acc4e5dec`
+pass both actualRef/control methods; see
+[final receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-quant-controls-final.json).
+The earlier41998345877 receipt-binding controls also pass. Superseded41998180454
+and41998220523 were cancelled before execution. Native admission remains empty.

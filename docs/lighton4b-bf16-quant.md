@@ -68,3 +68,13 @@ The Q4 candidate is the actual plain `q4_k` recipe, not a Q4_K_M mixture:
 The prior preparatory `q4_k_m` label remains in Git history; it was never an
 admitted or executed native producer. Receipt-digest binding was added before
 any native admission. Current protocol digest must be used by future captures.
+
+Final actual-Q4_K/receipt-bound
+[controls41998539516](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41998539516)
+at `acc4e5dece62bd49c576528d63fd30e33dd4739b` pass both methods, including
+below-budget nonzero drift, first threshold failure, corrupted bytes, forged
+producer and changed receipt-digest negatives. The
+[final receipt](../tests/results/qwen35-ocr/lightonocr3-4b-bf16-quant-controls-final.json)
+retains exact hashes. Earlier41998345877 independently passes receipt binding
+before the Q4 recipe-label amendment. Superseded41998180454 and41998220523
+were cancelled before execution. No actual native producer was admitted.
