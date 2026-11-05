@@ -1579,6 +1579,17 @@ target_link_libraries(test-ovisocr2-ffn PRIVATE crispembed-qwen35-delta crispemb
 add_executable(test-qwen35-decoder tests/test_qwen35_decoder.cpp)
 target_link_libraries(test-qwen35-decoder PRIVATE crispembed-qwen35-delta crispembed-core)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+    add_executable(test-lighton4b-dense-trace tests/test_lighton4b_dense_trace.cpp)
+    target_link_libraries(test-lighton4b-dense-trace PRIVATE crispembed-qwen35-delta crispembed-core)
+    target_compile_options(test-lighton4b-dense-trace PRIVATE -mavx2 -mfma -fno-fast-math -ffp-contract=off -fno-tree-vectorize)
+    target_link_options(test-lighton4b-dense-trace PRIVATE -Wl,--wrap=ggml_vec_dot_f32)
+    if(GGML_LLAMAFILE)
+        target_compile_definitions(test-lighton4b-dense-trace PRIVATE CRISPEMBED_TRACE_LLAMAFILE=1)
+        target_link_options(test-lighton4b-dense-trace PRIVATE -Wl,--wrap=llamafile_sgemm)
+    endif()
+endif()
+
 add_executable(test-lighton4b-decoder-upstream tests/test_lighton4b_decoder_upstream.cpp)
 target_link_libraries(test-lighton4b-decoder-upstream PRIVATE crispembed-qwen35-delta crispembed-core)
 
