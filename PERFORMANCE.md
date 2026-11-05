@@ -7934,3 +7934,15 @@ to the BF16 baseline, and source begins`<figure`. These bounded two-token runs
 do not test full completion/EOS/confidence/document quality. No speed, model
 quality, cross-platform, release or default promotion follows. Initial AVX512
 original-control failure remains retained; source dispatch is explicitly AVX2.
+
+### LightOn4B bounded decoder BF16 diagnostics — 5 November2026
+
+These are one-layer numerical limits, not speed or OCR qualification. Exact
+source-order RMS closes394,240 input norm values and630,784 GDN pre-weight norm
+values. Composed42032626361 then first fails QKV at0.015625 official/
+0.03125 Q8-Q4. Final hidden errors vs the corresponding activation oracle improve
+from0.03125→0.00390625 official,0.03125→0.0078125 Q8 and0.015625→0.00390625 Q4;
+all remain above0.002. All112 legacy same-weight stages and same-process/cache
+controls pass. Defaults remain unchanged; full decoder/decoded/platform gates are
+open. [Complete raw reports and comparison limits](docs/lighton4b-layer0-attribution-results.md)
+separate same-weight implementation error, precision and quantization loss.

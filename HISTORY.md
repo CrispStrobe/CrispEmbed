@@ -20807,3 +20807,11 @@ legacy/cache/direct-entry controls pass and old alternatives remain red. The
 separate composed layer0 continuation still carries projection/GDN/FFN/decoded
 debt. [The actual-helper receipt](docs/lighton4b-layer0-attribution-results.md)
 imports no runtime source or release/default change into qualification.
+
+Composed LightOn4B exact-RMS42032626361/5b47ed44e reaches bit-exact input norm,
+then fails QKV (official0.015625, Q8/Q40.03125). Hidden error improves but remains
+strict-negative. All112 legacy stages and true same-process mode/cache controls
+pass. The complete report now records numerical rejection before its red exit;
+no decoder expansion or decoded-quality claim follows. Focused source-fed QKV dot
+attribution is a separate operator scope; [all measured limits and earlier
+failures](docs/lighton4b-layer0-attribution-results.md) remain preserved.
