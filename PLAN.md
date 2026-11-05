@@ -17,7 +17,7 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Reranker residual (~0.2 logits) | Pair layout/truncation fixed (PR122) | Fix the stage-diff harness, Spearman/top-k instead of exact argsort | Attributed or accepted |
 | CUDA / Metal audit follow-ups | Matrices in `docs/gpu-support-matrix.md` | One gated GPU path or A/B at a time | Measured A/B before any default flip |
 | Ovis, Josev, MoEdern, UltraBERT, LFM2.5, EmbeddingGemma precision | See the 29 October table below | One bounded protocol at a time | Per-row gates in that table |
-| Issue 71 inpainting | Engines published (default-off); stream merged | Representative subtitle/video quality, MI-GAN512 Q4_K caveat (0.9019) | Owner-reviewed quality panel |
+| Issue 71 inpainting | Engines published (default-off); stream and grain correction [PR162](https://github.com/CrispStrobe/CrispEmbed/pull/162) merged | Representative subtitle/video quality, MI-GAN512 Q4_K caveat (0.9019) | Owner-reviewed quality panel |
 | Releases / pub.dev / app pin | v0.17.14 published, pub.dev unqualified, app on 0.17.12 | Qualified assets and fresh consumers first | Release procedure in the pub.dev section |
 | OXR-1.0 quantized + GPU | Q8_0-large / Q4_K-head pass the owner bar (cos ≥ 0.998 vs F16, CPU/Metal/CUDA); German diverges 1 token from decode-step activation quantization | Opt-in F32-activation decode A/B (the recipes are already published and registered as `oxr-1.0-q8_0` / `oxr-1.0-q4_k-head`, PR #97) | A/B receipt; German page token-exact or the divergence attributed |
 | OXR native document route / D-FINE | Hosted helpers/replay/native pass (41249898971), `dfine` stage failed there; D-FINE regions match original 5/5 but 2.6x slower | Re-run `oxr_native_doc.sh` `dfine native` stages on main; encoder per-op profile | Hosted parity on all five cases; profile receipt |
@@ -32,33 +32,6 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | MI-GAN256 Metal/Q4_K | Metal F32/F16/Q8_0 pass; Q4_K fails (masked 0.81); GPU default off | Q4_K probes with sensitive layers at Q8_0 (`CRISPEMBED_QUANTIZE_MIGAN_Q8`); flip to the padded-K Metal path only after measuring delivery-5 CPU kernels on Apple CPU | Q4_K ≥ 0.94 masked or declined; A/B before any default flip |
 | Big-LaMa (research only) | Weights' rights unclear; kept on `feat/issue71-lama-research`, private Hub copy only | Nothing until the owner clarifies the weight licence | Licence clarified (then publish) or lane closed |
 | Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
-
-### PR162 bounded temporal-grain review — 5 November 2026
-
-Review lane: [PR162](https://github.com/CrispStrobe/CrispEmbed/pull/162), original
-source `23f4ad05ad7f689122edd8e586ee3a343de53f57`, against main
-`17c96639a5507c4cee51898b9eeb05ad58d2ebdc`. The change corrects the residual
-score in the opt-in `--inpaint-temporal` stream; neural inference is unchanged.
-Original hosted [inpainting contracts42058381772](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42058381772)
-pass270 temporal checks on Linux/macOS/Windows. Original lint42058381900 has a
-cancelled style job; it is not a passing gate.
-
-Expanded head `8c125e599` passes396 temporal/48 CLI checks on Linux and Windows,
-but both attempts at inpainting42095238543 reject the retired `macos-14` runner
-before checkout. Use supported `macos-15` in this workflow per the
-[GitHub retirement notice](https://github.com/actions/runner-images); preserve
-the initial infrastructure failure separately from test outcomes.
-
-Acceptance: exact past/future donor pixels and current known pixels under grain,
-grainy engine-fill reuse, residual-only propagation/reuse/blend boundaries, and
-coherent brightness-change rejection. Run the expanded contracts and ordinary
-selected CI on hosted runners, then merge only the checked head and inspect main
-checks. Keep unrelated OCR branches and artifact sources intact. The author's
-Apple model-backed PSNR/flicker numbers in PERFORMANCE are reported evidence,
-not independently replayed here; no real-film ground truth or broad video quality
-qualification follows. The six-level allowance applies to a cell average and
-does not bound every copied pixel's error. Development0.17.15 remains unreleased;
-published0.17.14 and app0.17.12 are unchanged. Final evidence belongs in HISTORY.
 
 ## Regression review and OCR continuation — 4 November 2026
 

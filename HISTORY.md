@@ -2,6 +2,55 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 5 November 2026 — PR162 review and temporal regression coverage
+
+[PR162](https://github.com/CrispStrobe/CrispEmbed/pull/162) merged as
+`58eac88665be0f20255468c94f80cc0dae84e3bd`, preserving the original fix
+`23f4ad05ad7f689122edd8e586ee3a343de53f57` and two review commits. Baseline
+main was `17c96639a5507c4cee51898b9eeb05ad58d2ebdc`. The merge tree is identical
+to checked head `7de04e36f237e9352bdb21f7f28444c027d6b420`.
+
+Expanded model-free temporal coverage from 270 to 396 checks: exact past/future
+donor pixels and current known pixels under independent grain, stable engine-fill
+reuse, residual-only propagation/reuse/blend boundaries, and rejection of coherent
+brightness shifts below the noise allowance. At default thresholds, balanced
+stripes propagate through 9 RGB levels, reuse through 12, and blend below 30;
+strong texture motion still rejects. The six-level allowance applies to a cell's
+mean absolute RGB residual, not every pixel, and supplies no per-pixel error bound.
+No additional runtime optimization was added; this review did not establish a
+performance bottleneck.
+
+All 7 final-head workflows pass, including
+[inpainting42095988490](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42095988490),
+[Build42095988973](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42095988973),
+[Lint42095988369](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42095988369)
+and secret scanning. Linux/macOS 15/Windows each pass 396 temporal checks,
+48 CLI checks and all 5 fake-engine video cases. WASM/Rust selectors report their
+declared skips; these are not new WASM/Rust inference qualifications.
+
+Automatic merged-source [inpainting42097044219](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42097044219)
+also passes all three platforms with the same 396/48/five-case coverage.
+[Main Build42097043976](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42097043976),
+[Lint42097044085](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42097044085),
+secret scanning and the selected WASM/Rust aggregate checks pass. The separate
+WASM demo build/deploy was still running at this documentation checkpoint; it
+is not a new temporal-inpainting qualification gate. This closing change edits
+only HISTORY and PLAN, retaining the tested runtime and workflow bytes.
+
+Initial [42095238543](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42095238543)
+at `8c125e599` passes Linux/Windows, but both macOS attempts fail before checkout:
+`macos-14-arm64-us-default` is unsupported. The
+[runner retirement notice](https://github.com/actions/runner-images) confirms
+macOS 14 retirement on 2 November; only the inpainting workflow moves to macOS 15.
+Original PR lint42058381900's cancelled style job remains historical; corrected
+final-head style is green. Builds and suites ran on hosted CI.
+
+The author's Apple model-backed PSNR/flicker measurements below remain reported
+evidence, without independently archived/replayed raw A/B reports. The real-film
+clip has no ground truth. Representative video quality remains open in PLAN.
+The opt-in CLI temporal path is corrected; neural inference is unchanged.
+Development 0.17.15 remains unreleased, published 0.17.14 and app 0.17.12 unchanged.
+
 ## 5 November 2026 — Issue 71 stream: film grain no longer blocks propagation
 
 `ring_static` (src/inpaint_temporal.cpp) took half the per-pixel residual into every cell difference (80fb7e73), so
