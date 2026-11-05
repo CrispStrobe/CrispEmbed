@@ -40,7 +40,7 @@ def main():
         api=KaggleApi();api.authenticate()
         # Exact saved output is authenticated by its frozen report and member hashes;
         # a later mutable provider output cannot silently become a new reference.
-        kernel=os.environ['KAGGLE_USERNAME']+'/lightonocr-4b-bf16-cpu-capture-v1'
+        kernel=os.environ['KAGGLE_ACCOUNT']+'/lightonocr-4b-bf16-cpu-capture-v1'
         api.kernels_output(kernel,str(scratch/'original'),file_pattern=r'^lighton4b-bf16-freegen/(capture\.json|input-(pixel_values|image_grid_thw|input_ids|attention_mask|mm_token_type_ids)\.npy)$',quiet=True)
         retained=scratch/'original/lighton4b-bf16-freegen';capture=retained/'capture.json'
         require(sha(capture)==CAPTURE_SHA,'retained original capture hash differs')
