@@ -15,6 +15,7 @@ def main():
     def run(label,args):
         with (out/(label+'.log')).open('w') as log: subprocess.run(args,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,check=True)
     try:
+        run('case-contract-controls',['python',str(ROOT/'tests/test_lighton4b_frozen_case.py')])
         run('configure',['cmake','-S',str(ROOT),'-B',str(build),'-DCMAKE_BUILD_TYPE=Release',
             '-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_CUDA=OFF','-DGGML_VULKAN=OFF'])
         run('build',['cmake','--build',str(build),'--target','test-lighton4b-native-context','lighton4b-native-document','test-qwen35-stream-projection','test-lighton4b-mixed-policy','lighton4b-native-case-preflight','--parallel','2'])
@@ -28,6 +29,7 @@ def main():
         # Native binary has no model-free success mode; wrong arguments must fail.
         if subprocess.run([str(build/'lighton4b-native-document')],cwd=ROOT).returncode!=2:
             raise RuntimeError('native runner argument control failed')
+        report['mixed_policy_stdout']=(out/'mixed-policy-controls.log').read_text()
         report['stdout']=(out/'controls.log').read_text()
         if 'passed=1 model_payload=0' not in report['stdout']:raise RuntimeError('missing control receipt')
         report['status']='passed'

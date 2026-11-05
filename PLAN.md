@@ -1033,3 +1033,16 @@ recurrent tensors. Uniform old Q8/Q4 policies remain distinct and arbitrary
 mixed storage is rejected. Metadata-policy controls precede actual file use.
 The generalized worker will authenticate frozen image/cap/original-reference
 case manifests and weights; no source image, prompt, gold or budget tuning.
+
+Hosted[42005163384](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42005163384)
+at`7f49713bc` passes native preflight compilation,74 metadata-policy controls,
+old owner and streamed projection controls without model payload access.
+Subsequent source binds the mixed metadata key exactly and adds the generalized
+worker`tools/ci-heavy/lighton4b_frozen_case.py`. It authenticates the reviewed
+four-case protocol/PNG/RGB freeze and explicit original-capture/weight SHA256s,
+then compares native pixel/ID/modality/grid arrays exactly to authenticated
+original prepared inputs before any payload-backed inference. Original arrays
+are comparison-only, never inputs to the native decoder. Source-capped cases
+remain negative diagnostics. The frozen cap256 and calibration/heldout split
+are unchanged. Actual mixed weights, original four-case admissions and decoded
+panels remain pending; no admission or quality is inferred from preparation.
