@@ -152,6 +152,16 @@ const float * converted_weight_cache::get(ggml_tensor * source, int threads) {
     }
 }
 
+// Experimental CPU quantized dot kernels also round/quantize activation operands.
+// Preserve the dequantized-F32 baseline and require explicit LightOn4B scope.
+static bool direct_quant_matrix(const ggml_tensor * matrix) {
+    if (!core_env::on("CRISPEMBED_LIGHTON4B_DIRECT_QUANT") ||
+        !core_env::on("CRISPEMBED_LIGHTON4B_QUANT") || !core_env::on("CRISPEMBED_QWEN35_QUANT") ||
+        !matrix || !matrix->data || (matrix->type != GGML_TYPE_Q8_0 && matrix->type != GGML_TYPE_Q4_K)) return false;
+    const auto * source = matrix->view_src ? matrix->view_src : matrix;
+    return source->buffer && ggml_backend_buffer_is_host(source->buffer) && matrix_type_supported(matrix);
+}
+
 bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens, int threads,
                  std::vector<std::vector<float>> & output, converted_weight_cache * weights_cache) {
     profile_timer total(profile_event::project_total);
@@ -174,11 +184,16 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
             if (!observer(ggml_get_name(matrix), hidden, width, tokens, observer_user)) return false;
     profile_timer stage(profile_event::project_setup);
     std::array<const float *, 4> cached{};
+    std::array<bool, 4> direct{};
     size_t scratch_elements = elements;
+    for (size_t i = 0; i < matrices.size(); ++i) {
+        direct[i] = direct_quant_matrix(matrices[i]);
+        if (direct[i]) scratch_elements -= size_t(ggml_nelements(matrices[i]));
+    }
     if (weights_cache) {
         stage.next(profile_event::project_materialize);
         for (size_t i = 0; i < matrices.size(); ++i) {
-            cached[i] = weights_cache->get(matrices[i], threads);
+            if (!direct[i]) cached[i] = weights_cache->get(matrices[i], threads);
             if (cached[i]) scratch_elements -= size_t(ggml_nelements(matrices[i]));
         }
         stage.next(profile_event::project_setup);
@@ -196,14 +211,17 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
     for (size_t i = 0; i < matrices.size(); ++i) {
         auto * matrix = matrices[i];
         stage.next(profile_event::project_materialize);
-        ggml_set_no_alloc(ctx.get(), cached[i] != nullptr);
-        auto * weight = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, matrix->ne[0], matrix->ne[1]);
-        ggml_set_no_alloc(ctx.get(), false);
-        if (cached[i]) {
-            weight->data = const_cast<float *>(cached[i]);
-        } else {
-            profile_matrix_scope materialize(matrix);
-            if (!tensor_floats(matrix, static_cast<float *>(weight->data), threads)) return false;
+        auto * weight = matrix;
+        if (!direct[i]) {
+            ggml_set_no_alloc(ctx.get(), cached[i] != nullptr);
+            weight = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, matrix->ne[0], matrix->ne[1]);
+            ggml_set_no_alloc(ctx.get(), false);
+            if (cached[i]) {
+                weight->data = const_cast<float *>(cached[i]);
+            } else {
+                profile_matrix_scope materialize(matrix);
+                if (!tensor_floats(matrix, static_cast<float *>(weight->data), threads)) return false;
+            }
         }
         stage.next(profile_event::project_graph);
         auto * result = ggml_mul_mat(ctx.get(), weight, input);
@@ -269,7 +287,11 @@ bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int
         const size_t memory = 1024 * 1024;
         std::unique_ptr<ggml_context, decltype(&ggml_free)> context(ggml_init({ memory, nullptr, true }), ggml_free);
         if (!context) return false;
-        auto * tile = ggml_new_tensor_2d(context.get(), GGML_TYPE_F32, width, tile_rows);
+        const bool direct = direct_quant_matrix(matrix);
+        auto * tile = ggml_new_tensor_2d(context.get(), direct ? matrix->type : GGML_TYPE_F32, width, tile_rows);
+        // The shared quantized matrix contract requires at least two rows.
+        // Keep a one-row F32 tail for arbitrary vocabulary/tile seams.
+        auto * tail = direct ? ggml_new_tensor_2d(context.get(), GGML_TYPE_F32, width, 1) : nullptr;
         std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)> backend(ggml_backend_cpu_init(), ggml_backend_free);
         if (!backend) return false;
         std::unique_ptr<ggml_backend_buffer, decltype(&ggml_backend_buffer_free)> buffer(
@@ -279,15 +301,18 @@ bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int
         for (size_t begin = 0; begin < rows; begin += size_t(tile_rows)) {
             const size_t count = std::min(size_t(tile_rows), rows - begin);
             ggml_backend_tensor_get(matrix, raw.data(), begin * row_bytes, count * row_bytes);
-            auto * values = static_cast<float *>(tile->data);
-            if (matrix->type == GGML_TYPE_F32)
+            auto * active = direct && count == 1 ? tail : tile;
+            auto * values = static_cast<float *>(active->data);
+            if (direct && count > 1)
+                ggml_backend_tensor_set(active, raw.data(), 0, count * row_bytes);
+            else if (matrix->type == GGML_TYPE_F32)
                 std::memcpy(values, raw.data(), count * size_t(width) * sizeof(float));
             else
                 ggml_get_type_traits(matrix->type)->to_float(raw.data(), values, int64_t(count * width));
-            tile->ne[1] = int64_t(count);
-            tile->nb[2] = tile->nb[1] * count;
-            tile->nb[3] = tile->nb[2];
-            if (!project_cpu({ tile }, hidden, width, tokens, threads, projected)) return false;
+            active->ne[1] = int64_t(count);
+            active->nb[2] = active->nb[1] * count;
+            active->nb[3] = active->nb[2];
+            if (!project_cpu({ active }, hidden, width, tokens, threads, projected)) return false;
             for (int token = 0; token < tokens; ++token)
                 std::copy_n(projected[0].data() + size_t(token) * count, count,
                             complete.data() + size_t(token) * rows + begin);

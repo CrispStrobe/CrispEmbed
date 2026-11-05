@@ -1021,3 +1021,22 @@ retain the exact initial source/hash/gates/preflight. The corrected adapter
 matches the exported`lightonocr3-4b` profile. Corrected smoke waits for its hosted
 metadata/tokenizer controls. Initial subsecond sampledRSS is not a true process
 peak; corrected workers use GNU time child rusage for peakRSS/CPU/wall timing.
+
+### Separately gated LightOn4B direct quantized dot candidate — 5 November
+
+`perf/lighton4b-direct-quant-20261105` preserves the exact active`fd150b98f`
+full panels. Source inspection identifies repeated matrix materialization:
+`project_cpu` reads/dequantizes each stored Q8/Q4 matrix into a newly allocated
+F32 graph buffer on every call; streamed vocabulary projection repeats row-tile
+conversion. The new default-off`CRISPEMBED_LIGHTON4B_DIRECT_QUANT` additionally
+requires existing LightOn/quant gates and host-backed Q8_0/Q4_K tensors. It borrows
+quantized matrices for CPU GGML multiplication and retains quantized streamed
+head tiles, with the old F32 one-row seam fallback. F32/F16 and gate0 paths remain.
+
+This changes activation dot-operand rounding/quantization as well as avoiding
+materialization; it is a numerical candidate, not an established speed or quality
+win. Hosted full-width same-input Q8/Q4 projections compare errors, magnitudes,
+raw outputs, gate0 byte controls, stream seams and diagnostic timing before any
+actual decoded A/B. The worker's`--direct-quant` flag is explicit and default-off.
+Actual full-position logits/independent decoded QoI remain mandatory; no default,
+model recipe, threshold or active full-run source changes.

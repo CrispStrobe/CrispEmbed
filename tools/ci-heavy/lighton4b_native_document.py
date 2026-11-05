@@ -44,7 +44,7 @@ def memory():
   'cgroup_current_bytes':current,'available_bytes':available}
 def main():
  p=argparse.ArgumentParser();p.add_argument('--recipe',choices=CANDIDATES,required=True)
- p.add_argument('--mode',choices=('smoke','full'),default='smoke');p.add_argument('--threads',type=int,default=4)
+ p.add_argument('--direct-quant',action='store_true');p.add_argument('--mode',choices=('smoke','full'),default='smoke');p.add_argument('--threads',type=int,default=4)
  args=p.parse_args()
  if os.environ.get('GITHUB_ACTIONS')!='true' or os.environ.get('CRISPEMBED_BUILD_MODE')!='portable':
   raise RuntimeError('hosted portable execution required')
@@ -82,6 +82,8 @@ def main():
   ids=scratch/'teacher.ids';ids.write_text(''.join(f'{x}\n' for x in teacher))
   native=out/args.recipe;native.mkdir();binary=scratch/'native-document-build/lighton4b-native-document'
   env=os.environ.copy();env.update({key:'1' for key in GATES})
+  env['CRISPEMBED_LIGHTON4B_DIRECT_QUANT']='1' if args.direct_quant else '0'
+  report['direct_quant']=args.direct_quant
   env.update({'CRISPEMBED_QWEN35_PRECISE_RMS':'0','CRISPEMBED_QWEN35_IMATRIX':'0','CRISPEMBED_QWEN35_WEIGHT_CACHE':'0'})
   report['gates']={key:env[key] for key in GATES};report['threads']=args.threads
   start=time.monotonic()

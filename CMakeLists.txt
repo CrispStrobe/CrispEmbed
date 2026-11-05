@@ -1671,3 +1671,6 @@ target_link_libraries(test-qwen35-stream-projection PRIVATE crispembed-qwen35-de
 
 add_executable(lighton4b-native-document tests/lighton4b_native_document.cpp src/lighton4b_tokenizer.cpp)
 target_link_libraries(lighton4b-native-document PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(test-lighton4b-direct-quant tests/test_lighton4b_direct_quant.cpp)
+target_link_libraries(test-lighton4b-direct-quant PRIVATE crispembed-qwen35-delta crispembed-core)
