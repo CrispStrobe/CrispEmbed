@@ -1489,3 +1489,14 @@ operator; unsupported platforms/rounding/nonfinite inputs retain the preceding
 path, and existing std::erf path is preserved. Source BSD/SLEEF notices remain.
 Focused source/actual/gate/guard/build verification pending. No full-model smoke
 or decoded-quality claim; latest ordinary Q4 result remains negative.
+
+Final focused merger integration [42069996673](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42069996673)
+at `ca8e6dcade7fc85ec7adecb8dc904ee64c0db009` passes original and actual
+complete merger controls. Gated production matches all 573,440 activations and
+358,400 merged outputs on each input; unset/empty/0 preserve preceding bytes,
+nonfinite/unsupported-rounding guards reject unchanged. Native/context builds,
+context 9, decoder 20 and env docs pass. Final receipt pins runtime/artifact
+identities, retained 90 days. Operator success still does not qualify quality.
+One final authorized ordinary Q4 A/B now includes all verified vision corrections,
+with rejected rotary explicitly 0 and decoder candidate 0, all 30 fixed baseline
+hashes required, first scores/independent two-token decodes and native timings.

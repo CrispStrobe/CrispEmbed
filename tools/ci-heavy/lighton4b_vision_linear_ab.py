@@ -7,12 +7,13 @@ ROOT=Path(__file__).resolve().parents[2]
 CONV_GATE=False
 ATTENTION_GATE=False
 GELU_GATE=False
+MERGER_GATE=False
 def main():
  spec=importlib.util.spec_from_file_location('replay',ROOT/'tools/ci-heavy/lighton4b_vision_layer0_replay.py')
  module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
  module.BASELINE_NORM_GATES=('CRISPEMBED_LIGHTON4B_VISION_BF16_NORM','CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM')
  module.NORM_GATES=module.BASELINE_NORM_GATES+('CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR',)+(('CRISPEMBED_LIGHTON4B_VISION_BF16_CONV',)if CONV_GATE else ())+((
-  'CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION','CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2')if ATTENTION_GATE else ())+(('CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2',)if GELU_GATE else ())
+  'CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION','CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2')if ATTENTION_GATE else ())+(('CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2',)if GELU_GATE else ())+(('CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2',)if MERGER_GATE else ())
  frozen=json.loads((ROOT/'tests/results/qwen35-ocr/lightonocr3-4b-vision-fma-baseline-stages.json').read_text())
  if frozen['run_id']!=42028668863 or frozen['native_report_sha256']!='7a1a74ddbeaf1eaa1e916f091ab38a5895e59f7eb04165972a36ae8d4cb1ae14':raise ValueError('baseline receipt differs')
  module.COMPOSED_STAGE_NAMES=tuple(frozen['stages'])

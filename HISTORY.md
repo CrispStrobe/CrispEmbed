@@ -20812,3 +20812,5 @@ GELU-only integration 42064278334 passes actual activation bytes, old gates, nat
 GELU Q4 42065352208 preserves fixed baseline hashes and reduces merged RMS to 0.00775425, but first-logit RMS 0.56432682 still exceeds baseline 0.56013479 and both decodes remain wrong `<table>`. All 32 first-block differences match the known rotary boundary. Full negative and legacy replay-observer limitation retained; production GELU proof remains independent and exact. Defaults and quality unqualified.
 
 Retained merger 42069010152 passes original and actual bytes, isolates native std::erf at 33/26 activation and 84/58 output differences, and verifies source-derived erf exactly. Separate default-off production correction is prepared for focused gate/build validation; no model smoke or quality promotion.
+
+Final merger-erf integration 42069996673 passes full original/actual/production bytes, gate/guard controls, native/context builds and decoder controls. Separate default-off correction is validated; final ordinary Q4 impact remains pending.
