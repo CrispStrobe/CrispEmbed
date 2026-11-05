@@ -1184,3 +1184,16 @@ canonical double and serial float alternatives. A pinned original F.linear must
 match the entire retained QKV array byte-for-byte before selected attribution.
 No model is downloaded or forwarded; selected success is not full-operator or
 decoded qualification, and no runtime linear fix precedes this evidence.
+
+
+[Retained selected-dot42030085653](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42030085653)
+at403d94e21 reconstructs all1,720,320 original QKV values byte-exactly. Both
+source-order eight-register/eight-lane FMA and separate mul/add match all2,378
+selected values, covering every171 legacy difference plus2,207 controls.
+Canonical double variants still differ68/71 and serial FMA78: generic extra
+precision is not the source operator. The
+[full selected receipt](tests/results/qwen35-ocr/lightonocr3-4b-vision-selected-dot.json)
+preserves positions, magnitudes and original SHA controls. Next: a default-off
+source-order BF16 linear candidate with full source-fed operator validation,
+then composed image/decoded tests only if the full operator materially improves.
+No selected, component or speed result qualifies the model or changes defaults.
