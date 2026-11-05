@@ -20823,3 +20823,28 @@ reach0.03125; all tested wider/F64 alternatives remain negative. Observer/repeat
 neutrality and selected product operands are exact. No dot fix/default is promoted;
 known full decoded failures remain. [The complete dot evidence](docs/lighton4b-layer0-attribution-results.md)
 stays separate from default-off verified RMS integration7d1e73464 in PR155.
+
+
+### 2026-11-05: source-exact vision attention, combined Q4 quality negative
+
+PR155 runtime head `26bce947d` preserves separate default-off gates. Retained
+source-fed QK/PV attention reduced 65 to 20 pooled differences (42047075420),
+then original AVX2 vector-header attribution 42052003211 and self-contained
+SLEEF-compatible production 42053439752 close all 5,017,600 F32 probabilities,
+8,960 reciprocals and 573,440 actual pooled values to bit-exact. Initial setup
+failure 42050508555 remains retained. Final integration 42055105090 passes
+old-gate bytes, exact pool, no invalid/divzero, native/context builds, context 9
+and decoder 20 model-free controls. Gate requires x86_64 AVX2/FMA and nearest
+rounding; no Torch runtime dependency. License and runtime stay in PR155 only.
+
+Ordinary Q4 A/B 42056882067 at `88aa296dc653c87c493f1357605196df1799f0e9`
+preserves all 30 fixed baseline hashes and decoder candidate is explicitly 0.
+Candidate patch/position/embedded are exact; layer 0 differences 35,896 to 40,
+RMS 0.000691054 to 0.0000239534. But merged RMS worsens 0.00973525 to
+0.01839050, first-logit RMS 0.56013479 to 0.59042975, and both decodes still
+wrong `<table>` against original `<figure`. Quality remains negative; no default,
+release, app-pin or decoded promotion. Runtime-generated rotary and source-fed
+activation (14,029 F32 differences/max 1.5367e-7) are next attribution boundaries.
+Full source/operator/negative receipts and 90-day artifact identities are under
+`tests/results/qwen35-ocr/lightonocr3-4b-{vision-attention,softmax}-*.json`.
+This qualification commit changes evidence only, not runtime or workflow.
