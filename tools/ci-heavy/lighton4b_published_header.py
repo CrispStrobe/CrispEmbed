@@ -87,13 +87,14 @@ def inspect_published(binary, out):
         if end is None: raise ValueError('metadata exceeds64MiB protocol bound')
         header = out/'published-header-only.gguf'; header.write_bytes(data[:end])
         report.update({'fetched_prefix_bytes':len(data),'retained_header_bytes':end,
+                       'fetched_bytes_beyond_metadata':len(data)-end,'retained_weight_payload_bytes':0,
                        'header_sha256':hashlib.sha256(data[:end]).hexdigest()})
         result = subprocess.run([str(binary),'--inspect',str(header)],text=True,capture_output=True,check=True)
         (out/'published-header-controls.log').write_text(result.stdout+result.stderr)
         if 'PUBLISHED_HEADER passed=1' not in result.stdout: raise ValueError('native header receipt missing')
         report['native_header_stdout']=result.stdout; report['status']='passed'
     except Exception as error:
-        report['error_type']=type(error).__name__;report['error']=str(error)
+        report['error_type']=type(error).__name__;report['error']=str(error).replace(str(out),'[artifact]').replace(str(binary),'[native-inspector]')
         raise
     finally:
         (out/'published-header-receipt.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
