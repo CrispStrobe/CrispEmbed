@@ -20707,3 +20707,47 @@ format-5 Q8/Q4 payload owner. The
 retains initial41997019110's missing standalone matrix-helper declaration and
 corrected41997125120. No actual model payload was read; native decoded and
 intermediate quality remains unverified. Public API/release defaults are unchanged.
+
+
+### Consolidated source-specific record from 84e19504e
+
+These are archived component-lane records. Current pending execution is in PLAN.
+
+## Bounded LightOn4B vision ownership — 4 November 2026
+
+Active branch `feat/lighton4b-vision-owner-20261104`, based on current main `17c96639a`. Adds an explicit default-off component mapping all 297 vision tensors and returning the 24-layer, width1024/head16/output2560 configuration. PR143 and the separate streamed projection work stay intact. The component validates names, shapes and F32/F16 types without reading payloads; malformed and missing tensors clear ownership. Hosted model-free and platform checks are required. Format5 production admission remains closed. Full 723-tensor ownership, original/native stage/logit/decoded parity, tokenizer and publication remain open; no release or support claim.
+
+Initial hosted Build [41926266003](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41926266003) exposes an audit-copy duplicate symbol and iOS standalone-target placement error. Both are corrected separately; retain the initial failure. Full Build dispatch has no mode input and selects the complete matrix, including the explicit model-free ownership binary.
+
+Corrected `fea7fc72f` actual full Build dispatch [41927088394](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41927088394) passes the Linux build and explicitly executes `test-lighton4b-vision-owner` with all297 per-tensor malformed controls. The complete dispatch passes all3 desktop builds, iOS, all3 Android legs, sibling, Flutter bundle and aggregate Build result. This is model-free ownership evidence only.
+
+The separate contract [41928007006](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928007006) correctly rejects drift of historically frozen `src/qwen35_vision.cpp` despite passing platform builds. Preserve this initial failure. The new ownership function is moved into `src/lighton4b_vision_owner.cpp`, restoring the historical vision implementation bytes exactly; no receipt hash, source amendment or gate is changed. Fresh hosted component build and contract evidence are required for this placement correction.
+
+Final isolated ownership source `2b248c9cb` passes full hosted Build [41928227750](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928227750), including actual Linux297-tensor controls, all3 desktops, iOS, Android3, sibling and bundle. Docs-only successor `daf5e5a28` passes the formerly failing [Ovis contracts41928385929](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928385929), [decoded controls41928385638](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928385638) and lint41928384905 without altering historical pins. Remaining model acceptance gates are unchanged.
+
+
+### Consolidated source-specific record from b4b941273
+
+These are archived component-lane records. Current pending execution is in PLAN.
+
+## LightOn4B structural GGUF inspection — 5 November 2026
+
+Active isolated branch `feat/lighton4b-gguf-inspection-20261105` stacks PR146 `8157a3137`. Production context admission remains unsafe before frontend/decoder composition and payload-backed proof. Add a distinct default-off RAII GGUF inspection context owning real no-allocation tensor headers; validate format5/profile/source declarations, typed geometry/EOS and the atomic723 owner. Hosted synthetic header-only GGUF controls will prove independent context lifetime and metadata rejection. This is deliberately not payload-backed model admission or recognition. No historical runtime source/receipt changes.
+
+Synthetic structural inspection [41975595631](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41975595631) passes at `3061e16a4`; no payload/model admission. A separate hosted opt-in range protocol now targets the actual uploaded experimental baseline at Hub revision `a7ec2e54103165a96b8bb6dc3478a2887edd7459`, requiring exact HTTP206/Content-Range and stopping if ranges are unsupported. Acquisition is bounded64MiB, retains only parsed GGUF metadata and invokes the real C++ inspection context. Declared full-file SHA is provenance only, never verified by a prefix or synthetic sparse file.
+
+Actual published-header [41975926521](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41975926521) at `f4cc98568` passes86 synthetic controls plus actual native header inspection. Independent review verifies14 source digests,34 metadata fields, all723 tensor headers/offset spans,474F32/249F16 and retained10,010,976B header SHA. Three exact HTTP206 ranges fetched12,582,912B including2,571,936B discarded weight prefix;0 weight bytes retained/dereferenced. Full/tensor payload hashes remain unverified by this prefix. [Scope and exact exposure](docs/lighton4b-gguf-inspection.md), [review receipt](tests/results/qwen35-ocr/lightonocr3-4b-gguf-inspection.json). Reporting-only `2c3628732` makes overshoot explicit; native/parser unchanged. No payload-backed model admission/inference, historical-source amendment or release.
+
+
+### 5 November2026 — LightOn4B native preprocessing matches retained original
+
+Actual hosted41999219551 at5f0ca990f authenticates original BF16 capture
+07543dcc80eb and all five prepared-input members, then processes the unchanged
+frozen simple-form image through native C++. All860,160[560,1536] values are
+bit-exact (max/mean/RMS error0, cosine1, L2 magnitudes831.4008051587742), with
+exact[1,20,28] grid and45 positive model-free controls. The observed original
+processor uses the torchvision backend. No checkpoint transfer/model forward or
+original rerun occurred; decoded Q8/Q4 parity remains open. The
+[reviewed receipt](tests/results/qwen35-ocr/lightonocr3-4b-preprocess-replay.json)
+retains exact source/input hashes. Initial41998232116/41998761159 provider import
+failures remain archived; the second identifies the undeclared`six` dependency.

@@ -1,0 +1,15 @@
+{
+  "decoded_parity_qualified": false,
+  "error": "retained input replay failed; inspect authenticated hosted logs privately",
+  "error_type": "ModuleNotFoundError",
+  "failure_scope": "dependency import before provider file download or native execution",
+  "model_bytes_downloaded": 0,
+  "native_model_forward_executed": false,
+  "native_source": "a1df616c3fb1d36c0a1af79b017e9253656b805a",
+  "original_capture_sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a",
+  "original_forward_executed": false,
+  "original_source": "07543dcc80ebcecad644815d9397be2570a51dd4",
+  "run_id": 41998232116,
+  "schema": "lighton4b-retained-preprocess/v1",
+  "status": "failed"
+}

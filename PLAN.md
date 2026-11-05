@@ -1082,3 +1082,20 @@ exact executable hashes. No model payload or source capture was consumed.
 The worker remains blocked on independently reviewed original per-case capture
 SHA256s and actual mixed pack SHA256; these are explicit input admissions rather
 than inferred quality. Preserve active full panels and all initial negatives.
+
+### Consolidated LightOn4B native spine — 5 November
+
+PR155 now folds PR159's exact mixed policy/frozen-case worker and preserves
+PR154's already-contained payload-owner history. Unique PR144 vision-owner
+controls/platform wiring, PR147 structural inspection controls/header receipts,
+and PR153 actual preprocessing replay/initial dependency negatives are retained
+with their original source/run identities. Existing implementation blobs were
+kept; the newer mixed recipe accessor is not overwritten by the older inspector.
+Archived completed component records live in HISTORY. Historical original guards,
+arrays, budgets, negative outcomes and source branches remain unchanged.
+
+The failed direct-quant precision alternative stays only on its retained PR156
+branch; it is not added to this spine. Original full runs42001328483/42001333207
+continue on exact`fd150b98f`; no run is cancelled, repinned or interpreted as
+complete. New model dispatches and new PRs are paused while the user-requested
+PR/CI consolidation proceeds. No new runtime release or quality promotion.
