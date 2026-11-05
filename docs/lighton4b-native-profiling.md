@@ -50,3 +50,9 @@ binds original small-report hashes. These separate-host end-to-end observations
 include file loading and stage output; they establish no phase bottleneck or
 paired optimization improvement. Both capped smoke outputs remain distinct from
 complete EOS/document quality.
+
+Hosted model-free build42002026366 at4f2f4f679 passes actual diagnostic-runner
+compilation, nine native-context controls and unchanged streamed projection
+controls. The [build receipt](../tests/results/qwen35-ocr/lightonocr3-4b-profile-build.json)
+retains executable hashes. This is compilation/control evidence; actual
+profile0/1 output-neutrality/resource pairing remains pending.
