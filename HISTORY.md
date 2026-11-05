@@ -1,3 +1,29 @@
+## 5 November 2026 — Actual private Hub synthetic transport proof
+
+[41979390868](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41979390868)
+at `1447b6b0dd595471e239210f2bee9f33fc640020` actually uploads a13,239-byte
+non-model synthetic fixture in four parts plus one final manifest to an existing
+authorized private diagnostic destination. This is a successful provider write,
+not a blocked-auth result. A fresh client/empty cache reconstructs all68 files
+and verifies whole-file hashes at the immutable tested commit. All17 preexisting
+path GitOIDs/sizes remain unchanged; exactly five new paths are under a fresh
+unique prefix, with no repo creation, overwrite or deletion.
+
+Independent follow-up readback recovers the exact provider commit from its
+fingerprint, cold-downloads the manifest and all four parts, validates range and
+part/whole-file hashes, independently regenerates all67 authored F32 vectors and
+compares before/after tree metadata. [The public receipt](tests/results/qwen35-ocr/lightonocr3-4b-real-provider-transport.json)
+retains source/run/artifact/content fingerprints; full private service locators
+and tree proof remain outside Git. Manifest SHA256 is
+`f1bdcbeff38c136f8d20d6cde257672967db8ce0d69ad477e79ec6bd118ef652`.
+No credential values are stored or printed.
+
+This closes tiny real-provider write/cold-readback mechanics only. Long-term
+retention,512MiB-scale transfers,24GiB original captures and provider cache/storage
+budgets remain unqualified. Both v1 protocols, empty producers, original/capture
+hard blocks and40GiB RAM/48GiB disk gates remain unchanged. No model bytes,
+original/native forward or GPU use occurred. See [the provider proof scope](docs/lighton4b-real-provider-transport-v1.md).
+
 ## 5 November 2026 — Versioned original-cache sharded transport controls
 
 Initial [41977694403](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41977694403)

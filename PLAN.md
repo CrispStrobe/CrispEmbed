@@ -1,5 +1,14 @@
 # CrispEmbed plan — open work (updated 4 November 2026)
 
+Actual [real-provider41979390868](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41979390868)
+at `1447b6b0d` now passes tiny synthetic upload/immutable cold readback:13,239bytes,
+four parts,68 restored files,17 existing paths preserved and five fresh-prefix
+paths only. Independent second readback/source/tree review is positive in
+[the receipt](tests/results/qwen35-ocr/lightonocr3-4b-real-provider-transport.json).
+This supersedes only the earlier tiny external-provider-mechanics gap, not its
+historical unverified records. Long-term/large-capture/storage proofs and explicit
+reviewed capture admission remain pending; v1/capture/resource gates stay unchanged.
+
 The separate [original4B sharded transport](docs/lighton4b-original-sharded-transport-v1.md)
 implements bounded immutable parts, final-manifest publication and independent
 whole-file reconstruction with failure receipts. Hosted synthetic HTTP-service
