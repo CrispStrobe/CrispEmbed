@@ -1,3 +1,14 @@
+## LightOn4B conversion measurements — 4–5 November 2026
+
+The reviewed Kaggle CPU run produced a 9,757,493,600-byte F32-vision/F16
+baseline, a 5,815,503,232-byte Q8_0 candidate and a 4,030,957,952-byte Q4_K
+candidate. Recorded command durations were 284.095 seconds for conversion,
+60.472 seconds for Q8_0 and 530.588 seconds for Q4_K; these exclude other
+preparation, verification and upload work and are not inference benchmarks.
+See the [conversion review](tests/results/qwen35-ocr/lightonocr3-4b-kaggle-conversion-review.json)
+for exact hashes, source, environment warning and readback scope. No native
+latency, memory, decoded output or OCR-quality measurements were made.
+
 ## LightOn3 complete CPU cache+epsilon panel —4 November2026
 
 [All6 cases×2 precisions](tests/results/lightonocr3-1b/cache-ab-v1/full-review-41905258340.json)

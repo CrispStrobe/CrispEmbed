@@ -1,5 +1,17 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
+## LightOn4B conversion continuation — 4–5 November 2026
+
+On the separate `audit/lighton4b-convert-runner-20261104` branch, the pinned
+checkpoint was converted and experimental F32-vision/F16, Q8_0 and Q4_K GGUFs
+were uploaded and independently read back on the worker. [The conversion review](../tests/results/qwen35-ocr/lightonocr3-4b-kaggle-conversion-review.json)
+and [complete tensor audit](../tests/results/qwen35-ocr/lightonocr3-4b-conversion-tensor-audit.json)
+record the immutable public revision, all hashes and the nonfatal `sitecustomize`
+warning. All 723 tensor records and 297 protected vision payloads were checked.
+The earlier failed CPU attempts remain recorded in [PLAN](../PLAN.md). Native
+format-5 inference, full-position/original comparisons and decoded document
+quality are still open; the experimental files have no registry alias.
+
 ## State on 4 November 2026 — reviewed OCR execution
 
 PR141 merged as `a50d976fcaa8f5a99987209d70735ebb59895a41`, after release-record

@@ -1,15 +1,15 @@
 # CrispEmbed plan — open work (updated 4 November 2026)
 
-Bounded LightOn4B conversion preparation adds the hosted portable quantizer builder
+Bounded LightOn4B conversion work adds the hosted portable quantizer builder
 `tools/ci-heavy/lighton4b_quantizer_build.sh` and source-pinned
 `tools/ci-heavy/lighton4b_convert_quant.py`. The latter retains 723-tensor
 reader/finite/hash/type and protected-vision checks separately from the converter's
 historical false roundtrip flag. Initial source is `295fc0ec9`; original model
 revision remains `b71010f095dc3735de7ee6b9969bff8f8f50b39a`.
-Pending: actual hosted build, worker input/capacity admission, conversion/Q8/Q4,
-experimental upload and independent empty-cache readback. Original/native decoded
-and intermediate comparisons remain blocked by unsupported format-5 inference;
-this preparation establishes no native quality, model alias or runtime release.
+The actual CPU conversion, Q8/Q4 tensor audits, experimental upload and independent
+empty-cache worker readback are complete, as recorded in [the review](tests/results/qwen35-ocr/lightonocr3-4b-kaggle-conversion-review.json).
+Original/native decoded and intermediate comparisons remain blocked by unsupported
+format-5 inference; no native quality, model alias or runtime release follows.
 
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
@@ -29,10 +29,16 @@ venv before model download. Preserve both negative outputs. A third CPU attempt
 uses `venv --without-pip` and the worker's pip targeting that interpreter; its
 uploaded script SHA-256 is
 `537c57badbe9f11a12225f09ab97d64a76a42e05cca49149281b03d739fe1767`.
-Re-query its exact status and review its receipt and actual tensor audits; a
-submitted job is not a conversion result. Model upload and independent Hub
-readback occur only after the full baseline and both candidate audits pass.
-No 4B native inference or decoded quality has been established.
+The third attempt completed conversion and all declared tensor audits, followed by
+[experimental upload and worker readback](https://huggingface.co/cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2/tree/a7ec2e54103165a96b8bb6dc3478a2887edd7459).
+The [complete per-tensor audit](tests/results/qwen35-ocr/lightonocr3-4b-conversion-tensor-audit.json)
+preserves the original converter's false roundtrip field as distinct from its
+independent readback. Python startup reported a missing `wrapt` in `sitecustomize`;
+execution continued and `pip check` reported no broken requirements. Continue
+with explicit format-5 ownership, actual F32/F16 original/native intermediates,
+full-position logits and free decoded output; then evaluate the frozen Q8/Q4
+candidates on distinct calibration and held-out documents. No 4B native
+inference or decoded quality has been established.
 
 | Lane | State | Next action | Done when |
 |---|---|---|---|

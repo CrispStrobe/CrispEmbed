@@ -1,0 +1,78 @@
+{
+  "bootstrap_sha256": "537c57badbe9f11a12225f09ab97d64a76a42e05cca49149281b03d739fe1767",
+  "decoded_quality_qualified": false,
+  "diagnostics_sha256": "0a461ff72d6e971d357111eaa78e6b11a9a0a3887ed69bb5483e8feefe4cf282",
+  "environment_warning": "Python sitecustomize raised ModuleNotFoundError for wrapt at startup; execution continued and pip check reported no broken requirements.",
+  "hub_repo": "https://huggingface.co/cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
+  "hub_revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+  "meta_status": "passed",
+  "model_revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+  "native_inference_observed": false,
+  "pip_check_no_broken_requirements": true,
+  "products": {
+    "baseline": {
+      "bytes": 9757493600,
+      "filename": "lightonocr3-4b-vision-f32.gguf",
+      "sha256": "757ad5d0ea7699b3d0ce4cbb70978de442e5b95e660da0a13cf048980e255606",
+      "type_counts": {
+        "F16": 249,
+        "F32": 474
+      }
+    },
+    "q4_k": {
+      "bytes": 4030957952,
+      "filename": "lightonocr3-4b-q4_k-vision-f32.gguf",
+      "sha256": "f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91",
+      "type_counts": {
+        "F32": 474,
+        "Q4_K": 248,
+        "Q8_0": 1
+      }
+    },
+    "q8_0": {
+      "bytes": 5815503232,
+      "filename": "lightonocr3-4b-q8_0-vision-f32.gguf",
+      "sha256": "5888532207f0d98590cc028cbf92366f8a41ec925568f0c308bd69d9af6342f1",
+      "type_counts": {
+        "F32": 474,
+        "Q8_0": 249
+      }
+    }
+  },
+  "quantizer_build_run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41926516321",
+  "quantizer_sha256": "a09dd36ebc5a28d757a2950624c4b517363f3353b1dddf22dbf6519a65f9ae0f",
+  "schema": "lightonocr3-4b-kaggle-conversion-review/v1",
+  "scope": "conversion, tensor audits, experimental publication and independent worker readback; no model inference or OCR quality",
+  "seconds": {
+    "conversion": 284.095160946,
+    "meta": 6.3898111709999625,
+    "q4_k": 530.588285912,
+    "q8_0": 60.471832149999955
+  },
+  "source_sha": "94ad7bda378ac285f03fda28dcb97d29cb496418",
+  "status": "passed",
+  "tensor_audit_sha256": "1b52dd812e06b6905e9e1f99a35c482b964a0ad0a0b604442b3ca44aa582ce9d",
+  "worker_readback": {
+    "baseline": {
+      "bytes": 9757493600,
+      "matches": true,
+      "metadata_matches": true,
+      "sha256": "757ad5d0ea7699b3d0ce4cbb70978de442e5b95e660da0a13cf048980e255606",
+      "tensor_count": 723
+    },
+    "q4_k": {
+      "bytes": 4030957952,
+      "matches": true,
+      "metadata_matches": true,
+      "sha256": "f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91",
+      "tensor_count": 723
+    },
+    "q8_0": {
+      "bytes": 5815503232,
+      "matches": true,
+      "metadata_matches": true,
+      "sha256": "5888532207f0d98590cc028cbf92366f8a41ec925568f0c308bd69d9af6342f1",
+      "tensor_count": 723
+    }
+  }
+}
