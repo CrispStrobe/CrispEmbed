@@ -101,3 +101,15 @@ protocol file remains byte-identical at SHA256
 This prevents a circular dependency: admitting a receipt digest must not change
 the protocol digest already embedded in that receipt. Empty registry remains
 fail-closed until actual complete native outputs are independently reviewed.
+
+[Registry controls42001553561](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001553561)
+at `5eb0735c0` pass all three methods, including actualRef equal/error/tamper,
+below-budget drift, receipt-digest admission and wrong-registry-protocol
+rejection. The [receipt](../tests/results/qwen35-ocr/lightonocr3-4b-bf16-quant-registry-controls.json)
+retains exact hashes. Initial first-score jobs42000741513/42000808436 stopped
+before comparison because Kaggle imports undeclared `six`; it is now explicitly
+pinned. Corrected42001333434/42001338099 then stopped at provider HTTP before
+comparison: the official SDK documents that historical version labels require
+`v1`, not bare `1`. Exact `v1` requests replace that spelling; no current-version
+fallback or source/hash substitution is permitted. All four initial blocked
+receipts remain preserved and are not numerical failures.
