@@ -1,5 +1,6 @@
 #include "qwen35_linear.h"
 #include "lighton4b_parallel_dequant.h"
+#include "lighton4b_bf16_dequant_weights.h"
 #include "qwen35_math.h"
 #include "qwen35_profile.h"
 #include "qwen35_weight_cache.h"
@@ -97,6 +98,7 @@ bool tensor_floats(ggml_tensor * source, float * target, int threads) {
 #endif
             convert(raw.data(), target, int64_t(count));
     }
+    lighton4b_bf16_dequant_weights(source, target, count);
     stage.next(profile_event::source_validate);
     return std::all_of(target, target + count, [](float x) { return std::isfinite(x); });
 }
@@ -238,15 +240,17 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
 bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int tokens, int threads, int tile_rows,
                       std::vector<float> & output) {
     output.clear();
+    const bool q6 = matrix && matrix->type == GGML_TYPE_Q6_K && lighton4b_q6_enabled() &&
+                    core_env::on("CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT") && core_env::on("CRISPEMBED_LIGHTON4B_QUANT");
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !core_env::on("CRISPEMBED_QWEN35_STREAM_PROJECTION") || !matrix ||
         !hidden || width < 1 || width > 32768 || tokens < 1 || tokens > 16 || threads < 1 || threads > 256 ||
         tile_rows < 1 || tile_rows > 1024 || size_t(width) * tile_rows > 1048576 || matrix->ne[0] != width ||
         matrix->ne[1] < 1 || matrix->ne[1] > 300000 || matrix->ne[2] != 1 || matrix->ne[3] != 1 || !matrix->data ||
         !(matrix->view_src ? matrix->view_src->buffer : matrix->buffer) || !ggml_is_contiguous(matrix) ||
         (matrix->type != GGML_TYPE_F32 && matrix->type != GGML_TYPE_F16 && matrix->type != GGML_TYPE_Q8_0 &&
-         matrix->type != GGML_TYPE_Q4_K))
+         matrix->type != GGML_TYPE_Q4_K && !q6))
         return false;
-    if ((matrix->type == GGML_TYPE_Q8_0 || matrix->type == GGML_TYPE_Q4_K) &&
+    if ((matrix->type == GGML_TYPE_Q8_0 || matrix->type == GGML_TYPE_Q4_K || q6) &&
         (!core_env::on("CRISPEMBED_QWEN35_QUANT") || width % ggml_blck_size(matrix->type) != 0 ||
          !ggml_get_type_traits(matrix->type)->to_float))
         return false;
@@ -287,6 +291,7 @@ bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int
                 std::memcpy(values, raw.data(), count * size_t(width) * sizeof(float));
             else
                 ggml_get_type_traits(matrix->type)->to_float(raw.data(), values, int64_t(count * width));
+            lighton4b_bf16_dequant_weights(matrix, values, count * size_t(width));
             tile->ne[1] = int64_t(count);
             tile->nb[2] = tile->nb[1] * count;
             tile->nb[3] = tile->nb[2];
@@ -361,8 +366,9 @@ bool linear_grouped_cpu(const linear_weights & weights, int key_heads, const flo
         const bool projection = tensor == weights.qkv || tensor == weights.z || tensor == weights.a ||
                                 tensor == weights.b || tensor == weights.out;
         const bool quant = projection && core_env::on("CRISPEMBED_LIGHTON4B_QUANT") && tensor &&
-                           (tensor->type == GGML_TYPE_Q8_0 || tensor->type == GGML_TYPE_Q4_K) &&
-                           matrix_type_supported(tensor);
+                           (tensor->type == GGML_TYPE_Q8_0 || tensor->type == GGML_TYPE_Q4_K ||
+                            (tensor->type == GGML_TYPE_Q6_K && lighton4b_q6_enabled() &&
+                             core_env::on("CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT"))) && matrix_type_supported(tensor);
         if (!tensor || (!quant && tensor->type != GGML_TYPE_F32 && tensor->type != GGML_TYPE_F16) ||
             !ggml_is_contiguous(tensor))
             return false;

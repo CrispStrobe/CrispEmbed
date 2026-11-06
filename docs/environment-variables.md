@@ -17,15 +17,14 @@ need it, then run `python tools/list_env_vars.py --write`. See the
 
 ## Semantics
 
-| Kind | Reader | Unset | `=` (empty) | `=0` | Any other non-empty value |
+| Kind | Reader | Unset | `=` (empty) | `=0` / `false` / `off` / `no` | Any other non-empty value |
 |---|---|---|---|---|---|
 | `on` | `core_env::on` | off | off | off | on |
 | `off` | `core_env::explicitly_off` | **on** (default) | on (default) | off | on |
 | `value` | `core_env::value` / getenv + parse | built-in default | built-in default (`core_env::value`) | parsed | parsed |
 
-Only an exact `0` is off: `false`/`off`/`no` currently count as ON. Treating them as
-off needs the same change in CrispASR's code-identical `src/core/env_gate.h`; this is
-tracked in PLAN. `core_env::value` lives in `src/core/env_value.h`. Raw presence truth tests (`getenv(X) != nullptr`,
+Off words match exactly, without trimming, and are ASCII case-insensitive.
+`core_env::value` lives in `src/core/env_value.h`. Raw presence truth tests (`getenv(X) != nullptr`,
 `if (getenv(X))`, `!getenv(X)`), for which `X=0` meant *on*, were all converted
 on 2 November 2026 (131 variables; defaults unchanged, only explicit
 `=0`/empty changed meaning). `tests/test_env_vars_documented.py`
@@ -222,7 +221,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-453 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+459 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -553,7 +552,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_JOSEV_BACKBONE` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/qwen35_decoder.cpp` |  |
 | `CRISPEMBED_JOSEV_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/josev2b_text_frontend.cpp` |  |
 | `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +21 | 'minicpm-ocr' registry alias (same default as the HTTP server). The decoder reuses the qwen35 kernels, so both gates are still required. |
-| `CRISPEMBED_QWEN35_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/lighton4b_native_context.h`, `src/qwen35_lighton4b_text.h` +1 |  |
+| `CRISPEMBED_QWEN35_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_native_context.h` +3 |  |
 
 ### josev2b_composed
 
@@ -631,6 +630,14 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_ATTENTION_BLOCK` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_attention_block.h`, `src/lighton4b_decoder_compose.h` |  |
 
+### lighton4b_bf16_dequant_weights
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h` | else |
+| `CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_native_context.h`, `src/qwen35_linear.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_QUANT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_model_owner.h`, `src/lighton4b_native_context.h` +2 | Converter stores all norms/biases in F32 in both F16 recipes. Frozen Q8/Q4 candidates protect every vision tensor as F32. |
+
 ### lighton4b_bf16_linear
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
@@ -645,6 +652,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_LIGHTON4B_LINEAR_BLOCK` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_decoder_compose.h`, `src/lighton4b_linear_block.h` |  |
 | `CRISPEMBED_QWEN35_GDN_GROUPED_HEADS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_decoder_compose.h`, `src/lighton4b_linear_block.h`, `src/qwen35_delta.cpp` +1 |  |
 
+### lighton4b_gdn_out_q6_recipe
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q6` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gdn_out_q6_recipe.h`, `src/lighton4b_native_context.h` |  |
+
 ### lighton4b_gguf_inspection
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
@@ -654,6 +667,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gguf_inspection.h`, `src/lighton4b_model_owner.h` |  |
 | `CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gguf_inspection.h`, `src/qwen35_lighton4b_text.h` | Experimental, default off; borrowed tensor metadata only, never inference admission. |
 
+### lighton4b_head_bf16
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_HEAD_BF16` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_head_bf16.h` |  |
+
 ### lighton4b_image_compose
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
@@ -661,18 +680,24 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_image_compose.h` |  |
 | `CRISPEMBED_LIGHTON4B_VISION_BF16` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_image_compose.h`, `src/lighton4b_vision_bf16.cpp` |  |
 
-### lighton4b_model_owner
-
-| Variable | Kind | Default | Type | Status | Where | Hint |
-|---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_QUANT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_model_owner.h`, `src/lighton4b_native_context.h`, `src/qwen35_lighton4b_text.h` +1 | Converter stores all norms/biases in F32 in both F16 recipes. Frozen Q8/Q4 candidates protect every vision tensor as F32. |
-
 ### lighton4b_native_context
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
-| `CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
+| `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q8` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
+
+### lighton4b_parallel_dequant
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_parallel_dequant.h` |  |
+
+### lighton4b_q6_policy
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_Q6_K` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_q6_policy.h` | else |
 
 ### lighton4b_rotary_table
 
@@ -1503,3 +1528,18 @@ scores reject generation, infinities retain normal ordering.
 for test-runner-only hidden/operator capture; the recomputed layer0 probe must
 match actual forward hidden bytes and never mutates its cache. These probes are
 not linked into public recognition artifacts.
+
+`CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS=1` experimentally casts dequantized
+Q8_0/Q4_K **named text matrices** to BF16 then back to F32 before existing
+matmul/gather, including embedding and tied streamed vocabulary projection.
+NATIVE_CONTEXT, LIGHTON4B_QUANT and QWEN35_QUANT gates are also required.
+Quant storage stays immutable; float vision/norm/conv tensors, unrelated names
+and other types are excluded. Conversion is in-place in existing transient
+matrix/row/tile buffers, with no full-model F32 cache. Default off preserves
+old F32 dequantization. This isolates reference-weight dtype, not activation
+dtype, reduction arithmetic, speed or quality qualification.
+Full4B decoder caches capture this weight-dtype mode and reject reusing an
+old cache after a mode toggle; a fresh prefill is required.
+This experimental weight mode is disabled under `__EMSCRIPTEN__`; the
+standalone fallback control simulates that preprocessor branch only and
+does not qualify a WebAssembly runtime or 4B model.

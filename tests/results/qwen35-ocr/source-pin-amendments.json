@@ -99,6 +99,17 @@
             "35cf71ec1616c128f7079356a3b24d57521f52a6 Gate block-aligned Q8/Q4 conversion scheduling"
           ],
           "reason": "Separate default-off LIGHTON4B_PARALLEL_DEQUANT dispatch uses unchanged independent block converters; legacy quant admission and F32 matmul stay unchanged, no persistent full-model F32 cache. Hosted42164147108 proves48 byte-equality/boundary/gate cases; actual same-binary/model42164504290 proves all76 emitted native files byte-identical at gate0/1. Timing is order-confounded and decoded coverage is only2prefixIDs, so no speed/general quality/default qualification. Original receipt bytes/source pins and numerical failures remain unchanged."
+        },
+        {
+          "from_sha256": "de8e90adac93e487778cef2fce5405fb78869e2b9304c216305ad30d2c122afe",
+          "to_sha256": "270b5eb4944b140851f8ec374f76f7147721fff767b7c5c161179747e7d2f6c9",
+          "to_blob": "83856e52891b1afbb1f8dccd9650f2b55f570609",
+          "recorded_at_commit": "1c6d0c1c577e0051f22108382eab20cc59f41de1",
+          "recorded": "2026-11-06",
+          "changed_by": [
+            "1c6d0c1c577e0051f22108382eab20cc59f41de1 test: isolate BF16 quantized text weight materialization and cache mode [skip ci]"
+          ],
+          "reason": "Default-off LIGHTON4B_BF16_QUANT_WEIGHTS casts admitted named text Q8/Q4 dequantized weights in existing transient buffers, including streamed head; old gate-off F32 materialization branch and persistent storage remain unchanged. Separate experiment, no source receipt rewrite or speed/quality qualification; focused operator/cache controls pending."
         }
       ]
     },

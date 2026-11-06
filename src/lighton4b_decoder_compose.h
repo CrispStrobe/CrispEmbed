@@ -1,5 +1,6 @@
 #pragma once
 #include "lighton4b_linear_block.h"
+#include "lighton4b_bf16_dequant_weights.h"
 #include "lighton4b_attention_block.h"
 
 namespace qwen35_ocr {
@@ -10,6 +11,7 @@ struct lighton4b_layer_cache {
 };
 struct lighton4b_decoder_cache {
     int tokens = 0;
+    bool bf16_quant_weights = false;
     std::vector<lighton4b_layer_cache> layers;
 };
 struct lighton4b_decoder_outputs {
@@ -33,6 +35,8 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
     if (!norm || norm->type != GGML_TYPE_F32 || !norm->data || !ggml_is_contiguous(norm) || norm->ne[0] != 2560 ||
         norm->ne[1] != 1 || norm->ne[2] != 1 || norm->ne[3] != 1)
         return false;
+    const bool bf16_quant_weights = lighton4b_bf16_dequant_weights_mode();
+    if (previous && previous->bf16_quant_weights != bf16_quant_weights) return false;
     const int past = previous ? previous->tokens : 0;
     if (past < 0 || past > 4096 - tokens || (previous && (past == 0 || previous->layers.size() != 32))) return false;
     auto empty_attention = [](const attention_cache & c) {
@@ -66,6 +70,7 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
     }
     lighton4b_decoder_outputs candidate;
     candidate.cache.tokens = past + tokens;
+    candidate.cache.bf16_quant_weights = bf16_quant_weights;
     std::vector<float> hidden(input, input + size_t(tokens) * 2560);
     for (size_t i = 0; i < 32; ++i) {
         const auto & w = weights.layers[i];

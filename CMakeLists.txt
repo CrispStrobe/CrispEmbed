@@ -877,6 +877,8 @@ target_include_directories(test-no-repeat-ngram PRIVATE src)
 # presence-based inversion where `FOO=0` ENABLED the gate.
 add_executable(test-env-gate tests/test_env_gate.cpp)
 target_include_directories(test-env-gate PRIVATE src)
+add_executable(test-env-gate-words tests/test_env_gate_words.cpp)
+target_include_directories(test-env-gate-words PRIVATE src)
 
 # Metadata-only, no model allocation or inference admission. Consumes a hosted
 # schema derived from the immutable original LightOn4B checkpoint header.
@@ -1755,3 +1757,26 @@ target_link_libraries(test-lighton4b-parallel-dequant PRIVATE crispembed-qwen35-
 
 add_executable(test-lighton4b-head-bf16 tests/test_lighton4b_head_bf16.cpp)
 target_link_libraries(test-lighton4b-head-bf16 PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(test-lighton4b-bf16-dequant-weights tests/test_lighton4b_bf16_dequant_weights.cpp)
+target_link_libraries(test-lighton4b-bf16-dequant-weights PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(lighton4b-bf16-weight-operators tests/lighton4b_bf16_weight_operators.cpp)
+target_link_libraries(lighton4b-bf16-weight-operators PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(test-lighton4b-bf16-weight-wasm-guard tests/test_lighton4b_bf16_weight_wasm_guard.cpp)
+target_include_directories(test-lighton4b-bf16-weight-wasm-guard PRIVATE src ggml/include)
+
+# Default-off LightOn4B selective Q6 metadata/owner and independent scalar dequant controls.
+add_executable(test-lighton4b-q6-policy tests/test_lighton4b_q6_policy.cpp)
+target_link_libraries(test-lighton4b-q6-policy PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Probe-only streaming original-BF16 -> Q6 candidate builder (never a model graph).
+add_executable(lighton4b-q6-rows EXCLUDE_FROM_ALL tools/lighton4b_q6_rows.cpp)
+target_include_directories(lighton4b-q6-rows PRIVATE src)
+target_link_libraries(lighton4b-q6-rows PRIVATE ggml)
+
+add_executable(test-lighton4b-gdn-out-q6-recipe tests/test_lighton4b_gdn_out_q6_recipe.cpp)
+target_link_libraries(test-lighton4b-gdn-out-q6-recipe PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-lighton4b-gdn-out-recipe tests/test_lighton4b_gdn_out_recipe.cpp)
+target_link_libraries(test-lighton4b-gdn-out-recipe PRIVATE crispembed-qwen35-delta crispembed-core)

@@ -33,7 +33,7 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 |---|---|---|---|
 | OCR model gaps / LightOnOCR-3-4B (`feat/ocr-next-models-20261104`, [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143)) | Main `17c96639`/PR141 evidence is integrated; all seven workflows pass at `91b24764`. Explicit converter has 16 passing export controls at `aa661568` (333 total); its inline workflow-contract regression is repaired. [Default-off grouped-head APIs and pinned original/meta protocols](docs/lightonocr3-4b.md#default-off-grouped-head-component-and-hosted-reference) are implemented | Review hosted meta construction, 208 original/native component stages and cache controls, plus combined regression CI. Then add bounded vocabulary projection and explicit larger-model ownership | Native support remains false until complete original/native F32/F16 and document evidence, followed by separate precision/publication gates |
 | Q4_K_MIX publications (MiniCPM-OCR, Unlimited-OCR-2, MoEdern 27M/115M, Josev, UltraBERT) | Recipes and receipts on main. TeleOCR and MinerU Q4_K_MIX are already published and registered (`teleocr-q4_k-mix`, `mineru25-pro-q4_k-mix`, PR #116); the rest are not | Coordinator dispatches the cosine-gated publication per model (sections below); Josev needs a quantized branch in `josev_publish.py`, MoEdern needs SciFact/client panels first | Hub upload, empty-cache readback, registry alias with SHA-256 |
-| `env_gate.h` false/off/no lockstep | CrispASR #572 open (46 checks pass); CrispEmbed side not written | Handoff 3 Nov lane B | Identical header in both repos, tests in CI, sibling sync green |
+| `env_gate.h` false/off/no lockstep | Claimed by Codex; CrispASR #572 and companion update in progress | Handoff 3 Nov lane B | Identical header in both repos, tests in CI, sibling sync green |
 | OXR native-doc parity | Rerun 41664201815 failed again (`native=fail`, not the trace-key bug) | Handoff 3 Nov lane C | Five-case parity receipt or scoped runtime bug |
 | Unlimited-OCR-2 Q8_0 on CUDA | 0.9555 < 0.97 (CPU 0.9739) | Search a CUDA-qualifying Q8_0 mix (F16 shared experts/attention) | ≥ 0.97 on CPU and CUDA |
 | GOT-OCR2 Q4_K drift | F16-r2 exact vs original; Q4_K diverges at 83/20; no final-logit cosine measured, so the 1 November precision policy cannot yet be applied | Teacher-forced final-logit cosine of the published Q4_K vs the F16-r2 pipeline (as for Unlimited/MiniCPM), then a mixed search only if < 0.94. Owner: the model is research-licensed (Tongyi), so whether a Q4_K is worth more compute is an owner call (handoff "Owner decisions") | Cosine > 0.94 recorded, or 3/3 token-exact, or owner accepts/declines |
@@ -2519,6 +2519,42 @@ prior panel. [Evidence](docs/lighton4b-gdn-projection-sensitivity.md) retains
 all32 stages,magnitudes,hashes,timing and90-day remote arrays. A separately named,
 fixed Q4_K+24GDNoutputQ8 exploratory recipe can next receive complete calibration
 output comparison; it is notQ4_K_M and does not qualify a model/default/release.
+### Optional dequantized text weight dtype isolation
+
+A separate default-off BF16_QUANT_WEIGHTS experiment casts only admitted named
+Q8_0/Q4_K text weights to BF16 then back to F32 in existing transient buffers.
+It covers ordinary matrices, gathered embedding rows and tied head tiles;
+protected F32 vision/norm/conv and unrelated types/names remain untouched.
+No quantized storage change or full-model F32 cache. Full4B decoder caches
+record the mode and reject toggles between cached steps. First hosted gate
+is checkpoint-free projection/embedding/streamed-head byte equivalence to
+independently rounded F32 matrices, explicit-off/storage controls and genuine
+positive cache-toggle controls with the existing shared synthetic decoder.
+Historical synthetic numerical rejection remains separate, unchanged and
+insufficient for checkpoint qualification. Source-fed actual weight hashes
+and operator inputs are next; no full generation or speed claim yet.
+
+Focused [42196101066](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42196101066)
+passes16 dequantized-weight/operator controls and353 decoder controls including
+valid cache-mode toggle rejection at7ff9d2ded. The separate synthetic F32
+numerical comparison still rejects prefill.cache.21.recurrent, with its full
+original receipt unchanged/preserved; this is not waived or required to qualify
+the optional storage-dtype mechanism. No checkpoint or full-model storage.
+
+Next one hosted source-fed test streams all249 actual plainQ4 tensors in
+≤65536-element chunks, hashes raw and BF16 values against the authenticated
+03119ea4 oracle, and feeds the admitted5aa5a802 step33 embedding/head/FFN inputs
+through OFF/ON/OFF-repeat operators. Selected sharedQ8 embedding/head and Q4FFN
+source weight hashes must agree across oracle/trace. Exact source embedding and
+gate-off repeat are required; all projection numerical residuals are reported
+without threshold waivers. No autoregressive generation or speed/quality claim.
+
+The separate plainQ4 full producer444386169/42183620520 is now retained with
+this controller: corrected vision+head still yields the identical256-ID capped
+table as historical42001333207, noEOS. Its unchanged reportc726b09d… and genuine
+BF16 plainQ4 full reference1096b5f0… at4939c9a6e70a6651fa6072aab71665a30db0c71e
+remain separately frozen. First171 native/source IDs agree before a BF16 tie
+residual; no unquantized-original quality or document/EOS qualification.
 
 ### BF16 dequantized text-weight isolation
 
@@ -2671,3 +2707,59 @@ post-selection, not clean heldout or representative handwritten-letter OCR.
 No recipe change, quality/default/release promotion, F32 model or new reference
 forward. Next bounded work is source/tool integration for reproducible BF16→Q6
 conversion and the tested closed harnesses in existing PR155; evidence stays PR157.
+
+### Default-off exact selective Q6 LightOn4B candidate
+
+User-requested Q6 support is prepared separately from the running calibration
+source. [The candidate](docs/lighton4b-selective-q6.md) gates Q6 ownership and
+native admission behind`CRISPEMBED_LIGHTON4B_Q6_K`, an exact custom marker,
+UINT32 M-header15 and full32Q6/216Q4/1Q8 layout. The tied Q8 output and474F32
+protected tensors remain explicit; old recipes stay unchanged. Selection follows
+pinned llama.cpp value-family/FFN-down higher-bit layers, with the Q8 tied-head
+exception clearly labeled. Source must original BF16 or unquantized F16, never
+Q8→Q6 requantization. Model-free controls cover independent Q6 scalar decoding,
+actual projection/BF16 conversion and header/type negatives; one bounded hosted
+model-free build is next. No model job or quality claim before calibration review.
+
+
+Initial Q6 model-free42206305308 compiles all targets but fails control703:
+actual project_rows_cpu still rejects Q6 while full projection/dequant controls
+pass. The negative is retained. Both streamed projection and grouped-GDN type
+validators now gain the same default-off native Q6 admission, with explicit
+stream and synthetic grouped prefill/cached-decode equivalence tests. One bounded
+model-free retry follows; no checkpoint or calibration job is started.
+
+
+Q6 structural/operator controls now pass713 in42207472045, with old native/mixed/
+BF16 controls and native/preflight builds retained. Initial negative42206305308
+remains preserved. Guarded Q6 support is ready for scoped PR155 integration;
+actual candidate conversion/calibration remains pending the current recipe review.
+No Q6 model job has run.
+
+
+### Integrated default-off24-output Q6 and verified Q8 native admission
+
+PR155 selectively incorporates tested source10d3fad88 owner/typed metadata/profile
+selection/preflight and the700/112-check C++ fixtures, preserving old713-check32-Q6
+and all earlier gates. Exact635be5d9 ancestry and currentmain were verified first;
+no conversion worker or reference probe is added to runtime artifacts. See
+[native policy details](docs/lighton4b-gdn-output-native-policies.md). Hosted
+42218056668 and actual42219710049 supply the unchanged-source controls. No default,
+registry, release, EOS or full-decoded-quality promotion: separate calibration
+full generation remains pending; PR157 retains all score negatives and provenance.
+
+
+### Reproducible BF16→Q6 tooling integrated with the guarded native owner
+
+PR155 now carries the exact tested streaming row helper/converter and closed
+32-Q6/24-output first-score, full-calibration and observed-logo harnesses, plus
+source protocols and scoped controls. See the
+[end-to-end reproduction guide](docs/lighton4b-q6-conversion-and-calibration.md).
+Fresh Q6 weights come directly from original BF16; protected quantized payloads
+and the Q8 tied head are copied exactly. CMake's helper staysEXCLUDE_FROM_ALL;
+production artifacts gain no reference probe or model alias. Workflow changes
+are four exact read-only/manual selectors plus Q6-only retention routing; all
+unrelated jobs, steps and gates remain intact. Source files match the tested
+c7e6720ab tree, with compiled runtime hashes pinned to10d3/90d2. Calibration and
+logo evidence stay in PR157, including the remaining table/known-logo negatives.
+No additional model job, default/quality/release promotion or model-hub upload.

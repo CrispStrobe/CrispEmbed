@@ -121,6 +121,18 @@ static int run(int argc, char ** argv) {
         emit(phase + ".norm", output.norm);
         if (phase == "prefill") cache = std::move(output.cache);
     }
+    // A cache made under one dequantized weight dtype cannot cross modes.
+    for (auto * g : { "CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT", "CRISPEMBED_LIGHTON4B_QUANT", "CRISPEMBED_QWEN35_QUANT" })
+        gate(g, "1");
+    gate("CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS", "1");
+    check(reject(1, &cache));
+    check(invoke(2, nullptr));
+    const auto rounded_cache = output.cache;
+    check(rounded_cache.bf16_quant_weights);
+    check(invoke(1, &rounded_cache));
+    gate("CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS", "0");
+    check(reject(1, &rounded_cache));
+    check(invoke(1, &cache));
     auto bad = cache;
     bad.tokens = 0;
     check(reject(1, &bad));
