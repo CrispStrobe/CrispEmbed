@@ -1811,3 +1811,12 @@ selects solely measured CPU vendor/family/model before any forward. Intel must
 match a4 and Q4e59; AMD must match repeated02ca and separately reports its Q4
 comparison to e59. Unknown hardware is rejected. All three prior negatives remain
 retained; neither profile substitutes for the other, and no quality default moves.
+
+
+A single bounded read-only Q4 consumer uses the existing dedicated paired-capture
+job with closed`--plain-q4-full` mode: authenticate sourceversion4/bootstrap and
+full receipt1096…, native42183620520/archive13488399938, retain all256 source
+score rows, and compare only172 shared-causal rows0..171 with the actual portable
+Ref binary plus equal/changed controls. Different contexts after171 are excluded.
+The job uploads payloads for90 days and runs no model inference; all numerical
+failures remain retained. No hidden/operator stage exists at171 in these captures.
