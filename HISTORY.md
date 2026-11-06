@@ -21332,3 +21332,32 @@ OFF156tokens takes1388.25s/RSS5,185,196,032B; ON178tokens1561.55s/5,185,175,552B
 Different completion lengths prevent a speed interpretation. Gate stays
 default-off, no release/default/model alias change. Existing historical
 source-pin amendments and15git-verified frozen receipt pins remain intact.
+
+### Corrected plain Q4 remains capped and unqualified
+
+[Native42183620520](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42183620520)
+completes execution at444386169 using the immutable plainQ4f873eb3d… payload,
+all verified vision gates and BF16 head output (mixed gate0). Five prepared
+inputs and29 vision arrays match the frozen original exactly; head RNE/gate
+controls pass. The independent generation still hits256 tokens without EOS,
+ending in incomplete HTML `<td`. All256 IDs and581-byte text (SHA9b2b5352…)
+are identical to historical native42001333207/fd150b98, before vision/head fixes.
+This is a preserved quality failure, not a fixed plainQ4 result.
+
+The authenticated **same-weight BF16 first row** (048fd683f/03119ea4…/e59d6054…)
+already selects20353 `<table`, matching native and differing from unquantized
+original27 `<figure`. Original figure/table margin+2.125 becomes−1.0 under Q4
+in the genuine original code: the first layout regression is weight-induced.
+Corrected native versus same-Q4 BF16 firstrow max0.15625/RMS0.0267200/
+cosine0.999943264 still fails strict tolerance. Versus unquantized original,
+max2.453125/RMS0.587978416/cosine0.976136772 fail; decoded rawCER543/656
+(82.774%) andWER89/90(98.889%) remain unchanged.
+
+Native time2618.62s, peakRSS4,526,112,768B. One teacher row and all256 independent
+greedy rows are retained remotely, with complete hashes in
+[the native receipt](tests/results/qwen35-ocr/lightonocr3-4b-corrected-plain-q4/native-report.json).
+New full same-weight BF16 source attempts rejected an originala4→02ca baseline
+drift before quantization despite exact723 original tensors/five inputs;
+dual-vendor CPU-profile diagnostics are separate and never replace the frozen
+a4/e59 anchors. No full same-weight reference admission, EOS/document, heldout,
+strict score, default or release qualification follows.
