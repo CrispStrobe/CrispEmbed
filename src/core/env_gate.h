@@ -38,32 +38,27 @@ namespace core_env {
 
 // True when `value` is one of the off spellings: "0", "false", "off", "no"
 // (ASCII case-insensitive, exact length, no trimming).
-inline bool spells_off(const char* value) {
-    if (!value)
-        return false;
-    static const char* const words[] = {"0", "false", "off", "no"};
-    for (const char* word : words) {
-        const char* a = value;
-        const char* b = word;
+inline bool spells_off(const char * value) {
+    if (!value) return false;
+    static const char * const words[] = { "0", "false", "off", "no" };
+    for (const char * word : words) {
+        const char * a = value;
+        const char * b = word;
         while (*a && *b) {
             char c = *a;
-            if (c >= 'A' && c <= 'Z')
-                c = (char)(c - 'A' + 'a');
-            if (c != *b)
-                break;
+            if (c >= 'A' && c <= 'Z') c = (char)(c - 'A' + 'a');
+            if (c != *b) break;
             ++a;
             ++b;
         }
-        if (!*a && !*b)
-            return true;
+        if (!*a && !*b) return true;
     }
     return false;
 }
 
-inline bool on(const char* name) {
-    if (!name)
-        return false;
-    const char* e = std::getenv(name);
+inline bool on(const char * name) {
+    if (!name) return false;
+    const char * e = std::getenv(name);
     return e && *e && !spells_off(e);
 }
 
@@ -75,10 +70,9 @@ inline bool on(const char* name) {
 //     if (core_env::explicitly_off("CRISPEMBED_FOO_CLEANUP")) { /* legacy */ }
 //
 // Unset and empty are NOT off (they mean "default"); only an off spelling is.
-inline bool explicitly_off(const char* name) {
-    if (!name)
-        return false;
-    const char* e = std::getenv(name);
+inline bool explicitly_off(const char * name) {
+    if (!name) return false;
+    const char * e = std::getenv(name);
     return e && *e && spells_off(e);
 }
 
