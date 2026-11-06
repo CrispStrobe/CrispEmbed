@@ -34,6 +34,11 @@ def main():
   actual=json.loads(run('real-consumer',[binary,'--check-lighton4b-imatrix',adapted,header]));expected={row['target']:row['normalized_f32_sha256']for row in audit['tensors']};adapter.require(actual['quantization_executed']is False and actual['model_payload_bytes']==0 and actual['normalized_f32_sha256']==expected,'actual C++ consumer means differ');r['actual_consumer']=actual
   for mutation in('width','name'):
    wrong=scratch/(mutation+'.gguf');target_header(wrong,mutation);run('target-'+mutation+'-negative',[binary,'--check-lighton4b-imatrix',adapted,wrong],1)
+  # Exercise ordinary production CLI routing, still without model payload/quantization.
+  wrong=scratch/'width.gguf';forbidden=scratch/'adapted-must-not-publish.gguf'
+  run('production-adapted-coverage-negative',[binary,wrong,forbidden,'q4_k','--imatrix',adapted],1);adapter.require(not forbidden.exists()and not Path(str(forbidden)+'.partial').exists(),'rejected coverage published output')
+  legacy=scratch/'legacy.gguf';name='legacy.weight';meta=[adapter.text('general.architecture')+struct.pack('<I',8)+adapter.text('crispembed-imatrix'),adapter.text('count.'+name)+struct.pack('<IQ',10,2)];raw=b'GGUF'+struct.pack('<IQQ',3,1,len(meta))+b''.join(meta)+adapter.text(name)+struct.pack('<IQIQ',1,2,0,0);raw+=b'\0'*((-len(raw))%32);legacy.write_bytes(raw+struct.pack('<ff',2,8));forbidden=scratch/'legacy-must-not-publish.gguf'
+  run('production-legacy-load-preserved',[binary,scratch/'absent-model.gguf',forbidden,'q4_k','--imatrix',legacy],1);adapter.require('loaded importance vectors for 1 tensors'in(out/'production-legacy-load-preserved.log').read_text()and not forbidden.exists(),'valid legacy imatrix did not retain old load behavior')
   tampered=scratch/'tampered.gguf';raw=bytearray(adapted.read_bytes());raw[-1]^=1;tampered.write_bytes(raw);run('tamper-negative',[binary,'--check-lighton4b-imatrix',tampered,header],1)
   # Real upstream format must fail, rather than silently run unweighted; target has no model payload.
   forbidden=scratch/'must-not-publish.gguf';run('raw-upstream-no-fallback',[binary,header,forbidden,'q4_k','--imatrix',source],1);adapter.require(not forbidden.exists(),'failed imatrix request published an output');r['status']='passed';r['all248_actual_means_byte_exact']=True

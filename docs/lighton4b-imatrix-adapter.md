@@ -105,3 +105,11 @@ this fixture geometry is corrected, with an added723-header rank/patch regressio
 control. The adapter output/mean data are unchanged. Initial failure receipts
 and logs remain preserved. A bounded CPU retry uses the same source/statistics
 guards and still executes no weight quantization or model forward.
+
+
+Kaggle CPU v2 passes all seven Python controls and the compiled consumer: every
+one of248 normalized-vector hashes matches Python, including all24 inverse
+permutations, and every actual value agrees between upstream F32 division and
+the consumer's F64-then-F32 division. Width/name/tamper and raw-source fallback
+negatives pass. A short extension also checks ordinary CLI adapted-coverage
+rejection and valid legacy loading, with no model payload or quantization.
