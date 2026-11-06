@@ -2616,3 +2616,22 @@ Initial Q6 loader failure and713-pass/converter proofs are retained. Candidate a
 raw native first-score/prefill data are90-day remote artifact13500128433; no hub
 upload or further model job. Current decision is whether this mixed calibration
 screen justifies any later evaluation, separately from the held-out lane.
+
+
+### Fixed24 GDN-output Q6 screen: first table token restored, full decode pending
+
+[Actual42219710049](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42219710049)
+at10d3fad88 converts24 matrices directly from original BF16, copies699 payloads
+exactly including the Q8 tied head, and passes both immutable Q4/Q8-output score
+controls on table/Arabic. [Complete evidence](docs/lighton4b-gdn-out-q6-first-score.md)
+preserves all723 audits,700 new/713 old Q6/112 Q8-output model-free controls and
+six actual strict-score failures. Table first token changes20353→27, matching
+original; RMS .706260→.604549 (Q8-output .616934), original-ID probability
+.405578→.544192. Arabic keeps67321 but original-ID probability worsens
+.871767→.840039; RMS .364631→.359155. Every arm is cap1/noEOS, so the complete
+table is not yet proven fixed. All protected vision/input hashes match; first
+retained difference is decoder layer0, with actual magnitudes/errors preserved.
+Candidate83e065c4…/4,095,839,136 bytes and raw arrays remain remote90days in
+artifact13503268909. No heldout, F32 model, new reference forward, model-hub upload,
+default or release change. Next: review one bounded full-generation calibration
+worker for this exact candidate against frozen original/Q4/Q8-output decodes.
