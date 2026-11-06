@@ -13,7 +13,7 @@ static int run(int argc, char ** argv) {
     const int h = std::stoi(argv[3]), w = std::stoi(argv[4]), cap = std::stoi(argv[7]), threads = std::stoi(argv[8]);
     const std::string mode = argv[9], out = argv[6];
     if (h < 1 || w < 1 || h > 4096 || w > 4096 || cap < 1 || cap > 256 || threads < 1 || threads > 16 ||
-        (mode != "smoke" && mode != "full"))
+        (mode != "smoke" && mode != "full" && mode != "greedy-full"))
         return 2;
     auto emit = [&](const std::string & name, const std::vector<float> & v) {
         std::ofstream f(out + "/" + name + ".f32", std::ios::binary);
@@ -131,7 +131,7 @@ static int run(int argc, char ** argv) {
     if (teacher.empty() || teacher.size() > 256) return 13;
     auto teacher_cache = initial.cache;
     std::vector<float> logits = first;
-    const size_t teacher_count = mode == "smoke" ? 1 : teacher.size();
+    const size_t teacher_count = mode == "full" ? teacher.size() : 1;
     for (size_t i = 0; i < teacher_count; ++i) {
         emit("teacher." + std::to_string(i) + ".logits", logits);
         if (i + 1 < teacher_count && !step(teacher[i], teacher_cache, logits, "teacher." + std::to_string(i + 1)))

@@ -1811,3 +1811,20 @@ OFF156tokens takes1388.25s/RSS5,185,196,032B; ON178tokens1561.55s/5,185,175,552B
 Different completion lengths prevent a speed interpretation. Gate stays
 default-off, no release/default/model alias change. Existing historical
 source-pin amendments and15git-verified frozen receipt pins remain intact.
+
+## Fixed exploratory24GDNoutputQ8 candidate (6 November, prepared)
+
+[Exact recipe](docs/lighton4b-gdn-out-q8-recipe.md) is
+`lighton4b-q4k-gdn-out-q8-v1`,notQ4_K_M. Exactly24 whole recurrent out projections
+use authenticatedQ8 bytes;699 other tensors stay Q4-source byte-identical.
+Payload delta125829120;new default-off gate/exact typed source+manifest metadata
+and Q4/Q8 tensor-policy guards preserve all old recipes. Original selection and
+protocol are fixed before full output. One bounded hosted job will run model-free
+controls,all723 postpack tensor audits and actual serialized-file smoke equality
+against prior source765020066 (all32 blocks/firstscore/two tokens) before complete
+independent greedycap256 on calibration table/Arabic for BOTHQ4baseline/candidate.
+References are retained genuineBF16 originals; heldout untouched. Parallel-dequant
+1 is fixed for both and must match prior serial smoke hashes; precision candidate
+gates0,verified vision/headBF161. No redundant222-row teacher replay,newdefault,
+release or qualification. Resource/cgroup/process-group bounds and90-day remote
+candidate+arrays are explicit in the protocol; no new PR.

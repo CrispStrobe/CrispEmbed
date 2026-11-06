@@ -1732,3 +1732,6 @@ target_link_libraries(test-lighton4b-parallel-dequant PRIVATE crispembed-qwen35-
 
 add_executable(test-lighton4b-head-bf16 tests/test_lighton4b_head_bf16.cpp)
 target_link_libraries(test-lighton4b-head-bf16 PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(test-lighton4b-gdn-out-recipe EXCLUDE_FROM_ALL tests/test_lighton4b_gdn_out_recipe.cpp)
+target_link_libraries(test-lighton4b-gdn-out-recipe PRIVATE crispembed-qwen35-delta crispembed-core)

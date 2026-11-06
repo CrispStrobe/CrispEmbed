@@ -1,5 +1,6 @@
 #pragma once
 #include "lighton4b_model_owner.h"
+#include "lighton4b_gdn_out_recipe.h"
 #include <memory>
 
 namespace qwen35_ocr {
@@ -21,6 +22,7 @@ public:
     }
     const lighton4b_model_owner & model() const { return model_; }
     std::string mixed_quant_recipe() const { return core_gguf::kv_str(metadata_, "qwen35_ocr.mixed_quant_recipe", ""); }
+    bool gdn_out_recipe_metadata_matches() const { return lighton4b_gdn_out_metadata_matches(metadata_); }
     static std::unique_ptr<lighton4b_gguf_inspection> open(const char * path) {
         if (!core_env::on("CRISPEMBED_LIGHTON4B_GGUF_INSPECTION") ||
             !core_env::on("CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER") ||

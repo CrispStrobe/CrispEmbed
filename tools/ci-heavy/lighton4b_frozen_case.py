@@ -19,6 +19,7 @@ ROOT=Path(__file__).resolve().parents[2]
 PROTOCOL_SHA='3a1738c26cf5a34680fea1468bea07c06ee26659f7ddb7e249299677746ba36d'
 FROZEN_SHA='a07af76028a0d53c8bfc0ccafedac348eaeb725c8c8c55e3136906f202b8f65d'
 MIXED='lighton4b-q4k-mixers-q8-v1'
+GDN_OUT='lighton4b-q4k-gdn-out-q8-v1'
 ORIGINAL_SOURCE='42e5ce6f9bc6bd01865ac4f21d2157c98d3475f1'
 def sha(path):
  h=hashlib.sha256()
@@ -60,10 +61,10 @@ def validate_build(build,receipt_path,expected_sha,current_source):
 def main():
  parser=argparse.ArgumentParser();parser.add_argument('--case',required=True)
  parser.add_argument('--model',type=Path,required=True);parser.add_argument('--weights-sha256',required=True)
- parser.add_argument('--recipe',choices=('q8_0','q4_k',MIXED),required=True)
+ parser.add_argument('--recipe',choices=('q8_0','q4_k',MIXED,GDN_OUT),required=True)
  parser.add_argument('--original-root',type=Path,required=True);parser.add_argument('--original-capture-sha256',required=True)
  parser.add_argument('--prebuilt-build',type=Path);parser.add_argument('--build-receipt',type=Path);parser.add_argument('--build-receipt-sha256')
- parser.add_argument('--mode',choices=('smoke','full'),default='full');parser.add_argument('--threads',type=int,default=4)
+ parser.add_argument('--mode',choices=('smoke','full','greedy-full'),default='full');parser.add_argument('--threads',type=int,default=4)
  args=parser.parse_args()
  require(os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','hosted portable execution required')
  require(version('Pillow')=='11.3.0','pinned Pillow11.3.0 required')
@@ -92,7 +93,7 @@ def main():
    original['cap_hit']==(teacher[-1]!=248046 and len(teacher)==256),'original EOS/cap declaration differs')
   report['original_eos_completed']=original['eos_completed'];report['original_cap_hit']=original['cap_hit']
   require(args.model.is_file() and sha(args.model)==args.weights_sha256,'reviewed model payload differs')
-  if args.recipe!=MIXED:require(args.weights_sha256==protocol['candidate_inputs'][args.recipe]['sha256'],'uniform model outside fixed protocol')
+  if args.recipe not in (MIXED,GDN_OUT):require(args.weights_sha256==protocol['candidate_inputs'][args.recipe]['sha256'],'uniform model outside fixed protocol')
   spec=importlib.util.spec_from_file_location('native_driver',ROOT/'tools/ci-heavy/lighton4b_native_document.py')
   common=importlib.util.module_from_spec(spec);spec.loader.exec_module(common)
   report['resource_preflight']={'memory':common.memory(),'scratch_free_bytes':shutil.disk_usage(scratch).free,'output_free_bytes':shutil.disk_usage(out).free}
@@ -106,8 +107,9 @@ def main():
   ids_path=scratch/'teacher.ids';ids_path.write_text(''.join(f'{x}\n' for x in teacher))
   env=os.environ.copy();env.update({x:'1' for x in common.GATES})
   env.update({'CRISPEMBED_LIGHTON4B_FROZEN_CASES':'1','CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4':'1' if args.recipe==MIXED else '0',
+   'CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q8':'1' if args.recipe==GDN_OUT else '0',
    'CRISPEMBED_LIGHTON4B_DIRECT_QUANT':'0','CRISPEMBED_QWEN35_PRECISE_RMS':'0','CRISPEMBED_QWEN35_IMATRIX':'0','CRISPEMBED_QWEN35_WEIGHT_CACHE':'0'})
-  keys=list(common.GATES)+['CRISPEMBED_LIGHTON4B_FROZEN_CASES','CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4',
+  keys=list(common.GATES)+['CRISPEMBED_LIGHTON4B_FROZEN_CASES','CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4','CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q8',
    'CRISPEMBED_LIGHTON4B_DIRECT_QUANT','CRISPEMBED_QWEN35_PRECISE_RMS','CRISPEMBED_QWEN35_IMATRIX','CRISPEMBED_QWEN35_WEIGHT_CACHE']
   report['gates']={x:env[x] for x in keys}
   builder=ROOT/'tools/ci-heavy/lighton4b_frozen_case_build.py';build_report=out/'build';build_report.mkdir()
@@ -154,7 +156,7 @@ def main():
   report.update(generated_ids=generated,decoded=(native/'generated.txt').read_text(),eos_completed=generated[-1]==248046,
    cap_hit=generated[-1]!=248046 and len(generated)==cap,actual_cap=cap,frozen_cap=case['max_new_tokens'],teacher_forced_ids=teacher,
    native_summary=json.loads((native/'native-summary.json').read_text()))
-  count=1 if args.mode=='smoke' else len(teacher)
+  count=len(teacher) if args.mode=='full' else 1
   report['scores']=[{'position':i,'file':'native/teacher.'+str(i)+'.logits.f32','shape':[1,248320],
    'bytes':(native/f'teacher.{i}.logits.f32').stat().st_size,'sha256':sha(native/f'teacher.{i}.logits.f32')} for i in range(count)]
   require(all(x['bytes']==993280 for x in report['scores']),'native vocabulary row differs')
