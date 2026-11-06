@@ -2412,3 +2412,22 @@ control. UpstreamQ4_K_M protects selected FFN-down/V tensors; our frozen
 mixersQ8/FFNQ4 is a different policy. Any next recipe needs separate calibration,
 actual importance-vector coverage and heldout decoded/EOS evidence after
 same-weight arithmetic controls. No runtime or recipe change, CI or release.
+
+## 6 November: bounded Q8 restoration sensitivity measured
+
+[Five-arm calibration42185018279](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42185018279)
+at`67f47d435` completes table/Arabic only; heldout receipt/letter untouched.
+Exact donor groups0/152/32/96/248 and payload hashes were frozen before forward;
+all248 loaded base/donor pairs and475 protected tensors pass. Table first-score
+RMS Q4/mixers/down/FFN/fullQ8 is0.706260/0.654575/0.650900/0.632844/0.0712989;
+Arabic0.364631/0.293539/0.325577/0.291611/0.0394947. Mixer/fullQ8 fix table's
+observed two-token`<figure` prefix; down/FFN do not. All strict score gates still
+fail and no full decoded/EOS qualification follows. First recorded decoder
+response is block0; mixer block0 max/RMS0.155319/0.00558722(table),
+0.110185/0.00433838(Arabic), growing through32 blocks. These are changes versus
+nativeQ4, not original internal stages or operator attribution.
+[Complete evidence](docs/lighton4b-restoration-sensitivity.md) preserves timing,
+firstscore/block hashes,predeclared protocol and90-day remote arrays. FullQ8
+reduces RMS about90%, while selectiveFFN restoration alone is insufficient on
+table; further policies require separate calibration/source controls. Current
+owner has noQ6 support. No production admission/runtime/default/release change.
