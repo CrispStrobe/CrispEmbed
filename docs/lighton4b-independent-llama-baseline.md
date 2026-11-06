@@ -95,3 +95,12 @@ checkout. The exact submitted bootstrap is authenticated; setup logs and failed
 bootstrap receipt are retained. Corrected lookup uses the explicit source root,
 and the bootstrap launches in that checkout with an isolated Python environment.
 The retry preserves all model/input/protocol/generation pins.
+
+Kaggle CPU version2 passes source build, immutable projector/Q4 hashes, model
+load, exact source wrapper and original154-token prompt-ID hash, then rejects
+transport before vision/prefill. The native server overrides the default MTMD
+placeholder with a process-specific `media_marker` exposed by `/props`; passing
+the library default caused HTTP400 (zero markers for one image). Version3 reads
+that actual transport marker, requires exactly one occurrence and normalizes only
+it for the unchanged source-wrapper control. Prompt token bytes, all model/input
+pins and generation settings stay fixed. Version1/2 failures are retained.
