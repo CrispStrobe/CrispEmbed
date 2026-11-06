@@ -1,0 +1,30 @@
+{
+  "error": "Bounded BF16 original quant-weight first-score worker failed",
+  "error_type": "RuntimeError",
+  "gpu_requested": false,
+  "initial_resources": {
+    "available_memory_bytes": 32171773952,
+    "finite_cgroup_bounds": 1,
+    "output_free_bytes": 20940550144,
+    "scratch_free_bytes": 1038219005952,
+    "shared_filesystem": false
+  },
+  "model_quality_qualified": false,
+  "model_worker_returncode": 1,
+  "model_worker_started": true,
+  "model_worker_timeout_seconds": 5400,
+  "original_source": "8d3b2331d1b57e285f7ba348fc1eacd689b79aa8",
+  "pre_model_resources": {
+    "available_memory_bytes": 28485447680,
+    "finite_cgroup_bounds": 1,
+    "output_free_bytes": 20939919360,
+    "scratch_free_bytes": 1036159049728,
+    "shared_filesystem": false
+  },
+  "reference_profile": "distinct AMD diagnostic; frozen reference never substituted",
+  "requested_model_dtype": "bfloat16",
+  "schema": "lighton4b-bf16-kaggle-bootstrap/v1",
+  "source_sha": "6a760f06732be22d7e64f1529308216d7e143afe",
+  "status": "failed",
+  "worker_cgroup_peak_bytes": 19702718464
+}

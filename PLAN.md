@@ -1800,3 +1800,14 @@ the actual Q4 first row matches olde59 without treating a backend mismatch as
 frozen parity. This is a separate reference profile, never a substitution for
 frozen official/mixed evidence. It captures the full independent output through
 EOS/cap for the same-weight native comparison; all original strict gates remain.
+
+
+The AMD-only diagnostic landed on Intel family6/model79 and produced the exact
+frozena4 original row, correctly rejecting its AMD anchor before Q4 streaming.
+This directly measures a CPU-platform-dependent source result: identical weights,
+inputs, wheels, threads and AVX2 caps give02ca on AMD23/49 and a4 on Intel6/79.
+A final [closed two-profile protocol](docs/lighton4b-bf16-plain-q4-dual-profile-v1.json)
+selects solely measured CPU vendor/family/model before any forward. Intel must
+match a4 and Q4e59; AMD must match repeated02ca and separately reports its Q4
+comparison to e59. Unknown hardware is rejected. All three prior negatives remain
+retained; neither profile substitutes for the other, and no quality default moves.
