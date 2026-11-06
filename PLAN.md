@@ -2796,3 +2796,24 @@ human accuracy or broad qualification claim. GH cancellation and Kagglev1/v2
 setup failures preserved; no new GH dispatch or PR/default/release/model upload.
 Next bounded work requires a separately frozen conversion/arithmetic attribution,
 not promotion based solely on these observed three-case outputs.
+
+### External-text weighted plain Q4: verified application, partial decode negative
+
+[Complete calibration evidence](docs/lighton4b-imatrix-q4-calibration-results.md)
+retains the initial Kaggle ensurepip failure and the authorized source 3ee2b69dd
+retry. Regenerated f873 and both frozen first-score hashes are exact. All 248
+actual applications/normalized mean hashes and 475 protected payloads pass;
+all 248 Q4 projections change, tied Q8 head/vision remain exact. Candidate
+65fcdbd4… (4,030,958,240 bytes) is retained privately in Kaggle output with full
+producer SHA, Range-verified bytes and all 734 output paths. No GH dispatch,
+F32 model, model-hub upload, recipe search or heldout claim.
+
+Table first ID 20353→27 matches BF16 and one-position KLD improves .181511→.125953;
+raw RMS worsens .706260→.865078 due in part to a logit shift (centered RMS improves).
+Arabic KLD improves .030166→.015504; all 6 full IDs/EOS/text remain exactly BF16,
+CER 0/12 and WER 0/2, also matching retained Q4/Q8. Table full inference hits the
+strict 45-minute child limit after 225 score rows 0–224, with no generated IDs/text
+or completed-EOS summary; no table CER/WER or decoded fix is claimed. All raw
+negative/status flags are retained and their incomplete-run meanings explained.
+Independent read-only arithmetic and source/hash controls pass. No retry or
+extra inference; further table completion/quality qualification remains pending.
