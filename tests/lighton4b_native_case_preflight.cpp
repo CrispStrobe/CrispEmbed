@@ -14,20 +14,13 @@ static int crispembed_test_main(int argc, char ** argv) {
     auto header = lighton4b_gguf_inspection::open(argv[1]);
     if (!header) return 3;
     lighton4b_quant_recipe policy;
-    if (recipe == "q8_0")
-        policy = lighton4b_quant_recipe::q8_0;
-    else if (recipe == "q4_k")
-        policy = lighton4b_quant_recipe::q4_k;
-    else if (recipe == "lighton4b-q4k-mixers-q8-v1" && core_env::on("CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4"))
-        policy = lighton4b_quant_recipe::attention_q8_ffn_q4;
-    else if (recipe == lighton4b_q6_recipe && header->q6_profile_header() &&
-             !core_env::on("CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4"))
-        policy = lighton4b_quant_recipe::q4km_q6_q8head;
-    else
-        return 3;
-    const bool mixed = recipe == "lighton4b-q4k-mixers-q8-v1" || recipe == lighton4b_q6_recipe;
-    if (mixed ? header->mixed_quant_recipe() != recipe : !header->mixed_quant_recipe().empty()) return 3;
-    if (!lighton4b_quant_recipe_matches(header->model().text.decoder, policy)) return 3;
+    const std::string tag = recipe == "q8_0" || recipe == "q4_k" ? "" : recipe;
+    if (header->mixed_quant_recipe() != tag || !lighton4b_select_recipe(header->model().text.decoder, tag, policy)) return 3;
+    if (recipe == "q8_0" && policy != lighton4b_quant_recipe::q8_0) return 3;
+    if (recipe == "q4_k" && policy != lighton4b_quant_recipe::q4_k) return 3;
+    if (policy == lighton4b_quant_recipe::q4km_q6_q8head && !header->q6_profile_header()) return 3;
+    if (policy == lighton4b_quant_recipe::gdn_out_q8 && !header->gdn_out_recipe_metadata_matches()) return 3;
+    if (policy == lighton4b_quant_recipe::gdn_out_q6 && !header->gdn_out_q6_metadata_matches()) return 3;
     auto * meta = core_gguf::open_metadata(argv[1]);
     lighton4b::frontend_tokenizer tokenizer;
     if (!meta || !tokenizer.load(meta)) return 4;

@@ -221,7 +221,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-457 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+459 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -652,6 +652,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_LIGHTON4B_LINEAR_BLOCK` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_decoder_compose.h`, `src/lighton4b_linear_block.h` |  |
 | `CRISPEMBED_QWEN35_GDN_GROUPED_HEADS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_decoder_compose.h`, `src/lighton4b_linear_block.h`, `src/qwen35_delta.cpp` +1 |  |
 
+### lighton4b_gdn_out_q6_recipe
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q6` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gdn_out_q6_recipe.h`, `src/lighton4b_native_context.h` |  |
+
 ### lighton4b_gguf_inspection
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
@@ -679,6 +685,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
+| `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q8` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
 
 ### lighton4b_parallel_dequant
 

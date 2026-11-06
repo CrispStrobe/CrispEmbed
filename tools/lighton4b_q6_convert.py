@@ -37,7 +37,9 @@ def header(base,path,p):
   require(hashlib.sha256(record).hexdigest()==row['raw_sha256'],'raw metadata clone differs')
   records.append(text(name)+struct.pack('<II',4,15)if name=='general.file_type'else record)
  require('qwen35_ocr.mixed_quant_recipe'not in base['metadata'],'base must remain the plain Q4 file')
- for name,value in [('qwen35_ocr.mixed_quant_recipe',RECIPE),('qwen35_ocr.q6_source_checkpoint_sha256',SOURCE_SHA),('qwen35_ocr.q6_names_sha256',p['q6_names_sha256'])]:records.append(text(name)+struct.pack('<I',8)+text(value))
+ for name,value in [('qwen35_ocr.mixed_quant_recipe',p.get('recipe',RECIPE)),('qwen35_ocr.q6_source_checkpoint_sha256',SOURCE_SHA),('qwen35_ocr.q6_names_sha256',p['q6_names_sha256'])]:records.append(text(name)+struct.pack('<I',8)+text(value))
+ for name,value in p.get('metadata_strings',{}).items():records.append(text(name)+struct.pack('<I',8)+text(value))
+ for name,value in p.get('metadata_uint32',{}).items():records.append(text(name)+struct.pack('<II',4,value))
  layout=[];offset=0;expected={r['name']:r for r in p['all_tensors']}
  require(set(expected)==set(base['tensors']),'all723 base tensor names differ')
  descriptors=[]
@@ -67,8 +69,8 @@ def independent_bf16(path,offset,size):
    bits=values.view('<u4');rounded=((bits+np.uint32(0x7fff)+((bits>>16)&1))>>16).astype('<u2');h.update(rounded.tobytes());size-=count
  return h.hexdigest()
 
-def convert(base_path,checkpoint,oracle_path,binary,output,report_path):
- p=plan();report={'schema':'lighton4b-original-bf16-selective-q6/v1','status':'blocked','recipe':RECIPE,'source_checkpoint_sha256':SOURCE_SHA,'base_sha256':BASE_SHA,'quality_qualified':False,'held_out_selection':False,'model_inference_executed':False,'f32_model_instantiated':False,'requantization_executed':False,'tensors':[]}
+def convert(base_path,checkpoint,oracle_path,binary,output,report_path,recipe_plan=None):
+ p=recipe_plan or plan();fresh=len(p['q6_names']);copied=723-fresh;report={'schema':'lighton4b-original-bf16-selective-q6/v1','status':'blocked','recipe':p['recipe'],'source_checkpoint_sha256':SOURCE_SHA,'base_sha256':BASE_SHA,'quality_qualified':False,'held_out_selection':False,'model_inference_executed':False,'f32_model_instantiated':False,'requantization_executed':False,'tensors':[]}
  def save():report_path.write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
  partial=output.with_name(output.name+'.partial')
  try:
@@ -78,7 +80,7 @@ def convert(base_path,checkpoint,oracle_path,binary,output,report_path):
    length=struct.unpack('<Q',f.read(8))[0];raw=f.read(length)
   require(length==89456 and hashlib.sha256(raw).hexdigest()==p['source_header_sha256'],'original BF16 header differs');source_header=json.loads(raw)
   with partial.open('xb')as f:f.write(payload);f.truncate(size)
-  report.update(stage='copy691-and-quantize32',q6_names_sha256=p['q6_names_sha256'],candidate_bytes=size,header_bytes=len(payload));save()
+  report.update(stage='copy'+str(copied)+'-and-quantize'+str(fresh),q6_names_sha256=p['q6_names_sha256'],candidate_bytes=size,header_bytes=len(payload));save()
   with base_path.open('rb')as src,partial.open('r+b')as dst:
    for row in layout:
     expected=base_rows[row['name']];original=source_header[row['source']];elements=math.prod(row['source_shape']);old_sha=span(src,row['old_offset'],row['old_bytes']);require(old_sha==expected['raw_sha256'],'base tensor hash differs: '+row['name'])
@@ -94,8 +96,8 @@ def convert(base_path,checkpoint,oracle_path,binary,output,report_path):
      require(independent_bf16(partial,row['data_offset'],row['bytes'])==q['dequant_bf16_sha256'],'independent Python/native Q6 BF16 decode differs')
     with partial.open('rb')as verify:require(span(verify,row['data_offset'],row['bytes'])==new_sha,'candidate tensor readback differs')
     report['tensors'].append(record);save()
-  candidate=parse(partial,TYPES);require(len(candidate['tensors'])==723 and candidate['metadata']['general.file_type']['value']==15 and candidate['metadata']['qwen35_ocr.mixed_quant_recipe']['value']==RECIPE,'candidate final header differs');require(all(candidate['tensors'][r['name']]['type']==r['type']and candidate['tensors'][r['name']]['data_offset']==r['data_offset']and candidate['tensors'][r['name']]['bytes']==r['bytes']for r in layout),'final parsed candidate layout differs');require(all(candidate['metadata'][k]['raw_sha256']==v['raw_sha256']for k,v in base['metadata'].items()if k!='general.file_type'),'retained metadata bytes differ');require(sum(not r['copied']for r in report['tensors'])==32 and sum(r['copied']for r in report['tensors'])==691,'exact32/691 coverage differs')
-  report.update(status='converted',candidate_sha256=digest(partial),copied_tensors=691,original_bf16_to_q6_tensors=32,tied_q8_head_copied_exact=True,protected474_copied_exact=True,independent_q6_dequant_bf16_verified=True,effective_bf16_tensor_sha256={r['name']:r['bf16_sha256']for r in report['tensors']if r['type']!=0});partial.rename(output);save();return report
+  candidate=parse(partial,TYPES);require(len(candidate['tensors'])==723 and candidate['metadata']['general.file_type']['value']==15 and candidate['metadata']['qwen35_ocr.mixed_quant_recipe']['value']==p['recipe'],'candidate final header differs');require(all(candidate['tensors'][r['name']]['type']==r['type']and candidate['tensors'][r['name']]['data_offset']==r['data_offset']and candidate['tensors'][r['name']]['bytes']==r['bytes']for r in layout),'final parsed candidate layout differs');require(all(candidate['metadata'][k]['raw_sha256']==v['raw_sha256']for k,v in base['metadata'].items()if k!='general.file_type'),'retained metadata bytes differ');require(sum(not r['copied']for r in report['tensors'])==fresh and sum(r['copied']for r in report['tensors'])==copied,'exact selected/copied coverage differs')
+  report.update(status='converted',candidate_sha256=digest(partial),copied_tensors=copied,original_bf16_to_q6_tensors=fresh,tied_q8_head_copied_exact=True,protected474_copied_exact=True,independent_q6_dequant_bf16_verified=True,effective_bf16_tensor_sha256={r['name']:r['bf16_sha256']for r in report['tensors']if r['type']!=0});partial.rename(output);save();return report
  except Exception:
   report['error']='bounded original-BF16 conversion failed; partial candidate never admitted';save();raise
 
