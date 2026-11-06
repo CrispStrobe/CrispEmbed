@@ -2635,3 +2635,22 @@ Candidate83e065c4…/4,095,839,136 bytes and raw arrays remain remote90days in
 artifact13503268909. No heldout, F32 model, new reference forward, model-hub upload,
 default or release change. Next: review one bounded full-generation calibration
 worker for this exact candidate against frozen original/Q4/Q8-output decodes.
+
+
+### Exact24-Q6 full calibration: equal Q8 decodes, residual original disagreement
+
+[Full42223984643](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42223984643)
+at30c2332da passes the700 controls and both smoke/full70-stage/prefill/argmax/EOS
+barriers. [Complete evidence](docs/lighton4b-gdn-out-q6-full-calibration.md) records
+Q6-output24 exactly matching retained Q8-output24 IDs/text/EOS on table228 IDs and
+Arabic6 IDs, both under cap256. Arabic is exact genuine BF16. Table remains
+non-exact at ID36: CER224/607=.369028, WER61/106=.575472 versus genuine BF16,
+compared with plainQ4 .726524/.933962. All234 Q6/Q8 raw score hashes differ;
+six strict first-score negatives remain. This is decoded agreement, not numerical
+parity or human OCR accuracy. Candidate83e065c4… saves60,948,480 bytes versus Q8;
+full raw scores remain90days in artifact13506428243. Q6 observed table/Arabic
+seconds1085.18/76.67 and peak RSS4.526/4.535GB are retained; older Q8 workers are
+not a controlled speed comparison. PR155 head90d2 was reverified; policies stay
+default-off. No heldout, release/model alias, new reference forward, full F32
+model, cap waiver or further model job. Remaining original-table disagreement
+and Arabic probability regression remain explicit limits.
