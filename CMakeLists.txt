@@ -1742,3 +1742,9 @@ add_executable(test-lighton4b-mixer-partition-policy EXCLUDE_FROM_ALL tests/test
 target_link_libraries(test-lighton4b-mixer-partition-policy PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(lighton4b-mixer-partition-sensitivity EXCLUDE_FROM_ALL tests/lighton4b_mixer_partition_sensitivity.cpp src/lighton4b_tokenizer.cpp)
 target_link_libraries(lighton4b-mixer-partition-sensitivity PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Third test-only calibration partition: disjoint GDN projection classes.
+add_executable(test-lighton4b-gdn-projection-policy EXCLUDE_FROM_ALL tests/test_lighton4b_gdn_projection_policy.cpp)
+target_link_libraries(test-lighton4b-gdn-projection-policy PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(lighton4b-gdn-projection-sensitivity EXCLUDE_FROM_ALL tests/lighton4b_gdn_projection_sensitivity.cpp src/lighton4b_tokenizer.cpp)
+target_link_libraries(lighton4b-gdn-projection-sensitivity PRIVATE crispembed-qwen35-delta crispembed-core)
