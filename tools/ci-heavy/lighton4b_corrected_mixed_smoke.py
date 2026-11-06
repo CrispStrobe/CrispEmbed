@@ -59,7 +59,7 @@ def retrieve_prefill(scratch,comparison,mixed_control=False):
  (scratch/'original-prefill.json').write_bytes(raw);(scratch/'original-first-score.f32').write_bytes(score)
  return manifest,score
 
-def main(full=False):
+def main(full=False,parallel_ab=False):
  require(os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','hosted portable smoke required')
  import numpy as np
  from PIL import Image
@@ -72,7 +72,7 @@ def main(full=False):
  report={'schema':'lighton4b-corrected-mixed-native-smoke/v1','status':'failed','quality_qualified':False,'full_completion_executed':False,
   'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'recipe':'lighton4b-q4k-mixers-q8-v1',
   'scope':('observed simple_form full177 teacher scores and independent greedy cap256; excluded from calibration/heldout qualification' if full else 'observed simple_form first-score/two-token runtime diagnostic; excluded from calibration/heldout qualification'),
-  'vision_gates':control.VISION_GATES,'disabled_gates':{'CRISPEMBED_LIGHTON4B_BF16_LINEAR':'0','CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2':'0','CRISPEMBED_LIGHTON4B_DIRECT_QUANT':'0','CRISPEMBED_QWEN35_WEIGHT_CACHE':'0','CRISPEMBED_QWEN35_PRECISE_RMS':'0','CRISPEMBED_QWEN35_IMATRIX':'0'},
+  'vision_gates':control.VISION_GATES,'disabled_gates':{'CRISPEMBED_LIGHTON4B_BF16_LINEAR':'0','CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2':'0','CRISPEMBED_LIGHTON4B_DIRECT_QUANT':'0','CRISPEMBED_QWEN35_WEIGHT_CACHE':'0','CRISPEMBED_QWEN35_PRECISE_RMS':'0','CRISPEMBED_QWEN35_IMATRIX':'0','CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT':'0'},
   'rotary_table_sha256':TABLE_SHA,'complete_rotary_profile_sha256':PROFILE_SHA,'original_forward_executed':False}
  def run(label,argv,env=None):
   with (out/(label+'.log')).open('w') as log:subprocess.run([str(x)for x in argv],cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
@@ -118,8 +118,18 @@ def main(full=False):
    require(all((candidate/f'teacher.{i}.logits.f32').stat().st_size==993280 for i in range(177)),'full177 teacher rows required')
    report['full_teacher_score_comparison_executed']=False
   report['artifacts']={p.name:{'bytes':p.stat().st_size,'sha256':native.sha(p)}for p in candidate.iterdir() if p.is_file()}
+  if parallel_ab:
+   require(not full,'bounded A/B requires smoke scope')
+   parallel=out/'mixed-parallel';parallel.mkdir();env['CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT']='1';parallel_resource=out/'parallel-resources.txt'
+   report['stage']='parallel-dequant-native-first-score-two-token'
+   run('parallel-native',['/usr/bin/time','-q','-f','%U %S %e %M','-o',parallel_resource,binary,model,rgb,image.height,image.width,teacher,parallel,2,4,'smoke'],env)
+   user,system,elapsed,rss=parallel_resource.read_text().strip().split()
+   parallel_artifacts={p.name:{'bytes':p.stat().st_size,'sha256':native.sha(p)}for p in parallel.iterdir() if p.is_file()}
+   same=parallel_artifacts==report['artifacts']
+   report['parallel_dequant_ab']={'same_source_binary_model_inputs':True,'serial_first':True,'cache_warmth_not_controlled':True,'gate':'CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT','serial_gate':'0','parallel_gate':'1','all_emitted_artifacts_byte_exact':same,'parallel_artifacts':parallel_artifacts,'parallel_resources':{'wall_seconds':float(elapsed),'user_seconds':float(user),'system_seconds':float(system),'peak_rss_bytes':int(rss)*1024},'wall_speed_ratio':report['resources']['wall_seconds']/float(elapsed),'full_completion_executed':False,'quality_qualified':False}
+   require(same,'parallel conversion changed actual emitted stages/scores/IDs/text')
   report['status']='measured';report['full_completion_executed']=full
  except Exception as error:
   report['error_type']=type(error).__name__;report['error']='bounded corrected mixed smoke/control failed; inspect native/build/staging logs';raise RuntimeError(report['error'])from None
- finally:(out/('corrected-mixed-full.json' if full else 'corrected-mixed-smoke.json')).write_text(json.dumps(report,indent=2)+'\n')
+ finally:(out/('parallel-dequant-native-ab.json' if parallel_ab else 'corrected-mixed-full.json' if full else 'corrected-mixed-smoke.json')).write_text(json.dumps(report,indent=2)+'\n')
 if __name__=='__main__':main()

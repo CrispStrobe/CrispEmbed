@@ -1732,3 +1732,11 @@ sentinels and explicit-off/type/size/quant-gate controls on hosted CPU. No full
 model F32 cache or decoded-quality claim. Only after these pass may one bounded
 actual same-input A/B measure timing and score/decoded equality. Historical
 run sources, receipts and the rejected direct-quant branch remain unchanged.
+
+Focused [42164147108](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42164147108)
+passes all48 conversion byte-equality cases at35cf71ec1. Next single bounded
+native A/B uses one build/model/prepared input, serial first then parallel,
+1 teacher row and2 independent greedy tokens per arm; every emitted artifact
+must be byte-identical. Serial-first cache warmth is explicitly uncontrolled,
+so wall ratios are diagnostic, not a clean isolated speed claim. No full decoded
+quality inference follows from a prefix or conversion equality.
