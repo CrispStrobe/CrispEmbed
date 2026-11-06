@@ -106,6 +106,11 @@ static int run() {
             }
         }
     }
+    // Gather rejects both ends outside the matrix and clears stale output.
+    for (int invalid : { -1, rows }) {
+        got = { 42 };
+        check(!embed_cpu(embedding, { invalid }, got) && got.empty());
+    }
     gate("CRISPEMBED_QWEN35_QUANT", "0");
     check(!embed_cpu(embedding, { 0 }, got) && got.empty());
     check(!project_rows_cpu(head, hidden.data(), width, tokens, 2, 31, scores) && scores.empty());
