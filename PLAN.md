@@ -1832,3 +1832,19 @@ claim. Model-free selector/uniqueness/guard controls precede model acquisition;
 Single targeted portable hosted job; arrays retained remotely90 days. Gates and
 precision stay identical across arms, with verified vision and final-headBF16
 corrections enabled and rejected decoder/rotary alternatives disabled.
+
+## Predeclared architecture partition of152 mixers (6 November, pending)
+
+The [second calibration protocol](docs/lighton4b-mixer-partition-sensitivity-v1.json)
+freezes six arms: Q4baseline0,Q8linear/GDN120,Q8full-attention32,allmixers152,
+mixers+FFNdown184,andfullQ8248. The linear/full-attention groups are disjoint
+and exactly exhaust the previous152 donor names; down is the separate32-matrix
+FFN group. All248 Q4/Q8 donor digests and475 protected digests are already frozen
+by first-panel policySHA`bc52de8180ef3b71d1d572add1b6e0998c8013697657388e44d16e599ad7aceb`
+and must revalidate before forward. Model-free counts/disjointness/union controls
+precede acquisition. The full-attention-only arm must preserve nativeQ4 block0–2
+hashes, because its first changed layer is3. Same table/Arabic inputs,firstscore
+and two-token diagnostic only; heldout remains untouched. Precision/gates remain
+identical; current Q4/Q8 types only. Fresh independent caches,12GiB/20GiB/2GiB
+memory/scratch/output guards,40-minute native and55-minute single hosted caps.
+No production recipe/runtime/default/release changes; prior panel retained.

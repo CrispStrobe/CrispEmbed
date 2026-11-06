@@ -1736,3 +1736,9 @@ add_executable(test-lighton4b-sensitivity-policy EXCLUDE_FROM_ALL tests/test_lig
 target_link_libraries(test-lighton4b-sensitivity-policy PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(lighton4b-restoration-sensitivity EXCLUDE_FROM_ALL tests/lighton4b_restoration_sensitivity.cpp src/lighton4b_tokenizer.cpp)
 target_link_libraries(lighton4b-restoration-sensitivity PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Second test-only calibration partition; the prior five-arm policy is unchanged.
+add_executable(test-lighton4b-mixer-partition-policy EXCLUDE_FROM_ALL tests/test_lighton4b_mixer_partition_policy.cpp)
+target_link_libraries(test-lighton4b-mixer-partition-policy PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(lighton4b-mixer-partition-sensitivity EXCLUDE_FROM_ALL tests/lighton4b_mixer_partition_sensitivity.cpp src/lighton4b_tokenizer.cpp)
+target_link_libraries(lighton4b-mixer-partition-sensitivity PRIVATE crispembed-qwen35-delta crispembed-core)
