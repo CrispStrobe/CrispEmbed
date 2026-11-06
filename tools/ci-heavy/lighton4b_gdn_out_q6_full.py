@@ -25,6 +25,7 @@ def main():
  active={}
  def save():(out/'gdn-out-q6-full-calibration.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
  def terminate(*args):
+  report['deadline_reached']=True;report['deadline_kind']='global90minutes'if args and args[0]==signal.SIGALRM else'termination_signal'if args else'bounded_child_timeout';report['partial_native_outputs_preserved']=True;save()
   child=active.get('child')
   if child is not None and child.poll()is None:
    os.killpg(child.pid,signal.SIGTERM)
@@ -32,7 +33,7 @@ def main():
    except subprocess.TimeoutExpired:os.killpg(child.pid,signal.SIGKILL);child.wait()
   raise TimeoutError('bounded full calibration deadline')
  def run(label,args,env=None,timeout=1200):
-  report['stage']=label;save()
+  report['stage']=label;report['active_child_timeout_seconds']=timeout;save()
   with(out/(label+'.log')).open('w')as log:
    child=subprocess.Popen(list(map(str,args)),cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True);active['child']=child
    try:code=child.wait(timeout=timeout)
@@ -51,7 +52,7 @@ def main():
   require(np.__version__=='2.3.5'and Image.__version__=='11.3.0','frozen serializer/RGB versions differ');require(p['cases']==['simple_table','arabic_printed_line']and p['max_new_tokens']==256,'closed calibration scope differs')
   require(all(common.sha(ROOT/k)==v for k,v in p['runtime_paths_sha256'].items()),'compiled native source differs from first-score source');require(subprocess.check_output(['git','rev-parse','HEAD:ggml'],cwd=ROOT,text=True).strip()==p['ggml_commit'],'ggml source differs')
   require(common.sha(ROOT/'docs/lighton4b-mixed-calibration-v1.json')==p['calibration_protocol_sha256']and common.sha(ROOT/'tests/regression/lighton4b-mixed-v1/frozen-inputs.json')==p['input_manifest_sha256'],'frozen calibration/input manifests differ')
-  a=shutil.disk_usage(scratch).free;b=shutil.disk_usage(out).free;shared=scratch.stat().st_dev==out.stat().st_dev;report['preflight']={'memory':headroom(),'load_average':os.getloadavg(),'scratch_free_bytes':a,'output_free_bytes':b,'shared_filesystem':shared};require(a>=16*2**30 if shared else a>=12*2**30 and b>=4*2**30,'bounded scratch/output capacity unavailable');signal.signal(signal.SIGTERM,terminate);signal.signal(signal.SIGINT,terminate);signal.signal(signal.SIGALRM,terminate);signal.alarm(90*60)
+  a=shutil.disk_usage(scratch).free;b=shutil.disk_usage(out).free;shared=scratch.stat().st_dev==out.stat().st_dev;report['preflight']={'memory':headroom(),'load_average':os.getloadavg(),'scratch_free_bytes':a,'output_free_bytes':b,'shared_filesystem':shared,'swap':{k:v.strip()for k,v in(line.split(':',1)for line in Path('/proc/meminfo').read_text().splitlines())if k in('SwapTotal','SwapFree')}};require(a>=16*2**30 if shared else a>=12*2**30 and b>=4*2**30,'bounded scratch/output capacity unavailable');signal.signal(signal.SIGTERM,terminate);signal.signal(signal.SIGINT,terminate);signal.signal(signal.SIGALRM,terminate);signal.alarm(90*60)
   def receipt(key,name):
    q=p[key];path=out/name;get(q['url'],path,q['sha256'],2**20);return json.loads(path.read_text())
   first=receipt('first_score_receipt','first-score-reference.json');prior=receipt('decoded_baseline_receipt','decoded-baseline-reference.json');require(first['status']=='measured'and first['candidate_sha256']==p['model']['sha256']and first['baseline_hash_controls_passed'],'first-score receipt is not admitted');require(prior['status']=='completed'and prior['source_sha']==p['decoded_baseline_receipt']['source'],'decoded baseline source differs')
