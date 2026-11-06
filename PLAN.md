@@ -1982,3 +1982,12 @@ The actual format5 footprint is1536×1024. Correcting only that header fixture a
 adding a physical-rank regression check leaves adapted bytes/means unchanged;
 v1 failure logs/receipts are preserved before one bounded CPU retry. No model or
 weight quantization has run, and no GitHub job is dispatched.
+
+
+The tested adapter/strict opt-in is ready for existing PR155 integration. Kaggle
+CPU v4 passes all248/897,024 consumer means and8 Python controls, strict ordinary
+CLI target rejection, valid legacy loading and no-fallback negatives. The two
+initial fixture failures remain in PR157 evidence. No production inference source
+changes, new model, default/quality/release promotion or GitHub dispatch. A future
+weighted plainQ4 candidate remains separately gated on exact fresh-source/unweighted
+f873 reproduction,248 actual vector applications and all protected-byte checks.

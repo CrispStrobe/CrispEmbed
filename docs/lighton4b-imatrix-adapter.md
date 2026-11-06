@@ -1,9 +1,9 @@
 # LightOn4B external-text imatrix adapter
 
 This tool adapts one authenticated public statistics file into CrispEmbed's input
-format. It does not quantize weights or run a model. Python controls pass on the
-real3.63MB file and synthetic negatives; an actual C++ consumer build/check is
-pending on Kaggle CPU. No weighted model or quality result is admitted yet.
+format. It does not quantize weights or run a model. Eight Python controls and the actual C++ consumer pass on Kaggle CPU, including
+the real3.63MB file, all248 normalized hashes and ordinary production CLI negative/
+legacy-load paths. No weighted model or quality result is admitted yet.
 
 The source is
 [richardyoung/LightOnOCR-3-4B-GGUF](https://huggingface.co/richardyoung/LightOnOCR-3-4B-GGUF/tree/8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01)
@@ -81,8 +81,8 @@ statistics, checks a723-tensor header without payloads, and runs
 F32 hashes to the Python means and checks F32/F64 division agreement. Wrong
 width/name, tampered statistics and the real unadapted source must reject without
 publishing a model. This route does not enter weight quantization, collect
-activations, instantiate a reference model or read an OCR case. Artifacts stay
-remote90days; no new model or PR is created by these checks.
+activations, instantiate a reference model or read an OCR case. Statistics and receipts remain in versioned Kaggle output; no service expiry
+is supplied. No new model or PR is created by these checks.
 
 
 The queued GitHub control42238407232 was cancelled at the user's request before
@@ -120,3 +120,13 @@ new legacy fixture then exposes missing32-byte tail padding in that tiny synthet
 GGUF, before any model access. The fixture is corrected and independently checked
 for canonical padding; v3 logs remain preserved. No adapter data or production
 normalization code changes are needed.
+
+
+Final CPU version4 passes ordinary adapted-profile coverage rejection before
+output creation and preserves valid legacy loading through the old route. All
+897,024 normalized values, including98,304 inverse-permuted coordinates, match
+actual consumer F32 bytes. Source732942355 and binary747ae3ff… supply the tested
+code; integration changes documentation only. Quantization/model-forward flags
+remain false. Complete success and initial fixture-negative receipts are kept
+separately in PR157. The next weighted-Q4 experiment requires fresh source, exact
+unweighted control,248 actual applications and separate quality assessment.
