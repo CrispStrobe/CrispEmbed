@@ -1755,3 +1755,8 @@ add_executable(test-lighton4b-gdn-out-q6-recipe tests/test_lighton4b_gdn_out_q6_
 target_link_libraries(test-lighton4b-gdn-out-q6-recipe PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-lighton4b-gdn-out-recipe tests/test_lighton4b_gdn_out_recipe.cpp)
 target_link_libraries(test-lighton4b-gdn-out-recipe PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(test-lighton4b-q6-tied-head tests/test_lighton4b_q6_tied_head.cpp)
+target_link_libraries(test-lighton4b-q6-tied-head PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-lighton4b-release-fence tests/test_lighton4b_release_fence.cpp)
+target_link_libraries(test-lighton4b-release-fence PRIVATE crispembed-qwen35-delta crispembed-core)
