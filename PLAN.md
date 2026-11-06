@@ -1937,3 +1937,10 @@ margin before native cases; large files total≤17.31GB, conversion chunks≤655
 First-score calibration is table/Arabic only, with same-worker plain-Q4 hash controls;
 no original batch or held-out captures/labels may be read. Actual model dispatch
 waits for resource/source review and the current calibration decision.
+
+
+One bounded hosted model-free Q6 converter job is authorized: build only the row
+helper and existing quantizer, compare a65,792-value synthetic BF16 stream against
+an independently supplied F32 GGUF quantization, verify neighbor bytes/chunk tail,
+wrong-source-hash rejection and independent gguf BF16 decode. No checkpoint or
+candidate file is downloaded/generated; all such dispatch remains pending review.
