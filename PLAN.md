@@ -2833,3 +2833,13 @@ or completed-EOS summary; no table CER/WER or decoded fix is claimed. All raw
 negative/status flags are retained and their incomplete-run meanings explained.
 Independent read-only arithmetic and source/hash controls pass. No retry or
 extra inference; further table completion/quality qualification remains pending.
+
+### Publisher source-revision declaration correction
+
+The bounded publisher Q4_K_M header declares official b710 in `general.name`;
+[the correction receipt](tests/results/qwen35-ocr/lightonocr3-4b-publisher-declared-source-revision.json)
+pins the exact original spelling, header/range hashes and full LFS identity.
+Earlier wording that the revision was undisclosed was too strong. A declared
+revision is not independent source tensor-content verification, and does not pin
+the producing converter/quantizer commit or calibration corpus. Old raw evidence
+and its hashes remain unchanged; no quality, same-weight or release promotion.

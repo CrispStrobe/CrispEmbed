@@ -112,7 +112,10 @@ per-case receipts/logs establish the actual work. The null-file gate passed, so
 its scratch-cleanup diagnostic limitation was not exercised.
 
 The adapter coordinates are proven against audited upstream `6c01da627…`;
-the publisher's actual producing converter/quantizer commit and source-weight
-revision are not disclosed. This experiment tests the fixed hash-pinned file
+the publisher's actual producing converter/quantizer commit is not disclosed.
+The Q4_K_M header's `general.name` declares
+`B71010F095Dc3735De7Ee6B9969Bff8F8F50B39A`, matching the official b710 reference
+revision. That declaration does not independently verify source tensor-content
+identity or the producing conversion/calibration environment. This experiment tests the fixed hash-pinned file
 under that explicit coordinate assumption. It does not authenticate the original
 calibration environment, establish image calibration or qualify a release.
