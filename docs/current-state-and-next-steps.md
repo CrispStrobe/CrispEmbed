@@ -1,5 +1,14 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
+## Current cross-repository checkpoint — 6 November 2026
+
+CrispEmbed [v0.17.15](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.15) is published from `d28ca2ea43a95934d673d1a54177fdf721614ade`, with [verified asset and native-readback evidence](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/releases/v0.17.15.json). CrispMath's released app still pins 0.17.12. [CrispMath PR16](https://github.com/CrispStrobe/CrispMath/pull/16) proposes the immutable 0.17.15 source and asset hashes; platform, browser and Windows license-gate validation are separate acceptance gates. Do not infer an app upgrade from the candidate.
+
+[CrispEmbed PR165](https://github.com/CrispStrobe/CrispEmbed/pull/165) addresses PP-OCRv6 empty frames and changing dimensions with two default-off gates. Its real-model CPU and HTTP tests pass; CUDA execution remains unverified; the earlier quota report was incorrect, and the GPU validation remains pending. [PR155](https://github.com/CrispStrobe/CrispEmbed/pull/155) and stacked [PR157](https://github.com/CrispStrobe/CrispEmbed/pull/157) remain owned LightOn4B drafts. PR157 preserves rejection of both tested Q8 and Q4 full-prefix/decoded candidates; do not promote them from that evidence. Recheck exact heads and running jobs before taking any of these lanes.
+
+CrispMath's recorded App Store state on 5 November is build 27 awaiting review, not proof of a later approval; physical-device evidence remains open. Older dated sections below are historical snapshots and cannot supersede this checkpoint or current linked run results.
+
+
 ## State on 4 November 2026 — reviewed OCR execution
 
 PR141 merged as `a50d976fcaa8f5a99987209d70735ebb59895a41`, after release-record
