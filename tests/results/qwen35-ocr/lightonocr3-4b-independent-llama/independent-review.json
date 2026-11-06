@@ -138,5 +138,14 @@
     "Actual upstream resize/interpolation/vision compute can differ; prompt IDs/length admitted separately, not vision-byte parity.",
     "No original rerun, human ground-truth claim, model publication/default/release or new PR.",
     "Native response tokens_cached describes final populated context; timing cache_n=0 and fresh processes establish no reuse."
-  ]
+  ],
+  "validation": {
+    "json_syntax": "passed",
+    "python_syntax": "passed",
+    "relative_document_links": "passed",
+    "all115_downloaded_receipt_hashes": "passed",
+    "private_service_binding_exclusion": "passed",
+    "source_and_document_whitespace": "passed",
+    "raw_evidence_whitespace": "Preserved unchanged: capped Q4 table text ends in a space; raw git hints include trailing spaces and CMakeCache ends with a blank line. These are original output bytes authenticated by the download inventory."
+  }
 }

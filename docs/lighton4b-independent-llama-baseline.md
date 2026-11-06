@@ -141,4 +141,3 @@ including selected higher-bit V/down projections; it is neither our plain Q4_K
 nor the exact24-GDN-output recipe. The published Q6_K is a whole decoder recipe,
 not our24 selected Q6 matrices. No tensor/permutation or checkpoint-byte equality
 is asserted without a separate conversion audit.
-
