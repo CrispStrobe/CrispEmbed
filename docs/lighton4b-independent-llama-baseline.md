@@ -8,7 +8,7 @@ The actual upstream code is pinned to
 Its [`Qwen3_5TextModel`](https://github.com/ggml-org/llama.cpp/blob/6c01da6278ab6c69ed67d9124806b50d2b299ba7/conversion/qwen.py#L693)
 registers the official model class; [`Qwen3VLVisionModel`](https://github.com/ggml-org/llama.cpp/blob/6c01da6278ab6c69ed67d9124806b50d2b299ba7/conversion/qwen3vl.py#L16)
 converts its vision projector. The actual C++ graph is
-[`llm_build_qwen35`](https://github.com/ggml-org/llama.cpp/blob/6c01da6278ab6c69ed67d9124806b50d2b299ba7/src/models/qwen35.cpp).
+[`llama_model_qwen35::build_arch_graph`](https://github.com/ggml-org/llama.cpp/blob/6c01da6278ab6c69ed67d9124806b50d2b299ba7/src/models/qwen35.cpp).
 Generic older LightOnOCR support is insufficient evidence for this Qwen3.5-based4B;
 these registrations and graph are the relevant path.
 
