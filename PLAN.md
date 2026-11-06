@@ -2600,3 +2600,19 @@ source/raw-text metrics and closes prior whole-archive rehash TODO. Legacy
 `handwritten_letter` is a red A/logo, not paragraph OCR. Receipt remains untouched
 and originally capped; no promotion. Any next candidate/heldout or integration
 requires separate coordination and preservation of the frozen source/gates.
+
+
+### Actual original-BF16 selective Q6 candidate: measured calibration only
+
+[Q6 conversion/screen42212846887](docs/lighton4b-q6-candidate-screen.md) atc3d6b5f88
+builds4,195,863,232-byte candidate76911f05… by direct original-BF16 quantization of
+32 matrices and691 byte-exact copies, with Q8 tied head and full723/native/Python
+hash audits. Old plain first-score controls match exactly. Table RMS.70626033→
+.70573124 barely changes while maxerror4.22656→4.35938 and original-token
+probability.40558→.27142 worsen; Arabic RMS.36463124→.31669830 and probability
+.87177→.90418 improve. First tokens are unchanged; all4 cap1 withoutEOS and strict
+Ref comparisons fail. No complete decoded/heldout quality or default promotion.
+Initial Q6 loader failure and713-pass/converter proofs are retained. Candidate and
+raw native first-score/prefill data are90-day remote artifact13500128433; no hub
+upload or further model job. Current decision is whether this mixed calibration
+screen justifies any later evaluation, separately from the held-out lane.

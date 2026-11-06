@@ -1,0 +1,15 @@
+{
+  "converter_binary_sha256": "03ba881a4011a9a49e5a1de1ccb61908601a95f5b687746f416c26066086c343",
+  "independent_q6_bf16_exact": true,
+  "independent_quantizer_exact": true,
+  "max_chunk_elements": 65536,
+  "model_inference_executed": false,
+  "model_payload_bytes": 0,
+  "neighbor_bytes_unchanged": true,
+  "schema": "lighton4b-q6-conversion-controls/v1",
+  "source_sha": "0dfb61534ca6c0b759406c925f0bd936b580d882",
+  "status": "passed",
+  "synthetic_elements": 65792,
+  "two_chunks_required": true,
+  "wrong_source_sha_rejected": true
+}

@@ -1,0 +1,57 @@
+{
+  "artifact": {
+    "expires_at": "2027-02-04T11:47:35Z",
+    "id": 13500128433,
+    "sha256": "21cb50e617a777073da609bf6947a558d1f42bb1804f217722ff7a3f51c2e561",
+    "zip_bytes": 3549881778
+  },
+  "candidate": {
+    "bytes": 4195863232,
+    "copied691_payload_bytes": 3661154304,
+    "extra_bytes_vs_plain_q4": 164905280,
+    "file": "lighton4b-q4km-q6-q8head-v1.gguf",
+    "header_bytes": 10011328,
+    "q6_payload_bytes": 524697600,
+    "sha256": "76911f052870f4e800fdcea5d5a6205096883be3407867ddadb81e52b7f1fb09"
+  },
+  "conversion_report_sha256": "54677f2c0a05815799b0d577735da8e05f46146c02788e7756416ff965843602",
+  "conversion_support": {
+    "converter_control_source": "0dfb61534ca6c0b759406c925f0bd936b580d882",
+    "converter_controls_run": 42210897150,
+    "converter_source_files_unchanged_between_model_free_and_actual_run": true,
+    "initial_negative_control": 703,
+    "initial_negative_reason": "Q6 streamed projection rejected by narrow whitelist; grouped whitelist also fixed before713pass",
+    "initial_negative_run": 42206305308,
+    "loader_controls": 713,
+    "loader_controls_run": 42207472045,
+    "pr155_loader_source": "635be5d9b36bbe8cf365d9109c38e498960ecc19",
+    "runtime_src_unchanged_from_pr155635": true
+  },
+  "ggml_revision": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "independently_reviewed": {
+    "actual_ref_equal_changed_controls_passed": true,
+    "all249_effective_bf16_weight_hashes_present": true,
+    "all32_native_and_python_q6_bf16_hashes_match": true,
+    "all32_source_bf16_hashes_match_original723_oracle": true,
+    "all691_copied_raw_and_bf16_hashes_match03119": true,
+    "all723_names_and_types": true,
+    "baseline_first_scores_match26e6_exact": true,
+    "q8_tied_head_raw_bytes_unchanged": true,
+    "same_actual_inputs_and_all24_vision_layers_exact_between_arms": true
+  },
+  "limitations": [
+    "Calibration simple_table and arabic_printed_line only; no heldout capture or batch JSON read.",
+    "One teacher score and one independent greedy token per arm/case; all4 cap1 withoutEOS. No complete decoded quality or EOS measurement.",
+    "All4 actualRef raw comparisons fail max.002/mincos.99999. Table original-token probability/maxerror worsen despite tinyRMS gain.",
+    "No same-weight genuine BF16 Q6 model forward; native comparison against retained unquantized BF16 includes quantization/runtime effects.",
+    "Initial availableRAM/disk recorded and per-case guards executed; high-water RSS was not measured.",
+    "Large model and raw first-score/prefill arrays remain remote; only small receipts/logs and first-layer pairs were downloaded.",
+    "No model-hub upload, alias, default or release change."
+  ],
+  "producer_source": "c3d6b5f886cdef07216d37c863bc70e6e06e0b43",
+  "protocol_sha256": "57e77a76b8fecc6a90ee3bb137553e67d798e041ba49802f33273a559f7f0835",
+  "run": 42212846887,
+  "schema": "lighton4b-q6-candidate-review/v1",
+  "status": "measured-not-qualified",
+  "worker_report_sha256": "c5459a3870b06648df125dc97df4e1f3b70eba19f21b3dfef8709f9948b4e966"
+}
