@@ -1735,3 +1735,6 @@ target_link_libraries(test-lighton4b-head-bf16 PRIVATE crispembed-qwen35-delta c
 
 add_executable(test-lighton4b-bf16-dequant-weights tests/test_lighton4b_bf16_dequant_weights.cpp)
 target_link_libraries(test-lighton4b-bf16-dequant-weights PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(lighton4b-bf16-weight-operators tests/lighton4b_bf16_weight_operators.cpp)
+target_link_libraries(lighton4b-bf16-weight-operators PRIVATE crispembed-qwen35-delta crispembed-core)

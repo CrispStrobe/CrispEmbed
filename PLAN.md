@@ -1826,3 +1826,18 @@ positive cache-toggle controls with the existing shared synthetic decoder.
 Historical synthetic numerical rejection remains separate, unchanged and
 insufficient for checkpoint qualification. Source-fed actual weight hashes
 and operator inputs are next; no full generation or speed claim yet.
+
+Focused [42196101066](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42196101066)
+passes16 dequantized-weight/operator controls and353 decoder controls including
+valid cache-mode toggle rejection at7ff9d2ded. The separate synthetic F32
+numerical comparison still rejects prefill.cache.21.recurrent, with its full
+original receipt unchanged/preserved; this is not waived or required to qualify
+the optional storage-dtype mechanism. No checkpoint or full-model storage.
+
+Next one hosted source-fed test streams all249 actual plainQ4 tensors in
+≤65536-element chunks, hashes raw and BF16 values against the authenticated
+03119ea4 oracle, and feeds the admitted5aa5a802 step33 embedding/head/FFN inputs
+through OFF/ON/OFF-repeat operators. Selected sharedQ8 embedding/head and Q4FFN
+source weight hashes must agree across oracle/trace. Exact source embedding and
+gate-off repeat are required; all projection numerical residuals are reported
+without threshold waivers. No autoregressive generation or speed/quality claim.
