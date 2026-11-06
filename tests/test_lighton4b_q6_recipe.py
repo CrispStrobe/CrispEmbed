@@ -1,5 +1,6 @@
 """Exact selective names and no quantized-input laundering; no framework/model."""
 import copy
+import math
 from pathlib import Path
 import sys
 import unittest
@@ -15,8 +16,11 @@ class Controls(unittest.TestCase):
  def test_unquantized_input_guard(self):
   p=m.plan();d={}
   for r in p['all_tensors']:
-   s=r['source_shape'];s=[s[0],s[1]*s[2]*s[3]]if r['name']=='v.patch_embed.proj.weight'else s;d[r['name']]={'stored_shape':list(reversed(s)),'type':0 if r['type']==0 else 1}
+   s=r['source_shape'];s=[s[0],math.prod(s[1:])]if r['name']=='v.patch_embed.proj.weight'else s;d[r['name']]={'stored_shape':list(reversed(s)),'type':0 if r['type']==0 else 1}
+  self.assertEqual(d['v.patch_embed.proj.weight']['stored_shape'],[1536,1024])
   m.validate_source_inventory(d,p)
+  bad=copy.deepcopy(d);bad['v.patch_embed.proj.weight']['stored_shape']=[96,1024]
+  with self.assertRaises(ValueError):m.validate_source_inventory(bad,p)
   for typ in (8,12,14):
    bad=copy.deepcopy(d);bad['l.layers.0.mlp.down_proj.weight']['type']=typ
    with self.assertRaises(ValueError):m.validate_source_inventory(bad,p)

@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 RECIPE='lighton4b-q4km-q6-q8head-v1'
@@ -30,7 +31,7 @@ def validate_source_inventory(tensors,p):
  expected={r['name']:r for r in p['all_tensors']}
  if set(tensors)!=set(expected):raise ValueError('unquantized source full inventory differs')
  for name,r in tensors.items():
-  wanted=expected[name];shape=wanted['source_shape'];shape=([shape[0],shape[1]*shape[2]*shape[3]]if name=='v.patch_embed.proj.weight'else shape)
+  wanted=expected[name];shape=wanted['source_shape'];shape=([shape[0],math.prod(shape[1:])]if name=='v.patch_embed.proj.weight'else shape)
   if r['stored_shape']!=list(reversed(shape))or r['type']not in(0,1)or(wanted['type']==0 and r['type']!=0):raise ValueError('source must retain original F32 protection and unquantized matrices: '+name)
 def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True);args=parser.parse_args();args.output.write_text(json.dumps(plan(),indent=2,sort_keys=True)+'\n')
