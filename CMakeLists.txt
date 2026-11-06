@@ -1724,3 +1724,10 @@ if(LIGHTON4B_ROTARY_TABLE_GENERATED_DIR)
     target_include_directories(lighton4b-rotary-table-profile PRIVATE ${LIGHTON4B_ROTARY_TABLE_GENERATED_DIR})
     target_link_libraries(lighton4b-rotary-table-profile PRIVATE crispembed-qwen35-delta crispembed-core)
 endif()
+
+# Source-stage observer is never compiled into ordinary production artifacts.
+if(LIGHTON4B_VISION_GENERALIZATION_DIR)
+    add_executable(lighton4b-vision-generalization tests/lighton4b_vision_generalization.cpp)
+    target_include_directories(lighton4b-vision-generalization PRIVATE ${LIGHTON4B_VISION_GENERALIZATION_DIR})
+    target_link_libraries(lighton4b-vision-generalization PRIVATE crispembed-qwen35-delta crispembed-core)
+endif()
