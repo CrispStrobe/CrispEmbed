@@ -1,0 +1,23 @@
+{
+  "schema": "lighton4b-gdn-out-logo-review/v1",
+  "run": 42209944112,
+  "source_sha": "0effa01fd5faf0916b3143111d087bff4687afeb",
+  "engine_sha": "26e6ae6635648a09bdbb9ede19705c3e31271260",
+  "artifact_id": 13500455158,
+  "archive_bytes": 320511641,
+  "github_declared_archive_sha256": "a80192c1f9a75e2bb4e8e644fa23318193857e40f4cc83276595d92708768371",
+  "quality_qualified": false,
+  "candidate_unchanged": true,
+  "complete_archive_independently_rehashed_locally": false,
+  "small_receipt_sha256": {
+    "independent-array-hashes.json": "2dc759a063458f983c0c92ef6ac70084dd514863bd56afd987e249d4e56a894a",
+    "out.txt": "559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd",
+    "build.json": "a7bfe997a4328e9c76a3c43b81822b56e0cc4e747cdb2770c53acf9bf4f20df1",
+    "q4.ids": "86114a81a71ef93a8b21685e67d25f25dc4cdf04262a81dd2e315a49a0acf56e",
+    "independent-review.json": "6e61cbf468d6b377197c85831f0cc7fb07bc0272fc4feedad6fb976509c87cfe",
+    "independent-payload-hashes.json": "bdfa198f7852851c93e0ac1ba683c1711b2891757d19f1b2dbd7138a5e1b91dc",
+    "report.json": "e00b5c6638bac5ea05d141a1d27e3d541d586f3ea28f862d2f98546d6ba9ee10",
+    "q4.txt": "559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd",
+    "out.ids": "86114a81a71ef93a8b21685e67d25f25dc4cdf04262a81dd2e315a49a0acf56e"
+  }
+}
