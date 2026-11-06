@@ -20,8 +20,11 @@ try:
  assert subprocess.check_output(['git','rev-parse','HEAD:ggml'],cwd=source,text=True).strip()==GGML_SHA
  assert subprocess.check_output(['git','-C','ggml','rev-parse','HEAD'],cwd=source,text=True).strip()==GGML_SHA
  venv=scratch/'venv'
- subprocess.run([sys.executable,'-m','venv','--system-site-packages',str(venv)],check=True,timeout=120)
+ subprocess.run([sys.executable,'-m','venv','--without-pip','--system-site-packages',str(venv)],check=True,timeout=120)
  python=venv/'bin/python'
+ # Kaggle Debian Python may lack working ensurepip. Its existing pip module is visible
+ # through system-site-packages, but this interpreter installs only into this venv.
+ subprocess.run([str(python),'-c','import sys; assert sys.prefix != sys.base_prefix; import pip'],check=True,timeout=30)
  with(out/'packages.log').open('w')as log:
   subprocess.run([str(python),'-m','pip','install','--disable-pip-version-check','numpy==2.3.5','Pillow==11.3.0','gguf==0.19.0'],stdout=log,stderr=subprocess.STDOUT,check=True,timeout=300)
  env=dict(os.environ,HEAVY_OUT=str(out),HEAVY_SCRATCH=str(scratch),CRISPEMBED_BUILD_MODE='portable')
