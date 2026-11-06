@@ -21361,3 +21361,48 @@ drift before quantization despite exact723 original tensors/five inputs;
 dual-vendor CPU-profile diagnostics are separate and never replace the frozen
 a4/e59 anchors. No full same-weight reference admission, EOS/document, heldout,
 strict score, default or release qualification follows.
+
+### BF16 dequantized text-weight isolation
+
+Checkpoint-free [42196101066](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42196101066)
+passes16 projection/embedding/head/gate/storage checks and353 decoder controls,
+including valid cached-mode toggle rejection. The separate synthetic original
+numerical rejection remains preserved atprefill.cache.21.recurrent; no waiver.
+Actual source-fed [42198497821](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42198497821)
+atbe9eb625b verifies all249 raw quantized and BF16 weight hashes against the
+authenticated original oracle, in≤65536-element chunks, including tied embedding/
+head. Source-fed ON embedding/up/down arrays are byte-exact; gate differs1/9216
+(max0.0004883), head24/248320 (max0.03125/RMS0.00007093, still strict failure).
+OFF-repeat raw bytes are identical. Time38.49s/peakRSS2,928,726,016B. These fixed
+source inputs isolate weight dtype; no generation, speed or quality claim.
+[Full receipts and hash proof](tests/results/qwen35-ocr/lightonocr3-4b-bf16-weight-precision/source-operators.json).
+
+Next one real same-Q4 image OFF/ON smoke uses BF16 head and verified vision,
+1 teacher score plus independent16-token cap per arm. OFF must reproduce all
+shared frozen correctedQ4 stage/score bytes and16IDs; prepared/vision/positions
+stay exact across arms, ON embedding must equal independent BF16 RNE of OFF.
+The new native-only weight option stays off on WASM; a standalone simulated
+preprocessor guard runs before model staging, explicitly not a WASM runtime test.
+Existing source pin chain and cache controls remain intact. No full Q4 quality
+claim follows from this bounded smoke; integration waits for its checks.
+
+### Real plainQ4 weight-dtype smoke: partial negative
+
+[42200784414](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42200784414)
+completes at4bd327394 with BF16_QUANT_WEIGHTS OFF/ON. OFF reproduces87 frozen
+correctedQ4 shared stage/score hashes;34 prepared/vision/position artifacts
+remain identical across arms, and ON embedding equals independent BF16 RNE.
+Both produce the same16 IDs, matching the genuine same-Q4 source prefix,
+ending in partial `<table>…<th` without EOS. No full-document test. The
+standalone simulatedWASM preprocessor guard passes and disables this native
+oracle option there; no actualWASM runtime qualification.
+
+Same-weight BF16 firstscore RMS changes0.0267200→0.0257732, but max error
+worsens0.15625→0.1796875; both fail unchanged strict tolerance. Against the
+unquantized original, ON RMS0.5882684/max2.46875 also fail. This option is not
+a plainQ4 quality fix. OFF takes195.46s, ON417.00s (observed cost, not a speed
+benchmark; serial-first/cachewarmth uncontrolled), peakRSS4.525/4.522GB.
+The gate stays default-off, with immutable quant storage, bounded transient
+weight/row/tile conversion and cached-mode toggle rejection. All historical
+source pins/negative evidence remain unchanged.
+[Full measured receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-weight-precision/native-smoke.json).
