@@ -80,3 +80,11 @@ cleanup on failure/cancel. Large model files remain hosted;90-day artifacts reta
 small reports/inputs/text/IDs/logs and source/version receipts. No shared runtime,
 new PR, release, alias or default changes. Dispatch requires review of the exact
 worker/protocol source and resources; preparation is not qualification.
+
+User-directed infrastructure change: initial GitHub42235476177 is cancelled after
+the pinned upstream build and before any inference (phase `download-projector`,
+no arms). Artifact13515095161 retains the partial report/build logs,59,677 bytes,
+SHA256 `3f977c197613323efe132fc2c8693ac2ec1899a124fc305da6bc0a092137a797`.
+The same model/input/prompt/generation protocol moves to authorized Kaggle CPU;
+provider admission and ancestor-aware cgroup inspection are explicit. No duplicate
+GitHub job or model comparison is dispatched.

@@ -12,11 +12,22 @@ def sha(p):
  return h.hexdigest()
 def memory():
  vals={k:int(v.split()[0])*1024 for k,v in(line.split(':',1)for line in Path('/proc/meminfo').read_text().splitlines())if k in ('MemAvailable','SwapTotal','SwapFree')}
- for base in [Path('/sys/fs/cgroup')]:
-  try:
-   limit=(base/'memory.max').read_text().strip();used=int((base/'memory.current').read_text());vals['cgroup_limit']=limit;vals['cgroup_used']=used
-   if limit!='max':vals['MemAvailable']=min(vals['MemAvailable'],int(limit)-used)
-  except(OSError,ValueError):pass
+ observed=0;bounds=[]
+ for line in Path('/proc/self/cgroup').read_text().splitlines():
+  hierarchy,controllers,relative=line.split(':',2)
+  if hierarchy=='0'and controllers=='':base=Path('/sys/fs/cgroup');limitname='memory.max';usedname='memory.current'
+  elif 'memory'in controllers.split(','):base=Path('/sys/fs/cgroup/memory');limitname='memory.limit_in_bytes';usedname='memory.usage_in_bytes'
+  else:continue
+  target=base/relative.lstrip('/')
+  for node in (target,*target.parents):
+   if node!=base and base not in node.parents:break
+   try:
+    raw=(node/limitname).read_text().strip();used=int((node/usedname).read_text());observed+=1
+    if raw!='max'and int(raw)<2**60:bounds.append(max(0,int(raw)-used))
+   except(OSError,ValueError):pass
+ vals['cgroup_observed']=observed;vals['finite_cgroup_bounds']=len(bounds)
+ if bounds:vals['MemAvailable']=min(vals['MemAvailable'],*bounds)
+ require(observed>0,'actual memory cgroup inspection')
  return vals
 def download(url,p,size,expected):
  require(not p.exists(),'task destination exists');h=hashlib.sha256();count=0
@@ -37,11 +48,12 @@ def stop(p):
   try:p.wait(timeout=20)
   except subprocess.TimeoutExpired:os.killpg(p.pid,signal.SIGKILL);p.wait()
 def main():
- require(os.environ.get('GITHUB_ACTIONS')=='true'and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','hosted portable only')
+ provider='kaggle-cpu'if Path('/kaggle/working').is_dir()and Path('/kaggle/input').is_dir()else'github-actions'if os.environ.get('GITHUB_ACTIONS')=='true'else None
+ require(provider is not None and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','authorized hosted portable only')
  import numpy as np
  from PIL import Image
  require(np.__version__=='2.3.5'and Image.__version__=='11.3.0','input serializer pins')
- protocolpath=ROOT/'docs/lighton4b-independent-llama-baseline-v1.json';cfg=json.loads(protocolpath.read_text());out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH'])/'independent-llama';scratch.mkdir();report={'schema':'lighton4b-independent-llama-result/v1','status':'failed','source_sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'protocol_sha256':sha(protocolpath),'quality_qualified':False,'original_forward_executed':False,'preflight':{'memory':memory(),'load':os.getloadavg(),'scratch_free_bytes':shutil.disk_usage(scratch).free,'output_free_bytes':shutil.disk_usage(out).free},'arms':{},'limits':cfg['limits']};active=None;started=time.monotonic()
+ protocolpath=ROOT/'docs/lighton4b-independent-llama-baseline-v1.json';cfg=json.loads(protocolpath.read_text());out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH'])/'independent-llama';scratch.mkdir();report={'schema':'lighton4b-independent-llama-result/v1','status':'failed','source_sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'protocol_sha256':sha(protocolpath),'quality_qualified':False,'original_forward_executed':False,'provider':provider,'preflight':{'memory':memory(),'load':os.getloadavg(),'scratch_free_bytes':shutil.disk_usage(scratch).free,'output_free_bytes':shutil.disk_usage(out).free},'arms':{},'limits':cfg['limits']};active=None;started=time.monotonic()
  def save(phase):report['phase']=phase;(out/'independent-llama.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n');print('phase',phase,flush=True)
  def interrupted(signum,frame):stop(active);raise SystemExit(128+signum)
  signal.signal(signal.SIGTERM,interrupted);signal.signal(signal.SIGINT,interrupted);signal.signal(signal.SIGALRM,interrupted);signal.alarm(cfg['total_model_timeout_seconds'])
