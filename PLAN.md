@@ -1,5 +1,21 @@
 # CrispEmbed plan — open work (updated 5 November 2026)
 
+The user requires LightOn4B Q4 quality at least comparable to the measured
+llama.cpp Q4_K_M baseline before shipping a Q4 model. The existing plain Q4,
+custom mixed recipes and weighted experiments are unqualified; keep their gates
+default-off and do not publish, register, or use them as an app release. The
+[pinned independent baseline](docs/lighton4b-independent-llama-baseline.md)
+uses the same frozen form, table and Arabic inputs, with Q4_K_M form CER/WER
+189/656 and 46/90, table 315/607 and 88/106 (capped), and Arabic 0/12 and 0/2.
+On those diagnostics compare complete decoded text, EOS/cap, CER and WER against
+the identical BF16 reference and the upstream outcome; record both wins and
+losses. These are not human transcription accuracy. Require additional fresh,
+representative OCR cases before any broader quality or release decision. Preserve
+the distinction between plain Q4_K, llama.cpp Q4_K_M and each explicit custom
+recipe; Q6 or F16/BF16 tensors may be used where measured and declared. The user
+selects the BF16 original reference: an F32 model/reference is not a prerequisite.
+Use Kaggle rather than GitHub-hosted runners for this work.
+
 The bounded default-off `qwen35_lighton4b_text.h` component maps only the exact
 426 text tensors from immutable LightOn4B source
 `b71010f095dc3735de7ee6b9969bff8f8f50b39a`: 32 layers, full-attention and
