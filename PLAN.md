@@ -2460,3 +2460,18 @@ drift before quantization despite exact723 original tensors/five inputs;
 dual-vendor CPU-profile diagnostics are separate and never replace the frozen
 a4/e59 anchors. No full same-weight reference admission, EOS/document, heldout,
 strict score, default or release qualification follows.
+
+## 6 November: mixer architecture partition measured
+
+[Six-arm42187953019](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42187953019)
+finds table prefix fixed by Q8GDN120,not full-attention32 alone. Table first-score
+RMS baseline/GDN/attention/mixers/mixers+down/fullQ8 is
+0.706260/0.642260/0.664900/0.654575/0.558216/0.0712989;
+Arabic0.364631/0.336366/0.327429/0.293539/0.256652/0.0394947. All12strict gates
+still fail; two-token prefixes only,heldout untouched. Attention-only preserves
+blocks0–2 bytes and first responds at3; GDN responds at0. Repeated controls versus
+first panel pass198/198 fullscore/layer hashes. All248 donor pairs/475protected
+hashes and5prepared-input hashes/case pass. [Evidence](docs/lighton4b-mixer-partition-sensitivity.md)
+retains raw hashes,timing,stage magnitudes and the disjoint projection classes of
+GDN120: QKV24,Z24,a+b48,out24. Next calibration question can split these classes
+with high-precision controls; no production/model/default/release promotion.
