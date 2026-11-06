@@ -1934,3 +1934,19 @@ no conversion worker or reference probe is added to runtime artifacts. See
 42218056668 and actual42219710049 supply the unchanged-source controls. No default,
 registry, release, EOS or full-decoded-quality promotion: separate calibration
 full generation remains pending; PR157 retains all score negatives and provenance.
+
+
+### Reproducible BF16→Q6 tooling integrated with the guarded native owner
+
+PR155 now carries the exact tested streaming row helper/converter and closed
+32-Q6/24-output first-score, full-calibration and observed-logo harnesses, plus
+source protocols and scoped controls. See the
+[end-to-end reproduction guide](docs/lighton4b-q6-conversion-and-calibration.md).
+Fresh Q6 weights come directly from original BF16; protected quantized payloads
+and the Q8 tied head are copied exactly. CMake's helper staysEXCLUDE_FROM_ALL;
+production artifacts gain no reference probe or model alias. Workflow changes
+are four exact read-only/manual selectors plus Q6-only retention routing; all
+unrelated jobs, steps and gates remain intact. Source files match the tested
+c7e6720ab tree, with compiled runtime hashes pinned to10d3/90d2. Calibration and
+logo evidence stay in PR157, including the remaining table/known-logo negatives.
+No additional model job, default/quality/release promotion or model-hub upload.

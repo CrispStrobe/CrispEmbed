@@ -44,17 +44,14 @@ an inference memory or decoded-quality measurement.
 
 ## Generation and verification boundaries
 
-A future candidate must be quantized directly from the original BF16 checkpoint
-or an authenticated unquantized F16 baseline. Q8→Q6 or Q4→Q6 requantization does
-not recover original information and is prohibited by the plan's input inventory
-check. No F32 model is needed: source BF16/F16 values can be converted in bounded
-row chunks for quantization. The existing converter exports F16/F32; the generic
-quantizer already accepts explicit `--tensor-type NAME=q6_k` overrides. Its plain
-`q4_k` selector does not itself implement this mixed policy and writes the S
-header14 when standard labels are selected. A candidate writer must explicitly
-write the verified M header15 and custom marker after checking all723 actual
-shapes/types and protected payload hashes. The current tool emits the exact plan
-and validates unquantized source inventories; it has not generated a model file.
+The integrated [streaming converter and closed hosted harnesses](lighton4b-q6-conversion-and-calibration.md)
+now generate the exact32-Q6 and separate24-GDN-output recipes from the authenticated
+original BF16 checkpoint. Selected matrices are quantized directly in bounded
+row chunks; unchanged quantized base payloads are copied byte-exact. Q8→Q6 or
+Q4→Q6 requantization is prohibited. The writer sets the verified M header15 and
+custom marker, checks all723 source/shapes/types/payload hashes, protects the
+Q8 tied head and independently verifies all fresh Q6-to-BF16 tensor hashes. No
+full F32 model is constructed.
 
 With both weight-rounding and Q6 gates enabled, dequantized named text Q6 values
 also receive the existing BF16 oracle-weight conversion. Q6 retains the old
@@ -66,9 +63,12 @@ of each249 quantized matrix types, strict metadata/gate negatives, independent
 scalar Q6 decoding of65,792 synthetic values, native projection/row tiling,
 BF16 conversion and stored-byte preservation. Hosted builds also cover the real
 native runner and preflight, plus the old native/mixed/BF16-weight controls.
-No actual Q6 checkpoint, calibration, held-out case or EOS result has run yet.
-A model job remains blocked on the current calibration decision; no default,
-release, model alias or upload is authorized by this structural test.
+Actual conversion and bounded calibration have since run. The32-Q6 candidate
+did not restore the table first token; the separate24-GDN-output Q6 candidate
+matches retained Q8-output full calibration decodes but retains original-BF16
+table disagreement and an observed-logo negative. These remain calibration and
+post-selection diagnostics, with no default/release/model alias promotion.
+
 
 
 The first hosted model-free build42206305308 compiled every target, then failed
@@ -90,5 +90,6 @@ binaries compile and retain argument rejection. The
 records binary hashes, exact32-name digest and zero model payload/inference.
 Artifact13498105831 is retained90 days, SHA
 `6486186a9ca981051add8f20312d4931e687634aed82411116c58bb5b64028f8`.
-This closes structural/operator support only. Actual Q6 source conversion,
-checkpoint payload validation and calibration/held-out decoded quality remain open.
+The later source-conversion and calibration receipts are linked in the
+[reproduction guide](lighton4b-q6-conversion-and-calibration.md). Broader decoded
+quality and a release remain unqualified.

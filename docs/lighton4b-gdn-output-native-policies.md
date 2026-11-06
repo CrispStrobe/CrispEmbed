@@ -26,9 +26,11 @@ The separate source also passes actual723-payload admission and pinned same-work
 Q4/Q8-output first-score controls in
 [42219710049](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42219710049).
 
-This integration adds no converter/model worker, reference probe, new model alias,
-default promotion or release. The candidate is still calibration-only: Q6 restores
-the first table token but full table generation remains pending; Arabic first-token
-probability decreases. All six strict score comparisons fail and every one-token
-arm hits its cap without EOS. Large weights and arrays remain in the90-day hosted
-artifact; qualification evidence is maintained separately in PR157.
+The [reproduction tools](lighton4b-q6-conversion-and-calibration.md) now include the
+streaming source converter and closed experimental harnesses; their helper is
+excluded from default builds. Production artifacts gain no reference probe,
+model alias, default promotion or release. Q6 matches Q8-output full calibration
+IDs/text/EOS on both cases; the table still differs from original BF16, and the
+observed logo remains `A`. All six strict first-score failures and Arabic
+probability regression remain preserved. Evidence is maintained separately in
+PR157; no heldout-quality qualification follows.
