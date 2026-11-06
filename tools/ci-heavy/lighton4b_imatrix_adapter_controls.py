@@ -20,6 +20,9 @@ def target_header(path,mutation=None):
   offset+=size
  raw=b'GGUF'+struct.pack('<IQQ',3,len(rows),len(meta))+b''.join(meta)+b''.join(descriptors);raw+=b'\0'*((-len(raw))%32);path.write_bytes(raw)
 
+def legacy_header_fixture(path):
+ name='legacy.weight';meta=[adapter.text('general.architecture')+struct.pack('<I',8)+adapter.text('crispembed-imatrix'),adapter.text('count.'+name)+struct.pack('<IQ',10,2)];raw=b'GGUF'+struct.pack('<IQQ',3,1,len(meta))+b''.join(meta)+adapter.text(name)+struct.pack('<IQIQ',1,2,0,0);raw+=b'\0'*((-len(raw))%32);payload=struct.pack('<ff',2,8);payload+=b'\0'*((-len(payload))%32);path.write_bytes(raw+payload)
+
 def main():
  kaggle=Path('/kaggle/working').is_dir()and Path('/kaggle/input').is_dir();github=os.environ.get('GITHUB_ACTIONS')=='true';adapter.require((kaggle or github)and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','actual hosted portable environment required');adapter.require(not list(Path('/dev').glob('nvidia[0-9]*')),'CPU-only controls required');out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH'])/'lighton-imatrix';scratch.mkdir();build=scratch/'build';r={'schema':'lighton4b-imatrix-adapter-controls/v1','status':'failed','source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'quantization_executed':False,'model_forward_executed':False,'model_payload_bytes':0,'quality_qualified':False,'execution_host':'kaggle-cpu'if kaggle else'github-cpu','gpu_devices':[]}
  def run(name,args,expect=0):
@@ -37,7 +40,7 @@ def main():
   # Exercise ordinary production CLI routing, still without model payload/quantization.
   wrong=scratch/'width.gguf';forbidden=scratch/'adapted-must-not-publish.gguf'
   run('production-adapted-coverage-negative',[binary,wrong,forbidden,'q4_k','--imatrix',adapted],1);adapter.require(not forbidden.exists()and not Path(str(forbidden)+'.partial').exists(),'rejected coverage published output')
-  legacy=scratch/'legacy.gguf';name='legacy.weight';meta=[adapter.text('general.architecture')+struct.pack('<I',8)+adapter.text('crispembed-imatrix'),adapter.text('count.'+name)+struct.pack('<IQ',10,2)];raw=b'GGUF'+struct.pack('<IQQ',3,1,len(meta))+b''.join(meta)+adapter.text(name)+struct.pack('<IQIQ',1,2,0,0);raw+=b'\0'*((-len(raw))%32);legacy.write_bytes(raw+struct.pack('<ff',2,8));forbidden=scratch/'legacy-must-not-publish.gguf'
+  legacy=scratch/'legacy.gguf';legacy_header_fixture(legacy);forbidden=scratch/'legacy-must-not-publish.gguf'
   run('production-legacy-load-preserved',[binary,scratch/'absent-model.gguf',forbidden,'q4_k','--imatrix',legacy],1);adapter.require('loaded importance vectors for 1 tensors'in(out/'production-legacy-load-preserved.log').read_text()and not forbidden.exists(),'valid legacy imatrix did not retain old load behavior')
   tampered=scratch/'tampered.gguf';raw=bytearray(adapted.read_bytes());raw[-1]^=1;tampered.write_bytes(raw);run('tamper-negative',[binary,'--check-lighton4b-imatrix',tampered,header],1)
   # Real upstream format must fail, rather than silently run unweighted; target has no model payload.

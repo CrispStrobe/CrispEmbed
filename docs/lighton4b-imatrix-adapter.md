@@ -113,3 +113,10 @@ permutations, and every actual value agrees between upstream F32 division and
 the consumer's F64-then-F32 division. Width/name/tamper and raw-source fallback
 negatives pass. A short extension also checks ordinary CLI adapted-coverage
 rejection and valid legacy loading, with no model payload or quantization.
+
+
+The production-path extension v3 passes strict adapted target rejection. Its
+new legacy fixture then exposes missing32-byte tail padding in that tiny synthetic
+GGUF, before any model access. The fixture is corrected and independently checked
+for canonical padding; v3 logs remain preserved. No adapter data or production
+normalization code changes are needed.
