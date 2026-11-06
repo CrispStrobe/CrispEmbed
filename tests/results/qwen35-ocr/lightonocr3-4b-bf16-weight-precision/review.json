@@ -37,5 +37,5 @@
   "speed_claim": false,
   "scope": "genuine mixed-reference fixed operator inputs with identical effective Q4FFN/sharedQ8 embedding/head weights; not composed normal decode",
   "transport": "Selected ZIP members CRC and SHA verified through26003 range bytes; archive digest service-declared; rawarrays/models retained remotely",
-  "wasm_policy": "Later conservative __EMSCRIPTEN__ guard disables experimental mode; standalone preprocessor control pending next bounded native smoke, not an actualWASM runtime qualification"
+  "wasm_policy": "Conservative __EMSCRIPTEN__ mode OFF; standalone simulated-preprocessor guard passes in42200784414, not an actualWASM runtime qualification."
 }
