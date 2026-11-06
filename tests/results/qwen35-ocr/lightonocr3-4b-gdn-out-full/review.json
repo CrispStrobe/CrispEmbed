@@ -7,7 +7,7 @@
     "bytes": 3858198504,
     "github_declared_sha256": "8072676afb687ee4ed39e17d34f585690c3cbbce567ca8d4caa18f0d112181a1",
     "retention_days": 90,
-    "whole_archive_independent_rehash": "Pending hosted prerequisite audit before the heldout diagnostic; not downloaded locally."
+    "whole_archive_independent_rehash": "Passed hosted run42209944112: exact3858198504 bytes/SHA8072676afb687ee4ed39e17d34f585690c3cbbce567ca8d4caa18f0d112181a1; candidate complete4156787616 bytes/SHA40e54560ed349c077100c4e39276d29c02b98d6bec3611ac7b3a88d5a771c710; all723 payload spans and1004 archived float arrays rehashed."
   },
   "candidate": {
     "file": "candidate/lighton4b-q4k-gdn-out-q8-v1.gguf",
@@ -63,6 +63,7 @@
     "Table still differs at ID36 with224 character edits and61 word edits; no broad quality claim.",
     "Historic four-case original CPU dispatch was not separately recorded.",
     "Legacy teacher_forced_ids field lists reference IDs; greedy-full consumes no teacher continuation IDs and emits one teacher-position row.",
-    "Complete raw archive/candidate rehash is delegated to the next hosted read-only audit gate; no bulk local model download."
-  ]
+    "Whole archive/candidate and retained raw arrays independently audited on hosted CI42209944112; no bulk local download."
+  ],
+  "followup_audit_run": 42209944112
 }

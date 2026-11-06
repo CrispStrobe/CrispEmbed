@@ -2584,3 +2584,19 @@ then unchanged candidate versus plain baseline on heldout legacyhandwritten_lett
 which is actually an A/logo65-tokenEOS source,not representative paragraph OCR.
 Receipt stays deferred/capped. Coordinate latest PR1554850481ba before integration;
 current model measurement remains frozen26e6ae663.
+
+
+### 6 November2026 — unchanged GDN-out recipe heldout diagnostic completed
+
+[42209944112](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42209944112)
+at0effa01fd5 freezes calibration engine26e6 and verifies the complete prior
+archive/model,723 payloads,1004 F32 arrays and four fresh calibration closures
+before the predeclared A/logo case. Both Q4 and unchanged24-out-Q8 candidate
+produce `A`/EOS in2 IDs; original BF16 has65 IDs and a figure description.
+RMS improves0.643224→0.597031 but decoded agreement does not improve; both
+CER215/216 and WER37/38. Native105.98/105.96 seconds, RSS4,523,798,528/4,647,583,744.
+[Full evidence](docs/lighton4b-gdn-out-logo-heldout.md) preserves independent
+source/raw-text metrics and closes prior whole-archive rehash TODO. Legacy
+`handwritten_letter` is a red A/logo, not paragraph OCR. Receipt remains untouched
+and originally capped; no promotion. Any next candidate/heldout or integration
+requires separate coordination and preservation of the frozen source/gates.

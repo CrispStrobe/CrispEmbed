@@ -76,9 +76,10 @@ Levenshtein computation reproduces every character/word edit count. The
 [723-record candidate audit](../tests/results/qwen35-ocr/lightonocr3-4b-gdn-out-full/candidate-audit.json)
 and[raw text audit](../tests/results/qwen35-ocr/lightonocr3-4b-gdn-out-full/independent-text-audit.json)
 retain sources,binaries,timings,metrics and exact raw outputs. Native/reference
-text is preserved beside these receipts. Whole archive and candidate rehash will
-also run remotely as a prerequisite to the heldout diagnostic; no bulk model was
-downloaded onto the shared workspace for this review.
+text is preserved beside these receipts. Follow-up [hosted audit42209944112](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42209944112)
+independently rehashes the complete archive, candidate, all723 actual tensor spans
+and1004 retained float arrays before the heldout diagnostic. All expected hashes
+match; no bulk model was downloaded onto the shared workspace.
 
 Candidate GGUF and all arrays remain in90-day artifact13497191104,
 3,858,198,504 bytes,GitHub-declared SHA256
@@ -88,3 +89,6 @@ four-case CPU dispatch was not separately recorded. Next is the predeclared
 heldout legacy`handwritten_letter` case,actually a red capital A/logo with a
 complete65-token BF16 reference,not handwriting/paragraph OCR. Candidate bytes
 and selection must stay unchanged. No quality/default/release/alias promotion.
+
+The [completed A/logo heldout diagnostic](lighton4b-gdn-out-logo-heldout.md)
+retains unchanged native `A`/EOS in both arms and no decoded agreement gain.
