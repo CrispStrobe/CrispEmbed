@@ -2338,3 +2338,24 @@ qualification. Only1 teacher row and2 IDs per arm; original numerical failure
 is unchanged. The source-pin amendment preserves all historical receipt bytes,
 and the nonpthreadWASM path explicitly excludes thread launch. Default stays off.
 [Full balanced receipt](tests/results/qwen35-ocr/lightonocr3-4b-parallel-dequant/balanced-ab.json).
+
+
+### Mixed step33 precision attribution — complete, decoded correction verified
+
+Original source8eeb captures50actual stages; all34 IDs/score hashes remain exact
+against178-row mixedBF16 source. Native headRNE AB42168142185/b988 preserves229
+OFF artifacts/156IDs, whileON reproduces all178 source IDs/text/EOS. All47
+nonhead step33 arrays are byte-identical. Read-only Ref42174566100/5222 completes
+96raw stage comparisons plus26 same-causal-context official/mixed/native triples.
+Embedding max0.000105858 becomes source-bit-exact withBF16RNE; firstbudgetfailure
+is input_norm max0.0165167/RMS0.00256818. Later raw numerical debt remains: headON
+max0.125/RMS0.0302963 and all178 scoreSHA differ despite exactdecodedoutput.
+Actualhead401/1778 tie is18.5/18.5; independentRNE of all248,320OFF values exactly
+equalsON vector. Row5 official→mixedBF16 max10.578125/RMS1.54315937 confirms
+large quant-model loss without native implementation; mixed→native residual
+max0.656324/RMS0.0785952. [All stages, triples, controls and source versions](docs/lighton4b-mixed-step33-results.md).
+Artifact13483410105 preserves178source rows/all rawpaired stages/26official and
+native rows90days until2027-02-04. Complete numerical failure is expected, no
+setupfailure, inference or F32model in consumer. Runtimeagent owns gated correction;
+no defaults/quality qualification. Official177 output remains different, observed
+form remains excluded fromheldout/architecture selection. No additional jobs.

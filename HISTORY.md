@@ -21296,3 +21296,15 @@ fd150 0.13049504 / 0.568259001 and891d 0.2005369525 / 1.092198968; sources and
 hosts differ. Prefix `<figure` is preserved and was already correct before.
 Two-token only, no EOS/body qualification or speed/default/release promotion.
 Current native elapsed 139.13 s and peak 6,317,207,552 bytes are retained.
+
+
+Source-neutral step33 replay8eeb and pairedRef42174566100/5222 verify concrete
+final-head BF16 output correction: same-worker native42168142185/b988 OFF156IDs
+versusON exact178IDs/text/EOS genuine mixedBF16 source. All47 nonhead traces
+unchanged; every248,320 actualON head value equals independentRNE ofOFF. Remaining
+numerical debt is preserved (headON max0.125/RMS0.0302963, all178scoreSHA differ).
+First actualbudget failure input_norm; source/nativeweights differ in effective
+BF16/F32 precision, so this is not an isolatedRMSbug. All26 causal triples show
+large original-BF16 mixed quantization loss already exists (row5 max10.578125).
+[Complete raw/control/decoded/archival evidence](docs/lighton4b-mixed-step33-results.md).
+Default-off correction integration remains separate; no model/release promotion.
