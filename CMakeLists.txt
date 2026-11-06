@@ -1741,3 +1741,7 @@ target_link_libraries(lighton4b-bf16-weight-operators PRIVATE crispembed-qwen35-
 
 add_executable(test-lighton4b-bf16-weight-wasm-guard tests/test_lighton4b_bf16_weight_wasm_guard.cpp)
 target_include_directories(test-lighton4b-bf16-weight-wasm-guard PRIVATE src ggml/include)
+
+# Default-off LightOn4B selective Q6 metadata/owner and independent scalar dequant controls.
+add_executable(test-lighton4b-q6-policy tests/test_lighton4b_q6_policy.cpp)
+target_link_libraries(test-lighton4b-q6-policy PRIVATE crispembed-qwen35-delta crispembed-core)
