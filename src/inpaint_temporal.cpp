@@ -17,6 +17,9 @@ constexpr int cell = 8;         // static test cell size
 constexpr int strip = 64;       // flat decision per strip of the hole's width
 constexpr float flat_low = 4.0f, flat_high = 8.0f;
 constexpr double harmonic_budget = 2e7; // SOR pixel updates per frame (bounds iterative work)
+// Per-pixel residual between two frames that is still noise (film grain, compression):
+// grain on a still shot differs by ~2-4 levels per pixel without moving any cell mean.
+constexpr float residual_noise = 6.0f;
 
 struct box {
     int x0 = 0, y0 = 0, x1 = 0, y1 = 0;
@@ -117,9 +120,11 @@ struct stream::state {
                 if (n >= 8) {
                     const float mean =
                         float(std::abs(sa[0] - sb[0]) + std::abs(sa[1] - sb[1]) + std::abs(sa[2] - sb[2])) / (3.0f * n);
-                    // A translated fine texture can keep every cell mean unchanged.
-                    // Allow small pixel noise, but retain half its absolute residual.
-                    diffs.push_back(std::max(mean, float(residual) / (6.0f * n)));
+                    // A translated fine texture can keep every cell mean unchanged, but its
+                    // per-pixel residual is far above grain: keep half of the excess over
+                    // the noise level (half the whole residual made grain veto every copy).
+                    const float pixel = float(residual) / (3.0f * n);
+                    diffs.push_back(std::max(mean, 0.5f * std::max(0.0f, pixel - residual_noise)));
                 }
             }
         mean = p90 = -1;

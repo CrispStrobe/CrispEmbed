@@ -1,4 +1,4 @@
-# CrispEmbed plan — open work (updated 4 November 2026)
+# CrispEmbed plan — open work (updated 5 November 2026)
 
 The bounded default-off `qwen35_lighton4b_text.h` component maps only the exact
 426 text tensors from immutable LightOn4B source
@@ -41,14 +41,14 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Reranker residual (~0.2 logits) | Pair layout/truncation fixed (PR122) | Fix the stage-diff harness, Spearman/top-k instead of exact argsort | Attributed or accepted |
 | CUDA / Metal audit follow-ups | Matrices in `docs/gpu-support-matrix.md` | One gated GPU path or A/B at a time | Measured A/B before any default flip |
 | Ovis, Josev, MoEdern, UltraBERT, LFM2.5, EmbeddingGemma precision | See the 29 October table below | One bounded protocol at a time | Per-row gates in that table |
-| Issue 71 inpainting | Engines published (default-off); stream merged | Representative subtitle/video quality, MI-GAN512 Q4_K caveat (0.9019) | Owner-reviewed quality panel |
-| Releases / pub.dev / app pin | v0.17.14 published, pub.dev unqualified, app on 0.17.12 | Qualified assets and fresh consumers first | Release procedure in the pub.dev section |
+| Issue 71 inpainting | Engines published (default-off); stream and grain correction [PR162](https://github.com/CrispStrobe/CrispEmbed/pull/162) merged | Representative subtitle/video quality, MI-GAN512 Q4_K caveat (0.9019) | Owner-reviewed quality panel |
+| Releases / pub.dev / app pin | v0.17.15 published, pub.dev unqualified, app on 0.17.12 | Qualified assets and fresh consumers first | Release procedure in the pub.dev section |
 | OXR-1.0 quantized + GPU | Q8_0-large / Q4_K-head pass the owner bar (cos ≥ 0.998 vs F16, CPU/Metal/CUDA); German diverges 1 token from decode-step activation quantization | Opt-in F32-activation decode A/B (the recipes are already published and registered as `oxr-1.0-q8_0` / `oxr-1.0-q4_k-head`, PR #97) | A/B receipt; German page token-exact or the divergence attributed |
 | OXR native document route / D-FINE | Hosted helpers/replay/native pass (41249898971), `dfine` stage failed there; D-FINE regions match original 5/5 but 2.6x slower | Re-run `oxr_native_doc.sh` `dfine native` stages on main; encoder per-op profile | Hosted parity on all five cases; profile receipt |
 | MinerU2.5-Pro full native doc route | 8/8 model-backed cases identical (41251475795); default-off | Owner: default-on or not (handoff "Owner decisions"); image-bearing-table fixture | Decision recorded; fixture receipt |
 | Marker-style pipeline / TeleOCR | Implemented and bounded-validated, default-off; TeleOCR strict numerics false at every precision | Representative licensed multilingual/layout gold corpus (needs owner-provided licensed annotations) | Corpus frozen; CER/WER/order receipts |
 | Model-weight licences in apps | Registry/cards/gates corrected; CrispSorter PR20 at0af4c34 adds fail-closed OCR consent, typed Gemma terms, real0.17.12 pin and image backfill. Its reported Metal-feature cargo check passes; PR18 remains draft | Review/integrate [CrispSorter20](https://github.com/CrispStrobe/CrispSorter/pull/20) alongside18; retain Windows-helper/live-OCR gaps. Check CrispCalc consent separately. No vendor/app pin upgrade | Downstream acknowledgement PRs merged and actual consumer checks recorded |
-| **Release v0.17.14** (owner: release once every PR is resolved and main is green) | **Published 4 November 2026** from `9c790c81`; 16 assets (all platform archives, both WASM bundles, CUDA/Vulkan extras); macOS archive checks `0.17.14` and unversioned `@rpath` install names. Downstream apps still pin prebuilt libs to 0.17.12 via `CRISPEMBED_PREBUILT_VERSION` (PR #132) | Section "Release v0.17.14" below: only step 4 remains — tell downstream to drop the override | Downstream told to drop the override; app pins updated by their owners |
+| **Release v0.17.15** | **Published 5 November 2026** from `d28ca2ea4`; full candidate gates and all 16 native/WASM assets verified | Fresh downstream consumer checks and owner-controlled pin updates; package publication separate | Consumer upgrades reviewed against immutable 0.17.15 artifacts |
 | CI selection after PR #134 | Merged; docs/evidence-only pushes run nothing, so the main head may have no Build run | Before tagging: `gh workflow run build.yml --ref main` (and build-wasm, build-wasm-embed, rust-crates, inpaint-cli); confirm the dynamic desktop matrix in build.yml evaluates on hosted runners | One full green Build on the main head |
 | Failing main workflows owned by the integration session | Recorded as non-release-blocking on 4 November 2026 (HISTORY): `MoEdern real padded Q4_K diagnostic` stops at authenticated input preparation (run 41587641989), and `Layer0 attention op-by-op same-input replay v1` is a manual experiment with no main run | Re-run only if the authenticated inputs are authorized; otherwise no release action | Recorded; re-run or leave closed |
 | Embedder/tokenizer residuals (CUDA audit, PR #115/#122) | Fixed: SPM space collapse, XLM-R pair layout, 512 truncation | `xlmr-ner-hrl` GGUF has no Unigram scores (reconvert with scores); `paraphrase-multilingual` native truncates at 512, original at 128 (honour `max_seq_length`); Ettin reranker unchecked (tokenizer needs transformers 5) | Each matches the original on the 77-text panel |
@@ -56,6 +56,23 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | MI-GAN256 Metal/Q4_K | Metal F32/F16/Q8_0 pass; Q4_K fails (masked 0.81); GPU default off | Q4_K probes with sensitive layers at Q8_0 (`CRISPEMBED_QUANTIZE_MIGAN_Q8`); flip to the padded-K Metal path only after measuring delivery-5 CPU kernels on Apple CPU | Q4_K ≥ 0.94 masked or declined; A/B before any default flip |
 | Big-LaMa (research only) | Weights' rights unclear; kept on `feat/issue71-lama-research`, private Hub copy only | Nothing until the owner clarifies the weight licence | Licence clarified (then publish) or lane closed |
 | Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
+
+## Post-release v0.17.15 — 5 November 2026
+
+[Native/WASM v0.17.15](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.15)
+is published from `d28ca2ea43a95934d673d1a54177fdf721614ade` after all full
+candidate gates. All 16 assets and seven full hosted native readbacks are verified
+in [the receipt](tests/results/releases/v0.17.15.json); completed sources/runs and
+limits are in HISTORY. Draft PRs #155/#157 were explicitly excluded from this release
+and remain unmerged with their owners. Preserve the tag and source receipts.
+
+Remaining work is downstream consumer qualification and owner-controlled app pin
+updates; the application still pins 0.17.12. PyPI/pub.dev publication stays separate
+and disabled. Do not infer new model or precision qualification from a release
+build. Keep LightOn3 correction gates off unless explicitly enabled, and retain
+all prior capped/negative OCR evidence. The current release notes remain in
+[RELEASE_NOTES_v0.17.15.md](RELEASE_NOTES_v0.17.15.md); eight older tracked snapshots
+were removed while GitHub release bodies and Git history preserve their content.
 
 ## Regression review and OCR continuation — 4 November 2026
 
@@ -139,7 +156,8 @@ Gate status (4 November 2026): **met**. The open-PR queue is empty (#135, #138 a
 `main` at `2f1bbdb1` has all 16 workflows green including all 11 native build jobs, and the two
 manual diagnostics are recorded non-release-blocking below and in HISTORY. Versions agree on
 0.17.14; `tests/test_pubdev_release_gate.py` passes; the changelog entry and
-`RELEASE_NOTES_v0.17.14.md` are in this change.
+[published release notes](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.14)
+record that release. Its old Markdown snapshot was later removed during cleanup.
 
 1. **Gate.** `gh pr list --state open` is empty (or the owner excludes the rest). On the current
    main head, dispatch the full set because docs-only pushes no longer start Build (PR #134):
@@ -148,7 +166,7 @@ manual diagnostics are recorded non-release-blocking below and in HISTORY. Versi
    diagnostics in the index above must be green or recorded as non-blocking.
 2. **Preflight.** VERSION, `flutter/crispembed/pubspec.yaml`, crate/package versions and
    `flutter/crispembed/CHANGELOG.md` agree on 0.17.14; run `python tests/test_pubdev_release_gate.py`
-   (PR #91). Write `RELEASE_NOTES_v0.17.14.md` like the earlier release-notes files; it and the
+   (PR #91). Write `RELEASE_NOTES_vX.Y.Z.md` for the candidate; it and the
    changelog entry must list the default changes since 0.17.12 (EasyOCR LSTM state reset,
    GOT-OCR2 pipeline parity, SPM space collapse, XLM-R pair layout, position-table truncation,
    CLIP EOS keep, CUDA defaults for ESRGAN/InstructIR/PAN/Restormer/LightOnOCR, Metal defaults
@@ -168,13 +186,14 @@ present, install names are unversioned `@rpath/lib*.dylib`, and `libcrispembed.d
 current version 0.17.14. Only step 4 (downstream switch) is still open; the pub.dev publish job
 stayed skipped because that package is not qualified (PR #91 follow-ups).
 
-Operational note for the next cut: pushes of `v*` tags start no workflow in this repository, so
-both `release.yml` and `release-wasm.yml` must be dispatched at the tag ref
-(`gh workflow run release.yml --ref vX.Y.Z` and the same for `release-wasm.yml` with
-`-f tag=vX.Y.Z`). `release.yml` creates the release with an empty body, so attach the notes with
-`gh release edit vX.Y.Z --notes-file RELEASE_NOTES_vX.Y.Z.md`. Its `Create GitHub Release` step
-can fail transiently while uploading the multi-hundred-MB CUDA bundles; rerun the failed jobs
-once the release exists instead of re-cutting the tag.
+Operational note for the next cut: v0.17.15's tag push automatically started
+`release.yml`, `release-wasm.yml` and preview Python wheels. Inspect exact tag/SHA
+runs before dispatching anything; do not duplicate a healthy automatic build.
+If a workflow genuinely did not start, dispatch it at the immutable tag ref
+(`gh workflow run release.yml --ref vX.Y.Z`, or `gh workflow run release-wasm.yml
+--ref vX.Y.Z -f tag=vX.Y.Z`). Attach the reviewed body with
+`gh release edit vX.Y.Z --notes-file RELEASE_NOTES_vX.Y.Z.md` and verify it survives
+uploads. Retry only failed transient upload jobs; never move/re-cut a public tag.
 
 ## Quantizer changes and the OCR quality contract
 

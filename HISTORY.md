@@ -138,6 +138,123 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 5 November 2026 — v0.17.15 published and verified
+
+[Release v0.17.15](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.15)
+is published from immutable source `d28ca2ea43a95934d673d1a54177fdf721614ade`.
+The owner authorized this cut and excluded unmerged LightOn4B draft PRs #155/#157;
+those lanes remain with their existing owners. Versions/package metadata and
+released changelog agree at 0.17.15. The release notes cover only merged changes.
+
+All five full candidate workflows, plus lint and secret scan, pass on the exact
+source: 29 successful jobs. Full Build
+[42101523884](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42101523884)
+includes all desktop/mobile/native legs, sibling linkage and Flutter packaging;
+OCR WASM 42101527815, embedding WASM 42101532360, Rust 42101537877 and three-platform
+inpainting 42101542663 pass. This is release/build evidence, not a new claim of
+all-model numerical parity. Existing capped outputs and negative quality receipts
+remain unchanged; both LightOn3 correction gates remain default-off.
+
+The tag push automatically started native
+[42102421218](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42102421218),
+WASM [42102420486](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42102420486)
+and preview Python wheels 42102420721. No duplicate manual release dispatch was
+made. Native and WASM release workflows pass, including CUDA/Vulkan packaging,
+portable CPU baselines, Linux dependency/glibc checks and the macOS extracted
+archive's regular dylibs/install names/signatures/CLI/library-load checks.
+
+All 16 expected uploaded assets have nonempty sizes and GitHub SHA-256 digests:
+seven required native/mobile archives, four GPU variants and five WASM assets.
+The hosted pub.dev preflight downloaded all seven required native archives from
+the public release and compared their full SHA-256 values against this run's
+build artifacts; all match, independently agreeing with the GitHub asset digests.
+[The verification receipt](tests/results/releases/v0.17.15.json) records exact
+runs/jobs/source, sizes/digests and seven readback hashes. Large payloads stayed
+remote; only metadata and needed logs/reports were reviewed during integration.
+Release notes are attached and verified against the committed notes file.
+
+This release fixes temporal-grain propagation and adds the already gated LightOn3
+corrections/converter repairs and OCR evidence described in the notes. No new
+model alias or precision qualification, pub.dev/PyPI upload, application pin or
+consumer upgrade follows. Preview Python wheels remain workflow artifacts.
+The application still pins 0.17.12; downstream upgrades require their own immutable
+asset/consumer review. This closing commit changes documentation and the receipt
+only, preserving the published tag and tested runtime/workflow bytes.
+
+## 5 November 2026 — 0.17.15 candidate notes and old snapshot cleanup
+
+Compared published tag `v0.17.14` with main
+`0b0af65e5914b6c50320147982caf4c204a50622` and wrote
+[0.17.15 candidate notes](RELEASE_NOTES_v0.17.15.md). The patch's main user-facing
+change is PR162's temporal-grain correction; default-off LightOn3 epsilon/cache
+corrections, converter/reference repairs and completed OCR evidence are scoped
+separately from model qualification. Updated the unreleased package changelog's
+stale pending-panel statement. Removed all eight older tracked release-note
+Markdown snapshots with `git rm`; published release bodies and Git history retain
+the previous notes. Unrelated untracked workspace files were preserved.
+
+Development versions remain0.17.15. No tag, assets, package publication, admission
+gate/default or application pin changes. PLAN records the remaining open-draft
+policy decision and final-source full release-matrix/preflight requirements.
+
+## 5 November 2026 — PR162 review and temporal regression coverage
+
+[PR162](https://github.com/CrispStrobe/CrispEmbed/pull/162) merged as
+`58eac88665be0f20255468c94f80cc0dae84e3bd`, preserving the original fix
+`23f4ad05ad7f689122edd8e586ee3a343de53f57` and two review commits. Baseline
+main was `17c96639a5507c4cee51898b9eeb05ad58d2ebdc`. The merge tree is identical
+to checked head `7de04e36f237e9352bdb21f7f28444c027d6b420`.
+
+Expanded model-free temporal coverage from 270 to 396 checks: exact past/future
+donor pixels and current known pixels under independent grain, stable engine-fill
+reuse, residual-only propagation/reuse/blend boundaries, and rejection of coherent
+brightness shifts below the noise allowance. At default thresholds, balanced
+stripes propagate through 9 RGB levels, reuse through 12, and blend below 30;
+strong texture motion still rejects. The six-level allowance applies to a cell's
+mean absolute RGB residual, not every pixel, and supplies no per-pixel error bound.
+No additional runtime optimization was added; this review did not establish a
+performance bottleneck.
+
+All 7 final-head workflows pass, including
+[inpainting42095988490](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42095988490),
+[Build42095988973](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42095988973),
+[Lint42095988369](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42095988369)
+and secret scanning. Linux/macOS 15/Windows each pass 396 temporal checks,
+48 CLI checks and all 5 fake-engine video cases. WASM/Rust selectors report their
+declared skips; these are not new WASM/Rust inference qualifications.
+
+Automatic merged-source [inpainting42097044219](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42097044219)
+also passes all three platforms with the same 396/48/five-case coverage.
+[Main Build42097043976](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42097043976),
+[Lint42097044085](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42097044085),
+secret scanning and the selected WASM/Rust aggregate checks pass. The separate
+WASM demo build/deploy was still running at this documentation checkpoint; it
+is not a new temporal-inpainting qualification gate. This closing change edits
+only HISTORY and PLAN, retaining the tested runtime and workflow bytes.
+
+Initial [42095238543](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42095238543)
+at `8c125e599` passes Linux/Windows, but both macOS attempts fail before checkout:
+`macos-14-arm64-us-default` is unsupported. The
+[runner retirement notice](https://github.com/actions/runner-images) confirms
+macOS 14 retirement on 2 November; only the inpainting workflow moves to macOS 15.
+Original PR lint42058381900's cancelled style job remains historical; corrected
+final-head style is green. Builds and suites ran on hosted CI.
+
+The author's Apple model-backed PSNR/flicker measurements below remain reported
+evidence, without independently archived/replayed raw A/B reports. The real-film
+clip has no ground truth. Representative video quality remains open in PLAN.
+The opt-in CLI temporal path is corrected; neural inference is unchanged.
+Development 0.17.15 remains unreleased, published 0.17.14 and app 0.17.12 unchanged.
+
+## 5 November 2026 — Issue 71 stream: film grain no longer blocks propagation
+
+`ring_static` (src/inpaint_temporal.cpp) took half the per-pixel residual into every cell difference (80fb7e73), so
+ordinary grain on a still shot vetoed propagation from frames without a subtitle; the subtitle area then got an
+engine fill reused across the shot (static clip 34.57 -> 27.15 dB inside the mask). The guard now keeps half of
+the residual above a 6-level noise allowance: grain passes, one-pixel motion of fine texture (150 levels per pixel in
+`moving_texture_cannot_cancel_inside_cells`) is still rejected. New model-free check
+`grain_on_a_still_shot_still_propagates` (+-5 levels of grain; fails on v0.17.14). Numbers in PERFORMANCE.md.
+
 ## 4 November 2026 — complete LightOn cache panel passes; final regression matrix green
 
 [Complete cache+epsilon41905258340](tests/results/lightonocr3-1b/cache-ab-v1/full-review-41905258340.json)

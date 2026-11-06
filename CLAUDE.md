@@ -7,8 +7,10 @@ passes all12 corrected decoded arms, and294 model-free controls/actual Apple
 builds pass. Completed/capped/negative evidence and remaining acceptance gates
 supersede older queued-language snapshots. Both correction gates stay default-off;
 next is separately closed paired CPU-default replay, then EOS and quantization.
-Candidate development0.17.15 is unreleased; published assets remain0.17.14,
-application0.17.12. No new model alias or broad quality qualification.
+Native/WASM 0.17.15 is published from `d28ca2ea4`; application 0.17.12
+remains unchanged. [Release verification](tests/results/releases/v0.17.15.json)
+records the full candidate gates, all 16 assets and seven hosted native readbacks.
+No new model alias or broad quality qualification.
 
 [The 3 November handoff](docs/handoff-2026-11-03.md) remains the entry for the
 broader roadmap. PLAN contains open work; completed evidence belongs in HISTORY,

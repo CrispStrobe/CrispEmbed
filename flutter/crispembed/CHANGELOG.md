@@ -1,11 +1,14 @@
-## 0.17.15 (unreleased)
+## 0.17.15
 
-- Add a default-off LightOnOCR-3-1B experiment using the original Pixtral vision
-  norm epsilon. Existing profiles, text/projector norms and default behavior
-  remain unchanged. Hosted retained-reference A/B qualification is pending.
+- Fix film grain blocking real-background propagation in the opt-in CLI temporal
+  inpainting stream; retain motion and brightness-change guards.
+- Add default-off LightOnOCR-3-1B corrections for the original Pixtral vision
+  norm epsilon and an F32 CPU KV cache. Together they match all twelve retained
+  F32/F16 free outputs; strict intermediate failures and capped outputs remain.
+  Legacy profiles and runtime defaults remain unchanged.
 - Correct the LightOn3 loader/converter checkpoint namespace and OCR audit setup;
   retain original failures and bounded precision/decoded results separately.
-- No new runtime assets, model aliases, application pin or pub.dev publication.
+- No new model aliases, application pin changes or pub.dev publication.
 
 ## 0.17.14
 
