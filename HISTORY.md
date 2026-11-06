@@ -21019,3 +21019,16 @@ The gate stays default-off, with immutable quant storage, bounded transient
 weight/row/tile conversion and cached-mode toggle rejection. All historical
 source pins/negative evidence remain unchanged.
 [Full measured receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-weight-precision/native-smoke.json).
+
+
+### 6 November2026 — guarded LightOn4B selective Q6 support
+
+[Hosted42207472045](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42207472045)
+at20199554a passes713 model-free controls for the exact custom32Q6/216Q4/1Q8
+recipe, metadata/gates, independent scalar dequantization, streamed projection,
+grouped-GDN prefill/cached decode, BF16 weight conversion and unchanged storage.
+Old native/mixed/BF16 controls and real native/preflight builds pass. Initial
+42206305308 remains retained: it compiled but exposed the narrower stream Q6
+rejection, with the grouped validator also requiring guarded extension. No model
+payload, inference, default, quality qualification or release changed; see the
+[recipe and receipts](docs/lighton4b-selective-q6.md).

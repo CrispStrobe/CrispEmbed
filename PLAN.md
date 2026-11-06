@@ -1915,3 +1915,10 @@ pass. The negative is retained. Both streamed projection and grouped-GDN type
 validators now gain the same default-off native Q6 admission, with explicit
 stream and synthetic grouped prefill/cached-decode equivalence tests. One bounded
 model-free retry follows; no checkpoint or calibration job is started.
+
+
+Q6 structural/operator controls now pass713 in42207472045, with old native/mixed/
+BF16 controls and native/preflight builds retained. Initial negative42206305308
+remains preserved. Guarded Q6 support is ready for scoped PR155 integration;
+actual candidate conversion/calibration remains pending the current recipe review.
+No Q6 model job has run.
