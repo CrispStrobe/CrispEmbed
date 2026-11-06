@@ -1984,3 +1984,24 @@ mixed, BF16 controls and actual native/preflight builds passing. Artifact1350340
 is retained90days. The reviewed three-arm calibration worker may now run once
 with its strict capacity/input/model/baseline-hash guards; no heldout or release
 qualification follows from this structural proof.
+
+
+### Prepared exact24-Q6 candidate full calibration, pending review
+
+The new closed `lighton4b_gdn_out_q6_full.py` worker stages only the authenticated
+83e065c4… candidate from artifact13503268909, never reconverts weights. Its
+[full-generation protocol](docs/lighton4b-gdn-out-q6-full-protocol-v1.json) hashes
+all compiled runtime sources against10d3 (equivalent PR15590d2 native sources),
+retains HEAD_BF16=1 and the other first-score gates, and authenticates both previous
+first-score and Q4/Q8 full-decoded receipts. Both calibration cases must pass exact
+processor/prepared/prefill/all32-layer/firstscore smoke barriers before either full
+independent generation. It then runs cap256 with one teacher row and audits every
+returned greedy row, independent primary EOS/cap, IDs/text and raw CER/WER against
+genuine BF16 plus separately labeled Q4/Q8 baselines. No heldout/batch access,
+reference forward, F32 model or default/release change. Capacity gates require
+16GiB shared disk or12GiB scratch+4GiB output,8GiB effective RAM and2GiB cgroup
+margin; four native threads, two build threads,90minute worker/110minute workflow.
+Full-model-free/code protocol review is pending before one dispatch; no full
+candidate job has started. Three closed consumer controls pass; an initial local
+static test incorrectly rejected image RGB conversion and was narrowed to model
+requantization before passing. Native code is unchanged from hosted proof.
