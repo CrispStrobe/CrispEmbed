@@ -13,12 +13,14 @@
 #include "gguf.h"
 
 #include "../src/core/imatrix_alias.h"
+#include "../src/core/lighton4b_imatrix.h"
 #include "../src/core/gguf_file_type.h"
 #include "../src/core/json.h"
 #include "../src/core/sha256.h"
 #include "../src/core/env_gate.h"
 
 #include <cstdio>
+#include <filesystem>
 #include <cstdlib>
 #include <cstring>
 #include <set>
@@ -238,6 +240,7 @@ static bool exact_f16_patch_cast(const ggml_tensor * tensor, const std::string &
 // which uses it to minimise activation-weighted error for k-quants / IQ-quants.
 static std::map<std::string, std::vector<float>> g_imatrix;
 static bool g_imatrix_requested = false;
+static bool g_lighton_imatrix = false;
 
 // BERT-family runtimes pre-merge the per-layer attn q/k/v weights into one F32
 // tensor at load time, so the imatrix collector records that matmul's input
@@ -317,6 +320,13 @@ static bool load_imatrix(const std::string & path) {
     if (!g) {
         fprintf(stderr, "imatrix: failed to open '%s'\n", path.c_str());
         return false;
+    }
+    const auto adapted = gguf_find_key(g, "crispembed.imatrix.profile");
+    if (adapted >= 0) {
+        gguf_free(g); ggml_free(ctx);
+        g_lighton_imatrix = lighton4b_imatrix::load(path, g_imatrix);
+        if (!g_lighton_imatrix) fprintf(stderr, "adapted LightOn4B imatrix domain/coverage rejected\n");
+        return g_lighton_imatrix;
     }
     const int64_t nt = gguf_get_n_tensors(g);
     int loaded = 0;
@@ -640,9 +650,20 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         return false;
     }
 
+    if (g_lighton_imatrix && !lighton4b_imatrix::target(ctx_in, ctx_in_ggml)) {
+        fprintf(stderr, "adapted imatrix target tensor domain/coverage rejected\n");
+        gguf_free(ctx_in); ggml_free(ctx_in_ggml); return false;
+    }
+
     // Build output GGUF with same metadata
     struct gguf_context * ctx_out = gguf_init_empty();
     gguf_set_kv(ctx_out, ctx_in);
+    if (g_lighton_imatrix) {
+        gguf_set_val_str(ctx_out, "crispembed.quantization.imatrix_source_sha256", lighton4b_imatrix::source_sha);
+        gguf_set_val_str(ctx_out, "crispembed.quantization.imatrix_profile", lighton4b_imatrix::profile);
+        gguf_set_val_u32(ctx_out, "crispembed.quantization.imatrix_expected_entries", 248);
+    }
+
     gguf_set_val_u32(ctx_out, "general.quantization_version", GGML_QNT_VERSION);
     const bool standard_header = g_standard_file_type_header || core_env::on("CRISPEMBED_QUANTIZE_STANDARD_FTYPE");
     if (standard_header && g_legacy_file_type_header) {
@@ -1601,6 +1622,11 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         fseeko(fin, (off_t)offset, SEEK_SET);
 #endif
 
+        if (g_lighton_imatrix && sname.rfind("v.", 0) == 0) quantize = false;
+        if (g_lighton_imatrix && lighton4b_imatrix::expected().count(sname) && !quantize) {
+            fprintf(stderr, "adapted imatrix target was skipped: %s\n", name); fclose(fin); fclose(fout);
+            gguf_free(ctx_in); gguf_free(ctx_out); ggml_free(ctx_in_ggml); return false;
+        }
         if (quantize) {
             printf("quantizing to %s... ", ggml_type_name(qtype_used));
 
@@ -1687,6 +1713,10 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                 }
             }
 
+            if (g_lighton_imatrix && lighton4b_imatrix::expected().count(sname) && !imatrix) {
+                fprintf(stderr, "adapted imatrix vector was not applied: %s\n", name); fclose(fin); fclose(fout);
+                gguf_free(ctx_in); gguf_free(ctx_out); ggml_free(ctx_in_ggml); return false;
+            }
             size_t q_size = ggml_quantize_chunk(qtype_used, f32_data.data(), q_data.data(), 0, nelements / t->ne[0],
                                                 t->ne[0], imatrix);
 
@@ -1731,6 +1761,10 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                           counts.size());
     }
 
+    if (g_lighton_imatrix && n_imatrix != 248) {
+        fprintf(stderr, "adapted imatrix applied coverage differs from248\n"); fclose(fin); fclose(fout);
+        gguf_free(ctx_in); gguf_free(ctx_out); ggml_free(ctx_in_ggml); return false;
+    }
     // Rewrite metadata header now that tensor types/offsets are final
     rewind(fout);
     gguf_get_meta_data(ctx_out, meta_data.data());
@@ -1752,6 +1786,18 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
 }
 
 int main(int argc, char ** argv) {
+    // Header/statistics-only preflight: never enter any weight quantization path.
+    if (argc == 4 && std::string(argv[1]) == "--check-lighton4b-imatrix") {
+        std::map<std::string, std::vector<float>> means;
+        if (!lighton4b_imatrix::load(argv[2], means)) return 1;
+        ggml_context * ctx = nullptr; gguf_init_params p{true, &ctx};
+        auto * g = gguf_init_from_file(argv[3], p);
+        const bool ok = lighton4b_imatrix::target(g, ctx);
+        if (g) gguf_free(g); if (ctx) ggml_free(ctx);
+        if (!ok) return 1;
+        printf("%s\n", lighton4b_imatrix::audit(means).c_str()); return 0;
+    }
+
     // Collect positional args, allowing policy flags anywhere.
     std::vector<std::string> pos;
     std::string imatrix_path;
@@ -1930,13 +1976,22 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "josev quantization policy %s (%zu rules)\n", g_josev_policy->name, rules.size());
     }
     if (!imatrix_path.empty()) {
-        load_imatrix(imatrix_path); // non-fatal: falls back to unweighted if empty
+        if (!load_imatrix(imatrix_path)) { fprintf(stderr, "requested imatrix contains no usable vectors\n"); return 1; }
         init_qkv_imatrix_mode();
     }
 
-    if (!quantize_model(fname_inp, fname_out, it->second)) {
-        fprintf(stderr, "Failed to quantize model\n");
-        return 1;
+    // Adapted-profile output is published only after exact248 applied coverage.
+    const std::string target = g_lighton_imatrix ? fname_out + ".partial" : fname_out;
+    if (g_lighton_imatrix && (std::filesystem::exists(fname_out) || std::filesystem::exists(target) ||
+                              std::filesystem::is_symlink(fname_out) || std::filesystem::is_symlink(target))) {
+        fprintf(stderr, "adapted imatrix output/partial already exists\n"); return 1;
+    }
+    if (!quantize_model(fname_inp, target, it->second)) {
+        if (g_lighton_imatrix) std::remove(target.c_str());
+        fprintf(stderr, "Failed to quantize model\n"); return 1;
+    }
+    if (g_lighton_imatrix && std::rename(target.c_str(), fname_out.c_str()) != 0) {
+        fprintf(stderr, "failed to publish validated adapted-profile output\n"); return 1;
     }
 
     return 0;

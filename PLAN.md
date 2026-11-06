@@ -1950,3 +1950,20 @@ unrelated jobs, steps and gates remain intact. Source files match the tested
 c7e6720ab tree, with compiled runtime hashes pinned to10d3/90d2. Calibration and
 logo evidence stay in PR157, including the remaining table/known-logo negatives.
 No additional model job, default/quality/release promotion or model-hub upload.
+
+
+### Isolated external-text imatrix adapter, no weighted model
+
+The public publisher imatrix8406c78c/10e8194a… contains248 dense `.in_sum2`/`.counts`
+pairs,129×512 rows. The isolated adapter maps exact248 LightOn input vectors and
+inverse-permutes only24 recurrent output input axes from tiled to HF-grouped V
+heads. Six Python controls pass, including the real3.63MB source, complete248
+normalized hashes and synthetic domain/count/shape/nonfinite/energy negatives.
+The deterministic converted file is105aba299a…/3,621,184 bytes. Correct source
+math, coordinate formula, provenance limits and pending checks are in
+[the adapter note](docs/lighton4b-imatrix-adapter.md). Explicit unusable imatrix
+requests no longer silently fall back. Strict adapted-profile coverage and an
+actual-consumer/header-only checker are prepared; one bounded model-free hosted
+build/check is next. No weight quantization, model forward, OCR capture or quality
+promotion is authorized before verification. The source corpus contents and
+calibration source weights remain independently unauthenticated external text.
