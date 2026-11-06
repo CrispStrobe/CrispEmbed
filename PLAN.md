@@ -1811,3 +1811,24 @@ OFF156tokens takes1388.25s/RSS5,185,196,032B; ON178tokens1561.55s/5,185,175,552B
 Different completion lengths prevent a speed interpretation. Gate stays
 default-off, no release/default/model alias change. Existing historical
 source-pin amendments and15git-verified frozen receipt pins remain intact.
+
+## Predeclared Q8 restoration sensitivity (6 November, pending)
+
+The exact[calibration-only protocol](docs/lighton4b-restoration-sensitivity-v1.json)
+freezes five arms before any new output: plainQ4,all mixersQ8,FFN-down-onlyQ8,
+allFFNQ8 and fullQ8. Explicit selected-name counts are0/152/32/96/248. Immutable
+Q4/Q8 source files are independently fully hashed; all475 protected tensors,
+including tied head/embedding and vision, must match. Per-tensor donor/base
+payload digests are frozen before forward and verified again on actual loaded
+native bytes. The test-only overlay changes borrowed decoder pointers, never
+production model/profile admission or frozen recipes. Current owner supports
+Q4_K/Q8_0, notQ6_K. Actual native frontend/vision feed fresh independent decoder
+caches for each arm on predeclared table/Arabic calibration images only; heldout
+receipt/letter remain untouched. Compare one full first-score row against
+originalBF16 and plainQ4, all32 block differences versusQ4, and two-token greedy
+IDs/decoded prefix. No full generation/EOS or per-arm same-weight source oracle
+claim. Model-free selector/uniqueness/guard controls precede model acquisition;
+12GiB available RAM,20GiB scratch,2GiB output guards and35-minute process bound.
+Single targeted portable hosted job; arrays retained remotely90 days. Gates and
+precision stay identical across arms, with verified vision and final-headBF16
+corrections enabled and rejected decoder/rotary alternatives disabled.

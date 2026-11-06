@@ -1730,3 +1730,9 @@ target_link_libraries(test-lighton4b-parallel-dequant PRIVATE crispembed-qwen35-
 
 add_executable(test-lighton4b-head-bf16 tests/test_lighton4b_head_bf16.cpp)
 target_link_libraries(test-lighton4b-head-bf16 PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Test-only fixed-policy donor sensitivity; never linked into production.
+add_executable(test-lighton4b-sensitivity-policy EXCLUDE_FROM_ALL tests/test_lighton4b_sensitivity_policy.cpp)
+target_link_libraries(test-lighton4b-sensitivity-policy PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(lighton4b-restoration-sensitivity EXCLUDE_FROM_ALL tests/lighton4b_restoration_sensitivity.cpp src/lighton4b_tokenizer.cpp)
+target_link_libraries(lighton4b-restoration-sensitivity PRIVATE crispembed-qwen35-delta crispembed-core)
