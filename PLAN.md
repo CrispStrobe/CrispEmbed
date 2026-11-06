@@ -1748,3 +1748,15 @@ This is shared genuine-mixed prefix, not official-unquantized teacher context.
 No native replay duplication; runtimeagent owns independent fullhead-roundAB.
 BF16 source parameter rounding versus nativeF32 dequant remains explicit before
 calling a stage difference an implementation bug. Productionruntime unchanged.
+
+
+### Read-only shared-prefix step33 consumer — prepared, awaiting nativeAB
+
+Originalsource8eeb completed50actualstages/34neutralrows, input68100/positions60,
+receipt5aa5a802. Native42168142185/b988 fullheadAB remains pending.
+[Closed paired consumer](docs/lighton4b-mixed-step33-comparison.md) authenticates
+both, compares48rawstages with actualRef and separateBF16RNE controls, checks
+head-only/nonhead invariance on identical prefixes and recordsmags/earliestfailure.
+No modelinference/acquisition. One20min read-only job can retainall178source rows
+andrawpairedstages90days in sameartifact, no modelpayload. Threeprovenance
+negativecontrols pass; no dispatch before complete nativeidentityreview.
