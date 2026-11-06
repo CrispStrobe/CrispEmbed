@@ -1841,3 +1841,10 @@ through OFF/ON/OFF-repeat operators. Selected sharedQ8 embedding/head and Q4FFN
 source weight hashes must agree across oracle/trace. Exact source embedding and
 gate-off repeat are required; all projection numerical residuals are reported
 without threshold waivers. No autoregressive generation or speed/quality claim.
+
+The separate plainQ4 full producer444386169/42183620520 is now retained with
+this controller: corrected vision+head still yields the identical256-ID capped
+table as historical42001333207, noEOS. Its unchanged reportc726b09d… and genuine
+BF16 plainQ4 full reference1096b5f0… at4939c9a6e70a6651fa6072aab71665a30db0c71e
+remain separately frozen. First171 native/source IDs agree before a BF16 tie
+residual; no unquantized-original quality or document/EOS qualification.
