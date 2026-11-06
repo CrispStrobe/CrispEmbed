@@ -88,3 +88,10 @@ SHA256 `3f977c197613323efe132fc2c8693ac2ec1899a124fc305da6bc0a092137a797`.
 The same model/input/prompt/generation protocol moves to authorized Kaggle CPU;
 provider admission and ancestor-aware cgroup inspection are explicit. No duplicate
 GitHub job or model comparison is dispatched.
+
+Initial Kaggle CPU version1 stops before resource preflight, upstream build or
+model access: worker source-identity lookup assumed the launch directory was the
+checkout. The exact submitted bootstrap is authenticated; setup logs and failed
+bootstrap receipt are retained. Corrected lookup uses the explicit source root,
+and the bootstrap launches in that checkout with an isolated Python environment.
+The retry preserves all model/input/protocol/generation pins.
