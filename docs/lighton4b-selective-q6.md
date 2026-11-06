@@ -92,3 +92,33 @@ Artifact13498105831 is retained90 days, SHA
 `6486186a9ca981051add8f20312d4931e687634aed82411116c58bb5b64028f8`.
 This closes structural/operator support only. Actual Q6 source conversion,
 checkpoint payload validation and calibration/held-out decoded quality remain open.
+
+## Prepared direct-source conversion lane
+
+The proposed [conversion/first-score protocol](lighton4b-q6-conversion-protocol-v1.json)
+preserves691 payloads byte-for-byte from the authenticated plain Q4 file,
+including all216 remaining Q4 matrices, the Q8 tied head and474 protected tensors.
+Only the32 selected matrices are generated anew, directly from the authenticated
+original BF16 checkpoint. No existing Q4/Q8 value is decoded into a Q6 input.
+The bounded C++ helper processes whole rows in at most65,536 values; source BF16,
+new Q6 payload and decoded-BF16 hashes are independently recorded. Python verifies
+every copied/replaced tensor, preserves raw tokenizer/metadata bytes, and compares
+all32 native Q6 decoded-BF16 hashes against the independent gguf decoder.
+
+The source checkpoint, base and new candidate total at most17,306,578,488 bytes.
+Require27GiB free shared filesystem space and8GiB effective RAM before transfer;
+conversion buffers stay below2MiB. Builds and native temporary outputs need extra
+space within that guard. Before each first-score run, advise clean checkpoint/base
+pages away and recheck8GiB effective RAM plus2GiB cgroup hard margin. One worker,
+two threads and a90-minute deadline are proposed. The shared workspace does not
+have the required disk headroom and must never receive these large files.
+
+Only the fixed calibration table/Arabic captures and their first score are read.
+The original batch JSON is intentionally excluded: older transport helpers also
+inspect a held-out cap flag, so they must not be reused for this selection lane.
+Baseline and Q6 use the same binary/worker/gates, with baseline first-score hashes
+required to match retained calibration controls before measuring the new candidate.
+One-token scores are diagnostic; no completion or decoded-quality claim follows.
+Held-out captures/labels remain in the separate lane. The model job is not yet
+dispatched: synthetic converter controls, a closed calibration-only worker and
+resource/source review remain required first.

@@ -1922,3 +1922,18 @@ BF16 controls and native/preflight builds retained. Initial negative42206305308
 remains preserved. Guarded Q6 support is ready for scoped PR155 integration;
 actual candidate conversion/calibration remains pending the current recipe review.
 No Q6 model job has run.
+
+
+### Prepared original-BF16 selective Q6 conversion, no model dispatch
+
+The [bounded protocol](docs/lighton4b-q6-conversion-protocol-v1.json) now declares
+691 byte-exact copies fromf873 and32 fresh Q6 matrices from original BF16b710/6b0d,
+never quantized donors. Full723/raw source/output hashes, strict M15/custom metadata,
+independent native/Python Q6→BF16 hashes and Q8 tied-head identity are required.
+Pure-stdlib synthetic header/Unicode-array/offset/copied-byte/negative controls
+pass; the new bounded C++ row converter still requires hosted synthetic build
+verification. Proposed one worker needs27GiB disk,8GiB effective RAM and2GiB hard
+margin before native cases; large files total≤17.31GB, conversion chunks≤65536.
+First-score calibration is table/Arabic only, with same-worker plain-Q4 hash controls;
+no original batch or held-out captures/labels may be read. Actual model dispatch
+waits for resource/source review and the current calibration decision.

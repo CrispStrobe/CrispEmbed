@@ -1745,3 +1745,8 @@ target_include_directories(test-lighton4b-bf16-weight-wasm-guard PRIVATE src ggm
 # Default-off LightOn4B selective Q6 metadata/owner and independent scalar dequant controls.
 add_executable(test-lighton4b-q6-policy tests/test_lighton4b_q6_policy.cpp)
 target_link_libraries(test-lighton4b-q6-policy PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Probe-only streaming original-BF16 -> Q6 candidate builder (never a model graph).
+add_executable(lighton4b-q6-rows EXCLUDE_FROM_ALL tools/lighton4b_q6_rows.cpp)
+target_include_directories(lighton4b-q6-rows PRIVATE src)
+target_link_libraries(lighton4b-q6-rows PRIVATE ggml)

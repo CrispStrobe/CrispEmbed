@@ -1,0 +1,75 @@
+{
+  "schema": "lighton4b-q6-conversion-calibration-plan/v1",
+  "status": "prepared-not-dispatched",
+  "recipe": "lighton4b-q4km-q6-q8head-v1",
+  "original_checkpoint": {
+    "repository": "lightonai/LightOnOCR-3-4B",
+    "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+    "bytes": 9078620536,
+    "sha256": "6b0dab74a2dab02d5b10ca56322255024ed8dca35c02746b42e9f296aaeb4e67"
+  },
+  "base_container": {
+    "repository": "cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
+    "revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+    "file": "lightonocr3-4b-q4_k-vision-f32.gguf",
+    "bytes": 4030957952,
+    "sha256": "f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91"
+  },
+  "conversion": {
+    "direct_original_bf16_to_q6_tensors": 32,
+    "copied_payloads": 691,
+    "copied_q4": 216,
+    "copied_q8_tied_embedding_head": 1,
+    "copied_protected_f32": 474,
+    "requantization": false,
+    "f32_model": false,
+    "max_chunk_elements": 65536,
+    "source_sha_oracle": "03119ea4d0fbbf5cc86b91f80b47bbda22d90b417d89dd0c16b8fafa1a85a89b",
+    "extra_payload_bytes": 164904960,
+    "candidate_byte_ceiling": 4197000000,
+    "independent_decoder": "gguf==0.19.0 + numpy==2.3.5; all32 Q6 dequantized-to-BF16 tensor hashes must match native decoder",
+    "native_admission": "713 hosted owner/metadata/dequant/stream/grouped-prefill-decode controls from42207472045; repeat actual header-only native Q6 policy after conversion"
+  },
+  "resource_guards": {
+    "preferred_worker": "one GitHub-hosted CPU worker; Kaggle32GiB alternative only if needed, not parallel",
+    "concurrency": 1,
+    "threads": 2,
+    "minimum_shared_filesystem_free_bytes": 28991029248,
+    "expected_three_large_files_bytes_ceiling": 17306578488,
+    "minimum_effective_ram_before_conversion_bytes": 8589934592,
+    "minimum_effective_ram_before_native_case_bytes": 8589934592,
+    "minimum_cgroup_hard_margin_bytes": 2147483648,
+    "maximum_conversion_chunk_working_bytes": 2097152,
+    "model_job_deadline_minutes": 90,
+    "checkpoint_and_base_clean_cache_advice_before_native": true,
+    "large_files_never_downloaded_to_shared_workspace": true
+  },
+  "calibration_only": {
+    "cases": ["simple_table", "arabic_printed_line"],
+    "frozen_protocol_sha256": "3a1738c26cf5a34680fea1468bea07c06ee26659f7ddb7e249299677746ba36d",
+    "input_manifest_sha256": "a07af76028a0d53c8bfc0ccafedac348eaeb725c8c8c55e3136906f202b8f65d",
+    "baseline_native_source": "26e6ae6635648a09bdbb9ede19705c3e31271260",
+    "baseline_calibration_report_sha256": "ee94f2a3428648d83a70a53dcb5bfdfd5793630a3d0a98c7a823f82e6c5bd9ac",
+    "plain_q4_first_score_sha256": {
+      "simple_table": "74786da3f763d3aafeea14954a06e80b291d340005ffc413d804e71a21071a57",
+      "arabic_printed_line": "823de94f5bb8e96a32d33fd9382c7f7d62e436181bad60276c5f238d655625e2"
+    },
+    "same_worker_same_binary_ab": true,
+    "baseline_first_score_must_match_before_candidate_measured": true,
+    "max_new_tokens_per_arm": 1,
+    "teacher_rows_per_arm": 1,
+    "actual_eos_or_cap_reported": true,
+    "fixed_gates": {"HEAD_BF16": 1, "BF16_QUANT_WEIGHTS": 0, "BF16_LINEAR": 0, "PARALLEL_DEQUANT": 1},
+    "candidate_only_gate": "CRISPEMBED_LIGHTON4B_Q6_K=1",
+    "heldout_capture_or_labels_read": false,
+    "original_batch_json_read": false,
+    "quality_qualified": false
+  },
+  "pending_before_model_dispatch": [
+    "pass hosted synthetic chunk/source-hash/header-clone controls; no checkpoint",
+    "review worker capacity and frozen source SHA",
+    "finish closed calibration-only case loader using individual capture receipts, never original batch/heldout outputs",
+    "current calibration decision and root dispatch coordination"
+  ],
+  "output_policy": "candidate and raw first scores remotely retained90days with full SHA receipts; no model-hub publication, registry alias or release"
+}
