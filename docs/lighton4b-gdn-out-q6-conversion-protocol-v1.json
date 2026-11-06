@@ -72,10 +72,20 @@
     "sha256": "6b0dab74a2dab02d5b10ca56322255024ed8dca35c02746b42e9f296aaeb4e67"
   },
   "output_policy": "candidate and raw first scores remotely retained90days with full SHA receipts; no model-hub publication, registry alias or release",
-  "pending_before_model_dispatch": [
-    "hosted separate24-Q6 and preserved32 controls pass",
-    "review source and32GiBshared/28GiBscratch/8GiBoutput resource gates"
-  ],
+  "owner_controls": {
+    "archive_bytes": 9430,
+    "archive_sha256": "ee937691d758575867a6191bdda566b9504d49adb60040f55f2aab64258b2312",
+    "artifact_id": 13503400055,
+    "expires_at": "2027-02-04T12:29:31Z",
+    "model_payload_bytes": 0,
+    "preserved_q6_32_checks": 713,
+    "q6_output_checks": 700,
+    "q8_output_checks": 112,
+    "run": 42218056668,
+    "source": "90b0e2764",
+    "status": "passed"
+  },
+  "pending_before_model_dispatch": [],
   "q8_out": {
     "archive_bytes": 3858198504,
     "archive_sha256": "8072676afb687ee4ed39e17d34f585690c3cbbce567ca8d4caa18f0d112181a1",
@@ -117,5 +127,5 @@
     "workflow_timeout_including_setup_upload_minutes": 110
   },
   "schema": "lighton4b-q6-conversion-calibration-plan/v1",
-  "status": "prepared-not-dispatched"
+  "status": "authorized-one-bounded-worker"
 }

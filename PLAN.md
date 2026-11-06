@@ -1975,3 +1975,12 @@ and2GiB cgroup margin; direct conversion buffers remain bounded and no F32
 model is constructed. Candidate and raw rows stay remotely90days. This is
 calibration of a named custom policy, not heldout, EOS, full decode or release
 qualification, and no model-hub upload is authorized.
+
+
+Separate24-output Q6 model-free controls42218056668 pass700 checks, including
+actual grouped-output prefill/cached decode, exact storage retention and gate
+negatives; preserved32-Q6 passes713 and frozenQ8-output112, with existing native,
+mixed, BF16 controls and actual native/preflight builds passing. Artifact13503400055
+is retained90days. The reviewed three-arm calibration worker may now run once
+with its strict capacity/input/model/baseline-hash guards; no heldout or release
+qualification follows from this structural proof.
