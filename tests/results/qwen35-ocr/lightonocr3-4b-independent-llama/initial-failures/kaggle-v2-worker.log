@@ -1,0 +1,41 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+phase upstream-init
+phase upstream-remote
+phase upstream-fetch
+phase upstream-checkout
+phase configure
+phase build
+phase upstream-version
+phase host-cpu
+phase host-packages
+phase download-projector
+phase download-Q4_K_M
+phase run-Q4_K_M-simple_form
+phase run-Q4_K_M-simple_form
+Traceback (most recent call last):
+  File "/tmp/lighton4b-independent-llama-cpu-v1/source/tools/ci-heavy/lighton4b_independent_llama_baseline.py", line 112, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/tmp/lighton4b-independent-llama-cpu-v1/source/tools/ci-heavy/lighton4b_independent_llama_baseline.py", line 102, in main
+    request={'prompt':{'prompt_string':templ['prompt'],'multimodal_data':[base64.b64encode(images[name].read_bytes()).decode()]},'n_predict':cfg['cap'],'temperature':0,'seed':0,'top_k':1,'top_p':1,'min_p':0,'repeat_penalty':1,'presence_penalty':0,'frequency_penalty':0,'cache_prompt':False,'return_tokens':True,'n_probs':5,'stream':False};(folder/'request-settings.json').write_text(json.dumps({k:v for k,v in request.items()if k!='prompt'},indent=2)+'\n');response=api(port,'/completion',request,cfg['request_timeout_seconds']);(folder/'response.json').write_text(json.dumps(response,ensure_ascii=False,indent=2)+'\n');require(not response.get('truncated')and response['tokens_evaluated']==case['expected_prompt_tokens'],'actual upstream image/prompt token geometry differs');require(isinstance(response['tokens'],list)and len(response['tokens'])<=cfg['cap'],'raw generated IDs');require(response['stop_type']in ('eos','limit'),'explicit stopping classification');text=response['content'];ids=response['tokens'];(folder/'generated.txt').write_text(text);(folder/'generated.ids').write_text(''.join(str(x)+'\n'for x in ids));gold=refs[name];prefixids=0
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-independent-llama-cpu-v1/source/tools/ci-heavy/lighton4b_independent_llama_baseline.py", line 69, in api
+    with urllib.request.urlopen(req,timeout=timeout)as r:raw=r.read(8*1024**2+1)
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/urllib/request.py", line 189, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/urllib/request.py", line 495, in open
+    response = meth(req, response)
+  File "/usr/lib/python3.13/urllib/request.py", line 604, in http_response
+    response = self.parent.error(
+        'http', request, response, code, msg, hdrs)
+  File "/usr/lib/python3.13/urllib/request.py", line 533, in error
+    return self._call_chain(*args)
+           ~~~~~~~~~~~~~~~~^^^^^^^
+  File "/usr/lib/python3.13/urllib/request.py", line 466, in _call_chain
+    result = func(*args)
+  File "/usr/lib/python3.13/urllib/request.py", line 613, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 400: Bad Request

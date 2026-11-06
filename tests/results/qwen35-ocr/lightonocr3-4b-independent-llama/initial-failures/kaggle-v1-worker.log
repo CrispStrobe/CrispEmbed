@@ -1,0 +1,20 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+fatal: not a git repository (or any parent up to mount point /kaggle)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+Traceback (most recent call last):
+  File "/tmp/lighton4b-independent-llama-cpu-v1/source/tools/ci-heavy/lighton4b_independent_llama_baseline.py", line 112, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/tmp/lighton4b-independent-llama-cpu-v1/source/tools/ci-heavy/lighton4b_independent_llama_baseline.py", line 56, in main
+    protocolpath=ROOT/'docs/lighton4b-independent-llama-baseline-v1.json';cfg=json.loads(protocolpath.read_text());out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH'])/'independent-llama';scratch.mkdir();report={'schema':'lighton4b-independent-llama-result/v1','status':'failed','source_sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'protocol_sha256':sha(protocolpath),'quality_qualified':False,'original_forward_executed':False,'provider':provider,'preflight':{'memory':memory(),'load':os.getloadavg(),'scratch_free_bytes':shutil.disk_usage(scratch).free,'output_free_bytes':shutil.disk_usage(out).free},'arms':{},'limits':cfg['limits']};active=None;started=time.monotonic()
+                                                                                                                                                                                                                                                                                                                           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/subprocess.py", line 473, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+               **kwargs).stdout
+               ^^^^^^^^^
+  File "/usr/lib/python3.13/subprocess.py", line 578, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['git', 'rev-parse', 'HEAD']' returned non-zero exit status 128.

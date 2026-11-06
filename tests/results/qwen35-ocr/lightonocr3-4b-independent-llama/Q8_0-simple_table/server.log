@@ -1,0 +1,46 @@
+warning: no usable GPU found, --gpu-layers option will be ignored
+warning: one possible reason is that llama.cpp was compiled without GPU support
+warning: consult docs/build.md for compilation instructions
+0.00.004.604 W Setting 'enable_thinking' via --chat-template-kwargs is deprecated. Use --reasoning on / --reasoning off instead.
+0.00.004.885 I srv  llama_server: initializing ...
+0.00.004.923 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.005.716 W srv  server_setup: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.008.481 I srv    load_model: loading model '/tmp/lighton4b-independent-llama-cpu-v1/independent-llama/LightOnOCR-3-4B-Q8_0.gguf'
+0.01.703.099 I cmn          init: llama threadpool init, n_threads = 4
+0.01.705.293 W load_hparams: Qwen-VL models require at minimum 1024 image tokens to function correctly on grounding tasks
+0.01.705.309 W load_hparams: if you encounter problems with accuracy, try adding --image-min-tokens 1024
+0.01.705.309 W load_hparams: more info: https://github.com/ggml-org/llama.cpp/issues/16842
+
+0.02.238.719 I srv    load_model: loaded multimodal model, '/tmp/lighton4b-independent-llama-cpu-v1/independent-llama/mmproj-LightOnOCR-3-4B-F16.gguf'
+0.02.729.378 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 2048, kv_unified = 'false'
+0.02.736.716 I srv  server_run_i: model loaded
+0.02.736.749 I srv  server_on_li: listening on http://127.0.0.1:53679
+0.03.014.962 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1
+0.03.015.078 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.06.276.259 W find_slot: non-consecutive token position 4 after 3 for sequence 0 with 72 new tokens
+0.06.276.456 W find_slot: non-consecutive token position 4 after 3 for sequence 0 with 72 new tokens
+0.13.044.266 W find_slot: non-consecutive token position 21 after 4 for sequence 0 with 6 new tokens
+0.13.044.334 W find_slot: non-consecutive token position 21 after 4 for sequence 0 with 6 new tokens
+0.13.741.863 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =     82, progress = 0.95, t =  10.73 s / 7.64 tokens per second
+0.51.811.165 I slot print_timing: id  0 | task 0 | n_gen =    100, tg =   2.65 t/s, tg_3s =   2.67 t/s
+0.55.137.458 I slot print_timing: id  0 | task 0 | n_gen =    109, tg =   2.65 t/s, tg_3s =   2.71 t/s
+0.58.210.501 I slot print_timing: id  0 | task 0 | n_gen =    117, tg =   2.65 t/s, tg_3s =   2.60 t/s
+1.01.490.468 I slot print_timing: id  0 | task 0 | n_gen =    126, tg =   2.65 t/s, tg_3s =   2.74 t/s
+1.04.826.642 I slot print_timing: id  0 | task 0 | n_gen =    135, tg =   2.66 t/s, tg_3s =   2.70 t/s
+1.07.899.119 I slot print_timing: id  0 | task 0 | n_gen =    143, tg =   2.65 t/s, tg_3s =   2.60 t/s
+1.11.152.706 I slot print_timing: id  0 | task 0 | n_gen =    152, tg =   2.66 t/s, tg_3s =   2.77 t/s
+1.14.432.757 I slot print_timing: id  0 | task 0 | n_gen =    161, tg =   2.66 t/s, tg_3s =   2.74 t/s
+1.17.519.834 I slot print_timing: id  0 | task 0 | n_gen =    169, tg =   2.66 t/s, tg_3s =   2.59 t/s
+1.20.551.341 I slot print_timing: id  0 | task 0 | n_gen =    177, tg =   2.66 t/s, tg_3s =   2.64 t/s
+1.23.911.547 I slot print_timing: id  0 | task 0 | n_gen =    186, tg =   2.66 t/s, tg_3s =   2.68 t/s
+1.27.083.156 I slot print_timing: id  0 | task 0 | n_gen =    194, tg =   2.65 t/s, tg_3s =   2.52 t/s
+1.30.209.914 I slot print_timing: id  0 | task 0 | n_gen =    202, tg =   2.65 t/s, tg_3s =   2.56 t/s
+1.33.211.394 I slot print_timing: id  0 | task 0 | n_gen =    210, tg =   2.65 t/s, tg_3s =   2.67 t/s
+1.36.222.495 I slot print_timing: id  0 | task 0 | n_gen =    218, tg =   2.65 t/s, tg_3s =   2.66 t/s
+1.38.163.617 I slot print_timing: id  0 | task 0 | prompt eval time =   11368.95 ms /    86 tokens (  132.20 ms per token,     7.56 tokens per second)
+1.38.163.721 I slot print_timing: id  0 | task 0 |        eval time =   83775.79 ms /   223 tokens (  377.37 ms per token,     2.65 tokens per second)
+1.38.163.794 I slot print_timing: id  0 | task 0 |       total time =   95144.74 ms /   309 tokens
+1.38.163.831 I slot print_timing: id  0 | task 0 |    graphs reused =        220
+1.38.163.855 I slot print_timing: id  0 | task 0 |   graph reallocs =          0    /     0        (same size) / (changed size)
+1.38.164.006 I slot      release: id  0 | task 0 | stop processing: n_tokens = 308, truncated = 0
+1.38.274.697 I srv    operator(): operator(): cleaning up before exit...

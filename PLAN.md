@@ -2779,3 +2779,20 @@ license and calibration source weights remain unauthenticated; no pretrained ima
 imatrix is assumed. Next is reviewed Kaggle-only fresh-source weighted plainQ4,
 with exact unweightedf873 control and248 actual application checks, preserving
 protected tensors/gates and all reference/model-quality limits.
+
+
+### Independent upstream llama.cpp CPU baseline completed on observed cases
+
+[Full source/result evidence](docs/lighton4b-independent-llama-baseline.md) pins
+upstream6c01da627, publisher8406c78c and testedworker4d2184ede. Authorized Kaggle
+CPUv3 finishes all9 Q4_K_M/Q6_K/Q8×form/table/Arabic arms with exact original
+prompt-ID hashes and geometry, no original rerun. FullQ6 table222IDs/text/EOS
+and Arabic6 exactly match BF16; form still154/656character edits. Q4M form170EOS
+189edits improves over historical capped plainQ4 but uses different weights/vision;
+Q4M table256cap/noEOS315edits remains negative. Q8 table223EOS10edits and
+form160EOS140edits remain nonexact. All Arabic exact. Independent raw hashes,
+EOS/cap,27output hashes and full-matrix edit audits pass. No same-weight/operator,
+human accuracy or broad qualification claim. GH cancellation and Kagglev1/v2
+setup failures preserved; no new GH dispatch or PR/default/release/model upload.
+Next bounded work requires a separately frozen conversion/arithmetic attribution,
+not promotion based solely on these observed three-case outputs.
