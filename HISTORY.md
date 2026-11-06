@@ -20950,3 +20950,27 @@ fd150 0.13049504 / 0.568259001 and891d 0.2005369525 / 1.092198968; sources and
 hosts differ. Prefix `<figure` is preserved and was already correct before.
 Two-token only, no EOS/body qualification or speed/default/release promotion.
 Current native elapsed 139.13 s and peak 6,317,207,552 bytes are retained.
+
+### Full mixed runtime head-output dtype A/B
+
+[42168142185](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42168142185)
+completes atb98883abe. Optional HEAD_BF16 output rounding reproduces all178
+original-BF16 **mixed-recipe** IDs, EOS and686-byte text exactly (SHA c9075ce2…).
+Gate-off reproduces prior156-ID EOS output, divergence33, and229 shared
+stage/score hashes. All5 prepared inputs/29 vision stages remain exact;
+66 prefill artifacts and47 selectedstep33 hidden/operator arrays are unchanged
+across arms. RNE/NaN/Inf/lowest-ID/source-tie and explicit-off controls pass
+before model acquisition. Full raw report and hashes are retained in
+[the receipt](tests/results/qwen35-ocr/lightonocr3-4b-head-bf16/native-ab.json).
+
+This establishes decoded runtime fidelity for the observed mixed form, not
+unquantized-original or heldout quality. All178 score hashes still differ
+from the BF16 mixed source; actual row33 max0.125/RMS0.0302963/cosine0.999949698
+fails the unchanged strict budget. Against the unquantized BF16 original,
+firstID difference25 persists, raw CER improves197/656→180/656 (30.03→27.44%),
+and WER remains40/90 (44.44%). No full178 numerical acceptance claim.
+
+OFF156tokens takes1388.25s/RSS5,185,196,032B; ON178tokens1561.55s/5,185,175,552B.
+Different completion lengths prevent a speed interpretation. Gate stays
+default-off, no release/default/model alias change. Existing historical
+source-pin amendments and15git-verified frozen receipt pins remain intact.
