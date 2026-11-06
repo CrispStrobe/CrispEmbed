@@ -1,0 +1,29 @@
+{
+  "admitted_cpu_profile": "frozen-Intel-AVX2",
+  "gpu_requested": false,
+  "initial_resources": {
+    "available_memory_bytes": 32171597824,
+    "finite_cgroup_bounds": 1,
+    "output_free_bytes": 20940546048,
+    "scratch_free_bytes": 1038219010048,
+    "shared_filesystem": false
+  },
+  "model_quality_qualified": false,
+  "model_worker_returncode": 1,
+  "model_worker_started": true,
+  "model_worker_timeout_seconds": 5400,
+  "original_source": "8d3b2331d1b57e285f7ba348fc1eacd689b79aa8",
+  "pre_model_resources": {
+    "available_memory_bytes": 28900192256,
+    "finite_cgroup_bounds": 1,
+    "output_free_bytes": 20939911168,
+    "scratch_free_bytes": 1036158898176,
+    "shared_filesystem": false
+  },
+  "reference_profile": "closed measured CPU profile; frozen reference never substituted",
+  "requested_model_dtype": "bfloat16",
+  "schema": "lighton4b-bf16-kaggle-bootstrap/v1",
+  "source_sha": "bd87593040c9a31cf5ca6ec2fd2369de6f34b995",
+  "status": "completed-with-numerical-rejection",
+  "worker_cgroup_peak_bytes": 29806710784
+}

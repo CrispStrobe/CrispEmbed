@@ -2475,3 +2475,20 @@ hashes and5prepared-input hashes/case pass. [Evidence](docs/lighton4b-mixer-part
 retains raw hashes,timing,stage magnitudes and the disjoint projection classes of
 GDN120: QKV24,Z24,a+b48,out24. Next calibration question can split these classes
 with high-precision controls; no production/model/default/release promotion.
+
+
+### Unchanged Q4 full original/native mechanism comparison
+
+The [authenticated full Q4 comparison](docs/lighton4b-plain-q4-full-results.md)
+uses sourcebd8759304 with exact frozen Intel originala4/Q4e59 anchors and all
+723/249/474 hashes. Genuine BF16 Q4 independently generates256 tokens/noEOS and
+an incomplete HTML table, reproducing the main format/cap change inside the
+original framework. Corrected native42183620520 matches171 IDs, then differs;
+raw native agreement against genuine Q4 is CER110/583 and WER17/48. This is not
+absolute OCR accuracy, EOS completion or a quality promotion. Existing row171
+vectors show source27287=20.5 versus1058=20.375, while native ties both20.5 and
+correctly selects1058. RMS0.03414869 remains; no hidden/operator arrays at171
+exist, and F32-dequant versus BF16-rounded parameter representations remain
+separate. All three source-profile failures and the measured AMD/Intel split are
+retained. Next is complete read-only archival and, only if authorized, one
+observer-neutral same-prefix172-token stage replay; no new inference is dispatched.
