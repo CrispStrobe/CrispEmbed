@@ -39,7 +39,7 @@ profile controls, selector coverage and completed OCR status. Do not overwrite
 its owned implementation or mistake source-header qualification for native4B.
 The exact integration/native boundaries are in PLAN.
 
-Candidate0.17.15 is unreleased; published assets0.17.14/app0.17.12 stay unchanged.
+Historical 4 November snapshot: candidate 0.17.15 was then unreleased; the 5 November release checkpoint above supersedes it.
 Read [the 3 November handoff](handoff-2026-11-03.md) for the broader non-OCR queue.
 Older sections below are source-specific history; do not replay their old
 preparation commands or infer current status from dated queued-job language.
