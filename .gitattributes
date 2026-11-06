@@ -25,3 +25,5 @@ tests/fixtures/ovisocr3-document-source/** -text -whitespace
 docs/ovisocr3-document-protocol.json -text
 tests/results/qwen35-ocr/lightonocr3-4b-imatrix-adapter/v*/lighton-imatrix-results/bootstrap.log whitespace=-trailing-space
 tests/results/qwen35-ocr/lightonocr3-4b-independent-llama/** whitespace=-trailing-space,-blank-at-eof
+# Raw Kaggle bootstrap bytes are SHA-pinned, including Git's trailing-space hints.
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4/bootstrap-v*/bootstrap.log -text whitespace=-trailing-space

@@ -1,0 +1,16 @@
+[{"stream_name":"stderr","time":10.98400201,"data":"Error: Command '['/kaggle/working/lighton-weighted-q4-scratch/venv/bin/python3', '-m', 'ensurepip', '--upgrade', '--default-pip']' returned non-zero exit status 1.\n"}
+,{"stream_name":"stderr","time":11.293241102,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":11.293989294,"data":"  File \"/kaggle/src/script.py\", line 23, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":11.294011439,"data":"    subprocess.run([sys.executable,'-m','venv','--system-site-packages',str(venv)],check=True,timeout=120)\n"}
+,{"stream_name":"stderr","time":11.294016675,"data":"    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":11.294020608,"data":"  File \"/usr/lib/python3.13/subprocess.py\", line 578, in run\n"}
+,{"stream_name":"stderr","time":11.294024422,"data":"    raise CalledProcessError(retcode, process.args,\n"}
+,{"stream_name":"stderr","time":11.294028021,"data":"                             output=stdout, stderr=stderr)\n"}
+,{"stream_name":"stderr","time":11.294032283,"data":"subprocess.CalledProcessError: Command '['/usr/bin/python3', '-m', 'venv', '--system-site-packages', '/kaggle/working/lighton-weighted-q4-scratch/venv']' returned non-zero exit status 1.\n"}
+,{"stream_name":"stderr","time":14.230516129,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":14.230553255,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":14.773579076,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":14.773616954,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":16.919179418,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":18.309745178,"data":"[NbConvertApp] Writing 296624 bytes to __results__.html\n"}
+]
