@@ -1595,3 +1595,16 @@ failure. Both artifacts remain remote90days. Existing observed form is not heldo
 or architecture-quality selection. First-position genuine-BF16 mixed oracle
 cannot partition full177-row/decoded errors into quantization versus runtime.
 No additional jobs, runtime/default/release/app-pin change, newPR or model upload.
+
+## 6 November: four-case vision generalization closed within measured scope
+
+[Actual source/native vision42166765060](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42166765060)
+at`6838c8106` passes all34 retained form source-control hashes and all136 native
+processor/vision stage hash pairs across frozen table, Arabic, receipt and
+letter. All maximum/RMS errors0; actual rotary arrays exact for all four grids.
+No vision divergence or runtime correction was found; no decoder/generation ran.
+[Evidence and limitations](docs/lighton4b-vision-generalization.md) preserve the
+initial dependency-only failure, immutable source pins, original receipt cap,
+historical CPU-dispatch uncertainty and90-day remote arrays. Next correctness
+attribution belongs at the downstream native text/decoder boundary; full decoded
+quality remains open and all new gates remain default-off. No new PR or release.
