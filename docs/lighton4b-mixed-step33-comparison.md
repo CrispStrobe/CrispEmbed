@@ -36,6 +36,18 @@ called a kernel bug until same-input/effective-weight controls justify it.
 Record actual source/native/RNE argmax and401/1778 tie values at the head,
 without injecting any source values into product inference.
 
+The same consumer reuses the first26 retained score rows of official BF16,
+genuine mixed BF16 and native OFF. Verify their25 preceding generated IDs and all
+five prepared-input hashes agree; decision25 is included because its input
+prefix is still identical. Later contexts are excluded. Authenticate the official
+original v1 bootstrap, receipt and unchanged177-row protocol before retrieving
+only26 rows. Compare official-versus-mixed (quantization plus BF16 parameter
+rounding), mixed-versus-native (runtime plus effective-precision residual) and
+official-versus-native separately with the same Ref budgets. In particular this
+checks the old worst score row5 without a new teacher-forced/model run. Each
+payload is hashed and preserved; scalar maxima/RMS cannot be subtracted to assign
+causal contributions or interpreted as an isolated implementation defect.
+
 The one dedicated existing-workflow read-only job uses Python3.12, pinned
 NumPy2.3.5/Kaggle2.2.5/six1.17.0 and portable two-thread Ref build. It has no model
 upload credential. Require2GiB available RAM,4GiB scratch,512MiB output;

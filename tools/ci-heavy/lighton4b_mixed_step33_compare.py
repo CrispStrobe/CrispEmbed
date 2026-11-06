@@ -142,12 +142,28 @@ def main():
                     if suffix=='head.output'and not nonfinite:
                         report.setdefault('actual_head_choice',{})[arm]={'source_winner':int(np.argmax(source_view)),'native_winner':int(np.argmax(native_view)),'native_rne_winner':int(np.argmax(rne_bf16(native_view,np))),'source401':float(source_view[401]),'source1778':float(source_view[1778]),'native401':float(native_view[401]),'native1778':float(native_view[1778])}
                     report['rows'].append(item);save()
+        report['stage']='authenticate-shared-causal-window';save();all_urls=provider('lighton4b-bf16-mixed-free-generation-v1','ee97b217a97d303391228c3e2c34b5fa1c74adfe5eeda4a93cd7d312429c03fe');prefix_full='bf16-mixed-freegen/quant-oracle/';raw=read_url(all_urls[prefix_full+'oracle.json'],2*2**20);require(sha(raw)==FULL_SHA,'actual178 service receipt differs');destination=out/('retained-source178'if args.preserve_full_source else'retained-source26');destination.mkdir();(destination/'oracle.json').write_bytes(raw)
+        source_rows={}
+        for row in full['arms']['mixed']['scores']if args.preserve_full_source else full['arms']['mixed']['scores'][:26]:
+            data=fetch(all_urls,prefix_full+row['file'],row);(destination/row['file']).write_bytes(data)
+            if row['position']<26:source_rows[row['position']]=data
         if args.preserve_full_source:
-            report['stage']='preserve-retained178-source-rows';save();all_urls=provider('lighton4b-bf16-mixed-free-generation-v1','ee97b217a97d303391228c3e2c34b5fa1c74adfe5eeda4a93cd7d312429c03fe');prefix_full='bf16-mixed-freegen/quant-oracle/';raw=read_url(all_urls[prefix_full+'oracle.json'],2*2**20);require(sha(raw)==FULL_SHA,'actual178 service receipt differs');destination=out/'retained-source178';destination.mkdir();(destination/'oracle.json').write_bytes(raw)
-            for row in full['arms']['mixed']['scores']:(destination/row['file']).write_bytes(fetch(all_urls,prefix_full+row['file'],row))
             for key in ('ids_file','decoded_file'):
                 row=full['arms']['mixed'][key];(destination/row['file']).write_bytes(fetch(all_urls,prefix_full+row['file'],row))
             report['retained_full_source_rows']=178
+        original_protocol_raw=(ROOT/'docs/lighton4b-bf16-quant-v1.json').read_bytes();require(sha(original_protocol_raw)=='4d2a738a8df75947f5a8e269799c8b3a27af19bfafb82653802a7531b7c928bc','frozen official BF16 full protocol differs');official=json.loads(original_protocol_raw)
+        require(full['arms']['mixed']['ids'][:25]==official['original_generated_ids'][:25]and full['arms']['mixed']['ids'][25]!=official['original_generated_ids'][25],'closed25 shared ID prefix differs')
+        original_urls=provider('lightonocr-4b-bf16-cpu-capture-v1','c370b097a45c2d8158343fa1a3a3c510f9bea3b84912565e896b5ded37fd93f6');original_prefix='lighton4b-bf16-freegen/';raw=read_url(original_urls[original_prefix+'capture.json'],2**20);require(sha(raw)==official['original_capture_sha256'],'official original BF16 receipt differs');original_capture=json.loads(raw)
+        require(original_capture['status']=='captured'and original_capture['requested_dtype']=='bfloat16'and original_capture['source_sha']==official['original_source_sha']and original_capture['generated_ids']==official['original_generated_ids']and original_capture['scores']==official['score_records']and original_capture['eos_completed']and not original_capture['cap_hit'],'official full original closure differs')
+        require({k:v['sha256']for k,v in original_capture['prepared_inputs'].items()}=={k:v['sha256']for k,v in full['prepared_inputs'].items()},'official/mixed original prepared inputs differ')
+        for key in ('torch','transformers','tokenizers','numpy'):require(original_capture['packages'][key]==full['runtime_packages'][key],'official/mixed original core framework versions differ')
+        require(original_capture['upstream']['loaded_source_sha256']==full['original_module_source']['loaded_source_sha256'],'official/mixed original actual model/config source differs')
+        window=out/'shared-causal-window26';window.mkdir();(window/'official-capture.json').write_bytes(raw);report['causal_window26']={'shared_previous_ids':25,'score_positions':26,'rows':[],'limit':'OfficialBF16 versus mixedBF16 includes quantization+dequant-to-BF16 rounding; mixedBF16 versus native includes runtime+effective-weight-precision. No later different contexts compared.'}
+        with zipfile.ZipFile(archive)as z:
+            for i in range(26):
+                original_row=official['score_records'][i];original_data=fetch(original_urls,original_prefix+original_row['file'],original_row);(window/('official-'+original_row['file'])).write_bytes(original_data)
+                filename=f'greedy.{i}.logits.f32';record=native['artifacts'][filename];hits=[n for n in z.namelist()if n=='mixed/'+filename or n.endswith('/mixed/'+filename)];require(len(hits)==1 and z.getinfo(hits[0]).file_size==993280,'native causal score missing/ambiguous');native_data=z.read(hits[0]);require(len(native_data)==record['bytes']==993280 and sha(native_data)==record['sha256'],'native causal score identity differs');(window/filename).write_bytes(native_data)
+                report['causal_window26']['rows'].append({'position':i,'official_sha256':original_row['sha256'],'mixed_bf16_sha256':full['arms']['mixed']['scores'][i]['sha256'],'native_sha256':record['sha256'],'official_vs_mixed':compare_arrays(original_data,source_rows[i],f'causal-{i:02d}-official-mixed'),'mixed_vs_native':compare_arrays(source_rows[i],native_data,f'causal-{i:02d}-mixed-native'),'official_vs_native':compare_arrays(original_data,native_data,f'causal-{i:02d}-official-native')});save()
         passed={arm:all(row['raw']['returncode']==0 for row in report['rows']if row['arm']==arm)for arm in {row['arm']for row in report['rows']}}
         if 'on'in passed:
             off={r['name']:r['native_sha256']for r in report['rows']if r['arm']=='off'and r['name']!='greedy.33.head.output'}
@@ -159,6 +175,9 @@ def main():
         report.update(status='compared',raw_numerical_passed_by_arm=passed,native_artifact={k:artifact[k]for k in ('id','digest','size_in_bytes','expires_at')},source_receipt_sha256=args.source_receipt_sha256,native_receipt_sha256=args.receipt_sha256,binary_sha256=sha(binary.read_bytes()),rounding_control_limit='Diagnostic output rounding only; raw arrays/gold unchanged. Different effective BF16/F32 weights and prior state still require operator attribution.',scope='observed form sharedprefix33 only; no full-model/heldout qualification')
         return 0 if all(passed.values())else 1
     except Exception as error:
-        report.update(error_type=type(error).__name__,error=str(error)if isinstance(error,ValueError)else'bounded authenticated stage comparison failed');return 2
+        message=str(error)if isinstance(error,ValueError)else'bounded authenticated stage comparison failed'
+        for value,label in ((ROOT,'[repository]'),(scratch,'[scratch]'),(out,'[report]'),(os.environ.get('KAGGLE_ACCOUNT',''),'[account]')):
+            if str(value):message=message.replace(str(value),label)
+        report.update(error_type=type(error).__name__,error=message);return 2
     finally:signal.alarm(0);save()
 if __name__=='__main__':raise SystemExit(main())
