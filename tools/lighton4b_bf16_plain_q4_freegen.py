@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Unchanged-file Q4 oracle in the genuine BF16 original, bounded independent decode."""
 import json
+import os
+from pathlib import Path
 import lighton4b_bf16_mixed_freegen as full
 base=full.base
 base.PROTOCOL=base.ROOT/'docs/lighton4b-bf16-plain-q4-freegen-v1.json'
@@ -25,6 +27,16 @@ class PlainOracle(full.FullOracle):
         self.original_full=json.loads(path.read_text())
 
     def run(self,*args,**kwargs):
+        import torch
+        self.report['operator_runtime']={'cpu_capability':torch._C._get_cpu_capability(),'torch_git_version':torch.version.git_version,'threads':torch.get_num_threads(),'interop_threads':torch.get_num_interop_threads(),'mkldnn_enabled':torch.backends.mkldnn.enabled,'torch_config':torch.__config__.show(),'isa_environment':{k:os.environ.get(k)for k in ('ATEN_CPU_CAPABILITY','MKL_ENABLE_INSTRUCTIONS','MKL_CBWR','ONEDNN_MAX_CPU_ISA','DNNL_MAX_CPU_ISA')}}
+        cpu={}
+        for line in Path('/proc/cpuinfo').read_text().split('\n\n',1)[0].splitlines():
+            if ':'in line:
+                key,value=line.split(':',1)
+                if key.strip()in ('vendor_id','cpu family','model','model name','stepping','flags'):cpu[key.strip()]=value.strip()
+        self.report['operator_runtime']['cpu_metadata']=cpu
+        self.save()
+        base.require(all(os.environ.get(k)==v for k,v in self.p['backend_dispatch'].items())and torch._C._get_cpu_capability()=='AVX2','explicit AVX2 backend dispatch profile differs')
         result=super().run(*args,**kwargs)
         self.report['arms']['q4_k']=self.report['arms'].pop('mixed')
         self.report['plain_q4_final_bf16_parameter_sha256']=self.report.pop('mixed_final_bf16_parameter_sha256')

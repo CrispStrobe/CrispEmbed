@@ -1,5 +1,11 @@
 {
   "architecture_quality_selection": false,
+  "backend_dispatch": {
+    "ATEN_CPU_CAPABILITY": "avx2",
+    "DNNL_MAX_CPU_ISA": "AVX2",
+    "MKL_ENABLE_INSTRUCTIONS": "AVX2",
+    "ONEDNN_MAX_CPU_ISA": "AVX2"
+  },
   "candidate_order": [
     "q4_k"
   ],

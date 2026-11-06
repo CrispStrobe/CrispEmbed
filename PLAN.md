@@ -1775,3 +1775,15 @@ The [fixed protocol](docs/lighton4b-bf16-plain-q4-freegen-v1.json) and model-fre
 admission/corruption checks precede one bounded CPU worker; decoded agreement
 against corrected native requires both completed receipts. Precision sensitivity
 selection belongs to a separate predeclared calibration-only experiment.
+
+
+The first unchanged-Q4 source worker at83d91bf83 stopped before quantized weight
+streaming: the genuine original anchor was02ca259b… instead ofa4bece23….
+All723 original BF16 parameter hashes, five prepared inputs and four framework
+wheel hashes match the admitted source. ID27 remains first, but234,579 logits
+change (max0.29296875, RMS0.05778517); this is a rejected source profile, not Q4
+numerical evidence. The [complete initial failure](tests/results/qwen35-ocr/lightonocr3-4b-bf16-plain-q4-source-initial/oracle.json)
+and audit are retained. One retry explicitly caps ATen, MKL and oneDNN dispatch
+to the previously observed AVX2 profile, captures actual CPU/backend metadata
+before forward and retains both exact official/Q4 anchors. The original worker
+omitted CPU ISA metadata, so hardware drift remains an inference pending replay.
