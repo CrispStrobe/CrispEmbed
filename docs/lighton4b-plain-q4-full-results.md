@@ -88,9 +88,40 @@ final norm, pre-round head and layer0 operators. Actual retained inputs and both
 parameter representations must be distinguished before proposing a runtime fix.
 No such new inference has been dispatched for this report.
 
-All256 source score hashes and complete IDs/text are preserved in the receipt;
-the254,279,680 raw score bytes remain in the authenticated source service version4.
-Only two source/native score rows were downloaded for the read-only margin check.
-Complete90-day GitHub archival of the source payloads remains a pending read-only
-consumer task; the native full artifact is already remote. No default, release,
-model alias, upload or precision recipe is promoted.
+## Complete read-only archival and causal numerical progression
+
+[Consumer42192667516](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42192667516)
+authenticates the version4 source bootstrap/report and complete native archive.
+It preserves all256 raw source rows (254,279,680 bytes), IDs/text, source audit and
+172 native rows whose previous token IDs match. Rows172–255 have different
+contexts and are excluded from numerical comparison. The actual portable Ref
+binary SHA is`d6898491984110b0536dcd43ddb1091f6559495a79dfb23389baedb8dc4ae246`,
+identical to the earlier mixed consumer. Equal/changed controls pass; all172 raw
+comparisons fail the retained max0.002/mincos0.99999 budgets. The workflow is red
+for this expected numerical failure, with report status`compared` and no error.
+The [complete report](../tests/results/qwen35-ocr/lightonocr3-4b-bf16-plain-q4-full/plain-q4-comparison.json)
+retains every magnitude, causal context check, score hash and Ref result.
+
+The residual is not monotonically increasing or uniformly small:
+
+| Row | Maximum absolute error | RMS | Cosine | Winning IDs agree |
+| --- | ---: | ---: | ---: | --- |
+| 0 | 0.15625 | 0.02672002 | 0.99994326 | yes |
+| 33 | 0.25 | 0.04264112 | 0.99992412 | yes |
+| 100 | 0.5625 | 0.08100626 | 0.99976118 | yes |
+| 125 | 3.03125 | 0.49875835 | 0.98704768 | yes |
+| 126 | 0.46875 | 0.07585576 | 0.99979287 | yes |
+| 170 | 0.34375 | 0.03572288 | 0.99996496 | yes |
+| 171 | 0.203125 | 0.03414869 | 0.99984631 | no |
+
+Row125 is the largest RMS/absolute error despite choosing the same ID371:
+source38.0 versus native38.75. This spike remains a meaningful numerical negative;
+it cannot be dismissed because the decoded prefix still matches. Future stage
+attribution should include125 as well as the171 decision boundary. Neither has
+retained hidden/operator arrays, so this consumer makes no earliest-operator claim.
+
+Artifact13491795001 contains177,270,896 ZIP bytes, SHA
+`f19ddbdcc806b322b1d705442e1a02b9b089b9cd94d407c1d537a055dda5ad9d`, retained
+through2027-02-04T09:07:44Z. Large payloads remain remote; only small reports and two
+source/native rows were downloaded for review. No inference, default, release,
+model alias, model upload or precision recipe is promoted.
