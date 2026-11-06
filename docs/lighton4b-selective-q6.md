@@ -79,3 +79,16 @@ now require the same explicit LightOn native Q6 gate, preserving legacy rejectio
 when it is off. The retry adds actual synthetic grouped-GDN prefill and cached
 decode equivalence against independent F32 dequantized weights, plus gate-off
 rejection and immutable cache controls. The initial failed receipt is retained.
+
+
+[Hosted42207472045](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42207472045)
+at`20199554a92e1aba04fc3c28593d717d53892693` now passes all713 controls,
+including actual Q6 streamed projection and grouped-GDN prefill/cached decode.
+The old native, mixed-policy and BF16-weight controls also pass; native/preflight
+binaries compile and retain argument rejection. The
+[complete receipt](../tests/results/qwen35-ocr/lightonocr3-4b-q6-controls/q6-controls.json)
+records binary hashes, exact32-name digest and zero model payload/inference.
+Artifact13498105831 is retained90 days, SHA
+`6486186a9ca981051add8f20312d4931e687634aed82411116c58bb5b64028f8`.
+This closes structural/operator support only. Actual Q6 source conversion,
+checkpoint payload validation and calibration/held-out decoded quality remain open.
