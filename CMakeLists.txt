@@ -1675,6 +1675,31 @@ target_link_libraries(test-qwen35-stream-projection PRIVATE crispembed-qwen35-de
 add_executable(lighton4b-native-document tests/lighton4b_native_document.cpp src/lighton4b_tokenizer.cpp)
 target_link_libraries(lighton4b-native-document PRIVATE crispembed-qwen35-delta crispembed-core)
 
+# Retained evidence probes; production library sources remain unchanged.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+    add_executable(test-lighton4b-dense-trace tests/test_lighton4b_dense_trace.cpp)
+    target_link_libraries(test-lighton4b-dense-trace PRIVATE crispembed-qwen35-delta crispembed-core)
+    target_compile_options(test-lighton4b-dense-trace PRIVATE -mavx2 -mfma -fno-fast-math -ffp-contract=off -fno-tree-vectorize)
+    if(BUILD_SHARED_LIBS)
+        target_compile_definitions(test-lighton4b-dense-trace PRIVATE CRISPEMBED_TRACE_SHARED=1)
+        target_link_libraries(test-lighton4b-dense-trace PRIVATE ${CMAKE_DL_LIBS})
+        target_link_options(test-lighton4b-dense-trace PRIVATE -Wl,--export-dynamic)
+    else()
+        target_link_options(test-lighton4b-dense-trace PRIVATE -Wl,--wrap=ggml_vec_dot_f32)
+    endif()
+    if(GGML_LLAMAFILE)
+        target_compile_definitions(test-lighton4b-dense-trace PRIVATE CRISPEMBED_TRACE_LLAMAFILE=1)
+        if(NOT BUILD_SHARED_LIBS)
+            target_link_options(test-lighton4b-dense-trace PRIVATE -Wl,--wrap=llamafile_sgemm)
+        endif()
+    endif()
+endif()
+
+
+add_executable(test-lighton4b-decoder-upstream tests/test_lighton4b_decoder_upstream.cpp)
+target_link_libraries(test-lighton4b-decoder-upstream PRIVATE crispembed-qwen35-delta crispembed-core)
+
+
 add_executable(test-lighton4b-mixed-policy tests/test_lighton4b_mixed_policy.cpp)
 target_link_libraries(test-lighton4b-mixed-policy PRIVATE crispembed-qwen35-delta crispembed-core)
 

@@ -1,0 +1,4 @@
+STAGE generated.scores.0 passed=0 finite=1 count=248320 max_abs=3.34375 mean_abs=0.486675024 rms=0.616933525 row_cos=0.952284217 ref_norm=978.041199 native_norm=1004.8833
+DOCUMENT_DIFF passed=0 stages=1 first=generated.scores.0 inference_executed=0
+crispembed_diff: loaded 1 tensors from /mnt/heavy-q6/scratch/gdn-out-q6-candidate/ref-source.gguf
+crispembed_diff: loaded 1 tensors from /mnt/heavy-q6/scratch/gdn-out-q6-candidate/ref-native.gguf

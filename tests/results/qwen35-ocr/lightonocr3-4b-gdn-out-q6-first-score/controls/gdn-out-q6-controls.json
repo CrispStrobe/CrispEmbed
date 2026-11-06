@@ -1,0 +1,11 @@
+{
+  "model_inference_executed": false,
+  "model_payload_bytes": 0,
+  "recipe": "lighton4b-q4k-gdn-out-q6-v1",
+  "source_sha": "90b0e27648e900b13be623f688eb6c97d6a06943",
+  "status": "passed",
+  "stdout": {
+    "test-lighton4b-gdn-out-q6-recipe": "GDN_OUT_Q6 passed=1 checks=700 q6_matrices=24 q8_tied_head=1 grouped_out_prefill_decode=1 storage_unchanged=1 model_payload=0\n",
+    "test-lighton4b-gdn-out-recipe": "GDN_OUT_RECIPE passed=1 checks=112 payload_bytes=0 default_off=1 recipe=lighton4b-q4k-gdn-out-q8-v1\n"
+  }
+}

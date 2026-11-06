@@ -1,0 +1,35 @@
+{
+  "schema": "lighton4b-vision-generalization-evidence/v1",
+  "run": 42166765060,
+  "source_sha": "6838c8106a359b548c854e1865104733cdbd6e33",
+  "artifact": {
+    "id": 13480215848,
+    "bytes": 181680479,
+    "sha256": "23e92113dfda8f95a8e623b4d98ecca567821e38e073b9aec7bcf6e32c692e2d",
+    "retention_days": 90
+  },
+  "report_sha256": "30665c7cb746be8a20d741dc3138e845b7ebada2d4223783a6612b8d92ebe311",
+  "reviewed_source_form_controls": 34,
+  "reviewed_native_case_stage_hash_pairs": 136,
+  "all_case_stage_pairs_byte_exact": true,
+  "observer_executed": false,
+  "generation_executed": false,
+  "runtime_fix_needed_in_vision_for_these_cases": false,
+  "initial_failure": {
+    "run": 42166067458,
+    "source_sha": "7feeae399d6c83b432daf379c8e8b392becdeae0",
+    "phase": "transport import; no downloads/build/forward",
+    "reason": "missing six dependency",
+    "artifact": 13478943999,
+    "bytes": 1239,
+    "sha256": "089649d1a4482935074e80ac8b86b81b03d642fa7ebf696f823da9266e9f5ed0"
+  },
+  "limits": [
+    "New four-case source stages are diagnostics, not replacement frozen gold.",
+    "Historical four-case CPU dispatch was not recorded; current source uses qualified AVX2 math.",
+    "Checkpoint vision range is verified internally; full 9GB checkpoint and GGUF payload are not fetched.",
+    "No model logits, decoded output or EOS were tested. Existing mixed/Q4/Q8 quality negatives remain.",
+    "Actual native image path admits only still images up to1024 patches; no wider processor-domain qualification.",
+    "Native timings cover one subprocess per case, including weight load/output writes, not source-vs-native inference benchmarks."
+  ]
+}

@@ -81,7 +81,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_attribution.py' && inputs.script != 'tools/ci-heavy/lighton4b_calibration_native.py' && inputs.script != 'tools/ci-heavy/lighton4b_q6_candidate.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_candidate.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_full.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_logo_diagnostic.py'
+    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_attribution.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_upstream.py' && inputs.script != 'tools/ci-heavy/lighton4b_dense_trace.py' && inputs.script != 'tools/ci-heavy/lighton4b_prefill_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_smoke_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_full_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_corrected_mixed_full_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_calibration_native.py' && inputs.script != 'tools/ci-heavy/lighton4b_q6_candidate.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_candidate.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_full.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_logo_diagnostic.py'
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 350
     env:
@@ -570,7 +570,7 @@ jobs:
           if-no-files-found: warn
 
   retained-block21:
-    if: inputs.script == 'tools/ci-heavy/lighton4b_decoder_attribution.py'
+    if: inputs.script == 'tools/ci-heavy/lighton4b_decoder_attribution.py' || inputs.script == 'tools/ci-heavy/lighton4b_decoder_upstream.py' || inputs.script == 'tools/ci-heavy/lighton4b_dense_trace.py'
     permissions:
       contents: read
       actions: read
@@ -592,21 +592,78 @@ jobs:
           run-id: 41979168300
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/retained-decoder
-      - name: Replay only retained block21 boundaries
+      - uses: actions/download-artifact@v4
+        if: inputs.script == 'tools/ci-heavy/lighton4b_dense_trace.py'
+        with:
+          name: lighton4b-retained-attribution-41981848201
+          run-id: 41981848201
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/retained-upstream
+      - name: Replay only exact retained single-block boundaries
         env:
           CRISPEMBED_BUILD_MODE: portable
           HEAVY_OUT: ${{ runner.temp }}/decoder-attribution-out
           HEAVY_SCRATCH: ${{ runner.temp }}/decoder-attribution-scratch
           RETAINED_DECODER: ${{ runner.temp }}/retained-decoder
+          RETAINED_UPSTREAM: ${{ runner.temp }}/retained-upstream
+          ATTRIBUTION_SCRIPT: ${{ inputs.script }}
         run: |
           mkdir -p "$HEAVY_OUT" "$HEAVY_SCRATCH"
-          python tools/ci-heavy/lighton4b_decoder_attribution.py
+          python "$ATTRIBUTION_SCRIPT"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: lighton4b-retained-block21-${{ github.run_id }}
+          name: lighton4b-retained-attribution-${{ github.run_id }}
           path: ${{ runner.temp }}/decoder-attribution-out/
           retention-days: 90
+
+  lighton4b_reference_compare:
+    if: inputs.script == 'tools/ci-heavy/lighton4b_prefill_compare.py' || inputs.script == 'tools/ci-heavy/lighton4b_smoke_compare.py' || inputs.script == 'tools/ci-heavy/lighton4b_full_compare.py' || inputs.script == 'tools/ci-heavy/lighton4b_corrected_mixed_full_compare.py'
+    permissions:
+      contents: read
+      actions: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      REF_COMPARE_SCRIPT: ${{ inputs.script }}
+      REF_COMPARE_ARGS: ${{ inputs.args }}
+      REF_COMPARE_PIP: ${{ inputs.pip }}
+      REF_COMPARE_RUNNER: ${{ inputs.runner }}
+      REF_COMPARE_MODE: ${{ inputs.build_mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Require the closed portable read-only comparison lane
+        run: |
+          test -z "$REF_COMPARE_PIP"
+          test "$REF_COMPARE_RUNNER" = ubuntu-latest
+          test "$REF_COMPARE_MODE" = portable
+          mkdir -p "$RUNNER_TEMP/lighton4b-reference-out" "$RUNNER_TEMP/lighton4b-reference-scratch"
+      - name: Install only pinned comparison dependencies
+        run: python -m pip install numpy==2.3.5 kaggle==2.2.5 six==1.17.0
+      - name: Authenticate retained sources and compare without inference
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+          KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
+          CRISPEMBED_BUILD_MODE: portable
+          HEAVY_OUT: ${{ runner.temp }}/lighton4b-reference-out
+          HEAVY_SCRATCH: ${{ runner.temp }}/lighton4b-reference-scratch
+        run: |
+          read -ra argv <<< "$REF_COMPARE_ARGS"
+          python "$REF_COMPARE_SCRIPT" "${argv[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighton4b-reference-compare-${{ github.run_id }}
+          path: ${{ runner.temp }}/lighton4b-reference-out/
+          retention-days: 90
+          if-no-files-found: warn
 
   lighton4b_calibration_native:
     if: inputs.script == 'tools/ci-heavy/lighton4b_calibration_native.py'

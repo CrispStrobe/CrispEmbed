@@ -1,0 +1,183 @@
+{
+  "cap_hit": false,
+  "case_id": "arabic_printed_line",
+  "checkpoint": {
+    "bytes": 9078620536,
+    "file": "model.safetensors",
+    "header_sha256": "a1e36638b195f2d5943e000fcb069b275cb22ccc28b1b6184ddee7bdea7ef081",
+    "payload_verified": true,
+    "sha256": "6b0dab74a2dab02d5b10ca56322255024ed8dca35c02746b42e9f296aaeb4e67",
+    "tensor_count": 723
+  },
+  "decoded": "\u0623\u0628\u062c\u062f\u064a\u0629 \u0639\u0631\u0628\u064a\u0629",
+  "eos_completed": true,
+  "generated_ids": [
+    67321,
+    20704,
+    150386,
+    70943,
+    203974,
+    248046
+  ],
+  "generation_seconds": 73.01005280000004,
+  "input_manifest_sha256": "a07af76028a0d53c8bfc0ccafedac348eaeb725c8c8c55e3136906f202b8f65d",
+  "model_forward_calls": 6,
+  "native_forward_executed": false,
+  "original_forward_executed": true,
+  "packages": {
+    "gguf": "0.19.0",
+    "numpy": "2.3.5",
+    "pillow": "12.0.0",
+    "tokenizers": "0.22.2",
+    "torch": "2.13.0+cpu",
+    "torchvision": "0.28.0+cpu",
+    "transformers": "5.5.4"
+  },
+  "prepared_inputs": {
+    "attention_mask": {
+      "dtype": "torch.int64",
+      "file": "input-attention_mask.npy",
+      "sha256": "55cc3e07d88d5a3476272f76c9822cc42104c0d9b84d8008edf3e98c3e65b2a6",
+      "shape": [
+        1,
+        82
+      ]
+    },
+    "image_grid_thw": {
+      "dtype": "torch.int64",
+      "file": "input-image_grid_thw.npy",
+      "sha256": "4aa790c95c348c31b5cf9072c217fc095d5074a9e68cd074b8b6121e312b688b",
+      "shape": [
+        1,
+        3
+      ]
+    },
+    "input_ids": {
+      "dtype": "torch.int64",
+      "file": "input-input_ids.npy",
+      "sha256": "59ce2cc26acdd1815f3b3f29a173c682eb9a89f3bc3d6ef07cc203ab1b197543",
+      "shape": [
+        1,
+        82
+      ]
+    },
+    "mm_token_type_ids": {
+      "dtype": "torch.int64",
+      "file": "input-mm_token_type_ids.npy",
+      "sha256": "d2cb7acacd59670091524795b69703ffaa84575978179afb50b64121a11601d0",
+      "shape": [
+        1,
+        82
+      ]
+    },
+    "pixel_values": {
+      "dtype": "torch.float32",
+      "file": "input-pixel_values.npy",
+      "sha256": "43cff75db3f5dbebb163376fcd785715928e4459e96fe667b1ee78f7a336d0ae",
+      "shape": [
+        272,
+        1536
+      ]
+    }
+  },
+  "protocol_sha256": "3a1738c26cf5a34680fea1468bea07c06ee26659f7ddb7e249299677746ba36d",
+  "quality_qualified": false,
+  "schema": "lighton4b-fourcase-bf16-capture/v1",
+  "scores": [
+    {
+      "bytes": 993280,
+      "file": "scores-000.f32",
+      "position": 0,
+      "score_dtype": "float32",
+      "selected_id": 67321,
+      "selected_probability": 0.9318797871489879,
+      "sha256": "86992379e43f872e2958fd81c16b5aef548a43c588400d18e1154335bb3b8f05",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-001.f32",
+      "position": 1,
+      "score_dtype": "float32",
+      "selected_id": 20704,
+      "selected_probability": 0.9289469194022937,
+      "sha256": "73abe9e6044f620d2fb14243ed9f3127e3b4e5431586937c3fb6b85dcace79a5",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-002.f32",
+      "position": 2,
+      "score_dtype": "float32",
+      "selected_id": 150386,
+      "selected_probability": 0.9877467675156725,
+      "sha256": "fc7d78c31a8ee880e55acaa83cd79c333e994ad893874f66bef9552d55081a08",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-003.f32",
+      "position": 3,
+      "score_dtype": "float32",
+      "selected_id": 70943,
+      "selected_probability": 0.9998671829757723,
+      "sha256": "8e2e257e30474cad40da7520e15bff6811600c4599e2d7444e33d46354733bff",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-004.f32",
+      "position": 4,
+      "score_dtype": "float32",
+      "selected_id": 203974,
+      "selected_probability": 0.9930215634430276,
+      "sha256": "4161edb3f1cab74f73eb066e034ffadbb0d6cc04d22c6657fa135ff1428b6c3c",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-005.f32",
+      "position": 5,
+      "score_dtype": "float32",
+      "selected_id": 248046,
+      "selected_probability": 0.9908066811640375,
+      "sha256": "b946eee9ff8231de49397e545cc35684038f5354c752546ba59adc798883ca8b",
+      "shape": [
+        1,
+        248320
+      ]
+    }
+  ],
+  "source": {
+    "model": "lightonai/LightOnOCR-3-4B",
+    "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+    "source_metadata_sha256": {
+      "chat_template.jinja": "d5ddb788d5f3df12e32244954037eb535409d24eeb48c2429d7588af4e7b69a7",
+      "config.json": "99b4c363a998c2d8c5ed5b3f3a40ec5cb97a156034df5002d0d789c74324f5f0",
+      "generation_config.json": "8ce51af0baac298c116b7db144efe1ebd78b0b792d084002634fd3ed63f4d515",
+      "preprocessor_config.json": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+      "processor_config.json": "d89ef49ce9cd37fbf510158e13c1ef063d9286411c1ec9049932dbe0487143b1",
+      "tokenizer_config.json": "e98f1901ac6f0adff67b1d540bfa0c36ac1a0cf59eb72ed78146ef89aafa1182"
+    },
+    "tokenizer_sha256": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4"
+  },
+  "source_sha": "42e5ce6f9bc6bd01865ac4f21d2157c98d3475f1",
+  "split": "calibration",
+  "status": "captured",
+  "stop": "eos"
+}

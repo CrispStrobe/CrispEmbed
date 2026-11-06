@@ -1,0 +1,39 @@
+<table>
+  <thead>
+    <tr>
+      <th>Input</th>
+      <th>TEXTAREA</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Texte</td>
+      <td>Texte</td>
+    </tr>
+    <tr>
+      <td>Number</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Date</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Password</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>a label</td>
+      <td>ANOTHER LABEL Yet another label</td>
+    </tr>
+    <tr>
+      <td>combo suggest</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>F</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Finland</td>
+      <td

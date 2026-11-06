@@ -1,0 +1,29 @@
+{
+  "schema": "lighton4b-full-comparer-import-failure-review/v1",
+  "reviewed_jobs": [
+    {
+      "run_id": 42011206392,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42011206392",
+      "source_sha": "f75f6b51ba129a4e25b200e556995762db048bd4",
+      "observed_error": "ModuleNotFoundError",
+      "missing_module": "lighton4b_document_v2",
+      "stage": "module-import-before-main",
+      "compared_positions": 0,
+      "artifact_emitted": false
+    },
+    {
+      "run_id": 42011236969,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42011236969",
+      "source_sha": "f75f6b51ba129a4e25b200e556995762db048bd4",
+      "observed_error": "ModuleNotFoundError",
+      "missing_module": "lighton4b_document_v2",
+      "stage": "module-import-before-main",
+      "compared_positions": 0,
+      "artifact_emitted": false
+    }
+  ],
+  "numerical_failure_observed": false,
+  "inference_repeated": false,
+  "repair": "Use standalone bounded stdlib score I/O; preserve byte-identical diagnostic GGUF encoding and exact Ref C++ source; register missing Ref target. No old v1/v2 protocol/runtime code imported.",
+  "additional_static_closure_gap": "Standalone Ref C++ file/target also absent; discovered statically, not an observed build failure."
+}

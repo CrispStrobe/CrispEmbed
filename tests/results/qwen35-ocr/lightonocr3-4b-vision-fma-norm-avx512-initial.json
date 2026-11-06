@@ -1,0 +1,21 @@
+{
+  "schema": "lighton4b-vision-fma-norm-initial/v1",
+  "status": "failed-original-cpu-control",
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42028040544",
+  "source_sha": "fd102fa25e2d0af3bd76104b4ca6687be0cb8420",
+  "torch_version": "2.13.0+cpu",
+  "observed_torch_cpu_capability": "AVX512",
+  "original_reference_dispatch": "AVX2, established by exact reconstructed layer0 in42023264258/42024288946",
+  "original_control_bit_exact": false,
+  "original_reconstruction": {
+    "elements": 573440,
+    "different_values": 3965,
+    "max_abs": 0.015625,
+    "rms_error": 0.0002181271957290851,
+    "cosine": 0.9999999439913287
+  },
+  "native_candidate_executed": false,
+  "ordinary_composed_native_executed": false,
+  "quality_qualified": false,
+  "correction": "Pin ATen/oneDNN/MKL CPU dispatch to original AVX2 before importing Torch; preserve exact original reconstructed-layer control and portable native baseline hash controls."
+}

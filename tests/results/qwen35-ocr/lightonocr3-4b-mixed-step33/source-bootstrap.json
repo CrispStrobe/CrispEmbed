@@ -1,0 +1,27 @@
+{
+  "gpu_requested": false,
+  "initial_resources": {
+    "available_memory_bytes": 32171491328,
+    "finite_cgroup_bounds": 1,
+    "output_free_bytes": 20940550144,
+    "scratch_free_bytes": 1038219001856,
+    "shared_filesystem": false
+  },
+  "model_quality_qualified": false,
+  "model_worker_returncode": 1,
+  "model_worker_started": true,
+  "model_worker_timeout_seconds": 2700,
+  "original_source": "8d3b2331d1b57e285f7ba348fc1eacd689b79aa8",
+  "pre_model_resources": {
+    "available_memory_bytes": 28854525952,
+    "finite_cgroup_bounds": 1,
+    "output_free_bytes": 20939923456,
+    "scratch_free_bytes": 1036159582208,
+    "shared_filesystem": false
+  },
+  "requested_model_dtype": "bfloat16",
+  "schema": "lighton4b-bf16-kaggle-bootstrap/v1",
+  "source_sha": "8eeb67bdeb1bf0e55b0d9ffd833a600967615765",
+  "status": "completed-with-numerical-rejection",
+  "worker_cgroup_peak_bytes": 27085611008
+}
