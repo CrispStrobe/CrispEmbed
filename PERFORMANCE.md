@@ -1,3 +1,28 @@
+## Issue 71 stream: grain no longer blocks propagation (5 November 2026, Apple M1 Metal, `fix/inpaint-stream-grain`)
+
+Author-reported [PR162](https://github.com/CrispStrobe/CrispEmbed/pull/162)
+measurements at `23f4ad05ad7f689122edd8e586ee3a343de53f57`, baseline
+`17c96639a5507c4cee51898b9eeb05ad58d2ebdc`. These model-backed measurements
+were not independently replayed during integration; the PR supplies screenshots
+but no archived machine-readable A/B report. Model-free hosted contracts are
+separate evidence. The allowance below is applied to each cell's average absolute
+RGB residual; it is not a per-pixel error bound.
+
+Same harness and settings as "Issue 71 video stream with temporal consistency" (MI-GAN512 F16, `--gpu-backend auto`,
+`--inpaint-temporal 15`, `CRISPEMBED_INPAINT_GRAPH=1 CRISPEMBED_INPAINT_FAST=1`). v0.17.14's pixel-residual guard
+counted half of all per-pixel change, so normal grain (~3 levels per pixel between clean frames of the static clip)
+exceeded propagation's 1.5 limit on every frame. The guard now counts only the excess over 6 levels.
+
+| Clip | Build | PSNR in mask | Full frame | Flicker | Propagated / reused / engine frames |
+| --- | --- | ---: | ---: | ---: | --- |
+| Static shot (100) | v0.17.14 (`17c96639`) | 27.15 dB | 41.70 dB | 3.27 | 0.0% / 98.4% / 1 |
+| Static shot (100) | this fix | 34.57 dB | 43.84 dB | 3.19 | 49.2% / 50.8% / 0 |
+| Moving shot (180) | v0.17.14 | 29.29 dB | 45.38 dB | 3.30 | 22.9% / 23.8% / 56 |
+| Moving shot (180) | this fix | 29.28 dB | 45.38 dB | 3.32 | 22.9% / 24.8% / 55 |
+
+On par on the moving shot; the static shot is back to the pre-v0.17.14 result. Real film clip (241 frames, no ground
+truth): 171 engine frames, 0% propagated (the subtitle never leaves the shot), unchanged in practice.
+
 ## LightOn3 complete CPU cache+epsilon panel —4 November2026
 
 [All6 cases×2 precisions](tests/results/lightonocr3-1b/cache-ab-v1/full-review-41905258340.json)
@@ -7991,3 +8016,33 @@ plus178mixed rootcalls, noOOM/retry. This is not a throughput benchmark. Native
 156-token output differs at33 and hasCER19.85185%/WER31.57895% against this
 genuineBF16mixed reference. [Exact sources, metrics and precision caveats](docs/lighton4b-bf16-mixed-freegen-results.md).
 No speed/quality/default/release promotion.
+
+
+### LightOn4B verified vision norm/NN/Conv — final Q4 smoke remains negative
+
+[42041219151](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42041219151)
+uses decoder legacy explicitly, same immutable Q4/image and all30 fixed baseline
+hashes. Patch/position/embedded match original raw SHA values exactly.
+
+| Metric against original BF16 | Fixed norm-only baseline | Norm+NN+Conv candidate |
+| --- | --- | --- |
+| Layer0 RMS / differing values |0.000691054 /35,896 |0.000141771 /1,466 |
+| Merged RMS / max absolute |0.00973525 /1.21094 |0.00866825 /1.67969 |
+| First-logit RMS / max absolute |0.560135 /2.38528 |0.568348 /2.45592 |
+| Independent two-token output |`<table>` |`<table>` |
+
+Original prefix is`<figure`. Intermediate improvement does not qualify decoded
+quality; first-score RMS regresses. All gates remain default-off, with no speed,
+EOS/full-document, release or model-publication claim. Source-fed attention
+pooling65 differences and tiny GELU tails remain the next operator boundaries.
+
+Balanced [42165624595](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42165624595)
+passes atbf10b06d2: serial/parallel/parallel/serial wall111.21/82.38/84.06/116.36s,
+with all76 emitted stage/score/ID/text files byte-identical across all4 arms.
+Warm reverse pair116.36/84.06 yields1.38425 ratio; mean ratio1.36728. RSS remains
+about5.18GB, while parallel user/systemCPU increase. This supports the opt-in
+conversion scheduling on this worker; no full-document/general speed or quality
+qualification. Only1 teacher row and2 IDs per arm; original numerical failure
+is unchanged. The source-pin amendment preserves all historical receipt bytes,
+and the nonpthreadWASM path explicitly excludes thread launch. Default stays off.
+[Full balanced receipt](tests/results/qwen35-ocr/lightonocr3-4b-parallel-dequant/balanced-ab.json).

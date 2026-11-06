@@ -42,23 +42,30 @@ std::string replace_invalid_utf8(const std::string & input) {
 }
 } // namespace
 
-bool frontend_tokenizer::enabled() const {return core_env::on("CRISPEMBED_LIGHTON4B_FRONTEND");}
-bool frontend_tokenizer::is_stop(int id) const {return enabled() && id==248046 && eos_==248046;}
-bool frontend_tokenizer::load(gguf_context* meta) {
-    *this={};
-    if (!enabled() || !meta ||
-        core_gguf::kv_str(meta,"general.architecture","")!="qwen35_ocr" ||
-        core_gguf::kv_u32(meta,"qwen35_ocr.format_version",0)!=5 ||
-        core_gguf::kv_str(meta,"general.source.huggingface.repository","")!="lightonai/LightOnOCR-3-4B" ||
-        core_gguf::kv_str(meta,"general.source.huggingface.revision","")!="b71010f095dc3735de7ee6b9969bff8f8f50b39a" ||
-        core_gguf::kv_str(meta,"qwen35_ocr.profile","")!="lightonocr3-4b" ||
-        core_gguf::kv_str(meta,"qwen35_ocr.checkpoint_sha256","")!="6b0dab74a2dab02d5b10ca56322255024ed8dca35c02746b42e9f296aaeb4e67" ||
-        core_gguf::kv_str(meta,"qwen35_ocr.tokenizer_sha256","")!="87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4" ||
-        core_gguf::kv_str(meta,"tokenizer.ggml.pre","")!="qwen35" ||
-        core_gguf::kv_str(meta,"qwen35_ocr.normalizer","")!="NFC" ||
-        core_gguf::kv_str(meta,"qwen35_ocr.pretokenizer_pattern","")!=
-        R"((?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?[\p{L}\p{M}]+|\p{N}| ?[^\s\p{L}\p{M}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+)" ||
-        core_gguf::kv_u32(meta,"tokenizer.ggml.eos_token_id",0)!=248046) return false;
+bool frontend_tokenizer::enabled() const {
+    return core_env::on("CRISPEMBED_LIGHTON4B_FRONTEND");
+}
+bool frontend_tokenizer::is_stop(int id) const {
+    return enabled() && id == 248046 && eos_ == 248046;
+}
+bool frontend_tokenizer::load(gguf_context * meta) {
+    *this = {};
+    if (!enabled() || !meta || core_gguf::kv_str(meta, "general.architecture", "") != "qwen35_ocr" ||
+        core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) != 5 ||
+        core_gguf::kv_str(meta, "general.source.huggingface.repository", "") != "lightonai/LightOnOCR-3-4B" ||
+        core_gguf::kv_str(meta, "general.source.huggingface.revision", "") !=
+            "b71010f095dc3735de7ee6b9969bff8f8f50b39a" ||
+        core_gguf::kv_str(meta, "qwen35_ocr.profile", "") != "lightonocr3-4b" ||
+        core_gguf::kv_str(meta, "qwen35_ocr.checkpoint_sha256", "") !=
+            "6b0dab74a2dab02d5b10ca56322255024ed8dca35c02746b42e9f296aaeb4e67" ||
+        core_gguf::kv_str(meta, "qwen35_ocr.tokenizer_sha256", "") !=
+            "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4" ||
+        core_gguf::kv_str(meta, "tokenizer.ggml.pre", "") != "qwen35" ||
+        core_gguf::kv_str(meta, "qwen35_ocr.normalizer", "") != "NFC" ||
+        core_gguf::kv_str(meta, "qwen35_ocr.pretokenizer_pattern", "") !=
+            R"((?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?[\p{L}\p{M}]+|\p{N}| ?[^\s\p{L}\p{M}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+)" ||
+        core_gguf::kv_u32(meta, "tokenizer.ggml.eos_token_id", 0) != 248046)
+        return false;
     frontend_tokenizer result;
     result.vocab_ = core_gguf::kv_str_array(meta, "tokenizer.ggml.tokens");
     result.added_ = core_gguf::kv_i32_array(meta, "qwen35_ocr.added_token_ids");
@@ -66,13 +73,12 @@ bool frontend_tokenizer::load(gguf_context* meta) {
     const int generation_eos = int(core_gguf::kv_u32(meta, "qwen35_ocr.generation_eos_id", 0));
     if (generation_eos != 248046) return false;
     result.eos_ = 248046;
-    result.stops_ = {248046};
+    result.stops_ = { 248046 };
     const auto merges = core_gguf::kv_str_array(meta, "tokenizer.ggml.merges");
     if (result.vocab_.size() != 248320 || merges.empty() || result.added_.empty() || result.added_.size() > 256 ||
         result.special_.size() > result.added_.size())
         return false;
-    if (result.vocab_[248044] != "<|endoftext|>" || result.vocab_[248046] != "<|im_end|>")
-        return false;
+    if (result.vocab_[248044] != "<|endoftext|>" || result.vocab_[248046] != "<|im_end|>") return false;
     for (size_t i = 0; i < result.vocab_.size(); ++i)
         if (!result.vocab_[i].empty() && !result.tokens_.emplace(result.vocab_[i], int32_t(i)).second) return false;
     for (size_t i = 0; i < merges.size(); ++i)
@@ -118,9 +124,8 @@ bool frontend_tokenizer::encode(const std::string & text, std::vector<int> & ids
         }
         const auto ordinary = core_bpe::tokenize_pretokenized(
             tokens_, merges_,
-            core_bpe::bytelevel_pretokenize(
-                core_nfc::normalize(replace_invalid_utf8(text.substr(start, next - start))), 1,
-                true));
+            core_bpe::bytelevel_pretokenize(core_nfc::normalize(replace_invalid_utf8(text.substr(start, next - start))),
+                                            1, true));
         ids.insert(ids.end(), ordinary.begin(), ordinary.end());
         if (added < 0) break;
         ids.push_back(added);
@@ -154,7 +159,7 @@ bool frontend_tokenizer::image_prompt(const std::string & prompt, int image_toke
     if (!enabled() || image_tokens < 1 || image_tokens > 1024 || !prompt.empty()) return false;
     std::string effective_prompt = prompt;
     rendered = "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>" + effective_prompt +
-                                       "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n";
+               "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n";
     std::vector<int> initial;
     if (!encode(rendered, initial) || std::count(initial.begin(), initial.end(), 248056) != 1 ||
         initial.size() + image_tokens - 1 > 4096) {

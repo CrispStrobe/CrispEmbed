@@ -2,6 +2,7 @@
 #include "qwen35_frontend.h"
 #include "qwen35_positions.h"
 #include "qwen35_vision.h"
+#include "lighton4b_vision_bf16.h"
 #include "core/env_gate.h"
 #include <algorithm>
 #include <cmath>
@@ -35,9 +36,12 @@ inline bool lighton4b_image_vision_cpu(const vision_weights & weights, const vis
         !std::all_of(image.patches.begin(), image.patches.end(), [](float v) { return std::isfinite(v); }))
         return false;
     vision_outputs candidate;
-    if (!vision_cpu(weights, config, image.patches.data(), int(tokens), image.grid, threads, candidate) ||
-        candidate.merged.size() != tokens / 4 * 2560)
-        return false;
+    const bool bf16 = core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16");
+    const bool ok =
+        bf16 ? lighton4b_vision_bf16_cpu(weights, config, image.patches.data(), int(tokens), image.grid, threads,
+                                         candidate)
+             : vision_cpu(weights, config, image.patches.data(), int(tokens), image.grid, threads, candidate);
+    if (!ok || candidate.merged.size() != tokens / 4 * 2560) return false;
     output = std::move(candidate);
     return true;
 }

@@ -187,9 +187,9 @@ bool linear_grouped_core_cpu(const linear_inputs & in, int key_heads, linear_out
     return true;
 }
 
-bool delta_cpu(const float * q, const float * k, const float * v, const float * g, const float * beta,
-               const float * initial_state, int batch, int tokens, int heads, int width, int threads,
-               std::vector<float> & output, std::vector<float> & final_state) {
+static bool delta_cpu_impl(const float * q, const float * k, const float * v, const float * g, const float * beta,
+                           const float * initial_state, int batch, int tokens, int heads, int width, int threads,
+                           std::vector<float> & output, std::vector<float> & final_state, bool pre_normalized) {
     output.clear();
     final_state.clear();
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !q || !k || !v || !g || !beta || batch < 1 || tokens < 1 ||
@@ -219,8 +219,8 @@ bool delta_cpu(const float * q, const float * k, const float * v, const float * 
             ggml_sqrt(context, ggml_add1(context, ggml_sum_rows(context, ggml_sqr(context, tensor)), epsilon));
         return ggml_div(context, tensor, denominator);
     };
-    auto * query = normalize(input(q));
-    auto * key = normalize(input(k));
+    auto * query = pre_normalized ? input(q) : normalize(input(q));
+    auto * key = pre_normalized ? input(k) : normalize(input(k));
     auto * value = input(v);
     auto * decay = ggml_new_tensor_4d(context, GGML_TYPE_F32, 1, heads, tokens, batch);
     auto * mixing = ggml_new_tensor_4d(context, GGML_TYPE_F32, 1, heads, tokens, batch);
@@ -255,5 +255,24 @@ bool delta_cpu(const float * q, const float * k, const float * v, const float * 
         }
     }
     return true;
+}
+bool delta_cpu(const float * q, const float * k, const float * v, const float * g, const float * beta,
+               const float * initial_state, int batch, int tokens, int heads, int width, int threads,
+               std::vector<float> & output, std::vector<float> & final_state) {
+    return delta_cpu_impl(q, k, v, g, beta, initial_state, batch, tokens, heads, width, threads, output, final_state,
+                          false);
+}
+// Explicit pre-normalized entry for the gated LightOn4B BF16 boundary candidate.
+// Existing delta_cpu callers retain their original F32 normalization unchanged.
+bool delta_pre_normalized_cpu(const float * q, const float * k, const float * v, const float * g, const float * beta,
+                              const float * initial_state, int batch, int tokens, int heads, int width, int threads,
+                              std::vector<float> & output, std::vector<float> & final_state) {
+    if (!core_env::on("CRISPEMBED_LIGHTON4B_BF16_LINEAR")) {
+        output.clear();
+        final_state.clear();
+        return false;
+    }
+    return delta_cpu_impl(q, k, v, g, beta, initial_state, batch, tokens, heads, width, threads, output, final_state,
+                          true);
 }
 } // namespace qwen35_ocr

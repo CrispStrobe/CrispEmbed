@@ -222,7 +222,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-439 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+453 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -552,7 +552,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_JOSEV_BACKBONE` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/qwen35_decoder.cpp` |  |
 | `CRISPEMBED_JOSEV_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/josev2b_text_frontend.cpp` |  |
-| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +20 | 'minicpm-ocr' registry alias (same default as the HTTP server). The decoder reuses the qwen35 kernels, so both gates are still required. |
+| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +21 | 'minicpm-ocr' registry alias (same default as the HTTP server). The decoder reuses the qwen35 kernels, so both gates are still required. |
 | `CRISPEMBED_QWEN35_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/lighton4b_native_context.h`, `src/qwen35_lighton4b_text.h` +1 |  |
 
 ### josev2b_composed
@@ -631,6 +631,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_ATTENTION_BLOCK` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_attention_block.h`, `src/lighton4b_decoder_compose.h` |  |
 
+### lighton4b_bf16_linear
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_BF16_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_linear.h`, `src/qwen35_delta.cpp` |  |
+
 ### lighton4b_decoder_compose
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
@@ -653,6 +659,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_image_compose.h` |  |
+| `CRISPEMBED_LIGHTON4B_VISION_BF16` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_image_compose.h`, `src/lighton4b_vision_bf16.cpp` |  |
 
 ### lighton4b_model_owner
 
@@ -664,13 +671,35 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
 | `CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
+
+### lighton4b_rotary_table
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_TABLE` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_rotary_table.h` |  |
 
 ### lighton4b_tokenizer
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_FRONTEND` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_tokenizer.cpp` |  |
+
+### lighton4b_vision_bf16
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_VISION_BF16_CONV` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_VISION_BF16_NORM` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_VISION_BF16_PATCH_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_bf16.cpp` |  |
 
 ### lightonocr
 
@@ -1457,3 +1486,10 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `VIT_EMBED_FORCE_CPU` | value | unset | int | tuning / config | `src/vit_embed.cpp` | Load weights — prefer GPU backend when available |
 
 <!-- END GENERATED: tools/list_env_vars.py -->
+
+`CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT=1` enables experimental block-aligned
+Q8_0/Q4_K conversion scheduling (maximum8 workers, minimum262144 elements).
+The existing `CRISPEMBED_QWEN35_QUANT` gate remains required. Converted F32 values
+and downstream matmul stay unchanged; no full-model converted-weight cache is
+allocated. Unset/empty/0, one thread, small tensors and other types use legacy
+conversion. Thread-launch failure joins writers before serial overwrite.

@@ -100,7 +100,8 @@ def main():
   report['seconds']=time.monotonic()-start;report['native']=json.loads((native/'native-summary.json').read_text())
   report['artifacts']={x.name:{'bytes':x.stat().st_size,'sha256':sha(x)} for x in native.iterdir() if x.is_file()}
   generated=[int(x) for x in (native/'generated.ids').read_text().split()]
-  report['decoded']={'ids':generated,'text':(native/'generated.txt').read_text(),'exact_original_ids':generated==teacher}
+  report['decoded']={'ids':generated,'text':(native/'generated.txt').read_text(),'exact_original_ids':generated==teacher,
+   'original_completion_tokens':len(teacher),'original_prefix_ids':teacher[:len(generated)],'exact_original_prefix_ids':generated==teacher[:len(generated)]}
   if args.mode=='full':
    protocol=ROOT/'docs/lighton4b-bf16-quant-v1.json'
    if sha(protocol)!='4d2a738a8df75947f5a8e269799c8b3a27af19bfafb82653802a7531b7c928bc':raise RuntimeError('parity protocol differs')

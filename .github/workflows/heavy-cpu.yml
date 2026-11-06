@@ -78,10 +78,14 @@ concurrency:
 
 jobs:
   run:
-    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_attribution.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_upstream.py' && inputs.script != 'tools/ci-heavy/lighton4b_dense_trace.py' && inputs.script != 'tools/ci-heavy/lighton4b_prefill_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_smoke_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_full_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_corrected_mixed_full_compare.py'
+    permissions:
+      contents: read
+      actions: read
+    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_attribution.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_upstream.py' && inputs.script != 'tools/ci-heavy/lighton4b_dense_trace.py' && inputs.script != 'tools/ci-heavy/lighton4b_prefill_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_smoke_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_full_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_corrected_mixed_full_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_calibration_native.py'
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 350
     env:
+      GH_TOKEN: ${{ github.token }}
       SCRIPT: ${{ inputs.script }}
       ARGS: ${{ inputs.args }}
       PIP_EXTRA: ${{ inputs.pip }}
@@ -190,7 +194,7 @@ jobs:
           name: heavy-${{ github.run_id }}
           path: ${{ runner.temp }}/out
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: ${{ (inputs.script == 'tools/ci-heavy/lighton4b_vision_linear_integration.py' || inputs.script == 'tools/ci-heavy/lighton4b_vision_linear_conv_ab.py' || inputs.script == 'tools/ci-heavy/lighton4b_vision_attention_integration.py' || inputs.script == 'tools/ci-heavy/lighton4b_vision_softmax_ab.py' || inputs.script == 'tools/ci-heavy/lighton4b_vision_boundary_probe.py' || inputs.script == 'tools/ci-heavy/lighton4b_vision_gelu_integration.py' || inputs.script == 'tools/ci-heavy/lighton4b_vision_gelu_ab.py' || inputs.script == 'tools/ci-heavy/lighton4b_vision_merger_probe.py' || inputs.script == 'tools/ci-heavy/lighton4b_vision_merger_erf_integration.py' || inputs.script == 'tools/ci-heavy/lighton4b_vision_merger_erf_ab.py' || inputs.script == 'tools/ci-heavy/lighton4b_rotary_table_profile.py' || inputs.script == 'tools/ci-heavy/lighton4b_rotary_table_integration.py' || inputs.script == 'tools/ci-heavy/lighton4b_rotary_table_ab.py' || inputs.script == 'tools/ci-heavy/lighton4b_rotary_raw_audit.py' || inputs.script == 'tools/ci-heavy/lighton4b_rotary_q8_smoke.py' || inputs.script == 'tools/ci-heavy/lighton4b_corrected_mixed_smoke.py' || inputs.script == 'tools/ci-heavy/lighton4b_corrected_mixed_full.py' || inputs.script == 'tools/ci-heavy/lighton4b_parallel_dequant.py' || inputs.script == 'tools/ci-heavy/lighton4b_parallel_dequant_native_ab.py' || inputs.script == 'tools/ci-heavy/lighton4b_parallel_dequant_balanced_ab.py') && 90 || 14 }}
 
   ocr_evidence:
     if: inputs.script == 'tools/ci-heavy/extract_ocr_nov4_evidence.py'
@@ -658,5 +662,47 @@ jobs:
         with:
           name: lighton4b-reference-compare-${{ github.run_id }}
           path: ${{ runner.temp }}/lighton4b-reference-out/
+          retention-days: 90
+          if-no-files-found: warn
+
+  lighton4b_calibration_native:
+    if: inputs.script == 'tools/ci-heavy/lighton4b_calibration_native.py'
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: read
+      actions: read
+    env:
+      CRISPEMBED_BUILD_MODE: portable
+      GH_TOKEN: ${{ github.token }}
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+      KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate fixed sequential scope and create task-owned scratch
+        env:
+          REQUEST_ARGS: ${{ inputs.args }}
+          REQUEST_MODE: ${{ inputs.build_mode }}
+          REQUEST_PIP: ${{ inputs.pip }}
+        run: |
+          test -z "$REQUEST_ARGS" && test -z "$REQUEST_PIP"
+          test "$REQUEST_MODE" = portable
+          mkdir -p "$RUNNER_TEMP/lighton4b-calibration/scratch" "$RUNNER_TEMP/lighton4b-calibration/out"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/lighton4b-calibration/scratch" >> "$GITHUB_ENV"
+          echo "HEAVY_OUT=$RUNNER_TEMP/lighton4b-calibration/out" >> "$GITHUB_ENV"
+      - name: Install bounded transport and array dependencies
+        run: python -m pip install 'Pillow==11.3.0' 'numpy==2.2.6' 'kaggle==2.2.5' 'six==1.17.0'
+      - name: Stage once, build once, run two calibration cases sequentially
+        run: timeout --signal=TERM --kill-after=30s 225m python tools/ci-heavy/lighton4b_calibration_native.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighton4b-calibration-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}
           retention-days: 90
           if-no-files-found: warn

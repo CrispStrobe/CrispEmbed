@@ -1,0 +1,43 @@
+{
+  "schema": "lighton4b-consolidation-static-repair/v1",
+  "initial_source_sha": "cf1e7248c",
+  "local_source_repair_sha": "eb4c67cb2",
+  "initial_runs": {
+    "static_guard": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42008276848",
+    "format": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42008276885",
+    "source_contract": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42008276853"
+  },
+  "failures": [
+    {
+      "stage": "test exit guard",
+      "cause": "Four one-shot test mains did not route through core_util::clean_exit",
+      "repair": "Route all exits through existing clean_exit; return explicit0 after bodies moved from main."
+    },
+    {
+      "stage": "clang18 format",
+      "cause": "New owned LightOn C++ sources were not canonical clang18 style",
+      "repair": "Scoped owned-file clang18 formatting; no vendor or retained evidence source snapshots modified."
+    },
+    {
+      "stage": "source pin contract",
+      "preexisting_before_consolidation": true,
+      "cause": "Additive gated src/qwen35_linear.cpp and src/qwen35_math.h changes predate consolidation but lacked current append-only source amendments",
+      "repair": "Append exact reviewed current-byte chain using existing source-pin tool. All frozen receipt hashes remain unchanged."
+    }
+  ],
+  "unchanged_function_bodies_vs_main": [
+    "matrix_type_supported",
+    "tensor_floats",
+    "project_cpu",
+    "linear_cpu"
+  ],
+  "local_static_checks": {
+    "format": "713 files pass clang18",
+    "exit_routing": "264 one-shot mains pass",
+    "frozen_case_contract": "3 tests pass",
+    "quality_audit": "13 tests pass",
+    "source_pin_git_verification": "15 receipt pins verified",
+    "environment_documentation": "440 variables documented"
+  },
+  "limits": "Static and contract repair only, not inference/build qualification. Aggregate jobs were skipped by failed static prerequisites; their aggregate red does not establish native/platform/numerical failure. Cancellation is a separate workflow conclusion. Active fd150 full runs remain unchanged. No new CI dispatch or push for these repairs."
+}

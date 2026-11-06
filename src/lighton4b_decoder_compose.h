@@ -55,8 +55,8 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
                 if (c.attention.tokens != past || c.attention.batch != 1 || c.attention.heads != 4 ||
                     c.attention.width != 256 || c.attention.keys.size() != size_t(past) * 1024 ||
                     c.attention.values.size() != c.attention.keys.size() || !finite(c.attention.keys) ||
-                    !finite(c.attention.values) || c.linear.tokens || !c.linear.conv.empty() ||
-                    !c.linear.recurrent.empty())
+                    !finite(c.attention.values) || c.linear.tokens || c.linear.bf16_activations ||
+                    !c.linear.conv.empty() || !c.linear.recurrent.empty())
                     return false;
             } else if (c.linear.tokens != past || c.linear.conv.size() != 32768 ||
                        c.linear.recurrent.size() != 524288 || !finite(c.linear.conv) || !finite(c.linear.recurrent) ||

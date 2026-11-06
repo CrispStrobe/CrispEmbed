@@ -904,6 +904,7 @@ target_link_libraries(test-lfm2-shortconv PRIVATE crispembed)
 # Experimental Qwen3.5 recurrence boundary, independently testable before the
 # full OCR engine is wired. No production C ABI or registry exposure yet.
 add_library(crispembed-qwen35-delta STATIC src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/lighton4b_vision_owner.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
+target_sources(crispembed-qwen35-delta PRIVATE src/lighton4b_vision_bf16.cpp)
 target_include_directories(crispembed-qwen35-delta PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 # qwen35_linear.cpp uses std::thread; older manylinux glibc needs explicit pthread linkage.
 target_link_libraries(crispembed-qwen35-delta PUBLIC ggml ggml-base ggml-cpu crispembed-core Threads::Threads)
@@ -1696,6 +1697,58 @@ endif()
 add_executable(test-lighton4b-decoder-upstream tests/test_lighton4b_decoder_upstream.cpp)
 target_link_libraries(test-lighton4b-decoder-upstream PRIVATE crispembed-qwen35-delta crispembed-core)
 
-# Standalone post-inference score archive comparison; no production model code.
+
+add_executable(test-lighton4b-mixed-policy tests/test_lighton4b_mixed_policy.cpp)
+target_link_libraries(test-lighton4b-mixed-policy PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(lighton4b-native-case-preflight tests/lighton4b_native_case_preflight.cpp src/lighton4b_tokenizer.cpp)
+target_link_libraries(lighton4b-native-case-preflight PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(test-lighton4b-vision-owner tests/test_lighton4b_vision_owner.cpp)
+target_link_libraries(test-lighton4b-vision-owner PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(test-lighton4b-gguf-inspection tests/test_lighton4b_gguf_inspection.cpp)
+target_link_libraries(test-lighton4b-gguf-inspection PRIVATE crispembed-qwen35-delta crispembed-core)
+
 add_executable(crispembed-diff-lighton4b-document tests/lighton4b_document_diff.cpp)
 target_include_directories(crispembed-diff-lighton4b-document PRIVATE src)
+
+# Bounded BF16 vision controls and retained-input probes; no reference payload in production.
+add_executable(test-lighton4b-bf16-round tests/test_lighton4b_bf16_round.cpp)
+target_link_libraries(test-lighton4b-bf16-round PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(lighton4b-vision-layer0-replay tests/lighton4b_vision_layer0_replay.cpp)
+target_link_libraries(lighton4b-vision-layer0-replay PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(lighton4b-vision-norm-variants tests/lighton4b_vision_norm_variants.cpp)
+target_link_libraries(lighton4b-vision-norm-variants PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Model-free decoder BF16 gate/rounding/isolation controls; no reference payload.
+add_executable(test-lighton4b-bf16-linear-controls tests/test_lighton4b_bf16_linear_controls.cpp)
+target_link_libraries(test-lighton4b-bf16-linear-controls PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(lighton4b-vision-linear-operators tests/lighton4b_vision_linear_operators.cpp)
+target_link_libraries(lighton4b-vision-linear-operators PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(lighton4b-vision-conv-operators tests/lighton4b_vision_conv_operators.cpp)
+target_link_libraries(lighton4b-vision-conv-operators PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(lighton4b-vision-attention-probe tests/lighton4b_vision_attention_probe.cpp)
+target_link_libraries(lighton4b-vision-attention-probe PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Bounded hosted source-expression observer; excluded from normal target graphs.
+if(LIGHTON4B_BOUNDARY_GENERATED_DIR)
+    add_executable(lighton4b-vision-merger-probe tests/lighton4b_vision_merger_probe.cpp)
+    target_include_directories(lighton4b-vision-merger-probe PRIVATE ${LIGHTON4B_BOUNDARY_GENERATED_DIR})
+    target_link_libraries(lighton4b-vision-merger-probe PRIVATE crispembed-qwen35-delta crispembed-core)
+    add_executable(lighton4b-vision-boundary-probe tests/lighton4b_vision_boundary_probe.cpp)
+    target_include_directories(lighton4b-vision-boundary-probe PRIVATE ${LIGHTON4B_BOUNDARY_GENERATED_DIR})
+    target_link_libraries(lighton4b-vision-boundary-probe PRIVATE crispembed-qwen35-delta crispembed-core)
+endif()
+
+# Generated complete model-arithmetic constants are tested before integration.
+if(LIGHTON4B_ROTARY_TABLE_GENERATED_DIR)
+    add_executable(lighton4b-rotary-table-profile tests/lighton4b_rotary_table_profile.cpp)
+    target_include_directories(lighton4b-rotary-table-profile PRIVATE ${LIGHTON4B_ROTARY_TABLE_GENERATED_DIR})
+    target_link_libraries(lighton4b-rotary-table-profile PRIVATE crispembed-qwen35-delta crispembed-core)
+endif()
+
+add_executable(test-lighton4b-parallel-dequant tests/test_lighton4b_parallel_dequant.cpp)
+target_link_libraries(test-lighton4b-parallel-dequant PRIVATE crispembed-qwen35-delta crispembed-core)
