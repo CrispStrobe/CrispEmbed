@@ -1,0 +1,23 @@
+	Command being timed: "/mnt/heavy-q6/scratch/q6-out-logo/build/lighton4b-native-document /mnt/heavy-q6/scratch/q6-out-logo/lighton4b-q4k-gdn-out-q6-v1.gguf /mnt/heavy-q6/scratch/q6-out-logo/handwritten_letter.rgb 320 448 /mnt/heavy-q6/scratch/q6-out-logo/handwritten_letter.teacher.ids /home/runner/work/_temp/q6-out/full/handwritten_letter/native 256 4 smoke"
+	User time (seconds): 190.89
+	System time (seconds): 96.62
+	Percent of CPU this job got: 176%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 2:43.09
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 4477328
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 81186
+	Minor (reclaiming a frame) page faults: 38979472
+	Voluntary context switches: 87266
+	Involuntary context switches: 18071
+	Swaps: 0
+	File system inputs: 7999688
+	File system outputs: 246128
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
