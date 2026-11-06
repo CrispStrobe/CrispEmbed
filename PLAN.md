@@ -2005,3 +2005,22 @@ Full-model-free/code protocol review is pending before one dispatch; no full
 candidate job has started. Three closed consumer controls pass; an initial local
 static test incorrectly rejected image RGB conversion and was narrowed to model
 requantization before passing. Native code is unchanged from hosted proof.
+
+
+### Prepared post-selection fixed-Q6 logo diagnostic
+
+After the24-Q6 policy and two-case full calibration were frozen, the already
+observed logo failure may be probed once under the
+[closed diagnostic protocol](docs/lighton4b-gdn-out-q6-logo-protocol-v1.json).
+The historical fixture is namedhandwritten_letter but contains a logo. This is
+explicitly post-selection, not clean heldout or representative OCR qualification;
+no recipe change follows. Existing Q4/Q8 both return32/248046 (`A`) versus the
+frozen BF1665-ID caption. The exact83e065 candidate and all compiled runtime
+sources stay unchanged.700 controls and a70-stage table anchor precede one logo
+cap256 independent generation/one teacher row. Exact original154-token/560-patch
+input admission and36 prior protected-stage hashes are checked; raw first scores,
+layer0 magnitudes/errors, IDs/text/EOS and model-agreement CER/WER are retained.
+Original and prior logo/Q4/Q8 receipts and whole320MB archive are authenticated.
+Only the named anchor/logo members may be read. Three scoped source/manifest
+controls pass. Resource limits remain16GiB disk/8GiB effective RAM/2GiB cgroup
+margin; worker60minutes, child45, workflow80; no cap waiver or default promotion.
