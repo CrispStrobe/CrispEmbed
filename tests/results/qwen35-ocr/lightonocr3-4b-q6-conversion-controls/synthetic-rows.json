@@ -1,0 +1,1 @@
+{"source_bf16_sha256":"84bc588bd5f2ef2cfbaa0e6952605788e313d1ea421923ef37268697b4aefea5","q6_sha256":"e8036c17cfbb1a9b9d71a7da01aa727e148e5fdc56c34b9b037588b0a1af1c7b","dequant_bf16_sha256":"e570b02bf037cc85955d1a185124076500f08b9e152c7c409fd3db260db399ad","elements":65792,"bytes":53970,"max_chunk_elements":65536,"requantized":false,"model_inference_executed":false}
