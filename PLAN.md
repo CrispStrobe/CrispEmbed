@@ -1721,3 +1721,18 @@ model, original BF16 source and independent mixed BF16 first row. All prepared
 input/29 vision-stage controls remain mandatory. Expected CPU duration60–100min;
 180min cap, retained failure diagnostics, no new PR or broad CI. The first-row
 comparison does not substitute for the subsequent complete177-row replay.
+
+
+### Genuine BF16 mixed full-generation mechanism check — prepared
+
+Prioritize the same fixed mixed weights in the original BF16 model before
+speculative decoder arithmetic fixes. [Exact protocol, pins and limits](docs/lighton4b-bf16-mixed-freegen.md)
+retain723/249/474 mapping, tied head, all effective parameter hashes and original
+first-score anchor. One baseline token plus independent mixed greedy cap256,
+actual EOS/cap and all score/content hashes; no teacher replay or F32 model.
+Compare full decoded output with public hash-pinned native156-token EOS and
+original177-token EOS, with raw CER/WER as model agreement only. One CPU worker
+with90min bound and cache/capacity guards; no artifact credential or model upload.
+Native numerical rows may be compared later only for identical causal prefixes.
+Existing observed form remains excluded from heldout/architecture selection.
+Origin/main6c2d41d78 is merged before implementation; production runtime unchanged.
