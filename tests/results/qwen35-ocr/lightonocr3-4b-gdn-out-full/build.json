@@ -1,0 +1,15 @@
+{
+  "schema": "lighton4b-frozen-case-build/v1",
+  "status": "passed",
+  "model_payload_bytes": 0,
+  "quality_qualified": false,
+  "source_sha": "26e6ae6635648a09bdbb9ede19705c3e31271260",
+  "executable_sha256": "277dee8a7d26667b503a0458c81d73091408e6cf6a9057af52f805da7e6c2dce",
+  "lighton4b-native-document_sha256": "1f2d6af93513f0e2899a581d29a5399b53bc4be50afb64dd0a3b5255f50a49eb",
+  "test-qwen35-stream-projection_sha256": "4c24a4884e86ced2b8e72f1d66de7c8c12045ac5bbc9bc46d804eb0adb1b0dbf",
+  "lighton4b-native-case-preflight_sha256": "5d8bbd2f0a8aec5c4e7dfc6f7aef1dca36f7d4fb54f2ef0965d6de3cd5d42378",
+  "test-lighton4b-mixed-policy_sha256": "9465a5687643f0b2caa1c6ba862979ff4c9e51211c932be9830661c56fbdadff",
+  "crispembed-diff-lighton4b-document_sha256": "d6898491984110b0536dcd43ddb1091f6559495a79dfb23389baedb8dc4ae246",
+  "mixed_policy_stdout": "MIXED_POLICY controls=74 passed=1 payload_bytes=0 quality_qualified=0\n",
+  "stdout": "gguf_init_from_file: failed to open GGUF file 'missing.gguf' (No such file or directory)\nnative-context controls=9 passed=1 model_payload=0\n"
+}

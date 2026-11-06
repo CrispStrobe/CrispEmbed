@@ -2564,3 +2564,23 @@ The gate stays default-off, with immutable quant storage, bounded transient
 weight/row/tile conversion and cached-mode toggle rejection. All historical
 source pins/negative evidence remain unchanged.
 [Full measured receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-weight-precision/native-smoke.json).
+
+## 6 November: named24GDNoutputQ8 full calibration improves but remains negative
+
+[Actual four-run42199032449](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42199032449)
+at26e6ae663 finishes EOS for both Q4/candidate on table/Arabic. Candidate table
+CER441→224edits/607(72.65%→36.90%),WER99→61/106(93.40%→57.55%),matchingprefix0→36;
+212→228tokens versus222original. Both Arabic outputs exactly match6original
+IDs/text/EOS. Strict firstscore budgets still fail; table remains wrong. Verified
+file4156787616bytes SHA40e54560ed349c077100c4e39276d29c02b98d6bec3611ac7b3a88d5a771c710
+keeps699payloads and replaces24wholeout matrices. All723 producer hashes,112recipe
+controls,48parallel cases and132serializedsmoke SHA pairs pass. Independent raw
+ID/text and character/word edit audits reproduce metrics.
+[Evidence](docs/lighton4b-gdn-out-full-calibration.md) records complete decoded
+outputs,source/protocol pins,RSS/time and remote90-day candidate/arrays. No broader
+qualification or default/release follows calibration. Next one bounded job must
+first independently rehash whole prior archive/candidate/all723tensor payloads,
+then unchanged candidate versus plain baseline on heldout legacyhandwritten_letter,
+which is actually an A/logo65-tokenEOS source,not representative paragraph OCR.
+Receipt stays deferred/capped. Coordinate latest PR1554850481ba before integration;
+current model measurement remains frozen26e6ae663.
