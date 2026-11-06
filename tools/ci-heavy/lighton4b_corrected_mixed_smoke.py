@@ -24,7 +24,7 @@ def retrieve_prefill(scratch,comparison,mixed_control=False):
  from kaggle.api.kaggle_api_extended import KaggleApi
  provider=KaggleApi();provider.authenticate()
  Get=KaggleApi.kernels_pull.__globals__['ApiGetKernelRequest'];List=KaggleApi.kernels_output.__globals__['ApiListKernelSessionOutputRequest']
- owner=os.environ['KAGGLE_ACCOUNT'];slug=('lighton4b-bf16-mixed-free-generation-v1' if mixed_control=='free' else 'lighton4b-bf16-mixed-first-score-v1') if mixed_control else 'lighton4b-bf16-targeted-original-cpu-prefill';urls={};token=None;pages=0
+ owner=os.environ['KAGGLE_ACCOUNT'];slug=('lighton4b-bf16-quant-first-score-v1' if mixed_control=='q4' else 'lighton4b-bf16-mixed-free-generation-v1' if mixed_control=='free' else 'lighton4b-bf16-mixed-first-score-v1') if mixed_control else 'lighton4b-bf16-targeted-original-cpu-prefill';urls={};token=None;pages=0
  with provider.build_kaggle_client() as client:
   req=Get();req.user_name=owner;req.kernel_slug=slug;req.version_label='v1';client.kernels.kernels_api_client.get_kernel(req)
   while True:
@@ -42,6 +42,13 @@ def retrieve_prefill(scratch,comparison,mixed_control=False):
    with urllib.request.urlopen(urls[name],timeout=120) as stream:raw=stream.read(maximum+1)
   except Exception:raise ValueError('bounded original prefill transfer failed') from None
   require(len(raw)<=maximum,'original prefill member byte bound');return raw
+ if mixed_control=='q4':
+  prefix='bf16-quant-first-score/quant-oracle/';raw=fetch(prefix+'oracle.json',8*2**20)
+  require(digest(raw)=='03119ea4d0fbbf5cc86b91f80b47bbda22d90b417d89dd0c16b8fafa1a85a89b','source plainQ4 oracle differs')
+  manifest=json.loads(raw);require(manifest['source_sha']=='048fd683f4ad4adf50f945f6d7c6b436bacdb9aa' and manifest['comparison_completed'],'source plainQ4 status differs')
+  row=manifest['arms']['q4_k'];score=fetch(prefix+row['file'],993280)
+  require(len(score)==993280 and digest(score)==row['sha256']=='e59d6054c85e81fb1be7101c9899287fa3a1cdd23a3110c8e03d874992387a0d','source plainQ4 row differs')
+  return manifest,score
  if mixed_control=='free':
   prefix='bf16-mixed-freegen/quant-oracle/';raw=fetch(prefix+'oracle.json',8*2**20)
   require(digest(raw)=='ed4ef1b60c41d4d3b2a131d107c2563ee971c931873202f5f470683ebb9a1d58','source mixed full receipt differs')
@@ -67,7 +74,7 @@ def retrieve_prefill(scratch,comparison,mixed_control=False):
  (scratch/'original-prefill.json').write_bytes(raw);(scratch/'original-first-score.f32').write_bytes(score)
  return manifest,score
 
-def main(full=False,parallel_ab=False,alternating=False,head_ab=False):
+def main(full=False,parallel_ab=False,alternating=False,head_ab=False,plain_q4=False):
  require(os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','hosted portable smoke required')
  import numpy as np
  from PIL import Image
@@ -77,8 +84,8 @@ def main(full=False,parallel_ab=False,alternating=False,head_ab=False):
  control=load('verified_vision_gates',ROOT/'tools/ci-heavy/lighton4b_rotary_q8_smoke.py')
  mixed=load('mixed_transport',ROOT/'tools/ci-heavy/lighton4b_calibration_native.py')
  comparison=load('source_compare',ROOT/'tools/ci-heavy/lighton4b_vision_bf16_compare.py')
- report={'schema':'lighton4b-corrected-mixed-native-smoke/v1','status':'failed','quality_qualified':False,'full_completion_executed':False,
-  'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'recipe':'lighton4b-q4k-mixers-q8-v1',
+ report={'schema':'lighton4b-corrected-plain-q4-full/v1' if plain_q4 else 'lighton4b-corrected-mixed-native-smoke/v1','status':'failed','quality_qualified':False,'full_completion_executed':False,
+  'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'recipe':'q4_k' if plain_q4 else 'lighton4b-q4k-mixers-q8-v1',
   'scope':('observed simple_form full177 teacher scores and independent greedy cap256; excluded from calibration/heldout qualification' if full else 'observed simple_form first-score/two-token runtime diagnostic; excluded from calibration/heldout qualification'),
   'vision_gates':control.VISION_GATES,'disabled_gates':{'CRISPEMBED_LIGHTON4B_BF16_LINEAR':'0','CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2':'0','CRISPEMBED_LIGHTON4B_DIRECT_QUANT':'0','CRISPEMBED_QWEN35_WEIGHT_CACHE':'0','CRISPEMBED_QWEN35_PRECISE_RMS':'0','CRISPEMBED_QWEN35_IMATRIX':'0','CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT':'0','CRISPEMBED_LIGHTON4B_HEAD_BF16':'0','CRISPEMBED_LIGHTON4B_GREEDY_TRACE':'0'},
   'rotary_table_sha256':TABLE_SHA,'complete_rotary_profile_sha256':PROFILE_SHA,'original_forward_executed':False}
@@ -88,12 +95,18 @@ def main(full=False,parallel_ab=False,alternating=False,head_ab=False):
   report['preflight']={'memory':native.memory(),'load_average':os.getloadavg(),'swap':{k:v for k,v in (line.split(':',1)for line in Path('/proc/meminfo').read_text().splitlines()) if k in ('SwapTotal','SwapFree')},'scratch_free_bytes':shutil.disk_usage(scratch).free,'output_free_bytes':shutil.disk_usage(out).free}
   require(report['preflight']['memory']['available_bytes']>=10*1024**3 and report['preflight']['scratch_free_bytes']>=12*1024**3 and report['preflight']['output_free_bytes']>=2*1024**3,'guarded mixed smoke capacity unavailable')
   require(native.sha(ROOT/'src/lighton4b_rotary_table_data.inc')==TABLE_SHA and native.sha(ROOT/'tests/results/qwen35-ocr/lightonocr3-4b-complete-rotary-profile.json')==PROFILE_SHA,'complete corrected rotary table/proof differs')
-  if head_ab:
+  if head_ab or plain_q4:
    report['stage']='model-free-head-controls';builder=load('native_build_controls',ROOT/'tools/ci-heavy/lighton4b_native_document_build.py');builder.main();build=scratch/'native-document-build'
    run('head-controls-build',['cmake','--build',build,'--target','test-lighton4b-head-bf16','--parallel','2'])
    run('head-controls',[build/'test-lighton4b-head-bf16'])
    require('HEAD_BF16 passed=1 source_row33_tie=1' in (out/'head-controls.log').read_text(),'head RNE/tie controls required before model acquisition')
-  report['stage']='stage-immutable-mixed-artifact';model=mixed.stage_model(scratch,out);report['model']=mixed.MODEL
+  report['stage']='stage-immutable-candidate'
+  if plain_q4:
+   filename,expected,size=native.CANDIDATES['q4_k'];model=scratch/filename
+   native.download(f'https://huggingface.co/{native.MODEL_REPO}/resolve/{native.MODEL_REVISION}/{filename}',model)
+   require(model.stat().st_size==size and native.sha(model)==expected,'immutable plainQ4 payload differs')
+   report['model']={'repository':native.MODEL_REPO,'revision':native.MODEL_REVISION,'file':filename,'sha256':expected,'bytes':size}
+  else:model=mixed.stage_model(scratch,out);report['model']=mixed.MODEL
   with urllib.request.urlopen('https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/26fe41e35/tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture.json',timeout=60) as stream:raw=stream.read(1000001)
   require(digest(raw)==CAPTURE_SHA,'frozen independent BF16 completion differs');reference=json.loads(raw)
   image_path=ROOT/'tests/regression/images/cc0/simple_form.png';require(native.sha(image_path)=='3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc','frozen form image differs')
@@ -101,26 +114,29 @@ def main(full=False,parallel_ab=False,alternating=False,head_ab=False):
   require(len(reference['generated_ids'])==177,'original completion identity differs')
   manifest,original_logits=retrieve_prefill(scratch,comparison)
   report['original_bf16']={'capture_sha256':CAPTURE_SHA,'stage_manifest_sha256':comparison.ORIGINAL_REPORT_SHA,'first_score_sha256':digest(original_logits),'first_id':reference['generated_ids'][0]}
-  mixed_reference,mixed_logits=retrieve_prefill(scratch,comparison,True)
-  report['independent_bf16_mixed']={'source_sha':mixed_reference['source_sha'],'report_sha256':'0e3139c884a82ee9f1e0c5c3cc9943911241ab6aeb6e17b8b5602c90563c07c0','first_score_sha256':digest(mixed_logits),'ids':mixed_reference['arms']['mixed']['ids']}
+  mixed_reference,mixed_logits=retrieve_prefill(scratch,comparison,'q4' if plain_q4 else True)
+  report['independent_bf16_q4' if plain_q4 else 'independent_bf16_mixed']={'source_sha':mixed_reference['source_sha'],'report_sha256':'03119ea4d0fbbf5cc86b91f80b47bbda22d90b417d89dd0c16b8fafa1a85a89b' if plain_q4 else '0e3139c884a82ee9f1e0c5c3cc9943911241ab6aeb6e17b8b5602c90563c07c0','first_score_sha256':digest(mixed_logits),'ids':mixed_reference['arms']['q4_k' if plain_q4 else 'mixed']['ids']}
   require({k:v['sha256'] for k,v in mixed_reference['prepared_inputs'].items()}=={k:v['sha256'] for k,v in reference['prepared_inputs'].items()},'independent mixed prepared inputs differ')
   if head_ab:
    source_free,source_row33=retrieve_prefill(scratch,comparison,'free')
    report['source_mixed_full']={'report_sha256':'ed4ef1b60c41d4d3b2a131d107c2563ee971c931873202f5f470683ebb9a1d58','source_sha':source_free['source_sha'],'row33_sha256':digest(source_row33),'ids':source_free['arms']['mixed']['ids'],'decoded':source_free['arms']['mixed']['decoded'],'eos_completed':source_free['arms']['mixed']['eos_completed']}
   report['stage']='build-corrected-native';builder=load('native_build',ROOT/'tools/ci-heavy/lighton4b_native_document_build.py')
-  if not head_ab:builder.main()
+  if not (head_ab or plain_q4):builder.main()
   build=scratch/'native-document-build'
   binary=build/'lighton4b-native-document';report['binary_sha256']=native.sha(binary)
   env=os.environ.copy();env.update({x:'1' for x in tuple(native.GATES)+tuple(control.VISION_GATES)})
-  env.update(report['disabled_gates']);env['CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4']='1';report['enabled_gates']={x:env[x] for x in tuple(native.GATES)+tuple(control.VISION_GATES)+('CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4',)}
+  env.update(report['disabled_gates']);env['CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4']='0' if plain_q4 else '1';report['enabled_gates']={x:env[x] for x in tuple(native.GATES)+tuple(control.VISION_GATES)+('CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4',)}
   if head_ab:
    env['CRISPEMBED_LIGHTON4B_GREEDY_TRACE']='1';env['CRISPEMBED_LIGHTON4B_GREEDY_TRACE_POSITION']='33'
    report['scope']='same-worker head BF16 output dtype OFF/ON full independent greedy256, one teacher row each; observed form only, no heldout qualification'
-  candidate=out/'mixed';candidate.mkdir();resource=out/'native-resources.txt';report['stage']='native-full-greedy256' if (full or head_ab) else 'native-first-score-two-token';start=time.monotonic()
-  report['requested_teacher_positions']=177 if full else 1;report['requested_generation_cap']=256 if (full or head_ab) else 2
-  run('native',['/usr/bin/time','-q','-f','%U %S %e %M','-o',resource,binary,model,rgb,image.height,image.width,teacher,candidate,256 if (full or head_ab) else 2,4,'full' if full else 'smoke'],env)
+  if plain_q4:
+   env['CRISPEMBED_LIGHTON4B_HEAD_BF16']='1';report['active_overrides']={'CRISPEMBED_LIGHTON4B_HEAD_BF16':'1','CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4':'0'}
+   report['scope']='observed form plainQ4 correctedvision+BF16head full independent greedy256; one teacher row; same-weight original BF16 firstscore; full same-weight source reference pending; no heldout claim'
+  candidate=out/('q4_k' if plain_q4 else 'mixed');candidate.mkdir();resource=out/'native-resources.txt';report['stage']='native-full-greedy256' if (full or head_ab or plain_q4) else 'native-first-score-two-token';start=time.monotonic()
+  report['requested_teacher_positions']=177 if full else 1;report['requested_generation_cap']=256 if (full or head_ab or plain_q4) else 2
+  run('native',['/usr/bin/time','-q','-f','%U %S %e %M','-o',resource,binary,model,rgb,image.height,image.width,teacher,candidate,256 if (full or head_ab or plain_q4) else 2,4,'full' if full else 'smoke'],env)
   user,system,elapsed,rss=resource.read_text().strip().split();report['resources']={'wall_seconds':float(elapsed),'user_seconds':float(user),'system_seconds':float(system),'peak_rss_bytes':int(rss)*1024,'measured_seconds':time.monotonic()-start}
-  report['native_summary']=json.loads((candidate/'native-summary.json').read_text());require(report['native_summary']['teacher_positions']==(177 if full else 1) and report['native_summary']['cap']==(256 if (full or head_ab) else 2),'bounded smoke scope differs')
+  report['native_summary']=json.loads((candidate/'native-summary.json').read_text());require(report['native_summary']['teacher_positions']==(177 if full else 1) and report['native_summary']['cap']==(256 if (full or head_ab or plain_q4) else 2),'bounded smoke scope differs')
   ids=lambda name:np.array([int(x)for x in (candidate/name).read_text().split()],dtype='<i8')
   prompt=ids('prompt.ids');values={'input_ids':prompt.reshape(1,-1),'image_grid_thw':ids('processor.grid.ids').reshape(1,3),'mm_token_type_ids':ids('modalities.ids').reshape(1,-1),'pixel_values':np.fromfile(candidate/'processor.patches.f32',dtype='<f4').reshape(560,1536),'attention_mask':np.ones((1,len(prompt)),dtype='<i8')};report['prepared_controls']={}
   for name,value in values.items():
@@ -133,8 +149,12 @@ def main(full=False,parallel_ab=False,alternating=False,head_ab=False):
    report['raw_vision_controls'][name]={'bytes':path.stat().st_size,'source_sha256':row['sha256'],'native_sha256':actual,'bit_exact':True}
   actual=np.fromfile(candidate/'prefill.logits.f32',dtype='<f4');require(actual.size==248320,'complete first score required')
   report['first_score_vs_original_bf16']=comparison.compare(np.frombuffer(original_logits,dtype='<f4'),actual)
-  report['first_score_vs_independent_bf16_mixed']=comparison.compare(np.frombuffer(mixed_logits,dtype='<f4'),actual)
+  report['first_score_vs_independent_bf16_q4' if plain_q4 else 'first_score_vs_independent_bf16_mixed']=comparison.compare(np.frombuffer(mixed_logits,dtype='<f4'),actual)
   generated=ids('generated.ids').tolist();report['decoded']={'ids':generated,'text':(candidate/'generated.txt').read_text(),'exact_original_prefix_ids':generated==reference['generated_ids'][:len(generated)],'exact_original_complete_ids':generated==reference['generated_ids'],'native_eos':report['native_summary']['eos'],'first_differing_id':next((i for i,(a,b) in enumerate(zip(generated,reference['generated_ids'])) if a!=b),min(len(generated),len(reference['generated_ids'])) if len(generated)!=len(reference['generated_ids']) else None),'original_prefix_ids':reference['generated_ids'][:len(generated)],'original_completion_tokens':177}
+  if plain_q4:
+   report['decoded']['stop']='eos' if report['native_summary']['eos'] else 'max_tokens'
+   report['decoded']['cap_hit']=not report['native_summary']['eos'] and len(generated)==256
+   report['same_weight_first_id_matches']=generated[0]==mixed_reference['arms']['q4_k']['ids'][0]
   if full:
    require(all((candidate/f'teacher.{i}.logits.f32').stat().st_size==993280 for i in range(177)),'full177 teacher rows required')
    report['full_teacher_score_comparison_executed']=False
@@ -179,8 +199,8 @@ def main(full=False,parallel_ab=False,alternating=False,head_ab=False):
     report['parallel_dequant_ab']['order']=['serial','parallel','parallel','serial']
     report['parallel_dequant_ab']['cache_warmth_note']='first serial arm includes coldest model/cache state; compare warm reverse pair separately; one worker, no general performance claim'
 
-  report['status']='measured';report['full_completion_executed']=full or head_ab
+  report['status']='measured';report['full_completion_executed']=full or head_ab or plain_q4
  except Exception as error:
   report['error_type']=type(error).__name__;report['error']='bounded corrected mixed smoke/control failed; inspect native/build/staging logs';raise RuntimeError(report['error'])from None
- finally:(out/('head-bf16-native-ab.json' if head_ab else 'parallel-dequant-balanced-ab.json' if alternating else 'parallel-dequant-native-ab.json' if parallel_ab else 'corrected-mixed-full.json' if full else 'corrected-mixed-smoke.json')).write_text(json.dumps(report,indent=2)+'\n')
+ finally:(out/('corrected-plain-q4-head-full.json' if plain_q4 else 'head-bf16-native-ab.json' if head_ab else 'parallel-dequant-balanced-ab.json' if alternating else 'parallel-dequant-native-ab.json' if parallel_ab else 'corrected-mixed-full.json' if full else 'corrected-mixed-smoke.json')).write_text(json.dumps(report,indent=2)+'\n')
 if __name__=='__main__':main()

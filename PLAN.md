@@ -1811,3 +1811,16 @@ OFF156tokens takes1388.25s/RSS5,185,196,032B; ON178tokens1561.55s/5,185,175,552B
 Different completion lengths prevent a speed interpretation. Gate stays
 default-off, no release/default/model alias change. Existing historical
 source-pin amendments and15git-verified frozen receipt pins remain intact.
+
+### Plain Q4 corrected runtime versus same-weight original
+
+Next bounded native job uses the actual plainQ4_K payloadf873eb3d… (4,030,957,952B),
+all verified vision gates and BF16 head output, with the mixed recipe gate off.
+It captures one first score plus full independent greedy cap256 and retains
+EOS/cap/decoded negatives. No177-row teacher panel is repeated. A separate
+genuine originalBF16 source worker with these same Q4 weights supplies the
+full runtime comparison; first-row oracle03119ea4…/source048fd683f already
+selects20353 `<table`, unlike unquantized original27 `<figure`, proving an
+earlier weight-induced first-token loss. The native job authenticates that
+rowe59d6054… and the unchanged unquantized BF16 reference. Expected25–40min,
+90min cap, one CPU job, no new PR/broad CI or calibration/heldout claim.
