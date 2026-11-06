@@ -8046,3 +8046,15 @@ qualification. Only1 teacher row and2 IDs per arm; original numerical failure
 is unchanged. The source-pin amendment preserves all historical receipt bytes,
 and the nonpthreadWASM path explicitly excludes thread launch. Default stays off.
 [Full balanced receipt](tests/results/qwen35-ocr/lightonocr3-4b-parallel-dequant/balanced-ab.json).
+
+
+Mixed decoder head-BF16 correction42168142185/b988 restores exact178 genuine
+quantized-BF16 IDs/text/EOS from156-tokenOFF baseline, CER/WER19.85185%/31.57895%
+→0/0 against that reference on this observed form. It is not official-unquantized
+model qualification. ActualpairedRef42174566100 completes96stage checks and26
+causal triples; inputnorm max0.0165167, headON max0.125/RMS0.0302963 remain strict
+numeric rejects. Same-input-context official→mixed row5 max10.578125/RMS1.54315937,
+mixed→native max0.656324/RMS0.0785952 distinguish quant-model and runtime/precision
+residual magnitudes without subtracting scalar errors.
+[Complete metrics and source/retention limits](docs/lighton4b-mixed-step33-results.md).
+All178 source score rows and pairedarrays retained90days; no speed/default claim.
