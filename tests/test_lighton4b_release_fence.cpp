@@ -1,6 +1,7 @@
 #include "qwen35_ocr.h"
 #include "gguf.h"
 #include "core/clean_exit.h"
+#include "core/gguf_loader.h"
 #include <cstdio>
 #include <cstdlib>
 #include <initializer_list>
@@ -22,6 +23,11 @@ static int run(int argc, char ** argv) {
     gguf_set_val_bool(metadata, "qwen35_ocr.zero_centered_text_norm", true);
     if (!gguf_write_to_file(metadata, argv[1], true)) return 2;
     gguf_free(metadata);
+    auto * roundtrip = core_gguf::open_metadata(argv[1]);
+    if (!roundtrip || core_gguf::kv_u32(roundtrip, "qwen35_ocr.format_version", 0) != 5 ||
+        core_gguf::kv_str(roundtrip, "qwen35_ocr.profile", "") != "lightonocr3-4b")
+        return 2;
+    core_gguf::free_metadata(roundtrip);
     gate("CRISPEMBED_QWEN35_OCR", "1");
     int checks = 0;
     for (const char * value : { "0", "1" }) {
