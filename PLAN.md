@@ -1736,3 +1736,15 @@ with90min bound and cache/capacity guards; no artifact credential or model uploa
 Native numerical rows may be compared later only for identical causal prefixes.
 Existing observed form remains excluded from heldout/architecture selection.
 Origin/main6c2d41d78 is merged before implementation; production runtime unchanged.
+
+
+### Mixed BF16 original step33 activation replay — prepared
+
+One source-only bounded cap34 replay will capture50 actual step33 arrays matching
+nativeb988 trace names: actual input/positions,32layer outputs/finalnorm/head,
+layer0norm/QKV/z/a/b/attention/residual/FFN. All34 score hashes andIDs must remain
+exact against retained178 captureed4ef1b6. [Exact blueprint, scope and controls](docs/lighton4b-bf16-mixed-step33.md).
+This is shared genuine-mixed prefix, not official-unquantized teacher context.
+No native replay duplication; runtimeagent owns independent fullhead-roundAB.
+BF16 source parameter rounding versus nativeF32 dequant remains explicit before
+calling a stage difference an implementation bug. Productionruntime unchanged.

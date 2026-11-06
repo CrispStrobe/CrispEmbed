@@ -307,7 +307,7 @@ def main(argv=None):
         require(code==0 and oracle.report.get('comparison_completed'),'one-position source/candidate capture did not complete')
         require(audit['checkpoint']['payload_verified']and audit['checkpoint']['sha256']==protocol['checkpoint_sha256']and audit['checkpoint']['bytes']==protocol['checkpoint_bytes'],'full original checkpoint authentication differs')
         expected_calls=oracle.report.get('total_model_forward_calls',oracle.report.get('total_one_position_forwards'))
-        require(audit['model_forward_calls']==expected_calls and(expected_calls==protocol['expected_forward_arms']or protocol.get('full_free_generation')is True),'exact frozen original forward count differs')
+        require(audit['model_forward_calls']==expected_calls and(expected_calls==protocol['expected_forward_arms']or protocol.get('full_free_generation')is True or protocol.get('activation_trace')is True),'exact frozen original forward count differs')
         require(len(audit['scores'])==1 and audit['scores'][0]['sha256']==protocol['original_first_score_sha256'],'adapter audit must persist baseline first score only')
         if oracle.report['numerical_rejection']:return 1
         return 0
