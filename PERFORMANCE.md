@@ -7983,3 +7983,11 @@ max1.48261547/RMS0.284899443; worst max10.1740723/RMS1.51052773). Full decoded
 agreement rejects:156 versus177 tokens, divergence25, raw CER30.03049%/WER44.44444%
 against BF16 output. [Exact metrics, texts, controls and limits](docs/lighton4b-corrected-mixed-full-results.md).
 No speed or decoded-quality promotion; artifacts remain remotely preserved90days.
+
+
+Genuine BF16 mixed source89eda20c6 generates178tokens/EOS in596.86s, processHWM
+13,883,699,200bytes and cgrouppeak27,614,916,608of32,212,254,720bytes. One baseline
+plus178mixed rootcalls, noOOM/retry. This is not a throughput benchmark. Native
+156-token output differs at33 and hasCER19.85185%/WER31.57895% against this
+genuineBF16mixed reference. [Exact sources, metrics and precision caveats](docs/lighton4b-bf16-mixed-freegen-results.md).
+No speed/quality/default/release promotion.

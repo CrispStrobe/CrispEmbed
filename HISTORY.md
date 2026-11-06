@@ -21043,3 +21043,13 @@ that does not establish decoded parity. Raw BF16-output agreement CER30.03049%/
 WER44.44444%, with both full texts and definitions preserved.
 [Full authenticated evidence and90-day artifact identities](docs/lighton4b-corrected-mixed-full-results.md).
 No heldout/native-quality, default, release, app-pin or model-publication promotion.
+
+
+Genuine original BF16 mixed full generation89eda20c6 completes178-tokenEOS, versus
+corrected native156/EOS; firstdifference33. Nativeagreement against genuine BF16
+mixed isCER19.85185%/WER31.57895%, with675codepoints/95words as reference. All178
+score rows are finite/hash-recorded,249mixed/723original parameter hashes and474
+protected/tiedhead controls pass; original audit records179rootcalls.
+[Complete source/control/text evidence and limits](docs/lighton4b-bf16-mixed-freegen-results.md).
+The fixedmixed original also differs from official177-token output. Numerical
+native-row and step33activation attribution remain separate; no defaultpromotion.
