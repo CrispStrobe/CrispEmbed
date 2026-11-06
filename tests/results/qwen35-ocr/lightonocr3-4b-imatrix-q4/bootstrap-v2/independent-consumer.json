@@ -1,0 +1,115 @@
+{
+  "actual248_means_byte_exact": true,
+  "all248_q4_payloads_changed": true,
+  "all475_protected_payloads_exact": true,
+  "cases": {
+    "arabic_printed_line": {
+      "arms": {
+        "plain_q4": {
+          "centered_rms_error": 0.36434924247935124,
+          "gold_id_logit": 18.25,
+          "max_abs_error": 2.953125,
+          "max_abs_score": 18.25,
+          "mean_logit_error": 0.014337735922200624,
+          "non_bf16_expanded_f32_values": 0,
+          "probability_of_original_id": 0.8717670239415881,
+          "rms_error": 0.36463123997629693,
+          "score_rms": 2.0892761974575915,
+          "sha256": "823de94f5bb8e96a32d33fd9382c7f7d62e436181bad60276c5f238d655625e2",
+          "source_to_native_next_token_kld": 0.030166368661896384,
+          "top1_id": 67321
+        },
+        "weighted_q4": {
+          "centered_rms_error": 0.3601664228245838,
+          "gold_id_logit": 18.375,
+          "max_abs_error": 2.21875,
+          "max_abs_score": 18.375,
+          "mean_logit_error": 0.14250771578175697,
+          "non_bf16_expanded_f32_values": 0,
+          "probability_of_original_id": 0.8927936806139692,
+          "rms_error": 0.38733486957359115,
+          "score_rms": 2.0187641523743025,
+          "sha256": "6c2a414c6e2e1df5dbe2c84809f181a56fcd982740261fe0b5a6fa06edb174cc",
+          "source_to_native_next_token_kld": 0.0155036099641733,
+          "top1_id": 67321
+        }
+      },
+      "source_capture_sha256": "ff1a390370b702fabf8b5a25f0feec76888bb1ad8197cf08c3efd44adec1de84",
+      "source_max_abs_score": 19.0,
+      "source_probability_of_top1": 0.9318797871489876,
+      "source_row_sha256": "86992379e43f872e2958fd81c16b5aef548a43c588400d18e1154335bb3b8f05",
+      "source_score_rms": 2.1124022931228073,
+      "source_top1_id": 67321
+    },
+    "simple_table": {
+      "arms": {
+        "plain_q4": {
+          "centered_rms_error": 0.6850128113632385,
+          "gold_id_logit": 20.375,
+          "margin_27_over_20353": -0.25,
+          "max_abs_error": 4.2265625,
+          "max_abs_score": 20.625,
+          "mean_logit_error": 0.17193342337490433,
+          "non_bf16_expanded_f32_values": 0,
+          "probability_of_original_id": 0.4055778795243089,
+          "rms_error": 0.7062603300520156,
+          "score_rms": 2.0481310345541686,
+          "sha256": "74786da3f763d3aafeea14954a06e80b291d340005ffc413d804e71a21071a57",
+          "source_to_native_next_token_kld": 0.1815113158595354,
+          "top1_id": 20353
+        },
+        "weighted_q4": {
+          "centered_rms_error": 0.6233124946510975,
+          "gold_id_logit": 20.0,
+          "margin_27_over_20353": 0.875,
+          "max_abs_error": 4.3515625,
+          "max_abs_score": 20.0,
+          "mean_logit_error": -0.599867182628242,
+          "non_bf16_expanded_f32_values": 0,
+          "probability_of_original_id": 0.5904333187395782,
+          "rms_error": 0.8650775125863109,
+          "score_rms": 1.748705662659276,
+          "sha256": "c23329ed3fff83d49e206f92057caec2c2ac71dcaf6e524f7dc93d4a8a36e723",
+          "source_to_native_next_token_kld": 0.125953174434451,
+          "top1_id": 27
+        }
+      },
+      "source_capture_sha256": "6be5428f247b616e76d79513b62873cf0238842999be2fb0848997f8ced25763",
+      "source_margin_27_over_20353": 0.875,
+      "source_max_abs_score": 23.0,
+      "source_probability_of_top1": 0.6939341227257515,
+      "source_row_sha256": "e649ef0638ff33b3bdaee946b285f5265359b2608b0a7381d1095d2e9ac467f9",
+      "source_score_rms": 1.96268809104249,
+      "source_top1_id": 27
+    }
+  },
+  "f32_model": false,
+  "model_downloaded": false,
+  "original_bootstrap_sha256": "5be2b05e993791fe0aa88a61be6ca3997ba7f78b33021091149d6862ff7acffe",
+  "partial_table": {
+    "completed_eos_unqualified": true,
+    "generated_ids_file_present": false,
+    "generated_text_file_present": false,
+    "last_row_argmax": 24,
+    "last_row_sha256": "c5a92397752ffceaadd2a5dd28d53cb1fdc7856e7b122937f57a998d6de5dae7",
+    "positions": [
+      0,
+      224
+    ],
+    "rows": 225
+  },
+  "posthoc_diagnostics_note": "Centered error and one-position source||native KLD describe this observed calibration only; not a selection threshold or comparable to publisher text40-chunk KLD.",
+  "reference_model_forward_executed": false,
+  "reference_source": "42e5ce6f9bc6bd01865ac4f21d2157c98d3475f1",
+  "remote_candidate": {
+    "bytes": 4030958240,
+    "file": "lighton-weighted-q4-results/lighton4b-q4k-external-text-imatrix-v1.gguf",
+    "head_request_unsupported_404": true,
+    "independently_rehashed_full_remote_model": false,
+    "producer_sha256": "65fcdbd4dfd331e9a48ace0cde086b980f4fb0a61d78555f8b7ef8157948f42f",
+    "provider_retention_expiry_exposed": false,
+    "range_magic_verified": "GGUF"
+  },
+  "schema": "lighton4b-weighted-q4-independent-consumer/v1",
+  "status": "passed-bounded-evidence-checks"
+}

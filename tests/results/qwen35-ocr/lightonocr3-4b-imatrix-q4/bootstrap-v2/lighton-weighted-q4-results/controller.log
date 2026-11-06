@@ -1,0 +1,29 @@
+Traceback (most recent call last):
+  File "/kaggle/working/lighton-weighted-q4-source/tools/ci-heavy/lighton4b_imatrix_q4_candidate.py", line 66, in run
+    try: code = active.wait(timeout=timeout)
+                ~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/subprocess.py", line 1281, in wait
+    return self._wait(timeout=timeout)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/subprocess.py", line 2078, in _wait
+    raise TimeoutExpired(self.args, timeout)
+subprocess.TimeoutExpired: Command '['/kaggle/working/lighton-weighted-q4-scratch/weighted-q4/build/lighton4b-native-document', '/kaggle/working/lighton-weighted-q4-results/lighton4b-q4k-external-text-imatrix-v1.gguf', '/kaggle/working/lighton-weighted-q4-scratch/weighted-q4/simple_table.rgb', '102', '200', '/kaggle/working/lighton-weighted-q4-scratch/weighted-q4/simple_table.teacher.ids', '/kaggle/working/lighton-weighted-q4-results/simple_table/weighted_q4_full/native', '256', '4', 'smoke']' timed out after 2700 seconds
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/kaggle/working/lighton-weighted-q4-source/tools/ci-heavy/lighton4b_imatrix_q4_candidate.py", line 158, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/kaggle/working/lighton-weighted-q4-source/tools/ci-heavy/lighton4b_imatrix_q4_candidate.py", line 151, in main
+    for case in ('arabic_printed_line','simple_table'):score(case,candidate,'weighted_q4_full',256)
+                                                       ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/lighton-weighted-q4-source/tools/ci-heavy/lighton4b_imatrix_q4_candidate.py", line 126, in score
+    require(np.all(arrays['attention_mask']==1),'source mask differs');run(case+'-'+arm+'-native',[build/'lighton4b-native-document',model,rgb,image.height,image.width,teacher,native,cap,4,'smoke'],env)
+                                                                       ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/lighton-weighted-q4-source/tools/ci-heavy/lighton4b_imatrix_q4_candidate.py", line 67, in run
+    except subprocess.TimeoutExpired: terminate()
+                                      ~~~~~~~~~^^
+  File "/kaggle/working/lighton-weighted-q4-source/tools/ci-heavy/lighton4b_imatrix_q4_candidate.py", line 60, in terminate
+    raise TimeoutError('bounded weighted-Q4 deadline')
+TimeoutError: bounded weighted-Q4 deadline
