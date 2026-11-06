@@ -7926,3 +7926,14 @@ Original prefix is`<figure`. Intermediate improvement does not qualify decoded
 quality; first-score RMS regresses. All gates remain default-off, with no speed,
 EOS/full-document, release or model-publication claim. Source-fed attention
 pooling65 differences and tiny GELU tails remain the next operator boundaries.
+
+Balanced [42165624595](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42165624595)
+passes atbf10b06d2: serial/parallel/parallel/serial wall111.21/82.38/84.06/116.36s,
+with all76 emitted stage/score/ID/text files byte-identical across all4 arms.
+Warm reverse pair116.36/84.06 yields1.38425 ratio; mean ratio1.36728. RSS remains
+about5.18GB, while parallel user/systemCPU increase. This supports the opt-in
+conversion scheduling on this worker; no full-document/general speed or quality
+qualification. Only1 teacher row and2 IDs per arm; original numerical failure
+is unchanged. The source-pin amendment preserves all historical receipt bytes,
+and the nonpthreadWASM path explicitly excludes thread launch. Default stays off.
+[Full balanced receipt](tests/results/qwen35-ocr/lightonocr3-4b-parallel-dequant/balanced-ab.json).
