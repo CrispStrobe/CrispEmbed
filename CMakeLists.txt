@@ -877,6 +877,8 @@ target_include_directories(test-no-repeat-ngram PRIVATE src)
 # presence-based inversion where `FOO=0` ENABLED the gate.
 add_executable(test-env-gate tests/test_env_gate.cpp)
 target_include_directories(test-env-gate PRIVATE src)
+add_executable(test-env-gate-words tests/test_env_gate_words.cpp)
+target_include_directories(test-env-gate-words PRIVATE src)
 
 # Metadata-only, no model allocation or inference admission. Consumes a hosted
 # schema derived from the immutable original LightOn4B checkpoint header.
