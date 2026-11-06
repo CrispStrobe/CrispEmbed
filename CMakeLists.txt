@@ -1761,3 +1761,7 @@ add_executable(test-lighton4b-gdn-out-q6-recipe tests/test_lighton4b_gdn_out_q6_
 target_link_libraries(test-lighton4b-gdn-out-q6-recipe PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-lighton4b-gdn-out-recipe tests/test_lighton4b_gdn_out_recipe.cpp)
 target_link_libraries(test-lighton4b-gdn-out-recipe PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Experimental native-HF weighted Q4KM-style schedule; metadata/shape controls only.
+add_executable(test-lighton4b-imatrix-q4km-recipe tests/test_lighton4b_imatrix_q4km_recipe.cpp)
+target_link_libraries(test-lighton4b-imatrix-q4km-recipe PRIVATE crispembed-qwen35-delta crispembed-core)

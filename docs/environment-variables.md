@@ -221,7 +221,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-461 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+462 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -684,6 +684,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_IMATRIX_Q4KM_Q6HEAD` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h`, `src/lighton4b_q6_policy.h` |  |
 | `CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
 | `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q8` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
 

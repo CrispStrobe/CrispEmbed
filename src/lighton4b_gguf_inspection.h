@@ -26,6 +26,7 @@ public:
     bool gdn_out_recipe_metadata_matches() const { return lighton4b_gdn_out_metadata_matches(metadata_); }
     bool gdn_out_q6_metadata_matches() const { return lighton4b_gdn_out_q6_metadata_matches(metadata_); }
     bool q6_profile_header() const { return lighton4b_q6_metadata(metadata_); }
+    bool imatrix_q4km_profile_header() const { return lighton4b_imatrix_q4km_metadata(metadata_); }
     static std::unique_ptr<lighton4b_gguf_inspection> open(const char * path) {
         if (!core_env::on("CRISPEMBED_LIGHTON4B_GGUF_INSPECTION") ||
             !core_env::on("CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER") ||
