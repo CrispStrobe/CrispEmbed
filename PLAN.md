@@ -2763,3 +2763,16 @@ unrelated jobs, steps and gates remain intact. Source files match the tested
 c7e6720ab tree, with compiled runtime hashes pinned to10d3/90d2. Calibration and
 logo evidence stay in PR157, including the remaining table/known-logo negatives.
 No additional model job, default/quality/release promotion or model-hub upload.
+
+
+### Independent upstream LightOn4B baseline prepared, not executed
+
+[Source review and bounded protocol](docs/lighton4b-independent-llama-baseline.md)
+pins llama.cpp6c01da627 and publisher8406c78c Q4_K_M/Q6_K/Q8_0 plus F16mmproj.
+One prospective hosted CPU worker runs same observed form/table/Arabic, cap256,
+greedy, exact source prompt-ID hash/geometry guards, immutable whole-file hashes,
+raw text/IDs/EOS/timing/RSS. No original BF16 rerun or untouched heldout. Upstream
+permuted/two-file weights and imatrix differ from CrispEmbed recipes; reported
+publisher text-only KLD/invoice results lack a full reproducible source receipt.
+9GiB available RAM/25GiB scratch guards and180-minute total bound; no dispatch
+before exact source/preflight review. No runtime/default/release/alias/new PR.
