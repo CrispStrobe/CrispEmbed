@@ -24,7 +24,7 @@ def retrieve_prefill(scratch,comparison,mixed_control=False):
  from kaggle.api.kaggle_api_extended import KaggleApi
  provider=KaggleApi();provider.authenticate()
  Get=KaggleApi.kernels_pull.__globals__['ApiGetKernelRequest'];List=KaggleApi.kernels_output.__globals__['ApiListKernelSessionOutputRequest']
- owner=os.environ['KAGGLE_ACCOUNT'];slug='lighton4b-bf16-mixed-first-score-v1' if mixed_control else 'lighton4b-bf16-targeted-original-cpu-prefill';urls={};token=None;pages=0
+ owner=os.environ['KAGGLE_ACCOUNT'];slug=('lighton4b-bf16-mixed-free-generation-v1' if mixed_control=='free' else 'lighton4b-bf16-mixed-first-score-v1') if mixed_control else 'lighton4b-bf16-targeted-original-cpu-prefill';urls={};token=None;pages=0
  with provider.build_kaggle_client() as client:
   req=Get();req.user_name=owner;req.kernel_slug=slug;req.version_label='v1';client.kernels.kernels_api_client.get_kernel(req)
   while True:
@@ -42,6 +42,14 @@ def retrieve_prefill(scratch,comparison,mixed_control=False):
    with urllib.request.urlopen(urls[name],timeout=120) as stream:raw=stream.read(maximum+1)
   except Exception:raise ValueError('bounded original prefill transfer failed') from None
   require(len(raw)<=maximum,'original prefill member byte bound');return raw
+ if mixed_control=='free':
+  prefix='bf16-mixed-freegen/quant-oracle/';raw=fetch(prefix+'oracle.json',8*2**20)
+  require(digest(raw)=='ed4ef1b60c41d4d3b2a131d107c2563ee971c931873202f5f470683ebb9a1d58','source mixed full receipt differs')
+  manifest=json.loads(raw);require(manifest['source_sha'].startswith('89eda20c6') and manifest['full_generation_completed'],'source mixed full status differs')
+  row=manifest['arms']['mixed']['scores'][33];score=fetch(prefix+row['file'],993280)
+  require(len(score)==993280 and digest(score)==row['sha256']=='50d0d71849e27db998d9014068af6d2ff27c39a49803f56c4f099476847fda9f','source mixed row33 differs')
+  (scratch/'source-mixed-row33.f32').write_bytes(score)
+  return manifest,score
  if mixed_control:
   prefix='bf16-mixed-first-score/quant-oracle/'
   raw=fetch(prefix+'oracle.json',8*2**20)
@@ -59,7 +67,7 @@ def retrieve_prefill(scratch,comparison,mixed_control=False):
  (scratch/'original-prefill.json').write_bytes(raw);(scratch/'original-first-score.f32').write_bytes(score)
  return manifest,score
 
-def main(full=False,parallel_ab=False,alternating=False):
+def main(full=False,parallel_ab=False,alternating=False,head_ab=False):
  require(os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','hosted portable smoke required')
  import numpy as np
  from PIL import Image
@@ -72,7 +80,7 @@ def main(full=False,parallel_ab=False,alternating=False):
  report={'schema':'lighton4b-corrected-mixed-native-smoke/v1','status':'failed','quality_qualified':False,'full_completion_executed':False,
   'source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'recipe':'lighton4b-q4k-mixers-q8-v1',
   'scope':('observed simple_form full177 teacher scores and independent greedy cap256; excluded from calibration/heldout qualification' if full else 'observed simple_form first-score/two-token runtime diagnostic; excluded from calibration/heldout qualification'),
-  'vision_gates':control.VISION_GATES,'disabled_gates':{'CRISPEMBED_LIGHTON4B_BF16_LINEAR':'0','CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2':'0','CRISPEMBED_LIGHTON4B_DIRECT_QUANT':'0','CRISPEMBED_QWEN35_WEIGHT_CACHE':'0','CRISPEMBED_QWEN35_PRECISE_RMS':'0','CRISPEMBED_QWEN35_IMATRIX':'0','CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT':'0'},
+  'vision_gates':control.VISION_GATES,'disabled_gates':{'CRISPEMBED_LIGHTON4B_BF16_LINEAR':'0','CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_AVX2':'0','CRISPEMBED_LIGHTON4B_DIRECT_QUANT':'0','CRISPEMBED_QWEN35_WEIGHT_CACHE':'0','CRISPEMBED_QWEN35_PRECISE_RMS':'0','CRISPEMBED_QWEN35_IMATRIX':'0','CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT':'0','CRISPEMBED_LIGHTON4B_HEAD_BF16':'0','CRISPEMBED_LIGHTON4B_GREEDY_TRACE':'0'},
   'rotary_table_sha256':TABLE_SHA,'complete_rotary_profile_sha256':PROFILE_SHA,'original_forward_executed':False}
  def run(label,argv,env=None):
   with (out/(label+'.log')).open('w') as log:subprocess.run([str(x)for x in argv],cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
@@ -80,6 +88,11 @@ def main(full=False,parallel_ab=False,alternating=False):
   report['preflight']={'memory':native.memory(),'load_average':os.getloadavg(),'swap':{k:v for k,v in (line.split(':',1)for line in Path('/proc/meminfo').read_text().splitlines()) if k in ('SwapTotal','SwapFree')},'scratch_free_bytes':shutil.disk_usage(scratch).free,'output_free_bytes':shutil.disk_usage(out).free}
   require(report['preflight']['memory']['available_bytes']>=10*1024**3 and report['preflight']['scratch_free_bytes']>=12*1024**3 and report['preflight']['output_free_bytes']>=2*1024**3,'guarded mixed smoke capacity unavailable')
   require(native.sha(ROOT/'src/lighton4b_rotary_table_data.inc')==TABLE_SHA and native.sha(ROOT/'tests/results/qwen35-ocr/lightonocr3-4b-complete-rotary-profile.json')==PROFILE_SHA,'complete corrected rotary table/proof differs')
+  if head_ab:
+   report['stage']='model-free-head-controls';builder=load('native_build_controls',ROOT/'tools/ci-heavy/lighton4b_native_document_build.py');builder.main();build=scratch/'native-document-build'
+   run('head-controls-build',['cmake','--build',build,'--target','test-lighton4b-head-bf16','--parallel','2'])
+   run('head-controls',[build/'test-lighton4b-head-bf16'])
+   require('HEAD_BF16 passed=1 source_row33_tie=1' in (out/'head-controls.log').read_text(),'head RNE/tie controls required before model acquisition')
   report['stage']='stage-immutable-mixed-artifact';model=mixed.stage_model(scratch,out);report['model']=mixed.MODEL
   with urllib.request.urlopen('https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/26fe41e35/tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture.json',timeout=60) as stream:raw=stream.read(1000001)
   require(digest(raw)==CAPTURE_SHA,'frozen independent BF16 completion differs');reference=json.loads(raw)
@@ -91,15 +104,23 @@ def main(full=False,parallel_ab=False,alternating=False):
   mixed_reference,mixed_logits=retrieve_prefill(scratch,comparison,True)
   report['independent_bf16_mixed']={'source_sha':mixed_reference['source_sha'],'report_sha256':'0e3139c884a82ee9f1e0c5c3cc9943911241ab6aeb6e17b8b5602c90563c07c0','first_score_sha256':digest(mixed_logits),'ids':mixed_reference['arms']['mixed']['ids']}
   require({k:v['sha256'] for k,v in mixed_reference['prepared_inputs'].items()}=={k:v['sha256'] for k,v in reference['prepared_inputs'].items()},'independent mixed prepared inputs differ')
-  report['stage']='build-corrected-native';builder=load('native_build',ROOT/'tools/ci-heavy/lighton4b_native_document_build.py');builder.main();build=scratch/'native-document-build'
+  if head_ab:
+   source_free,source_row33=retrieve_prefill(scratch,comparison,'free')
+   report['source_mixed_full']={'report_sha256':'ed4ef1b60c41d4d3b2a131d107c2563ee971c931873202f5f470683ebb9a1d58','source_sha':source_free['source_sha'],'row33_sha256':digest(source_row33),'ids':source_free['arms']['mixed']['ids'],'decoded':source_free['arms']['mixed']['decoded'],'eos_completed':source_free['arms']['mixed']['eos_completed']}
+  report['stage']='build-corrected-native';builder=load('native_build',ROOT/'tools/ci-heavy/lighton4b_native_document_build.py')
+  if not head_ab:builder.main()
+  build=scratch/'native-document-build'
   binary=build/'lighton4b-native-document';report['binary_sha256']=native.sha(binary)
   env=os.environ.copy();env.update({x:'1' for x in tuple(native.GATES)+tuple(control.VISION_GATES)})
   env.update(report['disabled_gates']);env['CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4']='1';report['enabled_gates']={x:env[x] for x in tuple(native.GATES)+tuple(control.VISION_GATES)+('CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4',)}
-  candidate=out/'mixed';candidate.mkdir();resource=out/'native-resources.txt';report['stage']='native-full177-greedy256' if full else 'native-first-score-two-token';start=time.monotonic()
-  report['requested_teacher_positions']=177 if full else 1;report['requested_generation_cap']=256 if full else 2
-  run('native',['/usr/bin/time','-q','-f','%U %S %e %M','-o',resource,binary,model,rgb,image.height,image.width,teacher,candidate,256 if full else 2,4,'full' if full else 'smoke'],env)
+  if head_ab:
+   env['CRISPEMBED_LIGHTON4B_GREEDY_TRACE']='1';env['CRISPEMBED_LIGHTON4B_GREEDY_TRACE_POSITION']='33'
+   report['scope']='same-worker head BF16 output dtype OFF/ON full independent greedy256, one teacher row each; observed form only, no heldout qualification'
+  candidate=out/'mixed';candidate.mkdir();resource=out/'native-resources.txt';report['stage']='native-full-greedy256' if (full or head_ab) else 'native-first-score-two-token';start=time.monotonic()
+  report['requested_teacher_positions']=177 if full else 1;report['requested_generation_cap']=256 if (full or head_ab) else 2
+  run('native',['/usr/bin/time','-q','-f','%U %S %e %M','-o',resource,binary,model,rgb,image.height,image.width,teacher,candidate,256 if (full or head_ab) else 2,4,'full' if full else 'smoke'],env)
   user,system,elapsed,rss=resource.read_text().strip().split();report['resources']={'wall_seconds':float(elapsed),'user_seconds':float(user),'system_seconds':float(system),'peak_rss_bytes':int(rss)*1024,'measured_seconds':time.monotonic()-start}
-  report['native_summary']=json.loads((candidate/'native-summary.json').read_text());require(report['native_summary']['teacher_positions']==(177 if full else 1) and report['native_summary']['cap']==(256 if full else 2),'bounded smoke scope differs')
+  report['native_summary']=json.loads((candidate/'native-summary.json').read_text());require(report['native_summary']['teacher_positions']==(177 if full else 1) and report['native_summary']['cap']==(256 if (full or head_ab) else 2),'bounded smoke scope differs')
   ids=lambda name:np.array([int(x)for x in (candidate/name).read_text().split()],dtype='<i8')
   prompt=ids('prompt.ids');values={'input_ids':prompt.reshape(1,-1),'image_grid_thw':ids('processor.grid.ids').reshape(1,3),'mm_token_type_ids':ids('modalities.ids').reshape(1,-1),'pixel_values':np.fromfile(candidate/'processor.patches.f32',dtype='<f4').reshape(560,1536),'attention_mask':np.ones((1,len(prompt)),dtype='<i8')};report['prepared_controls']={}
   for name,value in values.items():
@@ -118,6 +139,22 @@ def main(full=False,parallel_ab=False,alternating=False):
    require(all((candidate/f'teacher.{i}.logits.f32').stat().st_size==993280 for i in range(177)),'full177 teacher rows required')
    report['full_teacher_score_comparison_executed']=False
   report['artifacts']={p.name:{'bytes':p.stat().st_size,'sha256':native.sha(p)}for p in candidate.iterdir() if p.is_file()}
+  if head_ab:
+   with urllib.request.urlopen('https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/03138b363/tests/results/qwen35-ocr/lightonocr3-4b-corrected-mixed-full/native-report.json',timeout=60) as stream:previous=stream.read(2000001)
+   require(digest(previous)=='2853afb5518c283f6eea356208c7f034a3c7b2e1ed56bfe61b62eab757303ee8','prior full native baseline receipt differs')
+   previous=json.loads(previous);require(generated==previous['decoded']['ids'],'head-off baseline full IDs changed')
+   shared=[name for name in report['artifacts'] if name in previous['artifacts'] and name!='native-summary.json']
+   require(all(report['artifacts'][name]==previous['artifacts'][name] for name in shared),'head-off baseline shared stage/score artifact differs')
+   destination=out/'head-bf16';destination.mkdir();env['CRISPEMBED_LIGHTON4B_HEAD_BF16']='1';resource=out/'head-bf16-resources.txt';report['stage']='head-bf16-full-independent-greedy'
+   run('head-bf16-native',['/usr/bin/time','-q','-f','%U %S %e %M','-o',resource,binary,model,rgb,image.height,image.width,teacher,destination,256,4,'smoke'],env)
+   user,system,elapsed,rss=resource.read_text().strip().split();head_ids=[int(x)for x in (destination/'generated.ids').read_text().split()];head_text=(destination/'generated.txt').read_text();head_summary=json.loads((destination/'native-summary.json').read_text())
+   head_artifacts={p.name:{'bytes':p.stat().st_size,'sha256':native.sha(p)}for p in destination.iterdir() if p.is_file()}
+   invariant=[name for name in report['artifacts'] if name.startswith(('processor.','vision.','prefill.layer.','prefill.input.','prefill.positions.','prefill.norm.','text.embedded.'))]
+   require(all(head_artifacts[name]==report['artifacts'][name] for name in invariant),'head output dtype changed prefill hidden/vision/input')
+   gold=source_free['arms']['mixed']['ids']
+   def first_diff(a,b):return next((i for i,(x,y)in enumerate(zip(a,b))if x!=y),min(len(a),len(b))if len(a)!=len(b)else None)
+   report['head_bf16_ab']={'same_binary_model_inputs':True,'baseline_first':True,'head_gate_off':'0','head_gate_on':'1','trace_gate':'1','trace_position':33,'baseline_shared_artifacts_exact':shared,'controls_stdout':(out/'head-controls.log').read_text(),'off_ids':generated,'on_ids':head_ids,'on_text':head_text,'on_summary':head_summary,'source_mixed_ids':gold,'off_first_differing_id_vs_source_mixed':first_diff(generated,gold),'on_first_differing_id_vs_source_mixed':first_diff(head_ids,gold),'on_complete_ids_equal_source_mixed':head_ids==gold,'on_text_equal_source_mixed':head_text==source_free['arms']['mixed']['decoded'],'unchanged_prefill_artifacts':invariant,'on_artifacts':head_artifacts,'on_resources':{'wall_seconds':float(elapsed),'user_seconds':float(user),'system_seconds':float(system),'peak_rss_bytes':int(rss)*1024},'full_teacher_score_comparison_executed':False,'quality_qualified':False,'trace_position':33,'trace_same_source_prefix_off':generated[:33]==gold[:33],'trace_same_source_prefix_on':head_ids[:33]==gold[:33]}
+   report['full_completion_executed']=True
   if parallel_ab:
    require(not full,'bounded A/B requires smoke scope')
    parallel=out/'mixed-parallel';parallel.mkdir();env['CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT']='1';parallel_resource=out/'parallel-resources.txt'
@@ -142,8 +179,8 @@ def main(full=False,parallel_ab=False,alternating=False):
     report['parallel_dequant_ab']['order']=['serial','parallel','parallel','serial']
     report['parallel_dequant_ab']['cache_warmth_note']='first serial arm includes coldest model/cache state; compare warm reverse pair separately; one worker, no general performance claim'
 
-  report['status']='measured';report['full_completion_executed']=full
+  report['status']='measured';report['full_completion_executed']=full or head_ab
  except Exception as error:
   report['error_type']=type(error).__name__;report['error']='bounded corrected mixed smoke/control failed; inspect native/build/staging logs';raise RuntimeError(report['error'])from None
- finally:(out/('parallel-dequant-balanced-ab.json' if alternating else 'parallel-dequant-native-ab.json' if parallel_ab else 'corrected-mixed-full.json' if full else 'corrected-mixed-smoke.json')).write_text(json.dumps(report,indent=2)+'\n')
+ finally:(out/('head-bf16-native-ab.json' if head_ab else 'parallel-dequant-balanced-ab.json' if alternating else 'parallel-dequant-native-ab.json' if parallel_ab else 'corrected-mixed-full.json' if full else 'corrected-mixed-smoke.json')).write_text(json.dumps(report,indent=2)+'\n')
 if __name__=='__main__':main()

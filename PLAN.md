@@ -1769,3 +1769,21 @@ qualification. Only1 teacher row and2 IDs per arm; original numerical failure
 is unchanged. The source-pin amendment preserves all historical receipt bytes,
 and the nonpthreadWASM path explicitly excludes thread launch. Default stays off.
 [Full balanced receipt](tests/results/qwen35-ocr/lightonocr3-4b-parallel-dequant/balanced-ab.json).
+
+### Mixed full generation first differing token33
+
+Authenticated original-BF16 mixed and native mixed have identical33-token
+independent prefix. Source row33 has an exact top tie: IDs401/1778 both18.5;
+Torch argmax selects lower401. Native F32 logits are18.551120758/18.558383942,
+selecting1778 by0.007263184. Offline BF16 RNE maps both to18.5 and restores401.
+Row32 still picks68100; row33 RMS0.0299801/max0.136086/cosine0.9999511. This
+identifies an output dtype boundary sufficient for the first token difference,
+without attributing all residuals to it or claiming later/full parity.
+
+Next single hosted same-worker experiment tests HEAD_BF16 default-off against
+on with full independent greedy cap256 (one teacher row each), preserving exact
+original178-row mixed receipt and prior native156-ID EOS baseline. Model-free
+RNE/special-value/lowest-ID/source-row tests must pass before model acquisition.
+Selected step33 cached hidden/operator probes are test-only and their recomputed
+layer0 hidden must match actual forward bytes. No source weights, prompt, EOS,
+protocol budgets or existing gates change. Expected45–70min total,180min cap.
