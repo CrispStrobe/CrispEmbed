@@ -635,7 +635,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h` | else |
-| `CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_native_context.h` |  |
+| `CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_native_context.h`, `src/qwen35_linear.cpp` |  |
 | `CRISPEMBED_LIGHTON4B_QUANT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_model_owner.h`, `src/lighton4b_native_context.h` +2 | Converter stores all norms/biases in F32 in both F16 recipes. Frozen Q8/Q4 candidates protect every vision tensor as F32. |
 
 ### lighton4b_bf16_linear

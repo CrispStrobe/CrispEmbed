@@ -1907,3 +1907,11 @@ exception clearly labeled. Source must original BF16 or unquantized F16, never
 Q8→Q6 requantization. Model-free controls cover independent Q6 scalar decoding,
 actual projection/BF16 conversion and header/type negatives; one bounded hosted
 model-free build is next. No model job or quality claim before calibration review.
+
+
+Initial Q6 model-free42206305308 compiles all targets but fails control703:
+actual project_rows_cpu still rejects Q6 while full projection/dequant controls
+pass. The negative is retained. Both streamed projection and grouped-GDN type
+validators now gain the same default-off native Q6 admission, with explicit
+stream and synthetic grouped prefill/cached-decode equivalence tests. One bounded
+model-free retry follows; no checkpoint or calibration job is started.

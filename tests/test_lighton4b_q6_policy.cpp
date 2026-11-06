@@ -89,8 +89,45 @@ static int run(int argc, char ** argv) {
     check(project_rows_cpu(q6, hidden.data(), 256, 3, 2, 31, rows) && project_rows_cpu(f32, hidden.data(), 256, 3, 2, 31, ref) && rows == ref);
     std::vector<uint8_t> after(storage.size()); ggml_backend_tensor_get(q6, after.data(), 0, after.size()); check(after == storage);
     gate("CRISPEMBED_LIGHTON4B_Q6_K", "0"); check(tensor_floats(q6, got.data(), 1) && got == raw);
+    check(!project_rows_cpu(q6, hidden.data(), 256, 3, 2, 31, rows) && rows.empty());
+    // Actual grouped-GDN Q6 projection, prefill and immutable-cache decode.
+    auto * grouped = ggml_init({65536, nullptr, true});
+    linear_weights w;
+    w.qkv = ggml_new_tensor_2d(grouped, GGML_TYPE_Q6_K, 256, 32);
+    auto * qkv_ref = ggml_new_tensor_2d(grouped, GGML_TYPE_F32, 256, 32);
+    w.z = ggml_new_tensor_2d(grouped, GGML_TYPE_F32, 256, 16);
+    w.a = ggml_new_tensor_2d(grouped, GGML_TYPE_F32, 256, 2);
+    w.b = ggml_new_tensor_2d(grouped, GGML_TYPE_F32, 256, 2);
+    w.out = ggml_new_tensor_2d(grouped, GGML_TYPE_F32, 16, 256);
+    w.conv = ggml_new_tensor_3d(grouped, GGML_TYPE_F32, 4, 1, 32);
+    w.a_log = ggml_new_tensor_1d(grouped, GGML_TYPE_F32, 2);
+    w.dt_bias = ggml_new_tensor_1d(grouped, GGML_TYPE_F32, 2);
+    w.norm = ggml_new_tensor_1d(grouped, GGML_TYPE_F32, 8);
+    auto * grouped_buffer = ggml_backend_alloc_ctx_tensors(grouped, backend); check(grouped_buffer != nullptr);
+    ggml_backend_tensor_set(w.qkv, storage.data(), 0, 32 * 210);
+    ggml_backend_tensor_set(qkv_ref, raw.data(), 0, 32 * 256 * 4);
+    for (auto * t : {w.z, w.a, w.b, w.out, w.conv, w.a_log, w.dt_bias, w.norm}) {
+        std::vector<float> values(size_t(ggml_nelements(t)));
+        for (size_t i = 0; i < values.size(); ++i) values[i] = t == w.norm ? 1.0f : t == w.a_log ? -1.0f : float(int(i % 7) - 3) / 1024;
+        ggml_backend_tensor_set(t, values.data(), 0, values.size() * 4);
+    }
+    auto reference = w; reference.qkv = qkv_ref;
+    std::vector<float> small(512); for (size_t i = 0; i < small.size(); ++i) small[i] = hidden[i] / 65536;
+    gate("CRISPEMBED_QWEN35_GDN_GROUPED_HEADS", "1"); gate("CRISPEMBED_LIGHTON4B_Q6_K", "1"); gate("CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS", "0");
+    projected_linear_outputs actual_core, expected_core;
+    check(linear_grouped_cpu(w, 1, small.data(), 1, 2, 2, nullptr, nullptr, actual_core) &&
+          linear_grouped_cpu(reference, 1, small.data(), 1, 2, 2, nullptr, nullptr, expected_core));
+    check(actual_core.qkv == expected_core.qkv && actual_core.attention == expected_core.attention && actual_core.core.state == expected_core.core.state && actual_core.core.conv_history == expected_core.core.conv_history);
+    const auto saved_state = actual_core.core.state, saved_conv = actual_core.core.conv_history;
+    projected_linear_outputs decode, decode_ref;
+    check(linear_grouped_cpu(w, 1, small.data() + 256, 1, 1, 2, saved_conv.data(), saved_state.data(), decode) &&
+          linear_grouped_cpu(reference, 1, small.data() + 256, 1, 1, 2, expected_core.core.conv_history.data(), expected_core.core.state.data(), decode_ref));
+    check(decode.attention == decode_ref.attention && decode.core.state == decode_ref.core.state && actual_core.core.state == saved_state && actual_core.core.conv_history == saved_conv);
+    gate("CRISPEMBED_LIGHTON4B_Q6_K", "0");
+    check(!linear_grouped_cpu(w, 1, small.data(), 1, 2, 2, nullptr, nullptr, decode) && decode.qkv.empty() && decode.core.state.empty());
+    ggml_backend_buffer_free(grouped_buffer); ggml_free(grouped);
     ggml_backend_buffer_free(buffer); ggml_backend_free(backend); ggml_free(ctx);
-    std::printf("Q6_POLICY passed=1 checks=%d q6_matrices=32 q8_tied_head=1 independent_dequant=1 synthetic_values=65792 storage_unchanged=1 model_payload=0\n", checks);
+    std::printf("Q6_POLICY passed=1 checks=%d q6_matrices=32 q8_tied_head=1 independent_dequant=1 synthetic_values=65792 grouped_q6_prefill_decode=1 storage_unchanged=1 model_payload=0\n", checks);
     return 0;
 }
 int main(int argc, char ** argv) { core_util::clean_exit(run(argc, argv)); }
