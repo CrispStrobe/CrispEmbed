@@ -1,0 +1,121 @@
+{
+  "base_container": {
+    "bytes": 4030957952,
+    "file": "lightonocr3-4b-q4_k-vision-f32.gguf",
+    "repository": "cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
+    "revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+    "sha256": "f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91"
+  },
+  "calibration_only": {
+    "actual_eos_or_cap_reported": true,
+    "baseline_calibration_report_sha256": "ee94f2a3428648d83a70a53dcb5bfdfd5793630a3d0a98c7a823f82e6c5bd9ac",
+    "baseline_first_score_must_match_before_candidate_measured": true,
+    "baseline_native_source": "26e6ae6635648a09bdbb9ede19705c3e31271260",
+    "candidate_only_gate": "Q6_K=1 and MIXED_GDN_OUT_Q6=1; frozen Q8out uses MIXED_GDN_OUT_Q8=1",
+    "cases": [
+      "simple_table",
+      "arabic_printed_line"
+    ],
+    "fixed_gates": {
+      "BF16_LINEAR": 0,
+      "BF16_QUANT_WEIGHTS": 0,
+      "HEAD_BF16": 1,
+      "PARALLEL_DEQUANT": 1
+    },
+    "frozen_protocol_sha256": "3a1738c26cf5a34680fea1468bea07c06ee26659f7ddb7e249299677746ba36d",
+    "heldout_capture_or_labels_read": false,
+    "input_manifest_sha256": "a07af76028a0d53c8bfc0ccafedac348eaeb725c8c8c55e3136906f202b8f65d",
+    "max_new_tokens_per_arm": 1,
+    "original_batch_json_read": false,
+    "plain_q4_first_score_sha256": {
+      "arabic_printed_line": "823de94f5bb8e96a32d33fd9382c7f7d62e436181bad60276c5f238d655625e2",
+      "simple_table": "74786da3f763d3aafeea14954a06e80b291d340005ffc413d804e71a21071a57"
+    },
+    "q8_out_first_score_sha256": {
+      "arabic_printed_line": "872b068945f36ed03eefa0702cb069e2468f816c7afdea66ae051196a3710082",
+      "simple_table": "36ac34bfd85aa13290e40668b1c61f97f361d6df7526941584a6a7d2fe154500"
+    },
+    "quality_qualified": false,
+    "same_worker_same_binary_ab": true,
+    "teacher_rows_per_arm": 1
+  },
+  "conversion": {
+    "candidate_byte_ceiling": 4097000000,
+    "copied_payloads": 699,
+    "copied_protected_f32": 474,
+    "copied_q4": 224,
+    "copied_q8_tied_embedding_head": 1,
+    "direct_original_bf16_to_q6_tensors": 24,
+    "extra_payload_bytes": 64880640,
+    "f32_model": false,
+    "independent_decoder": "gguf==0.19.0 + numpy==2.3.5; all24 Q6 dequantized-to-BF16 hashes match native",
+    "max_chunk_elements": 65536,
+    "native_admission": "separate24 policy/metadata/grouped-output controls must pass before model dispatch",
+    "requantization": false,
+    "source_sha_oracle": "03119ea4d0fbbf5cc86b91f80b47bbda22d90b417d89dd0c16b8fafa1a85a89b"
+  },
+  "converter_controls": {
+    "independent_q6_bf16_exact": true,
+    "independent_quantizer_exact": true,
+    "model_payload_bytes": 0,
+    "neighbor_bytes_unchanged": true,
+    "run": 42210897150,
+    "source": "0dfb61534ca6c0b759406c925f0bd936b580d882",
+    "status": "passed",
+    "synthetic_values": 65792,
+    "wrong_source_sha_rejected": true
+  },
+  "original_checkpoint": {
+    "bytes": 9078620536,
+    "repository": "lightonai/LightOnOCR-3-4B",
+    "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+    "sha256": "6b0dab74a2dab02d5b10ca56322255024ed8dca35c02746b42e9f296aaeb4e67"
+  },
+  "output_policy": "candidate and raw first scores remotely retained90days with full SHA receipts; no model-hub publication, registry alias or release",
+  "pending_before_model_dispatch": [
+    "hosted separate24-Q6 and preserved32 controls pass",
+    "review source and32GiBshared/28GiBscratch/8GiBoutput resource gates"
+  ],
+  "q8_out": {
+    "archive_bytes": 3858198504,
+    "archive_sha256": "8072676afb687ee4ed39e17d34f585690c3cbbce567ca8d4caa18f0d112181a1",
+    "artifact_id": 13497191104,
+    "model_bytes": 4156787616,
+    "model_sha256": "40e54560ed349c077100c4e39276d29c02b98d6bec3611ac7b3a88d5a771c710",
+    "source": "26e6ae6635648a09bdbb9ede19705c3e31271260"
+  },
+  "recipe": "lighton4b-q4k-gdn-out-q6-v1",
+  "resource_guards": {
+    "build_parallel": 2,
+    "case_expected_input_tokens": {
+      "arabic_printed_line": 82,
+      "simple_table": 86
+    },
+    "case_expected_patches": {
+      "arabic_printed_line": 272,
+      "simple_table": 288
+    },
+    "checkpoint_and_base_clean_cache_advice_before_native": true,
+    "concurrency": 1,
+    "conservative_python_header_working_bytes": 536870912,
+    "conversion_threads": 1,
+    "expected_four_large_files_bytes_ceiling": 21365000000,
+    "large_files_never_downloaded_to_shared_workspace": true,
+    "maximum_conversion_chunk_working_bytes": 2097152,
+    "maximum_metadata_read_bytes": 67108864,
+    "maximum_raw_copy_chunk_bytes": 4194304,
+    "minimum_cgroup_hard_margin_bytes": 2147483648,
+    "minimum_effective_ram_before_conversion_bytes": 8589934592,
+    "minimum_effective_ram_before_native_case_bytes": 8589934592,
+    "minimum_separate_output_free_bytes": 8589934592,
+    "minimum_separate_scratch_free_bytes": 30064771072,
+    "minimum_shared_filesystem_free_bytes": 34359738368,
+    "model_job_deadline_minutes": 90,
+    "preferred_worker": "one GitHub-hosted CPU worker; Kaggle32GiB alternative only if needed, not parallel",
+    "threads": 4,
+    "worker_deadline_minutes": 90,
+    "workflow_timeout_including_setup_upload_minutes": 110
+  },
+  "schema": "lighton4b-q6-conversion-calibration-plan/v1",
+  "status": "prepared-not-dispatched"
+}

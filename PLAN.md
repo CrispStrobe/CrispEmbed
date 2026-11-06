@@ -1953,3 +1953,25 @@ prepared but not dispatched. Native threads4 preserve the retained26e6 baseline
 controls. It reads individual calibration captures only, never batch/heldout
 outputs, and requires exact plain-Q4 first-score hashes before each Q6 measurement.
 Resource/source review and queue coordination are the remaining dispatch gates.
+
+
+### Separate24-output Q6 calibration lane, no heldout
+
+The preserved32-Q6 recipe remains distinct. The new
+[fixed24-output plan](docs/lighton4b-gdn-out-q6-v1.json) restores only recurrent
+GDN output matrices directly from hash-pinned original BF16, copying699 original
+Q4-container payloads byte-exact including the Q8 tied embedding/head. Strict
+custom metadata and default-off Q6 capability plus GDN-output gates protect it.
+Hosted model-free controls42218056668 are pending; initial local exact-name,
+metadata serialization, protected recipe, header and calibration-transfer controls
+pass. No checkpoint job has been dispatched.
+
+The [three-arm protocol](docs/lighton4b-gdn-out-q6-conversion-protocol-v1.json)
+compares plainQ4, authenticated retainedQ8-output and freshQ6-output using only
+table/Arabic first scores, one teacher row and one independent generated token.
+Both retained baseline score hashes must match before each new Q6 measurement.
+It requires32GiB shared disk or28GiB scratch plus8GiB output,8GiB effective RAM
+and2GiB cgroup margin; direct conversion buffers remain bounded and no F32
+model is constructed. Candidate and raw rows stay remotely90days. This is
+calibration of a named custom policy, not heldout, EOS, full decode or release
+qualification, and no model-hub upload is authorized.
