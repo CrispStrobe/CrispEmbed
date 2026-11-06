@@ -1755,3 +1755,8 @@ add_executable(test-lighton4b-gdn-out-q6-recipe tests/test_lighton4b_gdn_out_q6_
 target_link_libraries(test-lighton4b-gdn-out-q6-recipe PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-lighton4b-gdn-out-recipe tests/test_lighton4b_gdn_out_recipe.cpp)
 target_link_libraries(test-lighton4b-gdn-out-recipe PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Closed physical-weight audit only; never linked into production libraries.
+add_executable(lighton4b-upstream-dequant-audit EXCLUDE_FROM_ALL tools/lighton4b_upstream_dequant_audit.cpp)
+target_include_directories(lighton4b-upstream-dequant-audit PRIVATE src)
+target_link_libraries(lighton4b-upstream-dequant-audit PRIVATE ggml)

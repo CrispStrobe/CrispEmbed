@@ -1991,3 +1991,14 @@ initial fixture failures remain in PR157 evidence. No production inference sourc
 changes, new model, default/quality/release promotion or GitHub dispatch. A future
 weighted plainQ4 candidate remains separately gated on exact fresh-source/unweighted
 f873 reproduction,248 actual vector applications and all protected-byte checks.
+
+### Physical upstream Q4_K_M native import audit predeclared
+
+[The bounded audit](docs/lighton4b-upstream-physical-import.md) freezes all426
+physical→native name/shape/type mappings, pinned publisher/native quantized files,
+full249 native/independent dequant hashes and177 scalar-transform comparisons.
+128-wide GDN V-head inverse columns cross256-value quant blocks, so a lossless
+candidate must retain out blocks and reorder activations; whole-row QKV/Z/a/b
+copies remain possible. No image-specific fit, requantization or full F32 model.
+One authorized Kaggle CPU metadata/operator job only, RAM/disk guards before
+transfers, no inference; preserve all negatives before runtime import design.
