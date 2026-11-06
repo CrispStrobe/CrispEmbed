@@ -21,6 +21,14 @@ inline int lighton4b_dequant_workers(ggml_type type, size_t count, int threads) 
 #endif
 }
 inline bool lighton4b_parallel_dequant(ggml_type type, const uint8_t * raw, size_t count, int threads, float * target) {
+#if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
+    (void)type;
+    (void)raw;
+    (void)count;
+    (void)threads;
+    (void)target;
+    return false;
+#else
     const int workers = lighton4b_dequant_workers(type, count, threads);
     if (workers < 2 || !raw || !target) return false;
     const size_t block = size_t(ggml_blck_size(type)), bytes = ggml_type_size(type);
@@ -46,5 +54,6 @@ inline bool lighton4b_parallel_dequant(ggml_type type, const uint8_t * raw, size
     // No launched writer survives before serial overwrite after resource failure.
     if (fallback) convert(raw, target, int64_t(count));
     return true;
+#endif
 }
 } // namespace qwen35_ocr
