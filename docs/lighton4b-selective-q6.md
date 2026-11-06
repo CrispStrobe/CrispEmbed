@@ -1,6 +1,8 @@
 # Default-off LightOn4B selective Q6 candidate
 
-The generic projection engine already dequantizes Q6_K. LightOn4B previously
+The generic full-matrix projection engine already dequantizes Q6_K. Its streamed
+row projection and grouped-GDN projection validators still excluded Q6, as did
+the LightOn4B owner. LightOn4B previously
 rejected it at its narrower, exact owner/recipe boundary because only Q8, plain
 Q4 and attention-Q8/FFN-Q4 layouts had been declared. This candidate adds a
 separate native opt-in, `CRISPEMBED_LIGHTON4B_Q6_K=1`; old recipe admission and
@@ -67,3 +69,13 @@ native runner and preflight, plus the old native/mixed/BF16-weight controls.
 No actual Q6 checkpoint, calibration, held-out case or EOS result has run yet.
 A model job remains blocked on the current calibration decision; no default,
 release, model alias or upload is authorized by this structural test.
+
+
+The first hosted model-free build42206305308 compiled every target, then failed
+control703 at the actual streamed Q6 projection. All preceding independent raw
+Q6 decoder and full projection controls passed. That exposed the narrower stream
+whitelist; inspection found the equivalent grouped-GDN whitelist. Both routes
+now require the same explicit LightOn native Q6 gate, preserving legacy rejection
+when it is off. The retry adds actual synthetic grouped-GDN prefill and cached
+decode equivalence against independent F32 dequantized weights, plus gate-off
+rejection and immutable cache controls. The initial failed receipt is retained.
