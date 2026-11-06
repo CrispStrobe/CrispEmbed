@@ -2654,3 +2654,20 @@ not a controlled speed comparison. PR155 head90d2 was reverified; policies stay
 default-off. No heldout, release/model alias, new reference forward, full F32
 model, cap waiver or further model job. Remaining original-table disagreement
 and Arabic probability regression remain explicit limits.
+
+
+### Fixed-Q6 observed-logo diagnostic: decoded disagreement unchanged
+
+[Post-selection42230729575](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42230729575)
+atc7e6720ab preserves the frozen24-output83e065 candidate. [Full negative evidence](docs/lighton4b-q6-logo-post-selection.md)
+records Q6 returning exactly prior Q4/Q8 `A`, IDs32/248046, primary EOS/no cap,
+versus the65-ID BF16 caption: CER215/216=.995370, WER37/38=.973684.700 controls,
+70-hash table anchor, actual154-token/560-patch input admission and36 protected
+logo stage hashes pass. Q6 first-score RMS.593816 (Q8.597031/Q4.643224) and
+original-ID probability.091132 do not repair output. Layer0 Q6/Q8 RMS.001250457,
+max.01825738 and magnitudes are retained, with163.11s/4.585GB peak RSS. Raw arrays
+remain90days in artifact13510375701. This case was already observed: explicitly
+post-selection, not clean heldout or representative handwritten-letter OCR.
+No recipe change, quality/default/release promotion, F32 model or new reference
+forward. Next bounded work is source/tool integration for reproducible BF16→Q6
+conversion and the tested closed harnesses in existing PR155; evidence stays PR157.
