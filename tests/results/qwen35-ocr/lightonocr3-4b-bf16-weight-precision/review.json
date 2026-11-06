@@ -37,5 +37,11 @@
   "speed_claim": false,
   "scope": "genuine mixed-reference fixed operator inputs with identical effective Q4FFN/sharedQ8 embedding/head weights; not composed normal decode",
   "transport": "Selected ZIP members CRC and SHA verified through26003 range bytes; archive digest service-declared; rawarrays/models retained remotely",
-  "wasm_policy": "Conservative __EMSCRIPTEN__ mode OFF; standalone simulated-preprocessor guard passes in42200784414, not an actualWASM runtime qualification."
+  "wasm_policy": "Conservative __EMSCRIPTEN__ mode OFF; standalone simulated-preprocessor guard passes in42200784414, not an actualWASM runtime qualification.",
+  "controls_artifact": {
+    "id": 13492657475,
+    "archive_bytes": 301842911,
+    "archive_service_sha256": "0bb92a667ae7faac773ef9d8f6d7945049a6193d554a4a7f46bc6e4fc23677e5",
+    "full_synthetic_negative_receipt_sha256": "2270df5166935f5a03c88515ee4777d1ea4555ee66052de3b6a607dd9dca1f6a"
+  }
 }
