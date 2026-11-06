@@ -2492,3 +2492,14 @@ exist, and F32-dequant versus BF16-rounded parameter representations remain
 separate. All three source-profile failures and the measured AMD/Intel split are
 retained. Next is complete read-only archival and, only if authorized, one
 observer-neutral same-prefix172-token stage replay; no new inference is dispatched.
+
+
+The read-only [Q4 archival consumer42192667516](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42192667516)
+finishes with expected numerical failure and reportstatus`compared`: actualRef
+controls pass, all172 shared-causal rows fail retained budgets, and all256 source
+rows plus172 native rows are remotely preserved90days in artifact13491795001.
+No inference runs. RMS is nonmonotonic: row0=.02672002, row125=.49875835
+(max3.03125, cosine.98704768, samewinningID), row171=.03414869
+(max.203125, firstIDdifference). These are retained numerical negatives, not
+uniformly small residuals. Future observer-neutral attribution should capture125
+and171 with actual inputs/weights; no hidden/operator arrays exist at either row.

@@ -1,0 +1,4 @@
+STAGE stage passed=1 finite=1 count=2560 max_abs=0 mean_abs=0 rms=0 row_cos=1 ref_norm=50.5964432 native_norm=50.5964432
+DOCUMENT_DIFF passed=1 stages=1 first=none inference_executed=0
+crispembed_diff: loaded 1 tensors from /home/runner/work/_temp/step33-scratch/source.gguf
+crispembed_diff: loaded 1 tensors from /home/runner/work/_temp/step33-scratch/native.gguf
