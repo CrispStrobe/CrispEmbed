@@ -2503,3 +2503,19 @@ No inference runs. RMS is nonmonotonic: row0=.02672002, row125=.49875835
 (max.203125, firstIDdifference). These are retained numerical negatives, not
 uniformly small residuals. Future observer-neutral attribution should capture125
 and171 with actual inputs/weights; no hidden/operator arrays exist at either row.
+
+## 6 November: GDN projection-class screen measured
+
+[Eight-arm42191354208](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42191354208)
+completes table/Arabic calibration only. Table first-score RMS Q4/QKV/Z/a+b/out/
+GDN/mixers+down/fullQ8 is0.706260/0.668973/0.698002/0.707848/0.616934/
+0.642260/0.558216/0.0712989; Arabic0.364631/0.348032/0.357053/0.364840/
+0.352079/0.336366/0.256652/0.0394947. QKV/Z/out restore table's two-tokenprefix;
+a+b does not and slightly worsens both RMS values. Output-only24 adds125829120
+bytes and is best table singleclass,while QKV is best Arabic singleclass.
+All16strict original score gates fail; heldout/fullEOS untested. Controls248donor/
+475protected plus5inputs/case pass; repeated264/264 score/block hashes match
+prior panel. [Evidence](docs/lighton4b-gdn-projection-sensitivity.md) retains
+all32 stages,magnitudes,hashes,timing and90-day remote arrays. A separately named,
+fixed Q4_K+24GDNoutputQ8 exploratory recipe can next receive complete calibration
+output comparison; it is notQ4_K_M and does not qualify a model/default/release.
