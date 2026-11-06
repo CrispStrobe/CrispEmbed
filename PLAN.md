@@ -1893,3 +1893,17 @@ The gate stays default-off, with immutable quant storage, bounded transient
 weight/row/tile conversion and cached-mode toggle rejection. All historical
 source pins/negative evidence remain unchanged.
 [Full measured receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-weight-precision/native-smoke.json).
+
+
+### Default-off exact selective Q6 LightOn4B candidate
+
+User-requested Q6 support is prepared separately from the running calibration
+source. [The candidate](docs/lighton4b-selective-q6.md) gates Q6 ownership and
+native admission behind`CRISPEMBED_LIGHTON4B_Q6_K`, an exact custom marker,
+UINT32 M-header15 and full32Q6/216Q4/1Q8 layout. The tied Q8 output and474F32
+protected tensors remain explicit; old recipes stay unchanged. Selection follows
+pinned llama.cpp value-family/FFN-down higher-bit layers, with the Q8 tied-head
+exception clearly labeled. Source must original BF16 or unquantized F16, never
+Q8→Q6 requantization. Model-free controls cover independent Q6 scalar decoding,
+actual projection/BF16 conversion and header/type negatives; one bounded hosted
+model-free build is next. No model job or quality claim before calibration review.

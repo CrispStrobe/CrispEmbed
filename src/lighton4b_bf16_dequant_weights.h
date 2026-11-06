@@ -1,6 +1,7 @@
 #pragma once
 #include "core/env_gate.h"
 #include "ggml.h"
+#include "lighton4b_q6_policy.h"
 #include <cstddef>
 #include <cstring>
 #include <initializer_list>
@@ -20,7 +21,8 @@ inline bool lighton4b_bf16_dequant_weights_mode() {
 #endif
 }
 inline bool lighton4b_bf16_dequant_weights_enabled(const ggml_tensor * source) {
-    if (!source || (source->type != GGML_TYPE_Q8_0 && source->type != GGML_TYPE_Q4_K) ||
+    if (!source || (source->type != GGML_TYPE_Q8_0 && source->type != GGML_TYPE_Q4_K &&
+                    !(source->type == GGML_TYPE_Q6_K && lighton4b_q6_enabled())) ||
         !lighton4b_bf16_dequant_weights_mode())
         return false;
     const char * name = ggml_get_name(source);
