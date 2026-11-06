@@ -9,7 +9,7 @@ def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def main():
  require(Path('/kaggle/working').is_dir()and Path('/kaggle/input').is_dir(),'Kaggle CPU only; no GitHub workflow dispatch')
  require(not list(Path('/dev').glob('nvidia[0-9]*')),'model-free CPU controls only')
- out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH']);build=scratch/'release-q6-head-build'
+ out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH']);build=Path(os.environ.get('HEAVY_EXISTING_BUILD',str(scratch/'release-q6-head-build')))
  r={'schema':'lighton4b-release-q6-head-controls/v1','status':'failed','source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'execution_host':'kaggle-cpu','model_payload_bytes':0,'model_forward_executed':False,'quantization_executed':False,'quality_qualified':False,'current_q4_shipping_approved':False,'gate_or_alias_promoted':False}
  def run(label,args):
   with(out/(label+'.log')).open('w')as f:subprocess.run(list(map(str,args)),cwd=ROOT,stdout=f,stderr=subprocess.STDOUT,check=True)
