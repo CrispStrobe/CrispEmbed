@@ -85,22 +85,22 @@ class FullOracle(base.Oracle):
         self.save()
         for i,score in enumerate(result.scores):
             value=score.detach().cpu().float().contiguous().numpy();require(value.shape==(1,248320)and np.isfinite(value).all(),'complete finite free-generation scores required')
-            raw=value.astype('<f4').tobytes();name=f'mixed.scores-{i:03d}.f32';(self.out/name).write_bytes(raw)
+            raw=value.astype('<f4').tobytes();name=f"{self.p.get('output_prefix','mixed')}.scores-{i:03d}.f32";(self.out/name).write_bytes(raw)
             records.append({'position':i,'file':name,'shape':[1,248320],'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest()})
             if i==0:first=value.copy()
             if i%16==0:self.save()
         require(sum(r['bytes']for r in records)<=self.p['maximum_score_bytes']and records[0]['sha256']==self.p['mixed_first_score_sha256'],'full score budget or frozen mixed first-score anchor differs')
         id_bytes=(''.join(str(i)+'\n'for i in ids)).encode();text_bytes=text.encode()
-        (self.out/'mixed.ids').write_bytes(id_bytes);(self.out/'mixed.txt').write_bytes(text_bytes)
+        (self.out/(self.p.get('output_prefix','mixed')+'.ids')).write_bytes(id_bytes);(self.out/(self.p.get('output_prefix','mixed')+'.txt')).write_bytes(text_bytes)
         a=baseline.reshape(-1).astype(np.float64);b=first.reshape(-1).astype(np.float64);e=b-a;cos=float(a@b/(np.linalg.norm(a)*np.linalg.norm(b)))
         self.report['arms']['mixed']={'ids':ids,'decoded':text,'scores':records,'parameter_dtype':'bfloat16','all_scores_finite':True,
             'forward_counts':counts,'seconds':time.monotonic()-started,'generation_cap':cap,'eos_completed':ids[-1]==248046,'cap_hit':ids[-1]!=248046 and length==cap,
             'stop':'eos'if ids[-1]==248046 else'max_tokens','decoded_utf8_sha256':hashlib.sha256(text_bytes).hexdigest(),
-            'decoded_file':{'file':'mixed.txt','bytes':len(text_bytes),'sha256':hashlib.sha256(text_bytes).hexdigest()},
-            'ids_file':{'file':'mixed.ids','bytes':len(id_bytes),'sha256':hashlib.sha256(id_bytes).hexdigest()},
+            'decoded_file':{'file':self.p.get('output_prefix','mixed')+'.txt','bytes':len(text_bytes),'sha256':hashlib.sha256(text_bytes).hexdigest()},
+            'ids_file':{'file':self.p.get('output_prefix','mixed')+'.ids','bytes':len(id_bytes),'sha256':hashlib.sha256(id_bytes).hexdigest()},
             'vs_original_bf16':{'max_abs':float(np.abs(e).max()),'rms':float(np.sqrt(np.mean(e*e))),'cosine':cos,'strict_pass':bool(np.abs(e).max()<=self.p['max_abs']and cos>=self.p['min_cos'])},
             'vs_original_full_decoded':decoded_agreement(self.original_full['original_generated_ids'],self.original_full['original_decoded'],ids,text),
-            'vs_native_full_decoded':decoded_agreement(self.native['decoded']['ids'],self.native['decoded']['text'],ids,text)}
+            'vs_native_full_decoded':decoded_agreement(self.native['decoded']['ids'],self.native['decoded']['text'],ids,text)if self.native is not None else None}
         self.report.update(mixed_first_score_bit_exact=True,full_generation_completed=True,native_numerical_score_comparison='deferred to read-only consumer; no artifact credential in original worker')
         self.report.pop('full_generation_partial',None)
         self.save();minimal=types.SimpleNamespace(sequences=result.sequences.detach().clone(),scores=(result.scores[0].detach().clone(),))

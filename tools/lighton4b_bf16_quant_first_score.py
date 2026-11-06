@@ -50,6 +50,13 @@ def validate_inventory(parsed,plan,recipe):
 
 def mixed_selection(protocol,plan):
     """A predeclared architectural partition, never inferred from measured scores."""
+    if protocol.get('plain_q4_full') is True:
+        wanted={name:'q4_k'for name,row in plan.items()if row['quantized']}
+        names=sorted(wanted)
+        require(protocol['plain_q4_names']==names and hashlib.sha256(('\n'.join(names)+'\n').encode()).hexdigest()==protocol['plain_q4_names_sha256'],'plain Q4 complete name map differs')
+        require(protocol['candidate_order']==['q4_k']and set(protocol['candidates'])=={'q4_k'}and protocol['expected_forward_arms']==2 and protocol['max_chunk_elements']==65536,'plain Q4 bounded one-file contract differs')
+        require(protocol['exploratory_mechanism_only']and not protocol['held_out_calibration']and not protocol['architecture_quality_selection'],'plain Q4 mechanism-only contract differs')
+        return wanted
     policy=protocol.get('mixed_policy')
     if policy is None:return None
     wanted={name:('q4_k'if '.mlp.'in name else 'q8_0')for name,row in plan.items()if row['quantized']}
@@ -168,7 +175,7 @@ class Oracle:
             require(hashlib.sha256(stream.getbuffer()).hexdigest()==self.p['input_sha256'][name],'frozen prepared input differs: '+name)
         raw=(self.original_root/'tests/fixtures/lightonocr3-4b-source/model.safetensors.header.json').read_bytes();require(len(raw)==89456 and hashlib.sha256(raw).hexdigest()==HEADER_SHA,'frozen723-source header differs')
         header=json.loads(raw);plan=tensor_plan(header);selection=mixed_selection(self.p,plan);installed={};params=dict(model.named_parameters(remove_duplicate=False));self.model_guard(model,params,header,torch)
-        if selection is not None:self.report.update(exploratory_mechanism_only=True,held_out_calibration=False,mixed_policy=self.p['mixed_policy'],candidate_order=self.p['candidate_order'])
+        if selection is not None:self.report.update(exploratory_mechanism_only=True,held_out_calibration=False,mixed_policy=self.p.get('mixed_policy'),plain_q4_full=self.p.get('plain_q4_full',False),candidate_order=self.p['candidate_order'])
         identities={name:(id(params[name]),params[name].data_ptr())for name in header if name!='__metadata__'}
         self.stage('source-bf16-tensor-census');source_hashes={name:bits_hash(params[name],torch)for name in identities}
         self.report['original_bf16_tensor_sha256']=source_hashes

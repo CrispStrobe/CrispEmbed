@@ -1760,3 +1760,18 @@ head-only/nonhead invariance on identical prefixes and recordsmags/earliestfailu
 No modelinference/acquisition. One20min read-only job can retainall178source rows
 andrawpairedstages90days in sameartifact, no modelpayload. Threeprovenance
 negativecontrols pass; no dispatch before complete nativeidentityreview.
+
+
+### Bounded unchanged-file Q4 BF16 source mechanism baseline
+
+The one-position genuine BF16 Q4 oracle already reverses the first token to20353;
+corrected native full generation is independently running in42183620520. The
+next source-only worker uses the unchanged immutable Q4 file, all249 effective
+BF16 parameter hashes from the retained first-score receipt,474 protected
+original tensors, tied head and exact official/Q4 first-score anchors. It records
+independent greedy generation through actual EOS or256 tokens and every score
+hash. There are no Q8 overrides, F32 model, new gold or held-out qualification.
+The [fixed protocol](docs/lighton4b-bf16-plain-q4-freegen-v1.json) and model-free
+admission/corruption checks precede one bounded CPU worker; decoded agreement
+against corrected native requires both completed receipts. Precision sensitivity
+selection belongs to a separate predeclared calibration-only experiment.
