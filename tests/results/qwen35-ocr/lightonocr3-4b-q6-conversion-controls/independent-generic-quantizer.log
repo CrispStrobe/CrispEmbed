@@ -1,0 +1,7 @@
+GGUF general.file_type=18 (standard header, opt-in); tensor encoding unchanged
+Loading model from '/mnt/heavy/scratch/synthetic-f32.gguf'
+Writing quantized model to '/mnt/heavy/scratch/synthetic-q6-reference.gguf'
+[  1/  1] l.layers.0.mlp.down_proj.weight               -    f32, quantizing to q6_K... 0.3 MB -> 0.1 MB
+
+1 quantized, 0 kept
+0 MB -> 0 MB (4.9x compression)

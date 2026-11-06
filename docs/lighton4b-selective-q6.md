@@ -107,10 +107,13 @@ all32 native Q6 decoded-BF16 hashes against the independent gguf decoder.
 
 The source checkpoint, base and new candidate total at most17,306,578,488 bytes.
 Require27GiB free shared filesystem space and8GiB effective RAM before transfer;
-conversion buffers stay below2MiB. Builds and native temporary outputs need extra
+row-quantization buffers stay below2MiB; raw copies use4MiB and header cloning
+reads at most64MiB, with a conservative512MiB transient Python allowance.
+Builds and native temporary outputs need extra
 space within that guard. Before each first-score run, advise clean checkpoint/base
 pages away and recheck8GiB effective RAM plus2GiB cgroup hard margin. One worker,
-two threads and a90-minute deadline are proposed. The shared workspace does not
+serial quantization/build parallelism2, native threads4 (matching baseline controls)
+and a90-minute worker deadline are proposed. The shared workspace does not
 have the required disk headroom and must never receive these large files.
 
 Only the fixed calibration table/Arabic captures and their first score are read.
@@ -120,5 +123,31 @@ Baseline and Q6 use the same binary/worker/gates, with baseline first-score hash
 required to match retained calibration controls before measuring the new candidate.
 One-token scores are diagnostic; no completion or decoded-quality claim follows.
 Held-out captures/labels remain in the separate lane. The model job is not yet
-dispatched: synthetic converter controls, a closed calibration-only worker and
-resource/source review remain required first.
+dispatched: resource/source review remains required first. The closed calibration-only worker
+and model-free converter controls are now prepared separately.
+
+
+The [model-free converter proof42210897150](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42210897150)
+passes:65,792 framed BF16 values cross the65,536-value chunk boundary; output
+matches the existing quantizer supplied an independent F32 fixture, and native
+versus independent gguf decoded-BF16 hashes match. Neighbor bytes are unchanged
+and a wrong original BF16 source hash is rejected. No checkpoint/model runs.
+The [receipt](../tests/results/qwen35-ocr/lightonocr3-4b-q6-conversion-controls/q6-conversion-controls.json)
+and artifact13497839615 are retained90 days.
+
+A complete closed worker is prepared at`tools/ci-heavy/lighton4b_q6_candidate.py`.
+It reads only the two individual calibration receipts, five prepared inputs per
+case and their first-score vectors; it never downloads the original batch JSON.
+The exact future dispatch (not executed) is:
+
+```sh
+gh workflow run heavy-cpu.yml --ref audit/lighton4b-q6-conversion-20261106   -f script=tools/ci-heavy/lighton4b_q6_candidate.py   -f runner=ubuntu-latest -f build_mode=portable -f pip= -f args=
+```
+
+Only the dedicated Q6 job can run; generic model jobs are excluded. Its fixed
+worker deadline is90 minutes, with110 minutes total CI allowance for setup and
+artifact upload. Native uses four threads to match the retained baseline hashes;
+build parallelism is2 and conversion is serial. The frozen calibration images
+have86/82 input tokens and288/272 patches. Candidate tensors/scores/audits remain
+remote for90 days, with no model-hub upload, alias, default or release change.
+Dispatch still awaits resource/source review and queue coordination.

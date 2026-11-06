@@ -1944,3 +1944,12 @@ helper and existing quantizer, compare a65,792-value synthetic BF16 stream again
 an independently supplied F32 GGUF quantization, verify neighbor bytes/chunk tail,
 wrong-source-hash rejection and independent gguf BF16 decode. No checkpoint or
 candidate file is downloaded/generated; all such dispatch remains pending review.
+
+
+The bounded model-free converter42210897150 passes all synthetic source/header/
+chunk-tail/independent-quantizer/independent-BF16 checks. The closed one-worker
+actual conversion/first-score script and dedicated read-only-auth workflow are
+prepared but not dispatched. Native threads4 preserve the retained26e6 baseline
+controls. It reads individual calibration captures only, never batch/heldout
+outputs, and requires exact plain-Q4 first-score hashes before each Q6 measurement.
+Resource/source review and queue coordination are the remaining dispatch gates.
