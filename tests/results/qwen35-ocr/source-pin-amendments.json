@@ -285,6 +285,23 @@
             "bf5a1611d00e6c0d661b0b65ef37adfb598f7cc0 quantize: opt-in CRISPEMBED_QUANTIZE_JOSEV_POLICY named mixed Q4_K policies + recipe-equivalence test"
           ],
           "reason": "PR #131 merged with main: adds the opt-in MiniCPM-OCR policy table (CRISPEMBED_QUANTIZE_MINICPM_POLICY, minicpm_ocr sources and q8_0 base only) next to the Unlimited-OCR-2/Josev/qwen2vl policies; no rule applies to qwen35_ocr and default quantizer output is unchanged"
+        },
+        {
+          "from_sha256": "329fe07257325720652b5a8ed395fa21d281d6045a8fa8acfbe823d69e35f5e9",
+          "to_sha256": "12e1f1e958226a40628af46d80660b02d09cade63c40849cef0e4006aa762f47",
+          "to_blob": "f5eaee6b2ef2b1dbca7586a89e1a337a70e30e6c",
+          "recorded_at_commit": "d49f0a7eeeab2d2dca232814f3803357bbc61c76",
+          "recorded": "2026-11-06",
+          "changed_by": [
+            "d49f0a7eeeab2d2dca232814f3803357bbc61c76 Prepare closed native-HF weighted Q4KM-style Q6-head recipe [skip ci]",
+            "b461a5aeebfc16e9f25966b4808d1eebaa0b330c Add strict dense LightOn imatrix adapter and payload-free checks [skip ci]",
+            "d5b946992de85f81ff5fc78718f982a650faee6c Merge remote-tracking branch 'origin/main' into tmpm",
+            "89c81129769b767b4e003df613a0a02eb200b047 Merge origin/main (union of quantizer policy blocks)",
+            "452737b9feaeb5e141e2efea49ed409d65d3f049 unlimited-ocr2 Q4_K: CUDA v2 receipts, final policies (v1 = q4kne, shared8_v1 = q4kns), Q4_K_MIX publication recipe, docs",
+            "a44590b78ca0ed9ea43e5cb98cc085bd8db14d79 unlimited-ocr2 Q4_K: round-2 CPU receipts, Kaggle T4 CUDA receipts, experts policy, publisher cosine gate and per-recipe source",
+            "384a7048d54ca1338f8d70ad9fc1545972cd322d unlimited-ocr2: opt-in unlimited_ocr2_q4k_v1 quantizer policy (pending round-2 measurement), CUDA kernel, policy test"
+          ],
+          "reason": "Explicit closed LightOn4B native-HF imatrix Q4KM-style flag requires exact unquantized source SHA and adapted248-vector profile, forces216Q4/33Q6 including tiedhead, stamps actual248 application count and validates every named type before atomic publication. Default flag-off quantizer and old recipes remain unchanged; quality not promoted and no frozen receipt rewrite."
         }
       ]
     }
