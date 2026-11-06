@@ -59,7 +59,7 @@ def retrieve_prefill(scratch,comparison,mixed_control=False):
  (scratch/'original-prefill.json').write_bytes(raw);(scratch/'original-first-score.f32').write_bytes(score)
  return manifest,score
 
-def main(full=False,parallel_ab=False):
+def main(full=False,parallel_ab=False,alternating=False):
  require(os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('CRISPEMBED_BUILD_MODE')=='portable','hosted portable smoke required')
  import numpy as np
  from PIL import Image
@@ -128,8 +128,22 @@ def main(full=False,parallel_ab=False):
    same=parallel_artifacts==report['artifacts']
    report['parallel_dequant_ab']={'same_source_binary_model_inputs':True,'serial_first':True,'cache_warmth_not_controlled':True,'gate':'CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT','serial_gate':'0','parallel_gate':'1','all_emitted_artifacts_byte_exact':same,'parallel_artifacts':parallel_artifacts,'parallel_resources':{'wall_seconds':float(elapsed),'user_seconds':float(user),'system_seconds':float(system),'peak_rss_bytes':int(rss)*1024},'wall_speed_ratio':report['resources']['wall_seconds']/float(elapsed),'full_completion_executed':False,'quality_qualified':False}
    require(same,'parallel conversion changed actual emitted stages/scores/IDs/text')
+   if alternating:
+    repeats=[]
+    for index,value in enumerate(['1','0']):
+     destination=out/('repeat-'+str(index));destination.mkdir();env['CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT']=value;resources=out/('repeat-'+str(index)+'-resources.txt')
+     report['stage']='balanced-order-'+str(index);before={'load_average':os.getloadavg(),'memory':native.memory()}
+     run('repeat-'+str(index),['/usr/bin/time','-q','-f','%U %S %e %M','-o',resources,binary,model,rgb,image.height,image.width,teacher,destination,2,4,'smoke'],env)
+     user,system,elapsed,rss=resources.read_text().strip().split()
+     artifacts={p.name:{'bytes':p.stat().st_size,'sha256':native.sha(p)}for p in destination.iterdir() if p.is_file()}
+     equal=artifacts==report['artifacts'];repeats.append({'gate':value,'wall_seconds':float(elapsed),'user_seconds':float(user),'system_seconds':float(system),'peak_rss_bytes':int(rss)*1024,'artifacts':artifacts,'all_emitted_artifacts_byte_exact':equal,'before':before,'after':{'load_average':os.getloadavg(),'memory':native.memory()}})
+     report['parallel_dequant_ab']['balanced_repeats']=repeats
+     require(equal,'balanced-order conversion changed native artifact bytes')
+    report['parallel_dequant_ab']['order']=['serial','parallel','parallel','serial']
+    report['parallel_dequant_ab']['cache_warmth_note']='first serial arm includes coldest model/cache state; compare warm reverse pair separately; one worker, no general performance claim'
+
   report['status']='measured';report['full_completion_executed']=full
  except Exception as error:
   report['error_type']=type(error).__name__;report['error']='bounded corrected mixed smoke/control failed; inspect native/build/staging logs';raise RuntimeError(report['error'])from None
- finally:(out/('parallel-dequant-native-ab.json' if parallel_ab else 'corrected-mixed-full.json' if full else 'corrected-mixed-smoke.json')).write_text(json.dumps(report,indent=2)+'\n')
+ finally:(out/('parallel-dequant-balanced-ab.json' if alternating else 'parallel-dequant-native-ab.json' if parallel_ab else 'corrected-mixed-full.json' if full else 'corrected-mixed-smoke.json')).write_text(json.dumps(report,indent=2)+'\n')
 if __name__=='__main__':main()

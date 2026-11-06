@@ -1751,3 +1751,10 @@ strictly failing (RMS0.284899447); no full decoded/quality qualification. Candid
 remains separate/default-off; no additional job. Full receipts preserve exact
 model/source/table/reference pins in
 [the A/B report](tests/results/qwen35-ocr/lightonocr3-4b-parallel-dequant/native-ab.json).
+
+The next single controlled worker runs conversion gate order0,1,1,0 (two
+opposite-order pairs), sharing one immutable model/build/prepared input and
+requiring every emitted artifact to remain byte-identical. Per-arm GNU time,
+RSS and repeated-arm load/cgroup memory are retained. Warm reverse-pair timing
+is reported separately from the coldest first arm. Default-off integration
+waits for these checks; no additional matrix or full-document rerun.

@@ -88,6 +88,17 @@
             "52caee899795a724b9e7e1e59a3e0d641af65586 Add gated grouped-head OCR components and original reference CI"
           ],
           "reason": "The integrated LightOn4B prototype adds separately gated Q8/Q4 row-streamed vocabulary projection and permits grouped projection matrices only with explicit LIGHTON4B_QUANT plus QWEN35_QUANT. The existing matrix_type_supported, tensor_floats, project_cpu and linear_cpu bodies are byte-identical to main. The new row path requires STREAM_PROJECTION; grouped paths require their existing default-off gate. Scoped clang18 formatting changes no arithmetic. Original receipts, old default paths, budgets and negative outcomes remain unchanged; no composed quality or release qualification follows."
+        },
+        {
+          "from_sha256": "da0734e9eab94064dba1d9940483a358364d3c8c8f1c9b4739a3d2bf9108b212",
+          "to_sha256": "de8e90adac93e487778cef2fce5405fb78869e2b9304c216305ad30d2c122afe",
+          "to_blob": "785d0270d3f33461145f283967e581bf8cdb3657",
+          "recorded_at_commit": "35cf71ec1616c128f7079356a3b24d57521f52a6",
+          "recorded": "2026-11-06",
+          "changed_by": [
+            "35cf71ec1616c128f7079356a3b24d57521f52a6 Gate block-aligned Q8/Q4 conversion scheduling"
+          ],
+          "reason": "Separate default-off LIGHTON4B_PARALLEL_DEQUANT dispatch uses unchanged independent block converters; legacy quant admission and F32 matmul stay unchanged, no persistent full-model F32 cache. Hosted42164147108 proves48 byte-equality/boundary/gate cases; actual same-binary/model42164504290 proves all76 emitted native files byte-identical at gate0/1. Timing is order-confounded and decoded coverage is only2prefixIDs, so no speed/general quality/default qualification. Original receipt bytes/source pins and numerical failures remain unchanged."
         }
       ]
     },
