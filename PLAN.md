@@ -1787,3 +1787,16 @@ and audit are retained. One retry explicitly caps ATen, MKL and oneDNN dispatch
 to the previously observed AVX2 profile, captures actual CPU/backend metadata
 before forward and retains both exact official/Q4 anchors. The original worker
 omitted CPU ISA metadata, so hardware drift remains an inference pending replay.
+
+
+The explicitly AVX2-capped retry also rejects the same02ca259b… original row
+before any quantized streaming. It records AMD EPYC7B12, AVX2, identical Torch
+gitcf30153…, MKL2024.2/oneDNN3.12, two threads and one interop thread; ISA caps
+alone do not restore the frozena4 row. Both raw failed receipts remain retained.
+One [distinct AMD-profile diagnostic](docs/lighton4b-bf16-plain-q4-amd-diagnostic-v1.json)
+uses the twice-repeated02ca row as its explicit original anchor, retains the
+unchanged249 Q4 effective weights and474 protected tensors, and records whether
+the actual Q4 first row matches olde59 without treating a backend mismatch as
+frozen parity. This is a separate reference profile, never a substitution for
+frozen official/mixed evidence. It captures the full independent output through
+EOS/cap for the same-weight native comparison; all original strict gates remain.

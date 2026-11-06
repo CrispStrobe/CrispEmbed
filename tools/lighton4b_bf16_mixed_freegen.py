@@ -60,6 +60,9 @@ class FullOracle(base.Oracle):
         except Exception:
             self.report.update(status='blocked',error='small immutable full-generation evidence authentication failed');self.save();raise
 
+    def check_first_score(self,record):
+        require(record['sha256']==self.p['mixed_first_score_sha256'],'frozen mixed first-score anchor differs')
+
     def forward(self,label,model,inputs,processor,torch,np,baseline=None):
         if label=='original':return super().forward(label,model,inputs,processor,torch,np,baseline)
         require(label=='mixed'and self.report['mixed_final_bf16_parameter_sha256']==self.previous['mixed_final_bf16_parameter_sha256'],'all249 mixed effective BF16 weights must match previous oracle')
@@ -89,7 +92,8 @@ class FullOracle(base.Oracle):
             records.append({'position':i,'file':name,'shape':[1,248320],'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest()})
             if i==0:first=value.copy()
             if i%16==0:self.save()
-        require(sum(r['bytes']for r in records)<=self.p['maximum_score_bytes']and records[0]['sha256']==self.p['mixed_first_score_sha256'],'full score budget or frozen mixed first-score anchor differs')
+        require(sum(r['bytes']for r in records)<=self.p['maximum_score_bytes'],'full score budget differs')
+        self.check_first_score(records[0])
         id_bytes=(''.join(str(i)+'\n'for i in ids)).encode();text_bytes=text.encode()
         (self.out/(self.p.get('output_prefix','mixed')+'.ids')).write_bytes(id_bytes);(self.out/(self.p.get('output_prefix','mixed')+'.txt')).write_bytes(text_bytes)
         a=baseline.reshape(-1).astype(np.float64);b=first.reshape(-1).astype(np.float64);e=b-a;cos=float(a@b/(np.linalg.norm(a)*np.linalg.norm(b)))
@@ -101,7 +105,7 @@ class FullOracle(base.Oracle):
             'vs_original_bf16':{'max_abs':float(np.abs(e).max()),'rms':float(np.sqrt(np.mean(e*e))),'cosine':cos,'strict_pass':bool(np.abs(e).max()<=self.p['max_abs']and cos>=self.p['min_cos'])},
             'vs_original_full_decoded':decoded_agreement(self.original_full['original_generated_ids'],self.original_full['original_decoded'],ids,text),
             'vs_native_full_decoded':decoded_agreement(self.native['decoded']['ids'],self.native['decoded']['text'],ids,text)if self.native is not None else None}
-        self.report.update(mixed_first_score_bit_exact=True,full_generation_completed=True,native_numerical_score_comparison='deferred to read-only consumer; no artifact credential in original worker')
+        self.report.update(mixed_first_score_bit_exact=records[0]['sha256']==self.p['mixed_first_score_sha256'],full_generation_completed=True,native_numerical_score_comparison='deferred to read-only consumer; no artifact credential in original worker')
         self.report.pop('full_generation_partial',None)
         self.save();minimal=types.SimpleNamespace(sequences=result.sequences.detach().clone(),scores=(result.scores[0].detach().clone(),))
         del result;gc.collect();return minimal,first
