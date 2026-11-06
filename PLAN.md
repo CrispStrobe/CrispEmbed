@@ -1922,3 +1922,15 @@ BF16 controls and native/preflight builds retained. Initial negative42206305308
 remains preserved. Guarded Q6 support is ready for scoped PR155 integration;
 actual candidate conversion/calibration remains pending the current recipe review.
 No Q6 model job has run.
+
+
+### Integrated default-off24-output Q6 and verified Q8 native admission
+
+PR155 selectively incorporates tested source10d3fad88 owner/typed metadata/profile
+selection/preflight and the700/112-check C++ fixtures, preserving old713-check32-Q6
+and all earlier gates. Exact635be5d9 ancestry and currentmain were verified first;
+no conversion worker or reference probe is added to runtime artifacts. See
+[native policy details](docs/lighton4b-gdn-output-native-policies.md). Hosted
+42218056668 and actual42219710049 supply the unchanged-source controls. No default,
+registry, release, EOS or full-decoded-quality promotion: separate calibration
+full generation remains pending; PR157 retains all score negatives and provenance.

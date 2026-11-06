@@ -1745,3 +1745,9 @@ target_include_directories(test-lighton4b-bf16-weight-wasm-guard PRIVATE src ggm
 # Default-off LightOn4B selective Q6 metadata/owner and independent scalar dequant controls.
 add_executable(test-lighton4b-q6-policy tests/test_lighton4b_q6_policy.cpp)
 target_link_libraries(test-lighton4b-q6-policy PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Separate default-off24 GDN output policies; preserved32-Q6 remains above.
+add_executable(test-lighton4b-gdn-out-q6-recipe tests/test_lighton4b_gdn_out_q6_recipe.cpp)
+target_link_libraries(test-lighton4b-gdn-out-q6-recipe PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-lighton4b-gdn-out-recipe tests/test_lighton4b_gdn_out_recipe.cpp)
+target_link_libraries(test-lighton4b-gdn-out-recipe PRIVATE crispembed-qwen35-delta crispembed-core)
