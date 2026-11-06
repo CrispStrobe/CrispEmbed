@@ -1,4 +1,5 @@
 #include "qwen35_linear.h"
+#include "lighton4b_parallel_dequant.h"
 #include "qwen35_math.h"
 #include "qwen35_profile.h"
 #include "qwen35_weight_cache.h"
@@ -68,7 +69,9 @@ bool tensor_floats(ggml_tensor * source, float * target, int threads) {
     const size_t count = size_t(ggml_nelements(source));
     if (source->type == GGML_TYPE_F32)
         std::memcpy(target, raw.data(), count * sizeof(float));
-    else {
+    else if (lighton4b_parallel_dequant(source->type, raw.data(), count, threads, target)) {
+        // Same converted F32 values; existing validation and matmul are unchanged.
+    } else {
         const auto convert = ggml_get_type_traits(source->type)->to_float;
 #if !defined(__EMSCRIPTEN__) || defined(__EMSCRIPTEN_PTHREADS__)
         const int workers = source->type == GGML_TYPE_F16 ? f16_conversion_workers(count, threads) : 1;

@@ -1724,3 +1724,6 @@ if(LIGHTON4B_ROTARY_TABLE_GENERATED_DIR)
     target_include_directories(lighton4b-rotary-table-profile PRIVATE ${LIGHTON4B_ROTARY_TABLE_GENERATED_DIR})
     target_link_libraries(lighton4b-rotary-table-profile PRIVATE crispembed-qwen35-delta crispembed-core)
 endif()
+
+add_executable(test-lighton4b-parallel-dequant tests/test_lighton4b_parallel_dequant.cpp)
+target_link_libraries(test-lighton4b-parallel-dequant PRIVATE crispembed-qwen35-delta crispembed-core)

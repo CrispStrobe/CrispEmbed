@@ -1721,3 +1721,14 @@ model, original BF16 source and independent mixed BF16 first row. All prepared
 input/29 vision-stage controls remain mandatory. Expected CPU duration60–100min;
 180min cap, retained failure diagnostics, no new PR or broad CI. The first-row
 comparison does not substitute for the subsequent complete177-row replay.
+
+### Bounded parallel quantized conversion candidate
+
+A separate default-off candidate schedules existing Q8_0/Q4_K dequantization
+on complete block boundaries, retaining the original converters, F32 matmul,
+quant admission gates and bounded transient allocations. First acceptance is
+48 model-free serial/parallel byte-equality cases, uneven partitions, boundary
+sentinels and explicit-off/type/size/quant-gate controls on hosted CPU. No full
+model F32 cache or decoded-quality claim. Only after these pass may one bounded
+actual same-input A/B measure timing and score/decoded equality. Historical
+run sources, receipts and the rejected direct-quant branch remain unchanged.

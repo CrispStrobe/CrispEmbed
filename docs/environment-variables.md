@@ -1486,3 +1486,10 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `VIT_EMBED_FORCE_CPU` | value | unset | int | tuning / config | `src/vit_embed.cpp` | Load weights — prefer GPU backend when available |
 
 <!-- END GENERATED: tools/list_env_vars.py -->
+
+`CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT=1` enables experimental block-aligned
+Q8_0/Q4_K conversion scheduling (maximum8 workers, minimum262144 elements).
+The existing `CRISPEMBED_QWEN35_QUANT` gate remains required. Converted F32 values
+and downstream matmul stay unchanged; no full-model converted-weight cache is
+allocated. Unset/empty/0, one thread, small tensors and other types use legacy
+conversion. Thread-launch failure joins writers before serial overwrite.
