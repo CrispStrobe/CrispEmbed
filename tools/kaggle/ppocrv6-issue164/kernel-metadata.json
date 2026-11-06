@@ -1,6 +1,6 @@
 {
   "id": "${KAGGLE_ACCOUNT}/crispembed-ppocrv6-issue164",
-  "title": "CrispEmbed PP-OCRv6 issue 164 CUDA parity",
+  "title": "crispembed-ppocrv6-issue164",
   "code_file": "kernel.py",
   "language": "python",
   "kernel_type": "script",

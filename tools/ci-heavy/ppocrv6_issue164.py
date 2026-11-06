@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import shlex
+import socket
 import subprocess
 import time
 import urllib.request
@@ -117,7 +118,7 @@ def main():
                '-DGGML_BLAS=OFF', '-DGGML_OPENMP=OFF', '-DGGML_METAL=OFF', '-DGGML_VULKAN=OFF']
     options += shlex.split(os.environ.get('CMAKE_EXTRA', '-DGGML_CUDA=OFF'))
     call(['cmake', '-S', ROOT, '-B', build, *options])
-    call(['cmake', '--build', build, '--parallel', '2', '--target', 'test-ppocrv6-det-policy', 'test-ppocrv6-det-live'])
+    call(['cmake', '--build', build, '--parallel', '2', '--target', 'test-ppocrv6-det-policy', 'test-ppocrv6-det-live', 'crispembed-server'])
     call([build / 'test-ppocrv6-det-policy'])
     image_root = SCRATCH / 'images'
     image_root.mkdir(exist_ok=True)
@@ -227,6 +228,59 @@ def main():
                 a = np.fromfile(dirs['compare'] / f'{index}-{graph}.bin', dtype=np.float32)
                 b = np.fromfile(dirs['compare'] / (f'{index}-{cpu}.bin' if cpu else f'{index}-prob.bin'), dtype=np.float32)
                 report['comparisons'].append({'mode':'compare_stages','case':index,'stage':graph,'metrics':metrics(a,b)})
+        # Exercise the reporter's actual HTTP route in one long-lived context per mode.
+        server_rows = {}
+        report['server'] = {}
+        for mode in ('default', 'both'):
+            env = {k: v for k, v in os.environ.items() if k not in keys}
+            env.update(modes[mode], CRISPEMBED_PPOCRV6_DET_BENCH='1',
+                       CRISPEMBED_PPOCRV6_DET_GPU='1' if DEVICE == 'gpu' else '0')
+            if DEVICE == 'cpu': env['CRISPEMBED_PPOCRV6_FORCE_CPU'] = '1'
+            with socket.socket() as sock:
+                sock.bind(('127.0.0.1', 0))
+                port = sock.getsockname()[1]
+            logfile = OUT / ('server-' + mode + '.stderr.txt')
+            with logfile.open('w') as log:
+                process = subprocess.Popen([str(build / 'crispembed-server'), '--host', '127.0.0.1', '--port', str(port),
+                    '--ocr-pipeline', '--ocr-engine', 'ppocrv6', '--ocr-det', str(models['det']), '--ocr-rec', str(models['rec']),
+                    '--image-root', str(image_root), '-t', '2'], cwd=ROOT, env=env, stdout=log, stderr=log)
+                try:
+                    base = f'http://127.0.0.1:{port}'
+                    for attempt in range(120):
+                        if process.poll() is not None: raise RuntimeError(f'server {mode} exited: {process.returncode}')
+                        try:
+                            with urllib.request.urlopen(base + '/health', timeout=2) as response:
+                                if response.status == 200: break
+                        except (OSError, TimeoutError): time.sleep(0.5)
+                    else: raise RuntimeError(f'server {mode} did not start')
+                    server_rows[mode] = []
+                    for path in paths:
+                        request = urllib.request.Request(base + '/ocr/pipeline', data=json.dumps({'image': str(path)}).encode(),
+                                                         headers={'Content-Type': 'application/json'})
+                        with urllib.request.urlopen(request, timeout=300) as response:
+                            server_rows[mode].append(json.load(response))
+                finally:
+                    process.terminate()
+                    try: process.wait(timeout=15)
+                    except subprocess.TimeoutExpired:
+                        process.kill(); process.wait()
+            logtext = logfile.read_text()
+            benches = re.findall(r'\[ppocrv6-det-bench\] preprocess_ms=([0-9.]+) graph_ms=([0-9.]+) total_ms=([0-9.]+) boxes=(\d+) accepted=([01])', logtext)
+            accepted = [int(row[4]) for row in benches]
+            builds = logtext.count('persistent GGML detector graph ready')
+            report['server'][mode] = {'responses': server_rows[mode], 'accepted': accepted, 'graph_builds': builds}
+            assert accepted == ([0, 1, 0, 0, 1, 0] if mode == 'default' else [1] * 6), (mode, accepted)
+            assert builds == (1 if mode == 'default' else 4), (mode, builds)
+            if DEVICE == 'gpu': assert 'persistent GGML detector graph ready (CUDA' in logtext
+        for baseline, candidate in zip(server_rows['default'], server_rows['both']):
+            assert baseline['text'] == candidate['text'] and baseline['n_regions'] == candidate['n_regions'], (baseline, candidate)
+            assert len(baseline['results']) == len(candidate['results'])
+            for a, b in zip(baseline['results'], candidate['results']):
+                assert a['text'] == b['text']
+                def converted(row):
+                    x1, y1, x2, y2 = row['bbox']
+                    return {'geometry': [x1, y1, x2-x1, y2-y1]}
+                assert boxes_iou(converted(a), converted(b)) >= 0.90, (a, b)
         report['passed'] = True
     finally:
         (OUT / 'report.json').write_text(json.dumps(report, indent=2, allow_nan=False) + '\n')
