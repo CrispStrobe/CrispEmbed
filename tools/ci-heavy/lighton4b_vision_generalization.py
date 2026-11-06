@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """One hosted vision-only diagnostic on four frozen cases; no decoder or gold rewrite."""
 import hashlib, importlib.util, json, os, shutil, struct, subprocess, sys, time, urllib.request
+from importlib.metadata import version
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 def require(ok,message):
@@ -22,6 +23,7 @@ def main():
   require(mem['MemAvailable']>=10*1024**3 and report['preflight']['free_bytes']>=16*1024**3,'capacity guard')
   import numpy as np, torch
   from PIL import Image
+  require(version('kaggle')=='2.2.2' and version('six')=='1.17.0','retained transport dependency pins')
   from kaggle.api.kaggle_api_extended import KaggleApi
   import transformers.models.qwen3_5.modeling_qwen3_5 as source
   from transformers.models.qwen3_5.configuration_qwen3_5 import Qwen3_5VisionConfig

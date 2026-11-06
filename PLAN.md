@@ -1737,3 +1737,9 @@ comparison does not substitute for the subsequent complete177-row replay.
   qualify quality. Historical four-case CPU dispatch was not recorded; this
   diagnostic pins the already qualified AVX2 source profile. No full checkpoint
   or GGUF payload hash is independently rechecked by this vision-only lane.
+  Initial source-only run[42166067458](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42166067458)
+  failed importing the transport SDK's undeclared`six` dependency, before any
+  source download, build or inference. Preserved artifact13478943999 is1,239 bytes,
+  SHA256`089649d1a4482935074e80ac8b86b81b03d642fa7ebf696f823da9266e9f5ed0`.
+  The bounded retry fixes transport to the previously verifiedKaggle2.2.2 and
+  explicitly pins`six==1.17.0`; mathematical/source controls are unchanged.
