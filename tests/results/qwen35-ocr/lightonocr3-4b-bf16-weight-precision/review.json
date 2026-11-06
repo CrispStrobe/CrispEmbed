@@ -1,0 +1,41 @@
+{
+  "schema": "lighton4b-bf16-weight-precision-review/v1",
+  "controls_run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42196101066",
+  "controls_source_sha": "7ff9d2ded",
+  "controls_sha256": "97e5bfaa28352c2b4fb8014a02d7cf64648818f6b8e4c6fc19872029cbeb2f67",
+  "controls_16_operator_cases": true,
+  "controls_353_decoder_cases": true,
+  "synthetic_numerical_negative_retained": {
+    "sha256": "2270df5166935f5a03c88515ee4777d1ea4555ee66052de3b6a607dd9dca1f6a",
+    "earliest_failure": "prefill.cache.21.recurrent",
+    "budget_unchanged": true
+  },
+  "source_operator_run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42198497821",
+  "source_operator_source_sha": "be9eb625bd2c2980c45cb054a9145b07cfc78686",
+  "artifact_id": 13492802899,
+  "archive_bytes": 4394394,
+  "archive_service_sha256": "8d7494e633d62d230f6aabc04e0db6f6889bec230efcd669729e5677ab63ac29",
+  "source_operator_report_sha256": "7edd6aa2896e919654bc2a1cd15db0272d499c61136059097a03aed002e8e299",
+  "weight_hash_proof_sha256": "187a3b0cfac495827e1d314c4bd5ad0e1e56004a9f0dacd876ed6812c1e311d9",
+  "actual_weight_hashes_exact": 249,
+  "largest_streaming_conversion_elements": 65536,
+  "source_embedding_up_down_bytes_exact": true,
+  "gate_remaining_differences": 1,
+  "head_remaining_differences": 24,
+  "head_on_max_abs": 0.03125,
+  "head_on_rms": 7.093176914880384e-05,
+  "head_strict_pass": false,
+  "off_repeat_byte_exact": true,
+  "resources": {
+    "wall_seconds": 38.49,
+    "user_seconds": 38.74,
+    "system_seconds": 0.75,
+    "peak_rss_bytes": 2928726016
+  },
+  "generation_executed": false,
+  "quality_qualified": false,
+  "speed_claim": false,
+  "scope": "genuine mixed-reference fixed operator inputs with identical effective Q4FFN/sharedQ8 embedding/head weights; not composed normal decode",
+  "transport": "Selected ZIP members CRC and SHA verified through26003 range bytes; archive digest service-declared; rawarrays/models retained remotely",
+  "wasm_policy": "Later conservative __EMSCRIPTEN__ guard disables experimental mode; standalone preprocessor control pending next bounded native smoke, not an actualWASM runtime qualification"
+}

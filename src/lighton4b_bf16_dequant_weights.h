@@ -7,11 +7,17 @@
 
 namespace qwen35_ocr {
 // Oracle-matching weight dtype only. Actual quantized storage stays unchanged.
-// Protected float tensors/vision and other architectures/types never enter.
+// Only explicit native4B opt-in and named quantized text matrices enter.
+// Context owner retains schema admission; protected float/vision stays out.
 inline bool lighton4b_bf16_dequant_weights_mode() {
+#if defined(__EMSCRIPTEN__)
+    // Native oracle option is unqualified on WASM; retain its old materialization.
+    return false;
+#else
     return core_env::on("CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS") &&
            core_env::on("CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT") && core_env::on("CRISPEMBED_LIGHTON4B_QUANT") &&
            core_env::on("CRISPEMBED_QWEN35_QUANT");
+#endif
 }
 inline bool lighton4b_bf16_dequant_weights_enabled(const ggml_tensor * source) {
     if (!source || (source->type != GGML_TYPE_Q8_0 && source->type != GGML_TYPE_Q4_K) ||

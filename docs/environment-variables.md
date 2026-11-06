@@ -1514,3 +1514,6 @@ old F32 dequantization. This isolates reference-weight dtype, not activation
 dtype, reduction arithmetic, speed or quality qualification.
 Full4B decoder caches capture this weight-dtype mode and reject reusing an
 old cache after a mode toggle; a fresh prefill is required.
+This experimental weight mode is disabled under `__EMSCRIPTEN__`; the
+standalone fallback control simulates that preprocessor branch only and
+does not qualify a WebAssembly runtime or 4B model.
