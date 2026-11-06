@@ -1608,3 +1608,21 @@ initial dependency-only failure, immutable source pins, original receipt cap,
 historical CPU-dispatch uncertainty and90-day remote arrays. Next correctness
 attribution belongs at the downstream native text/decoder boundary; full decoded
 quality remains open and all new gates remain default-off. No new PR or release.
+
+
+### Genuine BF16 mixed full generation — complete, native residual confirmed
+
+Source89eda20c6 completed one CPU worker:178-token genuine BF16 mixed EOS versus
+native156/EOS and official177/EOS. Source/native share33IDs, diverge at33. With
+genuine BF16 mixed as reference, nativeCER134/675=19.85185%,WER30/95=31.57895%;
+reverse-denominator metrics labeled separately. Source mixed still differs from
+official BF16 at25 (CER27.43902%,WER44.44444%). All178 finite score hashes retained
+remotely; all249 effective mixed/723 original parameter hashes,474 protected/tied
+head, both score anchors and actual179 totalroot calls pass.17 hosted controls
+pass distinct6+6+5 paths; benignwrapt startup warning and historical duplicate
+mixed-test coverage are preserved. [Complete evidence and precision limits](docs/lighton4b-bf16-mixed-freegen-results.md).
+Genuine BF16 rounding differs from native F32-dequant storage, so residual alone
+is not an isolated logic defect. Next boundedsource replay captures actualshared-
+prefix step33 operators/all32hidden/headinput, checking all34scores against this
+retained capture; runtimeagent independently probes finalhead BF16 rounding.
+No F32 model, gold rewrite, heldout qualification, default/release/app-pin or upload.
