@@ -4,18 +4,20 @@
 #include "ggml-cpu.h"
 
 namespace qwen35_ocr {
-enum class lighton4b_quant_recipe { q8_0, q4_k, attention_q8_ffn_q4, q4km_q6_q8head, gdn_out_q8, gdn_out_q6 };
+enum class lighton4b_quant_recipe { q8_0, q4_k, attention_q8_ffn_q4, q4km_q6_q8head, gdn_out_q8, gdn_out_q6, imatrix_q4km_q6head };
 // Exact storage policy, separate from shape/source ownership and payload admission.
 inline bool lighton4b_quant_recipe_matches(const decoder_weights & decoder, lighton4b_quant_recipe recipe) {
     if (recipe != lighton4b_quant_recipe::q8_0 && recipe != lighton4b_quant_recipe::q4_k &&
         recipe != lighton4b_quant_recipe::attention_q8_ffn_q4 && recipe != lighton4b_quant_recipe::q4km_q6_q8head && recipe != lighton4b_quant_recipe::gdn_out_q8 &&
-        recipe != lighton4b_quant_recipe::gdn_out_q6)
+        recipe != lighton4b_quant_recipe::gdn_out_q6 && recipe != lighton4b_quant_recipe::imatrix_q4km_q6head)
         return false;
     auto type = [](const ggml_tensor * t, ggml_type expected) { return t && t->type == expected; };
-    if (decoder.layers.size() != 32 || decoder.head != decoder.embedding || !type(decoder.embedding, GGML_TYPE_Q8_0))
+    const bool q6head = recipe == lighton4b_quant_recipe::imatrix_q4km_q6head;
+    if (decoder.layers.size() != 32 || decoder.head != decoder.embedding ||
+        !type(decoder.embedding, q6head ? GGML_TYPE_Q6_K : GGML_TYPE_Q8_0))
         return false;
-    if (recipe == lighton4b_quant_recipe::q4km_q6_q8head) {
-        if (!lighton4b_q6_enabled()) return false;
+    if (recipe == lighton4b_quant_recipe::q4km_q6_q8head || q6head) {
+        if (!lighton4b_q6_enabled() || (q6head && !lighton4b_imatrix_q4km_enabled())) return false;
         for (int i = 0; i < 32; ++i) {
             const auto & layer = decoder.layers[size_t(i)];
             const auto selected = lighton4b_q6_layer(i) ? GGML_TYPE_Q6_K : GGML_TYPE_Q4_K;
@@ -61,8 +63,14 @@ inline bool lighton4b_select_recipe(const decoder_weights & decoder, const std::
     const bool mixed = core_env::on("CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4");
     const bool out8 = core_env::on("CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q8");
     const bool out6 = core_env::on("CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q6");
-    if (int(mixed) + int(out8) + int(out6) > 1) return false;
-    if (tag == lighton4b_q6_recipe) {
+    const bool q6head = core_env::on("CRISPEMBED_LIGHTON4B_IMATRIX_Q4KM_Q6HEAD");
+    if (int(mixed) + int(out8) + int(out6) + int(q6head) > 1) return false;
+    if (tag == lighton4b_imatrix_q4km_recipe) {
+        if (!lighton4b_imatrix_q4km_enabled() || mixed || out8 || out6) return false;
+        recipe = lighton4b_quant_recipe::imatrix_q4km_q6head;
+    } else if (q6head) {
+        return false; // Explicit profile gate must never choose an older/default recipe.
+    } else if (tag == lighton4b_q6_recipe) {
         if (!lighton4b_q6_enabled() || mixed || out8 || out6) return false;
         recipe = lighton4b_quant_recipe::q4km_q6_q8head;
     } else if (out6) {
@@ -109,6 +117,7 @@ public:
         lighton4b_quant_recipe recipe;
         if (!lighton4b_select_recipe(decoder, header->mixed_quant_recipe(), recipe)) return nullptr;
         if (recipe == lighton4b_quant_recipe::q4km_q6_q8head && !header->q6_profile_header()) return nullptr;
+        if (recipe == lighton4b_quant_recipe::imatrix_q4km_q6head && !header->imatrix_q4km_profile_header()) return nullptr;
         if (recipe == lighton4b_quant_recipe::gdn_out_q8 && !header->gdn_out_recipe_metadata_matches()) return nullptr;
         if (recipe == lighton4b_quant_recipe::gdn_out_q6 && !header->gdn_out_q6_metadata_matches()) return nullptr;
         auto candidate = std::unique_ptr<lighton4b_native_context>(new lighton4b_native_context);

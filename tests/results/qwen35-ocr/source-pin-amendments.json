@@ -110,6 +110,17 @@
             "1c6d0c1c577e0051f22108382eab20cc59f41de1 test: isolate BF16 quantized text weight materialization and cache mode [skip ci]"
           ],
           "reason": "Default-off LIGHTON4B_BF16_QUANT_WEIGHTS casts admitted named text Q8/Q4 dequantized weights in existing transient buffers, including streamed head; old gate-off F32 materialization branch and persistent storage remain unchanged. Separate experiment, no source receipt rewrite or speed/quality qualification; focused operator/cache controls pending."
+        },
+        {
+          "from_sha256": "270b5eb4944b140851f8ec374f76f7147721fff767b7c5c161179747e7d2f6c9",
+          "to_sha256": "360d023214d78e7dc5a3b76ccc33036bf655761222869ead87ab730ee743abac",
+          "to_blob": "60f9c34935d21217e5246ec3b83ee15b3c06a67f",
+          "recorded_at_commit": "3ee2b69dd24f24eae4a183b5f9821c8239b77350",
+          "recorded": "2026-11-06",
+          "changed_by": [
+            "36a0e10c6ad22a22cd852f38133e953238609ab8 Enable gated Q6 streamed and grouped projection paths [skip ci]"
+          ],
+          "reason": "Declare existing default-off LightOn4B Q6_K type admission in streamed/grouped projection, commit36a0e10c6; no dot/reduction change, quant storage stays raw and old Q8/Q4 branches unchanged. Existing hosted Q6 controls retained; no frozen receipt rewrite or decoded-quality promotion."
         }
       ]
     },
