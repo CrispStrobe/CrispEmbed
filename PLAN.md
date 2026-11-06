@@ -1828,3 +1828,22 @@ References are retained genuineBF16 originals; heldout untouched. Parallel-dequa
 gates0,verified vision/headBF161. No redundant222-row teacher replay,newdefault,
 release or qualification. Resource/cgroup/process-group bounds and90-day remote
 candidate+arrays are explicit in the protocol; no new PR.
+
+## Predeclared A/logo heldout diagnostic and independent byte audit
+
+After preserving calibration evidence8790b0f34,the
+[heldout protocol](docs/lighton4b-gdn-out-logo-heldout-v1.json) fixes the unchanged
+candidateSHA40e54560ed349c077100c4e39276d29c02b98d6bec3611ac7b3a88d5a771c710
+against plainQ4 on legacycasehandwritten_letter. The actual image is a red capital
+A/logo,not handwritten/paragraph OCR; no representative-quality promotion follows.
+Genuine original sourcecapture e87983eb3c289b5a8b8218e875b863a52d3aa0d1c5d10eeafe10418d83989d48
+is65tokens/EOS/notcapped and must validate before native output. First independently
+rehash the complete3858198504-byte prior artifact,4156787616-byte model,all723
+payloads,every archivedF32 array/greedy score inventory and rawcalibration metrics
+on hostedCI; no bulk local download. Then verify unchanged C++/worker source26e6
+and ggmlpins,112recipe/48parallel controls and132calibration smoke hashes before
+one heldout source-firstscore/full independentgreedycap256 Q4/candidate pair.
+Receipt and other heldout inputs remain untouched. Fixed vision/headBF16/parallel1,
+precisiondiagnostic0;8GiBavailable/20GiBscratch/3GiBout guards,45min/heldoutarm,
+180minoverall cap. Candidate stays unchanged and remotely retained by original
+artifact; new evidence90days. LatestQ6loader is a separate lane,not included here.
