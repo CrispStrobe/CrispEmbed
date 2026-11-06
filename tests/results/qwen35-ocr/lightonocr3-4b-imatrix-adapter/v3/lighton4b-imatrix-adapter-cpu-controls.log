@@ -1,0 +1,12 @@
+[{"stream_name":"stderr","time":76.089975733,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":76.090475718,"data":"  File \"/kaggle/src/script.py\", line 33, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":76.090495689,"data":"    receipt=json.loads((out/'imatrix-adapter-controls.json').read_text());assert code==0 and receipt['status']=='passed'and receipt['all248_actual_means_byte_exact']and receipt['execution_host']=='kaggle-cpu';report['status']='passed'\n"}
+,{"stream_name":"stderr","time":76.090504423,"data":"                                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":76.090510698,"data":"AssertionError\n"}
+,{"stream_name":"stderr","time":79.255173586,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":79.255210437,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":79.767923859,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":79.767957784,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":81.923744481,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":83.473554356,"data":"[NbConvertApp] Writing 293334 bytes to __results__.html\n"}
+]

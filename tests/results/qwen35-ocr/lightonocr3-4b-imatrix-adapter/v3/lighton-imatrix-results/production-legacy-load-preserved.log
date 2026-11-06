@@ -1,0 +1,3 @@
+gguf_init_from_reader: failed to read tensor data binary blob
+imatrix: failed to open '/kaggle/working/lighton-imatrix-scratch/lighton-imatrix/legacy.gguf'
+requested imatrix contains no usable vectors

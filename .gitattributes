@@ -23,3 +23,4 @@ licenses/latent-inpaint/NOTICE.md -text
 # OvisOCR3 source audit retains the original CRLF license and Markdown bytes.
 tests/fixtures/ovisocr3-document-source/** -text -whitespace
 docs/ovisocr3-document-protocol.json -text
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-adapter/v*/lighton-imatrix-results/bootstrap.log whitespace=-trailing-space

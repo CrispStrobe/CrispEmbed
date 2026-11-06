@@ -2763,3 +2763,19 @@ unrelated jobs, steps and gates remain intact. Source files match the tested
 c7e6720ab tree, with compiled runtime hashes pinned to10d3/90d2. Calibration and
 logo evidence stay in PR157, including the remaining table/known-logo negatives.
 No additional model job, default/quality/release promotion or model-hub upload.
+
+
+### External-text imatrix format/coordinates verified on Kaggle CPU
+
+[Complete verification](docs/lighton4b-imatrix-verification.md) preserves the
+cancelled queued GH job and Kaggle v1/v3 fixture negatives alongside v2/v4 passes.
+Actual C++ means match all248/897,024 normalized values, including24 inverse V-head
+input permutations. Eight Python controls, strict production target rejection,
+legacy valid loading and no-silent-fallback checks pass; no weight quantization
+or model forward ran. Public header census distinguishes plainQ4 from publisher
+Q4_K_M (216Q4+33Q6 including head), separate F16 projector and external-text
+calibration. Publisher English KLD is not OCR evidence. Source corpus contents,
+license and calibration source weights remain unauthenticated; no pretrained image
+imatrix is assumed. Next is reviewed Kaggle-only fresh-source weighted plainQ4,
+with exact unweightedf873 control and248 actual application checks, preserving
+protected tensors/gates and all reference/model-quality limits.

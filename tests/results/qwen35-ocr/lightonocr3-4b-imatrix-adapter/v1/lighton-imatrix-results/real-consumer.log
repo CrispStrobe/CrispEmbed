@@ -1,0 +1,2 @@
+gguf_init_from_reader: tensor 'v.patch_embed.proj.weight' has invalid number of dimensions: 5 > 4
+gguf_init_from_reader: failed to read tensor info

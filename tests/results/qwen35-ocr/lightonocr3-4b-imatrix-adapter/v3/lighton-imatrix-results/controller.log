@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/kaggle/working/lighton-imatrix-source/tools/ci-heavy/lighton4b_imatrix_adapter_controls.py", line 48, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/kaggle/working/lighton-imatrix-source/tools/ci-heavy/lighton4b_imatrix_adapter_controls.py", line 41, in main
+    run('production-legacy-load-preserved',[binary,scratch/'absent-model.gguf',forbidden,'q4_k','--imatrix',legacy],1);adapter.require('loaded importance vectors for 1 tensors'in(out/'production-legacy-load-preserved.log').read_text()and not forbidden.exists(),'valid legacy imatrix did not retain old load behavior')
+                                                                                                                       ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/lighton-imatrix-source/tools/lighton4b_imatrix_adapter.py", line 14, in require
+    if not ok:raise ValueError(message)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: valid legacy imatrix did not retain old load behavior
