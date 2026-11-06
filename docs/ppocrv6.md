@@ -68,6 +68,27 @@ neck — including medium's RepLKFPN neck — and head.
 bisection lever. The historical `CRISPEMBED_PPOCRV6_DET_GRAPH` /
 `CRISPEMBED_PPOCRV6_DET_GRAPH_ACCEPT` opt-in pair no longer exists.
 
+### Empty frames and changing sizes (issue #164)
+
+The default preserves the scalar fallback for an empty graph result and for any
+shape after the first. For a video workload, the following independent options
+are available:
+
+- `CRISPEMBED_PPOCRV6_DET_ACCEPT_EMPTY=1` accepts a graph result with zero boxes
+  only when its full probability map is finite and within [0, 1]. This avoids a
+  second inference on empty frames. An invalid map still falls back to CPU; a
+  numerically plausible map is not a proof that every faint text region survived.
+- `CRISPEMBED_PPOCRV6_DET_GRAPH_REBUILD=1` rebuilds on a new detector input
+  height or width. It retains the resident weights and only one shape-dependent
+  graph at a time. Alternating shapes can incur rebuild costs; a failed build
+  falls back to the scalar detector and is not retried for the same shape.
+
+Both options are default-off and value-parsed (including `=0`, `=false`, `=off`
+and `=no`). `CRISPEMBED_PPOCRV6_DET_SCALAR=1` forces the scalar path;
+`CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE=1` runs both and returns the scalar result.
+`CRISPEMBED_PPOCRV6_GRAPH_ACCEPT` concerns the recognizer and does not control
+these detector decisions. The backend choice and model admission are unchanged.
+
 The detector graph deliberately runs on the **CPU backend**: Metal ran the same
 graph 9x slower (1693 ms vs 187 ms on `synth_00_clean`, 2026-08-04) because conv
 at these spatial sizes does not pay for the dispatch.
