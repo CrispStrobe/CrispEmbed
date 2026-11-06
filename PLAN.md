@@ -51,6 +51,10 @@ CI and actual CUDA on authorized GPU resources; preserve initial failures. Metal
 and a representative low-contrast/real-video corpus remain separate unless run.
 No new default or model qualification follows from a speed measurement.
 
+Hosted CPU initial evidence: [run 42222784039](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42222784039), source `f2dac783fd28d30c012d3ff3e96b30c75cc790e2`, with the complete model hashes, input hashes, decoded text, geometry, timings, stage magnitudes and absolute errors in [the receipt](tests/results/ppocrv6/issue164-cpu-initial.json). The six inputs produced 0/2/0/2/2/0 boxes, with identical decoded text and at least 0.90 box IoU against scalar for all seven modes. Independent opt-ins and literal-zero controls passed; A→B→A rebuilt four graphs with both gates, compared with one under the default. The largest observed stage-0 absolute difference was 0.000244, and the largest probability difference was 0.001073. These are bounded native CPU graph-versus-scalar results, not a PaddleX or corpus qualification. Timings are single runs and are not a controlled benchmark.
+
+The HTTP server route is under hosted test at source `8922548d6f058bcce739810edff99b036e8b3b3a`; CUDA remains unverified because the GPU submission cannot be retrieved or its status confirmed. Do not promote either gate by default. Retain the initial CPU receipt even if later tests fail.
+
 ## Post-release v0.17.15 — 5 November 2026
 
 [Native/WASM v0.17.15](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.15)

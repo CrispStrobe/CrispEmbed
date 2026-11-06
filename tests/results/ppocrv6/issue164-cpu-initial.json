@@ -1,0 +1,2306 @@
+{
+  "schema": "ppocrv6-issue164-live-v1",
+  "source_commit": "f2dac783fd28d30c012d3ff3e96b30c75cc790e2",
+  "backend": "cpu",
+  "gpu": null,
+  "models": {
+    "det": {
+      "repository": "cstr/PP-OCRv6-medium-det-GGUF",
+      "revision": "62f655124d0b0bc71c7379ae598efe7807de1b97",
+      "filename": "PP-OCRv6_medium_det-f16.gguf",
+      "sha256": "39b80b016b7bc10ae3e17614ed5ebe6d58855859b88ab292127638935e673678"
+    },
+    "rec": {
+      "repository": "cstr/PP-OCRv6_medium_rec-GGUF",
+      "revision": "c67c83efd46f8efc4a0183fc26afbc06b6235ae7",
+      "filename": "PP-OCRv6_medium_rec-f16.gguf",
+      "sha256": "8aeac742d9a7325f3f487f5c05cb69389e4642f333857e4e95b95891a263f2e7"
+    }
+  },
+  "input_sha256": {
+    "white-a.png": "f80cab288f6a301f67e5bbac90e38e103ac289a457e4cf2763b48952dd00e31f",
+    "fox-a.png": "d139a96e514217e63970cea943e93b82a02521108ce2a2367069a14d57c87f39",
+    "white-b.png": "75faab8320d0a0b52308d3d2ad6e472e4fa99f672428e7d0972bd423ed3e0f3a",
+    "fox-b.png": "35f068bd9de306ebf0da345eb8c27be86170dc07c5bca8f41816d0b2a6427a1a",
+    "fox-again.png": "d139a96e514217e63970cea943e93b82a02521108ce2a2367069a14d57c87f39",
+    "black-b.png": "c853456bf1c8389c39bf8a302bd085042e58772f672440dc4d6d0a1363786fb3"
+  },
+  "modes": {
+    "scalar": {
+      "elapsed_seconds": 10.513689365000005,
+      "cases": [
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 0,
+          "boxes": []
+        },
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                27.844635,
+                36.2964897,
+                479.31073,
+                44.0736847,
+                0.962904215,
+                27.844635,
+                36.2964897,
+                507.155365,
+                36.2964897,
+                507.155365,
+                80.3701706,
+                27.844635,
+                80.3701706
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                27.1141815,
+                106.368942,
+                441.771637,
+                42.4704399,
+                0.96123451,
+                27.1141815,
+                106.368942,
+                468.885803,
+                106.368942,
+                468.885803,
+                148.839386,
+                27.1141815,
+                148.839386
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 0,
+          "boxes": []
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                10.4827194,
+                69.4827271,
+                192.034561,
+                19.0345535,
+                0.963177919,
+                10.4827194,
+                69.4827271,
+                202.517273,
+                69.4827271,
+                202.517273,
+                88.5172729,
+                10.4827194,
+                88.5172729
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                9.75113678,
+                98.7511368,
+                177.497726,
+                17.4977264,
+                0.97950691,
+                9.75113678,
+                98.7511368,
+                187.248871,
+                98.7511368,
+                187.248871,
+                116.248863,
+                9.75113678,
+                116.248863
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                27.844635,
+                36.2964897,
+                479.31073,
+                44.0736847,
+                0.962904215,
+                27.844635,
+                36.2964897,
+                507.155365,
+                36.2964897,
+                507.155365,
+                80.3701706,
+                27.844635,
+                80.3701706
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                27.1141815,
+                106.368942,
+                441.771637,
+                42.4704399,
+                0.96123451,
+                27.1141815,
+                106.368942,
+                468.885803,
+                106.368942,
+                468.885803,
+                148.839386,
+                27.1141815,
+                148.839386
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 0,
+          "boxes": []
+        }
+      ],
+      "timings": [
+        {
+          "preprocess_ms": 1.162,
+          "graph_ms": 0.001,
+          "total_ms": 1654.97,
+          "boxes": 0,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.567,
+          "graph_ms": 0.001,
+          "total_ms": 1543.792,
+          "boxes": 2,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.23,
+          "graph_ms": 0.001,
+          "total_ms": 624.361,
+          "boxes": 0,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.228,
+          "graph_ms": 0.001,
+          "total_ms": 625.721,
+          "boxes": 2,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.568,
+          "graph_ms": 0.001,
+          "total_ms": 1549.297,
+          "boxes": 2,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.239,
+          "graph_ms": 0.001,
+          "total_ms": 620.952,
+          "boxes": 0,
+          "accepted": 0
+        }
+      ],
+      "graph_builds": 0
+    },
+    "default": {
+      "elapsed_seconds": 9.892182549999973,
+      "cases": [
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 0,
+          "boxes": []
+        },
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                27.844635,
+                36.2964897,
+                479.31073,
+                44.0736847,
+                0.962901711,
+                27.844635,
+                36.2964897,
+                507.155365,
+                36.2964897,
+                507.155365,
+                80.3701706,
+                27.844635,
+                80.3701706
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                27.1141815,
+                106.368942,
+                441.771637,
+                42.4704399,
+                0.961236537,
+                27.1141815,
+                106.368942,
+                468.885803,
+                106.368942,
+                468.885803,
+                148.839386,
+                27.1141815,
+                148.839386
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 0,
+          "boxes": []
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                10.4827194,
+                69.4827271,
+                192.034561,
+                19.0345535,
+                0.963177919,
+                10.4827194,
+                69.4827271,
+                202.517273,
+                69.4827271,
+                202.517273,
+                88.5172729,
+                10.4827194,
+                88.5172729
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                9.75113678,
+                98.7511368,
+                177.497726,
+                17.4977264,
+                0.97950691,
+                9.75113678,
+                98.7511368,
+                187.248871,
+                98.7511368,
+                187.248871,
+                116.248863,
+                9.75113678,
+                116.248863
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                27.844635,
+                36.2964897,
+                479.31073,
+                44.0736847,
+                0.962901711,
+                27.844635,
+                36.2964897,
+                507.155365,
+                36.2964897,
+                507.155365,
+                80.3701706,
+                27.844635,
+                80.3701706
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                27.1141815,
+                106.368942,
+                441.771637,
+                42.4704399,
+                0.961236537,
+                27.1141815,
+                106.368942,
+                468.885803,
+                106.368942,
+                468.885803,
+                148.839386,
+                27.1141815,
+                148.839386
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 0,
+          "boxes": []
+        }
+      ],
+      "timings": [
+        {
+          "preprocess_ms": 1.177,
+          "graph_ms": 974.398,
+          "total_ms": 2665.135,
+          "boxes": 0,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.572,
+          "graph_ms": 723.041,
+          "total_ms": 724.018,
+          "boxes": 2,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.23,
+          "graph_ms": 0.001,
+          "total_ms": 616.886,
+          "boxes": 0,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.228,
+          "graph_ms": 0.001,
+          "total_ms": 621.254,
+          "boxes": 2,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.575,
+          "graph_ms": 711.088,
+          "total_ms": 712.036,
+          "boxes": 2,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.223,
+          "graph_ms": 0.001,
+          "total_ms": 587.704,
+          "boxes": 0,
+          "accepted": 0
+        }
+      ],
+      "graph_builds": 1
+    },
+    "zero": {
+      "elapsed_seconds": 9.71383178100001,
+      "cases": [
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 0,
+          "boxes": []
+        },
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                27.844635,
+                36.2964897,
+                479.31073,
+                44.0736847,
+                0.962901711,
+                27.844635,
+                36.2964897,
+                507.155365,
+                36.2964897,
+                507.155365,
+                80.3701706,
+                27.844635,
+                80.3701706
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                27.1141815,
+                106.368942,
+                441.771637,
+                42.4704399,
+                0.961236537,
+                27.1141815,
+                106.368942,
+                468.885803,
+                106.368942,
+                468.885803,
+                148.839386,
+                27.1141815,
+                148.839386
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 0,
+          "boxes": []
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                10.4827194,
+                69.4827271,
+                192.034561,
+                19.0345535,
+                0.963177919,
+                10.4827194,
+                69.4827271,
+                202.517273,
+                69.4827271,
+                202.517273,
+                88.5172729,
+                10.4827194,
+                88.5172729
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                9.75113678,
+                98.7511368,
+                177.497726,
+                17.4977264,
+                0.97950691,
+                9.75113678,
+                98.7511368,
+                187.248871,
+                98.7511368,
+                187.248871,
+                116.248863,
+                9.75113678,
+                116.248863
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                27.844635,
+                36.2964897,
+                479.31073,
+                44.0736847,
+                0.962901711,
+                27.844635,
+                36.2964897,
+                507.155365,
+                36.2964897,
+                507.155365,
+                80.3701706,
+                27.844635,
+                80.3701706
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                27.1141815,
+                106.368942,
+                441.771637,
+                42.4704399,
+                0.961236537,
+                27.1141815,
+                106.368942,
+                468.885803,
+                106.368942,
+                468.885803,
+                148.839386,
+                27.1141815,
+                148.839386
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 0,
+          "boxes": []
+        }
+      ],
+      "timings": [
+        {
+          "preprocess_ms": 1.146,
+          "graph_ms": 956.685,
+          "total_ms": 2585.155,
+          "boxes": 0,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.572,
+          "graph_ms": 663.632,
+          "total_ms": 664.6,
+          "boxes": 2,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.224,
+          "graph_ms": 0.001,
+          "total_ms": 614.918,
+          "boxes": 0,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.245,
+          "graph_ms": 0.001,
+          "total_ms": 622.74,
+          "boxes": 2,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.569,
+          "graph_ms": 687.051,
+          "total_ms": 687.985,
+          "boxes": 2,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.227,
+          "graph_ms": 0.001,
+          "total_ms": 603.953,
+          "boxes": 0,
+          "accepted": 0
+        }
+      ],
+      "graph_builds": 1
+    },
+    "empty_only": {
+      "elapsed_seconds": 7.870997245000012,
+      "cases": [
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 0,
+          "boxes": []
+        },
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                27.844635,
+                36.2964897,
+                479.31073,
+                44.0736847,
+                0.962901711,
+                27.844635,
+                36.2964897,
+                507.155365,
+                36.2964897,
+                507.155365,
+                80.3701706,
+                27.844635,
+                80.3701706
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                27.1141815,
+                106.368942,
+                441.771637,
+                42.4704399,
+                0.961236537,
+                27.1141815,
+                106.368942,
+                468.885803,
+                106.368942,
+                468.885803,
+                148.839386,
+                27.1141815,
+                148.839386
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 0,
+          "boxes": []
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                10.4827194,
+                69.4827271,
+                192.034561,
+                19.0345535,
+                0.963177919,
+                10.4827194,
+                69.4827271,
+                202.517273,
+                69.4827271,
+                202.517273,
+                88.5172729,
+                10.4827194,
+                88.5172729
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                9.75113678,
+                98.7511368,
+                177.497726,
+                17.4977264,
+                0.97950691,
+                9.75113678,
+                98.7511368,
+                187.248871,
+                98.7511368,
+                187.248871,
+                116.248863,
+                9.75113678,
+                116.248863
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                27.844635,
+                36.2964897,
+                479.31073,
+                44.0736847,
+                0.962901711,
+                27.844635,
+                36.2964897,
+                507.155365,
+                36.2964897,
+                507.155365,
+                80.3701706,
+                27.844635,
+                80.3701706
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                27.1141815,
+                106.368942,
+                441.771637,
+                42.4704399,
+                0.961236537,
+                27.1141815,
+                106.368942,
+                468.885803,
+                106.368942,
+                468.885803,
+                148.839386,
+                27.1141815,
+                148.839386
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 0,
+          "boxes": []
+        }
+      ],
+      "timings": [
+        {
+          "preprocess_ms": 1.15,
+          "graph_ms": 946.265,
+          "total_ms": 947.768,
+          "boxes": 0,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.551,
+          "graph_ms": 645.171,
+          "total_ms": 646.066,
+          "boxes": 2,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.23,
+          "graph_ms": 0.001,
+          "total_ms": 644.898,
+          "boxes": 0,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.215,
+          "graph_ms": 0.001,
+          "total_ms": 590.27,
+          "boxes": 2,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.563,
+          "graph_ms": 645.436,
+          "total_ms": 646.358,
+          "boxes": 2,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.22,
+          "graph_ms": 0.001,
+          "total_ms": 598.996,
+          "boxes": 0,
+          "accepted": 0
+        }
+      ],
+      "graph_builds": 1
+    },
+    "rebuild_only": {
+      "elapsed_seconds": 10.250618572000008,
+      "cases": [
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 0,
+          "boxes": []
+        },
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                27.844635,
+                36.2964897,
+                479.31073,
+                44.0736847,
+                0.962901711,
+                27.844635,
+                36.2964897,
+                507.155365,
+                36.2964897,
+                507.155365,
+                80.3701706,
+                27.844635,
+                80.3701706
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                27.1141815,
+                106.368942,
+                441.771637,
+                42.4704399,
+                0.961236537,
+                27.1141815,
+                106.368942,
+                468.885803,
+                106.368942,
+                468.885803,
+                148.839386,
+                27.1141815,
+                148.839386
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 0,
+          "boxes": []
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                10.4863892,
+                69.4863892,
+                192.027222,
+                19.0272255,
+                0.963741302,
+                10.4863892,
+                69.4863892,
+                202.513611,
+                69.4863892,
+                202.513611,
+                88.5136108,
+                10.4863892,
+                88.5136108
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                9.75113678,
+                98.7511368,
+                177.497726,
+                17.4977264,
+                0.979507625,
+                9.75113678,
+                98.7511368,
+                187.248871,
+                98.7511368,
+                187.248871,
+                116.248863,
+                9.75113678,
+                116.248863
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                27.844635,
+                36.2964897,
+                479.31073,
+                44.0736847,
+                0.962901711,
+                27.844635,
+                36.2964897,
+                507.155365,
+                36.2964897,
+                507.155365,
+                80.3701706,
+                27.844635,
+                80.3701706
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                27.1141815,
+                106.368942,
+                441.771637,
+                42.4704399,
+                0.961236537,
+                27.1141815,
+                106.368942,
+                468.885803,
+                106.368942,
+                468.885803,
+                148.839386,
+                27.1141815,
+                148.839386
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 0,
+          "boxes": []
+        }
+      ],
+      "timings": [
+        {
+          "preprocess_ms": 1.124,
+          "graph_ms": 934.601,
+          "total_ms": 2592.662,
+          "boxes": 0,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.572,
+          "graph_ms": 648.456,
+          "total_ms": 649.42,
+          "boxes": 2,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.224,
+          "graph_ms": 401.493,
+          "total_ms": 1000.951,
+          "boxes": 0,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.232,
+          "graph_ms": 256.941,
+          "total_ms": 257.282,
+          "boxes": 2,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.572,
+          "graph_ms": 923.119,
+          "total_ms": 924.086,
+          "boxes": 2,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.217,
+          "graph_ms": 398.12,
+          "total_ms": 978.394,
+          "boxes": 0,
+          "accepted": 0
+        }
+      ],
+      "graph_builds": 4
+    },
+    "both": {
+      "elapsed_seconds": 7.160880300999963,
+      "cases": [
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 0,
+          "boxes": []
+        },
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                27.844635,
+                36.2964897,
+                479.31073,
+                44.0736847,
+                0.962901711,
+                27.844635,
+                36.2964897,
+                507.155365,
+                36.2964897,
+                507.155365,
+                80.3701706,
+                27.844635,
+                80.3701706
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                27.1141815,
+                106.368942,
+                441.771637,
+                42.4704399,
+                0.961236537,
+                27.1141815,
+                106.368942,
+                468.885803,
+                106.368942,
+                468.885803,
+                148.839386,
+                27.1141815,
+                148.839386
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 0,
+          "boxes": []
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                10.4863892,
+                69.4863892,
+                192.027222,
+                19.0272255,
+                0.963741302,
+                10.4863892,
+                69.4863892,
+                202.513611,
+                69.4863892,
+                202.513611,
+                88.5136108,
+                10.4863892,
+                88.5136108
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                9.75113678,
+                98.7511368,
+                177.497726,
+                17.4977264,
+                0.979507625,
+                9.75113678,
+                98.7511368,
+                187.248871,
+                98.7511368,
+                187.248871,
+                116.248863,
+                9.75113678,
+                116.248863
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                27.844635,
+                36.2964897,
+                479.31073,
+                44.0736847,
+                0.962901711,
+                27.844635,
+                36.2964897,
+                507.155365,
+                36.2964897,
+                507.155365,
+                80.3701706,
+                27.844635,
+                80.3701706
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                27.1141815,
+                106.368942,
+                441.771637,
+                42.4704399,
+                0.961236537,
+                27.1141815,
+                106.368942,
+                468.885803,
+                106.368942,
+                468.885803,
+                148.839386,
+                27.1141815,
+                148.839386
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 0,
+          "boxes": []
+        }
+      ],
+      "timings": [
+        {
+          "preprocess_ms": 1.11,
+          "graph_ms": 929.629,
+          "total_ms": 931.088,
+          "boxes": 0,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.549,
+          "graph_ms": 636.946,
+          "total_ms": 637.846,
+          "boxes": 2,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.226,
+          "graph_ms": 387.711,
+          "total_ms": 388.174,
+          "boxes": 0,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.217,
+          "graph_ms": 248.688,
+          "total_ms": 249.029,
+          "boxes": 2,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.534,
+          "graph_ms": 874.144,
+          "total_ms": 875.029,
+          "boxes": 2,
+          "accepted": 1
+        },
+        {
+          "preprocess_ms": 0.215,
+          "graph_ms": 385.265,
+          "total_ms": 385.576,
+          "boxes": 0,
+          "accepted": 1
+        }
+      ],
+      "graph_builds": 4
+    },
+    "compare": {
+      "elapsed_seconds": 13.72136804600001,
+      "cases": [
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 0,
+          "boxes": []
+        },
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                27.844635,
+                36.2964897,
+                479.31073,
+                44.0736847,
+                0.962904215,
+                27.844635,
+                36.2964897,
+                507.155365,
+                36.2964897,
+                507.155365,
+                80.3701706,
+                27.844635,
+                80.3701706
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                27.1141815,
+                106.368942,
+                441.771637,
+                42.4704399,
+                0.96123451,
+                27.1141815,
+                106.368942,
+                468.885803,
+                106.368942,
+                468.885803,
+                148.839386,
+                27.1141815,
+                148.839386
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 0,
+          "boxes": []
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                10.4827194,
+                69.4827271,
+                192.034561,
+                19.0345535,
+                0.963177919,
+                10.4827194,
+                69.4827271,
+                202.517273,
+                69.4827271,
+                202.517273,
+                88.5172729,
+                10.4827194,
+                88.5172729
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                9.75113678,
+                98.7511368,
+                177.497726,
+                17.4977264,
+                0.97950691,
+                9.75113678,
+                98.7511368,
+                187.248871,
+                98.7511368,
+                187.248871,
+                116.248863,
+                9.75113678,
+                116.248863
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 800,
+          "declared_boxes": 2,
+          "boxes": [
+            {
+              "geometry": [
+                27.844635,
+                36.2964897,
+                479.31073,
+                44.0736847,
+                0.962904215,
+                27.844635,
+                36.2964897,
+                507.155365,
+                36.2964897,
+                507.155365,
+                80.3701706,
+                27.844635,
+                80.3701706
+              ],
+              "text": "The quick brown fox jumps"
+            },
+            {
+              "geometry": [
+                27.1141815,
+                106.368942,
+                441.771637,
+                42.4704399,
+                0.96123451,
+                27.1141815,
+                106.368942,
+                468.885803,
+                106.368942,
+                468.885803,
+                148.839386,
+                27.1141815,
+                148.839386
+              ],
+              "text": "over the lazy dog. 12345"
+            }
+          ]
+        },
+        {
+          "height": 192,
+          "width": 320,
+          "declared_boxes": 0,
+          "boxes": []
+        }
+      ],
+      "timings": [
+        {
+          "preprocess_ms": 1.096,
+          "graph_ms": 936.579,
+          "total_ms": 2503.993,
+          "boxes": 0,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.548,
+          "graph_ms": 637.434,
+          "total_ms": 2124.852,
+          "boxes": 2,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.216,
+          "graph_ms": 396.455,
+          "total_ms": 976.373,
+          "boxes": 0,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.215,
+          "graph_ms": 265.937,
+          "total_ms": 869.817,
+          "boxes": 2,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.548,
+          "graph_ms": 898.476,
+          "total_ms": 2462.653,
+          "boxes": 2,
+          "accepted": 0
+        },
+        {
+          "preprocess_ms": 0.231,
+          "graph_ms": 401.394,
+          "total_ms": 989.459,
+          "boxes": 0,
+          "accepted": 0
+        }
+      ],
+      "graph_builds": 4
+    }
+  },
+  "comparisons": [
+    {
+      "mode": "default",
+      "case": "same-text-after-shape-switch",
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 119.06825003987225,
+        "scalar_norm": 119.06825003987225,
+        "cosine": 1.0
+      }
+    },
+    {
+      "mode": "both",
+      "case": "same-text-after-shape-switch",
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 119.06825003987225,
+        "scalar_norm": 119.06825003987225,
+        "cosine": 1.0
+      }
+    },
+    {
+      "mode": "compare",
+      "case": "same-text-after-shape-switch",
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 119.06829737005368,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 1.0
+      }
+    },
+    {
+      "mode": "default",
+      "case": 0,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 29.31835160605055,
+        "scalar_norm": 29.31835160605055,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "default",
+      "case": 1,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.001072615385055542,
+        "rms": 2.7044785173043245e-05,
+        "graph_norm": 119.06825003987225,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 0.9999999960378827
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "default",
+      "case": 2,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 31.2728038611899,
+        "scalar_norm": 31.2728038611899,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "default",
+      "case": 3,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 49.584944367894394,
+        "scalar_norm": 49.584944367894394,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "default",
+      "case": 4,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.001072615385055542,
+        "rms": 2.7044785173043245e-05,
+        "graph_norm": 119.06825003987225,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 0.9999999960378827
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "default",
+      "case": 5,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 0.9063567046294437,
+        "scalar_norm": 0.9063567046294437,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "zero",
+      "case": 0,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 29.31835160605055,
+        "scalar_norm": 29.31835160605055,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "zero",
+      "case": 1,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.001072615385055542,
+        "rms": 2.7044785173043245e-05,
+        "graph_norm": 119.06825003987225,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 0.9999999960378827
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "zero",
+      "case": 2,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 31.2728038611899,
+        "scalar_norm": 31.2728038611899,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "zero",
+      "case": 3,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 49.584944367894394,
+        "scalar_norm": 49.584944367894394,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "zero",
+      "case": 4,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.001072615385055542,
+        "rms": 2.7044785173043245e-05,
+        "graph_norm": 119.06825003987225,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 0.9999999960378827
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "zero",
+      "case": 5,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 0.9063567046294437,
+        "scalar_norm": 0.9063567046294437,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "empty_only",
+      "case": 0,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.0004837512969970703,
+        "rms": 3.670900860461449e-05,
+        "graph_norm": 29.31435413663921,
+        "scalar_norm": 29.31835160605055,
+        "cosine": 0.9999998888798424
+      },
+      "threshold_disagreements": 10
+    },
+    {
+      "mode": "empty_only",
+      "case": 1,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.001072615385055542,
+        "rms": 2.7044785173043245e-05,
+        "graph_norm": 119.06825003987225,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 0.9999999960378827
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "empty_only",
+      "case": 2,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 31.2728038611899,
+        "scalar_norm": 31.2728038611899,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "empty_only",
+      "case": 3,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 49.584944367894394,
+        "scalar_norm": 49.584944367894394,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "empty_only",
+      "case": 4,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.001072615385055542,
+        "rms": 2.7044785173043245e-05,
+        "graph_norm": 119.06825003987225,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 0.9999999960378827
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "empty_only",
+      "case": 5,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 0.9063567046294437,
+        "scalar_norm": 0.9063567046294437,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "rebuild_only",
+      "case": 0,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 29.31835160605055,
+        "scalar_norm": 29.31835160605055,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "rebuild_only",
+      "case": 1,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.001072615385055542,
+        "rms": 2.7044785173043245e-05,
+        "graph_norm": 119.06825003987225,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 0.9999999960378827
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "rebuild_only",
+      "case": 2,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 31.2728038611899,
+        "scalar_norm": 31.2728038611899,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "rebuild_only",
+      "case": 3,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0008840560913085938,
+        "rms": 2.1889485401773294e-05,
+        "graph_norm": 49.58507422958008,
+        "scalar_norm": 49.584944367894394,
+        "cosine": 0.9999999940166742
+      },
+      "threshold_disagreements": 1
+    },
+    {
+      "mode": "rebuild_only",
+      "case": 4,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.001072615385055542,
+        "rms": 2.7044785173043245e-05,
+        "graph_norm": 119.06825003987225,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 0.9999999960378827
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "rebuild_only",
+      "case": 5,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 0.9063567046294437,
+        "scalar_norm": 0.9063567046294437,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "both",
+      "case": 0,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.0004837512969970703,
+        "rms": 3.670900860461449e-05,
+        "graph_norm": 29.31435413663921,
+        "scalar_norm": 29.31835160605055,
+        "cosine": 0.9999998888798424
+      },
+      "threshold_disagreements": 10
+    },
+    {
+      "mode": "both",
+      "case": 1,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.001072615385055542,
+        "rms": 2.7044785173043245e-05,
+        "graph_norm": 119.06825003987225,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 0.9999999960378827
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "both",
+      "case": 2,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0005804598331451416,
+        "rms": 4.701392200363629e-05,
+        "graph_norm": 31.270959064494182,
+        "scalar_norm": 31.2728038611899,
+        "cosine": 0.9999999323070042
+      },
+      "threshold_disagreements": 4
+    },
+    {
+      "mode": "both",
+      "case": 3,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0008840560913085938,
+        "rms": 2.1889485401773294e-05,
+        "graph_norm": 49.58507422958008,
+        "scalar_norm": 49.584944367894394,
+        "cosine": 0.9999999940166742
+      },
+      "threshold_disagreements": 1
+    },
+    {
+      "mode": "both",
+      "case": 4,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.001072615385055542,
+        "rms": 2.7044785173043245e-05,
+        "graph_norm": 119.06825003987225,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 0.9999999960378827
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "both",
+      "case": 5,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0008026063442230225,
+        "rms": 1.356783515458756e-05,
+        "graph_norm": 0.9058187793382515,
+        "scalar_norm": 0.9063567046294437,
+        "cosine": 0.9999932880891432
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "compare",
+      "case": 0,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 29.31835160605055,
+        "scalar_norm": 29.31835160605055,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "compare",
+      "case": 1,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 119.06829737005368,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "compare",
+      "case": 2,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 31.2728038611899,
+        "scalar_norm": 31.2728038611899,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "compare",
+      "case": 3,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 49.584944367894394,
+        "scalar_norm": 49.584944367894394,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "compare",
+      "case": 4,
+      "probability": {
+        "count": 153600,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 119.06829737005368,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "compare",
+      "case": 5,
+      "probability": {
+        "count": 61440,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "graph_norm": 0.9063567046294437,
+        "scalar_norm": 0.9063567046294437,
+        "cosine": 1.0
+      },
+      "threshold_disagreements": 0
+    },
+    {
+      "mode": "compare_stages",
+      "case": 0,
+      "stage": "graph_stage0",
+      "metrics": {
+        "count": 1228800,
+        "max_abs": 0.000202178955078125,
+        "rms": 8.723039011821913e-06,
+        "graph_norm": 494.8354805267055,
+        "scalar_norm": 494.836475444706,
+        "cosine": 0.9999999998110723
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 0,
+      "stage": "graph_med_adjust0",
+      "metrics": {
+        "count": 2457600,
+        "max_abs": 0.0001125335693359375,
+        "rms": 4.0538628431412015e-06,
+        "graph_norm": 388.9066075256487,
+        "scalar_norm": 388.90792137125896,
+        "cosine": 0.9999999998721711
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 0,
+      "stage": "graph_head_down",
+      "metrics": {
+        "count": 614400,
+        "max_abs": 5.5149197578430176e-05,
+        "rms": 6.514560620994343e-06,
+        "graph_norm": 136.41429664799335,
+        "scalar_norm": 136.41459709187208,
+        "cosine": 0.9999999993018267
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 0,
+      "stage": "graph_head_final_pre",
+      "metrics": {
+        "count": 153600,
+        "max_abs": 0.007506370544433594,
+        "rms": 0.0012601860136783054,
+        "graph_norm": 3305.658456908457,
+        "scalar_norm": 3305.656084611061,
+        "cosine": 0.9999999888389568
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 0,
+      "stage": "graph_head_final",
+      "metrics": {
+        "count": 153600,
+        "max_abs": 0.0004837512969970703,
+        "rms": 3.670900860461449e-05,
+        "graph_norm": 29.31435413663921,
+        "scalar_norm": 29.31835160605055,
+        "cosine": 0.9999998888798424
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 1,
+      "stage": "graph_stage0",
+      "metrics": {
+        "count": 1228800,
+        "max_abs": 0.00024366378784179688,
+        "rms": 1.5294390719383107e-05,
+        "graph_norm": 938.996653256445,
+        "scalar_norm": 939.0068841681816,
+        "cosine": 0.9999999998963507
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 1,
+      "stage": "graph_med_adjust0",
+      "metrics": {
+        "count": 2457600,
+        "max_abs": 0.00019359588623046875,
+        "rms": 7.05817923021382e-06,
+        "graph_norm": 682.1737368261869,
+        "scalar_norm": 682.180361134363,
+        "cosine": 0.9999999999155935
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 1,
+      "stage": "graph_head_down",
+      "metrics": {
+        "count": 614400,
+        "max_abs": 2.5391578674316406e-05,
+        "rms": 1.4959948499275326e-06,
+        "graph_norm": 194.5092727791532,
+        "scalar_norm": 194.50948636664964,
+        "cosine": 0.9999999999824314
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 1,
+      "stage": "graph_head_final_pre",
+      "metrics": {
+        "count": 153600,
+        "max_abs": 0.010850906372070312,
+        "rms": 0.0017312675239929023,
+        "graph_norm": 4665.008821739486,
+        "scalar_norm": 4665.015088288072,
+        "cosine": 0.9999999894233784
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 1,
+      "stage": "graph_head_final",
+      "metrics": {
+        "count": 153600,
+        "max_abs": 0.001072615385055542,
+        "rms": 2.7044785173043245e-05,
+        "graph_norm": 119.06825003987225,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 0.9999999960378827
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 2,
+      "stage": "graph_stage0",
+      "metrics": {
+        "count": 491520,
+        "max_abs": 8.0108642578125e-05,
+        "rms": 3.2055753384698487e-06,
+        "graph_norm": 349.2173504508476,
+        "scalar_norm": 349.21833640675885,
+        "cosine": 0.9999999999832746
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 2,
+      "stage": "graph_med_adjust0",
+      "metrics": {
+        "count": 983040,
+        "max_abs": 6.198883056640625e-05,
+        "rms": 1.6020398531366312e-06,
+        "graph_norm": 274.03271455461754,
+        "scalar_norm": 274.03358681892405,
+        "cosine": 0.9999999999882523
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 2,
+      "stage": "graph_head_down",
+      "metrics": {
+        "count": 245760,
+        "max_abs": 2.6054680347442627e-05,
+        "rms": 2.481852203678251e-06,
+        "graph_norm": 89.74001645779028,
+        "scalar_norm": 89.7402221731235,
+        "cosine": 0.9999999999086442
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 2,
+      "stage": "graph_head_final_pre",
+      "metrics": {
+        "count": 61440,
+        "max_abs": 0.00714874267578125,
+        "rms": 0.0012847934136709562,
+        "graph_norm": 2207.506202535461,
+        "scalar_norm": 2207.501023253134,
+        "cosine": 0.9999999895967281
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 2,
+      "stage": "graph_head_final",
+      "metrics": {
+        "count": 61440,
+        "max_abs": 0.0005804598331451416,
+        "rms": 4.701392200363629e-05,
+        "graph_norm": 31.270959064494182,
+        "scalar_norm": 31.2728038611899,
+        "cosine": 0.9999999323070042
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 3,
+      "stage": "graph_stage0",
+      "metrics": {
+        "count": 491520,
+        "max_abs": 5.435943603515625e-05,
+        "rms": 3.7515976197984613e-06,
+        "graph_norm": 500.6834624445775,
+        "scalar_norm": 500.6845283060825,
+        "cosine": 0.9999999999884666
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 3,
+      "stage": "graph_med_adjust0",
+      "metrics": {
+        "count": 983040,
+        "max_abs": 6.389617919921875e-05,
+        "rms": 1.8395283236241223e-06,
+        "graph_norm": 424.19591191315305,
+        "scalar_norm": 424.19682484792065,
+        "cosine": 0.9999999999930643
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 3,
+      "stage": "graph_head_down",
+      "metrics": {
+        "count": 245760,
+        "max_abs": 6.9588422775268555e-06,
+        "rms": 4.743932892189596e-07,
+        "graph_norm": 114.46094382734755,
+        "scalar_norm": 114.461009732089,
+        "cosine": 0.9999999999980563
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 3,
+      "stage": "graph_head_final_pre",
+      "metrics": {
+        "count": 61440,
+        "max_abs": 0.010636329650878906,
+        "rms": 0.0018391214582061152,
+        "graph_norm": 3366.5189035634617,
+        "scalar_norm": 3366.5206393157364,
+        "cosine": 0.9999999908320277
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 3,
+      "stage": "graph_head_final",
+      "metrics": {
+        "count": 61440,
+        "max_abs": 0.0008840560913085938,
+        "rms": 2.1889485401773294e-05,
+        "graph_norm": 49.58507422958008,
+        "scalar_norm": 49.584944367894394,
+        "cosine": 0.9999999940166742
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 4,
+      "stage": "graph_stage0",
+      "metrics": {
+        "count": 1228800,
+        "max_abs": 0.00024366378784179688,
+        "rms": 1.5294390719383107e-05,
+        "graph_norm": 938.996653256445,
+        "scalar_norm": 939.0068841681816,
+        "cosine": 0.9999999998963507
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 4,
+      "stage": "graph_med_adjust0",
+      "metrics": {
+        "count": 2457600,
+        "max_abs": 0.00019359588623046875,
+        "rms": 7.05817923021382e-06,
+        "graph_norm": 682.1737368261869,
+        "scalar_norm": 682.180361134363,
+        "cosine": 0.9999999999155935
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 4,
+      "stage": "graph_head_down",
+      "metrics": {
+        "count": 614400,
+        "max_abs": 2.5391578674316406e-05,
+        "rms": 1.4959948499275326e-06,
+        "graph_norm": 194.5092727791532,
+        "scalar_norm": 194.50948636664964,
+        "cosine": 0.9999999999824314
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 4,
+      "stage": "graph_head_final_pre",
+      "metrics": {
+        "count": 153600,
+        "max_abs": 0.010850906372070312,
+        "rms": 0.0017312675239929023,
+        "graph_norm": 4665.008821739486,
+        "scalar_norm": 4665.015088288072,
+        "cosine": 0.9999999894233784
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 4,
+      "stage": "graph_head_final",
+      "metrics": {
+        "count": 153600,
+        "max_abs": 0.001072615385055542,
+        "rms": 2.7044785173043245e-05,
+        "graph_norm": 119.06825003987225,
+        "scalar_norm": 119.06829737005368,
+        "cosine": 0.9999999960378827
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 5,
+      "stage": "graph_stage0",
+      "metrics": {
+        "count": 491520,
+        "max_abs": 0.000194549560546875,
+        "rms": 1.2475580691516466e-05,
+        "graph_norm": 696.10982548499,
+        "scalar_norm": 696.1157982478909,
+        "cosine": 0.99999999995787
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 5,
+      "stage": "graph_med_adjust0",
+      "metrics": {
+        "count": 983040,
+        "max_abs": 0.0001163482666015625,
+        "rms": 5.365934691281433e-06,
+        "graph_norm": 491.78298395426094,
+        "scalar_norm": 491.7864338987503,
+        "cosine": 0.9999999999661084
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 5,
+      "stage": "graph_head_down",
+      "metrics": {
+        "count": 245760,
+        "max_abs": 0.00032806396484375,
+        "rms": 1.4032349582882402e-05,
+        "graph_norm": 634.9606308959111,
+        "scalar_norm": 634.9670225616635,
+        "cosine": 0.9999999999906509
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 5,
+      "stage": "graph_head_final_pre",
+      "metrics": {
+        "count": 61440,
+        "max_abs": 0.14782333374023438,
+        "rms": 0.006561542455887792,
+        "graph_norm": 4675.860642184761,
+        "scalar_norm": 4675.8163661649805,
+        "cosine": 0.9999999395505854
+      }
+    },
+    {
+      "mode": "compare_stages",
+      "case": 5,
+      "stage": "graph_head_final",
+      "metrics": {
+        "count": 61440,
+        "max_abs": 0.0008026063442230225,
+        "rms": 1.356783515458756e-05,
+        "graph_norm": 0.9058187793382515,
+        "scalar_norm": 0.9063567046294437,
+        "cosine": 0.9999932880891432
+      }
+    }
+  ],
+  "passed": true
+}
