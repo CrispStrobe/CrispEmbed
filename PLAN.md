@@ -1811,3 +1811,18 @@ OFF156tokens takes1388.25s/RSS5,185,196,032B; ON178tokens1561.55s/5,185,175,552B
 Different completion lengths prevent a speed interpretation. Gate stays
 default-off, no release/default/model alias change. Existing historical
 source-pin amendments and15git-verified frozen receipt pins remain intact.
+
+### Optional dequantized text weight dtype isolation
+
+A separate default-off BF16_QUANT_WEIGHTS experiment casts only admitted named
+Q8_0/Q4_K text weights to BF16 then back to F32 in existing transient buffers.
+It covers ordinary matrices, gathered embedding rows and tied head tiles;
+protected F32 vision/norm/conv and unrelated types/names remain untouched.
+No quantized storage change or full-model F32 cache. Full4B decoder caches
+record the mode and reject toggles between cached steps. First hosted gate
+is checkpoint-free projection/embedding/streamed-head byte equivalence to
+independently rounded F32 matrices, explicit-off/storage controls and genuine
+positive cache-toggle controls with the existing shared synthetic decoder.
+Historical synthetic numerical rejection remains separate, unchanged and
+insufficient for checkpoint qualification. Source-fed actual weight hashes
+and operator inputs are next; no full generation or speed claim yet.

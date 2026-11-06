@@ -1,5 +1,6 @@
 #include "qwen35_linear.h"
 #include "lighton4b_parallel_dequant.h"
+#include "lighton4b_bf16_dequant_weights.h"
 #include "qwen35_math.h"
 #include "qwen35_profile.h"
 #include "qwen35_weight_cache.h"
@@ -97,6 +98,7 @@ bool tensor_floats(ggml_tensor * source, float * target, int threads) {
 #endif
             convert(raw.data(), target, int64_t(count));
     }
+    lighton4b_bf16_dequant_weights(source, target, count);
     stage.next(profile_event::source_validate);
     return std::all_of(target, target + count, [](float x) { return std::isfinite(x); });
 }
@@ -287,6 +289,7 @@ bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int
                 std::memcpy(values, raw.data(), count * size_t(width) * sizeof(float));
             else
                 ggml_get_type_traits(matrix->type)->to_float(raw.data(), values, int64_t(count * width));
+            lighton4b_bf16_dequant_weights(matrix, values, count * size_t(width));
             tile->ne[1] = int64_t(count);
             tile->nb[2] = tile->nb[1] * count;
             tile->nb[3] = tile->nb[2];

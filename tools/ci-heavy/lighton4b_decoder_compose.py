@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[2]
 
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
-def execute():
+def execute(weight_controls=False):
     if os.environ.get('GITHUB_ACTIONS')!='true' or os.environ.get('CRISPEMBED_BUILD_MODE')!='portable':
         raise RuntimeError('hosted portable execution required')
     import lighton4b_gdn_reference as reference
@@ -23,6 +23,7 @@ def execute():
         'src/qwen35_attention.cpp','src/qwen35_linear.cpp','src/qwen35_delta.cpp','src/qwen35_math.h',
         'tests/test_lighton4b_decoder_compose.cpp','tools/ci-heavy/lighton4b_decoder_compose.py',
         'tools/ci-heavy/lighton4b_gdn_reference.py','CMakeLists.txt')
+    if weight_controls:paths += ('src/lighton4b_bf16_dequant_weights.h','src/qwen35_decoder.cpp','tests/test_lighton4b_bf16_dequant_weights.cpp','tools/ci-heavy/lighton4b_bf16_weight_controls.py')
     report={'schema':'lighton4b-decoder-compose/v1','status':'failed','checkpoint_payload_bytes':0,
         'format5_admitted':False,'logits_observed':False,'quality_qualified':False,'full_model_inference_observed':False,
         'shared_synthetic_weight_sets':2,'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
@@ -118,7 +119,11 @@ def execute():
         del model,prototypes,weights,cache;gc.collect()
         command('configure',['cmake','-S',ROOT,'-B',scratch/'build','-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF',
             '-DCRISPEMBED_NATIVE=OFF','-DGGML_CUDA=OFF','-DGGML_VULKAN=OFF'])
-        command('build',['cmake','--build',scratch/'build','--target','test-lighton4b-decoder-compose','--parallel','2'])
+        command('build',['cmake','--build',scratch/'build','--target','test-lighton4b-decoder-compose',*(['test-lighton4b-bf16-dequant-weights'] if weight_controls else []),'--parallel','2'])
+        if weight_controls:
+            command('weight-controls',[scratch/'build/test-lighton4b-bf16-dequant-weights'])
+            report['weight_controls_stdout']=(out/'weight-controls.log').read_text()
+            if 'BF16_DEQUANT_WEIGHTS passed=1' not in report['weight_controls_stdout']:raise ValueError('weight conversion controls missing')
         binary=scratch/'build/test-lighton4b-decoder-compose';report['executable_sha256']=sha(binary)
         command('native',[binary,scratch/'weights.gguf',scratch/'reference.gguf',out/'native'])
         report['native_stdout']=(out/'native.log').read_text().replace(str(ROOT),'[repository]').replace(str(scratch),'[scratch]')

@@ -1502,3 +1502,15 @@ scores reject generation, infinities retain normal ordering.
 for test-runner-only hidden/operator capture; the recomputed layer0 probe must
 match actual forward hidden bytes and never mutates its cache. These probes are
 not linked into public recognition artifacts.
+
+`CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS=1` experimentally casts dequantized
+Q8_0/Q4_K **named text matrices** to BF16 then back to F32 before existing
+matmul/gather, including embedding and tied streamed vocabulary projection.
+NATIVE_CONTEXT, LIGHTON4B_QUANT and QWEN35_QUANT gates are also required.
+Quant storage stays immutable; float vision/norm/conv tensors, unrelated names
+and other types are excluded. Conversion is in-place in existing transient
+matrix/row/tile buffers, with no full-model F32 cache. Default off preserves
+old F32 dequantization. This isolates reference-weight dtype, not activation
+dtype, reduction arithmetic, speed or quality qualification.
+Full4B decoder caches capture this weight-dtype mode and reject reusing an
+old cache after a mode toggle; a fresh prefill is required.

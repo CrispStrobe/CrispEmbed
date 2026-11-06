@@ -1,4 +1,5 @@
 #include "qwen35_decoder.h"
+#include "lighton4b_bf16_dequant_weights.h"
 #include "qwen35_math.h"
 #include "core/env_gate.h"
 #include "ggml-backend.h"
@@ -88,6 +89,7 @@ bool embed_cpu(ggml_tensor * embedding, const std::vector<int> & ids, std::vecto
         else
             ggml_get_type_traits(embedding->type)->to_float(row.data(), hidden.data() + t * width, width);
     }
+    lighton4b_bf16_dequant_weights(embedding, hidden.data(), hidden.size());
     return std::all_of(hidden.begin(), hidden.end(), [](float x) { return std::isfinite(x); });
 }
 static bool decoder_impl(const decoder_weights & w, const attention_config & c, const float * input,
