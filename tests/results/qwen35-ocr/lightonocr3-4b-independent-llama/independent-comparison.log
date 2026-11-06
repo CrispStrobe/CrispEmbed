@@ -1,0 +1,34 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+phase upstream-init
+phase upstream-remote
+phase upstream-fetch
+phase upstream-checkout
+phase configure
+phase build
+phase upstream-version
+phase host-cpu
+phase host-packages
+phase download-projector
+phase download-Q4_K_M
+phase run-Q4_K_M-simple_form
+phase completed-Q4_K_M-simple_form
+phase run-Q4_K_M-simple_table
+phase completed-Q4_K_M-simple_table
+phase run-Q4_K_M-arabic_printed_line
+phase completed-Q4_K_M-arabic_printed_line
+phase download-Q6_K
+phase run-Q6_K-simple_form
+phase completed-Q6_K-simple_form
+phase run-Q6_K-simple_table
+phase completed-Q6_K-simple_table
+phase run-Q6_K-arabic_printed_line
+phase completed-Q6_K-arabic_printed_line
+phase download-Q8_0
+phase run-Q8_0-simple_form
+phase completed-Q8_0-simple_form
+phase run-Q8_0-simple_table
+phase completed-Q8_0-simple_table
+phase run-Q8_0-arabic_printed_line
+phase completed-Q8_0-arabic_printed_line
+phase completed-Q8_0-arabic_printed_line

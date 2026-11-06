@@ -1,0 +1,13 @@
+{
+  "schema": "lighton4b-independent-llama-kaggle-bootstrap/v1",
+  "source_sha": "82890a9871bb22a8e4d9c268a420c769a8b57494",
+  "status": "failed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "independent-comparison",
+  "worker_sha256": "04c94d311c7b5070e792fd5d1808acc1ae798511a0bb2bd14ed5b46c8a4a1452",
+  "protocol_sha256": "c79a17997c3fbb39bb30a4d6590d00ab382e91f5ef2959bf96679dd8e0aa37c3",
+  "error_type": "RuntimeError",
+  "error": "Bounded independent upstream worker did not complete; retain per-phase logs and receipt"
+}

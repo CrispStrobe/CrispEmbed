@@ -1,0 +1,40 @@
+warning: no usable GPU found, --gpu-layers option will be ignored
+warning: one possible reason is that llama.cpp was compiled without GPU support
+warning: consult docs/build.md for compilation instructions
+0.00.004.831 W Setting 'enable_thinking' via --chat-template-kwargs is deprecated. Use --reasoning on / --reasoning off instead.
+0.00.005.119 I srv  llama_server: initializing ...
+0.00.005.155 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.005.905 W srv  server_setup: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.008.877 I srv    load_model: loading model '/tmp/lighton4b-independent-llama-cpu-v1/independent-llama/LightOnOCR-3-4B-Q6_K.gguf'
+0.01.829.912 I cmn          init: llama threadpool init, n_threads = 4
+0.01.832.479 W load_hparams: Qwen-VL models require at minimum 1024 image tokens to function correctly on grounding tasks
+0.01.832.501 W load_hparams: if you encounter problems with accuracy, try adding --image-min-tokens 1024
+0.01.832.501 W load_hparams: more info: https://github.com/ggml-org/llama.cpp/issues/16842
+
+0.02.511.849 I srv    load_model: loaded multimodal model, '/tmp/lighton4b-independent-llama-cpu-v1/independent-llama/mmproj-LightOnOCR-3-4B-F16.gguf'
+0.02.995.481 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 2048, kv_unified = 'false'
+0.03.003.074 I srv  server_run_i: model loaded
+0.03.003.100 I srv  server_on_li: listening on http://127.0.0.1:49525
+0.04.023.064 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1
+0.04.023.169 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.10.472.369 W find_slot: non-consecutive token position 4 after 3 for sequence 0 with 140 new tokens
+0.10.472.659 W find_slot: non-consecutive token position 4 after 3 for sequence 0 with 140 new tokens
+0.20.972.607 W find_slot: non-consecutive token position 23 after 4 for sequence 0 with 6 new tokens
+0.20.972.760 W find_slot: non-consecutive token position 23 after 4 for sequence 0 with 6 new tokens
+0.21.754.100 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =    150, progress = 0.97, t =  17.73 s / 8.46 tokens per second
+0.52.615.841 I slot print_timing: id  0 | task 0 | n_gen =    100, tg =   3.28 t/s, tg_3s =   3.31 t/s
+0.55.662.564 I slot print_timing: id  0 | task 0 | n_gen =    110, tg =   3.28 t/s, tg_3s =   3.28 t/s
+0.58.819.437 I slot print_timing: id  0 | task 0 | n_gen =    120, tg =   3.27 t/s, tg_3s =   3.17 t/s
+1.01.828.777 I slot print_timing: id  0 | task 0 | n_gen =    130, tg =   3.27 t/s, tg_3s =   3.32 t/s
+1.04.858.625 I slot print_timing: id  0 | task 0 | n_gen =    140, tg =   3.28 t/s, tg_3s =   3.30 t/s
+1.07.884.435 I slot print_timing: id  0 | task 0 | n_gen =    149, tg =   3.26 t/s, tg_3s =   2.97 t/s
+1.10.973.921 I slot print_timing: id  0 | task 0 | n_gen =    159, tg =   3.26 t/s, tg_3s =   3.24 t/s
+1.14.027.042 I slot print_timing: id  0 | task 0 | n_gen =    169, tg =   3.26 t/s, tg_3s =   3.28 t/s
+1.17.226.313 I slot print_timing: id  0 | task 0 | n_gen =    179, tg =   3.25 t/s, tg_3s =   3.13 t/s
+1.18.163.437 I slot print_timing: id  0 | task 0 | prompt eval time =   18407.14 ms /   154 tokens (  119.53 ms per token,     8.37 tokens per second)
+1.18.163.582 I slot print_timing: id  0 | task 0 |        eval time =   55728.67 ms /   182 tokens (  307.89 ms per token,     3.25 tokens per second)
+1.18.163.613 I slot print_timing: id  0 | task 0 |       total time =   74135.82 ms /   336 tokens
+1.18.163.657 I slot print_timing: id  0 | task 0 |    graphs reused =        179
+1.18.163.684 I slot print_timing: id  0 | task 0 |   graph reallocs =          0    /     0        (same size) / (changed size)
+1.18.166.549 I slot      release: id  0 | task 0 | stop processing: n_tokens = 335, truncated = 0
+1.18.294.094 I srv    operator(): operator(): cleaning up before exit...
