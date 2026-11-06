@@ -3,7 +3,7 @@
 This tool adapts one authenticated public statistics file into CrispEmbed's input
 format. It does not quantize weights or run a model. Python controls pass on the
 real3.63MB file and synthetic negatives; an actual C++ consumer build/check is
-pending. No weighted model or quality result is admitted yet.
+pending on Kaggle CPU. No weighted model or quality result is admitted yet.
 
 The source is
 [richardyoung/LightOnOCR-3-4B-GGUF](https://huggingface.co/richardyoung/LightOnOCR-3-4B-GGUF/tree/8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01)
@@ -83,3 +83,16 @@ width/name, tampered statistics and the real unadapted source must reject withou
 publishing a model. This route does not enter weight quantization, collect
 activations, instantiate a reference model or read an OCR case. Artifacts stay
 remote90days; no new model or PR is created by these checks.
+
+
+The queued GitHub control42238407232 was cancelled at the user's request before
+it started; it produced no artifacts or test result. The same checks are ported
+to a CPU-only Kaggle bootstrap at `tools/kaggle/lighton4b-imatrix-adapter/kernel.py`.
+Replace only its source token with the reviewed40-character commit and instantiate
+the example metadata under the configured account outside Git. GPU/TPU and all
+data sources stay disabled; internet is read-only source/statistics transport.
+The bootstrap verifies its exact source and3a27 ggml pin, records RAM/swap/disk/load,
+uses two build threads and a20-minute controller deadline within a30-minute kernel.
+Only its fresh transient checkout/build directories are cleaned; all statistics,
+receipts, logs and negative results remain in the kernel output. Account/access
+references remain in private environment notes, never this public handoff.

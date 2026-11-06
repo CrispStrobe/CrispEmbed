@@ -1967,3 +1967,10 @@ actual-consumer/header-only checker are prepared; one bounded model-free hosted
 build/check is next. No weight quantization, model forward, OCR capture or quality
 promotion is authorized before verification. The source corpus contents and
 calibration source weights remain independently unauthenticated external text.
+
+
+GitHub check42238407232 remained queued and was cancelled by user instruction;
+no tests or artifacts ran there. The unchanged payload-free adapter controls are
+now ported to one CPU-only Kaggle worker with source/submodule pins, GPU rejection,
+resource receipts and a strict20-minute controller/30-minute kernel bound. No
+GitHub dispatch, weight quantization or model forward follows from this port.
