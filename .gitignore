@@ -63,3 +63,6 @@ python/*.egg-info/
 
 # c2pa prebuilt (fetched at configure time; see cmake/FindC2pa.cmake)
 third_party/c2pa/
+
+# Local GPU notebook submission settings (may contain private identifiers).
+tools/kaggle/**/kernel-metadata.json

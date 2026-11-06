@@ -33,6 +33,28 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Big-LaMa (research only) | Weights' rights unclear; kept on `feat/issue71-lama-research`, private Hub copy only | Nothing until the owner clarifies the weight licence | Licence clarified (then publish) or lane closed |
 | Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
 
+## PP-OCRv6 detector empty/shape handling — issue #164
+
+Owner lane: `fix/ppocrv6-det-issue164-20261106`, based on `a892ae982`.
+The default detector intentionally falls back to scalar when the graph returns
+no boxes, and permanently rejects dimensions other than its first attempted
+shape. The existing recognizer acceptance flag does not govern the detector.
+
+Implement independent default-off empty-result and bounded one-shape rebuild
+options, retain the CPU fallback and compare mode, and preserve resident weight
+ownership. Unit checks cover gate decisions, invalid/nonfinite maps and failed
+shape retries. Live acceptance requires real medium F16 detector/recognizer,
+empty and text frames, repeated and alternating sizes, default/zero/opt-in and
+scalar controls, probability and intermediate absolute errors/magnitudes, box
+geometry, decoded text, timing, and backend/source/model hashes. Run CPU on hosted
+CI and actual CUDA on authorized GPU resources; preserve initial failures. Metal
+and a representative low-contrast/real-video corpus remain separate unless run.
+No new default or model qualification follows from a speed measurement.
+
+Hosted CPU initial evidence: [run 42222784039](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42222784039), source `f2dac783fd28d30c012d3ff3e96b30c75cc790e2`, with the complete model hashes, input hashes, decoded text, geometry, timings, stage magnitudes and absolute errors in [the receipt](tests/results/ppocrv6/issue164-cpu-initial.json). The six inputs produced 0/2/0/2/2/0 boxes, with identical decoded text and at least 0.90 box IoU against scalar for all seven modes. Independent opt-ins and literal-zero controls passed; A→B→A rebuilt four graphs with both gates, compared with one under the default. The largest observed stage-0 absolute difference was 0.000244, and the largest probability difference was 0.001073. These are bounded native CPU graph-versus-scalar results, not a PaddleX or corpus qualification. Timings are single runs and are not a controlled benchmark.
+
+The actual HTTP server route also passed on [hosted CPU run 42224790355](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42224790355), source `8922548d6f058bcce739810edff99b036e8b3b3a`; [the server receipt](tests/results/ppocrv6/issue164-cpu-server.json) preserves all six responses and graph acceptance/build counts. Both settings returned 0/2/0/2/2/0 regions and the same decoded text; the default built one graph and both opt-ins built four. A real CUDA T4 execution at source `26e2e3d7e2bb069e4d279bacd01284b1c46f3726` passed the same seven modes and the actual HTTP server default/both A/B; [the CUDA receipt](tests/results/ppocrv6/issue164-cuda.json) preserves source and model hashes, all outputs, geometry and numerical comparisons. All modes returned 0/2/0/2/2/0 boxes with exact decoded text and at least 0.90 box IoU versus scalar. The largest stage-0 absolute difference was 0.00000906; the largest final probability difference was 0.00001115. These are bounded CUDA-versus-scalar results, not a corpus or original-framework qualification. Do not promote either gate by default. Retain the initial CPU receipt.
+
 ## Post-release v0.17.15 — 5 November 2026
 
 [Native/WASM v0.17.15](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.15)
