@@ -1493,3 +1493,13 @@ The existing `CRISPEMBED_QWEN35_QUANT` gate remains required. Converted F32 valu
 and downstream matmul stay unchanged; no full-model converted-weight cache is
 allocated. Unset/empty/0, one thread, small tensors and other types use legacy
 conversion. Thread-launch failure joins writers before serial overwrite.
+
+`CRISPEMBED_LIGHTON4B_HEAD_BF16=1` is an experimental native diagnostic final-logit
+output cast to BF16 (RNE), leaving weights/hidden/caches/F32 matmul unchanged.
+Default off preserves F32 logits. Greedy ties choose the lowest token ID; NaN
+scores reject generation, infinities retain normal ordering.
+`CRISPEMBED_LIGHTON4B_GREEDY_TRACE=1` plus integer
+`CRISPEMBED_LIGHTON4B_GREEDY_TRACE_POSITION` selects one cached decode position
+for test-runner-only hidden/operator capture; the recomputed layer0 probe must
+match actual forward hidden bytes and never mutates its cache. These probes are
+not linked into public recognition artifacts.

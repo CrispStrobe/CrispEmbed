@@ -1,4 +1,5 @@
 #include "lighton4b_native_context.h"
+#include "lighton4b_head_bf16.h"
 #include "lighton4b_image_compose.h"
 #include "lighton4b_frontend.h"
 #include "core/clean_exit.h"
@@ -71,9 +72,17 @@ static int run(int argc, char ** argv) {
     if (!project_rows_cpu(model.text.decoder.head, initial.norm.data() + (ids.size() - 1) * 2560, 2560, 1, threads, 256,
                           first))
         return 12;
+    lighton4b_head_bf16(first);
     emit("prefill.logits", first);
     initial.hidden.clear();
     initial.norm.clear();
+    int trace_position = -1;
+    if (core_env::on("CRISPEMBED_LIGHTON4B_GREEDY_TRACE")) {
+        const char * value = std::getenv("CRISPEMBED_LIGHTON4B_GREEDY_TRACE_POSITION");
+        if (!value) return 2;
+        trace_position = std::stoi(value);
+        if (trace_position < 1 || trace_position >= cap) return 2;
+    }
     auto step = [&](int id, lighton4b_decoder_cache & cache, std::vector<float> & logits, const std::string & label) {
         std::vector<float> x, pos;
         if (!embed_cpu(model.text.decoder.embedding, { id }, x) ||
@@ -83,12 +92,35 @@ static int run(int argc, char ** argv) {
         if (!lighton4b_decoder_hidden_cpu(model.text.decoder, x.data(), pos.data(), 1, threads, &cache, next))
             return false;
         if (!label.empty()) {
+            if (label.rfind("greedy.", 0) == 0) {
+                lighton4b_linear_block_outputs block;
+                if (!lighton4b_linear_block_cpu(model.text.decoder.layers[0], x.data(), 1, threads,
+                                                &cache.layers[0].linear, block) ||
+                    block.hidden != next.hidden[0])
+                    return false;
+                emit(label + ".layer0.input_norm", block.input_norm);
+                const auto & weights = model.text.decoder.layers[0].linear;
+                std::vector<std::vector<float>> projected;
+                if (!project_cpu({ weights.qkv, weights.z, weights.a, weights.b }, block.input_norm.data(), 2560, 1,
+                                 threads, projected))
+                    return false;
+                const char * names[] = { "qkv", "z", "a", "b" };
+                for (size_t i = 0; i < 4; ++i) emit(label + ".layer0." + names[i], projected[i]);
+                emit(label + ".layer0.attention", block.attention);
+                emit(label + ".layer0.attention_residual", block.attention_residual);
+                emit(label + ".layer0.post_norm", block.post_norm);
+                emit(label + ".layer0.gate", block.gate);
+                emit(label + ".layer0.up", block.up);
+                emit(label + ".layer0.activation", block.activation);
+                emit(label + ".layer0.down", block.down);
+            }
             emit(label + ".input", x);
             emit(label + ".positions", pos);
             for (size_t i = 0; i < next.hidden.size(); ++i) emit(label + ".layer." + std::to_string(i), next.hidden[i]);
             emit(label + ".norm", next.norm);
         }
         if (!project_rows_cpu(model.text.decoder.head, next.norm.data(), 2560, 1, threads, 256, logits)) return false;
+        lighton4b_head_bf16(logits);
         cache = std::move(next.cache);
         return true;
     };
@@ -110,11 +142,13 @@ static int run(int argc, char ** argv) {
     logits = first;
     std::vector<int> generated;
     for (int i = 0; i < cap; ++i) {
-        int best = int(std::max_element(logits.begin(), logits.end()) - logits.begin());
+        int best = lighton4b_greedy_id(logits);
+        if (best < 0) return 17;
         generated.push_back(best);
         emit("greedy." + std::to_string(i) + ".logits", logits);
         if (tokenizer.is_stop(best)) break;
-        if (i + 1 < cap && !step(best, greedy_cache, logits, "")) return 15;
+        const std::string label = i + 1 == trace_position ? "greedy." + std::to_string(i + 1) : "";
+        if (i + 1 < cap && !step(best, greedy_cache, logits, label)) return 15;
     }
     ids_write("generated", generated);
     std::string text;

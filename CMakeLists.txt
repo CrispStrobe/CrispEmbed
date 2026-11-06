@@ -1752,3 +1752,6 @@ endif()
 
 add_executable(test-lighton4b-parallel-dequant tests/test_lighton4b_parallel_dequant.cpp)
 target_link_libraries(test-lighton4b-parallel-dequant PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(test-lighton4b-head-bf16 tests/test_lighton4b_head_bf16.cpp)
+target_link_libraries(test-lighton4b-head-bf16 PRIVATE crispembed-qwen35-delta crispembed-core)

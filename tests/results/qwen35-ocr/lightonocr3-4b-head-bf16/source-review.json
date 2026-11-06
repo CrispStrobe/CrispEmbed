@@ -1,0 +1,19 @@
+{
+  "schema": "lighton4b-head-bf16-source-review/v1",
+  "tested_source_sha": "b98883abeccd0cae39e0026571c150e444b71786",
+  "sources_sha256": {
+    "src/lighton4b_head_bf16.h": "53771c6c56e31b06e81706d17f285d686568b6e4b79115837f32c2b9ad7f54c8",
+    "tests/lighton4b_native_document.cpp": "7c12381a7444cb8fcb7c69bc91c1cb8043d49248cd4454031df49d50b96ff85c",
+    "tests/test_lighton4b_head_bf16.cpp": "eef50902b9b2f265297ac60cbaf484c4ff6c8afa4f537b1c41d1a1500857030c",
+    "tools/ci-heavy/lighton4b_corrected_mixed_smoke.py": "e4a033ce48ed07ecb8e38fc7c76454307e932e68cfaee03bca748acb1f1b916d",
+    "tools/ci-heavy/lighton4b_head_bf16_native_ab.py": "b5b5f6a01e3513da8b3759a6916047eff13adbbf77c4eb98cacf11ed24d591e6",
+    "src/qwen35_linear.cpp": "de8e90adac93e487778cef2fce5405fb78869e2b9304c216305ad30d2c122afe",
+    "tests/results/qwen35-ocr/source-pin-amendments.json": "d40a164a1cd4706bf919ab4701278dfb27b51ff026b5bcd9769aefc3f8ad744d"
+  },
+  "historical_source_pin_policy": "No frozen receipt or pinned qwen35 source body changed by the head experiment. Existing declared parallel-dequant amendment chain remains byte-identical;15 amended receipt pins verified against git. New head helper is called only by experimental native test runner.",
+  "gate_off_preserved_by_actual_baseline": true,
+  "new_head_and_trace_gates_default": "off",
+  "main_ancestor": "6c2d41d78",
+  "rounding_contract": "BF16 finite RNE, signed zero/subnormal/overflow/quietNaN/Inf controls; lowest-ID exact ties; NaN greedy rejection",
+  "probe_contract": "Selected test-only cached position; layer0 recompute hidden must equal actualforward hidden before operators are emitted; immutable priorcache."
+}
