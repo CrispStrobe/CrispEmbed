@@ -1,0 +1,175 @@
+{
+  "all_decodes_exact_genuine_bf16": false,
+  "all_decodes_exact_retained_q8_out": true,
+  "all_eos_completed": true,
+  "artifact": {
+    "archive_bytes": 266196191,
+    "archive_sha256": "c0ca2607a067df0856ab366f55a9633998fcec03d74c159416c74d99cfb3261e",
+    "expires_at": "2027-02-04T13:15:07Z",
+    "id": 13506428243
+  },
+  "candidate_bytes": 4095839136,
+  "candidate_bytes_saved_vs_q8_out": 60948480,
+  "candidate_sha256": "83e065c472aa12d1c75be997c22d5038350540798f6ff7dbf6ca0240765c1c7a",
+  "cases": {
+    "arabic_printed_line": {
+      "against_genuine_bf16": {
+        "cer": {
+          "edits": 0,
+          "rate": 0.0,
+          "reference_codepoints": 12
+        },
+        "decoded_exact": true,
+        "first_differing_id": null,
+        "ids_exact": true,
+        "matching_prefix_ids": 6,
+        "normalization": "none; Unicode codepoints and whitespace words; model agreement, not human OCR accuracy",
+        "wer": {
+          "edits": 0,
+          "rate": 0.0,
+          "reference_words": 2
+        }
+      },
+      "cap": 256,
+      "cap_hit": false,
+      "decoded_utf8_bytes": 23,
+      "decoded_utf8_sha256": "24de6e789e4550dec9afdb7013d4e7d455b99f6a7ba75f2d166c0f20a896cc39",
+      "eos_id": 248046,
+      "equal_q6_q8_raw_score_hashes": 0,
+      "exact_q8_ids_text": true,
+      "generated_ids_count": 6,
+      "native_peak_rss_bytes": 4534755328,
+      "native_seconds": 76.67065036400004,
+      "old_q8_native_peak_rss_bytes": 4514562048,
+      "old_q8_native_seconds": 87.66,
+      "plain_q4_against_same_genuine_bf16": {
+        "cer": {
+          "edits": 0,
+          "rate": 0.0,
+          "reference_codepoints": 12
+        },
+        "decoded_exact": true,
+        "first_differing_id": null,
+        "ids_exact": true,
+        "matching_prefix_ids": 6,
+        "normalization": "none; Unicodecodepoints and whitespace words with case/punctuation retained; modelagreement, not human OCR accuracy",
+        "wer": {
+          "edits": 0,
+          "rate": 0.0,
+          "reference_words": 2
+        }
+      },
+      "prefill_stage_hashes_exact_per_smoke_and_full": 70,
+      "q8_out_against_same_genuine_bf16": {
+        "cer": {
+          "edits": 0,
+          "rate": 0.0,
+          "reference_codepoints": 12
+        },
+        "decoded_exact": true,
+        "first_differing_id": null,
+        "ids_exact": true,
+        "matching_prefix_ids": 6,
+        "normalization": "none; Unicodecodepoints and whitespace words with case/punctuation retained; modelagreement, not human OCR accuracy",
+        "wer": {
+          "edits": 0,
+          "rate": 0.0,
+          "reference_words": 2
+        }
+      },
+      "shared_causal_q6_q8_score_rows": 6,
+      "timing_limitation": "Different workers/sourcebuilds; no controlled speed claim."
+    },
+    "simple_table": {
+      "against_genuine_bf16": {
+        "cer": {
+          "edits": 224,
+          "rate": 0.36902800658978585,
+          "reference_codepoints": 607
+        },
+        "decoded_exact": false,
+        "first_differing_id": 36,
+        "ids_exact": false,
+        "matching_prefix_ids": 36,
+        "normalization": "none; Unicode codepoints and whitespace words; model agreement, not human OCR accuracy",
+        "wer": {
+          "edits": 61,
+          "rate": 0.5754716981132075,
+          "reference_words": 106
+        }
+      },
+      "cap": 256,
+      "cap_hit": false,
+      "decoded_utf8_bytes": 685,
+      "decoded_utf8_sha256": "43b2fb18411f07a557fb369417fb308c41b80bc4ba6930d9d0a8c5b30896ea13",
+      "eos_id": 248046,
+      "equal_q6_q8_raw_score_hashes": 0,
+      "exact_q8_ids_text": true,
+      "generated_ids_count": 228,
+      "native_peak_rss_bytes": 4525862912,
+      "native_seconds": 1085.183487772,
+      "old_q8_native_peak_rss_bytes": 4515020800,
+      "old_q8_native_seconds": 1585.16,
+      "plain_q4_against_same_genuine_bf16": {
+        "cer": {
+          "edits": 441,
+          "rate": 0.7265238879736409,
+          "reference_codepoints": 607
+        },
+        "decoded_exact": false,
+        "first_differing_id": 0,
+        "ids_exact": false,
+        "matching_prefix_ids": 0,
+        "normalization": "none; Unicodecodepoints and whitespace words with case/punctuation retained; modelagreement, not human OCR accuracy",
+        "wer": {
+          "edits": 99,
+          "rate": 0.9339622641509434,
+          "reference_words": 106
+        }
+      },
+      "prefill_stage_hashes_exact_per_smoke_and_full": 70,
+      "q8_out_against_same_genuine_bf16": {
+        "cer": {
+          "edits": 224,
+          "rate": 0.36902800658978585,
+          "reference_codepoints": 607
+        },
+        "decoded_exact": false,
+        "first_differing_id": 36,
+        "ids_exact": false,
+        "matching_prefix_ids": 36,
+        "normalization": "none; Unicodecodepoints and whitespace words with case/punctuation retained; modelagreement, not human OCR accuracy",
+        "wer": {
+          "edits": 61,
+          "rate": 0.5754716981132075,
+          "reference_words": 106
+        }
+      },
+      "shared_causal_q6_q8_score_rows": 228,
+      "timing_limitation": "Different workers/sourcebuilds; no controlled speed claim."
+    }
+  },
+  "first_score_strict_failures_preserved": 6,
+  "heldout_cases": [],
+  "native_PR155_head": "90d2aeb0fd63adc4b9f41ce88c094b68a3bcedbf",
+  "quality_qualified": false,
+  "retained_files_sha256": {
+    "decoded-baseline-reference.json": "ee94f2a3428648d83a70a53dcb5bfdfd5793630a3d0a98c7a823f82e6c5bd9ac",
+    "first-score-reference.json": "48ae6e7a5f58f401141a69312b0a3c210096a7400d4738b516393518241723ee",
+    "full/arabic_printed_line/native-time.txt": "ecc04761b0019ac884da3476180fdeadefce8045395353bce35aa51aa3ffa6e2",
+    "full/arabic_printed_line/native/generated.txt": "24de6e789e4550dec9afdb7013d4e7d455b99f6a7ba75f2d166c0f20a896cc39",
+    "full/simple_table/native-time.txt": "aa325be4954bf6523a36b7bb0d260fadbb0e7b925d7775eb6daa7bed2a830000",
+    "full/simple_table/native/generated.txt": "43b2fb18411f07a557fb369417fb308c41b80bc4ba6930d9d0a8c5b30896ea13",
+    "gdn-out-q6-full-calibration.json": "954e9aacd91498ce3ebf5764689e8489d4a189f86e619aee4f0bcdeb722d33fa",
+    "native-q6-controls.log": "30283288ec02a61588fbbdacbfa2b8ac5f1247302281b75c38bb02e266ecc07e",
+    "protocol.json": "4415e4bad380e8d8c67c23cffbf8a021844ee2b4ec5eec7c954c3fa5aeb25022",
+    "smoke/arabic_printed_line/native-time.txt": "84b2c4eb09b66af362f133f60e9d1f80f6c488edef577c7fd0eac85a2039bf1f",
+    "smoke/arabic_printed_line/native/generated.txt": "dd0eaa23a748ac491594f5aa50d3d09a236ef30040bdcbdf963f3e73190f1761",
+    "smoke/simple_table/native-time.txt": "02db6608ffcebcf8cc7dd8fa69e4f44af29c13b39ce6893d256cc6c69fd0b85e",
+    "smoke/simple_table/native/generated.txt": "dabd3aff769f07eb2965401eb029974ebba3407afd02b26ddb564ea5f8efae72"
+  },
+  "run": 42223984643,
+  "runtime_reference_commit": "10d3fad88f59c787dee855a564bfd8fed57962d0",
+  "schema": "lighton4b-gdn-out-q6-full-evidence/v1",
+  "source": "30c2332da09827723a79f8f55d51c550096edb51"
+}
