@@ -1740,3 +1740,14 @@ native A/B uses one build/model/prepared input, serial first then parallel,
 must be byte-identical. Serial-first cache warmth is explicitly uncontrolled,
 so wall ratios are diagnostic, not a clean isolated speed claim. No full decoded
 quality inference follows from a prefix or conversion equality.
+
+The bounded [actual A/B42164504290](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42164504290)
+passes at37beb2e4a: all76 emitted files are byte-identical between conversion
+gate0/1, including decoder stages, scores and independent `<figure` prefix.
+Serial177.97s/5,179,629,568B RSS versus parallel130.42s/5,176,004,608B RSS;
+wall ratio1.3646 is diagnostic because serial-first cache warmth is uncontrolled.
+User CPU165.08→169.41s and system75.8→95.0s increase. Original BF16 score remains
+strictly failing (RMS0.284899447); no full decoded/quality qualification. Candidate
+remains separate/default-off; no additional job. Full receipts preserve exact
+model/source/table/reference pins in
+[the A/B report](tests/results/qwen35-ocr/lightonocr3-4b-parallel-dequant/native-ab.json).
