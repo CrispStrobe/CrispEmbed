@@ -2401,3 +2401,14 @@ OFF156tokens takes1388.25s/RSS5,185,196,032B; ON178tokens1561.55s/5,185,175,552B
 Different completion lengths prevent a speed interpretation. Gate stays
 default-off, no release/default/model alias change. Existing historical
 source-pin amendments and15git-verified frozen receipt pins remain intact.
+
+The [pinned upstream blueprint audit](docs/lighton4b-upstream-blueprint-audit.md)
+compares llama.cpp`bbc2e4b65705132843b9d142f4471dfb8085b233` and official
+Qwen3.5-4B geometry without inference. It finds no demonstrated missing native
+GDN/attention operation. Upstream's tiled V-head storage permutation and
+pretransformed A/RMS parameters differ from our HF-order runtime contract; they
+must not be copied selectively. All4096 lane indices pass the integer layout
+control. UpstreamQ4_K_M protects selected FFN-down/V tensors; our frozen
+mixersQ8/FFNQ4 is a different policy. Any next recipe needs separate calibration,
+actual importance-vector coverage and heldout decoded/EOS evidence after
+same-weight arithmetic controls. No runtime or recipe change, CI or release.
