@@ -35,7 +35,8 @@ occupy a constrained shared host with builds or model inference.
 Two runtime requirements apply to every new path:
 
 - **Env-gate every new path**, and use the shared helpers — `core_env::on()` for
-  default-off gates, `core_env::explicitly_off()` for default-on ones. A bare
+  default-off gates, `core_env::explicitly_off()` for default-on ones. Off values
+  are `0`, `false`, `off` and `no` (case-insensitive, untrimmed). A bare
   `getenv(X) != nullptr` makes `X=0` mean ON; that defect class has already required a
   repo-wide audit once. Document every new variable in
   [docs/environment-variables.md](docs/environment-variables.md)

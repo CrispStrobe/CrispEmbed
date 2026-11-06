@@ -877,6 +877,8 @@ target_include_directories(test-no-repeat-ngram PRIVATE src)
 # presence-based inversion where `FOO=0` ENABLED the gate.
 add_executable(test-env-gate tests/test_env_gate.cpp)
 target_include_directories(test-env-gate PRIVATE src)
+add_executable(test-env-gate-words tests/test_env_gate_words.cpp)
+target_include_directories(test-env-gate-words PRIVATE src)
 
 # Hermetic: core/low_memory.h — automatic skip of optional F32 weight copies
 # (MiniCPM-OCR, Unlimited-OCR-2) when available memory is short.

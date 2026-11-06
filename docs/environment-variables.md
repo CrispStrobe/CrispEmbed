@@ -17,15 +17,14 @@ need it, then run `python tools/list_env_vars.py --write`. See the
 
 ## Semantics
 
-| Kind | Reader | Unset | `=` (empty) | `=0` | Any other non-empty value |
+| Kind | Reader | Unset | `=` (empty) | `=0` / `false` / `off` / `no` | Any other non-empty value |
 |---|---|---|---|---|---|
 | `on` | `core_env::on` | off | off | off | on |
 | `off` | `core_env::explicitly_off` | **on** (default) | on (default) | off | on |
 | `value` | `core_env::value` / getenv + parse | built-in default | built-in default (`core_env::value`) | parsed | parsed |
 
-Only an exact `0` is off: `false`/`off`/`no` currently count as ON. Treating them as
-off needs the same change in CrispASR's code-identical `src/core/env_gate.h`; this is
-tracked in PLAN. `core_env::value` lives in `src/core/env_value.h`. Raw presence truth tests (`getenv(X) != nullptr`,
+Off words match exactly, without trimming, and are ASCII case-insensitive.
+`core_env::value` lives in `src/core/env_value.h`. Raw presence truth tests (`getenv(X) != nullptr`,
 `if (getenv(X))`, `!getenv(X)`), for which `X=0` meant *on*, were all converted
 on 2 November 2026 (131 variables; defaults unchanged, only explicit
 `=0`/empty changed meaning). `tests/test_env_vars_documented.py`
