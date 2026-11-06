@@ -1974,3 +1974,11 @@ no tests or artifacts ran there. The unchanged payload-free adapter controls are
 now ported to one CPU-only Kaggle worker with source/submodule pins, GPU rejection,
 resource receipts and a strict20-minute controller/30-minute kernel bound. No
 GitHub dispatch, weight quantization or model forward follows from this port.
+
+
+Initial Kaggle CPU v1 compiles crispembed-quantize and passes six real/synthetic
+Python checks, then rejects the synthetic target's unflattened5D Conv3D patch.
+The actual format5 footprint is1536×1024. Correcting only that header fixture and
+adding a physical-rank regression check leaves adapted bytes/means unchanged;
+v1 failure logs/receipts are preserved before one bounded CPU retry. No model or
+weight quantization has run, and no GitHub job is dispatched.

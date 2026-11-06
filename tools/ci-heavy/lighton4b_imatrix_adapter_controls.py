@@ -10,6 +10,9 @@ def target_header(path,mutation=None):
  rows=plan()['all_tensors'];meta=[adapter.text('general.architecture')+struct.pack('<I',8)+adapter.text('qwen35_ocr'),adapter.text('qwen35_ocr.profile')+struct.pack('<I',8)+adapter.text('lightonocr3-4b')];descriptors=[];offset=0
  for row in rows:
   name=row['name'];shape=list(reversed(row['source_shape']))
+  if name=='v.patch_embed.proj.weight':
+   adapter.require(row['source_shape']==[1024,3,2,16,16],'reviewed Conv3D source axes required');shape=[1536,1024]
+  adapter.require(1<=len(shape)<=4,'GGUF physical tensor rank required')
   if mutation=='width'and name=='l.layers.0.mlp.gate_proj.weight':shape[0]+=1
   if mutation=='name'and name=='l.layers.0.mlp.gate_proj.weight':name='wrong.domain.weight'
   offset=(offset+31)//32*32;descriptors.append(adapter.text(name)+struct.pack('<I',len(shape))+b''.join(struct.pack('<Q',x)for x in shape)+struct.pack('<IQ',0,offset));size=4
@@ -34,5 +37,7 @@ def main():
   tampered=scratch/'tampered.gguf';raw=bytearray(adapted.read_bytes());raw[-1]^=1;tampered.write_bytes(raw);run('tamper-negative',[binary,'--check-lighton4b-imatrix',tampered,header],1)
   # Real upstream format must fail, rather than silently run unweighted; target has no model payload.
   forbidden=scratch/'must-not-publish.gguf';run('raw-upstream-no-fallback',[binary,header,forbidden,'q4_k','--imatrix',source],1);adapter.require(not forbidden.exists(),'failed imatrix request published an output');r['status']='passed';r['all248_actual_means_byte_exact']=True
+ except Exception as e:
+  r['error_type']=type(e).__name__;r['error']=str(e)if isinstance(e,ValueError)else'bounded controller failed';raise
  finally:(out/'imatrix-adapter-controls.json').write_text(json.dumps(r,indent=2,sort_keys=True)+'\n')
 if __name__=='__main__':main()

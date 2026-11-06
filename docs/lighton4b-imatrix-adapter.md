@@ -96,3 +96,12 @@ uses two build threads and a20-minute controller deadline within a30-minute kern
 Only its fresh transient checkout/build directories are cleaned; all statistics,
 receipts, logs and negative results remain in the kernel output. Account/access
 references remain in private environment notes, never this public handoff.
+
+
+The first Kaggle CPU attempt compiles the real consumer and passes all six Python
+checks, but rejects a target-header fixture that mistakenly kept the original
+Conv3D five-dimensional axes. Format5 stores that patch as `[1536,1024]`; only
+this fixture geometry is corrected, with an added723-header rank/patch regression
+control. The adapter output/mean data are unchanged. Initial failure receipts
+and logs remain preserved. A bounded CPU retry uses the same source/statistics
+guards and still executes no weight quantization or model forward.

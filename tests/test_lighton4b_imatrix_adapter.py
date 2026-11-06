@@ -1,5 +1,5 @@
 """Dense input-statistics adapter controls; no model/weight quantization."""
-import copy,hashlib,math,struct,sys,tempfile,unittest
+import copy,hashlib,importlib.util,math,struct,sys,tempfile,unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tools'))
 import lighton4b_imatrix_adapter as m
@@ -26,6 +26,18 @@ class Controls(unittest.TestCase):
    with self.assertRaises(ValueError):m.validate_statistics({**src,name:(values,counts)})
   for bad in (values+[1],[0]*len(values),[math.nan]+values[1:],[-1]+values[1:],[math.inf]+values[1:]):
    with self.assertRaises(ValueError):m.validate_statistics({**src,name:(bad,[66048])})
+ def test_format5_header_fixture_flattens_only_conv3d(self):
+  spec=importlib.util.spec_from_file_location('controller',ROOT/'tools/ci-heavy/lighton4b_imatrix_adapter_controls.py');c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c)
+  with tempfile.TemporaryDirectory()as d:
+   f=Path(d)/'header';c.target_header(f);raw=f.read_bytes();at=24
+   def text():
+    nonlocal at
+    n=struct.unpack_from('<Q',raw,at)[0];at+=8;v=raw[at:at+n].decode();at+=n;return v
+   for _ in range(2):text();kind=struct.unpack_from('<I',raw,at)[0];at+=4;self.assertEqual(kind,8);text()
+   found={}
+   for _ in range(723):
+    name=text();rank=struct.unpack_from('<I',raw,at)[0];at+=4;self.assertLessEqual(rank,4);shape=list(struct.unpack_from('<'+'Q'*rank,raw,at));at+=8*rank;kind,offset=struct.unpack_from('<IQ',raw,at);at+=12;self.assertEqual(kind,0);found[name]=shape
+   self.assertEqual(found['v.patch_embed.proj.weight'],[1536,1024]);self.assertEqual(found['l.layers.0.mlp.gate_proj.weight'],[2560,9216])
  def test_no_clobber_wrong_source_or_path_alias(self):
   with tempfile.TemporaryDirectory()as d:
    p=Path(d);wrong=p/'wrong';wrong.write_bytes(b'not approved');out=p/'out';report=p/'report'
