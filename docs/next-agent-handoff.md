@@ -1,5 +1,16 @@
 # Executable next-agent handoff
 
+## Release checkpoint — 5 November 2026
+
+Native/WASM [v0.17.15](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.15)
+is published from `d28ca2ea43a95934d673d1a54177fdf721614ade`. Full candidate gates,
+all 16 assets and seven hosted native readbacks pass; see the
+[receipt](../tests/results/releases/v0.17.15.json) and HISTORY. LightOn4B draft PRs #155/#157
+were excluded and remain with their owners. App 0.17.12, disabled package publishers,
+model qualification limits and default-off LightOn3 corrections are unchanged.
+Older dated release/candidate statements below describe their historical phase.
+
+
 ## Current entry —4 November2026
 
 Start with [the reviewed qualification continuation](ocr-qualification-2026-11-04.md),
