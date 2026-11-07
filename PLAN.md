@@ -2196,3 +2196,17 @@ all observed/composed/held-out gates.
 ### Additive source-vision integration preparation (2026-11-07)
 
 Prepared isolated union of tested sourceb59 with existing PR1559ca and currentmain17098, retaining publication/vendor/CLI work and repack-negative warning. Production src/GGML/CMake/native-document bytes remain exactlyb59; new source-vision scope documents off-by-default gates, supported CPU/still-image domain, effective precision and existing public format6 fence. Actual component039b proves28source arrays/29legacy anchors; full composed form remains runtime-owned and pending, so no shared push/release/quality promotion yet. Local sourcepin/env470 checks pass; no shared-host build/model work.
+
+### Actual-stage-admitted composed form vision follow-up
+
+Tools-only `lighton4b_composed_form_vision.py` freezes component receipt
+`039b024f`/source`b59e5d3a9`, rehashes every owned component artifact and all28
+actual source stages before model acquisition. The same physical843e weights,
+RGB/prompt/positions and decoder/F16-attention gates are fixed; Q4 repack and
+BF16 head remain0. Old composed194EOS must reproduce all194raw rows,38text
+stages and29vision/processor anchors before changing ONLY Pillow/F16vision
+gates. Fixed mode runs full independent greedy to EOS/cap512, records original
+177-reference/upstream rawmetrics and checks all167 retained source-feature
+rows/stages without discarding a completed negative. One teacher row, no new
+reference forward, no human-GT/heldout/general qualification or promotion.
+Protocol and controls require independent review before one bounded hosted run.
