@@ -243,7 +243,8 @@ class CrispMinerU:
                                 table_token_seed: int | None = None) -> list[dict[str, Any]]:
         """Complete two-step extraction entirely in C++ (no mineru-vl-utils).
 
-        Default on; ``CRISPEMBED_MINERU25_PRO_FULL_DOC=0`` disables it. Returns the upstream
+        Default on for F16/F32 GGUFs, opt-in (``CRISPEMBED_MINERU25_PRO_FULL_DOC=1``) for
+        quantized ones; ``=0`` disables it. Returns the upstream
         ExtractResult as plain dicts, byte-identical (as JSON) to
         ``two_step_extract`` for the same recognition outputs; the full native
         result (receipts, regions, caps) is kept in ``last_native_document``.
