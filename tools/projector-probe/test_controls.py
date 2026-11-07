@@ -31,6 +31,17 @@ class Controls(unittest.TestCase):
   patches=worker.pixels_to_patches(pixels.reshape(-1),64,64).reshape(16,3,2,16,16)
   self.assertEqual(patches[:5,0,0,0,0].tolist(),[0,16,1600,1616,32])
   self.assertTrue(np.array_equal(patches[:,:,0],patches[:,:,1]))
+ def test_preprocessing_resize_normalization_separate(self):
+  import numpy as np
+  worker=load('projector_worker_preprocess',Path(__file__).with_name('worker.py'))
+  native_rgb=(np.arange(64*64*3).reshape(64,64,3)%253).astype('u1');source_rgb=native_rgb.copy();source_rgb[0,0,0]+=2
+  native=(native_rgb.astype('<f4')-np.float32(127.5))/np.float32(127.5)
+  source=(source_rgb.astype('<f4')/np.float32(255)-np.float32(.5))/np.float32(.5)
+  patches=worker.pixels_to_patches(native.reshape(-1),64,64)
+  report,recovered=worker.preprocessing_audit(patches.reshape(-1),source.reshape(-1),source_rgb.reshape(-1),64,64,[.5]*3,[.5]*3)
+  self.assertTrue(np.array_equal(recovered,native_rgb));self.assertEqual(report['resize_different_channels'],1);self.assertEqual(report['resize_max_abs_u8'],2)
+  self.assertGreater(report['normalization_only_same_source_rgb']['max_abs'],0)
+  self.assertTrue(np.array_equal(worker.patches_to_pixels(patches.reshape(-1),64,64),native))
  def test_nonfinite_rejected(self):
   import numpy as np
   with self.assertRaises(ValueError):m.compare(np.array([np.nan],dtype='<f4'),np.zeros(1,dtype='<f4'))

@@ -24,6 +24,30 @@ def pixels_to_patches(pixels,h,w):
  return patches.reshape(gh//2,2,gw//2,2,3,2,16,16).transpose(0,2,1,3,4,5,6,7).reshape(gh*gw,1536)
 
 
+def patches_to_pixels(patches,h,w):
+ import numpy as np
+ gh,gw=h//16,w//16
+ require(h%32==w%32==0 and patches.size==gh*gw*1536,'native patch shape')
+ shaped=patches.reshape(gh//2,gw//2,2,2,3,2,16,16).transpose(0,2,1,3,4,5,6,7).reshape(gh,gw,3,2,16,16)
+ require(np.array_equal(shaped[:,:,:,0],shaped[:,:,:,1]),'identical still-image temporal frames')
+ return shaped[:,:,:,0].transpose(0,3,1,4,2).reshape(h,w,3)
+
+
+def preprocessing_audit(native_patches,source_pixels,resized,h,w,mean,std):
+ import numpy as np
+ native=patches_to_pixels(native_patches,h,w);source=source_pixels.reshape(h,w,3)
+ recovered=np.rint(native.astype('f8')*127.5+127.5)
+ require(recovered.min()>=0 and recovered.max()<=255,'native resized pixel inversion bound')
+ native_rgb=recovered.astype('u1');source_rgb=resized.reshape(h,w,3)
+ def native_formula(rgb):return (rgb.astype('<f4')-np.float32(127.5))/np.float32(127.5)
+ def source_formula(rgb):return (rgb.astype('<f4')/np.float32(255)-np.asarray(mean,dtype='<f4'))/np.asarray(std,dtype='<f4')
+ require(native_formula(native_rgb).tobytes()==native.tobytes(),'native normalization inversion exact')
+ require(source_formula(source_rgb).tobytes()==source.tobytes(),'source resized RGB normalization exact')
+ delta=native_rgb.astype('i2')-source_rgb.astype('i2')
+ same_source_native_norm=native_formula(source_rgb)
+ return dict(native_resize_recovered_exact=True,source_normalization_exact=True,resize_different_channels=int(np.count_nonzero(delta)),resize_total_channels=int(delta.size),resize_max_abs_u8=int(abs(delta).max()),resize_mean_abs_u8=float(np.mean(abs(delta))),normalization_only_same_source_rgb=metric(same_source_native_norm.reshape(-1),source.reshape(-1)),resize_only_same_native_normalization=metric(native.reshape(-1),same_source_native_norm.reshape(-1)),source_mean=mean,source_std=std),native_rgb
+
+
 def metric(a,b):
  import numpy as np
  require(a.shape==b.shape and a.size>0 and np.isfinite(a).all()and np.isfinite(b).all(),'equal finite stage')
@@ -94,8 +118,14 @@ def main():
    r['projector_forward_executed']=True;run(arm,[program,projector,rgb,317,452,dest/'source'],child,900)
    require(sha(dest/'source.merged.f32')==art['observer-on/source.vision.0.f32']['sha256'],'standalone source actual merged closure '+arm)
   require(sha(out/'off/source.pixels.f32')==sha(out/'on/source.pixels.f32'),'preprocessing observer neutral');r['source_observer_byte_neutral']=True;r['actual_source_merged_sha256']=sha(source_feature)
+  require(sha(out/'off/source.input.rgb')==sha(out/'on/source.input.rgb')==art['input.rgb']['sha256'],'actual C++ RGB bytes read')
+  counts=dict(line.split()for line in(out/'on/live-counts.tsv').read_text().splitlines());require(set(counts)==set(source_patch.STAGES)and all(v=='1'for v in counts.values()),'each live selected stage captured once');r['live_callback_counts']=counts
   meta=json.loads((out/'on/source.json').read_text());pixels=np.fromfile(out/'on/source.pixels.f32',dtype='<f4');patches=pixels_to_patches(pixels,meta['height'],meta['width']).reshape(-1);patches.tofile(out/'source.patches.f32')
   native=np.fromfile(fp.parent/'composed/processor.patches.f32',dtype='<f4');r['stage_metrics']['processor.patches']=metric(native,patches)
+  inp=np.fromfile(out/'on/inp_raw.f32',dtype='<f4');require(inp.tobytes()==pixels.reshape(meta['height'],meta['width'],3).transpose(2,0,1).copy().tobytes(),'actual source normalized HWC to graph CHW exact')
+  resized=np.fromfile(out/'on/resized.rgb',dtype='u1');r['preprocessing'],native_rgb=preprocessing_audit(native,pixels,resized,meta['height'],meta['width'],meta['mean'],meta['std']);native_rgb.tofile(out/'native.recovered-resized.rgb')
+  bias=np.fromfile(out/'on/patch_bias.f32',dtype='<f4');position=np.fromfile(out/'on/learned_pos.f32',dtype='<f4');embedded=np.fromfile(out/'on/inp_pos_emb.f32',dtype='<f4');require(np.any(position)and (bias+position).tobytes()==embedded.tobytes(),'live patch plus position arithmetic closure')
+  ff_in=np.fromfile(out/'on/ffn_inp-0.f32',dtype='<f4');ff_out=np.fromfile(out/'on/ffn_out-0.f32',dtype='<f4');layer=np.fromfile(out/'on/layer_out-0.f32',dtype='<f4');require((ff_in+ff_out).tobytes()==layer.tobytes(),'live first-layer residual arithmetic closure');r['live_arithmetic_closures_exact']=True
   pairs=[('patch_bias','vision.patch.f32'),('learned_pos','vision.position.f32'),('inp_pos_emb','vision.embedded.f32')]+[(f'layer_out-{i}',f'vision.layer.{i}.f32')for i in range(24)]
   for source,native in pairs:
    x=np.fromfile(fp.parent/'composed'/native,dtype='<f4');y=np.fromfile(out/'on'/(source+'.f32'),dtype='<f4');require(y.size>0 and np.any(y),'materialized nonzero actual source stage');r['stage_metrics'][source]=metric(x,y)

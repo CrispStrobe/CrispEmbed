@@ -44,15 +44,20 @@ def temporal_join(slices):
 def compare(native, upstream, chunk=65536):
     import numpy as np
     require(native.size==upstream.size and native.size>0, 'equal canonical domain')
-    mismatch=half_mismatch=bf16_exact=0;max_abs=0.;sum_sq=0.
+    mismatch=half_mismatch=bf16_exact=zero_sign=half_numeric=0;max_abs=half_max=0.;sum_sq=0.;samples=[]
     for start in range(0,native.size,chunk):
         a=np.asarray(native[start:start+chunk],dtype='<f4');b=np.asarray(upstream[start:start+chunk],dtype='<f4')
         require(np.isfinite(a).all()and np.isfinite(b).all(),'finite canonical parameters')
         mismatch+=int(np.count_nonzero(a.view('<u4')!=b.view('<u4')))
-        half_mismatch+=int(np.count_nonzero(a.astype('<f2').astype('<f4').view('<u4')!=b.view('<u4')))
+        rounded=a.astype('<f2').astype('<f4');different=rounded.view('<u4')!=b.view('<u4')
+        half_mismatch+=int(np.count_nonzero(different));half_numeric+=int(np.count_nonzero(rounded!=b))
+        zero_sign+=int(np.count_nonzero(different&(rounded==0)&(b==0)));half_max=max(half_max,float(abs(rounded.astype('f8')-b.astype('f8')).max()))
+        for index in np.flatnonzero(different)[:max(0,8-len(samples))]:
+            i=int(index);samples.append(dict(index=start+i,native=float(a[i]),rounded_f16=float(rounded[i]),source=float(b[i]),native_bits=int(a.view('<u4')[i]),rounded_bits=int(rounded.view('<u4')[i]),source_bits=int(b.view('<u4')[i])))
         bf16_exact+=int(np.count_nonzero((a.view('<u4')&0xffff)==0))
         d=a.astype('f8')-b.astype('f8');sum_sq+=float(np.sum(d*d));max_abs=max(max_abs,float(abs(d).max()))
     return dict(elements=int(native.size),different_f32_bits=mismatch,different_after_native_f16_round=half_mismatch,
+                different_after_f16_round_numeric=half_numeric,zero_sign_only_after_f16_round=zero_sign,max_abs_after_f16_round=half_max,f16_round_mismatch_samples=samples,
                 native_exact_bf16_elements=bf16_exact,max_abs=max_abs,rms=float((sum_sq/native.size)**.5),bit_exact=mismatch==0)
 
 
@@ -77,5 +82,5 @@ def audit(cfg,native_suffix,projector):
         result=compare(a,b);result.update(native_sha256=row['native_sha256'],source_names=[s['name']for s in row['upstream']],transform=row['transform']);results[row['native_name']]=result
         del a,b,parts
     return dict(native_tensors=297,upstream_tensors=298,tensors=results,all_canonical_f32_bit_exact=all(r['bit_exact']for r in results.values()),
-                all_native_f16_round_equal=all(r['different_after_native_f16_round']==0 for r in results.values()),
+                all_native_f16_round_equal=all(r['different_after_native_f16_round']==0 for r in results.values()),all_native_f16_round_numeric_equal=all(r['different_after_f16_round_numeric']==0 for r in results.values()),
                 original_checkpoint_identity_proven=False,scope='These two admitted projector payloads only; no assertion about unpublished prequantization checkpoints.')
