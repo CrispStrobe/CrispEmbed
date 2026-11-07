@@ -1,4 +1,5 @@
 import copy,importlib.util,json,unittest
+from unittest.mock import Mock,patch
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 s=importlib.util.spec_from_file_location('extended',ROOT/'tools/kaggle/lighton4b_physical_f16_table512.py');m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
@@ -19,4 +20,24 @@ class Admission(unittest.TestCase):
   for key,val in [('tokens',[9]*257),('completion_probabilities',[]),('stop_type','limit'),('truncated',True),('tokens_evaluated',85),('stop',False)]:
    c=copy.deepcopy(r);c[key]=val
    with self.assertRaises(RuntimeError):m.validate_source(c,old)
+class HealthDeadline(unittest.TestCase):
+ def test_whole_deadline_is_never_swallowed(self):
+  api=Mock(side_effect=m.WorkerDeadline('timer'));active=Mock();active.poll.return_value=None
+  with patch.object(m,'remaining_budget',return_value=10),patch.object(m.time,'sleep')as sleep:
+   with self.assertRaises(m.WorkerDeadline):m.wait_health(active,api,1,0,10)
+   api.assert_called_once();sleep.assert_not_called()
+ def test_budget_failure_before_request(self):
+  api=Mock();active=Mock()
+  with patch.object(m,'remaining_budget',side_effect=RuntimeError('closed')):
+   with self.assertRaisesRegex(RuntimeError,'closed'):m.wait_health(active,api,1,0,10)
+  api.assert_not_called()
+ def test_budget_failure_after_request(self):
+  api=Mock(side_effect=OSError('not ready'));active=Mock();active.poll.return_value=None
+  with patch.object(m,'remaining_budget',side_effect=[1,RuntimeError('closed')]),patch.object(m.time,'sleep')as sleep:
+   with self.assertRaisesRegex(RuntimeError,'closed'):m.wait_health(active,api,1,0,10)
+   api.assert_called_once();sleep.assert_not_called()
+ def test_healthy_return(self):
+  api=Mock(return_value={});active=Mock();active.poll.return_value=None
+  with patch.object(m,'remaining_budget',return_value=1):m.wait_health(active,api,1,0,10)
+  api.assert_called_once()
 if __name__=='__main__':unittest.main()

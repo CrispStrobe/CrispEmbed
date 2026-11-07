@@ -3,7 +3,7 @@
 import base64,csv,hashlib,io,json,os,resource,shutil,signal,socket,subprocess,sys,time,urllib.request
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'tools/physical-f16-attention-probe'))
-from runtime_guard import Deadline,command
+from runtime_guard import Deadline,WorkerDeadline,command
 import importlib.util
 def module(name,path):
  s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
@@ -24,6 +24,16 @@ def remaining_budget(started,arm_deadline=None,now=None):
 def validate_source(response,old):
  require(not response['truncated']and response['tokens_evaluated']==86 and response['stop']and response['tokens'][:256]==old['tokens']and response['completion_probabilities'][:256]==old['completion_probabilities'],'exact old source256 prefix/probabilities')
  require(1<=len(response['tokens'])<=512 and len(response['completion_probabilities'])==len(response['tokens'])and response['stop_type']in['eos','limit']and(response['stop_type']=='eos')==(response['tokens'][-1]in[248044,248046])and(response['stop_type']!='limit'or len(response['tokens'])==512),'source EOS/cap closure')
+def wait_health(active,api,port,started,arm_deadline):
+ for _ in range(180):
+  remaining_budget(started,arm_deadline)
+  require(active.poll()is None,'source process alive')
+  try:api(port,'/health');return
+  except WorkerDeadline:raise
+  except Exception:
+   remaining=remaining_budget(started,arm_deadline)
+   time.sleep(min(1,remaining))
+ raise RuntimeError('source ready deadline')
 def driver_scope_controls(native,work,out,loader):
  results=[];env=dict(os.environ);env['LD_LIBRARY_PATH']=loader
  base=[str(native),str(work/'absent.gguf'),str(work/'absent.rgb'),'1','1',str(work/'absent.ids'),str(out),'256','4','greedy-full','--upstream-vision',str(work/'absent.feature')]
@@ -94,11 +104,7 @@ def main():
    with(dest/'server.log').open('w')as log:
     active=subprocess.Popen(list(map(str,args)),stdout=log,stderr=subprocess.STDOUT,env=child,start_new_session=True)
     try:
-     for _ in range(180):
-      require(active.poll()is None,'source process alive')
-      try:api(port,'/health');break
-      except Exception:time.sleep(1)
-     else:raise RuntimeError('source ready deadline')
+     wait_health(active,api,port,started,source_deadline[0])
      marker=api(port,'/props').get('media_marker');require(isinstance(marker,str)and 1<=len(marker)<=256,'actual media marker');templ=api(port,'/apply-template',{'messages':[{'role':'user','content':marker}],'add_generation_prompt':True,'chat_template_kwargs':{'enable_thinking':False}})['prompt'];require(templ.count(marker)==1 and templ.replace(marker,'<__media__>')==protocol['expected_media_prompt'],'same wrapper');expanded=templ.replace(marker,'<|vision_start|>'+'<|image_pad|>'*case['image_tokens']+'<|vision_end|>');require(api(port,'/tokenize',{'content':expanded,'add_special':False,'parse_special':True})['tokens']==prompt_ids,'exact source prompt IDs')
      req={'prompt':{'prompt_string':templ,'multimodal_data':[base64.b64encode((folder/'input.png').read_bytes()).decode()]},'n_predict':512,'temperature':0,'seed':0,'top_k':1,'top_p':1,'min_p':0,'repeat_penalty':1,'presence_penalty':0,'frequency_penalty':0,'cache_prompt':False,'return_tokens':True,'n_probs':5,'stream':False};response=api(port,'/completion',req,1200);(dest/'response.json').write_text(json.dumps(response,indent=2,ensure_ascii=False)+'\n');validate_source(response,old_source);remaining_budget(started,source_deadline[0]);(dest/'generated.ids').write_text(''.join(str(x)+'\n'for x in response['tokens']));(dest/'generated.txt').write_bytes(response['content'].encode('utf8'))
      try:peak=int(next(x.split()[1]for x in Path('/proc/'+str(active.pid)+'/status').read_text().splitlines()if x.startswith('VmHWM:')))*1024
