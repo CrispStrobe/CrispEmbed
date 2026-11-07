@@ -76,3 +76,28 @@ requires the passing controls receipt, source-declared precision guard and exact
 RGB/packed-pixel admission before interpretation. Full composed decode follows
 only if component evidence supports it. The candidate remains unqualified;
 no release/default change or held-out claim is made.
+
+## Actual-component V1: adapter gate admission failed
+
+The first actual-stage worker at `d338c577c` stopped after131.69seconds in the
+reference adapter's metadata mapping, before legacy or F16 actual-weight vision
+execution. All297 protected tensor SHAs and the source-declared precision policy
+passed;1,334,056,960 vision-only bytes were acquired remotely. Synthetic graph
+controls passed again. There are no new actual-weight stage metrics.
+
+[Public redacted receipt and logs](../tests/results/qwen35-ocr/lightonocr3-4b-vision-profile-component/v1-map-gate-negative/index.json)
+bind the private original receipt SHA256
+`760db939e0a783812d4350dc517f32e1663809e15d7f4c19c1a5b8b06c3dfef3`.
+Private mounted-evidence locators are redacted in the public copies; the index
+records both original and public hashes. Status and measurements are preserved.
+
+The adapter enabled its OCR gate after calling `map_lighton4b_vision`; the
+controller deliberately clears inherited gates. Production code is unaffected.
+Reviewed correction `b59e5d3a9` moves gate setup before mapping and adds a real
+metadata-only CLI test using the same297-name schema and a sparse zero-data
+mapping. Positive/OCR-off rejection/restored admission now execute before any
+parameter transfer. The metadata schema retains SHA256 `1de40b987ba017a8c583e96ada32f8155a63383ed82be0f1702d7ff43fb9b6db`.
+The sparse test is removed before real acquisition; it reads no weights and runs
+no forward. Source/GGML/CMake/numerical-unit bytes stay strictly equal to the
+passing controls; the reference-only adapter exception has its own reviewed
+hash. Seven local controls pass. Retry results remain separate and unqualified.

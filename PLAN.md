@@ -3152,3 +3152,7 @@ Preserved valid live-callback projectorV3 receipt427b/sourcec1ed, all32 callback
 ### Gated vision model-free controls preserved (2026-11-07)
 
 Source0eca's separate Pillow22/F16-vision draft passes690.72s hosted controls, raw31e6d6e5. Independent58hashes,8actual-upstream resize pairs and actualformRGB/packedpatch bytes all exactV3, closing earliest pixel/normalization divergence. Synthetic24block2×2 graph37/mainstub7/Pillow17+main17 pass; no checkpoint acquired, no actual-weight/decoded proof. Initial title/slug400 rejected submission retained. Published raw controls/cache/logs/bootstrap and limits; next pinned vision-only297tensor actual-stage worker must reproduce oldlegacy stages before comparing newsource-compatible output. Default gates/public release remain unchanged.
+
+### Actual vision-component map-gate setup negative (2026-11-07)
+
+Source d338 worker stopped131.69s at reference map admission: OCR flag was enabled after mapper call while controller correctly cleared inherited flags. All297 tensor SHAs/source precision policy and synthetic graph passed;1.334GBvision-only parameters staged, no actual-weight vision/text forward or stage metrics. Original raw760db939 retained privately/remotely; public redacted receipt/logs bind original+public hashes without access locators. Scoped b59e reference adapter gate-order fix and actual metadata-only sparse-map control run before transfer; same297 schema1de40, seven local tests and peer review pass. Production/GGML/CMake/numerical helper unchanged; retry remains new evidence, no promotion.

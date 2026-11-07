@@ -1,0 +1,23 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+phase source
+phase fetch-tested
+phase runtime-byte-guard
+phase ggml-init
+phase configure
+phase build
+phase synthetic
+phase legacy
+Traceback (most recent call last):
+  File "/tmp/lighton4b-vision-profile-component-v1/source/tools/vision-profile-probe/component.py", line 97, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/tmp/lighton4b-vision-profile-component-v1/source/tools/vision-profile-probe/component.py", line 84, in main
+    dest=out/mode;dest.mkdir();run(mode,[build/'lighton4b-vision-profile-probe',suffix,schema,pp.parent/'on/source.input.rgb',317,452,mode,dest],env=env)
+                               ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-vision-profile-component-v1/source/tools/vision-profile-probe/component.py", line 48, in run
+    try:command(args,out/(label+'.log'),min(limit,2400-(time.monotonic()-started)),report['commands'][label],cwd=ROOT,env=env)
+        ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-vision-profile-component-v1/source/tools/physical-f16-attention-probe/runtime_guard.py", line 71, in command
+    raise subprocess.CalledProcessError(code, args)
+subprocess.CalledProcessError: Command '[PosixPath('/tmp/lighton4b-vision-profile-component-v1/vision-component/build/lighton4b-vision-profile-probe'), PosixPath('/tmp/lighton4b-vision-profile-component-v1/vision-component/vision-only.f32'), PosixPath('/tmp/lighton4b-vision-profile-component-v1/vision-component/vision.schema'), PosixPath('<mounted-evidence-file>'), 317, 452, 'legacy', PosixPath('/kaggle/working/legacy')]' returned non-zero exit status 1.
