@@ -1,9 +1,24 @@
 name: Josev packed F32 publication (owner-approved only)
+# workflow_call: the reviewed packed F32 file (tools/ci-heavy/josev_publish.py).
+# workflow_dispatch with `variants`: EXPERIMENTAL quantized files from the SHA-pinned published F32
+# (tools/ci-heavy/josev_quant_publish.py, docs/josev2b-q4k-publication-v1.json); each variant is
+# re-quantized with the measured sweep recipe and must reproduce the receipt's SHA256.
 on:
   workflow_call:
     secrets:
       HF_PUBLISH_TOKEN:
         required: false
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Exact commit containing the publisher, protocol and receipts'
+        required: true
+        type: string
+      variants:
+        description: 'Comma-separated quantized recipes (Q8_0,Q4_K_MIX)'
+        required: true
+        default: 'Q8_0,Q4_K_MIX'
+        type: string
 permissions:
   contents: read
   actions: read
@@ -12,6 +27,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publish:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
@@ -37,4 +53,68 @@ jobs:
         with:
           name: josev-publication-report-${{ github.run_id }}
           path: ${{ runner.temp }}/out/
+          retention-days: 90
+  quantized:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      VARIANTS: ${{ inputs.variants }}
+      PYTHONNOUSERSITE: '1'
+      PIP_CONFIG_FILE: /dev/null
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Offline controls, approval and cosine gate before any download or credential
+        run: |
+          set -euo pipefail
+          python tests/test_josev_quant_publish.py -v
+          python tests/test_josev_quant_policy.py
+          python tools/ci-heavy/josev_quant_publish.py plan "$VARIANTS"
+          echo "SOURCE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Free disk and scratch
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL || true
+          sudo mkdir -p /mnt/josevq && sudo chown "$USER" /mnt/josevq
+          mkdir -p /mnt/josevq/work "$RUNNER_TEMP/out"
+          df -h / /mnt
+      - name: Locked environment (same lock as the measuring sweep) and publication client
+        run: |
+          python -m venv --without-pip "$RUNNER_TEMP/venv"
+          python -m pip --python "$RUNNER_TEMP/venv/bin/python" install -q --no-deps --only-binary=:all: --require-hashes -r tools/kaggle/josev-q4k/requirements.lock
+          python -m pip --python "$RUNNER_TEMP/venv/bin/python" install -q huggingface-hub==1.33.0
+      - name: Build the sweep's C quantizer (portable)
+        run: |
+          cmake -S tests/josev-q4k -B /mnt/josevq/build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF
+          cmake --build /mnt/josevq/build --target josev-q4k-quantize --parallel 4
+          grep -q 'GGML_NATIVE:BOOL=OFF' /mnt/josevq/build/CMakeCache.txt
+      - name: SHA-pinned published F32
+        run: |
+          "$RUNNER_TEMP/venv/bin/python" - <<'PY'
+          import sys; sys.path[:0] = ['tools/kaggle/josev-q4k', 'tools', 'tools/ci-heavy']
+          from pathlib import Path
+          import importlib.util
+          spec = importlib.util.spec_from_file_location('w', 'tools/kaggle/josev-q4k/worker.py')
+          w = importlib.util.module_from_spec(spec); spec.loader.exec_module(w)
+          w.fetch_f32(Path('/mnt/josevq/josev2b-systemone-f32.gguf'))
+          PY
+      - name: Re-quantize, require receipt bytes, upload, LFS identity, empty-cache readback
+        env:
+          HF_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+          HF_HUB_DISABLE_XET: '1'
+          HEAVY_SCRATCH: /mnt/josevq/work
+        run: |
+          "$RUNNER_TEMP/venv/bin/python" tools/ci-heavy/josev_quant_publish.py publish "$VARIANTS" \
+            /mnt/josevq/josev2b-systemone-f32.gguf /mnt/josevq/build/josev-q4k-quantize "$RUNNER_TEMP/out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: josev-quant-publication-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: warn
           retention-days: 90
