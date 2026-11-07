@@ -3,6 +3,9 @@
 // binding additionally exposes the complete pinned MinerU document helper.
 #include "crispembed.h"
 #include "core/env_gate.h"
+#include "core/gguf_loader.h"
+#include "ggml.h"
+#include "gguf.h"
 #include "image_preprocess.h"
 #include "mineru_document.h"
 #include "mineru_layout.h"
@@ -26,12 +29,25 @@ struct crispembed_mineru_context {
     std::string json, markdown, error, rendered;
     crisp_marker::document document; // last full-route document
     bool has_document = false;
+    bool quantized = false; // any quantized (non-F16/F32/BF16) weight tensor in the loaded GGUF
     ~crispembed_mineru_context() {
         if (model) qwen2vl_ocr_free(model);
     }
 };
 
 namespace {
+// True when any GGUF tensor uses a quantized ggml type (Q8_0, Q4_K, ...).
+// F32/F16/BF16 models are "unquantized". Reads only the tensor headers.
+bool gguf_has_quantized_tensor(const char * path) {
+    gguf_context * g = core_gguf::open_metadata(path);
+    if (!g) return false;
+    bool quantized = false;
+    for (int64_t i = 0; i < gguf_get_n_tensors(g) && !quantized; ++i)
+        quantized = ggml_is_quantized(gguf_get_tensor_type(g, i));
+    core_gguf::free_metadata(g);
+    return quantized;
+}
+
 using clock_type = std::chrono::steady_clock;
 double elapsed_ms(clock_type::time_point start) {
     return std::chrono::duration<double, std::milli>(clock_type::now() - start).count();
@@ -166,6 +182,7 @@ crispembed_mineru_context * crispembed_mineru_init(const char * path, int thread
         auto ctx = std::make_unique<crispembed_mineru_context>();
         ctx->model = qwen2vl_ocr_init(path, threads);
         if (!ctx->model || !qwen2vl_ocr_is_mineru(ctx->model)) return nullptr;
+        ctx->quantized = gguf_has_quantized_tensor(path);
         return ctx.release();
     } catch (const std::exception &) {
         return nullptr;
@@ -174,6 +191,19 @@ crispembed_mineru_context * crispembed_mineru_init(const char * path, int thread
 
 void crispembed_mineru_free(crispembed_mineru_context * ctx) {
     delete ctx;
+}
+
+// Route gate (owner decision 7 Nov 2026): default ON for F16/F32 models (8/8
+// byte-identical, run 41251475795), opt-in only (=1) for quantized models
+// (Q8/Q4 6/8 with layout differences). =0 always restores the basic route.
+int crispembed_mineru_full_doc_enabled(const crispembed_mineru_context * ctx) {
+    if (!ctx) return 0;
+    if (ctx->quantized) return core_env::on("CRISPEMBED_MINERU25_PRO_FULL_DOC") ? 1 : 0;
+    return core_env::explicitly_off("CRISPEMBED_MINERU25_PRO_FULL_DOC") ? 0 : 1;
+}
+
+int crispembed_mineru_is_quantized(const crispembed_mineru_context * ctx) {
+    return ctx && ctx->quantized ? 1 : 0;
 }
 
 const char * crispembed_mineru_predict(crispembed_mineru_context * ctx, const uint8_t * px, int w, int h, int ch,
@@ -260,8 +290,8 @@ const char * crispembed_mineru_extract(crispembed_mineru_context * ctx, const ui
     }
 }
 
-// Complete native document route (default on since the 8-case byte-identical A/B;
-// CRISPEMBED_MINERU25_PRO_FULL_DOC=0 disables it): mineru_doc layout provider + router + translated mineru-vl-utils
+// Complete native document route (default on for F16/F32 since the 8-case
+// byte-identical A/B, opt-in for quantized models; CRISPEMBED_MINERU25_PRO_FULL_DOC=0 disables it): mineru_doc layout provider + router + translated mineru-vl-utils
 // postprocessing, written into the crisp_marker document model.
 const char * crispembed_mineru_extract_document(crispembed_mineru_context * ctx, const uint8_t * px, int w, int h,
                                                 int ch, const char * options_json, int max_tokens) {
@@ -272,8 +302,11 @@ const char * crispembed_mineru_extract_document(crispembed_mineru_context * ctx,
     ctx->has_document = false;
     ctx->document = crisp_marker::document{};
     try {
-        if (core_env::explicitly_off("CRISPEMBED_MINERU25_PRO_FULL_DOC"))
-            throw std::runtime_error("the full native document route is disabled (CRISPEMBED_MINERU25_PRO_FULL_DOC=0)");
+        if (!crispembed_mineru_full_doc_enabled(ctx))
+            throw std::runtime_error(ctx->quantized
+                                         ? "the full native document route is opt-in for quantized models "
+                                           "(set CRISPEMBED_MINERU25_PRO_FULL_DOC=1)"
+                                         : "the full native document route is disabled (CRISPEMBED_MINERU25_PRO_FULL_DOC=0)");
         const auto started = clock_type::now();
         const mineru_doc::options opts = mineru_doc::parse_options_json(options_json ? options_json : "");
         mineru_img::rgb_image page;

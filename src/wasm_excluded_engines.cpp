@@ -824,3 +824,13 @@ const char * crispembed_mineru_last_error(const crispembed_mineru_context * ctx)
     (void)ctx;
     return k_unavailable;
 }
+
+int crispembed_mineru_full_doc_enabled(const crispembed_mineru_context * ctx) {
+    (void)ctx;
+    return 0;
+}
+
+int crispembed_mineru_is_quantized(const crispembed_mineru_context * ctx) {
+    (void)ctx;
+    return 0;
+}
