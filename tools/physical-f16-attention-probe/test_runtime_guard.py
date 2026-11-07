@@ -45,7 +45,7 @@ class RuntimeGuardTests(unittest.TestCase):
     def test_environment_and_callback_failure_receipt(self):
         with tempfile.TemporaryDirectory() as folder:
             receipt = {}
-            command([sys.executable, '-c', 'import os; print(os.environ["TASK_TEST_VALUE"])'],
+            command([sys.executable, '-S', '-c', 'import os; print(os.environ["TASK_TEST_VALUE"])'],
                     Path(folder) / 'env', 2, receipt, env={**os.environ, 'TASK_TEST_VALUE': 'bounded'})
             self.assertEqual((Path(folder) / 'env').read_text().strip(), 'bounded')
             def broken():
