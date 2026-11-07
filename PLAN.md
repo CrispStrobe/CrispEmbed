@@ -2056,3 +2056,8 @@ closed. The ongoing same-feature baseline is immutable, with exact actual input
 bytes but nonzero first-score differences; full quality, actual-main primitive
 closure and a fixed-runtime same-feature rerun remain acceptance gates. No
 alias/default/release or BF16-reference change follows from component evidence.
+
+
+### LightOn4B original-F16 tiled-output isolation — 7 November 2026
+
+Decoder lane prepares a no-inference [paired coordinate reproducer](docs/lighton4b-hf-tiled-out-reproducer.md) after the preserved form CER failure. Five local Python protocol/negative tests pass; hosted synthetic helper compilation and numerical controls remain pending. No checkpoint worker or new runtime gate is dispatched by this change. Exact original-F16/HF and upstream-coordinate payload equality is required before preparing a distinct HF-tiled-output candidate; no quality promotion or release change.

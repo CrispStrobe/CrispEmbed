@@ -1785,3 +1785,8 @@ target_link_libraries(test-lighton4b-physical-native-ops PRIVATE crispembed-qwen
 add_executable(test-lighton4b-physical-runtime-primitive EXCLUDE_FROM_ALL tools/physical-primitive-probe/main.cpp)
 target_compile_definitions(test-lighton4b-physical-runtime-primitive PRIVATE CRISPEMBED_PHYSICAL_RUNTIME_PROBE=1)
 target_link_libraries(test-lighton4b-physical-runtime-primitive PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Explicit original-F16 weighted output-row reproducer; no model inference.
+add_executable(lighton4b-tiled-out-rows EXCLUDE_FROM_ALL tools/lighton4b_tiled_out_rows.cpp)
+target_include_directories(lighton4b-tiled-out-rows PRIVATE src)
+target_link_libraries(lighton4b-tiled-out-rows PRIVATE ggml)

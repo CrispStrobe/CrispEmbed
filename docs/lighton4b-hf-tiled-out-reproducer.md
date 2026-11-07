@@ -1,0 +1,9 @@
+# Original-F16 GDN output-coordinate reproducer
+
+The weighted HF-order candidate failed the form CER floor despite improving table and Arabic. This diagnostic isolates the 24 recurrent output matrices whose packed bytes differ from the publisher. It does not change a runtime recipe or establish decoded quality.
+
+The [closed protocol](lighton4b-hf-tiled-out-reproducer-protocol-v1.json) pins the original F16 carrier, published importance statistics, all 24 source names and the expected HF-control and publisher payload hashes. The helper reads at most 65,536 source elements at once. Each source span is quantized twice: HF columns with correspondingly reordered statistics, and upstream tiled columns with raw upstream-coordinate statistics. Both outputs must match their independently retained payload hashes. Independent Python dequantization verifies canonical-coordinate differences and errors against the original F16 weights. Importance-weighted weight errors are diagnostics, not activation or decoded errors.
+
+The first worker is synthetic and downloads no checkpoint. It builds only the excluded row helper, checks chunk invariance, independently constructed physical coordinates, incorrect statistics, malformed inputs and overwrite protection. It also hides the build tree before repeating controls using the retained helper/library bundle. The subsequent original-F16 worker requires separate source/resource review: roughly 9.1 GiB source storage plus at most 270 MiB paired quantized outputs; no quantized donor and no full F32 model. No model forward is part of this reproducer.
+
+Only after exact reproduction may a separately tagged HF-tiled-output candidate replace those 24 payloads and enable the matching activation permutation. The other 699 payloads, HF gamma and log-A conventions must remain intact. Physical-format scalar semantics must never be applied to that container. All existing candidates and their negative results remain independent.
