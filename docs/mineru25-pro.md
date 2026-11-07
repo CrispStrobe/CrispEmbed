@@ -31,7 +31,7 @@ scores on CPU, Metal and CUDA.
 | `crispembed_mineru_predict`, Python `CrispMinerU.predict`, Rust `MinerU`, Dart `CrispMinerU` | Native GGML vision and language model; one image/region or a text-only prompt. Returns text, structural tokens, IDs, stop flags and timing. |
 | Python `CrispMinerU.two_step_extract` / `batch_two_step_extract` | Native GGML inference plus the **unchanged pinned Python document helper** for layout preparation, crop geometry, table-image masking/restoration, formula repairs, image/chart processing and document postprocessing. No Python neural model is loaded. Pages/regions execute serially in one resident native context. |
 | `crispembed_mineru_extract`, Python `native_extract`, orchestrator engine 25 / `mineru25-pro` | Pure C++ **basic** two-step page extraction. Includes layout resize/parsing, crops/rotation, recognition, basic OTSL-to-HTML and Markdown. It does not reproduce every Python document repair. It rejects tables containing images and directs callers to the full helper path. |
-| `crispembed_mineru_extract_document` / `_last_document`, Python `native_two_step_extract` / `native_render`, Rust `MinerU::extract_document`, Dart `extractDocument`, engine 25 (default) | **Complete native document route** (no Python): every mineru-vl-utils branch translated to C++, built from the shared layout/router/document-model components. Default on (`CRISPEMBED_MINERU25_PRO_FULL_DOC=0` restores basic); see [Full native document route](#full-native-document-route). |
+| `crispembed_mineru_extract_document` / `_last_document`, Python `native_two_step_extract` / `native_render`, Rust `MinerU::extract_document`, Dart `extractDocument`, engine 25 (default) | **Complete native document route** (no Python): every mineru-vl-utils branch translated to C++, built from the shared layout/router/document-model components. Default on for F16/F32, opt-in (`=1`) for quantized GGUFs (`CRISPEMBED_MINERU25_PRO_FULL_DOC=0` restores basic); see [Full native document route](#full-native-document-route). |
 | Generic `CrispOcrModel` / CLI `-m FILE --ocr IMAGE` | Existing Qwen2-VL dispatch recognizes the new GGUF profile; default task is **Text Recognition on that image**, not automatic page layout extraction. |
 
 The native basic route must not be described as the complete Python document
@@ -42,13 +42,20 @@ package; absent helpers or native inference errors are reported, not ignored.
 
 ## Full native document route
 
-The pure C++ route is the **default** since 1 November 2026, after the 8-case
-byte-identical A/B below (owner decision); `CRISPEMBED_MINERU25_PRO_FULL_DOC=0`
-restores the basic route. It is a pure C++ route whose output is designed to be byte-identical to
+The pure C++ route is the **default for F16/F32 models** (owner decision, 7 November
+2026, after the 8-case byte-identical A/B below); `CRISPEMBED_MINERU25_PRO_FULL_DOC=0`
+restores the basic route. For a **quantized** GGUF (any tensor of a quantized ggml type,
+e.g. Q8_0 or Q4_K — detected from the GGUF tensor headers at `crispembed_mineru_init`)
+the route is **opt-in only**: unset means the basic route, `=1` enables it. Q8/Q4 match
+the original on 6/8 cases with layout differences, so the byte-identical evidence does not
+transfer to them. `crispembed_mineru_is_quantized()` and
+`crispembed_mineru_full_doc_enabled()` report the resolved state; with the route resolved
+off, `crispembed_mineru_extract_document` returns an error naming the gate and the
+orchestrator (engine 25) uses the basic route. It is a pure C++ route whose output is designed to be byte-identical to
 `CrispMinerU.two_step_extract` + `to_markdown` (pinned helper
 `c9797cde8f54cc48306196fc6aebe73ea31dd4a3`) given the same recognition outputs.
-The basic route (`crispembed_mineru_extract`) is unchanged and remains the
-default for engine 25.
+The basic route (`crispembed_mineru_extract`) is unchanged and remains callable
+directly; it is engine 25's route for quantized models and whenever the gate is `=0`.
 
 **Composition from shared components.** Step 1's VLM layout output (upstream
 regex, exact `int()`/dedup/fsum/table-internal filtering) is a layout provider
@@ -129,8 +136,9 @@ CPython 3.12. Route wall times are equal within noise (inference dominates).
 No protocol case contains a table with embedded images, so the token-glyph
 exception was not exercised by the model run
 ([receipt](../tests/results/mineru25/native-doc-model-parity.json)).
-The gate stays default-off pending review; proposing default-on is now
-supported by this evidence, keeping the basic and Python routes.
+This evidence is the basis of the F16/F32 default; the basic and Python routes are kept.
+The default-on lane (`mineru25_doc_parity.sh` with `ROUTE_ENV=default`, the gate unset) is
+the regression check for the shipped default; see PERFORMANCE/HISTORY for its receipt.
 
 ```bash
 CRISPEMBED_MINERU25_PRO=1 ./build/crispembed \

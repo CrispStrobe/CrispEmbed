@@ -5078,6 +5078,273 @@
    ]
   },
   {
+   "id": "en-list-geolsoc-v2-176",
+   "tags": [
+    "en",
+    "list",
+    "header",
+    "old"
+   ],
+   "lang": "en",
+   "source": "wikisource",
+   "v2_id": null,
+   "image": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Transactions_of_the_Geological_Society%2C_1st_series%2C_vol._2.djvu/page176-1280px-Transactions_of_the_Geological_Society%2C_1st_series%2C_vol._2.djvu.jpg?20090922070230",
+    "sha256": "480a71129717352e2e1c807a800c3ae1e9b850bb6f8af62378b8a5552e40ed8a",
+    "bytes": 402035,
+    "width": 1600,
+    "height": 2193,
+    "derived_from": {
+     "file": "File:Transactions of the Geological Society, 1st series, vol. 2.djvu",
+     "page": "176",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/4/44/Transactions_of_the_Geological_Society%2C_1st_series%2C_vol._2.djvu",
+     "file_sha1": "6a7f75b93a71c593581fa44de8c0e9599a059bac",
+     "host": "commons.wikimedia.org"
+    },
+    "fallback_urls": [
+     "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Transactions_of_the_Geological_Society%2C_1st_series%2C_vol._2.djvu/page176-1280px-Transactions_of_the_Geological_Society%2C_1st_series%2C_vol._2.djvu.jpg"
+    ],
+    "revision": {
+     "timestamp": "2009-09-22T07:02:30Z",
+     "file_sha1": "6a7f75b93a71c593581fa44de8c0e9599a059bac",
+     "api": "https://commons.wikimedia.org/w/api.php?action=query&titles=File%3ATransactions+of+the+Geological+Society%2C+1st+series%2C+vol.+2.djvu&prop=imageinfo&iiprop=timestamp%7Csha1&iilimit=1&format=json"
+    },
+    "bytes_policy": "per-page render of a multi-page DjVu/PDF (Wikimedia thumbnail): bytes are re-rendered on demand and have been observed to drift; the sha256 is the gate, the revision-qualified URL is tried first, then the bare URL; on mismatch re-render page 176 of the pinned file revision (file_sha1) at 1600px and record the new sha256 as a new corpus version rather than editing this one"
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "Collective works"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "en.wikisource.org",
+    "page": "Page:Transactions of the Geological Society, 1st series, vol. 2.djvu/176",
+    "revision_id": 7759562,
+    "revision_timestamp": "2018-08-03T00:28:14Z",
+    "revision_url": "https://en.wikisource.org/w/index.php?oldid=7759562",
+    "text_and_types": "derived: rendered revision HTML (sectioned header/body/footer) -> blocks, see tools/ocr-gold-corpus/wikisource_layout.py",
+    "reading_order": "derived: transcription document order (header, body, footnotes, footer)",
+    "bboxes": "pending: derived on hosted CI by Tesseract word alignment (build_corpus.py boxes)",
+    "manual_edits": []
+   },
+   "blocks": [
+    {
+     "id": "b0",
+     "order": 0,
+     "type": "header",
+     "text": "166",
+     "bbox": null,
+     "bbox_provenance": null,
+     "type_provenance": "derived:wikisource-html:section-header",
+     "section": "header"
+    },
+    {
+     "id": "b1",
+     "order": 1,
+     "type": "header",
+     "text": "Mr. Webster on the Strata lying over the Chalk.",
+     "bbox": null,
+     "bbox_provenance": null,
+     "type_provenance": "derived:wikisource-html:section-header",
+     "section": "header"
+    },
+    {
+     "id": "b2",
+     "order": 2,
+     "type": "text",
+     "text": "the same cause, and at the same time; and favours the idea, that many of these, although now broken and unconnected, were originally continuous.",
+     "bbox": null,
+     "bbox_provenance": null,
+     "type_provenance": "derived:wikisource-html:paragraph",
+     "section": "body"
+    },
+    {
+     "id": "b3",
+     "order": 3,
+     "type": "text",
+     "text": "A part of the series which I deduced from observations made in the south-eastern part of England, is as follows, beginning with the uppermost.",
+     "bbox": null,
+     "bbox_provenance": null,
+     "type_provenance": "derived:wikisource-html:paragraph",
+     "section": "body"
+    },
+    {
+     "id": "b4",
+     "order": 4,
+     "type": "list",
+     "text": "Alluvium, consisting of gravel, loam, sand, &c. and forming the surface or soil.\nSand seen chiefly in the neighbourhood of Bagshot.\nBlue clay, with septaria and marine fossils, commonly called the London clay.\nSand, plastic clay, &c.\nChalk with flints.\nChalk without flints.\nChalkmarl, including what is called the grey chalk.\nSandstone with green earth and mica, cemented together by calcareous matter, and containing subordinate beds of limestone and chert. This includes the firestone of Ryegate, and Kentish rag.\nBlueish black marl.\nSand and sandstone, highly ferruginous, containing subordinate beds of clay, fullers earth, shale, bituminous wood, and limestone. This stratum forms the wealds of Kent and Sussex.\nA series of strata of shelly limestone, known by the name of the Purbeck stone, alternating with shale and marle. Some of the fossils of these strata strongly resemble freshwater shells: they appear to be the Cyclostoma, Planorbis, &c.\nClay with gypsum.\nPortland oolite.",
+     "bbox": null,
+     "bbox_provenance": null,
+     "type_provenance": "derived:wikisource-html:list-tag",
+     "section": "body",
+     "items": [
+      "Alluvium, consisting of gravel, loam, sand, &c. and forming the surface or soil.",
+      "Sand seen chiefly in the neighbourhood of Bagshot.",
+      "Blue clay, with septaria and marine fossils, commonly called the London clay.",
+      "Sand, plastic clay, &c.",
+      "Chalk with flints.",
+      "Chalk without flints.",
+      "Chalkmarl, including what is called the grey chalk.",
+      "Sandstone with green earth and mica, cemented together by calcareous matter, and containing subordinate beds of limestone and chert. This includes the firestone of Ryegate, and Kentish rag.",
+      "Blueish black marl.",
+      "Sand and sandstone, highly ferruginous, containing subordinate beds of clay, fullers earth, shale, bituminous wood, and limestone. This stratum forms the wealds of Kent and Sussex.",
+      "A series of strata of shelly limestone, known by the name of the Purbeck stone, alternating with shale and marle. Some of the fossils of these strata strongly resemble freshwater shells: they appear to be the Cyclostoma, Planorbis, &c.",
+      "Clay with gypsum.",
+      "Portland oolite."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "en-list-geolsoc-v2-183",
+   "tags": [
+    "en",
+    "list",
+    "footnote",
+    "header",
+    "old"
+   ],
+   "lang": "en",
+   "source": "wikisource",
+   "v2_id": null,
+   "image": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Transactions_of_the_Geological_Society%2C_1st_series%2C_vol._2.djvu/page183-1280px-Transactions_of_the_Geological_Society%2C_1st_series%2C_vol._2.djvu.jpg?20090922070230",
+    "sha256": "08695b7d9c23c657a71a7905d35c075d3d95f7fd105e7205e7fe87bec396add3",
+    "bytes": 445486,
+    "width": 1600,
+    "height": 2310,
+    "derived_from": {
+     "file": "File:Transactions of the Geological Society, 1st series, vol. 2.djvu",
+     "page": "183",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/4/44/Transactions_of_the_Geological_Society%2C_1st_series%2C_vol._2.djvu",
+     "file_sha1": "6a7f75b93a71c593581fa44de8c0e9599a059bac",
+     "host": "commons.wikimedia.org"
+    },
+    "fallback_urls": [
+     "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Transactions_of_the_Geological_Society%2C_1st_series%2C_vol._2.djvu/page183-1280px-Transactions_of_the_Geological_Society%2C_1st_series%2C_vol._2.djvu.jpg"
+    ],
+    "revision": {
+     "timestamp": "2009-09-22T07:02:30Z",
+     "file_sha1": "6a7f75b93a71c593581fa44de8c0e9599a059bac",
+     "api": "https://commons.wikimedia.org/w/api.php?action=query&titles=File%3ATransactions+of+the+Geological+Society%2C+1st+series%2C+vol.+2.djvu&prop=imageinfo&iiprop=timestamp%7Csha1&iilimit=1&format=json"
+    },
+    "bytes_policy": "per-page render of a multi-page DjVu/PDF (Wikimedia thumbnail): bytes are re-rendered on demand and have been observed to drift; the sha256 is the gate, the revision-qualified URL is tried first, then the bare URL; on mismatch re-render page 183 of the pinned file revision (file_sha1) at 1600px and record the new sha256 as a new corpus version rather than editing this one"
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "Collective works"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "en.wikisource.org",
+    "page": "Page:Transactions of the Geological Society, 1st series, vol. 2.djvu/183",
+    "revision_id": 15552363,
+    "revision_timestamp": "2025-12-03T17:24:49Z",
+    "revision_url": "https://en.wikisource.org/w/index.php?oldid=15552363",
+    "text_and_types": "derived: rendered revision HTML (sectioned header/body/footer) -> blocks, see tools/ocr-gold-corpus/wikisource_layout.py",
+    "reading_order": "derived: transcription document order (header, body, footnotes, footer)",
+    "bboxes": "pending: derived on hosted CI by Tesseract word alignment (build_corpus.py boxes)",
+    "manual_edits": []
+   },
+   "blocks": [
+    {
+     "id": "b0",
+     "order": 0,
+     "type": "header",
+     "text": "Mr. Webster on the Strata lying over the Chalk.",
+     "bbox": null,
+     "bbox_provenance": null,
+     "type_provenance": "derived:wikisource-html:section-header",
+     "section": "header"
+    },
+    {
+     "id": "b1",
+     "order": 1,
+     "type": "header",
+     "text": "173",
+     "bbox": null,
+     "bbox_provenance": null,
+     "type_provenance": "derived:wikisource-html:section-header",
+     "section": "header"
+    },
+    {
+     "id": "b2",
+     "order": 2,
+     "type": "list",
+     "text": "Chalk formation.\nThe lowest marine formation over the shell, including the plastic clay and sand, together with London clay.\nThe lowest freshwater formation.\nThe upper marine formation.\nThe upper-freshwater formation.\nAlluvium.",
+     "bbox": null,
+     "bbox_provenance": null,
+     "type_provenance": "derived:wikisource-html:list-tag",
+     "section": "body",
+     "items": [
+      "Chalk formation.",
+      "The lowest marine formation over the shell, including the plastic clay and sand, together with London clay.",
+      "The lowest freshwater formation.",
+      "The upper marine formation.",
+      "The upper-freshwater formation.",
+      "Alluvium."
+     ]
+    },
+    {
+     "id": "b3",
+     "order": 3,
+     "type": "text",
+     "text": "Fortunately the complete series of these alternations may be seen at one place in the Isle of Wight, which leaves us no room to doubt their superposition; and when their characters have been studied in this spot, it is more easy to become acquainted with them in other places.",
+     "bbox": null,
+     "bbox_provenance": null,
+     "type_provenance": "derived:wikisource-html:paragraph",
+     "section": "body"
+    },
+    {
+     "id": "b4",
+     "order": 4,
+     "type": "title",
+     "text": "§ 1. Chalk Formation.",
+     "bbox": null,
+     "bbox_provenance": null,
+     "type_provenance": "derived:wikisource-html:centred-short",
+     "section": "body"
+    },
+    {
+     "id": "b5",
+     "order": 5,
+     "type": "text",
+     "text": "The south-east coast of England and that of the Isle of Wight afford us many excellent opportunities of examining the chalk. In numerous natural sections formed by cliffs, as well as in chalk pits, I have observed it as distinguished into at least three strata, each of which has peculiar and distinctive characters.",
+     "bbox": null,
+     "bbox_provenance": null,
+     "type_provenance": "derived:wikisource-html:paragraph",
+     "section": "body"
+    },
+    {
+     "id": "b6",
+     "order": 6,
+     "type": "text",
+     "text": "The lower stratum is more or less argillaceous, and constitutes what is called the chalk marl. Together with the other strata it frequently forms cliffs of considerable height, and though differing little from them in colour is easily distinguished by its constantly shivering with the frost, which always pulverizes a mass of it when exposed to the air for a few months; whereas the others resist the weather in a much greater degree, and are often even employed as a material for building.",
+     "bbox": null,
+     "bbox_provenance": null,
+     "type_provenance": "derived:wikisource-html:paragraph",
+     "section": "body"
+    },
+    {
+     "id": "b7",
+     "order": 7,
+     "type": "footnote",
+     "text": "In using the word formation I have followed the example of M. M. Cuvier and Brongniart, who have employed it to express an assemblage of beds of the same nature, or of a different nature but formed during the same epoch.",
+     "bbox": null,
+     "bbox_provenance": null,
+     "type_provenance": "derived:wikisource-html:references-li",
+     "section": "footer",
+     "note_id": "cite_note-1"
+    }
+   ]
+  },
+  {
    "id": "en-table-cakchiquels-13",
    "tags": [
     "en",
