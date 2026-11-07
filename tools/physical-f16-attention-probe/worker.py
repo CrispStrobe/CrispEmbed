@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import sys
 import time
 from runtime_guard import Deadline, command
 ROOT=Path(__file__).resolve().parents[2]
@@ -17,6 +18,25 @@ def sha(path):
 
 def require(ok,message):
     if not ok:raise RuntimeError(message)
+
+def text_schema(plan):
+    rows=[];counts={0:0,12:0,14:0};names=set()
+    for row in plan['all_tensors']:
+        if not row['name'].startswith('l.'):continue
+        name=row['name'];kind=14 if name=='l.embed_tokens.weight'else row['type']
+        require(name not in names and kind in counts,'closed text schema');names.add(name);counts[kind]+=1
+        dims=list(reversed(row['source_shape']));dims += [1]*(4-len(dims))
+        rows.append(name+'\t'+str(kind)+'\t'+'\t'.join(map(str,dims))+'\n')
+    require(len(rows)==426 and counts=={0:177,12:216,14:33},'exact426 schema inventory')
+    return ''.join(rows)
+
+
+def control_args(target,build,schema):
+    schema_targets={'test-lighton4b-upstream-physical','test-lighton4b-hf-tiled-out-recipe'}
+    noarg_targets={'test-lighton4b-physical-f16-attention','test-lighton4b-physical-f16-unsupported','test-lighton4b-physical-f16-wasm-guard','test-lighton4b-physical-native-ops','test-lighton4b-release-fence','test-lighton4b-hf-tiled-out-operator','test-lighton4b-q6-tied-head'}
+    require(target in schema_targets|noarg_targets,'unknown control CLI')
+    return [build/target,schema]if target in schema_targets else[build/target]
+
 
 def main():
     require(Path('/kaggle/working').is_dir()and Path('/kaggle/input').is_dir()and not list(Path('/dev').glob('nvidia[0-9]*')),'Kaggle CPU only')
@@ -57,9 +77,11 @@ def main():
         shutil.copy(build/'CMakeCache.txt',out/'runtime-CMakeCache.txt')
         targets=['test-lighton4b-physical-f16-attention','test-lighton4b-physical-f16-unsupported','test-lighton4b-physical-f16-wasm-guard','lighton4b-physical-f16-attention-probe','test-lighton4b-physical-native-ops','test-lighton4b-upstream-physical','test-lighton4b-release-fence','test-lighton4b-hf-tiled-out-recipe','test-lighton4b-hf-tiled-out-operator','test-lighton4b-q6-tied-head']
         run('runtime-build',['cmake','--build',build,'--target',*targets,'--parallel','2'])
+        sys.path.insert(0,str(ROOT/'tools'));from lighton4b_q6_recipe import plan
+        schema=out/'closed426.tsv';schema.write_text(text_schema(plan()))
         for target in targets:
             if target!='lighton4b-physical-f16-attention-probe':
-                run(target,[build/target])
+                run(target,control_args(target,build,schema))
                 if target=='test-lighton4b-physical-f16-attention':require('PHYSICAL_F16_ATTENTION PASS 'in(out/(target+'.log')).read_text(),'supported runtime controls required, not skipped')
         run('source-pins',['python3',ROOT/'tools/qwen35_source_pins.py','--check','--verify-git'])
         run('environment',['python3',ROOT/'tests/test_env_vars_documented.py'])
