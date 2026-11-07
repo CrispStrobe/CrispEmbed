@@ -108,7 +108,7 @@
     "src/lighton4b_physical_gdn_source_ops.h": "3521d513a0dde4423f7ef3f027b3f11bde259d0dbb8346ebe6a17eb34051597f",
     "src/lighton4b_linear_block.h": "608f9ba483726da0630352ac5a942aa2248a6da1da59339f11d240ea2b89a8dc",
     "src/lighton4b_decoder_compose.h": "a45e303578887058497cc4247997a2bb6dd7254674c5fd2b8613edef9903f647",
-    "tests/test_lighton4b_physical_gdn_source_ops.cpp": "97c454564c8dab7b5f65b2a36ff6b7bc38c3d0b9baa4c4ed787cfff34e2f5d9e"
+    "tests/test_lighton4b_physical_gdn_source_ops.cpp": "07c76fa96177ac1166b704ad5038ea15a2783ac66c090f7b1704700f3767c76b"
   },
   "native_inputs": {
     "prefill.first_chunk.layer0.qkv.f32": {
