@@ -3067,3 +3067,8 @@ The actual native main archive now passes all five closed-helper link checks. Th
 ### Actual native SDK and real WASM linkage verified
 
 [Corrected Emscripten control](tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/sdk-link-v2/evidence.json) at `d7a35a13d` passes the actual main SDK archive link and real Emscripten 6.0.2 shared-decoder/helper closure plus Node execution (five checks each, 456.24 s). The public helper remains the unsupported closed stub; only the experimental decoder target receives the private ABI definition. This verifies linkage, not a complete OCR WASM artifact or model qualification. V1 negative remains preserved.
+
+
+### Actual177 original-prefix teacher scores after physical F16 attention (2026-11-07)
+
+Artifact-only Kaggle143200239/v3 sourcebcbd50b18 passes177whole-vocabulary originalBF16/nativehash+causalcontextguards, no inference. All43,952,640logits: RMS0.386425/max8.82935, original/nativeRMSmagnitudes2.28140/2.26667; meanKLD(BF16||native)0.0123239,169/177top1, nativeoriginaltokenprobabilitymean0.861789. Row0RMS0.335973/max1.60669;row1710.257192/1.35267;EOS1760.655251/3.33821. Pinnedupstreamonlyrow0 admitted(RMS0.105889/max0.558670,exactproducerclosure); no misalignedgreedyrowssubstituted. BothsetupnegativesV1/V2 retained, V3fourcontrols+independentaggregateauditpass. [Fullrawreceipts,magnitudes/probabilities/limits](docs/lighton4b-f16-teacher-results.md). Differentweight/vision/arithmeticdomainsremainexplicit; no sameweightparity/generalshippingclaim.

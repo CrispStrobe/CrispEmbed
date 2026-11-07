@@ -1,0 +1,66 @@
+{
+  "bootstrap_sha256": "5c1ad4b07ed501116529ed5504138689237f6b43346b02bca69edf6aa536b45e",
+  "files": {
+    "independent-aggregate-review.json": {
+      "bytes": 637,
+      "sha256": "d502f8304eae9e80084b40cb1cdccd3f357c51263f3e2991fdc9fb95aebe0254"
+    },
+    "lighton-f16-teacher-readback.log": {
+      "bytes": 1543,
+      "sha256": "588dc09fb8b50eb4841528e494929c9fe00ea1aa979b00fbd2caefb9d86121b3"
+    },
+    "lighton-f16-teacher-readback/actual-artifact-readback.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-f16-teacher-readback/bootstrap-receipt.json": {
+      "bytes": 892,
+      "sha256": "e32dc775933c65be7d943b0036fba2b51eac78ed10ea4e544e62490e7d34bd09"
+    },
+    "lighton-f16-teacher-readback/causal-row-controls.log": {
+      "bytes": 102,
+      "sha256": "80144f3bf12d071a1497821467ab02765712cb11da3f547a5e2b5cf79f938e9a"
+    },
+    "lighton-f16-teacher-readback/checkout.log": {
+      "bytes": 87,
+      "sha256": "d47edeb3e8274e7ed0d547f98201d76c6370dd1af2e78643a7f670e7e10d6587"
+    },
+    "lighton-f16-teacher-readback/dependency-preflight.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-f16-teacher-readback/fetch.log": {
+      "bytes": 123,
+      "sha256": "052dcc2cb6da956d31735a31a3dd909ab538d019af0b9fd235c7b722a425f513"
+    },
+    "lighton-f16-teacher-readback/init.log": {
+      "bytes": 579,
+      "sha256": "be465fb7f90c458af70d6e68f339b46e3ee9de5d0b4c543d87cf2d4a3ad569d2"
+    },
+    "lighton-f16-teacher-readback/numpy.log": {
+      "bytes": 1469,
+      "sha256": "f4c7250f53bce0129b94ebad17f4b26f08d341870ca96fde030fe6e4e5d79b48"
+    },
+    "lighton-f16-teacher-readback/remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-f16-teacher-readback/results/teacher-readback.json": {
+      "bytes": 212328,
+      "sha256": "b8b6bdf1eea0030f707475c2bc0c98fbb59d828fb8025083eaecc2dddd6e4d24"
+    },
+    "lighton-f16-teacher-readback/venv-prefix.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-f16-teacher-readback/venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "model_inference_executed": false,
+  "schema": "lighton4b-f16-teacher-readback-evidence/v1",
+  "service": "Kaggle CPU kernel143200239/version3",
+  "source_sha": "bcbd50b1894a465e0bc44c1f8b3ef54c879d6529",
+  "status": "readback-verified"
+}
