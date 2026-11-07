@@ -69,7 +69,7 @@ class Controls(unittest.TestCase):
   with self.assertRaises(ValueError):analysis.select_prefill(actual+[graph(5,1)])
  def test_complete_source_response(self):
   import worker,copy
-  frozen={'tokens':list(range(173))+[248046],'content':'frozen','completion_probabilities':[{}]*174,'tokens_evaluated':154,'stop':True,'stop_type':'eos','truncated':False}
+  frozen={'tokens':list(range(169))+[248046],'content':'frozen','completion_probabilities':[{}]*170,'tokens_evaluated':154,'stop':True,'stop_type':'eos','truncated':False}
   worker.validate_response(frozen,frozen)
   for key,value in [('tokens_evaluated',153),('truncated',True),('stop_type','limit'),('content','changed')]:
    bad=copy.deepcopy(frozen);bad[key]=value

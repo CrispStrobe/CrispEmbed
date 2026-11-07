@@ -28,7 +28,7 @@ def load_graphs(folder):
    if row['status']=='captured':
     file=folder/row['file'];require(row['file']==f'graph-{i}.{name}.bin'and 0<size<=8<<20 and file.stat().st_size==size and int(row['type'])in[0,26]and size==math.prod(ne)*4,'captured full F32/I32 tensor');total+=size;require(total<=128<<20,'bounded live source bytes');a=np.fromfile(file,dtype='<f4'if int(row['type'])==0 else'<i4');require(int(row['type'])!=0 or np.isfinite(a).all(),'finite live source values');arrays[name]=a;records[name]['sha256']=sha(file)
   require('model.input_embed'in arrays,'actual model input required');emb=records['model.input_embed'];require(int(emb['type'])==0 and emb['ne'][0]==2560 and emb['ne'][2:]==[1,1],'actual decoder input matrix');n=emb['ne'][1];require(1<=n<=154 and 'inp_pos'in arrays,'bounded actual token block/positions');phases={int(r['sample_count'])for r in rows};require(len(phases)==1,'one graph sampling phase');graphs.append({'index':i,'tokens':n,'sample_count':phases.pop(),'records':records,'arrays':arrays})
- require([int(x)for x in(folder/'sampling-steps.tsv').read_text().split()]==list(range(174)),'actual174 sampling calls, captured only declared phases');return graphs,total
+ require([int(x)for x in(folder/'sampling-steps.tsv').read_text().split()]==list(range(170)),'actual170 sampling calls, captured only declared phases');return graphs,total
 
 def select_prefill(graphs):
  """Exclude only pinned common_context_can_seq_rm's independently identified probe."""

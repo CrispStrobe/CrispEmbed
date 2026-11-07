@@ -7,18 +7,18 @@ sys.path.insert(0,str(ROOT/'tools'));import lighton4b_upstream_observer_patch as
 sys.path.insert(0,str(Path(__file__).parent));import source_patch,analysis
 COMBINED='4428c4a2d8a877f64488847dfd7145fb0ccd1ba26810e6c0edf2229e6e40eac9'
 PHYSICAL='712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2'
-CFG_SHA='ca52b3c77c27a214e0b720ca31290166d8266d163b7f54d8eb20e32c7a2f55d5'
+CFG_SHA='b74c5c4d37f874b3745b3491df8a4940248abe604aa4b2fcfd10068ebb1cf3c7'
 def admit(cfg):
  require(hashlib.sha256(json.dumps(cfg,sort_keys=True,separators=(',',':')).encode()).hexdigest()==CFG_SHA,'immutable form trace protocol')
- require((cfg['prompt_tokens'],cfg['image_tokens'],cfg['generated_tokens'],cfg['same_prefix_tokens'])==(154,140,174,31)and cfg['worker_seconds']==3600 and cfg['source_arm_seconds']==900,'closed observed form scope')
+ require((cfg['prompt_tokens'],cfg['image_tokens'],cfg['generated_tokens'],cfg['same_prefix_tokens'])==(154,140,170,31)and cfg['worker_seconds']==3600 and cfg['source_arm_seconds']==900,'closed observed form scope')
  require(not any(cfg[k]for k in ['original_bf16_forward_allowed','native_forward_allowed','full_f32_model_allowed','heldout_allowed']),'quantized source-only trace')
 def load(name,path):
  s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
 base=load('physical',ROOT/'tools/kaggle/lighton4b_upstream_physical_decode.py');require=base.require;sha=base.sha
 PROFILE={'BUILD_SHARED_LIBS':'ON','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_AVX512':'OFF','GGML_CPU_REPACK':'ON','GGML_OPENMP':'ON','GGML_LLAMAFILE':'ON','GGML_BACKEND_DL':'OFF','GGML_BLAS':'OFF','GGML_CUDA':'OFF','GGML_VULKAN':'OFF'}
 def validate_response(response,frozen):
- require(response['tokens']==frozen['tokens']and response['content']==frozen['content']and response['completion_probabilities']==frozen['completion_probabilities'],'all actual174 form source IDs/text/probability records unchanged')
- require(len(response['tokens'])==174 and response['tokens_evaluated']==154 and response['stop']and response['stop_type']=='eos'and not response['truncated']and response['tokens'][-1]==248046,'independent complete source EOS/prompt')
+ require(response['tokens']==frozen['tokens']and response['content']==frozen['content']and response['completion_probabilities']==frozen['completion_probabilities'],'all actual170 form source IDs/text/probability records unchanged')
+ require(len(response['tokens'])==170 and response['tokens_evaluated']==154 and response['stop']and response['stop_type']=='eos'and not response['truncated']and response['tokens'][-1]==248046,'independent complete source EOS/prompt')
 def validate_png_inputs(original,canonical,rgb):
  from PIL import Image
  a=Image.open(original).convert('RGB');b=Image.open(canonical).convert('RGB')
@@ -87,17 +87,17 @@ def main():
      else:raise RuntimeError('source health deadline')
      marker=api(port,'/props').get('media_marker');require(isinstance(marker,str)and 1<=len(marker)<=256,'source media marker');template=api(port,'/apply-template',{'messages':[{'role':'user','content':marker}],'add_generation_prompt':True,'chat_template_kwargs':{'enable_thinking':False}})['prompt'];require(template.count(marker)==1 and template.replace(marker,'<__media__>')==protocol['expected_media_prompt'],'same wrapper');expanded=template.replace(marker,'<|vision_start|>'+'<|image_pad|>'*case['image_tokens']+'<|vision_end|>');require(api(port,'/tokenize',{'content':expanded,'add_special':False,'parse_special':True})['tokens']==prompt,'same actual source prompt')
      request={'prompt':{'prompt_string':template,'multimodal_data':[base64.b64encode((folder/'input.png').read_bytes()).decode()]},'n_predict':512,'temperature':0,'seed':0,'top_k':1,'top_p':1,'min_p':0,'repeat_penalty':1,'presence_penalty':0,'frequency_penalty':0,'cache_prompt':False,'return_tokens':True,'n_probs':5,'stream':False};response=api(port,'/completion',request);validate_response(response,frozen);responses.append(response);(dest/'response.json').write_text(json.dumps(response,indent=2,ensure_ascii=False)+'\n');(dest/'generated.txt').write_bytes(response['content'].encode());(dest/'generated.ids').write_text(''.join(str(x)+'\n'for x in response['tokens']))
-     for i in range(174):
+     for i in range(170):
       row_path=dest/f'source.logits.{i}.f32'
       if i<2:verify(row_path,art[f'observer-on/source.logits.{i}.f32'])
       values=np.fromfile(row_path,dtype='<f4');require(values.size==248320 and np.isfinite(values).all()and int(values.argmax())==response['tokens'][i],'finite actual full-vocabulary row/greedy argmax')
-     verify(dest/'source.vision.0.f32',art['observer-on/source.vision.0.f32']);verify(dest/'source.vision.0.positions.u32',art['observer-on/source.vision.0.positions.u32']);require(len(list(dest.glob('source.vision.*.f32')))==1 and (dest/dispatch.OUTPUT).is_file(),'one actual vision forward/dispatch inventory');report['arms'][arm].update(status='source-frozen-exact',original_two_raw_scores_exact=True,all174_ids_text_probability_records_exact=True,source_features_positions_exact=True,generated_ids=response['tokens'],decoded=response['content'],eos=True)
+     verify(dest/'source.vision.0.f32',art['observer-on/source.vision.0.f32']);verify(dest/'source.vision.0.positions.u32',art['observer-on/source.vision.0.positions.u32']);require(len(list(dest.glob('source.vision.*.f32')))==1 and (dest/dispatch.OUTPUT).is_file(),'one actual vision forward/dispatch inventory');report['arms'][arm].update(status='source-frozen-exact',original_two_raw_scores_exact=True,all170_ids_text_probability_records_exact=True,source_features_positions_exact=True,generated_ids=response['tokens'],decoded=response['content'],eos=True)
     finally:
      if active is not None and Path(f'/proc/{active.pid}/status').is_file():report['arms'][arm]['process_status_before_stop']={x.split(':',1)[0]:x.split(':',1)[1].strip()for x in Path(f'/proc/{active.pid}/status').read_text().splitlines()if x.startswith(('VmHWM:','VmRSS:','Threads:'))}
      base.stop(active);report['arms'][arm]['returncode']=active.returncode if active is not None else None;active=None;arm_end[0]=None;report['arms'][arm]['seconds']=time.monotonic()-arm_started;save()
   require(responses[0]['tokens']==responses[1]['tokens']and responses[0]['completion_probabilities']==responses[1]['completion_probabilities'],'complete live observer neutrality')
-  for i in range(174):require(sha(out/'off'/f'source.logits.{i}.f32')==sha(out/'on'/f'source.logits.{i}.f32'),'all174 actual raw scores observer-neutral')
-  require((out/'off'/dispatch.OUTPUT).read_bytes()==(out/'on'/dispatch.OUTPUT).read_bytes(),'actual source quantized buffer dispatch observer-neutral');report['all174_scores_observer_neutral']=True
+  for i in range(170):require(sha(out/'off'/f'source.logits.{i}.f32')==sha(out/'on'/f'source.logits.{i}.f32'),'all170 actual raw scores observer-neutral')
+  require((out/'off'/dispatch.OUTPUT).read_bytes()==(out/'on'/dispatch.OUTPUT).read_bytes(),'actual source quantized buffer dispatch observer-neutral');report['all170_scores_observer_neutral']=True
   # Capture admission is independent of the read-only comparison. Preserve a
   # usable COMPLETE producer if a previously unseen graph crop needs a reader fix.
   try:
@@ -105,7 +105,7 @@ def main():
    ordered=['attn_norm-0','linear_attn_qkv_mixed-0','z-0','alpha-0','beta-0','linear_attn_out-0','attn_residual-0','attn_post_norm-0','ffn_gate-0','ffn_up-0','ffn_swiglu-0','ffn_out-0'];pairs=report['analysis'].get('comparisons',{}).get('layer0_first_block',[]);report['first_different_layer0_stage']=next((name for name in ordered if any(v['source_stage']==name and not v['bit_exact']for v in pairs)),None)
   except WorkerDeadline:raise
   except Exception as error:report['analysis']={'comparison_status':'blocked-reader','error_type':type(error).__name__,'error':str(error),'scope':'Capture is valid; no missing or mismatched source stages inferred.'}
-  report['status']='measured_neutral_form_text_trace';report['limits']=['Observed form only; sourceOFF/ON observer closure and original174IDs/text/probabilities/EOS/twooriginal rawscore anchors required.','Actual source prefill batching/crops retained; layer0/nativefirst16 and all32prefill layers compared only on authenticated aligned inputs.','Only source step31 states exist; native step31 hidden/positions are not inferred. Native/source31 share actual token prefix.','Quantized GGUF source only; no originalBF16 orF32 model instantiated; no runtime/recipe/heldout change or quality promotion.']
+  report['status']='measured_neutral_form_text_trace';report['limits']=['Observed form only; sourceOFF/ON observer closure and original170IDs/text/probabilities/EOS/twooriginal rawscore anchors required.','Actual source prefill batching/crops retained; layer0/nativefirst16 and all32prefill layers compared only on authenticated aligned inputs.','Only source step31 states exist; native step31 hidden/positions are not inferred. Native/source31 share actual token prefix.','Quantized GGUF source only; no originalBF16 orF32 model instantiated; no runtime/recipe/heldout change or quality promotion.']
 
  except BaseException as e:report['error_type']=type(e).__name__;report['error']=str(e);raise
  finally:
