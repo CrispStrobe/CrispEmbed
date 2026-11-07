@@ -207,3 +207,36 @@ long pages; every decoder matrix needs >= 8 bits. Best approximate 4-bit-FFN arm
 is `q8_ffn_gu_q4k` (530 MB, receipt CER 0.067 vs 0.345 for the published Q4_K),
 a candidate replacement for the experimental Q4 file. Exact recommendation is
 unchanged: full Q8_0 decoder (600 MB).
+
+## 8. Gold corpus (57 pages, Kaggle CPU, 7 November 2026)
+
+Kaggle kernels `crispembed-got-gold-{f16,q8-0,q8-ffn-gu-q4k}` (`tools/kaggle/ocr-real-scans/kernel.py`,
+modes `native-got-*`, manifest `docs/ocr-gold-corpus-v1.json` via
+`tools/ocr-gold-corpus/to_text_manifest.py`), source `166dae4c`. Receipt:
+[summary.json](../tests/results/got-ocr2-q4/gold-kaggle-20261107/summary.json). Two Wikisource
+pages (`en-form-economic-journal-67`, `en-register-1758-16`) failed their sha256 pin in the F16
+and Q8_0 sessions (served thumbnail bytes differed) and were not run; the table uses the 55 pages
+common to all three arms.
+
+| arm | size | mean CER | median CER | mean WER | token-exact vs F16 | cap hits | decode wall (55 pages) | peak RSS |
+|---|---|---|---|---|---|---|---|---|
+| F16-r2 | 1.44 GB | 0.363 | 0.220 | 0.518 | 55/55 | 3 | 3899 s | 3.57 GB |
+| Q8_0 | 600 MB | 0.357 | 0.236 | 0.504 | 17/55 | 4 | 2830 s | 2.77 GB |
+| q8_ffn_gu_q4k | 530 MB | 0.345 | 0.178 | 0.474 | 11/55 | 2 | 1294 s | 2.70 GB |
+
+Findings:
+- Token exactness does not survive real long pages even at Q8_0 (17/55); the 3/3 panel result does
+  not generalize. The panel exactness bar is therefore not a usable publication criterion for any
+  quantized GOT-OCR2.
+- Against the gold text, both quantized arms are **on par** with F16 in aggregate (mean CER within
+  ±0.02; per-page swings both ways, worst regression `de-degraded-freiligrath-46` +0.21 / +0.50).
+  GOT-OCR2's own gold quality on this corpus is weak (F16 mean CER 0.36), so quantization noise is
+  small relative to model error.
+- q8_ffn_gu_q4k is 3x faster than F16 in decode wall time on the same panel.
+- F16 is not verified against the original Python pipeline on these 55 pages (only on the 3-case
+  panel); an original-reference arm would be a separate long Kaggle session.
+
+Recommendation: replace the experimental Q4_K with `q8_ffn_gu_q4k` (still `-experimental`, quality
+on par with F16 on the gold corpus, not token-exact), optionally also publish Q8_0 as experimental;
+F16-r2 stays the default exact variant. Publication goes through the HF workflow with
+LICENSE/NOTICE under the Tongyi Qianwen research licence.
