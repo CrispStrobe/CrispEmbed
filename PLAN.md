@@ -3100,3 +3100,13 @@ Prepared [LightOn4B held-out v1](docs/lighton4b-heldout-v1.md) and its hashed-in
 ### Projector-only attribution initial setup negative (2026-11-07)
 
 [Preserved first attempt](docs/lighton4b-projector-attribution.md) source0f92/receipt5f684: standaloneCPP andmtmdcompiled, finalreference linkfailedobsolete-lcommon at250.86s. Build-before-transferguard stoppedall2GBparametertransfer/canonical/visionforward; no numericalstageclaim. Narrowreference-onlyc010 removesunneededcommondependency, no math/profile change. Preservefailurebeforeboundedretry.
+
+### Physical Q4 repack route measured, integration remains experimental
+
+[Operator evidence](docs/lighton4b-q4-repack-operator-results.md) preserves exact
+source `3b41475c8`, raw receipt `4dc28c17`, two build profiles and bootstrap. All
+five actual N16 raw projections close; preferred Q4 routes match across both
+pinned backends while changing raw arithmetic slightly. Q6 N16 retains a
+separate backend residual. No decoded attribution follows. Next is bounded
+default-off physical buffer-cache lifecycle/source-fed verification, then
+same-feature decoded comparison; current Q4 is not qualified.
