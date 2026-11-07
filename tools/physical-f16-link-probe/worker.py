@@ -47,8 +47,10 @@ def main():
         def sdk_run(label,args,timeout=900):run(label,['bash','-c','source "$1/emsdk_env.sh" >/dev/null && shift && exec "$@"','--',sdk,*args],timeout)
         sdk_run('emcc-version',['emcc','--version']);require('6.0.2'in(out/'emcc-version.log').read_text(),'repo-pinned real Emscripten')
         wasm=work/'wasm'
-        sdk_run('wasm-configure',['emcmake','cmake','-S',ROOT/'tools/physical-f16-link-probe','-B',wasm,'-DCMAKE_BUILD_TYPE=Release','-DCRISPEMBED_SOURCE='+str(ROOT),'-DGGML_SOURCE='+str(ROOT/'ggml')])
+        sdk_run('wasm-configure',['emcmake','cmake','-S',ROOT/'tools/physical-f16-link-probe','-B',wasm,'-DCMAKE_BUILD_TYPE=Release','-DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm','-DCRISPEMBED_SOURCE='+str(ROOT),'-DGGML_SOURCE='+str(ROOT/'ggml')])
         shutil.copy(wasm/'CMakeCache.txt',out/'wasm-CMakeCache.txt')
+        require('EMSCRIPTEN_SYSTEM_PROCESSOR:UNINITIALIZED=wasm' in (wasm/'CMakeCache.txt').read_text() or 'EMSCRIPTEN_SYSTEM_PROCESSOR:STRING=wasm' in (wasm/'CMakeCache.txt').read_text(),'production WASM processor selection')
+        require(any('arch/wasm/quants.c' in p.read_text() for p in wasm.rglob('build.make')),'real WASM quantizer source membership')
         sdk_run('wasm-build',['cmake','--build',wasm,'--target','physical-f16-shared-link','--parallel','2'],900)
         sdk_run('wasm-run',['node',wasm/'physical-f16-shared-link.js']);require('MAIN_SDK_F16_CLOSED_STUB_LINK PASS 5'in(out/'wasm-run.log').read_text(),'actual shared attention+helper WASM link/run')
         retained=out/'wasm';retained.mkdir()
