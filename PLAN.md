@@ -2192,3 +2192,7 @@ unqualified; no speed/quality/default/alias/release promotion. Actualupstream
 text hidden stages are absent, so nativepairedL0drift is not upstream stage
 localization. Prioritize composed-vision attribution/correction and preserve
 all observed/composed/held-out gates.
+
+### Additive source-vision integration preparation (2026-11-07)
+
+Prepared isolated union of tested sourceb59 with existing PR1559ca and currentmain17098, retaining publication/vendor/CLI work and repack-negative warning. Production src/GGML/CMake/native-document bytes remain exactlyb59; new source-vision scope documents off-by-default gates, supported CPU/still-image domain, effective precision and existing public format6 fence. Actual component039b proves28source arrays/29legacy anchors; full composed form remains runtime-owned and pending, so no shared push/release/quality promotion yet. Local sourcepin/env470 checks pass; no shared-host build/model work.
