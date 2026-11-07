@@ -72,6 +72,12 @@ def main():
         up=work/'llama'
         for label,args in [('up-init',['git','init',up]),('up-remote',['git','-C',up,'remote','add','origin','https://github.com/ggml-org/llama.cpp']),('up-fetch',['git','-C',up,'fetch','--depth','1','origin',cfg['upstream_commit']]),('up-checkout',['git','-C',up,'checkout','--detach','FETCH_HEAD']),('native-submodule',['git','-C',ROOT,'submodule','update','--init','ggml']),('native-pin',['git','-C',ROOT/'ggml','rev-parse','HEAD'])]:run(label,args)
         require((out/'native-pin.log').read_text().strip()==cfg['native_ggml_commit'],'native backend pin')
+        sys.path.insert(0,str(ROOT/'tools'));import qwen35_source_pins as source_pins
+        commits=sorted({row[-1]for row in source_pins.pins(ROOT)})
+        require(commits and all(len(c)==40 and all(ch in '0123456789abcdef'for ch in c)for c in commits),'closed historical receipt commits')
+        run('fetch-frozen-receipt-commits',['git','-C',ROOT,'fetch','--depth','1','origin',*commits])
+        run('source-pins',['python3',ROOT/'tools/qwen35_source_pins.py','--check','--verify-git'])
+        run('environment',['python3',ROOT/'tests/test_env_vars_documented.py'])
         build=work/'runtime-build'
         flags={'CRISPEMBED_NATIVE':'OFF','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_LLAMAFILE':'ON','GGML_AVX512':'OFF','GGML_BLAS':'OFF','GGML_BACKEND_DL':'OFF','GGML_OPENMP':'OFF','GGML_CUDA':'OFF','GGML_VULKAN':'OFF'}
         run('runtime-configure',['cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release',*[f'-D{k}={v}'for k,v in flags.items()]])
@@ -87,8 +93,6 @@ def main():
             if target in primary:
                 run(target,control_args(target,build,schema))
                 if target=='test-lighton4b-physical-f16-attention':require('PHYSICAL_F16_ATTENTION PASS 'in(out/(target+'.log')).read_text(),'supported runtime controls required, not skipped')
-        run('source-pins',['python3',ROOT/'tools/qwen35_source_pins.py','--check','--verify-git'])
-        run('environment',['python3',ROOT/'tests/test_env_vars_documented.py'])
         run('runtime-sourcefed',[build/'lighton4b-physical-f16-attention-probe',frozen.parent/'native',out/'runtime'])
         ref=work/'reference-build'
         run('reference-configure',['cmake','-S',HERE,'-B',ref,'-DCMAKE_BUILD_TYPE=Release','-DGGML_SOURCE='+str(up/'ggml')])
