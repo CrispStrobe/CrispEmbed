@@ -46,6 +46,11 @@ class Controls(unittest.TestCase):
    context=(root/'src/llama-context.cpp').read_text();self.assertLess(context.index('crisp_text_trace_begin(gf, sched.get())'),context.index('auto status = ggml_backend_sched_graph_compute_async(sched.get(), gf);'))
    self.assertIn('ggml_backend_sched_synchronize(sched.get());\n        crisp_text_trace_end()',context)
    with self.assertRaises(ValueError):source_patch.patch(root)
+ def test_health_deadline_not_swallowed(self):
+  import worker
+  self.assertTrue(issubclass(worker.WorkerDeadline,OSError))
+  text=(Path(__file__).parent/"worker.py").read_text()
+  self.assertIn("except WorkerDeadline:raise\n      except (OSError,urllib.error.URLError)",text)
  def test_protocol_closed(self):
   import worker,json,copy
   cfg=json.loads((Path(__file__).parent/'protocol.json').read_text());worker.admit(cfg)

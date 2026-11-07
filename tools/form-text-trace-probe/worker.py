@@ -2,7 +2,7 @@
 """Pinned upstream-only neutral text trace; retained native arrays are read-only."""
 import base64,csv,hashlib,importlib.util,json,os,platform,shutil,signal,socket,subprocess,sys,time,urllib.request
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'tools/physical-f16-attention-probe'));from runtime_guard import Deadline,command
+ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'tools/physical-f16-attention-probe'));from runtime_guard import Deadline,WorkerDeadline,command
 sys.path.insert(0,str(ROOT/'tools'));import lighton4b_upstream_observer_patch as observer;import lighton4b_upstream_dispatch_log as dispatch
 sys.path.insert(0,str(Path(__file__).parent));import source_patch,analysis
 COMBINED='4428c4a2d8a877f64488847dfd7145fb0ccd1ba26810e6c0edf2229e6e40eac9'
@@ -82,6 +82,7 @@ def main():
      for _ in range(180):
       remaining();require(active.poll()is None,'source alive')
       try:api(port,'/health');break
+      except WorkerDeadline:raise
       except (OSError,urllib.error.URLError):time.sleep(min(1,remaining()))
      else:raise RuntimeError('source health deadline')
      marker=api(port,'/props').get('media_marker');require(isinstance(marker,str)and 1<=len(marker)<=256,'source media marker');template=api(port,'/apply-template',{'messages':[{'role':'user','content':marker}],'add_generation_prompt':True,'chat_template_kwargs':{'enable_thinking':False}})['prompt'];require(template.count(marker)==1 and template.replace(marker,'<__media__>')==protocol['expected_media_prompt'],'same wrapper');expanded=template.replace(marker,'<|vision_start|>'+'<|image_pad|>'*case['image_tokens']+'<|vision_end|>');require(api(port,'/tokenize',{'content':expanded,'add_special':False,'parse_special':True})['tokens']==prompt,'same actual source prompt')
