@@ -21425,3 +21425,10 @@ setup tests and compiled, but failed before any numerical comparison because
 its borrowed diagnostic weights lacked backend buffers. The [initial failure
 review](docs/lighton4b-attention-primitives.md) preserves exact receipts and
 limits; proposed tools-only buffer fix `5f82c4d0a` remains unmeasured.
+
+Corrected captured-input attention source `5f82c4d0a` passes actual native
+layer3/scalar context byte closure and eight observer pairs. The [operator
+review](docs/lighton4b-attention-primitives.md) identifies native fork F16-by-F32
+versus upstream F16-by-F16 dot dispatch; all26 selected N16 metrics were
+independently recomputed. Global vendor protection remains intact; no decoded
+quality or shipping claim follows. Initial NULL-buffer failure is retained.
