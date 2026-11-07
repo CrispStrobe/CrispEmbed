@@ -21471,3 +21471,10 @@ Integration controls `bfb09595a` produce valid N4/N16/16-step runtime exports;
 N4/N16 hashes match frozen source, but a mistaken reference OpenMP guard stops
 fresh comparison. The [partial receipt](docs/lighton4b-attention-primitives.md)
 retains the actual native-OFF/reference-ON distinction and pending N1 oracle.
+
+Physical-only F16 attention integration `02a2e507a` passes all18 real source-fed
+prefill/N1 comparisons and18 observer pairs,255,297 runtime controls and all
+legacy/fallback/fence/HF/Q6 gates. The
+[independent review](docs/lighton4b-attention-primitives.md) preserves seven vector readbacks and
+all four setup negatives. Existing PR155 contains the exact tested default-off
+tree; full-score/decoded gates remain pending.

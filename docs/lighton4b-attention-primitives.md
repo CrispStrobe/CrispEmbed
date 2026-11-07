@@ -174,3 +174,31 @@ actual profiles, explicitly sets reference ON and copies caches before checking
 them. V4's reference cache was not copied before failure; the retained configure
 log and earlier exact source caches support the correction. Fresh N1 oracle
 comparisons remain pending, with no model or quality claim.
+
+## Gated runtime integration: all component and cache gates complete
+
+Source `02a2e507ab5badf2608ee5716214803e9522266d` completes the bounded
+integration gate in192.48 seconds. The
+[exact receipt](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/integration-v5/physical-f16-controls.json)
+SHA256 is `4b667e02b8909670953ea561e49df96b11421235c011177b0e0cbf75a655fa61`.
+All18 actual-runtime output comparisons (N4/N16 prefill and16 N1 appends) are
+byte-exact with pinned upstream; all18 reference observer pairs pass. N4/N16
+also match the original frozen source anchors. Independent review verifies
+these hashes, downloads only seven needed vectors (557,056 bytes), compares
+actual N1/prefill bytes and canonical cache bytes, and retains all earlier
+setup negatives.
+
+The suite passes255,297 supported runtime checks, unsupported5/simulated-WASM5,
+physical operator142/policy557,865, public release fence39, HF recipe39/operator
+66,710, tied Q6 head84,15 historical source pins and the467-variable inventory.
+Native uses its actual OpenMP-OFF profile; upstream reference keeps its actual
+OpenMP-ON profile. The implementation is default-off, physical-owner-only,
+limits private ABI support to the exact pinned hosted CPU profile, rejects
+cache-mode toggles/noncanonical prior values, and preserves unrelated HF flags
+and global vendor traits. The exact tested tree is integrated in existing PR155
+with skip-CI commits; no release alias or promotion is created.
+
+Next is the bounded fixed-form same-feature full177-teacher-score and independent
+greedy-cap256 evaluation, with an unchanged38-stage baseline prefix anchor and
+actual full decoded receipts. Component success does not satisfy that model or
+quality gate.

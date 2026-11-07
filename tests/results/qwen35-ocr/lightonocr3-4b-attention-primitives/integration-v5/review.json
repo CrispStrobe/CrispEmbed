@@ -1,0 +1,38 @@
+{
+  "schema": "lighton4b-physical-f16-integration-independent-review/v1",
+  "source_sha": "02a2e507ab5badf2608ee5716214803e9522266d",
+  "report_sha256": "4b667e02b8909670953ea561e49df96b11421235c011177b0e0cbf75a655fa61",
+  "status": "model_free_sourcefed_pass",
+  "actual_runtime_source_gated_hash_pairs": 18,
+  "reference_observer_pairs": 18,
+  "frozen_source_prefill_anchors": 2,
+  "selected_raw_files_hashed_and_byte_compared": 7,
+  "selected_raw_bytes": 557056,
+  "canonical_prefill16_tokenwise_cache_bytes_equal": true,
+  "supported_runtime_controls_passed": 255297,
+  "unsupported_controls_passed": 5,
+  "simulated_wasm_guard_controls_passed": 5,
+  "legacy_controls": {
+    "physical_native_ops": 142,
+    "physical_policy": 557865,
+    "release_fence": 39,
+    "hf_layout_recipe": 39,
+    "hf_layout_operator": 66710,
+    "q6_tied_head": 84
+  },
+  "historical_source_pins_verified": 15,
+  "documented_environment_variables": 467,
+  "actual_thread_profiles": {
+    "native_openmp": false,
+    "reference_openmp": true
+  },
+  "compiled_profile": "Exact3a27 Linuxx86_64 fixedAVX2/FMA/F16C,LLAMAFILEON;native/AVX512/BLAS/OpenMP/backendDLOFF;runtimehardwareguard;otherbuildsstub",
+  "shared_pr155_integrated_sha": "02a2e507ab5badf2608ee5716214803e9522266d",
+  "quality_qualified": false,
+  "limits": [
+    "Conditional actual-native-QKV components, no actual upstream hidden2 capture.",
+    "N4/N16 +16 N1 appends source exact; padding/canonical/toggle guards synthetic.",
+    "Simulated WASM preprocessor guard is not a full Emscripten/model qualification.",
+    "No full model/decoded result or default promotion."
+  ]
+}
