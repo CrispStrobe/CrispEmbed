@@ -3046,3 +3046,8 @@ Kaggle CPU143171211/v3 atc89aaa4cb passed66,710 profile/type/metadata/permutatio
 ### HF tiled-output complete decoded negative (2026-11-07)
 
 Kaggle CPU143174221/v1 completed atB2/C89 with candidateSHA`cc6ce27eded435b8ac278229a8c6ff553f1654d865ff14a1b67c597fa0ca5254`:699other payloads protected,24original-F16-proven tiled Q4 outputs exact. Form182EOS remains exactoldHF candidate andCER217/656 (llama189/656),WER43/90; table256cap/noEOS worsens fromold160/607,47/106 to237/607,70/106; Arabic6EOSexact. Independent rawIDs/text/EOS/Unicode-metric audit passes. No quality/shipping/heldout claim. Full report63a586c0 and allsmall artifacts/actualtranscriptions are preserved in [decoded results](docs/lighton4b-hf-tiled-out-decoded-results.md). Separate artifact-only common-prefix/stage/body audit pending, no new inference.
+
+
+### HF tiled-output artifact-only causal audit (2026-11-07)
+
+Kaggle143195841/v1 source0d90fd0b2 passes actual4GB model/all723payload hashes and independently authenticated699old/24original-F16 publisher payloads, allscore argmax/hash/finite controls. All3prefill inputs+positions exactold; earliest observed difference layer0 (tableerrorRMS0.00273095/max0.0423252, magnitudes0.202175→0.202302), layer31RMS0.0532514/max1.26601, firstlogitsRMS0.162988/max1.0. Formall182/Arabic6 causalrows compared; tableonly0..113 (firstselectiondiff303→430),142laterrows excluded. Full32stage/rawmagnitudes/counts and actualtranscriptions retained in [decoded negative](docs/lighton4b-hf-tiled-out-decoded-results.md). No new inference or same-weight originalBF16 parity claim; quality remains negative.

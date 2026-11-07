@@ -64,3 +64,4 @@ tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v3/**/CMake
 
 # Preserve raw hosted HF-tiled decode logs byte-for-byte.
 tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/complete-decode-v1/** -whitespace
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/causal-readback-v1/** -whitespace
