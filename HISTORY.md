@@ -2,6 +2,17 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 7 November 2026 — OXR native document parity passes (comparator v2)
+
+Heavy CPU run 42359526030 (`f8ec7329`, `tools/ci-heavy/oxr_native_doc.sh dfine native`):
+self-checks, D-FINE and native all pass. All 5 cases (formula, table, receipt, german,
+japanese): Python replay and live requests bit-exact; native-D-FINE layout arms pass under
+comparator v2 (bbox floats within 0.01 px, text/types/order/counts exact); strict bit-exact
+layout still differs (recorded, `strict_all_identical=false`, max 0.0004 px)
+([receipt](tests/results/oxr/native-doc-42359526030-v2.json),
+[review of 41664201815](tests/results/oxr/native-doc-41664201815-review.json)). The route
+stays default-off.
+
 ## 7 November 2026 — OXR native-document rerun reviewed
 
 Heavy CPU run 41664201815 (`dd465a44`) reported `native=fail`. Review
