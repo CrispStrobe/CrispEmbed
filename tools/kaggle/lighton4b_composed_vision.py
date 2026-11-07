@@ -128,6 +128,7 @@ def main():
                 len(ids) == len(mods) == case['expected_prompt_tokens'] and mods.count(1) == case['image_tokens'] and
                 len(ids)+512 <= 2048, 'prompt/modality/context closure')
         original = json.loads((folder/'original.json').read_text()); retained = json.loads((folder/'retained-upstream-response.json').read_text())
+        report['retained_upstream_reference']={'ids':len(retained['tokens']),'eos':bool(retained['tokens'] and retained['tokens'][-1]in(248044,248046)), 'sha256':case['upstream_response_sha256'], 'observer_neutrality_scope':'Actual source OFF/ON first two tokens/probabilities only; full retained decode is independently pinned.'}
         require(len(original['generated_ids']) == case['reference_generated_ids'] and original['generated_ids'][-1] in (248044,248046), 'complete original reference IDs')
         source_row = np.fromfile(folder/'observer-on/source.logits.0.f32', dtype='<f4')
         require(source_row.size == 248320 and np.isfinite(source_row).all(), 'actual source score')
@@ -182,6 +183,10 @@ def main():
         require(env['CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION']=='1' and env['CRISPEMBED_LIGHTON4B_HEAD_BF16']=='0', 'frozen tested gate tuple')
         libs=sorted(p for p in build.rglob('libggml*.so*') if p.is_file()); require(libs,'actual runtime libraries')
         env['LD_LIBRARY_PATH']=':'.join(sorted({str(p.parent) for p in libs})); report['library_hashes']={p.name:sha(p) for p in libs}; report['gates']=form['arms']['f16-full']['gates']
+        bundle=out/'runtime';(bundle/'bin').mkdir(parents=True);(bundle/'lib').mkdir()
+        shutil.copy2(native,bundle/'bin'/native.name)
+        for library in libs:shutil.copy2(library,bundle/'lib'/library.name)
+        report['runtime_bundle']={str(p.relative_to(bundle)):{'bytes':p.stat().st_size,'sha256':sha(p)} for p in bundle.rglob('*') if p.is_file()}
         row=protocol['models']['Q4_K_M']; up=scratch/row['file']; report['phase']='acquire-upstream';save()
         base.download('https://huggingface.co/'+protocol['model_repo']+'/resolve/'+protocol['model_revision']+'/'+row['file'],up,row['bytes'],row['sha256'])
         row=protocol['base_model']; protected=scratch/row['file']; report['phase']='acquire-protected';save()
