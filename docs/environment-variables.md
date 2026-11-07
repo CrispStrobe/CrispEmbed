@@ -238,7 +238,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-470 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+471 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -727,11 +727,16 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_F16_VISION` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_f16_vision.h` |  |
 
+### lighton4b_physical_gdn_source_ops
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_gdn_source_ops.h` | else |
+
 ### lighton4b_physical_native_ops
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_gdn_source_ops.h` | Physical LightOn4B only; source-shaped GDN graph retaining scalar log1p softplus. Default off; separate cache mode; no decoded qualification. |
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_native_ops.h` |  |
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION` | value | unset | string | tuning / config | `src/lighton4b_physical_native_ops.h` |  |
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_native_ops.h` |  |
@@ -1595,3 +1600,5 @@ explicit paired-F16 dot path; larger query batches require the supported SGEMM
 operator, with no kernel substitution. Cache mode is immutable, prior F16 cache
 values must be canonical, and output commits on success. This gate is inert for
 nonphysical owners. It does not qualify decoded quality or create a release alias.
+
+`CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS=1` is a default-off physical-owner experiment using source-shaped GDN operators while retaining the scalar log1p softplus. It preserves existing quantized projections and output routes, records a distinct cache mode, and rejects reuse across modes. Actual-input component controls pass; decoded quality remains unqualified and this gate does not enable a release format.
