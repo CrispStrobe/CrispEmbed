@@ -2068,3 +2068,11 @@ out-projection controls distinguish convolution, normalization, gating, recurren
 and post normalization. No model forward, decoded-quality claim or production
 GDN change is included. Hosted compilation and measurement remain pending;
 see the probe README for source pins, batching limits and resource guards.
+
+
+The initial GDN operator worker completed with native helper/state and actual
+first-sixteen attention byte closure. Its raw source post-RMS buffer was not
+materialized by CPU RMS/multiply fusion, so that intermediate comparison is
+invalid. A reference-only output-flag correction preserves the original result
+and retains strict composed/observed byte neutrality before interpreting a retry.
+No production arithmetic change follows from the initial tiny component errors.

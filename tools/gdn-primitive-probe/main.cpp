@@ -142,7 +142,10 @@ static std::map<std::string,V> compute(const Inputs & in, int n, bool source, bo
     }
     auto * graph=ggml_new_graph(c);
     // Stage observation adds sinks only; an independent composed run must match.
-    if(observe)for(auto & entry:stages)ggml_build_forward_expand(graph,entry.second);
+    if(observe)for(auto & entry:stages){
+        // CPU RMS+MUL fusion may skip an intermediate unless explicitly requested.
+        ggml_set_output(entry.second);ggml_build_forward_expand(graph,entry.second);
+    }
     ggml_build_forward_expand(graph,source?sourceDirect:delta);if(sourceDequant)ggml_build_forward_expand(graph,sourceDequant);ggml_build_forward_expand(graph,finalState);
     need(ggml_backend_graph_compute(backend.get(),graph)==GGML_STATUS_SUCCESS,"fused GDN compute");
     std::map<std::string,V> out;
@@ -168,6 +171,7 @@ static std::map<std::string,V> compute(const Inputs & in, int n, bool source, bo
         values=to_hf(static_cast<const float *>(sourcePost->data),n,4096,true);
     }
     out["postnorm"]=values;
+    if(source&&observe)need(std::any_of(out.at("post_rms").begin(),out.at("post_rms").end(),[](float x){return x!=0;}),"actual nonzero RMS stage must be materialized");
 #ifdef CRISPEMBED_GDN_RUNTIME_PROBE
     if(!source){
         qwen35_ocr::linear_inputs li{};li.batch=1;li.tokens=n;li.heads=32;li.width=128;li.conv_kernel=4;li.threads=4;li.norm_eps=1e-6f;

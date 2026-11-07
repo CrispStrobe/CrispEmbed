@@ -35,3 +35,10 @@ Run model-free protocol controls with
 The production graph never depends on this executable. Hosted invocation uses
 `tools/kaggle/lighton4b_gdn_source_primitives.py`, with four CPU threads, two build
 threads, a 30-minute outer cap and 2 GiB effective RAM / 4 GiB scratch admission.
+
+The initial v1 measurement passed actual native closure but exposed an observation
+limitation: CPU RMS-plus-multiply fusion left the unrequested raw RMS buffer
+unmaterialized. Its zero-buffer RMS comparison is invalid and must remain
+excluded from attribution. Explicit output flags now request intermediate
+materialization; the independent composed-result equality gate still rejects
+any observer-induced arithmetic change. The original result is preserved.
