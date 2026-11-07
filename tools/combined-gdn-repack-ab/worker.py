@@ -132,7 +132,7 @@ def main():
    for layer in range(32):
     x=np.fromfile(out/case/'on'/f'prefill.layer.{layer}.f32',dtype='<f4');y=np.fromfile(out/case/'off'/f'prefill.layer.{layer}.f32',dtype='<f4');require(x.shape==y.shape and np.isfinite(x).all()and np.isfinite(y).all(),'finite paired layer');d=x.astype('f8')-y;paired.append(dict(layer=layer,bit_exact=x.tobytes()==y.tobytes(),rms=float(np.sqrt(np.mean(d*d))),max_abs=float(abs(d).max()),off_max_abs=float(abs(y).max()),off_rms_magnitude=float(np.sqrt(np.mean(y.astype('f8')**2))),on_rms_magnitude=float(np.sqrt(np.mean(x.astype('f8')**2)))))
    r['cases'][case]['paired_native_layers']=dict(scope='Native OFF/ON; not actual upstream hidden',layers=paired,first_different_layer=next((v['layer']for v in paired if not v['bit_exact']),None));save()
-  require(sha(candidate)==cfg['candidate_sha256'],'weights unchanged');r['status']='measured_gdn_full_ab'
+  require(sha(candidate)==cfg['candidate_sha256'],'weights unchanged');r['status']='measured_combined_gdn_repack_ab'
  except BaseException as e:r.update(error_type=type(e).__name__,error=str(e));raise
  finally:
   deadline.close()
