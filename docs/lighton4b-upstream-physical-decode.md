@@ -15,7 +15,8 @@ verify the complete persisted imported file and all 723 tensor spans. The
 format-6 path remains experimental and default-off. Public model admission,
 release aliases and format-5 behavior remain unchanged.
 
-Two arms answer different questions:
+Two arms answer different questions; this first worker executes only the
+source-feature arm, and defers composed vision until its measured result:
 
 - `upstream_features` feeds actual captured upstream merged F32 image features
   into the test executable, isolating the physical-weight text decoder. These
@@ -33,7 +34,7 @@ The independently decoded upstream Q6 embedding rows, actual native prefill
 splice and source image positions must agree byte for byte; the source-feature
 arm must consume the exact captured feature bytes.
 
-Both native arms independently generate greedily up to 256 IDs and preserve raw
+The native source-feature arm independently generates greedily up to 256 IDs and preserve raw
 text, both admitted EOG IDs, cap status, full first scores and stage arrays.
 The report compares first scores with actual source F32 logits and full output
 with both references, including prefix, character/word edits, process time and
@@ -41,10 +42,15 @@ observed peak resident memory. No original BF16 forward, full F32 model,
 requantizer or image-specific fitted constants are used. First-score drift after
 exact input does not by itself localize a specific decoder operator.
 
+Earlier audited Kaggle CPU capacity was 31.51 GB effective available RAM with no
+swap; this is an observation, not a guarantee for every worker.
+
 One sequential Kaggle CPU worker builds with four threads and requires 10 GiB
 effective available RAM, 24 GiB scratch and 8 GiB output before any checkpoint
-transfer. Its outer deadline is four hours; each native arm is limited to 25
-minutes. Three authenticated source files total approximately 7.4 GB; the
+transfer. Its outer deadline is six hours; each native case is limited to 90
+minutes, based on prior observed throughput of about 225 rows in 45 minutes.
+All three source observer controls finish before native full generation starts;
+per-token partial IDs/text and progress survive a timeout. Three authenticated source files total approximately 7.4 GB; the
 imported quantized candidate is temporary and its full hash plus all tensor
 readbacks are retained. Large stage arrays stay in remote output. Submission
 must follow the separately running candidate-conversion worker; there is no new

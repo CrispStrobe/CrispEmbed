@@ -183,6 +183,18 @@ static int run(int argc, char ** argv) {
         int best = lighton4b_greedy_id(logits);
         if (best < 0) return 17;
         generated.push_back(best);
+        if (model.text.decoder.upstream_physical) {
+            // Reference executable only: preserve completed prefix on timeout.
+            ids_write("generated-partial", generated);
+            std::string partial;
+            if (!tokenizer.decode(generated, partial)) return 16;
+            std::ofstream(out + "/generated-partial.txt") << partial;
+            std::ofstream progress(out + "/generated-progress.json");
+            progress << "{\"generated_tokens\":" << generated.size() << ",\"last_id\":" << best
+                     << ",\"eog\":" << (tokenizer.is_stop(best) ? "true" : "false") << "}\n";
+            if (generated.size() % 16 == 0 || tokenizer.is_stop(best))
+                std::cout << "LIGHTON4B_PHYSICAL_PROGRESS generated=" << generated.size() << std::endl;
+        }
         emit("greedy." + std::to_string(i) + ".logits", logits);
         if (tokenizer.is_stop(best)) break;
         const std::string label = i + 1 == trace_position ? "greedy." + std::to_string(i + 1) : "";

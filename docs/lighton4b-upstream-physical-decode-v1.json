@@ -77,7 +77,7 @@
   "minimum_scratch_free_bytes": 25769803776,
   "minimum_output_free_bytes": 8589934592,
   "request_timeout_seconds": 300,
-  "total_model_timeout_seconds": 14400,
+  "total_model_timeout_seconds": 21600,
   "expected_media_prompt": "<|im_start|>user\n<__media__><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
   "limits": [
     "Same physical TEXT quant blocks and authoritative F32 scalars; no full F32 model, quantizer, or BF16 original forward.",
@@ -88,11 +88,10 @@
     "No speed/component similarity substitutes for complete IDs/text/EOG/cap evidence."
   ],
   "physical_source_controls": "0610af26d9cb8972ecdfe55204e2306e9e740d5e",
-  "native_arm_timeout_seconds": 1500,
+  "native_arm_timeout_seconds": 5400,
   "source_prefix_tokens": 2,
   "arms": [
-    "upstream_features",
-    "composed_original_vision"
+    "upstream_features"
   ],
   "base_model": {
     "repository": "cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
@@ -100,5 +99,10 @@
     "file": "lightonocr3-4b-q4_k-vision-f32.gguf",
     "bytes": 4030957952,
     "sha256": "f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91"
-  }
+  },
+  "deferred_arms": [
+    "composed_original_vision"
+  ],
+  "execution_order": "Authenticate and capture all three source observer controls first, then full same-feature native form/table/Arabic. Composed original vision deferred.",
+  "budget_basis": "Prior actual native throughput approximately225 decode rows/45min; allow90min per native case,6h outer including build/download/import."
 }

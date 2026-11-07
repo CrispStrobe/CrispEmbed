@@ -66,7 +66,7 @@ def main():
   (out/'physical-decode.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n')
  def interrupted(signum,frame):stop(active);save();raise SystemExit(128+signum)
  signal.signal(signal.SIGTERM,interrupted);signal.signal(signal.SIGINT,interrupted);signal.signal(signal.SIGALRM,interrupted);signal.alarm(cfg['total_model_timeout_seconds'])
- def command(label,args,env=None,timeout=1800):
+ def command(label,args,env=None,timeout=1800,on_tick=None):
   nonlocal active
   save(label);start=time.monotonic()
   with(out/(label+'.log')).open('w')as f:
@@ -75,6 +75,7 @@ def main():
     peak=0
     while True:
      require(time.monotonic()-start<timeout,label+' deadline')
+     if on_tick:on_tick()
      try:
       rows=dict(line.split(':',1)for line in Path('/proc/'+str(active.pid)+'/status').read_text().splitlines());peak=max(peak,int(rows.get('VmHWM','0').split()[0])*1024)
      except(FileNotFoundError,ProcessLookupError):pass
@@ -113,6 +114,7 @@ def main():
   sys.path.insert(0,str(repo/'gguf-py'));from gguf.quants import dequantize;from gguf import GGMLQuantizationType
   header=pack.parse(up,pack.TYPES);embedding=header['tensors']['token_embd.weight'];require(embedding['type']==14 and embedding['stored_shape']==[2560,248320],'source tied Q6 embedding geometry')
   env=dict(os.environ);env.update({x:'0'for x in env if x.startswith('CRISPEMBED_')});env.update({x:'1'for x in common.GATES});env.update({x:'1'for x in vision.VISION_GATES});env.update(CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL='1',CRISPEMBED_LIGHTON4B_Q6_K='1',CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT='1',CRISPEMBED_LIGHTON4B_HEAD_BF16='0',CRISPEMBED_LIGHTON4B_BF16_LINEAR='0',CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS='0');report['native_gates']={k:v for k,v in env.items()if k.startswith('CRISPEMBED_')}
+  prepared=[]
   for case in cfg['cases']:
    name=case['id'];folder=out/name;folder.mkdir();original=fetch(case['reference_url'],folder/'original.json',case['reference_sha256']);retained=fetch(case['upstream_response_url'],folder/'retained-upstream-response.json',case['upstream_response_sha256']);imagepath=ROOT/case['image'];require(sha(imagepath)==case['image_sha256'],'frozen image');image=Image.open(imagepath).convert('RGB');canonical=folder/'input.png';Image.frombytes('RGB',image.size,image.tobytes()).save(canonical,compress_level=6);rgb=folder/'input.rgb';rgb.write_bytes(image.tobytes());teacher=folder/'unused-one-teacher.ids';teacher.write_text(str(original['generated_ids'][0])+'\n');responses=[];tokens=None
    report['cases'][name]={'arms':{}};save(name+'-source-control')
@@ -138,10 +140,22 @@ def main():
     for token in tokens:
      f.seek(embedding['data_offset']+token*10*210);packed=f.read(10*210);require(len(packed)==2100,'Q6 embedding row');expected.append(dequantize(np.frombuffer(packed,dtype=np.uint8),GGMLQuantizationType.Q6_K).reshape(-1).astype('<f4'))
    expected=np.asarray(expected,dtype='<f4');require(expected.shape==(len(tokens),2560),'source embedding rows')
+   prepared.append((case,folder,original,retained,image,rgb,teacher,tokens,source,feature,sourcefeatures,sourcepos,expected))
+  save('all-three-source-controls-exact')
+  for case,folder,original,retained,image,rgb,teacher,tokens,source,feature,sourcefeatures,sourcepos,expected in prepared:
+   name=case['id']
    for arm in cfg['arms']:
     require(memory()['MemAvailable']>=cfg['minimum_available_memory_bytes'],'per-arm RAM guard');dest=folder/arm;dest.mkdir();args=[native,candidate,rgb,image.height,image.width,teacher,dest,cfg['cap'],4,'greedy-full']
     if arm=='upstream_features':args+=['--upstream-vision',feature]
-    elapsed=command(name+'-'+arm,args,env,cfg['native_arm_timeout_seconds']);summary=json.loads((dest/'native-summary.json').read_text());ids=list(map(int,(dest/'generated.ids').read_text().split()));text=(dest/'generated.txt').read_text();actualids=list(map(int,(dest/'prompt.ids').read_text().split()));require(actualids==tokens and summary['prompt_tokens']==len(tokens),'native exact prompt tokens');mods=np.array(list(map(int,(dest/'modalities.ids').read_text().split())));require((mods==1).sum()==case['image_tokens'],'native modality shape');embedded=np.fromfile(dest/'text.embedded.f32',dtype='<f4').reshape(-1,2560);require(embedded.tobytes()==expected.tobytes(),'native embedding all rows bit exact independent source Q6 decoder');prefill=np.fromfile(dest/'prefill.input.f32',dtype='<f4').reshape(-1,2560);features=np.fromfile(dest/'vision.merged.f32',dtype='<f4').reshape(-1,2560);wanted=expected.copy();wanted[mods==1]=features;require(prefill.tobytes()==wanted.tobytes(),'actual prefill embedding splice bit exact');axes=np.fromfile(dest/'prefill.positions.f32',dtype='<f4').reshape(3,-1);require(np.array_equal(axes[:,mods==1].T,sourcepos[:,[0,2,1]])and np.all(sourcepos[:,3]==0),'actual source/native image mrope positions exact');require(ids and len(ids)<=256 and summary['eos']==(ids[-1]in[248044,248046]),'native EOG and cap closure')
+    early_done=[False]
+    def early_check():
+     if early_done[0]:return
+     scorepath=dest/'greedy.0.logits.f32'
+     if not scorepath.exists()or scorepath.stat().st_size!=248320*4:return
+     emb=np.fromfile(dest/'text.embedded.f32',dtype='<f4').reshape(-1,2560);pre=np.fromfile(dest/'prefill.input.f32',dtype='<f4').reshape(-1,2560);features_now=np.fromfile(dest/'vision.merged.f32',dtype='<f4').reshape(-1,2560);mods_now=np.array(list(map(int,(dest/'modalities.ids').read_text().split())));axes_now=np.fromfile(dest/'prefill.positions.f32',dtype='<f4').reshape(3,-1);wanted_now=expected.copy();wanted_now[mods_now==1]=sourcefeatures
+     require(emb.tobytes()==expected.tobytes()and pre.tobytes()==wanted_now.tobytes()and features_now.tobytes()==sourcefeatures.tobytes(),'early actual same-feature embedding/prefill bytes');require(np.array_equal(axes_now[:,mods_now==1].T,sourcepos[:,[0,2,1]]),'early actual source image positions')
+     report['cases'][name]['arms'][arm]={'status':'decoding','actual_input_bytes_exact':True,'first_score_vs_source':diff(np.fromfile(scorepath,dtype='<f4'),np.fromfile(source/'source.logits.0.f32',dtype='<f4'))};early_done[0]=True;save(name+'-'+arm+'-early-controls-exact')
+    elapsed=command(name+'-'+arm,args,env,cfg['native_arm_timeout_seconds'],early_check);early_check();require(early_done[0],'early source input controls missing');summary=json.loads((dest/'native-summary.json').read_text());ids=list(map(int,(dest/'generated.ids').read_text().split()));text=(dest/'generated.txt').read_text();actualids=list(map(int,(dest/'prompt.ids').read_text().split()));require(actualids==tokens and summary['prompt_tokens']==len(tokens),'native exact prompt tokens');mods=np.array(list(map(int,(dest/'modalities.ids').read_text().split())));require((mods==1).sum()==case['image_tokens'],'native modality shape');embedded=np.fromfile(dest/'text.embedded.f32',dtype='<f4').reshape(-1,2560);require(embedded.tobytes()==expected.tobytes(),'native embedding all rows bit exact independent source Q6 decoder');prefill=np.fromfile(dest/'prefill.input.f32',dtype='<f4').reshape(-1,2560);features=np.fromfile(dest/'vision.merged.f32',dtype='<f4').reshape(-1,2560);wanted=expected.copy();wanted[mods==1]=features;require(prefill.tobytes()==wanted.tobytes(),'actual prefill embedding splice bit exact');axes=np.fromfile(dest/'prefill.positions.f32',dtype='<f4').reshape(3,-1);require(np.array_equal(axes[:,mods==1].T,sourcepos[:,[0,2,1]])and np.all(sourcepos[:,3]==0),'actual source/native image mrope positions exact');require(ids and len(ids)<=256 and summary['eos']==(ids[-1]in[248044,248046]),'native EOG and cap closure')
     if arm=='upstream_features':require(features.tobytes()==sourcefeatures.tobytes(),'source-fed actual feature bytes exact')
     scores=np.fromfile(dest/'greedy.0.logits.f32',dtype='<f4');gold=np.fromfile(source/'source.logits.0.f32',dtype='<f4');require(scores.size==gold.size==248320 and ids[0]==int(scores.argmax()),'actual first score argmax');report['cases'][name]['arms'][arm]={'ids':ids,'decoded':text,'eog_completed':summary['eos'],'cap_hit':not summary['eos']and len(ids)==256,'elapsed_process_seconds':elapsed,'peak_rss_bytes_observed':report['process_resources'][name+'-'+arm]['peak_rss_bytes_observed'],'source_text_weights_same':True,'source_vision_features_same':arm=='upstream_features','actual_embedding_bytes_exact':True,'actual_image_positions_exact':True,'merged_feature_vs_source':diff(features,sourcefeatures),'first_score_vs_source':diff(scores,gold),'vs_retained_upstream':metric(ids,text,retained['tokens'],retained['content']),'vs_original_bf16':metric(ids,text,original['generated_ids'],original['decoded']),'summary':summary};save(name+'-'+arm+'-measured')
    report['cases'][name]['artifacts']={str(p.relative_to(folder)):{'bytes':p.stat().st_size,'sha256':sha(p)}for p in folder.rglob('*')if p.is_file()};save(name+'-complete')
