@@ -2106,3 +2106,8 @@ Selective four-file integration preserves byte-exact reader/test/protocol source
 ### Frozen physical F16 table/Arabic continuation
 
 `docs/lighton4b-physical-f16-calibration-v1.json` freezes one sequential worker for `simple_table` and `arabic_printed_line`. It reuses the authenticated full-form executable and GGML bundle, identical physical weight bytes and exact gate tuple, authenticates both retained source-feature/input/reference sets before forwarding, and preserves full original teacher panels (222/6) plus independent cap-256 generation. No new reference forward or precision switch is involved. Artifact-only form teacher-row numerical review and representative held-out/composed-vision checks remain separate acceptance gates; nothing is released by this diagnostic.
+
+
+### Executed177-row artifact-only reader integrated (2026-11-07)
+
+Fournewreader/controller/test/protocol files preserve exactexecuted source`bcbd50b1894a465e0bc44c1f8b3ef54c879d6529` (Kaggle143200239/v3,91.86s), reportb8b6bdf1 andPR157evidence`8009816b9`. Bothinitialsetupnegativesretained. [Protocol](docs/lighton4b-f16-teacher-readback-v1.json), [consumer](tools/ci-heavy/lighton4b_f16_teacher_readback.py), [Kagglecontroller](tools/kaggle/lighton4b_f16_teacher_readback.py). OriginalBF16/nativeactual177teacherrow/contextguards anddirectionalKL/probability/magnitude/top1metrics; pinnedupstreamnumericalcomparisonstrictlyrow0only. All177RMS0.386425/max8.82935 and169/177top1 combinequantization/sourcevision/runtime, notsameweightparity. Fourcontrols+15historicalsourcepins pass; no inference/runtime/header/CMake/workflow/defaultchanges or shippingclaim. Actualexecutedreader/nativeproducer sources remain explicitly distinct from integrationhead.
