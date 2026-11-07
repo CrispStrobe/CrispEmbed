@@ -2181,3 +2181,16 @@ upstream forward, composition, held-out qualification or promotion.
 ### Model-free physical vision controls passed; component stage next (2026-11-07)
 
 Pinned source0eca worker passed in690.72s, receipt31e6d6e5. Independently verified58 owned output hashes, all8 fixed synthetic resize pairs versus actual pinned upstream22-bit resizer, and actual form RGB/normalized packed patches exactly against liveV3 captures. Supported synthetic2×2/24block vision graph37checks, main unsupported7, Pillow17+main17 pass; no checkpoint weights acquired. Initial submission title/id400 preserved separately, no worker ran from it. Freeze actual source/control receipt in next projector-only worker: complete1.334GB protected vision suffix/all297 tensor SHA, no text weights/fullF32model, exact retained legacy stages before source-F16/F32-state comparison. Actual-weight graph and decoded quality are still unqualified; no default/release promotion.
+### Q4 repack decoded regression: experimental gate unqualified
+
+[Keep physical Q4 repacking disabled](docs/lighton4b-q4-repack-experiment.md).
+Source `f079dcec6` completes the same-feature table OFF/ON diagnostic with exact
+OFF282row/38stage/ID/text/EOS anchors. ON295EOS regresses CER349→365/607 and
+WER97→104/106; first-scoreRMS0.188629→0.202156. Actual216-entry1.663GBquantcache
+retains zero convertedF32weights but sampledRSS grows2.959→4.632GB. Fullraw
+receipt `5acbdab9`/independentreview are preserved in PR157`1d48ac73c` alongside
+the initial compile negative and passed controls. Gate staysdefault-off and
+unqualified; no speed/quality/default/alias/release promotion. Actualupstream
+text hidden stages are absent, so nativepairedL0drift is not upstream stage
+localization. Prioritize composed-vision attribution/correction and preserve
+all observed/composed/held-out gates.
