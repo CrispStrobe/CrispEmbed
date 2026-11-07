@@ -1,6 +1,10 @@
 {
   "schema": "crispembed-moedern-q4k-publication-recipes-v1",
-  "status": "prepared, not published",
+  "status": "approved for experimental publication",
+  "approved_by_owner": true,
+  "owner_decision": "7 November 2026: publish MoEdern 27M/115M Q4_K_MIX as EXPERIMENTAL; SciFact retrieval and public-client panels are not measured and are stated as such on the card.",
+  "workflow": ".github/workflows/moedern-q4k-publish.yml",
+  "publisher": "tools/ci-heavy/moedern_q4k_publish.py",
   "doc": "docs/moedern-q4k-mixed.md",
   "quantizer": "tools/moedern-colbert/quantize_q4k_mixed.py --input <published F32> --output <file> --variant <V> --recipe <policy> --quantizer <crispembed-quantize> --report <report.json>",
   "runtime_gates": [
@@ -18,6 +22,11 @@
         "policy": "moedern27m_q4k_v1",
         "note": "Q8_0 base; routed-expert up/down projections and attn_q Q4_K (zero-padded 640->768 columns); gate experts, shared experts and attn_k/v/o Q8_0; embeddings, router, norms and dense head F32. 30.53 MiB vs 35.67 MiB Q8_0.",
         "precision_receipt": "tests/results/moedern-colbert/q4k-lane-27m.json",
+        "build_recipe": "q8+exps_up+exps_down+attn_q",
+        "build_note": "Built from the policy's recipe string, i.e. the exact x86 arm measured in run 41618191791; its moedern.q4k.policy metadata therefore reads q8+exps_up+exps_down+attn_q (the recipe of moedern27m_q4k_v1).",
+        "expected": {"run": 41618191791, "arm": "q8+exps_up+exps_down+attn_q",
+                     "sha256": "5d31ac7e5495690e9f3bbe428166764bfee980b3697916ae71366bf717f70d62", "bytes": 32008416},
+        "second_isa": {"run": 41614428780, "arm": "q8+exps_up+exps_down+attn_q"},
         "precision_dtype": "q8+exps_up+exps_down+attn_q",
         "precision_tier": "q4_k",
         "precision_gate": "cosine"
@@ -31,6 +40,10 @@
         "policy": "moedern115m_q4k_v1",
         "note": "All 52 engine-quantizable matmul weights Q4_K (640-wide rows zero-padded to 768); embeddings, router, norms, depthwise conv kernels and dense head F32. 85.34 MiB vs 134.55 MiB Q8_0.",
         "precision_receipt": "tests/results/moedern-colbert/q4k-lane-115m.json",
+        "build_recipe": "moedern115m_q4k_v1",
+        "expected": {"run": 41595964329, "arm": "moedern115m_q4k_v1",
+                     "sha256": "01d0e507430ba2f839709648272e3e3e622e02cc98aafac5b179e36b145db110", "bytes": 89483616},
+        "second_isa": {"run": 41595968391, "arm": "moedern115m_q4k_v1"},
         "precision_dtype": "moedern115m_q4k_v1",
         "precision_tier": "q4_k",
         "precision_gate": "cosine"
@@ -41,5 +54,5 @@
     "1.5M": "no Q4_K recipe clears 0.94 and Q4_K cannot be smaller than Q8_0 (128-wide rows)",
     "Q8_0": "named Q8_0 fails the 0.97 bar on 27M (0.9315) and 115M (0.9670) through single-token routing flips"
   },
-  "open": "Retrieval (SciFact NDCG/MRR/Recall, top-1 agreement) and public-client panels for a quantized package are not run; publication needs the owner's dispatch."
+  "open": "Retrieval (SciFact NDCG/MRR/Recall, top-1 agreement), public-client panels and GPU are not measured for a quantized package; strict 0.002/0.99999 vector budgets are not met. Published as experimental by owner decision."
 }

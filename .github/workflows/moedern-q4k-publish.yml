@@ -1,0 +1,57 @@
+name: MoEdern 27M/115M Q4_K_MIX experimental publication (owner-approved)
+# Quantizes the SHA-pinned published F32 package with the protocol recipe
+# (docs/moedern-q4k-publication-v1.json), refuses unless the bytes equal the receipt arm,
+# and uploads next to the F32 file. tools/ci-heavy/moedern_q4k_publish.py holds every gate.
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        type: choice
+        options: ['27M', '115M']
+        required: true
+      source_ref:
+        description: 'Exact commit containing the publisher, quantizer, protocol and receipts'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: moedern-q4k-publish-${{ inputs.variant }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      VARIANT: ${{ inputs.variant }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Offline controls and gates before any download or credential
+        run: |
+          set -euo pipefail
+          python tests/test_moedern_q4k_publish.py -v
+          python tests/test_moedern_q4k_mixed.py -v
+          python tools/ci-heavy/moedern_q4k_publish.py plan "$VARIANT"
+          echo "SOURCE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - run: python -m pip install -q numpy==2.2.6 gguf==0.17.1 "huggingface_hub>=0.36,<2"
+      - name: Build, quantize, exact-bytes gate, upload, LFS identity, empty-cache readback
+        env:
+          HF_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+          HF_HUB_DISABLE_XET: '1'
+          CRISPEMBED_BUILD_MODE: portable
+        run: |
+          export HEAVY_SCRATCH="$RUNNER_TEMP/scratch"; mkdir -p "$HEAVY_SCRATCH"
+          python tools/ci-heavy/moedern_q4k_publish.py publish "$VARIANT" "$RUNNER_TEMP/out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moedern-q4k-publication-${{ inputs.variant }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: warn
+          retention-days: 90

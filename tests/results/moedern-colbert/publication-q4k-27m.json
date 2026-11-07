@@ -1,0 +1,58 @@
+{
+  "schema": "crispembed-moedern-q4k-publication-report-v1",
+  "variant": "27M",
+  "status": "published and re-verified",
+  "protocol": "docs/moedern-q4k-publication-v1.json",
+  "protocol_sha256": "e9d39d49bdb3eb7f3c0564e55aa443b3fb9063aba07fccfeadc5cfc9fd951992",
+  "source": "6edbad67903f40bac024fbfbafe1c0e8bed6f90f",
+  "build": {
+    "mode": "portable (GGML_NATIVE=OFF, GGML_LLAMAFILE=ON, -ffp-contract=off)",
+    "cpu": "AMD EPYC 7763 64-Core Processor",
+    "heavy_cpu_build_mode": "portable",
+    "nproc": 4,
+    "source": "6edbad67903f40bac024fbfbafe1c0e8bed6f90f"
+  },
+  "built": {
+    "sha256": "5d31ac7e5495690e9f3bbe428166764bfee980b3697916ae71366bf717f70d62",
+    "bytes": 32008416,
+    "counts": {
+      "F32": 12,
+      "Q8_0": 14,
+      "Q4_K": 6
+    },
+    "policy": "q8+exps_up+exps_down+attn_q"
+  },
+  "repo": "cstr/SauerkrautLM-MoEdernColBERT-27M-CrispEmbed-GGUF",
+  "commit": "5db7ae22876da3d2b1557ffb6a0180e05c3e6994",
+  "files": [
+    {
+      "filename": "moedern-27m-text-f32.gguf",
+      "variant": "F32",
+      "bytes": 109596000,
+      "sha256": "e836acbb507ebf9d26ad6a3f5e5712487f1b90f1430b1174acb07de07e85ce18",
+      "status": "reference package (unchanged)"
+    },
+    {
+      "filename": "moedern-27m-text-q4_k-mix.gguf",
+      "variant": "Q4_K_MIX",
+      "bytes": 32008416,
+      "sha256": "5d31ac7e5495690e9f3bbe428166764bfee980b3697916ae71366bf717f70d62",
+      "status": "experimental",
+      "policy": "moedern27m_q4k_v1",
+      "recipe": "q8+exps_up+exps_down+attn_q",
+      "counts": {
+        "F32": 12,
+        "Q8_0": 14,
+        "Q4_K": 6
+      }
+    }
+  ],
+  "small_files_sha256": {
+    "upstream/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "upstream/README.md": "a107040dd0f4987cf741b3391bda58dd97a2296b0e3dd3b9dee7fa11fb02ab71",
+    "README.md": "8f22ad7672a17355c5bce8d8a42ebdac8b701567a3764152fb68c965a47f6a19",
+    "manifest.json": "cb1258e90d08b3a8af4d33e6874231fe3582693c047c1022f34a45fcf3acc5b3"
+  },
+  "url": "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-27M-CrispEmbed-GGUF/resolve/5db7ae22876da3d2b1557ffb6a0180e05c3e6994/moedern-27m-text-q4_k-mix.gguf",
+  "run": 42371136944
+}

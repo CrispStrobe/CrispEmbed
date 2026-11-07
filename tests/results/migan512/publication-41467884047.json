@@ -1,0 +1,26 @@
+{
+  "schema": "crispembed-inpaint-gguf-publication-report-v1",
+  "protocol": "docs/inpaint-publication-v1.json",
+  "repo": "cstr/MI-GAN-512-GGUF",
+  "status": "published and re-verified",
+  "remote": {
+    "repo": "cstr/MI-GAN-512-GGUF",
+    "revision": "e1481f21784f99ec9d53ee935b978264be36abbb",
+    "anonymous_readback_sha256": {
+      "migan-512-places2-f32.gguf": "4bec681ef10f8ca914c5331f007a0605773cd09106d4fd6d9fcc0992f0a61739",
+      "migan-512-places2-f16.gguf": "932cfbd35db478dba4372f7ad9889ee68c84eac1c0b46025cf7336c8d55c0033",
+      "migan-512-places2-q8_0.gguf": "efdf1b08207f2c47c4710ca66831e6aff86ea31fca68593337f2ce605db70280",
+      "migan-512-places2-q4_k.gguf": "bd90218cd6f86a9b215fa3528ad5400536b7cf883a76e2450f22c835e376af46",
+      "licenses/LICENSE": "674e33456b8d03693b84ab305aa7372d93c91e68b234651b0adad106d518e6eb",
+      "licenses/LICENSE-WEIGHTS": "674e33456b8d03693b84ab305aa7372d93c91e68b234651b0adad106d518e6eb",
+      "README.md": "573a72b1405ad3250c66701bd5cd1f369b2011320fa6f19bdba9e428f4709c17",
+      "manifest.json": "c57df22f9e5fc426b599449efbaa6b4a66d872b9dd012f749f6770f21e313f7f"
+    },
+    "urls": {
+      "migan-512-places2-f32.gguf": "https://huggingface.co/cstr/MI-GAN-512-GGUF/resolve/e1481f21784f99ec9d53ee935b978264be36abbb/migan-512-places2-f32.gguf",
+      "migan-512-places2-f16.gguf": "https://huggingface.co/cstr/MI-GAN-512-GGUF/resolve/e1481f21784f99ec9d53ee935b978264be36abbb/migan-512-places2-f16.gguf",
+      "migan-512-places2-q8_0.gguf": "https://huggingface.co/cstr/MI-GAN-512-GGUF/resolve/e1481f21784f99ec9d53ee935b978264be36abbb/migan-512-places2-q8_0.gguf",
+      "migan-512-places2-q4_k.gguf": "https://huggingface.co/cstr/MI-GAN-512-GGUF/resolve/e1481f21784f99ec9d53ee935b978264be36abbb/migan-512-places2-q4_k.gguf"
+    }
+  }
+}

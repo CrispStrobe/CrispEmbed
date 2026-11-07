@@ -1,0 +1,44 @@
+{
+  "schema": "crispembed-ultrabert-publication-v1",
+  "approved_by_owner": true,
+  "approval": "Owner decision 7 November 2026: publish UltraBERT Q4_K q4k-last-four-ffn as experimental (min embedding cosine 0.9779 > Q4_K bar 0.94; SciFact nDCG@10 -0.0018 vs original F32).",
+  "destination": "cstr/UltraBERT-Embed-150M-CrispEmbed-GGUF",
+  "upstream": {
+    "repo": "dmis-lab/UltraBERT-Embed-150M",
+    "revision": "367d5343b5a0164d57b810cedf5de4b8983d5984",
+    "license": "apache-2.0",
+    "authors": "Jungwoo Park, Taewhoo Lee and Jaewoo Kang (DMIS Lab)",
+    "readme": {"bytes": 221523, "sha256": "27573272049ca66a4504b7e458887848b0fa0b7a5c6c68edcd774c6ce5070608"},
+    "license_file": {
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "note": "The model repository declares license: apache-2.0 but ships no LICENSE or NOTICE file; the canonical Apache-2.0 text is shipped verbatim."
+    }
+  },
+  "variants": {
+    "Q4_K-LAST-FOUR-FFN": {
+      "filename": "ultrabert-embed-150m-q4_k-last-four-ffn.gguf",
+      "recipe": "q4k-last-four-ffn",
+      "note": "crispembed-quantize q4_k with token_embd and every attention matrix F32 and blk.0-19 FFN gate/up/down F32: only the last four layers' FFN matrices (12 tensors) are Q4_K, 206 tensors stay F32. Legacy UltraBERT header written by the runtime-018cf85b quantizer.",
+      "source_artifact": {
+        "run": 40843704011,
+        "id": 12885865196,
+        "name": "ultrabert-first-q4-model-payload-40843704011",
+        "bytes": 531993310,
+        "digest": "sha256:c2919ce6b58db9083ecbbebf8cffe310e55593200a1569663dfa7bbfe7799405",
+        "expires_at": "2027-01-27T08:39:25Z"
+      },
+      "model": {"bytes": 576997440, "sha256": "087c9be0fa50ba57db74e650889521c985d306863c94aabf731764538eb4533c"},
+      "original_f32": {"bytes": 609437696, "sha256": "89478b9cbbad2fd1121be4031d760f1529c989fedf23b6b19251ba2c87422566"},
+      "receipts": {
+        "model": "tests/results/ultrabert/first-q4-model-40843704011-review.json",
+        "quality": "tests/results/ultrabert/remaining-q4-shards-v1-review.json"
+      }
+    }
+  },
+  "runtime": {
+    "measured_runtime_commit": "018cf85b7bb6ee2ac98011738aaa289d63b896ac",
+    "gates": ["CRISPEMBED_ULTRABERT=1", "CRISPEMBED_ULTRABERT_QUANT=1", "CRISPEMBED_ULTRABERT_UNICODE_PRETOKEN=1", "CRISPEMBED_ULTRABERT_TRUNCATE=1"]
+  }
+}
