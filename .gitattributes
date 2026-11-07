@@ -50,3 +50,6 @@ tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/original-f16-proof-v1/**/*.
 
 # Preserve initial HF-layout synthetic compile-negative raw output.
 tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v1-negative/**/*.log -text whitespace=-trailing-space,-blank-at-eof
+
+# Preserve exact source-fed GDN operator receipts, logs and build cache hashes.
+tests/results/qwen35-ocr/lightonocr3-4b-gdn-source-primitives/** -text whitespace=-trailing-space,-blank-at-eof

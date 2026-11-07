@@ -1,0 +1,45 @@
+{
+  "schema": "lighton4b-gdn-source-primitives-independent-review/v1",
+  "status": "passed_with_explicit_limits",
+  "source_v1": "7427940f6567f66b4dc9fcfc288ffdd71ee72faf",
+  "source_v2": "0bbe9d8769f13cacd8788194298bf8cb3c26f84e",
+  "v1_report_sha256": "bb5e63ee4cd4550fbef3d70d662f47b4c8ee2f3048f8905c4b93422ec473c02c",
+  "v2_report_sha256": "0805d52b3c1e02c81251f2dff668c88076354c706a8decc2e95be035ba930593",
+  "v1_invalid_intermediates": [
+    "source-native-ggml-{4,16}/post_rms.f32",
+    "source-upstream-ggml-{4,16}/post_rms.f32"
+  ],
+  "v1_to_v2_changed_stage_names": {
+    "native-4": [],
+    "source-native-ggml-4": [
+      "post_rms.f32"
+    ],
+    "source-upstream-ggml-4": [
+      "post_rms.f32"
+    ],
+    "native-16": [],
+    "source-native-ggml-16": [
+      "post_rms.f32"
+    ],
+    "source-upstream-ggml-16": [
+      "post_rms.f32"
+    ]
+  },
+  "all_other_stage_hashes_unchanged": true,
+  "parameter_and_actual_input_hashes_unchanged": true,
+  "all_six_observer_composed_controls_pass": true,
+  "native_helper_values_state_bit_exact": true,
+  "actual_native_first16_attention_bit_exact": true,
+  "source_full_model_internal_trace_captured": false,
+  "model_forward_executed": false,
+  "decoded_quality_measured": false,
+  "production_fix_qualified": false,
+  "arrays_retained_remotely": true,
+  "limits": [
+    "Same native projected inputs, not upstream full model hidden states.",
+    "N4 matches initial source text batch length; N16 includes image tokens and is a component counterfactual.",
+    "Zero initial convolution history and recurrent state only.",
+    "Backend controls are not universally byte-exact.",
+    "Initial raw RMS metric is invalid; corrected materialized RMS changes no other observed stage hashes."
+  ]
+}

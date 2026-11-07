@@ -3014,3 +3014,17 @@ Kaggle CPU 143168048/v1 at617534eff passed19 synthetic checks plus19 retained-bu
 ### LightOn4B actual original-F16 output-coordinate proof — 7 November2026
 
 Kaggle CPU143168450/v1 at24208e2ac reproduced all24 old-HF payloads and all24 publisher-tiled payloads directly from immutable original F16, with48 statistics hashes and72 independent dequant hashes exact,294.67s/no forward. [Full evidence and magnitudes](docs/lighton4b-hf-tiled-out-controls-results.md) preserve canonical weight RMS0.000596409/max0.0468936 and slightly worse tiled unweighted source RMSE. The remaining24 packed differences are coordinate-dependent quantization; no decoded promotion follows. A distinctly gated HF-only output-layout candidate/699 protected-payload audit and decoded tests remain next.
+
+
+### Same-input GDN localization completed; no production correction
+
+Corrected operator-only Kaggle `143170539/v2`, source `0bbe9d876`, passes
+actual native helper/state, first-sixteen actual attention and all six observer
+neutrality byte controls. Raw convolution is exact; earliest SiLU RMS is
+`1.04e-8` (max `9.54e-7`), and final gated post-norm RMS `8.23e-9`
+(max `4.77e-7`). Backend controls have tiny nonzero differences. Initial v1
+raw RMS comparison is invalid because fusion skipped its buffer; output flags
+correct materialization and change only those source RMS hashes, preserving all
+other stage hashes. No model/decode/full-F32-model job or production GDN change
+was made. Source-fed native inputs, zero-state and four-vs-sixteen batch limits
+remain explicit; see [raw evidence and source blueprint](docs/lighton4b-gdn-source-primitives-results.md).
