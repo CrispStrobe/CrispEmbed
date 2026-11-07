@@ -2889,3 +2889,20 @@ quality producer a4f2c908f restores original streamed arithmetic. Original-F16
 one-pass weighted 216-Q4/33-Q6 and complete table/Arabic decoded evaluation remain
 pending; the previous 225-row timeout is not decoded-quality proof. No GH job,
 F32 reference model, heldout read, new PR or quality promotion.
+
+### Weighted Q4KM-style candidate first-score evidence — 7 November
+
+[Producer receipts](docs/lighton4b-imatrix-q4km-candidate-results.md) preserve
+actual sourcea4f2c908f, bootstrap0f53bde5, controller1,796.45s and candidate
+SHA5d133ae02c12611572c02e2d43bd06f4fecc5e059f94709a13bdb36458fadb29
+(4,041,905,312bytes). All248 weighted body applications,216Q4/33Q6/474F32 types,
+723 payload hashes and474 protected equalities passed; both frozen null score
+hashes reproduced. Table firstID20353→27, BF16-first-ID probability.405578→.503789,
+but the prior weighted plain-Q4 achieved.590433. Arabic firstID67321 unchanged,
+probability.871767→.858263; rawRMS.364631→.336954. Table rawRMS worsens
+.706260→.776426; RMS and probability are not decoded-quality selection evidence.
+No originalF32 model, requantization, heldout read, shipping/default or release.
+All63 small files are retained with exact hashes; full candidate and rawhead stay
+remote without an asserted fixed Kaggle retention expiry. Complete table/Arabic
+continuation is running from sealed source191406b82 with exact preserved producer
+binaries; separate post-selection form follows, then the physical same-weight lane.

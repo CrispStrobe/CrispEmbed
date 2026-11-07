@@ -1,0 +1,6 @@
+Loading model from '/kaggle/working/lighton-q4km-candidate-scratch/lighton-imatrix/absent-model.gguf'
+imatrix: loaded importance vectors for 1 tensors from '/kaggle/working/lighton-q4km-candidate-scratch/lighton-imatrix/legacy.gguf'
+gguf_init_from_file: failed to open GGUF file '/kaggle/working/lighton-q4km-candidate-scratch/lighton-imatrix/absent-model.gguf' (No such file or directory)
+gguf_init_from_file: failed to open GGUF file '/kaggle/working/lighton-q4km-candidate-scratch/lighton-imatrix/absent-model.gguf' (No such file or directory)
+Failed to load model from '/kaggle/working/lighton-q4km-candidate-scratch/lighton-imatrix/absent-model.gguf'
+Failed to quantize model

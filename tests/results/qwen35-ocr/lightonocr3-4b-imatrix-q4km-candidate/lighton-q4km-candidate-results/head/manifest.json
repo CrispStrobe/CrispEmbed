@@ -1,0 +1,14 @@
+{
+  "hidden": {
+    "file": "input.f32",
+    "sha256": "7f9736c0489add6211aa81347ddfd023d62ac8c9b9b63a655bff8a5937e3fb09"
+  },
+  "rows": 248320,
+  "source_prefill_logits_sha256": "dde17c5485bfe6d2c73e080c890c302ff3f97bed3553a2edc987be7616adfdab",
+  "type": "q6_k",
+  "weights": {
+    "file": "weights.q6",
+    "sha256": "a9e1f76e0465d7856d1d63813b56ae69d205c7159387f9a36c5975b542d91ece"
+  },
+  "width": 2560
+}
