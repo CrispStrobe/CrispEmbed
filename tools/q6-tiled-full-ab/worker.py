@@ -31,6 +31,10 @@ def rows(dest,ids,np):
  for i,token in enumerate(ids):
   p=dest/f'greedy.{i}.logits.f32';x=np.fromfile(p,dtype='<f4');require(x.size==248320 and np.isfinite(x).all()and int(x.argmax())==token,'complete finite greedy argmax');
  require(sha(dest/'prefill.logits.f32')==sha(dest/'teacher.0.logits.f32')==sha(dest/'greedy.0.logits.f32'),'same first vocabulary row')
+def progress_count(dest):
+ try:return int(json.loads((dest/'generated-progress.json').read_text())['generated_tokens'])
+ except WorkerDeadline:raise
+ except(OSError,ValueError,KeyError):return None
 def artifacts(out,commands):
  owned={label+'.log'for label in commands}|{'CMakeCache.txt','physical-pack.json'}
  return {str(p.relative_to(out)):dict(bytes=p.stat().st_size,sha256=sha(p))for p in out.rglob('*')if p.is_file()and(p.parent!=out or p.name in owned)}
@@ -110,8 +114,8 @@ def main():
     require(base.memory()['MemAvailable']>=10<<30 and shutil.disk_usage(out).free>=2<<30,'per-arm capacity');dest=out/case/arm;dest.mkdir(parents=True);checked=[0]
     def tick():
      if arm!='off':return
-     try:n=int(json.loads((dest/'generated-progress.json').read_text())['generated_tokens'])
-     except(OSError,ValueError,KeyError):return
+     n=progress_count(dest)
+     if n is None:return
      while checked[0]<min(count,n-1):
       j=checked[0];require(sha(dest/f'greedy.{j}.logits.f32')==receipt['artifacts'][prefix+f'/greedy.{j}.logits.f32']['sha256'],'early closed OFF score');checked[0]+=1
     label=case+'-'+arm;run(label,[native,candidate,inp/'input.rgb',image.height,image.width,teacher,dest,512,4,'greedy-full','--observed-composed-cap512'],child,900,tick)

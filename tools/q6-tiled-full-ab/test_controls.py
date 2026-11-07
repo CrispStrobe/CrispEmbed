@@ -1,9 +1,14 @@
 import ast,importlib.util,tempfile,unittest
 from pathlib import Path
+from unittest.mock import patch
 import numpy as np
 HERE=Path(__file__).parent
 s=importlib.util.spec_from_file_location('gdn_full_ab',HERE/'worker.py');w=importlib.util.module_from_spec(s);s.loader.exec_module(w)
 class Controls(unittest.TestCase):
+ def test_progress_preserves_whole_deadline(self):
+  with patch.object(Path,'read_text',side_effect=w.WorkerDeadline('whole')):
+   with self.assertRaises(w.WorkerDeadline):w.progress_count(Path('/unused'))
+  with patch.object(Path,'read_text',side_effect=OSError('not ready')):self.assertIsNone(w.progress_count(Path('/unused')))
  def test_outer_receipts_remain_outside_child_inventory(self):
   with tempfile.TemporaryDirectory()as d:
    p=Path(d);(p/'outer.log').write_text('active');(p/'bootstrap.json').write_text('active');(p/'done.log').write_text('closed');(p/'CMakeCache.txt').write_text('closed');(p/'case').mkdir();(p/'case/generated.txt').write_text('closed')
