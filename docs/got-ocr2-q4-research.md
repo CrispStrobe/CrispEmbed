@@ -190,3 +190,20 @@ as the non-F16 option; keep Q4_K labelled experimental (known drift on long
 pages); do not ship Q6_K/Q5_K. Done-when for publication: Q8_0 re-run on the
 full gold corpus with the standard OCR qualification lane, then publish via
 the HF workflow with LICENSE/NOTICE (Tongyi Qianwen research licence).
+
+## 7. Round-3 results (run 42392365607) — no mixed recipe below full Q8_0 is exact
+
+| recipe | size | exact | CER (receipt / form) | min logit cos (receipt / form) |
+|---|---|---|---|---|
+| mlx_q4_1 (affine 4-bit, vision F16) | 555 MB | 1/3 | 0.421 / 0.017 | 0.739 / 0.602 |
+| q8_ffn_gu_q4k (= q4k_attn_down_q8) | 530 MB | 1/3 | 0.067 / 0.026 | 0.878 / 0.936 |
+| q8_ffn_q6k (attention Q8_0, FFN Q6_K) | 549 MB | 1/3 | 0.067 / 0.030 | 0.991 / 0.962 |
+| q6k_down_v_q8 | 525 MB | 1/3 | 0.188 / 0.017 | 0.978 / 0.955 |
+| q6k_attn_q8 | 527 MB | 1/3 | 0.414 / 0.039 | 0.980 / 0.973 |
+
+Findings: the MLX-style affine Q4_1 is no better than Q4_K. Even Q6_K on the FFN
+alone, with Q8_0 attention and down projection, breaks greedy exactness on both
+long pages; every decoder matrix needs >= 8 bits. Best approximate 4-bit-FFN arm
+is `q8_ffn_gu_q4k` (530 MB, receipt CER 0.067 vs 0.345 for the published Q4_K),
+a candidate replacement for the experimental Q4 file. Exact recommendation is
+unchanged: full Q8_0 decoder (600 MB).
