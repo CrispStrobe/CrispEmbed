@@ -1,0 +1,63 @@
+{
+  "kernel_id": 143171211,
+  "model_payload_bytes": 0,
+  "raw_files": {
+    "lighton-hf-tiled-out-native-controls/bootstrap-receipt.json": {
+      "bytes": 766,
+      "sha256": "bc6f48854a547fb6e4d2258442fdc55365814a0f5c0f0e5ae5f39a4df1289380"
+    },
+    "lighton-hf-tiled-out-native-controls/build.log": {
+      "bytes": 48192,
+      "sha256": "9c4ec9d6e02cfdecef45329582ea9e4d1249986355ea1b854731991e6a130572"
+    },
+    "lighton-hf-tiled-out-native-controls/checkout.log": {
+      "bytes": 92,
+      "sha256": "2d1e025897e669c37ff46c70c96014d514a3e23c92f59118ac4f0eae3c2a819f"
+    },
+    "lighton-hf-tiled-out-native-controls/configure.log": {
+      "bytes": 2089,
+      "sha256": "82aef6e6804799e95a014737b74f465f084e5ea82f626b4240d997923f744535"
+    },
+    "lighton-hf-tiled-out-native-controls/dependency-preflight.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-native-controls/fetch.log": {
+      "bytes": 123,
+      "sha256": "4db2fd004d24f300340eee704f801fbf46d929ae2b374a631dbd4aeb3bfb08a0"
+    },
+    "lighton-hf-tiled-out-native-controls/init.log": {
+      "bytes": 587,
+      "sha256": "42f9a45a86c0c33bd9a8d3247e0f2193053f95f7b7aed7c2e9e945c081cf86f0"
+    },
+    "lighton-hf-tiled-out-native-controls/packages.log": {
+      "bytes": 3548,
+      "sha256": "87e26086227e897de6d1d48729dedf28601e947162e322c2b36fb58e7f84322d"
+    },
+    "lighton-hf-tiled-out-native-controls/remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-native-controls/submodule.log": {
+      "bytes": 364,
+      "sha256": "aed02f5ea51e9df37f2ddb5edfe78838ac8e7f72c6b20b97ecb96cbe7e8cc16f"
+    },
+    "lighton-hf-tiled-out-native-controls/venv-prefix.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-native-controls/venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton4b-hf-tiled-out-native-controls.log": {
+      "bytes": 4085,
+      "sha256": "914689a111d7c1feaf62c686b4c49e05dcfe030fe5d2d77301eee850d0fbdb13"
+    }
+  },
+  "reason": "Synthetic recipe test reused input for both schema ifstream and activation vector; conflicting declaration. No model, quantization, numeric-tolerance or payload gate was changed.",
+  "schema": "lighton4b-hf-tiled-out-native-controls-negative/v1",
+  "source_sha": "11e64198f37e6ee9ed00f12ace3b9031320c210b",
+  "status": "compile-failed-before-native-controls",
+  "version": 1
+}

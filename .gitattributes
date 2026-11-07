@@ -47,3 +47,6 @@ tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/controls-v1/**/CMakeCache.t
 
 # Preserve exact actual original-F16 paired-proof remote logs.
 tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/original-f16-proof-v1/**/*.log -text whitespace=-trailing-space,-blank-at-eof
+
+# Preserve initial HF-layout synthetic compile-negative raw output.
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v1-negative/**/*.log -text whitespace=-trailing-space,-blank-at-eof
