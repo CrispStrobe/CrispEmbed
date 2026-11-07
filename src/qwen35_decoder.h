@@ -20,6 +20,7 @@ struct decoder_weights {
     ggml_tensor * embedding = nullptr;
     ggml_tensor * head = nullptr;
     bool upstream_physical = false;
+    bool hf_tiled_out = false;
 };
 struct decoder_layer_cache {
     std::vector<float> conv, recurrent;

@@ -221,7 +221,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-465 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+466 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -642,7 +642,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_BF16_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_linear.h`, `src/lighton4b_upstream_physical_semantics.h`, `src/qwen35_delta.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_BF16_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_linear.h`, `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_upstream_physical_semantics.h` +1 |  |
 
 ### lighton4b_decoder_compose
 
@@ -656,7 +656,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q6` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gdn_out_q6_recipe.h`, `src/lighton4b_native_context.h` |  |
+| `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q6` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gdn_out_q6_recipe.h`, `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_native_context.h` |  |
 
 ### lighton4b_gguf_inspection
 
@@ -673,20 +673,23 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_HEAD_BF16` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_head_bf16.h`, `src/lighton4b_upstream_physical_semantics.h` |  |
 
+### lighton4b_hf_tiled_out
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_HF_TILED_OUT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h` | else |
+| `CRISPEMBED_LIGHTON4B_IMATRIX_Q4KM_Q6HEAD` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_native_context.h`, `src/lighton4b_q6_policy.h` |  |
+| `CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_native_context.h` |  |
+| `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q8` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_native_context.h` |  |
+| `CRISPEMBED_LIGHTON4B_Q6_K` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_physical_native_ops.h`, `src/lighton4b_q6_policy.h` | else |
+| `CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_upstream_physical_semantics.h` | else |
+
 ### lighton4b_image_compose
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_image_compose.h` |  |
 | `CRISPEMBED_LIGHTON4B_VISION_BF16` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_image_compose.h`, `src/lighton4b_vision_bf16.cpp` |  |
-
-### lighton4b_native_context
-
-| Variable | Kind | Default | Type | Status | Where | Hint |
-|---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_IMATRIX_Q4KM_Q6HEAD` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h`, `src/lighton4b_q6_policy.h` |  |
-| `CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
-| `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q8` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
 
 ### lighton4b_parallel_dequant
 
@@ -700,7 +703,6 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_native_ops.h` |  |
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION` | value | unset | string | tuning / config | `src/lighton4b_physical_native_ops.h` |  |
-| `CRISPEMBED_LIGHTON4B_Q6_K` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_native_ops.h`, `src/lighton4b_q6_policy.h` | else |
 
 ### lighton4b_rotary_table
 
@@ -713,12 +715,6 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_FRONTEND` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_tokenizer.cpp` |  |
-
-### lighton4b_upstream_physical_semantics
-
-| Variable | Kind | Default | Type | Status | Where | Hint |
-|---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_upstream_physical_semantics.h` | else |
 
 ### lighton4b_vision_bf16
 

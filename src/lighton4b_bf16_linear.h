@@ -52,7 +52,7 @@ inline bool lighton4b_bf16_linear_enabled() {
 inline bool lighton4b_bf16_grouped_cpu(const linear_weights & w, const float * hidden, int tokens, int threads,
                                        const float * history, const float * state, projected_linear_outputs & out) {
     out = {};
-    if (!lighton4b_bf16_linear_enabled() || !hidden || tokens < 1 || tokens > 16) return false;
+    if (!lighton4b_bf16_linear_enabled() || w.hf_tiled_out || !hidden || tokens < 1 || tokens > 16) return false;
     constexpr int keys = 16, heads = 32, width = 128, channels = 8192, group = 4096, kernel = 4;
     std::vector<std::vector<float>> projections;
     if (!project_cpu({ w.qkv, w.z, w.a, w.b }, hidden, 2560, tokens, threads, projections)) return false;

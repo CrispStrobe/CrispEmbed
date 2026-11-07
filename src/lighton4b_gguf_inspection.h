@@ -1,5 +1,6 @@
 #pragma once
 #include "lighton4b_model_owner.h"
+#include "lighton4b_hf_tiled_out.h"
 #include "lighton4b_gdn_out_recipe.h"
 #include "lighton4b_gdn_out_q6_recipe.h"
 #include "lighton4b_upstream_physical_recipe.h"
@@ -27,6 +28,7 @@ public:
     bool gdn_out_recipe_metadata_matches() const { return lighton4b_gdn_out_metadata_matches(metadata_); }
     bool gdn_out_q6_metadata_matches() const { return lighton4b_gdn_out_q6_metadata_matches(metadata_); }
     bool upstream_physical_profile_header() const { return lighton4b_upstream_physical_metadata_matches(metadata_); }
+    bool hf_tiled_out_profile_header() const { return lighton4b_hf_tiled_out_metadata(metadata_); }
     bool q6_profile_header() const { return lighton4b_q6_metadata(metadata_); }
     bool imatrix_q4km_profile_header() const { return lighton4b_imatrix_q4km_metadata(metadata_); }
     static std::unique_ptr<lighton4b_gguf_inspection> open(const char * path) {

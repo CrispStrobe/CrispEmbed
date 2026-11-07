@@ -15,6 +15,7 @@ struct lighton4b_decoder_cache {
     std::vector<lighton4b_layer_cache> layers;
     bool upstream_physical = false;
     uint8_t physical_native_ops = 0;
+    bool hf_tiled_out = false;
 };
 struct lighton4b_decoder_outputs {
     std::vector<std::vector<float>> hidden;
@@ -38,6 +39,8 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
         norm->ne[1] != 1 || norm->ne[2] != 1 || norm->ne[3] != 1)
         return false;
     const bool bf16_quant_weights = lighton4b_bf16_dequant_weights_mode();
+    if (!lighton4b_hf_tiled_out_mode_valid(weights.hf_tiled_out,weights.upstream_physical) ||
+        (previous && previous->hf_tiled_out != weights.hf_tiled_out)) return false;
     if (!lighton4b_upstream_physical_mode_valid(weights.upstream_physical) || !lighton4b_physical_native_ops_valid(weights.upstream_physical) ||
         (previous && (previous->upstream_physical != weights.upstream_physical ||
                       previous->physical_native_ops != lighton4b_physical_native_ops_mode(weights.upstream_physical)))) return false;
@@ -57,7 +60,8 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
     for (size_t i = 0; i < 32; ++i) {
         const bool full = i % 4 == 3;
         if (weights.layers[i].full_attention != full ||
-            weights.layers[i].upstream_physical != weights.upstream_physical) return false;
+            weights.layers[i].upstream_physical != weights.upstream_physical ||
+            weights.layers[i].linear.hf_tiled_out != (weights.hf_tiled_out && !full)) return false;
         if (previous) {
             const auto & c = previous->layers[i];
             if (c.full_attention != full) return false;
@@ -66,7 +70,7 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
                     c.attention.width != 256 || c.attention.keys.size() != size_t(past) * 1024 ||
                     c.attention.values.size() != c.attention.keys.size() || !finite(c.attention.keys) ||
                     !finite(c.attention.values) || c.linear.tokens || c.linear.bf16_activations ||
-                    c.linear.upstream_physical || c.linear.physical_native_ops || !c.linear.conv.empty() || !c.linear.recurrent.empty())
+                    c.linear.upstream_physical || c.linear.physical_native_ops || c.linear.hf_tiled_out || !c.linear.conv.empty() || !c.linear.recurrent.empty())
                     return false;
             } else if (c.linear.tokens != past || c.linear.conv.size() != 32768 ||
                        c.linear.recurrent.size() != 524288 || !finite(c.linear.conv) || !finite(c.linear.recurrent) ||
@@ -76,6 +80,7 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
     }
     lighton4b_decoder_outputs candidate;
     candidate.cache.tokens = past + tokens;
+    candidate.cache.hf_tiled_out = weights.hf_tiled_out;
     candidate.cache.bf16_quant_weights = bf16_quant_weights;
     candidate.cache.upstream_physical = weights.upstream_physical;
     candidate.cache.physical_native_ops = lighton4b_physical_native_ops_mode(weights.upstream_physical);

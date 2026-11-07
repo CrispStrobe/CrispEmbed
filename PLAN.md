@@ -2076,3 +2076,8 @@ unset/`all` preserves its previously measured full mode, while `quant`, `rms`,
 physical modes reject before payload/profile admission and primitive calls;
 cache masks reject subset switches. No learned-model ablation or quality
 qualification follows. The composed full-mode negative remains preserved.
+
+
+### LightOn4B HF-only tiled-output candidate — 7 November2026
+
+Actual original-F16 proof passed all24 HF/publisher payload pairs at24208e2ac; proof preserved separately in PR157. Decoder lane adds distinct HF-layout metadata/gate, owner and cache fingerprint plus output-only activation bridge; all699 other payloads and HF gamma/log-A/tokenizer metadata remain immutable. [Design and pending controls](docs/lighton4b-hf-tiled-out-reproducer.md). Eight local Python tests pass; native full-width operator/type/metadata/cache checks and actual candidate packing/decoded comparison remain hosted gates. Physical native-ops/cache-mask work is preserved independently.

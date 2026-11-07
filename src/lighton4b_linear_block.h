@@ -1,4 +1,5 @@
 #pragma once
+#include "lighton4b_hf_tiled_out.h"
 #include "lighton4b_physical_native_ops.h"
 #include "qwen35_lighton4b_text.h"
 #include "qwen35_math.h"
@@ -15,6 +16,7 @@ struct lighton4b_linear_cache {
     std::vector<float> conv, recurrent;
     bool upstream_physical = false;
     uint8_t physical_native_ops = 0;
+    bool hf_tiled_out = false;
 };
 struct lighton4b_linear_block_outputs {
     std::vector<float> input_norm, attention, attention_residual, post_norm, gate, up, activation, down, hidden;
@@ -35,6 +37,8 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
         return std::all_of(v.begin(), v.end(), [](float x) { return std::isfinite(x); });
     };
     const bool bf16 = lighton4b_bf16_linear_enabled();
+    if (!lighton4b_hf_tiled_out_mode_valid(w.linear.hf_tiled_out,w.upstream_physical) ||
+        (previous && previous->hf_tiled_out != w.linear.hf_tiled_out)) return false;
     if (!lighton4b_upstream_physical_mode_valid(w.upstream_physical) || !lighton4b_physical_native_ops_valid(w.upstream_physical) ||
         w.linear.upstream_physical != w.upstream_physical ||
         (previous && (previous->upstream_physical != w.upstream_physical || previous->physical_native_ops != lighton4b_physical_native_ops_mode(w.upstream_physical)))) return false;
@@ -112,6 +116,7 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     if (bf16) lighton4b_bf16_round(candidate.hidden);
     if (!finite(candidate.hidden)) return false;
     candidate.cache.tokens = past + tokens;
+    candidate.cache.hf_tiled_out = w.linear.hf_tiled_out;
     candidate.cache.bf16_activations = bf16;
     candidate.cache.upstream_physical = w.upstream_physical;
     candidate.cache.physical_native_ops = lighton4b_physical_native_ops_mode(w.upstream_physical);

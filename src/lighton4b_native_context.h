@@ -5,23 +5,25 @@
 #include "lighton4b_q4km_types.h"
 
 namespace qwen35_ocr {
-enum class lighton4b_quant_recipe { q8_0, q4_k, attention_q8_ffn_q4, q4km_q6_q8head, gdn_out_q8, gdn_out_q6, imatrix_q4km_q6head, upstream_physical_q4km };
+enum class lighton4b_quant_recipe { q8_0, q4_k, attention_q8_ffn_q4, q4km_q6_q8head, gdn_out_q8, gdn_out_q6, imatrix_q4km_q6head, upstream_physical_q4km, hf_tiled_out_q4km };
 // Exact storage policy, separate from shape/source ownership and payload admission.
 inline bool lighton4b_quant_recipe_matches(const decoder_weights & decoder, lighton4b_quant_recipe recipe) {
     if (recipe != lighton4b_quant_recipe::q8_0 && recipe != lighton4b_quant_recipe::q4_k &&
         recipe != lighton4b_quant_recipe::attention_q8_ffn_q4 && recipe != lighton4b_quant_recipe::q4km_q6_q8head && recipe != lighton4b_quant_recipe::gdn_out_q8 &&
-        recipe != lighton4b_quant_recipe::gdn_out_q6 && recipe != lighton4b_quant_recipe::imatrix_q4km_q6head && recipe != lighton4b_quant_recipe::upstream_physical_q4km)
+        recipe != lighton4b_quant_recipe::gdn_out_q6 && recipe != lighton4b_quant_recipe::imatrix_q4km_q6head && recipe != lighton4b_quant_recipe::upstream_physical_q4km && recipe != lighton4b_quant_recipe::hf_tiled_out_q4km)
         return false;
     auto type = [](const ggml_tensor * t, ggml_type expected) { return t && t->type == expected; };
     if (recipe == lighton4b_quant_recipe::upstream_physical_q4km)
         return lighton4b_q6_enabled() && lighton4b_upstream_physical_mode_valid(true) &&
             lighton4b_q4km_types_match(decoder, GGML_TYPE_Q6_K);
-    const bool q6head = recipe == lighton4b_quant_recipe::imatrix_q4km_q6head;
+    const bool tiled = recipe == lighton4b_quant_recipe::hf_tiled_out_q4km;
+    if (tiled && !lighton4b_hf_tiled_out_mode_valid(true,false)) return false;
+    const bool q6head = recipe == lighton4b_quant_recipe::imatrix_q4km_q6head || tiled;
     if (decoder.layers.size() != 32 || decoder.head != decoder.embedding ||
         !type(decoder.embedding, q6head ? GGML_TYPE_Q6_K : GGML_TYPE_Q8_0))
         return false;
     if (recipe == lighton4b_quant_recipe::q4km_q6_q8head || q6head) {
-        if (!lighton4b_q6_enabled() || (q6head && !lighton4b_imatrix_q4km_enabled())) return false;
+        if (!lighton4b_q6_enabled() || (q6head && !tiled && !lighton4b_imatrix_q4km_enabled())) return false;
         return lighton4b_q4km_types_match(decoder,q6head?GGML_TYPE_Q6_K:GGML_TYPE_Q8_0);
     }
     if (recipe == lighton4b_quant_recipe::gdn_out_q6 && !lighton4b_gdn_out_q6_enabled()) return false;
@@ -50,12 +52,16 @@ inline bool lighton4b_quant_recipe_matches(const decoder_weights & decoder, ligh
 inline bool lighton4b_select_recipe(const decoder_weights & decoder, const std::string & tag,
                                   lighton4b_quant_recipe & recipe) {
     const bool physical = lighton4b_upstream_physical_enabled();
+    const bool tiled = lighton4b_hf_tiled_out_enabled();
     const bool mixed = core_env::on("CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4");
     const bool out8 = core_env::on("CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q8");
     const bool out6 = core_env::on("CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q6");
     const bool q6head = core_env::on("CRISPEMBED_LIGHTON4B_IMATRIX_Q4KM_Q6HEAD");
-    if (int(mixed) + int(out8) + int(out6) + int(q6head) + int(physical) > 1) return false;
-    if (physical) {
+    if (int(mixed) + int(out8) + int(out6) + int(q6head) + int(physical) + int(tiled) > 1) return false;
+    if (tiled) {
+        if (tag != lighton4b_hf_tiled_out_recipe || !lighton4b_hf_tiled_out_mode_valid(true,false)) return false;
+        recipe = lighton4b_quant_recipe::hf_tiled_out_q4km;
+    } else if (physical) {
         if (tag != lighton4b_upstream_physical_recipe || !lighton4b_physical_native_ops_valid(true)) return false;
         recipe = lighton4b_quant_recipe::upstream_physical_q4km;
     } else if (tag == lighton4b_imatrix_q4km_recipe) {
@@ -113,6 +119,7 @@ public:
         if (recipe == lighton4b_quant_recipe::q4km_q6_q8head && !header->q6_profile_header()) return nullptr;
         if (recipe == lighton4b_quant_recipe::imatrix_q4km_q6head && !header->imatrix_q4km_profile_header()) return nullptr;
         if (recipe == lighton4b_quant_recipe::upstream_physical_q4km && !header->upstream_physical_profile_header()) return nullptr;
+        if (recipe == lighton4b_quant_recipe::hf_tiled_out_q4km && !header->hf_tiled_out_profile_header()) return nullptr;
         if (recipe == lighton4b_quant_recipe::gdn_out_q8 && !header->gdn_out_recipe_metadata_matches()) return nullptr;
         if (recipe == lighton4b_quant_recipe::gdn_out_q6 && !header->gdn_out_q6_metadata_matches()) return nullptr;
         auto candidate = std::unique_ptr<lighton4b_native_context>(new lighton4b_native_context);
@@ -121,6 +128,11 @@ public:
             !core_gguf::load_weights(path, candidate->backend_, "lighton4b-native", candidate->loaded_, true) ||
             !map_lighton4b_model(candidate->loaded_.tensors, candidate->model_))
             return nullptr;
+        if (recipe == lighton4b_quant_recipe::hf_tiled_out_q4km) {
+            auto & weights = candidate->model_.text.decoder;
+            weights.hf_tiled_out = true;
+            for (auto & layer : weights.layers) if (!layer.full_attention) layer.linear.hf_tiled_out = true;
+        }
         if (recipe == lighton4b_quant_recipe::upstream_physical_q4km) {
             auto & weights = candidate->model_.text.decoder;
             weights.upstream_physical = true;

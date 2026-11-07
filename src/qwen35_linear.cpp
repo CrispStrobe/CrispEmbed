@@ -1,3 +1,4 @@
+#include "lighton4b_hf_tiled_out.h"
 #include "lighton4b_physical_native_ops.h"
 #include "lighton4b_upstream_physical_semantics.h"
 #include "qwen35_linear.h"
@@ -327,7 +328,7 @@ bool linear_cpu(const linear_weights & weights, const float * hidden, int batch,
                 const float * conv_history, const float * state, projected_linear_outputs & output,
                 converted_weight_cache * weights_cache) {
     output = {};
-    if (weights.upstream_physical) return false;
+    if (weights.upstream_physical || weights.hf_tiled_out) return false;
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !hidden || batch < 1 || batch > 4 || tokens < 1 || tokens > 4096 ||
         threads < 1 || threads > 256 || !weights.a_log || !weights.norm || !weights.qkv || !weights.conv)
         return false;
@@ -401,6 +402,8 @@ bool linear_grouped_cpu(const linear_weights & weights, int key_heads, const flo
         output = {};
         return false;
     }
+    if (!lighton4b_hf_tiled_out_mode_valid(weights.hf_tiled_out, weights.upstream_physical)) return false;
+    if (weights.hf_tiled_out && (key_heads != 16 || heads != 32 || width != 128 || hidden_width != 2560 || batch != 1 || tokens > 16)) return false;
     if (weights.upstream_physical && (!lighton4b_upstream_physical_mode_valid(true) || key_heads != 16 ||
         heads != 32 || width != 128 || hidden_width != 2560 || batch != 1 || tokens > 16)) return false;
     const int64_t group = heads * width, channels = (2 * int64_t(key_heads) + heads) * width;
@@ -440,6 +443,9 @@ bool linear_grouped_cpu(const linear_weights & weights, int key_heads, const flo
     const float * out_input = output.core.values.data();
     if (weights.upstream_physical) {
         if (!lighton4b_upstream_v_to_tiled(output.core.values, tokens, tiled)) return fail();
+        out_input = tiled.data();
+    } else if (weights.hf_tiled_out) {
+        if (!lighton4b_hf_v_to_tiled(output.core.values, tokens, tiled)) return fail();
         out_input = tiled.data();
     }
     if (!project_cpu({ weights.out }, out_input, int(group), batch * tokens, threads, projections,

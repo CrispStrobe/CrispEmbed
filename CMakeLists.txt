@@ -1790,3 +1790,9 @@ target_link_libraries(test-lighton4b-physical-runtime-primitive PRIVATE crispemb
 add_executable(lighton4b-tiled-out-rows EXCLUDE_FROM_ALL tools/lighton4b_tiled_out_rows.cpp)
 target_include_directories(lighton4b-tiled-out-rows PRIVATE src)
 target_link_libraries(lighton4b-tiled-out-rows PRIVATE ggml)
+
+# Separate HF scalar profile with original-F16-proven tiled GDN output columns.
+add_executable(test-lighton4b-hf-tiled-out-recipe EXCLUDE_FROM_ALL tests/test_lighton4b_hf_tiled_out_recipe.cpp)
+target_link_libraries(test-lighton4b-hf-tiled-out-recipe PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-lighton4b-hf-tiled-out-operator EXCLUDE_FROM_ALL tests/test_lighton4b_hf_tiled_out_operator.cpp)
+target_link_libraries(test-lighton4b-hf-tiled-out-operator PRIVATE crispembed-qwen35-delta crispembed-core)
