@@ -1,0 +1,44 @@
+{
+  "model_repo": "richardyoung/LightOnOCR-3-4B-GGUF",
+  "model_revision": "8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01",
+  "models": {
+    "Q4_K_M": {
+      "file": "LightOnOCR-3-4B-Q4_K_M.gguf",
+      "bytes": 2708804576,
+      "sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26"
+    }
+  },
+  "base_model": {
+    "repository": "cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
+    "revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+    "file": "lightonocr3-4b-q4_k-vision-f32.gguf",
+    "bytes": 4030957952,
+    "sha256": "f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91"
+  },
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "schema": "lighton4b-composed-vision-calibration/v1",
+  "cases": [
+    "simple_table",
+    "arabic_printed_line"
+  ],
+  "arms": [
+    "source-features",
+    "composed"
+  ],
+  "cap": 512,
+  "context": 2048,
+  "threads": 4,
+  "worker_seconds": 3600,
+  "arm_seconds": 900,
+  "form_source_sha": "b98567cfd46aaf594f33076aaab4ff8e4610edbb",
+  "form_receipt_sha256": "aec0d0b10befb5b3498b55a87f9cda785998242c0d9f49a4a1b3f72a92ed160b",
+  "physical_receipt_sha256": "712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2",
+  "extended_table_receipt_sha256": "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3",
+  "calibration_receipt_sha256": "7639d6559da7cc58443ccfbe1dac518af0d70f3e7a83718d037a97bb147eb2b7",
+  "frozen_source_feature_ids": {
+    "simple_table": 282,
+    "arabic_printed_line": 6
+  },
+  "quality_qualified": false,
+  "scope": "Observed corrected-vision table/Arabic only; same proven binary/weights/decoder/gates, source-feature baseline then composed pixels. No new reference forward/heldout/shipping qualification; table floor remains explicit."
+}

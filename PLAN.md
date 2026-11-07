@@ -2214,3 +2214,17 @@ Protocol and controls require independent review before one bounded hosted run.
 ### Composed form verified; source-vision integration ready (2026-11-07)
 
 Full composed aec0/sourceb985 preservesold194EOS/all194rows/38text+29vision anchors, then fixed167EOS matchesall167retainedsource-feature rows/stages andactual28sourcevision arrays, with source_fed_vision=false. FrozenBF16-reference CER259→175/656, WER47→45/90; actualupstream189/46. This observed form meetsfloor, not heldout/general qualification. Bothgates remainoff. Integration unionscurrentmain17098/PR1559ca/testedb59 plusfourtestedformharnessfiles; producttree exactb59. Added explicit immutable historicaldriver amendment ratherthanquietrepinning. Runtime preparescomposedtable/Arabic; no release/default promotion.
+
+### Corrected composed table/Arabic continuation
+
+Tools-only `lighton4b_composed_vision_calibration.py` freezes the actual aec0 form
+binary/backend bundle and corrected gate tuple (Pillow/F16vision/F16attention1,
+Q4repack/HEADBF160). One sequential worker authenticates both observed inputs,
+complete table282EOS andArabic6EOS references/rows before any model payload.
+Each source-feature baseline must close all frozen greedy rows and38 text
+stages before the pixels-only composed arm. Old BF16 processor-patch hashes are
+not reused for the corrected preprocessor; both arms must instead share new
+patch/grid bytes. Actual merged-source byte identity is required before text
+parity interpretation; complete decode/firstscore/CER/WER/EOS/cap/resources and
+per-case upstream floor failures are retained even when negative. No runtime
+rebuild, new reference forward, held-out or shipping/default promotion.
