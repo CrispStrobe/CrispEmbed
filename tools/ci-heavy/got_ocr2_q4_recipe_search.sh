@@ -62,6 +62,13 @@ declare -A BASE
 R[dec_q8_0]=""; BASE[dec_q8_0]=q8_0                       # Q8_0 weights, Q8_0 activations
 R[dec_q6_k]=""; BASE[dec_q6_k]=q6_k                       # Q6_K weights, Q8_K activations
 R[dec_q5_k]=""; BASE[dec_q5_k]=q5_k                       # Q5_K weights, Q8_K activations
+# Round 3: mixed precision between 4 and 8 bits, plus MLX-like affine 4-bit.
+R[mlx_q4_1]="$VIS"; BASE[mlx_q4_1]=q4_1                                    # affine 4-bit (scale+min), vision F16
+R[q8_ffn_gu_q4k]="--tensor-type l.blk.*.ffn_gate.weight=q4_k --tensor-type l.blk.*.ffn_up.weight=q4_k"; BASE[q8_ffn_gu_q4k]=q8_0
+R[q8_ffn_q6k]="--tensor-type l.blk.*.ffn_?*.weight=q6_k"; BASE[q8_ffn_q6k]=q8_0   # attention Q8_0, FFN Q6_K
+R[q6k_down_v_q8]="--tensor-type l.blk.*.ffn_down.weight=q8_0 --tensor-type l.blk.*.attn_v.weight=q8_0"; BASE[q6k_down_v_q8]=q6_k
+R[q6k_attn_q8]="--tensor-type l.blk.*.attn_?.weight=q8_0"; BASE[q6k_attn_q8]=q6_k
+R[q4k_attn_down_q8]="--tensor-type l.blk.*.attn_?.weight=q8_0 --tensor-type l.blk.*.ffn_down.weight=q8_0"; BASE[q4k_attn_down_q8]=q4_k
 ORDER="q4k_repro dec_f16 vis_f16 vis_f16_km vis_f16_attn_q8 vis_f16_emb_f16 vis_f16_imat vis_f16_km_imat"
 [ "$WANT" = all ] || ORDER=${WANT//,/ }
 
