@@ -1,0 +1,47 @@
+{
+  "schema": "crispembed-ocr-gguf-publication-report-v1",
+  "protocol": "docs/oxr-publication-v1.json",
+  "status": "published and re-verified",
+  "variants": [
+    "F16",
+    "Q8_0-LARGE",
+    "Q4_K-HEAD"
+  ],
+  "remote": {
+    "repo": "cstr/OXR-1.0-GGUF",
+    "commit": "1fb6277433f0be816b2be1c165e23e0ac2ce3491",
+    "files": [
+      {
+        "variant": "F16",
+        "filename": "oxr-1.0-f16.gguf",
+        "bytes": 4440553984,
+        "sha256": "eac8754f4886ba4197416083d49089a3d86c8644f0e5650f44fcf69059d81a57"
+      },
+      {
+        "variant": "Q8_0-LARGE",
+        "filename": "oxr-1.0-q8_0.gguf",
+        "bytes": 2029456896,
+        "sha256": "f0a67a94b9f5416ff35e5c31b7873cea1a15b95743e09a2d032005ead44eca83"
+      },
+      {
+        "variant": "Q4_K-HEAD",
+        "filename": "oxr-1.0-q4_k-head.gguf",
+        "bytes": 1878471168,
+        "sha256": "037a31df623facd71ca96961e48d65d9010bd1b4b16bcd867254d68d57637709"
+      }
+    ],
+    "small_files_sha256": {
+      "README.md": "2d0276d2f980db6c264e473730440676f36552508d77fc867768958a54081525",
+      "manifest.json": "d3f11533a5c236ba2a104a6490956233e64ef9ec77796498e9b49afa0e4e412a",
+      "LICENSE": "4577df88e499926976b390c4ea3992cc91baa9ebac29386f35b557bd3cb4a662",
+      "LICENSE-APACHE-2.0": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "NOTICE": "74bb5fb42b79fd4d8dd7666e6f7ae06248e9e54f102024efaf2f4ab59e2168ab",
+      "UPSTREAM_README.md": "a3241e175099ea57a4491be25cce8e965945889e41ed25c3c01911fd17a2236f"
+    },
+    "urls": {
+      "oxr-1.0-f16.gguf": "https://huggingface.co/cstr/OXR-1.0-GGUF/resolve/1fb6277433f0be816b2be1c165e23e0ac2ce3491/oxr-1.0-f16.gguf",
+      "oxr-1.0-q8_0.gguf": "https://huggingface.co/cstr/OXR-1.0-GGUF/resolve/1fb6277433f0be816b2be1c165e23e0ac2ce3491/oxr-1.0-q8_0.gguf",
+      "oxr-1.0-q4_k-head.gguf": "https://huggingface.co/cstr/OXR-1.0-GGUF/resolve/1fb6277433f0be816b2be1c165e23e0ac2ce3491/oxr-1.0-q4_k-head.gguf"
+    }
+  }
+}
