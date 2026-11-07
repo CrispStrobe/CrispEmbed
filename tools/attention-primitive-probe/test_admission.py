@@ -48,6 +48,16 @@ class AttentionAdmission(unittest.TestCase):
                 with self.subTest(key=key), self.assertRaises(RuntimeError):
                     validate_cache(path, runtime=True)
 
+    def test_disabled_dispatch_is_explicit_diagnostic_profile(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'CMakeCache.txt'
+            path.write_text('\n'.join(f'{k}:BOOL={v}' for k, v in {
+                'GGML_LLAMAFILE': 'OFF', 'GGML_AVX2': 'ON', 'GGML_NATIVE': 'OFF',
+                'GGML_AVX512': 'OFF', 'GGML_BLAS': 'OFF'}.items()))
+            validate_cache(path, llamafile=False)
+            with self.assertRaises(RuntimeError):
+                validate_cache(path)
+
     def test_range_mutations(self):
         for field, value in [('bytes', 1), ('type', 1), ('source_offset', -1),
                              ('name', 'l.layers.4.input_layernorm.weight')]:
