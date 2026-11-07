@@ -6,6 +6,7 @@ spec=importlib.util.spec_from_file_location('heldout_prepare',Path(__file__).wit
 require=prepare.require
 ARMS=['upstream-off','upstream-on','native-composed','native-source-features']
 CAP=1536
+OBSERVED_TEXT_ANCHORS=['prefill.input.f32','prefill.positions.f32','prefill.logits.f32','prefill.norm.f32','teacher.0.logits.f32','greedy.0.logits.f32']+[f'prefill.layer.{i}.f32'for i in range(32)]
 
 def sha(path):
  with Path(path).open('rb')as f:return hashlib.file_digest(f,'sha256').hexdigest()

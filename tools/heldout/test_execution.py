@@ -22,6 +22,9 @@ class Contracts(unittest.TestCase):
    with self.assertRaises(ValueError):m.source_response(bad,3)
   bad=copy.deepcopy(r);bad['content']='changed'
   with self.assertRaises(ValueError):m.neutral(r,bad)
+ def test_observed_full_text_anchor_scope(self):
+  self.assertEqual(len(m.OBSERVED_TEXT_ANCHORS),38);self.assertEqual(len(set(m.OBSERVED_TEXT_ANCHORS)),38)
+  for key in ['prefill.norm.f32','teacher.0.logits.f32','greedy.0.logits.f32','prefill.layer.31.f32']:self.assertIn(key,m.OBSERVED_TEXT_ANCHORS)
  def test_actual_native_args(self):
   for arm,argc in [('native-composed',11),('native-source-features',13)]:
    args=m.native_args('binary','model','rgb',32,32,'one','out',arm,'features');self.assertEqual(len(args),argc);self.assertEqual(args[7:10],[1536,4,'greedy-full']);self.assertEqual(args[-1],'--provisional-heldout-cap1536')
