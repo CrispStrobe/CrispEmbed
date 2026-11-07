@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Complete calibration decode using the exact producer model and CPU runtime bundle."""
-import io,urllib.request,hashlib,importlib.metadata,importlib.util,json,os,re,shutil,signal,subprocess,sys,time
+import io,resource,urllib.request,hashlib,importlib.metadata,importlib.util,json,os,re,shutil,signal,subprocess,sys,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'tools'))
 import lighton4b_imatrix_q4km_recipe as profile
@@ -35,13 +35,14 @@ def main():
   raise TimeoutError('bounded complete-decode deadline')
  def run(label,args,env,timeout):
   nonlocal active
+  before_usage=resource.getrusage(resource.RUSAGE_CHILDREN)
   r['stage']=label;print('PHASE '+label,flush=True);save();start=time.monotonic()
   with(out/(label+'.log')).open('w')as log:
    active=subprocess.Popen(list(map(str,args)),cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
    try:code=active.wait(timeout=timeout)
    except subprocess.TimeoutExpired:stop()
    active=None
-  r.setdefault('child_seconds',{})[label]=time.monotonic()-start;save();require(code==0,'native child failed: '+label)
+  after_usage=resource.getrusage(resource.RUSAGE_CHILDREN);r.setdefault('child_rusage',{})[label]={'user_seconds':after_usage.ru_utime-before_usage.ru_utime,'system_seconds':after_usage.ru_stime-before_usage.ru_stime,'cumulative_children_peak_rss_bytes':int(after_usage.ru_maxrss)*1024,'peak_scope':'cumulative completed children; not isolated per-child peak'};r.setdefault('child_seconds',{})[label]=time.monotonic()-start;save();require(code==0,'native child failed: '+label)
  try:
   import numpy as np
   import PIL
@@ -92,7 +93,7 @@ def main():
    require(common.memory()['available_bytes']>=8*2**30,'native child RAM unavailable');cap=256;deadline=90*60 if form_only else(75*60 if case=='simple_table'else 20*60)
    r['model_forward_attempted']=True
    if not r['model_forward_executed']:r['model_forward_executed']=None
-   save();run(case+'-complete-greedy',['/usr/bin/time','-v','-o',folder/'native-time.txt',runtime/'bin/lighton4b-native-document',model,rgb_path,image.height,image.width,teacher,native,cap,4,'smoke'],env,deadline)
+   save();run(case+'-complete-greedy',[runtime/'bin/lighton4b-native-document',model,rgb_path,image.height,image.width,teacher,native,cap,4,'smoke'],env,deadline)
    summary=json.loads((native/'native-summary.json').read_text());ids=[int(x)for x in(native/'generated.ids').read_text().split()];raw_text=(native/'generated.txt').read_bytes();valid_utf8=True
    try:text=raw_text.decode('utf-8')
    except UnicodeDecodeError:valid_utf8=False;text=raw_text.decode('utf-8',errors='replace')
