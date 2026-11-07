@@ -52,7 +52,8 @@ inline bool lighton4b_physical_q4_repack_valid(bool physical) {
 }
 inline bool lighton4b_physical_q6_tiled_valid(bool physical) {
     return !lighton4b_physical_q6_tiled_mode(physical) ||
-           (lighton4b_physical_native_component(physical,1) && lighton4b_physical_q6_tiled_available());
+           (lighton4b_physical_native_component(physical,1) && lighton4b_physical_f16_attention_available() &&
+            lighton4b_physical_q6_tiled_available());
 }
 // Borrow original quant storage, or retain explicitly owned Q4 repacked bytes.
 // No F32 weight materialization/cache and no shared trait mutation.
