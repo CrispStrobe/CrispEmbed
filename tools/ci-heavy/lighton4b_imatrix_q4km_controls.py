@@ -25,7 +25,7 @@ def main():
   # Verify old frozen receipt blobs and the explicit new-source amendment chain.
   pins=[json.loads((ROOT/('tests/results/qwen35-ocr/quality-quant-'+p+'-inventory-table.json')).read_text())['source_commit']for p in('q8','q8-q6','q4')]
   run('fetch-frozen-receipt-commits',['git','fetch','--depth','1','origin',*sorted(set(pins))]);run('source-pin-check',[sys.executable,ROOT/'tools/qwen35_source_pins.py','--check','--verify-git'])
-  targets=['test-lighton4b-imatrix-q4km-recipe','test-lighton4b-q6-policy','test-lighton4b-gdn-out-q6-recipe','test-lighton4b-gdn-out-recipe']
+  targets=['test-lighton4b-imatrix-q4km-recipe','test-lighton4b-q6-policy','test-lighton4b-gdn-out-q6-recipe','test-lighton4b-gdn-out-recipe','test-qwen35-stream-projection']
   run('build-policy-controls',['cmake','--build',build,'--target',*targets,'--parallel','2'])
   for label,p,target in [('new-q4km',recipe.plan(),targets[0]),('old32-q8head',old.plan(),targets[1]),('old24-q6out',out6.plan(),targets[2])]:
    lines=[]
@@ -33,7 +33,7 @@ def main():
     if row['name'].startswith('l.'):
      shape=list(reversed(row['source_shape']));shape+=[1]*(4-len(shape));lines.append(' '.join([row['name'],str(row['type']),*map(str,shape)]))
    schema=out/(label+'.tsv');schema.write_text('\n'.join(lines)+'\n');run(label,[build/target,schema])
-  run('old24-q8out',[build/targets[3]])
+  run('old24-q8out',[build/targets[3]]);run('stream-graph-off-on',[build/targets[4]])
   # Closed ordinary production CLI must reject all paths without weight work.
   binary=build/'crispembed-quantize';header=scratch/'lighton-imatrix/target-header-only.gguf';adapted=aout/'adapted-imatrix.gguf';forbidden=scratch/'must-not-publish-q4km.gguf'
   tests=[('no-stats',[header,forbidden,'q4_k','--lighton4b-imatrix-q4km-style']),('wrong-method',[header,forbidden,'q8_0','--lighton4b-imatrix-q4km-style','--imatrix',adapted]),('override',[header,forbidden,'q4_k','--lighton4b-imatrix-q4km-style','--imatrix',adapted,'--tensor-type','l.embed_tokens.weight=q8_0']),('legacy-header',[header,forbidden,'q4_k','--lighton4b-imatrix-q4km-style','--imatrix',adapted,'--legacy-file-type-header']),('wrong-original-source',recipe.quantizer_arguments(header,forbidden,adapted))]
