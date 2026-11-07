@@ -33,7 +33,7 @@ def main():
     if row['name'].startswith('l.'):
      shape=list(reversed(row['source_shape']));shape+=[1]*(4-len(shape));lines.append(' '.join([row['name'],str(row['type']),*map(str,shape)]))
    schema=out/(label+'.tsv');schema.write_text('\n'.join(lines)+'\n');run(label,[build/target,schema])
-  run('old24-q8out',[build/targets[3]]);run('stream-graph-off-on',[build/targets[4]])
+  run('old24-q8out',[build/targets[3]]);run('legacy-stream-controls',[build/targets[4]])
   # Closed ordinary production CLI must reject all paths without weight work.
   binary=build/'crispembed-quantize';header=scratch/'lighton-imatrix/target-header-only.gguf';adapted=aout/'adapted-imatrix.gguf';forbidden=scratch/'must-not-publish-q4km.gguf'
   tests=[('no-stats',[header,forbidden,'q4_k','--lighton4b-imatrix-q4km-style']),('wrong-method',[header,forbidden,'q8_0','--lighton4b-imatrix-q4km-style','--imatrix',adapted]),('override',[header,forbidden,'q4_k','--lighton4b-imatrix-q4km-style','--imatrix',adapted,'--tensor-type','l.embed_tokens.weight=q8_0']),('legacy-header',[header,forbidden,'q4_k','--lighton4b-imatrix-q4km-style','--imatrix',adapted,'--legacy-file-type-header']),('wrong-original-source',recipe.quantizer_arguments(header,forbidden,adapted))]

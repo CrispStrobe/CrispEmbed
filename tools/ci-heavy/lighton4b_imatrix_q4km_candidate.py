@@ -63,7 +63,7 @@ def bundle_runtime(build,out):
             target=libs/source.name
             if target.exists():adapter.require(sha(target)==sha(source),'ambiguous runtime library');continue
             shutil.copyfile(source,target);manifest[str(target.relative_to(bundle))]={'sha256':sha(target),'bytes':target.stat().st_size}
-    for name in ('lighton4b-native-document','lighton4b-native-case-preflight','test-lighton4b-stream-head-benchmark'):
+    for name in ('lighton4b-native-document','lighton4b-native-case-preflight'):
         target=binaries/name;shutil.copyfile(build/name,target);target.chmod(0o755);manifest['bin/'+name]={'sha256':sha(target),'bytes':target.stat().st_size}
         env=dict(os.environ,LD_LIBRARY_PATH=str(libs));ldd=subprocess.check_output(['ldd',str(target)],env=env,text=True);(out/(name+'-ldd.log')).write_text(ldd)
         adapter.require('not found'not in ldd,'runtime library unresolved')
@@ -126,12 +126,12 @@ def main():
         # Repeat the full already-passed model-free union on this post-merge source before staging any model.
         phase_out=out/'controls';phase_out.mkdir();run('post-merge-model-free',[sys.executable,ROOT/'tools/ci-heavy/lighton4b_imatrix_q4km_controls.py'],dict(os.environ,HEAVY_OUT=str(phase_out)),timeout=20*60)
         control_receipt=json.loads((phase_out/'imatrix-q4km-controls.json').read_text());require(control_receipt['status']=='passed','post-merge model-free controls failed');r['post_merge_model_free_controls_passed']=True
-        build=scratch.parent/'lighton-imatrix/build';targets=['lighton4b-native-document','lighton4b-native-case-preflight','test-lighton4b-stream-head-benchmark'];run('build-native-runners',['cmake','--build',build,'--target',*targets,'--parallel','2']);r['binary_sha256']={x:sha(build/x)for x in targets};bundle=bundle_runtime(build,out);r['runtime_bundle_manifest_sha256']=sha(out/'runtime-bundle.json')
+        build=scratch.parent/'lighton-imatrix/build';targets=['lighton4b-native-document','lighton4b-native-case-preflight'];run('build-native-runners',['cmake','--build',build,'--target',*targets,'--parallel','2']);r['binary_sha256']={x:sha(build/x)for x in targets};bundle=bundle_runtime(build,out);r['runtime_bundle_manifest_sha256']=sha(out/'runtime-bundle.json')
         adapted=phase_out/'adapter/adapted-imatrix.gguf';stats=json.loads((phase_out/'adapter/adapter.json').read_text());require(sha(adapted)==p['statistics']['adapted_sha256'],'approved adapted file differs')
         baseline=out/'unweighted-null-control.gguf';download(p['null_control'],baseline);r['null_control_measured']={'bytes':baseline.stat().st_size,'sha256':sha(baseline)};save();require(r['null_control_measured']=={'bytes':p['null_control']['bytes'],'sha256':p['null_control']['sha256']},'exact f873 null file failed')
         baseline_audit=audit_baseline(baseline,None);(out/'null-payload-audit.json').write_text(json.dumps(baseline_audit,indent=2,sort_keys=True)+'\n');r['null_file_exact']=True
         env = dict(os.environ); env.update({x:'1' for x in common.GATES}); env.update({x:'1' for x in vision.VISION_GATES})
-        for name in ('BF16_LINEAR','BF16_QUANT_WEIGHTS','VISION_BF16_ROTARY_AVX2','DIRECT_QUANT','GREEDY_TRACE','MIXED_ATTN_Q8_FFN_Q4','MIXED_GDN_OUT_Q8','MIXED_GDN_OUT_Q6','Q6_K','IMATRIX_Q4KM_Q6HEAD','STREAM_GRAPH_REUSE'): env['CRISPEMBED_LIGHTON4B_'+name] = '0'
+        for name in ('BF16_LINEAR','BF16_QUANT_WEIGHTS','VISION_BF16_ROTARY_AVX2','DIRECT_QUANT','GREEDY_TRACE','MIXED_ATTN_Q8_FFN_Q4','MIXED_GDN_OUT_Q8','MIXED_GDN_OUT_Q6','Q6_K','IMATRIX_Q4KM_Q6HEAD'): env['CRISPEMBED_LIGHTON4B_'+name] = '0'
         for name in ('WEIGHT_CACHE','PRECISE_RMS','IMATRIX'): env['CRISPEMBED_QWEN35_'+name] = '0'
         env.update(CRISPEMBED_LIGHTON4B_HEAD_BF16='1', CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT='1', CRISPEMBED_LIGHTON4B_FROZEN_CASES='1')
         env['LD_LIBRARY_PATH']=str(bundle/'lib')
