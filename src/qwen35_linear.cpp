@@ -283,6 +283,34 @@ bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int
             ggml_backend_alloc_ctx_tensors(context.get(), backend.get()), ggml_backend_buffer_free);
         if (!buffer) return false;
         std::vector<std::vector<float>> projected;
+        // Reuse only the full-tile graph within this call. The original F32
+        // mul_mat kernel, precision, shape and reduction remain unchanged.
+        // No weights survive the call and the final short tile uses the old path.
+#if defined(__EMSCRIPTEN__)
+        const bool reuse = false;
+#else
+        const bool reuse = core_env::on("CRISPEMBED_LIGHTON4B_STREAM_GRAPH_REUSE");
+#endif
+        std::unique_ptr<ggml_context, decltype(&ggml_free)> reuse_context(nullptr, ggml_free);
+        ggml_cgraph * reuse_graph = nullptr;
+        ggml_tensor * reuse_result = nullptr;
+        if (reuse) {
+            reuse_context.reset(ggml_init(
+                { 1024 * 1024 + size_t(width) * tokens * sizeof(float) + size_t(tile_rows) * tokens * sizeof(float),
+                  nullptr, false }));
+            if (!reuse_context) return false;
+            auto * input = ggml_new_tensor_2d(reuse_context.get(), GGML_TYPE_F32, width, tokens);
+            std::memcpy(input->data, hidden, size_t(width) * tokens * sizeof(float));
+            ggml_set_no_alloc(reuse_context.get(), true);
+            auto * weight = ggml_new_tensor_2d(reuse_context.get(), GGML_TYPE_F32, width, tile_rows);
+            ggml_set_no_alloc(reuse_context.get(), false);
+            weight->data = tile->data;
+            reuse_result = ggml_mul_mat(reuse_context.get(), weight, input);
+            ggml_mul_mat_set_prec(reuse_result, GGML_PREC_F32);
+            reuse_graph = ggml_new_graph(reuse_context.get());
+            ggml_build_forward_expand(reuse_graph, reuse_result);
+            ggml_backend_cpu_set_n_threads(backend.get(), threads);
+        }
         for (size_t begin = 0; begin < rows; begin += size_t(tile_rows)) {
             const size_t count = std::min(size_t(tile_rows), rows - begin);
             ggml_backend_tensor_get(matrix, raw.data(), begin * row_bytes, count * row_bytes);
@@ -295,10 +323,18 @@ bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int
             tile->ne[1] = int64_t(count);
             tile->nb[2] = tile->nb[1] * count;
             tile->nb[3] = tile->nb[2];
-            if (!project_cpu({ tile }, hidden, width, tokens, threads, projected)) return false;
+            const float * result = nullptr;
+            if (reuse && count == size_t(tile_rows)) {
+                if (ggml_backend_graph_compute(backend.get(), reuse_graph) != GGML_STATUS_SUCCESS) return false;
+                result = static_cast<const float *>(reuse_result->data);
+                if (!std::all_of(result, result + count * tokens, [](float x) { return std::isfinite(x); }))
+                    return false;
+            } else {
+                if (!project_cpu({ tile }, hidden, width, tokens, threads, projected)) return false;
+                result = projected[0].data();
+            }
             for (int token = 0; token < tokens; ++token)
-                std::copy_n(projected[0].data() + size_t(token) * count, count,
-                            complete.data() + size_t(token) * rows + begin);
+                std::copy_n(result + size_t(token) * count, count, complete.data() + size_t(token) * rows + begin);
         }
         output = std::move(complete);
         return true;
