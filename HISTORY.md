@@ -21419,3 +21419,9 @@ Old native/mixed/BF16 controls and real native/preflight builds pass. Initial
 rejection, with the grouped validator also requiring guarded extension. No model
 payload, inference, default, quality qualification or release changed; see the
 [recipe and receipts](docs/lighton4b-selective-q6.md).
+
+Captured-input attention probe initial source `8f747ee2e` passed nine hosted
+setup tests and compiled, but failed before any numerical comparison because
+its borrowed diagnostic weights lacked backend buffers. The [initial failure
+review](docs/lighton4b-attention-primitives.md) preserves exact receipts and
+limits; proposed tools-only buffer fix `5f82c4d0a` remains unmeasured.

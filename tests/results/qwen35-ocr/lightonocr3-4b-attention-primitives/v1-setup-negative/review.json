@@ -1,0 +1,21 @@
+{
+  "schema": "lighton4b-attention-primitives-review/v1",
+  "status": "setup_failed_no_numerical_comparison",
+  "source_sha": "8f747ee2e551d022bfc2bb8ed883cd6288314cfd",
+  "report_sha256": "a001f09eff5db72eb1703d7bf4ba11c1f2ccecd93837f6e7594f3f391d68c255",
+  "bootstrap_receipt_sha256": "793a8c9c89f04573c801bb601c0bafb1c036e0b9420c488c037e99105f360701",
+  "protocol_sha256": "6a737558d8e324bde00d070ae2942968ad229fd47e23a7d686915c5452c5de4d",
+  "phase": "actual-native-closure",
+  "error_type": "CalledProcessError",
+  "failure": "GGML backend_tensor_get asserts tensor buffer not set for diagnostic borrowed weights",
+  "elapsed_seconds": 100.46289553700001,
+  "actual_native_hidden_closed": false,
+  "compared_stages": 0,
+  "model_forward_executed": false,
+  "quality_qualified": false,
+  "controls_passed": 9,
+  "runtime_build_passed": true,
+  "fix_source_sha": "5f82c4d0a",
+  "fix": "Attach separately owned CPU backend buffers to eleven bounded borrowed tensors; production backend access checks unchanged. Fix not yet executed.",
+  "limits": "No actual hidden byte closure, source graph execution, cache arithmetic attribution or decoded-quality result. Full original failure receipt/logs remain retained remotely; public index binds exact bytes without publishing private binding locations."
+}
