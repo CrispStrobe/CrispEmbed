@@ -47,7 +47,7 @@ def main():
  try:
   run('source',['git','rev-parse','HEAD']);r['source_sha']=(out/'source.log').read_text().strip();require(r['source_sha']==os.environ['LIGHTON4B_EXPECTED_SOURCE'],'exact source');run('cpu',['lscpu'])
   base=load('physical_base',ROOT/'tools/kaggle/lighton4b_upstream_physical_decode.py');r['capacity']=dict(memory=base.memory(),scratch_free=shutil.disk_usage(work).free,output_free=shutil.disk_usage(out).free);require(r['capacity']['memory']['MemAvailable']>=10<<30 and r['capacity']['scratch_free']>=25<<30 and r['capacity']['output_free']>=4<<30,'resource admission before weights')
-  fp=locate('composed-form-vision.json',FORM);form=json.loads(fp.read_text());admit_form(form);r['actual_form_receipt_sha256']=FORM
+  fp=locate('composed-form-vision.json',FORM);form=json.loads(fp.read_text());admit_form(form);r['actual_form_receipt_sha256']=FORM;r['runtime_producer_source_sha']=SOURCE
   verify(fp.parent/'CMakeCache.txt',form['artifacts']['CMakeCache.txt']);cache=(fp.parent/'CMakeCache.txt').read_text().splitlines()
   for key,value in {'CRISPEMBED_NATIVE':'OFF','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_LLAMAFILE':'ON','GGML_OPENMP':'OFF','GGML_BLAS':'OFF','GGML_CPU_REPACK':'ON','GGML_AVX512':'OFF'}.items():require(f'{key}:BOOL={value}'in cache,'actual producer profile '+key)
   bundle=out/'runtime'
