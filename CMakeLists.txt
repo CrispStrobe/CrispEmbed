@@ -1838,3 +1838,6 @@ target_link_libraries(test-lighton4b-physical-q4-repack PRIVATE crispembed-qwen3
 add_executable(test-lighton4b-physical-q4-repack-main-stub EXCLUDE_FROM_ALL tests/test_lighton4b_physical_q4_repack.cpp)
 target_include_directories(test-lighton4b-physical-q4-repack-main-stub PRIVATE src)
 target_link_libraries(test-lighton4b-physical-q4-repack-main-stub PRIVATE crispembed)
+
+add_executable(test-lighton4b-physical-q4-repack-sourcefed EXCLUDE_FROM_ALL tests/lighton4b_physical_q4_repack_probe.cpp)
+target_link_libraries(test-lighton4b-physical-q4-repack-sourcefed PRIVATE crispembed-qwen35-delta)
