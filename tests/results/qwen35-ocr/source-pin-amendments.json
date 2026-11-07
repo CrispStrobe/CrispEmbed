@@ -121,17 +121,6 @@
             "36a0e10c6ad22a22cd852f38133e953238609ab8 Enable gated Q6 streamed and grouped projection paths [skip ci]"
           ],
           "reason": "Declare existing default-off LightOn4B Q6_K type admission in streamed/grouped projection, commit36a0e10c6; no dot/reduction change, quant storage stays raw and old Q8/Q4 branches unchanged. Existing hosted Q6 controls retained; no frozen receipt rewrite or decoded-quality promotion."
-        },
-        {
-          "from_sha256": "360d023214d78e7dc5a3b76ccc33036bf655761222869ead87ab730ee743abac",
-          "to_sha256": "bd1231d63beb6c155d4fe8faf7a073f3fa376df1e7a0cb72b8a6d83a443393bc",
-          "to_blob": "1483bc33b3c17751ecd9042b7a99aa603b3eb431",
-          "recorded_at_commit": "981676ed3fff9054bf10c847b1ce3c1c96df603b",
-          "recorded": "2026-11-07",
-          "changed_by": [
-            "981676ed3fff9054bf10c847b1ce3c1c96df603b Prototype bounded streamed-head graph reuse behind opt-in gate [skip ci]"
-          ],
-          "reason": "Default-off bounded streamed-head graph/backend reuse; same F32 kernel and short-tile legacy fallback; no quant arithmetic or default change."
         }
       ]
     },
