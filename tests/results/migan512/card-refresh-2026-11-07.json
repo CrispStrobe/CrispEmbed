@@ -1,0 +1,42 @@
+{
+  "schema": "crispembed-model-card-refresh-report-v1",
+  "spec": "docs/model-card-refresh-v1.json",
+  "entry": "migan512",
+  "source_commit": "f076e21dfde72e0ca0488b5e941036ebbf8b19ed",
+  "status": "published and re-verified",
+  "remote": {
+    "repo": "cstr/MI-GAN-512-GGUF",
+    "parent": "e1481f21784f99ec9d53ee935b978264be36abbb",
+    "commit": "0b2d8319bbbbdac2eb51bd236612eaa809bc82f7",
+    "changed_files": {
+      "README.md": {
+        "bytes": 3787,
+        "sha256": "29eab1af123682bb7f61a860b16074446949bfc89c3ecb3ae1492faf159de6a6"
+      },
+      "manifest.json": {
+        "bytes": 3602,
+        "sha256": "6b072938debe1e0167aef4b1d2e029e2f75dba4be4fd86467d78e19e284dcaa3"
+      }
+    },
+    "weights_unchanged": {
+      "migan-512-places2-f16.gguf": {
+        "bytes": 17982208,
+        "sha256": "932cfbd35db478dba4372f7ad9889ee68c84eac1c0b46025cf7336c8d55c0033"
+      },
+      "migan-512-places2-f32.gguf": {
+        "bytes": 29500736,
+        "sha256": "4bec681ef10f8ca914c5331f007a0605773cd09106d4fd6d9fcc0992f0a61739"
+      },
+      "migan-512-places2-q4_k.gguf": {
+        "bytes": 11143424,
+        "sha256": "bd90218cd6f86a9b215fa3528ad5400536b7cf883a76e2450f22c835e376af46"
+      },
+      "migan-512-places2-q8_0.gguf": {
+        "bytes": 12583168,
+        "sha256": "efdf1b08207f2c47c4710ca66831e6aff86ea31fca68593337f2ce605db70280"
+      }
+    },
+    "pins_verified": []
+  },
+  "run_id": 42371362348
+}

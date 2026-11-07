@@ -1,0 +1,45 @@
+{
+  "schema": "crispembed-ocr-gguf-publication-report-v1",
+  "protocol": "docs/teleocr-publication-v1.json",
+  "status": "published and re-verified",
+  "variants": [
+    "F16",
+    "Q8_0",
+    "Q4_K_M"
+  ],
+  "remote": {
+    "repo": "cstr/TeleOCR-GGUF",
+    "commit": "36f626c16f05fd4240565e7d33924917300aa00a",
+    "files": [
+      {
+        "variant": "F16",
+        "filename": "teleocr-f16.gguf",
+        "bytes": 2526109984,
+        "sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780"
+      },
+      {
+        "variant": "Q8_0",
+        "filename": "teleocr-q8_0.gguf",
+        "bytes": 2113233248,
+        "sha256": "9de7e45ce6c13ba03d3d2879f2a1bff9f8407e12808be588cf057cd2553f224b"
+      },
+      {
+        "variant": "Q4_K_M",
+        "filename": "teleocr-q4_k-m.gguf",
+        "bytes": 1923310816,
+        "sha256": "e975568f8bd069b3bc81364d10b38143a834922cdf600150e7e74084bfbce293"
+      }
+    ],
+    "small_files_sha256": {
+      "README.md": "0169cea675028465e402e710a8971965d28d49b37f1175686d2257d9cf4fc036",
+      "manifest.json": "ebd29d8be1853506c8aa83c9126eab635cb8b88421fe00ee9d7d7596211b1f75",
+      "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "UPSTREAM_README.md": "176c705cd92eeb9006c048e72274741e839f2bafa2bae858e64c3277264eb0db"
+    },
+    "urls": {
+      "teleocr-f16.gguf": "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/36f626c16f05fd4240565e7d33924917300aa00a/teleocr-f16.gguf",
+      "teleocr-q8_0.gguf": "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/36f626c16f05fd4240565e7d33924917300aa00a/teleocr-q8_0.gguf",
+      "teleocr-q4_k-m.gguf": "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/36f626c16f05fd4240565e7d33924917300aa00a/teleocr-q4_k-m.gguf"
+    }
+  }
+}
