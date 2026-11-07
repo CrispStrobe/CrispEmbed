@@ -916,7 +916,13 @@ target_sources(crispembed-qwen35-delta PRIVATE src/lighton4b_vision_bf16.cpp)
 target_sources(crispembed-qwen35-delta PRIVATE src/lighton4b_physical_f16_attention.cpp)
 # Private ABI is deliberately closed to the exact hosted CPU profile first.
 # Other builds retain the old path and reject an explicitly enabled experiment.
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^([Xx]86_64|[Aa][Mm][Dd]64)$"
+find_program(_lighton4b_f16_git git)
+set(_lighton4b_f16_ggml_commit "")
+if(_lighton4b_f16_git)
+    execute_process(COMMAND ${_lighton4b_f16_git} -C ${CMAKE_CURRENT_SOURCE_DIR}/ggml rev-parse HEAD
+        OUTPUT_VARIABLE _lighton4b_f16_ggml_commit OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+endif()
+if(_lighton4b_f16_ggml_commit STREQUAL "3a27b6c665b191cb230be367db5c52d81dd3e2ac" AND CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^([Xx]86_64|[Aa][Mm][Dd]64)$"
    AND NOT CMAKE_CROSSCOMPILING AND NOT EMSCRIPTEN AND NOT CRISPEMBED_NATIVE
    AND GGML_LLAMAFILE AND GGML_AVX2 AND GGML_F16C AND GGML_FMA AND NOT GGML_OPENMP
    AND NOT GGML_NATIVE AND NOT GGML_AVX512 AND NOT GGML_BLAS AND NOT GGML_BACKEND_DL)
