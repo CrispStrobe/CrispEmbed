@@ -1,0 +1,109 @@
+[  2%] Building CXX object vendor/hash/CMakeFiles/vendor-hash.dir/hash.cpp.o
+[  2%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml.c.o
+[  2%] Building C object vendor/hash/CMakeFiles/vendor-hash.dir/xxhash/xxhash.c.o
+[  4%] Building CXX object vendor/hash/CMakeFiles/vendor-hash.dir/sha1/sha1.c.o
+[  4%] Building C object vendor/hash/CMakeFiles/vendor-hash.dir/sha256/sha256.c.o
+[  6%] Linking CXX static library libvendor-hash.a
+[  6%] Built target vendor-hash
+[  8%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml.cpp.o
+[  8%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o
+[ 10%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o
+[ 10%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o
+[ 13%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o
+[ 13%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o
+[ 15%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o
+[ 15%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/gguf.cpp.o
+[ 17%] Linking CXX shared library ../../bin/libggml-base.so
+[ 17%] Built target ggml-base
+[ 17%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o
+[ 19%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o
+[ 19%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o
+[ 21%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o
+[ 21%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o
+[ 21%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o
+[ 23%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o
+[ 23%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o
+[ 26%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled.cpp.o
+[ 26%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled-kernel.cpp.o
+[ 28%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o
+[ 28%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o
+[ 30%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o
+[ 30%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o
+[ 32%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile/sgemm.cpp.o
+[ 32%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o
+[ 34%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o
+[ 34%] Linking CXX shared library ../../bin/libggml-cpu.so
+[ 34%] Built target ggml-cpu
+[ 36%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o
+[ 36%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o
+[ 39%] Linking CXX shared library ../../bin/libggml.so
+[ 39%] Built target ggml
+[ 41%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_10_cxx.cxx.o
+[ 41%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_9_cxx.cxx.o
+[ 43%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_8_cxx.cxx.o
+[ 43%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_7_cxx.cxx.o
+[ 45%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_6_cxx.cxx.o
+[ 45%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_5_cxx.cxx.o
+[ 47%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_4_cxx.cxx.o
+[ 47%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_3_cxx.cxx.o
+[ 47%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_2_cxx.cxx.o
+[ 50%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_1_cxx.cxx.o
+[ 50%] Building CXX object src/CMakeFiles/llama.dir/Unity/unity_0_cxx.cxx.o
+[ 52%] Building CXX object src/CMakeFiles/llama.dir/llama.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/llama.dir/llama-adapter.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/llama.dir/llama-arch.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/llama.dir/llama-batch.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/llama.dir/llama-chat.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/llama.dir/llama-context.cpp.o
+[ 58%] Building CXX object src/CMakeFiles/llama.dir/llama-cparams.cpp.o
+[ 58%] Building CXX object src/CMakeFiles/llama.dir/llama-grammar.cpp.o
+[ 60%] Building CXX object src/CMakeFiles/llama.dir/llama-graph.cpp.o
+[ 60%] Building CXX object src/CMakeFiles/llama.dir/llama-hparams.cpp.o
+[ 63%] Building CXX object src/CMakeFiles/llama.dir/llama-impl.cpp.o
+[ 63%] Building CXX object src/CMakeFiles/llama.dir/llama-io.cpp.o
+[ 65%] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache.cpp.o
+[ 65%] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-iswa.cpp.o
+[ 67%] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-dsa.cpp.o
+[ 67%] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-dsa-iswa.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-msa.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-dsv4.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/llama.dir/llama-memory.cpp.o
+[ 71%] Building CXX object src/CMakeFiles/llama.dir/llama-moe-cache.cpp.o
+[ 71%] Building CXX object src/CMakeFiles/llama.dir/llama-memory-hybrid.cpp.o
+[ 73%] Building CXX object src/CMakeFiles/llama.dir/llama-memory-hybrid-iswa.cpp.o
+[ 73%] Building CXX object src/CMakeFiles/llama.dir/llama-memory-hybrid-idx.cpp.o
+[ 76%] Building CXX object src/CMakeFiles/llama.dir/llama-memory-recurrent.cpp.o
+[ 76%] Building CXX object src/CMakeFiles/llama.dir/llama-mmap.cpp.o
+[ 78%] Building CXX object src/CMakeFiles/llama.dir/llama-model-loader.cpp.o
+[ 78%] Building CXX object src/CMakeFiles/llama.dir/llama-model-saver.cpp.o
+[ 80%] Building CXX object src/CMakeFiles/llama.dir/llama-model.cpp.o
+[ 80%] Building CXX object src/CMakeFiles/llama.dir/llama-quant.cpp.o
+[ 82%] Building CXX object src/CMakeFiles/llama.dir/llama-sampler.cpp.o
+[ 82%] Building CXX object src/CMakeFiles/llama.dir/llama-vocab.cpp.o
+[ 84%] Building CXX object src/CMakeFiles/llama.dir/unicode-data.cpp.o
+[ 84%] Building CXX object src/CMakeFiles/llama.dir/unicode.cpp.o
+[ 86%] Linking CXX shared library ../bin/libllama.so
+[ 86%] Built target llama
+[ 86%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/Unity/unity_3_cxx.cxx.o
+[ 89%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/Unity/unity_2_cxx.cxx.o
+[ 89%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/Unity/unity_1_cxx.cxx.o
+[ 91%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/Unity/unity_0_cxx.cxx.o
+[ 91%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd.cpp.o
+[ 93%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd-audio.cpp.o
+[ 93%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd-image.cpp.o
+[ 95%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd-helper.cpp.o
+[ 95%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd-helper-gen.cpp.o
+[ 97%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/clip.cpp.o
+/tmp/lighton4b-projector-canonical-v2/projector/upstream/tools/mtmd/mtmd-helper.cpp: In function ‘mtmd_helper_video_info mtmd_helper_video_get_info(const mtmd_helper_video*)’:
+/tmp/lighton4b-projector-canonical-v2/projector/upstream/tools/mtmd/mtmd-helper.cpp:1222:24: warning: function might be candidate for attribute ‘noreturn’ [-Wsuggest-attribute=noreturn]
+ 1222 | mtmd_helper_video_info mtmd_helper_video_get_info(const mtmd_helper_video * ctx) {
+      |                        ^~~~~~~~~~~~~~~~~~~~~~~~~~
+/tmp/lighton4b-projector-canonical-v2/projector/upstream/tools/mtmd/mtmd-helper.cpp: In function ‘int32_t mtmd_helper_video_read_next(mtmd_helper_video*, mtmd_bitmap**, char**)’:
+/tmp/lighton4b-projector-canonical-v2/projector/upstream/tools/mtmd/mtmd-helper.cpp:1231:9: warning: function might be candidate for attribute ‘noreturn’ [-Wsuggest-attribute=noreturn]
+ 1231 | int32_t mtmd_helper_video_read_next(mtmd_helper_video * ctx,
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+[ 97%] Linking CXX shared library ../../bin/libmtmd.so
+[ 97%] Built target mtmd
+[100%] Building CXX object CMakeFiles/crisp-projector-probe.dir/crisp-projector-probe.cpp.o
+[100%] Linking CXX executable bin/crisp-projector-probe
+[100%] Built target crisp-projector-probe

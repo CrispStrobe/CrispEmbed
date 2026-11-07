@@ -3110,3 +3110,8 @@ pinned backends while changing raw arithmetic slightly. Q6 N16 retains a
 separate backend residual. No decoded attribution follows. Next is bounded
 default-off physical buffer-cache lifecycle/source-fed verification, then
 same-feature decoded comparison; current Q4 is not qualified.
+
+
+### ProjectorV2 qualified evidence and observer invalidation (2026-11-07)
+
+[PreservedV2](docs/lighton4b-projector-attribution.md): raw64eb/sourcec010 completes318.87s, canonical297/298 allauthenticated333.5Mvalues (198F32exact/99F16 max2^-25;287nativeF16roundexact/10edgecasesunresolved), actualsourceOFF/ONmergedbyteclosure and validpreprocessingRMS.000221817/max.0156863. Postcomputeintermediatebuffersalias, so rejectALLintermediatemagnitudes despite rawmeasuredstatus/nonzero/finalneutrality. CorrectedreferenceLIVEcallback+arithmeticclosures+RGB/resize/normalizationdecompositionpreparedc1ed, no productfix orqualityclaim; awaitpeerreview/boundedretry.

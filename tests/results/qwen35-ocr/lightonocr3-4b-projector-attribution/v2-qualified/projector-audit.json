@@ -1,0 +1,4894 @@
+{
+  "schema": "lighton4b-projector-canonical/v1",
+  "status": "measured_projector_only_audit",
+  "quality_qualified": false,
+  "text_model_instantiated": false,
+  "original_bf16_forward_executed": false,
+  "projector_forward_executed": true,
+  "commands": {
+    "source-pin": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 65,
+      "elapsed_seconds": 0.004212372999973013,
+      "child_user_seconds": 0.0008359999999999999,
+      "child_system_seconds": 0.0016719999999999999,
+      "peak_rss_bytes_observed": 4096,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 41734144
+    },
+    "up-init": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 66,
+      "elapsed_seconds": 0.008206026000038946,
+      "child_user_seconds": 0.002056,
+      "child_system_seconds": 0.002056,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 45371392
+    },
+    "up-remote": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 67,
+      "elapsed_seconds": 0.003915161999998418,
+      "child_user_seconds": 0.0,
+      "child_system_seconds": 0.002604,
+      "peak_rss_bytes_observed": 192512,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 45371392
+    },
+    "up-fetch": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 68,
+      "elapsed_seconds": 5.317451059999996,
+      "child_user_seconds": 2.6472439999999997,
+      "child_system_seconds": 0.431037,
+      "peak_rss_bytes_observed": 16871424,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 45371392
+    },
+    "up-checkout": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 79,
+      "elapsed_seconds": 1.2656947799999898,
+      "child_user_seconds": 0.926761,
+      "child_system_seconds": 0.29487399999999997,
+      "peak_rss_bytes_observed": 63696896,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 71131136
+    },
+    "configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 81,
+      "elapsed_seconds": 2.617835990000003,
+      "child_user_seconds": 1.3191400000000004,
+      "child_system_seconds": 0.646469,
+      "peak_rss_bytes_observed": 17997824,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 71131136
+    },
+    "build": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 258,
+      "elapsed_seconds": 235.63878789399996,
+      "child_user_seconds": 428.994125,
+      "child_system_seconds": 16.719836,
+      "peak_rss_bytes_observed": 9773056,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 559247360
+    },
+    "source-cli-noargs": {
+      "status": "failed",
+      "returncode": 1,
+      "pid": 893,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-projector-canonical-v2/projector/build/bin/crisp-projector-probe')]' returned non-zero exit status 1.",
+      "elapsed_seconds": 0.00831193900000926,
+      "child_user_seconds": 0.0028649999999856846,
+      "child_system_seconds": 0.0028649999999998954,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 559247360
+    },
+    "off": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 894,
+      "elapsed_seconds": 10.029218957000012,
+      "child_user_seconds": 23.825298000000032,
+      "child_system_seconds": 1.1440780000000004,
+      "peak_rss_bytes_observed": 736817152,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 736206848
+    },
+    "on": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 898,
+      "elapsed_seconds": 7.784788955000067,
+      "child_user_seconds": 24.18302299999999,
+      "child_system_seconds": 1.282546,
+      "peak_rss_bytes_observed": 737177600,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 737325056
+    }
+  },
+  "stage_metrics": {
+    "processor.patches": {
+      "bit_exact": false,
+      "elements": 860160,
+      "rms": 0.00022181688982640785,
+      "max_abs": 0.0156862735748291,
+      "reference_max_abs": 1.0
+    },
+    "patch_bias": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 69.21535925866438,
+      "max_abs": 5710.5458984375,
+      "reference_max_abs": 5710.8603515625
+    },
+    "learned_pos": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 8.685934702359638,
+      "max_abs": 641.9981079101562,
+      "reference_max_abs": 641.9738159179688
+    },
+    "inp_pos_emb": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 69.21665406158682,
+      "max_abs": 5710.6162109375,
+      "reference_max_abs": 5710.8603515625
+    },
+    "layer_out-0": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 0.6673625100634532,
+      "max_abs": 11.66952133178711,
+      "reference_max_abs": 11.71541976928711
+    },
+    "layer_out-1": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 69.22396160727372,
+      "max_abs": 5710.7802734375,
+      "reference_max_abs": 5710.8603515625
+    },
+    "layer_out-2": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 0.47829548579127606,
+      "max_abs": 18.62890625,
+      "reference_max_abs": 11.71541976928711
+    },
+    "layer_out-3": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 69.22528793228413,
+      "max_abs": 5711.1337890625,
+      "reference_max_abs": 5710.8603515625
+    },
+    "layer_out-4": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 0.4756860503756693,
+      "max_abs": 22.75390625,
+      "reference_max_abs": 11.71541976928711
+    },
+    "layer_out-5": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 69.2269568149794,
+      "max_abs": 5711.2705078125,
+      "reference_max_abs": 5710.8603515625
+    },
+    "layer_out-6": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 0.44703574196730217,
+      "max_abs": 18.37890625,
+      "reference_max_abs": 11.71541976928711
+    },
+    "layer_out-7": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 69.2141921276446,
+      "max_abs": 5710.3720703125,
+      "reference_max_abs": 5710.8603515625
+    },
+    "layer_out-8": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 0.44156625173125214,
+      "max_abs": 14.25390625,
+      "reference_max_abs": 11.71541976928711
+    },
+    "layer_out-9": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 69.21256616854436,
+      "max_abs": 5710.1572265625,
+      "reference_max_abs": 5710.8603515625
+    },
+    "layer_out-10": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 0.505009690017362,
+      "max_abs": 93.48312377929688,
+      "reference_max_abs": 11.71541976928711
+    },
+    "layer_out-11": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 69.19982830642098,
+      "max_abs": 5710.1845703125,
+      "reference_max_abs": 5710.8603515625
+    },
+    "layer_out-12": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 0.6143837274278707,
+      "max_abs": 149.98312377929688,
+      "reference_max_abs": 11.71541976928711
+    },
+    "layer_out-13": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 69.19411326641305,
+      "max_abs": 5710.7197265625,
+      "reference_max_abs": 5710.8603515625
+    },
+    "layer_out-14": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 0.6988552486994308,
+      "max_abs": 157.98312377929688,
+      "reference_max_abs": 11.71541976928711
+    },
+    "layer_out-15": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 69.17158222239713,
+      "max_abs": 5710.0126953125,
+      "reference_max_abs": 5710.8603515625
+    },
+    "layer_out-16": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 0.7598004728553738,
+      "max_abs": 169.98312377929688,
+      "reference_max_abs": 11.71541976928711
+    },
+    "layer_out-17": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 69.09493051838564,
+      "max_abs": 5704.9853515625,
+      "reference_max_abs": 5710.8603515625
+    },
+    "layer_out-18": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 0.8855504910805067,
+      "max_abs": 171.98312377929688,
+      "reference_max_abs": 11.71541976928711
+    },
+    "layer_out-19": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 69.1207114751469,
+      "max_abs": 5706.7353515625,
+      "reference_max_abs": 5710.8603515625
+    },
+    "layer_out-20": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 1.0064960631538573,
+      "max_abs": 178.98312377929688,
+      "reference_max_abs": 11.71541976928711
+    },
+    "layer_out-21": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 69.07644475223944,
+      "max_abs": 5704.1416015625,
+      "reference_max_abs": 5710.8603515625
+    },
+    "layer_out-22": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 1.0968179162075942,
+      "max_abs": 177.98312377929688,
+      "reference_max_abs": 11.71541976928711
+    },
+    "layer_out-23": {
+      "bit_exact": false,
+      "elements": 573440,
+      "rms": 37.933178935643774,
+      "max_abs": 5087.9171142578125,
+      "reference_max_abs": 5710.8603515625
+    },
+    "merged": {
+      "bit_exact": false,
+      "elements": 358400,
+      "rms": 0.011237023839387116,
+      "max_abs": 1.6814732551574707,
+      "reference_max_abs": 5.4313178062438965
+    }
+  },
+  "canonical_weight_equivalence_proven": false,
+  "phase": "on",
+  "source_sha": "c010086968ba44efcb07e7a9e27ff87dc9b36732",
+  "preflight": {
+    "memory": {
+      "MemAvailable": 31484997632,
+      "SwapTotal": 0,
+      "SwapFree": 0,
+      "cgroup_observed": 1,
+      "finite_cgroup_bounds": 1
+    },
+    "scratch_free": 1037711548416,
+    "output_free": 20940288000,
+    "load": [
+      0.705078125,
+      0.25439453125,
+      0.1279296875
+    ]
+  },
+  "inputs_authenticated": true,
+  "reference_patch": {
+    "tools/mtmd/clip.cpp": {
+      "original_sha256": "c43db7f76964cb3855c09851156400e4a6cab7ff41dc0972dc4ffb9a9dd31f5e",
+      "patched_sha256": "8ec8b701627d4b75f414257ef5ff3c4be61200d797fcd2a9e87aba6047172261"
+    },
+    "tools/mtmd/models/qwen3vl.cpp": {
+      "original_sha256": "26e0da9db8258d5dcb6c3b75edea86caeeb9bad3ac4f378c5d508f7304d74781",
+      "patched_sha256": "487cdd2eec70a5863d51675dbe6804ebfb2e4864cc9b010ec662b0abcfaeb49d"
+    }
+  },
+  "source_binary_sha256": "e7769908fb6f936693ff19b47ce6e1459a9df84c8241e2c18b92af3ba94e537f",
+  "downloaded_weight_bytes": 2006480160,
+  "canonical": {
+    "native_tensors": 297,
+    "upstream_tensors": 298,
+    "tensors": {
+      "v.blocks.0.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "dc6f50ae214f09889047b222fa7bb560b775e10284c5370d4c7716062e6b0b25",
+        "source_names": [
+          "v.blk.0.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.0.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 448,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 5.09178965976105e-10,
+        "bit_exact": false,
+        "native_sha256": "b3314a33182e6fc67d0ce1681e1ac21d837bf2ab8e37c7a57bf323827f8d47a4",
+        "source_names": [
+          "v.blk.0.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.0.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "f62be0eeb0d6c253dd70f7b8b30dac9f38a08ecc006b32a60448edee39efc923",
+        "source_names": [
+          "v.blk.0.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.0.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 1594,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 5.472335349932067e-10,
+        "bit_exact": false,
+        "native_sha256": "e2d0b20c9a68759f825cfa18a99cca2bfebf633d7a464369e4fb84e3874df54e",
+        "source_names": [
+          "v.blk.0.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.0.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "37da5e0b083fc2751bb796215c6e1031110449e8241ec28c8729b62e67f2aafb",
+        "source_names": [
+          "v.blk.0.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.0.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 3686,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 5.707939474506624e-10,
+        "bit_exact": false,
+        "native_sha256": "0f649dc1bc0789e58a1f4126ffa0a7793dcbf3209fb9547fd58f2198706f22d4",
+        "source_names": [
+          "v.blk.0.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.0.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "aad22d84b87d614620cc75e0acec804d4879bd6ca28f47daf3feea49931ced43",
+        "source_names": [
+          "v.blk.0.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.0.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 2269,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.1292380405784304e-10,
+        "bit_exact": false,
+        "native_sha256": "f7921337fe14e7385023216c1ed53ff3b2506128fed59760ef1a7e024532b5d8",
+        "source_names": [
+          "v.blk.0.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.0.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "74224bfca99b9c6c872f8b9376512d7832efb88d865068a3428ff562e2d536ce",
+        "source_names": [
+          "v.blk.0.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.0.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "43b995d7eeb6fbe156cd8a3a261692690905df827096cdccc66ab76a9b2dfb52",
+        "source_names": [
+          "v.blk.0.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.0.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "624fc61b3fd32f400e72a1ed1ab3c60e2ecb5e44fbc243785c275cc499140fbf",
+        "source_names": [
+          "v.blk.0.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.0.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 4,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "9257fc865b570a2ac7ec72695a591ff65b795383e412a71ba04c62e7c16038d9",
+        "source_names": [
+          "v.blk.0.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.1.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "e04e09cfc933656c42e39bbe95ea92f6c414014e9beb0ebf784ae8086d842583",
+        "source_names": [
+          "v.blk.1.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.1.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 395,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.769959396781574e-10,
+        "bit_exact": false,
+        "native_sha256": "0c012dc80be104e144e2619baf351d42c2e3849241bef1048041348d84245e6b",
+        "source_names": [
+          "v.blk.1.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.1.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "d8db2e8b76d25a94db192f0b88736e7ec44a7913142e2a8cf8ce0471bf57981b",
+        "source_names": [
+          "v.blk.1.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.1.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 897,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.0601969796391366e-10,
+        "bit_exact": false,
+        "native_sha256": "0311597b7b61488029ccc81b014432d22416f41abad490643250c11189f5cab5",
+        "source_names": [
+          "v.blk.1.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.1.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "a816b504d28ccd570deb948fccc16356bd26797ec92bcd4a1a6760731f9a4b36",
+        "source_names": [
+          "v.blk.1.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.1.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 16033,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 1.3039219282022637e-09,
+        "bit_exact": false,
+        "native_sha256": "27ddfcba67497e6e8db355fee539eb032245ac99513b4668a3d53e0aeec89f34",
+        "source_names": [
+          "v.blk.1.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.1.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "5ebd8427295b082475b76ec9687eb6a7b67e9621e3951ca65e125b303789eb3c",
+        "source_names": [
+          "v.blk.1.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.1.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 2718,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 6.058406682547713e-10,
+        "bit_exact": false,
+        "native_sha256": "a7c884312a9f786fcdbe3976c0aa21e2338c15a76f937e86fa87d72748901e8b",
+        "source_names": [
+          "v.blk.1.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.1.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "1eca34e28b80e639c7481233d5035083165b35ab58f24c40a6bb1c8a3b83dfaa",
+        "source_names": [
+          "v.blk.1.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.1.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "30364d7ae8ba7dbbfc85d841e1ec0562c030c69392a6c7c4d0d42bbd456e123f",
+        "source_names": [
+          "v.blk.1.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.1.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "4f830f8c85fc8c9cbf72ba628f91fd73bb7c72da49b13b81508091e2228fff11",
+        "source_names": [
+          "v.blk.1.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.1.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 1,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "a0be25459529c9cee1d79cc1a22a54bd88f70810e9a8e8e07a5fd26317f6f8ab",
+        "source_names": [
+          "v.blk.1.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.10.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "3a6100edf7ce776197ce23e2b7296c370b7b9d4a45be47b20d0c2c6f8706c073",
+        "source_names": [
+          "v.blk.10.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.10.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 308,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.126673733690157e-10,
+        "bit_exact": false,
+        "native_sha256": "d52ffbb6036f2eedf4e7a6cf7d4a06a525fec972901bf0a487fe233741122f11",
+        "source_names": [
+          "v.blk.10.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.10.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "cbfcf660c5c0fdb696a0fa5c43113c37a43d751f0786a965e2f5e20dea7dad51",
+        "source_names": [
+          "v.blk.10.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.10.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 788,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.7572975287152046e-10,
+        "bit_exact": false,
+        "native_sha256": "0926b83f1c6ef7481866cf45cb15c36e8e18a5ab35409ba7b4b5ccb46b3fc9c2",
+        "source_names": [
+          "v.blk.10.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.10.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "8bbefcc6f8654efe9d356843a3b195247ce65e66d6d21b8b410d9154462899d4",
+        "source_names": [
+          "v.blk.10.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.10.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 989,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.6648187826059583e-10,
+        "bit_exact": false,
+        "native_sha256": "fa8548a8421d8fdf15772ec7ab3c31c9c2442e579350db8c4ecf9e3bfea0e549",
+        "source_names": [
+          "v.blk.10.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.10.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "aa933dd4a18be8c8d7cd344b29b0ecbb504b2465740c9e57f1acd97b88555257",
+        "source_names": [
+          "v.blk.10.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.10.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1213,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.0973682642768737e-10,
+        "bit_exact": false,
+        "native_sha256": "9c6249cd15c12013b2aec9a330238c87c718bdead17427c6c8c087924e0850f7",
+        "source_names": [
+          "v.blk.10.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.10.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "b84de853c76133e52edccdabf06c653034142b37825d7477bfe1426f1e0a5d91",
+        "source_names": [
+          "v.blk.10.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.10.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "ea898bb3b19d364a33ed0b233001df63731b4bb44bb856db218ec82d59636717",
+        "source_names": [
+          "v.blk.10.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.10.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "f45b7f0c79efda55d4fc2e0430fe649f0f2c70bcfc75c6435bd763842097fbeb",
+        "source_names": [
+          "v.blk.10.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.10.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "2a6f89c763cfd6523529365b9f448fd2b5ecb7f64f38d497022616e620ae78a0",
+        "source_names": [
+          "v.blk.10.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.11.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "2b1e9c94e0785f36e9eaa4595253c9d6fc514da56f9fe9b0c2e6c4b28fa618e6",
+        "source_names": [
+          "v.blk.11.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.11.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 339,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.34806959560987e-10,
+        "bit_exact": false,
+        "native_sha256": "a2676f2751d133a4dc00a615dcd17d10a7c150564465075779521a7884035042",
+        "source_names": [
+          "v.blk.11.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.11.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "5900ce3c695a3b98731278f3508e260375e6d6c065d5efe27c49479db3fb8242",
+        "source_names": [
+          "v.blk.11.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.11.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 765,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.805306159779292e-10,
+        "bit_exact": false,
+        "native_sha256": "28d1dd913982c53fa941fa9c8c9ac405128ca0480cc1ca3b2264bc373216a8bd",
+        "source_names": [
+          "v.blk.11.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.11.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "cc608da1ed9f702d1f67f9f699d2ac8e34c228ab7e695e3ae95b328ba298c5b6",
+        "source_names": [
+          "v.blk.11.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.11.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1033,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.7155954560997167e-10,
+        "bit_exact": false,
+        "native_sha256": "9b749eed588a9afaf30915cc10275a64259734dbed6417e58778809ab17da23b",
+        "source_names": [
+          "v.blk.11.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.11.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "894d6d9dab7811e3e926bda31bccfedcd83c1a8b9123cb8f901d4bb7b04c45cd",
+        "source_names": [
+          "v.blk.11.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.11.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1136,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.980894257083685e-10,
+        "bit_exact": false,
+        "native_sha256": "0098a308f68c70fa2e58150e84fe6521a2c7d0bfe9c3490ccd5f1fc5c6d39e71",
+        "source_names": [
+          "v.blk.11.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.11.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "a8f3520029b609d8fec77a10aed39e14284f164203dfa132cc8e69e0f1d7fdb5",
+        "source_names": [
+          "v.blk.11.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.11.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "1a086a18be7f0fa3941c7c24945f317ecc9eb88566a3dd25cb80cdea66f34342",
+        "source_names": [
+          "v.blk.11.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.11.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "b713d979dd41358af6d2abccf0e4c88508f37e938646034a9a7b5cf4d41a2fff",
+        "source_names": [
+          "v.blk.11.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.11.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "cc99c077c33933d6249c9da4eb556f6d7c41eeb46aa67bc2f0c8ecac06bdb9bd",
+        "source_names": [
+          "v.blk.11.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.12.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "3e4c677c82134f19b63beb1972bd167a0be26e909a964ada0acb87aff0e73d4f",
+        "source_names": [
+          "v.blk.12.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.12.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 310,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.2558132821425677e-10,
+        "bit_exact": false,
+        "native_sha256": "96c4c3350a5f79ca8f409b3da82ae70a48b2b323c053655569100d6cf5d33f28",
+        "source_names": [
+          "v.blk.12.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.12.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "f00f6bd1abb26f5b2c611c0aa3ea5f26a9971aa4a51970d9ff3b0c7cc149cd89",
+        "source_names": [
+          "v.blk.12.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.12.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 767,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.802815488615637e-10,
+        "bit_exact": false,
+        "native_sha256": "0ae1c85a518c2b21986c44304947a385c5cd04597af2ac397b03f2c38bb73f3b",
+        "source_names": [
+          "v.blk.12.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.12.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "4d8932dc88dda7fbb821d1d0c491030a9ba136d8683588c605288c23b3824ae1",
+        "source_names": [
+          "v.blk.12.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.12.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1004,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.7774069846911895e-10,
+        "bit_exact": false,
+        "native_sha256": "5da6328ccb2dba692b47278e4914c4f8408e622b1d2e7ea5f71194d4adc39c50",
+        "source_names": [
+          "v.blk.12.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.12.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "d6b9aac38e62ca0b1f01889089b81ca4e1cded16700f72ab07bdd03c05c4594c",
+        "source_names": [
+          "v.blk.12.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.12.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1121,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.9094197592583607e-10,
+        "bit_exact": false,
+        "native_sha256": "cafb6864b59c662b6253e6e161b00a7a9d0dcae8e5593ac41e52c74691465a9c",
+        "source_names": [
+          "v.blk.12.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.12.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "5eab2298aaf677c7a5d021661a22c1bd1ed2e2117263f4a9e006100947108320",
+        "source_names": [
+          "v.blk.12.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.12.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "bdf8786ebbca875cc0c9680ef532ea96676e204087e6f56424624b6047ed064f",
+        "source_names": [
+          "v.blk.12.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.12.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "c7912ceef83430a604e239f9d20531939c733b67e25959229241de8a7765e4cd",
+        "source_names": [
+          "v.blk.12.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.12.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "1094c2def54828bf490fc0bf94e54c9d570895407cf59fd17276e81f5b77012c",
+        "source_names": [
+          "v.blk.12.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.13.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "954526d0423e1cf99102a3d3535fd8157165f67ac255e96580de6e89da185e50",
+        "source_names": [
+          "v.blk.13.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.13.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 313,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.282223269219279e-10,
+        "bit_exact": false,
+        "native_sha256": "86eadd05a265b0e79dc3da923c4a2a14680e74634852a6e391b2d89d7612dcb6",
+        "source_names": [
+          "v.blk.13.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.13.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "d70cf6434ac51bb7b7ef8a72795da863911ad7b2c6391391452e6611288d9004",
+        "source_names": [
+          "v.blk.13.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.13.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 799,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.888145031018286e-10,
+        "bit_exact": false,
+        "native_sha256": "e407d988ec0f91e1743565197fa8bc11bf89780621366ff22b0d3a8b1c970a4d",
+        "source_names": [
+          "v.blk.13.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.13.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "2c6012bce5bf44d7f79339f06f4fa67255fdcc6b00a7d5b16e8cb9d5da98b2cd",
+        "source_names": [
+          "v.blk.13.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.13.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1080,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.916720282321982e-10,
+        "bit_exact": false,
+        "native_sha256": "ee76eec2df46c32a0642e4ab3e7df0c5a0601b7ff33961d65c5bbb0f92bbb039",
+        "source_names": [
+          "v.blk.13.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.13.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "7a6fa00044f126ec583b787bac84292af59a3deeae5c08f09664e668cd0ccd2e",
+        "source_names": [
+          "v.blk.13.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.13.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1119,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.951737635461657e-10,
+        "bit_exact": false,
+        "native_sha256": "74c6456b5702f375982c9953ff92d55a54699fe232dc47417a23a5c0aff33708",
+        "source_names": [
+          "v.blk.13.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.13.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "51b32230ca38c2784024b699cf59b94a0f1f5db1dad174cc4eaefaac2cc638af",
+        "source_names": [
+          "v.blk.13.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.13.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "a3cb76b7ed3c8642842e813b8cd354ba6ad6c6cd93891ee3f9e149e69f0278f9",
+        "source_names": [
+          "v.blk.13.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.13.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "6ca61783a95f77b37032463d791261b3a2483695ccb5b2d2d4fcd99f1de08434",
+        "source_names": [
+          "v.blk.13.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.13.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "afa0e27d1b94d8f30e771d95acd23e02385332dc576462a86534c9404e042f97",
+        "source_names": [
+          "v.blk.13.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.14.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "3db357b16c88501d627e7d571385f402498ae27683e4da39d55374a8e635fbec",
+        "source_names": [
+          "v.blk.14.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.14.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 288,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.864549903888539e-10,
+        "bit_exact": false,
+        "native_sha256": "849f4057df0423500aa8d93c4aace384192058c16bc794baac2bbdf85649322c",
+        "source_names": [
+          "v.blk.14.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.14.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "448a5cfb8bab796174f82db32f022466be842c91bfe215113b332403ba85a533",
+        "source_names": [
+          "v.blk.14.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.14.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 792,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.808094791192802e-10,
+        "bit_exact": false,
+        "native_sha256": "80ca9dd8ae888ed571606070e3eadcaf5f34c3db5190b5f6a0d1be79814c6037",
+        "source_names": [
+          "v.blk.14.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.14.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "b02da3b3a64b1cfb03eca056fa6738918bc125f19e93abbf79d5f291942b6286",
+        "source_names": [
+          "v.blk.14.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.14.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1180,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.0614870595094974e-10,
+        "bit_exact": false,
+        "native_sha256": "04495b2641344e07cccce6de4706853312a7ebd5fe8ec919b35e28bea6f56a5e",
+        "source_names": [
+          "v.blk.14.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.14.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "306d86e11085b104b9df8469367e0ed40fc624a8d1d82dbe9ee339a67fac961d",
+        "source_names": [
+          "v.blk.14.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.14.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1160,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.9650878993817207e-10,
+        "bit_exact": false,
+        "native_sha256": "e210c08ed39d5e8ea78c56e9d0f451cf5cdfe72164853569d776a6dc283e77e5",
+        "source_names": [
+          "v.blk.14.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.14.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "c17f8de2239c59b4a735e776b2b42eb3043123502c5cd8d01d431d63cdbda30a",
+        "source_names": [
+          "v.blk.14.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.14.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "5fec49056128dd474725b7c176eb0ebd8efbd981490bf11637cc15b0c3709ab3",
+        "source_names": [
+          "v.blk.14.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.14.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "899c5b854431e91533ddfb3f84fb2f6040e8ac004f94171e96ed295aea710066",
+        "source_names": [
+          "v.blk.14.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.14.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "e57700c9f21759da0e6de2a4092363632010b5c27d2e17974ece4f38a0aca2b9",
+        "source_names": [
+          "v.blk.14.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.15.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "ce28164d88b7a7201b106ac82b21eecbf4f85c895df1bd05436a3babf6493cea",
+        "source_names": [
+          "v.blk.15.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.15.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 319,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.2338516958428814e-10,
+        "bit_exact": false,
+        "native_sha256": "505bbef544812674d28c326809069c4917a9a681e396a685807c2bdd40f6e1df",
+        "source_names": [
+          "v.blk.15.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.15.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "09a7d1306ba25e6a34c168156a357f6f7c0193a067e4d3168e33d1b63e24b6e3",
+        "source_names": [
+          "v.blk.15.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.15.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 788,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.856793756904312e-10,
+        "bit_exact": false,
+        "native_sha256": "1aebd21818acd21b35217935092c87b1475a10892f244e7b0e2712de9d77631f",
+        "source_names": [
+          "v.blk.15.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.15.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "b4b2df2027dd4ff34715163814b69ccb5713c6411b61f8102e61c826e7905d45",
+        "source_names": [
+          "v.blk.15.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.15.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1203,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.110131589862094e-10,
+        "bit_exact": false,
+        "native_sha256": "db88ae423257490def65e12b519054457ab56bf878cf4b58a872d95e2548f5a5",
+        "source_names": [
+          "v.blk.15.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.15.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "32e783e02e51be1f4741120238affd9c45c0196e256a811fb9dfa081e3ad890f",
+        "source_names": [
+          "v.blk.15.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.15.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1138,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.001471183134796e-10,
+        "bit_exact": false,
+        "native_sha256": "b1f3308958a5f7cca303c3622eb8f6b81fea3fbcd1cc2f0ab9a1507c75057586",
+        "source_names": [
+          "v.blk.15.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.15.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "fcfa5f381eb424c50589a28c5b70f4b1ff37a3c8df855eefbd3870c6046b3438",
+        "source_names": [
+          "v.blk.15.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.15.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "4a3e790606da356adde2398fb8b96c9882b1a44c0b0574445c8fb6267777ea3c",
+        "source_names": [
+          "v.blk.15.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.15.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "4012056d263b309c25a3ea830b462b8c0720b835d19a6ea122048264ccf48e33",
+        "source_names": [
+          "v.blk.15.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.15.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "6645bd1ef1f21692c1c24c3b450547c6f5ee60f2fcfc3d5806ac36510f3ce5f8",
+        "source_names": [
+          "v.blk.15.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.16.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "0b73855444dd4c4f5fb26b5e3f116f5a872c0cea5cf647e654ace70e7189d7bb",
+        "source_names": [
+          "v.blk.16.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.16.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 305,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.145979257195691e-10,
+        "bit_exact": false,
+        "native_sha256": "b933fbe9add05529554b90dcd542f8b9bf49b735449e6686d3569f291b9d8ab0",
+        "source_names": [
+          "v.blk.16.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.16.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 1,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "6840ca1775ec346cee788bc3bd306c9439c3037d98b99a8e2605f26bfbc3c673",
+        "source_names": [
+          "v.blk.16.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.16.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 877,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.0310091027451e-10,
+        "bit_exact": false,
+        "native_sha256": "d0ff51856630bc6408ca9877c45b0033d5d2d03fd337f54c57c933761cb737da",
+        "source_names": [
+          "v.blk.16.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.16.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "f62f077a81ad184f411f1d742900b2dbac5d3ca03f862fac25dff84a35c1e3e4",
+        "source_names": [
+          "v.blk.16.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.16.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1194,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.1420076511996153e-10,
+        "bit_exact": false,
+        "native_sha256": "0937dc790dc3f48687378a082930aa31ff996c57a8b3d154df9493cf837c64fc",
+        "source_names": [
+          "v.blk.16.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.16.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "d8664ad4bcd81b43461c8c18c3373c8e93f973952119fec883121edbb5f1de64",
+        "source_names": [
+          "v.blk.16.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.16.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1143,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.0183847905868607e-10,
+        "bit_exact": false,
+        "native_sha256": "b52053e5d328ed59a85ac56d27756c83885a9d58f0df723f7ee72efefe505479",
+        "source_names": [
+          "v.blk.16.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.16.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "a9d871f980b6c4a1d04196b062d6f6842818599b436306ea1e001554137737c6",
+        "source_names": [
+          "v.blk.16.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.16.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "fbacc699dcc93bf50531508c3dda6d3029231aa69b25a8a74608313d01fcdd35",
+        "source_names": [
+          "v.blk.16.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.16.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "5246c7ca4e61b923728c36757256acb56650c371aa02a68060184a9785ecbe3c",
+        "source_names": [
+          "v.blk.16.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.16.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "93c2028710d3a80abc3261b637e17eec9f2c3d76ad78e539196258d7f91ed4cf",
+        "source_names": [
+          "v.blk.16.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.17.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "3609e929b84c938488a7b8b28852f11f83bfd52e20b10120875e95b8a2dedabb",
+        "source_names": [
+          "v.blk.17.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.17.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 306,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.0538194919093035e-10,
+        "bit_exact": false,
+        "native_sha256": "6659e33fcea17842debf3d4fff14c7fcb9cf9448557446be2cd9413abee2d57c",
+        "source_names": [
+          "v.blk.17.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.17.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "14e6d5c97e4fe7cf4229246f9f58a57c148661065b95cf1541df8eb66205d2f6",
+        "source_names": [
+          "v.blk.17.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.17.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 851,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.9919947697543657e-10,
+        "bit_exact": false,
+        "native_sha256": "7fca71a21aab97b9cfa912bc6d89698c89be08966cd5099e86a78b65bb0879c3",
+        "source_names": [
+          "v.blk.17.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.17.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "4cb1c21d72d2b864a325c05e37ba17da0665ec198385b23dec0197ad7be6f6ba",
+        "source_names": [
+          "v.blk.17.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.17.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1195,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.1102911356274506e-10,
+        "bit_exact": false,
+        "native_sha256": "f04f7db471d887fe8f3ee3451ba5bc18be09e7f8669382ae3b4c0382630774fd",
+        "source_names": [
+          "v.blk.17.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.17.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "8576ed0a6b3df61a278664f7ccacbbd6b654a98d1a1e5564a271fde57a5f2833",
+        "source_names": [
+          "v.blk.17.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.17.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1142,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.0169290697313787e-10,
+        "bit_exact": false,
+        "native_sha256": "63a8c6b8861e170857b2ee88501454ec65899ef3f4235245760d8436b6a27143",
+        "source_names": [
+          "v.blk.17.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.17.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "e860973e5beea249a33b9dcc6eccf0a1c9abac937f296be0fea0651f35dd2537",
+        "source_names": [
+          "v.blk.17.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.17.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "13170e794c4a27cdd9d1f552c053f5790ed7e07260d4f123c387f3f136ded36f",
+        "source_names": [
+          "v.blk.17.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.17.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "27cd4371872b45cf04d41bd376ad2aa0780a567f5560630f361c63d0ad7780b4",
+        "source_names": [
+          "v.blk.17.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.17.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "ad9246e68e13c6597e80103c1f944ad51cacb368bdf5447ce0622f3f885cbbdb",
+        "source_names": [
+          "v.blk.17.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.18.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "1d76450f3a992ffc720a6cb26edf37e08e55e53804223d3d31b4449bf89b60ff",
+        "source_names": [
+          "v.blk.18.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.18.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 319,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.190313627735474e-10,
+        "bit_exact": false,
+        "native_sha256": "dee1136bd301248052a4ff1d4ee1775ee85cf1308a757e1e9c5a63f4588b50ed",
+        "source_names": [
+          "v.blk.18.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.18.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "85a84535b51fddeaffddfeee4e7768c16d4c212ea6e9ee780dc6659f57b91075",
+        "source_names": [
+          "v.blk.18.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.18.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 834,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.9674215383060955e-10,
+        "bit_exact": false,
+        "native_sha256": "fd84d165d34a7e4768f99ecce01d3ce90b71f312d6efd940f11872395e358543",
+        "source_names": [
+          "v.blk.18.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.18.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "a3ca1a314c83bdd52e44a0f917169722207cbdeeb32cfafe7bad774706a892b9",
+        "source_names": [
+          "v.blk.18.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.18.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1242,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.1684075533037023e-10,
+        "bit_exact": false,
+        "native_sha256": "cb6878155bbe704278cd86e4dce3d61018fa70ec75de7d77e6541fc928d6daee",
+        "source_names": [
+          "v.blk.18.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.18.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "69a767ae3c8422e8292f352b65ce238e6949ecb07c11b76c719bd1b9105715de",
+        "source_names": [
+          "v.blk.18.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.18.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1098,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.904807096245306e-10,
+        "bit_exact": false,
+        "native_sha256": "e804fcddd820ee54c6b596685d658600fd36214719197e2179cf66e1c5b4c896",
+        "source_names": [
+          "v.blk.18.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.18.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "94c71d057746b46bd4239f6aa70759ee762a7fc7a6900db2fcfbb53f20fe20e5",
+        "source_names": [
+          "v.blk.18.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.18.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "d32e2e86e76c9b402572e7c22296e014f4cbce53d1ff986412ad29a3e5ff149c",
+        "source_names": [
+          "v.blk.18.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.18.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "9e6aec7347e560a90300c066470fc845d5c74a9f3ef04724f8df9fd30203c5bd",
+        "source_names": [
+          "v.blk.18.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.18.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "2c6256ef824025b5d846fcb6b89327de2fa41662e7b516d2e9496501bd043282",
+        "source_names": [
+          "v.blk.18.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.19.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "c7a170e382594644ebf6804ddc64e25a99885dd7173d3bcf81ff2cc6e7f5caa6",
+        "source_names": [
+          "v.blk.19.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.19.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 280,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.0625612475414497e-10,
+        "bit_exact": false,
+        "native_sha256": "6945a8b5ee810f0bd1947655644187bf150b7e4cbb9b32ecae9a9271b85881ec",
+        "source_names": [
+          "v.blk.19.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.19.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "4e63afb1a1640bf6fbda72a918702dc086c6ea142b809dc86708b79955354c49",
+        "source_names": [
+          "v.blk.19.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.19.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 830,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.8959747796592397e-10,
+        "bit_exact": false,
+        "native_sha256": "76a416716f63a12c345f6a5ce0330dee33f607abe0a7eccefedb3a607c4ee360",
+        "source_names": [
+          "v.blk.19.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.19.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "8ca1d36ed97a4f7295ee426d43de9d12055585293a963dea3d6bbc9bb498e94f",
+        "source_names": [
+          "v.blk.19.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.19.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1174,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.090788601948521e-10,
+        "bit_exact": false,
+        "native_sha256": "91900ae0e642ce07c12a0893f081ce7dfd64efc6db2f357bb01fe6161b204bc1",
+        "source_names": [
+          "v.blk.19.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.19.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "a6883763e7593d0efecb36fbde7cfd7fc4d879a2814fa71423b8f43a02cbfcc9",
+        "source_names": [
+          "v.blk.19.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.19.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1063,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.8649941852034807e-10,
+        "bit_exact": false,
+        "native_sha256": "4399103d5784753c2c48de8c758ea41fb590b24d123062e122e1d2e73c6d36c1",
+        "source_names": [
+          "v.blk.19.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.19.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "98f72e89bc18a533e84413214a559ef8871c7cb012b8d16d0ecffbcd2089db82",
+        "source_names": [
+          "v.blk.19.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.19.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "312b961bcc08c0354ff1ff492c78db9c63ce6c95233406e6ab8a16a0c3f84bc8",
+        "source_names": [
+          "v.blk.19.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.19.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "bfa2c096d8327b05e476857e79559a153ab0356dea96091fdf789aed3842e9b2",
+        "source_names": [
+          "v.blk.19.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.19.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "8d5d1698266ef9cc59869a51a351430e3720abb209b6d9af4cc308cfb4057b01",
+        "source_names": [
+          "v.blk.19.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.2.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "7b462c4ee844ed6c1f144c5b330fc0131a3a921b3395eb3ec06d95f563f0005a",
+        "source_names": [
+          "v.blk.2.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.2.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 308,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.1310286589975387e-10,
+        "bit_exact": false,
+        "native_sha256": "46eafe6900d06cf7e21b97439c798b8d8590713edf6b820d82cbeca07c965074",
+        "source_names": [
+          "v.blk.2.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.2.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "032a43c0075b2bd168f00d7879da5cb637e9eeed2888663cb0f0c72ffb621950",
+        "source_names": [
+          "v.blk.2.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.2.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 740,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.755642576271995e-10,
+        "bit_exact": false,
+        "native_sha256": "9c10403ed3a012f5f233b5ca26363970e304249c9cb5e702c97201d86c279465",
+        "source_names": [
+          "v.blk.2.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.2.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "5a85635fde120a536b7c60c2e31cd5cf0b5f932251a4014d49e6299f8e1b5d79",
+        "source_names": [
+          "v.blk.2.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.2.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 28723,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 1.895865900847201e-09,
+        "bit_exact": false,
+        "native_sha256": "f2dafca7bc56dee1ea68d90be81d0e3d55377ee26819dcf8add07b65176e267b",
+        "source_names": [
+          "v.blk.2.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.2.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "0eddc168d3aea9b4987755a06f43d952dbb64a91f419a8c7308b3c869e96eb65",
+        "source_names": [
+          "v.blk.2.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.2.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 6039,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 9.133994260002407e-10,
+        "bit_exact": false,
+        "native_sha256": "068acb0bcca7bf7a2febd33be0518e8f4921e886434ba69868c3c33e158ecb14",
+        "source_names": [
+          "v.blk.2.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.2.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "2193342a36463c2c69816cc53589ea413afd6a29d490048805a5de4005d9f523",
+        "source_names": [
+          "v.blk.2.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.2.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "022f921f3d5f17ef5e5bd9bb93c05b5f475af991a1dabb4c647754e00b2778ca",
+        "source_names": [
+          "v.blk.2.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.2.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "bcce3fb44aff71ace1d8ebbcb1bedc0fd0940de18979e03bbb5ad904a2ea2e15",
+        "source_names": [
+          "v.blk.2.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.2.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 1,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "46b166e4e1b97fbe5a3e53c31bdb45e39b8f3a2b504e48c5219abd1729955db6",
+        "source_names": [
+          "v.blk.2.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.20.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "d74c7687447b5f827d4b208ff6d0f7bb32edc3f270d2382d83afca47ec0f3971",
+        "source_names": [
+          "v.blk.20.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.20.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 276,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.8864979084484406e-10,
+        "bit_exact": false,
+        "native_sha256": "049fe90e9e96f1b34b323ab9015d0bff178d279f360da296fcf7137bfd3bb246",
+        "source_names": [
+          "v.blk.20.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.20.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "ee90b0e8e31c20afd2d3773f53501a3e787c9f80f029cd3dcf99dd93620ac88c",
+        "source_names": [
+          "v.blk.20.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.20.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 801,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.8165805339659587e-10,
+        "bit_exact": false,
+        "native_sha256": "b7c43ecf86babd28cde5af6988da8f2207c8cf48a37a78a4253ab9d83b4cfd05",
+        "source_names": [
+          "v.blk.20.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.20.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "45d0a15abe1b3b56ff1ca2dad02b4f20d911acb68abfa95501cecc3d41229425",
+        "source_names": [
+          "v.blk.20.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.20.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1198,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.0804991908398594e-10,
+        "bit_exact": false,
+        "native_sha256": "15820c880b912b3b0ba001f18e14a3fb9b366a4f27911f2501d3d14a4724f02d",
+        "source_names": [
+          "v.blk.20.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.20.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "abe02f0b387479c1992fa02c9232b2d4ab9fd9a017b02af1a4fa4e8a5737fb40",
+        "source_names": [
+          "v.blk.20.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.20.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1035,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.7991926555900437e-10,
+        "bit_exact": false,
+        "native_sha256": "34f6a6acb60fd3dac60a7f47581994dd56bbd3ad589653ac238002295c4c42b4",
+        "source_names": [
+          "v.blk.20.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.20.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "37fd5f67b8c6e8b023cb5aab19e7e45c9746a7cfed7030df128071f284f0ec37",
+        "source_names": [
+          "v.blk.20.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.20.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "c11d6ce486c83f6bdd6332a5dc450250bf53d5e34ada7ac3f5522e610a9bae5e",
+        "source_names": [
+          "v.blk.20.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.20.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "1bb9c81f081205b4cb48a45afdbc536ff7a53f50011913e3fc4357783de76794",
+        "source_names": [
+          "v.blk.20.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.20.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "c1faa2a36039fdc64f0143eb0274f208f32a12f90f8cff181973ad907b6eaa0e",
+        "source_names": [
+          "v.blk.20.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.21.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "57bcc11ffd8d3e66a7a92f049d79de11d9e6a3e71289ad62907e2fc128bb649c",
+        "source_names": [
+          "v.blk.21.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.21.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 298,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.1774231228005517e-10,
+        "bit_exact": false,
+        "native_sha256": "080959af719b9518e67b44f0a6bf382821b03bec6d0bd12c347069b0c8959aa7",
+        "source_names": [
+          "v.blk.21.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.21.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "954e441e2cbeeda65a810d22eb10ac28827f526340458c1f9a0afe6b5d19716a",
+        "source_names": [
+          "v.blk.21.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.21.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 916,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.1624836176425865e-10,
+        "bit_exact": false,
+        "native_sha256": "3d087ab92da605171a479608d83eddc0598fb74347aa7c1bae156ebbc9d70a3a",
+        "source_names": [
+          "v.blk.21.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.21.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "31edd0f667ae51041989ff1daf6671787680546e340a6a3a614b063b52335768",
+        "source_names": [
+          "v.blk.21.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.21.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1257,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.2120554527532003e-10,
+        "bit_exact": false,
+        "native_sha256": "406c5b7bf3be9d316ac49b9bca29ecfac7769856888fc3284ba2bd60b6589627",
+        "source_names": [
+          "v.blk.21.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.21.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "baf577b05c2ea9b856db803180f619b48ae0a33884dfaedafef84d7cb2deb101",
+        "source_names": [
+          "v.blk.21.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.21.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1063,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.792226736097976e-10,
+        "bit_exact": false,
+        "native_sha256": "36def608ea6dbbfcba2d68324aedc8754cfa124a90740b5e92d2639dec040870",
+        "source_names": [
+          "v.blk.21.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.21.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "1aa25cffb3b3ddf6e77b994114efa4d8e6c1450b0c395733184c999807e90475",
+        "source_names": [
+          "v.blk.21.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.21.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "a17e08a628114300cc6fb234f87fd06f4be5f9e076b380ab6608dc7611ca6cdf",
+        "source_names": [
+          "v.blk.21.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.21.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "6649f15128ee4dac530b0b412414c72224510735d0fa1fc58d024a743592c6f5",
+        "source_names": [
+          "v.blk.21.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.21.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "9f55f708c2d41f58c1e6b1fbb98b6742715e17bc2ced1afc309f42cb5231988a",
+        "source_names": [
+          "v.blk.21.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.22.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "0840ae18b4739cb24d4a14e63d6401dbf6ac4fc173af051c6d4bb95b9a94393d",
+        "source_names": [
+          "v.blk.22.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.22.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 297,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.022979954092336e-10,
+        "bit_exact": false,
+        "native_sha256": "5f2db3f911f92920f08b31a5cc0673fbed1901764886baaee605fa623e3370e8",
+        "source_names": [
+          "v.blk.22.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.22.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "cf1658adb722de52e06cc8fd5bf3d8b1e05a108633c7b789ed5aebd4c6bfc61a",
+        "source_names": [
+          "v.blk.22.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.22.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 826,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.910111541967468e-10,
+        "bit_exact": false,
+        "native_sha256": "fa4b8759f234d325873537ad06485ca1d4d3f0c2adc2656f21fd75c23d8bfca4",
+        "source_names": [
+          "v.blk.22.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.22.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "aba86b473a274d041d85ba0abb462bf39a52b6c605a73bb3b1fc473bbfa0f57b",
+        "source_names": [
+          "v.blk.22.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.22.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1192,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.035908358605118e-10,
+        "bit_exact": false,
+        "native_sha256": "d8c5694420690b89671fda7355fd09ead01f7d21d319488522a9d056e13b1c1a",
+        "source_names": [
+          "v.blk.22.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.22.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "793f626b91d826f8f8d7899026b48f64497dfed82e8901477fe19080b9788925",
+        "source_names": [
+          "v.blk.22.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.22.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1099,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.907624994214385e-10,
+        "bit_exact": false,
+        "native_sha256": "5ea35f165e11b36abc7cd577316e6398f8f7f6bea37fa23f7b627a4989ea2776",
+        "source_names": [
+          "v.blk.22.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.22.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "ec93ba767e1434073b71411ad9e98bffdaa5b95ab7c380c24f45e4325a40d8c0",
+        "source_names": [
+          "v.blk.22.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.22.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "ee621a0b66e0000f5de0b9368273939278146bc89b8cd5239584e30356ad50ae",
+        "source_names": [
+          "v.blk.22.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.22.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "0ea7759ddece361428ec7f58c828b8833bcc854e199af96f7610d1b6ba8abcbc",
+        "source_names": [
+          "v.blk.22.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.22.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "a25f92e6fc95af4dee8a8fdae7df88724c832b2b48dc1b64fa47ff5d05051552",
+        "source_names": [
+          "v.blk.22.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.23.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "179cf02b1c423f08a719989fc063f9168a77125a7da978714bfe68438cc02988",
+        "source_names": [
+          "v.blk.23.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.23.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 252,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.7598999376015665e-10,
+        "bit_exact": false,
+        "native_sha256": "5262fde6c8cbf3c367cb9be914647e57be47940b98dbc7dd5e7aee455328c473",
+        "source_names": [
+          "v.blk.23.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.23.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "815915ef49e0dd0e4777c9ba1b8cc2c8ae04924b300bcc24fbcd70e143df48f2",
+        "source_names": [
+          "v.blk.23.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.23.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 829,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.9632070846713443e-10,
+        "bit_exact": false,
+        "native_sha256": "54bb67a9e1edf97669f74c2b25a7c2ef33bce0c571be7fcafd87fbc7674c5528",
+        "source_names": [
+          "v.blk.23.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.23.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "a473096122cc2f047625d230e3712599591d727f5528ec482ad0c97d11010226",
+        "source_names": [
+          "v.blk.23.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.23.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1252,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.172687948268919e-10,
+        "bit_exact": false,
+        "native_sha256": "da493b63ae956acd6cdd9a6c1ea933c98ec8639b4a0a843a5e6e11ce0567cb03",
+        "source_names": [
+          "v.blk.23.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.23.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "794d11c536c78756670f520b8541dea02eccc980d07a50cac78b26177fe35f15",
+        "source_names": [
+          "v.blk.23.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.23.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1170,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.0578350601425203e-10,
+        "bit_exact": false,
+        "native_sha256": "a742dc1af5991d35dd84c246ec330944d860aea5fee848b18d0f933775fdea1c",
+        "source_names": [
+          "v.blk.23.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.23.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "d719e68c7aad0beb6c47d7ab1d833c3d7a06f5f899fd7af6059107a3e27c427d",
+        "source_names": [
+          "v.blk.23.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.23.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "fb0d100c55c121edf86df7800895d319be2dfd117a8160e25d1a5517b4be911b",
+        "source_names": [
+          "v.blk.23.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.23.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "1876b161d5243726bda9d1ddd385cf744c4af02d5e4a94772bc916d73c8fd60d",
+        "source_names": [
+          "v.blk.23.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.23.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "856672beab3b1a4b94f4a83c3adfd22610308b1d4f4ccf893b9b4bbff532a9b3",
+        "source_names": [
+          "v.blk.23.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.3.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "6d21ac8f75cfd395fb789d290f582797fb7b2a8ef958e5f77df73c84535944ee",
+        "source_names": [
+          "v.blk.3.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.3.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 269,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.913493983265738e-10,
+        "bit_exact": false,
+        "native_sha256": "dbeaeb23b4d49541aba8458ea8a8c13fbe3863e224dc7d2b8d109c49fd4b403d",
+        "source_names": [
+          "v.blk.3.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.3.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 1,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "b74dc482bc821f88f822cab5a6a4b2476e267adeee5db8439c4eac3ee8cfc311",
+        "source_names": [
+          "v.blk.3.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.3.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 717,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.6442006831266903e-10,
+        "bit_exact": false,
+        "native_sha256": "b281aa717e09735326bd0bce8ea921956297dbe219d5d318d930b57610085bc6",
+        "source_names": [
+          "v.blk.3.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.3.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "fc11bcd21eec3fc50af09bed753845e7b2e038779292fe5418e149b9093d405e",
+        "source_names": [
+          "v.blk.3.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.3.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 18622,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 1.5443400314244799e-09,
+        "bit_exact": false,
+        "native_sha256": "57a122a0489c8925394ce7c2ed17c6af41ba6b421db08e75cbed4c37a0465b63",
+        "source_names": [
+          "v.blk.3.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.3.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "7172081d25da9543c3848adb03626fdb9a7a90c1082e5bcf09e27e3515106f38",
+        "source_names": [
+          "v.blk.3.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.3.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 5507,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 8.58293244936271e-10,
+        "bit_exact": false,
+        "native_sha256": "653542f61aa55751c56aceb3c2f8c486a2246585d2e7d039e30764bc85e794a4",
+        "source_names": [
+          "v.blk.3.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.3.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "8403638e5fdc9e012f788eae2b353cac58a6c667b346bd8bdd204efacd3160af",
+        "source_names": [
+          "v.blk.3.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.3.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "5803ce5b44e36e278c4f908e65e4eb2c0cfd28e49acbedf9b0c63411d74154dd",
+        "source_names": [
+          "v.blk.3.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.3.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "c2fd621aec6b97bfee763ca2ba461fcc9d2abc1e857aeac91e0e43ca0de3a932",
+        "source_names": [
+          "v.blk.3.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.3.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "53532407ead097dd950d0a1ed90b05d475f7e66cf67eaa7034ab35912fd80cd0",
+        "source_names": [
+          "v.blk.3.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.4.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "6356eeca48b9075fdd1af4d62127743272f7793c30e578cc724620a03ab9b5b3",
+        "source_names": [
+          "v.blk.4.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.4.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 317,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.243828998664298e-10,
+        "bit_exact": false,
+        "native_sha256": "dae0325b70d8ca9cd4b5b19d26ca9d6643a1d01c6bb190f6ce29c50259819f69",
+        "source_names": [
+          "v.blk.4.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.4.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 2,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "fdf7aa55b73db7e1c664d40507cba66b2bbd30ffe8f03f5cbbae7c55b4c8d5d5",
+        "source_names": [
+          "v.blk.4.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.4.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 755,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.768673744183455e-10,
+        "bit_exact": false,
+        "native_sha256": "4af73e663bbb78e98dddf94193cf1212dabbd67329b04911f7d7a6ab9fa82982",
+        "source_names": [
+          "v.blk.4.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.4.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "aaed83064a5877e0b62bf01071a8d1f3a7be2faa0aecd9a2bb3243459c7471c5",
+        "source_names": [
+          "v.blk.4.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.4.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 4854,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 7.850066533967003e-10,
+        "bit_exact": false,
+        "native_sha256": "0ea65b84463a845e085ff95d872abc28cd2ced7fecb62803e6274458d0663516",
+        "source_names": [
+          "v.blk.4.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.4.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "e55747d0defa9311adddfbc4968fe4daa85417e3d1908089e5d50c54dcbac08a",
+        "source_names": [
+          "v.blk.4.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.4.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 2118,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 5.443046819254174e-10,
+        "bit_exact": false,
+        "native_sha256": "d700b6917ef39248a255642d8166d0e623d4991385637375c389c6d7d0f24719",
+        "source_names": [
+          "v.blk.4.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.4.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "2547638d4f877b0dfad5b1a99ba49eac525c9ab02be3aeadb3910481fc2cfce0",
+        "source_names": [
+          "v.blk.4.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.4.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "9de5634204a4920d4f0c7daf9cdc1ea5c6e296018dbbbede8864a3d1446078c8",
+        "source_names": [
+          "v.blk.4.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.4.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "18270a021768ae86a3ee149aae51320c67250633471930aece6e0fb1e08740d6",
+        "source_names": [
+          "v.blk.4.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.4.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "5f838ab5c69ec4d20510a927bd4ba249652bde10abf4b74d79ac9611146f2838",
+        "source_names": [
+          "v.blk.4.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.5.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "459f00f2acdeb2f6662d3b53e8870f34fd3936ab79b9eeea88b05956d7149b81",
+        "source_names": [
+          "v.blk.5.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.5.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 274,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.8952846891798893e-10,
+        "bit_exact": false,
+        "native_sha256": "51da475f4737a370a5eebde32acfad5b08d0563bd24f652b2140a947fa04bf39",
+        "source_names": [
+          "v.blk.5.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.5.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "fec9e0c58e0f9b62855d2d6edc76f13c61a24665b75711cc7b350346bdf09d90",
+        "source_names": [
+          "v.blk.5.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.5.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 745,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.7158730299946224e-10,
+        "bit_exact": false,
+        "native_sha256": "10811c732e47a2ffd23a68c022e2f44a5baca0aff47875cdc56c2b6044a8f0f8",
+        "source_names": [
+          "v.blk.5.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.5.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "3a3f2cc7ac50f597638b1b9d953fa454f14fa54cfd313c736627735565c1932e",
+        "source_names": [
+          "v.blk.5.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.5.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1942,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 5.173140590844595e-10,
+        "bit_exact": false,
+        "native_sha256": "bdcdb0ee79ac2ff45a3bc62d71b8e4aa566655a9bbb636e6d645f3ebc4794459",
+        "source_names": [
+          "v.blk.5.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.5.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "e81fe4d5786041bdc2b83157a002f33e0b17d67ceac2ede2736dc84878dd6678",
+        "source_names": [
+          "v.blk.5.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.5.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1673,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.774211713803434e-10,
+        "bit_exact": false,
+        "native_sha256": "c20e1e74a59e2767f541a4661cfd63697c4dc37e536b35a4f46394e489a1e67e",
+        "source_names": [
+          "v.blk.5.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.5.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "06e380b1185e6519aac2848745e69257ead7535f34741cc25f4a9c12bf4fe366",
+        "source_names": [
+          "v.blk.5.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.5.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "b433a6b46cbc2e578d6acaeb415e8910d9ffcde722c68ed5093e17835e6f6bd5",
+        "source_names": [
+          "v.blk.5.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.5.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "f36c644de8256cab1b56515a0320ece9adb72b8429ae91d1d79413e9212ed4d5",
+        "source_names": [
+          "v.blk.5.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.5.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "64c4127cea3a1749b716691d7c72b9e19d0b45e17a5b9330732ecc2222eb130a",
+        "source_names": [
+          "v.blk.5.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.6.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "dd89cab6a8470c115c561a70a5813746e3e9b335bad1485e5d1d7a834e2b0c11",
+        "source_names": [
+          "v.blk.6.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.6.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 276,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.8897037352586273e-10,
+        "bit_exact": false,
+        "native_sha256": "6a08825e43fa69c40f4c76e2855bd34ba07c88d372e8fa3f125d64775f591a94",
+        "source_names": [
+          "v.blk.6.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.6.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "d0687d116a735d6b35b309f0a515b25a6a06d54ea589aef17fbea15573a4b089",
+        "source_names": [
+          "v.blk.6.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.6.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 767,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.766500581406015e-10,
+        "bit_exact": false,
+        "native_sha256": "a77fc2fd5c300acdfa54694519bf07e387e91673b221d211e9a85ceceda01b8f",
+        "source_names": [
+          "v.blk.6.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.6.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "8eb45fb055caa0c9214f61646aeba2bf286acffd475cce580543ea8d07db7f33",
+        "source_names": [
+          "v.blk.6.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.6.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1114,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.9819057946285724e-10,
+        "bit_exact": false,
+        "native_sha256": "502848bbc694577f4c23d0a1eeb2a910db2fee78dc6720e9f1611460dfa85240",
+        "source_names": [
+          "v.blk.6.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.6.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "90963a9082aded63b0b61b1cc0aee18cbc9903d7a68c18fa67ea85ffcf00a19e",
+        "source_names": [
+          "v.blk.6.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.6.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1156,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.975140875357088e-10,
+        "bit_exact": false,
+        "native_sha256": "e9a43bbfbd802e4cd4ebe4389101451518e033f0189d06cb713968ef46a0ef15",
+        "source_names": [
+          "v.blk.6.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.6.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "cde75339a4e3237f73e101f6c641f56b41dc2833c66e10a5d4109269d7ba2067",
+        "source_names": [
+          "v.blk.6.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.6.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "fb2a83c37e00893541484b61d509346a34b95a96316eb07f31b4c7910c671acd",
+        "source_names": [
+          "v.blk.6.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.6.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "66c4280051277d3462a031a6c7531de701974e6dfe5e141084204fde8c9bd821",
+        "source_names": [
+          "v.blk.6.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.6.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "3b77d0e835ba30904d817de4511022f233dc06d552a538be22b79bfe244d342d",
+        "source_names": [
+          "v.blk.6.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.7.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "9e85ea68925b3956d8c8eec00fd55ca9da32e638802cf083f896c796758e52d5",
+        "source_names": [
+          "v.blk.7.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.7.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 268,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.908997224545998e-10,
+        "bit_exact": false,
+        "native_sha256": "193ef5c355e07aa6f0d5f6786406d7336481413db62f7ff358cbdb9815912350",
+        "source_names": [
+          "v.blk.7.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.7.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "a546922288f9a99d0aa0096f6f49cf97e3bd93e3dee234fab2bf1506567618f3",
+        "source_names": [
+          "v.blk.7.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.7.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 749,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.727378856666939e-10,
+        "bit_exact": false,
+        "native_sha256": "4129a9a5cb7fa6292a2117335d4978c389b22d2a2bb1c2af7288fb8aed0e87fb",
+        "source_names": [
+          "v.blk.7.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.7.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "5fe504bd8fcd67c9fa0f31cf121c1891b13119218bbf3031be546a106a3260a2",
+        "source_names": [
+          "v.blk.7.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.7.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 966,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.7221515136408487e-10,
+        "bit_exact": false,
+        "native_sha256": "f68ccb25f15cce80f8910a1acef1207e9ce0b839a502fa31ef516e5cab32c268",
+        "source_names": [
+          "v.blk.7.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.7.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "28de4aaf3299a6f906908fb4a7d32c6c384acc917b1a6cb2c6f5f9f1c82d0de7",
+        "source_names": [
+          "v.blk.7.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.7.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1185,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.064462017040505e-10,
+        "bit_exact": false,
+        "native_sha256": "d3adf9050242484dfc7963b47f0f2a615c08ab360a44f14027d82251cc8c876b",
+        "source_names": [
+          "v.blk.7.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.7.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "fd8e57db334ea23f475c8054927c8a1cf0d1d7601a1cee59295c596768ba61a7",
+        "source_names": [
+          "v.blk.7.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.7.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "ec66119f15028ecec0c6da5cff5c15decd8e46c56e81ac1ff70b8913413ede7b",
+        "source_names": [
+          "v.blk.7.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.7.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "8ee6c2e3c7748e94798770f4f52c13275f9970efd3f1ff045bbdffd8cd78b317",
+        "source_names": [
+          "v.blk.7.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.7.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "b93ec4c8cc812af3bae6a7965b1d82c9e40646cc77044ea4117b6fe572da8a87",
+        "source_names": [
+          "v.blk.7.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.8.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "4e2f60fb71a4fc3a5f0e69a94b977a6f1b61f7c3a022298162de8c65c5d4e45f",
+        "source_names": [
+          "v.blk.8.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.8.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 256,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.756807656184107e-10,
+        "bit_exact": false,
+        "native_sha256": "40427253714a3959e30b7d2b1336948719b022dc71739e0571e9cfa48cf3799b",
+        "source_names": [
+          "v.blk.8.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.8.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "3ac6623839e4b23c655966c278245f95e704a4f094f8fcfde243bfd5ec513787",
+        "source_names": [
+          "v.blk.8.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.8.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 773,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.88608330257742e-10,
+        "bit_exact": false,
+        "native_sha256": "d8d5544e596eda75087ed758c520946b85e82ce6fa96de06a033df4cfe997e68",
+        "source_names": [
+          "v.blk.8.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.8.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "a46a616dbd081fac8f0bdc2afa34b4a723e60f7a2c8256985180648982f278a4",
+        "source_names": [
+          "v.blk.8.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.8.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 984,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.7286837385677614e-10,
+        "bit_exact": false,
+        "native_sha256": "ebdef787a151274cf02d8e4aa64c088893cf5ee512792246b90270fe53e36e4b",
+        "source_names": [
+          "v.blk.8.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.8.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "5235fa06652ff64e1acab9b6336d82d27c2969bfefcdb45a880332d672b6235c",
+        "source_names": [
+          "v.blk.8.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.8.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1173,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.0821612781663003e-10,
+        "bit_exact": false,
+        "native_sha256": "b1290b0019aea71f110ee75631291353c16bb44c7e692e2ea79977a2f7ef9d81",
+        "source_names": [
+          "v.blk.8.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.8.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "b6e1090ef2e8662aa4664d15460b1ee884497b5150c5465f55dcb0daa3619789",
+        "source_names": [
+          "v.blk.8.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.8.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "1f1c9409e94679f41fddc37ce5a135a6afc91bc8f00e117ae1130ea4dc8df860",
+        "source_names": [
+          "v.blk.8.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.8.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "4607e2aba6910f99fac4027b49f64547c2643f595b11ea5c749ba2fb8ba13a59",
+        "source_names": [
+          "v.blk.8.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.8.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "e3ddae3b55c1b4128450f31cd6a224818ec47cf8c5373c38209699e1060c7748",
+        "source_names": [
+          "v.blk.8.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.9.attn.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "204b24693e31d64ccb9396be11d01e7f9e4c15751c4232f6df298b92528863a2",
+        "source_names": [
+          "v.blk.9.attn_out.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.9.attn.proj.weight": {
+        "elements": 1048576,
+        "different_f32_bits": 299,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1048576,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.066956858941072e-10,
+        "bit_exact": false,
+        "native_sha256": "0d26fad9e35f1cea65a549de6fbaff5162b7580340f98b424df2b1946e23292b",
+        "source_names": [
+          "v.blk.9.attn_out.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.9.attn.qkv.bias": {
+        "elements": 3072,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 2,
+        "native_exact_bf16_elements": 3072,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "53275a6cf3b42852ae8169f713c1010a49710d73f8c6e4f23c1d1e33e9e2bc4c",
+        "source_names": [
+          "v.blk.9.attn_qkv.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.9.attn.qkv.weight": {
+        "elements": 3145728,
+        "different_f32_bits": 705,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 3145728,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.65622903195291e-10,
+        "bit_exact": false,
+        "native_sha256": "998c8fb698a76fa0f8e06a53652be1befa7f517ad04e123b8fb2fa78a31732d9",
+        "source_names": [
+          "v.blk.9.attn_qkv.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.9.mlp.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "bd2383d8ca63bf535e0ed3fac15443f9d065b2cdf6fca36cb94e6f0e9bef4b13",
+        "source_names": [
+          "v.blk.9.ffn_up.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.9.mlp.linear_fc1.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1018,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 3.811355431108877e-10,
+        "bit_exact": false,
+        "native_sha256": "78e9c9834d46041c8b641941aaac38d91642fcc5b3e8237fa1d20b242a953a38",
+        "source_names": [
+          "v.blk.9.ffn_up.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.9.mlp.linear_fc2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "ecbc21e640bba3ddec2f3d9aec5071fc7f1cf744c276bf7c85697d817f009d2e",
+        "source_names": [
+          "v.blk.9.ffn_down.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.9.mlp.linear_fc2.weight": {
+        "elements": 4194304,
+        "different_f32_bits": 1286,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 4194304,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.235066497855762e-10,
+        "bit_exact": false,
+        "native_sha256": "7007463c18d98a2779754390b7255cb160cffbcba73177c70490f6bf41c354f1",
+        "source_names": [
+          "v.blk.9.ffn_down.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.9.norm1.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "dda8b0b26d8a7e86220692347fba6912d776bd8e23fbfaccdad669f440daaba2",
+        "source_names": [
+          "v.blk.9.ln1.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.9.norm1.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "2192c194d3ba232877a76bcc7453c81ef8127a5ff1230a5399a4cc864ed9e730",
+        "source_names": [
+          "v.blk.9.ln1.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.9.norm2.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "2167e02d3c15325c70f618bb89367f039f5f5ed368c55bcaba0637b2f8fcc66a",
+        "source_names": [
+          "v.blk.9.ln2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.blocks.9.norm2.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "5802cda014250982dd50c188b2c9c9badc3a5e10571658cc58debd27dc93e8eb",
+        "source_names": [
+          "v.blk.9.ln2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.merger.linear_fc1.bias": {
+        "elements": 4096,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 1,
+        "native_exact_bf16_elements": 4096,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "6deff1ef11ed1f38e91cf0ec237aaee16a94071271359bb88a2819dee6474d49",
+        "source_names": [
+          "mm.0.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.merger.linear_fc1.weight": {
+        "elements": 16777216,
+        "different_f32_bits": 5878,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 16777216,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.52196984060984e-10,
+        "bit_exact": false,
+        "native_sha256": "69588ce35e0d9c2b83a3b0dc7a0998b9789d82cd944f39be3903fc529c3fded6",
+        "source_names": [
+          "mm.0.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.merger.linear_fc2.bias": {
+        "elements": 2560,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 1,
+        "native_exact_bf16_elements": 2560,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "9c137dd72eca7658d9031253b8e2a95196cb45003aea672fc95cc9b13a6a6cb7",
+        "source_names": [
+          "mm.2.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.merger.linear_fc2.weight": {
+        "elements": 10485760,
+        "different_f32_bits": 4014,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 10485760,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 4.767803311791383e-10,
+        "bit_exact": false,
+        "native_sha256": "021c41d7037de43187f27e78139173dd20ec1736a596c1a40cd4a47ec2c52bf3",
+        "source_names": [
+          "mm.2.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.merger.norm.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "f4cd2f2d9c9d7e1d98d40b02d2e19fdad746b4c296c790f5604eb4d507e46741",
+        "source_names": [
+          "v.post_ln.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.merger.norm.weight": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "eb4e7e8f3d558ac36763b8cebf53b48ed6241e65ee2361f8b66f81ccb2453f44",
+        "source_names": [
+          "v.post_ln.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.patch_embed.proj.bias": {
+        "elements": 1024,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1024,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "95ffe85a4b7b708660112e6df4a6330aae03db86b2fa69444689014e11785148",
+        "source_names": [
+          "v.patch_embd.bias"
+        ],
+        "transform": "identity canonical F32 values"
+      },
+      "v.patch_embed.proj.weight": {
+        "elements": 1572864,
+        "different_f32_bits": 1546,
+        "different_after_native_f16_round": 0,
+        "native_exact_bf16_elements": 1572864,
+        "max_abs": 2.9802322387695312e-08,
+        "rms": 7.52412485352643e-10,
+        "bit_exact": false,
+        "native_sha256": "a572388158b8d27f5fe4a4dad20d6ee84096387a70c6e1a30e696815d7fd10f8",
+        "source_names": [
+          "v.patch_embd.weight",
+          "v.patch_embd.weight.1"
+        ],
+        "transform": "stack temporal slices axis2 in [out,3,2,16,16]"
+      },
+      "v.pos_embed.weight": {
+        "elements": 2359296,
+        "different_f32_bits": 0,
+        "different_after_native_f16_round": 230,
+        "native_exact_bf16_elements": 2359296,
+        "max_abs": 0.0,
+        "rms": 0.0,
+        "bit_exact": true,
+        "native_sha256": "6d82337054c3a5ec53565ee47be445577d7f3eb13578917cce5023bc44d2fbae",
+        "source_names": [
+          "v.position_embd.weight"
+        ],
+        "transform": "identity canonical F32 values"
+      }
+    },
+    "all_canonical_f32_bit_exact": false,
+    "all_native_f16_round_equal": false,
+    "original_checkpoint_identity_proven": false,
+    "scope": "These two admitted projector payloads only; no assertion about unpublished prequantization checkpoints."
+  },
+  "source_observer_byte_neutral": true,
+  "actual_source_merged_sha256": "b9a171d18d5698e5c897662ddedf6cf399448838e55350c3b206e7a24c240d1b",
+  "earliest_comparable_difference": "processor.patches",
+  "elapsed_seconds": 318.86606508799997,
+  "artifacts": {
+    "up-fetch.log": {
+      "bytes": 119,
+      "sha256": "5537e1fa1b4cf8d84bd910e3fed8a4a9e0803b4bddddf1cf9b9182e0f1b00983"
+    },
+    "configure.log": {
+      "bytes": 1774,
+      "sha256": "999dda5267810bbe6dece9e0183541752fc2d88f4dfbec6ebcab0632f212b2c1"
+    },
+    "up-init.log": {
+      "bytes": 584,
+      "sha256": "0192989e978d60a0d7d7217e9a00321e57bad7843026d5f6efcd9f279f320db4"
+    },
+    "pip-resolution.json": {
+      "bytes": 205584,
+      "sha256": "182672f676b0fee31e2e2cba68c6296615ab0a90bc9ac93c4c61da17a66f3934"
+    },
+    "up-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source-fetch.log": {
+      "bytes": 123,
+      "sha256": "5599a71825baa4c612c3c3b628a9eb3e6d38a9e446b42a0ec4aaef49f303e67a"
+    },
+    "source-init.log": {
+      "bytes": 572,
+      "sha256": "af6ebda4793675f36df2d61617e49915276b7315d68c7b78de6884fe27e14c8f"
+    },
+    "control-test_runtime_guard.py.log": {
+      "bytes": 205,
+      "sha256": "91e512cbcb9b56f62ddc12b1642086e3319d654d1cc6f8079dd5391139682b91"
+    },
+    "build.log": {
+      "bytes": 8308,
+      "sha256": "0725fc82e73ab5418d8766e84af75994589d197be86b48bbd4f885d0c5d36f45"
+    },
+    "source-checkout.log": {
+      "bytes": 94,
+      "sha256": "0b89ec8d9631e311f1ebc3b85a590cc035106d21e6857f4a7c1c9a57655059c0"
+    },
+    "dependency-check.log": {
+      "bytes": 132,
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    "venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source.patches.f32": {
+      "bytes": 3440640,
+      "sha256": "1d66249e7d176481cb037eea70a82c2944b772b3fdd1f3df2becc18bfbc2edb4"
+    },
+    "source-pin.log": {
+      "bytes": 41,
+      "sha256": "3bbeef6db11e8023070b063013f0cbd1a563bbfdc1c581fa5a1864896fabdfa2"
+    },
+    "control-test_projector_controls.py.log": {
+      "bytes": 206,
+      "sha256": "4758c6c923e737cb4cbd7bd91d4acef0427e5cf2723862fc153a8e9214a03e62"
+    },
+    "bounded-worker.log": {
+      "bytes": 253,
+      "sha256": "59c80056a37fa7038f20193745735b1f3015918f2676646b4dcd0509803848ee"
+    },
+    "source-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off.log": {
+      "bytes": 44975,
+      "sha256": "3548190bb8fdf99688844250fd796d06954baffc9199cd4ac8dbcbdb762de851"
+    },
+    "up-checkout.log": {
+      "bytes": 84,
+      "sha256": "401b0f35047d9999135ce240162909f4d3b9be4cafce7c16c1eafb93d3b7bff7"
+    },
+    "CMakeCache.txt": {
+      "bytes": 34830,
+      "sha256": "90ca70634987fe7fe3c28c1a1579ff652b65e2ffbf5833a73d683785e0fffea0"
+    },
+    "dependencies.log": {
+      "bytes": 2562,
+      "sha256": "b0ae9aa828d2289294fe7d3428236287d83f58718ad9407fc6b51120b0ccd002"
+    },
+    "on.log": {
+      "bytes": 44975,
+      "sha256": "3548190bb8fdf99688844250fd796d06954baffc9199cd4ac8dbcbdb762de851"
+    },
+    "source-cli-noargs.log": {
+      "bytes": 50,
+      "sha256": "d69c6fe38e7b6a720d46b6112a2478fbd0fb09948dedb93096924e2e9d05d864"
+    },
+    "physical-f16-bootstrap.json": {
+      "bytes": 352,
+      "sha256": "587a2fd20bf4aea3216af6682e0e88b7660bfb269909f82a8ee2996146bdbaca"
+    },
+    "on/layer_out-5.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-15.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/inp_pos_emb.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/layer_out-14.f32": {
+      "bytes": 2293760,
+      "sha256": "96f09b3528bdb617a9625219cbbd7506f6ace5af08bdbbc916fea51d82822aac"
+    },
+    "on/layer_out-0.f32": {
+      "bytes": 2293760,
+      "sha256": "96f09b3528bdb617a9625219cbbd7506f6ace5af08bdbbc916fea51d82822aac"
+    },
+    "on/inp_pos_emb.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-19.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/ln1-0.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-18.f32": {
+      "bytes": 2293760,
+      "sha256": "96f09b3528bdb617a9625219cbbd7506f6ace5af08bdbbc916fea51d82822aac"
+    },
+    "on/layer_out-16.f32": {
+      "bytes": 2293760,
+      "sha256": "96f09b3528bdb617a9625219cbbd7506f6ace5af08bdbbc916fea51d82822aac"
+    },
+    "on/inp_raw.f32": {
+      "bytes": 1720320,
+      "sha256": "fd41f1a86c93ba4ee2f3caa27be1d291290dda704d27d3122229a4626b96a6ba"
+    },
+    "on/layer_out-4.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-21.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/layer_out-17.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-16.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-9.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/layer_out-18.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-6.f32": {
+      "bytes": 2293760,
+      "sha256": "96f09b3528bdb617a9625219cbbd7506f6ace5af08bdbbc916fea51d82822aac"
+    },
+    "on/layer_out-12.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-22.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-1.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-1.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/layer_out-3.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/layer_out-4.f32": {
+      "bytes": 2293760,
+      "sha256": "96f09b3528bdb617a9625219cbbd7506f6ace5af08bdbbc916fea51d82822aac"
+    },
+    "on/layer_out-3.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-15.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-2.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-0.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-5.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/ffn_inp_normed-0.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/patch_bias.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-6.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-23.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/layer_out-21.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-20.f32": {
+      "bytes": 2293760,
+      "sha256": "96f09b3528bdb617a9625219cbbd7506f6ace5af08bdbbc916fea51d82822aac"
+    },
+    "on/layer_out-2.f32": {
+      "bytes": 2293760,
+      "sha256": "96f09b3528bdb617a9625219cbbd7506f6ace5af08bdbbc916fea51d82822aac"
+    },
+    "on/layer_out-22.f32": {
+      "bytes": 2293760,
+      "sha256": "96f09b3528bdb617a9625219cbbd7506f6ace5af08bdbbc916fea51d82822aac"
+    },
+    "on/layer_out-12.f32": {
+      "bytes": 2293760,
+      "sha256": "96f09b3528bdb617a9625219cbbd7506f6ace5af08bdbbc916fea51d82822aac"
+    },
+    "on/layer_out-13.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/layer_out-7.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/learned_pos.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/learned_pos.f32": {
+      "bytes": 2293760,
+      "sha256": "d0ba132bcc8373fe9c23712ac524ce8a9809f7f7f44c9653168c0eeae93fe8f9"
+    },
+    "on/layer_out-7.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/layer_out-10.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-23.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-8.f32": {
+      "bytes": 2293760,
+      "sha256": "96f09b3528bdb617a9625219cbbd7506f6ace5af08bdbbc916fea51d82822aac"
+    },
+    "on/layer_out-11.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/layer_out-9.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/inp_raw.shape": {
+      "bytes": 34,
+      "sha256": "bc38199d71fe1038273bb63f23086834e7fb759f68a1a43e4b3559a23c21d45c"
+    },
+    "on/source.pixels.f32": {
+      "bytes": 1720320,
+      "sha256": "c4c066f5df3decd147f6a50e94abc56034537e3dba55df17ce4f095a1e74adaa"
+    },
+    "on/layer_out-19.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/patch_bias.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/layer_out-14.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-17.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/layer_out-13.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/ln1-0.f32": {
+      "bytes": 2293760,
+      "sha256": "96f09b3528bdb617a9625219cbbd7506f6ace5af08bdbbc916fea51d82822aac"
+    },
+    "on/layer_out-8.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/source.json": {
+      "bytes": 95,
+      "sha256": "b58146a4b438af694674b951ec826dd0c70f617a41250d5ce350ce3070e829a7"
+    },
+    "on/layer_out-10.f32": {
+      "bytes": 2293760,
+      "sha256": "96f09b3528bdb617a9625219cbbd7506f6ace5af08bdbbc916fea51d82822aac"
+    },
+    "on/layer_out-11.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/layer_out-20.shape": {
+      "bytes": 36,
+      "sha256": "ea2449427c1dbbe80d8c925ee10e3024a00cd645043e31790edc0aeed816ecde"
+    },
+    "on/source.merged.f32": {
+      "bytes": 1433600,
+      "sha256": "b9a171d18d5698e5c897662ddedf6cf399448838e55350c3b206e7a24c240d1b"
+    },
+    "on/ffn_inp_normed-0.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "off/source.pixels.f32": {
+      "bytes": 1720320,
+      "sha256": "c4c066f5df3decd147f6a50e94abc56034537e3dba55df17ce4f095a1e74adaa"
+    },
+    "off/source.json": {
+      "bytes": 95,
+      "sha256": "b58146a4b438af694674b951ec826dd0c70f617a41250d5ce350ce3070e829a7"
+    },
+    "off/source.merged.f32": {
+      "bytes": 1433600,
+      "sha256": "b9a171d18d5698e5c897662ddedf6cf399448838e55350c3b206e7a24c240d1b"
+    }
+  }
+}

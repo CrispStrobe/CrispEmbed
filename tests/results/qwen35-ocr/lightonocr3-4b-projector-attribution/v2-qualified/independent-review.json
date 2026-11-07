@@ -1,0 +1,130 @@
+{
+  "schema": "lighton4b-projector-v2-qualified-review/v1",
+  "receipt_sha256": "64eb77727c39265cc1cc32cd5290ed501c1e29629f4aba3f44a5b7b2308c9db2",
+  "source_sha": "c010086968ba44efcb07e7a9e27ff87dc9b36732",
+  "valid_controls": {
+    "native_tensors_authenticated": 297,
+    "source_tensors_authenticated": 298,
+    "canonical_scalar_values": 333514240,
+    "canonical_exact_tensors": 198,
+    "canonical_f16_storage_difference_tensors": 99,
+    "maximum_parameter_value_difference": 2.9802322387695312e-08,
+    "native_f16_round_exact_tensors": 287,
+    "native_all_bf16_exact_tensors": 297,
+    "actual_source_OFF_ON_merged_sha256": "b9a171d18d5698e5c897662ddedf6cf399448838e55350c3b206e7a24c240d1b",
+    "source_actual_merged_closed": true,
+    "preprocessing_rms_recomputed": 0.00022181688982640785,
+    "preprocessing_max_abs_recomputed": 0.0156862735748291
+  },
+  "INVALID_intermediate_observer": {
+    "reason": "Postcompute reads reflect reused buffers despite output flags. Nonzero/finite and final merged neutrality did not establish individual stage validity.",
+    "duplicate_stage_groups": [
+      [
+        "on/layer_out-15.f32",
+        "on/inp_pos_emb.f32",
+        "on/layer_out-19.f32",
+        "on/layer_out-21.f32",
+        "on/layer_out-9.f32",
+        "on/layer_out-1.f32",
+        "on/layer_out-3.f32",
+        "on/layer_out-5.f32",
+        "on/layer_out-23.f32",
+        "on/layer_out-13.f32",
+        "on/layer_out-7.f32",
+        "on/layer_out-11.f32",
+        "on/patch_bias.f32",
+        "on/layer_out-17.f32",
+        "on/ffn_inp_normed-0.f32"
+      ],
+      [
+        "on/layer_out-14.f32",
+        "on/layer_out-0.f32",
+        "on/layer_out-18.f32",
+        "on/layer_out-16.f32",
+        "on/layer_out-6.f32",
+        "on/layer_out-4.f32",
+        "on/layer_out-20.f32",
+        "on/layer_out-2.f32",
+        "on/layer_out-22.f32",
+        "on/layer_out-12.f32",
+        "on/layer_out-8.f32",
+        "on/ln1-0.f32",
+        "on/layer_out-10.f32"
+      ]
+    ],
+    "all_intermediate_stage_metrics_rejected": true,
+    "learned_position_stage_also_unsupported": true
+  },
+  "independent_download_vector_hashes": {
+    "source.patches.f32": {
+      "bytes": 3440640,
+      "sha256": "1d66249e7d176481cb037eea70a82c2944b772b3fdd1f3df2becc18bfbc2edb4"
+    },
+    "on/source.merged.f32": {
+      "bytes": 1433600,
+      "sha256": "b9a171d18d5698e5c897662ddedf6cf399448838e55350c3b206e7a24c240d1b"
+    },
+    "on/patch_bias.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/layer_out-23.f32": {
+      "bytes": 2293760,
+      "sha256": "bf8c97875ab6de6f83fbaeb4dbbc44cf7bc786b437fdd5a521976f626b4a4e3a"
+    },
+    "on/source.pixels.f32": {
+      "bytes": 1720320,
+      "sha256": "c4c066f5df3decd147f6a50e94abc56034537e3dba55df17ce4f095a1e74adaa"
+    },
+    "off/source.merged.f32": {
+      "bytes": 1433600,
+      "sha256": "b9a171d18d5698e5c897662ddedf6cf399448838e55350c3b206e7a24c240d1b"
+    }
+  },
+  "quality_qualified": false,
+  "checkpoint_identity_proven": false,
+  "full_f32_model_instantiated": false,
+  "next_probe": "Live scheduler evaluation callback; capture before reuse, arithmetic identity closures; RGB/resize/normalization separation; inspect F16-round zero-sign/ties.",
+  "files": {
+    "projector-audit.json": {
+      "bytes": 173368,
+      "sha256": "64eb77727c39265cc1cc32cd5290ed501c1e29629f4aba3f44a5b7b2308c9db2"
+    },
+    "physical-f16-bootstrap.json": {
+      "bytes": 407,
+      "sha256": "7d566184630ea679c526b7f11ae51b549479ff156448876d2a000e342fbf1603"
+    },
+    "bounded-worker.log": {
+      "bytes": 253,
+      "sha256": "59c80056a37fa7038f20193745735b1f3015918f2676646b4dcd0509803848ee"
+    },
+    "build.log": {
+      "bytes": 8308,
+      "sha256": "0725fc82e73ab5418d8766e84af75994589d197be86b48bbd4f885d0c5d36f45"
+    },
+    "configure.log": {
+      "bytes": 1774,
+      "sha256": "999dda5267810bbe6dece9e0183541752fc2d88f4dfbec6ebcab0632f212b2c1"
+    },
+    "source-cli-noargs.log": {
+      "bytes": 50,
+      "sha256": "d69c6fe38e7b6a720d46b6112a2478fbd0fb09948dedb93096924e2e9d05d864"
+    },
+    "off.log": {
+      "bytes": 44975,
+      "sha256": "3548190bb8fdf99688844250fd796d06954baffc9199cd4ac8dbcbdb762de851"
+    },
+    "on.log": {
+      "bytes": 44975,
+      "sha256": "3548190bb8fdf99688844250fd796d06954baffc9199cd4ac8dbcbdb762de851"
+    },
+    "off/source.json": {
+      "bytes": 95,
+      "sha256": "b58146a4b438af694674b951ec826dd0c70f617a41250d5ce350ce3070e829a7"
+    },
+    "on/source.json": {
+      "bytes": 95,
+      "sha256": "b58146a4b438af694674b951ec826dd0c70f617a41250d5ce350ce3070e829a7"
+    }
+  }
+}
