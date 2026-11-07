@@ -1,0 +1,2 @@
+repack: repack tensor  with q4_K_8x8
+SWIGLU_SOURCE_CONTROLS PASS model=0 quant_weights=synthetic

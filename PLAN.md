@@ -3230,3 +3230,8 @@ The bounded `cd50e9e69` worker passes20 gate/cache controls, actual old native16
 ## Physical GDN decoded A/B negative
 
 Source `f6a1e60d3` completed full table/form OFF/ON: OFF all282/167 rows and38 text anchors exact; ON table294EOS regresses349→364/607 character edits and97→104/106 words, while form167EOS text stays exactOFF. First-score RMS improves but does not rescue decoded quality. Gate remains default-off/unqualified; no ship. [Full evidence and limits](docs/lighton4b-gdn-full-ab-results.md). No new model job authorized by this result.
+
+
+### SwiGLU same-input operator result
+
+The bounded `38171f0d4` worker passes actual source4/nativeOFF16/ON16 activation and all9 whole projection closures, proving the declared Q4/Q4/Q6 weights and layouts. [Rawd637 receipt and independent878,720-byte array audit](docs/lighton4b-swiglu-source-probe-results.md) establish native fusedGGML==upstream fusedGGML, while native scalar differs~1.4e-9 RMS onsource4. Crucially zero integer Q8_K codes/sums flip acrossall8sets; same-Q6 output effect~6.37e-9 RMS. All48forcedQ8/F32 output closures pass. This does not explain earlier large FFN amplification alone. Production/globalrepack remain unchanged and the prior GDN decoded negative remains binding. Next: bounded source-vs-native actual postnorm/Q4 gate-up code attribution; no heldout tuning or quality promotion.
