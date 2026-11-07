@@ -1,0 +1,10 @@
+Setting up EMSDK environment (suppress these messages with EMSDK_QUIET=1)
+Adding directories to PATH:
+PATH += /tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk
+PATH += /tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk/upstream/emscripten
+
+Setting environment variables:
+PATH = /tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk:/tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk/upstream/emscripten:/opt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/tools/node/bin:/tools/google-cloud-sdk/bin
+EMSDK = /tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk
+EMSDK_NODE = /tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk/node/24.19.0_64bit/bin/node
+MAIN_SDK_F16_CLOSED_STUB_LINK PASS 5

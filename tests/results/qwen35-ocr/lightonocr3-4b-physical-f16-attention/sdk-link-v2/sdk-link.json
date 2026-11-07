@@ -1,0 +1,336 @@
+{
+  "schema": "lighton4b-physical-f16-sdk-link/v1",
+  "status": "native_main_and_real_wasm_link_pass",
+  "commands": {
+    "source-pin": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 50,
+      "elapsed_seconds": 0.002147312000005286,
+      "child_user_seconds": 0.0,
+      "child_system_seconds": 0.001838,
+      "peak_rss_bytes_observed": 454656,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 20381696
+    },
+    "source-membership": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 51,
+      "elapsed_seconds": 0.11486494999999763,
+      "child_user_seconds": 0.070843,
+      "child_system_seconds": 0.010341,
+      "peak_rss_bytes_observed": 237568,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 20574208
+    },
+    "submodule": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 52,
+      "elapsed_seconds": 9.036877526000012,
+      "child_user_seconds": 9.22541,
+      "child_system_seconds": 0.6852609999999999,
+      "peak_rss_bytes_observed": 4050944,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 63774720
+    },
+    "native-configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 93,
+      "elapsed_seconds": 2.9204390769999975,
+      "child_user_seconds": 0.9085029999999996,
+      "child_system_seconds": 0.7651470000000001,
+      "peak_rss_bytes_observed": 17436672,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 63774720
+    },
+    "native-main-build": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 171,
+      "elapsed_seconds": 283.771903618,
+      "child_user_seconds": 529.8027490000001,
+      "child_system_seconds": 26.527612,
+      "peak_rss_bytes_observed": 9764864,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434012160
+    },
+    "native-main-link": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1124,
+      "elapsed_seconds": 0.00425515799997811,
+      "child_user_seconds": 0.0010979999999563006,
+      "child_system_seconds": 0.0010979999999989332,
+      "peak_rss_bytes_observed": 282624,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434012160
+    },
+    "sdk-init": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1125,
+      "elapsed_seconds": 0.008271675000003142,
+      "child_user_seconds": 0.0,
+      "child_system_seconds": 0.0038119999999999266,
+      "peak_rss_bytes_observed": 446464,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434012160
+    },
+    "sdk-remote": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1126,
+      "elapsed_seconds": 0.003818377000015971,
+      "child_user_seconds": 0.0009820000000217988,
+      "child_system_seconds": 0.0009820000000004825,
+      "peak_rss_bytes_observed": 208896,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434012160
+    },
+    "sdk-fetch": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1127,
+      "elapsed_seconds": 1.0166086479999876,
+      "child_user_seconds": 0.04616299999997864,
+      "child_system_seconds": 0.028209000000000373,
+      "peak_rss_bytes_observed": 5652480,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434012160
+    },
+    "sdk-checkout": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1138,
+      "elapsed_seconds": 0.03241847199996073,
+      "child_user_seconds": 0.002973999999994703,
+      "child_system_seconds": 0.01087400000000116,
+      "peak_rss_bytes_observed": 237568,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434012160
+    },
+    "sdk-install": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1139,
+      "elapsed_seconds": 42.58642961100003,
+      "child_user_seconds": 24.56886499999996,
+      "child_system_seconds": 6.714127999999999,
+      "peak_rss_bytes_observed": 34996224,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434012160
+    },
+    "sdk-activate": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1144,
+      "elapsed_seconds": 0.16529402700007267,
+      "child_user_seconds": 0.11870600000008835,
+      "child_system_seconds": 0.03593399999999747,
+      "peak_rss_bytes_observed": 589824,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434012160
+    },
+    "emcc-version": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1145,
+      "elapsed_seconds": 0.5165539600000102,
+      "child_user_seconds": 0.40711899999996604,
+      "child_system_seconds": 0.07996400000000392,
+      "peak_rss_bytes_observed": 188416,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434012160
+    },
+    "wasm-configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1162,
+      "elapsed_seconds": 6.72074652699996,
+      "child_user_seconds": 5.018834999999967,
+      "child_system_seconds": 1.3008699999999962,
+      "peak_rss_bytes_observed": 15450112,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434012160
+    },
+    "wasm-build": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1293,
+      "elapsed_seconds": 108.31677745700006,
+      "child_user_seconds": 130.05854,
+      "child_system_seconds": 3.992001000000002,
+      "peak_rss_bytes_observed": 9969664,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434012160
+    },
+    "wasm-run": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1595,
+      "elapsed_seconds": 1.0009520879999627,
+      "child_user_seconds": 0.2121470000000727,
+      "child_system_seconds": 0.10812800000000067,
+      "peak_rss_bytes_observed": 188416,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434012160
+    }
+  },
+  "model_forward_executed": false,
+  "quality_qualified": false,
+  "emsdk_source_sha": "1693ce7359fc9694f198694f902a2cc061239b86",
+  "emsdk_version": "6.0.2",
+  "phase": "wasm-run",
+  "source_sha": "d7a35a13d6960a836da3831d515cb0ede09083bc",
+  "preflight": {
+    "available_bytes": 31501971456,
+    "disk_free_bytes": 1037712060416,
+    "load": [
+      0.66748046875,
+      0.373046875,
+      0.1533203125
+    ]
+  },
+  "compile_contract": {
+    "main_helper_present": true,
+    "main_private_abi": false,
+    "delta_private_abi": true
+  },
+  "wasm_artifacts": {
+    "wasm/physical-f16-shared-link.wasm": {
+      "bytes": 797658,
+      "sha256": "843578be0aaa3b8138bb53ecdc590f406db69df10dc927b21040b8c3336b0ecb"
+    },
+    "wasm/physical-f16-shared-link.js": {
+      "bytes": 12369,
+      "sha256": "c6dab6a3a97eb14d51b5d1dd8df5e5c0587bdb1b3ac1a2e0ab0e5a1fd4eaa157"
+    }
+  },
+  "limitations": "Focused actual shared-decoder WASM closure + main source membership, not a complete OCR/WASM artifact size or model qualification.",
+  "elapsed_seconds": 456.23588570699997,
+  "artifacts": {
+    "bounded-worker.log": {
+      "bytes": 405,
+      "sha256": "caaa3d6df027a3d79b084f790556b77db3cabe2a267dccc8223760580b66469c"
+    },
+    "wasm-configure.log": {
+      "bytes": 2158,
+      "sha256": "41ea75dd9e488ac01772288a6d4ed172893fb787f8139e701eca660b6e8d07d9"
+    },
+    "wasm-build.log": {
+      "bytes": 4755,
+      "sha256": "60aab82e8d5395a7719de27a2aa7d451b2034299c31c80d1171ab15d20853084"
+    },
+    "venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "pip-resolution.json": {
+      "bytes": 205584,
+      "sha256": "182672f676b0fee31e2e2cba68c6296615ab0a90bc9ac93c4c61da17a66f3934"
+    },
+    "native-main-build.log": {
+      "bytes": 263233,
+      "sha256": "bdeec35d143fcf92ef7a5f19dbb1a8c4169c989b5de422e633af8ad91a9e6288"
+    },
+    "sdk-activate.log": {
+      "bytes": 936,
+      "sha256": "71a038929ba9558cfc22a8652822be862a7f94d5a826f9f6933f2afc7d1ac7e3"
+    },
+    "sdk-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "native-CMakeCache.txt": {
+      "bytes": 29027,
+      "sha256": "632c80a42cc37a0bda9b9705bd84f30a58eb59abcd1a0a36dd8fba5a33eaf370"
+    },
+    "wasm-run.log": {
+      "bytes": 727,
+      "sha256": "d88b78523cb1344a2bcb58903007b7285d1f1ca48182bca53eb70523cedea8f1"
+    },
+    "source-membership.log": {
+      "bytes": 200,
+      "sha256": "10f2c1fc249ef367339cbc71636f650976f05b21a9229b33b34adce1708eda33"
+    },
+    "submodule.log": {
+      "bytes": 234,
+      "sha256": "ff508577c9b2cd54b941b4cca4f9cd325d32914cc8d03ae3bdeff897aca55849"
+    },
+    "sdk-checkout.log": {
+      "bytes": 45,
+      "sha256": "dc8908e86d2bb643be83158f423a2d049f04830e3525c64cab94f535ea6a75af"
+    },
+    "emcc-version.log": {
+      "bytes": 1069,
+      "sha256": "495dc3f9f153a9933d9e008354e62259dfa2e736bd7e2e5788c7b920845304f0"
+    },
+    "sdk-fetch.log": {
+      "bytes": 122,
+      "sha256": "679b5178d86681a2a778be4950f693999f062fac2aaa03f127d72a0aec7ee8a7"
+    },
+    "source-pin.log": {
+      "bytes": 41,
+      "sha256": "5b00af7d4254da9977490aadde7132778e738e627341c444cc3e6e3dcc2e5df2"
+    },
+    "native-main-link.log": {
+      "bytes": 37,
+      "sha256": "e40c9000f6e6d7cba997e679ba3e65d09b9136bb56bbd66e9952d2330044e0bb"
+    },
+    "native-configure.log": {
+      "bytes": 2027,
+      "sha256": "5d87121644c53b3be09dd1ea28b5511a4ce7aebdf7f310b0de11fb7494a84900"
+    },
+    "sdk-init.log": {
+      "bytes": 582,
+      "sha256": "1022f0e4a3fb96dcc80a8fe9cd2eb131cb5ca5b7a9fd5203ea87c95746042dbe"
+    },
+    "sdk-install.log": {
+      "bytes": 1688,
+      "sha256": "e81427195a312816a5c78fb9e794c4498a5a6a63c16f4d707165ba831a73f3e7"
+    },
+    "dependencies.log": {
+      "bytes": 2563,
+      "sha256": "e910b4c656b2b798e3f094b32bf5c11e346da72eb991b8f2cd52c538af6a122e"
+    },
+    "source-init.log": {
+      "bytes": 574,
+      "sha256": "bbbf94ff01a0ef238ac2513afc58cc0aab86df17871d4c07d89ad7f757e3eef0"
+    },
+    "source-fetch.log": {
+      "bytes": 123,
+      "sha256": "ec95f5e5875a5b9a15986f6b77bd2014d1edc2b266420f9ea79adb2b5eee3329"
+    },
+    "dependency-check.log": {
+      "bytes": 132,
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    "physical-f16-bootstrap.json": {
+      "bytes": 352,
+      "sha256": "4a94adeef3a132052827fe3ae09b597ffa4b62ca1400ee4386780c5429538eab"
+    },
+    "source-checkout.log": {
+      "bytes": 95,
+      "sha256": "5bbcd98b2c3dbf91220a671d8b7b045f4399d35288db1db7c29b14dbab3507a8"
+    },
+    "wasm-CMakeCache.txt": {
+      "bytes": 26698,
+      "sha256": "eaea7da1a80b368f8cd2dd67f04bc16d034a23d56e95a9c8ff920adf36ddce42"
+    },
+    "wasm/physical-f16-shared-link.wasm": {
+      "bytes": 797658,
+      "sha256": "843578be0aaa3b8138bb53ecdc590f406db69df10dc927b21040b8c3336b0ecb"
+    },
+    "wasm/physical-f16-shared-link.js": {
+      "bytes": 12369,
+      "sha256": "c6dab6a3a97eb14d51b5d1dd8df5e5c0587bdb1b3ac1a2e0ab0e5a1fd4eaa157"
+    }
+  }
+}

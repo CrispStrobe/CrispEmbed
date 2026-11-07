@@ -1,0 +1,36 @@
+{
+  "schema": "lighton4b-physical-f16-sdk-link-evidence/v1",
+  "source_sha": "d7a35a13d6960a836da3831d515cb0ede09083bc",
+  "receipt_sha256": "872bb06415bb7beeabbfdbc3ba5af1890df0709896a3047fd9aa8271df4f4023",
+  "native_main_archive_link": "PASS 5",
+  "real_emscripten_shared_attention_helper_node": "PASS 5",
+  "emscripten_version": "6.0.2",
+  "public_helper_closed": true,
+  "full_ocr_wasm_qualification": false,
+  "artifacts": {
+    "source-membership.log": {
+      "bytes": 200,
+      "sha256": "10f2c1fc249ef367339cbc71636f650976f05b21a9229b33b34adce1708eda33"
+    },
+    "wasm-CMakeCache.txt": {
+      "bytes": 26698,
+      "sha256": "eaea7da1a80b368f8cd2dd67f04bc16d034a23d56e95a9c8ff920adf36ddce42"
+    },
+    "physical-f16-bootstrap.json": {
+      "bytes": 413,
+      "sha256": "15115bb626527b9f02b76d22fc92e598ffd59f0d614d90d90032bdde0d5e584e"
+    },
+    "native-main-link.log": {
+      "bytes": 37,
+      "sha256": "e40c9000f6e6d7cba997e679ba3e65d09b9136bb56bbd66e9952d2330044e0bb"
+    },
+    "sdk-link.json": {
+      "bytes": 12378,
+      "sha256": "872bb06415bb7beeabbfdbc3ba5af1890df0709896a3047fd9aa8271df4f4023"
+    },
+    "wasm-run.log": {
+      "bytes": 727,
+      "sha256": "d88b78523cb1344a2bcb58903007b7285d1f1ca48182bca53eb70523cedea8f1"
+    }
+  }
+}

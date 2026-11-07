@@ -1,0 +1,11 @@
+{
+  "schema": "lighton4b-physical-f16-bootstrap/v1",
+  "source_sha": "d7a35a13d6960a836da3831d515cb0ede09083bc",
+  "status": "completed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "bounded-worker",
+  "worker_sha256": "869f1f33b459357d248ae453919895bd78d3e9724e897c65971df7a1e47bcbaf",
+  "worker_status": "native_main_and_real_wasm_link_pass"
+}

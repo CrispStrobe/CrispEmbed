@@ -3063,3 +3063,7 @@ The actual native main archive now passes all five closed-helper link checks. Th
 ### Physical F16 attention full-form measured result
 
 [Authenticated full-form evidence](tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/full-form-v2/evidence.json): source `4a63d73be`, unchanged physical weights/features, frozen old-ON baseline 38 stages and both score rows exact. The new gate completes all 177 teacher positions and independent 167-token EOS generation. Against original BF16, native CER 175/656 and WER 45/90 improve on retained upstream 189/656 and 46/90 for this form. It remains numerically different (upstream first-score RMS 0.105889/max 0.558670), and is not release qualification. Full arm including teacher scoring took 241.94 s; sampled RSS 3,023,495,168 B. Independent teacher-row numerical review and same-configuration table/Arabic plus representative held-out/composed-vision gates remain pending.
+
+### Actual native SDK and real WASM linkage verified
+
+[Corrected Emscripten control](tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/sdk-link-v2/evidence.json) at `d7a35a13d` passes the actual main SDK archive link and real Emscripten 6.0.2 shared-decoder/helper closure plus Node execution (five checks each, 456.24 s). The public helper remains the unsupported closed stub; only the experimental decoder target receives the private ABI definition. This verifies linkage, not a complete OCR WASM artifact or model qualification. V1 negative remains preserved.
