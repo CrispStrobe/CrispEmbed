@@ -56,6 +56,12 @@ R[vis_f16_attn_q8]="$VIS --tensor-type l.blk.*.attn_?.weight=q8_0"
 R[vis_f16_emb_f16]="$VIS --tensor-type l.embed_tokens.weight=f16"
 R[vis_f16_imat]="$VIS --imatrix $M/imatrix.gguf"
 R[vis_f16_km_imat]="$VIS $(km_rules) --imatrix $M/imatrix.gguf"
+# Round 2 (after run 42375883471: vision Q8_0 is fine, the 4-bit decoder is the cause):
+# higher-precision decoder bases, vision at the default Q8_0 policy.
+declare -A BASE
+R[dec_q8_0]=""; BASE[dec_q8_0]=q8_0                       # Q8_0 weights, Q8_0 activations
+R[dec_q6_k]=""; BASE[dec_q6_k]=q6_k                       # Q6_K weights, Q8_K activations
+R[dec_q5_k]=""; BASE[dec_q5_k]=q5_k                       # Q5_K weights, Q8_K activations
 ORDER="q4k_repro dec_f16 vis_f16 vis_f16_km vis_f16_attn_q8 vis_f16_emb_f16 vis_f16_imat vis_f16_km_imat"
 [ "$WANT" = all ] || ORDER=${WANT//,/ }
 
@@ -73,9 +79,9 @@ fi
 for r in $ORDER; do
     set -f  # the GLOB=TYPE rules must reach the quantizer unexpanded
     # shellcheck disable=SC2086
-    "$Q" "$M/f16.gguf" "$M/$r.gguf" q4_k ${R[$r]} > "$OUT/quant.$r.log" 2>&1 || { set +f; note "quantize $r FAILED"; continue; }
+    "$Q" "$M/f16.gguf" "$M/$r.gguf" "${BASE[$r]:-q4_k}" ${R[$r]} > "$OUT/quant.$r.log" 2>&1 || { set +f; note "quantize $r FAILED"; continue; }
     set +f
-    note "recipe $r bytes=$(stat -c %s "$M/$r.gguf") flags=${R[$r]//$M\//}"
+    note "recipe $r base=${BASE[$r]:-q4_k} bytes=$(stat -c %s "$M/$r.gguf") flags=${R[$r]//$M\//}"
 done
 
 CASES=(fox=$I/fox.png receipt_example=$I/cc0/receipt_example.png simple_form=$I/cc0/simple_form.png)

@@ -141,3 +141,30 @@ gh workflow run heavy-cpu.yml --ref <branch> -f script=tools/ci-heavy/got_ocr2_q
 Follow-ups if E2–E7 plateau: Q5_K decoder (`q5_k` base plus the same vision rule), and a gated
 F16-activation decoder path (dequantize the weight to F16 per matmul) to separate weight error
 from activation-quantization error.
+
+## 5. Round-1 results (run 42375883471) — hypothesis 1 rejected
+
+[Receipt](../tests/results/got-ocr2-q4/recipe-search-42375883471.txt). Panel: fox / receipt_example / simple_form.
+
+| Recipe | Bytes | Exact | First div. (receipt/form) | CER (receipt/form) | min logit cos (receipt/form) |
+|---|---|---|---|---|---|
+| F16-r2 | 1.44 GB | 3/3 | — | 0 / 0 | 1.0 / 1.0 |
+| published Q4_K / E0 | 445 MB | 1/3 | 83 / 20 | 0.34 / 0.05 | 0.46 / 0.80 |
+| **E1 F16 decoder, Q8_0 vision** | 1.03 GB | **2/3** | — / 7 | **0 / 0.004** | **0.999 / 0.966** |
+| E2 F16 vision, Q4_K decoder | 535 MB | 1/3 | 83 / 20 | 0.35 / 0.04 | 0.50 / 0.82 |
+| E3 E2 + Q4_K_M Q6_K layers | 548 MB | 1/3 | 3 / 27 | 0.60 / 0.04 | 0.82 / 0.59 |
+| E4 E2 + Q8_0 attention | 586 MB | 1/3 | 3 / 16 | 0.55 / 0.07 | 0.27 / 0.95 |
+| E5 E2 + F16 embedding | 681 MB | 1/3 | 3 / 16 | 0.55 / 0.05 | 0.72 / 0.87 |
+| E6/E7 + imatrix | 535/548 MB | 1/3 | 3 / 27, 3 / 7 | 0.55 / 0.02, 0.55 / 0.004 | 0.66 / 0.73, 0.56 / 0.77 |
+
+Findings: the Q8_0 vision policy is **not** the cause (E1 with Q8_0 vision is near-exact; E2 with
+F16 vision is no better than the published file). Every 4-bit-weight decoder fails the long,
+digit-heavy receipt page regardless of Q4_K_M layers, Q8_0 attention, an F16 LM head or imatrix,
+consistent with the prior art (no exact 4-bit GOT-OCR2 exists; MLX 4-bit CER 0.0116).
+Open question: weight precision vs CPU activation quantization (F16-weight matmuls take F16
+activations; quantized matmuls quantize activations to Q8_K/Q8_0).
+
+**Round 2** (dispatched next): decoder base Q8_0 / Q6_K / Q5_K with vision at the default Q8_0
+policy (`dec_q8_0`, `dec_q6_k`, `dec_q5_k`). If Q8_0 is exact, the answer is weight precision and
+the smallest exact base is the candidate; if Q8_0 also drifts on the receipt, the remaining lever
+is a gated F16-activation decoder path.
