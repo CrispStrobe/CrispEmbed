@@ -1,0 +1,50 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+phase source
+phase fetch-production
+phase production-bytes
+phase ggml
+phase native-configure
+phase native-build
+phase test-lighton4b-physical-f16-vision
+phase test-lighton4b-physical-f16-attention
+phase cli-native-composed
+phase cli-native-source-features
+phase cli-cap-low
+phase cli-cap-high
+phase cli-threads
+phase cli-mode
+phase cli-disabled
+phase cli-unflagged
+phase cli-old256
+phase cli-old512
+phase up-init
+phase up-remote
+phase up-fetch
+phase up-checkout
+phase up-configure
+phase up-build
+phase source-preflight-noargs
+phase server-help
+Traceback (most recent call last):
+  File "/tmp/lighton4b-heldout-historical-receipt-v1/source/tools/heldout/worker.py", line 119, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/tmp/lighton4b-heldout-historical-receipt-v1/source/tools/heldout/worker.py", line 79, in main
+    row=cfg['base_model'];protected=work/row['file'];base.download('https://huggingface.co/'+row['repository']+'/resolve/'+row['revision']+'/'+row['file'],protected,row['bytes'],row['sha256']);candidate=work/'candidate.gguf';audit=pack.convert(protected,up_model,candidate,out/'physical-pack.json');require(audit['candidate_sha256']==cfg['candidate_sha256'],'same immutable physical model');protected.unlink()
+                                                     ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-heldout-historical-receipt-v1/source/tools/kaggle/lighton4b_upstream_physical_decode.py", line 35, in download
+    while b:=src.read(8*1024**2):
+             ~~~~~~~~^^^^^^^^^^^
+  File "/usr/lib/python3.13/http/client.py", line 494, in read
+    s = self.fp.read(amt)
+  File "/usr/lib/python3.13/socket.py", line 723, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/lib/python3.13/ssl.py", line 1315, in recv_into
+    return self.read(nbytes, buffer)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/ssl.py", line 1149, in read
+    return self._sslobj.read(len, buffer)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+TimeoutError: The read operation timed out

@@ -1,0 +1,23 @@
+{
+  "schema": "lighton4b-heldout-transfer-negative-review/v1",
+  "source_sha": "6ec3b4f9dff8849c2a514b3838fd8e931f67bf69",
+  "files": {
+    "heldout-result.json": "4e66179ae812721d19e6a2a2445db6cfd03f16193cd57f81f2484cb61f066566",
+    "heldout-case-bootstrap.json": "6dff5b91aaced7504e0016199bfe0609f8a8f3e5bd022915b0b05ea0686e3fa6",
+    "bounded-worker.log": "f9603e133f23811e1aec160dccefe13e82c298c1b5e3258544372bf89e90b50b",
+    "test-lighton4b-physical-f16-vision.log": "d58c15e1a57af3d53eada05f045b41d5fdb56580fc6854f8021f06a8bb03c7f2",
+    "test-lighton4b-physical-f16-attention.log": "5892c49ef41bc582baf756071bcb35987aa815a18b8e88452d1cfa601f57cdef",
+    "production-bytes.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "phase_actual": "native base model HTTP read before candidate conversion",
+  "elapsed_seconds": 799.76841874,
+  "reported_phase_stale": "server-help (download phase was not yet recorded in source6ec3)",
+  "heldout_forward_executed": false,
+  "model_acquisition_attempted": true,
+  "candidate_converted": false,
+  "observed167_replay_executed": false,
+  "heldout_output_read": false,
+  "remaining_cases_submitted": false,
+  "fix_source": "0d1755ca1b2478256ac81c5a3132bc0408497ef4",
+  "fix_scope": "At most three authenticated transport attempts; never swallow worker deadlines or retry hash failures; clean only initially absent task destination partials."
+}

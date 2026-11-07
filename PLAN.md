@@ -3184,3 +3184,7 @@ Source `a03412aeb` completed: merged upstream vision exact for both cases; nativ
 ### Provisional held-out executor controls (2026-11-07)
 
 Source874728 model-free CPU controls pass632.16s, raw7b090c04; all28owned artifact hashes independently exact. Actual10CLI gates, synthetic24-layer vision37/F16attention255297, both native/upstream metadata adapter builds and18Python tests pass. No checkpoint acquisition or heldout forward. Freeze this receipt before case execution; require actual source/native IDs/modalities/3-axis positions and observed167 replay before any heldout forward. References remain provisional/unadjudicated with rights limits; no release/quality claim.
+
+### First provisional held-out transport negative (2026-11-07)
+
+Source6ec3 receipt attempt stopped799.77s on nativebase4GBHTTP read timeout after successfulcontrols/inputadmission, before candidate conversion/observed167/anyheldoutforward. Rawfailure/stack/controlmarkers/hashreview preserved. No heldoutoutput/qualityresult or othercase submitted. Scoped0d175 retry max3transportattempts keeps completeSHAverification, explicitWorkerDeadlinerethrow, integrityfailclosed and taskownedpartialcleanup; inputs/selection/scoring/arithmetic unchanged.
