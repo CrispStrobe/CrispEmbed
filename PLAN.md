@@ -29,14 +29,16 @@ receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
 [current state](docs/current-state-and-next-steps.md). Branches named below are merged
 into `main` unless the row says otherwise; start new work from `origin/main`.
 
+**LightOn4B composed-vision follow-up:** [independent source review](docs/lighton4b-composed-control-independent-review.md) covers tools-only `b98567cfd`: four composed protocol controls and seven component controls passed, and production-source identity and driver hash were checked. The prior composed observed form was worse than source-fed vision; an actual-stage-admitted paired decode is being prepared by the existing lane. The component receipt and payloads were not independently read for this review. Preserve the negative baseline and independently verify those artifacts, the new decoded output and all predeclared gates before any qualification or default change.
+
 | Lane | State | Next action | Done when |
 |---|---|---|---|
 | OCR model gaps / LightOnOCR-3-4B (`feat/ocr-next-models-20261104`, [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143)) | Main `17c96639`/PR141 evidence is integrated; all seven workflows pass at `91b24764`. Explicit converter has 16 passing export controls at `aa661568` (333 total); its inline workflow-contract regression is repaired. [Default-off grouped-head APIs and pinned original/meta protocols](docs/lightonocr3-4b.md#default-off-grouped-head-component-and-hosted-reference) are implemented | Review hosted meta construction, 208 original/native component stages and cache controls, plus combined regression CI. Then add bounded vocabulary projection and explicit larger-model ownership | Native support remains false until complete original/native F32/F16 and document evidence, followed by separate precision/publication gates |
 | Q4_K_MIX publications (MiniCPM-OCR, Unlimited-OCR-2, MoEdern 27M/115M, Josev, UltraBERT) | Recipes and receipts on main. TeleOCR and MinerU Q4_K_MIX are already published and registered (`teleocr-q4_k-mix`, `mineru25-pro-q4_k-mix`, PR #116); the rest are not | Coordinator dispatches the cosine-gated publication per model (sections below); Josev needs a quantized branch in `josev_publish.py`, MoEdern needs SciFact/client panels first | Hub upload, empty-cache readback, registry alias with SHA-256 |
+| Experimental quantized publications (7 Nov owner decision) | Closed: all published, read back from an empty cache and registered with pinned SHA-256 `-experimental` aliases; quality tables in [docs/quantized-models.md](docs/quantized-models.md) and HISTORY 7 November | Downstream consumer receipts for the new aliases (UltraBERT, MoEdern, Josev, MiniCPM/Unlimited Q4_K_MIX, GOT-OCR2 Q4_K); SciFact/client panels for MoEdern Q4 | Consumer receipts; no promotion out of experimental without new quality evidence |
 | `env_gate.h` false/off/no lockstep | CrispEmbed [PR163](https://github.com/CrispStrobe/CrispEmbed/pull/163) merged the companion update and tests | Recheck sibling sync when either header changes | Identical headers, tests in CI, sibling sync green |
-| OXR native-doc parity | Rerun 41664201815 reviewed ([receipt](tests/results/oxr/native-doc-41664201815-review.json)): replay/live/request sets identical on 5/5, block counts/types/text identical, only D-FINE bbox floats differ (max 0.0004 px) under the bit-exact comparator | **Owner decision:** accept a versioned bbox tolerance (e.g. ≤0.01 px, text/types/order exact) in `tools/oxr_doc_parity.py`, or keep strict; then rerun `tools/oxr_native_doc.sh` | Five-case parity receipt under the chosen comparator |
 | Unlimited-OCR-2 Q8_0 on CUDA | 0.9555 < 0.97 (CPU 0.9739) | Search a CUDA-qualifying Q8_0 mix (F16 shared experts/attention) | ≥ 0.97 on CPU and CUDA |
-| GOT-OCR2 Q4_K drift | F16-r2 exact vs original; Q4_K diverges at 83/20; no final-logit cosine measured, so the 1 November precision policy cannot yet be applied | Teacher-forced final-logit cosine of the published Q4_K vs the F16-r2 pipeline (as for Unlimited/MiniCPM), then a mixed search only if < 0.94. Owner: the model is research-licensed (Tongyi), so whether a Q4_K is worth more compute is an owner call (handoff "Owner decisions") | Cosine > 0.94 recorded, or 3/3 token-exact, or owner accepts/declines |
+| GOT-OCR2 mixed-precision Q4 search | Owner (7 Nov): Q4_K published as EXPERIMENTAL (`got-ocr2-q4_k-experimental`); F16-r2 stays the exact recommended variant; Q4_K diverges at token 83/20 | Measure teacher-forced final-logit cosine of Q4_K vs F16-r2, then search mixed Q4_K recipes against the exact F16-r2 pipeline (`tools/ci-heavy/got_ocr2_f16_republish.sh` compares IDs with the original). Licence gate stays | A recipe token-exact on fox/receipt_example/simple_form, or > 0.94 with divergences documented |
 | Server load control (PR124) | Merged, gates default-off | Live A/B with a real GGUF; concurrent latency; chat-route parity | Receipts per item in the section below |
 | Reranker residual (~0.2 logits) | Pair layout/truncation fixed (PR122) | Fix the stage-diff harness, Spearman/top-k instead of exact argsort | Attributed or accepted |
 | CUDA / Metal audit follow-ups | Matrices in `docs/gpu-support-matrix.md` | One gated GPU path or A/B at a time | Measured A/B before any default flip |
@@ -44,7 +46,7 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Issue 71 inpainting | Engines published (default-off); stream and grain correction [PR162](https://github.com/CrispStrobe/CrispEmbed/pull/162) merged | Representative subtitle/video quality, MI-GAN512 Q4_K caveat (0.9019) | Owner-reviewed quality panel |
 | Releases / pub.dev / app pin | v0.17.15 published, pub.dev unqualified, app on 0.17.12 | Qualified assets and fresh consumers first | Release procedure in the pub.dev section |
 | OXR-1.0 quantized + GPU | Q8_0-large / Q4_K-head pass the owner bar (cos ≥ 0.998 vs F16, CPU/Metal/CUDA); German diverges 1 token from decode-step activation quantization | Opt-in F32-activation decode A/B (the recipes are already published and registered as `oxr-1.0-q8_0` / `oxr-1.0-q4_k-head`, PR #97) | A/B receipt; German page token-exact or the divergence attributed |
-| OXR native document route / D-FINE | Hosted helpers/replay/native pass (41249898971), `dfine` stage failed there; D-FINE regions match original 5/5 but 2.6x slower | Re-run `oxr_native_doc.sh` `dfine native` stages on main; encoder per-op profile | Hosted parity on all five cases; profile receipt |
+| OXR native document route / D-FINE | [Run 42359526030](tests/results/oxr/native-doc-42359526030-v2.json) passes all five cases with 0.01 px bbox tolerance; strict bbox equality remains false | Profile the encoder; preserve comparator-v2 and strict results | Profile receipt and any performance action independently validated |
 | MinerU2.5-Pro full native doc route | 8/8 model-backed cases identical (41251475795); default-off | Owner: default-on or not (handoff "Owner decisions"); image-bearing-table fixture | Decision recorded; fixture receipt |
 | Marker-style pipeline / TeleOCR | Implemented and bounded-validated, default-off; TeleOCR strict numerics false at every precision | Representative licensed multilingual/layout gold corpus (needs owner-provided licensed annotations) | Corpus frozen; CER/WER/order receipts |
 | Model-weight licences in apps | Registry/cards/gates corrected; CrispSorter PR20 at0af4c34 adds fail-closed OCR consent, typed Gemma terms, real0.17.12 pin and image backfill. Its reported Metal-feature cargo check passes; PR18 remains draft | Review/integrate [CrispSorter20](https://github.com/CrispStrobe/CrispSorter/pull/20) alongside18; retain Windows-helper/live-OCR gaps. Check CrispCalc consent separately. No vendor/app pin upgrade | Downstream acknowledgement PRs merged and actual consumer checks recorded |
@@ -361,11 +363,9 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
 ## Unlimited-OCR-2 Q4_K recipes — 3 November 2026 (perf/q4k-unlimited-ocr2-20261103)
 
 Source: `docs/unlimited-ocr2-q4k-recipes.md`. Both named policies clear the Q4_K bar on
-hosted CPU (portable) and Kaggle T4; `Q4_K_MIX` (`unlimited_ocr2_q4k_shared8_v1`) is
-prepared in the publication protocol, not published.
-
-- Coordinator: dispatch `Q4_K_MIX` publication (cosine gate); the fresh F16 conversion must
-  equal the measured published F16 SHA `487b887e...` or the receipt is re-scored.
+hosted CPU (portable) and CUDA T4. `Q4_K_MIX` (`unlimited_ocr2_q4k_shared8_v1`) was
+[published and re-verified](tests/results/unlimited-ocr2/publication-42371027698.json)
+in run 42371027698; review alias and consumer coverage separately.
 - TODO: Q8_0 is 0.9555 on CUDA (< 0.97; CPU 0.9739). Find a CUDA-qualifying Q8_0 recipe
   (F16 shared experts / attention) and re-score the published F32-sourced Q8_0.
 - Metal arm not measured.
@@ -376,9 +376,9 @@ Source: `docs/josev2b-q4k-sweep.md`. Portable hosted CPU, frozen original refere
 `josev_q4k_down8_v1` (2,952 MiB vs Q8_0 3,462) clears the Q4_K bar on head logits
 (0.99739) and final norm (0.94911); Q8_0 clears 0.97 (0.99995/0.99944).
 
-- Coordinator: Josev Q8_0/Q4_K_MIX publication needs a quantized branch in
-  `tools/ci-heavy/josev_publish.py` first (`docs/josev2b-q4k-publication-v1.json`
-  is prepared, `dispatch_ready` false). Not published.
+- Q8_0 and Q4_K_MIX were published experimentally and re-verified in run
+  42371120858; [the receipt](tests/results/josev2b/publication-q4k.json) records
+  exact bytes, hashes, precision limits and immutable readback.
 - No Q4_K recipe is typed-JSON exact (0/4; argmax 4/4). Strict 0.002/0.99999 stage
   budgets stay failed diagnostics.
 - CUDA: Josev's packed/composed runtime is CPU-only; a CUDA arm needs a backend path.
@@ -386,10 +386,8 @@ Source: `docs/josev2b-q4k-sweep.md`. Portable hosted CPU, frozen original refere
 ## TeleOCR / MinerU Q4_K-class recipes — 2 November 2026 (feat/qwen2vl-q4k-recipes)
 
 Source: `docs/qwen2vl-q4k-recipes.md`. Winners clear the Q4_K bar on CPU, Metal and
-CUDA; `Q4_K_MIX` publication recipes are prepared, not published.
-
-- Coordinator: dispatch `Q4_K_MIX` publication for TeleOCR and MinerU (cosine gate),
-  then add registry aliases with the read-back SHA-256.
+CUDA; `Q4_K_MIX` variants were published and registered in PR116 with
+`teleocr-q4_k-mix` and `mineru25-pro-q4_k-mix` aliases.
 - Neither winner is token-exact free-running (TeleOCR table@35, three CJK characters;
   MinerU German masthead/"Infrafttreten" and a layout box coordinate). A token-exact
   Q4-class recipe would need more Q8_0 (MinerU `r4` keeps the same two divergences).
@@ -727,7 +725,7 @@ explains why a generic exemption list is insufficient.
 | Josev-2B |F32 composition227 stages/four typed requests is established; protected/single-projection quantization negatives are retained. Final-pair Q8 passes a limited decision screen but75 strict stages/full serialization remain negative. |Execute reviewed calibrated/uncalibrated final-pair Q4 experiment; keep292 critical F32/148 F16/2 Q4 and exact uncalibrated model continuity. Do not select/tune on NEW20. A separately declared independent task panel, actual six-client/public/error/recovery checks and immutable HF readback remain before publication. Q8 and Q4 qualification are both open. |
 | MoEdern1.5M |Actual F32 capture localizes one near-boundary expert change; router weights already F32. Component-only replay source is ready, execution unreviewed. |Separate same-input operator rounding from upstream input effects; preserve exact-tie guards and all original matrices. Only then declare a gated correction, original-bound full5483-vector/300-query replay and Q8/Q4 retrieval/client panels. Keep explicit query/document roles and late-interaction semantics. |
 | MoEdern27M/115M |Original token checks complete but exact-router-tie failures prevent full reference completion. Authored Q8/top-k tests are component evidence only. |Use source-backed routing semantics and bounded failed-row attribution before separately frozen original/full native controls. Preserve115M dilated-conv behavior. Validate actual20/20/52 padded Q4 and protected Q8 tensors, full retrieval and all public consumers; no component-to-model promotion. |
-| UltraBERT |Frozen5483-row F32 control/300 rankings pass. Full 8-shard Q4 aggregate 40871150002 (`q4k-last-four-ffn`, portable) is complete: min embedding cosine 0.9779 clears the owner Q4_K bar (> 0.94); nDCG@10 -0.0018; strict v1 vector/top-1 (0.973) gates fail and stay recorded ([receipt](tests/results/ultrabert/remaining-q4-shards-v1-review.json)). |Q4_K: coordinator publication dispatch (with the Q4_K_MIX queue). Keep .001 task-degradation/.99 top-one gates and strict vector flags separately. Q8 needs explicit metadata/type admission; standard-header normalization, public clients, independent activation and publication/readback remain open. Public pairs/F16/long-context/GPU/performance are distinct follow-ups. |
+| UltraBERT |Frozen5483-row F32 control/300 rankings pass. Full 8-shard Q4 aggregate 40871150002 (`q4k-last-four-ffn`, portable) is complete: min embedding cosine 0.9779 clears the owner Q4_K bar (> 0.94); nDCG@10 -0.0018; strict v1 vector/top-1 (0.973) gates fail and stay recorded ([receipt](tests/results/ultrabert/remaining-q4-shards-v1-review.json)). |Q4_K: published and re-verified experimentally; keep .001 task-degradation/.99 top-one gates and strict vector flags separately. Q8 needs explicit metadata/type admission; standard-header normalization, public clients, independent activation and publication/readback remain open. Public pairs/F16/long-context/GPU/performance are distinct follow-ups. |
 | Unlimited-OCR-2 |The last1 per-stage panel 40868634374 stopped after 1/4 Q4 cases on its disk-reserve preflight ([receipt](tests/results/unlimited-ocr2/last1-replay-v1-initial-failure.json)); superseded by the 3 November final-logit Q4_K recipe lane. |See "Unlimited-OCR-2 Q4_K recipes" and "Unlimited-OCR-2 Q8_0 on CUDA" above; no further per-stage panel. |
 | MiniCPM-OCR |All30 decoded cases exact; vision130/180 pass,50 fail;96 crop parts unmapped. Q4 protects vision while generic Q8 quantizes it. |Declare decoder-only Q8 on the SAME186 decoder matrices; keep593 source-model exclusions byte-exact. Independently attribute earliest F32 vision differences with same inputs/weights and document unmapped crop limits. Preserve original23 plus added7 outputs; qualify all five cases/intermediates/clients before publication. No original corpus recapture or generic quantizer default change. |
 | LFM2.5 masked230M |Published Q8/Q4/calibrated/mixed profiles exist, but mixed330 still changes one masked prediction. |Reuse immutable original/same-weight references; isolate remaining prediction-sensitive groups. Preserve attention/ShortConv/FFN-down high precision supported by actual ablations. Freeze independent task inputs before selection; extend quantized/GPU/client evidence separately. Do not confuse this with the350M retrieval model. |

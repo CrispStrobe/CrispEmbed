@@ -138,6 +138,60 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 7 November 2026 — `got-ocr2` alias now resolves to F16-r2
+
+Owner decision: the default `got-ocr2` alias points to the token-exact F16-r2 at pinned Hub
+commit `c0f1aa7b` (same file as `got-ocr2-f16`); the Q4_K file is only reachable as
+`got-ocr2-q4_k-experimental`. The unpinned `/main/` Q4 URL and its hash entry are removed.
+
+## 7 November 2026 — Experimental quantized publications (owner decision)
+
+Owner decision of 7 November: publish the Q4_K/Q4_K_MIX queue as experimental, each with a
+per-model quality table on its card and in [docs/quantized-models.md](docs/quantized-models.md).
+All runs ended "published and re-verified" (remote LFS identity plus empty-cache readback):
+
+| Model | Run | Hub commit | File | Bytes | SHA-256 |
+|---|---|---|---|---:|---|
+| UltraBERT-Embed-150M Q4_K last-four FFN (new repo) | 42371042739 | `5105fa99` | `ultrabert-embed-150m-q4_k-last-four-ffn.gguf` | 576,997,440 | `087c9be0…eb4533c` |
+| MoEdern 115M Q4_K_MIX | 42371134640 | `8e14d8bb` | `moedern-115m-text-q4_k-mix.gguf` | 89,483,616 | `01d0e507…145db110` |
+| MoEdern 27M Q4_K_MIX | 42371136944 | `5db7ae22` | `moedern-27m-text-q4_k-mix.gguf` | 32,008,416 | `5d31ac7e…f70d62` |
+| Josev-2B Q8_0 | 42371120858 | `7bc8a7ae` | `josev2b-systemone-q8_0.gguf` | 3,630,289,376 | `fc1663bb…e36b85` |
+| Josev-2B Q4_K_MIX | 42371120858 | `7bc8a7ae` | `josev2b-systemone-q4_k-down8.gguf` | 3,095,515,616 | `adc7fa47…74d5e582` |
+| MiniCPM-OCR Q4_K_MIX (+ F16/Q8_0 unchanged) | 42371025754 | `195ba6b1` | `minicpm-ocr-1.0-q4_k-mix.gguf` | 1,017,943,296 | `5ba6cd53…c511ed` |
+| Unlimited-OCR-2 Q4_K_MIX (+ F16/Q8_0 rebuilt) | 42371027698 | `7f5f82c4` | `unlimited-ocr-2-q4_k-mix.gguf` | 2,295,035,584 | `b71f158d…da493a` |
+
+UltraBERT, MoEdern, Josev and MiniCPM Q4 bytes equal the files their precision receipts measured.
+Unlimited-OCR-2's rebuilt F16/Q8_0 differ in whole-file SHA from Hub `e3af0c0c` only by embedded
+tokenizer metadata (tensor-data hashes equal); old aliases stay pinned there. Card refreshes
+(small files only, GGUF bytes verified unchanged) via the new `model-card-refresh.yml`:
+GOT-OCR2 `f557899a` (research-only card, F16-r2 recommended, Q4_K experimental, UPSTREAM_README
+added, LICENSE matches Qwen1.5-0.5B's Tongyi Qianwen LICENSE, NOTICE carries the 2(c) line),
+OXR `08d82435` (German one-step decode divergence), TeleOCR `d6cf3319`, MinerU `e7a85625`,
+MI-GAN512 `0b2d8319` (F16 normal, Q4_K experimental 0.9019). Original TeleOCR/MinerU/OXR/MI-GAN
+publication receipts were archived from their run artifacts. Registry: eight new SHA-pinned
+`-experimental` aliases; MI-GAN f16/q4_k descriptions updated.
+
+## 7 November 2026 — Hugging Face private storage cleanup (owner-approved)
+
+Freed about 30.4 GB of private storage: pruned 163 per-epoch checkpoints from
+`cstr/posformer-training-checkpoints` (kept each run's `latest.ckpt`; history squashed),
+deleted two unrelated 2024 experiment repos, and retired `cstr/crispembed-pixelhacker-private`
+after confirming every GGUF is byte-identical in the public PixelHacker/SDXL-VAE repos and
+mirroring its sidecars ([amendment](docs/inpaint-publication-v1-amendment-20261107.md)).
+A private granite Q4_K_M repo was kept (no byte-identical public copy). All other private repos
+are kept by owner decision.
+
+## 7 November 2026 — OXR native document parity passes (comparator v2)
+
+Heavy CPU run 42359526030 (`f8ec7329`, `tools/ci-heavy/oxr_native_doc.sh dfine native`):
+self-checks, D-FINE and native all pass. All 5 cases (formula, table, receipt, german,
+japanese): Python replay and live requests bit-exact; native-D-FINE layout arms pass under
+comparator v2 (bbox floats within 0.01 px, text/types/order/counts exact); strict bit-exact
+layout still differs (recorded, `strict_all_identical=false`, max 0.0004 px)
+([receipt](tests/results/oxr/native-doc-42359526030-v2.json),
+[review of 41664201815](tests/results/oxr/native-doc-41664201815-review.json)). The route
+stays default-off.
+
 ## 7 November 2026 — OXR native-document rerun reviewed
 
 Heavy CPU run 41664201815 (`dd465a44`) reported `native=fail`. Review

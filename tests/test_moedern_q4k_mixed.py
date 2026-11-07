@@ -80,7 +80,8 @@ class Controls(unittest.TestCase):
     def test_publication_recipes_clear_the_cosine_bar_in_every_run(self):
         import json
         cfg = json.loads((ROOT / 'docs/moedern-q4k-publication-v1.json').read_text())
-        self.assertEqual(cfg['status'], 'prepared, not published')
+        self.assertEqual(cfg['status'], 'approved for experimental publication')
+        self.assertIs(cfg['approved_by_owner'], True)
         for variant, recipes in cfg['recipes'].items():
             for name, rec in recipes.items():
                 self.assertEqual((rec['precision_gate'], rec['precision_tier']), ('cosine', 'q4_k'))
