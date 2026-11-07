@@ -519,6 +519,14 @@ the CLI/server build. Results are recorded in
 [`tests/results/oxr/native-doc.json`](../tests/results/oxr/native-doc.json).
 The route remains default-off until hosted x86 parity holds on every case.
 
+**Comparator v2 (owner decision 7 November 2026).** Python replay and live requests stay
+bit-exact. The two native-D-FINE layout arms (`native_layout_replay`, `e2e`) pass when the
+document is identical except for `bbox` floats within `BBOX_TOL_PX = 0.01` px; text, block
+types, order, counts and scores must still match exactly. Native D-FINE differs from PyTorch by
+at most 0.0004 px (float32 accumulation order; review
+[`native-doc-41664201815-review.json`](../tests/results/oxr/native-doc-41664201815-review.json)).
+Strict results are still recorded per case (`*_identical`, report `strict_all_identical`).
+
 ## Graph optimization gates
 
 | Environment variable | Behavior |
