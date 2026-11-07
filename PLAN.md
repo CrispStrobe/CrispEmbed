@@ -2252,3 +2252,5 @@ Full table/form A/B at `f6a1e60d3` closes OFF all282/167 rows+38 text anchors. G
 ## Combined physical GDN/repack remains unqualified
 
 Source `374d04387` completes four cap512 arms with exact OFF282/167 rows/stages. Combined ON table282EOS matches upstream IDs/text; form167EOS fails character floor194/656 versus upstream189, even with fewer word edits40 versus46. Keep both gates default-off; no aggregate waiver, promotion or ship. [Full evidence and limits](docs/lighton4b-physical-gdn-source-ops.md). No runtime/default/release change or held-out execution.
+
+- Active bounded LightOn4B lane: implement default-off physical Q6 tiled block reduction from pinned6c01 primary source; preserve native legacy for batches<8, all original quantized storage, no global vendor edits. Same-input full source140/native16 operator controls precede decoded table/form A/B; differing source/native graph boundaries remain explicit. No promotion.

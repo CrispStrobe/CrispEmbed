@@ -238,7 +238,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-471 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+474 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -742,6 +742,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_native_ops.h` |  |
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION` | value | unset | string | tuning / config | `src/lighton4b_physical_native_ops.h` |  |
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_native_ops.h` |  |
+
+### lighton4b_physical_q6_tiled
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_q6_tiled.h` | else |
 
 ### lighton4b_rotary_table
 
@@ -1606,3 +1612,5 @@ nonphysical owners. It does not qualify decoded quality or create a release alia
 `CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS=1` is a default-off physical-owner experiment using source-shaped GDN operators while retaining the scalar log1p softplus. It preserves existing quantized projections and output routes, records a distinct cache mode, and rejects reuse across modes. Actual-input component controls pass, but full decoded table A/B regresses349→364/607 character edits and97→104/106 word edits; form text is unchanged. Keep this gate default-off and unqualified; it does not enable a release format. See [decoded result](lighton4b-physical-gdn-source-ops.md).
 
 The combined physical GDN+Q4-repack diagnostic matches observed table IDs/text but fails form character quality194/656 versus upstream189/656, despite better word edits. Both experimental flags remain default-off and unqualified. [Mixed outcome and no-ship limits](lighton4b-physical-gdn-source-ops.md).
+
+`CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED=1` is a default-off physical-owner experiment reproducing pinned upstream Q6 tiled block reduction for batches of at least eight tokens. It retains original quantized bytes, uses the existing public Q8_K activation converter and records a separate cache mode. Smaller batches retain legacy GGML arithmetic. Actual source and native graph boundaries differ; same-input operator proof and complete decoded A/B are required before any quality conclusion. The gate does not enable a public release format or a model alias.

@@ -49,6 +49,8 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
         (previous && previous->physical_f16_attention != lighton4b_physical_f16_attention_mode(w.upstream_physical)) ||
         !lighton4b_upstream_physical_mode_valid(w.upstream_physical) || !lighton4b_physical_native_ops_valid(w.upstream_physical) ||
         w.attention.upstream_physical != w.upstream_physical) return false;
+    const bool q6_tiled=lighton4b_physical_q6_tiled_mode(w.upstream_physical);
+    if (!lighton4b_physical_q6_tiled_valid(w.upstream_physical) || (previous && previous->physical_q6_tiled != q6_tiled)) return false;
     const bool repack = lighton4b_physical_q4_repack_mode(w.upstream_physical);
     if (!lighton4b_physical_q4_repack_valid(w.upstream_physical) || w.physical_q4_repack != repack ||
         w.attention.physical_q4_repack != repack ||

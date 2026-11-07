@@ -295,7 +295,7 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !hidden || matrices.empty() || matrices.size() > 4 || width < 1 ||
         width > 32768 || tokens < 1 || tokens > 16384 || threads < 1 || threads > 256)
         return false;
-    if (!lighton4b_physical_native_ops_valid(upstream_physical) ||
+    if (!lighton4b_physical_q6_tiled_valid(upstream_physical) || !lighton4b_physical_native_ops_valid(upstream_physical) ||
         !lighton4b_physical_q4_repack_valid(upstream_physical) ||
         (upstream_physical && bool(weights_cache && weights_cache->physical_repack_enabled()) !=
                                   lighton4b_physical_q4_repack_mode(true))) return false;
@@ -393,7 +393,7 @@ bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int
          !ggml_get_type_traits(matrix->type)->to_float))
         return false;
     if (!std::all_of(hidden, hidden + size_t(width) * tokens, [](float x) { return std::isfinite(x); })) return false;
-    if (!lighton4b_physical_native_ops_valid(upstream_physical)) return false;
+    if (!lighton4b_physical_q6_tiled_valid(upstream_physical) || !lighton4b_physical_native_ops_valid(upstream_physical)) return false;
     if (lighton4b_physical_native_component(upstream_physical,4)) {
         try {
             if (observer && core_env::on("CRISPEMBED_QWEN35_IMATRIX") &&

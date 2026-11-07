@@ -387,7 +387,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set_property(SOURCE src/josev2b_backbone.cpp src/josev2b_head.cpp
         src/josev2b_text_frontend.cpp src/josev2b_answer_serializer.cpp
         src/josev2b_composed.cpp src/qwen35_decoder.cpp src/qwen35_attention.cpp
-        src/qwen35_linear.cpp src/qwen35_delta.cpp src/lighton4b_physical_gdn_source_ops.cpp src/qwen35_norm.cpp
+        src/qwen35_linear.cpp src/qwen35_delta.cpp src/lighton4b_physical_gdn_source_ops.cpp src/lighton4b_physical_q6_tiled.cpp src/qwen35_norm.cpp
         src/qwen35_positions.cpp src/qwen35_profile.cpp
         APPEND PROPERTY COMPILE_OPTIONS -ffp-contract=off)
     set_property(SOURCE src/qwen35_graph_decoder.cpp APPEND PROPERTY COMPILE_OPTIONS -ffp-contract=off)
@@ -413,7 +413,7 @@ list(APPEND CRISPEMBED_SOURCES src/bert_ner.cpp)
 list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lfm2_vl_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lightonocr.cpp)
-list(APPEND CRISPEMBED_SOURCES src/lighton4b_physical_gdn_source_ops.cpp src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/lighton4b_vision_owner.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/lighton4b_pillow_resize.cpp src/lighton4b_physical_f16_vision.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/lighton4b_physical_gdn_source_ops.cpp src/lighton4b_physical_q6_tiled.cpp src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/lighton4b_vision_owner.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/lighton4b_pillow_resize.cpp src/lighton4b_physical_f16_vision.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
 # Main native/WASM shared decoder resolves the helper to its closed stub. The
 # supported private ABI definition remains PRIVATE to crispembed-qwen35-delta.
 list(APPEND CRISPEMBED_SOURCES src/lighton4b_physical_f16_attention.cpp)
@@ -918,7 +918,7 @@ target_link_libraries(test-lfm2-shortconv PRIVATE crispembed)
 
 # Experimental Qwen3.5 recurrence boundary, independently testable before the
 # full OCR engine is wired. No production C ABI or registry exposure yet.
-add_library(crispembed-qwen35-delta STATIC src/lighton4b_physical_gdn_source_ops.cpp src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/lighton4b_vision_owner.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/lighton4b_pillow_resize.cpp src/lighton4b_physical_f16_vision.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
+add_library(crispembed-qwen35-delta STATIC src/lighton4b_physical_gdn_source_ops.cpp src/lighton4b_physical_q6_tiled.cpp src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/lighton4b_vision_owner.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/lighton4b_pillow_resize.cpp src/lighton4b_physical_f16_vision.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
 target_sources(crispembed-qwen35-delta PRIVATE src/lighton4b_vision_bf16.cpp)
 target_sources(crispembed-qwen35-delta PRIVATE src/lighton4b_physical_f16_attention.cpp)
 # Private ABI is deliberately closed to the exact hosted CPU profile first.
