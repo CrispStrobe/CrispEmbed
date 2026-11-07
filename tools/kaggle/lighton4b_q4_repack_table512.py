@@ -21,6 +21,12 @@ def admit(cfg):
  for key in ['model_repo','model_revision','models','base_model']:require(cfg[key]==baseline[key],'immutable source/precision '+key)
  require(cfg['driver_source_sha256']==sha(ROOT/'tests/lighton4b_native_document.cpp'),'reviewed reference-only CLI')
  require(cfg['expected_candidate_sha256']=='843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43','unchanged physical bytes')
+def score_row(path,np):
+ row=np.fromfile(path,dtype='<f4');require(row.size==248320 and np.isfinite(row).all(),'finite full first-score row');return row
+def first_score(dest,np):
+ row=score_row(dest/'prefill.logits.f32',np)
+ require(sha(dest/'prefill.logits.f32')==sha(dest/'greedy.0.logits.f32')==sha(dest/'teacher.0.logits.f32'),'same actual prefill/teacher/greedy first row')
+ return row
 def cli_controls(native,work,out,run,env):
  base=[native,work/'absent.gguf',work/'absent.rgb',1,1,work/'absent.ids',out,256,4,'greedy-full','--upstream-vision',work/'absent.feature'];rows=[]
  for label,cap,threads,mode,flag,expected in [('legacy256',256,4,'greedy-full',None,4),('legacy257',257,4,'greedy-full',None,2),('legacy512',512,4,'greedy-full',None,2),('extended512',512,4,'greedy-full','--extended-table-cap512',4),('extended513',513,4,'greedy-full','--extended-table-cap512',2),('threads',512,2,'greedy-full','--extended-table-cap512',2),('mode',512,4,'full','--extended-table-cap512',2),('flag',512,4,'greedy-full','--unknown',2),('extended256',256,4,'greedy-full','--extended-table-cap512',2)]:
@@ -66,6 +72,7 @@ def main():
   for rel in ['input.rgb','original.json','upstream_features/prompt.ids']:verify(folder/rel,art[rel])
   for rel in ['upstream-off/response.json','upstream-on/source.vision.0.f32','upstream-on/source.logits.0.f32']+['native/'+x for x in f.STAGES]+[f'native/greedy.{j}.logits.f32'for j in range(282)]:verify(tp.parent/rel,old['artifacts'][rel])
   upstream=json.loads((tp.parent/'upstream-off/response.json').read_text());require(upstream['stop_type']=='eos'and len(upstream['tokens'])==282,'complete actual upstream reference');original=json.loads((folder/'original.json').read_text());require(len(original['generated_ids'])==222 and original['generated_ids'][-1]in[248044,248046],'frozen original teacher reference')
+  reference_score=score_row(tp.parent/'upstream-on/source.logits.0.f32',np)
   image=Image.open(ROOT/case['image']).convert('RGB');require(sha(ROOT/case['image'])==case['image_sha256']and image.tobytes()==(folder/'input.rgb').read_bytes(),'frozen PNG/RGB');ids=list(map(int,(folder/'upstream_features/prompt.ids').read_text().split()));b=io.BytesIO();np.save(b,np.array([ids],dtype='<i8'),allow_pickle=False);require(hashlib.sha256(b.getvalue()).hexdigest()==case['expected_input_ids_npy_sha256'],'frozen actual prompt IDs')
   run('submodule',['git','submodule','update','--init','ggml']);build=work/'build';flags={'CRISPEMBED_NATIVE':'OFF','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_LLAMAFILE':'ON','GGML_CPU_REPACK':'ON','GGML_AVX512':'OFF','GGML_BLAS':'OFF','GGML_BACKEND_DL':'OFF','GGML_OPENMP':'OFF','GGML_CUDA':'OFF','GGML_VULKAN':'OFF'}
   run('configure',['cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release',*[f'-D{k}={v}'for k,v in flags.items()]])
@@ -77,7 +84,7 @@ def main():
   for library in libraries:shutil.copy2(library,bundle/'lib'/library.name)
   r['runtime_bundle']={str(p.relative_to(bundle)):{'bytes':p.stat().st_size,'sha256':sha(p)}for p in bundle.rglob('*')if p.is_file()}
   row=cfg['models']['Q4_K_M'];source=work/row['file'];r['phase']='acquire-source';save();base.download('https://huggingface.co/'+cfg['model_repo']+'/resolve/'+cfg['model_revision']+'/'+row['file'],source,row['bytes'],row['sha256']);row=cfg['base_model'];protected=work/row['file'];r['phase']='acquire-protected';save();base.download('https://huggingface.co/'+row['repository']+'/resolve/'+row['revision']+'/'+row['file'],protected,row['bytes'],row['sha256']);candidate=work/'candidate.gguf';audit=pack.convert(protected,source,candidate,out/'physical-pack.json');require(audit['candidate_sha256']==cfg['expected_candidate_sha256'],'immutable transport');r['candidate_sha256']=audit['candidate_sha256'];protected.unlink()
-  teacher=work/'one.ids';teacher.write_text(str(original['generated_ids'][0])+'\n');feature=tp.parent/'upstream-on/source.vision.0.f32';reference_score=np.fromfile(tp.parent/'upstream-on/source.logits.0.f32',dtype='<f4')
+  teacher=work/'one.ids';teacher.write_text(str(original['generated_ids'][0])+'\n');feature=tp.parent/'upstream-on/source.vision.0.f32'
   for arm in cfg['arms']:
    require(base.memory()['MemAvailable']>=cfg['minimum_available_memory_bytes'],'per-arm memory');dest=out/arm;dest.mkdir();child=dict(env);child['CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK']='1'if arm=='on'else'0';checked=[0];last=[0.]
    def tick():
@@ -98,7 +105,7 @@ def main():
     for j in range(282):require(sha(dest/f'greedy.{j}.logits.f32')==old['artifacts'][f'native/greedy.{j}.logits.f32']['sha256'],'OFF all282 raw rows')
     for rel in f.STAGES:require(sha(dest/rel)==old['artifacts']['native/'+rel]['sha256'],'OFF all38 stages')
     r['off_282_rows_38_stages_ids_exact']=True
-   row=np.fromfile(dest/'prefill.logits.f32',dtype='<f4');d=row.astype('f8')-reference_score;r['arms'][arm]={'summary':summary,'gates':{k:v for k,v in child.items()if k.startswith('CRISPEMBED_')},'generated_ids':generated,'decoded':text,'cap_hit':not summary['eos'],'vs_original_bf16':f.metric(base,generated,text,original['generated_ids'],original['decoded']),'vs_actual_upstream':f.metric(base,generated,text,upstream['tokens'],upstream['content']),'firstscore_vs_actual_upstream':{'rms':float(np.sqrt(np.mean(d*d))),'max_abs':float(abs(d).max()),'reference_max_abs':float(abs(reference_score).max())},'resources':r['commands'][arm]};save()
+   row=first_score(dest,np);d=row.astype('f8')-reference_score;r['arms'][arm]={'summary':summary,'gates':{k:v for k,v in child.items()if k.startswith('CRISPEMBED_')},'generated_ids':generated,'decoded':text,'cap_hit':not summary['eos'],'vs_original_bf16':f.metric(base,generated,text,original['generated_ids'],original['decoded']),'vs_actual_upstream':f.metric(base,generated,text,upstream['tokens'],upstream['content']),'firstscore_vs_actual_upstream':{'rms':float(np.sqrt(np.mean(d*d))),'max_abs':float(abs(d).max()),'reference_max_abs':float(abs(reference_score).max())},'resources':r['commands'][arm]};save()
   stages=[]
   for layer in range(32):
    x=np.fromfile(out/f'on/prefill.layer.{layer}.f32',dtype='<f4');y=np.fromfile(out/f'off/prefill.layer.{layer}.f32',dtype='<f4');require(x.shape==y.shape and np.isfinite(x).all()and np.isfinite(y).all(),'finite paired layers');d=x.astype('f8')-y;stages.append({'layer':layer,'bit_exact':x.tobytes()==y.tobytes(),'rms':float(np.sqrt(np.mean(d*d))),'max_abs':float(abs(d).max()),'off_max_abs':float(abs(y).max())})

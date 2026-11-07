@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import copy,importlib.util,json,sys,unittest
+import copy,importlib.util,json,sys,tempfile,unittest
+import numpy as np
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 spec=importlib.util.spec_from_file_location('paired',ROOT/'tools/kaggle/lighton4b_q4_repack_table512.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
@@ -19,6 +20,19 @@ class Admission(unittest.TestCase):
    raise m.subprocess.CalledProcessError(4 if valid else 2,args)
   rows=m.cli_controls(Path('native'),Path('work'),Path('out'),run,{})
   self.assertEqual(len(rows),9);self.assertEqual(len(calls),9);self.assertEqual([r['returncode']for r in rows],[4,2,2,4,2,2,2,2,2]);self.assertTrue(all(x[2]==10 for x in calls))
+ def test_firstscore_closed_identity(self):
+  with tempfile.TemporaryDirectory()as folder:
+   root=Path(folder);raw=np.zeros(248320,dtype='<f4')
+   for name in ['prefill.logits.f32','teacher.0.logits.f32','greedy.0.logits.f32']:raw.tofile(root/name)
+   self.assertEqual(m.first_score(root,np).size,248320)
+   changed=raw.copy();changed[0]=1;changed.tofile(root/'greedy.0.logits.f32')
+   with self.assertRaises(RuntimeError):m.first_score(root,np)
+ def test_firstscore_invalid_rows(self):
+  with tempfile.TemporaryDirectory()as folder:
+   root=Path(folder)
+   for raw in [np.zeros(248319,dtype='<f4'),np.full(248320,np.nan,dtype='<f4')]:
+    raw.tofile(root/'bad.f32')
+    with self.assertRaises(RuntimeError):m.score_row(root/'bad.f32',np)
  def test_scope_wrong_code_rejects(self):
   with self.assertRaises(RuntimeError):m.cli_controls(Path('n'),Path('w'),Path('o'),lambda *args:None,{})
 if __name__=='__main__':unittest.main()
