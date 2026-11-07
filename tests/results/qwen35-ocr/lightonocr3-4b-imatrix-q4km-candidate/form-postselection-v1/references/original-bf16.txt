@@ -1,0 +1,8 @@
+<figure>
+### Figure – Interface de saisie de données
+*Type: autre*
+
+L'image montre une interface utilisateur avec des champs de saisie et des options. Elle semble être utilisée pour entrer des informations comme un texte, un numéro, une date, un mot de passe, et des cases à cocher.
+
+Les éléments visibles incluent : "Input", "Texte", "Number", "Date", "Password", "a label", "ANOTHER LABEL", "Yet another label", "combo suggest", "Finland", "France", "checkbox1", "checkbox2", "checkbox3", "CodeLabel", "code fill", "code", "Button", "Rechercher...", "Modifier l'utilisateur", "TEXTAREA", "Texte", "Radio", "Drag and drop frames", "Fixe frames".
+</figure>

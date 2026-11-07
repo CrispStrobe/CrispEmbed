@@ -37,3 +37,6 @@ tests/results/qwen35-ocr/lightonocr3-4b-upstream-physical-decode/**/*.log -text 
 # Exact decoded/token bytes include the pinned capped baseline's trailing space.
 tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/full-calibration-v2/**/*.txt -text whitespace=-trailing-space,-blank-at-eof
 tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/full-calibration-v2/**/*.ids -text
+# Exact post-selection form output/reference bytes are independently SHA-pinned.
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/form-postselection-v1/**/*.txt -text whitespace=-trailing-space,-blank-at-eof
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/form-postselection-v1/**/*.ids -text

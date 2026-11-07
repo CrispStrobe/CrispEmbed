@@ -68,3 +68,8 @@ physical same-weight test addresses runtime attribution. Publisher checkpoint
 identity is declared in its header but not proven from quantized tensors alone.
 Form remains post-selection, other heldout cases are untouched, and neither the
 public-model fence nor defaults/release artifacts are changed by these results.
+
+The subsequent [post-selection form result](lighton4b-imatrix-q4km-form-result.md)
+reaches182 IDs/EOS but fails the predeclared CER requirement:217/656 versus
+llama189/656, despite better WER43/90 versus46/90. Thus these table/Arabic wins
+do not establish the requested all-three-case floor or permit shipping.

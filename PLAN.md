@@ -2967,3 +2967,19 @@ retained. Raw out-hash differences are NOT a canonical dequantized-weight error
 measurement or decoded-quality cause. Floating norm/A, vision inputs and actual
 quantized-activation versus dequant-F32 arithmetic remain separate. No model,
 quantization, reference forward, default or shipping change; fullform is pending.
+
+### Weighted Q4KM-style form negative — 7 November
+
+[Complete form bytes/review](docs/lighton4b-imatrix-q4km-form-result.md), source
+b978b1cef/bootstrap0faac598, retain182 independentIDs/EOS (no cap), valid full
+model/runtime/platform/input guards, but CER217/656=.330793 is worse than pinned
+llama189/656=.288110; WER43/90=.477778 improves46/90=.511111. Both are mandatory,
+so no aggregate/one-metric promotion: this fixedcandidateFAILS the all3 observed
+floor, despite table/Arabic wins.13rawAPI files, actualtext/IDs, frozenreference
+texts and independenthash/EOS/182-row-manifest/edit-distance review are saved.
+Controller3030.72s/form2857.43s; CPUmetadata nowcapturedIntel4cores, cumulativeRSS
+scope and previousmetadataomission remainexplicit. No neworiginal/F32model,
+heldoutclaim, recipe/default/release/shippingchange. Root-approvednext bounded
+lane is original-F16→24tiledQ4 tensorreproduction, then distinctHF-tiled-out tag
+with699otherpayloads/HFgamma/logA unchanged andONLY outputactivationP; do not apply
+physical-format6 scalar mode to HF tensors. No newmodeljob from this evidence.

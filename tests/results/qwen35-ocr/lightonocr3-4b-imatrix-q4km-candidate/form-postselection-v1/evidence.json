@@ -1,0 +1,85 @@
+{
+  "all_three_observed_floors_met": false,
+  "bootstrap_sha256": "0faac598a3d5c87a0f441578fc55ce35bb065e79802ee11079a22a5ad629d0a3",
+  "candidate_sha256": "5d133ae02c12611572c02e2d43bd06f4fecc5e059f94709a13bdb36458fadb29",
+  "derived_reference_texts": {
+    "references/original-bf16.txt": {
+      "bytes": 665,
+      "derivation": "Exact decoded field from previously authenticated frozen original/publisher report.",
+      "sha256": "f6c56ad4da16752f2a4a2b92a3a48d11c34afd6ad69c818c99227ead66e0749f"
+    },
+    "references/pinned-llama-q4km.txt": {
+      "bytes": 654,
+      "derivation": "Exact decoded field from previously authenticated frozen original/publisher report.",
+      "sha256": "167e0ea13ebb831a75e400ed8ee08f9ca221569211ae16fb8ca2a5a5071e7097"
+    }
+  },
+  "f32_model_instantiated": false,
+  "independent_review_sha256": "40e1ad95809acfe204fdb4dd13ea2af16dc1d11b48f484cfb398ef60df43e7eb",
+  "model_or_large_score_arrays_downloaded_locally": false,
+  "new_original_forward": false,
+  "observed_form_floor_met": false,
+  "postselection_not_heldout": true,
+  "raw_api_files": {
+    "lighton-q4km-form-results/bootstrap-receipt.json": {
+      "bytes": 843,
+      "sha256": "124452883b8d9ed9237bb32b2c8fdd2db1b15b65509c9a39f4ef3105004e9999"
+    },
+    "lighton-q4km-form-results/bootstrap.log": {
+      "bytes": 1130,
+      "sha256": "76c5ada8be86a001621a78a86f75cbd3a42d9895c1977056c431a5cfdf70ca0f"
+    },
+    "lighton-q4km-form-results/controller.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-q4km-form-results/packages.log": {
+      "bytes": 3099,
+      "sha256": "83ff7c89bcbc4a03614970bbd31605202956abb00f6dd4a709cb164f3046afbc"
+    },
+    "lighton-q4km-form-results/platform-control/native-summary.json": {
+      "bytes": 102,
+      "sha256": "49c73b9556582b868b8b3830f618308a3f4ff3626d7a1ad3ddb10d7b023bcf68"
+    },
+    "lighton-q4km-form-results/q4km-complete-decode.json": {
+      "bytes": 100911,
+      "sha256": "a483fe4d56cfdde2c3835d2cf7ca1f322d09c4594664405e0faa8da073230643"
+    },
+    "lighton-q4km-form-results/same-producer-platform-control.log": {
+      "bytes": 70,
+      "sha256": "2da95cfaf7336ae1188c023606975570f1249173c34abefc67cc1f792028fb2a"
+    },
+    "lighton-q4km-form-results/simple_form-complete-greedy.log": {
+      "bytes": 72,
+      "sha256": "6d7221010a324c7becde8801cfed5fb00de1d6919a0c61a1cbc0eba2809e5422"
+    },
+    "lighton-q4km-form-results/simple_form-preflight.log": {
+      "bytes": 89,
+      "sha256": "297b315b861a0cb5b4bc9c329a819bcb9449ee9f9e4733fc6dda010803144094"
+    },
+    "lighton-q4km-form-results/simple_form/native/generated.ids": {
+      "bytes": 836,
+      "sha256": "f6d2a007f1d3b679e61d21a639fd9c85366ed575a94240e620cf68bf90124a13"
+    },
+    "lighton-q4km-form-results/simple_form/native/generated.txt": {
+      "bytes": 679,
+      "sha256": "0cd35b2322b8f3a1431e1ae833d4be87265f1edefe928b85d121b50abc3ffc31"
+    },
+    "lighton-q4km-form-results/simple_form/native/native-summary.json": {
+      "bytes": 107,
+      "sha256": "0c7f56db2608d5129eaa46aff894e593ddea48abf3ae64955a8082edc29756b1"
+    },
+    "lighton4b-q4km-post-selection-form-decode.log": {
+      "bytes": 1088,
+      "sha256": "e35e1492d38594a96153e15ff262a801eeeda96426728ab92abe8477cee5ca53"
+    }
+  },
+  "raw_score_arrays_retained_remotely": true,
+  "reason": "Form CER217 exceeds baseline189; WER43 improves over46. Both per-case requirements are mandatory.",
+  "receipt_sha256": "a483fe4d56cfdde2c3835d2cf7ca1f322d09c4594664405e0faa8da073230643",
+  "recipe_changed": false,
+  "schema": "lighton4b-q4km-postselection-form-evidence/v1",
+  "shipping_approved": false,
+  "source_sha": "b978b1cefb9cafee88a70e23f4f4faf1b6ab90a5",
+  "status": "valid-measurement-floor-failed"
+}
