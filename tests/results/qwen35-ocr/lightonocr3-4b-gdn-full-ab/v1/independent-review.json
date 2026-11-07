@@ -52,5 +52,27 @@
     }
   },
   "limits": "Only selected small files independently downloaded and rehashed; full vocabulary rows/stages remain remote and were checked by the producer. No additional inference.",
-  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43"
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "reference_files_authenticated": {
+    "simple_form/original.json": {
+      "bytes": 69011,
+      "sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a"
+    },
+    "simple_table/original.json": {
+      "bytes": 80062,
+      "sha256": "6be5428f247b616e76d79513b62873cf0238842999be2fb0848997f8ced25763"
+    },
+    "simple_form/upstream.json": {
+      "bytes": 218666,
+      "sha256": "ddf699b954ebbdb82fb8f56dbe7992bf682f602ecfb7798045aa3be23b9354fb"
+    },
+    "simple_table/upstream.json": {
+      "bytes": 342793,
+      "sha256": "93e5d2e177f8257837b93d1c1abf3e613a592602cd2e11705b8db5373efb66f3"
+    }
+  },
+  "reference_receipts_authenticated": [
+    "712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2",
+    "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3"
+  ]
 }
