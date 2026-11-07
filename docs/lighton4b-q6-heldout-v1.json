@@ -35,5 +35,6 @@
   "source_scope": "Immutable historical complete upstream OFF/ON references and ON raw rows, no new reference forward. Source OFF raw vocabulary was not captured.",
   "scope": "Three-gate combined correction against prior published configuration, not single-factor attribution. Same provisional labels; no qualification or shipping.",
   "driver_sha256": "d275388577e24b05151f2f9c50b684c414442ab55080205164c70c32cccd3b2a",
-  "cmake_sha256": "0f972ed3ab6b828e946c02f9c3ceabeb265ec86cf7d44db031b75f3a534db88f"
+  "cmake_sha256": "0f972ed3ab6b828e946c02f9c3ceabeb265ec86cf7d44db031b75f3a534db88f",
+  "native_preflight_sha256": "af06ef417533a1eff2f6658782c8c267126ae7495b1d03ad6c3b839af706b957"
 }

@@ -30,6 +30,14 @@ class Controls(unittest.TestCase):
   for key,value in [('generated_tokens',2),('eos',False),('provisional_heldout_cap',512),('converted_f32_weight_bytes',4),('source_fed_vision',True)]:
    bad=dict(s);bad[key]=value
    with self.assertRaises(ValueError):c.native_complete(bad,[248046],False)
+ def test_actual_shared_position_exporter(self):
+  text=(c.ROOT/'tests/lighton4b_native_case_preflight.cpp').read_text()
+  self.assertIn('export_positions(mods, image.grid, out)',text)
+  self.assertIn('export_positions({0,1,1,1,1,1,1,0}, {1,4,6}, argv[2])',text)
+  self.assertIn('std::memcmp(bytes.data(), expected, sizeof(expected))',text)
+  worker=Path(__file__).with_name('worker.py').read_text()
+  self.assertLess(worker.index("run('position-export-control'"),worker.index('if opt.controls_only:'))
+  self.assertIn("position_env['CRISPEMBED_QWEN35_OCR']='1'",worker)
  def test_reference_cli_is_explicit_and_bounded(self):
   args=c.ex.native_args('binary','model','rgb',32,32,'teacher','out','native-composed');self.assertEqual(args[7:],[1536,4,'greedy-full','--provisional-heldout-cap1536'])
   source=c.ex.native_args('binary','model','rgb',32,32,'teacher','out','native-source-features','feature');self.assertEqual(len(source),13)

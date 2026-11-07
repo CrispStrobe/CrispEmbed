@@ -47,9 +47,17 @@ def main():
    try:run('cli-'+label,args,child,30)
    except subprocess.CalledProcessError as e:require(e.returncode==expected,'actual CLI '+label)
    else:raise ValueError('missing model admitted')
+  position_dir=out/'position-export-control';position_dir.mkdir();position_env=dict(env);position_env['CRISPEMBED_LIGHTON4B_FROZEN_CASES']='1';position_env['CRISPEMBED_QWEN35_OCR']='1'
+  run('position-export-control',[build/'lighton4b-native-case-preflight','--positions-control',position_dir],position_env,30);require('NATIVE_CASE_PREFLIGHT_POSITIONS PASS'in(out/'position-export-control.log').read_text()and(position_dir/'prefill.positions.f32').stat().st_size==96,'actual shared three-axis exporter before models')
+  for name,flag,code in [('ocr-off','CRISPEMBED_QWEN35_OCR',8),('owner-off','CRISPEMBED_LIGHTON4B_FROZEN_CASES',2)]:
+   disabled_positions=dict(position_env);disabled_positions[flag]='0'
+   try:run('position-export-'+name,[build/'lighton4b-native-case-preflight','--positions-control',position_dir],disabled_positions,30)
+   except subprocess.CalledProcessError as error:require(error.returncode==code,'position exporter gate remains closed')
+   else:raise ValueError('disabled position exporter admitted')
+  r['position_export_control']=True
   r['actual_cli_controls']=len(checks);r['native_binary_sha256']=sha(native)
   if opt.controls_only:r['status']='passed_model_free_q6_heldout_controls';return
-  controlp,control=locate('q6-heldout.json',opt.controls_receipt_sha);require(control['status']=='passed_model_free_q6_heldout_controls'and control['source_sha']==r['source_sha']and control['model_acquisition']is False and control['heldout_forward_executed']is False and control['actual_cli_controls']==10,'same-source hosted controls required')
+  controlp,control=locate('q6-heldout.json',opt.controls_receipt_sha);require(control['status']=='passed_model_free_q6_heldout_controls'and control['source_sha']==r['source_sha']and control['model_acquisition']is False and control['heldout_forward_executed']is False and control['actual_cli_controls']==10 and control['position_export_control'],'same-source hosted controls required')
   for name,row in control['artifacts'].items():verify(controlp.parent/name,row)
   r['controls_receipt_sha256']=sha(controlp)
   # Original references are authenticated, never rerun or relabelled.

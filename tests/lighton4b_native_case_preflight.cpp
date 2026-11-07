@@ -5,8 +5,28 @@
 #include <fstream>
 #include <iterator>
 #include <iostream>
+#include <cstring>
 using namespace qwen35_ocr;
+static bool export_positions(const std::vector<int> & mods, const std::vector<int> & grid, const std::string & out) {
+    position_outputs positions;
+    if (!image_positions(mods, grid, 2, positions)) return false;
+    std::ofstream file(out + "/prefill.positions.f32", std::ios::binary);
+    file.write(reinterpret_cast<const char *>(positions.axes.data()), positions.axes.size() * sizeof(float));
+    file.close();
+    return bool(file);
+}
 static int crispembed_test_main(int argc, char ** argv) {
+    if (argc == 3 && std::string(argv[1]) == "--positions-control") {
+        if (!core_env::on("CRISPEMBED_LIGHTON4B_FROZEN_CASES")) return 2;
+        if (!export_positions({0,1,1,1,1,1,1,0}, {1,4,6}, argv[2])) return 8;
+        // Read the shared exporter as bytes so all three distinct planes are checked.
+        std::ifstream binary(std::string(argv[2]) + "/prefill.positions.f32", std::ios::binary);
+        const float expected[] = {0,1,1,1,1,1,1,4, 0,1,1,1,2,2,2,4, 0,1,2,3,1,2,3,4};
+        std::vector<char> bytes((std::istreambuf_iterator<char>(binary)), {});
+        if (bytes.size() != sizeof(expected) || std::memcmp(bytes.data(), expected, sizeof(expected))) return 8;
+        std::cout << "NATIVE_CASE_PREFLIGHT_POSITIONS PASS model_payload=0 model_forward_calls=0 axes=3\n";
+        return 0;
+    }
     if (argc != 7 || !core_env::on("CRISPEMBED_LIGHTON4B_FROZEN_CASES")) return 2;
     const int height = std::stoi(argv[3]), width = std::stoi(argv[4]);
     const std::string recipe = argv[6], out = argv[5];
@@ -48,6 +68,7 @@ static int crispembed_test_main(int argc, char ** argv) {
         if (!f) return 8;
     }
     std::ofstream(out + "/rendered.txt") << rendered;
+    if (!export_positions(mods, image.grid, out)) return 8;
     std::cout << "NATIVE_CASE_PREFLIGHT payload_bytes=0 model_forward_calls=0 input_tokens=" << ids.size()
               << " patches=" << image.patches.size() / 1536 << "\n";
     return 0;

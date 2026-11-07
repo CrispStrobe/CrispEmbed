@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools/heldout'));import execution as ex
 require=ex.require;sha=ex.sha
 CHANGED={'CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS','CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK','CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED'}
-CFG_SHA='bb43eee1f6717b21d3625693c9b1934c0c6f16ccc2a6c7b7a3d25426e95649c4'
+CFG_SHA='4844e0e5e53a056ecf854ea577821ded0660147da1b7b6eb87d3127e39bb8148'
 def admit(cfg):
  require(hashlib.sha256((json.dumps(cfg,indent=2)+'\n').encode()).hexdigest()==CFG_SHA,'immutable corrected panel protocol')
  require(cfg['cases']==ex.prepare.CASE_IDS and cfg['cap']==1536 and cfg['context']==2048 and cfg['threads']==4 and cfg['worker_seconds']==6000 and cfg['arm_seconds']==1200,'frozen selection/capacity/budgets')
@@ -17,6 +17,7 @@ def admit(cfg):
  original=ROOT/'docs/lighton4b-heldout-executor-v1.json';require(sha(original)==cfg['frozen_executor_sha256'],'original reference protocol unchanged');old=json.loads(original.read_text())
  require(cfg['model_sha256']==old['candidate_sha256'],'same weights')
  require(sha(ROOT/'tests/lighton4b_native_document.cpp')==cfg['driver_sha256']and sha(ROOT/'CMakeLists.txt')==cfg['cmake_sha256'],'only reviewed CLI/CMake exceptions')
+ require(sha(ROOT/'tests/lighton4b_native_case_preflight.cpp')==cfg['native_preflight_sha256'],'reviewed actual metadata position exporter')
  for path,digest in json.loads(selection.read_text())['reference']['scorer'].items():require(sha(ROOT/path)==digest,'unchanged scorer')
  return old
 
