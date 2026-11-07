@@ -75,6 +75,39 @@ static int run() {
             }
         }
     }
+    // Real bounded physical full-attention cache: both same-mode continuations
+    // must succeed, while either arithmetic-mode toggle rejects atomically.
+    std::unique_ptr<ggml_context, decltype(&ggml_free)> cache_ctx(ggml_init({ 1024 * 1024, nullptr, true }), ggml_free);
+    check(bool(cache_ctx));
+    attention_weights aw{};
+    aw.upstream_physical = true;
+    aw.q = ggml_new_tensor_2d(cache_ctx.get(), GGML_TYPE_Q4_K, 2560, 8192);
+    aw.k = ggml_new_tensor_2d(cache_ctx.get(), GGML_TYPE_Q4_K, 2560, 1024);
+    aw.v = ggml_new_tensor_2d(cache_ctx.get(), GGML_TYPE_Q4_K, 2560, 1024);
+    aw.out = ggml_new_tensor_2d(cache_ctx.get(), GGML_TYPE_Q4_K, 4096, 2560);
+    aw.q_norm = ggml_new_tensor_1d(cache_ctx.get(), GGML_TYPE_F32, 256);
+    aw.k_norm = ggml_new_tensor_1d(cache_ctx.get(), GGML_TYPE_F32, 256);
+    std::unique_ptr<ggml_backend_buffer, decltype(&ggml_backend_buffer_free)> cache_buf(
+        ggml_backend_alloc_ctx_tensors(cache_ctx.get(), backend.get()), ggml_backend_buffer_free);
+    check(bool(cache_buf));
+    for (auto * tensor : { aw.q, aw.k, aw.v, aw.out }) std::memset(tensor->data, 0, ggml_nbytes(tensor));
+    for (auto * tensor : { aw.q_norm, aw.k_norm }) std::fill_n(static_cast<float *>(tensor->data), 256, 1.0f);
+    attention_config config;
+    config.query_heads = 16;
+    config.kv_heads = 4;
+    std::vector<float> cache_input(2560, 0.125f);
+    float positions[3] = { 0, 0, 0 };
+    for (const char * mode : { "0", "1" }) {
+        gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS", mode);
+        attention_outputs first, next;
+        check(attention_cpu(aw, config, cache_input.data(), positions, 1, 1, 2, nullptr, first));
+        check(attention_cpu(aw, config, cache_input.data(), positions, 1, 1, 2, &first.cache, next));
+        check(next.cache.tokens == 2 && next.cache.physical_native_ops == lighton4b_physical_native_ops(true));
+        gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS", mode[0] == '0' ? "1" : "0");
+        next.attention = { 42 };
+        check(!attention_cpu(aw, config, cache_input.data(), positions, 1, 1, 2, &first.cache, next) &&
+              next.attention.empty());
+    }
     gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS", "1");
     check(lighton4b_physical_rms(input.data(), gamma.data(), width, tokens, 2, rms));
     check(rms.size() == input.size());
@@ -93,7 +126,7 @@ static int run() {
     }
     check(!lighton4b_physical_native_ops(false));
     std::printf("PHYSICAL_NATIVE_OPS pass=1 checks=%d gate_off_legacy_exact=1 nonphysical_unchanged=1 "
-                "streamed_head_exact=1 model_forward=0\n",
+                "streamed_head_exact=1 physical_cache_toggle=1 learned_model_forward=0\n",
                 checks);
     return 0;
 }
