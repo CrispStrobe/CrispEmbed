@@ -1,0 +1,13 @@
+# Actual-source GDN stage replay
+
+This reference-only operator diagnostic separates the already attributed Z/alpha/beta buffer-route residual from normalization and nonlinear GDN math. It uses the observed table's actual native16 projected inputs and actual upstream4 preferred projected inputs. No model, decoded output, calibration choice or held-out case is evaluated.
+
+The current native helper must retain its exact production source hash and disabled FMA contraction rule. Its complete native16 GDN plus quantized RAW output must reproduce the frozen actual main attention array before interpretation. The upstream operator graph reproduces pinned `models.h`, `qwen35.cpp` and `delta-net-base.cpp`: convolution/SiLU, RMS-based Q/K normalization, softplus/sigmoid decay, fused K1 GDN, RMS×gamma and separately evaluated SiLU(z). Both graph observers must be bit-exact to their composed outputs.
+
+The actual upstream4 graph with all live preferred projected inputs must close **every value** of captured convolution, SiLU, gated normalization and preferred output projection. A graph assembled from algebra alone is not admitted. The native-GGML version of that same graph is a separate measured backend control.
+
+The fixed ten runs are native16 baseline; native4 baseline on native/source-native/source-upstream graphs; all-three preferred Z/alpha/beta inputs on those three graphs; and individual Z, alpha or beta replacement on the native graph. Input interventions change only projected activation vectors and are not candidate model recipes. RAW versus preferred output projections use the same untouched Q4 bytes and public CPU buffer APIs, with no F32 weight matrix materialization.
+
+Only five original publisher tensor ranges (6,030,080 bytes, including one Q4 output matrix) are streamed and fully hashed. Native and source builds plus dynamic-loader and zero-quantized backend setup controls precede their transfer. No GGUF model loader is linked or called. Synthetic setup checks require every output to replace a NaN prefill and equal the analytically zero matrix result; they are not checkpoint proof.
+
+The protocol is closed to fixed head/width/kernel dimensions, fixed4/16 tokens, ten runs, four compute/two build threads,4GiB effective RAM,6GiB scratch and1GiB output. The worker is bounded to1,800 seconds; the private bootstrap reserves2,100 seconds. All large operator arrays remain remote. Source context/profile, initial/final reports, exact stage hashes and failed closures must be preserved. No production source, default, cache profile or release is changed by this directory. Existing full-repack decoded negatives remain binding.
