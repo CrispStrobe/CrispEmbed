@@ -303,10 +303,10 @@ const char * crispembed_mineru_extract_document(crispembed_mineru_context * ctx,
     ctx->document = crisp_marker::document{};
     try {
         if (!crispembed_mineru_full_doc_enabled(ctx))
-            throw std::runtime_error(ctx->quantized
-                                         ? "the full native document route is opt-in for quantized models "
-                                           "(set CRISPEMBED_MINERU25_PRO_FULL_DOC=1)"
-                                         : "the full native document route is disabled (CRISPEMBED_MINERU25_PRO_FULL_DOC=0)");
+            throw std::runtime_error(
+                ctx->quantized ? "the full native document route is opt-in for quantized models "
+                                 "(set CRISPEMBED_MINERU25_PRO_FULL_DOC=1)"
+                               : "the full native document route is disabled (CRISPEMBED_MINERU25_PRO_FULL_DOC=0)");
         const auto started = clock_type::now();
         const mineru_doc::options opts = mineru_doc::parse_options_json(options_json ? options_json : "");
         mineru_img::rgb_image page;
