@@ -79,6 +79,8 @@ int main(int argc, char ** argv) {
         }
         check(!lighton4b_pillow_resize_rgb(nullptr, 10, 10, 20, 20, out) && out.empty(), "null clears");
         check(!lighton4b_pillow_resize_rgb(rgb.data(), 0, 10, 20, 20, out) && out.empty(), "bad shape clears");
+        check(!lighton4b_pillow_resize_rgb(rgb.data(), 32768, 1, 1, 32768, out) && out.empty(),
+              "cross-aspect horizontal allocation bounded before input read");
         image_inputs legacy, physical, nonphysical;
         flag("CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE", "0");
         check(lighton4b_preprocess_rgb(rgb.data(), 256, 256, legacy), "legacy default");
