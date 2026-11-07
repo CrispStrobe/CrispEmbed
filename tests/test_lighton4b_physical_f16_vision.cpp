@@ -49,16 +49,19 @@ int main() {
               "invalid weights/config/grid rejected");
         // Model-free minimum-grid graph execution: shared synthetic zero matrices,
         // unit norm scales. No checkpoint or captured output is used.
-        std::vector<float> zero(size_t(4096) * 4096, 0.f), ones(4096, 1.f);
+        const size_t zero_count = size_t(4096) * 4096;
         std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(ggml_init({ 2u << 20, nullptr, true }), ggml_free);
         std::unique_ptr<ggml_backend_buffer, decltype(&ggml_backend_buffer_free)> zb(
-            ggml_backend_cpu_buffer_from_ptr(zero.data(), zero.size() * 4), ggml_backend_buffer_free);
+            ggml_backend_buft_alloc_buffer(ggml_backend_cpu_buffer_type(), zero_count * 4), ggml_backend_buffer_free);
         std::unique_ptr<ggml_backend_buffer, decltype(&ggml_backend_buffer_free)> ob(
-            ggml_backend_cpu_buffer_from_ptr(ones.data(), ones.size() * 4), ggml_backend_buffer_free);
-        check(bool(ctx) && bool(zb) && bool(ob), "synthetic mapped storage");
+            ggml_backend_buft_alloc_buffer(ggml_backend_cpu_buffer_type(), 4096 * 4), ggml_backend_buffer_free);
+        check(bool(ctx) && bool(zb) && bool(ob), "synthetic aligned CPU storage");
+        auto * zero = static_cast<float *>(ggml_backend_buffer_get_base(zb.get()));
+        auto * ones = static_cast<float *>(ggml_backend_buffer_get_base(ob.get()));
+        std::fill_n(zero, zero_count, 0.f); std::fill_n(ones, 4096, 1.f);
         auto tensor = [&](int width, int rows, bool scale = false) {
             auto * t = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, width, rows);
-            t->data = scale ? static_cast<void *>(ones.data()) : static_cast<void *>(zero.data());
+            t->data = scale ? static_cast<void *>(ones) : static_cast<void *>(zero);
             t->buffer = scale ? ob.get() : zb.get();
             return t;
         };
