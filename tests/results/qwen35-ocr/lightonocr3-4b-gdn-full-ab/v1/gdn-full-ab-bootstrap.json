@@ -1,0 +1,27 @@
+{
+  "schema": "lighton4b-gdn-full-ab-bootstrap/v1",
+  "source_sha": "f6a1e60d3cea5a1f6841079697734906f70d8b40",
+  "bootstrap_sha256": "ecfa58da1ae2f5ac3505f9ceeec9701ae9e8593bbd133a1e2bf37f87617a2adc",
+  "status": "completed",
+  "gpu_requested": false,
+  "model_forward_executed": true,
+  "model_quality_qualified": false,
+  "phase": "gdn-full-ab",
+  "source_file_sha256": {
+    "tools/gdn-full-ab/worker.py": "75685af1092a92e4b7e454616a5fbefdf397158e8c02f64e6a372d028a24b30d",
+    "tools/gdn-full-ab/test_controls.py": "d9e18dac414ffa2269fa0516af1a0ad104a90dedcca2a26002af9c355df34298",
+    "docs/lighton4b-gdn-full-ab-v1.json": "37bb2ff725ffcfd8c5a1a3acc58e09136856a710d80436456e7ff67b7c9cae63",
+    "tools/kaggle/lighton4b_physical_f16_full_form.py": "fd417f272f522e63d103f091589952f43a14c36a8c7068edee33a19cc2202c86",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "tools/lighton4b_upstream_physical_pack.py": "0f86cd619b1b25c419bd643a549786cc35d0c546b0bcab382e2efb77e3b24910",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "docs/lighton4b-upstream-physical-decode-v1.json": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d",
+    "docs/lighton4b-composed-form-vision-v1.json": "bfc3fbb1d856c36525c7a11bddb68184d92114c5f1a051786fc7bf0988753d90",
+    "docs/lighton4b-physical-f16-full-form-v1.json": "da10739fba67295a43ad796c9a3c7b37dc89f9bfbcfcf821d9f2a25d7a753370",
+    "tests/lighton4b_native_document.cpp": "e162586bf5cc48684163967612f1cb7aba335421014d7ef8be2e55831bf85e2b",
+    "CMakeLists.txt": "e9fe2621980f84d43ea48199c447d030f5dddcf201ddaabcd91f845c1e4a8104"
+  },
+  "worker_status": "measured_gdn_full_ab",
+  "elapsed_seconds": 1154.6008605299999
+}

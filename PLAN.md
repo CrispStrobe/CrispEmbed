@@ -3226,3 +3226,7 @@ All three unchanged d378 cases and four arms per case reach EOS. Receipt source/
 ### Hybrid GDN actual-input component proof
 
 The bounded `cd50e9e69` worker passes20 gate/cache controls, actual old native16 attention closure and all live source4 closures. The actual hybrid helper matches source postnorm/state/FIFO exactly on allfour predeclared same-input cases, including actual nonzero-state continuation. [Raw6b1f receipt and independent4.38MB activation audit](docs/lighton4b-live-gdn-replay-results.md#hybrid-actual-input-component-pass) preserve magnitudes, all negatives and limits. N16 RAW projection still differs2.756e-8 RMS while preferred output is exact. Default remains off; no global repack or release change. Reviewed selective integration and same-feature table/form decoded A/B are next, with no quality claim from component proof.
+
+## Physical GDN decoded A/B negative
+
+Source `f6a1e60d3` completed full table/form OFF/ON: OFF all282/167 rows and38 text anchors exact; ON table294EOS regresses349→364/607 character edits and97→104/106 words, while form167EOS text stays exactOFF. First-score RMS improves but does not rescue decoded quality. Gate remains default-off/unqualified; no ship. [Full evidence and limits](docs/lighton4b-gdn-full-ab-results.md). No new model job authorized by this result.

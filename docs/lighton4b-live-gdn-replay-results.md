@@ -1,5 +1,7 @@
 # Actual-input GDN replay
 
+**Subsequent full decoded A/B is negative: keep the physical GDN source-operator gate default-off and unqualified.** Table character edits worsen349→364/607; form text is unchanged. [Decoded evidence](lighton4b-gdn-full-ab-results.md) supersedes any quality inference from the exact component closures below.
+
 The bounded operator-only replay at source `2f1261053` measured the first four text tokens of the observed table. The [raw receipt](../tests/results/qwen35-ocr/lightonocr3-4b-live-gdn-replay/report.json) has SHA256 `7ff684cf80e3f1d11368615c0aa54fbc6219404ce1a31f238bd152a6957981c7`. It completed in 134.237 seconds and transferred five whole parameter ranges totaling 6,030,080 bytes. It ran no model generation, used no held-out cases and establishes no decoded-quality improvement. Large operator arrays remain in the completed Kaggle output `lighton4b-live-gdn-stage-replay-v1`.
 
 The upstream graph is pinned to `6c01da6278ab6c69ed67d9124806b50d2b299ba7`; native GGML is `3a27b6c665b191cb230be367db5c52d81dd3e2ac`. Actual live source convolution, SiLU, gated post-normalization and preferred Q4 output projection are all byte-exact to replay. Their reference RMS magnitudes are respectively 0.424982, 0.259703, 0.070063 and 0.059582. Native sixteen-token replay closes the actual native attention output; native four-token post-normalization and both output routes close the native sixteen-token prefix exactly. Observer/composed controls pass.
