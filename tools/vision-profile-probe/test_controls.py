@@ -27,7 +27,7 @@ class Controls(unittest.TestCase):
  def test_canonical_uses_declared_precision(self):
   import sys,json,copy
   sys.path.insert(0,str(Path(__file__).parent));module=load('component_canonical_test',Path(__file__).with_name('component.py'))
-  cfg=json.loads((ROOT/'docs/lighton4b-projector-canonical-v1.json').read_text());rows={r['native_name']:dict(native_sha256=r['native_sha256'],elements=r['native_bytes']//4,bit_exact=True,different_after_native_f16_round=0,zero_sign_only_after_f16_round=0)for r in cfg['tensors']};source={'canonical':{'tensors':rows}}
+  cfg=json.loads((ROOT/'docs/lighton4b-projector-canonical-v1.json').read_text());rows={r['native_name']:dict(native_sha256=r['native_sha256'],elements=r['native_bytes']//4,bit_exact=True,different_f32_bits=0,different_after_native_f16_round=0,zero_sign_only_after_f16_round=0)for r in cfg['tensors']};source={'canonical':{'tensors':rows}}
   module.admit_canonical(cfg,source)
   f32=next(r['native_name']for r in cfg['tensors']if r['upstream'][0]['type']==0);half=next(r['native_name']for r in cfg['tensors']if r['upstream'][0]['type']==1)
   rows[f32]['different_after_native_f16_round']=1;module.admit_canonical(cfg,source) # This cast must never be applied.

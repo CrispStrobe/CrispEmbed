@@ -23,7 +23,7 @@ def admit_canonical(cfg,source):
  for row in cfg['tensors']:
   actual=rows[row['native_name']];types={x['type']for x in row['upstream']};require(len(types)==1 and types<={0,1},'one declared source precision per canonical tensor');dtype=next(iter(types))
   require(actual['native_sha256']==row['native_sha256']and actual['elements']==row['native_bytes']//4,'canonical report bound to authenticated native spans')
-  require(actual['bit_exact']is True if dtype==0 else actual['different_after_native_f16_round']==0,'source-declared precision transform exact')
+  require((actual['bit_exact']is True and actual['different_f32_bits']==0) if dtype==0 else actual['different_after_native_f16_round']==0,'source-declared precision transform exact')
   counts[dtype]+=1;elements+=actual['elements'];zero_sign[dtype]+=actual['zero_sign_only_after_f16_round']
   if dtype==0 and actual['different_after_native_f16_round']:unneeded.append(row['native_name'])
  require(counts=={0:198,1:99}and elements==333514240,'complete canonical precision domain')
@@ -35,7 +35,7 @@ def verify(path,meta):require(path.stat().st_size==meta['bytes']and canonical.sh
 def metric(a,b):
  import numpy as np
  x=np.fromfile(a,dtype='<f4');y=np.fromfile(b,dtype='<f4');require(x.size and x.shape==y.shape and np.isfinite(x).all()and np.isfinite(y).all(),'same finite stage')
- d=x.astype('f8')-y.astype('f8');return dict(bit_exact=x.tobytes()==y.tobytes(),elements=int(x.size),rms=float(np.sqrt(np.mean(d*d))),max_abs=float(abs(d).max()),reference_max_abs=float(abs(y).max()),candidate_sha256=canonical.sha(a),reference_sha256=canonical.sha(b))
+ d=x.astype('f8')-y.astype('f8');return dict(bit_exact=x.tobytes()==y.tobytes(),elements=int(x.size),rms=float(np.sqrt(np.mean(d*d))),max_abs=float(abs(d).max()),reference_max_abs=float(abs(y).max()),candidate_max_abs=float(abs(x).max()),candidate_rms_magnitude=float(np.sqrt(np.mean(x.astype('f8')**2))),reference_rms_magnitude=float(np.sqrt(np.mean(y.astype('f8')**2))),candidate_sha256=canonical.sha(a),reference_sha256=canonical.sha(b))
 def main():
  require(len(CONTROL_RECEIPT)==64 and len(CONTROL_SOURCE)==40,'actual completed controls source/receipt pinned')
  import numpy as np
