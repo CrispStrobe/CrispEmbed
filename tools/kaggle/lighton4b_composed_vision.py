@@ -82,7 +82,7 @@ def main():
                   f32_model_instantiated=False, arms={}, commands={},
                   projector_weight_equivalence='unproven; deployed projectors, not pure arithmetic comparison',
                   unsupported_upstream_stages=['preprocessing patches', 'patch/rotary', 'vision block intermediates'],
-                  reference_limits='BF16 capture is a reference output, not human ground truth; upstream table256 is capped')
+                  reference_limits='BF16 capture is a reference output, not human ground truth; historical upstream table256 was capped, completed512 receipt is required for table')
     def save():
         (out / 'composed-vision.json').write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n')
     def run(label, args, env=None, timeout=600, on_tick=None):
