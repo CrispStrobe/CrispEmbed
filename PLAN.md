@@ -2177,3 +2177,7 @@ rows,38 prefill stages, IDs/text/EOS from `36a9b14b`. ON must retain actual
 Only reference-CLI cap512 admission and cache-accounting summary are added to
 the tested source; production runtime bytes remain identical. No original or
 upstream forward, composition, held-out qualification or promotion.
+
+### Model-free physical vision controls passed; component stage next (2026-11-07)
+
+Pinned source0eca worker passed in690.72s, receipt31e6d6e5. Independently verified58 owned output hashes, all8 fixed synthetic resize pairs versus actual pinned upstream22-bit resizer, and actual form RGB/normalized packed patches exactly against liveV3 captures. Supported synthetic2×2/24block vision graph37checks, main unsupported7, Pillow17+main17 pass; no checkpoint weights acquired. Initial submission title/id400 preserved separately, no worker ran from it. Freeze actual source/control receipt in next projector-only worker: complete1.334GB protected vision suffix/all297 tensor SHA, no text weights/fullF32model, exact retained legacy stages before source-F16/F32-state comparison. Actual-weight graph and decoded quality are still unqualified; no default/release promotion.
