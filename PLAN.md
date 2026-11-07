@@ -2046,3 +2046,10 @@ then compare all 248320 real row-zero logits on one authenticated input and
 same-worker alternating timings. Preserve original source pins and qualification
 settings. Direct quantized dots quantize activations (Q8_0/Q8_K) and therefore do
 not preserve these F32-dot semantics. No default, alias or quality promotion.
+
+Initial model-free producer `11131b7fc` stopped before model acquisition: OFF
+controls passed and ON returned 1. The control invoked both modes in one process
+without resetting its static observer counter, making its second observer-count
+assertion necessarily fail. Preserve the initial log and add per-run reset plus
+failure diagnostics; no tolerance change or speed/correctness claim until a
+separate hosted rerun. The candidate producer continues with reuse disabled.
