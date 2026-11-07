@@ -49,6 +49,19 @@ def decoded(result):
     return row
 
 
+def check_gate_rejected(result, key):
+    expected = {'minicpm': 'failed to load OCR model',
+                'unlimited': 'requires CRISPEMBED_UNLIMITED_OCR2=1',
+                'got': 'CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1'}
+    if expected[key] not in result.stderr:
+        raise AssertionError('gate-off failure lacked the expected engine diagnostic')
+    try:
+        decoded(result)
+    except (ValueError, RuntimeError):
+        return
+    raise AssertionError('disabled engine gate unexpectedly produced OCR text')
+
+
 def main():
     if len(sys.argv) != 2 or sys.argv[1] not in MODELS:
         raise SystemExit('choose minicpm, unlimited or got')
@@ -86,12 +99,7 @@ def main():
         assert decoded(run(args(matches[0]), offline, 'direct')) == online, 'alias/path drift'
         negative = run(args(alias), dict(offline, **{gate: '0'}), 'gate-off')
         # Recognition can fail while the CLI returns zero: require no decoded text.
-        try:
-            decoded(negative)
-        except (ValueError, RuntimeError, json.JSONDecodeError):
-            pass
-        else:
-            raise AssertionError('disabled engine gate unexpectedly produced OCR text')
+        check_gate_rejected(negative, key)
         report.update(passed=True, decoded=online, offline_equal=True, explicit_path_equal=True,
                       gate_off_rejected=True)
     except BaseException as exc:
