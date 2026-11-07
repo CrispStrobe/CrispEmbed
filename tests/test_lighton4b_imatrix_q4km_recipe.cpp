@@ -49,4 +49,4 @@ static int run(int argc,char ** argv) {
     gate("CRISPEMBED_LIGHTON4B_Q6_K","0");check(!lighton4b_imatrix_q4km_metadata(meta));check(!lighton4b_select_recipe(owner.decoder,lighton4b_imatrix_q4km_recipe,chosen));
     gguf_free(meta);ggml_free(ctx);std::printf("checks=%d pass=1 model_payload_bytes=0\n",checks);return 0;
 }
-int main(int argc,char ** argv){return core_cli::clean_exit(run(argc,argv));}
+int main(int argc,char ** argv){core_util::clean_exit(run(argc,argv));}
