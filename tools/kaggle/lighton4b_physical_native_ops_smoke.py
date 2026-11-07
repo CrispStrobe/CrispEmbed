@@ -47,6 +47,14 @@ def stop(p):
   os.killpg(p.pid,signal.SIGTERM)
   try:p.wait(timeout=20)
   except subprocess.TimeoutExpired:os.killpg(p.pid,signal.SIGKILL);p.wait()
+BASELINE_STAGE_FILES=tuple(['text.embedded.f32','prefill.input.f32','prefill.positions.f32','prefill.norm.f32','prefill.logits.f32','greedy.0.logits.f32']+['prefill.layer.'+str(i)+'.f32'for i in range(32)])
+def close_stage_hashes(arm,current,reference):
+ require(set(current)==set(BASELINE_STAGE_FILES),'complete actual reference stage set')
+ if arm=='reference':
+  require(not reference,'reference stage admission repeated');reference.update(current)
+ else:
+  require(arm=='off' and set(reference)==set(BASELINE_STAGE_FILES),'actual regenerated reference stages missing')
+  for rel in BASELINE_STAGE_FILES:require(current[rel]==reference[rel],'OFF actual regenerated baseline stage drift: '+rel)
 def admit_protocol(cfg):
  require(cfg['schema']=='lighton4b-physical-native-ops-smoke/v1','closed smoke schema')
  require(cfg['arms']==['reference','off','on'] and cfg['cap']==2 and len(cfg['cases'])==1 and cfg['cases'][0]['id']=='simple_form','closed two-token form/reference/OFF/ON scope')
@@ -134,7 +142,9 @@ def main():
   for label,args in [('old-init',['git','init',oldroot]),('old-remote',['git','-C',oldroot,'remote','add','origin','https://github.com/CrispStrobe/CrispEmbed.git']),('old-fetch',['git','-C',oldroot,'fetch','--depth','1','origin',cfg['actual_baseline_source_sha']]),('old-checkout',['git','-C',oldroot,'checkout','--detach','FETCH_HEAD']),('old-submodule',['git','-C',oldroot,'submodule','update','--init','ggml'])]:command(label,args)
   require(subprocess.check_output(['git','-C',oldroot,'rev-parse','HEAD'],text=True).strip()==cfg['actual_baseline_source_sha'],'actual regenerated baseline source');require(sha(oldroot/'docs/lighton4b-upstream-physical-decode-v1.json')==cfg['baseline_protocol_sha256'],'unchanged old physical protocol bytes')
   oldbuild=scratch/'baseline-build';command('old-configure',['cmake','-S',oldroot,'-B',oldbuild,'-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_AVX2=ON','-DGGML_AVX512=OFF','-DGGML_BLAS=OFF','-DGGML_LLAMAFILE=ON','-DGGML_CUDA=OFF','-DGGML_VULKAN=OFF']);command('old-build',['cmake','--build',oldbuild,'--target','lighton4b-native-document','--parallel','4']);oldnative=oldbuild/'lighton4b-native-document';shutil.copy(oldbuild/'CMakeCache.txt',out/'reference-CMakeCache.txt');report['binary_sha256']['reference']=sha(oldnative);report['reference_source_sha']=cfg['actual_baseline_source_sha']
-  for profile in ['upstream','native','reference']:require('GGML_LLAMAFILE:BOOL=ON' in (out/(profile+'-CMakeCache.txt')).read_text(),'explicit same LLAMAFILE profile')
+  for profile in ['upstream','native','reference']:
+   cache=(out/(profile+'-CMakeCache.txt')).read_text()
+   for flag in ['GGML_LLAMAFILE:BOOL=ON','GGML_NATIVE:BOOL=OFF','GGML_AVX2:BOOL=ON','GGML_AVX512:BOOL=OFF','GGML_BLAS:BOOL=OFF']:require(flag in cache,'explicit same build profile: '+flag)
   prefix='https://huggingface.co/'+cfg['model_repo']+'/resolve/'+cfg['model_revision']+'/';up=scratch/cfg['models']['Q4_K_M']['file'];proj=scratch/cfg['projector']['file']
   for path,row in [(up,cfg['models']['Q4_K_M']),(proj,cfg['projector'])]:save('download-'+path.name);download(prefix+path.name,path,row['bytes'],row['sha256'])
   base=cfg['base_model'];bp=scratch/base['file'];save('download-protected-base');download('https://huggingface.co/'+base['repository']+'/resolve/'+base['revision']+'/'+base['file'],bp,base['bytes'],base['sha256']);candidate=scratch/'physical-native.gguf';save('lossless-pack');audit=pack.convert(bp,up,candidate,out/'physical-pack.json');report['candidate_sha256']=audit['candidate_sha256'];report['candidate_bytes']=candidate.stat().st_size;require(report['candidate_sha256']==cfg['expected_candidate_sha256'],'candidate byte identity to first independently persisted transport');bp.unlink()
@@ -181,12 +191,8 @@ def main():
      emb=np.fromfile(dest/'text.embedded.f32',dtype='<f4').reshape(-1,2560);pre=np.fromfile(dest/'prefill.input.f32',dtype='<f4').reshape(-1,2560);features_now=np.fromfile(dest/'vision.merged.f32',dtype='<f4').reshape(-1,2560);mods_now=np.array(list(map(int,(dest/'modalities.ids').read_text().split())));axes_now=np.fromfile(dest/'prefill.positions.f32',dtype='<f4').reshape(3,-1);wanted_now=expected.copy();wanted_now[mods_now==1]=sourcefeatures
      require(emb.tobytes()==expected.tobytes()and pre.tobytes()==wanted_now.tobytes()and features_now.tobytes()==sourcefeatures.tobytes(),'early actual same-feature embedding/prefill bytes');image_rows=np.flatnonzero(mods_now==1);require(np.array_equal(image_rows,np.arange(image_rows[0],image_rows[-1]+1))and meta['past']==int(image_rows[0]),'source image chunk begins at actual native prefix');expected_axes=np.empty((3,len(tokens)),dtype='<f4');expected_axes[:,:image_rows[0]]=np.arange(image_rows[0],dtype='<f4');expected_axes[:,image_rows]=sourcepos[:,[0,2,1]].T;suffix_start=int(image_rows[-1])+1;expected_axes[:,suffix_start:]=np.arange(meta['past']+meta['position_count'],meta['past']+meta['position_count']+len(tokens)-suffix_start,dtype='<f4');require(axes_now.tobytes()==expected_axes.tobytes(),'early complete source/native text-image mrope positions')
      if arm in ['reference','off']:
-      required=['text.embedded.f32','prefill.input.f32','prefill.positions.f32','prefill.norm.f32','prefill.logits.f32','greedy.0.logits.f32']+['prefill.layer.'+str(i)+'.f32'for i in range(32)]
-      if arm=='reference':
-       baseline_files={rel:sha(dest/rel)for rel in required};report['reference_actual_stage_sha256']=baseline_files
-      else:
-       for rel in required:require(sha(dest/rel)==baseline_files[rel],'OFF actual regenerated baseline stage drift: '+rel)
-       report['off_actual_baseline_stage_sha256']={rel:sha(dest/rel)for rel in required}
+      current={rel:sha(dest/rel)for rel in BASELINE_STAGE_FILES};close_stage_hashes(arm,current,baseline_files)
+      report['reference_actual_stage_sha256' if arm=='reference' else 'off_actual_baseline_stage_sha256']=dict(current)
      report['cases'][name]['arms'][arm]={'status':'decoding','actual_input_bytes_exact':True,'first_score_vs_source':diff(np.fromfile(scorepath,dtype='<f4'),np.fromfile(source/'source.logits.0.f32',dtype='<f4'))};early_done[0]=True;save(name+'-'+arm+'-early-controls-exact')
     elapsed=command(name+'-'+arm,args,armenv,cfg['native_arm_timeout_seconds'],early_check);early_check();require(early_done[0],'early source input controls missing');summary=json.loads((dest/'native-summary.json').read_text());ids=list(map(int,(dest/'generated.ids').read_text().split()));text=(dest/'generated.txt').read_bytes().decode('utf-8');actualids=list(map(int,(dest/'prompt.ids').read_text().split()));require(actualids==tokens and summary['prompt_tokens']==len(tokens),'native exact prompt tokens');mods=np.array(list(map(int,(dest/'modalities.ids').read_text().split())));require((mods==1).sum()==case['image_tokens'],'native modality shape');embedded=np.fromfile(dest/'text.embedded.f32',dtype='<f4').reshape(-1,2560);require(embedded.tobytes()==expected.tobytes(),'native embedding all rows bit exact independent source Q6 decoder');prefill=np.fromfile(dest/'prefill.input.f32',dtype='<f4').reshape(-1,2560);features=np.fromfile(dest/'vision.merged.f32',dtype='<f4').reshape(-1,2560);wanted=expected.copy();wanted[mods==1]=features;require(prefill.tobytes()==wanted.tobytes(),'actual prefill embedding splice bit exact');axes=np.fromfile(dest/'prefill.positions.f32',dtype='<f4').reshape(3,-1);require(np.array_equal(axes[:,mods==1].T,sourcepos[:,[0,2,1]])and np.all(sourcepos[:,3]==0),'actual source/native image mrope positions exact');require(ids and len(ids)<=cfg['cap'] and summary['eos']==(ids[-1]in[248044,248046]) and (summary['eos'] or len(ids)==cfg['cap']),'native EOG and cap closure')
     require(features.tobytes()==sourcefeatures.tobytes(),'source-fed actual feature bytes exact')
