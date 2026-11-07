@@ -167,6 +167,23 @@ token-ID exact on all five Kaggle cases and IDs identical to the old default on 
 | `CRISPEMBED_QWEN35_TOKENIZER_MARKS`, `CRISPEMBED_QWEN35_PROFILE` | off | Tokenizer mark handling; profiling output. |
 | `CRISPEMBED_OVISOCR2_FRONTEND`, `_INFERENCE`, `_LARGE_IMAGES`, `CRISPEMBED_OVISOCR3_FRONTEND`, `_INFERENCE` | off | OvisOCR2/3 gates. |
 
+### MinerU2.5-Pro full native document route
+
+`CRISPEMBED_MINERU25_PRO_FULL_DOC` selects the complete native C++ document route
+(`crispembed_mineru_extract_document`, orchestrator engine 25 / `mineru25-pro`)
+over the basic route. It is quantization-aware (owner decision, 7 November 2026):
+
+| Loaded GGUF | Unset / empty | `=0`/`false`/`off`/`no` | Any other value |
+|---|---|---|---|
+| F16/F32 (no quantized tensor) | **ON** (8/8 identical, run 41251475795) | basic route | ON |
+| Quantized (any tensor `ggml_is_quantized`, e.g. Q8_0/Q4_K) | basic route (opt-in only; Q8/Q4 match 6/8 with layout differences) | basic route | ON |
+
+Quantization is detected once at `crispembed_mineru_init` from the GGUF tensor
+header types (metadata only, no weights read); `crispembed_mineru_is_quantized`
+and `crispembed_mineru_full_doc_enabled` report it. With the route resolved off,
+`crispembed_mineru_extract_document` returns an error and the orchestrator uses
+the basic route. Frozen panels that must measure the basic path pin `=0`.
+
 ### MinerU 2605 checkpoint
 
 `CRISPEMBED_MINERU25_PRO_2605=1` is an additional **default-off** admission gate
@@ -813,7 +830,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_MINERU25_PRO_FULL_DOC` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/mineru_ocr.cpp`, `src/ocr_orchestrator.cpp` | else |
+| `CRISPEMBED_MINERU25_PRO_FULL_DOC` | off/on | mixed (see code) | bool | default-off experimental / opt-in | `src/mineru_ocr.cpp` |  |
 
 ### minicpm_ocr
 

@@ -66,8 +66,9 @@ CRISPEMBED_API const char * crispembed_mineru_extract(crispembed_mineru_context 
                                                       int width, int height, int channels, int image_analysis,
                                                       int max_new_tokens);
 // Complete native two-step document route (all mineru-vl-utils c9797cde
-// postprocessing translated to C++; no Python). Default on;
-// CRISPEMBED_MINERU25_PRO_FULL_DOC=0 disables it. Requires
+// postprocessing translated to C++; no Python). Default on for F16/F32
+// models; opt-in only (CRISPEMBED_MINERU25_PRO_FULL_DOC=1) when the loaded GGUF
+// has quantized weight tensors; CRISPEMBED_MINERU25_PRO_FULL_DOC=0 disables it. Requires
 // CRISPEMBED_MINERU25_PRO=1. options_json (NULL/"" = defaults) accepts
 // image_analysis, simple_post_process, handle_equation_block, abandon_list,
 // abandon_paratext, enable_table_formula_eq_wrap, not_extract_list,
@@ -82,6 +83,11 @@ CRISPEMBED_API const char * crispembed_mineru_extract_document(crispembed_mineru
 CRISPEMBED_API const char * crispembed_mineru_last_document(crispembed_mineru_context * ctx, const char * format);
 CRISPEMBED_API const char * crispembed_mineru_last_markdown(const crispembed_mineru_context * ctx);
 CRISPEMBED_API const char * crispembed_mineru_last_error(const crispembed_mineru_context * ctx);
+// 1 when the full document route is enabled for this context (the resolved
+// CRISPEMBED_MINERU25_PRO_FULL_DOC gate, quantization-aware), else 0.
+CRISPEMBED_API int crispembed_mineru_full_doc_enabled(const crispembed_mineru_context * ctx);
+// 1 when the loaded GGUF contains any quantized tensor type (e.g. Q8_0, Q4_K).
+CRISPEMBED_API int crispembed_mineru_is_quantized(const crispembed_mineru_context * ctx);
 
 // Experimental OXR-1.0 recognition and reading order. Requires CRISPEMBED_OXR=1
 // and a pinned oxr GGUF. Layout detection is a separate model: the native
