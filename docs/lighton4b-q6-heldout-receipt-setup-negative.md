@@ -1,0 +1,9 @@
+# Corrected Q6 receipt setup negative
+
+The first fixed historical-receipt attempt stopped before any heldout inference. [The raw receipt](../tests/results/qwen35-ocr/lightonocr3-4b-q6-heldout-receipt-v1-negative/q6-heldout.json) SHA is `49da9537e79636855c3f5c6bd4f4859a7e1d14820d384fbc27bef2c45bf44000`, source `001a7cc95`, elapsed619.29 seconds. Model acquisition and both observed-form control forwards occurred; no heldout output or heldout-quality result exists.
+
+Both old and corrected observed167-token controls passed their full raw-row, stage and vision guards. The metadata-only native preflight then returned success without writing `prefill.positions.f32`; opening that required seal input raised `FileNotFoundError`. The executor had restored the original provisional1536 decode flag but omitted the separate d378 metadata position-export amendment. The failure was not an arithmetic or label disagreement, and no missing position values were inferred or substituted.
+
+The scoped fix restores the diagnostic exporter and exercises the shared actual-file path on a model-free two-row/three-column image grid, with three distinct position planes. Hosted controls must check all96 exported bytes plus OCR/owner-disabled rejection before models. Runtime source/GGML, quantized weights, selected correction gates, case order, images, references and scorer remain unchanged. New same-source controls and a reviewed retry are required; existing provisional-label and copyright limits remain binding.
+
+Kaggle also generated a title-derived canonical slug different from the requested metadata identifier. Status readback was corrected using the returned canonical URL, without another submission. [The client-only readback note](../tests/results/qwen35-ocr/lightonocr3-4b-q6-heldout-receipt-v1-negative/client-readback-negative.json) is separate from the real missing-position failure. No credentials, identities or private access references are published.
