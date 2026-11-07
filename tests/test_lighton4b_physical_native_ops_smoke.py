@@ -14,7 +14,18 @@ class Admission(unittest.TestCase):
  def test_off_closes_reference_bytes_before_on(self):
   text=(ROOT/'tools/kaggle/lighton4b_physical_native_ops_smoke.py').read_text()
   self.assertIn("if arm in ['reference','off']",text)
-  self.assertIn("sha(dest/rel)==baseline_files[rel]",text)
+  self.assertIn("close_stage_hashes(arm,current,baseline_files)",text)
   self.assertIn("args=[oldnative if arm=='reference' else native",text)
   self.assertIn("armenv['CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS']='1' if arm=='on' else '0'",text)
+ def test_separate_reference_off_callbacks_share_all38_stages(self):
+  reference={};actual={rel:format(i,'064x')for i,rel in enumerate(module.BASELINE_STAGE_FILES)}
+  def callback(arm,current):
+   def early_check():module.close_stage_hashes(arm,current,reference)
+   return early_check
+  callback('reference',actual)();self.assertEqual(len(reference),38)
+  callback('off',dict(actual))();self.assertEqual(reference,actual)
+  changed=dict(actual);changed['greedy.0.logits.f32']='f'*64
+  with self.assertRaises(RuntimeError):callback('off',changed)()
+  missing=dict(actual);missing.pop('prefill.layer.31.f32')
+  with self.assertRaises(RuntimeError):callback('off',missing)()
 if __name__=='__main__':unittest.main()
