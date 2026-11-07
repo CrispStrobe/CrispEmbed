@@ -21,6 +21,13 @@ def admit_producer(path,receipt_sha,source_sha):
  require(set(producer['cases'])=={'simple_table','arabic_printed_line'},'calibration cases differ')
  return producer
 
+def cpu_profile(text=None):
+ if text is None:text=Path('/proc/cpuinfo').read_text()
+ values={key.strip():value.strip()for key,value in(line.split(':',1)for line in text.split('\n\n',1)[0].splitlines()if ':'in line)}
+ result={key:values.get(key,'')for key in('vendor_id','model name','flags')};result.update(logical_count=os.cpu_count(),affinity_cpus=len(os.sched_getaffinity(0)))
+ result['identity_fields_available']=all(result[key]for key in('vendor_id','model name','flags'))
+ return result
+
 def check_runtime(runtime):
  require(shutil.which('git')is not None,'git executable unavailable')
  env=dict(os.environ,LD_LIBRARY_PATH=str(runtime/'lib'))
@@ -58,7 +65,7 @@ def main():
   import PIL
   from PIL import Image
   require(np.__version__=='2.3.5'and PIL.__version__=='11.3.0','frozen serializer versions differ');common=load('complete_common',ROOT/'tools/ci-heavy/lighton4b_native_document.py');cases=load('complete_cases',ROOT/'tools/ci-heavy/lighton4b_frozen_case.py');helpers=load('complete_helpers',ROOT/'tools/ci-heavy/lighton4b_gdn_out_q6_full.py');producer_helpers=load('complete_producer_helpers',ROOT/'tools/ci-heavy/lighton4b_imatrix_q4km_candidate.py')
-  mem=common.memory();require(mem['available_bytes']>=8*2**30 and shutil.disk_usage(scratch).free>=8*2**30,'complete-decode RAM/disk unavailable');r['preflight']={'memory':mem,'free_disk_bytes':shutil.disk_usage(scratch).free,'load':os.getloadavg(),'cpu_max':Path('/sys/fs/cgroup/cpu.max').read_text().strip()if Path('/sys/fs/cgroup/cpu.max').exists()else None};signal.signal(signal.SIGTERM,stop);signal.signal(signal.SIGINT,stop);signal.signal(signal.SIGALRM,stop);signal.alarm(105*60)
+  r['cpu_profile']=cpu_profile();mem=common.memory();require(mem['available_bytes']>=8*2**30 and shutil.disk_usage(scratch).free>=8*2**30,'complete-decode RAM/disk unavailable');r['preflight']={'memory':mem,'free_disk_bytes':shutil.disk_usage(scratch).free,'load':os.getloadavg(),'cpu_max':Path('/sys/fs/cgroup/cpu.max').read_text().strip()if Path('/sys/fs/cgroup/cpu.max').exists()else None};signal.signal(signal.SIGTERM,stop);signal.signal(signal.SIGINT,stop);signal.signal(signal.SIGALRM,stop);signal.alarm(105*60)
   receipt_sha=os.environ.get('LIGHTON4B_PRODUCER_RECEIPT_SHA256','');source_sha=os.environ.get('LIGHTON4B_PRODUCER_SOURCE_SHA','');require(re.fullmatch('[0-9a-f]{64}',receipt_sha)is not None and re.fullmatch('[0-9a-f]{40}',source_sha)is not None,'sealed producer pins required')
   matches=list(Path('/kaggle/input').rglob('q4km-candidate-first-score.json'));require(len(matches)==1,'unique immutable producer receipt required');receipt_path=matches[0];producer=admit_producer(receipt_path,receipt_sha,source_sha);r['producer']={'source_sha':source_sha,'receipt_sha256':receipt_sha,'model':producer['candidate']}
   origin=receipt_path.parent;manifest_path=origin/'runtime-bundle.json';require(sha(manifest_path)==producer['runtime_bundle_manifest_sha256'],'runtime manifest changed');manifest=json.loads(manifest_path.read_text());require(manifest['source_sha']==source_sha,'runtime source changed');runtime=scratch/'runtime';runtime.mkdir();bundled={}

@@ -10,6 +10,9 @@ class Admission(unittest.TestCase):
    for key,value in [('status','failed'),('actual248_applied',False),('both_frozen_null_scores_exact',False),('post_merge_model_free_controls_passed',False),('source_sha','b'*40),('cases',{'form':{}}),('candidate',dict(good['candidate'],types={'0':474,'12':217,'14':32}))]:
     bad=copy.deepcopy(good);bad[key]=value;p.write_text(json.dumps(bad))
     with self.subTest(key=key),self.assertRaises(ValueError):m.admit_producer(p,m.sha(p),'a'*40)
+ def test_cpu_identity_whitespace(self):
+  x=m.cpu_profile('vendor_id\t: GenuineIntel\nmodel name\t: fixture CPU\nflags\t\t: avx2 fma\n\nvendor_id: ignored')
+  self.assertEqual(x['vendor_id'],'GenuineIntel');self.assertEqual(x['model name'],'fixture CPU');self.assertEqual(x['flags'],'avx2 fma');self.assertTrue(x['identity_fields_available'])
  def test_loader_guards_before_model_staging(self):
   with tempfile.TemporaryDirectory()as folder:
    root=Path(folder);(root/'bin').mkdir();(root/'lib').mkdir()

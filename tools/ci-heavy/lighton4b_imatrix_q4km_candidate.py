@@ -120,7 +120,7 @@ def main():
         import gguf
         from PIL import Image
         require(np.__version__ == '2.3.5' and PIL.__version__ == '11.3.0' and importlib.metadata.version('gguf') == '0.19.0', 'frozen input serializer versions differ')
-        first_cpu=Path('/proc/cpuinfo').read_text().split('\n\n',1)[0];cpu=dict(line.split(':',1)for line in first_cpu.splitlines()if ':'in line);r['cpu_profile']={key:cpu.get(key,'').strip()for key in('vendor_id','model name','flags')};r['cpu_profile'].update(logical_count=os.cpu_count(),affinity_cpus=len(os.sched_getaffinity(0)),cpu_max=Path('/sys/fs/cgroup/cpu.max').read_text().strip()if Path('/sys/fs/cgroup/cpu.max').exists()else None)
+        first_cpu=Path('/proc/cpuinfo').read_text().split('\n\n',1)[0];cpu={key.strip():value.strip()for key,value in(line.split(':',1)for line in first_cpu.splitlines()if ':'in line)};r['cpu_profile']={key:cpu.get(key,'').strip()for key in('vendor_id','model name','flags')};r['cpu_profile'].update(logical_count=os.cpu_count(),affinity_cpus=len(os.sched_getaffinity(0)),cpu_max=Path('/sys/fs/cgroup/cpu.max').read_text().strip()if Path('/sys/fs/cgroup/cpu.max').exists()else None)
         r['preflight'] = capacity(True); signal.signal(signal.SIGTERM, terminate); signal.signal(signal.SIGINT, terminate); signal.signal(signal.SIGALRM, terminate); signal.alarm(75*60)
         require(sha(ROOT/'docs/lighton4b-mixed-calibration-v1.json') == p['calibration_only']['frozen_protocol_sha256'] and sha(ROOT/'tests/regression/lighton4b-mixed-v1/frozen-inputs.json') == p['calibration_only']['input_manifest_sha256'], 'calibration protocol/input pins differ')
         # Repeat the full already-passed model-free union on this post-merge source before staging any model.
