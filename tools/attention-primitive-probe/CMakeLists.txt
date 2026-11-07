@@ -22,3 +22,7 @@ target_link_libraries(attention-primitive PRIVATE ggml ggml-cpu)
 # Private backend symbol experiment: explicit original F16 dot, no trait mutation.
 add_executable(attention-paired-f16 paired.cpp)
 target_link_libraries(attention-paired-f16 PRIVATE ggml ggml-cpu)
+# Exact pinned private SGEMM ABI diagnostic, deliberately excluded from product.
+add_executable(attention-paired-f16-sgemm sgemm.cpp)
+target_include_directories(attention-paired-f16-sgemm PRIVATE "${GGML_SOURCE}/src" "${GGML_SOURCE}/src/ggml-cpu")
+target_link_libraries(attention-paired-f16-sgemm PRIVATE ggml ggml-cpu)
