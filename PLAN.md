@@ -2228,3 +2228,7 @@ patch/grid bytes. Actual merged-source byte identity is required before text
 parity interpretation; complete decode/firstscore/CER/WER/EOS/cap/resources and
 per-case upstream floor failures are retained even when negative. No runtime
 rebuild, new reference forward, held-out or shipping/default promotion.
+
+### LightOn4B bounded upstream text localization — 7 November 2026
+
+The corrected composed table has identical upstream vision features yet retains a one-character observed quality-floor miss. Prepare the [reference-only text trace](docs/lighton4b-upstream-text-trace-v1.md): same pinned upstream binary OFF/ON, all282 frozen score/ID/text/EOS/dispatch anchors, actual prefill and same-prefix position126 live tensors. No production or quantization change, no original/F32 model reference, no held-out inference. Four tiny controls pass, including applying the exact layered patch to pinned primary source. Hosted source/bootstrap review and one bounded Kaggle CPU execution remain pending; no numerical or quality result is claimed.

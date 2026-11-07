@@ -1,0 +1,19 @@
+# Bounded upstream text trace
+
+This reference-only diagnostic localizes the remaining observed table discrepancy after the native and upstream merged vision features became byte-identical. It changes no production runtime, model, recipe or release qualification.
+
+The worker builds upstream llama.cpp `6c01da6278ab6c69ed67d9124806b50d2b299ba7` with the frozen table CPU profile. It loads the original publisher Q4_K_M and F16 projector at the exact revision, sizes and hashes in [the physical protocol](lighton4b-upstream-physical-decode-v1.json). It never creates an F32 model or reruns the original BF16 model. Native arrays are read from completed captures.
+
+Both arms retain the existing feature/sampler observer and independently generate the complete frozen table response. Only the ON arm enables the new live scheduler observer. Each arm must reproduce every one of the 282 full-vocabulary score hashes, all IDs, text and probability records, EOS, actual vision features and actual tensor-buffer dispatch. A deviation rejects observer neutrality; captured stages cannot establish an implementation defect in that case.
+
+The live observer selects actual initial prompt graphs and the one generation graph predicting position 126, the first frozen source/native ID disagreement after an identical prefix. It copies selected tensors during the synchronized scheduler callback before buffer reuse, and input leaves after input setup. It does not use output flags or read intermediates after graph completion. Missing, cropped, unsupported or unallocated stages remain explicit. The callback must initially be unoccupied.
+
+Analysis checks actual prompt embeddings and all three position axes before comparing native stages. It retains actual source graph batching and output crop indices. Layer-zero QKV/Z/a/b values are mapped through the measured physical V-head permutation before comparison. Different batch sizes and unequal intermediate inputs prevent a pure operator attribution. Position 126 has a retained native score row but no native hidden-state capture; native intermediate values are never inferred.
+
+The source-score denominator is upstream quantized inference. The frozen original BF16 transcription remains the quality reference in the earlier qualification reports; this diagnostic creates no replacement reference and makes no held-out claim.
+
+Admission receipts are SHA256-bound: table `36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3`, corrected composed calibration `f69d23ffe6d65d9abf6c7c5c660723613ce84cc901383c5151e17d8f8dc5fe64`, and source-input physical capture `712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2`.
+
+One Kaggle CPU worker is bounded to 3,600 seconds, 900 seconds per source arm, two build threads and four inference threads. Admission requires 10 GiB available RAM, 12 GiB scratch and 4 GiB output space. Individual traced arrays are at most 8 MiB, all traced arrays at most 128 MiB and at most 16 graphs. Build and loader checks precede the approximately 3.38 GB remote model transfer. Large weights and score arrays remain remote; only small reports and decoded text are read locally. Setup, numerical-neutrality and timeout negatives must be preserved.
+
+Executable source: [worker](../tools/text-trace-probe/worker.py), [live patch](../tools/text-trace-probe/source_patch.py), [bounded analysis](../tools/text-trace-probe/analysis.py), [controls](../tools/text-trace-probe/test_controls.py). No hosted result is claimed by this protocol.
