@@ -237,7 +237,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-428 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+430 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -473,6 +473,8 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_GOT_OCR_BENCH` | on | off | bool | debug | `src/got_ocr.cpp` |  |
 | `CRISPEMBED_GOT_OCR_DEBUG` | on | off | bool | debug | `src/got_ocr.cpp` |  |
 | `CRISPEMBED_GOT_OCR_DUMP_DIR` | value | unset | path | debug | `src/got_ocr.cpp` | diagnostic: pixels + ids |
+| `CRISPEMBED_GOT_OCR_FORCE_IDS` | value | unset | value | tuning / config | `src/got_ocr.cpp` |  |
+| `CRISPEMBED_GOT_OCR_LOGITS_OUT` | value | unset | path | tuning / config | `src/got_ocr.cpp` |  |
 | `CRISPEMBED_GOT_OCR_NO_REPEAT_NGRAM` | value | unset | int | tuning / config | `src/got_ocr.cpp` |  |
 | `CRISPEMBED_GOT_OCR_ORIG_NGRAM` | on/off | per-gate default | bool | tuning / config | `src/got_ocr.cpp` | No-repeat-ngram rule (see the gate block above argmax_no_repeat_ngram). |
 | `CRISPEMBED_GOT_OCR_ORIG_SYSTEM` | on/off | per-gate default | bool | tuning / config | `src/got_ocr.cpp` | second line keeps 8 spaces of source indentation; tiktoken splits that into 286 ("       ", 7 spaces) + 1446 (" You"). |
