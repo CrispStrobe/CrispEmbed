@@ -91,6 +91,7 @@ int main() {
         check(!lighton4b_physical_f16_vision_cpu(weights, config, image, 4, true, output) && output.merged.empty(),
               "disabled direct component clears synthetic output");
         std::cout << "PHYSICAL_F16_VISION_SYNTHETIC PASS grid=2x2 layers=24 checkpoint_bytes=0\n";
+        flag("CRISPEMBED_LIGHTON4B_PHYSICAL_F16_VISION", "1");
         flag("CRISPEMBED_QWEN35_OCR", "0");
         check(!lighton4b_physical_f16_vision_valid(true), "OCR gate closed");
         std::cout << "PHYSICAL_F16_VISION PASS " << checks << "\n";

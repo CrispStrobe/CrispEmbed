@@ -11,7 +11,9 @@ and main-stub targets, source-fed adapter, and a pinned upstream22-bit resize
 reference before any weight transfer. Eight predeclared synthetic resize shapes
 cover identity, up/down and single-axis/skinny cases. Actual form RGB resize and
 normalized packed patches must exactly match authenticated live projectorV3
-outputs. It never acquires model weights or executes vision/text inference.
+outputs. It never acquires checkpoint weights or executes checkpoint vision/text inference.
+A minimum2×2-grid zero-weight synthetic fixture executes all24 production vision
+blocks, with finite zero/shape checks, before any real parameter staging.
 The reference bridge invokes actual upstream `img_tool::resize` at
 llama.cpp `6c01da6278ab6c69ed67d9124806b50d2b299ba7`, preserving its arithmetic.
 
