@@ -20,7 +20,9 @@ static std::vector<float> read(const fs::path & p, size_t n) {
 static void dump(const fs::path & p, ggml_tensor * t) {
     need(t->type == GGML_TYPE_F32 && ggml_is_contiguous(t), "dump layout");
     const auto * x = static_cast<const float *>(t->data);
-    for (int64_t i = 0; i < ggml_nelements(t); ++i) need(std::isfinite(x[i]), "nonfinite output");
+    bool nonzero = false;
+    for (int64_t i = 0; i < ggml_nelements(t); ++i) { need(std::isfinite(x[i]), "nonfinite output"); nonzero |= x[i] != 0.f; }
+    need(nonzero, "unmaterialized/zero observed output on fixed nonzero capture");
     std::ofstream f(p, std::ios::binary); need(bool(f.write(static_cast<const char *>(t->data), ggml_nbytes(t))), "output write");
 }
 int main(int argc, char ** argv) try {

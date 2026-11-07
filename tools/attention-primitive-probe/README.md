@@ -32,6 +32,8 @@ Record stage shape/stride/type/hash, maximum magnitude, RMS/max errors and all
 initial failures. A primitive match or speed difference cannot promote the
 experimental physical profile, whose measured decoded result remains negative.
 
-Preparation only: no worker is submitted by these files yet. The protocol
+Preparation only: no worker is submitted by these files yet. `worker.py` performs
+batched4/16 controls; tokenwise replay is explicitly not yet implemented and
+cannot be inferred from these results. The protocol
 freezes eleven whole source tensor ranges (including native layer3 FFN solely
 for actual-helper byte closure), three actual capture hashes and resource caps.
