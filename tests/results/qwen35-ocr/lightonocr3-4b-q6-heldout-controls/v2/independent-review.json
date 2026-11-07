@@ -1,0 +1,133 @@
+{
+  "schema": "lighton4b-q6-heldout-controls-independent-review/v2",
+  "source": "52e1cfcec5b515b4f4483fbeb86817250868f1f4",
+  "receipt_sha256": "47fbe751d1767efcf537a867d6ec74b1b9a1ae4efc7bca587ff863d4b56a4ae3",
+  "status": "passed",
+  "all_owned_members_rehashed": 26,
+  "actual_decode_cli_controls": 10,
+  "actual_position_export_bytes": 96,
+  "ocr_disabled_returncode": 8,
+  "owner_disabled_returncode": 2,
+  "model_acquisition": false,
+  "model_forward": false,
+  "elapsed_seconds": 116.658986083,
+  "scope": "Actual shared metadata exporter and model-free controls only; no new heldout output or quality claim.",
+  "files": {
+    "cli-disabled.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-native-source-features.log": {
+      "bytes": 236,
+      "sha256": "09f02851567ba4ca8bc7315b2f750691cc439b3744720caab7627d8541dc975c"
+    },
+    "cli-old512.log": {
+      "bytes": 236,
+      "sha256": "09f02851567ba4ca8bc7315b2f750691cc439b3744720caab7627d8541dc975c"
+    },
+    "test-lighton4b-physical-q4-repack.log": {
+      "bytes": 101,
+      "sha256": "3c9df6965787489db5717598b1e39e2d8ca31d7273e512cc53fbb587bf1b80dd"
+    },
+    "CMakeCache.txt": {
+      "bytes": 29123,
+      "sha256": "b8eb0c033eda386ff9754e20be771514b396dfb17ea867194b323a8133ddcfc9"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "6142d13d4a5c367f56a6b47a1d48ed5cb564403ae8501d4c29a761e185453a2a"
+    },
+    "source-admission.json": {
+      "bytes": 2801,
+      "sha256": "29997343c6855d4f9a181c1edbfb9b8b91bacd52317493b413ba2d1ef8b0c972"
+    },
+    "ggml.log": {
+      "bytes": 232,
+      "sha256": "296fa3e9b3d0db37237d02fc1ffcd03c5a7af1719cd0218f77be723b26a7847b"
+    },
+    "build.log": {
+      "bytes": 8676,
+      "sha256": "e42bc2b5739021a0cfe4aa180abcf5509b95774c2bcf43ff3ef51f54562bd3f7"
+    },
+    "position-export-control.log": {
+      "bytes": 82,
+      "sha256": "192468d0c1a75479871cfc90325234277909d42cac22523ab11a4392a93f2544"
+    },
+    "q6-heldout.json": {
+      "bytes": 21722,
+      "sha256": "47fbe751d1767efcf537a867d6ec74b1b9a1ae4efc7bca587ff863d4b56a4ae3"
+    },
+    "test-lighton4b-physical-f16-vision.log": {
+      "bytes": 101,
+      "sha256": "d58c15e1a57af3d53eada05f045b41d5fdb56580fc6854f8021f06a8bb03c7f2"
+    },
+    "cli-unflagged.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-threads.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-cap-low.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "bootstrap.py": {
+      "bytes": 6906,
+      "sha256": "7b7b01c7c40088b2016cade7c85e4851ae802c9e4737449660a73550ddac00dd"
+    },
+    "configure.log": {
+      "bytes": 2018,
+      "sha256": "bc51f5d868695768c15dd315a9f81b7b1be957f0c461b7ce77f38a9c71504026"
+    },
+    "position-export-owner-off.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "position-export-ocr-off.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-old256.log": {
+      "bytes": 236,
+      "sha256": "09f02851567ba4ca8bc7315b2f750691cc439b3744720caab7627d8541dc975c"
+    },
+    "test-lighton4b-physical-q6-tiled.log": {
+      "bytes": 68,
+      "sha256": "406d8fc763654ed18ae54a066fa10e8eb857f95a2c6a39efe05b753fe10ee55e"
+    },
+    "cli-mode.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "production-bytes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "fetch-production.log": {
+      "bytes": 125,
+      "sha256": "879d2160fe83817755666037e2a0cc701afc4de473bd6222ea9fed2d855f4d5f"
+    },
+    "test-lighton4b-physical-f16-attention.log": {
+      "bytes": 35,
+      "sha256": "5892c49ef41bc582baf756071bcb35987aa815a18b8e88452d1cfa601f57cdef"
+    },
+    "cli-cap-high.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-native-composed.log": {
+      "bytes": 236,
+      "sha256": "09f02851567ba4ca8bc7315b2f750691cc439b3744720caab7627d8541dc975c"
+    },
+    "test-lighton4b-physical-gdn-source-ops.log": {
+      "bytes": 74,
+      "sha256": "79542376e42103fed64742e365b7d0e5d0285c49763fe6006e1052f488e6d1d6"
+    },
+    "position-export-control/prefill.positions.f32": {
+      "bytes": 96,
+      "sha256": "6c0f0b2a6ddcd83edda7617971a452d53cf4f0458c1e5d41b485e5aea62b8dc9"
+    }
+  }
+}
