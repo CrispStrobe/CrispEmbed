@@ -65,13 +65,16 @@ def analyze(folder,native_folder,first_score,step_score,source_ids):
    if len(indices)!=len(x)or any(not 0<=j<n for j in indices):result['unsupported'].append({'graph':g['index'],'stage':name,'reason':'output crop mapping unavailable'});continue
    selected=reference[np.asarray(indices)+g['offset']];pairs.append({'graph':g['index'],'native_global_token_rows':[int(j)+g['offset']for j in indices],'source_batch_tokens':n,**delta(selected,x)})
   result['comparisons'][stage]=pairs
- g=graphs[0];take=min(16,g['tokens']);raw=g['arrays'];norm=raw.get('attn_norm-0');same_projected=False
- if norm is not None:
-  a=norm.reshape(-1,2560)[:take];b=np.fromfile(native/'prefill.first_chunk.layer0.input_norm.f32',dtype='<f4').reshape(-1,2560)[:take];same_projected=a.tobytes()==b.tobytes()
- result['layer0_source_native_projection_inputs_bits_equal']=same_projected
  stages=[('attn_norm-0','input_norm',2560,None),('linear_attn_qkv_mixed-0','qkv',8192,'qkv'),('z-0','z',4096,'z'),('alpha-0','a',32,'a'),('beta-0','b',32,'b'),('linear_attn_out-0','attention',2560,None),('attn_residual-0','attention_residual',2560,None),('attn_post_norm-0','post_norm',2560,None),('ffn_gate-0','gate',9216,None),('ffn_up-0','up',9216,None),('ffn_swiglu-0','activation',9216,None),('ffn_out-0','down',2560,None)]
- result['comparisons']['layer0_first_block']=[]
- for source,name,width,role in stages:
-  if source not in raw:result['unsupported'].append({'graph':g['index'],'stage':source,'reason':'not captured/materialized'});continue
-  a=raw[source].reshape(-1,width)[:take];a=a[:,row_map(role,width)]if role else a;b=np.fromfile(native/f'prefill.first_chunk.layer0.{name}.f32',dtype='<f4').reshape(-1,width)[:take];result['comparisons']['layer0_first_block'].append({'source_stage':source,'native_stage':name,'tokens':take,'source_graph_tokens':g['tokens'],'native_chunk_tokens':16,**delta(b,a)})
+ result['comparisons']['layer0_first_block']=[];result['layer0_source_native_projection_inputs_bits_equal']=[]
+ for g in graphs:
+  offset=g['offset'];take=min(16-offset,g['tokens'])
+  if take<=0:continue
+  raw=g['arrays'];norm=raw.get('attn_norm-0');same_projected=False
+  if norm is not None:
+   a=norm.reshape(-1,2560)[:take];b=np.fromfile(native/'prefill.first_chunk.layer0.input_norm.f32',dtype='<f4').reshape(-1,2560)[offset:offset+take];same_projected=a.tobytes()==b.tobytes()
+  result['layer0_source_native_projection_inputs_bits_equal'].append({'graph':g['index'],'native_global_token_rows':list(range(offset,offset+take)),'bit_exact':same_projected})
+  for source,name,width,role in stages:
+   if source not in raw:result['unsupported'].append({'graph':g['index'],'stage':source,'reason':'not captured/materialized'});continue
+   a=raw[source].reshape(-1,width)[:take];a=a[:,row_map(role,width)]if role else a;b=np.fromfile(native/f'prefill.first_chunk.layer0.{name}.f32',dtype='<f4').reshape(-1,width)[offset:offset+take];result['comparisons']['layer0_first_block'].append({'graph':g['index'],'native_global_token_rows':list(range(offset,offset+take)),'source_stage':source,'native_stage':name,'tokens':take,'source_graph_tokens':g['tokens'],'native_chunk_tokens':16,**delta(b,a)})
  result['comparison_status']='aligned-actual-stages';return result
