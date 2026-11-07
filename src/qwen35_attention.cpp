@@ -1,4 +1,5 @@
 #include "lighton4b_physical_native_ops.h"
+#include "lighton4b_physical_f16_attention.h"
 #include "lighton4b_upstream_physical_semantics.h"
 #include "qwen35_attention.h"
 #include "qwen35_math.h"
@@ -55,13 +56,16 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
     const int width = int(w.q->ne[0]), d = c.head_dim, qh = c.query_heads, kh = c.kv_heads;
     if (w.upstream_physical && (!lighton4b_upstream_physical_mode_valid(true) || batch != 1 || tokens > 16 ||
         width != 2560 || d != 256 || qh != 16 || kh != 4 || c.rotary_dim != 64)) return false;
-    if (!lighton4b_physical_native_ops_valid(w.upstream_physical)) return false;
-    if (previous && (previous->upstream_physical != w.upstream_physical || previous->physical_native_ops != lighton4b_physical_native_ops_mode(w.upstream_physical))) return false;
+    if (!lighton4b_physical_native_ops_valid(w.upstream_physical) ||
+        !lighton4b_physical_f16_attention_valid(w.upstream_physical)) return false;
+    const bool physical_f16 = lighton4b_physical_f16_attention_mode(w.upstream_physical);
+    if (previous && (previous->upstream_physical != w.upstream_physical || previous->physical_native_ops != lighton4b_physical_native_ops_mode(w.upstream_physical) || previous->physical_f16_attention != physical_f16)) return false;
     if (width < 1 || width > 8192 || !matrix(w.q, width, 2 * qh * d) || !matrix(w.k, width, kh * d) ||
         !matrix(w.v, width, kh * d) || !matrix(w.out, qh * d, width) || !matrix(w.q_norm, d, 1) ||
         !matrix(w.k_norm, d, 1))
         return false;
     const int past = previous ? previous->tokens : 0, total = past + tokens, count = batch * tokens;
+    if (physical_f16 && (threads != 4 || total > 2048)) return false;
     if (past < 0 || total > 4096 || size_t(batch) * total * kh * d > 16 * 1024 * 1024 ||
         size_t(count) * qh * d > 16 * 1024 * 1024)
         return false;
@@ -97,6 +101,7 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
     auto & cache = output.cache;
     cache.upstream_physical = w.upstream_physical;
     cache.physical_native_ops = lighton4b_physical_native_ops_mode(w.upstream_physical);
+    cache.physical_f16_attention = physical_f16;
     cache.batch = batch;
     cache.heads = kh;
     cache.tokens = total;
@@ -117,6 +122,14 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
                 std::copy_n(output.v.data() + src, d, cache.values.data() + dst);
             }
         }
+    if (physical_f16) {
+        std::vector<float> pooled;
+        attention_cache canonical;
+        if (!lighton4b_physical_f16_attention_cpu(queries, output.q, cache, past, tokens, threads, pooled, canonical)) {
+            output = {}; return false;
+        }
+        output.pooled = std::move(pooled); cache = std::move(canonical);
+    } else {
     output.pooled.resize(size_t(count) * qh * d);
     std::vector<float> scores(total);
     const float scale = 1.0f / std::sqrt(float(d));
@@ -145,6 +158,7 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
                     output.pooled[qbase + i] = value / (1.0f + std::exp(-output.q[gate]));
                 }
             }
+    }
     projected.clear();
     if (!project_cpu({ w.out }, output.pooled.data(), qh * d, count, threads, projected, weights_cache, w.upstream_physical)) return false;
     output.attention = std::move(projected[0]);

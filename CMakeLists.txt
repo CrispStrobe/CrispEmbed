@@ -913,6 +913,17 @@ target_link_libraries(test-lfm2-shortconv PRIVATE crispembed)
 # full OCR engine is wired. No production C ABI or registry exposure yet.
 add_library(crispembed-qwen35-delta STATIC src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/lighton4b_vision_owner.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
 target_sources(crispembed-qwen35-delta PRIVATE src/lighton4b_vision_bf16.cpp)
+target_sources(crispembed-qwen35-delta PRIVATE src/lighton4b_physical_f16_attention.cpp)
+# Private ABI is deliberately closed to the exact hosted CPU profile first.
+# Other builds retain the old path and reject an explicitly enabled experiment.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^([Xx]86_64|[Aa][Mm][Dd]64)$"
+   AND NOT CMAKE_CROSSCOMPILING AND NOT EMSCRIPTEN AND NOT CRISPEMBED_NATIVE
+   AND GGML_LLAMAFILE AND GGML_AVX2 AND GGML_F16C AND GGML_FMA AND NOT GGML_OPENMP
+   AND NOT GGML_NATIVE AND NOT GGML_AVX512 AND NOT GGML_BLAS AND NOT GGML_BACKEND_DL)
+    target_compile_definitions(crispembed-qwen35-delta PRIVATE CRISPEMBED_LIGHTON4B_F16_SGEMM_ABI=1)
+    target_include_directories(crispembed-qwen35-delta PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/src ${CMAKE_CURRENT_SOURCE_DIR}/ggml/src/ggml-cpu)
+endif()
+
 target_include_directories(crispembed-qwen35-delta PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 # qwen35_linear.cpp uses std::thread; older manylinux glibc needs explicit pthread linkage.
 target_link_libraries(crispembed-qwen35-delta PUBLIC ggml ggml-base ggml-cpu crispembed-core Threads::Threads)
@@ -1796,3 +1807,14 @@ add_executable(test-lighton4b-hf-tiled-out-recipe EXCLUDE_FROM_ALL tests/test_li
 target_link_libraries(test-lighton4b-hf-tiled-out-recipe PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-lighton4b-hf-tiled-out-operator EXCLUDE_FROM_ALL tests/test_lighton4b_hf_tiled_out_operator.cpp)
 target_link_libraries(test-lighton4b-hf-tiled-out-operator PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(test-lighton4b-physical-f16-attention EXCLUDE_FROM_ALL tests/test_lighton4b_physical_f16_attention.cpp)
+target_link_libraries(test-lighton4b-physical-f16-attention PRIVATE crispembed-qwen35-delta crispembed-core)
+# Compile the SAME source without the private ABI, and under the WASM guard.
+foreach(_fallback unsupported wasm-guard)
+    add_executable(test-lighton4b-physical-f16-${_fallback} EXCLUDE_FROM_ALL tests/test_lighton4b_physical_f16_fallback.cpp src/lighton4b_physical_f16_attention.cpp)
+    target_include_directories(test-lighton4b-physical-f16-${_fallback} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+endforeach()
+target_compile_definitions(test-lighton4b-physical-f16-wasm-guard PRIVATE __EMSCRIPTEN__=1 CRISPEMBED_LIGHTON4B_F16_SGEMM_ABI=1)
+add_executable(lighton4b-physical-f16-attention-probe EXCLUDE_FROM_ALL tests/lighton4b_physical_f16_attention_probe.cpp)
+target_link_libraries(lighton4b-physical-f16-attention-probe PRIVATE crispembed-qwen35-delta crispembed-core)

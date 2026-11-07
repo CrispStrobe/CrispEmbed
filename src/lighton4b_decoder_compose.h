@@ -15,6 +15,7 @@ struct lighton4b_decoder_cache {
     std::vector<lighton4b_layer_cache> layers;
     bool upstream_physical = false;
     uint8_t physical_native_ops = 0;
+    bool physical_f16_attention = false;
     bool hf_tiled_out = false;
 };
 struct lighton4b_decoder_outputs {
@@ -41,14 +42,18 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
     const bool bf16_quant_weights = lighton4b_bf16_dequant_weights_mode();
     if (!lighton4b_hf_tiled_out_mode_valid(weights.hf_tiled_out,weights.upstream_physical) ||
         (previous && previous->hf_tiled_out != weights.hf_tiled_out)) return false;
+    const bool physical_f16 = lighton4b_physical_f16_attention_mode(weights.upstream_physical);
+    if (!lighton4b_physical_f16_attention_valid(weights.upstream_physical) ||
+        (previous && previous->physical_f16_attention != physical_f16)) return false;
     if (!lighton4b_upstream_physical_mode_valid(weights.upstream_physical) || !lighton4b_physical_native_ops_valid(weights.upstream_physical) ||
         (previous && (previous->upstream_physical != weights.upstream_physical ||
                       previous->physical_native_ops != lighton4b_physical_native_ops_mode(weights.upstream_physical)))) return false;
     if (previous && previous->bf16_quant_weights != bf16_quant_weights) return false;
     const int past = previous ? previous->tokens : 0;
+    if (physical_f16 && (threads != 4 || past > 2048 - tokens)) return false;
     if (past < 0 || past > 4096 - tokens || (previous && (past == 0 || previous->layers.size() != 32))) return false;
     auto empty_attention = [](const attention_cache & c) {
-        return !c.batch && !c.heads && !c.tokens && !c.width && !c.upstream_physical && !c.physical_native_ops && c.keys.empty() && c.values.empty();
+        return !c.batch && !c.heads && !c.tokens && !c.width && !c.upstream_physical && !c.physical_native_ops && !c.physical_f16_attention && c.keys.empty() && c.values.empty();
     };
     auto finite = [](const std::vector<float> & v) {
         return std::all_of(v.begin(), v.end(), [](float x) { return std::isfinite(x); });
@@ -66,7 +71,7 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
             const auto & c = previous->layers[i];
             if (c.full_attention != full) return false;
             if (full) {
-                if (c.attention.tokens != past || c.attention.batch != 1 || c.attention.heads != 4 ||
+                if (c.attention.physical_f16_attention != physical_f16 || c.attention.tokens != past || c.attention.batch != 1 || c.attention.heads != 4 ||
                     c.attention.width != 256 || c.attention.keys.size() != size_t(past) * 1024 ||
                     c.attention.values.size() != c.attention.keys.size() || !finite(c.attention.keys) ||
                     !finite(c.attention.values) || c.linear.tokens || c.linear.bf16_activations ||
@@ -84,6 +89,7 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
     candidate.cache.bf16_quant_weights = bf16_quant_weights;
     candidate.cache.upstream_physical = weights.upstream_physical;
     candidate.cache.physical_native_ops = lighton4b_physical_native_ops_mode(weights.upstream_physical);
+    candidate.cache.physical_f16_attention = physical_f16;
     std::vector<float> hidden(input, input + size_t(tokens) * 2560);
     for (size_t i = 0; i < 32; ++i) {
         const auto & w = weights.layers[i];

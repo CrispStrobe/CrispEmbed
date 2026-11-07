@@ -24,6 +24,7 @@ struct attention_cache {
     std::vector<float> keys, values;
     bool upstream_physical = false;
     uint8_t physical_native_ops = 0;
+    bool physical_f16_attention = false;
 };
 struct attention_outputs {
     std::vector<float> q, k, v, q_norm, k_norm, pooled, attention;

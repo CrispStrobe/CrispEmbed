@@ -2084,3 +2084,16 @@ Actual original-F16 proof passed all24 HF/publisher payload pairs at24208e2ac; p
 
 
 HF-layout native controls are now measured passing atc89aaa4cb (Kaggle143171211/v3), with both initial fixture failures preserved in PR157. The next [closed observed three-case worker](docs/lighton4b-hf-tiled-out-observed-threecase-v1.json) reuses those exact binaries/libraries and verifies source/runner blob identity; it does not rebuild or change arithmetic. It admits old5d on the retained full table score/70 stage hashes before packing, audits699 protected/24 replaced payloads, and records full form/table/Arabic text/IDs/EOS against genuine BF16 and pinned llama/old-HF outputs.4h controller/90min form and table/20min Arabic, partial evidence retained. No heldout or shipping claim.
+
+## Physical-only F16 attention continuation
+
+The explicit private SGEMM operator at `b4a1a8dcf` closes40 conditional source
+stages bytewise and12 observer pairs; evidence is frozen on the qualification
+branch at `fe019dda5`. The isolated integration adds default-off
+`CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION`, separate cache fingerprints,
+canonical F16 K/V, source N1 paired-dot fallback and matched-profile SGEMM.
+Global traits, vendor source, public loading fence and HF tiled-output flags
+remain unchanged. Next gates are hosted supported/stub/WASM-guard controls,
+source-fed N4/N16 plus16 N1 cache replays against pinned upstream, then a bounded
+same-feature full-score and independent decoded comparison. Unsupported profiles
+must fail closed; no shipping/quality claim follows from the operator proof.

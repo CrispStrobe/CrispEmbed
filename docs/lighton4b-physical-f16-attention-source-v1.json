@@ -1,0 +1,37 @@
+{
+  "schema": "lighton4b-physical-f16-attention-source-change/v1",
+  "parent_commit": "b2a3778e424559b7216e1b11f21c7b38b71b02d8",
+  "reason": "Default-off physical-only F16 attention and immutable cache mode, exact source-profile operators; historical evidence/source pins stay frozen.",
+  "runtime_sources": {
+    "src/qwen35_attention.cpp": {
+      "parent_sha256": "6acde4684e52e0949b1e93f4546aebcf12539926929169bf3ef1a066f54d42d1",
+      "candidate_sha256": "4c7026537227177faae73b66555299564f92ab6470d76cc3301fb82972660a3e"
+    },
+    "src/qwen35_attention.h": {
+      "parent_sha256": "83c5db3ded3d45cc8faffc58856107d1df61dd5b1697b029844a0795de5d4597",
+      "candidate_sha256": "7961a29151b1d169634fff16d91517059a4b924e15859c56d7f53abdefd41e94"
+    },
+    "src/lighton4b_attention_block.h": {
+      "parent_sha256": "330acc6a35f490ddc9e4996f289728a58417fed186591e141a5d36b9aa48c890",
+      "candidate_sha256": "ebc64466a926ca89a5e55702755ed4794622eb7ff1d9a33eea83a988ad856ef6"
+    },
+    "src/lighton4b_decoder_compose.h": {
+      "parent_sha256": "e0bc79be29eef4559989f214a631d9b79d15ec09810fd4c5de800f94daf96ac3",
+      "candidate_sha256": "8390280952a9aa664a8c9b1ff5e660f8f28b16f8b85bffcdbe31a2e9d8b70e4b"
+    },
+    "src/lighton4b_native_context.h": {
+      "parent_sha256": "02d0b3b294d01a32057fb9db056bc41bed01953139b62a9715fb7cedbb9021e7",
+      "candidate_sha256": "f9aeccebd51cd2abf12efa1e2df6f8f2378c57c49a6de1d62fc4688e30a3951f"
+    },
+    "src/lighton4b_physical_f16_attention.cpp": {
+      "parent_sha256": null,
+      "candidate_sha256": "ea885989b0e7e4779a200307626789304278d6bf57e92b282f377d6cef2ac666"
+    },
+    "src/lighton4b_physical_f16_attention.h": {
+      "parent_sha256": null,
+      "candidate_sha256": "b7a3cec0f3b45e6e4450361d5b583b3e06087caf325cc9054459ffe56ffb9dd4"
+    }
+  },
+  "hosted_controls_status": "pending",
+  "quality_qualified": false
+}
