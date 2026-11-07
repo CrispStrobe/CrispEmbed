@@ -15,5 +15,5 @@
   "total_timeout_seconds": 3600,
   "per_arm_timeout_seconds": 1200,
   "quality_qualified": false,
-  "scope": "Extended completion diagnostic, originalcap256negativepreserved. Actualpinnedupstream observerOFF/ONfull512strictneutrality, exactoldsource256IDs/probs+features+first2scoreanchors, exactformnativebinary/gates+oldnative256IDs/firstscoreanchors. No heldout or composedvisionqualification."
+  "scope": "Extended completion diagnostic; preserve the original cap256 negative. Require full upstream observer OFF/ON neutrality, exact old source256 IDs/probabilities and feature/first-two-score anchors, plus the unchanged native binary/gates and exact old native256 IDs/first-score anchors. No held-out or composed-vision qualification."
 }
