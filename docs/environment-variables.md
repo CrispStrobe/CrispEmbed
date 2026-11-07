@@ -1602,3 +1602,5 @@ values must be canonical, and output commits on success. This gate is inert for
 nonphysical owners. It does not qualify decoded quality or create a release alias.
 
 `CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS=1` is a default-off physical-owner experiment using source-shaped GDN operators while retaining the scalar log1p softplus. It preserves existing quantized projections and output routes, records a distinct cache mode, and rejects reuse across modes. Actual-input component controls pass, but full decoded table A/B regresses349→364/607 character edits and97→104/106 word edits; form text is unchanged. Keep this gate default-off and unqualified; it does not enable a release format. See [decoded result](lighton4b-physical-gdn-source-ops.md).
+
+The combined physical GDN+Q4-repack diagnostic matches observed table IDs/text but fails form character quality194/656 versus upstream189/656, despite better word edits. Both experimental flags remain default-off and unqualified. [Mixed outcome and no-ship limits](lighton4b-physical-gdn-source-ops.md).

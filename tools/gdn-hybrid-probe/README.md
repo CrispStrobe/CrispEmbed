@@ -1,6 +1,6 @@
 # Physical GDN hybrid operator controls
 
-**Subsequent full decoded A/B regresses table output. Keep the gate default-off and unqualified; do not ship.** [Measured result and limits](../../docs/lighton4b-physical-gdn-source-ops.md).
+**Single-gate full decoded A/B regresses table output; the later two-gate combination matches table but fails the form character floor. Keep both gates default-off and unqualified; do not ship.** [Measured result and limits](../../docs/lighton4b-physical-gdn-source-ops.md).
 
 Reference-only harness for a separately gated production helper. Fourteen fixed runs compare old native operators, pinned upstream GGML, native GGML source graph and the actual gated helper on observed table inputs. Geometry is 1/4/16 tokens, B1, 16 QK heads, 32 value heads, width128 and kernel4.
 

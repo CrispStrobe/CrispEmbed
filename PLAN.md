@@ -2246,3 +2246,7 @@ Integrate the exact reviewed/tested `cd50e9e691530525fb998edda8a449cc0725be91` h
 ## Physical GDN decoded regression: gate stays off
 
 Full table/form A/B at `f6a1e60d3` closes OFF all282/167 rows+38 text anchors. GDN ON table294EOS worsens349→364/607 character edits,97→104/106 words; form167EOS raw IDs/text unchanged. Both first-score errors improve, without decoded quality parity. Keep default-off/unqualified and no ship; [evidence and limits](docs/lighton4b-physical-gdn-source-ops.md). No runtime/default/alias/release change.
+
+## Combined physical GDN/repack remains unqualified
+
+Source `374d04387` completes four cap512 arms with exact OFF282/167 rows/stages. Combined ON table282EOS matches upstream IDs/text; form167EOS fails character floor194/656 versus upstream189, even with fewer word edits40 versus46. Keep both gates default-off; no aggregate waiver, promotion or ship. [Full evidence and limits](docs/lighton4b-physical-gdn-source-ops.md). No runtime/default/release change or held-out execution.
