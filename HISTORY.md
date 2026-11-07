@@ -21461,3 +21461,8 @@ Integration-control retry `6ed974440` retains a second harness CLI exit2 at
 release-fence output-path admission after supported255,297 and physical-policy
 557,865 controls pass. [Both initial negatives](docs/lighton4b-attention-primitives.md)
 remain explicit; no source-fed result or model-quality claim is made.
+
+Control source `4f243a180` retains a shallow-history setup failure after
+255,297 supported controls; exact archived receipt commits were not fetched
+before Git verification. The [negative](docs/lighton4b-attention-primitives.md)
+claims zero source-fed comparisons. Runtime bytes remain unchanged.

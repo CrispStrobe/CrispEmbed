@@ -152,3 +152,12 @@ is retained, with zero source-fed cases claimed. Tools-only fix `4f243a180`
 checks invocation arity against all nine actual C++ test signatures, supplies
 the fixture path, and moves source-fed proof before unrelated compatibility
 controls. Runtime bytes remain unchanged and shared PR155 is still gated.
+
+The next control source `4f243a180` again passes255,297 runtime controls, but
+its shallow hosted checkout lacks an archived receipt commit needed by
+`--verify-git`. The
+[third setup-negative receipt](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/integration-v3-setup-negative/review.json)
+retains the history-verification failure without claiming source drift or a
+numerical result. Tools-only fix `bfb09595a` fetches the exact frozen receipt
+commits before verifying them, and moves history/environment admission before
+compilation. No actual source-fed cases or model forward occurred.
