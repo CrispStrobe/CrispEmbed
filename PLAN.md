@@ -3144,3 +3144,7 @@ unqualified, with no speed or quality promotion. NativepairedstageL0RMS
 3.266e-5 growsL31RMS0.07623; actualupstreamtextinternalstageswerenotcaptured.
 Prioritize composed-vision attribution/fix; do not infer a new text-kernel fix
 from this negative. Preserve all raw text,IDs,receipts and immutable sources.
+
+### Live projector V3 and precision-policy closure (2026-11-07)
+
+Preserved valid live-callback projectorV3 receipt427b/sourcec1ed, all32 callbacks once, patch/position and FFN residual identities, actual upstream OFF/ON merged-byte closure. Independent17 small-array hashes verify source normalization/HWC→CHW and341 differing resize channels/max2. Dtype-aware audit closes198 F32 parameters exactly and99 native matrices/100 F16 source tensors after required rounding; V2's10 F16 mismatches were sourceF32 parameters incorrectly judged after an unnecessary cast. All297/298 canonical transforms close; original checkpoint identity remains unproven. Valid actual patch RMS.0008215/layer0 .003005/layer23 7.98955/merged .011237 locate growing arithmetic divergence; report-derived metrics and independent raw subset are distinguished. V2 aliased stage claims remain rejected. Separate default-off Pillow22/F16-matrix/F32-state production draft awaits hosted component controls and complete decode; no quality/default/release promotion.
