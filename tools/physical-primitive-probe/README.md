@@ -8,7 +8,7 @@ input hashes and compiler options. No generation or full F32 model is involved.
 Configure twice with `-DGGML_SOURCE=<authenticated-tree>/ggml` for upstream
 llama.cpp `6c01da6278ab6c69ed67d9124806b50d2b299ba7`, and the native gitlink
 `3a27b6c665b191cb230be367db5c52d81dd3e2ac` itself. The independent builds use
-AVX2, no AVX512/BLAS/CUDA/Vulkan, four CPU threads. Preserve both CMake caches,
+AVX2, LLAMAFILE ON, no AVX512/BLAS/CUDA/Vulkan, four CPU threads. Preserve both CMake caches,
 binary/library hashes and CPU details. Exact runtime input paths are worker-owned.
 
 Invocation: `physical-primitive OP TYPE ROWS TOKENS WEIGHTS INPUT OUTPUT`.
@@ -63,3 +63,11 @@ main-path evidence. The scalar norm and upstream ggml norm are fed separately
 to both direct and dequantized projections, with no row-layout comparison needed
 for the cross-backend same-physical outputs. Later actual-native comparison must
 apply the recorded row permutation.
+
+Initial reconstructed version2 used standalone ggml's implicit LLAMAFILE OFF.
+Its cross-version bit equality is restricted to that profile. Focused version3
+exposed a mismatch against the actual root runtime's LLAMAFILE ON F32 SGEMM
+(RMS3.95e-7/max5.72e-6 on QKV); the retained-quantized QKV and RMS already
+matched exactly. Preserve this strict failed comparison. The corrected worker
+explicitly sets LLAMAFILE ON and admits all three actual CMake caches before
+comparing. No numerical tolerance is relaxed.

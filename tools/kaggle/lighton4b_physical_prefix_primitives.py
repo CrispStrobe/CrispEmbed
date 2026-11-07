@@ -14,7 +14,7 @@ def main():
  require(Path('/kaggle/working').is_dir()and Path('/kaggle/input').is_dir(),'Kaggle CPU only');require(not list(Path('/dev').glob('nvidia[0-9]*')),'CPU only')
  import numpy as np
  require(np.__version__=='2.3.5','numpy pin')
- out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH'])/'prefix-primitives';scratch.mkdir();report={'schema':'lighton4b-reconstructed-prefix-primitives/v1','status':'failed','actual_source_graph_captured':False,'actual_native_trace_compared':False,'model_forward_executed':False,'quality_qualified':False,'scope':'reconstructed4-tokenprefix only','source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()}
+ out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH'])/'prefix-primitives';scratch.mkdir();report={'schema':'lighton4b-reconstructed-prefix-primitives/v1','status':'failed','actual_source_graph_captured':False,'actual_native_trace_compared':False,'model_forward_executed':False,'quality_qualified':False,'ggml_profile':{'llamafile':True,'avx2':True,'avx512':False,'blas':False,'threads':4},'scope':'reconstructed4-tokenprefix only','source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()}
  def run(label,args):
   report['phase']=label
   with(out/(label+'.log')).open('w')as f:subprocess.run(list(map(str,args)),stdout=f,stderr=subprocess.STDOUT,check=True,timeout=900)
@@ -50,10 +50,11 @@ def main():
   binaries={}
   for tag,source in [('native',ROOT/'ggml'),('upstream',up/'ggml')]:
    build=scratch/(tag+'-build');run(tag+'-configure',['cmake','-S',ROOT/'tools/physical-primitive-probe','-B',build,'-DCMAKE_BUILD_TYPE=Release','-DGGML_SOURCE='+str(source)]);run(tag+'-build',['cmake','--build',build,'--target','physical-primitive','--parallel','2']);binaries[tag]=build/'physical-primitive';shutil.copy(build/'CMakeCache.txt',out/(tag+'-CMakeCache.txt'))
-  build=scratch/'runtime-build';run('runtime-configure',['cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_AVX2=ON','-DGGML_AVX512=OFF','-DGGML_BLAS=OFF','-DGGML_CUDA=OFF','-DGGML_VULKAN=OFF'])
+  build=scratch/'runtime-build';run('runtime-configure',['cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_AVX2=ON','-DGGML_AVX512=OFF','-DGGML_BLAS=OFF','-DGGML_LLAMAFILE=ON','-DGGML_CUDA=OFF','-DGGML_VULKAN=OFF'])
   run('runtime-build',['cmake','--build',build,'--target','test-lighton4b-physical-native-ops','test-lighton4b-physical-runtime-primitive','lighton4b-native-document','test-qwen35-stream-projection','test-lighton4b-q6-tied-head','--parallel','2'])
   for target in ('test-lighton4b-physical-native-ops','test-qwen35-stream-projection','test-lighton4b-q6-tied-head'):run(target,[build/target])
-  binaries['runtime']=build/'test-lighton4b-physical-runtime-primitive'
+  binaries['runtime']=build/'test-lighton4b-physical-runtime-primitive';shutil.copy(build/'CMakeCache.txt',out/'runtime-CMakeCache.txt')
+  for tag in ('native','upstream','runtime'):require('GGML_LLAMAFILE:BOOL=ON' in (out/(tag+'-CMakeCache.txt')).read_text(),'same explicit LLAMAFILE profile')
   gamma=rows['blk.0.attn_norm.weight'][1];report['norm']={}
   for tag,binary in binaries.items():run(tag+'-norm',[binary,'norm','f32',1,4,gamma,out/'reconstructed-prefix.f32',out/(tag+'-norm.f32')])
   require((out/'runtime-norm.f32').read_bytes()==(out/'upstream-norm.f32').read_bytes(),'runtime/upstream norm bit identity')
@@ -76,5 +77,7 @@ def main():
     key[inputname]={'runtime_direct_exact':True,'runtime_dequant_exact':True,'backend_direct':diff(load('native','direct'),load('upstream','direct')),'backend_dequant':diff(load('native','dequant'),load('upstream','dequant')),'upstream_direct_vs_dequant':diff(load('upstream','direct'),load('upstream','dequant'))}
    report['projections'][name]=key
   report['binary_sha256']={k:sha(v)for k,v in binaries.items()};report['status']='measured_operator_only'
+ except Exception as error:
+  report['error_type']=type(error).__name__;report['error']=str(error);raise
  finally:(out/'prefix-primitives.json').write_text(json.dumps(report,indent=2)+'\n')
 if __name__=='__main__':main()
