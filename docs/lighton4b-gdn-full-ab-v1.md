@@ -1,0 +1,11 @@
+# Physical GDN full observed-case A/B
+
+This diagnostic keeps physical model SHA `843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43`, corrected Pillow/F16 vision, F16 attention and existing text settings fixed. It compares only `CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS=0` versus `1`. Global Q4 repack, BF16 head and BF16 text rounding stay off. Neither outcome qualifies a release.
+
+The [frozen protocol](lighton4b-gdn-full-ab-v1.json) requires operator receipt `6b1f4f9c3150d06df0a195c1f21c42136874e69934b9586205712114354e798d`. Its actual upstream first-four-token and nonzero-state continuation closures are exact. Its native16 RAW output projection has a separately recorded backend residual; that is not waived or treated as whole-model proof.
+
+One bounded Kaggle CPU job builds the exact tested implementation, runs supported cache and attention controls, then evaluates table OFF/ON followed by form OFF/ON. Every arm uses independent greedy generation, cap512/context2048/four compute threads. The single teacher row is solely a first-score identity check. This is not a 177-position teacher panel. OFF must reproduce all282 table or167 form raw rows, all38 text stages, vision/processor arrays, IDs and EOS before the corresponding ON arm starts. ON must preserve actual input/vision bytes. All output rows are retained remotely and checked for finite values and correct argmax.
+
+The worker has a6000-second global deadline,900 seconds per decode arm, two build threads, cgroup-aware10GiB available RAM,25GiB scratch and6GiB output admission. Failures, timeouts and capped outputs remain diagnostics. Reports preserve raw text/IDs/EOS, character and word edits against original BF16 and completed upstream outputs, first-score magnitudes/errors, native OFF/ON layer differences, and child wall/CPU/RSS metadata. Original and upstream models are not rerun. Five completed input services are required: hybrid controls, physical input capture, table512, corrected composed form, and composed calibration.
+
+Current acceptance remains blocked by the table one-character regression and the held-out historical receipt regression. A component pass, speed difference or one improved observed case does not remove either gate. No app alias, release pin, vendor traits or default changes are authorized by this harness.
