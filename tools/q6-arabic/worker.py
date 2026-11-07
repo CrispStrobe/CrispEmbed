@@ -16,6 +16,8 @@ def admit(path):
  require(sha(path)==CFG_SHA,'immutable Arabic protocol');return json.loads(Path(path).read_text())
 def gates(env):
  off=dict(env);off.update({k:'0'for k in CHANGED});on=dict(off);on.update({k:'1'for k in CHANGED});require({k for k in off if off[k]!=on[k]}==CHANGED,'exact declared three-mechanism change');return off,on
+def upstream_complete(up):
+ ids=up['tokens'];require(len(ids)==6 and ids[-1]in[248044,248046]and up['stop']is True and up['stop_type']=='eos'and up['truncated']is False and up['tokens_predicted']==len(ids)and len(up['completion_probabilities'])==len(ids)and [v['id']for v in up['completion_probabilities']]==ids,'complete frozen source EOS/probability rows')
 def stage(path):require(path.is_file(),'owned binary');path.chmod(path.stat().st_mode|stat.S_IXUSR)
 def main():
  import numpy as np
@@ -52,7 +54,7 @@ def main():
   for name in ['input.rgb','original.json','retained-upstream-response.json','observer-on/source.vision.0.f32','observer-on/source.logits.0.f32','upstream_features/prompt.ids','upstream_features/modalities.ids','upstream_features/prefill.positions.f32']:verify(folder/name,art[name])
   anchors=list(shared.STAGES)+[f'greedy.{i}.logits.f32'for i in range(6)];visual=[k[len(prefix):]for k in calib['artifacts']if k.startswith(prefix+'vision.')or k.startswith(prefix+'processor.')]
   for name in anchors+visual+['prompt.ids','modalities.ids']:verify(cp.parent/prefix/name,calib['artifacts'][prefix+name])
-  original=json.loads((folder/'original.json').read_text());up=json.loads((folder/'retained-upstream-response.json').read_text());reference=np.fromfile(folder/'observer-on/source.logits.0.f32',dtype='<f4');require(reference.size==248320 and np.isfinite(reference).all(),'finite actual source vocabulary');protocol=json.loads((ROOT/'docs/lighton4b-upstream-physical-decode-v1.json').read_text());c=next(v for v in protocol['cases']if v['id']==case);image=Image.open(ROOT/c['image']).convert('RGB');require(sha(ROOT/c['image'])==c['image_sha256']and image.tobytes()==(folder/'input.rgb').read_bytes(),'same frozen RGB')
+  original=json.loads((folder/'original.json').read_text());up=json.loads((folder/'retained-upstream-response.json').read_text());upstream_complete(up);reference=np.fromfile(folder/'observer-on/source.logits.0.f32',dtype='<f4');require(reference.size==248320 and np.isfinite(reference).all(),'finite actual source vocabulary');protocol=json.loads((ROOT/'docs/lighton4b-upstream-physical-decode-v1.json').read_text());c=next(v for v in protocol['cases']if v['id']==case);image=Image.open(ROOT/c['image']).convert('RGB');require(sha(ROOT/c['image'])==c['image_sha256']and image.tobytes()==(folder/'input.rgb').read_bytes(),'same frozen RGB')
   r['actual_upstream_vs_original']=f.metric(base,up['tokens'],up['content'],original['generated_ids'],original['decoded']);r['all_inputs_admitted_before_weights']=True;save()
   sys.path.insert(0,str(ROOT/'tools'));import lighton4b_upstream_physical_pack as pack
   def download(url,path,size,digest):
@@ -82,7 +84,7 @@ def main():
   for layer in range(32):
    x=np.fromfile(out/'on'/f'prefill.layer.{layer}.f32',dtype='<f4');y=np.fromfile(out/'off'/f'prefill.layer.{layer}.f32',dtype='<f4');require(x.shape==y.shape and x.size and np.isfinite(x).all()and np.isfinite(y).all(),'paired finite native layers');d=x.astype('f8')-y;paired.append(dict(layer=layer,bit_exact=x.tobytes()==y.tobytes(),rms=float(np.sqrt(np.mean(d*d))),max_abs=float(abs(d).max()),off_rms_magnitude=float(np.sqrt(np.mean(y.astype('f8')**2))),on_rms_magnitude=float(np.sqrt(np.mean(x.astype('f8')**2)))))
   r['paired_native_layers']=dict(scope='Native old/corrected; not actual upstream hidden',first_different_layer=next((v['layer']for v in paired if not v['bit_exact']),None),layers=paired)
-  r['status']='measured_q6_arabic';r['limits']=['Frozen observed Arabic only; explicit three-mechanism change from old baseline.','One teacher row and full independent greedy, not full teacher parity.','No heldout or shipping qualification.']
+  require(sha(candidate)==cfg['candidate_sha256'],'candidate unchanged after all arms');r['status']='measured_q6_arabic';r['limits']=['Frozen observed Arabic only; explicit three-mechanism change from old baseline.','One teacher row and full independent greedy, not full teacher parity.','No heldout or shipping qualification.']
  except BaseException as e:r.update(error_type=type(e).__name__,error=str(e));raise
  finally:
   deadline.close()
