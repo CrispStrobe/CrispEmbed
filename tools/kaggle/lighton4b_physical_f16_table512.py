@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Frozen extended table diagnostic. Cap256 evidence remains unchanged."""
-import base64,hashlib,io,json,os,resource,shutil,signal,socket,subprocess,sys,time,urllib.request
+import base64,csv,hashlib,io,json,os,resource,shutil,signal,socket,subprocess,sys,time,urllib.request
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'tools/physical-f16-attention-probe'))
 from runtime_guard import Deadline,command
@@ -28,7 +28,7 @@ def main():
  from PIL import Image
  require(Path('/kaggle/input').is_dir()and not list(Path('/dev').glob('nvidia[0-9]*')),'Kaggle CPU only');require(np.__version__=='2.3.5'and Image.__version__=='11.3.0','serializer versions')
  cfgpath=ROOT/'docs/lighton4b-physical-f16-table512-v1.json';cfg=json.loads(cfgpath.read_text());admit(cfg);out=Path(os.environ['HEAVY_OUT']);work=Path(os.environ['HEAVY_SCRATCH'])/'table512';work.mkdir();started=time.monotonic();active=None;source_deadline=[None];deadline=Deadline(3600);deadline.__enter__()
- base=module('physical_base',ROOT/'tools/kaggle/lighton4b_upstream_physical_decode.py');sys.path.insert(0,str(ROOT/'tools'));import lighton4b_upstream_physical_pack as pack;import lighton4b_upstream_observer_patch as observer
+ base=module('physical_base',ROOT/'tools/kaggle/lighton4b_upstream_physical_decode.py');sys.path.insert(0,str(ROOT/'tools'));import lighton4b_upstream_physical_pack as pack;import lighton4b_upstream_observer_patch as observer;import lighton4b_upstream_dispatch_log as dispatch
  r={'schema':cfg['schema'],'status':'failed','source_sha':None,'arms':{},'commands':{},'quality_qualified':False,'original_bf16_forward_executed':False,'cap256_evidence_replaced':False}
  def save():(out/'physical-f16-table512.json').write_text(json.dumps(r,indent=2,ensure_ascii=False)+'\n')
  def interrupted(signum,frame):base.stop(active);raise SystemExit(128+signum)
@@ -59,7 +59,7 @@ def main():
   require(sha(folder/'original.json')==case['reference_sha256']and sha(folder/'retained-upstream-response.json')==case['upstream_response_sha256'],'reference hashes');image=Image.open(ROOT/case['image']).convert('RGB');require(sha(ROOT/case['image'])==case['image_sha256']and image.tobytes()==(folder/'input.rgb').read_bytes(),'frozen image/RGB');prompt_ids=list(map(int,(folder/'upstream_features/prompt.ids').read_text().split()));b=io.BytesIO();np.save(b,np.array([prompt_ids],dtype='<i8'),allow_pickle=False);require(hashlib.sha256(b.getvalue()).hexdigest()==case['expected_input_ids_npy_sha256'],'actual prompt NPY bytes')
   repo=work/'llama.cpp'
   for label,args in [('up-init',['git','init',repo]),('up-remote',['git','-C',repo,'remote','add','origin',protocol['upstream_repo']]),('up-fetch',['git','-C',repo,'fetch','--depth','1','origin',protocol['upstream_commit']]),('up-checkout',['git','-C',repo,'checkout','--detach','FETCH_HEAD'])]:run(label,args)
-  require(subprocess.check_output(['git','-C',repo,'rev-parse','HEAD'],text=True).strip()==observer.SOURCE==protocol['upstream_commit'],'pinned upstream');r['observer_patch']=observer.patch(repo)
+  require(subprocess.check_output(['git','-C',repo,'rev-parse','HEAD'],text=True).strip()==observer.SOURCE==protocol['upstream_commit'],'pinned upstream');r['observer_patch']=observer.patch(repo);r['dispatch_patch']=dispatch.patch(repo)
   build=work/'up-build';flags={'GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_AVX512':'OFF','GGML_BLAS':'OFF','GGML_CUDA':'OFF','GGML_VULKAN':'OFF','GGML_LLAMAFILE':'ON','GGML_OPENMP':'ON','GGML_BACKEND_DL':'OFF'}
   run('up-configure',['cmake','-S',repo,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DLLAMA_BUILD_SERVER=ON','-DLLAMA_BUILD_TESTS=OFF','-DLLAMA_BUILD_EXAMPLES=OFF','-DLLAMA_CURL=OFF','-DLLAMA_OPENSSL=OFF',*[f'-D{k}={v}'for k,v in flags.items()]]);cache=(build/'CMakeCache.txt').read_text().splitlines()
   for k,v in flags.items():require(f'{k}:BOOL={v}'in cache,'source profile '+k)
@@ -69,7 +69,7 @@ def main():
   row=protocol['base_model'];protected=work/row['file'];base.download('https://huggingface.co/'+row['repository']+'/resolve/'+row['revision']+'/'+row['file'],protected,row['bytes'],row['sha256']);candidate=work/'physical-native.gguf';audit=pack.convert(protected,up,candidate,out/'physical-pack.json');require(audit['candidate_sha256']==form['candidate_sha256'],'immutable same native weights');r['candidate_sha256']=audit['candidate_sha256'];protected.unlink()
   responses=[]
   for enabled in [False,True]:
-   arm='upstream-on'if enabled else'upstream-off';dest=out/arm;dest.mkdir();r['phase']=arm;save();child=dict(os.environ);child.pop(observer.ENV,None)
+   arm='upstream-on'if enabled else'upstream-off';dest=out/arm;dest.mkdir();r['phase']=arm;save();child=dict(os.environ);child.pop(observer.ENV,None);child[dispatch.ENV]=str(dest)
    if enabled:child[observer.ENV]=str(dest)
    with socket.socket()as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
    args=[server,'-m',up,'--mmproj',proj,'--host','127.0.0.1','--port',str(port),'-t','4','-tb','4','-c','2048','-np','1','-ngl','0','--no-mmproj-offload','--no-warmup','--flash-attn','off','--jinja','--chat-template-kwargs','{"enable_thinking":false}','--image-min-tokens',str(protocol['image_min_tokens']),'--image-max-tokens',str(protocol['image_max_tokens'])];arm_started=time.monotonic();source_deadline[0]=arm_started+1200;peak=0;before=resource.getrusage(resource.RUSAGE_CHILDREN);r['arms'][arm]={'status':'running'};save()
@@ -85,11 +85,12 @@ def main():
      req={'prompt':{'prompt_string':templ,'multimodal_data':[base64.b64encode((folder/'input.png').read_bytes()).decode()]},'n_predict':512,'temperature':0,'seed':0,'top_k':1,'top_p':1,'min_p':0,'repeat_penalty':1,'presence_penalty':0,'frequency_penalty':0,'cache_prompt':False,'return_tokens':True,'n_probs':5,'stream':False};response=api(port,'/completion',req,1200);(dest/'response.json').write_text(json.dumps(response,indent=2,ensure_ascii=False)+'\n');validate_source(response,old_source);remaining_budget(started,source_deadline[0]);(dest/'generated.ids').write_text(''.join(str(x)+'\n'for x in response['tokens']));(dest/'generated.txt').write_bytes(response['content'].encode('utf8'))
      try:peak=int(next(x.split()[1]for x in Path('/proc/'+str(active.pid)+'/status').read_text().splitlines()if x.startswith('VmHWM:')))*1024
      except(OSError,StopIteration):pass
-     responses.append(response);r['arms'][arm]={'status':'completed','response_sha256':sha(dest/'response.json'),'generated_tokens':len(response['tokens']),'eos':response['stop_type']=='eos','cap_hit':response['stop_type']=='limit','elapsed_seconds':time.monotonic()-arm_started,'peak_rss_bytes_observed':peak,'vs_original_bf16':f.metric(base,response['tokens'],response['content'],original['generated_ids'],original['decoded'])};save()
+     dispatch_rows=list(csv.DictReader((dest/dispatch.OUTPUT).read_text().splitlines(),delimiter='\t'));require(len(dispatch_rows)==9 and len({row['role']for row in dispatch_rows})==9 and all(row['extra']in['0','1']and row['host']in['0','1']for row in dispatch_rows),'actual loaded tensor dispatch rows');responses.append(response);r['arms'][arm]={'status':'completed','tensor_dispatch':dispatch_rows,'response_sha256':sha(dest/'response.json'),'generated_tokens':len(response['tokens']),'eos':response['stop_type']=='eos','cap_hit':response['stop_type']=='limit','elapsed_seconds':time.monotonic()-arm_started,'peak_rss_bytes_observed':peak,'vs_original_bf16':f.metric(base,response['tokens'],response['content'],original['generated_ids'],original['decoded'])};save()
     finally:
      base.stop(active);r['arms'][arm]['returncode']=active.returncode if active is not None else None;active=None;source_deadline[0]=None;r['arms'][arm]['elapsed_seconds']=time.monotonic()-arm_started;after=resource.getrusage(resource.RUSAGE_CHILDREN);r['arms'][arm]['child_user_seconds']=after.ru_utime-before.ru_utime;r['arms'][arm]['child_system_seconds']=after.ru_stime-before.ru_stime
      if r['arms'][arm]['status']=='running':r['arms'][arm]['status']='failed'
      save()
+  require((out/'upstream-off'/dispatch.OUTPUT).read_bytes()==(out/'upstream-on'/dispatch.OUTPUT).read_bytes(),'same actual source dispatch with observer OFF/ON')
   require(responses[0]['tokens']==responses[1]['tokens']and responses[0]['content']==responses[1]['content']and responses[0]['completion_probabilities']==responses[1]['completion_probabilities']and responses[0]['stop_type']==responses[1]['stop_type'],'full source observer neutral')
   for rel in ['source.vision.0.f32','source.logits.0.f32','source.logits.1.f32']:require(sha(out/'upstream-on'/rel)==art['observer-on/'+rel]['sha256'],'source feature/first2 raw score anchor '+rel)
   env=dict(os.environ);env.update({k:'0'for k in env if k.startswith('CRISPEMBED_')});env.update(form['arms']['f16-full']['gates']);env['LD_LIBRARY_PATH']=str(bundle/'lib');teacher=work/'one.ids';teacher.write_text(str(original['generated_ids'][0])+'\n');dest=out/'native';dest.mkdir();run('native',[native,candidate,folder/'input.rgb',image.height,image.width,teacher,dest,512,4,'greedy-full','--upstream-vision',out/'upstream-on/source.vision.0.f32'],env,1200)
