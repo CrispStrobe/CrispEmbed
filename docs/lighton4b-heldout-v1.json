@@ -1,0 +1,196 @@
+{
+  "version": 1,
+  "status": "frozen-selection-no-inference; execution-blocked",
+  "policy": "lighton4b-heldout-v1",
+  "selection_scope": "Held out from current LightOnOCR3-4B calibration only; historically used in other OCR lanes; no pretraining-clean or globally-unseen claim. No candidate outputs inspected for selection.",
+  "quota": {
+    "cases": 3,
+    "real_documents": 2,
+    "owned_controlled_tables": 1,
+    "variants_per_case": 1,
+    "replacement_cases": 0,
+    "max_new_tokens": 1536,
+    "context": 2048,
+    "threads": 4,
+    "build_threads": 2,
+    "max_workers": 1,
+    "case_worker_seconds": 6000,
+    "arm_seconds": 1200,
+    "total_case_worker_seconds": 18000,
+    "minimum_available_ram_gib": 10,
+    "minimum_scratch_gib": 25,
+    "minimum_output_free_gib": 8,
+    "maximum_prompt_tokens": 512,
+    "maximum_merged_image_tokens": 256
+  },
+  "prepared_archive": {
+    "repo": "cstr/crispembed-regression-fixtures",
+    "revision": "057e12668bf8109ec83c65929c9b8d6cb99ca566",
+    "file": "ocr-quality-v1/prepared-38879605915/prepared.zip",
+    "url": "https://huggingface.co/datasets/cstr/crispembed-regression-fixtures/resolve/057e12668bf8109ec83c65929c9b8d6cb99ca566/ocr-quality-v1/prepared-38879605915/prepared.zip",
+    "sha256": "a890c3ad8151706948d3d89529e5f5716405e5f790a3749436f36d78f20ca9cc",
+    "bytes": 724951
+  },
+  "cases": [
+    {
+      "id": "historical-receipt",
+      "split": "heldout-current-lighton4b",
+      "kind": "real-document",
+      "source": "tests/regression/images/cc0/receipt_historical.tif",
+      "source_sha256": "f479c79b45d01b6927887ef979c9d731ea0336134a83809738e7bbcf66e4b3e5",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Alexander%27s_Supermarket_receipt,_late_twentieth_century.tif",
+      "license": "CC0-1.0",
+      "resize": [
+        352,
+        704
+      ],
+      "crop": null,
+      "renderer": "Pillow RGB BICUBIC",
+      "gold": "tests/regression/ocr-quality/historical-receipt.gold.json",
+      "gold_sha256": "125c47bc521ded86512c6ba3bc85feb1a9a19a371a64bf8a9e8ccb3453d7705e",
+      "max_new_tokens": 1536,
+      "prompt": "",
+      "prepared": {
+        "id": "historical-receipt",
+        "source_sha256": "f479c79b45d01b6927887ef979c9d731ea0336134a83809738e7bbcf66e4b3e5",
+        "gold_sha256": "125c47bc521ded86512c6ba3bc85feb1a9a19a371a64bf8a9e8ccb3453d7705e",
+        "original_size": [
+          768,
+          1552
+        ],
+        "size": [
+          352,
+          704
+        ],
+        "png_sha256": "7aa766b0a5bd886e769cb1559d16a71312e9f9929669ac5d847c241bec10564b",
+        "rgb_sha256": "34260ff707cfb3628e622007464cdeb32a960cd66c03eb34a36044f0e2c2dca4",
+        "file": "historical-receipt.png",
+        "nominal_patches": 968
+      }
+    },
+    {
+      "id": "two-column-page",
+      "split": "heldout-current-lighton4b",
+      "kind": "real-document",
+      "source": "tests/regression/images/cc0/commons_test_ocr_document.jpg",
+      "source_sha256": "92d117d352ed2ebe86efc72e661407761f2747bf44fe7a292facd8d75735e4be",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Test_OCR_document.jpg",
+      "license": "CC0-1.0",
+      "resize": [
+        448,
+        576
+      ],
+      "crop": null,
+      "renderer": "Pillow RGB BICUBIC",
+      "gold": "tests/regression/ocr-quality/two-column-page.gold.json",
+      "gold_sha256": "abf6dfbf6d2461f79dd6911b5e7bd259a56fb0fc6534155bc34eb5fce41044b7",
+      "max_new_tokens": 1536,
+      "prompt": "",
+      "prepared": {
+        "id": "two-column-page",
+        "source_sha256": "92d117d352ed2ebe86efc72e661407761f2747bf44fe7a292facd8d75735e4be",
+        "gold_sha256": "abf6dfbf6d2461f79dd6911b5e7bd259a56fb0fc6534155bc34eb5fce41044b7",
+        "original_size": [
+          1920,
+          2485
+        ],
+        "size": [
+          448,
+          576
+        ],
+        "png_sha256": "36a6ca6306a9f74ceee06b1a5268c8eae354b53212417d3eac0f2b70b2bada21",
+        "rgb_sha256": "3a462c9b8a913ffd4102fe8fd3b9bc2eac103a0c855c83b68c929a844d900290",
+        "file": "two-column-page.png",
+        "nominal_patches": 1008
+      }
+    },
+    {
+      "id": "inventory-table",
+      "split": "heldout-current-lighton4b",
+      "kind": "owned-controlled-document",
+      "source": "tests/regression/ocr-quality/inventory.svg",
+      "source_sha256": "c4cc20f79a2f9105ad14f6fd8f4d4d1db956b8004854a03d074a528422dcee6a",
+      "source_page": "https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/regression/ocr-quality/inventory.svg",
+      "license": "MIT",
+      "resize": null,
+      "crop": null,
+      "renderer": "CairoSVG 2.8.2 / system DejaVu Sans (font hash recorded by hosted preparation)",
+      "gold": "tests/regression/ocr-quality/inventory.gold.json",
+      "gold_sha256": "801171c1459131e5d34479d6820fcc3dd260c9ea7110b0cbb4a6705e0f729e76",
+      "max_new_tokens": 1536,
+      "prompt": "",
+      "prepared": {
+        "id": "inventory-table",
+        "source_sha256": "c4cc20f79a2f9105ad14f6fd8f4d4d1db956b8004854a03d074a528422dcee6a",
+        "gold_sha256": "801171c1459131e5d34479d6820fcc3dd260c9ea7110b0cbb4a6705e0f729e76",
+        "original_size": null,
+        "size": [
+          448,
+          448
+        ],
+        "png_sha256": "1e7a3073bd158dc87613463e45eafc52cec0c48f3655a6937a583767e26f4b4f",
+        "rgb_sha256": "9ac5313218d0c513e4312cf5669ea6def4c77d32562f317d8b1367b7b2b273a4",
+        "file": "inventory-table.png",
+        "nominal_patches": 784
+      }
+    }
+  ],
+  "excluded": [
+    "simple_form and derivatives",
+    "simple_table and derivatives",
+    "arabic_printed_line and derivatives",
+    "receipt_example / commons_example_receipt (identical bytes) and derivatives",
+    "handwritten_letter (logo, no usable paragraph reference)"
+  ],
+  "reserve_not_in_primary_quota": {
+    "name": "german_official_print.jpg",
+    "source_sha256": "cc3392810b29cf5a2d0b1831cff95d07a2cbf9e00a3e91e785779a96c0a12a2e",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Deutsches_Reichsgesetzblatt_1900_001_0001.jpg",
+    "license_claim": "Public-domain official juridical document, source page declaration",
+    "required": [
+      "pinned model-free prepared render and RGB hashes",
+      "independent annotation adjudication",
+      "new protocol revision before any output; never substitute for failed primary case"
+    ]
+  },
+  "reference": {
+    "gold_registry_sha256": "dd4ba6eff5922febe81c6ec71b6c70d1b0117d392e4ff3d581564a61caa82b4d",
+    "status": "Existing prior assistant visual transcription, no OCR output consulted, not expert-human adjudicated. Inventory literal source authored independently.",
+    "scorer": {
+      "tools/ocr_quality.py": "de93f01d26759e052e4c99c224b3184a39bdf3bbd11f768318c672ccad7fa0c5",
+      "tools/ci-heavy/qwen35_quant_calibration.py": "bf03b5a66fd6d42700eaf5e4dcc9a5705ea208df3e903c2187f576b7b45ebed6"
+    },
+    "policy": "crispembed-ocr-quality-v1; raw and parsed-content CER/WER; positional table-cell errors; no winner-tuned normalization"
+  },
+  "arms": [
+    "upstream Q4_K_M composed, observer OFF",
+    "upstream Q4_K_M composed, observer ON; full output/probability neutrality required",
+    "native same-weight composed vision; primary quality arm",
+    "native same-weight upstream features; secondary decoder isolation only"
+  ],
+  "model_pins": {
+    "publisher_revision": "8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01",
+    "q4km_sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26",
+    "mmproj_f16_sha256": "21eae623f60580f19ae4f04716292cd76ad36b420ee01e761254c8b1ec966321",
+    "physical_candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+    "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+    "native_production_source_anchor": "4a63d73bee7289deab41fb20f67765d3c6800182",
+    "candidate_rule": "Existing physical F16 attention form gate tuple; freeze exact executable/library/gate receipt before execution, no output-selected configuration."
+  },
+  "acceptance": [
+    "Every case source and native primary must reach EOS within fixed cap; capped case is incomplete, never a pass.",
+    "Every primary case parsed-content CER and WER must each be <= upstream against independent gold; report raw metrics too.",
+    "Inventory table parse/shape must be valid and positional cell errors <= upstream; no aggregate can hide per-case failure.",
+    "Secondary source-feature result cannot rescue composed-vision failure.",
+    "Retain raw UTF-8, all token IDs, EOS/cap reason, all greedy row hashes/argmax, timing/resources and immutable asset/source hashes."
+  ],
+  "execution_blockers": [
+    "Expert-human adjudication of existing references and reading order before release qualification.",
+    "Two-column image CC0 declaration does not independently clear embedded literary text; review underlying text rights before new distribution.",
+    "Generic heldout test executor cap1536 is not implemented: current driver admits256 and table-only512. Require bounded cap extension and default-off/old-stage byte controls.",
+    "Freeze exact binary/library hashes, complete gate tuple, prompt/chat-template/token IDs, geometry/grid/positions and context+generation fit before any forward. No implicit crop/resize or prompt tuning.",
+    "Verify native composed vision supports all three geometries; keep source features secondary.",
+    "Separate authorization/resource preflight required before workers; this protocol launches none.",
+    "Physical F16 KV capacity is fixed2048: actual prompt tokens +1536 generation budget must be <=2048 before forward; prompt maximum512. Reject, do not resize or shorten outputs to fit."
+  ]
+}
