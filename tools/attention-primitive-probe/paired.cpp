@@ -29,6 +29,16 @@ static void dump(const fs::path & p, const std::vector<float> & x) {
     std::ofstream f(p, std::ios::binary); need(bool(f.write(reinterpret_cast<const char *>(x.data()), x.size() * 4)), "output write");
 }
 int main(int argc, char ** argv) try {
+    if (argc == 2 && std::string(argv[1]) == "--selftest") {
+        std::unique_ptr<ggml_context,decltype(&ggml_free)> init(ggml_init({1ull<<20,nullptr,false}),ggml_free);
+        need(bool(init),"selftest init");
+        std::vector<ggml_fp16_t> a(256,ggml_fp32_to_fp16(1.f)), b(256,ggml_fp32_to_fp16(.5f));
+        std::fill_n(b.data(),128,ggml_fp32_to_fp16(1.f));float value=0;
+        ggml_vec_dot_f16(256,&value,0,a.data(),0,b.data(),0,1);need(value==192.f,"paired dot symbol/control");
+        bool overflow_rejected=false;try { half({65536.f}); } catch(const std::runtime_error &) { overflow_rejected=true; }
+        need(overflow_rejected,"F16 overflow must reject");
+        std::cout<<"PAIRED_F16_SYMBOL_OVERFLOW_CONTROLS PASS 2\n";return 0;
+    }
     need(argc == 4, "usage: paired INPUT OUTPUT {4,16}"); const fs::path root=argv[1], out=argv[2];
     const int n=std::stoi(argv[3]); need(n==4 || n==16, "tokens"); fs::create_directories(out);
     std::unique_ptr<ggml_context,decltype(&ggml_free)> ctx(ggml_init({8ull<<20,nullptr,false}),ggml_free);
@@ -51,7 +61,12 @@ int main(int argc, char ** argv) try {
     need(ggml_backend_graph_compute(backend.get(),graph)==GGML_STATUS_SUCCESS,"softmax/sigmoid graph");
     std::copy_n(static_cast<float *>(probability->data),probs.size(),probs.data());
     std::copy_n(static_cast<float *>(sig->data),sigmoid.size(),sigmoid.data());
-    auto ph=half(probs);std::vector<ggml_fp16_t> lane(256,ggml_fp32_to_fp16(0.f));
+    auto ph=half(probs);
+    auto rounded = [&](const char * name, const std::vector<ggml_fp16_t> & values) {
+        std::vector<float> f(values.size());ggml_fp16_to_fp32_row(values.data(),f.data(),int64_t(values.size()));dump(out/name,f);
+    };
+    rounded("q.rounded.f32",q);rounded("k.rounded.f32",k);rounded("v.rounded.f32",v);rounded("probs.rounded.f32",ph);
+std::vector<ggml_fp16_t> lane(256,ggml_fp32_to_fp16(0.f));
     for(int h=0;h<16;++h)for(int i=0;i<256;++i){
         std::fill(lane.begin(),lane.end(),ggml_fp32_to_fp16(0.f));
         for(int s=0;s<n;++s)lane[s]=v[(s*4+h/4)*256+i];
