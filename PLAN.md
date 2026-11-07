@@ -3095,3 +3095,8 @@ Prepared [LightOn4B held-out v1](docs/lighton4b-heldout-v1.md) and its hashed-in
 ### Observed composed-vision negative (2026-11-07)
 
 [Paired form result](docs/lighton4b-composed-vision-negative.md) source8be/receipt1458: source-fed167EOS175/656char45/90word vsoriginalreference, composed194EOS259/65647/90, actualupstream189/46. Both floors fail for composed; no ship. Oldsourcefed allrow+38stageanchors exact, pairedpatches/textembeddings/positions exact, earliestcomparable mergedvision RMS.011237/max1.68147; firstscoreRMS.192548 vsfed.105889. Independentrawtext/IDs/edits and12 vector hashes checked; firstscoreRMS FP64 reduction differences2/1ULP explicitly retained, maxexact. Fullvectors remainremote. No human-GT claim or canonicalprojectorweight-equivalence claim. Hold additional table/Arabic model runs while tracing actual F16projector canonicalweights/precision and earliestavailable sourcevisionstages; implement only measured gated corrections.
+
+
+### Projector-only attribution initial setup negative (2026-11-07)
+
+[Preserved first attempt](docs/lighton4b-projector-attribution.md) source0f92/receipt5f684: standaloneCPP andmtmdcompiled, finalreference linkfailedobsolete-lcommon at250.86s. Build-before-transferguard stoppedall2GBparametertransfer/canonical/visionforward; no numericalstageclaim. Narrowreference-onlyc010 removesunneededcommondependency, no math/profile change. Preservefailurebeforeboundedretry.

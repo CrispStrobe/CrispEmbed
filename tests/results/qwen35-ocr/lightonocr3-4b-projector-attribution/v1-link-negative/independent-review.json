@@ -1,0 +1,35 @@
+{
+  "schema": "lighton4b-projector-link-negative-review/v1",
+  "source_sha": "0f92f3b6a1e6f46a81df15ea5287e2b377a3bb53",
+  "receipt_sha256": "5f6845f8d836e4dea130e1c0a52a42947645c677c5216f4e52222d7009fb8c34",
+  "failure_phase": "standalone executable link",
+  "diagnostic": "cannot find -lcommon; standalone C++ object and libmtmd compiled, unneeded obsolete dependency in reference target",
+  "weight_transfer_executed": false,
+  "canonical_audit_executed": false,
+  "projector_forward_executed": false,
+  "quality_qualified": false,
+  "proposed_fix_source": "c01008696",
+  "fix_scope": "Reference target links mtmd only; no math/profile/parameter changes",
+  "files": {
+    "projector-audit.json": {
+      "bytes": 7526,
+      "sha256": "5f6845f8d836e4dea130e1c0a52a42947645c677c5216f4e52222d7009fb8c34"
+    },
+    "physical-f16-bootstrap.json": {
+      "bytes": 421,
+      "sha256": "625b325b160fe84fcd945ceb965a74dbed981a048791b5f6ce78132f5fb88105"
+    },
+    "build.log": {
+      "bytes": 8713,
+      "sha256": "6d9498415098c2671c1441257f03058fe2330cac92f9ceafbd86fcb4d67904da"
+    },
+    "configure.log": {
+      "bytes": 1774,
+      "sha256": "7ab587191f43341a73ceee9506257c69c010184589c66b825212b4df18dba079"
+    },
+    "bounded-worker.log": {
+      "bytes": 1623,
+      "sha256": "ab4bc75656be83007b9e90c2c04dc731fb0d4fb8619d0daa47ba6b347edd730f"
+    }
+  }
+}

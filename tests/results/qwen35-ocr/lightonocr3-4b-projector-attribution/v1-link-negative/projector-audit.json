@@ -1,0 +1,205 @@
+{
+  "schema": "lighton4b-projector-canonical/v1",
+  "status": "failed",
+  "quality_qualified": false,
+  "text_model_instantiated": false,
+  "original_bf16_forward_executed": false,
+  "projector_forward_executed": false,
+  "commands": {
+    "source-pin": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 65,
+      "elapsed_seconds": 0.004889606999995522,
+      "child_user_seconds": 0.002399,
+      "child_system_seconds": 0.0,
+      "peak_rss_bytes_observed": 4177920,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 43397120
+    },
+    "up-init": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 66,
+      "elapsed_seconds": 0.01655360600000222,
+      "child_user_seconds": 0.0008909999999999999,
+      "child_system_seconds": 0.0035629999999999998,
+      "peak_rss_bytes_observed": 184320,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 47067136
+    },
+    "up-remote": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 67,
+      "elapsed_seconds": 0.004358019999983753,
+      "child_user_seconds": 0.001788,
+      "child_system_seconds": 0.0008940000000000003,
+      "peak_rss_bytes_observed": 454656,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 47067136
+    },
+    "up-fetch": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 68,
+      "elapsed_seconds": 5.770306556000037,
+      "child_user_seconds": 2.378004,
+      "child_system_seconds": 0.5438649999999999,
+      "peak_rss_bytes_observed": 16953344,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 47067136
+    },
+    "up-checkout": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 79,
+      "elapsed_seconds": 1.1657697130000315,
+      "child_user_seconds": 0.7452700000000001,
+      "child_system_seconds": 0.346356,
+      "peak_rss_bytes_observed": 67272704,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 71294976
+    },
+    "configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 81,
+      "elapsed_seconds": 3.117599367999958,
+      "child_user_seconds": 1.2429069999999998,
+      "child_system_seconds": 0.7515850000000001,
+      "peak_rss_bytes_observed": 24006656,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 71294976
+    },
+    "build": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 258,
+      "error_type": "CalledProcessError",
+      "error": "Command '['cmake', '--build', PosixPath('/tmp/lighton4b-projector-canonical-v1/projector/build'), '--target', 'crisp-projector-probe', '--parallel', '2']' returned non-zero exit status 2.",
+      "elapsed_seconds": 234.24288241199997,
+      "child_user_seconds": 422.012023,
+      "child_system_seconds": 18.822916,
+      "peak_rss_bytes_observed": 9871360,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 559341568
+    }
+  },
+  "stage_metrics": {},
+  "canonical_weight_equivalence_proven": false,
+  "phase": "build",
+  "source_sha": "0f92f3b6a1e6f46a81df15ea5287e2b377a3bb53",
+  "preflight": {
+    "memory": {
+      "MemAvailable": 31485083648,
+      "SwapTotal": 0,
+      "SwapFree": 0,
+      "cgroup_observed": 1,
+      "finite_cgroup_bounds": 1
+    },
+    "scratch_free": 1037711544320,
+    "output_free": 20940288000,
+    "load": [
+      0.3994140625,
+      0.29296875,
+      0.1455078125
+    ]
+  },
+  "inputs_authenticated": true,
+  "reference_patch": {
+    "tools/mtmd/clip.cpp": {
+      "original_sha256": "c43db7f76964cb3855c09851156400e4a6cab7ff41dc0972dc4ffb9a9dd31f5e",
+      "patched_sha256": "8ec8b701627d4b75f414257ef5ff3c4be61200d797fcd2a9e87aba6047172261"
+    },
+    "tools/mtmd/models/qwen3vl.cpp": {
+      "original_sha256": "26e0da9db8258d5dcb6c3b75edea86caeeb9bad3ac4f378c5d508f7304d74781",
+      "patched_sha256": "487cdd2eec70a5863d51675dbe6804ebfb2e4864cc9b010ec662b0abcfaeb49d"
+    }
+  },
+  "error_type": "CalledProcessError",
+  "error": "Command '['cmake', '--build', PosixPath('/tmp/lighton4b-projector-canonical-v1/projector/build'), '--target', 'crisp-projector-probe', '--parallel', '2']' returned non-zero exit status 2.",
+  "elapsed_seconds": 250.86039638899996,
+  "artifacts": {
+    "build.log": {
+      "bytes": 8713,
+      "sha256": "6d9498415098c2671c1441257f03058fe2330cac92f9ceafbd86fcb4d67904da"
+    },
+    "control-test_runtime_guard.py.log": {
+      "bytes": 205,
+      "sha256": "629d2915f189d1087d2c6d669f5ba5c02019fd6aaad4cc6b751d89086336194b"
+    },
+    "dependency-check.log": {
+      "bytes": 132,
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    "bounded-worker.log": {
+      "bytes": 210,
+      "sha256": "a76f9a64f48f36f6c9245b872789d1821a2fda5cc653094b6131afb89df91f02"
+    },
+    "up-checkout.log": {
+      "bytes": 84,
+      "sha256": "401b0f35047d9999135ce240162909f4d3b9be4cafce7c16c1eafb93d3b7bff7"
+    },
+    "configure.log": {
+      "bytes": 1774,
+      "sha256": "7ab587191f43341a73ceee9506257c69c010184589c66b825212b4df18dba079"
+    },
+    "source-fetch.log": {
+      "bytes": 123,
+      "sha256": "8622ccd0bf40f84972295f381022d1611950eaa1af2e51c80e56de968080fe8a"
+    },
+    "physical-f16-bootstrap.json": {
+      "bytes": 352,
+      "sha256": "f230d6b0d587caa52025a83c24fbb583813da42e5fdb1ee0b093515cdaecb6d0"
+    },
+    "venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "dependencies.log": {
+      "bytes": 2563,
+      "sha256": "972b803c859baaec3670803d16498b60c0303adc8ec72edfc0c75114aa1c0ba5"
+    },
+    "pip-resolution.json": {
+      "bytes": 205584,
+      "sha256": "182672f676b0fee31e2e2cba68c6296615ab0a90bc9ac93c4c61da17a66f3934"
+    },
+    "control-test_projector_controls.py.log": {
+      "bytes": 206,
+      "sha256": "d759610bb1619c044a14115c4d911ad16f96e45943c1407f1e30dd8fa608adec"
+    },
+    "source-pin.log": {
+      "bytes": 41,
+      "sha256": "bdd467fecf3b10557ea34248af90e9021202eaa816f5bedf72bebf2167306056"
+    },
+    "up-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "up-fetch.log": {
+      "bytes": 119,
+      "sha256": "5537e1fa1b4cf8d84bd910e3fed8a4a9e0803b4bddddf1cf9b9182e0f1b00983"
+    },
+    "source-init.log": {
+      "bytes": 572,
+      "sha256": "0933bea1544fe4cb343a8905d6913b72ac211b4dfec2635c890bdf67412082c8"
+    },
+    "up-init.log": {
+      "bytes": 584,
+      "sha256": "a20f8a87b48cb2b183bca49c67f6ae4c837b2b1b2f30c7322a5142201ab72e7a"
+    },
+    "CMakeCache.txt": {
+      "bytes": 34830,
+      "sha256": "1dd1b9ad61a4e72b29cf708f622042a0ca4f940504d1251fb68e25f4d463f37c"
+    },
+    "source-checkout.log": {
+      "bytes": 88,
+      "sha256": "2033c121a6ce3b859bd1b7c4a06423246005af045c7b38c45d6d4c8e87d43129"
+    }
+  }
+}
