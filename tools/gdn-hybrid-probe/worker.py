@@ -17,6 +17,17 @@ def admit(cfg):
  require(len(cfg['tensors'])==5 and sum(r['bytes']for r in cfg['tensors'])==6030080,'five whole bounded parameters')
  require({r['file']for r in cfg['tensors']}=={'conv.f32','A.f32','dt.f32','norm.f32','out.q4k'},'exact parameter domain')
  require([c['variant']for c in cfg['cases']]==['native16','native4','zab4','continuation1']and sum(len(c['runs'])for c in cfg['cases'])==14,'predeclared mechanisms, not output selection')
+def admit_compile(entries):
+ selected=[e for e in entries if Path(e['file']).name in ['qwen35_delta.cpp','lighton4b_physical_gdn_source_ops.cpp']]
+ expected={(name,target)for name in ['qwen35_delta.cpp','lighton4b_physical_gdn_source_ops.cpp']for target in ['gdn-hybrid-probe','gdn-hybrid-cache-controls']}
+ seen=set()
+ for entry in selected:
+  command=entry.get('command',' '.join(entry.get('arguments',[])))
+  targets=[target for target in ['gdn-hybrid-probe','gdn-hybrid-cache-controls']if 'CMakeFiles/'+target+'.dir/'in command]
+  require(len(targets)==1 and '-ffp-contract=off'in command,'actual exact target/helper contraction rule')
+  key=(Path(entry['file']).name,targets[0]);require(key not in seen,'unique target/helper compile entry');seen.add(key)
+ require(seen==expected,'both actual helpers in both named targets')
+ return selected
 def row_map(role,width):
  p=lambda h:16*(h%2)+h//2
  if role=='qkv':return list(range(4096))+[4096+128*p(i//128)+i%128 for i in range(4096)]
@@ -105,7 +116,7 @@ def main():
    for key,value in PROFILE.items():require(f'{key}:BOOL={value}'in cache,'exact actual CPU profile '+kind+'/'+key)
    shutil.copy2(build/'CMakeCache.txt',out/(kind+'-CMakeCache.txt'))
    if kind=='native':
-    entries=[e for e in json.loads((build/'compile_commands.json').read_text())if Path(e['file']).name=='qwen35_delta.cpp'];require(len(entries)==1 and '-ffp-contract=off'in entries[0].get('command',' '.join(entries[0].get('arguments',[]))),'actual native helper contraction rule');report['native_delta_compile_entry']=entries[0]
+    report['native_helper_compile_entries']=admit_compile(json.loads((build/'compile_commands.json').read_text()))
    run(kind+'-build',['cmake','--build',build,'--target','gdn-hybrid-probe','--parallel','2']);binary=build/'gdn-hybrid-probe';run(kind+'-noargs',[binary],30,1);require('MODE TOKENS INPUT_TOKENS ACTUAL_INPUT_DIR WEIGHTS_DIR OUTPUT_DIR'in(out/(kind+'-noargs.log')).read_text(),'actual source adapter loader contract');synthetic=work/(kind+'-synthetic');synthetic.mkdir();run(kind+'-backend-control',[binary,'--backend-control',synthetic],30);require('GDN_TRACE_BACKEND PASS model=0 raw_preferred=1'in(out/(kind+'-backend-control.log')).read_text(),'actual zero-quantized raw/preferred backend setup');builds[kind]=binary
   run('hybrid-cache-build',['cmake','--build',work/'native-build','--target','gdn-hybrid-cache-controls','--parallel','2']);run('hybrid-cache-controls',[work/'native-build/gdn-hybrid-cache-controls'],120);require('PHYSICAL_GDN_SOURCE_OPS_CONTROLS PASS'in(out/'hybrid-cache-controls.log').read_text(),'actual full block cache/gate controls')
   weights=work/'weights';weights.mkdir();report['phase']='five-source-parameter-ranges';save()
