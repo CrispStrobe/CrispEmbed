@@ -1,0 +1,55 @@
+{
+  "schema": "crispembed-ocr-gguf-publication-report-v1",
+  "protocol": "docs/teleocr-publication-v1.json",
+  "status": "published and re-verified",
+  "variants": [
+    "F16",
+    "Q8_0",
+    "Q4_K_M",
+    "Q4_K_MIX"
+  ],
+  "remote": {
+    "repo": "cstr/TeleOCR-GGUF",
+    "commit": "68a65df9c3035cdab6d01e59980edf0ec2b421ee",
+    "files": [
+      {
+        "variant": "F16",
+        "filename": "teleocr-f16.gguf",
+        "bytes": 2526109984,
+        "sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780"
+      },
+      {
+        "variant": "Q8_0",
+        "filename": "teleocr-q8_0.gguf",
+        "bytes": 2113233248,
+        "sha256": "9de7e45ce6c13ba03d3d2879f2a1bff9f8407e12808be588cf057cd2553f224b"
+      },
+      {
+        "variant": "Q4_K_M",
+        "filename": "teleocr-q4_k-m.gguf",
+        "bytes": 1923310816,
+        "sha256": "e975568f8bd069b3bc81364d10b38143a834922cdf600150e7e74084bfbce293"
+      },
+      {
+        "variant": "Q4_K_MIX",
+        "filename": "teleocr-q4_k-mix.gguf",
+        "bytes": 1195406784,
+        "sha256": "31219f3ac469228f13a46cbfcc6ca6afb86436f3d62b51a0ae5a4fef4ee02a35"
+      }
+    ],
+    "small_files_sha256": {
+      "README.md": "8c3c4d0e4c0cdd6a396d8505d84d56c060c231af70957706342d2c9a192fa4c0",
+      "manifest.json": "264f39d3ba7e1985f76b40fbcadc85f78f53aff198abd82d67b63ee804eb05ec",
+      "LICENSE": "b5c0e5cf74cf51af1ecbc4af597cfcd13fd9925611838884a681070838a14a50",
+      "LICENSE-APACHE-2.0": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "NOTICE": "50965734ded577e544c77641e19db6a4c703ec0b6fedbc5c8e5bbe902817da17",
+      "UPSTREAM_README.md": "176c705cd92eeb9006c048e72274741e839f2bafa2bae858e64c3277264eb0db"
+    },
+    "urls": {
+      "teleocr-f16.gguf": "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/68a65df9c3035cdab6d01e59980edf0ec2b421ee/teleocr-f16.gguf",
+      "teleocr-q8_0.gguf": "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/68a65df9c3035cdab6d01e59980edf0ec2b421ee/teleocr-q8_0.gguf",
+      "teleocr-q4_k-m.gguf": "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/68a65df9c3035cdab6d01e59980edf0ec2b421ee/teleocr-q4_k-m.gguf",
+      "teleocr-q4_k-mix.gguf": "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/68a65df9c3035cdab6d01e59980edf0ec2b421ee/teleocr-q4_k-mix.gguf"
+    }
+  }
+}

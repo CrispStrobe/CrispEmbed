@@ -1,0 +1,198 @@
+{
+  "schema": "crispembed-model-card-refresh-v1",
+  "approved_by_owner": true,
+  "approval": "Owner decisions of 7 November 2026: experimental Q4 labels and per-model quality tables on cards; GOT-OCR2 research-only card with LICENSE+NOTICE; OXR German divergence documented; MI-GAN512 F16 normal, Q4_K experimental.",
+  "policy": "Card-only: small text files change; every GGUF's size and LFS SHA-256 must equal these pins before and after; numbers in card files cite committed receipts.",
+  "entries": {
+    "got-ocr2": {
+      "repo": "cstr/got-ocr2-crispembed-GGUF",
+      "parent": "c0f1aa7b5b52c15002e911d5d630e6d0dcb3ba8f",
+      "base_readme_sha256": "d56196895965920065fa4bcf78ac472cd9e03c7e90305efdae7563d2bf21ab7b",
+      "mode": "replace",
+      "card_file": "docs/model-cards/got-ocr2-README.md",
+      "date": "2026-11-07",
+      "commit_message": "Card: research-only Tongyi Qianwen license, F16-r2 recommended, Q4_K experimental with measured drift; add UPSTREAM_README.md",
+      "weights": {
+        "got-ocr2-f16-r2.gguf": {
+          "bytes": 1441830112,
+          "sha256": "98b431abc3e6b5715363e7296f7fc665a2eca829127ccb8693511926c4784a7f"
+        },
+        "got-ocr2-f16.gguf": {
+          "bytes": 1441830112,
+          "sha256": "aeaf1b44925eeb449584d716f181fc486cdd6becf596ec896276c5d633e996bb"
+        },
+        "got-ocr2-q4_k.gguf": {
+          "bytes": 445492288,
+          "sha256": "ba276f2e246273af7d1bcd58f35ac7bae09c30340b923ed4440effe82d5e7613"
+        },
+        "got-ocr2-q8_0.gguf": {
+          "bytes": 599632960,
+          "sha256": "15920499f65b71bcfbf4d44d0e92ffbaf7f7c4523ad13f7b7bef160dc5edf098"
+        },
+        "got-ocr2-ref-full.gguf": {
+          "bytes": 170013952,
+          "sha256": "27de920f22b7b44c65d4fb32087e51f35b7bc38c9e45d438b2251df05849ffe5"
+        }
+      },
+      "pins": {
+        "LICENSE": {
+          "sha256": "41c2cf8c272f6fb0080a97cd9d9bd7d4604072b80a0b10e7d65ca26ef5000c0c",
+          "bytes": 7281,
+          "upstream": "https://huggingface.co/Qwen/Qwen1.5-0.5B/resolve/8f445e3628f3500ee69f24e1303c9f10f5342a39/LICENSE"
+        },
+        "NOTICE": {
+          "sha256": "c3fe8e03056e0610a7f69c38e12066bfe7e4931223d046eaf5596604788ee892",
+          "bytes": 391
+        },
+        "UPSTREAM_README.md": {
+          "url": "https://huggingface.co/stepfun-ai/GOT-OCR2_0/resolve/979938bf89ccdc949c0131ddd3841e24578a4742/README.md",
+          "sha256": "1c8697ddeb841080c25a06b2eadd9dbdf714cdef886fb457a2568b57b2079134",
+          "bytes": 3959
+        }
+      }
+    },
+    "oxr": {
+      "repo": "cstr/OXR-1.0-GGUF",
+      "parent": "1fb6277433f0be816b2be1c165e23e0ac2ce3491",
+      "base_readme_sha256": "2d0276d2f980db6c264e473730440676f36552508d77fc867768958a54081525",
+      "mode": "insert",
+      "card_file": "docs/model-cards/oxr-quality.md",
+      "date": "2026-11-07",
+      "commit_message": "Card: per-file quality/status table; German one-step divergence from decode-step activation quantization",
+      "weights": {
+        "oxr-1.0-f16.gguf": {
+          "bytes": 4440553984,
+          "sha256": "eac8754f4886ba4197416083d49089a3d86c8644f0e5650f44fcf69059d81a57"
+        },
+        "oxr-1.0-q4_k-head.gguf": {
+          "bytes": 1878471168,
+          "sha256": "037a31df623facd71ca96961e48d65d9010bd1b4b16bcd867254d68d57637709"
+        },
+        "oxr-1.0-q8_0.gguf": {
+          "bytes": 2029456896,
+          "sha256": "f0a67a94b9f5416ff35e5c31b7873cea1a15b95743e09a2d032005ead44eca83"
+        }
+      },
+      "anchor": "## Usage",
+      "pins": {
+        "LICENSE": {
+          "sha256": "4577df88e499926976b390c4ea3992cc91baa9ebac29386f35b557bd3cb4a662",
+          "bytes": 6588
+        },
+        "NOTICE": {
+          "sha256": "74bb5fb42b79fd4d8dd7666e6f7ae06248e9e54f102024efaf2f4ab59e2168ab",
+          "bytes": 470
+        },
+        "UPSTREAM_README.md": {
+          "sha256": "a3241e175099ea57a4491be25cce8e965945889e41ed25c3c01911fd17a2236f",
+          "bytes": 19677
+        }
+      }
+    },
+    "teleocr": {
+      "repo": "cstr/TeleOCR-GGUF",
+      "parent": "68a65df9c3035cdab6d01e59980edf0ec2b421ee",
+      "base_readme_sha256": "8c3c4d0e4c0cdd6a396d8505d84d56c060c231af70957706342d2c9a192fa4c0",
+      "mode": "insert",
+      "card_file": "docs/model-cards/teleocr-quality.md",
+      "date": "2026-11-07",
+      "commit_message": "Card: per-file quality/status table; Q4_K_MIX experimental; strict numerics false",
+      "weights": {
+        "teleocr-f16.gguf": {
+          "bytes": 2526109984,
+          "sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780"
+        },
+        "teleocr-q4_k-m.gguf": {
+          "bytes": 1923310816,
+          "sha256": "e975568f8bd069b3bc81364d10b38143a834922cdf600150e7e74084bfbce293"
+        },
+        "teleocr-q4_k-mix.gguf": {
+          "bytes": 1195406784,
+          "sha256": "31219f3ac469228f13a46cbfcc6ca6afb86436f3d62b51a0ae5a4fef4ee02a35"
+        },
+        "teleocr-q8_0.gguf": {
+          "bytes": 2113233248,
+          "sha256": "9de7e45ce6c13ba03d3d2879f2a1bff9f8407e12808be588cf057cd2553f224b"
+        }
+      },
+      "anchor": "## Usage",
+      "pins": {
+        "LICENSE": {
+          "sha256": "b5c0e5cf74cf51af1ecbc4af597cfcd13fd9925611838884a681070838a14a50",
+          "bytes": 7387
+        },
+        "NOTICE": {
+          "sha256": "50965734ded577e544c77641e19db6a4c703ec0b6fedbc5c8e5bbe902817da17",
+          "bytes": 651
+        },
+        "UPSTREAM_README.md": {
+          "sha256": "176c705cd92eeb9006c048e72274741e839f2bafa2bae858e64c3277264eb0db",
+          "bytes": 16801
+        }
+      }
+    },
+    "mineru25-pro": {
+      "repo": "cstr/MinerU2.5-Pro-2604-1.2B-GGUF",
+      "parent": "a5d0508061d28ad8e6fffe15f925856da4e4d63f",
+      "base_readme_sha256": "3b4c6bab41059b5a50bd97034b76ad6d95b1711aa07e6f328e2fc44c0d8ea927",
+      "mode": "insert",
+      "card_file": "docs/model-cards/mineru-quality.md",
+      "date": "2026-11-07",
+      "commit_message": "Card: per-file quality/status table; Q4_K_MIX experimental with layout/German differences",
+      "weights": {
+        "mineru25-pro-2604-f16.gguf": {
+          "bytes": 2591511520,
+          "sha256": "7d464d375f7c20dd3e2bae7e20fed1f80485ae9ca69aaad201897652c74d746b"
+        },
+        "mineru25-pro-2604-q4_k-mix.gguf": {
+          "bytes": 769390656,
+          "sha256": "f45e9447b78e95c9f6bcdfeb7e455ec3a498354a8b7e6bb3b8700be9512509a6"
+        },
+        "mineru25-pro-2604-q8_0.gguf": {
+          "bytes": 1920768000,
+          "sha256": "0c3f9eaf0e916fe85546fac47267677502241a2b0c3ea76b5e949cfd193601f4"
+        }
+      },
+      "anchor": "## Usage",
+      "pins": {
+        "LICENSE": {
+          "sha256": "0b0c9cbb9e9f032856deef12e761c0661f14fdbaf88753bb1e1c68d1f7e5a3da",
+          "bytes": 11350
+        },
+        "UPSTREAM_README.md": {
+          "sha256": "c7859313699e858a61074e7d2ab171bea25d37504f3d530b9e0d4232c91706a5",
+          "bytes": 13091
+        }
+      }
+    },
+    "migan512": {
+      "repo": "cstr/MI-GAN-512-GGUF",
+      "parent": "e1481f21784f99ec9d53ee935b978264be36abbb",
+      "base_readme_sha256": "573a72b1405ad3250c66701bd5cd1f369b2011320fa6f19bdba9e428f4709c17",
+      "mode": "insert",
+      "card_file": "docs/model-cards/migan512-quality.md",
+      "date": "2026-11-07",
+      "commit_message": "Card: F16 normal, Q4_K experimental (0.9019 masked-region caveat)",
+      "weights": {
+        "migan-512-places2-f16.gguf": {
+          "bytes": 17982208,
+          "sha256": "932cfbd35db478dba4372f7ad9889ee68c84eac1c0b46025cf7336c8d55c0033"
+        },
+        "migan-512-places2-f32.gguf": {
+          "bytes": 29500736,
+          "sha256": "4bec681ef10f8ca914c5331f007a0605773cd09106d4fd6d9fcc0992f0a61739"
+        },
+        "migan-512-places2-q4_k.gguf": {
+          "bytes": 11143424,
+          "sha256": "bd90218cd6f86a9b215fa3528ad5400536b7cf883a76e2450f22c835e376af46"
+        },
+        "migan-512-places2-q8_0.gguf": {
+          "bytes": 12583168,
+          "sha256": "efdf1b08207f2c47c4710ca66831e6aff86ea31fca68593337f2ce605db70280"
+        }
+      },
+      "anchor": "## Use",
+      "pins": {}
+    }
+  }
+}

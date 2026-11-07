@@ -145,6 +145,16 @@ class Protocol(unittest.TestCase):
             with self.assertRaises(ValueError):
                 p.load(fake_root(cfg_patch=patch))
 
+    def test_card_quality_table_labels_q4_experimental(self):
+        files = [{"variant": v, "filename": self.cfg["recipes"][v]["filename"], "bytes": 10**9, "sha256": "c" * 64}
+                 for v in ("F16", "Q8_0", "Q4_K_MIX")]
+        text = p.card(self.cfg, files, p.receipts(self.cfg), {"F16": None, "Q8_0": None, "Q4_K_MIX": None}, "b" * 40)
+        self.assertIn("**Experimental: Q4_K_MIX**", text)
+        self.assertIn("## Status and quality", text)
+        self.assertIn("para-en` diverges at generated token 54", text)
+        self.assertIn("not measured", text)
+        self.assertNotIn("/home/", text)
+
     def test_card(self):
         files = [{"variant": "F16", "filename": "minicpm-ocr-1.0-f16.gguf", "bytes": 2_700_000_000, "sha256": "a" * 64}]
         text = p.card(self.cfg, files, p.receipts(self.cfg), {"F16": None}, "b" * 40)

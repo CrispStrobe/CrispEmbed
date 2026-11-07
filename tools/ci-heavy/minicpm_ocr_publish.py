@@ -206,6 +206,25 @@ def notices(cfg, out_dir, opener=urllib.request.urlopen):
     (out / "UPSTREAM_README.md").write_bytes(fetch(readme, up["readme"], opener))
 
 
+
+def quality_section(cfg, names):
+    """Owner-required status label and quality table (protocol `card_quality`, receipt-cited numbers only)."""
+    q = cfg.get("card_quality")
+    if not q:
+        return ""
+    label = "".join(f"\n> **Experimental: {v}** - see the quality table before use.\n" for v in names
+                    if v.startswith("Q4"))
+    return f"""
+## Status and quality
+{label}
+{q['status_md']}
+
+{q['table_md']}
+
+Cells marked "not measured" were not measured; numbers come from the CrispEmbed receipts named in each row.
+"""
+
+
 def card(cfg, files, parity, prec, source_commit):
     up = cfg["upstream"]
     rows = "\n".join(f"| `{f['filename']}` | {f['variant']} | {f['bytes']:,} | `{f['sha256']}` |" for f in files)
@@ -261,7 +280,7 @@ No weights were trained, fine-tuned, merged or otherwise altered.
 | File | Precision | Bytes | SHA256 |
 |---|---|---:|---|
 {rows}
-
+{quality_section(cfg, [f['variant'] for f in files])}
 ## How the files were produced
 
 1. Downloaded `{up['repo']}` at the pinned revision `{up['revision']}`; every file was checked against the size and
@@ -269,7 +288,7 @@ No weights were trained, fine-tuned, merged or otherwise altered.
 2. Converted with `models/convert-minicpm-ocr-to-gguf.py` (`--dtype f32` lossless; `--dtype f16`; norms, biases and
    other 1-D tensors stay F32).
 3. Quantized variants, if any, were produced from the F16 GGUF with CrispEmbed's own `crispembed-quantize`
-   (Q8_0 recipe `q8_0`; 1-D tensors keep their source type; per-tensor types are listed in the GGUF header).
+   (Q8_0 recipe `q8_0`; Q4_K_MIX named policy `minicpm_q4k_v1`; 1-D tensors keep their source type; per-tensor types are listed in the GGUF header).
 4. Built and uploaded by CrispEmbed commit `{source_commit}` (workflow `minicpm-ocr-publish.yml`);
    `manifest.json` lists every recipe, input pin, receipt and file hash.
 

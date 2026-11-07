@@ -1,0 +1,64 @@
+{
+  "schema": "crispembed-unlimited-ocr2-publication-report-v1",
+  "status": "published and re-verified",
+  "variants": [
+    "F16",
+    "Q8_0",
+    "Q4_K_MIX"
+  ],
+  "remote": {
+    "repo": "cstr/Unlimited-OCR-2-GGUF",
+    "commit": "7f5f82c43a38054d8f7929029c14d35e3943ea5c",
+    "files": [
+      {
+        "variant": "F16",
+        "filename": "unlimited-ocr-2-f16.gguf",
+        "bytes": 6692751392,
+        "sha256": "f15d33d42fd1a63d7b70fbb8b92552369185bacd803560ae3bbd0cb6351a3697"
+      },
+      {
+        "variant": "Q8_0",
+        "filename": "unlimited-ocr-2-q8_0.gguf",
+        "bytes": 3571946656,
+        "sha256": "a603cedac5577e0b9c3d98b7cbe78dc7642933df67f90e4e84ef8234365afd7b"
+      },
+      {
+        "variant": "Q4_K_MIX",
+        "filename": "unlimited-ocr-2-q4_k-mix.gguf",
+        "bytes": 2295035584,
+        "sha256": "b71f158d36713e1c7ee39b7fb48193aa87a8592bca666f92caeae41093da493a"
+      }
+    ],
+    "small_files_sha256": {
+      "README.md": "2cff7b7ad2fd502a6f28565a9274c8f5dfeb2ae241ce8a8a990f9e8dc4fe0d4c",
+      "manifest.json": "fc5ac01fbcc0fdaec7b22604201e753499bc4253fb31660dae46a93224abba23",
+      "LICENSE": "d985048c6d69429d685fdbe7557340aa0897c0fd8dc038299b148b9c75dc3383",
+      "UPSTREAM_README.md": "3276903e26b37f30d2443ed767a86bc422bebba74fe4c64394b6d6255bd01676"
+    },
+    "urls": {
+      "unlimited-ocr-2-f16.gguf": "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/7f5f82c43a38054d8f7929029c14d35e3943ea5c/unlimited-ocr-2-f16.gguf",
+      "unlimited-ocr-2-q8_0.gguf": "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/7f5f82c43a38054d8f7929029c14d35e3943ea5c/unlimited-ocr-2-q8_0.gguf",
+      "unlimited-ocr-2-q4_k-mix.gguf": "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/7f5f82c43a38054d8f7929029c14d35e3943ea5c/unlimited-ocr-2-q4_k-mix.gguf"
+    }
+  },
+  "run": 42371027698,
+  "source_commit": "ff4cd2d50dbe62b088ceb2bf1baa0701f8dc3f74",
+  "rebuild_identity_vs_previous_hub_e3af0c0c": {
+    "whole_file_sha_equal": false,
+    "cause": "current converter embeds the 831 added tokenizer pieces (tokenizer.ggml.tokens 128000->128831, unlimited_ocr.tokenizer.added_{content,flags,ids} 834 each) that the runtime previously supplied by fallback; tensor table (739 names/dims/types/offsets) identical",
+    "tensor_data_sha256": {
+      "unlimited-ocr-2-f16.gguf": {
+        "bytes": 6687956480,
+        "previous": "c27a0dd36b6bf500cdf65df062fa9ef3eb48a01f7dadef38847af888b279fa73",
+        "new": "c27a0dd36b6bf500cdf65df062fa9ef3eb48a01f7dadef38847af888b279fa73"
+      },
+      "unlimited-ocr-2-q8_0.gguf": {
+        "bytes": 3567151680,
+        "previous": "68ddbe62aa35d3cfc4cdfa6363caa1e95d4f560a439d325d974778ad5b01afdb",
+        "new": "68ddbe62aa35d3cfc4cdfa6363caa1e95d4f560a439d325d974778ad5b01afdb"
+      }
+    },
+    "method": "HTTP range read of the GGUF header from both immutable Hub commits, streamed SHA256 of the aligned tensor-data region",
+    "note": "Weights are byte-identical; existing aliases stay pinned to e3af0c0c. Q4_K_MIX was quantized from this F16 (tensor data identical to the published F16 the precision receipt was scored against); the Q4 receipt records no GGUF hash, so whole-file identity with the scored file is not proven."
+  }
+}

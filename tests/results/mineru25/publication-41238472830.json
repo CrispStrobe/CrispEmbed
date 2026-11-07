@@ -1,0 +1,37 @@
+{
+  "schema": "crispembed-ocr-gguf-publication-report-v1",
+  "protocol": "docs/mineru25-pro-publication-v1.json",
+  "status": "published and re-verified",
+  "variants": [
+    "F16",
+    "Q8_0"
+  ],
+  "remote": {
+    "repo": "cstr/MinerU2.5-Pro-2604-1.2B-GGUF",
+    "commit": "e63c95cfd4e9f753783f588a187b9a3b89a7c201",
+    "files": [
+      {
+        "variant": "F16",
+        "filename": "mineru25-pro-2604-f16.gguf",
+        "bytes": 2591511520,
+        "sha256": "7d464d375f7c20dd3e2bae7e20fed1f80485ae9ca69aaad201897652c74d746b"
+      },
+      {
+        "variant": "Q8_0",
+        "filename": "mineru25-pro-2604-q8_0.gguf",
+        "bytes": 1920768000,
+        "sha256": "0c3f9eaf0e916fe85546fac47267677502241a2b0c3ea76b5e949cfd193601f4"
+      }
+    ],
+    "small_files_sha256": {
+      "README.md": "218d174d633c82171a25c064ebedc1696f6d651442ae8f47102b99975430855d",
+      "manifest.json": "26c8f4cbe2f554f3ac5e47569d18c612bc254af39aa22adbdb4e6820ff53a52b",
+      "LICENSE": "0b0c9cbb9e9f032856deef12e761c0661f14fdbaf88753bb1e1c68d1f7e5a3da",
+      "UPSTREAM_README.md": "c7859313699e858a61074e7d2ab171bea25d37504f3d530b9e0d4232c91706a5"
+    },
+    "urls": {
+      "mineru25-pro-2604-f16.gguf": "https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF/resolve/e63c95cfd4e9f753783f588a187b9a3b89a7c201/mineru25-pro-2604-f16.gguf",
+      "mineru25-pro-2604-q8_0.gguf": "https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF/resolve/e63c95cfd4e9f753783f588a187b9a3b89a7c201/mineru25-pro-2604-q8_0.gguf"
+    }
+  }
+}

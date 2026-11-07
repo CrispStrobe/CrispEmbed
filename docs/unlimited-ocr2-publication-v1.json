@@ -25,16 +25,61 @@
       "sha256": "d985048c6d69429d685fdbe7557340aa0897c0fd8dc038299b148b9c75dc3383"
     }
   },
-  "default_variants": ["F16", "Q8_0"],
+  "default_variants": [
+    "F16",
+    "Q8_0"
+  ],
   "recipes": {
-    "F32": {"filename": "unlimited-ocr-2-f32.gguf", "from": "convert", "convert_args": []},
-    "F16": {"filename": "unlimited-ocr-2-f16.gguf", "from": "convert", "convert_args": ["--fp16"]},
-    "Q8_0": {"filename": "unlimited-ocr-2-q8_0.gguf", "from": "F32", "type": "q8_0", "tensor_type": []},
-    "Q5_K": {"filename": "unlimited-ocr-2-q5_k.gguf", "from": "F32", "type": "q5_k", "tensor_type": []},
-    "Q4_K": {"filename": "unlimited-ocr-2-q4_k.gguf", "from": "F32", "type": "q4_k", "tensor_type": []},
-    "Q4_K_MIX": {"filename": "unlimited-ocr-2-q4_k-mix.gguf", "from": "F16", "type": "q4_k", "quantize_env": {"CRISPEMBED_QUANTIZE_UNLIMITED_OCR2_POLICY": "unlimited_ocr2_q4k_shared8_v1"}, "note": "Named policy unlimited_ocr2_q4k_shared8_v1 (docs/unlimited-ocr2-q4k-recipes.md): routed experts and decoder attention Q4_K, expert ffn_down IQ4_NL (896-wide, no Q4_0), shared experts Q8_0, SAM/CLIP vision, embedding and lm_head Q8_0, c.pos_embed and v.pos_embed F16. 2,189 MiB vs 3,397 MiB Q8_0. Final-logit cosine min 0.9634 (hosted CPU, portable) / 0.9540 (CUDA T4) on all four frozen cases; free-running decoding differs from the original only in box coordinates (max 2 px), text with boxes stripped equal on 4/4, every case reaches EOS.", "precision_receipt": "tests/results/unlimited-ocr2/q4k-precision-q4kns.json", "precision_dtype": "unlimited_ocr2_q4k_shared8_v1", "precision_tier": "q4_k", "precision_gate": "cosine"}
+    "F32": {
+      "filename": "unlimited-ocr-2-f32.gguf",
+      "from": "convert",
+      "convert_args": []
+    },
+    "F16": {
+      "filename": "unlimited-ocr-2-f16.gguf",
+      "from": "convert",
+      "convert_args": [
+        "--fp16"
+      ]
+    },
+    "Q8_0": {
+      "filename": "unlimited-ocr-2-q8_0.gguf",
+      "from": "F32",
+      "type": "q8_0",
+      "tensor_type": []
+    },
+    "Q5_K": {
+      "filename": "unlimited-ocr-2-q5_k.gguf",
+      "from": "F32",
+      "type": "q5_k",
+      "tensor_type": []
+    },
+    "Q4_K": {
+      "filename": "unlimited-ocr-2-q4_k.gguf",
+      "from": "F32",
+      "type": "q4_k",
+      "tensor_type": []
+    },
+    "Q4_K_MIX": {
+      "filename": "unlimited-ocr-2-q4_k-mix.gguf",
+      "from": "F16",
+      "type": "q4_k",
+      "quantize_env": {
+        "CRISPEMBED_QUANTIZE_UNLIMITED_OCR2_POLICY": "unlimited_ocr2_q4k_shared8_v1"
+      },
+      "note": "Named policy unlimited_ocr2_q4k_shared8_v1 (docs/unlimited-ocr2-q4k-recipes.md): routed experts and decoder attention Q4_K, expert ffn_down IQ4_NL (896-wide, no Q4_0), shared experts Q8_0, SAM/CLIP vision, embedding and lm_head Q8_0, c.pos_embed and v.pos_embed F16. 2,189 MiB vs 3,397 MiB Q8_0. Final-logit cosine min 0.9634 (hosted CPU, portable) / 0.9540 (CUDA T4) on all four frozen cases; free-running decoding differs from the original only in box coordinates (max 2 px), text with boxes stripped equal on 4/4, every case reaches EOS.",
+      "precision_receipt": "tests/results/unlimited-ocr2/q4k-precision-q4kns.json",
+      "precision_dtype": "unlimited_ocr2_q4k_shared8_v1",
+      "precision_tier": "q4_k",
+      "precision_gate": "cosine"
+    }
   },
-  "parity_cases": ["paragraphs", "table", "receipt", "german"],
+  "parity_cases": [
+    "paragraphs",
+    "table",
+    "receipt",
+    "german"
+  ],
   "receipts": {
     "original": "tests/results/unlimited-ocr2/original-reference.json",
     "untiled": "tests/results/unlimited-ocr2/native-untiled.json",
@@ -50,5 +95,9 @@
     "tiled_parity": "experimental",
     "receipts_precision": "F32 lossless conversion; other precisions are covered only by the separate precision sweep",
     "registry_alias": "follow-up after upload; real SHA256 required"
+  },
+  "card_quality": {
+    "status_md": "**Status per file.** F16 is **recommended** (token-ID exact against the original on all four tiled trial pages). Q8_0 carries a **caveat** (box-coordinate tokens differ by 1-3 on 2 of 4 tiled pages; text unchanged; CUDA final-logit cosine 0.9555 is below the 0.97 Q8_0 bar). **Experimental: Q4_K_MIX** - it clears the owner's Q4_K final-logit cosine bar (> 0.94) on CPU and CUDA, but is not token-ID exact on any of the four cases; the recognized text matches F16 only after layout boxes are stripped.",
+    "table_md": "| Precision | File size | Token IDs vs original (4 tiled pages) | Decoded text | Final-logit cosine min (teacher-forced) | Known divergences | Status |\n|---|---:|---|---|---|---|---|\n| F16 | 6,383 MiB | 4/4 exact (`tests/results/unlimited-ocr2/trial.json`, `verify-text-v2.json`) | raw UTF-8 text byte-exact 4/4 | reference for Q4_K_MIX scoring | none on the panel | recommended |\n| Q8_0 | 3,397 MiB | 2/4 exact; table at token 7, receipt at tokens 131 and 258 (`tests/results/unlimited-ocr2/trial.json`) | text unchanged; one box-coordinate token off by 1-3 per divergence | 0.9739 CPU / 0.9555 CUDA (`docs/unlimited-ocr2-q4k-recipes.md`) | CUDA below the 0.97 Q8_0 bar | caveat |\n| Q4_K_MIX (`unlimited_ocr2_q4k_shared8_v1`) | 2,188.6 MiB | 0/4 exact vs F16; first divergence paragraphs@30, table@10, receipt@28, german@4 (`tests/results/unlimited-ocr2/q4k-precision-q4kns.json`) | text equal to F16 with boxes stripped 4/4; box coordinates differ (max 2 px); every case reaches EOS; CER not measured | 0.9634 CPU (portable) / 0.9540 CUDA T4; top-1 agreement 0.980-0.993 | layout box coordinates; real-scan quality and Metal not measured | **experimental** |"
   }
 }
