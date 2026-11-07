@@ -86,7 +86,8 @@ inline bool lighton4b_physical_matmul(const std::vector<ggml_tensor *> & matrice
     std::memcpy(input->data, hidden, size_t(width) * tokens * sizeof(float));
     auto * graph = ggml_new_graph(ctx.get());
     std::vector<ggml_tensor *> results;
-    std::vector<std::vector<float>> tiled_results(matrices.size());
+    std::vector<std::vector<float>> tiled_results(
+        lighton4b_physical_q6_tiled_mode(true) && tokens >= 8 ? matrices.size() : 0);
     std::vector<std::shared_ptr<ggml_tensor>> leases;
     for (auto * source : matrices) {
         if (source->type == GGML_TYPE_Q6_K && tokens >= 8 && lighton4b_physical_q6_tiled_mode(true)) {

@@ -64,7 +64,7 @@ bool lighton4b_physical_q6_tiled_cpu(const void * packed,size_t bytes,const floa
 #else
     if(!lighton4b_physical_q6_tiled_available()||!packed||!input||width<256||width>32768||width%256||
        rows<1||rows>300000||tokens<8||tokens>144||threads<1||threads>16||
-       size_t(rows)*tokens>16ull*1024*1024||bytes!=size_t(rows)*(width/256)*sizeof(q6_block)||
+       size_t(rows)*tokens>16ull*1024*1024||bytes>1ull*1024*1024*1024||bytes!=size_t(rows)*(width/256)*sizeof(q6_block)||
        size_t(tokens)*(width/256)*sizeof(q8_block)>64ull*1024*1024||
        !std::all_of(input,input+size_t(width)*tokens,[](float v){return std::isfinite(v);}))return false;
     const auto * trait=ggml_get_type_traits_cpu(GGML_TYPE_Q8_K);
