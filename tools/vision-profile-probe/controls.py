@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Model-free hosted build, profile and pinned Pillow22 byte controls."""
-import hashlib,importlib.util,json,os,shutil,subprocess,sys,time
+import hashlib,importlib.util,json,os,shutil,signal,subprocess,sys,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools/physical-f16-attention-probe'))
@@ -31,6 +31,8 @@ def main():
   try:command(args,out/(label+'.log'),min(limit,2400-(time.monotonic()-start)),report['commands'][label],cwd=ROOT)
   finally:save()
  deadline=Deadline(2400);deadline.__enter__()
+ def canceled(signum,_frame):raise SystemExit('bounded worker canceled by signal '+str(signum))
+ prior={sig:signal.signal(sig,canceled)for sig in (signal.SIGTERM,signal.SIGINT)}
  try:
   run('source',['git','rev-parse','HEAD']);report['source_sha']=(out/'source.log').read_text().strip();require(report['source_sha']==os.environ['LIGHTON4B_EXPECTED_SOURCE'],'exact source')
   capacity=importlib.util.spec_from_file_location('capacity',ROOT/'tools/kaggle/lighton4b_upstream_physical_decode.py');base=importlib.util.module_from_spec(capacity);capacity.loader.exec_module(base)
@@ -63,5 +65,10 @@ def main():
   report['actual_form_preprocessing_exact']=True;report['status']='passed_model_free_vision_controls'
  except BaseException as e:report['error_type']=type(e).__name__;report['error']=str(e);raise
  finally:
-  deadline.close();report['elapsed_seconds']=time.monotonic()-start;report['artifacts']={str(p.relative_to(out)):dict(bytes=p.stat().st_size,sha256=sha(p))for p in out.iterdir()if p.is_file()and p.name!='vision-controls.json'};save()
+  deadline.close()
+  for sig,handler in prior.items():signal.signal(sig,handler)
+  report['elapsed_seconds']=time.monotonic()-start
+  owned={label+'.log'for label in report['commands']}|{'native-CMakeCache.txt','source-CMakeCache.txt'}
+  report['artifacts']={str(p.relative_to(out)):dict(bytes=p.stat().st_size,sha256=sha(p))for p in out.iterdir()if p.is_file()and(p.name in owned or p.name.startswith('resize-')or p.name.startswith('actual-form.'))}
+  report['artifact_scope']='Only completed task-owned command logs, caches and result arrays; outer bootstrap/active worker log excluded.';save()
 if __name__=='__main__':main()
