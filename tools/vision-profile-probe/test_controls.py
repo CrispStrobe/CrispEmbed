@@ -12,6 +12,12 @@ class Controls(unittest.TestCase):
    path=Path(d)/'tools/mtmd/mtmd-image.cpp';path.parent.mkdir(parents=True);path.write_bytes(source.read_bytes())
    result=resize.patch(d);self.assertNotEqual(result['before_sha256'],result['after_sha256']);self.assertIn('img_tool::resize(src,dst,{ow,oh},RESIZE_ALGO_BICUBIC,PAD_NONE)',path.read_text())
    with self.assertRaises(ValueError):resize.patch(d)
+ def test_component_blocked_until_measured_controls(self):
+  text=Path(__file__).with_name('component.py').read_text()
+  self.assertIn("CONTROL_RECEIPT='BLOCKED_UNTIL_HOSTED_CONTROLS_PASS'",text)
+  self.assertIn("len(CONTROL_RECEIPT)==64 and len(CONTROL_SOURCE)==40",text)
+  self.assertLess(text.index("report['legacy_anchor_exact']=True"),text.index("report['all_source_stages_byte_exact']="))
+  self.assertIn("report['downloaded_weight_bytes']==1334056960",text)
  def test_explicit_model_free(self):
   text=Path(__file__).with_name('controls.py').read_text();self.assertIn('model_acquisition=False',text);self.assertNotIn('range_download(',text);self.assertNotIn('urlopen(',text)
  def test_reference_not_production(self):
