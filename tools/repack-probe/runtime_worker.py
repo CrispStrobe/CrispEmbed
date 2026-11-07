@@ -41,7 +41,8 @@ def main():
   commits=sorted({row[-1]for row in pins.pins(ROOT)});require(all(len(x)==40 for x in commits),'historical receipt commits');run('fetch-pins',['git','fetch','--depth','1','origin',*commits])
   run('source-pins',['python3',ROOT/'tools/qwen35_source_pins.py','--check','--verify-git']);run('environment',['python3',ROOT/'tests/test_env_vars_documented.py'])
   build=work/'build';run('configure',['cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release',*[f'-D{k}={v}'for k,v in profile.BUILD_FLAGS.items()],' -DGGML_CPU_REPACK=ON'.strip()]);profile.validate_profile((build/'CMakeCache.txt').read_text().splitlines());require('GGML_CPU_REPACK:BOOL=ON'in(build/'CMakeCache.txt').read_text().splitlines(),'repack compile profile');shutil.copyfile(build/'CMakeCache.txt',out/'CMakeCache.txt')
-  for target in TARGETS:
+  # Compile the source-fed adapter before the expensive independent main archive.
+  for target in [TARGETS[0],TARGETS[2],*TARGETS[3:],TARGETS[1]]:
    run('build-'+target,['cmake','--build',build,'--target',target,'--parallel','2'],900)
    if target.endswith('sourcefed'):continue
    run('run-'+target,[build/target],600)

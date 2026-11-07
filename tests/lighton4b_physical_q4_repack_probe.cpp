@@ -1,6 +1,7 @@
 // Reference-only authenticated source-fed project_cpu adapter; never a product CLI.
 #include "lighton4b_physical_native_ops.h"
 #include "qwen35_linear.h"
+#include "qwen35_math.h"
 #include "qwen35_weight_cache.h"
 #include "ggml-cpu.h"
 #include <cmath>
