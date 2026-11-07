@@ -1,7 +1,6 @@
 # Independent review: composed-vision control protocol
 
-Reviewed 7 November 2026: tools-only source `b98567cfd`, based on component
-source `b59e5d3a9d9e333f67f9646c1a43a1edc70fccfa`. This is a source and
+Reviewed 7 November 2026: [tools-only source `b98567cfd`](https://github.com/CrispStrobe/CrispEmbed/commit/b98567cfd46aaf594f33076aaab4ff8e4610edbb), based on [component source `b59e5d3a9`](https://github.com/CrispStrobe/CrispEmbed/commit/b59e5d3a9d9e333f67f9646c1a43a1edc70fccfa). This is a source and
 model-free control review; it is not a completed model run or quality verdict.
 
 The seven component Python controls passed at `b59e5d3a9`; the four composed
