@@ -33,7 +33,7 @@ below, whose descriptions say so). All aliases are pinned to a Hub commit and SH
 | Josev-2B SystemOne | `josev2b-systemone-q4k-mix-experimental` | Q4_K_MIX | experimental | option argmax 4/4, typed JSON exact 0/4 |
 | OXR-1.0 | `oxr-1.0-q8_0` | Q8_0-LARGE | experimental | 4/5 token-exact; German page diverges at one decode step |
 | OXR-1.0 | `oxr-1.0-q4_k-head` | Q4_K-HEAD | experimental | 4/5 token-exact; German page diverges at one decode step |
-| GOT-OCR2 | `got-ocr2-q4_k-experimental` (also legacy `got-ocr2`) | Q4_K | experimental | 1/3 token-exact; diverges at token 83 / 20 |
+| GOT-OCR2 | `got-ocr2-q4_k-experimental` | Q4_K | experimental | 1/3 token-exact; diverges at token 83 / 20 |
 | MiniCPM-OCR-1.0 | `minicpm-ocr-q4_k-mix-experimental` | Q4_K_MIX | experimental | 4/5 token-exact; cosine 0.9671 |
 | Unlimited-OCR-2 | `unlimited-ocr2-q4_k-mix-experimental` | Q4_K_MIX | experimental | 0/4 token-exact vs F16; text equal, boxes differ |
 | TeleOCR | `teleocr-q4_k-mix` | Q4_K_MIX | experimental | 5/6 token-exact; three CJK characters change |
@@ -115,7 +115,7 @@ ships the verbatim LICENSE and the section 2(c) NOTICE.
 | Q4_K (`got-ocr2-q4_k-experimental`) | experimental | 1/3 (`fox`) | `receipt_example` 83, `simple_form` 20 | 1.0 / 0.8041 / 0.9679 | vision 0.997745, decoder 0.995157 | not measured |
 | Q8_0 (file on Hub, no alias) | unqualified | not measured | not measured | not measured | not measured | not measured |
 
-The legacy `got-ocr2` alias points to the same Q4_K bytes. A mixed-precision Q4 search is open in PLAN.
+Since 7 November 2026 the default `got-ocr2` alias points to the token-exact F16-r2 (same file as `got-ocr2-f16`, pinned commit `c0f1aa7b`); the Q4_K bytes are only behind `got-ocr2-q4_k-experimental`. A mixed-precision Q4 search is open in PLAN.
 
 ## MiniCPM-OCR-1.0
 

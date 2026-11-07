@@ -2,6 +2,12 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 7 November 2026 — `got-ocr2` alias now resolves to F16-r2
+
+Owner decision: the default `got-ocr2` alias points to the token-exact F16-r2 at pinned Hub
+commit `c0f1aa7b` (same file as `got-ocr2-f16`); the Q4_K file is only reachable as
+`got-ocr2-q4_k-experimental`. The unpinned `/main/` Q4 URL and its hash entry are removed.
+
 ## 7 November 2026 — Experimental quantized publications (owner decision)
 
 Owner decision of 7 November: publish the Q4_K/Q4_K_MIX queue as experimental, each with a

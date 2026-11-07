@@ -436,7 +436,7 @@ unified `crispembed_ocr_model_*` C API. Available through CLI (`--ocr`), server
 | **Polyphonic-TrOMR** | ResNetV2+ViT + 4-head decoder | ~22M | Printed music photos → symbolic | Apache-2.0 |
 | **Flova/omr_transformer** | DonutSwin + mBART-4L | 143M | Handwritten/whiteboard music → LilyPond | Apache-2.0 |
 | **Transcoda-59M** | ConvNeXt-V2 + 8L RoPE cross-attn | 59M | Zero-shot full-page score → Humdrum `**kern` (real-scan SOTA) | CC-BY-4.0 |
-| **GOT-OCR2** | SAM ViT-B + Qwen1.5-0.5B | 0.7B | Doc OCR (text+LaTeX+tables); `got-ocr2` (Q4_K) / `got-ocr2-f16` (token-exact vs the original pipeline); needs `CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1` | Tongyi Qianwen Research (non-commercial) |
+| **GOT-OCR2** | SAM ViT-B + Qwen1.5-0.5B | 0.7B | Doc OCR (text+LaTeX+tables); `got-ocr2` / `got-ocr2-f16` (F16-r2, token-exact vs the original pipeline) / `got-ocr2-q4_k-experimental`; needs `CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1` | Tongyi Qianwen Research (non-commercial) |
 | **GLM-OCR** | CogViT + GLM-0.5B | 0.9B | Doc OCR (OmniDocBench #1, 8 langs) | MIT |
 | **InternVL2 / 2.5** | InternViT + Qwen2/InternLM2.5 | 0.9–2.1B | Edge/WASM & EN+DE VLM OCR | MIT |
 | **Qwen2.5-VL / Qwen3-VL** | ViT (+DeepStack) + Qwen LLM | 2.4–3.6B | General/multilingual VLM OCR | Apache-2.0 |
