@@ -3041,3 +3041,8 @@ production change or full-model qualification claim.
 ### LightOn4B HF-only tiled-output native controls — 7 November2026
 
 Kaggle CPU143171211/v3 atc89aaa4cb passed66,710 profile/type/metadata/permutation +39 full-width output/cache controls and all selected old recipe/physical/Q6/stream/public-fence controls,134.98s/no checkpoint. [Raw receipts and both preserved fixture negatives](docs/lighton4b-hf-tiled-out-controls-results.md). Exact runner/library bundle retained remotely. Next is independently audited699-protected/24-replaced candidate packing and full observed form/table/Arabic decode with adequate90min case caps; default/release/quality fences remain unchanged.
+
+
+### HF tiled-output complete decoded negative (2026-11-07)
+
+Kaggle CPU143174221/v1 completed atB2/C89 with candidateSHA`cc6ce27eded435b8ac278229a8c6ff553f1654d865ff14a1b67c597fa0ca5254`:699other payloads protected,24original-F16-proven tiled Q4 outputs exact. Form182EOS remains exactoldHF candidate andCER217/656 (llama189/656),WER43/90; table256cap/noEOS worsens fromold160/607,47/106 to237/607,70/106; Arabic6EOSexact. Independent rawIDs/text/EOS/Unicode-metric audit passes. No quality/shipping/heldout claim. Full report63a586c0 and allsmall artifacts/actualtranscriptions are preserved in [decoded results](docs/lighton4b-hf-tiled-out-decoded-results.md). Separate artifact-only common-prefix/stage/body audit pending, no new inference.

@@ -61,3 +61,6 @@ tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v2-negative
 # Retain exact passing HF-layout native controls and build cache bytes.
 tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v3/**/*.log -text whitespace=-trailing-space,-blank-at-eof
 tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v3/**/CMakeCache.txt -text whitespace=-trailing-space,-blank-at-eof
+
+# Preserve raw hosted HF-tiled decode logs byte-for-byte.
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/complete-decode-v1/** -whitespace
