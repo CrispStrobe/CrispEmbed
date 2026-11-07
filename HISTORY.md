@@ -2,6 +2,16 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 7 November 2026 — Hugging Face private storage cleanup (owner-approved)
+
+Freed about 30.4 GB of private storage: pruned 163 per-epoch checkpoints from
+`cstr/posformer-training-checkpoints` (kept each run's `latest.ckpt`; history squashed),
+deleted two unrelated 2024 experiment repos, and retired `cstr/crispembed-pixelhacker-private`
+after confirming every GGUF is byte-identical in the public PixelHacker/SDXL-VAE repos and
+mirroring its sidecars ([amendment](docs/inpaint-publication-v1-amendment-20261107.md)).
+A private granite Q4_K_M repo was kept (no byte-identical public copy). All other private repos
+are kept by owner decision.
+
 ## 7 November 2026 — OXR native document parity passes (comparator v2)
 
 Heavy CPU run 42359526030 (`f8ec7329`, `tools/ci-heavy/oxr_native_doc.sh dfine native`):

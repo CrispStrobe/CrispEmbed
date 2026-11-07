@@ -1,0 +1,50 @@
+{
+  "schema": "crispembed-model-card-refresh-report-v1",
+  "spec": "docs/model-card-refresh-v1.json",
+  "entry": "got-ocr2",
+  "source_commit": "f076e21dfde72e0ca0488b5e941036ebbf8b19ed",
+  "status": "published and re-verified",
+  "remote": {
+    "repo": "cstr/got-ocr2-crispembed-GGUF",
+    "parent": "c0f1aa7b5b52c15002e911d5d630e6d0dcb3ba8f",
+    "commit": "f557899a7dc82b979d335406d64d9d44e54b8fbe",
+    "changed_files": {
+      "README.md": {
+        "bytes": 6697,
+        "sha256": "d65e58a0ad25a38f4a8c47faf3386f3fbb20d6eb98e8cc98b4efd58ec0b32df2"
+      },
+      "UPSTREAM_README.md": {
+        "bytes": 3959,
+        "sha256": "1c8697ddeb841080c25a06b2eadd9dbdf714cdef886fb457a2568b57b2079134"
+      }
+    },
+    "weights_unchanged": {
+      "got-ocr2-f16-r2.gguf": {
+        "bytes": 1441830112,
+        "sha256": "98b431abc3e6b5715363e7296f7fc665a2eca829127ccb8693511926c4784a7f"
+      },
+      "got-ocr2-f16.gguf": {
+        "bytes": 1441830112,
+        "sha256": "aeaf1b44925eeb449584d716f181fc486cdd6becf596ec896276c5d633e996bb"
+      },
+      "got-ocr2-q4_k.gguf": {
+        "bytes": 445492288,
+        "sha256": "ba276f2e246273af7d1bcd58f35ac7bae09c30340b923ed4440effe82d5e7613"
+      },
+      "got-ocr2-q8_0.gguf": {
+        "bytes": 599632960,
+        "sha256": "15920499f65b71bcfbf4d44d0e92ffbaf7f7c4523ad13f7b7bef160dc5edf098"
+      },
+      "got-ocr2-ref-full.gguf": {
+        "bytes": 170013952,
+        "sha256": "27de920f22b7b44c65d4fb32087e51f35b7bc38c9e45d438b2251df05849ffe5"
+      }
+    },
+    "pins_verified": [
+      "LICENSE",
+      "NOTICE",
+      "UPSTREAM_README.md"
+    ]
+  },
+  "run_id": 42371355310
+}

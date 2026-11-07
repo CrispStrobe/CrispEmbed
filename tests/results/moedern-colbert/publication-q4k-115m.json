@@ -1,0 +1,58 @@
+{
+  "schema": "crispembed-moedern-q4k-publication-report-v1",
+  "variant": "115M",
+  "status": "published and re-verified",
+  "protocol": "docs/moedern-q4k-publication-v1.json",
+  "protocol_sha256": "e9d39d49bdb3eb7f3c0564e55aa443b3fb9063aba07fccfeadc5cfc9fd951992",
+  "source": "6edbad67903f40bac024fbfbafe1c0e8bed6f90f",
+  "build": {
+    "mode": "portable (GGML_NATIVE=OFF, GGML_LLAMAFILE=ON, -ffp-contract=off)",
+    "cpu": "AMD EPYC 9V45 96-Core Processor",
+    "heavy_cpu_build_mode": "portable",
+    "nproc": 4,
+    "source": "6edbad67903f40bac024fbfbafe1c0e8bed6f90f"
+  },
+  "built": {
+    "sha256": "01d0e507430ba2f839709648272e3e3e622e02cc98aafac5b179e36b145db110",
+    "bytes": 89483616,
+    "counts": {
+      "F32": 42,
+      "Q8_0": 0,
+      "Q4_K": 52
+    },
+    "policy": "moedern115m_q4k_v1"
+  },
+  "repo": "cstr/SauerkrautLM-MoEdernColBERT-115M-CrispEmbed-GGUF",
+  "commit": "8e14d8bbf5637c9823539d31ba1ff5a25e9acf69",
+  "files": [
+    {
+      "filename": "moedern-115m-text-f32.gguf",
+      "variant": "F32",
+      "bytes": 459890432,
+      "sha256": "4150412f66caaa058c90ad0ed6cc4e318a0ea146f4ce9e59de62f83975903766",
+      "status": "reference package (unchanged)"
+    },
+    {
+      "filename": "moedern-115m-text-q4_k-mix.gguf",
+      "variant": "Q4_K_MIX",
+      "bytes": 89483616,
+      "sha256": "01d0e507430ba2f839709648272e3e3e622e02cc98aafac5b179e36b145db110",
+      "status": "experimental",
+      "policy": "moedern115m_q4k_v1",
+      "recipe": "q4",
+      "counts": {
+        "F32": 42,
+        "Q8_0": 0,
+        "Q4_K": 52
+      }
+    }
+  ],
+  "small_files_sha256": {
+    "upstream/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "upstream/README.md": "476783e79c1c34c4b7f3cb79e3fe0bdecee79f3618fb1a7afc7933d166934f8d",
+    "README.md": "4a8057dd1974ab5e7739c5f46528413f4a2a0b66d4f1f416dfe98cbdb7c86f92",
+    "manifest.json": "f3e45eb426236d43d0bde04f22440a9a08b0bcea8934e1aa9fedd17e5a536131"
+  },
+  "url": "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-115M-CrispEmbed-GGUF/resolve/8e14d8bbf5637c9823539d31ba1ff5a25e9acf69/moedern-115m-text-q4_k-mix.gguf",
+  "run": 42371134640
+}

@@ -1,0 +1,26 @@
+{
+  "schema": "crispembed-ultrabert-publication-report-v1",
+  "variant": "Q4_K-LAST-FOUR-FFN",
+  "status": "published and re-verified",
+  "remote": {
+    "repo": "cstr/UltraBERT-Embed-150M-CrispEmbed-GGUF",
+    "commit": "5105fa99950961e1bfd82b7fd300b9912c5be0dc",
+    "files": [
+      {
+        "variant": "Q4_K-LAST-FOUR-FFN",
+        "filename": "ultrabert-embed-150m-q4_k-last-four-ffn.gguf",
+        "bytes": 576997440,
+        "sha256": "087c9be0fa50ba57db74e650889521c985d306863c94aabf731764538eb4533c"
+      }
+    ],
+    "small_files_sha256": {
+      "README.md": "ebfa2a1eb6a0e7ef915e2eed7297718cbc0e259132d10238e0644652c24a6a0e",
+      "manifest.json": "3c018b047dd6b371db6e7b97692357c4b1f21899a06af2c11ba26208d0cca4b5",
+      "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "UPSTREAM_README.md": "27573272049ca66a4504b7e458887848b0fa0b7a5c6c68edcd774c6ce5070608"
+    },
+    "urls": {
+      "ultrabert-embed-150m-q4_k-last-four-ffn.gguf": "https://huggingface.co/cstr/UltraBERT-Embed-150M-CrispEmbed-GGUF/resolve/5105fa99950961e1bfd82b7fd300b9912c5be0dc/ultrabert-embed-150m-q4_k-last-four-ffn.gguf"
+    }
+  }
+}
