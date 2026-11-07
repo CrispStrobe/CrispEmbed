@@ -1,0 +1,31 @@
+[{"stream_name":"stdout","time":0.94824012,"data":"PHASE init\n"}
+,{"stream_name":"stdout","time":1.065600114,"data":"PHASE remote\n"}
+,{"stream_name":"stdout","time":1.075186492,"data":"PHASE fetch\n"}
+,{"stream_name":"stdout","time":6.458590615,"data":"PHASE checkout\n"}
+,{"stream_name":"stdout","time":7.979050227,"data":"PHASE submodule\n"}
+,{"stream_name":"stdout","time":10.810322902,"data":"PHASE venv\n"}
+,{"stream_name":"stdout","time":10.975057012,"data":"PHASE venv-prefix\n"}
+,{"stream_name":"stdout","time":11.090198955,"data":"PHASE packages\n"}
+,{"stream_name":"stdout","time":20.634083101999998,"data":"PHASE dependency-preflight\n"}
+,{"stream_name":"stdout","time":21.40093767,"data":"PHASE configure\n"}
+,{"stream_name":"stdout","time":24.328313531,"data":"PHASE build\n"}
+,{"stream_name":"stdout","time":119.789717098,"data":"PHASE python-controls\n"}
+,{"stream_name":"stdout","time":120.105102518,"data":"PHASE environment-inventory\n"}
+,{"stream_name":"stdout","time":121.058650099,"data":"PHASE fetch-frozen-receipts\n"}
+,{"stream_name":"stdout","time":123.982811665,"data":"PHASE source-pins\n"}
+,{"stream_name":"stdout","time":124.248320149,"data":"PHASE native-controls\n"}
+,{"stream_name":"stderr","time":125.178647742,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":125.179269828,"data":"  File \"/kaggle/src/script.py\", line 53, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":125.179299967,"data":"    run('native-controls',[python,source/'tools/ci-heavy/lighton4b_hf_tiled_out_native_controls.py'],600,dict(env,HEAVY_OUT=str(out),HEAVY_BUILD=str(build)))\n"}
+,{"stream_name":"stderr","time":125.179313721,"data":"    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":125.179320403,"data":"  File \"/kaggle/src/script.py\", line 28, in run\n"}
+,{"stream_name":"stderr","time":125.179326802,"data":"    if code:raise RuntimeError('bounded controls stage failed: '+label)\n"}
+,{"stream_name":"stderr","time":125.17933284,"data":"            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":125.179338356,"data":"RuntimeError: bounded controls stage failed: native-controls\n"}
+,{"stream_name":"stderr","time":127.800694375,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":127.800735435,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":128.192903163,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":128.192954913,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":129.382135644,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":130.797244301,"data":"[NbConvertApp] Writing 316701 bytes to __results__.html\n"}
+]

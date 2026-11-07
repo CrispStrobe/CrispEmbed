@@ -53,3 +53,7 @@ tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v1-negative
 
 # Preserve exact source-fed GDN operator receipts, logs and build cache hashes.
 tests/results/qwen35-ocr/lightonocr3-4b-gdn-source-primitives/** -text whitespace=-trailing-space,-blank-at-eof
+
+# Preserve HF-layout synthetic backend-fixture negative byte hashes.
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v2-negative/**/*.log -text whitespace=-trailing-space,-blank-at-eof
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v2-negative/**/CMakeCache.txt -text whitespace=-trailing-space,-blank-at-eof

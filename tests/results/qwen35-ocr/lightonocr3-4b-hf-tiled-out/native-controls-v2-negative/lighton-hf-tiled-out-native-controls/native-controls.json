@@ -1,0 +1,10 @@
+{
+  "checks": {
+    "hf-tiled-recipe": 66710
+  },
+  "model_forward_executed": false,
+  "model_payload_bytes": 0,
+  "schema": "lighton4b-hf-tiled-out-native-controls/v1",
+  "seconds": 0.35968867899998713,
+  "status": "failed"
+}

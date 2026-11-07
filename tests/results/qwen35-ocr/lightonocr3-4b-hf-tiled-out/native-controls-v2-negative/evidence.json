@@ -1,0 +1,106 @@
+{
+  "kernel_id": 143171211,
+  "model_payload_bytes": 0,
+  "native_recipe_controls_passed": 66710,
+  "python_tests_passed": 8,
+  "raw_files": {
+    "lighton-hf-tiled-out-native-controls/CMakeCache.txt": {
+      "bytes": 29259,
+      "sha256": "be0e2e18bb9ad21a318b045d0d4dc5bb1774e35e566c0e3be65bec772b63bf7e"
+    },
+    "lighton-hf-tiled-out-native-controls/bootstrap-receipt.json": {
+      "bytes": 759,
+      "sha256": "864db041ed3713b596e1b6c5c8dbd7606774c969dda0ab458ca60a065a6c7ead"
+    },
+    "lighton-hf-tiled-out-native-controls/build.log": {
+      "bytes": 8973,
+      "sha256": "273e883a5a68875ff2775632f2233732ad7bfba33f9d705ea872b60d7a7d3aec"
+    },
+    "lighton-hf-tiled-out-native-controls/checkout.log": {
+      "bytes": 95,
+      "sha256": "bb7b5684a2030fa6c40ae71f080428daa123090553806bf5c44326d4acef61f2"
+    },
+    "lighton-hf-tiled-out-native-controls/closed426.tsv": {
+      "bytes": 21774,
+      "sha256": "1f3dae72f4b1f4beb80772f48d908181d372520df4961f70d8f6655e8a6c5021"
+    },
+    "lighton-hf-tiled-out-native-controls/configure.log": {
+      "bytes": 2089,
+      "sha256": "5aec93cb629f0890541be5a62698e7583fb2586c61261e2c5045b05a2883fa95"
+    },
+    "lighton-hf-tiled-out-native-controls/dependency-preflight.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-native-controls/environment-inventory.log": {
+      "bytes": 3,
+      "sha256": "a12b7cb43c9d9134b5bb1b35e9096b66775d9e92e7611d1cc92b02edd6782a87"
+    },
+    "lighton-hf-tiled-out-native-controls/fetch-frozen-receipts.log": {
+      "bytes": 275,
+      "sha256": "725df7c1a7fda21ba1fb7377d190662619b07760d9eb47a7bae5aeaee49f8b59"
+    },
+    "lighton-hf-tiled-out-native-controls/fetch.log": {
+      "bytes": 123,
+      "sha256": "3f7fff25ba085628663aafbdf16232f0b500a424195b6fddf8fe2e16fce3dee4"
+    },
+    "lighton-hf-tiled-out-native-controls/hf-tiled-fullwidth-operator.log": {
+      "bytes": 1583,
+      "sha256": "12cbc9d381b4ab2f3af33cd29d3840f599aa085d3d9ec1288df95ade5d91b2fd"
+    },
+    "lighton-hf-tiled-out-native-controls/hf-tiled-recipe.log": {
+      "bytes": 42,
+      "sha256": "c2915815cbb5dcd0f56a56dc058300ee896f5adf366e074fe6dbc8591083e5f2"
+    },
+    "lighton-hf-tiled-out-native-controls/init.log": {
+      "bytes": 587,
+      "sha256": "42f9a45a86c0c33bd9a8d3247e0f2193053f95f7b7aed7c2e9e945c081cf86f0"
+    },
+    "lighton-hf-tiled-out-native-controls/native-controls.json": {
+      "bytes": 227,
+      "sha256": "31d6e67bb83c041ba3ff260ad7894929b7ae34c2b281c302ba157967cf02a319"
+    },
+    "lighton-hf-tiled-out-native-controls/native-controls.log": {
+      "bytes": 1150,
+      "sha256": "b9ccf8feae4bab5c0a1ec6e452eda05fb08c7f89dd6e2023298bb2ff5c1e7640"
+    },
+    "lighton-hf-tiled-out-native-controls/packages.log": {
+      "bytes": 3548,
+      "sha256": "d13c46d0b3db84f6d73c2b0d9cb4dc9bdf42f1c049a2862410348f7440dd51a4"
+    },
+    "lighton-hf-tiled-out-native-controls/python-controls.log": {
+      "bytes": 106,
+      "sha256": "40ca486838d221c325895202ea121c5971fc2f6911a6dac3a4c81e3511c0952a"
+    },
+    "lighton-hf-tiled-out-native-controls/remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-native-controls/source-pins.log": {
+      "bytes": 45,
+      "sha256": "286d64b42ca5d0653f39f75075fbdf6a62f6e2b124cdefaf3181887f5469dfcd"
+    },
+    "lighton-hf-tiled-out-native-controls/submodule.log": {
+      "bytes": 364,
+      "sha256": "aed02f5ea51e9df37f2ddb5edfe78838ac8e7f72c6b20b97ecb96cbe7e8cc16f"
+    },
+    "lighton-hf-tiled-out-native-controls/venv-prefix.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-native-controls/venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton4b-hf-tiled-out-native-controls.log": {
+      "bytes": 3144,
+      "sha256": "66b7ba03874d13004717209f7ac629f6c04fd2e702be4f31948511715b73952d"
+    }
+  },
+  "reason": "Fullwidth synthetic tensors were legacy arena-owned; tensor_floats requires a ggml backend buffer. Only the fixture allocation is repaired; arithmetic/tolerances/gates are unchanged. Subsequent old-path controls did not run.",
+  "schema": "lighton4b-hf-tiled-out-native-controls-negative/v2",
+  "source_pin_and_env_checks_passed": true,
+  "source_sha": "3fc4ea82a5566e52b5294b1d731b080b6954a9d7",
+  "status": "synthetic-backend-fixture-assertion",
+  "version": 2
+}
