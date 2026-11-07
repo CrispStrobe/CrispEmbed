@@ -21432,3 +21432,9 @@ review](docs/lighton4b-attention-primitives.md) identifies native fork F16-by-F3
 versus upstream F16-by-F16 dot dispatch; all26 selected N16 metrics were
 independently recomputed. Global vendor protection remains intact; no decoded
 quality or shipping claim follows. Initial NULL-buffer failure is retained.
+
+Explicit paired-F16 diagnostic source `0b76ce136` links and passes symbol/overflow
+controls on both pinned backends; all10 paired helper stage hashes match. It
+retains a source-graph numerical residual and one F16 probability rounding
+boundary; [evidence and limitations](docs/lighton4b-attention-primitives.md)
+preserve the negative without vendor changes or decoded-quality claims.

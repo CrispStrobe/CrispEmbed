@@ -53,3 +53,24 @@ scalar pooled versus conditional upstream F16 graph has RMS0.0000122786 and
 max0.000610024. A narrowly gated physical-only paired-F16 operator may now be
 tested without changing vendor traits or unrelated models. No such path is
 promoted, and decoded quality remains unproven.
+
+## Explicit paired-F16 dot experiment
+
+Source `0b76ce1365b57360616e5fce44784db1665bbf10` calls the existing original
+paired-F16 dot explicitly, without changing vendor dispatch. Both backends pass
+symbol/overflow controls, and all ten corresponding N4/N16 helper stage hashes
+are identical. The [report](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/paired-v1/paired-attention.json)
+SHA256 is `04b194e16e7243dbc22d3db74c9d86a0d42e8d4918b528064c0afdf50b369904`;
+elapsed118.65 seconds. Ten selected vectors were independently authenticated;
+ten N16 metrics reproduce exactly for max/byte equality and within one binary64
+ULP for RMS.
+
+The helper is still not byte-identical to the original source graph. N16 QK
+RMS is0.00000206412/max0.0000610352; context RMS0.0000118884/max0.000530243;
+gated context RMS0.000000691884/max0.0000839084. N4 gated RMS is
+0.000000000608240/max0.0000000149012. Exactly one N16 probability crosses an
+F16 rounding boundary (flatindex23300, delta0.000244140625), so the context
+residual cannot yet be attributed independently to PV. Next controlled checks
+feed exact retained source probabilities into PV and isolate actual QK graph
+dispatch. This is a private-backend-ABI operator experiment, not a production
+implementation or decoded-quality proof; no fallback or vendor mutation occurred.
