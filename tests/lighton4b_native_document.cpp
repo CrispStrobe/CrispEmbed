@@ -102,14 +102,14 @@ static int run(int argc, char ** argv) {
         emit("prefill.first_chunk.layer0.down", block.down);
         std::vector<std::vector<float>> projected;
         const auto & w = model.text.decoder.layers[0].linear;
-        if (!project_cpu({ w.qkv, w.z, w.a, w.b }, block.input_norm.data(), 2560, count, threads, projected)) return 19;
+        if (!project_cpu({ w.qkv, w.z, w.a, w.b }, block.input_norm.data(), 2560, count, threads, projected, nullptr, model.text.decoder.upstream_physical)) return 19;
         const char * names[]{"qkv", "z", "a", "b"};
         for (int i = 0; i < 4; ++i) emit(std::string("prefill.first_chunk.layer0.") + names[i], projected[size_t(i)]);
     }
 
     std::vector<float> first;
     if (!project_rows_cpu(model.text.decoder.head, initial.norm.data() + (ids.size() - 1) * 2560, 2560, 1, threads, 256,
-                          first))
+                          first, model.text.decoder.upstream_physical))
         return 12;
     lighton4b_head_bf16(first);
     emit("prefill.logits", first);
@@ -141,7 +141,7 @@ static int run(int argc, char ** argv) {
                 const auto & weights = model.text.decoder.layers[0].linear;
                 std::vector<std::vector<float>> projected;
                 if (!project_cpu({ weights.qkv, weights.z, weights.a, weights.b }, block.input_norm.data(), 2560, 1,
-                                 threads, projected))
+                                 threads, projected, nullptr, model.text.decoder.upstream_physical))
                     return false;
                 const char * names[] = { "qkv", "z", "a", "b" };
                 for (size_t i = 0; i < 4; ++i) emit(label + ".layer0." + names[i], projected[i]);
@@ -158,7 +158,7 @@ static int run(int argc, char ** argv) {
             for (size_t i = 0; i < next.hidden.size(); ++i) emit(label + ".layer." + std::to_string(i), next.hidden[i]);
             emit(label + ".norm", next.norm);
         }
-        if (!project_rows_cpu(model.text.decoder.head, next.norm.data(), 2560, 1, threads, 256, logits)) return false;
+        if (!project_rows_cpu(model.text.decoder.head, next.norm.data(), 2560, 1, threads, 256, logits, model.text.decoder.upstream_physical)) return false;
         lighton4b_head_bf16(logits);
         cache = std::move(next.cache);
         return true;

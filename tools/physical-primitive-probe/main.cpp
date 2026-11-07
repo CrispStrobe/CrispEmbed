@@ -1,9 +1,15 @@
+#ifdef CRISPEMBED_PHYSICAL_RUNTIME_PROBE
+#include "lighton4b_physical_native_ops.h"
+#include "qwen35_math.h"
+#include <cstdlib>
+#endif
 // Reference diagnostic only; builds separately against either pinned ggml tree.
 #include "ggml.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <fstream>
 #include <memory>
 #include <string>
@@ -34,6 +40,48 @@ static int run(int argc, char ** argv) {
     const auto * x = static_cast<const float *>(input->data);
     for (size_t i = 0; i < size_t(width * tokens); ++i)
         if (!std::isfinite(x[i])) return 1;
+#ifdef CRISPEMBED_PHYSICAL_RUNTIME_PROBE
+    for (const char * n :
+         { "CRISPEMBED_QWEN35_OCR", "CRISPEMBED_QWEN35_QUANT", "CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL",
+           "CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT", "CRISPEMBED_LIGHTON4B_QUANT", "CRISPEMBED_LIGHTON4B_Q6_K",
+           "CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS" }) {
+#ifdef _WIN32
+        _putenv_s(n, "1");
+#else
+        setenv(n, "1", 1);
+#endif
+    }
+    for (const char * n : { "CRISPEMBED_LIGHTON4B_BF16_LINEAR", "CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS",
+                            "CRISPEMBED_LIGHTON4B_HEAD_BF16" }) {
+#ifdef _WIN32
+        _putenv_s(n, "0");
+#else
+        setenv(n, "0", 1);
+#endif
+    }
+    // project_cpu borrows host-backed storage. This private copy is bounded to
+    // one source-fed matrix, never a model/head or production artifact.
+    std::vector<unsigned char> raw(ggml_nbytes(weight));
+    std::memcpy(raw.data(), weight->data, raw.size());
+    auto * host_buffer = ggml_backend_buft_alloc_buffer(ggml_backend_cpu_buffer_type(), raw.size());
+    if (!host_buffer) return 1;
+    std::unique_ptr<ggml_backend_buffer, decltype(&ggml_backend_buffer_free)> storage(host_buffer,
+                                                                                      ggml_backend_buffer_free);
+    weight->buffer = host_buffer;
+    weight->data = ggml_backend_buffer_get_base(host_buffer);
+    std::memcpy(weight->data, raw.data(), raw.size());
+    std::vector<float> values;
+    if (op == "norm") {
+        if (!qwen35_ocr::lighton4b_physical_rms(x, static_cast<const float *>(weight->data), width, tokens, 4, values))
+            return 1;
+    } else {
+        std::vector<std::vector<float>> results;
+        if (!qwen35_ocr::project_cpu({ weight }, x, width, tokens, 4, results, nullptr, op == "direct")) return 1;
+        values = std::move(results[0]);
+    }
+    std::ofstream output(argv[7], std::ios::binary);
+    return output.write(reinterpret_cast<const char *>(values.data()), values.size() * sizeof(float)) ? 0 : 1;
+#endif
     ggml_tensor * result;
     if (op == "norm")
         result = ggml_mul(ctx.get(), ggml_rms_norm(ctx.get(), input, 1e-6f), weight);

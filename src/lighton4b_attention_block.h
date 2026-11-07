@@ -1,3 +1,4 @@
+#include "lighton4b_physical_native_ops.h"
 #include "lighton4b_upstream_physical_semantics.h"
 #pragma once
 #include "qwen35_lighton4b_text.h"
@@ -51,6 +52,8 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
     auto rms = [&](const std::vector<float> & x, ggml_tensor * norm, std::vector<float> & y) {
         std::vector<float> weights(2560);
         if (!tensor_floats(norm, weights.data()) || !finite(weights)) return false;
+        if (lighton4b_physical_native_ops(w.upstream_physical))
+            return lighton4b_physical_rms(x.data(), weights.data(), 2560, tokens, threads, y);
         y.resize(x.size());
         for (int token = 0; token < tokens; ++token) {
             const size_t base = size_t(token) * 2560;
@@ -82,7 +85,7 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
     candidate.attention_residual = candidate.hidden;
     if (!rms(candidate.hidden, w.post_norm, candidate.post_norm)) return false;
     std::vector<std::vector<float>> projections;
-    if (!project_cpu({ w.gate, w.up }, candidate.post_norm.data(), 2560, tokens, threads, projections)) return false;
+    if (!project_cpu({ w.gate, w.up }, candidate.post_norm.data(), 2560, tokens, threads, projections, nullptr, w.upstream_physical)) return false;
     candidate.gate = std::move(projections[0]);
     candidate.up = std::move(projections[1]);
     candidate.activation.resize(candidate.gate.size());
@@ -91,7 +94,7 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
         candidate.activation[i] = (gate / (1.0f + std::exp(-gate))) * candidate.up[i];
     }
     projections.clear();
-    if (!project_cpu({ w.down }, candidate.activation.data(), 9216, tokens, threads, projections)) return false;
+    if (!project_cpu({ w.down }, candidate.activation.data(), 9216, tokens, threads, projections, nullptr, w.upstream_physical)) return false;
     candidate.down = std::move(projections[0]);
     for (size_t i = 0; i < candidate.hidden.size(); ++i) candidate.hidden[i] += candidate.down[i];
     if (!finite(candidate.hidden)) return false;

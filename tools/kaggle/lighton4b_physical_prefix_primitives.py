@@ -50,8 +50,13 @@ def main():
   binaries={}
   for tag,source in [('native',ROOT/'ggml'),('upstream',up/'ggml')]:
    build=scratch/(tag+'-build');run(tag+'-configure',['cmake','-S',ROOT/'tools/physical-primitive-probe','-B',build,'-DCMAKE_BUILD_TYPE=Release','-DGGML_SOURCE='+str(source)]);run(tag+'-build',['cmake','--build',build,'--target','physical-primitive','--parallel','2']);binaries[tag]=build/'physical-primitive';shutil.copy(build/'CMakeCache.txt',out/(tag+'-CMakeCache.txt'))
+  build=scratch/'runtime-build';run('runtime-configure',['cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_AVX2=ON','-DGGML_AVX512=OFF','-DGGML_BLAS=OFF','-DGGML_CUDA=OFF','-DGGML_VULKAN=OFF'])
+  run('runtime-build',['cmake','--build',build,'--target','test-lighton4b-physical-native-ops','test-lighton4b-physical-runtime-primitive','lighton4b-native-document','test-qwen35-stream-projection','test-lighton4b-q6-tied-head','--parallel','2'])
+  for target in ('test-lighton4b-physical-native-ops','test-qwen35-stream-projection','test-lighton4b-q6-tied-head'):run(target,[build/target])
+  binaries['runtime']=build/'test-lighton4b-physical-runtime-primitive'
   gamma=rows['blk.0.attn_norm.weight'][1];report['norm']={}
   for tag,binary in binaries.items():run(tag+'-norm',[binary,'norm','f32',1,4,gamma,out/'reconstructed-prefix.f32',out/(tag+'-norm.f32')])
+  require((out/'runtime-norm.f32').read_bytes()==(out/'upstream-norm.f32').read_bytes(),'runtime/upstream norm bit identity')
   report['norm']['backend_difference']=diff(np.fromfile(out/'native-norm.f32',dtype='<f4'),np.fromfile(out/'upstream-norm.f32',dtype='<f4'))
   gamma_values=np.fromfile(gamma,dtype='<f4');scalar=x.copy()
   for t in range(4):
@@ -66,7 +71,9 @@ def main():
      for mode in ('direct','dequant'):
       label=name+'-'+inputname+'-'+tag+'-'+mode;run(label,[binary,mode,kind,n,4,p,out/(inputname+'.f32'),out/(label+'.f32')])
     load=lambda tag,mode:np.fromfile(out/(name+'-'+inputname+'-'+tag+'-'+mode+'.f32'),dtype='<f4')
-    key[inputname]={'backend_direct':diff(load('native','direct'),load('upstream','direct')),'backend_dequant':diff(load('native','dequant'),load('upstream','dequant')),'upstream_direct_vs_dequant':diff(load('upstream','direct'),load('upstream','dequant'))}
+    require(np.array_equal(load('runtime','direct').view('<u4'),load('upstream','direct').view('<u4')),'runtime retainedquant vsupstream exact operator')
+    require(np.array_equal(load('runtime','dequant').view('<u4'),load('upstream','dequant').view('<u4')),'runtime gate-off vsupstream dequant exact operator')
+    key[inputname]={'runtime_direct_exact':True,'runtime_dequant_exact':True,'backend_direct':diff(load('native','direct'),load('upstream','direct')),'backend_dequant':diff(load('native','dequant'),load('upstream','dequant')),'upstream_direct_vs_dequant':diff(load('upstream','direct'),load('upstream','dequant'))}
    report['projections'][name]=key
   report['binary_sha256']={k:sha(v)for k,v in binaries.items()};report['status']='measured_operator_only'
  finally:(out/'prefix-primitives.json').write_text(json.dumps(report,indent=2)+'\n')

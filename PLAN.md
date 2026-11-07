@@ -2073,3 +2073,21 @@ inputs. Compare native actual first4 prefix and16-token probe independently;
 upstream image batching differs. Await actual retained capture hashes before any
 Kaggle primitive execution. No active-job change, reference graph callback,
 full F32 model, decode, tolerance waiver or release promotion.
+
+The reconstructed prefix worker completed on source `f155c591e`: both pinned
+backends are bit-identical for RMS and both projection arithmetic paths; direct
+quantized vs F32-dequant QKV RMS0.00644986/max0.0517402 exceeds reconstructed
+scalar RMS error5.23e-7/max5.72e-6. This is operator-only evidence, not actual
+main-path or decoded proof (raw evidence preserved separately in PR157).
+
+Prepare `CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS`, default-off and native-only,
+requiring authenticated physical owners plus existing prototype gates. It retains
+host-backed Q4/Q6 matrices for ggml matmul, including the tied head, and uses ggml
+RMS for text/final and full-attention Q/K norms. GDN recurrence, convolution,
+post-recurrence gated norm, SiLU and attention arithmetic remain separate future
+attribution stages. No full-model F32 cache is created. Arithmetic-mode tags bind
+all three cache levels and reject toggles. Gate-off/nonphysical behavior remains
+legacy; BF16 oracle modes are excluded. Before any model replay, one Kaggle
+control must verify exact same-input outputs against pinned upstream ggml,
+synthetic gate-off byte identity, admission/atomic failures and compile all actual
+native-driver/header paths. Active workers and shipping settings remain frozen.

@@ -1777,3 +1777,10 @@ target_link_libraries(test-lighton4b-release-fence PRIVATE crispembed-qwen35-del
 # Physical upstream import semantics and model-free closed admission controls.
 add_executable(test-lighton4b-upstream-physical EXCLUDE_FROM_ALL tests/test_lighton4b_upstream_physical.cpp)
 target_link_libraries(test-lighton4b-upstream-physical PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Default-off physical-profile arithmetic diagnostic, no model payload.
+add_executable(test-lighton4b-physical-native-ops tests/test_lighton4b_physical_native_ops.cpp)
+target_link_libraries(test-lighton4b-physical-native-ops PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-lighton4b-physical-runtime-primitive tools/physical-primitive-probe/main.cpp)
+target_compile_definitions(test-lighton4b-physical-runtime-primitive PRIVATE CRISPEMBED_PHYSICAL_RUNTIME_PROBE=1)
+target_link_libraries(test-lighton4b-physical-runtime-primitive PRIVATE crispembed-qwen35-delta crispembed-core)

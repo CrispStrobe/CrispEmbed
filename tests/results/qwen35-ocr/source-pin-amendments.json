@@ -43,6 +43,15 @@
             "ca8d8fd405b2e90c554a1d1c51caa14947bb2fec Assemble quantized LightOn4B native image and cached document runner"
           ],
           "reason": "The integrated LightOn4B prototype adds only the default-off streamed vocabulary projection declaration and scoped clang18 formatting. Original RMS helpers and existing declarations retain behavior; frozen receipts and budgets are unchanged. This records exact current source bytes, not model qualification or a replacement reference."
+        },
+        {
+          "from_sha256": "cd48a69b83620b7c386890b0233c1cb57b6b9ee2735208a52e2821bf70b045f6",
+          "to_sha256": "cc0a6df67af20d9383d91fbc2cb71d2d66521ba92f070571e15747683d936e5b",
+          "to_blob": "98c4de9173cd706bf801b7547249499dbe067aef",
+          "recorded_at_commit": "f155c591e3e8fa7e3cfb59f719a477a886976fc7",
+          "recorded": "2026-11-07",
+          "changed_by": [],
+          "reason": "Internal optional physical-owner argument dispatches default-off retained quantized path; all existing callers retain legacy defaults."
         }
       ]
     },
@@ -121,6 +130,17 @@
             "36a0e10c6ad22a22cd852f38133e953238609ab8 Enable gated Q6 streamed and grouped projection paths [skip ci]"
           ],
           "reason": "Declare existing default-off LightOn4B Q6_K type admission in streamed/grouped projection, commit36a0e10c6; no dot/reduction change, quant storage stays raw and old Q8/Q4 branches unchanged. Existing hosted Q6 controls retained; no frozen receipt rewrite or decoded-quality promotion."
+        },
+        {
+          "from_sha256": "360d023214d78e7dc5a3b76ccc33036bf655761222869ead87ab730ee743abac",
+          "to_sha256": "d9b0f496382eed58103f19935d459acc0879bff04616ddd0d3373c54191904ce",
+          "to_blob": "e0abbe3b4d3f18ef5ca77e3e7911ae752b19ae1b",
+          "recorded_at_commit": "f155c591e3e8fa7e3cfb59f719a477a886976fc7",
+          "recorded": "2026-11-07",
+          "changed_by": [
+            "7c5f738a12f341c76f231a7e787307d25c35849f Scope physical upstream scale A and activation layout semantics [skip ci]"
+          ],
+          "reason": "Default-off physical-profile retained-quantized matmul; prototype owner flag required; legacy and BF16 modes unchanged."
         }
       ]
     },

@@ -1,0 +1,93 @@
+#pragma once
+#include "lighton4b_upstream_physical_semantics.h"
+#include "ggml.h"
+#include "ggml-backend.h"
+#include "ggml-cpu.h"
+#include <memory>
+#include <cstring>
+namespace qwen35_ocr {
+inline bool lighton4b_physical_native_ops(bool physical) {
+#if defined(__EMSCRIPTEN__)
+    return false;
+#else
+    return physical && lighton4b_upstream_physical_mode_valid(true) && core_env::on("CRISPEMBED_QWEN35_OCR") &&
+           core_env::on("CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT") && core_env::on("CRISPEMBED_LIGHTON4B_QUANT") &&
+           core_env::on("CRISPEMBED_LIGHTON4B_Q6_K") && core_env::on("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS");
+#endif
+}
+// Only borrowed host-backed quant storage; no F32 weight materialization/cache.
+inline bool lighton4b_physical_matmul(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width,
+                                      int tokens, int threads, std::vector<std::vector<float>> & output) {
+    output.clear();
+    if (!lighton4b_physical_native_ops(true) || !hidden || matrices.empty() || matrices.size() > 4 || width < 1 ||
+        width > 32768 || tokens < 1 || tokens > 16 || threads < 1 || threads > 256)
+        return false;
+    size_t elements = size_t(width) * tokens;
+    for (auto * m : matrices) {
+        if (!m || m->ne[0] != width || m->ne[1] < 1 || m->ne[1] > 300000 || m->ne[2] != 1 || m->ne[3] != 1 ||
+            !ggml_is_contiguous(m) || !m->data || !m->buffer || !ggml_backend_buffer_is_host(m->buffer) ||
+            (m->type != GGML_TYPE_Q4_K && m->type != GGML_TYPE_Q6_K && m->type != GGML_TYPE_F32))
+            return false;
+        elements += size_t(m->ne[1]) * tokens;
+    }
+    if (elements > 16ull * 1024 * 1024 ||
+        !std::all_of(hidden, hidden + size_t(width) * tokens, [](float x) { return std::isfinite(x); }))
+        return false;
+    std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(
+        ggml_init({ 1024 * 1024 + elements * sizeof(float), nullptr, false }), ggml_free);
+    std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)> backend(ggml_backend_cpu_init(), ggml_backend_free);
+    if (!ctx || !backend) return false;
+    ggml_backend_cpu_set_n_threads(backend.get(), threads);
+    auto * input = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, width, tokens);
+    std::memcpy(input->data, hidden, size_t(width) * tokens * sizeof(float));
+    auto * graph = ggml_new_graph(ctx.get());
+    std::vector<ggml_tensor *> results;
+    for (auto * source : matrices) {
+        ggml_set_no_alloc(ctx.get(), true);
+        auto * weight = ggml_new_tensor_2d(ctx.get(), source->type, width, source->ne[1]);
+        ggml_set_no_alloc(ctx.get(), false);
+        weight->data = source->data;
+        auto * result = ggml_mul_mat(ctx.get(), weight, input);
+        ggml_mul_mat_set_prec(result, GGML_PREC_F32);
+        ggml_build_forward_expand(graph, result);
+        results.push_back(result);
+    }
+    if (ggml_backend_graph_compute(backend.get(), graph) != GGML_STATUS_SUCCESS) return false;
+    std::vector<std::vector<float>> complete;
+    for (auto * result : results) {
+        auto * values = static_cast<const float *>(result->data);
+        const auto count = size_t(ggml_nelements(result));
+        if (!std::all_of(values, values + count, [](float x) { return std::isfinite(x); })) return false;
+        complete.emplace_back(values, values + count);
+    }
+    output = std::move(complete);
+    return true;
+}
+inline bool lighton4b_physical_rms(const float * hidden, const float * gamma, int width, int tokens, int threads,
+                                   std::vector<float> & output, float eps = 1e-6f) {
+    output.clear();
+    if (!lighton4b_physical_native_ops(true) || !hidden || !gamma || width < 1 || width > 4096 || tokens < 1 ||
+        tokens > 4096 || size_t(width) * tokens > 1048576 || threads < 1 || threads > 256 || !std::isfinite(eps) ||
+        eps <= 0 || !std::all_of(hidden, hidden + size_t(width) * tokens, [](float x) { return std::isfinite(x); }) ||
+        !std::all_of(gamma, gamma + width, [](float x) { return std::isfinite(x); }))
+        return false;
+    const size_t elements = size_t(width) * tokens;
+    std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(
+        ggml_init({ 1024 * 1024 + (3 * elements + width) * sizeof(float), nullptr, false }), ggml_free);
+    std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)> backend(ggml_backend_cpu_init(), ggml_backend_free);
+    if (!ctx || !backend) return false;
+    ggml_backend_cpu_set_n_threads(backend.get(), threads);
+    auto * input = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, width, tokens);
+    auto * weight = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_F32, width);
+    std::memcpy(input->data, hidden, elements * sizeof(float));
+    std::memcpy(weight->data, gamma, size_t(width) * sizeof(float));
+    auto * result = ggml_mul(ctx.get(), ggml_rms_norm(ctx.get(), input, eps), weight);
+    auto * graph = ggml_new_graph(ctx.get());
+    ggml_build_forward_expand(graph, result);
+    if (ggml_backend_graph_compute(backend.get(), graph) != GGML_STATUS_SUCCESS) return false;
+    auto * values = static_cast<const float *>(result->data);
+    if (!std::all_of(values, values + elements, [](float x) { return std::isfinite(x); })) return false;
+    output.assign(values, values + elements);
+    return true;
+}
+} // namespace qwen35_ocr

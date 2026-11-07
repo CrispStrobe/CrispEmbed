@@ -22,6 +22,7 @@ struct attention_cache {
     int batch = 0, heads = 0, tokens = 0, width = 0;
     std::vector<float> keys, values;
     bool upstream_physical = false;
+    bool physical_native_ops = false;
 };
 struct attention_outputs {
     std::vector<float> q, k, v, q_norm, k_norm, pooled, attention;
