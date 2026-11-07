@@ -4,6 +4,9 @@ import hashlib,importlib.util,os,tempfile,unittest
 from pathlib import Path
 import source_patch,analysis
 class Controls(unittest.TestCase):
+ def test_worker_imports(self):
+  spec=importlib.util.spec_from_file_location("text_trace_worker",Path(__file__).parent/"worker.py");module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+  self.assertEqual(module.TABLE,"36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3")
  def test_phase_closed(self):
   self.assertIn('(n==0||n==126)',source_patch.HELPER)
   self.assertIn('ggml_backend_tensor_get(t,v.data(),0,bytes)',source_patch.HELPER)
