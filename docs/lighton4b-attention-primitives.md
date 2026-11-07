@@ -161,3 +161,16 @@ retains the history-verification failure without claiming source drift or a
 numerical result. Tools-only fix `bfb09595a` fetches the exact frozen receipt
 commits before verifying them, and moves history/environment admission before
 compilation. No actual source-fed cases or model forward occurred.
+
+Control source `bfb09595a` verifies15 archived pins and passes runtime guards,
+then produces both prefill exports and all16 N1 runtime steps with final cache
+memcmp equality. Independent receipt-hash comparison closes N4/N16 gated
+exports against the original source vectors. The
+[fourth partial receipt](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/integration-v4-profile-negative/review.json)
+stops before fresh reference comparison because the harness wrongly requires
+OpenMP OFF for upstream. Actual upstream/server and source-primitives caches
+use ON; actual native app uses OFF. Fix `02a2e507a` preserves these distinct
+actual profiles, explicitly sets reference ON and copies caches before checking
+them. V4's reference cache was not copied before failure; the retained configure
+log and earlier exact source caches support the correction. Fresh N1 oracle
+comparisons remain pending, with no model or quality claim.

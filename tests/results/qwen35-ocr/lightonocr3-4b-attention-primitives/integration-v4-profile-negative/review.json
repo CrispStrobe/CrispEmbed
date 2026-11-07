@@ -1,0 +1,21 @@
+{
+  "schema": "lighton4b-physical-f16-integration-initial-review/v1",
+  "source_sha": "bfb09595a9caca42ab7d8a9dd5a02ff63c1e183c",
+  "report_sha256": "c976707dcda039a676ada98d55ac21b0518a946c1c447bbfcc5107335a4a7325",
+  "status": "wrong_reference_thread_profile_guard",
+  "phase": "reference-configure",
+  "elapsed_seconds": 140.795405234,
+  "cause": "Harness incorrectly expects native OpenMP OFF for the upstream reference. Actual pinned upstream server and source primitives use OpenMP ON; native app uses OFF.",
+  "supported_controls_passed": 255297,
+  "historical_source_pins_verified": 15,
+  "runtime_exports_produced": "N4,N16,16 N1 steps; canonical cache memcmp passes",
+  "prefill_export_hashes_independently_match_frozen_source": {
+    "4": true,
+    "16": true
+  },
+  "fresh_source_reference_cases_compared": 0,
+  "proposed_fix_source_sha": "02a2e507a",
+  "fix_scope": "Tools/reference CMake only: retain actual distinct thread-engine profiles, save caches before validation and test cross-profile rejection. Runtime unchanged.",
+  "limits": "V4 reference cache was not copied before guard failed; configure log and exact prior actual source caches support the profile correction. Fresh N1 oracle remains pending.",
+  "quality_qualified": false
+}

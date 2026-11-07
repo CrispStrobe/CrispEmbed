@@ -21466,3 +21466,8 @@ Control source `4f243a180` retains a shallow-history setup failure after
 255,297 supported controls; exact archived receipt commits were not fetched
 before Git verification. The [negative](docs/lighton4b-attention-primitives.md)
 claims zero source-fed comparisons. Runtime bytes remain unchanged.
+
+Integration controls `bfb09595a` produce valid N4/N16/16-step runtime exports;
+N4/N16 hashes match frozen source, but a mistaken reference OpenMP guard stops
+fresh comparison. The [partial receipt](docs/lighton4b-attention-primitives.md)
+retains the actual native-OFF/reference-ON distinction and pending N1 oracle.
