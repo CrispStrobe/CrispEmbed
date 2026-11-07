@@ -2,6 +2,7 @@
 #include "lighton4b_gguf_inspection.h"
 #include "lighton4b_decoder_compose.h"
 #include "ggml-cpu.h"
+#include "lighton4b_q4km_types.h"
 
 namespace qwen35_ocr {
 enum class lighton4b_quant_recipe { q8_0, q4_k, attention_q8_ffn_q4, q4km_q6_q8head, gdn_out_q8, gdn_out_q6, imatrix_q4km_q6head };
@@ -18,22 +19,7 @@ inline bool lighton4b_quant_recipe_matches(const decoder_weights & decoder, ligh
         return false;
     if (recipe == lighton4b_quant_recipe::q4km_q6_q8head || q6head) {
         if (!lighton4b_q6_enabled() || (q6head && !lighton4b_imatrix_q4km_enabled())) return false;
-        for (int i = 0; i < 32; ++i) {
-            const auto & layer = decoder.layers[size_t(i)];
-            const auto selected = lighton4b_q6_layer(i) ? GGML_TYPE_Q6_K : GGML_TYPE_Q4_K;
-            if (layer.full_attention != (i % 4 == 3) || !type(layer.gate, GGML_TYPE_Q4_K) ||
-                !type(layer.up, GGML_TYPE_Q4_K) || !type(layer.down, selected)) return false;
-            if (layer.full_attention) {
-                if (!type(layer.attention.v, selected)) return false;
-                for (auto * t : { layer.attention.q, layer.attention.k, layer.attention.out })
-                    if (!type(t, GGML_TYPE_Q4_K)) return false;
-            } else {
-                if (!type(layer.linear.qkv, selected)) return false;
-                for (auto * t : { layer.linear.z, layer.linear.a, layer.linear.b, layer.linear.out })
-                    if (!type(t, GGML_TYPE_Q4_K)) return false;
-            }
-        }
-        return true;
+        return lighton4b_q4km_types_match(decoder,q6head?GGML_TYPE_Q6_K:GGML_TYPE_Q8_0);
     }
     if (recipe == lighton4b_quant_recipe::gdn_out_q6 && !lighton4b_gdn_out_q6_enabled()) return false;
     const bool gdn_out = recipe == lighton4b_quant_recipe::gdn_out_q8 || recipe == lighton4b_quant_recipe::gdn_out_q6;

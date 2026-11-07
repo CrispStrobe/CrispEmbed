@@ -26,6 +26,7 @@ static int run(int argc,char ** argv) {
     }
     check(input.eof()&&tensors.size()==426&&q6==33&&q4==216&&f32==177);
     lighton4b_text_owner owner;gate("CRISPEMBED_LIGHTON4B_Q6_K","0");check(!map_lighton4b_text(tensors,owner));gate("CRISPEMBED_LIGHTON4B_Q6_K","1");check(map_lighton4b_text(tensors,owner));check(owner.decoder.head==owner.decoder.embedding&&owner.decoder.head->type==GGML_TYPE_Q6_K);
+    check(lighton4b_q4km_types_match(owner.decoder,GGML_TYPE_Q6_K));
     lighton4b_quant_recipe chosen;gate("CRISPEMBED_LIGHTON4B_IMATRIX_Q4KM_Q6HEAD","0");check(!lighton4b_select_recipe(owner.decoder,lighton4b_imatrix_q4km_recipe,chosen));gate("CRISPEMBED_LIGHTON4B_IMATRIX_Q4KM_Q6HEAD","1");check(lighton4b_select_recipe(owner.decoder,lighton4b_imatrix_q4km_recipe,chosen)&&chosen==lighton4b_quant_recipe::imatrix_q4km_q6head);
     check(!lighton4b_select_recipe(owner.decoder,lighton4b_q6_recipe,chosen));check(!lighton4b_select_recipe(owner.decoder,"",chosen));
     for(auto & row:tensors)if(row.second->type!=GGML_TYPE_F32){const auto saved=row.second->type;row.second->type=saved==GGML_TYPE_Q6_K?GGML_TYPE_Q4_K:GGML_TYPE_Q6_K;check(!lighton4b_quant_recipe_matches(owner.decoder,lighton4b_quant_recipe::imatrix_q4km_q6head));row.second->type=saved;}
