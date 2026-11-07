@@ -1856,3 +1856,6 @@ target_link_libraries(test-lighton4b-physical-q4-repack-main-stub PRIVATE crispe
 
 add_executable(test-lighton4b-physical-q4-repack-sourcefed EXCLUDE_FROM_ALL tests/lighton4b_physical_q4_repack_probe.cpp)
 target_link_libraries(test-lighton4b-physical-q4-repack-sourcefed PRIVATE crispembed-qwen35-delta)
+
+add_executable(lighton4b-vision-profile-probe EXCLUDE_FROM_ALL tools/vision-profile-probe/native.cpp)
+target_link_libraries(lighton4b-vision-profile-probe PRIVATE crispembed-qwen35-delta crispembed-core)
