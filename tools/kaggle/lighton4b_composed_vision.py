@@ -75,7 +75,8 @@ def main():
     cfgpath = ROOT / 'docs/lighton4b-composed-vision-v1.json'
     cfg = json.loads(cfgpath.read_text()); admit(cfg)
     out = Path(os.environ['HEAVY_OUT']); scratch = Path(os.environ['HEAVY_SCRATCH']) / 'composed-vision'
-    scratch.mkdir(); started = time.monotonic(); deadline = Deadline(6000); deadline.__enter__()
+    scratch.mkdir(); started = time.monotonic(); worker_seconds = 1800 if options.controls_only else 6000
+    deadline = Deadline(worker_seconds); deadline.__enter__()
     report = dict(schema=cfg['schema'], case=options.case, status='failed', protocol_sha256=sha(cfgpath),
                   quality_qualified=False, heldout=False, original_forward_executed=False,
                   f32_model_instantiated=False, arms={}, commands={},
@@ -87,7 +88,7 @@ def main():
     def run(label, args, env=None, timeout=600, on_tick=None):
         report['phase'] = label; report['commands'][label] = {}; save(); print('phase', label, flush=True)
         try:
-            command(args, out / (label+'.log'), min(timeout, 6000-(time.monotonic()-started)),
+            command(args, out / (label+'.log'), min(timeout, worker_seconds-(time.monotonic()-started)),
                     report['commands'][label], env=env, cwd=ROOT, on_tick=on_tick)
         finally:
             save()
