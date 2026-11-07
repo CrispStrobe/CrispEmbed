@@ -43,3 +43,23 @@ separately. Direct quantized dots may introduce Q8_K activation conversion;
 source-vs-native backend differences and that arithmetic change must be isolated
 before proposing any production fix. The firstscore difference alone identifies
 neither a cache bug nor a particular operator.
+
+`tools/kaggle/lighton4b_physical_prefix_primitives.py` prepares the operator-only
+four-token reconstruction without actual activation captures. It authenticates
+the full retained154-ID prompt against both text-file and original NPY hashes,
+then uses IDs248045,846,198,248053. To authenticate those four embedding rows it
+streams and verifies the **entire521472000-byte quantized embedding tensor**,
+retains four rows and deletes the task-owned tensor. It also retrieves the
+complete five small layer0 tensors; total weight transfer544675840 bytes. It
+never downloads a full model. Source and tensor manifest digests are recorded.
+
+The two builds use two compile workers and four operator threads sequentially;
+preflight requires2GiB effective RAM and4GiB disk. Suggested provider budget is
+35minutes with45minutes outer retention. This can fit a third isolated CPU
+worker on resources, but scheduling remains explicitly coordinated; no execution
+is implied. Actual trace comparison has priority once its immutable outputs are
+available. Reconstructed scalar norm is labeled reconstruction, never actual
+main-path evidence. The scalar norm and upstream ggml norm are fed separately
+to both direct and dequantized projections, with no row-layout comparison needed
+for the cross-backend same-physical outputs. Later actual-native comparison must
+apply the recorded row permutation.
