@@ -6,7 +6,7 @@ class Admission(unittest.TestCase):
  def setUp(self):self.cfg=json.loads((ROOT/'docs/lighton4b-physical-native-ops-ablation-v1.json').read_text())
  def test_frozen_six_prefix_arms(self):module.admit_protocol(self.cfg)
  def test_wrong_scope_or_golden_source_rejects(self):
-  changes=[lambda c:c.update(cap=256),lambda c:c.update(arms=['quant','rms']),lambda c:c.update(arms=list(reversed(c['arms']))),lambda c:c['cases'][0].update(id='simple_table'),lambda c:c.update(golden_smoke_report_sha256='0'*64),lambda c:c.update(golden_smoke_source_sha='latest'),lambda c:c.update(expected_candidate_sha256='0'*64),lambda c:c.update(threads=8),lambda c:c.update(native_arm_timeout_seconds=5400)]
+  changes=[lambda c:c.update(cap=256),lambda c:c.update(arms=['quant','rms']),lambda c:c.update(arms=list(reversed(c['arms']))),lambda c:c['cases'][0].update(id='simple_table'),lambda c:c.update(golden_smoke_report_sha256='0'*64),lambda c:c.update(golden_smoke_source_sha='latest'),lambda c:c.update(expected_candidate_sha256='0'*64),lambda c:c.update(threads=8),lambda c:c.update(native_arm_timeout_seconds=5400),lambda c:c.update(total_model_timeout_seconds=0)]
   for change in changes:
    with self.subTest(change=repr(change)):
     cfg=copy.deepcopy(self.cfg);change(cfg)

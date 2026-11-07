@@ -13,7 +13,7 @@ def sha(path):
 def admit_protocol(cfg):
  require(cfg['schema']=='lighton4b-physical-native-ops-ablation/v1'and cfg['arms']==['off','all','quant','rms','layers','head']and cfg['cap']==2 and len(cfg['cases'])==1 and cfg['cases'][0]['id']=='simple_form','closed six-arm form prefix protocol')
  require(cfg['golden_smoke_report_sha256']=='1694d990aa2b23c17685025134b0c565aff844369ef823a46bfc6a8933a219a1'and cfg['golden_smoke_source_sha']=='285ab5a4e9d669746a3664ec7804783ca06cc6dd','exact actual golden smoke')
- require(cfg['expected_candidate_sha256']=='843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43'and cfg['threads']==4 and cfg['native_arm_timeout_seconds']<=900 and cfg['total_model_timeout_seconds']<=2400,'closed weights/CPU/budget')
+ require(cfg['expected_candidate_sha256']=='843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43'and cfg['threads']==4 and 0<cfg['native_arm_timeout_seconds']<=900 and 0<cfg['total_model_timeout_seconds']<=2400,'closed weights/CPU/budget')
 def module(name,path):
  s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
 STAGES=tuple(['text.embedded.f32','prefill.input.f32','prefill.positions.f32','prefill.norm.f32','prefill.logits.f32','greedy.0.logits.f32']+['prefill.layer.'+str(i)+'.f32'for i in range(32)])
