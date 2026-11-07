@@ -1,0 +1,41 @@
+{
+  "schema": "crispembed-model-card-refresh-report-v1",
+  "spec": "docs/model-card-refresh-v1.json",
+  "entry": "mineru25-pro",
+  "source_commit": "f076e21dfde72e0ca0488b5e941036ebbf8b19ed",
+  "status": "published and re-verified",
+  "remote": {
+    "repo": "cstr/MinerU2.5-Pro-2604-1.2B-GGUF",
+    "parent": "a5d0508061d28ad8e6fffe15f925856da4e4d63f",
+    "commit": "e7a8562540d04684b4f03d4cc711e9ccd7a7bed4",
+    "changed_files": {
+      "README.md": {
+        "bytes": 6611,
+        "sha256": "1ddaea42dbce1a1d1ca7c61851ecf232f7318099bbe358ed030e3526f08ba256"
+      },
+      "manifest.json": {
+        "bytes": 6441,
+        "sha256": "1b252aac4e33ab5e399d602c6dbb5ff5ad51ab121c90305c9f993b4eb8bac51d"
+      }
+    },
+    "weights_unchanged": {
+      "mineru25-pro-2604-f16.gguf": {
+        "bytes": 2591511520,
+        "sha256": "7d464d375f7c20dd3e2bae7e20fed1f80485ae9ca69aaad201897652c74d746b"
+      },
+      "mineru25-pro-2604-q4_k-mix.gguf": {
+        "bytes": 769390656,
+        "sha256": "f45e9447b78e95c9f6bcdfeb7e455ec3a498354a8b7e6bb3b8700be9512509a6"
+      },
+      "mineru25-pro-2604-q8_0.gguf": {
+        "bytes": 1920768000,
+        "sha256": "0c3f9eaf0e916fe85546fac47267677502241a2b0c3ea76b5e949cfd193601f4"
+      }
+    },
+    "pins_verified": [
+      "LICENSE",
+      "UPSTREAM_README.md"
+    ]
+  },
+  "run_id": 42371360528
+}

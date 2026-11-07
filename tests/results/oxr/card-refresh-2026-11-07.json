@@ -1,0 +1,42 @@
+{
+  "schema": "crispembed-model-card-refresh-report-v1",
+  "spec": "docs/model-card-refresh-v1.json",
+  "entry": "oxr",
+  "source_commit": "f076e21dfde72e0ca0488b5e941036ebbf8b19ed",
+  "status": "published and re-verified",
+  "remote": {
+    "repo": "cstr/OXR-1.0-GGUF",
+    "parent": "1fb6277433f0be816b2be1c165e23e0ac2ce3491",
+    "commit": "08d8243532a15609cf57f116433eb3a85d6dd64d",
+    "changed_files": {
+      "README.md": {
+        "bytes": 7427,
+        "sha256": "f09f2f7e3cf055f45defdd7c73e69be141401ddd221c7bb46ad7ebe50adab978"
+      },
+      "manifest.json": {
+        "bytes": 5218,
+        "sha256": "de35f80815b69b3ed791aa6d645b203db004c8b604e5ab03b495e60c25ac4553"
+      }
+    },
+    "weights_unchanged": {
+      "oxr-1.0-f16.gguf": {
+        "bytes": 4440553984,
+        "sha256": "eac8754f4886ba4197416083d49089a3d86c8644f0e5650f44fcf69059d81a57"
+      },
+      "oxr-1.0-q4_k-head.gguf": {
+        "bytes": 1878471168,
+        "sha256": "037a31df623facd71ca96961e48d65d9010bd1b4b16bcd867254d68d57637709"
+      },
+      "oxr-1.0-q8_0.gguf": {
+        "bytes": 2029456896,
+        "sha256": "f0a67a94b9f5416ff35e5c31b7873cea1a15b95743e09a2d032005ead44eca83"
+      }
+    },
+    "pins_verified": [
+      "LICENSE",
+      "NOTICE",
+      "UPSTREAM_README.md"
+    ]
+  },
+  "run_id": 42371356960
+}
