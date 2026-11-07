@@ -390,6 +390,14 @@ def cmd_boxes(src, dst, tsv_dir, tool_version):
         f = Path(tsv_dir) / f'{p["id"]}.tsv'
         if not f.exists():
             continue
+        size = A.page_size(f.read_text())
+        im = p['image']
+        if size and (size[0], size[1]) != (im['width'], im['height']):
+            # Wikimedia snaps paged renders to standard widths (e.g. 1920px for a 1600px request);
+            # the API-reported thumb size is not the size of the served bytes.
+            im['api_reported_size'] = [im['width'], im['height']]
+            im['width'], im['height'] = size
+            im['size_provenance'] = 'measured from the verified bytes (Tesseract page row)'
         words = A.read_tsv(f.read_text())
         res = A.align(p['blocks'], words)
         for b, (box, ratio) in zip(p['blocks'], res):

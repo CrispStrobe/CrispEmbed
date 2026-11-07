@@ -3,13 +3,13 @@
 [`ocr-gold-corpus-v1.json`](ocr-gold-corpus-v1.json) is the licensed real-page gold set for
 layout-aware OCR benchmarks (Marker-style pipeline, TeleOCR, MinerU, the real-page lanes).
 It grows the [real-scan v2 manifest](ocr-real-scans-v2.json), which stays unchanged: all
-20 v2 pages are reused (`v2_id`) with their image pins byte-for-byte, and 35 pages are new.
+20 v2 pages are reused (`v2_id`) with their image pins byte-for-byte, and 37 pages are new (57 total).
 
 | | pages |
 |---|---|
-| English / German / French Wikisource (Validated) | 13 / 13 / 12 |
+| English / German / French Wikisource (Validated) | 17 / 13 / 12 |
 | CORD-v2 receipts (CC BY 4.0) | 15 |
-| Fraktur, multi-column, tables, footnotes | 9 / 10 / 15 (+15 receipt tables) / 11 |
+| Wikisource pages with Fraktur / multi-column / table / footnote / list / figure blocks | 11 / 9 / 12 / 10 / 2 / 4 (+15 receipt tables) |
 
 Per page: image pin, licences, provenance, and ordered `blocks` with `type` (text, title,
 table, list, figure, footnote, header, footer), `text`, `bbox` (`[x0, y0, x1, y1]` pixels of
@@ -44,6 +44,15 @@ the Commons file revision (timestamp + file sha1).
   sha256 as a new corpus version, never to edit v1 in place.
 - All accepted licences permit redistribution, so an exact-byte mirror is allowed if
   rendering drift becomes a problem. Bytes are not committed here (repository size policy).
+- Hosted CI run 42372548797 verified 40/42 Wikimedia pins. Two DjVu renders were served
+  with different bytes from the hosted runner than at pin time (`en-form-economic-journal-67`,
+  the known v2 drifter, and `en-register-1758-16`); both observed hashes are recorded in
+  `image.render_variants`, are not accepted by the gate, and those pages carry no derived
+  boxes. The lane exits non-zero while any drift exists, by design.
+- Image `width`/`height` are measured from the verified bytes. Wikimedia snaps paged
+  renders to standard widths (a 1600px request is served at 1920px), so the API-reported
+  size, kept as `api_reported_size`, was wrong for 36 pages. The same API sizes are in the
+  unchanged v2 manifest; consumers of v2 should measure images rather than trust them.
 - CORD images live in the pinned Hub parquet (revision + file sha256 + row).
 
 ## How annotations are made
@@ -60,7 +69,8 @@ the Commons file revision (timestamp + file sha1).
   a table header row missing from a transcription.
 - **Wikisource boxes** — derived on hosted CI by aligning each block's transcription to
   official Tesseract word boxes (`align_boxes.py`; the Tesseract text never enters the gold).
-  A block gets a box only when at least 30% of its tokens (and two words) align; the match
+  Run 42372548797 (Tesseract 5.3.4) boxed
+  307 of 381 blocks. A block gets a box only when at least 30% of its tokens (and two words) align; the match
   ratio is recorded. Unaligned blocks keep `bbox: null` and are scored by text matching.
 - **CORD** — boxes are the annotators' word quads (manual); menu lines become one table
   block (rows by group/sub-group, columns by field), other groups become text blocks.

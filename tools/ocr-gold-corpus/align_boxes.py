@@ -41,6 +41,19 @@ def read_tsv(text: str) -> list[dict]:
     return out
 
 
+def page_size(text: str) -> tuple[int, int] | None:
+    """(width, height) of the image Tesseract read, from the level-1 page row."""
+    lines = text.splitlines()
+    if not lines:
+        return None
+    ix = {k: i for i, k in enumerate(lines[0].split('\t'))}
+    for line in lines[1:]:
+        f = line.split('\t')
+        if f[ix['level']] == '1':
+            return int(f[ix['width']]), int(f[ix['height']])
+    return None
+
+
 def align(blocks: list[dict], words: list[dict]) -> list[tuple[list[int] | None, float]]:
     gold, owner = [], []
     for bi, b in enumerate(blocks):
