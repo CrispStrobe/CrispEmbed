@@ -2251,3 +2251,8 @@ Full table/form A/B at `f6a1e60d3` closes OFF all282/167 rows+38 text anchors. G
 ### Bounded source-fed FFN SwiGLU attribution
 
 The hybrid GDN full decode remains a binding negative and stays off. The next tools-only [predeclared operator protocol](tools/swiglu-source-probe/protocol.json) compares actual captured upstream4/nativeOFF16/nativeON16 gate/up inputs using scalar versus native/upstream fused SwiGLU. Whole actual activation and projection closures precede interpretation. Gate/up are Q4_K; down is Q6_K, all45,895,680 original published GGUF bytes independently range/hash checked against physical-pack920b, without changing a tensor recipe or global repack. Public Q8_K converter interventions are distinguished from live internal buffers; forced-input output equivalence is measured. No model inference, heldout tuning, runtime change or quality claim is authorized by component results alone.
+
+
+### Actual FFN postnorm code attribution
+
+The [SwiGLU proof](https://github.com/CrispStrobe/CrispEmbed/blob/998a08bec/docs/lighton4b-swiglu-source-probe-results.md) shows no integer-code amplification from scalar activation alone. The next [tools-only protocol](tools/ffn-postnorm-probe/protocol.json) authenticates its actual source4/nativeOFF16/ON16 postnorm and gate/up arrays, streams only unchanged Q4 gate/up26,542,080bytes, requires actual projections and RAW forced-Q8 closure, and separates fixed-route input drift from same-input route effects. Code-space source/native scale/integer corners retain coupled sums and record sign changes/reconstructed activation magnitudes; they are explicit interventions, not captured CPU_REPACK buffers or model states. No runtime/globalrepack/recipe change, model inference, heldout tuning or quality promotion.
