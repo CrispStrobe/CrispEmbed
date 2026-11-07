@@ -2930,3 +2930,9 @@ KLD.030166→.032228 (prior weighted plainQ4.360166/.015504). These mixed one-po
 posthoc metrics do not select a quality winner or compare with publisher corpus
 KLD. Reproducible source8bae598d3 has3 focused mathematical controls; full decoded
 calibration remains running on its immutable source, and the recipe is unchanged.
+
+The [physical import setup review](docs/lighton4b-upstream-physical-import.md#actual-persisted-physical-import-and-initial-decoder-setup-negative)
+now preserves the actual 723-tensor readback and full candidate hash, both built
+executables and initial missing-PyYAML failure before either engine forward.
+The corrected source-feature-only Kaggle retry is pending its measured result;
+no decoded quality, performance or release qualification follows from this proof.

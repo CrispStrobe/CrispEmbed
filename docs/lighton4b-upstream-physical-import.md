@@ -139,3 +139,26 @@ verified through the service API; private service binding stays outside Git.
 Initial version1's missing protocol path is preserved: it stops after dependency
 checks and before compilation/model access. The corrected protocol/path was
 validated before version2. No GitHub job or duplicate worker is launched.
+
+## Actual persisted physical import and initial decoder setup negative
+
+The [independent review](../tests/results/qwen35-ocr/lightonocr3-4b-upstream-physical-decode/v1-setup-negative/independent-review.json)
+preserves all 24 small outputs (646,619 bytes) from Kaggle CPU version1 at
+`a6644247c48cb25e1b7e4b8da9e8ff91644eaca7`. Both native and pinned upstream
+executables built. The actual lossless import verified every one of 723 persisted
+tensor spans and produced 4,041,905,760 bytes, SHA-256
+`843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43`.
+The census is 474 F32 protected/scalar tensors, 216 Q4_K and 33 Q6_K matrices;
+96 whole quantized row permutations and 24 unchanged GDN out projections are
+recorded. All 19 runtime/packer Git blobs remain exactly the passing component
+control source.
+
+The worker then stopped on missing PyYAML while importing pinned upstream
+`gguf-py`, before any original, upstream or native forward. This is setup and
+transport evidence, not a first-score or decoded-quality result. A separate
+primary-source routing review also found that the pinned server bypasses the
+initial CLI feature-capture site; the corrected hook targets the shared
+`mtmd_helper_decode_image_chunk` encoded-pointer boundary. The bounded retry
+pins the previously verified audit dependencies, imports them before transfers,
+and requires the same complete candidate file hash. Its runtime behavior and
+source-feature-only scope remain unchanged and default-off.

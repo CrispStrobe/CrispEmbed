@@ -1,0 +1,150 @@
+{
+  "schema": "lighton4b-upstream-physical-decode-setup-review/v1",
+  "status": "setup-negative-before-either-engine-forward",
+  "source_sha": "a6644247c48cb25e1b7e4b8da9e8ff91644eaca7",
+  "service_kernel_id": 143153961,
+  "service_version": 1,
+  "bootstrap_api_verified_sha256": "6403a4a7e4f1ead82c181d18f0487244f03f53fc18946370e09d9f6eac400e9e",
+  "failure_phase": "after-lossless-pack-before-upstream-gguf-import",
+  "failure_type": "ModuleNotFoundError",
+  "missing_module": "yaml",
+  "native_and_upstream_binaries_built": true,
+  "original_forward_executed": false,
+  "upstream_forward_executed": false,
+  "native_forward_executed": false,
+  "actual_candidate_bytes": 4041905760,
+  "actual_candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "persisted_tensor_readbacks": 723,
+  "census": {
+    "0": 474,
+    "12": 216,
+    "14": 33
+  },
+  "raw_artifact_count": 24,
+  "raw_artifact_bytes": 646619,
+  "raw_artifacts": {
+    "native-CMakeCache.txt": {
+      "bytes": 29180,
+      "sha256": "adf7ff07b4422af4c5060cf8c3d3d8e63281ed009b5a48d6d6b1b594837b531b"
+    },
+    "venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "dependency-check.log": {
+      "bytes": 132,
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    "native-configure.log": {
+      "bytes": 2054,
+      "sha256": "e1ef6b0b53ebedb7262773bf2937b0f92f40276349849763363be178c4f923a3"
+    },
+    "up-configure.log": {
+      "bytes": 1581,
+      "sha256": "57fb871e39056f60ead81823548ba6d817ca53c6bd7ed5091059312c8c22c5b5"
+    },
+    "physical-decode.json": {
+      "bytes": 3275,
+      "sha256": "7b0983d61d7818f23420acb687d871fea2ef49b0d5cef9e989f06ee59ea14df7"
+    },
+    "up-checkout.log": {
+      "bytes": 84,
+      "sha256": "401b0f35047d9999135ce240162909f4d3b9be4cafce7c16c1eafb93d3b7bff7"
+    },
+    "source-init.log": {
+      "bytes": 577,
+      "sha256": "a3a1d1d0f715a85aec309f0e256edcbd1b8f69f73c231a6cc211a438e4c27061"
+    },
+    "physical-pack.json": {
+      "bytes": 483048,
+      "sha256": "920b4d5db276414bdd743fcc80a7ed1033ed1c0ca3b76859ef922aa667de9dee"
+    },
+    "up-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "up-init.log": {
+      "bytes": 596,
+      "sha256": "8e35ea744f9dbd51720594534628058220db1894c4b6d4ab5223df3a116e183a"
+    },
+    "submodules.log": {
+      "bytes": 354,
+      "sha256": "16ce980dfd593197f1f47c949fd422f4f52a665ed147368340ae5d865a98ade8"
+    },
+    "physical-comparison.log": {
+      "bytes": 1310,
+      "sha256": "61c74f259210d9d6e16be7efb7e2c90aabaea965c70866ae7a2d564e3643b126"
+    },
+    "native-build.log": {
+      "bytes": 5621,
+      "sha256": "f8abdc61864a39fa8c2518dd8e52e304e0525fbe2d4dbbd0daae8a6982073c90"
+    },
+    "upstream-CMakeCache.txt": {
+      "bytes": 32090,
+      "sha256": "dba2ae58e3072c8efbb1d178f62ea72b8dfa2e1e9fa18fd309b461b4061be888"
+    },
+    "source-fetch.log": {
+      "bytes": 123,
+      "sha256": "25920e161623d6af6af2beb9cbd606f70f65bf34625bf8a2a68d02d02389789f"
+    },
+    "source-checkout.log": {
+      "bytes": 99,
+      "sha256": "2e7115f2184d7a69cc658818ca299d72b95b38a1264cb2f901ccbb9dd921df97"
+    },
+    "up-build.log": {
+      "bytes": 14809,
+      "sha256": "d0a9ce156e4ec5582c0c4a6878ed2db630016c0e48426a879653022ae6458125"
+    },
+    "pip-resolution.json": {
+      "bytes": 66895,
+      "sha256": "b96bf7d322ce0577680335af667993790eff4016dd30610bd2adbfbcdb283d03"
+    },
+    "up-fetch.log": {
+      "bytes": 119,
+      "sha256": "5537e1fa1b4cf8d84bd910e3fed8a4a9e0803b4bddddf1cf9b9182e0f1b00983"
+    },
+    "host-cpu.log": {
+      "bytes": 3127,
+      "sha256": "e68a238f7eb1b51e17602a78cf401768f91461e9b818feb2d5c1c51571c5d5d8"
+    },
+    "dependencies.log": {
+      "bytes": 955,
+      "sha256": "202bcdb2596f1e00d30707fd5cb2dcf7ab5d99fac9dc64c2c7ef2f432cf9b312"
+    },
+    "source-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "physical-decode-bootstrap.json": {
+      "bytes": 590,
+      "sha256": "beb32c2c71f9cc6998609f4f8629c8c0c15d8075bcf3dbdc85ae930726bfebd0"
+    }
+  },
+  "runtime19_blobs_exact_to_passing_controls": {
+    "src/lighton4b_upstream_physical_recipe.h": "df197fccdb6759cc0d48e66986b9d96091d8cc9edd0b4e0bd4442bc412dd8aba",
+    "src/lighton4b_upstream_physical_semantics.h": "ceda0f3fc21d14a5edfe288858b339ccc82e1e629cb5ba2cb18e9bc73127cedc",
+    "src/lighton4b_native_context.h": "ae9d5cde474321ec8b31c39dd4ab055109b0e7dc28832880c832af878fdcb5b2",
+    "src/lighton4b_gguf_inspection.h": "bfbe31a3f916b013a7f432861ff8f071e3b44174e52041ab7260a2e14c11c56c",
+    "src/lighton4b_tokenizer.cpp": "3e492b0363487da073f7709424badf6bd4279a6713d0a192e5f1bb294568ddd7",
+    "src/lighton4b_linear_block.h": "898090b79a242b8d0a3a16c22825fee6e9f2812df08a820f52bdcf43c2ffa30d",
+    "src/lighton4b_attention_block.h": "e109e64a9b88683e70b71b62323898d03bee95ea05555d763236819727d2620c",
+    "src/lighton4b_decoder_compose.h": "318e8b16b2c9cd59c6d1ac4802d8bd7ff46c0e34ba2c3d78778b2d80356b7d1d",
+    "src/qwen35_linear.cpp": "32e766bfd688504a4e6c362b6d8972eda59d45a741f104cf2b856a1fabbec1a2",
+    "src/qwen35_linear.h": "7229094802f8970e81a144e8a859384393e2475eb6569ec86dfb7b64cdc6bef5",
+    "src/qwen35_delta.cpp": "be17737dae21c29757fa139e48938fd7cd1b0b736b9c8e84b3fb736e0c1202e6",
+    "src/qwen35_delta.h": "95a47622a26c498fdab71630472bca2fd80e5c61a11a6e95ed250baa6577d75a",
+    "src/qwen35_attention.cpp": "6c8c4392aeae6a373a52417aa3c15f08c224af8ce4cfe486bdbc65fdd59e4cb3",
+    "src/qwen35_attention.h": "d03fb6275b6d5fb86c2dc8d2cd22d98989bff2ffc79b01074902d4d91e524a76",
+    "src/qwen35_decoder.cpp": "15eeecc44bdaea3fb174bffa4d2927700314ae5b3df12b8386a1f7e819203ea9",
+    "src/qwen35_decoder.h": "40b79d22738bce389b6dc432ec6a03f082c4f1ebea54955a79f6bf315a38baf7",
+    "src/core/lighton4b_release_fence.h": "f1e17f5d340d3dd5028de01c0795ae11c135fbebbba1c0d086cb12f526309806",
+    "src/crispembed.cpp": "a0c0c406440b62598a6786f4308d3f7b18c4079a76cd3b09d94f06cfd1d9693b",
+    "tools/lighton4b_upstream_physical_pack.py": "0f86cd619b1b25c419bd643a549786cc35d0c546b0bcab382e2efb77e3b24910"
+  },
+  "separate_preflight_routing_issue": "Server batched-media route bypassed original CLI evaluator capture hook; corrected shared decode_image_chunk hook before retry. No source capture was attempted in version1.",
+  "quality_qualified": false,
+  "limits": [
+    "Actual transport and build proof only; no first-score, output, throughput or parity claim.",
+    "Large source/candidate payloads remain remote; only small reports/logs retained here."
+  ]
+}

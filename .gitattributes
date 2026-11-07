@@ -32,3 +32,5 @@ tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4/bootstrap-v*/lighton-weighted
 tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-controls/**/*.log -text whitespace=-trailing-space,-blank-at-eof
 # Preserve byte-pinned conversion/control logs, including Git/compiler whitespace.
 tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/**/*.log -text whitespace=-trailing-space,-blank-at-eof
+# Preserve exact remote physical-import setup logs and their SHA evidence.
+tests/results/qwen35-ocr/lightonocr3-4b-upstream-physical-decode/**/*.log -text whitespace=-trailing-space,-blank-at-eof

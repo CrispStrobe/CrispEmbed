@@ -1,0 +1,13 @@
+{
+  "schema": "lighton4b-physical-decode-kaggle-bootstrap/v1",
+  "source_sha": "a6644247c48cb25e1b7e4b8da9e8ff91644eaca7",
+  "status": "failed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "physical-comparison",
+  "worker_sha256": "552a0d1efbc99294ae8b22970ffca4fe36036ba664b014e1c3502f92fff2bfcc",
+  "protocol_sha256": "caf8c285aa81fbd5d75e0624c5ad7332e0f1cded9aca613baf1fdc95114ab9e3",
+  "error_type": "RuntimeError",
+  "error": "Bounded independent upstream worker did not complete; retain per-phase logs and receipt"
+}
