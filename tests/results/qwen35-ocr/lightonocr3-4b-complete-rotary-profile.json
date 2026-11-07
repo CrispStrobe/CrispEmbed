@@ -1,0 +1,127 @@
+{
+  "schema": "lighton4b-rotary-table-profile/v1",
+  "status": "proved",
+  "production_integrated": false,
+  "images_read": false,
+  "activations_read": false,
+  "checkpoint_read": false,
+  "model_forward_executed": false,
+  "quality_qualified": false,
+  "source_sha": "79fbff4e74ba084c35804ba96178a15d2e3e2da0",
+  "cpu_dispatch": {
+    "ATEN_CPU_CAPABILITY": "avx2",
+    "ONEDNN_MAX_CPU_ISA": "AVX2",
+    "DNNL_MAX_CPU_ISA": "AVX2",
+    "MKL_ENABLE_INSTRUCTIONS": "AVX2"
+  },
+  "preflight": {
+    "load_average": [
+      1.15380859375,
+      0.5830078125,
+      0.2353515625
+    ],
+    "memory_available_bytes": 15661563904,
+    "swap_total_bytes": 3221221376,
+    "swap_free_bytes": 3221221376,
+    "scratch_free_bytes": 113846906880
+  },
+  "transformers_default_control": {
+    "source": "https://raw.githubusercontent.com/huggingface/transformers/75d3bdcd4b3ba70cee21287218d9764f33da41f0/src/transformers/models/qwen3_5/modeling_qwen3_5.py",
+    "sha256": "aee59d55ee4e8ce0e50bf0e279796b85c2c66a28dfae55c3fcbb62fa9bcba048",
+    "head_dimension": 64,
+    "embedding_dimension": 32,
+    "theta": 10000.0
+  },
+  "last_phase": "native-dependencies",
+  "generation": {
+    "schema": "lighton4b-rotary-arithmetic-table/v1",
+    "configuration_repository": "lightonai/LightOnOCR-3-4B",
+    "configuration_revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+    "configuration_sha256": "99b4c363a998c2d8c5ed5b3f3a40ec5cb97a156034df5002d0d789c74324f5f0",
+    "transformers_source": "https://github.com/huggingface/transformers/blob/75d3bdcd4b3ba70cee21287218d9764f33da41f0/src/transformers/models/qwen3_5/modeling_qwen3_5.py",
+    "transformers_source_sha256": "aee59d55ee4e8ce0e50bf0e279796b85c2c66a28dfae55c3fcbb62fa9bcba048",
+    "theta": 10000.0,
+    "head_dimension": 64,
+    "rotary_dimension": 32,
+    "frequency_count": 16,
+    "coordinate_count": 1024,
+    "raw_bytes": 131072,
+    "raw_sha256": "30ea508c92d92a8400604e276fac161a1a85f7e89cd79877f227684a6d330e0c",
+    "header_sha256": "9f52f11eff527011693a3dcae1cafe9cfbff85c7c146453f8c41b54d90ed6d0e",
+    "generator_sha256": "fc9b16208ea41c21957447ab8a9d6685323e5853a5c37042417ca1d5013af262",
+    "torch_version": "2.13.0+cpu",
+    "torch_git_version": "cf30153c4c131c8164ee7798e5022d810682e2cb",
+    "numpy_version": "2.3.5",
+    "mkl_profile": "2024.2 build20240605 AVX2 VML_HA",
+    "cpu_dispatch": {
+      "ATEN_CPU_CAPABILITY": "avx2",
+      "ONEDNN_MAX_CPU_ISA": "AVX2",
+      "DNNL_MAX_CPU_ISA": "AVX2",
+      "MKL_ENABLE_INSTRUCTIONS": "AVX2"
+    },
+    "license": "MIT generator and generated arithmetic constants; Apache-2.0 source configuration provenance; no MKL code/binary copied",
+    "images_read": false,
+    "activations_read": false,
+    "checkpoints_read": false
+  },
+  "regeneration_bit_exact": true,
+  "direct_mkl_control": {
+    "cos": {
+      "elements": 16384,
+      "bit_different_values": 0
+    },
+    "sin": {
+      "elements": 16384,
+      "bit_different_values": 0
+    }
+  },
+  "geometry_domain": {
+    "max_axis_size": 1024,
+    "max_coordinate": 1023,
+    "merge": 2,
+    "max_patch_area": 2048,
+    "ordinary_patch_area": 1024,
+    "max_total_tokens": 4096,
+    "max_grid_rows": 16,
+    "max_frames_per_row": 16,
+    "proof": "geometry caps h,w at1024, so every emitted row/column is0..1023. Temporal frames and grid rows repeat the same two coordinate axes; no image or frame-dependent arithmetic is omitted. Fixed profile width1024/heads16 yields d64 and16 frequencies; theta10000 is original default.",
+    "runtime_source_sha256": "82de96aef635a56269b3ef8e9e9a60fa0a9e7ab67a246138ef2dacb559432f63"
+  },
+  "native_controls": {
+    "case_count": 3873,
+    "fallback_controls": 17,
+    "constant_bytes": 131072,
+    "product_mkl_dependency": false
+  },
+  "native_dependencies": {
+    "forbidden_mkl_torch_c10": false,
+    "sonames": [
+      "linux-vdso.so.1",
+      "libggml-cpu.so.0",
+      "libggml-base.so.0",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6",
+      "/lib64/ld-linux-x86-64.so.2"
+    ]
+  },
+  "source_vs_reader": {
+    "bit_exact": true,
+    "single_frame_h_w_cases": 3280,
+    "all_total_token_counts": 1024,
+    "cases": 3873,
+    "float_values": 681459712,
+    "expected_sha256": "53e32412676f60d48ec83bdab288fa36573f3c4c80fbb344d56d8d8eaa409e91",
+    "actual_sha256": "53e32412676f60d48ec83bdab288fa36573f3c4c80fbb344d56d8d8eaa409e91",
+    "transient_bytes": 2725838848,
+    "images_or_activations_used": false
+  },
+  "workflow_run": 42096520795,
+  "artifact": {
+    "id": 13446094604,
+    "bytes": 275451,
+    "sha256": "ae3ba2c0c472a9c495a21cfdd4516dfb6201271fa9c177ddc5a7617fd4ae78fa",
+    "expires_at": "2027-02-03T19:42:59Z"
+  }
+}

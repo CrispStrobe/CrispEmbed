@@ -1,0 +1,99 @@
+{
+  "fetched_prefix_bytes": 12582912,
+  "fetched_weight_prefix_bytes": 2571936,
+  "full_payload_hash_verified": false,
+  "header_bytes": 10010976,
+  "header_sha256": "babd50697d19b06d8f7ea35a8b0a129074c92c100be354b68fab407b87f96ab6",
+  "metadata_fields_verified": 34,
+  "native_inference_observed": false,
+  "payload_backed_model_admitted": false,
+  "published_header_receipt": {
+    "declared_full_sha256": "757ad5d0ea7699b3d0ce4cbb70978de442e5b95e660da0a13cf048980e255606",
+    "declared_full_size": 9757493600,
+    "fetched_prefix_bytes": 12582912,
+    "filename": "lightonocr3-4b-vision-f32.gguf",
+    "full_payload_hash_verified": false,
+    "header_sha256": "babd50697d19b06d8f7ea35a8b0a129074c92c100be354b68fab407b87f96ab6",
+    "native_header_stdout": "PUBLISHED_HEADER passed=1 tensors=723 text_layers=32 vision_layers=24 payload_bytes=0 model_inference=0\n",
+    "native_inference_observed": false,
+    "payload_backed_model_admitted": false,
+    "ranges": [
+      {
+        "content_range": "bytes 0-4194303/9757493600",
+        "end": 4194303,
+        "sha256": "ba10c940873b50ea07fe7b87b9184cc96b7a5748e0595257e736b2eb4e6a3250",
+        "start": 0,
+        "status": 206
+      },
+      {
+        "content_range": "bytes 4194304-8388607/9757493600",
+        "end": 8388607,
+        "sha256": "0a75e9a0cc6e5fe1d7a118344ae90301ea34726b0e5752a6b509f8d1449fd6d2",
+        "start": 4194304,
+        "status": 206
+      },
+      {
+        "content_range": "bytes 8388608-12582911/9757493600",
+        "end": 12582911,
+        "sha256": "9b2eb8c57ad1cf47e2fc1945804fcda4bbb13ca5c1a5b1899ac60466ca284f13",
+        "start": 8388608,
+        "status": 206
+      }
+    ],
+    "repository": "cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
+    "retained_header_bytes": 10010976,
+    "revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+    "schema": "lighton4b-published-header/v1",
+    "status": "passed"
+  },
+  "retained_weight_payload_bytes": 0,
+  "run_id": 41975926521,
+  "schema": "lighton4b-gguf-inspection-review/v1",
+  "source_commit": "f4cc98568f7304b7f70922c360dcd3d7dd5c78fa",
+  "source_receipt": {
+    "controls_stdout": "GGUF_INSPECTION controls=86 passed=1 payload_bytes=0 model_inference=0\n",
+    "executable_sha256": "cc74e77516af83c1d8fc46a3f06db177ae85f0472eacc61b71d0dcc4ac45846a",
+    "format5_admitted": false,
+    "metadata_fields": 34,
+    "model_payload_bytes": 0,
+    "native_inference_observed": false,
+    "original": {
+      "header_sha256": "a1e36638b195f2d5943e000fcb069b275cb22ccc28b1b6184ddee7bdea7ef081",
+      "model": "lightonai/LightOnOCR-3-4B",
+      "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+      "schema_sha256": "f4c44309f9cd44fcfbfa619ec78ba50339c8853006699605a688e7e4ab7d86d1",
+      "text_tensors": 426,
+      "total_tensors": 723,
+      "vision_tensors": 297
+    },
+    "quality_qualified": false,
+    "schema": "lighton4b-gguf-inspection/v1",
+    "source_sha": "f4cc98568f7304b7f70922c360dcd3d7dd5c78fa",
+    "source_sha256": {
+      "CMakeLists.txt": "68b3d1d300ef9f9fe0ea9d25d63ad2acb8bb60f78ee5f5d502352daaa133947e",
+      "src/lighton4b_gguf_inspection.h": "ae46d421260acad5f1c7dc1e87a2d6a72e9b1b663591bc96f87ab4a8921a6c54",
+      "src/lighton4b_model_owner.h": "e419c271a527d74c782fb321d348f4397c642fb9c5b12ab59f527c74f2568826",
+      "src/lighton4b_vision_owner.cpp": "d777fd59ccb843d7d74cfb7f6cb6de0b90c5c6fcd61e0a3e80eaa3d442c82780",
+      "src/qwen35_lighton4b_text.h": "2ab01f3c48b51eea21837f437ddeb5c1304ae26798e39d07dfaa19a49cc7405b",
+      "src/qwen35_vision.h": "93ae9252abdf010121e3988419254cbe1b360bcbd5e584c53e56a0ae7c4d584e",
+      "tests/test_lighton4b_gdn_reference.py": "7afbb938b519d8a8f838edd7e9791b2694a0333dba82b42f0154e632b9066dcf",
+      "tests/test_lighton4b_gguf_inspection.cpp": "eb0f6c9ded67dda7bde4d7b9eec341624ec08f5708a662e01bd0746abcb8e1e9",
+      "tests/test_ovisocr2_large_inputs.py": "d738e386e1d8c6925c32d49b60a0ed092d79cefc6725015e1a018cf6f7608bf2",
+      "tests/test_ovisocr2_native_replay.py": "a8a0d0dee4668259ca94bba38e9f0009c4a9c5002adc45070c83722fef0d35ce",
+      "tools/ci-heavy/lighton4b_gdn_reference.py": "de650114fdb2fde4938a1b0a5fa1a14ff9e4016016c7d8fc2a2b1801895cf142",
+      "tools/ci-heavy/lighton4b_gguf_inspection.py": "7fad602b5aa68e5746b0fb2589fa0c7057df0b9a9956a43606b369c6a8653581",
+      "tools/ci-heavy/lighton4b_published_header.py": "2680681437dc151733931264fff4cd7d8a2d21b4eace6184d1223a31fd22732e",
+      "tools/ci-heavy/ovisocr2_native_replay.py": "cc515a3fab916692c1139de5db5a7bb46762ae677a72f93af7a691ccd0bd4dae"
+    },
+    "status": "passed"
+  },
+  "source_records_verified": 14,
+  "status": "passed",
+  "synthetic_controls": 86,
+  "tensor_header_records_verified": 723,
+  "tensor_payload_hashes_verified": false,
+  "tensor_type_counts": {
+    "F16": 249,
+    "F32": 474
+  }
+}

@@ -1,0 +1,3871 @@
+{
+  "header_bytes": 10968032,
+  "metadata": {
+    "general.architecture": {
+      "kind": 8,
+      "value": "qwen35"
+    },
+    "general.type": {
+      "kind": 8,
+      "value": "model"
+    },
+    "general.name": {
+      "kind": 8,
+      "value": "B71010F095Dc3735De7Ee6B9969Bff8F8F50B39A"
+    },
+    "general.size_label": {
+      "kind": 8,
+      "value": "4.2B"
+    },
+    "general.license": {
+      "kind": 8,
+      "value": "apache-2.0"
+    },
+    "general.tags": {
+      "kind": 9,
+      "value": {
+        "element": 8,
+        "count": 7
+      }
+    },
+    "qwen35.block_count": {
+      "kind": 4,
+      "value": 32
+    },
+    "qwen35.context_length": {
+      "kind": 4,
+      "value": 262144
+    },
+    "qwen35.embedding_length": {
+      "kind": 4,
+      "value": 2560
+    },
+    "qwen35.feed_forward_length": {
+      "kind": 4,
+      "value": 9216
+    },
+    "qwen35.attention.head_count": {
+      "kind": 4,
+      "value": 16
+    },
+    "qwen35.attention.head_count_kv": {
+      "kind": 4,
+      "value": 4
+    },
+    "qwen35.rope.dimension_sections": {
+      "kind": 9,
+      "value": {
+        "element": 5,
+        "count": 4
+      }
+    },
+    "qwen35.rope.freq_base": {
+      "kind": 6,
+      "value": 10000000.0
+    },
+    "qwen35.attention.layer_norm_rms_epsilon": {
+      "kind": 6,
+      "value": 9.999999974752427e-07
+    },
+    "qwen35.attention.key_length": {
+      "kind": 4,
+      "value": 256
+    },
+    "qwen35.attention.value_length": {
+      "kind": 4,
+      "value": 256
+    },
+    "qwen35.ssm.conv_kernel": {
+      "kind": 4,
+      "value": 4
+    },
+    "qwen35.ssm.state_size": {
+      "kind": 4,
+      "value": 128
+    },
+    "qwen35.ssm.group_count": {
+      "kind": 4,
+      "value": 16
+    },
+    "qwen35.ssm.time_step_rank": {
+      "kind": 4,
+      "value": 32
+    },
+    "qwen35.ssm.inner_size": {
+      "kind": 4,
+      "value": 4096
+    },
+    "qwen35.attention.recurrent_layers": {
+      "kind": 9,
+      "value": {
+        "element": 7,
+        "count": 32
+      }
+    },
+    "qwen35.full_attention_interval": {
+      "kind": 4,
+      "value": 4
+    },
+    "qwen35.rope.dimension_count": {
+      "kind": 4,
+      "value": 64
+    },
+    "tokenizer.ggml.model": {
+      "kind": 8,
+      "value": "gpt2"
+    },
+    "tokenizer.ggml.pre": {
+      "kind": 8,
+      "value": "qwen35"
+    },
+    "tokenizer.ggml.tokens": {
+      "kind": 9,
+      "value": {
+        "element": 8,
+        "count": 248320
+      }
+    },
+    "tokenizer.ggml.token_type": {
+      "kind": 9,
+      "value": {
+        "element": 5,
+        "count": 248320
+      }
+    },
+    "tokenizer.ggml.merges": {
+      "kind": 9,
+      "value": {
+        "element": 8,
+        "count": 247587
+      }
+    },
+    "tokenizer.ggml.eos_token_id": {
+      "kind": 4,
+      "value": 248046
+    },
+    "tokenizer.ggml.padding_token_id": {
+      "kind": 4,
+      "value": 248044
+    },
+    "tokenizer.ggml.add_bos_token": {
+      "kind": 7,
+      "value": 0
+    },
+    "tokenizer.ggml.add_eos_token": {
+      "kind": 7,
+      "value": 0
+    },
+    "tokenizer.chat_template": {
+      "kind": 8,
+      "value": "{%- set image_count = namespace(value=0) %}\n{%- set video_count = namespace(value=0) %}\n{%- macro render_content(content, do_vision_count, is_system_content=false) %}\n    {%- if content is string %}\n        {{- content }}\n    {%- elif content is iterable and content is not mapping %}\n        {%- for item in content %}\n            {%- if 'image' in item or 'image_url' in item or item.type == 'image' %}\n                {%- if is_system_content %}\n                    {{- raise_exception('System message cannot contain images.') }}\n                {%- endif %}\n                {%- if do_vision_count %}\n                    {%- set image_count.value = image_count.value + 1 %}\n                {%- endif %}\n                {%- if add_vision_id %}\n                    {{- 'Picture ' ~ image_count.value ~ ': ' }}\n                {%- endif %}\n                {{- '<|vision_start|><|image_pad|><|vision_end|>' }}\n            {%- elif 'video' in item or item.type == 'video' %}\n                {%- if is_system_content %}\n                    {{- raise_exception('System message cannot contain videos.') }}\n                {%- endif %}\n                {%- if do_vision_count %}\n                    {%- set video_count.value = video_count.value + 1 %}\n                {%- endif %}\n                {%- if add_vision_id %}\n                    {{- 'Video ' ~ video_count.value ~ ': ' }}\n                {%- endif %}\n                {{- '<|vision_start|><|video_pad|><|vision_end|>' }}\n            {%- elif 'text' in item %}\n                {{- item.text }}\n            {%- else %}\n                {{- raise_exception('Unexpected item type in content.') }}\n            {%- endif %}\n        {%- endfor %}\n    {%- elif content is none or content is undefined %}\n        {{- '' }}\n    {%- else %}\n        {{- raise_exception('Unexpected content type.') }}\n    {%- endif %}\n{%- endmacro %}\n{%- if not messages %}\n    {{- raise_exception('No messages provided.') }}\n{%- endif %}\n{%- if tools and tools is iterable and tools is not mapping %}\n    {{- '<|im_start|>system\\n' }}\n    {{- \"# Tools\\n\\nYou have access to the following functions:\\n\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\" }}\n    {{- '\\n\\nIf you choose to call a function ONLY reply in the following format with NO suffix:\\n\\n<tool_call>\\n<function=example_function_name>\\n<parameter=example_parameter_1>\\nvalue_1\\n</parameter>\\n<parameter=example_parameter_2>\\nThis is the value for the second parameter\\nthat can span\\nmultiple lines\\n</parameter>\\n</function>\\n</tool_call>\\n\\n<IMPORTANT>\\nReminder:\\n- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags\\n- Required parameters MUST be specified\\n- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after\\n- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls\\n</IMPORTANT>' }}\n    {%- if messages[0].role == 'system' %}\n        {%- set content = render_content(messages[0].content, false, true)|trim %}\n        {%- if content %}\n            {{- '\\n\\n' + content }}\n        {%- endif %}\n    {%- endif %}\n    {{- '<|im_end|>\\n' }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {%- set content = render_content(messages[0].content, false, true)|trim %}\n        {{- '<|im_start|>system\\n' + content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" %}\n        {%- set content = render_content(message.content, false)|trim %}\n        {%- if not(content.startswith('<tool_response>') and content.endswith('</tool_response>')) %}\n            {%- set ns.multi_step_tool = false %}\n            {%- set ns.last_query_index = index %}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if ns.multi_step_tool %}\n    {{- raise_exception('No user query found in messages.') }}\n{%- endif %}\n{%- for message in messages %}\n    {%- set content = render_content(message.content, true)|trim %}\n    {%- if message.role == \"system\" %}\n        {%- if not loop.first %}\n            {{- raise_exception('System message must be at the beginning.') }}\n        {%- endif %}\n    {%- elif message.role == \"user\" %}\n        {{- '<|im_start|>' + message.role + '\\n' + content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is string %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in content %}\n                {%- set reasoning_content = content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n                {%- set content = content.split('</think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- set reasoning_content = reasoning_content|trim %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content + '\\n</think>\\n\\n' + content }}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls and message.tool_calls is iterable and message.tool_calls is not mapping %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if tool_call.function is defined %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {%- if loop.first %}\n                    {%- if content|trim %}\n                        {{- '\\n\\n<tool_call>\\n<function=' + tool_call.name + '>\\n' }}\n                    {%- else %}\n                        {{- '<tool_call>\\n<function=' + tool_call.name + '>\\n' }}\n                    {%- endif %}\n                {%- else %}\n                    {{- '\\n<tool_call>\\n<function=' + tool_call.name + '>\\n' }}\n                {%- endif %}\n                {%- if tool_call.arguments is defined %}\n                    {%- for args_name, args_value in tool_call.arguments|items %}\n                        {{- '<parameter=' + args_name + '>\\n' }}\n                        {%- set args_value = args_value | tojson | safe if args_value is mapping or (args_value is sequence and args_value is not string) else args_value | string %}\n                        {{- args_value }}\n                        {{- '\\n</parameter>\\n' }}\n                    {%- endfor %}\n                {%- endif %}\n                {{- '</function>\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.previtem and loop.previtem.role != \"tool\" %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- content }}\n        {{- '\\n</tool_response>' }}\n        {%- if not loop.last and loop.nextitem.role != \"tool\" %}\n            {{- '<|im_end|>\\n' }}\n        {%- elif loop.last %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- else %}\n        {{- raise_exception('Unexpected message role.') }}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is not defined or enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- else %}\n        {{- '<think>\\n' }}\n    {%- endif %}\n{%- endif %}"
+    },
+    "general.quantization_version": {
+      "kind": 4,
+      "value": 2
+    },
+    "general.file_type": {
+      "kind": 4,
+      "value": 15
+    },
+    "quantize.imatrix.file": {
+      "kind": 8,
+      "value": "/mnt/ssd-data/heretic/batch/quant_runs/LightOnOCR-3-4B/gguf/LightOnOCR-3-4B-imatrix.gguf"
+    },
+    "quantize.imatrix.dataset": {
+      "kind": 8,
+      "value": "/mnt/ssd-data/heretic/calibration_datav3.txt"
+    },
+    "quantize.imatrix.entries_count": {
+      "kind": 4,
+      "value": 248
+    },
+    "quantize.imatrix.chunks_count": {
+      "kind": 4,
+      "value": 129
+    }
+  },
+  "tensors": {
+    "output_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 0,
+      "elements": 2560
+    },
+    "token_embd.weight": {
+      "shape": [
+        2560,
+        248320
+      ],
+      "type": 14,
+      "offset": 10240,
+      "elements": 635699200
+    },
+    "blk.0.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 521482240,
+      "elements": 10485760
+    },
+    "blk.0.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 527380480,
+      "elements": 2560
+    },
+    "blk.0.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 14,
+      "offset": 527390720,
+      "elements": 20971520
+    },
+    "blk.0.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 544593920,
+      "elements": 23592960
+    },
+    "blk.0.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 563947520,
+      "elements": 23592960
+    },
+    "blk.0.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 577218560,
+      "elements": 23592960
+    },
+    "blk.0.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 590489600,
+      "elements": 2560
+    },
+    "blk.0.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 590499840,
+      "elements": 32
+    },
+    "blk.0.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 590499968,
+      "elements": 81920
+    },
+    "blk.0.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 590546048,
+      "elements": 81920
+    },
+    "blk.0.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 590592128,
+      "elements": 32768
+    },
+    "blk.0.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 590723200,
+      "elements": 32
+    },
+    "blk.0.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 590723328,
+      "elements": 128
+    },
+    "blk.0.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 590723840,
+      "elements": 10485760
+    },
+    "blk.1.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 596622080,
+      "elements": 10485760
+    },
+    "blk.1.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 602520320,
+      "elements": 2560
+    },
+    "blk.1.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 14,
+      "offset": 602530560,
+      "elements": 20971520
+    },
+    "blk.1.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 619733760,
+      "elements": 23592960
+    },
+    "blk.1.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 639087360,
+      "elements": 23592960
+    },
+    "blk.1.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 652358400,
+      "elements": 23592960
+    },
+    "blk.1.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 665629440,
+      "elements": 2560
+    },
+    "blk.1.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 665639680,
+      "elements": 32
+    },
+    "blk.1.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 665639808,
+      "elements": 81920
+    },
+    "blk.1.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 665685888,
+      "elements": 81920
+    },
+    "blk.1.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 665731968,
+      "elements": 32768
+    },
+    "blk.1.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 665863040,
+      "elements": 32
+    },
+    "blk.1.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 665863168,
+      "elements": 128
+    },
+    "blk.1.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 665863680,
+      "elements": 10485760
+    },
+    "blk.2.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 671761920,
+      "elements": 10485760
+    },
+    "blk.2.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 677660160,
+      "elements": 2560
+    },
+    "blk.2.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 14,
+      "offset": 677670400,
+      "elements": 20971520
+    },
+    "blk.2.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 694873600,
+      "elements": 23592960
+    },
+    "blk.2.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 714227200,
+      "elements": 23592960
+    },
+    "blk.2.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 727498240,
+      "elements": 23592960
+    },
+    "blk.2.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 740769280,
+      "elements": 2560
+    },
+    "blk.2.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 740779520,
+      "elements": 32
+    },
+    "blk.2.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 740779648,
+      "elements": 81920
+    },
+    "blk.2.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 740825728,
+      "elements": 81920
+    },
+    "blk.2.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 740871808,
+      "elements": 32768
+    },
+    "blk.2.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 741002880,
+      "elements": 32
+    },
+    "blk.2.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 741003008,
+      "elements": 128
+    },
+    "blk.2.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 741003520,
+      "elements": 10485760
+    },
+    "blk.3.attn_k.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 12,
+      "offset": 746901760,
+      "elements": 2621440
+    },
+    "blk.3.attn_k_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 748376320,
+      "elements": 256
+    },
+    "blk.3.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 748377344,
+      "elements": 2560
+    },
+    "blk.3.attn_output.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 748387584,
+      "elements": 10485760
+    },
+    "blk.3.attn_q.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 754285824,
+      "elements": 20971520
+    },
+    "blk.3.attn_q_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 766082304,
+      "elements": 256
+    },
+    "blk.3.attn_v.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 14,
+      "offset": 766083328,
+      "elements": 2621440
+    },
+    "blk.3.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 768233728,
+      "elements": 23592960
+    },
+    "blk.3.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 787587328,
+      "elements": 23592960
+    },
+    "blk.3.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 800858368,
+      "elements": 23592960
+    },
+    "blk.3.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 814129408,
+      "elements": 2560
+    },
+    "blk.4.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 814139648,
+      "elements": 10485760
+    },
+    "blk.4.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 820037888,
+      "elements": 2560
+    },
+    "blk.4.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 820048128,
+      "elements": 20971520
+    },
+    "blk.4.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 831844608,
+      "elements": 23592960
+    },
+    "blk.4.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 845115648,
+      "elements": 23592960
+    },
+    "blk.4.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 858386688,
+      "elements": 23592960
+    },
+    "blk.4.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 871657728,
+      "elements": 2560
+    },
+    "blk.4.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 871667968,
+      "elements": 32
+    },
+    "blk.4.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 871668096,
+      "elements": 81920
+    },
+    "blk.4.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 871714176,
+      "elements": 81920
+    },
+    "blk.4.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 871760256,
+      "elements": 32768
+    },
+    "blk.4.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 871891328,
+      "elements": 32
+    },
+    "blk.4.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 871891456,
+      "elements": 128
+    },
+    "blk.4.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 871891968,
+      "elements": 10485760
+    },
+    "blk.5.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 877790208,
+      "elements": 10485760
+    },
+    "blk.5.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 883688448,
+      "elements": 2560
+    },
+    "blk.5.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 883698688,
+      "elements": 20971520
+    },
+    "blk.5.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 895495168,
+      "elements": 23592960
+    },
+    "blk.5.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 908766208,
+      "elements": 23592960
+    },
+    "blk.5.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 922037248,
+      "elements": 23592960
+    },
+    "blk.5.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 935308288,
+      "elements": 2560
+    },
+    "blk.5.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 935318528,
+      "elements": 32
+    },
+    "blk.5.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 935318656,
+      "elements": 81920
+    },
+    "blk.5.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 935364736,
+      "elements": 81920
+    },
+    "blk.5.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 935410816,
+      "elements": 32768
+    },
+    "blk.5.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 935541888,
+      "elements": 32
+    },
+    "blk.5.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 935542016,
+      "elements": 128
+    },
+    "blk.5.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 935542528,
+      "elements": 10485760
+    },
+    "blk.6.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 941440768,
+      "elements": 10485760
+    },
+    "blk.6.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 947339008,
+      "elements": 2560
+    },
+    "blk.6.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 14,
+      "offset": 947349248,
+      "elements": 20971520
+    },
+    "blk.6.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 964552448,
+      "elements": 23592960
+    },
+    "blk.6.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 983906048,
+      "elements": 23592960
+    },
+    "blk.6.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 997177088,
+      "elements": 23592960
+    },
+    "blk.6.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1010448128,
+      "elements": 2560
+    },
+    "blk.6.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1010458368,
+      "elements": 32
+    },
+    "blk.6.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1010458496,
+      "elements": 81920
+    },
+    "blk.6.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1010504576,
+      "elements": 81920
+    },
+    "blk.6.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 1010550656,
+      "elements": 32768
+    },
+    "blk.6.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1010681728,
+      "elements": 32
+    },
+    "blk.6.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 1010681856,
+      "elements": 128
+    },
+    "blk.6.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1010682368,
+      "elements": 10485760
+    },
+    "blk.7.attn_k.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 12,
+      "offset": 1016580608,
+      "elements": 2621440
+    },
+    "blk.7.attn_k_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 1018055168,
+      "elements": 256
+    },
+    "blk.7.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1018056192,
+      "elements": 2560
+    },
+    "blk.7.attn_output.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1018066432,
+      "elements": 10485760
+    },
+    "blk.7.attn_q.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 1023964672,
+      "elements": 20971520
+    },
+    "blk.7.attn_q_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 1035761152,
+      "elements": 256
+    },
+    "blk.7.attn_v.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 12,
+      "offset": 1035762176,
+      "elements": 2621440
+    },
+    "blk.7.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 1037236736,
+      "elements": 23592960
+    },
+    "blk.7.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1050507776,
+      "elements": 23592960
+    },
+    "blk.7.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1063778816,
+      "elements": 23592960
+    },
+    "blk.7.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1077049856,
+      "elements": 2560
+    },
+    "blk.8.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 1077060096,
+      "elements": 10485760
+    },
+    "blk.8.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1082958336,
+      "elements": 2560
+    },
+    "blk.8.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 1082968576,
+      "elements": 20971520
+    },
+    "blk.8.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 1094765056,
+      "elements": 23592960
+    },
+    "blk.8.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1108036096,
+      "elements": 23592960
+    },
+    "blk.8.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1121307136,
+      "elements": 23592960
+    },
+    "blk.8.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1134578176,
+      "elements": 2560
+    },
+    "blk.8.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1134588416,
+      "elements": 32
+    },
+    "blk.8.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1134588544,
+      "elements": 81920
+    },
+    "blk.8.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1134634624,
+      "elements": 81920
+    },
+    "blk.8.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 1134680704,
+      "elements": 32768
+    },
+    "blk.8.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1134811776,
+      "elements": 32
+    },
+    "blk.8.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 1134811904,
+      "elements": 128
+    },
+    "blk.8.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1134812416,
+      "elements": 10485760
+    },
+    "blk.9.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 1140710656,
+      "elements": 10485760
+    },
+    "blk.9.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1146608896,
+      "elements": 2560
+    },
+    "blk.9.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 14,
+      "offset": 1146619136,
+      "elements": 20971520
+    },
+    "blk.9.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 1163822336,
+      "elements": 23592960
+    },
+    "blk.9.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1183175936,
+      "elements": 23592960
+    },
+    "blk.9.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1196446976,
+      "elements": 23592960
+    },
+    "blk.9.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1209718016,
+      "elements": 2560
+    },
+    "blk.9.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1209728256,
+      "elements": 32
+    },
+    "blk.9.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1209728384,
+      "elements": 81920
+    },
+    "blk.9.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1209774464,
+      "elements": 81920
+    },
+    "blk.9.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 1209820544,
+      "elements": 32768
+    },
+    "blk.9.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1209951616,
+      "elements": 32
+    },
+    "blk.9.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 1209951744,
+      "elements": 128
+    },
+    "blk.9.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1209952256,
+      "elements": 10485760
+    },
+    "blk.10.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 1215850496,
+      "elements": 10485760
+    },
+    "blk.10.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1221748736,
+      "elements": 2560
+    },
+    "blk.10.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 1221758976,
+      "elements": 20971520
+    },
+    "blk.10.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 1233555456,
+      "elements": 23592960
+    },
+    "blk.10.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1246826496,
+      "elements": 23592960
+    },
+    "blk.10.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1260097536,
+      "elements": 23592960
+    },
+    "blk.10.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1273368576,
+      "elements": 2560
+    },
+    "blk.10.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1273378816,
+      "elements": 32
+    },
+    "blk.10.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1273378944,
+      "elements": 81920
+    },
+    "blk.10.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1273425024,
+      "elements": 81920
+    },
+    "blk.10.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 1273471104,
+      "elements": 32768
+    },
+    "blk.10.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1273602176,
+      "elements": 32
+    },
+    "blk.10.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 1273602304,
+      "elements": 128
+    },
+    "blk.10.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1273602816,
+      "elements": 10485760
+    },
+    "blk.11.attn_k.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 12,
+      "offset": 1279501056,
+      "elements": 2621440
+    },
+    "blk.11.attn_k_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 1280975616,
+      "elements": 256
+    },
+    "blk.11.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1280976640,
+      "elements": 2560
+    },
+    "blk.11.attn_output.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1280986880,
+      "elements": 10485760
+    },
+    "blk.11.attn_q.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 1286885120,
+      "elements": 20971520
+    },
+    "blk.11.attn_q_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 1298681600,
+      "elements": 256
+    },
+    "blk.11.attn_v.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 12,
+      "offset": 1298682624,
+      "elements": 2621440
+    },
+    "blk.11.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 1300157184,
+      "elements": 23592960
+    },
+    "blk.11.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1313428224,
+      "elements": 23592960
+    },
+    "blk.11.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1326699264,
+      "elements": 23592960
+    },
+    "blk.11.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1339970304,
+      "elements": 2560
+    },
+    "blk.12.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 1339980544,
+      "elements": 10485760
+    },
+    "blk.12.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1345878784,
+      "elements": 2560
+    },
+    "blk.12.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 14,
+      "offset": 1345889024,
+      "elements": 20971520
+    },
+    "blk.12.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 1363092224,
+      "elements": 23592960
+    },
+    "blk.12.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1382445824,
+      "elements": 23592960
+    },
+    "blk.12.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1395716864,
+      "elements": 23592960
+    },
+    "blk.12.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1408987904,
+      "elements": 2560
+    },
+    "blk.12.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1408998144,
+      "elements": 32
+    },
+    "blk.12.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1408998272,
+      "elements": 81920
+    },
+    "blk.12.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1409044352,
+      "elements": 81920
+    },
+    "blk.12.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 1409090432,
+      "elements": 32768
+    },
+    "blk.12.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1409221504,
+      "elements": 32
+    },
+    "blk.12.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 1409221632,
+      "elements": 128
+    },
+    "blk.12.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1409222144,
+      "elements": 10485760
+    },
+    "blk.13.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 1415120384,
+      "elements": 10485760
+    },
+    "blk.13.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1421018624,
+      "elements": 2560
+    },
+    "blk.13.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 1421028864,
+      "elements": 20971520
+    },
+    "blk.13.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 1432825344,
+      "elements": 23592960
+    },
+    "blk.13.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1446096384,
+      "elements": 23592960
+    },
+    "blk.13.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1459367424,
+      "elements": 23592960
+    },
+    "blk.13.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1472638464,
+      "elements": 2560
+    },
+    "blk.13.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1472648704,
+      "elements": 32
+    },
+    "blk.13.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1472648832,
+      "elements": 81920
+    },
+    "blk.13.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1472694912,
+      "elements": 81920
+    },
+    "blk.13.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 1472740992,
+      "elements": 32768
+    },
+    "blk.13.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1472872064,
+      "elements": 32
+    },
+    "blk.13.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 1472872192,
+      "elements": 128
+    },
+    "blk.13.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1472872704,
+      "elements": 10485760
+    },
+    "blk.14.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 1478770944,
+      "elements": 10485760
+    },
+    "blk.14.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1484669184,
+      "elements": 2560
+    },
+    "blk.14.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 1484679424,
+      "elements": 20971520
+    },
+    "blk.14.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 1496475904,
+      "elements": 23592960
+    },
+    "blk.14.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1509746944,
+      "elements": 23592960
+    },
+    "blk.14.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1523017984,
+      "elements": 23592960
+    },
+    "blk.14.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1536289024,
+      "elements": 2560
+    },
+    "blk.14.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1536299264,
+      "elements": 32
+    },
+    "blk.14.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1536299392,
+      "elements": 81920
+    },
+    "blk.14.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1536345472,
+      "elements": 81920
+    },
+    "blk.14.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 1536391552,
+      "elements": 32768
+    },
+    "blk.14.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1536522624,
+      "elements": 32
+    },
+    "blk.14.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 1536522752,
+      "elements": 128
+    },
+    "blk.14.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1536523264,
+      "elements": 10485760
+    },
+    "blk.15.attn_k.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 12,
+      "offset": 1542421504,
+      "elements": 2621440
+    },
+    "blk.15.attn_k_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 1543896064,
+      "elements": 256
+    },
+    "blk.15.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1543897088,
+      "elements": 2560
+    },
+    "blk.15.attn_output.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1543907328,
+      "elements": 10485760
+    },
+    "blk.15.attn_q.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 1549805568,
+      "elements": 20971520
+    },
+    "blk.15.attn_q_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 1561602048,
+      "elements": 256
+    },
+    "blk.15.attn_v.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 14,
+      "offset": 1561603072,
+      "elements": 2621440
+    },
+    "blk.15.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 1563753472,
+      "elements": 23592960
+    },
+    "blk.15.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1583107072,
+      "elements": 23592960
+    },
+    "blk.15.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1596378112,
+      "elements": 23592960
+    },
+    "blk.15.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1609649152,
+      "elements": 2560
+    },
+    "blk.16.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 1609659392,
+      "elements": 10485760
+    },
+    "blk.16.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1615557632,
+      "elements": 2560
+    },
+    "blk.16.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 1615567872,
+      "elements": 20971520
+    },
+    "blk.16.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 1627364352,
+      "elements": 23592960
+    },
+    "blk.16.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1640635392,
+      "elements": 23592960
+    },
+    "blk.16.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1653906432,
+      "elements": 23592960
+    },
+    "blk.16.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1667177472,
+      "elements": 2560
+    },
+    "blk.16.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1667187712,
+      "elements": 32
+    },
+    "blk.16.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1667187840,
+      "elements": 81920
+    },
+    "blk.16.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1667233920,
+      "elements": 81920
+    },
+    "blk.16.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 1667280000,
+      "elements": 32768
+    },
+    "blk.16.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1667411072,
+      "elements": 32
+    },
+    "blk.16.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 1667411200,
+      "elements": 128
+    },
+    "blk.16.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1667411712,
+      "elements": 10485760
+    },
+    "blk.17.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 1673309952,
+      "elements": 10485760
+    },
+    "blk.17.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1679208192,
+      "elements": 2560
+    },
+    "blk.17.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 1679218432,
+      "elements": 20971520
+    },
+    "blk.17.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 1691014912,
+      "elements": 23592960
+    },
+    "blk.17.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1704285952,
+      "elements": 23592960
+    },
+    "blk.17.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1717556992,
+      "elements": 23592960
+    },
+    "blk.17.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1730828032,
+      "elements": 2560
+    },
+    "blk.17.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1730838272,
+      "elements": 32
+    },
+    "blk.17.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1730838400,
+      "elements": 81920
+    },
+    "blk.17.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1730884480,
+      "elements": 81920
+    },
+    "blk.17.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 1730930560,
+      "elements": 32768
+    },
+    "blk.17.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1731061632,
+      "elements": 32
+    },
+    "blk.17.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 1731061760,
+      "elements": 128
+    },
+    "blk.17.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1731062272,
+      "elements": 10485760
+    },
+    "blk.18.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 1736960512,
+      "elements": 10485760
+    },
+    "blk.18.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1742858752,
+      "elements": 2560
+    },
+    "blk.18.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 14,
+      "offset": 1742868992,
+      "elements": 20971520
+    },
+    "blk.18.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 1760072192,
+      "elements": 23592960
+    },
+    "blk.18.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1779425792,
+      "elements": 23592960
+    },
+    "blk.18.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1792696832,
+      "elements": 23592960
+    },
+    "blk.18.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1805967872,
+      "elements": 2560
+    },
+    "blk.18.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1805978112,
+      "elements": 32
+    },
+    "blk.18.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1805978240,
+      "elements": 81920
+    },
+    "blk.18.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1806024320,
+      "elements": 81920
+    },
+    "blk.18.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 1806070400,
+      "elements": 32768
+    },
+    "blk.18.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1806201472,
+      "elements": 32
+    },
+    "blk.18.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 1806201600,
+      "elements": 128
+    },
+    "blk.18.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1806202112,
+      "elements": 10485760
+    },
+    "blk.19.attn_k.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 12,
+      "offset": 1812100352,
+      "elements": 2621440
+    },
+    "blk.19.attn_k_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 1813574912,
+      "elements": 256
+    },
+    "blk.19.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1813575936,
+      "elements": 2560
+    },
+    "blk.19.attn_output.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1813586176,
+      "elements": 10485760
+    },
+    "blk.19.attn_q.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 1819484416,
+      "elements": 20971520
+    },
+    "blk.19.attn_q_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 1831280896,
+      "elements": 256
+    },
+    "blk.19.attn_v.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 12,
+      "offset": 1831281920,
+      "elements": 2621440
+    },
+    "blk.19.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 1832756480,
+      "elements": 23592960
+    },
+    "blk.19.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1846027520,
+      "elements": 23592960
+    },
+    "blk.19.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1859298560,
+      "elements": 23592960
+    },
+    "blk.19.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1872569600,
+      "elements": 2560
+    },
+    "blk.20.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 1872579840,
+      "elements": 10485760
+    },
+    "blk.20.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1878478080,
+      "elements": 2560
+    },
+    "blk.20.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 1878488320,
+      "elements": 20971520
+    },
+    "blk.20.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 1890284800,
+      "elements": 23592960
+    },
+    "blk.20.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1903555840,
+      "elements": 23592960
+    },
+    "blk.20.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1916826880,
+      "elements": 23592960
+    },
+    "blk.20.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1930097920,
+      "elements": 2560
+    },
+    "blk.20.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1930108160,
+      "elements": 32
+    },
+    "blk.20.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1930108288,
+      "elements": 81920
+    },
+    "blk.20.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 1930154368,
+      "elements": 81920
+    },
+    "blk.20.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 1930200448,
+      "elements": 32768
+    },
+    "blk.20.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 1930331520,
+      "elements": 32
+    },
+    "blk.20.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 1930331648,
+      "elements": 128
+    },
+    "blk.20.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 1930332160,
+      "elements": 10485760
+    },
+    "blk.21.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 1936230400,
+      "elements": 10485760
+    },
+    "blk.21.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 1942128640,
+      "elements": 2560
+    },
+    "blk.21.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 14,
+      "offset": 1942138880,
+      "elements": 20971520
+    },
+    "blk.21.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 1959342080,
+      "elements": 23592960
+    },
+    "blk.21.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1978695680,
+      "elements": 23592960
+    },
+    "blk.21.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 1991966720,
+      "elements": 23592960
+    },
+    "blk.21.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2005237760,
+      "elements": 2560
+    },
+    "blk.21.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2005248000,
+      "elements": 32
+    },
+    "blk.21.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2005248128,
+      "elements": 81920
+    },
+    "blk.21.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2005294208,
+      "elements": 81920
+    },
+    "blk.21.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 2005340288,
+      "elements": 32768
+    },
+    "blk.21.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2005471360,
+      "elements": 32
+    },
+    "blk.21.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 2005471488,
+      "elements": 128
+    },
+    "blk.21.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 2005472000,
+      "elements": 10485760
+    },
+    "blk.22.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 2011370240,
+      "elements": 10485760
+    },
+    "blk.22.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2017268480,
+      "elements": 2560
+    },
+    "blk.22.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 2017278720,
+      "elements": 20971520
+    },
+    "blk.22.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 2029075200,
+      "elements": 23592960
+    },
+    "blk.22.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2042346240,
+      "elements": 23592960
+    },
+    "blk.22.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2055617280,
+      "elements": 23592960
+    },
+    "blk.22.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2068888320,
+      "elements": 2560
+    },
+    "blk.22.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2068898560,
+      "elements": 32
+    },
+    "blk.22.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2068898688,
+      "elements": 81920
+    },
+    "blk.22.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2068944768,
+      "elements": 81920
+    },
+    "blk.22.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 2068990848,
+      "elements": 32768
+    },
+    "blk.22.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2069121920,
+      "elements": 32
+    },
+    "blk.22.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 2069122048,
+      "elements": 128
+    },
+    "blk.22.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 2069122560,
+      "elements": 10485760
+    },
+    "blk.23.attn_k.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 12,
+      "offset": 2075020800,
+      "elements": 2621440
+    },
+    "blk.23.attn_k_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 2076495360,
+      "elements": 256
+    },
+    "blk.23.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2076496384,
+      "elements": 2560
+    },
+    "blk.23.attn_output.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 2076506624,
+      "elements": 10485760
+    },
+    "blk.23.attn_q.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 2082404864,
+      "elements": 20971520
+    },
+    "blk.23.attn_q_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 2094201344,
+      "elements": 256
+    },
+    "blk.23.attn_v.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 12,
+      "offset": 2094202368,
+      "elements": 2621440
+    },
+    "blk.23.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 2095676928,
+      "elements": 23592960
+    },
+    "blk.23.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2108947968,
+      "elements": 23592960
+    },
+    "blk.23.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2122219008,
+      "elements": 23592960
+    },
+    "blk.23.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2135490048,
+      "elements": 2560
+    },
+    "blk.24.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 2135500288,
+      "elements": 10485760
+    },
+    "blk.24.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2141398528,
+      "elements": 2560
+    },
+    "blk.24.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 14,
+      "offset": 2141408768,
+      "elements": 20971520
+    },
+    "blk.24.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 2158611968,
+      "elements": 23592960
+    },
+    "blk.24.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2177965568,
+      "elements": 23592960
+    },
+    "blk.24.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2191236608,
+      "elements": 23592960
+    },
+    "blk.24.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2204507648,
+      "elements": 2560
+    },
+    "blk.24.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2204517888,
+      "elements": 32
+    },
+    "blk.24.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2204518016,
+      "elements": 81920
+    },
+    "blk.24.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2204564096,
+      "elements": 81920
+    },
+    "blk.24.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 2204610176,
+      "elements": 32768
+    },
+    "blk.24.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2204741248,
+      "elements": 32
+    },
+    "blk.24.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 2204741376,
+      "elements": 128
+    },
+    "blk.24.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 2204741888,
+      "elements": 10485760
+    },
+    "blk.25.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 2210640128,
+      "elements": 10485760
+    },
+    "blk.25.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2216538368,
+      "elements": 2560
+    },
+    "blk.25.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 2216548608,
+      "elements": 20971520
+    },
+    "blk.25.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 2228345088,
+      "elements": 23592960
+    },
+    "blk.25.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2241616128,
+      "elements": 23592960
+    },
+    "blk.25.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2254887168,
+      "elements": 23592960
+    },
+    "blk.25.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2268158208,
+      "elements": 2560
+    },
+    "blk.25.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2268168448,
+      "elements": 32
+    },
+    "blk.25.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2268168576,
+      "elements": 81920
+    },
+    "blk.25.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2268214656,
+      "elements": 81920
+    },
+    "blk.25.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 2268260736,
+      "elements": 32768
+    },
+    "blk.25.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2268391808,
+      "elements": 32
+    },
+    "blk.25.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 2268391936,
+      "elements": 128
+    },
+    "blk.25.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 2268392448,
+      "elements": 10485760
+    },
+    "blk.26.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 2274290688,
+      "elements": 10485760
+    },
+    "blk.26.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2280188928,
+      "elements": 2560
+    },
+    "blk.26.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 2280199168,
+      "elements": 20971520
+    },
+    "blk.26.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 12,
+      "offset": 2291995648,
+      "elements": 23592960
+    },
+    "blk.26.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2305266688,
+      "elements": 23592960
+    },
+    "blk.26.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2318537728,
+      "elements": 23592960
+    },
+    "blk.26.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2331808768,
+      "elements": 2560
+    },
+    "blk.26.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2331819008,
+      "elements": 32
+    },
+    "blk.26.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2331819136,
+      "elements": 81920
+    },
+    "blk.26.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2331865216,
+      "elements": 81920
+    },
+    "blk.26.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 2331911296,
+      "elements": 32768
+    },
+    "blk.26.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2332042368,
+      "elements": 32
+    },
+    "blk.26.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 2332042496,
+      "elements": 128
+    },
+    "blk.26.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 2332043008,
+      "elements": 10485760
+    },
+    "blk.27.attn_k.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 12,
+      "offset": 2337941248,
+      "elements": 2621440
+    },
+    "blk.27.attn_k_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 2339415808,
+      "elements": 256
+    },
+    "blk.27.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2339416832,
+      "elements": 2560
+    },
+    "blk.27.attn_output.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 2339427072,
+      "elements": 10485760
+    },
+    "blk.27.attn_q.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 2345325312,
+      "elements": 20971520
+    },
+    "blk.27.attn_q_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 2357121792,
+      "elements": 256
+    },
+    "blk.27.attn_v.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 14,
+      "offset": 2357122816,
+      "elements": 2621440
+    },
+    "blk.27.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 2359273216,
+      "elements": 23592960
+    },
+    "blk.27.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2378626816,
+      "elements": 23592960
+    },
+    "blk.27.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2391897856,
+      "elements": 23592960
+    },
+    "blk.27.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2405168896,
+      "elements": 2560
+    },
+    "blk.28.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 2405179136,
+      "elements": 10485760
+    },
+    "blk.28.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2411077376,
+      "elements": 2560
+    },
+    "blk.28.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 14,
+      "offset": 2411087616,
+      "elements": 20971520
+    },
+    "blk.28.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 2428290816,
+      "elements": 23592960
+    },
+    "blk.28.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2447644416,
+      "elements": 23592960
+    },
+    "blk.28.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2460915456,
+      "elements": 23592960
+    },
+    "blk.28.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2474186496,
+      "elements": 2560
+    },
+    "blk.28.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2474196736,
+      "elements": 32
+    },
+    "blk.28.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2474196864,
+      "elements": 81920
+    },
+    "blk.28.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2474242944,
+      "elements": 81920
+    },
+    "blk.28.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 2474289024,
+      "elements": 32768
+    },
+    "blk.28.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2474420096,
+      "elements": 32
+    },
+    "blk.28.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 2474420224,
+      "elements": 128
+    },
+    "blk.28.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 2474420736,
+      "elements": 10485760
+    },
+    "blk.29.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 2480318976,
+      "elements": 10485760
+    },
+    "blk.29.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2486217216,
+      "elements": 2560
+    },
+    "blk.29.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 14,
+      "offset": 2486227456,
+      "elements": 20971520
+    },
+    "blk.29.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 2503430656,
+      "elements": 23592960
+    },
+    "blk.29.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2522784256,
+      "elements": 23592960
+    },
+    "blk.29.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2536055296,
+      "elements": 23592960
+    },
+    "blk.29.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2549326336,
+      "elements": 2560
+    },
+    "blk.29.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2549336576,
+      "elements": 32
+    },
+    "blk.29.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2549336704,
+      "elements": 81920
+    },
+    "blk.29.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2549382784,
+      "elements": 81920
+    },
+    "blk.29.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 2549428864,
+      "elements": 32768
+    },
+    "blk.29.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2549559936,
+      "elements": 32
+    },
+    "blk.29.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 2549560064,
+      "elements": 128
+    },
+    "blk.29.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 2549560576,
+      "elements": 10485760
+    },
+    "blk.30.attn_gate.weight": {
+      "shape": [
+        2560,
+        4096
+      ],
+      "type": 12,
+      "offset": 2555458816,
+      "elements": 10485760
+    },
+    "blk.30.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2561357056,
+      "elements": 2560
+    },
+    "blk.30.attn_qkv.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 14,
+      "offset": 2561367296,
+      "elements": 20971520
+    },
+    "blk.30.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 2578570496,
+      "elements": 23592960
+    },
+    "blk.30.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2597924096,
+      "elements": 23592960
+    },
+    "blk.30.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2611195136,
+      "elements": 23592960
+    },
+    "blk.30.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2624466176,
+      "elements": 2560
+    },
+    "blk.30.ssm_a": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2624476416,
+      "elements": 32
+    },
+    "blk.30.ssm_alpha.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2624476544,
+      "elements": 81920
+    },
+    "blk.30.ssm_beta.weight": {
+      "shape": [
+        2560,
+        32
+      ],
+      "type": 12,
+      "offset": 2624522624,
+      "elements": 81920
+    },
+    "blk.30.ssm_conv1d.weight": {
+      "shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "offset": 2624568704,
+      "elements": 32768
+    },
+    "blk.30.ssm_dt.bias": {
+      "shape": [
+        32
+      ],
+      "type": 0,
+      "offset": 2624699776,
+      "elements": 32
+    },
+    "blk.30.ssm_norm.weight": {
+      "shape": [
+        128
+      ],
+      "type": 0,
+      "offset": 2624699904,
+      "elements": 128
+    },
+    "blk.30.ssm_out.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 2624700416,
+      "elements": 10485760
+    },
+    "blk.31.attn_k.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 12,
+      "offset": 2630598656,
+      "elements": 2621440
+    },
+    "blk.31.attn_k_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 2632073216,
+      "elements": 256
+    },
+    "blk.31.attn_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2632074240,
+      "elements": 2560
+    },
+    "blk.31.attn_output.weight": {
+      "shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "offset": 2632084480,
+      "elements": 10485760
+    },
+    "blk.31.attn_q.weight": {
+      "shape": [
+        2560,
+        8192
+      ],
+      "type": 12,
+      "offset": 2637982720,
+      "elements": 20971520
+    },
+    "blk.31.attn_q_norm.weight": {
+      "shape": [
+        256
+      ],
+      "type": 0,
+      "offset": 2649779200,
+      "elements": 256
+    },
+    "blk.31.attn_v.weight": {
+      "shape": [
+        2560,
+        1024
+      ],
+      "type": 14,
+      "offset": 2649780224,
+      "elements": 2621440
+    },
+    "blk.31.ffn_down.weight": {
+      "shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "offset": 2651930624,
+      "elements": 23592960
+    },
+    "blk.31.ffn_gate.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2671284224,
+      "elements": 23592960
+    },
+    "blk.31.ffn_up.weight": {
+      "shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "offset": 2684555264,
+      "elements": 23592960
+    },
+    "blk.31.post_attention_norm.weight": {
+      "shape": [
+        2560
+      ],
+      "type": 0,
+      "offset": 2697826304,
+      "elements": 2560
+    }
+  },
+  "prefix_sha256": "95d865c95703161726daedef09c031be4990517de36572072c1d0cd369a052c3"
+}

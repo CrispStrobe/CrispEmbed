@@ -1,3 +1,139 @@
+## 5 November 2026 — PR145 complete final-source CI
+
+Re-query at `2d36eeb9492d4c241040411fb5340b6368a6b6f2` finds all13
+selected workflows completed successfully. The actual
+[Build41930954667](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667)
+aggregate and Static guards now pass;
+[Lint41930954656](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954656),
+model-free/decoded/Ovis controls and the macOS/Linux/Windows contracts pass.
+[The final CI receipt](tests/results/qwen35-ocr/lightonocr3-4b-text-owner-ci.json)
+retains every workflow and check identity plus actual build-job conclusions.
+No further scoped source repair was needed. Earlier initial style/static/fixture
+failures and superseded cancellations remain historical; original source gates
+stay unchanged. This closes the text-owner PR source-CI follow-up only. The
+3498 owner/36 Python component evidence remains separate from full-model
+inference, decoded quality, publication, aliases and runtime-release gates.
+
+## 4 November 2026 — LightOn4B text-owner initial PR checks retained
+
+Initial PR145 checks at `16dac27f6` failed independently of the positive
+3498-component run: [Build41929695234](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41929695234)
+stopped at the clean-exit static guard and its aggregate correctly rejected the
+resulting skipped builds; [style41929695310](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41929695310)
+reported formatting in the two new C++ files. The test entry now uses the
+required clean-exit wrapper and those files use clang-format18.
+[Controls41929695255](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41929695255)
+exposed a stale GDN test census (25/31 expected versus mandatory26/32 after
+the preserved empty-cache correction). Only the test expectation is updated,
+with an explicit empty-cache-control assertion; the real parser protocol stays
+unchanged. [Controls41929695342](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41929695342)
+rejected a synthetic historical Ovis fixture that inadvertently included the
+new opt-in header. The fixture excludes that metadata-only file, matching its
+existing explicit opt-in exclusions; the real 29-file frozen guard and actual
+current-tree rejection stay unchanged. A subsequent [style41930124505](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930124505)
+then isolated9 inherited wrapping violations in the GDN test-only optional-cache
+call sites; clang-format18 fixes whitespace only, without altering the frozen
+original reports, real protocol or any source-hash guard. The larger-input
+historical test fixture likewise explicitly excludes the new owner header; its
+real strict source contract stays unchanged. Fresh hosted component/protocol
+checks are now positive: [41930138239](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930138239)
+at `522ed4aa6` passes all3498 owner controls,17 GDN controls,6 historical
+replay controls and13 historical larger-input controls. Independent readback
+verifies all426 unique rows and every recorded current source digest; subsequent
+GDN test formatting is whitespace-only and outside the owner executable.
+[The repair receipt](tests/results/qwen35-ocr/lightonocr3-4b-text-owner-pr-repair.json)
+retains exact source/artifact/log identities. At `f58d961cc`, actual
+[style41930419067](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930419067),
+Static guards in [Build41930419071](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930419071),
+and [Ovis controls41930419488](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930419488)
+pass. The overall selected platform build aggregate remains separate. No initial
+failure is relabeled.
+
+## 4 November 2026 — LightOn4B exact text ownership component
+
+[Hosted41929343665](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41929343665)
+at `291b0a171d6ed75e2248cb27626ada4367c0491b` passes all3,498 model-free
+controls for the separate default-off text owner. Independent small-artifact
+review verifies all426 unique original-header rows (249 matrices/177 protected
+tensors), the schema digest and the recomputed control census. Tests cover
+every mapped pointer, per-tensor missing/axis/type/stride rejection, stored-head
+and pointer aliases, gate unset/empty/zero, F16 matrices and all-F32 ownership.
+[The receipt](tests/results/qwen35-ocr/lightonocr3-4b-text-owner.json) retains
+exact source/header/binary/artifact identities. No weight payload was allocated;
+format-5 admission and model inference remain false. This closes only borrowed
+text-tensor ownership, not composed decoder, tokenizer, vision, vocabulary
+projection, decoded quality or publication qualification. Existing mapper and
+source closures remain unchanged.
+
+## 4 November 2026 — LightOn4B grouped-head component and original-reference CI
+
+The additive `linear_grouped_core_cpu`/`linear_grouped_cpu` APIs keep compact
+Q/K/V convolution channels, repeat complete Q/K heads after convolution/SiLU,
+and preserve separate native recurrent/cache state. Both the OCR master gate
+and new `CRISPEMBED_QWEN35_GDN_GROUPED_HEADS` gate use default-off `core_env::on`;
+literal0 disables the new entry. Existing equal-head and projection bodies are
+byte-preserved against main17c, equal-head calls delegate unchanged, and the
+reviewed addition has a separate source-pin amendment. No owning model admission.
+
+The hosted original protocol executes pinned Transformers5.5.4 on four synthetic
+cases, including actual16K/32V head geometry with synthetic hidden16/F32 weights.
+It freezes original arrays before native build, checks observation neutrality,
+prefill/two cached steps/full-prefix consistency, and compares 208 native stages
+plus106 controls across independently carried native cache lanes. Magnitudes,
+absolute errors and row cosine retain the0.002/0.99999 budgets. Actual execution
+is pending. A separate original meta-device probe verifies the full723+1 tensor
+schema and tied parameter identity without checkpoint acquisition. The existing
+controls workflow now contains the selected reference job,51 new stdlib protocol/
+selector controls and90-day raw evidence retention; no new standalone workflow.
+
+At converter `aa661568`, all16 export controls and333 total controls pass in
+[41919572206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41919572206),
+and the Ovis export audit passes. Five ordinary workflows stopped before build
+execution on the same1/51 selector failure: the frozen test required the source
+preflight command on its own inline `run:` line. The original step is restored
+and added controls use a separate block; the old test is unchanged. The
+[retained receipt](tests/results/lightonocr3-4b/export-controls-aa661568.json)
+records successful controls and every failed workflow. Full model/export/
+document/publication qualification remains false.
+
+## 4 November 2026 — LightOn4B explicit conversion contract; integrated CI passes
+
+All seven selected workflows on integrated `91b24764c2b6a89fcbc1d95d0ebed578f414c95d`
+pass, including [controls41916906725](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41916906725)
+(317 tests in 27 suites) and [Build41916906714](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41916906714).
+The [receipt](tests/results/lightonocr3-4b/integration-ci-91b24764.json) records
+the exact PR checkout and all seven run IDs. This closes the combined integration
+check after merging main `17c96639`; historical pending statements below retain
+their original checkpoint meaning.
+
+The explicit `--profile lightonocr3-4b` conversion path now requires the exact
+model/revision, six small source files, full tokenizer and checkpoint SHA-256,
+original Transformers 5.5.4 implementation and 724-key meta schema. It exports
+723 tensors with source/converted hashes, retaining the tied head once. The new
+24-layer `lightonocr3-4b-vision-f32` recipe protects 100 matrices and leaves the
+old 52-matrix `vision-f32` recipe unchanged. Format 5 remains rejected by current
+native admission; all model/export/document/publication qualification flags stay
+false. Sixteen stdlib controls are added to the existing workflow; hosted execution,
+meta-schema observation, actual conversion and GGUF readback remain separate gates.
+No model weights were downloaded or executed locally.
+
+## 4 November 2026 — LightOn4B continuation integrates current main
+
+The owner requested continued implementation and incremental pushes on
+`feat/ocr-next-models-20261104` / [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143).
+All seven selected workflows at `19531b886` finished successfully, including
+[Build41908784558](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41908784558),
+both WASM builds, Rust, image contracts, controls and Secret scan. Main advanced
+to `17c96639a5507c4cee51898b9eeb05ad58d2ebdc` after PR141 merged. The continuation
+reconciles workflow/PLAN/HISTORY/roadmap overlaps, preserving all PR141 receipts,
+294 existing controls and 23 source-preflight controls. Combined hosted validation
+remains pending at this merge checkpoint; no old-source result is relabelled.
+
+The active next slice is pinned original-component reference execution,
+default-off unequal-head native primitives and an explicit 4B export contract
+with a separate 24-layer vision recipe. Full native model admission and quality,
+quantization/publication and runtime-default decisions remain separate gates.
+
 Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
@@ -203,6 +339,43 @@ in26 suites. [The receipt](tests/results/ocr-benchmark-expansion/source-ci-ddb66
 records exact workflow identities and bounded coverage. No further M1 compilation
 is needed; its pressure stop remains a preflight-only result. No runtime release,
 model alias/publication or application pin changed.
+
+## 4 November 2026 — OCR roadmap rechecked; LightOn4B source preflight passes hosted controls
+
+The owner requested the updated missing-model recommendations in the repository,
+then an environment-appropriate implementation slice with incremental feature-branch
+pushes. [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143), branch
+`feat/ocr-next-models-20261104`, begins from main `2f748825`. The initial roadmap
+checkpoint is [`6b7b78dd`](https://github.com/CrispStrobe/CrispEmbed/commit/6b7b78dd89063ea8eb2647aae80feaa46d4c9bd7).
+PLAN and the expansion guide now distinguish implemented/qualified/public models,
+the completed PR141 panels and exact-version weight terms. LightOnOCR-3-4B is the
+first new source lane; Qianfan and conditional Logics V3/dots.mocr remain planned.
+
+The [4B preflight and technical handoff](docs/lightonocr3-4b.md) pin HF revision
+`b71010f095dc3735de7ee6b9969bff8f8f50b39a`, preserve actual original metadata/header
+bytes, independently derive the tensor schema and validate 723 BF16 tensors /
+4,539,265,536 parameters. Contiguous offsets imply 9,078,531,072 payload bytes;
+with the 89,456-byte header and eight-byte prefix this matches the declared
+9,078,620,536-byte file. The checkpoint payload was not downloaded or hashed.
+Separate exact 65,536-byte tokenizer prefixes confirm 4B/0.8B regex and ByteLevel
+differences; full tokenizer contents and tokenizer execution remain unverified.
+The exact official Apache license and distinct checkpoint-card declaration are retained.
+
+Local syntax and bounded positive/negative CLI checks pass. At implementation
+[`c41469b2`](https://github.com/CrispStrobe/CrispEmbed/commit/c41469b24cb7835b4fe2706835b59db583392c76),
+[controls run 41908139315](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41908139315)
+passes all 23 new LightOn4B cases and all 236 tests across 18 unittest executions.
+[Static guards job 126848192178](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41908139236/job/126848192178)
+passes all 51 CI-selection tests, including the five new routing/workflow controls.
+The actual PR merge checkout `34fcb32e` has the identical implementation tree;
+the [receipt](tests/results/lightonocr3-4b/source-ci-c41469b2.json) records both identities.
+Other platform Build jobs were still running or queued at observation. These
+source/control results are not model parity. Native source review identifies fixed small-model dimensions,
+16-key/32-value-head support, the full-vocabulary projection bound and the old
+12-layer precision recipe as blockers. Native/export/publication flags remain
+false. No runtime defaults, source pins, version metadata or model aliases changed;
+PR141 retains the existing-model qualification and LightOn1B norm/cache lane.
+
 
 ## 4 November 2026 — Xiaomi bounded neural panel passes; exact LightOn namespace repair
 
@@ -20687,3 +20860,238 @@ OvisOCR3's frozen capped-page failure and all old strict LightOnOCR-3-0.8B verdi
 remain recorded. A separate review of complete retained logits finds F16/Q8 clear
 the current owner numerical bars; Q4 does not. Fresh current-source portable
 qualification is still required. See PR138's `docs/lighton08-precision-next.md`.
+
+### 5 November2026 — bounded LightOn4B decoder composition and retained attribution
+
+Draft PR150 adds a default-off exact32-layer hidden-state/cache orchestrator,
+preserving tested blocks and historical source closures. Synthetic original
+TextModel [41979168300](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41979168300)
+uses two explicitly shared full-width parameter sets across32 original modules:
+347 controls and290/291 numerical pairs pass, with one unchanged strict tiny-row
+recurrent-cache cosine failure. Retained block21-only
+[41980636649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41980636649)
+verifies26 weight hashes/six bit-exact anchors;22+4 same-input/boundary comparisons
+pass. Changing only the original block input reproduces the rejection, attributing
+it sufficiently to accumulated upstream hidden drift. Preserve the original
+negative panel; no gate/default/release/model-support promotion. Exact magnitudes,
+source pins, dependencies and limits are in [the scope](docs/lighton4b-decoder-compose.md)
+and [combined review receipt](tests/results/qwen35-ocr/lightonocr3-4b-decoder-compose-attribution.json).
+
+### LightOn4B quantized payload owner controls — 5 November 2026
+
+[41997276699](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41997276699)
+at`fe27027bb4ebbfa0d4d9c8600db30cd7192044a4` passes hosted portable
+compilation and nine model-free gate/type/negative controls for the experimental
+format-5 Q8/Q4 payload owner. The
+[receipt](tests/results/qwen35-ocr/lightonocr3-4b-native-context-controls.json)
+retains initial41997019110's missing standalone matrix-helper declaration and
+corrected41997125120. No actual model payload was read; native decoded and
+intermediate quality remains unverified. Public API/release defaults are unchanged.
+
+
+### Consolidated source-specific record from 84e19504e
+
+These are archived component-lane records. Current pending execution is in PLAN.
+
+## Bounded LightOn4B vision ownership — 4 November 2026
+
+Active branch `feat/lighton4b-vision-owner-20261104`, based on current main `17c96639a`. Adds an explicit default-off component mapping all 297 vision tensors and returning the 24-layer, width1024/head16/output2560 configuration. PR143 and the separate streamed projection work stay intact. The component validates names, shapes and F32/F16 types without reading payloads; malformed and missing tensors clear ownership. Hosted model-free and platform checks are required. Format5 production admission remains closed. Full 723-tensor ownership, original/native stage/logit/decoded parity, tokenizer and publication remain open; no release or support claim.
+
+Initial hosted Build [41926266003](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41926266003) exposes an audit-copy duplicate symbol and iOS standalone-target placement error. Both are corrected separately; retain the initial failure. Full Build dispatch has no mode input and selects the complete matrix, including the explicit model-free ownership binary.
+
+Corrected `fea7fc72f` actual full Build dispatch [41927088394](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41927088394) passes the Linux build and explicitly executes `test-lighton4b-vision-owner` with all297 per-tensor malformed controls. The complete dispatch passes all3 desktop builds, iOS, all3 Android legs, sibling, Flutter bundle and aggregate Build result. This is model-free ownership evidence only.
+
+The separate contract [41928007006](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928007006) correctly rejects drift of historically frozen `src/qwen35_vision.cpp` despite passing platform builds. Preserve this initial failure. The new ownership function is moved into `src/lighton4b_vision_owner.cpp`, restoring the historical vision implementation bytes exactly; no receipt hash, source amendment or gate is changed. Fresh hosted component build and contract evidence are required for this placement correction.
+
+Final isolated ownership source `2b248c9cb` passes full hosted Build [41928227750](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928227750), including actual Linux297-tensor controls, all3 desktops, iOS, Android3, sibling and bundle. Docs-only successor `daf5e5a28` passes the formerly failing [Ovis contracts41928385929](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928385929), [decoded controls41928385638](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928385638) and lint41928384905 without altering historical pins. Remaining model acceptance gates are unchanged.
+
+
+### Consolidated source-specific record from b4b941273
+
+These are archived component-lane records. Current pending execution is in PLAN.
+
+## LightOn4B structural GGUF inspection — 5 November 2026
+
+Active isolated branch `feat/lighton4b-gguf-inspection-20261105` stacks PR146 `8157a3137`. Production context admission remains unsafe before frontend/decoder composition and payload-backed proof. Add a distinct default-off RAII GGUF inspection context owning real no-allocation tensor headers; validate format5/profile/source declarations, typed geometry/EOS and the atomic723 owner. Hosted synthetic header-only GGUF controls will prove independent context lifetime and metadata rejection. This is deliberately not payload-backed model admission or recognition. No historical runtime source/receipt changes.
+
+Synthetic structural inspection [41975595631](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41975595631) passes at `3061e16a4`; no payload/model admission. A separate hosted opt-in range protocol now targets the actual uploaded experimental baseline at Hub revision `a7ec2e54103165a96b8bb6dc3478a2887edd7459`, requiring exact HTTP206/Content-Range and stopping if ranges are unsupported. Acquisition is bounded64MiB, retains only parsed GGUF metadata and invokes the real C++ inspection context. Declared full-file SHA is provenance only, never verified by a prefix or synthetic sparse file.
+
+Actual published-header [41975926521](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41975926521) at `f4cc98568` passes86 synthetic controls plus actual native header inspection. Independent review verifies14 source digests,34 metadata fields, all723 tensor headers/offset spans,474F32/249F16 and retained10,010,976B header SHA. Three exact HTTP206 ranges fetched12,582,912B including2,571,936B discarded weight prefix;0 weight bytes retained/dereferenced. Full/tensor payload hashes remain unverified by this prefix. [Scope and exact exposure](docs/lighton4b-gguf-inspection.md), [review receipt](tests/results/qwen35-ocr/lightonocr3-4b-gguf-inspection.json). Reporting-only `2c3628732` makes overshoot explicit; native/parser unchanged. No payload-backed model admission/inference, historical-source amendment or release.
+
+
+### 5 November2026 — LightOn4B native preprocessing matches retained original
+
+Actual hosted41999219551 at5f0ca990f authenticates original BF16 capture
+07543dcc80eb and all five prepared-input members, then processes the unchanged
+frozen simple-form image through native C++. All860,160[560,1536] values are
+bit-exact (max/mean/RMS error0, cosine1, L2 magnitudes831.4008051587742), with
+exact[1,20,28] grid and45 positive model-free controls. The observed original
+processor uses the torchvision backend. No checkpoint transfer/model forward or
+original rerun occurred; decoded Q8/Q4 parity remains open. The
+[reviewed receipt](tests/results/qwen35-ocr/lightonocr3-4b-preprocess-replay.json)
+retains exact source/input hashes. Initial41998232116/41998761159 provider import
+failures remain archived; the second identifies the undeclared`six` dependency.
+
+
+### 2026-11-05 — PR155 assembled default-off vision norm controls pass
+
+Targeted42033147414 at43b2d2c35 verifies actual complete source-fed norm/raw-SHA,
+mean/rstd and unset/empty/0 controls, BF16 finite/tie round controls,9 native-context
+and45 image-compose controls, compiled ordinary native runner and environment
+documentation. Initial missing workflow read-token42031440977 and renamed test
+helper fallthrough42032227007 remain retained. Runtime defaults and published
+release/app pins stay unchanged; ordinary Q4 decoded quality remains negative.
+
+
+### 2026-11-05 — Assembled gated vision NN/Conv source math and preservation pass
+
+Actual42038802495 atedbd2b782 closes full norm, nn.Linear and Conv3D source-fed
+operator/raw-byte/gate controls on the combined PR155/decoder source. All native
+builds/controls and decoder20 controls pass. Exact original238,129,493-byte ZIP
+13414500337 is copied without regeneration into artifact13420770687, expiring
+3 February2027. Earlier combined wrong-Conv/score/decoded negatives remain; this
+is operator/build evidence, with actual composed quality still unqualified.
+
+
+### 2026-11-05 — Real Q4 vision corrections close frontend bytes, decoded negative retained
+
+Final42041219151 at3a0c7ffc6 passes original/source-fed controls and every30-stage
+old baseline hash with decoder candidate explicitly0. Patch/position/embedded are
+raw-byte exact; layer0 and merged RMS improve, but first-logit RMS worsens and
+both independent decodes remain wrong`<table>`. The complete numerical/decoded
+receipt and prior unused-receipt failure42040210848 remain retained. Attention
+pooling is the next actual source-fed mismatch. No quality or default promotion.
+
+
+### 2026-11-05 — Gated vision QK/PV source ordering integrated, softmax incomplete
+
+Focused42048810358 atc3abc6057 passes exact source QK/PV primitives, actual/
+observer/old-gate bytes, native/context build and decoder20 controls. Pooled
+differences fall65→20, but whole attention remains inexact; original reciprocal
+plus source/std exp still leaves12 probability differences. Exact-vector-header
+softmax attribution is the next bounded lane. Prior Q4 decoded-negative evidence
+remains; no model run, quality, default, release or app-pin promotion follows.
+
+### 2026-11-05 — Source-fed vision attention exactness behind an isolated gate
+
+Pinned AVX2 vector-header attribution and self-contained SLEEF-compatible exp /
+reduction now reproduce all source-fed F32 probabilities and pooled attention
+bytes. Separate default-off softmax gate preserves old paths and requires
+x86_64 AVX2/FMA with nearest rounding. Focused assembled verification and ordinary
+Q4 A/B remain pending; runtime rotary generation and decoded quality are separate
+boundaries. Previous negative quality evidence remains, with no release change.
+
+Focused softmax integration 42055105090 passes the final guarded production form, native/context builds, context 9 and decoder 20 controls. Source-fed attention is byte-exact; ordinary composed Q4 quality remains pending.
+
+Ordinary Q4 42056882067 preserves all 30 baseline stage hashes. Combined exact-attention vision candidate reduces layer 0 to 40 differences, but merged/first-logit errors worsen and both decodes remain wrong `<table>`. Full negative receipt retained; default-off and unqualified. Next lane isolates activation and generated rotary on identical retained inputs.
+
+Retained first-block 42060487656 explains all 40 actual candidate differences: native rotary alone 32 and GELU alone 8. Original reconstruction and combined reproduction are byte-exact. Source vector GELU matches all original bytes; rotary is earliest remaining operator. No runtime correction or quality promotion follows this attribution alone.
+
+GELU-only integration 42064278334 passes actual activation bytes, old gates, native/context and decoder controls. Direct reference MKL HA trig matches Torch on all 2,000 angles, clearing the actual rotary backend; rejected SLEEF rotary stays off. Ordinary Q4 GELU quality pending.
+
+GELU Q4 42065352208 preserves fixed baseline hashes and reduces merged RMS to 0.00775425, but first-logit RMS 0.56432682 still exceeds baseline 0.56013479 and both decodes remain wrong `<table>`. All 32 first-block differences match the known rotary boundary. Full negative and legacy replay-observer limitation retained; production GELU proof remains independent and exact. Defaults and quality unqualified.
+
+Retained merger 42069010152 passes original and actual bytes, isolates native std::erf at 33/26 activation and 84/58 output differences, and verifies source-derived erf exactly. Separate default-off production correction is prepared for focused gate/build validation; no model smoke or quality promotion.
+
+Final merger-erf integration 42069996673 passes full original/actual/production bytes, gate/guard controls, native/context builds and decoder controls. Separate default-off correction is validated; final ordinary Q4 impact remains pending.
+
+Final verified-vision Q4 42070806605 at e7730d91e reproduces all 30 baseline
+hashes and closes all eight source-fed first-block operators. Ordinary runtime
+retains 32 known rotary differences; merged RMS 0.0077542505 improves baseline,
+but first-logit RMS 0.5643236502 still exceeds baseline 0.5601347910, and both
+decodes remain wrong `<table>`. Baseline/candidate native elapsed 105.17/115.84 s
+and complete limits are retained. Defaults, release and quality stay unchanged;
+no further runs in this lane.
+
+Complete configured rotary production 42098420346 passes full-domain/regeneration/22 fallback controls, native dependencies/builds and decoder controls. Source-fed original tables, attention and first block are now byte-exact, with preceding bytes preserved. Ordinary Q4 quality with the table remains pending; gate remains off.
+
+Complete rotary Q4 42099925931 plus independent raw audit 42102908743 establish 29 recorded processor/vision SHA identities for one image. First downstream difference is text embedding; first scores and `<table>` prefix remain worse/incorrect. Full raw and timing limits retained, prefix observer corrected. One guarded corrected Q8 smoke is authorized; prior Q8 already had the correct two-token prefix, so no new-prefix claim from an unchanged result.
+
+Corrected Q8 42104609427 passes immutable model/prepared-input and 29 raw vision
+controls. First-logit RMS 0.0742289135 / max 0.460906029 improves historical
+fd150 0.13049504 / 0.568259001 and891d 0.2005369525 / 1.092198968; sources and
+hosts differ. Prefix `<figure` is preserved and was already correct before.
+Two-token only, no EOS/body qualification or speed/default/release promotion.
+Current native elapsed 139.13 s and peak 6,317,207,552 bytes are retained.
+
+### Full mixed runtime head-output dtype A/B
+
+[42168142185](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42168142185)
+completes atb98883abe. Optional HEAD_BF16 output rounding reproduces all178
+original-BF16 **mixed-recipe** IDs, EOS and686-byte text exactly (SHA c9075ce2…).
+Gate-off reproduces prior156-ID EOS output, divergence33, and229 shared
+stage/score hashes. All5 prepared inputs/29 vision stages remain exact;
+66 prefill artifacts and47 selectedstep33 hidden/operator arrays are unchanged
+across arms. RNE/NaN/Inf/lowest-ID/source-tie and explicit-off controls pass
+before model acquisition. Full raw report and hashes are retained in
+[the receipt](tests/results/qwen35-ocr/lightonocr3-4b-head-bf16/native-ab.json).
+
+This establishes decoded runtime fidelity for the observed mixed form, not
+unquantized-original or heldout quality. All178 score hashes still differ
+from the BF16 mixed source; actual row33 max0.125/RMS0.0302963/cosine0.999949698
+fails the unchanged strict budget. Against the unquantized BF16 original,
+firstID difference25 persists, raw CER improves197/656→180/656 (30.03→27.44%),
+and WER remains40/90 (44.44%). No full178 numerical acceptance claim.
+
+OFF156tokens takes1388.25s/RSS5,185,196,032B; ON178tokens1561.55s/5,185,175,552B.
+Different completion lengths prevent a speed interpretation. Gate stays
+default-off, no release/default/model alias change. Existing historical
+source-pin amendments and15git-verified frozen receipt pins remain intact.
+
+### BF16 dequantized text-weight isolation
+
+Checkpoint-free [42196101066](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42196101066)
+passes16 projection/embedding/head/gate/storage checks and353 decoder controls,
+including valid cached-mode toggle rejection. The separate synthetic original
+numerical rejection remains preserved atprefill.cache.21.recurrent; no waiver.
+Actual source-fed [42198497821](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42198497821)
+atbe9eb625b verifies all249 raw quantized and BF16 weight hashes against the
+authenticated original oracle, in≤65536-element chunks, including tied embedding/
+head. Source-fed ON embedding/up/down arrays are byte-exact; gate differs1/9216
+(max0.0004883), head24/248320 (max0.03125/RMS0.00007093, still strict failure).
+OFF-repeat raw bytes are identical. Time38.49s/peakRSS2,928,726,016B. These fixed
+source inputs isolate weight dtype; no generation, speed or quality claim.
+[Full receipts and hash proof](tests/results/qwen35-ocr/lightonocr3-4b-bf16-weight-precision/source-operators.json).
+
+Next one real same-Q4 image OFF/ON smoke uses BF16 head and verified vision,
+1 teacher score plus independent16-token cap per arm. OFF must reproduce all
+shared frozen correctedQ4 stage/score bytes and16IDs; prepared/vision/positions
+stay exact across arms, ON embedding must equal independent BF16 RNE of OFF.
+The new native-only weight option stays off on WASM; a standalone simulated
+preprocessor guard runs before model staging, explicitly not a WASM runtime test.
+Existing source pin chain and cache controls remain intact. No full Q4 quality
+claim follows from this bounded smoke; integration waits for its checks.
+
+### Real plainQ4 weight-dtype smoke: partial negative
+
+[42200784414](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42200784414)
+completes at4bd327394 with BF16_QUANT_WEIGHTS OFF/ON. OFF reproduces87 frozen
+correctedQ4 shared stage/score hashes;34 prepared/vision/position artifacts
+remain identical across arms, and ON embedding equals independent BF16 RNE.
+Both produce the same16 IDs, matching the genuine same-Q4 source prefix,
+ending in partial `<table>…<th` without EOS. No full-document test. The
+standalone simulatedWASM preprocessor guard passes and disables this native
+oracle option there; no actualWASM runtime qualification.
+
+Same-weight BF16 firstscore RMS changes0.0267200→0.0257732, but max error
+worsens0.15625→0.1796875; both fail unchanged strict tolerance. Against the
+unquantized original, ON RMS0.5882684/max2.46875 also fail. This option is not
+a plainQ4 quality fix. OFF takes195.46s, ON417.00s (observed cost, not a speed
+benchmark; serial-first/cachewarmth uncontrolled), peakRSS4.525/4.522GB.
+The gate stays default-off, with immutable quant storage, bounded transient
+weight/row/tile conversion and cached-mode toggle rejection. All historical
+source pins/negative evidence remain unchanged.
+[Full measured receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-weight-precision/native-smoke.json).
+
+
+### 6 November2026 — guarded LightOn4B selective Q6 support
+
+[Hosted42207472045](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42207472045)
+at20199554a passes713 model-free controls for the exact custom32Q6/216Q4/1Q8
+recipe, metadata/gates, independent scalar dequantization, streamed projection,
+grouped-GDN prefill/cached decode, BF16 weight conversion and unchanged storage.
+Old native/mixed/BF16 controls and real native/preflight builds pass. Initial
+42206305308 remains retained: it compiled but exposed the narrower stream Q6
+rejection, with the grouped validator also requiring guarded extension. No model
+payload, inference, default, quality qualification or release changed; see the
+[recipe and receipts](docs/lighton4b-selective-q6.md).

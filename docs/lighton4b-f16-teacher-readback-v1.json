@@ -1,0 +1,27 @@
+{
+  "bounds": {
+    "bootstrap_seconds": 1500,
+    "minimum_available_ram_bytes": 4294967296,
+    "minimum_free_disk_bytes": 1073741824,
+    "reader_seconds": 1200,
+    "service_seconds": 1800
+  },
+  "model_inference_allowed": false,
+  "native_report_sha256": "0a0c2084baa4e46aa80f09f7ae94fd4b1c56ccae2bbf2f9ef6210e81e8cf1d01",
+  "native_source_sha": "4a63d73bee7289deab41fb20f67765d3c6800182",
+  "original_bf16_report_sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a",
+  "original_dtype": "torch.bfloat16",
+  "positions": 177,
+  "row_bytes": 993280,
+  "schema": "lighton4b-f16-teacher-readback-protocol/v1",
+  "scope": [
+    "Actual full177 original teacher row hashes/native row hashes/finite/selection controls",
+    "Native producer constructs original teacher prefix from exact authenticated original.json; no free-generation rows substituted",
+    "Original input token IDs exact; native source-fed upstream embeddings/positions/vision hashes exact to gold",
+    "Unquantized original BF16 versus quantized physical native includes quantization, source vision features and runtime effects, not same-weight parity",
+    "Pinned upstream numerical comparison only row0: no177 original teacher upstream capture",
+    "Every row RMS/max and reference/native magnitudes, cosine, directional KLD(BF16||native), original-token probability/rank/top1 and margins",
+    "Aggregate all177RMS/max/meanKLD/top1, preserve raw current free-generation quality already recorded separately"
+  ],
+  "vocabulary": 248320
+}

@@ -1,0 +1,653 @@
+{
+  "schema": "lighton4b-softmax-vector-source/v1",
+  "status": "compared",
+  "model_forward_executed": false,
+  "quality_qualified": false,
+  "source_sha": "13909256012d8e85483a121e1c9c26db884dc3aa",
+  "torch_version": "2.13.0+cpu",
+  "torch_git_version": "cf30153c4c131c8164ee7798e5022d810682e2cb",
+  "cpu_dispatch": {
+    "ATEN_CPU_CAPABILITY": "avx2",
+    "ONEDNN_MAX_CPU_ISA": "AVX2",
+    "DNNL_MAX_CPU_ISA": "AVX2",
+    "MKL_ENABLE_INSTRUCTIONS": "AVX2"
+  },
+  "last_phase": "default-fastmath",
+  "header_sha256": {
+    "ATen/cpu/vec/functional_base.h": "ea4d0a4dd6fabde61b05a18c8c4a976bd97ae577afdee127402c9097f569cea6",
+    "ATen/cpu/vec/vec256/vec256_float.h": "aae876b3281d44b7a0d9f6b4280da147df51acdc1106ba40247b70e4741dbdd5"
+  },
+  "original_bf16_input_control": {
+    "elements": 5017600,
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "rms_error": 0.0,
+    "cosine": 1.0,
+    "original_l2": 31.56341376081704,
+    "native_l2": 31.56341376081704,
+    "original_abs_max": 0.9999997615814209,
+    "native_abs_max": 0.9999997615814209,
+    "different_values": 0,
+    "first_differing_flat_index": null,
+    "raw_strict_flag": false,
+    "bit_different_values": 0,
+    "bit_exact": true
+  },
+  "f32_vs_original_bf16_input": {
+    "elements": 5017600,
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "rms_error": 0.0,
+    "cosine": 1.0,
+    "original_l2": 31.56341376081704,
+    "native_l2": 31.56341376081704,
+    "original_abs_max": 0.9999997615814209,
+    "native_abs_max": 0.9999997615814209,
+    "different_values": 0,
+    "first_differing_flat_index": null,
+    "raw_strict_flag": false,
+    "bit_different_values": 0,
+    "bit_exact": true
+  },
+  "variants": {
+    "avx2-off": {
+      "vector": {
+        "lanes": 8,
+        "exp_zero_exact_one": true
+      },
+      "probability_f32": {
+        "elements": 5017600,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "cosine": 1.0,
+        "original_l2": 31.56341376081704,
+        "native_l2": 31.56341376081704,
+        "original_abs_max": 0.9999997615814209,
+        "native_abs_max": 0.9999997615814209,
+        "different_values": 0,
+        "first_differing_flat_index": null,
+        "raw_strict_flag": false,
+        "bit_different_values": 0,
+        "bit_exact": true
+      },
+      "probability_bf16": {
+        "elements": 5017600,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "cosine": 1.0,
+        "original_l2": 31.56287605426372,
+        "native_l2": 31.56287605426372,
+        "original_abs_max": 1.0,
+        "native_abs_max": 1.0,
+        "different_values": 0,
+        "first_differing_flat_index": null,
+        "raw_strict_flag": false,
+        "bit_different_values": 0,
+        "bit_exact": true
+      },
+      "reciprocal": {
+        "elements": 8960,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "cosine": 1.0,
+        "original_l2": 29.51571949589247,
+        "native_l2": 29.51571949589247,
+        "original_abs_max": 0.9999997615814209,
+        "native_abs_max": 0.9999997615814209,
+        "different_values": 0,
+        "first_differing_flat_index": null,
+        "raw_strict_flag": false,
+        "bit_different_values": 0,
+        "bit_exact": true
+      },
+      "exp_vs_torch_exp": {
+        "elements": 5017600,
+        "max_abs": 5.960464477539063e-08,
+        "mean_abs": 3.223968925044841e-10,
+        "rms_error": 2.756371365220397e-09,
+        "cosine": 1.0000000000000353,
+        "original_l2": 273.1391794621238,
+        "native_l2": 273.13918022204666,
+        "original_abs_max": 1.0,
+        "native_abs_max": 1.0,
+        "different_values": 493502,
+        "first_differing_flat_index": 2,
+        "raw_strict_flag": false,
+        "first_original": 0.010435936041176319,
+        "first_native": 0.010435936972498894,
+        "bit_different_values": 493502,
+        "bit_exact": false
+      }
+    },
+    "avx2-fast": {
+      "vector": {
+        "lanes": 8,
+        "exp_zero_exact_one": true
+      },
+      "probability_f32": {
+        "elements": 5017600,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "cosine": 1.0,
+        "original_l2": 31.56341376081704,
+        "native_l2": 31.56341376081704,
+        "original_abs_max": 0.9999997615814209,
+        "native_abs_max": 0.9999997615814209,
+        "different_values": 0,
+        "first_differing_flat_index": null,
+        "raw_strict_flag": false,
+        "bit_different_values": 0,
+        "bit_exact": true
+      },
+      "probability_bf16": {
+        "elements": 5017600,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "cosine": 1.0,
+        "original_l2": 31.56287605426372,
+        "native_l2": 31.56287605426372,
+        "original_abs_max": 1.0,
+        "native_abs_max": 1.0,
+        "different_values": 0,
+        "first_differing_flat_index": null,
+        "raw_strict_flag": false,
+        "bit_different_values": 0,
+        "bit_exact": true
+      },
+      "reciprocal": {
+        "elements": 8960,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "cosine": 1.0,
+        "original_l2": 29.51571949589247,
+        "native_l2": 29.51571949589247,
+        "original_abs_max": 0.9999997615814209,
+        "native_abs_max": 0.9999997615814209,
+        "different_values": 0,
+        "first_differing_flat_index": null,
+        "raw_strict_flag": false,
+        "bit_different_values": 0,
+        "bit_exact": true
+      },
+      "exp_vs_torch_exp": {
+        "elements": 5017600,
+        "max_abs": 5.960464477539063e-08,
+        "mean_abs": 3.223968925044841e-10,
+        "rms_error": 2.756371365220397e-09,
+        "cosine": 1.0000000000000353,
+        "original_l2": 273.1391794621238,
+        "native_l2": 273.13918022204666,
+        "original_abs_max": 1.0,
+        "native_abs_max": 1.0,
+        "different_values": 493502,
+        "first_differing_flat_index": 2,
+        "raw_strict_flag": false,
+        "first_original": 0.010435936041176319,
+        "first_native": 0.010435936972498894,
+        "bit_different_values": 493502,
+        "bit_exact": false
+      }
+    },
+    "avx2-fastmath": {
+      "vector": {
+        "lanes": 8,
+        "exp_zero_exact_one": true
+      },
+      "probability_f32": {
+        "elements": 5017600,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "cosine": 1.0,
+        "original_l2": 31.56341376081704,
+        "native_l2": 31.56341376081704,
+        "original_abs_max": 0.9999997615814209,
+        "native_abs_max": 0.9999997615814209,
+        "different_values": 0,
+        "first_differing_flat_index": null,
+        "raw_strict_flag": false,
+        "bit_different_values": 0,
+        "bit_exact": true
+      },
+      "probability_bf16": {
+        "elements": 5017600,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "cosine": 1.0,
+        "original_l2": 31.56287605426372,
+        "native_l2": 31.56287605426372,
+        "original_abs_max": 1.0,
+        "native_abs_max": 1.0,
+        "different_values": 0,
+        "first_differing_flat_index": null,
+        "raw_strict_flag": false,
+        "bit_different_values": 0,
+        "bit_exact": true
+      },
+      "reciprocal": {
+        "elements": 8960,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "cosine": 1.0,
+        "original_l2": 29.51571949589247,
+        "native_l2": 29.51571949589247,
+        "original_abs_max": 0.9999997615814209,
+        "native_abs_max": 0.9999997615814209,
+        "different_values": 0,
+        "first_differing_flat_index": null,
+        "raw_strict_flag": false,
+        "bit_different_values": 0,
+        "bit_exact": true
+      },
+      "exp_vs_torch_exp": {
+        "elements": 5017600,
+        "max_abs": 5.960464477539063e-08,
+        "mean_abs": 3.223968925044841e-10,
+        "rms_error": 2.756371365220397e-09,
+        "cosine": 1.0000000000000353,
+        "original_l2": 273.1391794621238,
+        "native_l2": 273.13918022204666,
+        "original_abs_max": 1.0,
+        "native_abs_max": 1.0,
+        "different_values": 493502,
+        "first_differing_flat_index": 2,
+        "raw_strict_flag": false,
+        "first_original": 0.010435936041176319,
+        "first_native": 0.010435936972498894,
+        "bit_different_values": 493502,
+        "bit_exact": false
+      }
+    },
+    "default-off": {
+      "vector": {
+        "lanes": 8,
+        "exp_zero_exact_one": true
+      },
+      "probability_f32": {
+        "elements": 5017600,
+        "max_abs": 1.7881393432617188e-07,
+        "mean_abs": 7.177173429523588e-11,
+        "rms_error": 9.011222850607031e-10,
+        "cosine": 0.9999999999999978,
+        "original_l2": 31.56341376081704,
+        "native_l2": 31.563413780628245,
+        "original_abs_max": 0.9999997615814209,
+        "native_abs_max": 0.9999998807907104,
+        "different_values": 1953518,
+        "first_differing_flat_index": 2,
+        "raw_strict_flag": false,
+        "first_original": 0.00015056114352773875,
+        "first_native": 0.00015056112897582352,
+        "bit_different_values": 1953518,
+        "bit_exact": false
+      },
+      "probability_bf16": {
+        "elements": 5017600,
+        "max_abs": 6.103515625e-05,
+        "mean_abs": 6.671347809784418e-11,
+        "rms_error": 4.9990439648841264e-08,
+        "cosine": 0.9999999999937066,
+        "original_l2": 31.56287605426372,
+        "native_l2": 31.562876075286507,
+        "original_abs_max": 1.0,
+        "native_abs_max": 1.0,
+        "different_values": 36,
+        "first_differing_flat_index": 177273,
+        "raw_strict_flag": false,
+        "first_original": 0.009765625,
+        "first_native": 0.00982666015625,
+        "bit_different_values": 36,
+        "bit_exact": false
+      },
+      "reciprocal": {
+        "elements": 8960,
+        "max_abs": 1.7881393432617188e-07,
+        "mean_abs": 7.0204155885481405e-09,
+        "rms_error": 1.9723518567933126e-08,
+        "cosine": 0.9999999999999979,
+        "original_l2": 29.51571949589247,
+        "native_l2": 29.515719518240466,
+        "original_abs_max": 0.9999997615814209,
+        "native_abs_max": 0.9999998807907104,
+        "different_values": 3259,
+        "first_differing_flat_index": 3,
+        "raw_strict_flag": false,
+        "first_original": 0.009030960500240326,
+        "first_native": 0.0090309614315629,
+        "bit_different_values": 3259,
+        "bit_exact": false
+      },
+      "exp_vs_torch_exp": {
+        "elements": 5017600,
+        "max_abs": 5.960464477539063e-08,
+        "mean_abs": 5.313650796140645e-12,
+        "rms_error": 2.2291580579886862e-10,
+        "cosine": 0.9999999999999984,
+        "original_l2": 273.1391794621238,
+        "native_l2": 273.1391794601311,
+        "original_abs_max": 1.0,
+        "native_abs_max": 1.0,
+        "different_values": 27805,
+        "first_differing_flat_index": 4429,
+        "raw_strict_flag": false,
+        "first_original": 0.00017403571109753102,
+        "first_native": 0.00017403572564944625,
+        "bit_different_values": 27805,
+        "bit_exact": false
+      }
+    },
+    "default-fast": {
+      "vector": {
+        "lanes": 8,
+        "exp_zero_exact_one": true
+      },
+      "probability_f32": {
+        "elements": 5017600,
+        "max_abs": 1.7881393432617188e-07,
+        "mean_abs": 7.177173429523588e-11,
+        "rms_error": 9.011222850607031e-10,
+        "cosine": 0.9999999999999978,
+        "original_l2": 31.56341376081704,
+        "native_l2": 31.563413780628245,
+        "original_abs_max": 0.9999997615814209,
+        "native_abs_max": 0.9999998807907104,
+        "different_values": 1953518,
+        "first_differing_flat_index": 2,
+        "raw_strict_flag": false,
+        "first_original": 0.00015056114352773875,
+        "first_native": 0.00015056112897582352,
+        "bit_different_values": 1953518,
+        "bit_exact": false
+      },
+      "probability_bf16": {
+        "elements": 5017600,
+        "max_abs": 6.103515625e-05,
+        "mean_abs": 6.671347809784418e-11,
+        "rms_error": 4.9990439648841264e-08,
+        "cosine": 0.9999999999937066,
+        "original_l2": 31.56287605426372,
+        "native_l2": 31.562876075286507,
+        "original_abs_max": 1.0,
+        "native_abs_max": 1.0,
+        "different_values": 36,
+        "first_differing_flat_index": 177273,
+        "raw_strict_flag": false,
+        "first_original": 0.009765625,
+        "first_native": 0.00982666015625,
+        "bit_different_values": 36,
+        "bit_exact": false
+      },
+      "reciprocal": {
+        "elements": 8960,
+        "max_abs": 1.7881393432617188e-07,
+        "mean_abs": 7.0204155885481405e-09,
+        "rms_error": 1.9723518567933126e-08,
+        "cosine": 0.9999999999999979,
+        "original_l2": 29.51571949589247,
+        "native_l2": 29.515719518240466,
+        "original_abs_max": 0.9999997615814209,
+        "native_abs_max": 0.9999998807907104,
+        "different_values": 3259,
+        "first_differing_flat_index": 3,
+        "raw_strict_flag": false,
+        "first_original": 0.009030960500240326,
+        "first_native": 0.0090309614315629,
+        "bit_different_values": 3259,
+        "bit_exact": false
+      },
+      "exp_vs_torch_exp": {
+        "elements": 5017600,
+        "max_abs": 5.960464477539063e-08,
+        "mean_abs": 5.313650796140645e-12,
+        "rms_error": 2.2291580579886862e-10,
+        "cosine": 0.9999999999999984,
+        "original_l2": 273.1391794621238,
+        "native_l2": 273.1391794601311,
+        "original_abs_max": 1.0,
+        "native_abs_max": 1.0,
+        "different_values": 27805,
+        "first_differing_flat_index": 4429,
+        "raw_strict_flag": false,
+        "first_original": 0.00017403571109753102,
+        "first_native": 0.00017403572564944625,
+        "bit_different_values": 27805,
+        "bit_exact": false
+      }
+    },
+    "default-fastmath": {
+      "vector": {
+        "lanes": 8,
+        "exp_zero_exact_one": true
+      },
+      "probability_f32": {
+        "elements": 5017600,
+        "max_abs": 1.7881393432617188e-07,
+        "mean_abs": 1.145611283081696e-10,
+        "rms_error": 9.856808851691894e-10,
+        "cosine": 1.0000000000000018,
+        "original_l2": 31.56341376081704,
+        "native_l2": 31.563413700812376,
+        "original_abs_max": 0.9999997615814209,
+        "native_abs_max": 0.9999998807907104,
+        "different_values": 2963931,
+        "first_differing_flat_index": 0,
+        "raw_strict_flag": false,
+        "first_original": 0.00043566309614107013,
+        "first_native": 0.00043566315434873104,
+        "bit_different_values": 2963931,
+        "bit_exact": false
+      },
+      "probability_bf16": {
+        "elements": 5017600,
+        "max_abs": 0.000244140625,
+        "mean_abs": 1.444440924239402e-10,
+        "rms_error": 1.2152668673849033e-07,
+        "cosine": 0.9999999999628075,
+        "original_l2": 31.56287605426372,
+        "native_l2": 31.56287581146829,
+        "original_abs_max": 1.0,
+        "native_abs_max": 1.0,
+        "different_values": 62,
+        "first_differing_flat_index": 177273,
+        "raw_strict_flag": false,
+        "first_original": 0.009765625,
+        "first_native": 0.00982666015625,
+        "bit_different_values": 62,
+        "bit_exact": false
+      },
+      "reciprocal": {
+        "elements": 8960,
+        "max_abs": 1.7881393432617188e-07,
+        "mean_abs": 7.480100196387087e-09,
+        "rms_error": 2.050678989506971e-08,
+        "cosine": 0.9999999999999978,
+        "original_l2": 29.51571949589247,
+        "native_l2": 29.515719427278984,
+        "original_abs_max": 0.9999997615814209,
+        "native_abs_max": 0.9999998807907104,
+        "different_values": 3458,
+        "first_differing_flat_index": 0,
+        "raw_strict_flag": false,
+        "first_original": 0.014427180401980877,
+        "first_native": 0.014427182264626026,
+        "bit_different_values": 3458,
+        "bit_exact": false
+      },
+      "exp_vs_torch_exp": {
+        "elements": 5017600,
+        "max_abs": 1.1920928955078125e-07,
+        "mean_abs": 2.3774966144259723e-09,
+        "rms_error": 8.115884707069892e-09,
+        "cosine": 1.0000000000000098,
+        "original_l2": 273.1391794621238,
+        "native_l2": 273.1391798190851,
+        "original_abs_max": 1.0,
+        "native_abs_max": 1.0,
+        "different_values": 2473182,
+        "first_differing_flat_index": 1,
+        "raw_strict_flag": false,
+        "first_original": 0.3678794503211975,
+        "first_native": 0.3678794801235199,
+        "bit_different_values": 2473182,
+        "bit_exact": false
+      }
+    }
+  },
+  "artifacts": {
+    "default-fastmath.inverse.f32": {
+      "bytes": 35840,
+      "sha256": "d0ee8a8e875eb10ded2e5ef7ab530153807e86831cf7848449e7f096a52116cb"
+    },
+    "avx2-off.json": {
+      "bytes": 38,
+      "sha256": "881b58bcd1dd891e18820ec8fa4ed32bc225c6fd942e263e5219e5e32bc1d064"
+    },
+    "default-off.json": {
+      "bytes": 38,
+      "sha256": "881b58bcd1dd891e18820ec8fa4ed32bc225c6fd942e263e5219e5e32bc1d064"
+    },
+    "avx2-fastmath.sum.f32": {
+      "bytes": 35840,
+      "sha256": "55caedfd1aa147e592fe2c60fb8f948686f0efeccbc69da66d67072604d9cba1"
+    },
+    "default-off.sum.f32": {
+      "bytes": 35840,
+      "sha256": "9f775d1307f2354d3fdd3b148b5cd71c1b28f743aad3110c8db147a019d533bd"
+    },
+    "avx2-fastmath.inverse.f32": {
+      "bytes": 35840,
+      "sha256": "cf3fbc09108bc943f6c461e90757283729e65d96593503e6138ee22e746688d9"
+    },
+    "default-fastmath.sum.f32": {
+      "bytes": 35840,
+      "sha256": "e728f74c9fb005b9ae0913da150248bb02def53d11b83ca283bb209bdcbef6f0"
+    },
+    "avx2-off.exp.f32": {
+      "bytes": 20070400,
+      "sha256": "9e0ff4bb3a340443eb2c350e624ade88f57aa10ce931f23911748b878eab4aaf"
+    },
+    "default-fast.prob.f32": {
+      "bytes": 20070400,
+      "sha256": "bb0bc710f229c60c684322d254b25b5080080e1cfc9c3ec5d27adab1066aa71b"
+    },
+    "source.scores.f32": {
+      "bytes": 20070400,
+      "sha256": "3434913597b0c69b3b219423d1ad3fecb2f2ea90c0f65d44868c010a47fa4e89"
+    },
+    "default-fastmath.exp.f32": {
+      "bytes": 20070400,
+      "sha256": "aea0b02e87e4cc08a04046870bd36ea6f864851530667f72799aa4248499a3c1"
+    },
+    "avx2-fast.prob.f32": {
+      "bytes": 20070400,
+      "sha256": "1ed3330048f8719d64c9244d1979060322affcafd30a1d3cb7c8b24032889ce0"
+    },
+    "default-off.inverse.f32": {
+      "bytes": 35840,
+      "sha256": "0b236449246db9145cd7703a4c9918e0412db78f2d0ef199e2ac2ad29a347803"
+    },
+    "source.prob.f32": {
+      "bytes": 20070400,
+      "sha256": "5925ae17bdcb619c1c42e9fdb0f98f5ed1a6112a778af0f9e11c0f8d1a2cf775"
+    },
+    "avx2-fast.inverse.f32": {
+      "bytes": 35840,
+      "sha256": "cf3fbc09108bc943f6c461e90757283729e65d96593503e6138ee22e746688d9"
+    },
+    "avx2-fast.exp.f32": {
+      "bytes": 20070400,
+      "sha256": "9e0ff4bb3a340443eb2c350e624ade88f57aa10ce931f23911748b878eab4aaf"
+    },
+    "avx2-fastmath.json": {
+      "bytes": 38,
+      "sha256": "881b58bcd1dd891e18820ec8fa4ed32bc225c6fd942e263e5219e5e32bc1d064"
+    },
+    "default-fast.json": {
+      "bytes": 38,
+      "sha256": "881b58bcd1dd891e18820ec8fa4ed32bc225c6fd942e263e5219e5e32bc1d064"
+    },
+    "default-off.exp.f32": {
+      "bytes": 20070400,
+      "sha256": "59c73d96ecaf08501f263e731aea82232aea67901d8762fa0bec85e288885919"
+    },
+    "default-fast.sum.f32": {
+      "bytes": 35840,
+      "sha256": "9f775d1307f2354d3fdd3b148b5cd71c1b28f743aad3110c8db147a019d533bd"
+    },
+    "default-fast.exp.f32": {
+      "bytes": 20070400,
+      "sha256": "59c73d96ecaf08501f263e731aea82232aea67901d8762fa0bec85e288885919"
+    },
+    "avx2-fastmath.exp.f32": {
+      "bytes": 20070400,
+      "sha256": "9e0ff4bb3a340443eb2c350e624ade88f57aa10ce931f23911748b878eab4aaf"
+    },
+    "default-fast.inverse.f32": {
+      "bytes": 35840,
+      "sha256": "0b236449246db9145cd7703a4c9918e0412db78f2d0ef199e2ac2ad29a347803"
+    },
+    "default-fastmath.prob.f32": {
+      "bytes": 20070400,
+      "sha256": "0aa9ea606ffc8dc9b1565d82c7efb5190b98aaf1b0e46bf0abeab93dcb77d477"
+    },
+    "avx2-fastmath.prob.f32": {
+      "bytes": 20070400,
+      "sha256": "1ed3330048f8719d64c9244d1979060322affcafd30a1d3cb7c8b24032889ce0"
+    },
+    "avx2-off.inverse.f32": {
+      "bytes": 35840,
+      "sha256": "cf3fbc09108bc943f6c461e90757283729e65d96593503e6138ee22e746688d9"
+    },
+    "source.inverse.f32": {
+      "bytes": 35840,
+      "sha256": "cf3fbc09108bc943f6c461e90757283729e65d96593503e6138ee22e746688d9"
+    },
+    "avx2-fast.json": {
+      "bytes": 38,
+      "sha256": "881b58bcd1dd891e18820ec8fa4ed32bc225c6fd942e263e5219e5e32bc1d064"
+    },
+    "avx2-off.sum.f32": {
+      "bytes": 35840,
+      "sha256": "55caedfd1aa147e592fe2c60fb8f948686f0efeccbc69da66d67072604d9cba1"
+    },
+    "avx2-off.prob.f32": {
+      "bytes": 20070400,
+      "sha256": "1ed3330048f8719d64c9244d1979060322affcafd30a1d3cb7c8b24032889ce0"
+    },
+    "avx2-fast.sum.f32": {
+      "bytes": 35840,
+      "sha256": "55caedfd1aa147e592fe2c60fb8f948686f0efeccbc69da66d67072604d9cba1"
+    },
+    "default-fastmath.json": {
+      "bytes": 38,
+      "sha256": "881b58bcd1dd891e18820ec8fa4ed32bc225c6fd942e263e5219e5e32bc1d064"
+    },
+    "source.prob_float.f32": {
+      "bytes": 20070400,
+      "sha256": "1ed3330048f8719d64c9244d1979060322affcafd30a1d3cb7c8b24032889ce0"
+    },
+    "default-off.prob.f32": {
+      "bytes": 20070400,
+      "sha256": "bb0bc710f229c60c684322d254b25b5080080e1cfc9c3ec5d27adab1066aa71b"
+    },
+    "source.exp.f32": {
+      "bytes": 20070400,
+      "sha256": "77b4e3133b82f104a18146fe51a0438b7176649401e08bedbacb064e7134c147"
+    }
+  },
+  "workflow_run": 42052003211,
+  "artifact": {
+    "id": 13426439836,
+    "bytes": 151474227,
+    "sha256": "8b1429a0a14a8590bebf8a24e1822074e95e200b36ff361b0c73760008eae6d1",
+    "expires_at": "2027-02-03T15:09:00Z"
+  }
+}

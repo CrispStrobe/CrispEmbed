@@ -1,0 +1,39 @@
+{
+  "artifact": {
+    "archive_sha256": "18b33af440b44facd1b745ce7a0ec6aa82a539667fea536286096afbcd732a97",
+    "bytes": 4315,
+    "id": 13370771763,
+    "name": "heavy-41929343665"
+  },
+  "controls_stdout": "LIGHTON4B_TEXT_OWNER controls=3498 passed=1 payload_bytes=0 model_inference=0\n",
+  "executable_sha256": "8c07ab7a1b60cde3ef072b5780fbddc8d51ba2794110bcf9213fe78f5f1dfc7f",
+  "format5_admitted": false,
+  "independent_review": {
+    "control_count_recomputed": true,
+    "controls": 3498,
+    "downloaded_schema_hash_verified": true,
+    "matrix_rows": 249,
+    "protected_rows": 177,
+    "unique_text_rows": 426
+  },
+  "model_payload_bytes": 0,
+  "native_inference_observed": false,
+  "original": {
+    "header_sha256": "a1e36638b195f2d5943e000fcb069b275cb22ccc28b1b6184ddee7bdea7ef081",
+    "model": "lightonai/LightOnOCR-3-4B",
+    "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+    "schema_sha256": "441d2124086f5194d7fb52e6780f8e09b59878ee15dfba4f5e4971429fd8059b",
+    "text_tensors": 426
+  },
+  "quality_qualified": false,
+  "run_id": "41929343665",
+  "schema": "lighton4b-text-owner/v1",
+  "source_sha": "291b0a171d6ed75e2248cb27626ada4367c0491b",
+  "source_sha256": {
+    "CMakeLists.txt": "957a4858fc147cad159f2778c22ee3ef8bf6a21d4fa32fa90a692b9cf0c8784b",
+    "src/qwen35_lighton4b_text.h": "f1932546c94ff6f49e07168d51682cca27d9c001f30ddeab757d9f68e5d4a883",
+    "tests/test_lighton4b_text_owner.cpp": "1072d5e82367bafa65ae858c2488cd3a17f1bdd54eab473e4050300126254cf1",
+    "tools/ci-heavy/lighton4b_text_owner.py": "4fffe7a4f5cb74e76d7e25c585c725e653d6f86ab4961a099ebcd78b81854e59"
+  },
+  "status": "passed"
+}

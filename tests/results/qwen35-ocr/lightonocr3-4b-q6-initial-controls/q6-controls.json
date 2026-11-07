@@ -1,0 +1,10 @@
+{
+  "model_inference_executed": false,
+  "model_payload_bytes": 0,
+  "q6_names_sha256": "cfa42b73f9eff0e209673730dbadbc275bef9289017ddb2f4df044c674c12382",
+  "quality_qualified": false,
+  "recipe": "lighton4b-q4km-q6-q8head-v1",
+  "schema": "lighton4b-q6-controls/v1",
+  "source_sha": "cf71c6733f59ac0b12c1c1c280f6ef1ed76703e7",
+  "status": "failed"
+}

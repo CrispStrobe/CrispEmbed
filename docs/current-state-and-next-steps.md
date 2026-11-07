@@ -67,12 +67,18 @@ closure before reuse. This is a qualification gap, not a demonstrated numerical
 regression. No expensive shared-host work, new model publication, tag, default
 flip or app upgrade follows from these bounded reports.
 
-New draft [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143),
-head19531b886, adds723-tensor LightOn3-4B source preflight and23 profile controls.
-Its ordinary checks pass on its older base. Current-main rebase/integration and
-combined controls are still required; keep its owned implementation intact and
-preserve the complete PR141 receipts. It does not load weights, export GGUF or
-admit native4B. PLAN scopes both integration and the separate native effort.
+[PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143) adds the 723-tensor
+LightOn3-4B source preflight and 23 profile controls. Main `17c96639` is integrated
+at `91b24764`; all seven selected workflows pass, including 317 controls in
+27 suites. The explicit 4B converter and separate 24-layer precision recipe now
+require exact source/payload/schema proof and emit unqualified format 5.
+All 16 export controls pass at `aa661568` (333 overall); a shared inline-command
+workflow assertion stopped five ordinary workflows before compilation and is
+repaired by restoring the original source-preflight step. Default-off grouped-head
+APIs and hosted original/meta protocols are implemented. Actual meta construction,
+208 component stages/cache controls and combined regression CI are next. Component evidence and
+export admission do not qualify a native model. See PLAN and the
+[4B technical handoff](lightonocr3-4b.md) for ownership and remaining gates.
 
 ## State on 3 November 2026
 

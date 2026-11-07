@@ -1,0 +1,52 @@
+{
+  "schema": "lighton4b-vision-norm-integration/v1",
+  "status": "passed",
+  "model_forward_executed": false,
+  "quality_qualified": false,
+  "default_off": true,
+  "source_sha": "43b2d2c353191f8469b4078c5f3e9cde48255150",
+  "byte_controls": {
+    "norm1": {
+      "source": {
+        "bytes": 2293760,
+        "sha256": "5c8b532d171c15e40cab5b10be3f16f957549288f5f073636cf2ada58404bbaf"
+      },
+      "candidate": {
+        "bytes": 2293760,
+        "sha256": "5c8b532d171c15e40cab5b10be3f16f957549288f5f073636cf2ada58404bbaf"
+      },
+      "empty_zero_equal_unset": true,
+      "moments_equal_source_fast": true
+    },
+    "norm2": {
+      "source": {
+        "bytes": 2293760,
+        "sha256": "2d7f56c18ffcd4c8ffa01455976c48f08a30f8c49b7b4aeee48bbda9250c5fc0"
+      },
+      "candidate": {
+        "bytes": 2293760,
+        "sha256": "2d7f56c18ffcd4c8ffa01455976c48f08a30f8c49b7b4aeee48bbda9250c5fc0"
+      },
+      "empty_zero_equal_unset": true,
+      "moments_equal_source_fast": true
+    }
+  },
+  "source_sha256": {
+    "src/lighton4b_vision_bf16.cpp": "09394e54d8fd3a3581cfc508fa755f9f2188944a43f11772d450252314df9e3f",
+    "src/lighton4b_image_compose.h": "5e97143e51eb8243c35984467d0646c44c61a0b1d97c792e908a6c2d28f30d37",
+    "src/qwen35_vision.cpp": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3",
+    "src/qwen35_norm.cpp": "753ed80708e60f855c0756d75506cde62d285ffdb9d2663083cdeb308573b268",
+    "src/qwen35_vision.h": "93ae9252abdf010121e3988419254cbe1b360bcbd5e584c53e56a0ae7c4d584e",
+    "src/lighton4b_vision_owner.cpp": "d777fd59ccb843d7d74cfb7f6cb6de0b90c5c6fcd61e0a3e80eaa3d442c82780",
+    "src/qwen35_linear.cpp": "da0734e9eab94064dba1d9940483a358364d3c8c8f1c9b4739a3d2bf9108b212"
+  },
+  "controls_stdout": {
+    "test-lighton4b-bf16-round": "BF16_ROUND passed=1 finite_bf16_identity=1 ties_even=1 special=1 model_inference=0\n",
+    "test-lighton4b-native-context": "gguf_init_from_file: failed to open GGUF file 'missing.gguf' (No such file or directory)\nnative-context controls=9 passed=1 model_payload=0\n",
+    "test-lighton4b-image-compose": "passed=1 checks=45 model_inference=0\n",
+    "environment-doc-controls": "OK\n"
+  },
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42033147414",
+  "artifact_id": 13417635935,
+  "artifact_sha256": "be374b4429a07b4246c6564f659dce24ae9b05de1b5c437819b98431c18811e8"
+}

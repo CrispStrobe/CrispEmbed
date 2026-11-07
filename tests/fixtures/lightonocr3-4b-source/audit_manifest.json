@@ -1,0 +1,198 @@
+{
+  "repository": "lightonai/LightOnOCR-3-4B",
+  "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+  "retrieved_at": "2026-11-04T20:20:21.534842+00:00",
+  "source_files": {
+    "config.json": {
+      "url": "https://huggingface.co/lightonai/LightOnOCR-3-4B/resolve/b71010f095dc3735de7ee6b9969bff8f8f50b39a/config.json",
+      "bytes": 2897,
+      "sha256": "99b4c363a998c2d8c5ed5b3f3a40ec5cb97a156034df5002d0d789c74324f5f0",
+      "transport": {
+        "http_status": 200,
+        "content_range": null,
+        "etag": "\"1717ee7bae2615d301d79ab043bfdece2690f382\""
+      }
+    },
+    "generation_config.json": {
+      "url": "https://huggingface.co/lightonai/LightOnOCR-3-4B/resolve/b71010f095dc3735de7ee6b9969bff8f8f50b39a/generation_config.json",
+      "bytes": 204,
+      "sha256": "8ce51af0baac298c116b7db144efe1ebd78b0b792d084002634fd3ed63f4d515",
+      "transport": {
+        "http_status": 200,
+        "content_range": null,
+        "etag": "\"874bb40c8a36790d21635394ebcc2cfd06b12664\""
+      }
+    },
+    "preprocessor_config.json": {
+      "url": "https://huggingface.co/lightonai/LightOnOCR-3-4B/resolve/b71010f095dc3735de7ee6b9969bff8f8f50b39a/preprocessor_config.json",
+      "bytes": 390,
+      "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+      "transport": {
+        "http_status": 200,
+        "content_range": null,
+        "etag": "\"2ea84a437d448ff71b08df68fdd949d5cc4ebb64\""
+      }
+    },
+    "processor_config.json": {
+      "url": "https://huggingface.co/lightonai/LightOnOCR-3-4B/resolve/b71010f095dc3735de7ee6b9969bff8f8f50b39a/processor_config.json",
+      "bytes": 1191,
+      "sha256": "d89ef49ce9cd37fbf510158e13c1ef063d9286411c1ec9049932dbe0487143b1",
+      "transport": {
+        "http_status": 200,
+        "content_range": null,
+        "etag": "\"33818c7f9e991ad735fd240209f4fa73e6c28c50\""
+      }
+    },
+    "tokenizer_config.json": {
+      "url": "https://huggingface.co/lightonai/LightOnOCR-3-4B/resolve/b71010f095dc3735de7ee6b9969bff8f8f50b39a/tokenizer_config.json",
+      "bytes": 1139,
+      "sha256": "e98f1901ac6f0adff67b1d540bfa0c36ac1a0cf59eb72ed78146ef89aafa1182",
+      "transport": {
+        "http_status": 200,
+        "content_range": null,
+        "etag": "\"a068e2468cff426a9b105006e74e044030a6faf4\""
+      }
+    },
+    "chat_template.jinja": {
+      "url": "https://huggingface.co/lightonai/LightOnOCR-3-4B/resolve/b71010f095dc3735de7ee6b9969bff8f8f50b39a/chat_template.jinja",
+      "bytes": 7759,
+      "sha256": "d5ddb788d5f3df12e32244954037eb535409d24eeb48c2429d7588af4e7b69a7",
+      "transport": {
+        "http_status": 200,
+        "content_range": null,
+        "etag": "\"604313d96dfd6010febc856ca2322be030b6042a\""
+      }
+    },
+    "README.md": {
+      "url": "https://huggingface.co/lightonai/LightOnOCR-3-4B/resolve/b71010f095dc3735de7ee6b9969bff8f8f50b39a/README.md",
+      "bytes": 9321,
+      "sha256": "4c56af1be12a620d0cadbb09976c0cd02fac5557f0f780be747d35bd6689fc54",
+      "transport": {
+        "http_status": 200,
+        "content_range": null,
+        "etag": "\"2a63ebba5a67b40df72278190f2c4a465a1b3c93\""
+      }
+    },
+    "README.no_thinking.md": {
+      "url": "https://huggingface.co/lightonai/LightOnOCR-3-4B/resolve/b71010f095dc3735de7ee6b9969bff8f8f50b39a/README.no_thinking.md",
+      "bytes": 347,
+      "sha256": "8c909ee2086b401f6c6bfa016f43ca72777046b8e0ee8f496c898a8cd80b4538",
+      "transport": {
+        "http_status": 200,
+        "content_range": null,
+        "etag": "\"3a8ad3d30b76dbe8646a6c8ebbaad2cd1fe23187\""
+      }
+    },
+    "huggingface_model_api.json": {
+      "url": "https://huggingface.co/api/models/lightonai/LightOnOCR-3-4B/revision/b71010f095dc3735de7ee6b9969bff8f8f50b39a?blobs=true",
+      "bytes": 11751,
+      "sha256": "d87514a394c5c208efcb455fc9d876d989aefe6716635d340436c6c2f82ee364",
+      "transport": {
+        "http_status": 200,
+        "content_range": null,
+        "etag": "W/\"2de7-VIuxwOvOSnRfGYDwf8saAUmTV7U\""
+      }
+    },
+    "model.safetensors.header.json": {
+      "url": "https://huggingface.co/lightonai/LightOnOCR-3-4B/resolve/b71010f095dc3735de7ee6b9969bff8f8f50b39a/model.safetensors",
+      "bytes": 89456,
+      "sha256": "a1e36638b195f2d5943e000fcb069b275cb22ccc28b1b6184ddee7bdea7ef081",
+      "source_file_bytes": 9078620536,
+      "transport": {
+        "http_status": 206,
+        "content_range": "bytes 0-89463/9078620536",
+        "etag": "\"71bada45b8affc6abb80d4bb2c80b9f4ff616355e89bfd60d610fab56516debb\""
+      },
+      "extraction": "Exact original safetensors JSON header bytes, excluding 8-byte uint64 length prefix; original padding preserved."
+    }
+  },
+  "hf_reported_files": {
+    ".eval_results/olmocrbench.yaml": {
+      "blobId": "f533a7767ae820bbd1c78fe2c2e337ac0faf48cc",
+      "size": 1981
+    },
+    ".eval_results/parsebench.yaml": {
+      "blobId": "50ab5836796d603263a2bc561f0ada52f46bfe17",
+      "size": 1307
+    },
+    ".gitattributes": {
+      "blobId": "d7b6a0b54e6822ce07042a3e201e4c905a53b4ac",
+      "size": 1627
+    },
+    "README.md": {
+      "blobId": "2a63ebba5a67b40df72278190f2c4a465a1b3c93",
+      "size": 9321
+    },
+    "README.no_thinking.md": {
+      "blobId": "3a8ad3d30b76dbe8646a6c8ebbaad2cd1fe23187",
+      "size": 347
+    },
+    "chat_template.jinja": {
+      "blobId": "604313d96dfd6010febc856ca2322be030b6042a",
+      "size": 7759
+    },
+    "config.json": {
+      "blobId": "1717ee7bae2615d301d79ab043bfdece2690f382",
+      "size": 2897
+    },
+    "generation_config.json": {
+      "blobId": "874bb40c8a36790d21635394ebcc2cfd06b12664",
+      "size": 204
+    },
+    "lightonocr3_logo.png": {
+      "blobId": "9a52b9bedabb54667998e8dffb5f211f057d41f8",
+      "size": 1648312,
+      "lfs": {
+        "sha256": "768eee79d378518cfea9ed8d81ba3a53a0cff17ccf4b12c22a9e5ebedde32bcf",
+        "size": 1648312,
+        "pointerSize": 132
+      }
+    },
+    "merges.txt": {
+      "blobId": "a494e019ca1502219fd0128658b979e5f05ae8e8",
+      "size": 3353259
+    },
+    "model.safetensors": {
+      "blobId": "1d03cd62840dc4ac8cf19867ed1424ca45ec6e71",
+      "size": 9078620536,
+      "lfs": {
+        "sha256": "6b0dab74a2dab02d5b10ca56322255024ed8dca35c02746b42e9f296aaeb4e67",
+        "size": 9078620536,
+        "pointerSize": 135
+      }
+    },
+    "preprocessor_config.json": {
+      "blobId": "2ea84a437d448ff71b08df68fdd949d5cc4ebb64",
+      "size": 390
+    },
+    "processor_config.json": {
+      "blobId": "33818c7f9e991ad735fd240209f4fa73e6c28c50",
+      "size": 1191
+    },
+    "tokenizer.json": {
+      "blobId": "67741b04f23bfdb46501f748ce27865ec82eccfb",
+      "size": 19989343,
+      "lfs": {
+        "sha256": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4",
+        "size": 19989343,
+        "pointerSize": 133
+      }
+    },
+    "tokenizer_config.json": {
+      "blobId": "a068e2468cff426a9b105006e74e044030a6faf4",
+      "size": 1139
+    },
+    "vocab.json": {
+      "blobId": "0aa0ce0658d60ac4a5d609f4eadb0e8e43514176",
+      "size": 6722759
+    }
+  },
+  "tensor_header_audit": {
+    "tensor_count": 723,
+    "bf16_parameter_count": 4539265536,
+    "has_lm_head": false,
+    "has_mtp": false,
+    "parameter_count_includes_tied_embedding_once": true
+  },
+  "scope": "Metadata-only audit. No weight payload downloaded, no inference run, no full model-file checksum independently computed. Full payload sizes/hashes are HF API/Xet reported provenance; small-file and header SHA256 values above were computed over actual acquired bytes."
+}

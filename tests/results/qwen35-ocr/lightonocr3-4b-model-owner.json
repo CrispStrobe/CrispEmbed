@@ -1,0 +1,50 @@
+{
+  "format5_admitted": false,
+  "initial_failed_run": 41973459077,
+  "initial_failure": "Test incorrectly treated literal false as off; corrected to shared helper unset/empty/literal0 semantics without changing runtime.",
+  "model_inference_observed": false,
+  "owner_controls": 5281,
+  "protected_vision_f32": 197,
+  "quality_qualified": false,
+  "run_id": 41973787198,
+  "schema": "lighton4b-model-owner-review/v1",
+  "source_commit": "8ea8f4d03f7bbdf909986548dc9df2d5de7ab213",
+  "source_digest_records_verified": 12,
+  "source_receipt": {
+    "controls_stdout": "MODEL_OWNER controls=5281 passed=1 payload_bytes=0 model_inference=0\n",
+    "executable_sha256": "a4ebf0ba13e923633be74badf3ec4f8850d68903cbff5b1cf62ff2bb8e1e3635",
+    "format5_admitted": false,
+    "model_payload_bytes": 0,
+    "native_inference_observed": false,
+    "original": {
+      "header_sha256": "a1e36638b195f2d5943e000fcb069b275cb22ccc28b1b6184ddee7bdea7ef081",
+      "model": "lightonai/LightOnOCR-3-4B",
+      "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+      "schema_sha256": "f4c44309f9cd44fcfbfa619ec78ba50339c8853006699605a688e7e4ab7d86d1",
+      "text_tensors": 426,
+      "total_tensors": 723,
+      "vision_tensors": 297
+    },
+    "quality_qualified": false,
+    "schema": "lighton4b-model-owner/v1",
+    "source_sha": "8ea8f4d03f7bbdf909986548dc9df2d5de7ab213",
+    "source_sha256": {
+      "CMakeLists.txt": "5eccf14edbf76223bb0e394358e52843754470a6cd476b2a1d7d18fb5acdeeb0",
+      "src/lighton4b_model_owner.h": "e419c271a527d74c782fb321d348f4397c642fb9c5b12ab59f527c74f2568826",
+      "src/lighton4b_vision_owner.cpp": "d777fd59ccb843d7d74cfb7f6cb6de0b90c5c6fcd61e0a3e80eaa3d442c82780",
+      "src/qwen35_lighton4b_text.h": "2ab01f3c48b51eea21837f437ddeb5c1304ae26798e39d07dfaa19a49cc7405b",
+      "src/qwen35_vision.h": "93ae9252abdf010121e3988419254cbe1b360bcbd5e584c53e56a0ae7c4d584e",
+      "tests/test_lighton4b_gdn_reference.py": "7afbb938b519d8a8f838edd7e9791b2694a0333dba82b42f0154e632b9066dcf",
+      "tests/test_lighton4b_model_owner.cpp": "dae9cdb24f0b1561c5774d620e9a3dd5633ae264affd41b1297f1ae51f542476",
+      "tests/test_ovisocr2_large_inputs.py": "d738e386e1d8c6925c32d49b60a0ed092d79cefc6725015e1a018cf6f7608bf2",
+      "tests/test_ovisocr2_native_replay.py": "a8a0d0dee4668259ca94bba38e9f0009c4a9c5002adc45070c83722fef0d35ce",
+      "tools/ci-heavy/lighton4b_gdn_reference.py": "de650114fdb2fde4938a1b0a5fa1a14ff9e4016016c7d8fc2a2b1801895cf142",
+      "tools/ci-heavy/lighton4b_model_owner.py": "08852332b737b06000b416f76c6dfd5556b94f4eb15836a2fb7764c1511e3661",
+      "tools/ci-heavy/ovisocr2_native_replay.py": "cc515a3fab916692c1139de5db5a7bb46762ae677a72f93af7a691ccd0bd4dae"
+    },
+    "status": "passed"
+  },
+  "status": "passed",
+  "text_tensors": 426,
+  "vision_tensors": 297
+}

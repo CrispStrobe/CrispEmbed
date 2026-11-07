@@ -32,12 +32,18 @@ preservation41894992782/41897911047 is complete with verified readback through
 transport and the905-array admission barrier are linked; missing-other-case raw
 arrays require a separate current-CPU capture protocol, not a blind old rerun.
 
-New draft [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143) at19531b886
-adds LightOn3-4B source preflight on an older base. Its checks pass there; it
-still needs current-main integration review, preserving294 existing+23 new
-profile controls, selector coverage and completed OCR status. Do not overwrite
-its owned implementation or mistake source-header qualification for native4B.
-The exact integration/native boundaries are in PLAN.
+[PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143) continues after all
+seven selected workflows passed at integrated `91b24764`, preserving main
+`17c96639` and completed PR141 evidence; all 317 controls in 27 suites pass.
+The explicit 4B converter and 24-layer precision recipe are implemented with
+unqualified format 5. All 16 export controls pass at `aa661568` (333 total).
+The shared workflow assertion is repaired by restoring its original inline source
+step; five ordinary workflows had stopped before compilation. Separate default-off
+grouped-head APIs and the selected original/meta hosted job are implemented.
+Review actual meta construction and the four-case/208-stage component receipt,
+then bounded vocabulary projection. Preserve existing equal-head callers, old source guards and precision
+recipes; source/component success does not qualify native4B. The exact boundaries
+and next acceptance gates are in PLAN and [the 4B handoff](lightonocr3-4b.md).
 
 Historical 4 November snapshot: candidate 0.17.15 was then unreleased; the 5 November release checkpoint above supersedes it.
 Read [the 3 November handoff](handoff-2026-11-03.md) for the broader non-OCR queue.

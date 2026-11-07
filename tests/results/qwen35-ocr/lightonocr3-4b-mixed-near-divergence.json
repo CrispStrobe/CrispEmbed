@@ -1,0 +1,127 @@
+{
+  "schema": "lighton4b-mixed-near-divergence/v1",
+  "source_bf16_mixed_sha256": "ed4ef1b60c41d4d3b2a131d107c2563ee971c931873202f5f470683ebb9a1d58",
+  "native_run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42109519607",
+  "native_artifact_id": 13457482504,
+  "source_scores_sha256": {
+    "32": "8d9c184d37d2b43e8e32c321bbc57a31d427d31f5f1b59985b246a6b9ecf3bfd",
+    "33": "50d0d71849e27db998d9014068af6d2ff27c39a49803f56c4f099476847fda9f"
+  },
+  "native_scores_sha256": {
+    "32": "21affda48afff47f9eeee377da4769aaf3f9d672e85fe48caa50c8a866c63e4f",
+    "33": "9aad6ace48b2ef0e10bec5af70fdb7efded85968e5c5652d34983a017dee6a7a"
+  },
+  "matching_independent_prefix_tokens": 33,
+  "rows": [
+    {
+      "position": 32,
+      "same_input_prefix": true,
+      "source_top_ids": [
+        68100,
+        177328,
+        13753,
+        78149,
+        24590,
+        11161,
+        4881,
+        226171
+      ],
+      "source_top_scores": [
+        22.875,
+        20.125,
+        16.0,
+        15.6875,
+        15.6875,
+        15.125,
+        15.0625,
+        14.75
+      ],
+      "native_top_ids": [
+        68100,
+        177328,
+        13753,
+        78149,
+        24590,
+        11161,
+        4881,
+        226171
+      ],
+      "native_top_scores": [
+        22.89715576171875,
+        20.19397735595703,
+        16.021163940429688,
+        15.783332824707031,
+        15.67031478881836,
+        15.107501029968262,
+        15.082906723022461,
+        14.739405632019043
+      ],
+      "source_margin": 2.75,
+      "native_margin": 2.7031784057617188,
+      "native_at_source_winner": 22.89715576171875,
+      "source_at_native_winner": 22.875,
+      "rms": 0.019605177539874997,
+      "max_abs": 0.1033334732055664,
+      "cosine": 0.9999602963474841
+    },
+    {
+      "position": 33,
+      "same_input_prefix": true,
+      "source_top_ids": [
+        401,
+        1778,
+        293,
+        4755,
+        3656,
+        13,
+        1414,
+        15803
+      ],
+      "source_top_scores": [
+        18.5,
+        18.5,
+        17.25,
+        15.75,
+        14.625,
+        14.375,
+        13.0625,
+        13.0
+      ],
+      "native_top_ids": [
+        1778,
+        401,
+        293,
+        4755,
+        3656,
+        13,
+        1414,
+        15803
+      ],
+      "native_top_scores": [
+        18.55838394165039,
+        18.55112075805664,
+        17.227699279785156,
+        15.699102401733398,
+        14.560359954833984,
+        14.409934043884277,
+        13.062356948852539,
+        12.99170207977295
+      ],
+      "source_margin": 0.0,
+      "native_margin": 0.00726318359375,
+      "native_at_source_winner": 18.55112075805664,
+      "source_at_native_winner": 18.5,
+      "rms": 0.029980123882360196,
+      "max_abs": 0.13608551025390625,
+      "cosine": 0.9999510635841199
+    }
+  ],
+  "native_row33_after_offline_bf16_output_cast": {
+    "401": 18.5,
+    "1778": 18.5,
+    "argmax_lowest_id": 401
+  },
+  "interpretation": "BF16 final-head output RNE is sufficient to restore the source token at this first differing position; no subsequent/full-output claim",
+  "source_native_weight_precision_equal": false,
+  "quality_qualified": false
+}

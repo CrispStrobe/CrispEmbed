@@ -1,0 +1,16 @@
+{
+  "schema": "lighton4b-vision-norm-integration-initial/v1",
+  "status": "failed-test-helper-fallthrough",
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42032227007",
+  "source_sha": "16b849573",
+  "artifact_id": 13417815499,
+  "model_forward_executed": false,
+  "norm_byte_controls_passed": true,
+  "norm_moments_byte_controls_passed": true,
+  "norm_gate_controls_passed": true,
+  "all_four_targets_compiled": true,
+  "native_context_controls": 9,
+  "image_compose_assertions_before_fallthrough": 45,
+  "image_compose_stdout": "passed=1 checks=45 model_inference=0\nfailed line98",
+  "diagnosis": "Existing renamed crispembed_test_main falls through without return0; compiler warns control reaches end of non-void function. Add explicit return only; no assertion, runtime, source vector or budget changes."
+}

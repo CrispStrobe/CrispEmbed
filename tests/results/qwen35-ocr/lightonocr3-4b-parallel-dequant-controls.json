@@ -1,0 +1,9 @@
+{
+  "schema": "lighton4b-parallel-dequant-controls/v1",
+  "status": "passed",
+  "source_sha": "35cf71ec1616c128f7079356a3b24d57521f52a6",
+  "model_payload_bytes": 0,
+  "quality_qualified": false,
+  "binary_sha256": "964511a96c2d1c47892ef6a5d247affad6a1d83bd737be3cf4d095fcb1220445",
+  "stdout": "PARALLEL_DEQUANT passed=1 bit_exact_cases=48 boundary_guards=1 legacy_quant_gate=1 model_payload=0\n"
+}

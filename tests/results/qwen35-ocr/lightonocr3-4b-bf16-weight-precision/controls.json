@@ -1,0 +1,14 @@
+{
+  "schema": "lighton4b-bf16-weight-controls/v1",
+  "status": "passed",
+  "checkpoint_payload_bytes": 0,
+  "full_model_storage": false,
+  "quality_qualified": false,
+  "native_controls": "crispembed_diff: loaded 297 tensors from /mnt/heavy/scratch/lighton4b-decoder-compose/reference.gguf\nDECODER_COMPOSE controls=353 passed=1 shared_synthetic_weight_sets=2 checkpoint=0 logits=0\n",
+  "weight_controls": "BF16_DEQUANT_WEIGHTS passed=1 checks=16 embedding_head=1 storage_unchanged=1 gate_off_byte_identity=1 model_payload=0\n",
+  "legacy_synthetic_numeric_status": "failed",
+  "legacy_synthetic_earliest_failure": "prefill.cache.21.recurrent",
+  "legacy_error_type": "ValueError",
+  "synthetic_numeric_budget_unchanged": true,
+  "note": "Any original synthetic numerical rejection remains preserved, independent from new weight/gate/cache controls."
+}
