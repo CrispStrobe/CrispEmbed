@@ -10,7 +10,10 @@ def admit(cfg):
  require(hashlib.sha256((json.dumps(cfg,indent=2)+'\n').encode()).hexdigest()==CFG_SHA,'immutable corrected panel protocol')
  require(cfg['cases']==ex.prepare.CASE_IDS and cfg['cap']==1536 and cfg['context']==2048 and cfg['threads']==4 and cfg['worker_seconds']==6000 and cfg['arm_seconds']==1200,'frozen selection/capacity/budgets')
  require(set(cfg['changed_gates'])==CHANGED and cfg['qualified']is False and cfg['references_expert_adjudicated']is False and not cfg['reference_forward_allowed']and not cfg['heldout_tuning_allowed'],'closed diagnostic scope')
- selection=ROOT/'docs/lighton4b-heldout-v1.json';ex.prepare.admit(json.loads(selection.read_text()));require(sha(selection)==cfg['selection_protocol_sha256'],'original selection unchanged')
+ selection=ROOT/'docs/lighton4b-heldout-v1.json';selected=json.loads(selection.read_text());ex.prepare.admit(selected);require(sha(selection)==cfg['selection_protocol_sha256'],'original selection unchanged')
+ for case in selected['cases']:
+  for key in ['source','gold']:require(sha(ROOT/case[key])==case[key+'_sha256'],'unchanged frozen '+key)
+ require(sha(ROOT/'tests/regression/images/cc0/ground_truth.json')==selected['reference']['gold_registry_sha256'],'unchanged original reference registry')
  original=ROOT/'docs/lighton4b-heldout-executor-v1.json';require(sha(original)==cfg['frozen_executor_sha256'],'original reference protocol unchanged');old=json.loads(original.read_text())
  require(cfg['model_sha256']==old['candidate_sha256'],'same weights')
  require(sha(ROOT/'tests/lighton4b_native_document.cpp')==cfg['driver_sha256']and sha(ROOT/'CMakeLists.txt')==cfg['cmake_sha256'],'only reviewed CLI/CMake exceptions')
