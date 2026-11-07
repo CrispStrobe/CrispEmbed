@@ -1,0 +1,32 @@
+{
+  "schema": "lighton4b-composed-form-vision-bootstrap/v1",
+  "source_sha": "b98567cfd46aaf594f33076aaab4ff8e4610edbb",
+  "bootstrap_sha256": "e7ae9ddb4dff327d64e2c32cfc8bfae583ef2b5f9ed969599206b63f9559d79c",
+  "status": "failed",
+  "gpu_requested": false,
+  "model_forward_executed": null,
+  "model_quality_qualified": false,
+  "phase": "dependency-profile",
+  "source_file_sha256": {
+    "tools/kaggle/lighton4b_composed_form_vision.py": "91fdc5c329a49da611a9133c3da5611ec9a0232d298c64d3e68dc5d03eef7cad",
+    "tools/vision-profile-probe/test_composed_form_vision.py": "1d506a0780c7b3888cd2241ff268eecb3ee4da6b3ef81cd050b97859168856c0",
+    "docs/lighton4b-composed-form-vision-v1.json": "bfc3fbb1d856c36525c7a11bddb68184d92114c5f1a051786fc7bf0988753d90",
+    "tools/vision-profile-probe/component.py": "41f98cd9425a2aaedded36a326539117b403cd0a7c3791445aa3505b70f014bc",
+    "tools/vision-profile-probe/controls.py": "cadf5c775905e9d2749eef4b570bc566513b04f9f4b526d215db9b5d61b1da12",
+    "tools/vision-profile-probe/resize_patch.py": "ff801fb296de7a8c9bc110fc848895d99444f90e42537f06a3b14a3a1a487e2f",
+    "tools/projector-probe/source_patch.py": "8e53e2bf57a7cbaa2d6fc10fdd9029c58f3577396abe0e4188b8d285868c26ad",
+    "tools/projector-probe/canonical.py": "dcefedfc49a112f0d961199430b47159f9a8f9be517577ca2c97c3c55f8b3fb8",
+    "tools/projector-probe/worker.py": "56bc0b56a9324ffcc5494196502ec48ece027a430af5d85d9c31f5ae28a5ca2e",
+    "tools/physical-f16-attention-probe/worker.py": "fa5c24b1d371c2e5ae802635ca56bff80ba873d2056ac1f46ada859711b88bd7",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "tools/kaggle/lighton4b_physical_f16_full_form.py": "fd417f272f522e63d103f091589952f43a14c36a8c7068edee33a19cc2202c86",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "tools/lighton4b_upstream_physical_pack.py": "0f86cd619b1b25c419bd643a549786cc35d0c546b0bcab382e2efb77e3b24910",
+    "docs/lighton4b-upstream-physical-decode-v1.json": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d",
+    "tests/lighton4b_native_document.cpp": "e162586bf5cc48684163967612f1cb7aba335421014d7ef8be2e55831bf85e2b"
+  },
+  "error_type": "RuntimeError",
+  "error": "one exact complete dependency required: composed-vision.json",
+  "elapsed_seconds": 24.179674350000028
+}

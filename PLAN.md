@@ -3160,3 +3160,15 @@ Source d338 worker stopped131.69s at reference map admission: OCR flag was enabl
 ### Actual source-compatible vision byte proof (2026-11-07)
 
 Corrected b59 component completed280.59s, raw039b024f: actual sparse metadata admission before1.334GBtransfer, all297tensorSHA/source-declared precision exact. All29legacy anchors remain exact; newPillow/F16matrix/F32state pipeline matchesALL28actual live upstream arrays (patch/position/embedded/24blocks/merged), RMS/max0. Independent9rawfiles18.2MB +full cross-manifest hash census pass; full73owned/28source remote rehash required before composed-form model staging. Ordered vision-only138.00s→15.47s/~1.50GBRSS is component evidence, not balanced/fullspeed proof. No text checkpoint/originalBF16/upstream rerun; no decoded/heldout/general claim or default promotion. Full composed form follow-up preservesold194EOS/allraw+text/vision anchors before only2gatechange; fixed167source-feature parity is measured independently.
+
+### Corrected pixels-only composed form: observed positive, no shipping
+
+[Full composed form](docs/lighton4b-composed-form-vision-results.md), source
+`b98567cfd`, raw`aec0d0b1`,778.920s: old194EOS/all194score+38text+29vision
+anchors close before onlyPillow/F16vision gates change. Corrected167EOS matches
+all167 source-feature rows/text/IDs/EOS and28 actualsourcevision+processor
+bytes. CER259→175/656,WER47→45/90 vsupstream189/46.73 componentmembers
+rehashbeforeweights; Q4repack0/HEADBF160/F16attention1, same843e weights.
+Initial24.18s missing-dependency setupnegative retained. One teacherrow; BF16
+output reference isnot humanGT. No shipping/default/alias promotion; corrected
+fullcomposed table/Arabic andrepresentativeheldout gates remain.
