@@ -240,3 +240,39 @@ Recommendation: replace the experimental Q4_K with `q8_ffn_gu_q4k` (still `-expe
 on par with F16 on the gold corpus, not token-exact), optionally also publish Q8_0 as experimental;
 F16-r2 stays the default exact variant. Publication goes through the HF workflow with
 LICENSE/NOTICE under the Tongyi Qianwen research licence.
+
+## 5. Results: run 42375883471 (7 November 2026)
+
+Receipt: `tests/results/got-ocr2-q4-search-42375883471/` (`results.txt`, `compare.json`). The
+original `chat()` pipeline is the token and CER reference. Logit cosine is teacher-forced against
+F16-r2. CER, divergence and logit-cosine cells list fox / receipt_example / simple_form.
+
+| Arm | Size (MB) | Token-exact | First divergence | CER | Min logit cosine | Min stage cosine |
+|---|---:|---|---|---|---|---|
+| F16-r2 | 1442 | 3/3 | none | 0 / 0 / 0 | 1 / 1 / 1 | 1.000000 |
+| published Q4_K | 445 | 1/3 | – / 83 / 20 | 0 / 0.3445 / 0.0522 | 0.939 / 0.456 / 0.796 | 0.995157 |
+| E0 q4k_repro | 445 | 1/3 | – / 83 / 20 | 0 / 0.3445 / 0.0522 | 0.956 / 0.472 / 0.782 | 0.994163 |
+| **E1 dec_f16** (vision Q8_0, decoder F16) | 1034 | **2/3** | – / – / 7 | 0 / 0 / **0.0043** | **0.9999 / 0.9990 / 0.966** | 0.997745 |
+| E2 vis_f16 | 535 | 1/3 | – / 83 / 20 | 0 / 0.3468 / 0.0435 | 0.943 / 0.499 / 0.823 | 0.994163 |
+| E3 vis_f16_km | 548 | 1/3 | – / 3 / 27 | 0 / 0.6018 / 0.0391 | 0.973 / 0.825 / 0.593 | 0.996202 |
+| E4 vis_f16_attn_q8 | 586 | 1/3 | – / 3 / 16 | 0 / 0.5526 / 0.0739 | 0.962 / 0.266 / 0.947 | 0.996662 |
+| E5 vis_f16_emb_f16 | 681 | 1/3 | – / 3 / 16 | 0 / 0.5526 / 0.0478 | 0.944 / 0.718 / 0.869 | 0.995147 |
+| E6 vis_f16_imat | 535 | 1/3 | – / 3 / 27 | 0 / 0.5526 / 0.0217 | 0.980 / 0.657 / 0.732 | 0.996380 |
+| E7 vis_f16_km_imat | 548 | 1/3 | – / 3 / 7 | 0 / 0.5526 / 0.0043 | 0.966 / 0.561 / 0.765 | 0.997097 |
+
+**The section 3 diagnosis is revised by measurement.** The vision tower is *not* the main cause.
+E2 (vision F16, decoder Q4_K) is no better than E0. E1 (vision still Q8_0, decoder F16) is close
+to exact. The drift comes from the **4-bit decoder**. None of the 4-bit-class decoder levers
+(Q4_K_M layers, Q8_0 attention, F16 embeddings, imatrix) passes, and they mostly move
+receipt_example's first divergence to token 3. Its greedy margin there is evidently near a tie, so
+any 4-bit perturbation flips it. imatrix helps simple_form CER (0.0435 → 0.0217 → 0.0043 with
+the K_M layers) but not receipt_example. This matches the prior art: no measured 4-bit GOT-OCR2
+is exact (MLX 4-bit CER 0.0116).
+
+Next experiments (same lane, add recipes):
+- **E8** decoder **Q8_0** + vision F16. E1 suggests ~0.999 logits at about 600–700 MB.
+- **E9** decoder Q6_K, and **E10** Q5_K (+ imatrix), with vision F16, to find the smallest
+  decoder type above the bar.
+- Keep Q4_K as experimental. Unless the owner accepts the bar's "> 0.94 with divergences
+  documented" route, no 4-bit recipe here qualifies: the best minimum logit cosine on
+  receipt_example is 0.825.
