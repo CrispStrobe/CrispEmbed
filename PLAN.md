@@ -3004,3 +3004,8 @@ quality proof. Independent read-only closure verifies664 raw per-case hashes and
 actual first4 input/RMS/QKV/Z/a/b plus first16 layer0 main output. Keep master off;
 next is source-fed GDN/attention attribution and focused closed ablation controls,
 not promotion or another unbounded model panel.
+
+
+### LightOn4B tiled-output helper controls — 7 November 2026
+
+Kaggle CPU 143168048/v1 at617534eff passed19 synthetic checks plus19 retained-bundle repeats and5 Python protocol tests in76.18s, with zero checkpoint/inference. [Receipts and limitations](docs/lighton4b-hf-tiled-out-controls-results.md) retain exact source/helper/runtime hashes. Original-F1624tensor reproduction is a separate pending gate; no new runtime recipe or quality promotion.

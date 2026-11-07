@@ -1,0 +1,32 @@
+{
+  "checks": [
+    "chunk16",
+    "chunk3",
+    "chunk1",
+    "both-payloads-chunk-invariant",
+    "nontrivial-canonical-weight-control",
+    "python-coordinate-reference",
+    "python-constructed-physical-reference-exact",
+    "inverse-statistics-negative",
+    "wrong-statistics-not-silently-ignored",
+    "empty-energy-rejected",
+    "wrong-width-rejected",
+    "wrong-source-span-rejected",
+    "split-row-chunk-rejected",
+    "truncated-source-rejected",
+    "nonfinite-source-rejected",
+    "nonfinite-importance-rejected",
+    "negative-importance-rejected",
+    "existing-output-protected",
+    "source-file-immutable"
+  ],
+  "fixture_elements": 69632,
+  "full_f32_model_instantiated": false,
+  "helper_sha256": "c1bd905abfdb65ca4bcc5dc3d23cc41b312e93877b1dfbed67b2eb29c981bae1",
+  "max_chunk_elements": 65536,
+  "model_inference_executed": false,
+  "real_checkpoint_payload_bytes": 0,
+  "schema": "lighton4b-tiled-out-synthetic-controls/v1",
+  "seconds": 0.5653854869999577,
+  "status": "passed"
+}
