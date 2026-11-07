@@ -116,6 +116,8 @@ extern "C" {
     pub fn crispembed_mineru_last_document(ctx: *mut MineruContext, format: *const c_char) -> *const c_char;
     pub fn crispembed_mineru_last_markdown(ctx: *const MineruContext) -> *const c_char;
     pub fn crispembed_mineru_last_error(ctx: *const MineruContext) -> *const c_char;
+    pub fn crispembed_mineru_full_doc_enabled(ctx: *const MineruContext) -> c_int;
+    pub fn crispembed_mineru_is_quantized(ctx: *const MineruContext) -> c_int;
 }
 
 /// Opaque joint-schema SystemOne context; separate from embedding/Gemma handles.

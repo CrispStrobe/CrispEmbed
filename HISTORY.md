@@ -138,6 +138,101 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 7 November 2026 — MinerU full native document route default (owner decision) and OCR gold corpus v1
+
+- **MinerU default.** `CRISPEMBED_MINERU25_PRO_FULL_DOC` is now quantization-aware: default-on
+  for F16/F32 GGUFs, opt-in only (`=1`) when the loaded GGUF has any quantized tensor (detected
+  from tensor header types at `crispembed_mineru_init`; new C ABI
+  `crispembed_mineru_is_quantized` / `crispembed_mineru_full_doc_enabled`). `=0` restores the
+  basic route everywhere. Hosted run [42370991098](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42370991098)
+  at `222563d7` re-ran the MinerU route panel with the gate **unset**: 8/8 protocol cases
+  identical to the original pipeline (blocks JSON, Markdown, per-region requests), recorded
+  replay and all weight-free gates pass, and the C ABI reports F16 unquantized/route on
+  (unset) and off (`=0`) ([receipt](tests/results/mineru25/native-doc-default-42370991098.json)).
+  No frozen panel needed a `=0` pin: the qualification lanes call the basic C API or the
+  Python helper directly, and the only orchestrator users (`ocr_wrappers.sh`) are
+  interface-only checks on F16, already on the full route since `03b3e9f5`.
+- **OCR gold corpus v1.** [`docs/ocr-gold-corpus-v1.json`](docs/ocr-gold-corpus-v1.json): 57
+  licensed pages (17 en / 13 de / 12 fr Wikisource Validated, 15 CORD receipts), all 20 v2
+  pages reused with unchanged pins, block types/order/tables with derived-vs-manual
+  provenance; reused v2 pages reproduce their v2 ground truth with CER 0. Hosted run
+  [42372548797](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42372548797)
+  verified 40/42 Wikimedia pins (two DjVu render variants recorded, not accepted), pinned the
+  new CORD bytes, and aligned Tesseract 5.3.4 word boxes: 307/381 blocks boxed. It also found
+  that the API-reported size of paged renders is wrong (served at 1920px) for 36 pages;
+  sizes are now measured. Layout scorer (block IoU/text matching, type accuracy, Kendall
+  tau-b, table cell F1) with unit tests. [Guide](docs/ocr-gold-corpus.md).
+## 7 November 2026 — GOT-OCR2 quantization search closed
+
+Rounds 1–3 (heavy-cpu runs 42375883471, 42382978017, 42392365607) and a 57-page gold-corpus run on
+Kaggle: the 4-bit decoder drift is weight precision, not vision quantization or CPU activation
+quantization. A full Q8_0 decoder is exact on the 3-case panel but only 17/55 token-exact on the gold
+corpus; Q8_0 and the mixed `q8_ffn_gu_q4k` are on par with F16 on gold CER (0.357 / 0.345 vs 0.363).
+Details: [docs/got-ocr2-q4-research.md](docs/got-ocr2-q4-research.md).
+
+## 7 November 2026 — `got-ocr2` alias now resolves to F16-r2
+
+Owner decision: the default `got-ocr2` alias points to the token-exact F16-r2 at pinned Hub
+commit `c0f1aa7b` (same file as `got-ocr2-f16`); the Q4_K file is only reachable as
+`got-ocr2-q4_k-experimental`. The unpinned `/main/` Q4 URL and its hash entry are removed.
+
+## 7 November 2026 — Experimental quantized publications (owner decision)
+
+Owner decision of 7 November: publish the Q4_K/Q4_K_MIX queue as experimental, each with a
+per-model quality table on its card and in [docs/quantized-models.md](docs/quantized-models.md).
+All runs ended "published and re-verified" (remote LFS identity plus empty-cache readback):
+
+| Model | Run | Hub commit | File | Bytes | SHA-256 |
+|---|---|---|---|---:|---|
+| UltraBERT-Embed-150M Q4_K last-four FFN (new repo) | 42371042739 | `5105fa99` | `ultrabert-embed-150m-q4_k-last-four-ffn.gguf` | 576,997,440 | `087c9be0…eb4533c` |
+| MoEdern 115M Q4_K_MIX | 42371134640 | `8e14d8bb` | `moedern-115m-text-q4_k-mix.gguf` | 89,483,616 | `01d0e507…145db110` |
+| MoEdern 27M Q4_K_MIX | 42371136944 | `5db7ae22` | `moedern-27m-text-q4_k-mix.gguf` | 32,008,416 | `5d31ac7e…f70d62` |
+| Josev-2B Q8_0 | 42371120858 | `7bc8a7ae` | `josev2b-systemone-q8_0.gguf` | 3,630,289,376 | `fc1663bb…e36b85` |
+| Josev-2B Q4_K_MIX | 42371120858 | `7bc8a7ae` | `josev2b-systemone-q4_k-down8.gguf` | 3,095,515,616 | `adc7fa47…74d5e582` |
+| MiniCPM-OCR Q4_K_MIX (+ F16/Q8_0 unchanged) | 42371025754 | `195ba6b1` | `minicpm-ocr-1.0-q4_k-mix.gguf` | 1,017,943,296 | `5ba6cd53…c511ed` |
+| Unlimited-OCR-2 Q4_K_MIX (+ F16/Q8_0 rebuilt) | 42371027698 | `7f5f82c4` | `unlimited-ocr-2-q4_k-mix.gguf` | 2,295,035,584 | `b71f158d…da493a` |
+
+UltraBERT, MoEdern, Josev and MiniCPM Q4 bytes equal the files their precision receipts measured.
+Unlimited-OCR-2's rebuilt F16/Q8_0 differ in whole-file SHA from Hub `e3af0c0c` only by embedded
+tokenizer metadata (tensor-data hashes equal); old aliases stay pinned there. Card refreshes
+(small files only, GGUF bytes verified unchanged) via the new `model-card-refresh.yml`:
+GOT-OCR2 `f557899a` (research-only card, F16-r2 recommended, Q4_K experimental, UPSTREAM_README
+added, LICENSE matches Qwen1.5-0.5B's Tongyi Qianwen LICENSE, NOTICE carries the 2(c) line),
+OXR `08d82435` (German one-step decode divergence), TeleOCR `d6cf3319`, MinerU `e7a85625`,
+MI-GAN512 `0b2d8319` (F16 normal, Q4_K experimental 0.9019). Original TeleOCR/MinerU/OXR/MI-GAN
+publication receipts were archived from their run artifacts. Registry: eight new SHA-pinned
+`-experimental` aliases; MI-GAN f16/q4_k descriptions updated.
+
+## 7 November 2026 — Hugging Face private storage cleanup (owner-approved)
+
+Freed about 30.4 GB of private storage: pruned 163 per-epoch checkpoints from
+`cstr/posformer-training-checkpoints` (kept each run's `latest.ckpt`; history squashed),
+deleted two unrelated 2024 experiment repos, and retired `cstr/crispembed-pixelhacker-private`
+after confirming every GGUF is byte-identical in the public PixelHacker/SDXL-VAE repos and
+mirroring its sidecars ([amendment](docs/inpaint-publication-v1-amendment-20261107.md)).
+A private granite Q4_K_M repo was kept (no byte-identical public copy). All other private repos
+are kept by owner decision.
+
+## 7 November 2026 — OXR native document parity passes (comparator v2)
+
+Heavy CPU run 42359526030 (`f8ec7329`, `tools/ci-heavy/oxr_native_doc.sh dfine native`):
+self-checks, D-FINE and native all pass. All 5 cases (formula, table, receipt, german,
+japanese): Python replay and live requests bit-exact; native-D-FINE layout arms pass under
+comparator v2 (bbox floats within 0.01 px, text/types/order/counts exact); strict bit-exact
+layout still differs (recorded, `strict_all_identical=false`, max 0.0004 px)
+([receipt](tests/results/oxr/native-doc-42359526030-v2.json),
+[review of 41664201815](tests/results/oxr/native-doc-41664201815-review.json)). The route
+stays default-off.
+
+## 7 November 2026 — OXR native-document rerun reviewed
+
+Heavy CPU run 41664201815 (`dd465a44`) reported `native=fail`. Review
+([receipt](tests/results/oxr/native-doc-41664201815-review.json)): Python replay, live
+requests and request sets are identical on all 5 cases; native D-FINE layout has identical
+block counts, types, order and text; only bbox floats differ, by at most 0.0004 px. The
+failing gate is the bit-exact bbox comparator, not a runtime regression. A tolerance is an
+owner decision (PLAN). Also closed handoff lanes A (main green at `cb56aeec`) and B (PR #163).
+
 ## 5 November 2026 — v0.17.15 published and verified
 
 [Release v0.17.15](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.15)

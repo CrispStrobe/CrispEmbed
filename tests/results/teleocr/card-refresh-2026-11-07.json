@@ -1,0 +1,46 @@
+{
+  "schema": "crispembed-model-card-refresh-report-v1",
+  "spec": "docs/model-card-refresh-v1.json",
+  "entry": "teleocr",
+  "source_commit": "f076e21dfde72e0ca0488b5e941036ebbf8b19ed",
+  "status": "published and re-verified",
+  "remote": {
+    "repo": "cstr/TeleOCR-GGUF",
+    "parent": "68a65df9c3035cdab6d01e59980edf0ec2b421ee",
+    "commit": "d6cf33192fb3a33dad706698547c15bb7845b297",
+    "changed_files": {
+      "README.md": {
+        "bytes": 7197,
+        "sha256": "6fe08261ec3fb1c9c5d73d38b373270ec217e8fe2400ec177cba73c3948598b2"
+      },
+      "manifest.json": {
+        "bytes": 7266,
+        "sha256": "539981fc09c7ccd813399ec39f65e3ccffed2962d2f906345b69c54562e3cd5c"
+      }
+    },
+    "weights_unchanged": {
+      "teleocr-f16.gguf": {
+        "bytes": 2526109984,
+        "sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780"
+      },
+      "teleocr-q4_k-m.gguf": {
+        "bytes": 1923310816,
+        "sha256": "e975568f8bd069b3bc81364d10b38143a834922cdf600150e7e74084bfbce293"
+      },
+      "teleocr-q4_k-mix.gguf": {
+        "bytes": 1195406784,
+        "sha256": "31219f3ac469228f13a46cbfcc6ca6afb86436f3d62b51a0ae5a4fef4ee02a35"
+      },
+      "teleocr-q8_0.gguf": {
+        "bytes": 2113233248,
+        "sha256": "9de7e45ce6c13ba03d3d2879f2a1bff9f8407e12808be588cf057cd2553f224b"
+      }
+    },
+    "pins_verified": [
+      "LICENSE",
+      "NOTICE",
+      "UPSTREAM_README.md"
+    ]
+  },
+  "run_id": 42371358461
+}

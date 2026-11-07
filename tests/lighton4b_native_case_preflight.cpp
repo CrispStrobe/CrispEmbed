@@ -19,6 +19,9 @@ static int crispembed_test_main(int argc, char ** argv) {
     if (recipe == "q8_0" && policy != lighton4b_quant_recipe::q8_0) return 3;
     if (recipe == "q4_k" && policy != lighton4b_quant_recipe::q4_k) return 3;
     if (policy == lighton4b_quant_recipe::q4km_q6_q8head && !header->q6_profile_header()) return 3;
+    if (policy == lighton4b_quant_recipe::imatrix_q4km_q6head && !header->imatrix_q4km_profile_header()) return 3;
+    if (policy == lighton4b_quant_recipe::upstream_physical_q4km && !header->upstream_physical_profile_header()) return 3;
+    if (policy == lighton4b_quant_recipe::hf_tiled_out_q4km && !header->hf_tiled_out_profile_header()) return 3;
     if (policy == lighton4b_quant_recipe::gdn_out_q8 && !header->gdn_out_recipe_metadata_matches()) return 3;
     if (policy == lighton4b_quant_recipe::gdn_out_q6 && !header->gdn_out_q6_metadata_matches()) return 3;
     auto * meta = core_gguf::open_metadata(argv[1]);
@@ -29,7 +32,8 @@ static int crispembed_test_main(int argc, char ** argv) {
     std::vector<uint8_t> rgb((std::istreambuf_iterator<char>(input)), {});
     if (rgb.size() != size_t(height) * width * 3) return 5;
     image_inputs image;
-    if (!lighton4b_preprocess_rgb(rgb.data(), height, width, image)) return 6;
+    if (!lighton4b_preprocess_rgb(rgb.data(), height, width, image,
+                                  policy == lighton4b_quant_recipe::upstream_physical_q4km)) return 6;
     std::vector<int> ids, mods;
     std::string rendered;
     if (!tokenizer.image_prompt("", image.grid[1] * image.grid[2] / 4, ids, mods, rendered)) return 7;

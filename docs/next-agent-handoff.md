@@ -45,7 +45,7 @@ then bounded vocabulary projection. Preserve existing equal-head callers, old so
 recipes; source/component success does not qualify native4B. The exact boundaries
 and next acceptance gates are in PLAN and [the 4B handoff](lightonocr3-4b.md).
 
-Candidate0.17.15 is unreleased; published assets0.17.14/app0.17.12 stay unchanged.
+Historical 4 November snapshot: candidate 0.17.15 was then unreleased; the 5 November release checkpoint above supersedes it.
 Read [the 3 November handoff](handoff-2026-11-03.md) for the broader non-OCR queue.
 Older sections below are source-specific history; do not replay their old
 preparation commands or infer current status from dated queued-job language.

@@ -1,3 +1,11 @@
+## MinerU full native document route at the shipped default (7 November 2026, hosted x86 CPU, portable, 4 threads)
+
+Run 42370991098, F16 GGUF, gate unset: 8/8 cases identical to `two_step_extract`; per-case
+wall time Python helper vs native route (s): formula 257.8/258.5, table 279.4/278.8,
+receipt 345.3/345.8, german 682.1/684.4, japanese 286.8/283.7, arabic 257.8/257.5,
+layout-page 385.5/386.7, layout-rot90 520.7/518.7 — equal within noise (inference dominates).
+Quantized GGUFs keep the basic route unless `=1` (Q8/Q4: 6/8 vs original).
+
 ## Issue 71 stream: grain no longer blocks propagation (5 November 2026, Apple M1 Metal, `fix/inpaint-stream-grain`)
 
 Author-reported [PR162](https://github.com/CrispStrobe/CrispEmbed/pull/162)

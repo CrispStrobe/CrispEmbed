@@ -989,15 +989,17 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         if (!img) return {};
             // The complete native document route (upstream-exact postprocessing) is
-            // the default after an 8-case byte-identical A/B against the original
-            // Python pipeline; CRISPEMBED_MINERU25_PRO_FULL_DOC=0 restores basic.
+            // the default for F16/F32 after an 8-case byte-identical A/B against the
+            // original Python pipeline (opt-in =1 for quantized models, 6/8);
+            // CRISPEMBED_MINERU25_PRO_FULL_DOC=0 restores basic.
 #ifdef __EMSCRIPTEN__
         // WASM keeps the basic route: the full document route would exceed the
         // module size budget, and a 1.2B VLM is not a browser target.
         const char * data =
             crispembed_mineru_extract(ctx->mineru, img, w, h, 3, 0, std::max(0, st.params.vlm_max_tokens));
 #else
-        const bool full_doc = !core_env::explicitly_off("CRISPEMBED_MINERU25_PRO_FULL_DOC");
+        // Quantization-aware: default on for F16/F32, opt-in (=1) for quantized GGUFs.
+        const bool full_doc = crispembed_mineru_full_doc_enabled(ctx->mineru) != 0;
         const char * data =
             full_doc ? crispembed_mineru_extract_document(ctx->mineru, img, w, h, 3, nullptr,
                                                           std::max(0, st.params.vlm_max_tokens))

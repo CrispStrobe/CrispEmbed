@@ -1,0 +1,322 @@
+{
+  "schema": "ppocrv6-issue164-live-v1",
+  "source_commit": "8922548d6f058bcce739810edff99b036e8b3b3a",
+  "backend": "cpu",
+  "gpu": null,
+  "models": {
+    "det": {
+      "repository": "cstr/PP-OCRv6-medium-det-GGUF",
+      "revision": "62f655124d0b0bc71c7379ae598efe7807de1b97",
+      "filename": "PP-OCRv6_medium_det-f16.gguf",
+      "sha256": "39b80b016b7bc10ae3e17614ed5ebe6d58855859b88ab292127638935e673678"
+    },
+    "rec": {
+      "repository": "cstr/PP-OCRv6_medium_rec-GGUF",
+      "revision": "c67c83efd46f8efc4a0183fc26afbc06b6235ae7",
+      "filename": "PP-OCRv6_medium_rec-f16.gguf",
+      "sha256": "8aeac742d9a7325f3f487f5c05cb69389e4642f333857e4e95b95891a263f2e7"
+    }
+  },
+  "input_sha256": {
+    "white-a.png": "f80cab288f6a301f67e5bbac90e38e103ac289a457e4cf2763b48952dd00e31f",
+    "fox-a.png": "d139a96e514217e63970cea943e93b82a02521108ce2a2367069a14d57c87f39",
+    "white-b.png": "75faab8320d0a0b52308d3d2ad6e472e4fa99f672428e7d0972bd423ed3e0f3a",
+    "fox-b.png": "35f068bd9de306ebf0da345eb8c27be86170dc07c5bca8f41816d0b2a6427a1a",
+    "fox-again.png": "d139a96e514217e63970cea943e93b82a02521108ce2a2367069a14d57c87f39",
+    "black-b.png": "c853456bf1c8389c39bf8a302bd085042e58772f672440dc4d6d0a1363786fb3"
+  },
+  "server": {
+    "default": {
+      "responses": [
+        {
+          "text": "",
+          "n_regions": 0,
+          "mean_confidence": 0.0,
+          "results": [],
+          "reading_order": [],
+          "markdown": "",
+          "ms": 4375.8
+        },
+        {
+          "text": "The quick brown fox jumps\nover the lazy dog. 12345",
+          "n_regions": 2,
+          "mean_confidence": 0.9621,
+          "results": [
+            {
+              "text": "The quick brown fox jumps",
+              "bbox": [
+                27.8446,
+                36.2965,
+                507.1554,
+                80.3702
+              ],
+              "confidence": 0.9629,
+              "rec_confidence": 0.9629
+            },
+            {
+              "text": "over the lazy dog. 12345",
+              "bbox": [
+                27.1142,
+                106.3689,
+                468.8858,
+                148.8394
+              ],
+              "confidence": 0.9612,
+              "rec_confidence": 0.9612
+            }
+          ],
+          "reading_order": [
+            0,
+            1
+          ],
+          "markdown": "The quick brown fox jumps\n\nover the lazy dog. 12345\n\n",
+          "ms": 3418.7
+        },
+        {
+          "text": "",
+          "n_regions": 0,
+          "mean_confidence": 0.0,
+          "results": [],
+          "reading_order": [],
+          "markdown": "",
+          "ms": 972.1
+        },
+        {
+          "text": "The quick brown fox jumps\nover the lazy dog. 12345",
+          "n_regions": 2,
+          "mean_confidence": 0.9713,
+          "results": [
+            {
+              "text": "The quick brown fox jumps",
+              "bbox": [
+                10.4827,
+                69.4827,
+                202.5173,
+                88.5173
+              ],
+              "confidence": 0.9632,
+              "rec_confidence": 0.9632
+            },
+            {
+              "text": "over the lazy dog. 12345",
+              "bbox": [
+                9.7511,
+                98.7511,
+                187.2489,
+                116.2489
+              ],
+              "confidence": 0.9795,
+              "rec_confidence": 0.9795
+            }
+          ],
+          "reading_order": [
+            0,
+            1
+          ],
+          "markdown": "The quick brown fox jumps\n\nover the lazy dog. 12345\n\n",
+          "ms": 2916.0
+        },
+        {
+          "text": "The quick brown fox jumps\nover the lazy dog. 12345",
+          "n_regions": 2,
+          "mean_confidence": 0.9621,
+          "results": [
+            {
+              "text": "The quick brown fox jumps",
+              "bbox": [
+                27.8446,
+                36.2965,
+                507.1554,
+                80.3702
+              ],
+              "confidence": 0.9629,
+              "rec_confidence": 0.9629
+            },
+            {
+              "text": "over the lazy dog. 12345",
+              "bbox": [
+                27.1142,
+                106.3689,
+                468.8858,
+                148.8394
+              ],
+              "confidence": 0.9612,
+              "rec_confidence": 0.9612
+            }
+          ],
+          "reading_order": [
+            0,
+            1
+          ],
+          "markdown": "The quick brown fox jumps\n\nover the lazy dog. 12345\n\n",
+          "ms": 3225.0
+        },
+        {
+          "text": "",
+          "n_regions": 0,
+          "mean_confidence": 0.0,
+          "results": [],
+          "reading_order": [],
+          "markdown": "",
+          "ms": 965.1
+        }
+      ],
+      "accepted": [
+        0,
+        1,
+        0,
+        0,
+        1,
+        0
+      ],
+      "graph_builds": 1
+    },
+    "both": {
+      "responses": [
+        {
+          "text": "",
+          "n_regions": 0,
+          "mean_confidence": 0.0,
+          "results": [],
+          "reading_order": [],
+          "markdown": "",
+          "ms": 1661.8
+        },
+        {
+          "text": "The quick brown fox jumps\nover the lazy dog. 12345",
+          "n_regions": 2,
+          "mean_confidence": 0.9621,
+          "results": [
+            {
+              "text": "The quick brown fox jumps",
+              "bbox": [
+                27.8446,
+                36.2965,
+                507.1554,
+                80.3702
+              ],
+              "confidence": 0.9629,
+              "rec_confidence": 0.9629
+            },
+            {
+              "text": "over the lazy dog. 12345",
+              "bbox": [
+                27.1142,
+                106.3689,
+                468.8858,
+                148.8394
+              ],
+              "confidence": 0.9612,
+              "rec_confidence": 0.9612
+            }
+          ],
+          "reading_order": [
+            0,
+            1
+          ],
+          "markdown": "The quick brown fox jumps\n\nover the lazy dog. 12345\n\n",
+          "ms": 3588.0
+        },
+        {
+          "text": "",
+          "n_regions": 0,
+          "mean_confidence": 0.0,
+          "results": [],
+          "reading_order": [],
+          "markdown": "",
+          "ms": 631.1
+        },
+        {
+          "text": "The quick brown fox jumps\nover the lazy dog. 12345",
+          "n_regions": 2,
+          "mean_confidence": 0.9716,
+          "results": [
+            {
+              "text": "The quick brown fox jumps",
+              "bbox": [
+                10.4864,
+                69.4864,
+                202.5136,
+                88.5136
+              ],
+              "confidence": 0.9637,
+              "rec_confidence": 0.9637
+            },
+            {
+              "text": "over the lazy dog. 12345",
+              "bbox": [
+                9.7511,
+                98.7511,
+                187.2489,
+                116.2489
+              ],
+              "confidence": 0.9795,
+              "rec_confidence": 0.9795
+            }
+          ],
+          "reading_order": [
+            0,
+            1
+          ],
+          "markdown": "The quick brown fox jumps\n\nover the lazy dog. 12345\n\n",
+          "ms": 2354.9
+        },
+        {
+          "text": "The quick brown fox jumps\nover the lazy dog. 12345",
+          "n_regions": 2,
+          "mean_confidence": 0.9621,
+          "results": [
+            {
+              "text": "The quick brown fox jumps",
+              "bbox": [
+                27.8446,
+                36.2965,
+                507.1554,
+                80.3702
+              ],
+              "confidence": 0.9629,
+              "rec_confidence": 0.9629
+            },
+            {
+              "text": "over the lazy dog. 12345",
+              "bbox": [
+                27.1142,
+                106.3689,
+                468.8858,
+                148.8394
+              ],
+              "confidence": 0.9612,
+              "rec_confidence": 0.9612
+            }
+          ],
+          "reading_order": [
+            0,
+            1
+          ],
+          "markdown": "The quick brown fox jumps\n\nover the lazy dog. 12345\n\n",
+          "ms": 3544.9
+        },
+        {
+          "text": "",
+          "n_regions": 0,
+          "mean_confidence": 0.0,
+          "results": [],
+          "reading_order": [],
+          "markdown": "",
+          "ms": 632.8
+        }
+      ],
+      "accepted": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "graph_builds": 4
+    }
+  },
+  "passed": true,
+  "workflow_run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42224790355"
+}

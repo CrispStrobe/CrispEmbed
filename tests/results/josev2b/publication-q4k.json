@@ -1,0 +1,125 @@
+{
+  "schema": "crispembed-josev-quant-publication-report-v1",
+  "protocol": "docs/josev2b-q4k-publication-v1.json",
+  "status": "published and re-verified",
+  "variants": [
+    "Q8_0",
+    "Q4_K_MIX"
+  ],
+  "remote": {
+    "repo": "cstr/Josev-2B-SystemOne-GGUF",
+    "commit": "7bc8a7aeb6c6d862fc3e0cf55bee49afd79dccc2",
+    "previous_revision": "bffe62522f826b4c33f2e731d5b870ced5150a17",
+    "files": [
+      {
+        "variant": "Q8_0",
+        "filename": "josev2b-systemone-q8_0.gguf",
+        "bytes": 3630289376,
+        "sha256": "fc1663bbd050938ff0bdb1b20ca52bd9ff7579dca63c0f7f9a15b3c3b7e36b85"
+      },
+      {
+        "variant": "Q4_K_MIX",
+        "filename": "josev2b-systemone-q4_k-down8.gguf",
+        "bytes": 3095515616,
+        "sha256": "adc7fa473febfef3fac10eac6fa0bebb6f68932675d1613e24706a3b74d5e582"
+      }
+    ],
+    "all_files_sha256": {
+      ".gitattributes": "f02c014ce411f5dfc7d49938f7d62ffd173885a7f0556ea460755e839c913546",
+      "README.md": "7abb97ea99d097de8f5c1c08077ac946cbd2a37ef097c1147b1aac001912ce89",
+      "josev2b-systemone-f32.gguf": "72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2",
+      "josev2b-systemone-q4_k-down8.gguf": "adc7fa473febfef3fac10eac6fa0bebb6f68932675d1613e24706a3b74d5e582",
+      "josev2b-systemone-q8_0.gguf": "fc1663bbd050938ff0bdb1b20ca52bd9ff7579dca63c0f7f9a15b3c3b7e36b85",
+      "manifest.json": "94629f7d01b6206da44998a903cc714b100f103af2e7ddc3253c29119cc5a885",
+      "upstream/LICENSE": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a",
+      "upstream/README.md": "a73261b2cb0a219b6d95b7b3fd281e2ebd47dcfadc3bfe674f8cb2719a2a4d33",
+      "upstream/config.json": "d839cc74703ac0a81b31e343eed5cb20e7e0de087f66ac2b6be3d4b92496b76a",
+      "upstream/joint_head_config.json": "9ec32207deca79a5ec809cb8306c8222d435163da3800e6fdb42e8789a69b8f8",
+      "upstream/joint_schema_model.py": "0e304cf7c6500e8bb59bef7e2afd2c6373f82596dfb3b57d1aa93c175e2dc3a3",
+      "upstream/processor_config.json": "14932921ca485d458a04dafd8069fbb0a4505622a48208d19ed247115801385b",
+      "upstream/tokenizer_config.json": "50470511708577d43f7c18c2d8e2ab02fb8abf3add1c40f60b74579d6d16e27e",
+      "upstream/unsloth_decision_config.json": "efa0bd264d7b010287a37cb87cbc6f4763ffbc9350724232180761b24ce335f1"
+    },
+    "precision": {
+      "Q8_0": {
+        "variant": "Q8_0",
+        "recipe": "q8-all",
+        "receipt": "tests/results/josev2b/q4k-sweep-41615751516.json",
+        "receipt_sha256": "9dc81dbf9428a7156c8f7021d838cd79a76340f9a23c8fd9c29d16cecb80efb9",
+        "receipt_commit": "c2b72a58ef848bdcd4adf18bab6cd76a8284a3c8",
+        "bar": 0.97,
+        "head_logit_cos_min": 0.9999467750007115,
+        "final_norm_cos_min": 0.9994414401011729,
+        "final_norm_bar_passed": true,
+        "typed_json_exact": 1,
+        "argmax_exact": 4,
+        "cases": 4,
+        "probabilities_max_abs": 0.0058747828006744385,
+        "strict_stage_failures": 200,
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 150,
+          "Q4_K": 0
+        },
+        "expected_sha256": "fc1663bbd050938ff0bdb1b20ca52bd9ff7579dca63c0f7f9a15b3c3b7e36b85",
+        "expected_bytes": 3630289376
+      },
+      "Q4_K_MIX": {
+        "variant": "Q4_K_MIX",
+        "recipe": "all-q4-down-q8",
+        "receipt": "tests/results/josev2b/q4k-sweep-41615751516.json",
+        "receipt_sha256": "9dc81dbf9428a7156c8f7021d838cd79a76340f9a23c8fd9c29d16cecb80efb9",
+        "receipt_commit": "c2b72a58ef848bdcd4adf18bab6cd76a8284a3c8",
+        "bar": 0.94,
+        "head_logit_cos_min": 0.9973891795079161,
+        "final_norm_cos_min": 0.9491092304303442,
+        "final_norm_bar_passed": true,
+        "typed_json_exact": 0,
+        "argmax_exact": 4,
+        "cases": 4,
+        "probabilities_max_abs": 0.0358424186706543,
+        "strict_stage_failures": 203,
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 24,
+          "Q4_K": 126
+        },
+        "expected_sha256": "adc7fa473febfef3fac10eac6fa0bebb6f68932675d1613e24706a3b74d5e582",
+        "expected_bytes": 3095515616
+      }
+    },
+    "conversion_checks": {
+      "Q8_0": {
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 150,
+          "Q4_K": 0
+        },
+        "critical292_f32_byte_exact": true,
+        "general_file_type": 7,
+        "output_sha256": "fc1663bbd050938ff0bdb1b20ca52bd9ff7579dca63c0f7f9a15b3c3b7e36b85"
+      },
+      "Q4_K_MIX": {
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 24,
+          "Q4_K": 126
+        },
+        "critical292_f32_byte_exact": true,
+        "general_file_type": 14,
+        "output_sha256": "adc7fa473febfef3fac10eac6fa0bebb6f68932675d1613e24706a3b74d5e582"
+      }
+    },
+    "urls": {
+      "josev2b-systemone-q8_0.gguf": "https://huggingface.co/cstr/Josev-2B-SystemOne-GGUF/resolve/7bc8a7aeb6c6d862fc3e0cf55bee49afd79dccc2/josev2b-systemone-q8_0.gguf",
+      "josev2b-systemone-q4_k-down8.gguf": "https://huggingface.co/cstr/Josev-2B-SystemOne-GGUF/resolve/7bc8a7aeb6c6d862fc3e0cf55bee49afd79dccc2/josev2b-systemone-q4_k-down8.gguf"
+    }
+  },
+  "run": 42371120858,
+  "source_commit": "84b5fbedd8a1b07dd5e8a6582cc02010be75b11a",
+  "status_label": "experimental"
+}

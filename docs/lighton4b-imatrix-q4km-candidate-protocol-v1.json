@@ -1,0 +1,135 @@
+{
+  "calibration_only": {
+    "baseline_calibration_report_sha256": "ee94f2a3428648d83a70a53dcb5bfdfd5793630a3d0a98c7a823f82e6c5bd9ac",
+    "cases": [
+      "simple_table",
+      "arabic_printed_line"
+    ],
+    "fixed_gates": {
+      "BF16_LINEAR": 0,
+      "BF16_QUANT_WEIGHTS": 0,
+      "HEAD_BF16": 1,
+      "PARALLEL_DEQUANT": 1
+    },
+    "frozen_protocol_sha256": "3a1738c26cf5a34680fea1468bea07c06ee26659f7ddb7e249299677746ba36d",
+    "input_manifest_sha256": "a07af76028a0d53c8bfc0ccafedac348eaeb725c8c8c55e3136906f202b8f65d",
+    "plain_q4_first_score_sha256": {
+      "arabic_printed_line": "823de94f5bb8e96a32d33fd9382c7f7d62e436181bad60276c5f238d655625e2",
+      "simple_table": "74786da3f763d3aafeea14954a06e80b291d340005ffc413d804e71a21071a57"
+    }
+  },
+  "execution": {
+    "Pillow": "11.3.0",
+    "baseline_file_and_two_first_score_gates_before_weighted_quantization": true,
+    "bootstrap_deadline_seconds": 4800,
+    "build_parallel": 2,
+    "child_deadline_seconds": 2700,
+    "controller_deadline_seconds": 4500,
+    "first_score_only": true,
+    "full_generation_in_this_worker": false,
+    "gguf": "0.19.0",
+    "github_dispatch_allowed": false,
+    "host": "Kaggle CPU only",
+    "kernel_deadline_seconds": 5400,
+    "max_new_tokens": 256,
+    "minimum_available_memory_bytes": 8589934592,
+    "minimum_cgroup_headroom_bytes": 2147483648,
+    "minimum_free_disk_bytes": 19327352832,
+    "native_threads": 4,
+    "no_credentials_in_source": true,
+    "no_silent_fallback": true,
+    "numpy": "2.3.5",
+    "retain_same_compiled_runtime_bundle": true
+  },
+  "limitations": [
+    "External published text statistics, not pretrained image/OCR statistics.",
+    "Statistics repo and source model repo declare Apache-2.0; underlying calibration text license/content remain unauthenticated.",
+    "Calibration-only, previously observed cases; no heldout, release, default or quality qualification.",
+    "Weighted Q4 path changes its optimizer as well as using column importance; cannot attribute all effects solely to calibration corpus."
+  ],
+  "limits": {
+    "accelerator": "Currentnativecontext/projection/vision path is CPU-hardwired. GPU allocation alone does not accelerate this tested path.",
+    "decoded_followup": {
+      "arabic_child_seconds": 1200,
+      "complete_native_ids_text_eos_or_cap_required": true,
+      "controller_seconds": 6300,
+      "kernel_seconds": 7200,
+      "max_new_tokens": 256,
+      "previous_225_rows_not_quality_evidence": true,
+      "reuse_same_producer_binary_and_ggml_hashes": true,
+      "table_child_seconds": 4500
+    },
+    "no_shipping_approval": true,
+    "same_calibration_only": true
+  },
+  "model_free_controls": {
+    "initial_compile_and_link_negatives_preserved": true,
+    "new_policy_checks": 1147,
+    "old_recipe_checks": [
+      713,
+      700,
+      112
+    ],
+    "public_fence_checks": 39,
+    "q6_head_checks": 84,
+    "source": "6d751828e61937fe816a04ab355e7305239d63ff",
+    "source_pins": 15,
+    "status": "passed"
+  },
+  "null_control": {
+    "bytes": 4030957952,
+    "file": "lightonocr3-4b-q4_k-vision-f32.gguf",
+    "repository": "cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
+    "revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+    "sha256": "f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91"
+  },
+  "pending_before_dispatch": [
+    "Review concrete worker source and null control / actual248 coverage controls.",
+    "Verify private immutable original-output mount and only two admitted calibration paths.",
+    "Verify resource checks and safe partial retention."
+  ],
+  "recipe": {
+    "protected_f32_exact": 474,
+    "publisher_byte_equivalent": false,
+    "q6_names_sha256": "0ebc0b6104238b46de946f940f61cdc90e04a0eb187553026714fc1270cdb44c",
+    "q6_tied_head": "same physical embedding/output tensor; no source importance vector, intentionally unweighted Q6",
+    "source_only": true,
+    "tag": "lighton4b-weighted-q4km-style-q6head-v1",
+    "types": {
+      "F32": 474,
+      "Q4_K": 216,
+      "Q6_K": 33
+    }
+  },
+  "retention": {
+    "candidate": "private Kaggle kernel output, explicit content SHA; no model hub upload",
+    "provider_expiry": "not supplied; no 90-day guarantee asserted",
+    "receipts": "All stages/partial failures, exact candidate and compiled runtime bundle, raw source/native first scores/IDs/EOS metadata; private Kaggle outputs, no provider expiry guarantee"
+  },
+  "schema": "lighton4b-imatrix-q4km-candidate/v1",
+  "source": {
+    "bytes": 9757493600,
+    "file": "lightonocr3-4b-vision-f32.gguf",
+    "repository": "cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
+    "revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+    "sha256": "757ad5d0ea7699b3d0ce4cbb70978de442e5b95e660da0a13cf048980e255606",
+    "weights": "original BF16-derived unquantized F16 text, F32 protected tensors; no requantization or F32 model"
+  },
+  "statistics": {
+    "adapted_bytes": 3621184,
+    "adapted_sha256": "105aba299aff48c63b43323bf6ec4f02d20f2fbb726b1ece0728e9e7fbb24663",
+    "applied_count_required": 248,
+    "bytes": 3626496,
+    "corpus_content_authenticated": false,
+    "corpus_license_authenticated": false,
+    "file": "LightOnOCR-3-4B-imatrix.gguf",
+    "image_calibration_claim": false,
+    "inverse_gdn_output_vectors": 24,
+    "profile": "lighton4b-text-inputs-hf-grouped-v1",
+    "publisher_source_weights_authenticated": false,
+    "repository": "richardyoung/LightOnOCR-3-4B-GGUF",
+    "revision": "8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01",
+    "sha256": "10e8194af99deb61c457b7f84b39c57224c72f0b9ed262b27c626dc92887afd7"
+  },
+  "status": "predeclared"
+}

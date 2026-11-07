@@ -1,0 +1,152 @@
+{
+  "schema": "lighton4b-source-repack-operator/v1",
+  "upstream_source": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "native_ggml_source": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "actual_receipt_sha256": "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3",
+  "source_model_sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26",
+  "source_model_bytes": 2708804576,
+  "source_model_url": "https://huggingface.co/richardyoung/LightOnOCR-3-4B-GGUF/resolve/8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01/LightOnOCR-3-4B-Q4_K_M.gguf",
+  "transport_audit_sha256": "920b4d5db276414bdd743fcc80a7ed1033ed1c0ca3b76859ef922aa667de9dee",
+  "matrices": [
+    {
+      "name": "l.layers.0.linear_attn.in_proj_qkv.weight",
+      "physical_name": "blk.0.attn_qkv.weight",
+      "source_offset": 538358752,
+      "offset": 521705728,
+      "bytes": 17203200,
+      "type": 14,
+      "stored_shape": [
+        2560,
+        8192
+      ],
+      "source_shape": [
+        2560,
+        8192
+      ],
+      "data_offset": 531717984,
+      "source_packed_sha256": "8104e56008adb5aab2312f0097f46b02a32cb9c0da5e6c5a78e4d571c484a652",
+      "sha256": "a9e19cf26d94b1a37d3a22b995bb657841c44eaa027be108a52d5688c4affcd2",
+      "whole_rows_permuted": 8192,
+      "protected_vision": false,
+      "out_columns_retained": false,
+      "quant_blocks_unchanged": true,
+      "role": "qkv",
+      "input": "native/prefill.first_chunk.layer0.input_norm.f32",
+      "output": "native/prefill.first_chunk.layer0.qkv.f32"
+    },
+    {
+      "name": "l.layers.0.linear_attn.in_proj_z.weight",
+      "physical_name": "blk.0.attn_gate.weight",
+      "source_offset": 532450272,
+      "offset": 538908928,
+      "bytes": 5898240,
+      "type": 12,
+      "stored_shape": [
+        2560,
+        4096
+      ],
+      "source_shape": [
+        2560,
+        4096
+      ],
+      "data_offset": 548921184,
+      "source_packed_sha256": "73298ca6d6137e900af591c0f174e255d9316d0626ad7d48a2b7baffdb5c365d",
+      "sha256": "4224974b23af7a2e78f515d45dc0e73a9ac064d5fd2e5710c6bad5b377e8e870",
+      "whole_rows_permuted": 4096,
+      "protected_vision": false,
+      "out_columns_retained": false,
+      "quant_blocks_unchanged": true,
+      "role": "z",
+      "input": "native/prefill.first_chunk.layer0.input_norm.f32",
+      "output": "native/prefill.first_chunk.layer0.z.f32"
+    },
+    {
+      "name": "l.layers.0.linear_attn.in_proj_a.weight",
+      "physical_name": "blk.0.ssm_alpha.weight",
+      "source_offset": 601468000,
+      "offset": 521613568,
+      "bytes": 46080,
+      "type": 12,
+      "stored_shape": [
+        2560,
+        32
+      ],
+      "source_shape": [
+        2560,
+        32
+      ],
+      "data_offset": 531625824,
+      "source_packed_sha256": "bf8d98dea7d466d7b584768922455e4be5b279adf329a74bd34493f8861cd795",
+      "sha256": "e6adef6deda6f1a857c50da502ef586ae8b7871a1d3eabee8b88f0f965671ea6",
+      "whole_rows_permuted": 32,
+      "protected_vision": false,
+      "out_columns_retained": false,
+      "quant_blocks_unchanged": true,
+      "role": "a",
+      "input": "native/prefill.first_chunk.layer0.input_norm.f32",
+      "output": "native/prefill.first_chunk.layer0.a.f32"
+    },
+    {
+      "name": "l.layers.0.linear_attn.in_proj_b.weight",
+      "physical_name": "blk.0.ssm_beta.weight",
+      "source_offset": 601514080,
+      "offset": 521659648,
+      "bytes": 46080,
+      "type": 12,
+      "stored_shape": [
+        2560,
+        32
+      ],
+      "source_shape": [
+        2560,
+        32
+      ],
+      "data_offset": 531671904,
+      "source_packed_sha256": "aac964631a29d404b54d6f16f1a4229f4b16ed6c9a7c530327d9d9c92c4e9f06",
+      "sha256": "d599e24008e52cf3471e09ce4b5daaf4d93334e431a8c698965de215f891b162",
+      "whole_rows_permuted": 32,
+      "protected_vision": false,
+      "out_columns_retained": false,
+      "quant_blocks_unchanged": true,
+      "role": "b",
+      "input": "native/prefill.first_chunk.layer0.input_norm.f32",
+      "output": "native/prefill.first_chunk.layer0.b.f32"
+    },
+    {
+      "name": "l.layers.0.mlp.gate_proj.weight",
+      "physical_name": "blk.0.ffn_gate.weight",
+      "source_offset": 574915552,
+      "offset": 570059520,
+      "bytes": 13271040,
+      "type": 12,
+      "stored_shape": [
+        2560,
+        9216
+      ],
+      "source_shape": [
+        2560,
+        9216
+      ],
+      "data_offset": 580071776,
+      "source_packed_sha256": "2c7b3c2cfebc0ca1e12795d8998b60ae8d89e9453124073635dc9a735ab8051e",
+      "sha256": "2c7b3c2cfebc0ca1e12795d8998b60ae8d89e9453124073635dc9a735ab8051e",
+      "whole_rows_permuted": 0,
+      "protected_vision": false,
+      "out_columns_retained": false,
+      "quant_blocks_unchanged": true,
+      "role": "gate",
+      "input": "native/prefill.first_chunk.layer0.post_norm.f32",
+      "output": "native/prefill.first_chunk.layer0.gate.f32"
+    }
+  ],
+  "tokens": [
+    1,
+    4,
+    16
+  ],
+  "threads": 4,
+  "worker_seconds": 1800,
+  "maximum_transfer_bytes": 41943040,
+  "quality_qualified": false,
+  "scope": "Same-input operator only. N16 borrowed native-row outputs must match actual current native captures. Compare borrowed/mapped and observed CPU_REPACK allocation using public backend extension; preserve Q6 mapped negative control. N1/N16 are component inputs, not actual upstream model batching; N4 is the text-prefix geometry. No full model or decoded qualification."
+}

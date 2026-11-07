@@ -1,0 +1,587 @@
+{
+ "schema": "crispembed-got-ocr2-gold-quant-v1",
+ "kaggle_kernels": [
+  "crispembed-got-gold-f16",
+  "crispembed-got-gold-q8-0",
+  "crispembed-got-gold-q8-ffn-gu-q4k"
+ ],
+ "meta": {
+  "f16": {
+   "commit": "166dae4cd335edc3f121975f31e48ba149adfd2a",
+   "failed_pages": [
+    "en-form-economic-journal-67",
+    "en-register-1758-16"
+   ],
+   "recipe": null,
+   "f16_sha256": "98b431abc3e6b5715363e7296f7fc665a2eca829127ccb8693511926c4784a7f",
+   "cpu": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+   "elapsed_s": 4478.6
+  },
+  "q8_0": {
+   "commit": "166dae4cd335edc3f121975f31e48ba149adfd2a",
+   "failed_pages": [
+    "en-form-economic-journal-67",
+    "en-register-1758-16"
+   ],
+   "recipe": {
+    "name": "q8_0",
+    "base": "q8_0",
+    "flags": [],
+    "bytes": 599632960,
+    "sha256": "15920499f65b71bcfbf4d44d0e92ffbaf7f7c4523ad13f7b7bef160dc5edf098"
+   },
+   "f16_sha256": "98b431abc3e6b5715363e7296f7fc665a2eca829127ccb8693511926c4784a7f",
+   "cpu": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+   "elapsed_s": 3439.6
+  },
+  "q8_ffn_gu_q4k": {
+   "commit": "166dae4cd335edc3f121975f31e48ba149adfd2a",
+   "failed_pages": [],
+   "recipe": {
+    "name": "q8_ffn_gu_q4k",
+    "base": "q8_0",
+    "flags": [
+     "--tensor-type",
+     "l.blk.*.ffn_gate.weight=q4_k",
+     "--tensor-type",
+     "l.blk.*.ffn_up.weight=q4_k"
+    ],
+    "bytes": 530426944,
+    "sha256": "5ccd3d291e52cb9a0f923ccd1b7f70f7c25469382bbe7492e7373ac1bd2b73b5"
+   },
+   "f16_sha256": "98b431abc3e6b5715363e7296f7fc665a2eca829127ccb8693511926c4784a7f",
+   "cpu": "AMD EPYC 7B12",
+   "elapsed_s": 1854.9
+  }
+ },
+ "common_pages": 55,
+ "summary": {
+  "f16": {
+   "pages": 55,
+   "mean_cer": 0.363,
+   "median_cer": 0.2203,
+   "mean_wer": 0.5183,
+   "cap_hits": 3,
+   "decode_wall_s": 3899,
+   "token_exact_vs_f16": 55,
+   "max_rss_mb": 3572.4
+  },
+  "q8_0": {
+   "pages": 55,
+   "mean_cer": 0.3571,
+   "median_cer": 0.2361,
+   "mean_wer": 0.5035,
+   "cap_hits": 4,
+   "decode_wall_s": 2830,
+   "token_exact_vs_f16": 17,
+   "max_rss_mb": 2769.3
+  },
+  "q8_ffn_gu_q4k": {
+   "pages": 55,
+   "mean_cer": 0.3452,
+   "median_cer": 0.1778,
+   "mean_wer": 0.4736,
+   "cap_hits": 2,
+   "decode_wall_s": 1294,
+   "token_exact_vs_f16": 11,
+   "max_rss_mb": 2703.3
+  }
+ },
+ "pages": [
+  {
+   "page": "de-2col-amz-1823-2",
+   "f16_cer": 0.831,
+   "q8_0_cer": 0.6114,
+   "q8_ffn_gu_q4k_cer": 0.0808,
+   "f16_n_ids": 2152,
+   "q8_0_n_ids": 2152,
+   "q8_ffn_gu_q4k_n_ids": 1485
+  },
+  {
+   "page": "de-2col-gartenlaube-1866-007",
+   "f16_cer": 0.9989,
+   "q8_0_cer": 0.9989,
+   "q8_ffn_gu_q4k_cer": 0.994,
+   "f16_n_ids": 21,
+   "q8_0_n_ids": 21,
+   "q8_ffn_gu_q4k_n_ids": 97
+  },
+  {
+   "page": "de-2col-gartenlaube-1866-023",
+   "f16_cer": 0.9999,
+   "q8_0_cer": 0.9986,
+   "q8_ffn_gu_q4k_cer": 0.9999,
+   "f16_n_ids": 7,
+   "q8_0_n_ids": 6,
+   "q8_ffn_gu_q4k_n_ids": 7
+  },
+  {
+   "page": "de-2col-gartenlaube-1866-044",
+   "f16_cer": 0.9995,
+   "q8_0_cer": 0.9995,
+   "q8_ffn_gu_q4k_cer": 0.9995,
+   "f16_n_ids": 6,
+   "q8_0_n_ids": 7,
+   "q8_ffn_gu_q4k_n_ids": 7
+  },
+  {
+   "page": "de-2col-meyers-b13-103",
+   "f16_cer": 0.955,
+   "q8_0_cer": 0.9138,
+   "q8_ffn_gu_q4k_cer": 0.9648,
+   "f16_n_ids": 564,
+   "q8_0_n_ids": 4096,
+   "q8_ffn_gu_q4k_n_ids": 265
+  },
+  {
+   "page": "de-antiqua-kafka-betrachtung-94",
+   "f16_cer": 0.025,
+   "q8_0_cer": 0.0266,
+   "q8_ffn_gu_q4k_cer": 0.0234,
+   "f16_n_ids": 586,
+   "q8_0_n_ids": 586,
+   "q8_ffn_gu_q4k_n_ids": 587
+  },
+  {
+   "page": "de-antiqua-kafka-schloss-211",
+   "f16_cer": 0.0053,
+   "q8_0_cer": 0.0053,
+   "q8_ffn_gu_q4k_cer": 0.0096,
+   "f16_n_ids": 377,
+   "q8_0_n_ids": 376,
+   "q8_ffn_gu_q4k_n_ids": 380
+  },
+  {
+   "page": "de-degraded-freiligrath-46",
+   "f16_cer": 0.767,
+   "q8_0_cer": 0.9814,
+   "q8_ffn_gu_q4k_cer": 1.266,
+   "f16_n_ids": 347,
+   "q8_0_n_ids": 514,
+   "q8_ffn_gu_q4k_n_ids": 664
+  },
+  {
+   "page": "de-fraktur-grimm-319",
+   "f16_cer": 0.3801,
+   "q8_0_cer": 0.3825,
+   "q8_ffn_gu_q4k_cer": 0.3887,
+   "f16_n_ids": 308,
+   "q8_0_n_ids": 304,
+   "q8_ffn_gu_q4k_n_ids": 308
+  },
+  {
+   "page": "de-fraktur-kant-himmel-12",
+   "f16_cer": 0.2203,
+   "q8_0_cer": 0.2273,
+   "q8_ffn_gu_q4k_cer": 0.2191,
+   "f16_n_ids": 377,
+   "q8_0_n_ids": 391,
+   "q8_ffn_gu_q4k_n_ids": 380
+  },
+  {
+   "page": "de-mixed-welzheim-188",
+   "f16_cer": 0.9923,
+   "q8_0_cer": 0.9923,
+   "q8_ffn_gu_q4k_cer": 0.9923,
+   "f16_n_ids": 14,
+   "q8_0_n_ids": 14,
+   "q8_ffn_gu_q4k_n_ids": 14
+  },
+  {
+   "page": "de-table-meyers-b1-168",
+   "f16_cer": 0.9698,
+   "q8_0_cer": 0.8197,
+   "q8_ffn_gu_q4k_cer": 0.8146,
+   "f16_n_ids": 215,
+   "q8_0_n_ids": 2972,
+   "q8_ffn_gu_q4k_n_ids": 2972
+  },
+  {
+   "page": "de-table-rgbl-1867-403",
+   "f16_cer": 0.753,
+   "q8_0_cer": 0.8484,
+   "q8_ffn_gu_q4k_cer": 0.8354,
+   "f16_n_ids": 458,
+   "q8_0_n_ids": 881,
+   "q8_ffn_gu_q4k_n_ids": 401
+  },
+  {
+   "page": "en-2col-eb1911-v04-246",
+   "f16_cer": 0.9961,
+   "q8_0_cer": 0.9961,
+   "q8_ffn_gu_q4k_cer": 0.9961,
+   "f16_n_ids": 10,
+   "q8_0_n_ids": 10,
+   "q8_ffn_gu_q4k_n_ids": 10
+  },
+  {
+   "page": "en-2col-eb1911-v25-5",
+   "f16_cer": 0.9859,
+   "q8_0_cer": 0.9859,
+   "q8_ffn_gu_q4k_cer": 0.9918,
+   "f16_n_ids": 13,
+   "q8_0_n_ids": 13,
+   "q8_ffn_gu_q4k_n_ids": 10
+  },
+  {
+   "page": "en-catalogue-library-11",
+   "f16_cer": 0.974,
+   "q8_0_cer": 0.974,
+   "q8_ffn_gu_q4k_cer": 0.974,
+   "f16_n_ids": 107,
+   "q8_0_n_ids": 107,
+   "q8_ffn_gu_q4k_n_ids": 107
+  },
+  {
+   "page": "en-list-geolsoc-v2-176",
+   "f16_cer": 0.0422,
+   "q8_0_cer": 0.0422,
+   "q8_ffn_gu_q4k_cer": 0.0429,
+   "f16_n_ids": 393,
+   "q8_0_n_ids": 393,
+   "q8_ffn_gu_q4k_n_ids": 393
+  },
+  {
+   "page": "en-list-geolsoc-v2-183",
+   "f16_cer": 0.0354,
+   "q8_0_cer": 0.0379,
+   "q8_ffn_gu_q4k_cer": 0.0354,
+   "f16_n_ids": 387,
+   "q8_0_n_ids": 386,
+   "q8_ffn_gu_q4k_n_ids": 388
+  },
+  {
+   "page": "en-nature-1836-12",
+   "f16_cer": 0.0,
+   "q8_0_cer": 0.0,
+   "q8_ffn_gu_q4k_cer": 0.0,
+   "f16_n_ids": 259,
+   "q8_0_n_ids": 259,
+   "q8_ffn_gu_q4k_n_ids": 259
+  },
+  {
+   "page": "en-old-statutes-v1-772",
+   "f16_cer": 0.6832,
+   "q8_0_cer": 0.2557,
+   "q8_ffn_gu_q4k_cer": 0.1614,
+   "f16_n_ids": 2114,
+   "q8_0_n_ids": 857,
+   "q8_ffn_gu_q4k_n_ids": 682
+  },
+  {
+   "page": "en-prose-constitution-13",
+   "f16_cer": 0.045,
+   "q8_0_cer": 0.045,
+   "q8_ffn_gu_q4k_cer": 0.045,
+   "f16_n_ids": 205,
+   "q8_0_n_ids": 205,
+   "q8_ffn_gu_q4k_n_ids": 205
+  },
+  {
+   "page": "en-prose-constitution-81",
+   "f16_cer": 0.0494,
+   "q8_0_cer": 0.0494,
+   "q8_ffn_gu_q4k_cer": 0.0494,
+   "f16_n_ids": 220,
+   "q8_0_n_ids": 220,
+   "q8_ffn_gu_q4k_n_ids": 220
+  },
+  {
+   "page": "en-psm-v2-13",
+   "f16_cer": 0.0154,
+   "q8_0_cer": 0.0154,
+   "q8_ffn_gu_q4k_cer": 0.0164,
+   "f16_n_ids": 536,
+   "q8_0_n_ids": 536,
+   "q8_ffn_gu_q4k_n_ids": 536
+  },
+  {
+   "page": "en-register-1775-606",
+   "f16_cer": 0.1677,
+   "q8_0_cer": 0.1614,
+   "q8_ffn_gu_q4k_cer": 0.1778,
+   "f16_n_ids": 723,
+   "q8_0_n_ids": 729,
+   "q8_ffn_gu_q4k_n_ids": 754
+  },
+  {
+   "page": "en-report-amtrak-23",
+   "f16_cer": 0.0069,
+   "q8_0_cer": 0.0049,
+   "q8_ffn_gu_q4k_cer": 0.0036,
+   "f16_n_ids": 637,
+   "q8_0_n_ids": 637,
+   "q8_ffn_gu_q4k_n_ids": 637
+  },
+  {
+   "page": "en-report-delhi-agra-26",
+   "f16_cer": 0.0199,
+   "q8_0_cer": 0.0205,
+   "q8_ffn_gu_q4k_cer": 0.0194,
+   "f16_n_ids": 460,
+   "q8_0_n_ids": 461,
+   "q8_ffn_gu_q4k_n_ids": 459
+  },
+  {
+   "page": "en-table-cakchiquels-13",
+   "f16_cer": 0.8601,
+   "q8_0_cer": 0.9143,
+   "q8_ffn_gu_q4k_cer": 0.9231,
+   "f16_n_ids": 414,
+   "q8_0_n_ids": 414,
+   "q8_ffn_gu_q4k_n_ids": 414
+  },
+  {
+   "page": "en-table-climatic-26",
+   "f16_cer": 0.0208,
+   "q8_0_cer": 0.0208,
+   "q8_ffn_gu_q4k_cer": 0.0205,
+   "f16_n_ids": 701,
+   "q8_0_n_ids": 702,
+   "q8_ffn_gu_q4k_n_ids": 702
+  },
+  {
+   "page": "fr-figure-tour-france-117",
+   "f16_cer": 0.38,
+   "q8_0_cer": 0.3969,
+   "q8_ffn_gu_q4k_cer": 0.398,
+   "f16_n_ids": 688,
+   "q8_0_n_ids": 756,
+   "q8_ffn_gu_q4k_n_ids": 709
+  },
+  {
+   "page": "fr-footnote-caboul-19",
+   "f16_cer": 0.0348,
+   "q8_0_cer": 0.0359,
+   "q8_ffn_gu_q4k_cer": 0.037,
+   "f16_n_ids": 336,
+   "q8_0_n_ids": 337,
+   "q8_ffn_gu_q4k_n_ids": 334
+  },
+  {
+   "page": "fr-footnote-maccarthy-coree-17",
+   "f16_cer": 0.0753,
+   "q8_0_cer": 0.0766,
+   "q8_ffn_gu_q4k_cer": 0.078,
+   "f16_n_ids": 725,
+   "q8_0_n_ids": 726,
+   "q8_ffn_gu_q4k_n_ids": 723
+  },
+  {
+   "page": "fr-footnote-sable-maximes-20",
+   "f16_cer": 0.0097,
+   "q8_0_cer": 0.0097,
+   "q8_ffn_gu_q4k_cer": 0.0097,
+   "f16_n_ids": 330,
+   "q8_0_n_ids": 330,
+   "q8_ffn_gu_q4k_n_ids": 331
+  },
+  {
+   "page": "fr-footnote-tableau-france-20",
+   "f16_cer": 0.1481,
+   "q8_0_cer": 0.1518,
+   "q8_ffn_gu_q4k_cer": 0.1512,
+   "f16_n_ids": 711,
+   "q8_0_n_ids": 709,
+   "q8_ffn_gu_q4k_n_ids": 696
+  },
+  {
+   "page": "fr-footnote-vallat-rabelais-13",
+   "f16_cer": 0.0658,
+   "q8_0_cer": 0.0746,
+   "q8_ffn_gu_q4k_cer": 0.0946,
+   "f16_n_ids": 462,
+   "q8_0_n_ids": 473,
+   "q8_ffn_gu_q4k_n_ids": 498
+  },
+  {
+   "page": "fr-old-tachard-siam-102",
+   "f16_cer": 0.2035,
+   "q8_0_cer": 0.1923,
+   "q8_ffn_gu_q4k_cer": 0.067,
+   "f16_n_ids": 353,
+   "q8_0_n_ids": 380,
+   "q8_ffn_gu_q4k_n_ids": 413
+  },
+  {
+   "page": "fr-prose-dupin-droit-108",
+   "f16_cer": 0.0344,
+   "q8_0_cer": 0.0344,
+   "q8_ffn_gu_q4k_cer": 0.0344,
+   "f16_n_ids": 203,
+   "q8_0_n_ids": 203,
+   "q8_ffn_gu_q4k_n_ids": 203
+  },
+  {
+   "page": "fr-prose-rabaut-cevenol-20",
+   "f16_cer": 0.0365,
+   "q8_0_cer": 0.0365,
+   "q8_ffn_gu_q4k_cer": 0.0365,
+   "f16_n_ids": 362,
+   "q8_0_n_ids": 361,
+   "q8_ffn_gu_q4k_n_ids": 362
+  },
+  {
+   "page": "fr-table-hauy-physique-13",
+   "f16_cer": 0.7086,
+   "q8_0_cer": 0.702,
+   "q8_ffn_gu_q4k_cer": 0.4238,
+   "f16_n_ids": 132,
+   "q8_0_n_ids": 134,
+   "q8_ffn_gu_q4k_n_ids": 92
+  },
+  {
+   "page": "fr-table-sabatier-chimie-7",
+   "f16_cer": 0.3668,
+   "q8_0_cer": 0.3668,
+   "q8_ffn_gu_q4k_cer": 0.3886,
+   "f16_n_ids": 103,
+   "q8_0_n_ids": 103,
+   "q8_ffn_gu_q4k_n_ids": 103
+  },
+  {
+   "page": "fr-table-tableau-france-2",
+   "f16_cer": 0.2361,
+   "q8_0_cer": 0.2361,
+   "q8_ffn_gu_q4k_cer": 0.2361,
+   "f16_n_ids": 443,
+   "q8_0_n_ids": 442,
+   "q8_ffn_gu_q4k_n_ids": 443
+  },
+  {
+   "page": "receipt-cord-test-14",
+   "f16_cer": 0.084,
+   "q8_0_cer": 0.0798,
+   "q8_ffn_gu_q4k_cer": 0.0798,
+   "f16_n_ids": 137,
+   "q8_0_n_ids": 138,
+   "q8_ffn_gu_q4k_n_ids": 137
+  },
+  {
+   "page": "receipt-cord-test-16",
+   "f16_cer": 0.1015,
+   "q8_0_cer": 0.0914,
+   "q8_ffn_gu_q4k_cer": 0.1015,
+   "f16_n_ids": 116,
+   "q8_0_n_ids": 115,
+   "q8_ffn_gu_q4k_n_ids": 116
+  },
+  {
+   "page": "receipt-cord-test-17",
+   "f16_cer": 0.4245,
+   "q8_0_cer": 0.3632,
+   "q8_ffn_gu_q4k_cer": 0.3302,
+   "f16_n_ids": 110,
+   "q8_0_n_ids": 117,
+   "q8_ffn_gu_q4k_n_ids": 108
+  },
+  {
+   "page": "receipt-cord-test-20",
+   "f16_cer": 0.4891,
+   "q8_0_cer": 0.5924,
+   "q8_ffn_gu_q4k_cer": 0.5924,
+   "f16_n_ids": 80,
+   "q8_0_n_ids": 70,
+   "q8_ffn_gu_q4k_n_ids": 70
+  },
+  {
+   "page": "receipt-cord-test-26",
+   "f16_cer": 0.3146,
+   "q8_0_cer": 0.3146,
+   "q8_ffn_gu_q4k_cer": 0.3371,
+   "f16_n_ids": 103,
+   "q8_0_n_ids": 103,
+   "q8_ffn_gu_q4k_n_ids": 102
+  },
+  {
+   "page": "receipt-cord-test-28",
+   "f16_cer": 0.3101,
+   "q8_0_cer": 0.3876,
+   "q8_ffn_gu_q4k_cer": 0.3101,
+   "f16_n_ids": 75,
+   "q8_0_n_ids": 77,
+   "q8_ffn_gu_q4k_n_ids": 75
+  },
+  {
+   "page": "receipt-cord-test-29",
+   "f16_cer": 0.1473,
+   "q8_0_cer": 0.1473,
+   "q8_ffn_gu_q4k_cer": 0.1512,
+   "f16_n_ids": 167,
+   "q8_0_n_ids": 167,
+   "q8_ffn_gu_q4k_n_ids": 167
+  },
+  {
+   "page": "receipt-cord-test-33",
+   "f16_cer": 0.141,
+   "q8_0_cer": 0.141,
+   "q8_ffn_gu_q4k_cer": 0.141,
+   "f16_n_ids": 111,
+   "q8_0_n_ids": 111,
+   "q8_ffn_gu_q4k_n_ids": 111
+  },
+  {
+   "page": "receipt-cord-test-38",
+   "f16_cer": 0.1524,
+   "q8_0_cer": 0.2379,
+   "q8_ffn_gu_q4k_cer": 0.2342,
+   "f16_n_ids": 163,
+   "q8_0_n_ids": 165,
+   "q8_ffn_gu_q4k_n_ids": 165
+  },
+  {
+   "page": "receipt-cord-test-4",
+   "f16_cer": 0.3333,
+   "q8_0_cer": 0.2857,
+   "q8_ffn_gu_q4k_cer": 0.3605,
+   "f16_n_ids": 76,
+   "q8_0_n_ids": 82,
+   "q8_ffn_gu_q4k_n_ids": 76
+  },
+  {
+   "page": "receipt-cord-test-41",
+   "f16_cer": 0.1582,
+   "q8_0_cer": 0.1612,
+   "q8_ffn_gu_q4k_cer": 0.1582,
+   "f16_n_ids": 176,
+   "q8_0_n_ids": 175,
+   "q8_ffn_gu_q4k_n_ids": 175
+  },
+  {
+   "page": "receipt-cord-test-51",
+   "f16_cer": 0.3867,
+   "q8_0_cer": 0.3867,
+   "q8_ffn_gu_q4k_cer": 0.3867,
+   "f16_n_ids": 145,
+   "q8_0_n_ids": 145,
+   "q8_ffn_gu_q4k_n_ids": 145
+  },
+  {
+   "page": "receipt-cord-test-59",
+   "f16_cer": 0.3171,
+   "q8_0_cer": 0.3171,
+   "q8_ffn_gu_q4k_cer": 0.3136,
+   "f16_n_ids": 171,
+   "q8_0_n_ids": 171,
+   "q8_ffn_gu_q4k_n_ids": 171
+  },
+  {
+   "page": "receipt-cord-test-61",
+   "f16_cer": 0.4181,
+   "q8_0_cer": 0.4111,
+   "q8_ffn_gu_q4k_cer": 0.4042,
+   "f16_n_ids": 186,
+   "q8_0_n_ids": 186,
+   "q8_ffn_gu_q4k_n_ids": 185
+  },
+  {
+   "page": "receipt-cord-test-70",
+   "f16_cer": 0.0863,
+   "q8_0_cer": 0.0812,
+   "q8_ffn_gu_q4k_cer": 0.0863,
+   "f16_n_ids": 271,
+   "q8_0_n_ids": 271,
+   "q8_ffn_gu_q4k_n_ids": 269
+  }
+ ]
+}

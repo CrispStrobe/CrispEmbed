@@ -60,6 +60,15 @@ class Protocol(unittest.TestCase):
         with self.assertRaises(ValueError):
             p.receipts(bad)
 
+    def test_card_quality_table_labels_q4_experimental(self):
+        files = [{"variant": v, "filename": self.cfg["recipes"][v]["filename"], "bytes": 2 * 10**9, "sha256": "c" * 64}
+                 for v in ("F16", "Q8_0", "Q4_K_MIX")]
+        text = p.card(self.cfg, files, p.receipts(self.cfg), "b" * 40)
+        self.assertIn("**Experimental: Q4_K_MIX**", text)
+        self.assertIn("q4k-precision-q4kns.json", text)
+        self.assertNotIn("are not published", text)
+        self.assertNotIn("/home/", text)
+
     def test_card(self):
         files = [{"variant": "F16", "filename": "unlimited-ocr-2-f16.gguf", "bytes": 6_700_000_000, "sha256": "a" * 64}]
         text = p.card(self.cfg, files, p.receipts(self.cfg), "b" * 40)

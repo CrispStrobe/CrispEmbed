@@ -43,6 +43,15 @@
             "ca8d8fd405b2e90c554a1d1c51caa14947bb2fec Assemble quantized LightOn4B native image and cached document runner"
           ],
           "reason": "The integrated LightOn4B prototype adds only the default-off streamed vocabulary projection declaration and scoped clang18 formatting. Original RMS helpers and existing declarations retain behavior; frozen receipts and budgets are unchanged. This records exact current source bytes, not model qualification or a replacement reference."
+        },
+        {
+          "from_sha256": "cd48a69b83620b7c386890b0233c1cb57b6b9ee2735208a52e2821bf70b045f6",
+          "to_sha256": "cc0a6df67af20d9383d91fbc2cb71d2d66521ba92f070571e15747683d936e5b",
+          "to_blob": "98c4de9173cd706bf801b7547249499dbe067aef",
+          "recorded_at_commit": "f155c591e3e8fa7e3cfb59f719a477a886976fc7",
+          "recorded": "2026-11-07",
+          "changed_by": [],
+          "reason": "Internal optional physical-owner argument dispatches default-off retained quantized path; all existing callers retain legacy defaults."
         }
       ]
     },
@@ -110,6 +119,63 @@
             "1c6d0c1c577e0051f22108382eab20cc59f41de1 test: isolate BF16 quantized text weight materialization and cache mode [skip ci]"
           ],
           "reason": "Default-off LIGHTON4B_BF16_QUANT_WEIGHTS casts admitted named text Q8/Q4 dequantized weights in existing transient buffers, including streamed head; old gate-off F32 materialization branch and persistent storage remain unchanged. Separate experiment, no source receipt rewrite or speed/quality qualification; focused operator/cache controls pending."
+        },
+        {
+          "from_sha256": "270b5eb4944b140851f8ec374f76f7147721fff767b7c5c161179747e7d2f6c9",
+          "to_sha256": "360d023214d78e7dc5a3b76ccc33036bf655761222869ead87ab730ee743abac",
+          "to_blob": "60f9c34935d21217e5246ec3b83ee15b3c06a67f",
+          "recorded_at_commit": "3ee2b69dd24f24eae4a183b5f9821c8239b77350",
+          "recorded": "2026-11-06",
+          "changed_by": [
+            "36a0e10c6ad22a22cd852f38133e953238609ab8 Enable gated Q6 streamed and grouped projection paths [skip ci]"
+          ],
+          "reason": "Declare existing default-off LightOn4B Q6_K type admission in streamed/grouped projection, commit36a0e10c6; no dot/reduction change, quant storage stays raw and old Q8/Q4 branches unchanged. Existing hosted Q6 controls retained; no frozen receipt rewrite or decoded-quality promotion."
+        },
+        {
+          "from_sha256": "360d023214d78e7dc5a3b76ccc33036bf655761222869ead87ab730ee743abac",
+          "to_sha256": "d9b0f496382eed58103f19935d459acc0879bff04616ddd0d3373c54191904ce",
+          "to_blob": "e0abbe3b4d3f18ef5ca77e3e7911ae752b19ae1b",
+          "recorded_at_commit": "f155c591e3e8fa7e3cfb59f719a477a886976fc7",
+          "recorded": "2026-11-07",
+          "changed_by": [
+            "7c5f738a12f341c76f231a7e787307d25c35849f Scope physical upstream scale A and activation layout semantics [skip ci]"
+          ],
+          "reason": "Default-off physical-profile retained-quantized matmul; prototype owner flag required; legacy and BF16 modes unchanged."
+        },
+        {
+          "from_sha256": "d9b0f496382eed58103f19935d459acc0879bff04616ddd0d3373c54191904ce",
+          "to_sha256": "e69233a8e8f0abf5b36b90a2dc75868697f84c5f8d385a829f4b7eee39115951",
+          "to_blob": "e316d6dc0b12f3616a8e3bcff3d577a5ed806da7",
+          "recorded_at_commit": "9918eae569bd8003a236b08ab1c44a30db83bab7",
+          "recorded": "2026-11-07",
+          "changed_by": [
+            "bb896097173d937ec482592f5aa27311ed848347 Prototype physical-only retained quantized projection and ggml RMS [skip ci]"
+          ],
+          "reason": "Closed physical-only quant/RMS/layers/head ablation selector preserves full default opt-in; head observer failure remains atomic."
+        },
+        {
+          "from_sha256": "e69233a8e8f0abf5b36b90a2dc75868697f84c5f8d385a829f4b7eee39115951",
+          "to_sha256": "d167064d077b4b21c7f62949fd809e99ac1b6adae2f3530dcd32d5a635014c1f",
+          "to_blob": "dc1270cdb6551c159617ba0435ffc78e005a45a0",
+          "recorded_at_commit": "9b5dd25e0b33a29096c86b16d1da2d54dbed13af",
+          "recorded": "2026-11-07",
+          "changed_by": [
+            "9b5dd25e0b33a29096c86b16d1da2d54dbed13af feat: gate proven HF tiled GDN output profile [skip ci]",
+            "ae2a61472a268af1fc4e9f4bc2ee0d94d403f57e Integrate verified closed physical arithmetic ablation controls [skip ci]",
+            "d0eed902b6373537cdb0b19454ac87e981dd15f4 Integrate closed physical upstream import and gated native arithmetic [skip ci]"
+          ],
+          "reason": "Distinct default-off HF tiled-output owner changes only the proven24 recurrent output activation coordinates; old/physical projection paths are preserved, pending hosted controls and decoded qualification."
+        },
+        {
+          "from_sha256": "d167064d077b4b21c7f62949fd809e99ac1b6adae2f3530dcd32d5a635014c1f",
+          "to_sha256": "fecc278344d1343d67cba01b59ed6565787cf89b28f46b397bc865bd20f1b6b7",
+          "to_blob": "93635367b3881e4f518d4583812c5bd67b25fce4",
+          "recorded_at_commit": "460ee198208b5b60c34d25626db87897d275cbc7",
+          "recorded": "2026-11-07",
+          "changed_by": [
+            "460ee198208b5b60c34d25626db87897d275cbc7 Experimentally cache physical Q4 preferred buffers [skip ci]"
+          ],
+          "reason": "Default-off physical Q4 CPU_REPACK buffer cache; preserve legacy converted F32 storage and all off paths. Hosted verification pending."
         }
       ]
     },
@@ -274,6 +340,23 @@
             "bf5a1611d00e6c0d661b0b65ef37adfb598f7cc0 quantize: opt-in CRISPEMBED_QUANTIZE_JOSEV_POLICY named mixed Q4_K policies + recipe-equivalence test"
           ],
           "reason": "PR #131 merged with main: adds the opt-in MiniCPM-OCR policy table (CRISPEMBED_QUANTIZE_MINICPM_POLICY, minicpm_ocr sources and q8_0 base only) next to the Unlimited-OCR-2/Josev/qwen2vl policies; no rule applies to qwen35_ocr and default quantizer output is unchanged"
+        },
+        {
+          "from_sha256": "329fe07257325720652b5a8ed395fa21d281d6045a8fa8acfbe823d69e35f5e9",
+          "to_sha256": "12e1f1e958226a40628af46d80660b02d09cade63c40849cef0e4006aa762f47",
+          "to_blob": "f5eaee6b2ef2b1dbca7586a89e1a337a70e30e6c",
+          "recorded_at_commit": "d49f0a7eeeab2d2dca232814f3803357bbc61c76",
+          "recorded": "2026-11-06",
+          "changed_by": [
+            "d49f0a7eeeab2d2dca232814f3803357bbc61c76 Prepare closed native-HF weighted Q4KM-style Q6-head recipe [skip ci]",
+            "b461a5aeebfc16e9f25966b4808d1eebaa0b330c Add strict dense LightOn imatrix adapter and payload-free checks [skip ci]",
+            "d5b946992de85f81ff5fc78718f982a650faee6c Merge remote-tracking branch 'origin/main' into tmpm",
+            "89c81129769b767b4e003df613a0a02eb200b047 Merge origin/main (union of quantizer policy blocks)",
+            "452737b9feaeb5e141e2efea49ed409d65d3f049 unlimited-ocr2 Q4_K: CUDA v2 receipts, final policies (v1 = q4kne, shared8_v1 = q4kns), Q4_K_MIX publication recipe, docs",
+            "a44590b78ca0ed9ea43e5cb98cc085bd8db14d79 unlimited-ocr2 Q4_K: round-2 CPU receipts, Kaggle T4 CUDA receipts, experts policy, publisher cosine gate and per-recipe source",
+            "384a7048d54ca1338f8d70ad9fc1545972cd322d unlimited-ocr2: opt-in unlimited_ocr2_q4k_v1 quantizer policy (pending round-2 measurement), CUDA kernel, policy test"
+          ],
+          "reason": "Explicit closed LightOn4B native-HF imatrix Q4KM-style flag requires exact unquantized source SHA and adapted248-vector profile, forces216Q4/33Q6 including tiedhead, stamps actual248 application count and validates every named type before atomic publication. Default flag-off quantizer and old recipes remain unchanged; quality not promoted and no frozen receipt rewrite."
         }
       ]
     }

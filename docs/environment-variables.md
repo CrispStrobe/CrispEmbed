@@ -167,6 +167,23 @@ token-ID exact on all five Kaggle cases and IDs identical to the old default on 
 | `CRISPEMBED_QWEN35_TOKENIZER_MARKS`, `CRISPEMBED_QWEN35_PROFILE` | off | Tokenizer mark handling; profiling output. |
 | `CRISPEMBED_OVISOCR2_FRONTEND`, `_INFERENCE`, `_LARGE_IMAGES`, `CRISPEMBED_OVISOCR3_FRONTEND`, `_INFERENCE` | off | OvisOCR2/3 gates. |
 
+### MinerU2.5-Pro full native document route
+
+`CRISPEMBED_MINERU25_PRO_FULL_DOC` selects the complete native C++ document route
+(`crispembed_mineru_extract_document`, orchestrator engine 25 / `mineru25-pro`)
+over the basic route. It is quantization-aware (owner decision, 7 November 2026):
+
+| Loaded GGUF | Unset / empty | `=0`/`false`/`off`/`no` | Any other value |
+|---|---|---|---|
+| F16/F32 (no quantized tensor) | **ON** (8/8 identical, run 41251475795) | basic route | ON |
+| Quantized (any tensor `ggml_is_quantized`, e.g. Q8_0/Q4_K) | basic route (opt-in only; Q8/Q4 match 6/8 with layout differences) | basic route | ON |
+
+Quantization is detected once at `crispembed_mineru_init` from the GGUF tensor
+header types (metadata only, no weights read); `crispembed_mineru_is_quantized`
+and `crispembed_mineru_full_doc_enabled` report it. With the route resolved off,
+`crispembed_mineru_extract_document` returns an error and the orchestrator uses
+the basic route. Frozen panels that must measure the basic path pin `=0`.
+
 ### MinerU 2605 checkpoint
 
 `CRISPEMBED_MINERU25_PRO_2605=1` is an additional **default-off** admission gate
@@ -221,7 +238,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-459 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+473 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -457,6 +474,8 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_GOT_OCR_BENCH` | on | off | bool | debug | `src/got_ocr.cpp` |  |
 | `CRISPEMBED_GOT_OCR_DEBUG` | on | off | bool | debug | `src/got_ocr.cpp` |  |
 | `CRISPEMBED_GOT_OCR_DUMP_DIR` | value | unset | path | debug | `src/got_ocr.cpp` | diagnostic: pixels + ids |
+| `CRISPEMBED_GOT_OCR_FORCE_IDS` | value | unset | value | tuning / config | `src/got_ocr.cpp` |  |
+| `CRISPEMBED_GOT_OCR_LOGITS_OUT` | value | unset | path | tuning / config | `src/got_ocr.cpp` |  |
 | `CRISPEMBED_GOT_OCR_NO_REPEAT_NGRAM` | value | unset | int | tuning / config | `src/got_ocr.cpp` |  |
 | `CRISPEMBED_GOT_OCR_ORIG_NGRAM` | on/off | per-gate default | bool | tuning / config | `src/got_ocr.cpp` | No-repeat-ngram rule (see the gate block above argmax_no_repeat_ngram). |
 | `CRISPEMBED_GOT_OCR_ORIG_SYSTEM` | on/off | per-gate default | bool | tuning / config | `src/got_ocr.cpp` | second line keeps 8 spaces of source indentation; tiktoken splits that into 286 ("       ", 7 spaces) + 1446 (" You"). |
@@ -551,7 +570,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_JOSEV_BACKBONE` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/qwen35_decoder.cpp` |  |
 | `CRISPEMBED_JOSEV_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/josev2b_text_frontend.cpp` |  |
-| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +21 | 'minicpm-ocr' registry alias (same default as the HTTP server). The decoder reuses the qwen35 kernels, so both gates are still required. |
+| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +25 | else |
 | `CRISPEMBED_QWEN35_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_native_context.h` +3 |  |
 
 ### josev2b_composed
@@ -634,15 +653,15 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h` | else |
-| `CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_native_context.h`, `src/qwen35_linear.cpp` |  |
-| `CRISPEMBED_LIGHTON4B_QUANT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_model_owner.h`, `src/lighton4b_native_context.h` +2 | Converter stores all norms/biases in F32 in both F16 recipes. Frozen Q8/Q4 candidates protect every vision tensor as F32. |
+| `CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_physical_f16_attention.h`, `src/lighton4b_upstream_physical_semantics.h` | else |
+| `CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_native_context.h`, `src/lighton4b_physical_native_ops.h` +1 |  |
+| `CRISPEMBED_LIGHTON4B_QUANT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_model_owner.h`, `src/lighton4b_native_context.h` +3 | Converter stores all norms/biases in F32 in both F16 recipes. Frozen Q8/Q4 candidates protect every vision tensor as F32. |
 
 ### lighton4b_bf16_linear
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_BF16_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_linear.h`, `src/qwen35_delta.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_BF16_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_linear.h`, `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_physical_f16_attention.h` +2 |  |
 
 ### lighton4b_decoder_compose
 
@@ -656,14 +675,14 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q6` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gdn_out_q6_recipe.h`, `src/lighton4b_native_context.h` |  |
+| `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q6` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gdn_out_q6_recipe.h`, `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_native_context.h` |  |
 
 ### lighton4b_gguf_inspection
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_GGUF_INSPECTION` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gguf_inspection.h` |  |
-| `CRISPEMBED_LIGHTON4B_VISION_OWNER` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gguf_inspection.h`, `src/lighton4b_image_compose.h`, `src/lighton4b_vision_owner.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_VISION_OWNER` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gguf_inspection.h`, `src/lighton4b_image_compose.h`, `src/lighton4b_physical_f16_vision.h` +1 |  |
 | `CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gguf_inspection.h`, `src/lighton4b_model_owner.h` |  |
 | `CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_gguf_inspection.h`, `src/qwen35_lighton4b_text.h` | Experimental, default off; borrowed tensor metadata only, never inference admission. |
 
@@ -671,21 +690,26 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_HEAD_BF16` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_head_bf16.h` |  |
+| `CRISPEMBED_LIGHTON4B_HEAD_BF16` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_head_bf16.h`, `src/lighton4b_physical_f16_attention.h`, `src/lighton4b_upstream_physical_semantics.h` |  |
+
+### lighton4b_hf_tiled_out
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_HF_TILED_OUT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h` | else |
+| `CRISPEMBED_LIGHTON4B_IMATRIX_Q4KM_Q6HEAD` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_native_context.h`, `src/lighton4b_q6_policy.h` |  |
+| `CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_native_context.h` |  |
+| `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q8` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_native_context.h` |  |
+| `CRISPEMBED_LIGHTON4B_Q6_K` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_physical_native_ops.h`, `src/lighton4b_q6_policy.h` | else |
+| `CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_physical_f16_attention.h`, `src/lighton4b_physical_f16_vision.cpp` +2 | else |
 
 ### lighton4b_image_compose
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_image_compose.h` |  |
+| `CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_image_compose.h`, `src/lighton4b_physical_f16_vision.cpp`, `src/lighton4b_physical_f16_vision.h` +1 |  |
+| `CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_image_compose.h`, `src/lighton4b_physical_f16_vision.cpp`, `src/lighton4b_physical_f16_vision.h` +1 |  |
 | `CRISPEMBED_LIGHTON4B_VISION_BF16` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_image_compose.h`, `src/lighton4b_vision_bf16.cpp` |  |
-
-### lighton4b_native_context
-
-| Variable | Kind | Default | Type | Status | Where | Hint |
-|---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
-| `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q8` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
 
 ### lighton4b_parallel_dequant
 
@@ -693,11 +717,31 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_parallel_dequant.h` |  |
 
-### lighton4b_q6_policy
+### lighton4b_physical_f16_attention
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_Q6_K` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_q6_policy.h` | else |
+| `CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_f16_attention.h` |  |
+
+### lighton4b_physical_f16_vision
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_PHYSICAL_F16_VISION` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_f16_vision.h` |  |
+
+### lighton4b_physical_gdn_source_ops
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_gdn_source_ops.h` | else |
+
+### lighton4b_physical_native_ops
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_native_ops.h` |  |
+| `CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION` | value | unset | string | tuning / config | `src/lighton4b_physical_native_ops.h` |  |
+| `CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_native_ops.h` |  |
 
 ### lighton4b_rotary_table
 
@@ -794,7 +838,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_MINERU25_PRO_FULL_DOC` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/mineru_ocr.cpp`, `src/ocr_orchestrator.cpp` | else |
+| `CRISPEMBED_MINERU25_PRO_FULL_DOC` | off/on | mixed (see code) | bool | default-off experimental / opt-in | `src/mineru_ocr.cpp` |  |
 
 ### minicpm_ocr
 
@@ -998,11 +1042,13 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_PPOCRV6_CONV_DIRECT` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp`, `src/ppocrv6_ocr.cpp` |  |
+| `CRISPEMBED_PPOCRV6_DET_ACCEPT_EMPTY` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` | Accept an empty detection only for a complete, finite probability map. |
 | `CRISPEMBED_PPOCRV6_DET_BENCH` | on | off | bool | debug | `src/ppocrv6_det.cpp` |  |
 | `CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` | resident half weights. Keep CPU graph parity in F32 and provide an explicit F32 override for backend-diff debugging. |
 | `CRISPEMBED_PPOCRV6_DET_GPU` | value | unset | value | tuning / config | `src/ppocrv6_det.cpp` |  |
 | `CRISPEMBED_PPOCRV6_DET_GPU_LOAD` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` |  |
 | `CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` |  |
+| `CRISPEMBED_PPOCRV6_DET_GRAPH_REBUILD` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` | Rebuild the single retained detector graph when input dimensions change. |
 | `CRISPEMBED_PPOCRV6_DET_PROFILE` | on | off | bool | debug | `src/ppocrv6_det.cpp` |  |
 | `CRISPEMBED_PPOCRV6_DET_SCALAR` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` | (the CPU-scalar medium detector was why the medium tier timed out in every benchmark). German CER graph 0.04856 vs scalar 0.04955. |
 
@@ -1543,3 +1589,20 @@ old cache after a mode toggle; a fresh prefill is required.
 This experimental weight mode is disabled under `__EMSCRIPTEN__`; the
 standalone fallback control simulates that preprocessor branch only and
 does not qualify a WebAssembly runtime or 4B model.
+
+`CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION=1` is a default-off experiment
+for the explicit format6 physical profile only. It uses F16 K/V cache values,
+F16 Q and softmax-P operands and the pinned original paired-F16/SGEMM CPU
+operators without changing global vendor traits. The first supported build
+profile is Linux x86_64, fixed AVX2/FMA/F16C, LLAMAFILE ON, native/AVX512/BLAS/
+OpenMP/backend-DL OFF; other builds, including WASM, reject an explicitly enabled
+physical experiment. Hardware capability is checked as well. Four compute
+threads and at most2048 cached tokens are required. N1 uses the source's
+explicit paired-F16 dot path; larger query batches require the supported SGEMM
+operator, with no kernel substitution. Cache mode is immutable, prior F16 cache
+values must be canonical, and output commits on success. This gate is inert for
+nonphysical owners. It does not qualify decoded quality or create a release alias.
+
+`CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS=1` is a default-off physical-owner experiment using source-shaped GDN operators while retaining the scalar log1p softplus. It preserves existing quantized projections and output routes, records a distinct cache mode, and rejects reuse across modes. Actual-input component controls pass, but full decoded table A/B regresses349→364/607 character edits and97→104/106 word edits; form text is unchanged. Keep this gate default-off and unqualified; it does not enable a release format. See [decoded result](lighton4b-physical-gdn-source-ops.md).
+
+The combined physical GDN+Q4-repack diagnostic matches observed table IDs/text but fails form character quality194/656 versus upstream189/656, despite better word edits. Both experimental flags remain default-off and unqualified. [Mixed outcome and no-ship limits](lighton4b-physical-gdn-source-ops.md).

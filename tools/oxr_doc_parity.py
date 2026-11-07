@@ -467,8 +467,15 @@ def replay_case(binary, pages, layouts, options, seed, workdir, name):
     return py, native, trace
 
 
-def compare_documents(py, native):
-    """Return (identical, first differing field)."""
+BBOX_TOL_PX = 0.01  # comparator v2: native D-FINE vs PyTorch layout boxes (float32 order only)
+
+
+def compare_documents(py, native, bbox_tol=0.0):
+    """Return (identical, first differing field).
+
+    bbox_tol > 0 (comparator v2, native-layout arms only) accepts numeric differences up to
+    bbox_tol pixels inside any ``bbox`` list; every other field, including text, block types,
+    order, counts and scores, must still match exactly."""
     if "error" in py or "error" in native:
         same = ("error" in py) == ("error" in native)
         return same, None if same else f"error: python={py.get('error')} native={native.get('error')}"
@@ -480,6 +487,9 @@ def compare_documents(py, native):
         return True, None
 
     def walk(x, y, path):
+        if (bbox_tol and ".bbox[" in path and isinstance(x, (int, float)) and isinstance(y, (int, float))
+                and not isinstance(x, bool) and abs(x - y) <= bbox_tol):
+            return None
         if type(x) is not type(y) and not (isinstance(x, (int, float)) and isinstance(y, (int, float))):
             return path
         if isinstance(x, dict):
@@ -497,7 +507,8 @@ def compare_documents(py, native):
                     return d
             return None if len(x) == len(y) else f"{path}.length"
         return None if x == y else path
-    return False, walk(a, b, "$")
+    where = walk(a, b, "$")
+    return where is None, where
 
 
 def synthetic_page(rng, w=900, h=1200):
@@ -601,7 +612,10 @@ def run_native(binary, lib, gguf, cases, workdir, threads, live, layout_gguf=Non
                     raise RuntimeError(f"{name}: native-layout replay exit {out.returncode}, no JSON; stderr: {out.stderr[-2000:]}")
                 nl = json.loads(out.stdout)
                 same, where = compare_documents(py, nl)
+                tol_same, tol_where = compare_documents(py, nl, BBOX_TOL_PX)
                 entry.update(native_layout_replay_identical=same, native_layout_replay_first_difference=where,
+                             native_layout_replay_within_tolerance=tol_same,
+                             native_layout_replay_tolerance_first_difference=tol_where,
                              native_layout_replay_error=nl.get("error"))
                 if "native_layout_response" in nl:
                     size = [(arr.shape[1], arr.shape[0])]
@@ -643,6 +657,8 @@ def run_native(binary, lib, gguf, cases, workdir, threads, live, layout_gguf=Non
                     except Exception as e:  # noqa: BLE001
                         e2e = {"error": f"{type(e).__name__}: {e}"}
                     same, where = compare_documents(py, e2e)
+                    tol_same, tol_where = compare_documents(py, e2e, BBOX_TOL_PX)
+                    entry.update(e2e_within_tolerance=tol_same, e2e_tolerance_first_difference=tol_where)
                     entry.update(e2e_identical=same, e2e_first_difference=where, e2e_requests=len(model.last_trace),
                                  e2e_layout_source=(e2e.get("result") or {}).get("metadata", {}).get(
                                      "crispembed", {}).get("layout_source"), e2e_error=e2e.get("error"))
@@ -682,9 +698,15 @@ def main():
     elif args.mode == "native":
         res = run_native(args.binary, args.lib, args.gguf, args.case, args.workdir, args.threads, not args.no_live,
                          args.layout_gguf)
-        report = {"mode": "native", "cases": res}
+        # Comparator v2 (owner decision 7 Nov 2026): replay/live stay bit-exact; the two
+        # native-D-FINE layout arms pass within BBOX_TOL_PX on bbox floats only. Strict
+        # results stay recorded per case (``*_identical``) next to ``*_within_tolerance``.
+        report = {"mode": "native", "comparator": "oxr-doc-parity-v2", "bbox_tol_px": BBOX_TOL_PX, "cases": res,
+                  "strict_all_identical": bool(res) and all(
+                      r.get("e2e_identical", True) and r.get("native_layout_replay_identical", True) for r in res)}
         ok = bool(res) and all(r.get("replay_identical") and r.get("live_identical", True)
-                               and r.get("e2e_identical", True) and r.get("native_layout_replay_identical", True)
+                               and r.get("e2e_within_tolerance", True)
+                               and r.get("native_layout_replay_within_tolerance", True)
                                for r in res)
     else:
         res = run_replay(args.binary, args.cases, args.seed, args.output)

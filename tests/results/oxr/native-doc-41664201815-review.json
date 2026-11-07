@@ -1,0 +1,63 @@
+{
+ "schema": "crispembed-oxr-native-doc-review-v1",
+ "run": "41664201815",
+ "source": "dd465a44",
+ "workflow": "heavy-cpu.yml (tools/oxr_native_doc.sh)",
+ "self_checks": "pass",
+ "dfine": "pass",
+ "native": "fail (harness verdict)",
+ "cases": {
+  "formula": {
+   "blocks": [
+    1,
+    1
+   ],
+   "text_identical": true,
+   "max_bbox_delta_px": 0.0001,
+   "rounded_identical": true
+  },
+  "table": {
+   "blocks": [
+    2,
+    2
+   ],
+   "text_identical": true,
+   "max_bbox_delta_px": 2e-05,
+   "rounded_identical": true
+  },
+  "receipt": {
+   "blocks": [
+    21,
+    21
+   ],
+   "text_identical": true,
+   "max_bbox_delta_px": 0.0003,
+   "rounded_identical": false
+  },
+  "german": {
+   "blocks": [
+    13,
+    13
+   ],
+   "text_identical": true,
+   "max_bbox_delta_px": 0.0004,
+   "rounded_identical": false
+  },
+  "japanese": {
+   "blocks": [
+    1,
+    1
+   ],
+   "text_identical": true,
+   "max_bbox_delta_px": 0.0002,
+   "rounded_identical": true
+  }
+ },
+ "replay_identical_all": true,
+ "live_identical_all": true,
+ "live_request_sets_identical_all": true,
+ "cause": "e2e/native-layout comparisons require bit-exact D-FINE bbox floats; native D-FINE differs from PyTorch by <=0.0004 px (float32 accumulation order). Block counts, types, order and all recognized text are identical on 5/5 cases; every recognition request (Python replay, live) is identical.",
+ "verdict": "not a runtime regression; strict bit-exact bbox comparator is the failing gate",
+ "previous": "41655661950 (harness trace-key bug, fixed in 0e1b7a6b)",
+ "next": "owner decision: accept a bbox tolerance (e.g. <=0.01 px, all text/types/order exact) in a new versioned comparator, or keep the strict bit-exact layout gate"
+}

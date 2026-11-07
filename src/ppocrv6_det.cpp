@@ -1,4 +1,5 @@
 #include "ppocrv6_det.h"
+#include "ppocrv6_det_policy.h"
 #include "ocr_detect.h"
 
 #include "ggml.h"
@@ -506,9 +507,39 @@ static ggml_tensor * graph_block(context * c, ggml_context * g, ggml_tensor * x,
     return out;
 }
 
+// Discard only shape-dependent allocations; resident weights remain owned by
+// this context and are reused when the next shape is built.
+static void graph_clear_shape(context * c) {
+    auto & g = c->graph;
+    if (g.sched) ggml_backend_sched_free(g.sched);
+    if (g.graph_ctx) ggml_free(g.graph_ctx);
+    if (g.cpu_backend) ggml_backend_free(g.cpu_backend);
+    g.sched = nullptr;
+    g.graph_ctx = nullptr;
+    g.cpu_backend = nullptr;
+    g.graph = nullptr;
+    g.input = nullptr;
+    g.output = nullptr;
+    g.taps.clear();
+    g.named_taps.clear();
+    std::vector<uint8_t>().swap(g.meta);
+    g.h = g.w = 0;
+    g.attempted = g.ready = g.probability_output = false;
+}
+
 static bool graph_build(context * c, int h, int w) {
-    if (c->graph.attempted) return c->graph.ready && c->graph.h == h && c->graph.w == w;
+    // Rebuild the single retained detector graph when input dimensions change.
+    const bool rebuild_graph = core_env::on("CRISPEMBED_PPOCRV6_DET_GRAPH_REBUILD");
+    const auto action =
+        policy::graph_shape(c->graph.attempted, c->graph.ready, c->graph.h, c->graph.w, h, w, rebuild_graph);
+    if (action == policy::shape_action::reuse) return true;
+    if (action == policy::shape_action::fallback) return false;
+    if (action == policy::shape_action::rebuild) graph_clear_shape(c);
     c->graph.attempted = true;
+    // Remember failures by shape, so an unsupported shape is not retried on
+    // every frame; a later different shape may still be attempted.
+    c->graph.h = h;
+    c->graph.w = w;
     // Graph is the default since 2026-08-04: after the insert-SE double-scale
     // fix it matches the scalar path to probability cosine ~1e-8, runs 186 ms
     // vs 315 ms scalar on synth_00_clean (CPU backend), and the 25-fixture CER
@@ -1115,13 +1146,11 @@ context * init(const char * path, int n_threads) {
 
 void free(context * c) {
     if (!c) return;
+    graph_clear_shape(c);
     for (auto * buf : c->graph.resident_bufs)
         if (buf) ggml_backend_buffer_free(buf);
     for (auto * wc : c->graph.resident_ctxs)
         if (wc) ggml_free(wc);
-    if (c->graph.sched) ggml_backend_sched_free(c->graph.sched);
-    if (c->graph.cpu_backend) ggml_backend_free(c->graph.cpu_backend);
-    if (c->graph.graph_ctx) ggml_free(c->graph.graph_ctx);
     core_gguf::free_weights(c->wl);
     if (c->backend) crispasr_free_gpu_backend(c->backend);
     delete c;
@@ -1151,11 +1180,8 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
     bool graph_done = graph_run(c, input, h, w, x, H, W);
     const auto graph_finished = std::chrono::steady_clock::now();
     const bool compare_graph = core_env::on("CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE");
-    if (graph_done && c->graph.probability_output && compare_graph) {
-        graph_probability = x;
-        graph_done = false;
-    }
     if (graph_done && c->graph.probability_output) {
+        if (compare_graph) graph_probability = x;
         c->last_prob = x;
         c->last_h = H;
         c->last_w = W;
@@ -1185,7 +1211,10 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         // graph_build). Compare mode still falls through to the scalar
         // reference so the diagnostic diff has both sides;
         // CRISPEMBED_PPOCRV6_DET_SCALAR disables the graph entirely upstream.
-        if (!out.empty() && !compare_graph) {
+
+        // Accept an empty detection only for a complete, finite probability map.
+        const bool accept_empty = core_env::on("CRISPEMBED_PPOCRV6_DET_ACCEPT_EMPTY");
+        if (policy::accept_graph(compare_graph, accept_empty, out.size(), x, H, W)) {
             if (bench) {
                 const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
                 fprintf(stderr,

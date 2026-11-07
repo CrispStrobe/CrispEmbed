@@ -1,3 +1,9 @@
+## 0.17.16 (unreleased)
+
+- Add default-off PP-OCRv6 detector options to accept valid empty graph results
+  and rebuild the persistent graph when video frames change size. Preserve the
+  scalar reference fallback and comparison mode.
+
 ## 0.17.15
 
 - Fix film grain blocking real-background propagation in the opt-in CLI temporal

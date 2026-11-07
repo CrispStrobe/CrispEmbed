@@ -1,4 +1,5 @@
 #include "lighton4b_frontend.h"
+#include "lighton4b_upstream_physical_recipe.h"
 #include "core/bpe.h"
 #include "core/nfc.h"
 #include "core/env_gate.h"
@@ -46,12 +47,14 @@ bool frontend_tokenizer::enabled() const {
     return core_env::on("CRISPEMBED_LIGHTON4B_FRONTEND");
 }
 bool frontend_tokenizer::is_stop(int id) const {
-    return enabled() && id == 248046 && eos_ == 248046;
+    return enabled() && eos_ == 248046 && std::find(stops_.begin(), stops_.end(), id) != stops_.end();
 }
 bool frontend_tokenizer::load(gguf_context * meta) {
     *this = {};
+    const bool physical = qwen35_ocr::lighton4b_upstream_physical_enabled() &&
+        qwen35_ocr::lighton4b_upstream_physical_metadata_matches(meta);
     if (!enabled() || !meta || core_gguf::kv_str(meta, "general.architecture", "") != "qwen35_ocr" ||
-        core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) != 5 ||
+        core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) != (physical ? 6u : 5u) ||
         core_gguf::kv_str(meta, "general.source.huggingface.repository", "") != "lightonai/LightOnOCR-3-4B" ||
         core_gguf::kv_str(meta, "general.source.huggingface.revision", "") !=
             "b71010f095dc3735de7ee6b9969bff8f8f50b39a" ||
@@ -73,7 +76,7 @@ bool frontend_tokenizer::load(gguf_context * meta) {
     const int generation_eos = int(core_gguf::kv_u32(meta, "qwen35_ocr.generation_eos_id", 0));
     if (generation_eos != 248046) return false;
     result.eos_ = 248046;
-    result.stops_ = { 248046 };
+    result.stops_ = physical ? std::vector<int>{ 248044, 248046 } : std::vector<int>{ 248046 };
     const auto merges = core_gguf::kv_str_array(meta, "tokenizer.ggml.merges");
     if (result.vocab_.size() != 248320 || merges.empty() || result.added_.empty() || result.added_.size() > 256 ||
         result.special_.size() > result.added_.size())

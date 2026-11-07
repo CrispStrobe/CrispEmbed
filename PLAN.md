@@ -1,4 +1,4 @@
-# CrispEmbed plan — open work (updated 5 November 2026)
+# CrispEmbed plan — open work (updated 7 November 2026)
 
 The user requires LightOn4B Q4 quality at least comparable to the measured
 llama.cpp Q4_K_M baseline before shipping a Q4 model. The existing plain Q4,
@@ -45,14 +45,22 @@ receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
 [current state](docs/current-state-and-next-steps.md). Branches named below are merged
 into `main` unless the row says otherwise; start new work from `origin/main`.
 
+**LightOn4B composed-vision follow-up:** [independent source review](docs/lighton4b-composed-control-independent-review.md) covers tools-only `b98567cfd`: four composed protocol controls and seven component controls passed, and production-source identity and driver hash were checked. The prior composed observed form was worse than source-fed vision; an actual-stage-admitted paired decode is being prepared by the existing lane. The component receipt and payloads were not independently read for this review. Preserve the negative baseline and independently verify those artifacts, the new decoded output and all predeclared gates before any qualification or default change.
+
+**MoEdern Q4 Python consumer follow-up:** [Run 42403821795](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42403821795) tested source `e88b54c471612cd8cc56778c71345b000529e166` and passed both published experimental aliases through the real Python client and CLI, with fresh-cache SHA and offline alias checks. All IDs, masks and expansion positions matched across six frozen cases per model; selected-vector maximum absolute differences were below 5e-10, and one MaxSim pair agreed within 1e-6. The full [receipt](tests/results/moedern-q4-python-consumer-42403821795.json) preserves per-case data. [First run 42392530566](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42392530566) built the library but stopped before client inference because NumPy was missing; the passing retry installed it. This bounded client check is not SciFact, original-quality or GPU qualification.
+
+**Experimental alias consumer continuation (7 November):** [PR #173](https://github.com/CrispStrobe/CrispEmbed/pull/173) covers the registered experimental MoEdern, UltraBERT, Josev, MiniCPM, Unlimited and GOT aliases through the real CLI with pinned full-file SHA, fresh-cache/offline/path identity and gate-off controls. Complete small reports, exact source hashes and workflow links are preserved in [the consumer receipts](tests/results/experimental-alias-consumers-2026-11-07.json). MoEdern 27M/115M (`71d3c4a2e`, ARM) passed six frozen cases and the independent MaxSim checks: top-1 agreed 3/3 for each, minimum token cosine 0.968685/0.986780 and maximum absolute vector difference 0.0628191/0.0425641; 115M swaps the second and third documents on one query. Its [first run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42376527148) failed before inference due to an incorrect F32 test gate and [the next](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42382529704) due to missing NumPy; neither is a model result. UltraBERT (`eec0ee63b`, x86) passed a three-text 768-dimensional smoke. Josev (`03749fa85`, ARM) passed four typed-request/cache/gate checks per profile, while Q8 and Q4 typed JSON matched only 1/4 and 0/4 originals, with maximum numeric errors 0.0093 and 0.0413. MiniCPM and GOT (ARM) and Unlimited (x86) each produced the expected fox text with a 32-token cap, identical offline/direct-path outputs and the expected gate-off diagnostics; Unlimited includes layout markup and box coordinates in its output. Two model-free controls at `f0837d3db` verify that empty OCR despite exit zero fails and gate rejection must include the engine diagnostic; the earlier hosted gate stderr was independently checked against those controls. These are bounded consumer tests, not EOS, original/F16 OCR quality, SciFact, GPU or broad retrieval qualification; existing negative evidence and experimental gates remain.
+
+**LightOn4B observed table/Arabic report review:** [independent report review](docs/lighton4b-composed-calibration-independent-review.md) preserves worker source `a03412aeb`, raw report SHA and filtered [receipt](tests/results/lighton4b-composed-calibration-review-2026-11-07.json). Source-feature and pixels-only arms match merged bytes, complete recorded rows/stages, IDs and EOS for both cases. Arabic meets its upstream frozen floor; the table misses it by one character edit (349 versus 348), with 97 word edits in both. Actual raw payloads were not independently rehashed. Keep both vision gates default off and preserve the negative; held-out and broader quality qualification remain.
+
 | Lane | State | Next action | Done when |
 |---|---|---|---|
 | OCR model gaps / LightOnOCR-3-4B (`feat/ocr-next-models-20261104`, [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143)) | Main `17c96639`/PR141 evidence is integrated; all seven workflows pass at `91b24764`. Explicit converter has 16 passing export controls at `aa661568` (333 total); its inline workflow-contract regression is repaired. [Default-off grouped-head APIs and pinned original/meta protocols](docs/lightonocr3-4b.md#default-off-grouped-head-component-and-hosted-reference) are implemented | Review hosted meta construction, 208 original/native component stages and cache controls, plus combined regression CI. Then add bounded vocabulary projection and explicit larger-model ownership | Native support remains false until complete original/native F32/F16 and document evidence, followed by separate precision/publication gates |
 | Q4_K_MIX publications (MiniCPM-OCR, Unlimited-OCR-2, MoEdern 27M/115M, Josev, UltraBERT) | Recipes and receipts on main. TeleOCR and MinerU Q4_K_MIX are already published and registered (`teleocr-q4_k-mix`, `mineru25-pro-q4_k-mix`, PR #116); the rest are not | Coordinator dispatches the cosine-gated publication per model (sections below); Josev needs a quantized branch in `josev_publish.py`, MoEdern needs SciFact/client panels first | Hub upload, empty-cache readback, registry alias with SHA-256 |
-| `env_gate.h` false/off/no lockstep | Claimed by Codex; CrispASR #572 and companion update in progress | Handoff 3 Nov lane B | Identical header in both repos, tests in CI, sibling sync green |
-| OXR native-doc parity | Rerun 41664201815 failed again (`native=fail`, not the trace-key bug) | Handoff 3 Nov lane C | Five-case parity receipt or scoped runtime bug |
+| Experimental quantized publications (7 Nov owner decision) | Closed: all published, read back from an empty cache and registered with pinned SHA-256 `-experimental` aliases; quality tables in [docs/quantized-models.md](docs/quantized-models.md) and HISTORY 7 November | Downstream consumer receipts for the new aliases (UltraBERT, MoEdern, Josev, MiniCPM/Unlimited Q4_K_MIX, GOT-OCR2 Q4_K); SciFact/client panels for MoEdern Q4 | Consumer receipts; no promotion out of experimental without new quality evidence |
+| `env_gate.h` false/off/no lockstep | CrispEmbed [PR163](https://github.com/CrispStrobe/CrispEmbed/pull/163) merged the companion update and tests | Recheck sibling sync when either header changes | Identical headers, tests in CI, sibling sync green |
 | Unlimited-OCR-2 Q8_0 on CUDA | 0.9555 < 0.97 (CPU 0.9739) | Search a CUDA-qualifying Q8_0 mix (F16 shared experts/attention) | ≥ 0.97 on CPU and CUDA |
-| GOT-OCR2 Q4_K drift | F16-r2 exact vs original; Q4_K diverges at 83/20; no final-logit cosine measured, so the 1 November precision policy cannot yet be applied | Teacher-forced final-logit cosine of the published Q4_K vs the F16-r2 pipeline (as for Unlimited/MiniCPM), then a mixed search only if < 0.94. Owner: the model is research-licensed (Tongyi), so whether a Q4_K is worth more compute is an owner call (handoff "Owner decisions") | Cosine > 0.94 recorded, or 3/3 token-exact, or owner accepts/declines |
+| GOT-OCR2 quantized replacement | Search done (rounds 1–3 + 57-page gold corpus, [research §5–8](docs/got-ocr2-q4-research.md)): only a full Q8_0 decoder is panel-exact, and nothing (Q8_0 included, 17/55) is token-exact on the gold corpus; Q8_0 and `q8_ffn_gu_q4k` (530 MB) are on par with F16 on gold CER | Owner decision: publish `q8_ffn_gu_q4k` (and optionally Q8_0) as `-experimental` replacing the Q4_K file, via the HF publish workflow with LICENSE/NOTICE, empty-cache readback, SHA-pinned alias | Published + alias pinned + quantized-models.md updated with the gold table |
 | Server load control (PR124) | Merged, gates default-off | Live A/B with a real GGUF; concurrent latency; chat-route parity | Receipts per item in the section below |
 | Reranker residual (~0.2 logits) | Pair layout/truncation fixed (PR122) | Fix the stage-diff harness, Spearman/top-k instead of exact argsort | Attributed or accepted |
 | CUDA / Metal audit follow-ups | Matrices in `docs/gpu-support-matrix.md` | One gated GPU path or A/B at a time | Measured A/B before any default flip |
@@ -60,9 +68,9 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Issue 71 inpainting | Engines published (default-off); stream and grain correction [PR162](https://github.com/CrispStrobe/CrispEmbed/pull/162) merged | Representative subtitle/video quality, MI-GAN512 Q4_K caveat (0.9019) | Owner-reviewed quality panel |
 | Releases / pub.dev / app pin | v0.17.15 published, pub.dev unqualified, app on 0.17.12 | Qualified assets and fresh consumers first | Release procedure in the pub.dev section |
 | OXR-1.0 quantized + GPU | Q8_0-large / Q4_K-head pass the owner bar (cos ≥ 0.998 vs F16, CPU/Metal/CUDA); German diverges 1 token from decode-step activation quantization | Opt-in F32-activation decode A/B (the recipes are already published and registered as `oxr-1.0-q8_0` / `oxr-1.0-q4_k-head`, PR #97) | A/B receipt; German page token-exact or the divergence attributed |
-| OXR native document route / D-FINE | Hosted helpers/replay/native pass (41249898971), `dfine` stage failed there; D-FINE regions match original 5/5 but 2.6x slower | Re-run `oxr_native_doc.sh` `dfine native` stages on main; encoder per-op profile | Hosted parity on all five cases; profile receipt |
-| MinerU2.5-Pro full native doc route | 8/8 model-backed cases identical (41251475795); default-off | Owner: default-on or not (handoff "Owner decisions"); image-bearing-table fixture | Decision recorded; fixture receipt |
-| Marker-style pipeline / TeleOCR | Implemented and bounded-validated, default-off; TeleOCR strict numerics false at every precision | Representative licensed multilingual/layout gold corpus (needs owner-provided licensed annotations) | Corpus frozen; CER/WER/order receipts |
+| OXR native document route / D-FINE | [Run 42359526030](tests/results/oxr/native-doc-42359526030-v2.json) passes all five cases with 0.01 px bbox tolerance; strict bbox equality remains false | Profile the encoder; preserve comparator-v2 and strict results | Profile receipt and any performance action independently validated |
+| MinerU2.5-Pro full native doc route | Owner decision 7 Nov 2026: default-on for F16/F32 (8/8 identical, 41251475795), opt-in only for quantized GGUFs (Q8/Q4 6/8); default-gate rerun 42370991098 8/8 identical | Image-bearing-table fixture with the real model | Fixture receipt |
+| Marker-style pipeline / TeleOCR / real-page benchmarks | Gold corpus frozen: [`docs/ocr-gold-corpus-v1.json`](docs/ocr-gold-corpus-v1.json) (57 licensed pages, blocks/types/order/tables, derived vs manual provenance; [guide](docs/ocr-gold-corpus.md)); scorer `tools/ocr-gold-corpus/layout_score.py` | See "OCR gold corpus lanes" below | Per-engine CER/WER + block F1/IoU/type/tau/table-F1 receipts on the corpus |
 | Model-weight licences in apps | Registry/cards/gates corrected; CrispSorter PR20 at0af4c34 adds fail-closed OCR consent, typed Gemma terms, real0.17.12 pin and image backfill. Its reported Metal-feature cargo check passes; PR18 remains draft | Review/integrate [CrispSorter20](https://github.com/CrispStrobe/CrispSorter/pull/20) alongside18; retain Windows-helper/live-OCR gaps. Check CrispCalc consent separately. No vendor/app pin upgrade | Downstream acknowledgement PRs merged and actual consumer checks recorded |
 | **Release v0.17.15** | **Published 5 November 2026** from `d28ca2ea4`; full candidate gates and all 16 native/WASM assets verified | Fresh downstream consumer checks and owner-controlled pin updates; package publication separate | Consumer upgrades reviewed against immutable 0.17.15 artifacts |
 | CI selection after PR #134 | Merged; docs/evidence-only pushes run nothing, so the main head may have no Build run | Before tagging: `gh workflow run build.yml --ref main` (and build-wasm, build-wasm-embed, rust-crates, inpaint-cli); confirm the dynamic desktop matrix in build.yml evaluates on hosted runners | One full green Build on the main head |
@@ -72,6 +80,50 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | MI-GAN256 Metal/Q4_K | Metal F32/F16/Q8_0 pass; Q4_K fails (masked 0.81); GPU default off | Q4_K probes with sensitive layers at Q8_0 (`CRISPEMBED_QUANTIZE_MIGAN_Q8`); flip to the padded-K Metal path only after measuring delivery-5 CPU kernels on Apple CPU | Q4_K ≥ 0.94 masked or declined; A/B before any default flip |
 | Big-LaMa (research only) | Weights' rights unclear; kept on `feat/issue71-lama-research`, private Hub copy only | Nothing until the owner clarifies the weight licence | Licence clarified (then publish) or lane closed |
 | Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
+
+## OCR gold corpus lanes — 7 November 2026
+
+The corpus unblocks the Marker, TeleOCR and real-page lanes. Exact next steps:
+
+1. Review the derived annotations of the 37 new pages against their pinned scans (types,
+   order, table cells); turn corrections into `manual` ops in
+   `tools/ocr-gold-corpus/candidates.json`, rebuild (`build_corpus.py fetch`), rerun
+   `tools/ci-heavy/ocr_gold_corpus.sh` and commit its reviewed artifact as a new version.
+2. Marker lane: add a `--corpus docs/ocr-gold-corpus-v1.json` mode to the Marker validation
+   driver that exports per-page blocks (bbox, type, text, table HTML, order) from the
+   `crisp_marker` document JSON renderer and runs `layout_score.py` plus the CER/WER
+   scorer; one hosted CPU run with `CRISPEMBED_MARKER=1`, receipts under
+   `tests/results/marker/gold-v1/`.
+3. TeleOCR lane: same export from the TeleOCR parser output (published F16), receipts under
+   `tests/results/teleocr/gold-v1/`; quantized arms only after F16.
+4. Real-page benchmark lane: extend `tools/kaggle/ocr-real-scans/kernel.py` to read the v1
+   corpus (same sha256 gate), score text with `score.py` and layout with `layout_score.py`
+   for engines that emit blocks (MinerU full route, Marker, PP-Structure), with paired
+   timing spans; CPU sessions within the shared Kaggle capacity.
+5. Corpus gaps: more list/figure pages and French Fraktur-free degraded scans; CORD stays
+   partial (no header/address annotation).
+
+## PP-OCRv6 detector empty/shape handling — issue #164
+
+Owner lane: `fix/ppocrv6-det-issue164-20261106`, based on `a892ae982`.
+The default detector intentionally falls back to scalar when the graph returns
+no boxes, and permanently rejects dimensions other than its first attempted
+shape. The existing recognizer acceptance flag does not govern the detector.
+
+Implement independent default-off empty-result and bounded one-shape rebuild
+options, retain the CPU fallback and compare mode, and preserve resident weight
+ownership. Unit checks cover gate decisions, invalid/nonfinite maps and failed
+shape retries. Live acceptance requires real medium F16 detector/recognizer,
+empty and text frames, repeated and alternating sizes, default/zero/opt-in and
+scalar controls, probability and intermediate absolute errors/magnitudes, box
+geometry, decoded text, timing, and backend/source/model hashes. Run CPU on hosted
+CI and actual CUDA on authorized GPU resources; preserve initial failures. Metal
+and a representative low-contrast/real-video corpus remain separate unless run.
+No new default or model qualification follows from a speed measurement.
+
+Hosted CPU initial evidence: [run 42222784039](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42222784039), source `f2dac783fd28d30c012d3ff3e96b30c75cc790e2`, with the complete model hashes, input hashes, decoded text, geometry, timings, stage magnitudes and absolute errors in [the receipt](tests/results/ppocrv6/issue164-cpu-initial.json). The six inputs produced 0/2/0/2/2/0 boxes, with identical decoded text and at least 0.90 box IoU against scalar for all seven modes. Independent opt-ins and literal-zero controls passed; A→B→A rebuilt four graphs with both gates, compared with one under the default. The largest observed stage-0 absolute difference was 0.000244, and the largest probability difference was 0.001073. These are bounded native CPU graph-versus-scalar results, not a PaddleX or corpus qualification. Timings are single runs and are not a controlled benchmark.
+
+The actual HTTP server route also passed on [hosted CPU run 42224790355](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42224790355), source `8922548d6f058bcce739810edff99b036e8b3b3a`; [the server receipt](tests/results/ppocrv6/issue164-cpu-server.json) preserves all six responses and graph acceptance/build counts. Both settings returned 0/2/0/2/2/0 regions and the same decoded text; the default built one graph and both opt-ins built four. A real CUDA T4 execution at source `26e2e3d7e2bb069e4d279bacd01284b1c46f3726` passed the same seven modes and the actual HTTP server default/both A/B; [the CUDA receipt](tests/results/ppocrv6/issue164-cuda.json) preserves source and model hashes, all outputs, geometry and numerical comparisons. All modes returned 0/2/0/2/2/0 boxes with exact decoded text and at least 0.90 box IoU versus scalar. The largest stage-0 absolute difference was 0.00000906; the largest final probability difference was 0.00001115. These are bounded CUDA-versus-scalar results, not a corpus or original-framework qualification. Do not promote either gate by default. Retain the initial CPU receipt.
 
 ## Post-release v0.17.15 — 5 November 2026
 
@@ -355,11 +407,9 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
 ## Unlimited-OCR-2 Q4_K recipes — 3 November 2026 (perf/q4k-unlimited-ocr2-20261103)
 
 Source: `docs/unlimited-ocr2-q4k-recipes.md`. Both named policies clear the Q4_K bar on
-hosted CPU (portable) and Kaggle T4; `Q4_K_MIX` (`unlimited_ocr2_q4k_shared8_v1`) is
-prepared in the publication protocol, not published.
-
-- Coordinator: dispatch `Q4_K_MIX` publication (cosine gate); the fresh F16 conversion must
-  equal the measured published F16 SHA `487b887e...` or the receipt is re-scored.
+hosted CPU (portable) and CUDA T4. `Q4_K_MIX` (`unlimited_ocr2_q4k_shared8_v1`) was
+[published and re-verified](tests/results/unlimited-ocr2/publication-42371027698.json)
+in run 42371027698; review alias and consumer coverage separately.
 - TODO: Q8_0 is 0.9555 on CUDA (< 0.97; CPU 0.9739). Find a CUDA-qualifying Q8_0 recipe
   (F16 shared experts / attention) and re-score the published F32-sourced Q8_0.
 - Metal arm not measured.
@@ -370,9 +420,9 @@ Source: `docs/josev2b-q4k-sweep.md`. Portable hosted CPU, frozen original refere
 `josev_q4k_down8_v1` (2,952 MiB vs Q8_0 3,462) clears the Q4_K bar on head logits
 (0.99739) and final norm (0.94911); Q8_0 clears 0.97 (0.99995/0.99944).
 
-- Coordinator: Josev Q8_0/Q4_K_MIX publication needs a quantized branch in
-  `tools/ci-heavy/josev_publish.py` first (`docs/josev2b-q4k-publication-v1.json`
-  is prepared, `dispatch_ready` false). Not published.
+- Q8_0 and Q4_K_MIX were published experimentally and re-verified in run
+  42371120858; [the receipt](tests/results/josev2b/publication-q4k.json) records
+  exact bytes, hashes, precision limits and immutable readback.
 - No Q4_K recipe is typed-JSON exact (0/4; argmax 4/4). Strict 0.002/0.99999 stage
   budgets stay failed diagnostics.
 - CUDA: Josev's packed/composed runtime is CPU-only; a CUDA arm needs a backend path.
@@ -380,10 +430,8 @@ Source: `docs/josev2b-q4k-sweep.md`. Portable hosted CPU, frozen original refere
 ## TeleOCR / MinerU Q4_K-class recipes — 2 November 2026 (feat/qwen2vl-q4k-recipes)
 
 Source: `docs/qwen2vl-q4k-recipes.md`. Winners clear the Q4_K bar on CPU, Metal and
-CUDA; `Q4_K_MIX` publication recipes are prepared, not published.
-
-- Coordinator: dispatch `Q4_K_MIX` publication for TeleOCR and MinerU (cosine gate),
-  then add registry aliases with the read-back SHA-256.
+CUDA; `Q4_K_MIX` variants were published and registered in PR116 with
+`teleocr-q4_k-mix` and `mineru25-pro-q4_k-mix` aliases.
 - Neither winner is token-exact free-running (TeleOCR table@35, three CJK characters;
   MinerU German masthead/"Infrafttreten" and a layout box coordinate). A token-exact
   Q4-class recipe would need more Q8_0 (MinerU `r4` keeps the same two divergences).
@@ -673,11 +721,12 @@ path is qualified or receives a published model alias. No existing model default
 release version, application pin or remote model artifact is changed here.
 
 Full native document route (`feat/mineru-native-doc`): C++ port of every
-mineru-vl-utils branch behind `CRISPEMBED_MINERU25_PRO_FULL_DOC` (default off),
+mineru-vl-utils branch behind `CRISPEMBED_MINERU25_PRO_FULL_DOC` (default on for F16/F32,
+opt-in for quantized GGUFs since the 7 November owner decision),
 composed from the layout/router/Marker-document components with an exact
 upstream output profile. Weight-free parity is identical (see the guide).
 Model-backed parity on hosted run 41251475795: 8/8 protocol cases identical.
-Next: review and decide default-on (keep basic/Python routes); add an
+Default decided (7 November; basic/Python routes kept). Next: add an
 image-bearing-table fixture to exercise masking with the real model; token-glyph pixels in image-bearing tables and
 cross-page table merge remain documented exceptions.
 
@@ -721,7 +770,7 @@ explains why a generic exemption list is insufficient.
 | Josev-2B |F32 composition227 stages/four typed requests is established; protected/single-projection quantization negatives are retained. Final-pair Q8 passes a limited decision screen but75 strict stages/full serialization remain negative. |Execute reviewed calibrated/uncalibrated final-pair Q4 experiment; keep292 critical F32/148 F16/2 Q4 and exact uncalibrated model continuity. Do not select/tune on NEW20. A separately declared independent task panel, actual six-client/public/error/recovery checks and immutable HF readback remain before publication. Q8 and Q4 qualification are both open. |
 | MoEdern1.5M |Actual F32 capture localizes one near-boundary expert change; router weights already F32. Component-only replay source is ready, execution unreviewed. |Separate same-input operator rounding from upstream input effects; preserve exact-tie guards and all original matrices. Only then declare a gated correction, original-bound full5483-vector/300-query replay and Q8/Q4 retrieval/client panels. Keep explicit query/document roles and late-interaction semantics. |
 | MoEdern27M/115M |Original token checks complete but exact-router-tie failures prevent full reference completion. Authored Q8/top-k tests are component evidence only. |Use source-backed routing semantics and bounded failed-row attribution before separately frozen original/full native controls. Preserve115M dilated-conv behavior. Validate actual20/20/52 padded Q4 and protected Q8 tensors, full retrieval and all public consumers; no component-to-model promotion. |
-| UltraBERT |Frozen5483-row F32 control/300 rankings pass. Full 8-shard Q4 aggregate 40871150002 (`q4k-last-four-ffn`, portable) is complete: min embedding cosine 0.9779 clears the owner Q4_K bar (> 0.94); nDCG@10 -0.0018; strict v1 vector/top-1 (0.973) gates fail and stay recorded ([receipt](tests/results/ultrabert/remaining-q4-shards-v1-review.json)). |Q4_K: coordinator publication dispatch (with the Q4_K_MIX queue). Keep .001 task-degradation/.99 top-one gates and strict vector flags separately. Q8 needs explicit metadata/type admission; standard-header normalization, public clients, independent activation and publication/readback remain open. Public pairs/F16/long-context/GPU/performance are distinct follow-ups. |
+| UltraBERT |Frozen5483-row F32 control/300 rankings pass. Full 8-shard Q4 aggregate 40871150002 (`q4k-last-four-ffn`, portable) is complete: min embedding cosine 0.9779 clears the owner Q4_K bar (> 0.94); nDCG@10 -0.0018; strict v1 vector/top-1 (0.973) gates fail and stay recorded ([receipt](tests/results/ultrabert/remaining-q4-shards-v1-review.json)). |Q4_K: published and re-verified experimentally; keep .001 task-degradation/.99 top-one gates and strict vector flags separately. Q8 needs explicit metadata/type admission; standard-header normalization, public clients, independent activation and publication/readback remain open. Public pairs/F16/long-context/GPU/performance are distinct follow-ups. |
 | Unlimited-OCR-2 |The last1 per-stage panel 40868634374 stopped after 1/4 Q4 cases on its disk-reserve preflight ([receipt](tests/results/unlimited-ocr2/last1-replay-v1-initial-failure.json)); superseded by the 3 November final-logit Q4_K recipe lane. |See "Unlimited-OCR-2 Q4_K recipes" and "Unlimited-OCR-2 Q8_0 on CUDA" above; no further per-stage panel. |
 | MiniCPM-OCR |All30 decoded cases exact; vision130/180 pass,50 fail;96 crop parts unmapped. Q4 protects vision while generic Q8 quantizes it. |Declare decoder-only Q8 on the SAME186 decoder matrices; keep593 source-model exclusions byte-exact. Independently attribute earliest F32 vision differences with same inputs/weights and document unmapped crop limits. Preserve original23 plus added7 outputs; qualify all five cases/intermediates/clients before publication. No original corpus recapture or generic quantizer default change. |
 | LFM2.5 masked230M |Published Q8/Q4/calibrated/mixed profiles exist, but mixed330 still changes one masked prediction. |Reuse immutable original/same-weight references; isolate remaining prediction-sensitive groups. Preserve attention/ShortConv/FFN-down high precision supported by actual ablations. Freeze independent task inputs before selection; extend quantized/GPU/client evidence separately. Do not confuse this with the350M retrieval model. |
@@ -3252,3 +3301,259 @@ Source `374d04387` completes four arms with OFF all282/167 rows/stages exact. Co
 - Q6 QKV operator attribution ([results](docs/lighton4b-q6-qkv-batch-results.md)):136 cases, actual source4/full140 and native16 closures exact. Threads and LLAMAFILE toggles are byte-neutral; upstream batch>=8 tiled path is absent from native3a. Full source-backed reduction proof and default-off generic route/decoded A/B remain next, with original batching differences and all form/table negatives binding.
 
 - Actual Q6 tiled helper proof ([results](docs/lighton4b-q6-tiled-helper-results.md)): all68 retained native/upstream case hashes and1,146,880 actual source image QKV outputs byte-exact;95.13s/no model forward. Default-off physical gate/cache integration is implemented but structural multi-width controls and full decoded table/form A/B remain pending. Original graph-boundary limitation and no-ship status retained.
+
+### Isolated external-text imatrix adapter, no weighted model
+
+The public publisher imatrix8406c78c/10e8194a… contains248 dense `.in_sum2`/`.counts`
+pairs,129×512 rows. The isolated adapter maps exact248 LightOn input vectors and
+inverse-permutes only24 recurrent output input axes from tiled to HF-grouped V
+heads. Six Python controls pass, including the real3.63MB source, complete248
+normalized hashes and synthetic domain/count/shape/nonfinite/energy negatives.
+The deterministic converted file is105aba299a…/3,621,184 bytes. Correct source
+math, coordinate formula, provenance limits and pending checks are in
+[the adapter note](docs/lighton4b-imatrix-adapter.md). Explicit unusable imatrix
+requests no longer silently fall back. Strict adapted-profile coverage and an
+actual-consumer/header-only checker are prepared; one bounded model-free hosted
+build/check is next. No weight quantization, model forward, OCR capture or quality
+promotion is authorized before verification. The source corpus contents and
+calibration source weights remain independently unauthenticated external text.
+
+
+GitHub check42238407232 remained queued and was cancelled by user instruction;
+no tests or artifacts ran there. The unchanged payload-free adapter controls are
+now ported to one CPU-only Kaggle worker with source/submodule pins, GPU rejection,
+resource receipts and a strict20-minute controller/30-minute kernel bound. No
+GitHub dispatch, weight quantization or model forward follows from this port.
+
+
+Initial Kaggle CPU v1 compiles crispembed-quantize and passes six real/synthetic
+Python checks, then rejects the synthetic target's unflattened5D Conv3D patch.
+The actual format5 footprint is1536×1024. Correcting only that header fixture and
+adding a physical-rank regression check leaves adapted bytes/means unchanged;
+v1 failure logs/receipts are preserved before one bounded CPU retry. No model or
+weight quantization has run, and no GitHub job is dispatched.
+
+
+The tested adapter/strict opt-in is ready for existing PR155 integration. Kaggle
+CPU v4 passes all248/897,024 consumer means and8 Python controls, strict ordinary
+CLI target rejection, valid legacy loading and no-fallback negatives. The two
+initial fixture failures remain in PR157 evidence. No production inference source
+changes, new model, default/quality/release promotion or GitHub dispatch. A future
+weighted plainQ4 candidate remains separately gated on exact fresh-source/unweighted
+f873 reproduction,248 actual vector applications and all protected-byte checks.
+
+### No shipping currentQ4; Q6 tied-head capability controls
+
+The production audit finds no LightOn4B CLI model alias/payload, no format5
+public loader admission, and no experimental probes in explicit release binary
+lists. CurrentQ4 remains unqualified/capped and must not ship. The output-quality
+target is the actual llama.cpp Q4_K_M baseline, not a naming/type-count claim.
+[Production fence](docs/lighton4b-production-fence.md) records exact boundaries.
+
+A separate checkpoint-free control adds independent Q6_K gathered embedding and
+aliased head tests with odd tiles/last row, BF16/quant/explicit-off gates and
+storage immutability; no dot arithmetic changes are needed. The decoder owner
+lane supplies separately gated Q6-head recipe admission. All execution is a
+bounded Kaggle CPU control, combined with that lane where possible; no GitHub
+model/CI run, full model, quantization, public alias or release qualification.
+
+### Weighted Q4KM-style reproducible harness integration — 7 November
+
+Additive [source/tool integration](docs/lighton4b-imatrix-q4km-reproduction.md)
+preserves actual producera4f2c908f and corrected complete-decode sourcee822a6de8,
+including its initial unavailable-timer negative. The closed original-F16 producer,
+sealed runtime/model continuation, separate post-selection form and authenticated
+BF16-score diagnostics are explicit Kaggle tools, excluded from production
+artifacts. Existing source/runtime bytes and old recipes remain unchanged; the
+only C++ delta is an additional HF-profile metadata check in the test preflight.
+Ten focused Python controls and15 historical source-pin checks pass. Native
+preflight plus legacy stream controls already ran in the authenticated producer;
+no local native build, GitHub dispatch or extra model run is needed for this copy.
+Complete table/Arabic evaluation remains running; form follows on its lane while
+the independent physical same-weight diagnostic may run in parallel. No shipping,
+default, publisher-byte-equivalence or broad heldout-quality claim is made.
+
+### Closed physical upstream transport and arithmetic experiment
+
+The [physical runtime scope](docs/lighton4b-upstream-physical-runtime.md) adds
+separate default-off format-6 admission/direct scalar/layout semantics and the
+independently gated retained-quantized matmul/ggml RMS path. Actual 723-tensor
+transport readback and focused reconstructed-prefix component controls pass;
+source profile, cache toggles, legacy paths and public shipping fence remain
+closed. The ongoing same-feature baseline is immutable, with exact actual input
+bytes but nonzero first-score differences; full quality, actual-main primitive
+closure and a fixed-runtime same-feature rerun remain acceptance gates. No
+alias/default/release or BF16-reference change follows from component evidence.
+
+
+### LightOn4B original-F16 tiled-output isolation — 7 November 2026
+
+Decoder lane prepares a no-inference [paired coordinate reproducer](docs/lighton4b-hf-tiled-out-reproducer.md) after the preserved form CER failure. Five local Python protocol/negative tests pass; hosted synthetic helper compilation and numerical controls remain pending. No checkpoint worker or new runtime gate is dispatched by this change. Exact original-F16/HF and upstream-coordinate payload equality is required before preparing a distinct HF-tiled-output candidate; no quality promotion or release change.
+
+The physical native-ops form smoke at285ab5a4e is a composed numerical negative:
+ON RMS0.1296631 vs OFF/reference0.1023485; all38 OFF stage hashes match ac34,
+but cap2 `<figure`/noEOS is not quality proof. Keep the gate and shipping fences
+unchanged. [Immutable evidence](https://github.com/CrispStrobe/CrispEmbed/blob/678d3ca790fbdbf8eec69dda9cbcbc2996170186/docs/lighton4b-physical-native-ops-negative.md)
+also closes actual first4 operator reconstruction/all664 per-case artifacts.
+
+Closed physical diagnostic ablations are verified at4a8821e3e:142 mode/cache/
+unknown/observer controls,557865 physical-policy/geometry checks, old stream and
+84 Q6 controls/65792 scalar values pass. The existing master stays default-off;
+unset/`all` preserves its previously measured full mode, while `quant`, `rms`,
+`layers`, `head` and explicit off select bounded components. Unknown active
+physical modes reject before payload/profile admission and primitive calls;
+cache masks reject subset switches. No learned-model ablation or quality
+qualification follows. The composed full-mode negative remains preserved.
+
+
+### LightOn4B HF-only tiled-output candidate — 7 November2026
+
+Actual original-F16 proof passed all24 HF/publisher payload pairs at24208e2ac; proof preserved separately in PR157. Decoder lane adds distinct HF-layout metadata/gate, owner and cache fingerprint plus output-only activation bridge; all699 other payloads and HF gamma/log-A/tokenizer metadata remain immutable. [Design and pending controls](docs/lighton4b-hf-tiled-out-reproducer.md). Eight local Python tests pass; native full-width operator/type/metadata/cache checks and actual candidate packing/decoded comparison remain hosted gates. Physical native-ops/cache-mask work is preserved independently.
+
+
+HF-layout native controls are now measured passing atc89aaa4cb (Kaggle143171211/v3), with both initial fixture failures preserved in PR157. The next [closed observed three-case worker](docs/lighton4b-hf-tiled-out-observed-threecase-v1.json) reuses those exact binaries/libraries and verifies source/runner blob identity; it does not rebuild or change arithmetic. It admits old5d on the retained full table score/70 stage hashes before packing, audits699 protected/24 replaced payloads, and records full form/table/Arabic text/IDs/EOS against genuine BF16 and pinned llama/old-HF outputs.4h controller/90min form and table/20min Arabic, partial evidence retained. No heldout or shipping claim.
+
+## Physical-only F16 attention continuation
+
+The explicit private SGEMM operator at `b4a1a8dcf` closes40 conditional source
+stages bytewise and12 observer pairs; evidence is frozen on the qualification
+branch at `fe019dda5`. The isolated integration adds default-off
+`CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION`, separate cache fingerprints,
+canonical F16 K/V, source N1 paired-dot fallback and matched-profile SGEMM.
+Global traits, vendor source, public loading fence and HF tiled-output flags
+remain unchanged. Next gates are hosted supported/stub/WASM-guard controls,
+source-fed N4/N16 plus16 N1 cache replays against pinned upstream, then a bounded
+same-feature full-score and independent decoded comparison. Unsupported profiles
+must fail closed; no shipping/quality claim follows from the operator proof.
+
+
+### Executed HF-tiled artifact-only reader integrated (2026-11-07)
+
+Selective four-file integration preserves byte-exact reader/test/protocol source`0d90fd0b2a24fc7990cbd8bc052c478bd28bf0f2`, executed on Kaggle143195841/v1. Sealed producer report63a586c0 and reader reportcb7a0a3e prove actual4GB/723payload hashes, allcurrent score finite/hash/argmax controls and only common-prefix historical-native comparisons; complete evidence is PR157commit`3b8436830`. [Protocol](docs/lighton4b-hf-tiled-out-readback-protocol-v1.json), [artifact consumer](tools/ci-heavy/lighton4b_hf_tiled_out_readback.py), [Kaggle controller](tools/kaggle/lighton4b_hf_tiled_out_readback.py). No inference/build/quantization, new source stages, runtime/header/CMake/workflow/default changes, or quality promotion; fullform/table negative remains. Actual tested source remains distinct from this integration source.
+
+### Frozen physical F16 table/Arabic continuation
+
+`docs/lighton4b-physical-f16-calibration-v1.json` freezes one sequential worker for `simple_table` and `arabic_printed_line`. It reuses the authenticated full-form executable and GGML bundle, identical physical weight bytes and exact gate tuple, authenticates both retained source-feature/input/reference sets before forwarding, and preserves full original teacher panels (222/6) plus independent cap-256 generation. No new reference forward or precision switch is involved. Artifact-only form teacher-row numerical review and representative held-out/composed-vision checks remain separate acceptance gates; nothing is released by this diagnostic.
+
+
+### Executed177-row artifact-only reader integrated (2026-11-07)
+
+Fournewreader/controller/test/protocol files preserve exactexecuted source`bcbd50b1894a465e0bc44c1f8b3ef54c879d6529` (Kaggle143200239/v3,91.86s), reportb8b6bdf1 andPR157evidence`8009816b9`. Bothinitialsetupnegativesretained. [Protocol](docs/lighton4b-f16-teacher-readback-v1.json), [consumer](tools/ci-heavy/lighton4b_f16_teacher_readback.py), [Kagglecontroller](tools/kaggle/lighton4b_f16_teacher_readback.py). OriginalBF16/nativeactual177teacherrow/contextguards anddirectionalKL/probability/magnitude/top1metrics; pinnedupstreamnumericalcomparisonstrictlyrow0only. All177RMS0.386425/max8.82935 and169/177top1 combinequantization/sourcevision/runtime, notsameweightparity. Fourcontrols+15historicalsourcepins pass; no inference/runtime/header/CMake/workflow/defaultchanges or shippingclaim. Actualexecutedreader/nativeproducer sources remain explicitly distinct from integrationhead.
+
+### Held-out executor preparation and composed-vision prerequisite (2026-11-07)
+
+Added model-free input/reference admission and blocked execution-plan source under tools/heldout, with four controls covering frozen quota/case order, capacity worst case, malformed archive rejection before parse and protocol mutations. No candidate outputs inspected or inference executed. [Composed vision design](docs/lighton4b-composed-vision-executor-design.md) places already-observed form/table/Arabic paired projector comparison before provisional heldout; authenticate publisher F16 versus native protected vision weights and preserve dtype confounds. Current source-feature results remain decoder diagnostics. Generic cap1536 execution, human reference adjudication, licensing review and hosted execution adapter remain prerequisites, not implemented model execution.
+
+### Observed composed-vision executor draft (2026-11-07; unrun)
+
+Prepared tools/kaggle/lighton4b_composed_vision.py and closed protocol: one previously observed form/table/Arabic case per sequential hosted worker, source-feature arm first then composed-native, fixed512 cap/four threads,2400s per arm/6000s whole-worker with process-group cleanup/raw partial retention. Rebuild exact tested production/CMake bytes, with separate reference-executable-only cap512 flag for both modes and fixed2048 context admission; preserves old256 and table-only512 CLI. Authenticate actual RGB/prompt/modalities/features/positions/references, all old source-fed decode rows and38 stage hashes; source-fed repeat must reproduce all retained rows/stages before composed arm. Compare actual merged vectors/firstscore and paired native32-layer stages in FP64, complete independent greedy or explicit cap failure. Upstream internal vision intermediates unsupported; projector canonical weight/dtype equivalence remains unproven. BF16 capture is a reference output, not human ground truth. Model-free --controls-only stops after supported-CPU/ABI and nine ACTUAL binary CLI checks, before model acquisition; three local admission/arity tests and Python syntax checks pass. Hosted build/controls and independent review remain required. No model job launched, no held-out outputs read. Table retained upstream256 remains incomplete; extended source reference needs separately pinned receipt before any full-reference quality comparison.
+
+### Pinned F16 projector attribution preparation (2026-11-07; not dispatched)
+
+Prepared reference-only tools/projector-probe with complete297-native/298-publisher canonical tensor map and explicit temporal Conv3D→twoConv2D reconstruction; source conversion/clip graph pinned6c01. Remote plan transfers only1.334GB authenticated protected native vision suffix plus672MB mmproj, no text model/fullF32 artifact. Canonical-value/F16-round/BF16-domain comparisons precede standalone source-projector OFF/ON exactactualmerged closure and materialized early/all24visual-stage comparisons on observedform. Any observer drift, unsupported stage or nonfinite value fails closed. Five model-free tests and exact source patch anchors pass; C++/worker remain uncompiled/unrun pending independent review and authorized hosted slot. Native code/default gates unchanged. Meaningful source-stage magnitudes are required before a production correction.
+
+
+### Projector live-observer correction preparation (2026-11-07)
+
+ProjectorV2 retained complete canonical297/298 parameter authentication and strict actualsource merged OFF/ON byte closure, but postcompute intermediate reads were invalid: alternating stage files shared final buffer hashes despite outputflags. Reject those stage magnitudes. Corrected reference-only live scheduler callback captures selected nodes before reuse; per-stage counts, patch+position and FFN residual identities failclosed. Separately capture input/resizedRGB and normalizedHWC/CHW, invert nativepatchnormalization exactly, and split resizepixel differences from normalization-only arithmetic. Seven model-free controls/exactsourcepatchanchors pass; await independentreview/boundedretry. No product/vendor/defaultchanges.
+
+### Physical F16 vision/resize draft (2026-11-07; unqualified)
+
+Separately gated Pillow22 RGB resize and source-compatible F16-matrix/F32-state vision are drafted from pinned llama.cpp6c01. The source path uses explicit F16 im2col and paired F16 SGEMM, F32 parameters/residuals and source GGML GELU, preserving the existing Torch/BF16 path and all defaults. Physical owner, supported CPU/private ABI, four-thread and geometry guards fail closed. Added model-free resize/gate and main-library stub/link targets; no local C++ build/model forward and no hosted numerical qualification yet. Next is bounded hosted compilation, source-fed actual observed-form stage controls and complete decoded comparison only after byte controls pass. ProjectorV3 live captures establish source-declared precision transforms for all297 native/298 source tensors; source F32 parameters must remain F32, while only source F16 matrices are rounded. Reference probes remain separate from production.
+### Bounded physical Q4 CPU_REPACK experiment (2026-11-07)
+
+The same-input operator source `3b41475c88f570cf899bac12ae6c4f80e4eb3400`
+measured report SHA256 `4dc28c17717082a36e9f2cad3729a31a83a97c3234b07d3c00002232744a66f5`.
+All five N16 borrowed projections close actual captured native outputs; the
+four Q4 preferred-buffer projections agree across both pinned backends and
+whole-row transports. Repack versus raw differences are small (maximum
+6.12065196e-6); the separate Q6 N16 backend residual is not fixed by repacking.
+These are operator measurements, not decoded attribution or qualification.
+
+The isolated implementation adds default-off
+`CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK`, physical-owner-only supported-CPU
+admission, immutable decoder/cache tags and public CPU_REPACK buffer allocation.
+Quantized storage stays quantized; a separate bounded 2 GiB manager retains
+preferred buffers, charges outstanding leases after clear, rejects source-header
+mutation and never populates the existing F32 converted-weight cache. It does
+not change vendor traits, the public release fence, Q6 head dispatch or other
+models. Unsupported SDK/WASM profiles reject the option.
+
+Pending: independently reviewed hosted lifecycle/budget/toggle controls, legacy
+compatibility, actual source-fed preferred projection equality, then a bounded
+same-feature full-score and independent decoded OFF/ON comparison. No default
+or release change is authorized by component equality; current Q4 remains
+unqualified.
+
+### Physical Q4 repack controls passed; paired table512 next
+
+Kaggle controls source `5f6dfb9f09b49002201c7702ff71a5e345294af2` completed
+in491.644s with receipt SHA256
+`c7130c6d7b54e6859439bbf87c8e54880c30bd5d2db33c3571ded179e6711cf5`.
+All30 actual-input OFF/ON projections match the sealed raw/preferred operator
+outputs bytewise. Supported lifecycle57, F16-attention255297, native-ops142,
+HF-layout39, Q6-head84 (65,792 independent values), main SDK5 and closed
+main-stub2 controls pass. Initial reference-adapter compile failure remains
+preserved; no model forward or decoded claim follows from this panel.
+
+[Paired table protocol](docs/lighton4b-q4-repack-table512-v1.json) freezes a
+single bounded worker: exact existing source-feature table, published physical
+weights, F16-attention and all other gates unchanged; fresh OFF then ON child
+processes, greedy cap512/context2048. OFF must reproduce all282 completed raw
+rows,38 prefill stages, IDs/text/EOS from `36a9b14b`. ON must retain actual
+216-entry bounded quant cache and zero converted F32 weight entries/bytes.
+Only reference-CLI cap512 admission and cache-accounting summary are added to
+the tested source; production runtime bytes remain identical. No original or
+upstream forward, composition, held-out qualification or promotion.
+
+### Model-free physical vision controls passed; component stage next (2026-11-07)
+
+Pinned source0eca worker passed in690.72s, receipt31e6d6e5. Independently verified58 owned output hashes, all8 fixed synthetic resize pairs versus actual pinned upstream22-bit resizer, and actual form RGB/normalized packed patches exactly against liveV3 captures. Supported synthetic2×2/24block vision graph37checks, main unsupported7, Pillow17+main17 pass; no checkpoint weights acquired. Initial submission title/id400 preserved separately, no worker ran from it. Freeze actual source/control receipt in next projector-only worker: complete1.334GB protected vision suffix/all297 tensor SHA, no text weights/fullF32model, exact retained legacy stages before source-F16/F32-state comparison. Actual-weight graph and decoded quality are still unqualified; no default/release promotion.
+### Q4 repack decoded regression: experimental gate unqualified
+
+[Keep physical Q4 repacking disabled](docs/lighton4b-q4-repack-experiment.md).
+Source `f079dcec6` completes the same-feature table OFF/ON diagnostic with exact
+OFF282row/38stage/ID/text/EOS anchors. ON295EOS regresses CER349→365/607 and
+WER97→104/106; first-scoreRMS0.188629→0.202156. Actual216-entry1.663GBquantcache
+retains zero convertedF32weights but sampledRSS grows2.959→4.632GB. Fullraw
+receipt `5acbdab9`/independentreview are preserved in PR157`1d48ac73c` alongside
+the initial compile negative and passed controls. Gate staysdefault-off and
+unqualified; no speed/quality/default/alias/release promotion. Actualupstream
+text hidden stages are absent, so nativepairedL0drift is not upstream stage
+localization. Prioritize composed-vision attribution/correction and preserve
+all observed/composed/held-out gates.
+
+### Additive source-vision integration preparation (2026-11-07)
+
+Prepared isolated union of tested sourceb59 with existing PR1559ca and currentmain17098, retaining publication/vendor/CLI work and repack-negative warning. Production src/GGML/CMake/native-document bytes remain exactlyb59; new source-vision scope documents off-by-default gates, supported CPU/still-image domain, effective precision and existing public format6 fence. Actual component039b proves28source arrays/29legacy anchors; full composed form remains runtime-owned and pending, so no shared push/release/quality promotion yet. Local sourcepin/env470 checks pass; no shared-host build/model work.
+
+### Actual-stage-admitted composed form vision follow-up
+
+Tools-only `lighton4b_composed_form_vision.py` freezes component receipt
+`039b024f`/source`b59e5d3a9`, rehashes every owned component artifact and all28
+actual source stages before model acquisition. The same physical843e weights,
+RGB/prompt/positions and decoder/F16-attention gates are fixed; Q4 repack and
+BF16 head remain0. Old composed194EOS must reproduce all194raw rows,38text
+stages and29vision/processor anchors before changing ONLY Pillow/F16vision
+gates. Fixed mode runs full independent greedy to EOS/cap512, records original
+177-reference/upstream rawmetrics and checks all167 retained source-feature
+rows/stages without discarding a completed negative. One teacher row, no new
+reference forward, no human-GT/heldout/general qualification or promotion.
+Protocol and controls require independent review before one bounded hosted run.
+
+### Composed form verified; source-vision integration ready (2026-11-07)
+
+Full composed aec0/sourceb985 preservesold194EOS/all194rows/38text+29vision anchors, then fixed167EOS matchesall167retainedsource-feature rows/stages andactual28sourcevision arrays, with source_fed_vision=false. FrozenBF16-reference CER259→175/656, WER47→45/90; actualupstream189/46. This observed form meetsfloor, not heldout/general qualification. Bothgates remainoff. Integration unionscurrentmain17098/PR1559ca/testedb59 plusfourtestedformharnessfiles; producttree exactb59. Added explicit immutable historicaldriver amendment ratherthanquietrepinning. Runtime preparescomposedtable/Arabic; no release/default promotion.
+
+
+### Default-off physical GDN source-operator integration
+
+Integrate the exact reviewed/tested `cd50e9e691530525fb998edda8a449cc0725be91` helper, cache fingerprint, unit and bounded source-fed harness. The separate `CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS` gate retains scalar log1p softplus and matches pinned source postnorm/state/FIFO on allfour fixed operator inputs, including actual nonzero-state continuation; old native16 attention and20 gate/cache controls pass. [Immutable operator evidence and both initial negatives](https://github.com/CrispStrobe/CrispEmbed/blob/638aac0ed/docs/lighton4b-live-gdn-replay-results.md#hybrid-actual-input-component-pass) retain the6b1f receipt and N16 RAW output-projection residual. Quantized projections/global repack/default-off release fences remain unchanged. Same-feature table/form full decoded A/B is still required; this integration makes no quality or shipping claim.
+
+## Physical GDN decoded regression: gate stays off
+
+Full table/form A/B at `f6a1e60d3` closes OFF all282/167 rows+38 text anchors. GDN ON table294EOS worsens349→364/607 character edits,97→104/106 words; form167EOS raw IDs/text unchanged. Both first-score errors improve, without decoded quality parity. Keep default-off/unqualified and no ship; [evidence and limits](docs/lighton4b-physical-gdn-source-ops.md). No runtime/default/alias/release change.
+
+## Combined physical GDN/repack remains unqualified
+
+Source `374d04387` completes four cap512 arms with exact OFF282/167 rows/stages. Combined ON table282EOS matches upstream IDs/text; form167EOS fails character floor194/656 versus upstream189, even with fewer word edits40 versus46. Keep both gates default-off; no aggregate waiver, promotion or ship. [Full evidence and limits](docs/lighton4b-physical-gdn-source-ops.md). No runtime/default/release change or held-out execution.

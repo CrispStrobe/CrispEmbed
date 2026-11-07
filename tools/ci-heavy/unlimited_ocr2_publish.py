@@ -169,6 +169,25 @@ def notices(cfg, out_dir, opener=urllib.request.urlopen):
     (out / "UPSTREAM_README.md").write_bytes(fetch(readme, up["readme"], opener))
 
 
+
+def quality_section(cfg, names):
+    """Owner-required status label and quality table (protocol `card_quality`, receipt-cited numbers only)."""
+    q = cfg.get("card_quality")
+    if not q:
+        return ""
+    label = "".join(f"\n> **Experimental: {v}** - see the quality table before use.\n" for v in names
+                    if v.startswith("Q4"))
+    return f"""
+## Status and quality
+{label}
+{q['status_md']}
+
+{q['table_md']}
+
+Cells marked "not measured" were not measured; numbers come from the CrispEmbed receipts named in each row.
+"""
+
+
 def card(cfg, files, parity, source_commit):
     up = cfg["upstream"]
     rows = "\n".join(f"| `{f['filename']}` | {f['variant']} | {f['bytes']:,} | `{f['sha256']}` |" for f in files)
@@ -217,14 +236,15 @@ All credit for the model belongs to the original authors; these files only chang
 | File | Precision | Bytes | SHA256 |
 |---|---|---:|---|
 {rows}
-
+{quality_section(cfg, [f['variant'] for f in files])}
 ## How the files were produced
 
 1. Downloaded `{up['repo']}` at the pinned revision `{up['revision']}`; both safetensors shards were
    checked against the SHA256 values in CrispEmbed's `docs/unlimited-ocr2-source.json`.
 2. Converted with `models/convert-unlimited-ocr-to-gguf.py` (F32 lossless; F16 with `--fp16`).
-3. Quantized variants were produced from the F32 GGUF with CrispEmbed's own `crispembed-quantize`
-   (`tools/quantize.cpp`; 1-D tensors keep their source type, embeddings/router/lm_head/vision keep a Q8_0 floor).
+3. Quantized variants were produced with CrispEmbed's own `crispembed-quantize` (`tools/quantize.cpp`; 1-D tensors
+   keep their source type, embeddings/router/lm_head/vision keep a Q8_0 floor): Q8_0 from the F32 GGUF; Q4_K_MIX, where
+   listed, from the F16 GGUF with the named policy `unlimited_ocr2_q4k_shared8_v1`.
 4. Built and uploaded by CrispEmbed commit `{source_commit}` (workflow `unlimited-ocr2-publish.yml`);
    `manifest.json` lists every recipe, input pin, receipt and file hash.
 
@@ -232,7 +252,8 @@ All credit for the model belongs to the original authors; these files only chang
 
 Receipts were measured on the **F32** conversion. A CPU precision sweep (receipt
 `tests/results/unlimited-ocr2/precision-sweep.json` in CrispEmbed) found the **F16 and Q8_0**
-conversions also token-ID exact on the untiled page; Q4_K and mixed Q4 variants were not, and are not published.
+conversions also token-ID exact on the untiled page; Q4_K and mixed Q4 variants were not (the experimental
+Q4_K_MIX, where listed, is qualified only by the final-logit cosine gate above).
 
 - **Untiled pages:** generated token IDs are exactly identical to the original
   ({parity['untiled']['tokens']} tokens on `{parity['untiled']['case']}`).
@@ -424,6 +445,11 @@ def refresh_card(cfg, out, root=ROOT):
 def publish(cfg, variants, gguf_dir, notice_dir, out, source_commit):
     require(re.fullmatch("[0-9a-f]{40}", source_commit or ""), "exact source commit required")
     parity = receipts(cfg)
+    # Keep the reviewed raw-text and real-scan statements of the refreshed card on a full republish.
+    parity["trial_text"] = trial_text_receipt()
+    real_scans = real_scan_receipt()
+    if real_scans:
+        parity["real_scans"] = real_scans
     files = []
     for v in variants:
         name = cfg["recipes"][v]["filename"]

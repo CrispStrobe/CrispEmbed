@@ -1,0 +1,26 @@
+{
+  "schema": "lighton4b-composed-vision/v1",
+  "cases": [
+    "simple_form",
+    "simple_table",
+    "arabic_printed_line"
+  ],
+  "arms": [
+    "source-features",
+    "composed"
+  ],
+  "cap": 512,
+  "threads": 4,
+  "context": 2048,
+  "arm_seconds": 2400,
+  "worker_seconds": 6000,
+  "production_source": "4a63d73bee7289deab41fb20f67765d3c6800182",
+  "receipts": {
+    "form": "0a0c2084baa4e46aa80f09f7ae94fd4b1c56ccae2bbf2f9ef6210e81e8cf1d01",
+    "physical": "712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2",
+    "calibration": "7639d6559da7cc58443ccfbe1dac518af0d70f3e7a83718d037a97bb147eb2b7",
+    "extended_table": "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3"
+  },
+  "quality_qualified": false,
+  "scope": "Previously observed diagnostics, one case per sequential hosted worker; cap512 attempt, incomplete output never pass. No original forward. Same decoder/different deployed vision; projector weight equivalence unproven. Table source reference is completed512 EOS under pinned receipt, preserving256 evidence."
+}

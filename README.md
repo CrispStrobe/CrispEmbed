@@ -436,7 +436,7 @@ unified `crispembed_ocr_model_*` C API. Available through CLI (`--ocr`), server
 | **Polyphonic-TrOMR** | ResNetV2+ViT + 4-head decoder | ~22M | Printed music photos → symbolic | Apache-2.0 |
 | **Flova/omr_transformer** | DonutSwin + mBART-4L | 143M | Handwritten/whiteboard music → LilyPond | Apache-2.0 |
 | **Transcoda-59M** | ConvNeXt-V2 + 8L RoPE cross-attn | 59M | Zero-shot full-page score → Humdrum `**kern` (real-scan SOTA) | CC-BY-4.0 |
-| **GOT-OCR2** | SAM ViT-B + Qwen1.5-0.5B | 0.7B | Doc OCR (text+LaTeX+tables); `got-ocr2` (Q4_K) / `got-ocr2-f16` (token-exact vs the original pipeline); needs `CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1` | Tongyi Qianwen Research (non-commercial) |
+| **GOT-OCR2** | SAM ViT-B + Qwen1.5-0.5B | 0.7B | Doc OCR (text+LaTeX+tables); `got-ocr2` / `got-ocr2-f16` (F16-r2, token-exact vs the original pipeline) / `got-ocr2-q4_k-experimental`; needs `CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1` | Tongyi Qianwen Research (non-commercial) |
 | **GLM-OCR** | CogViT + GLM-0.5B | 0.9B | Doc OCR (OmniDocBench #1, 8 langs) | MIT |
 | **InternVL2 / 2.5** | InternViT + Qwen2/InternLM2.5 | 0.9–2.1B | Edge/WASM & EN+DE VLM OCR | MIT |
 | **Qwen2.5-VL / Qwen3-VL** | ViT (+DeepStack) + Qwen LLM | 2.4–3.6B | General/multilingual VLM OCR | Apache-2.0 |
@@ -835,6 +835,16 @@ and [LEARNINGS.md](LEARNINGS.md) (deep dives) for detail. Every runtime
 
 ---
 
+## Quantized and experimental variants
+
+Quantized files whose output is measurably different from the original are published as
+**experimental** (aliases ending in `-experimental`): UltraBERT Q4_K, MoEdernColBERT 27M/115M
+Q4_K_MIX, Josev-2B Q8_0/Q4_K_MIX, MiniCPM-OCR and Unlimited-OCR-2 Q4_K_MIX, GOT-OCR2 Q4_K, plus
+OXR-1.0 Q8_0-large/Q4_K-head, TeleOCR and MinerU2.5-Pro Q4_K_MIX and MI-GAN512 Q4_K. Per-model
+quality tables (token agreement, cosine, retrieval/CER deltas, known divergences) are in
+[docs/quantized-models.md](docs/quantized-models.md). Do not mix quantized embedding vectors into an
+index built with F32.
+
 ## Model licenses
 
 Converting a checkpoint to GGUF **does not relicense it** — each downloaded model
@@ -875,7 +885,7 @@ The VLM OCR engines' upstream licences, all verified against the base chain:
 | `nanonets-ocr2-1.5b` | nanonets/Nanonets-OCR2-1.5B-exp | Qwen2-VL-2B-Instruct | Apache-2.0 |
 | `nanonets-ocr-s` | nanonets/Nanonets-OCR-s | Qwen2.5-VL-**3B** | Qwen Research (non-commercial) |
 | `qwen2vl-3b`, `uni-mumer-qwen2.5-vl-3b`, `teleocr-*` | — | Qwen2.5-VL-3B (vision) | Qwen Research (non-commercial); engine gate `CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1` |
-| `got-ocr2`, `got-ocr2-f16` | stepfun-ai/GOT-OCR2_0 | Qwen1.5-0.5B (decoder) | Tongyi Qianwen Research (non-commercial, no use to improve other LLMs); gate `CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1` |
+| `got-ocr2`, `got-ocr2-f16`, `got-ocr2-q4_k-experimental` | stepfun-ai/GOT-OCR2_0 | Qwen1.5-0.5B (decoder) | Tongyi Qianwen Research (non-commercial, no use to improve other LLMs); gate `CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1` |
 | `oxr-1.0-*` | OXR-1.0 | — | OXR License (attribution for online services, no competing hosted API); `--accept-license oxr` |
 | `h2ovl-mississippi-800m` | h2oai/h2ovl-mississippi-800m | Danube3-500m + InternViT-300M | Apache-2.0 (+ MIT) |
 | `h2ovl-mississippi-2b` | h2oai/h2ovl-mississippi-2b | Danube2-1.8b + InternViT-300M | Apache-2.0 (+ MIT) |

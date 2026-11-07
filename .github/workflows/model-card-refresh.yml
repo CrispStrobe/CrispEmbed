@@ -1,0 +1,56 @@
+name: Model card refresh (card-only, owner-approved spec)
+# Commits only small text files (README.md, manifest.json, NOTICE, UPSTREAM_README.md) to an
+# already-published model repo, from docs/model-card-refresh-v1.json. GGUF bytes are never
+# uploaded; every GGUF's LFS identity is checked against the spec before and after, and every
+# changed file is read back from the new immutable commit. tools/ci-heavy/model_card_refresh.py
+# holds every gate.
+on:
+  workflow_dispatch:
+    inputs:
+      entry:
+        description: 'Spec entry'
+        required: true
+        type: choice
+        options: [got-ocr2, oxr, teleocr, mineru25-pro, migan512]
+      source_ref:
+        description: 'Exact commit containing the spec and card files'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: model-card-refresh-${{ inputs.entry }}
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SPEC: docs/model-card-refresh-v1.json
+      ENTRY: ${{ inputs.entry }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Offline controls
+        run: python tests/test_model_card_refresh.py -v
+      - name: Anonymous plan against the pinned parent (before any credential)
+        run: |
+          echo "SOURCE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          SOURCE_COMMIT=$(git rev-parse HEAD) python tools/ci-heavy/model_card_refresh.py plan "$SPEC" "$ENTRY" "$RUNNER_TEMP/plan"
+      - run: python -m pip install -q "huggingface_hub>=0.36,<2"
+      - name: Card-only commit, weight identity and immutable readback
+        env:
+          HF_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+          HF_HUB_DISABLE_XET: '1'
+        run: python tools/ci-heavy/model_card_refresh.py publish "$SPEC" "$ENTRY" "$RUNNER_TEMP/out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: model-card-refresh-${{ inputs.entry }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: warn
+          retention-days: 90
