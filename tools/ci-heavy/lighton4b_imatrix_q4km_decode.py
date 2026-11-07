@@ -21,6 +21,16 @@ def admit_producer(path,receipt_sha,source_sha):
  require(set(producer['cases'])=={'simple_table','arabic_printed_line'},'calibration cases differ')
  return producer
 
+def check_runtime(runtime):
+ require(shutil.which('git')is not None,'git executable unavailable')
+ env=dict(os.environ,LD_LIBRARY_PATH=str(runtime/'lib'))
+ result={}
+ for name in('lighton4b-native-document','lighton4b-native-case-preflight'):
+  binary=runtime/'bin'/name;require(binary.is_file()and os.access(binary,os.X_OK),'native runtime executable unavailable: '+name)
+  probe=subprocess.run([str(binary)],env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=30)
+  require(probe.returncode==2,'native loader/argument guard failed: '+name);result[name]={'argument_guard_returncode':2,'output_sha256':hashlib.sha256(probe.stdout).hexdigest()}
+ return result
+
 def main():
  require(Path('/kaggle/input').is_dir()and Path('/kaggle/working').is_dir()and not list(Path('/dev').glob('nvidia[0-9]*')),'Kaggle CPU only')
  form_only=os.environ.get('LIGHTON4B_Q4KM_FORM_ONLY')=='1'
@@ -56,7 +66,14 @@ def main():
    rel=Path(name);require(len(rel.parts)==2 and rel.parts[0]in('bin','lib')and all(re.fullmatch('[A-Za-z0-9_.+-]+',p)for p in rel.parts)and '..'not in rel.parts,'unsafe runtime path');src=origin/'runtime'/rel;require(src.stat().st_size==entry['bytes']and sha(src)==entry['sha256'],'runtime bytes changed');dst=runtime/rel;dst.parent.mkdir(exist_ok=True);shutil.copyfile(src,dst)
    if rel.parts[0]=='bin':dst.chmod(0o755)
    bundled[name]=entry
-  r['runtime_bundle_manifest_sha256']=sha(manifest_path);r['same_producer_binaries']=True
+  r['runtime_bundle_manifest_sha256']=sha(manifest_path);r['same_producer_binaries']=True;r['pre_model_runtime_guards']=check_runtime(runtime)
+  required_assets=['docs/lighton4b-imatrix-q4km-quality-floor-v1.json','docs/lighton4b-imatrix-q4km-form-floor-v1.json','docs/lighton4b-mixed-calibration-v1.json','tests/regression/lighton4b-mixed-v1/frozen-inputs.json','tests/regression/images/cc0/simple_form.png']
+  for asset in required_assets:require((ROOT/asset).is_file(),'required source asset missing: '+asset)
+  if not form_only:
+   for asset_case,asset_sha in [('arabic_printed_line','ff1a390370b702fabf8b5a25f0feec76888bb1ad8197cf08c3efd44adec1de84'),('simple_table','6be5428f247b616e76d79513b62873cf0238842999be2fb0848997f8ced25763')]:
+    asset_capture=producer_helpers.unique_capture(Path('/kaggle/input'),asset_case,asset_sha);asset_record=json.loads(asset_capture.read_text());_,asset_contract,asset_frozen=cases.load_contract(asset_case);cases.validate_original(asset_record,asset_contract);require(sha(ROOT/'tests/regression/lighton4b-mixed-v1'/asset_frozen['png_file'])==asset_frozen['png_sha256'],'calibration image asset changed')
+    for asset in asset_record['prepared_inputs'].values():require(Path(asset['file']).name==asset['file']and sha(asset_capture.parent/asset['file'])==asset['sha256'],'calibration prepared asset unavailable')
+  r['pre_model_asset_paths_checked']=True;save()
   model=scratch/(profile.RECIPE+'.gguf');source_model=origin/model.name;require(source_model.stat().st_size==producer['candidate']['bytes']<=4050000000,'candidate byte count differs')
   with source_model.open('rb')as src,model.open('xb')as dst:shutil.copyfileobj(src,dst,4*2**20)
   require(sha(model)==producer['candidate']['sha256'],'full mounted model SHA differs');r['full_model_independently_rehashed']=True
