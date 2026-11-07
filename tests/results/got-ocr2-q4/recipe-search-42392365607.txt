@@ -1,0 +1,14 @@
+recipe mlx_q4_1 base=q4_1 bytes=554671680 flags=--tensor-type v.*=f16
+recipe q8_ffn_gu_q4k base=q8_0 bytes=530426944 flags=--tensor-type l.blk.*.ffn_gate.weight=q4_k --tensor-type l.blk.*.ffn_up.weight=q4_k
+recipe q8_ffn_q6k base=q8_0 bytes=549350464 flags=--tensor-type l.blk.*.ffn_?*.weight=q6_k
+recipe q6k_down_v_q8 base=q6_k bytes=525383744 flags=--tensor-type l.blk.*.ffn_down.weight=q8_0 --tensor-type l.blk.*.attn_v.weight=q8_0
+recipe q6k_attn_q8 base=q6_k bytes=526907456 flags=--tensor-type l.blk.*.attn_?.weight=q8_0
+recipe q4k_attn_down_q8 base=q4_k bytes=530426944 flags=--tensor-type l.blk.*.attn_?.weight=q8_0 --tensor-type l.blk.*.ffn_down.weight=q8_0
+f16                exact=3/3 div=[None, None, None] cer=[0.0, 0.0, 0.0] logit_cos_min=[1.0, 1.0, 1.0] top1=[1.0, 1.0, 1.0] min_stage_cos=1.0
+published_q4k      exact=1/3 div=[None, 83, 20] cer=[0.0, 0.3445, 0.0522] logit_cos_min=[0.938538, 0.455906, 0.796134] top1=[1.0, 0.9819, 0.9434] min_stage_cos=0.995157
+mlx_q4_1           exact=1/3 div=[None, 83, 4] cer=[0.0, 0.4206, 0.0174] logit_cos_min=[0.878107, 0.7386, 0.601692] top1=[1.0, 0.9864, 0.9057] min_stage_cos=0.99309
+q8_ffn_gu_q4k      exact=1/3 div=[None, 124, 20] cer=[0.0, 0.0671, 0.0261] logit_cos_min=[0.982541, 0.877751, 0.935895] top1=[1.0, 0.9955, 0.9623] min_stage_cos=0.997745
+q8_ffn_q6k         exact=1/3 div=[None, 124, 7] cer=[0.0, 0.0671, 0.0304] logit_cos_min=[0.996369, 0.990726, 0.961897] top1=[1.0, 0.9955, 0.9811] min_stage_cos=0.997745
+q6k_down_v_q8      exact=1/3 div=[None, 122, 26] cer=[0.0, 0.1879, 0.0174] logit_cos_min=[0.995881, 0.978037, 0.955338] top1=[1.0, 0.991, 0.9811] min_stage_cos=0.989152
+q6k_attn_q8        exact=1/3 div=[None, 83, 7] cer=[0.0, 0.4139, 0.0391] logit_cos_min=[0.995943, 0.980291, 0.972516] top1=[1.0, 0.9955, 0.9245] min_stage_cos=0.989152
+q4k_attn_down_q8   exact=1/3 div=[None, 124, 20] cer=[0.0, 0.0671, 0.0261] logit_cos_min=[0.982541, 0.877751, 0.935895] top1=[1.0, 0.9955, 0.9623] min_stage_cos=0.997745

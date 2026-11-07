@@ -1,0 +1,86 @@
+{
+  "schema": "moedern-q4-python-consumer-v1",
+  "source_commit": "e88b54c471612cd8cc56778c71345b000529e166",
+  "scope": "Six frozen cases and one MaxSim pair, Python versus CLI on the same model; no SciFact, original-quality or GPU claim.",
+  "models": {
+    "27m": {
+      "alias": "moedern-27m-q4k-experimental",
+      "sha256": "5d31ac7e5495690e9f3bbe428166764bfee980b3697916ae71366bf717f70d62",
+      "cases": {
+        "q-de": {
+          "tokens": 32,
+          "selected_rows": 32,
+          "max_abs_client_vs_cli": 4.997482427882005e-10
+        },
+        "q-empty": {
+          "tokens": 32,
+          "selected_rows": 32,
+          "max_abs_client_vs_cli": 4.993362390237621e-10
+        },
+        "q-markers": {
+          "tokens": 32,
+          "selected_rows": 32,
+          "max_abs_client_vs_cli": 4.99870311809758e-10
+        },
+        "d-de": {
+          "tokens": 28,
+          "selected_rows": 26,
+          "max_abs_client_vs_cli": 4.99092100980647e-10
+        },
+        "d-unicode": {
+          "tokens": 21,
+          "selected_rows": 16,
+          "max_abs_client_vs_cli": 4.968490618928456e-10
+        },
+        "d-punctuation": {
+          "tokens": 23,
+          "selected_rows": 15,
+          "max_abs_client_vs_cli": 4.988250645876491e-10
+        }
+      },
+      "client_score": 15.865581512451172,
+      "cli_score": 15.8655815,
+      "offline_alias": true
+    },
+    "115m": {
+      "alias": "moedern-115m-q4k-experimental",
+      "sha256": "01d0e507430ba2f839709648272e3e3e622e02cc98aafac5b179e36b145db110",
+      "cases": {
+        "q-de": {
+          "tokens": 32,
+          "selected_rows": 32,
+          "max_abs_client_vs_cli": 4.995269753393927e-10
+        },
+        "q-empty": {
+          "tokens": 32,
+          "selected_rows": 32,
+          "max_abs_client_vs_cli": 4.998092772989793e-10
+        },
+        "q-markers": {
+          "tokens": 32,
+          "selected_rows": 32,
+          "max_abs_client_vs_cli": 4.994583080453197e-10
+        },
+        "d-de": {
+          "tokens": 28,
+          "selected_rows": 26,
+          "max_abs_client_vs_cli": 4.997253444383176e-10
+        },
+        "d-unicode": {
+          "tokens": 21,
+          "selected_rows": 16,
+          "max_abs_client_vs_cli": 4.995727442835829e-10
+        },
+        "d-punctuation": {
+          "tokens": 23,
+          "selected_rows": 15,
+          "max_abs_client_vs_cli": 4.990692026307642e-10
+        }
+      },
+      "client_score": 14.813729286193848,
+      "cli_score": 14.8137293,
+      "offline_alias": true
+    }
+  },
+  "passed": true
+}

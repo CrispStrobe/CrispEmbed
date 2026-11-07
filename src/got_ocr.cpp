@@ -14,6 +14,7 @@
 #include "core/gpu_backend_pref.h"
 #include "core/env_gate.h"
 #include "image_preprocess.h"
+#include "imatrix.h"
 
 #include <algorithm>
 #include <cassert>
@@ -403,6 +404,8 @@ bool got_ocr::load(context & ctx, const char * gguf_path, int n_threads, int ver
     backends.push_back(ctx.backend);
     if (ctx.backend_cpu) backends.push_back(ctx.backend_cpu);
     ctx.sched = ggml_backend_sched_new(backends.data(), nullptr, (int)backends.size(), 32768, false, false);
+    // Calibration only: no-op unless CRISPEMBED_IMATRIX_OUT is set (docs/got-ocr2-q4-research.md).
+    crispembed_imatrix_install(ctx.sched);
     ctx.compute_meta.resize(16 * 1024 * 1024);
 
     if (!load_tensors(ctx, gguf_path)) {
@@ -429,6 +432,7 @@ bool got_ocr::load(context & ctx, const char * gguf_path, int n_threads, int ver
 }
 
 void got_ocr::free_(context & ctx) {
+    crispembed_imatrix_flush(); // no-op unless a calibration run collected statistics
     if (ctx.kvc.buf) ggml_backend_buffer_free(ctx.kvc.buf);
     if (ctx.kvc.ctx) ggml_free(ctx.kvc.ctx);
     if (ctx.decode_galloc) ggml_gallocr_free(ctx.decode_galloc);
@@ -1597,8 +1601,45 @@ bool got_ocr::generate(context & ctx, const float * image_embeds, int n_image_to
     ggml_free(lg.gctx);
 
     // Argmax with no-repeat-ngram blocking
+    // Diagnostic teacher forcing (quantization research, docs/got-ocr2-q4-research.md):
+    // CRISPEMBED_GOT_OCR_FORCE_IDS=<file of whitespace-separated token IDs> replaces each
+    // greedy pick with the next forced ID (decoding stops when the list is exhausted), and
+    // CRISPEMBED_GOT_OCR_LOGITS_OUT=<file> writes every step's full F32 logit row, so two
+    // precisions can be compared on the same token stream. Both unset: unchanged path.
+    std::vector<int32_t> forced_ids;
+    bool forcing = false;
+    if (const char * fp = std::getenv("CRISPEMBED_GOT_OCR_FORCE_IDS"); fp && *fp) {
+        if (FILE * f = fopen(fp, "r")) {
+            int v = 0;
+            while (fscanf(f, "%d", &v) == 1) forced_ids.push_back(v);
+            fclose(f);
+            forcing = true;
+        }
+    }
+    FILE * logits_f = nullptr;
+    if (const char * lp = std::getenv("CRISPEMBED_GOT_OCR_LOGITS_OUT"); lp && *lp) logits_f = fopen(lp, "wb");
+    struct logits_closer {
+        FILE *& f;
+        ~logits_closer() {
+            if (f) fclose(f);
+        }
+    } close_logits{ logits_f };
+    size_t forced_pos = 0;
+    // Returns false when teacher forcing has run out of IDs (stop decoding).
+    auto observe = [&](const float * lgt, int nv, int & tok) {
+        if (logits_f) fwrite(lgt, sizeof(float), (size_t)nv, logits_f);
+        if (!forcing) return true;
+        if (forced_pos >= forced_ids.size()) return false;
+        tok = forced_ids[forced_pos++];
+        return true;
+    };
+
     out.token_confidences.clear();
     int next_token = argmax_no_repeat_ngram(last_logits.data(), V, hist_for_ban(), no_repeat_ngram);
+    if (!observe(last_logits.data(), V, next_token)) {
+        out.text = "";
+        return true;
+    }
 
     // Confidence: numerically-stable softmax for winning token
     {
@@ -1635,6 +1676,7 @@ bool got_ocr::generate(context & ctx, const float * image_embeds, int n_image_to
         ctx.kvc.n_past += 1;
 
         next_token = argmax_no_repeat_ngram(logits.data(), (int)logits.size(), hist_for_ban(), no_repeat_ngram);
+        if (!observe(logits.data(), (int)logits.size(), next_token)) break;
 
         {
             float max_l = logits[next_token];
