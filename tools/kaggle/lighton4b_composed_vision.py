@@ -28,6 +28,7 @@ CASES = ['simple_form', 'simple_table', 'arabic_printed_line']
 FORM = '0a0c2084baa4e46aa80f09f7ae94fd4b1c56ccae2bbf2f9ef6210e81e8cf1d01'
 PHYSICAL = '712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2'
 CALIBRATION = '7639d6559da7cc58443ccfbe1dac518af0d70f3e7a83718d037a97bb147eb2b7'
+EXTENDED = '36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3'
 SOURCE = '4a63d73bee7289deab41fb20f67765d3c6800182'
 
 
@@ -36,7 +37,7 @@ def admit(cfg):
     require(cfg['arms'] == ['source-features', 'composed'] and cfg['cap'] == 512 and
             cfg['threads'] == 4 and cfg['context'] == 2048 and
             cfg['arm_seconds'] == 2400 and cfg['worker_seconds'] == 6000, 'closed bounded pair')
-    require(cfg['receipts'] == {'form': FORM, 'physical': PHYSICAL, 'calibration': CALIBRATION}, 'frozen receipts')
+    require(cfg['receipts'] == {'form': FORM, 'physical': PHYSICAL, 'calibration': CALIBRATION, 'extended_table': EXTENDED}, 'frozen receipts')
     require(cfg['production_source'] == SOURCE and cfg['quality_qualified'] is False, 'source and limits')
 
 
@@ -133,10 +134,24 @@ def main():
         source_row = np.fromfile(folder/'observer-on/source.logits.0.f32', dtype='<f4')
         require(source_row.size == 248320 and np.isfinite(source_row).all(), 'actual source score')
         teacher = scratch/'one.ids'; teacher.write_text(str(original['generated_ids'][0])+'\n')
+        extended = None
+        if options.case == 'simple_table':
+            ep=locate('physical-f16-table512.json',EXTENDED);extended=json.loads(ep.read_text())
+            require(extended['status']=='measured_extended_table' and extended['source_observer_full_neutral'] is True and
+                    extended['old_cap256_prefix_anchors_exact'] is True and extended['source_sha']=='f789609c2f1ff1a9527c8d02545d096ed10446b0', 'complete source table anchors')
+            for rel in ['upstream-off/response.json','upstream-on/response.json']:
+                verify(ep.parent/rel,extended['artifacts'][rel])
+            source_off=json.loads((ep.parent/'upstream-off/response.json').read_text());source_on=json.loads((ep.parent/'upstream-on/response.json').read_text())
+            require(source_off['tokens']==source_on['tokens'] and source_off['completion_probabilities']==source_on['completion_probabilities'] and
+                    source_off['tokens'][:len(retained['tokens'])]==retained['tokens'] and source_off['tokens'][-1] in(248044,248046), 'complete source table output neutrality/prefix/EOS')
+            retained=source_off
+            report['retained_upstream_reference']={'ids':len(retained['tokens']),'eos':True,'sha256':extended['artifacts']['upstream-off/response.json']['sha256'],'receipt_sha256':EXTENDED,'observer_neutrality_scope':'Full512 OFF/ON IDs/probabilities, old256 prefix anchors; completeEOS.'}
         golden = fp.parent/'f16-full' if options.case == 'simple_form' else cp.parent/options.case
         golden_art = form['artifacts'] if options.case == 'simple_form' else calibration['artifacts']
         prefix = 'f16-full/' if options.case == 'simple_form' else options.case+'/'
         old = form['arms']['f16-full']['generated_ids'] if options.case == 'simple_form' else calibration['cases'][options.case]['generated_ids']
+        if extended is not None:
+            golden=ep.parent/'native';golden_art=extended['artifacts'];prefix='native/';old=extended['arms']['native']['generated_ids']
         # Authenticate every old row and stage before rebuilding or acquiring any model.
         for rel in list(f.STAGES) + [f'greedy.{i}.logits.f32' for i in range(len(old))]: verify(golden/rel, golden_art[prefix+rel])
         report['inputs_authenticated'] = True; report['receipts'] = cfg['receipts']; report['actual_input_hashes']={rel:art[rel] for rel in required}; save()
