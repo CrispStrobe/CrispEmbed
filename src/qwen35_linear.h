@@ -20,6 +20,7 @@ struct linear_weights {
     ggml_tensor * norm;
     bool upstream_physical = false;
     bool hf_tiled_out = false;
+    bool physical_q4_repack = false;
 };
 struct projected_linear_outputs {
     std::vector<float> qkv, z, a, b, attention;

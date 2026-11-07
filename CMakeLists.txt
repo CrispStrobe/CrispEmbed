@@ -1830,3 +1830,11 @@ target_link_libraries(lighton4b-physical-f16-attention-probe PRIVATE crispembed-
 
 add_executable(test-lighton4b-main-f16-link EXCLUDE_FROM_ALL tests/test_lighton4b_main_f16_link.cpp)
 target_link_libraries(test-lighton4b-main-f16-link PRIVATE crispembed crispembed-core)
+
+# Physical-only quantized repack ownership and cache lifecycle controls.
+add_executable(test-lighton4b-physical-q4-repack EXCLUDE_FROM_ALL tests/test_lighton4b_physical_q4_repack.cpp)
+target_include_directories(test-lighton4b-physical-q4-repack PRIVATE src)
+target_link_libraries(test-lighton4b-physical-q4-repack PRIVATE crispembed-qwen35-delta)
+add_executable(test-lighton4b-physical-q4-repack-main-stub EXCLUDE_FROM_ALL tests/test_lighton4b_physical_q4_repack.cpp)
+target_include_directories(test-lighton4b-physical-q4-repack-main-stub PRIVATE src)
+target_link_libraries(test-lighton4b-physical-q4-repack-main-stub PRIVATE crispembed)

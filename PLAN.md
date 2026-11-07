@@ -2111,3 +2111,28 @@ Selective four-file integration preserves byte-exact reader/test/protocol source
 ### Executed177-row artifact-only reader integrated (2026-11-07)
 
 Fournewreader/controller/test/protocol files preserve exactexecuted source`bcbd50b1894a465e0bc44c1f8b3ef54c879d6529` (Kaggle143200239/v3,91.86s), reportb8b6bdf1 andPR157evidence`8009816b9`. Bothinitialsetupnegativesretained. [Protocol](docs/lighton4b-f16-teacher-readback-v1.json), [consumer](tools/ci-heavy/lighton4b_f16_teacher_readback.py), [Kagglecontroller](tools/kaggle/lighton4b_f16_teacher_readback.py). OriginalBF16/nativeactual177teacherrow/contextguards anddirectionalKL/probability/magnitude/top1metrics; pinnedupstreamnumericalcomparisonstrictlyrow0only. All177RMS0.386425/max8.82935 and169/177top1 combinequantization/sourcevision/runtime, notsameweightparity. Fourcontrols+15historicalsourcepins pass; no inference/runtime/header/CMake/workflow/defaultchanges or shippingclaim. Actualexecutedreader/nativeproducer sources remain explicitly distinct from integrationhead.
+
+### Bounded physical Q4 CPU_REPACK experiment (2026-11-07)
+
+The same-input operator source `3b41475c88f570cf899bac12ae6c4f80e4eb3400`
+measured report SHA256 `4dc28c17717082a36e9f2cad3729a31a83a97c3234b07d3c00002232744a66f5`.
+All five N16 borrowed projections close actual captured native outputs; the
+four Q4 preferred-buffer projections agree across both pinned backends and
+whole-row transports. Repack versus raw differences are small (maximum
+6.12065196e-6); the separate Q6 N16 backend residual is not fixed by repacking.
+These are operator measurements, not decoded attribution or qualification.
+
+The isolated implementation adds default-off
+`CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK`, physical-owner-only supported-CPU
+admission, immutable decoder/cache tags and public CPU_REPACK buffer allocation.
+Quantized storage stays quantized; a separate bounded 2 GiB manager retains
+preferred buffers, charges outstanding leases after clear, rejects source-header
+mutation and never populates the existing F32 converted-weight cache. It does
+not change vendor traits, the public release fence, Q6 head dispatch or other
+models. Unsupported SDK/WASM profiles reject the option.
+
+Pending: independently reviewed hosted lifecycle/budget/toggle controls, legacy
+compatibility, actual source-fed preferred projection equality, then a bounded
+same-feature full-score and independent decoded OFF/ON comparison. No default
+or release change is authorized by component equality; current Q4 remains
+unqualified.

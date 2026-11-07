@@ -17,6 +17,7 @@ struct lighton4b_decoder_cache {
     uint8_t physical_native_ops = 0;
     bool physical_f16_attention = false;
     bool hf_tiled_out = false;
+    bool physical_q4_repack = false;
 };
 struct lighton4b_decoder_outputs {
     std::vector<std::vector<float>> hidden;
@@ -43,6 +44,13 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
     if (!lighton4b_hf_tiled_out_mode_valid(weights.hf_tiled_out,weights.upstream_physical) ||
         (previous && previous->hf_tiled_out != weights.hf_tiled_out)) return false;
     const bool physical_f16 = lighton4b_physical_f16_attention_mode(weights.upstream_physical);
+    const bool repack = lighton4b_physical_q4_repack_mode(weights.upstream_physical);
+    if (!lighton4b_physical_q4_repack_valid(weights.upstream_physical) || weights.physical_q4_repack != repack ||
+        bool(weights.physical_weights_cache && weights.physical_weights_cache->physical_repack_enabled()) != repack ||
+        (previous && previous->physical_q4_repack != repack)) return false;
+    for (const auto & layer : weights.layers)
+        if (layer.physical_q4_repack != repack || layer.physical_weights_cache != weights.physical_weights_cache.get() ||
+            (layer.full_attention ? layer.attention.physical_q4_repack : layer.linear.physical_q4_repack) != repack) return false;
     if (!lighton4b_physical_f16_attention_valid(weights.upstream_physical) ||
         (previous && previous->physical_f16_attention != physical_f16)) return false;
     if (!lighton4b_upstream_physical_mode_valid(weights.upstream_physical) || !lighton4b_physical_native_ops_valid(weights.upstream_physical) ||
@@ -53,7 +61,7 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
     if (physical_f16 && (threads != 4 || past > 2048 - tokens)) return false;
     if (past < 0 || past > 4096 - tokens || (previous && (past == 0 || previous->layers.size() != 32))) return false;
     auto empty_attention = [](const attention_cache & c) {
-        return !c.batch && !c.heads && !c.tokens && !c.width && !c.upstream_physical && !c.physical_native_ops && !c.physical_f16_attention && c.keys.empty() && c.values.empty();
+        return !c.batch && !c.heads && !c.tokens && !c.width && !c.upstream_physical && !c.physical_native_ops && !c.physical_f16_attention && !c.physical_q4_repack && c.keys.empty() && c.values.empty();
     };
     auto finite = [](const std::vector<float> & v) {
         return std::all_of(v.begin(), v.end(), [](float x) { return std::isfinite(x); });
@@ -71,13 +79,13 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
             const auto & c = previous->layers[i];
             if (c.full_attention != full) return false;
             if (full) {
-                if (c.attention.physical_f16_attention != physical_f16 || c.attention.tokens != past || c.attention.batch != 1 || c.attention.heads != 4 ||
+                if (c.attention.physical_q4_repack != repack || c.attention.physical_f16_attention != physical_f16 || c.attention.tokens != past || c.attention.batch != 1 || c.attention.heads != 4 ||
                     c.attention.width != 256 || c.attention.keys.size() != size_t(past) * 1024 ||
                     c.attention.values.size() != c.attention.keys.size() || !finite(c.attention.keys) ||
                     !finite(c.attention.values) || c.linear.tokens || c.linear.bf16_activations ||
-                    c.linear.upstream_physical || c.linear.physical_native_ops || c.linear.hf_tiled_out || !c.linear.conv.empty() || !c.linear.recurrent.empty())
+                    c.linear.upstream_physical || c.linear.physical_native_ops || c.linear.hf_tiled_out || c.linear.physical_q4_repack || !c.linear.conv.empty() || !c.linear.recurrent.empty())
                     return false;
-            } else if (c.linear.tokens != past || c.linear.conv.size() != 32768 ||
+            } else if (c.linear.physical_q4_repack != repack || c.linear.tokens != past || c.linear.conv.size() != 32768 ||
                        c.linear.recurrent.size() != 524288 || !finite(c.linear.conv) || !finite(c.linear.recurrent) ||
                        !empty_attention(c.attention))
                 return false;
@@ -90,6 +98,7 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
     candidate.cache.upstream_physical = weights.upstream_physical;
     candidate.cache.physical_native_ops = lighton4b_physical_native_ops_mode(weights.upstream_physical);
     candidate.cache.physical_f16_attention = physical_f16;
+    candidate.cache.physical_q4_repack = repack;
     std::vector<float> hidden(input, input + size_t(tokens) * 2560);
     for (size_t i = 0; i < 32; ++i) {
         const auto & w = weights.layers[i];

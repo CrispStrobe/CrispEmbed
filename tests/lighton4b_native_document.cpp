@@ -102,7 +102,7 @@ static int run(int argc, char ** argv) {
         emit("prefill.first_chunk.layer0.down", block.down);
         std::vector<std::vector<float>> projected;
         const auto & w = model.text.decoder.layers[0].linear;
-        if (!project_cpu({ w.qkv, w.z, w.a, w.b }, block.input_norm.data(), 2560, count, threads, projected, nullptr, model.text.decoder.upstream_physical)) return 19;
+        if (!project_cpu({ w.qkv, w.z, w.a, w.b }, block.input_norm.data(), 2560, count, threads, projected, model.text.decoder.physical_weights_cache.get(), model.text.decoder.upstream_physical)) return 19;
         const char * names[]{"qkv", "z", "a", "b"};
         for (int i = 0; i < 4; ++i) emit(std::string("prefill.first_chunk.layer0.") + names[i], projected[size_t(i)]);
     }
@@ -141,7 +141,7 @@ static int run(int argc, char ** argv) {
                 const auto & weights = model.text.decoder.layers[0].linear;
                 std::vector<std::vector<float>> projected;
                 if (!project_cpu({ weights.qkv, weights.z, weights.a, weights.b }, block.input_norm.data(), 2560, 1,
-                                 threads, projected, nullptr, model.text.decoder.upstream_physical))
+                                 threads, projected, model.text.decoder.physical_weights_cache.get(), model.text.decoder.upstream_physical))
                     return false;
                 const char * names[] = { "qkv", "z", "a", "b" };
                 for (size_t i = 0; i < 4; ++i) emit(label + ".layer0." + names[i], projected[i]);
