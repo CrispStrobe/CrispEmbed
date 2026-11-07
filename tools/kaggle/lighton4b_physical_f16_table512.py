@@ -111,7 +111,15 @@ def main():
   require((out/'upstream-off'/dispatch.OUTPUT).read_bytes()==(out/'upstream-on'/dispatch.OUTPUT).read_bytes(),'same actual source dispatch with observer OFF/ON')
   require(responses[0]['tokens']==responses[1]['tokens']and responses[0]['content']==responses[1]['content']and responses[0]['completion_probabilities']==responses[1]['completion_probabilities']and responses[0]['stop_type']==responses[1]['stop_type'],'full source observer neutral')
   for rel in ['source.vision.0.f32','source.logits.0.f32','source.logits.1.f32']:require(sha(out/'upstream-on'/rel)==art['observer-on/'+rel]['sha256'],'source feature/first2 raw score anchor '+rel)
-  env=dict(os.environ);env.update({k:'0'for k in env if k.startswith('CRISPEMBED_')});env.update(form['arms']['f16-full']['gates']);env['LD_LIBRARY_PATH']=native_loader;teacher=work/'one.ids';teacher.write_text(str(original['generated_ids'][0])+'\n');dest=out/'native';dest.mkdir();run('native',[native,candidate,folder/'input.rgb',image.height,image.width,teacher,dest,512,4,'greedy-full','--upstream-vision',out/'upstream-on/source.vision.0.f32','--extended-table-cap512'],env,1200)
+  env=dict(os.environ);env.update({k:'0'for k in env if k.startswith('CRISPEMBED_')});env.update(form['arms']['f16-full']['gates']);env['LD_LIBRARY_PATH']=native_loader;teacher=work/'one.ids';teacher.write_text(str(original['generated_ids'][0])+'\n');dest=out/'native';dest.mkdir();checked=[0]
+  def native_tick():
+   try:completed=int(json.loads((dest/'generated-progress.json').read_text())['generated_tokens'])
+   except(OSError,ValueError,KeyError):return
+   # Progress for token j+2 proves row j was closed before the next decode step.
+   while checked[0]<min(256,completed-1):
+    j=checked[0];require(sha(dest/f'greedy.{j}.logits.f32')==calib['artifacts'][f'simple_table/greedy.{j}.logits.f32']['sha256'],'early old native raw score anchor');checked[0]+=1
+   r['native_old256_raw_checked_during_run']=checked[0];save()
+  run('native',[native,candidate,folder/'input.rgb',image.height,image.width,teacher,dest,512,4,'greedy-full','--upstream-vision',out/'upstream-on/source.vision.0.f32','--extended-table-cap512'],env,1200,native_tick)
   summary=json.loads((dest/'native-summary.json').read_text());ids=list(map(int,(dest/'generated.ids').read_text().split()));text=(dest/'generated.txt').read_bytes().decode('utf8');require(summary['eos']==(ids[-1]in[248044,248046])and(len(ids)==512 or summary['eos'])and ids[:256]==old_native['generated_ids'],'native extended EOS/old256 prefix');
   for j in range(256):require(sha(dest/f'greedy.{j}.logits.f32')==calib['artifacts'][f'simple_table/greedy.{j}.logits.f32']['sha256'],'all256 native raw score anchors')
   for rel in f.STAGES:require(sha(dest/rel)==calib['artifacts']['simple_table/'+rel]['sha256'],'all38 native prefill stage anchors')
