@@ -2157,3 +2157,17 @@ rows,38 prefill stages, IDs/text/EOS from `36a9b14b`. ON must retain actual
 Only reference-CLI cap512 admission and cache-accounting summary are added to
 the tested source; production runtime bytes remain identical. No original or
 upstream forward, composition, held-out qualification or promotion.
+
+### Q4 repack decoded regression: experimental gate unqualified
+
+[Keep physical Q4 repacking disabled](docs/lighton4b-q4-repack-experiment.md).
+Source `f079dcec6` completes the same-feature table OFF/ON diagnostic with exact
+OFF282row/38stage/ID/text/EOS anchors. ON295EOS regresses CER349→365/607 and
+WER97→104/106; first-scoreRMS0.188629→0.202156. Actual216-entry1.663GBquantcache
+retains zero convertedF32weights but sampledRSS grows2.959→4.632GB. Fullraw
+receipt `5acbdab9`/independentreview are preserved in PR157`1d48ac73c` alongside
+the initial compile negative and passed controls. Gate staysdefault-off and
+unqualified; no speed/quality/default/alias/release promotion. Actualupstream
+text hidden stages are absent, so nativepairedL0drift is not upstream stage
+localization. Prioritize composed-vision attribution/correction and preserve
+all observed/composed/held-out gates.
