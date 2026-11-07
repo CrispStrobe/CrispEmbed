@@ -1,0 +1,13 @@
+# Corrected Q6 provisional panel replay
+
+This executor retains the three cases, image bytes, labels, scorer, cap1536 and context2048 frozen in [the original selection](lighton4b-heldout-v1.json). Labels remain provisional, including an earlier assistant transcription and an authored inventory control. They are not expert ground truth. Existing outputs were already observed; this is a fixed regression replay, not a fresh independent selection.
+
+The configuration is frozen by [the new protocol](lighton4b-q6-heldout-v1.json). Old native GDN/Q4-repack/Q6-tiled gates are all zero; corrected arms set all three to one. Other vision, attention, model and precision settings remain identical. This is a combined correction comparison, not single-factor attribution. Text matrices remain quantized; no full F32 model or F32 text weight cache is created.
+
+Each sequential case reuses its immutable completed upstream OFF/ON responses, full probabilities, ON raw-row archive, merged features and pre-forward input seal. Whole raw archives and member censuses are rechecked; earlier independent finite/argmax/per-row audits remain binding. There is no new source forward, same-host claim or new reference. Copyright-sensitive two-column text and IDs stay private; public evidence must use the existing rights-limited summary policy.
+
+Before weights, model-free controls compile the actual driver, supported Q6/GDN/Q4/F16-attention/vision units and ten real CLI admission cases. A completed same-source controls receipt is required for case execution. The only driver amendment restores the previously tested explicit provisional1536 diagnostic flag; production source/GGML bytes remain pinned to `00c5faebd728c5b0694b10197d7ca971d803cbac`.
+
+Before heldout inference, old and corrected observed-form167 full rows/stages/vision must replay their frozen receipts. Metadata-only native preflight must reproduce the original source IDs, modalities, grid and all three position planes, producing the identical original seal. Then old native pixels must reproduce every old full vocabulary row, complete IDs/text/EOS and all retained prefill/vision stages before corrected pixels and corrected source-feature decoding. New arms preserve raw rows, complete text/IDs/EOS, first-score absolute errors, merged features, resource measurements and unchanged provisional scoring. No cap/deadline/partial run qualifies as complete.
+
+One case per CPU worker, four inference threads, two build threads, 6000 seconds total and1200 per arm. Requirements remain10GiB available RAM,25GiB scratch and8GiB output before models. Large artifacts remain remote. No heldout tuning, replacement, default change, release, model alias or qualification is authorized by this executor.
