@@ -2056,3 +2056,15 @@ closed. The ongoing same-feature baseline is immutable, with exact actual input
 bytes but nonzero first-score differences; full quality, actual-main primitive
 closure and a fixed-runtime same-feature rerun remain acceptance gates. No
 alias/default/release or BF16-reference change follows from component evidence.
+
+
+### Physical same-input GDN localization (prepared, not measured)
+
+The reference-only `tools/gdn-primitive-probe/` and closed Kaggle controller
+freeze actual first-four/first-sixteen projection inputs and five complete
+source tensor spans. Native helper/state and actual first-sixteen attention
+byte controls precede interpretation; source graph/backend and identical-input
+out-projection controls distinguish convolution, normalization, gating, recurrence
+and post normalization. No model forward, decoded-quality claim or production
+GDN change is included. Hosted compilation and measurement remain pending;
+see the probe README for source pins, batching limits and resource guards.

@@ -1785,3 +1785,8 @@ target_link_libraries(test-lighton4b-physical-native-ops PRIVATE crispembed-qwen
 add_executable(test-lighton4b-physical-runtime-primitive EXCLUDE_FROM_ALL tools/physical-primitive-probe/main.cpp)
 target_compile_definitions(test-lighton4b-physical-runtime-primitive PRIVATE CRISPEMBED_PHYSICAL_RUNTIME_PROBE=1)
 target_link_libraries(test-lighton4b-physical-runtime-primitive PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Source-fed GDN recurrence diagnostics only; never installed with production.
+add_executable(test-lighton4b-gdn-source-primitive EXCLUDE_FROM_ALL tools/gdn-primitive-probe/main.cpp)
+target_compile_definitions(test-lighton4b-gdn-source-primitive PRIVATE CRISPEMBED_GDN_RUNTIME_PROBE=1)
+target_link_libraries(test-lighton4b-gdn-source-primitive PRIVATE crispembed-qwen35-delta crispembed-core)
