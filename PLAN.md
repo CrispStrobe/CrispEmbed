@@ -3028,3 +3028,11 @@ correct materialization and change only those source RMS hashes, preserving all
 other stage hashes. No model/decode/full-F32-model job or production GDN change
 was made. Source-fed native inputs, zero-state and four-vs-sixteen batch limits
 remain explicit; see [raw evidence and source blueprint](docs/lighton4b-gdn-source-primitives-results.md).
+
+[Six same-feature cap2 arithmetic ablations](docs/lighton4b-physical-prefix-ablations.md)
+complete at7ccb0c468: all38 OFF/all golden hashes close; none improves firstscore
+RMS (OFF0.1023485/all0.1296631/quant0.1287035/RMS0.1023507/layers0.1269996/
+head0.1039377). Every arm is only `<figure`, cap2/noEOS. No promotion or recipe
+selection; ordered timings cannot waive quality. Next bounded lane is actual-input
+source attention/F16-cache/softmax primitive attribution, with no speculative
+production change or full-model qualification claim.
