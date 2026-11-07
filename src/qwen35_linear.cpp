@@ -1,3 +1,5 @@
+#include "lighton4b_physical_native_ops.h"
+#include "lighton4b_upstream_physical_semantics.h"
 #include "qwen35_linear.h"
 #include "lighton4b_parallel_dequant.h"
 #include "lighton4b_bf16_dequant_weights.h"
@@ -158,25 +160,28 @@ const float * converted_weight_cache::get(ggml_tensor * source, int threads) {
 }
 
 bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens, int threads,
-                 std::vector<std::vector<float>> & output, converted_weight_cache * weights_cache) {
+                 std::vector<std::vector<float>> & output, converted_weight_cache * weights_cache, bool upstream_physical) {
     profile_timer total(profile_event::project_total);
     output.clear();
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !hidden || matrices.empty() || matrices.size() > 4 || width < 1 ||
         width > 32768 || tokens < 1 || tokens > 16384 || threads < 1 || threads > 256)
         return false;
+    const bool native_ops = lighton4b_physical_native_ops(upstream_physical);
     constexpr size_t limit = 512ull * 1024 * 1024;
     size_t elements = size_t(width) * tokens;
     for (auto * matrix : matrices) {
         if (!matrix || matrix->ne[0] != width || matrix->ne[1] < 1 || matrix->ne[1] > 300000 || matrix->ne[2] != 1 ||
             matrix->ne[3] != 1 || !matrix_type_supported(matrix))
             return false;
-        elements += size_t(ggml_nelements(matrix)) + size_t(matrix->ne[1]) * tokens;
+        elements += (native_ops ? 0 : size_t(ggml_nelements(matrix))) + size_t(matrix->ne[1]) * tokens;
         if (elements > limit) return false;
     }
     if (!std::all_of(hidden, hidden + size_t(width) * tokens, [](float x) { return std::isfinite(x); })) return false;
     if (observer && core_env::on("CRISPEMBED_QWEN35_IMATRIX"))
         for (auto * matrix : matrices)
             if (!observer(ggml_get_name(matrix), hidden, width, tokens, observer_user)) return false;
+    if (lighton4b_physical_native_ops(upstream_physical))
+        return lighton4b_physical_matmul(matrices, hidden, width, tokens, threads, output);
     profile_timer stage(profile_event::project_setup);
     std::array<const float *, 4> cached{};
     size_t scratch_elements = elements;
@@ -238,7 +243,7 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
 // intact. Each tile uses the same F32 matmul, with contiguous source rows read
 // through the backend API (including non-host-backed weights).
 bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int tokens, int threads, int tile_rows,
-                      std::vector<float> & output) {
+                      std::vector<float> & output, bool upstream_physical) {
     output.clear();
     const bool q6 = matrix && matrix->type == GGML_TYPE_Q6_K && lighton4b_q6_enabled() &&
                     core_env::on("CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT") && core_env::on("CRISPEMBED_LIGHTON4B_QUANT");
@@ -255,6 +260,11 @@ bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int
          !ggml_get_type_traits(matrix->type)->to_float))
         return false;
     if (!std::all_of(hidden, hidden + size_t(width) * tokens, [](float x) { return std::isfinite(x); })) return false;
+    if (lighton4b_physical_native_ops(upstream_physical)) {
+        std::vector<std::vector<float>> result;
+        if (!project_cpu({matrix}, hidden, width, tokens, threads, result, nullptr, true)) return false;
+        output = std::move(result[0]); return true;
+    }
     try {
         // Preserve calibration identity: observe the original named matrix once,
         // then suppress tile callbacks while retaining all old-path behavior.
@@ -311,6 +321,7 @@ bool linear_cpu(const linear_weights & weights, const float * hidden, int batch,
                 const float * conv_history, const float * state, projected_linear_outputs & output,
                 converted_weight_cache * weights_cache) {
     output = {};
+    if (weights.upstream_physical) return false;
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !hidden || batch < 1 || batch > 4 || tokens < 1 || tokens > 4096 ||
         threads < 1 || threads > 256 || !weights.a_log || !weights.norm || !weights.qkv || !weights.conv)
         return false;
@@ -328,7 +339,7 @@ bool linear_cpu(const linear_weights & weights, const float * hidden, int batch,
         return false;
     std::vector<std::vector<float>> projections;
     if (!project_cpu({ weights.qkv, weights.z, weights.a, weights.b }, hidden, int(hidden_width), batch * tokens,
-                     threads, projections, weights_cache))
+                     threads, projections, weights_cache, weights.upstream_physical))
         return false;
     output.qkv = std::move(projections[0]);
     output.z = std::move(projections[1]);
@@ -348,7 +359,7 @@ bool linear_cpu(const linear_weights & weights, const float * hidden, int batch,
     if (!linear_core_cpu(input, output.core)) return false;
     projections.clear();
     if (!project_cpu({ weights.out }, output.core.values.data(), int(group), batch * tokens, threads, projections,
-                     weights_cache))
+                     weights_cache, weights.upstream_physical))
         return false;
     output.attention = std::move(projections[0]);
     return true;
@@ -384,6 +395,8 @@ bool linear_grouped_cpu(const linear_weights & weights, int key_heads, const flo
         output = {};
         return false;
     }
+    if (weights.upstream_physical && (!lighton4b_upstream_physical_mode_valid(true) || key_heads != 16 ||
+        heads != 32 || width != 128 || hidden_width != 2560 || batch != 1 || tokens > 16)) return false;
     const int64_t group = heads * width, channels = (2 * int64_t(key_heads) + heads) * width;
     if (!shape(weights.a_log, heads, 1) || !shape(weights.dt_bias, heads, 1) || !shape(weights.norm, width, 1) ||
         !shape(weights.qkv, hidden_width, channels) || !shape(weights.z, hidden_width, group) ||
@@ -397,7 +410,7 @@ bool linear_grouped_cpu(const linear_weights & weights, int key_heads, const flo
     };
     std::vector<std::vector<float>> projections;
     if (!project_cpu({ weights.qkv, weights.z, weights.a, weights.b }, hidden, int(hidden_width), batch * tokens,
-                     threads, projections, weights_cache))
+                     threads, projections, weights_cache, weights.upstream_physical))
         return fail();
     output.qkv = std::move(projections[0]);
     output.z = std::move(projections[1]);
@@ -408,16 +421,23 @@ bool linear_grouped_cpu(const linear_weights & weights, int key_heads, const flo
     if (!tensor_floats(weights.conv, conv.data()) || !tensor_floats(weights.a_log, a_log.data()) ||
         !tensor_floats(weights.dt_bias, dt_bias.data()) || !tensor_floats(weights.norm, norm.data()))
         return fail();
-    const linear_inputs input{
+    linear_inputs input{
         batch,           tokens,      int(heads),        int(width),      int(kernel),
         threads,         1e-6f,       output.qkv.data(), output.z.data(), output.a.data(),
         output.b.data(), conv.data(), a_log.data(),      dt_bias.data(),  norm.data(),
         conv_history,    state,
     };
+    input.a_is_pretransformed = weights.upstream_physical;
     if (!linear_grouped_core_cpu(input, key_heads, output.core)) return fail();
     projections.clear();
-    if (!project_cpu({ weights.out }, output.core.values.data(), int(group), batch * tokens, threads, projections,
-                     weights_cache))
+    std::vector<float> tiled;
+    const float * out_input = output.core.values.data();
+    if (weights.upstream_physical) {
+        if (!lighton4b_upstream_v_to_tiled(output.core.values, tokens, tiled)) return fail();
+        out_input = tiled.data();
+    }
+    if (!project_cpu({ weights.out }, out_input, int(group), batch * tokens, threads, projections,
+                     weights_cache, weights.upstream_physical))
         return fail();
     output.attention = std::move(projections[0]);
     return true;

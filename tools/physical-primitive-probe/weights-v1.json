@@ -1,0 +1,82 @@
+{
+  "schema": "lighton4b-physical-prefix-weights/v1",
+  "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "native_ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "source_url": "https://huggingface.co/richardyoung/LightOnOCR-3-4B-GGUF/resolve/8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01/LightOnOCR-3-4B-Q4_K_M.gguf",
+  "source_bytes": 2708804576,
+  "source_sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26",
+  "tensors": [
+    {
+      "name": "l.embed_tokens.weight",
+      "physical_name": "token_embd.weight",
+      "source_offset": 10978272,
+      "bytes": 521472000,
+      "type": 14,
+      "source_shape": [
+        2560,
+        248320
+      ],
+      "source_packed_sha256": "a9e1f76e0465d7856d1d63813b56ae69d205c7159387f9a36c5975b542d91ece"
+    },
+    {
+      "name": "l.layers.0.input_layernorm.weight",
+      "physical_name": "blk.0.attn_norm.weight",
+      "source_offset": 538348512,
+      "bytes": 10240,
+      "type": 0,
+      "source_shape": [
+        2560
+      ],
+      "source_packed_sha256": "22d967324f5e2f4f37c9a4140284673d59d404d21af7331211726be8a192aefb"
+    },
+    {
+      "name": "l.layers.0.linear_attn.in_proj_a.weight",
+      "physical_name": "blk.0.ssm_alpha.weight",
+      "source_offset": 601468000,
+      "bytes": 46080,
+      "type": 12,
+      "source_shape": [
+        2560,
+        32
+      ],
+      "source_packed_sha256": "bf8d98dea7d466d7b584768922455e4be5b279adf329a74bd34493f8861cd795"
+    },
+    {
+      "name": "l.layers.0.linear_attn.in_proj_b.weight",
+      "physical_name": "blk.0.ssm_beta.weight",
+      "source_offset": 601514080,
+      "bytes": 46080,
+      "type": 12,
+      "source_shape": [
+        2560,
+        32
+      ],
+      "source_packed_sha256": "aac964631a29d404b54d6f16f1a4229f4b16ed6c9a7c530327d9d9c92c4e9f06"
+    },
+    {
+      "name": "l.layers.0.linear_attn.in_proj_qkv.weight",
+      "physical_name": "blk.0.attn_qkv.weight",
+      "source_offset": 538358752,
+      "bytes": 17203200,
+      "type": 14,
+      "source_shape": [
+        2560,
+        8192
+      ],
+      "source_packed_sha256": "8104e56008adb5aab2312f0097f46b02a32cb9c0da5e6c5a78e4d571c484a652"
+    },
+    {
+      "name": "l.layers.0.linear_attn.in_proj_z.weight",
+      "physical_name": "blk.0.attn_gate.weight",
+      "source_offset": 532450272,
+      "bytes": 5898240,
+      "type": 12,
+      "source_shape": [
+        2560,
+        4096
+      ],
+      "source_packed_sha256": "73298ca6d6137e900af591c0f174e255d9316d0626ad7d48a2b7baffdb5c365d"
+    }
+  ],
+  "scope": "Reconstructed first4 source text-prefix operator controls; not actual graph captures or quality proof."
+}

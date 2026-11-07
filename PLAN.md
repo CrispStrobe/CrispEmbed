@@ -2044,3 +2044,15 @@ no local native build, GitHub dispatch or extra model run is needed for this cop
 Complete table/Arabic evaluation remains running; form follows on its lane while
 the independent physical same-weight diagnostic may run in parallel. No shipping,
 default, publisher-byte-equivalence or broad heldout-quality claim is made.
+
+### Closed physical upstream transport and arithmetic experiment
+
+The [physical runtime scope](docs/lighton4b-upstream-physical-runtime.md) adds
+separate default-off format-6 admission/direct scalar/layout semantics and the
+independently gated retained-quantized matmul/ggml RMS path. Actual 723-tensor
+transport readback and focused reconstructed-prefix component controls pass;
+source profile, cache toggles, legacy paths and public shipping fence remain
+closed. The ongoing same-feature baseline is immutable, with exact actual input
+bytes but nonzero first-score differences; full quality, actual-main primitive
+closure and a fixed-runtime same-feature rerun remain acceptance gates. No
+alias/default/release or BF16-reference change follows from component evidence.

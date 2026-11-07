@@ -7,13 +7,18 @@
 #include <iostream>
 #include <iterator>
 #include <chrono>
+#include <algorithm>
+#include <cmath>
+#include <cstring>
 using namespace qwen35_ocr;
 static int run(int argc, char ** argv) {
-    if (argc != 10) return 2; // gguf RGB H W teacher.ids out maxgen threads mode
+    if (argc != 10 && argc != 12) return 2; // optional test-only --upstream-vision feature.f32
+    const bool source_vision = argc == 12 && std::string(argv[10]) == "--upstream-vision";
+    if (argc == 12 && !source_vision) return 2;
     const int h = std::stoi(argv[3]), w = std::stoi(argv[4]), cap = std::stoi(argv[7]), threads = std::stoi(argv[8]);
     const std::string mode = argv[9], out = argv[6];
     if (h < 1 || w < 1 || h > 4096 || w > 4096 || cap < 1 || cap > 256 || threads < 1 || threads > 16 ||
-        (mode != "smoke" && mode != "full"))
+        (mode != "smoke" && mode != "full" && mode != "greedy-full"))
         return 2;
     auto emit = [&](const std::string & name, const std::vector<float> & v) {
         std::ofstream f(out + "/" + name + ".f32", std::ios::binary);
@@ -45,11 +50,22 @@ static int run(int argc, char ** argv) {
     if (!context) return 3;
     const auto & model = context->model();
     vision_outputs vision;
-    if (!lighton4b_image_vision_cpu(model.vision, model.vision_parameters, image, threads, vision)) return 8;
-    emit("vision.patch", vision.patch);
-    emit("vision.position", vision.position);
-    emit("vision.embedded", vision.embedded);
-    for (size_t i = 0; i < vision.hidden.size(); ++i) emit("vision.layer." + std::to_string(i), vision.hidden[i]);
+    if (source_vision) {
+        // Explicit reference-fed diagnostic in this test executable only. It is
+        // never a model artifact, public API or production image-flow fallback.
+        if (!model.text.decoder.upstream_physical) return 2;
+        const size_t count = size_t(image.grid[1] * image.grid[2] / 4) * 2560;
+        std::ifstream f(argv[11], std::ios::binary | std::ios::ate);
+        if (!f || f.tellg() != std::streamoff(count * sizeof(float))) return 18;
+        f.seekg(0); vision.merged.resize(count); f.read(reinterpret_cast<char *>(vision.merged.data()), count * sizeof(float));
+        if (!f || !std::all_of(vision.merged.begin(), vision.merged.end(), [](float x) { return std::isfinite(x); })) return 18;
+    } else {
+        if (!lighton4b_image_vision_cpu(model.vision, model.vision_parameters, image, threads, vision)) return 8;
+        emit("vision.patch", vision.patch);
+        emit("vision.position", vision.position);
+        emit("vision.embedded", vision.embedded);
+        for (size_t i = 0; i < vision.hidden.size(); ++i) emit("vision.layer." + std::to_string(i), vision.hidden[i]);
+    }
     emit("vision.merged", vision.merged);
     std::vector<float> embedded;
     if (!embed_cpu(model.text.decoder.embedding, ids, embedded)) return 9;
@@ -68,9 +84,32 @@ static int run(int argc, char ** argv) {
         return 11;
     for (size_t i = 0; i < initial.hidden.size(); ++i) emit("prefill.layer." + std::to_string(i), initial.hidden[i]);
     emit("prefill.norm", initial.norm);
+    if (model.text.decoder.upstream_physical) {
+        // Observer-only duplicate first block, checked against the actual main
+        // prefill. Its first text rows permit same-input source operator replay.
+        const int count = std::min<int>(16, int(ids.size()));
+        lighton4b_linear_block_outputs block;
+        if (!lighton4b_linear_block_cpu(model.text.decoder.layers[0], prefill.hidden.data(), count, threads, nullptr, block) ||
+            initial.hidden.size() != 32 || initial.hidden[0].size() < block.hidden.size() ||
+            std::memcmp(block.hidden.data(), initial.hidden[0].data(), block.hidden.size() * sizeof(float)) != 0) return 19;
+        emit("prefill.first_chunk.layer0.input_norm", block.input_norm);
+        emit("prefill.first_chunk.layer0.attention", block.attention);
+        emit("prefill.first_chunk.layer0.attention_residual", block.attention_residual);
+        emit("prefill.first_chunk.layer0.post_norm", block.post_norm);
+        emit("prefill.first_chunk.layer0.gate", block.gate);
+        emit("prefill.first_chunk.layer0.up", block.up);
+        emit("prefill.first_chunk.layer0.activation", block.activation);
+        emit("prefill.first_chunk.layer0.down", block.down);
+        std::vector<std::vector<float>> projected;
+        const auto & w = model.text.decoder.layers[0].linear;
+        if (!project_cpu({ w.qkv, w.z, w.a, w.b }, block.input_norm.data(), 2560, count, threads, projected, nullptr, model.text.decoder.upstream_physical)) return 19;
+        const char * names[]{"qkv", "z", "a", "b"};
+        for (int i = 0; i < 4; ++i) emit(std::string("prefill.first_chunk.layer0.") + names[i], projected[size_t(i)]);
+    }
+
     std::vector<float> first;
     if (!project_rows_cpu(model.text.decoder.head, initial.norm.data() + (ids.size() - 1) * 2560, 2560, 1, threads, 256,
-                          first))
+                          first, model.text.decoder.upstream_physical))
         return 12;
     lighton4b_head_bf16(first);
     emit("prefill.logits", first);
@@ -102,7 +141,7 @@ static int run(int argc, char ** argv) {
                 const auto & weights = model.text.decoder.layers[0].linear;
                 std::vector<std::vector<float>> projected;
                 if (!project_cpu({ weights.qkv, weights.z, weights.a, weights.b }, block.input_norm.data(), 2560, 1,
-                                 threads, projected))
+                                 threads, projected, nullptr, model.text.decoder.upstream_physical))
                     return false;
                 const char * names[] = { "qkv", "z", "a", "b" };
                 for (size_t i = 0; i < 4; ++i) emit(label + ".layer0." + names[i], projected[i]);
@@ -119,7 +158,7 @@ static int run(int argc, char ** argv) {
             for (size_t i = 0; i < next.hidden.size(); ++i) emit(label + ".layer." + std::to_string(i), next.hidden[i]);
             emit(label + ".norm", next.norm);
         }
-        if (!project_rows_cpu(model.text.decoder.head, next.norm.data(), 2560, 1, threads, 256, logits)) return false;
+        if (!project_rows_cpu(model.text.decoder.head, next.norm.data(), 2560, 1, threads, 256, logits, model.text.decoder.upstream_physical)) return false;
         lighton4b_head_bf16(logits);
         cache = std::move(next.cache);
         return true;
@@ -131,7 +170,7 @@ static int run(int argc, char ** argv) {
     if (teacher.empty() || teacher.size() > 256) return 13;
     auto teacher_cache = initial.cache;
     std::vector<float> logits = first;
-    const size_t teacher_count = mode == "smoke" ? 1 : teacher.size();
+    const size_t teacher_count = (mode == "smoke" || mode == "greedy-full") ? 1 : teacher.size();
     for (size_t i = 0; i < teacher_count; ++i) {
         emit("teacher." + std::to_string(i) + ".logits", logits);
         if (i + 1 < teacher_count && !step(teacher[i], teacher_cache, logits, "teacher." + std::to_string(i + 1)))
@@ -145,6 +184,18 @@ static int run(int argc, char ** argv) {
         int best = lighton4b_greedy_id(logits);
         if (best < 0) return 17;
         generated.push_back(best);
+        if (model.text.decoder.upstream_physical) {
+            // Reference executable only: preserve completed prefix on timeout.
+            ids_write("generated-partial", generated);
+            std::string partial;
+            if (!tokenizer.decode(generated, partial)) return 16;
+            std::ofstream(out + "/generated-partial.txt") << partial;
+            std::ofstream progress(out + "/generated-progress.json");
+            progress << "{\"generated_tokens\":" << generated.size() << ",\"last_id\":" << best
+                     << ",\"eog\":" << (tokenizer.is_stop(best) ? "true" : "false") << "}\n";
+            if (generated.size() % 16 == 0 || tokenizer.is_stop(best))
+                std::cout << "LIGHTON4B_PHYSICAL_PROGRESS generated=" << generated.size() << std::endl;
+        }
         emit("greedy." + std::to_string(i) + ".logits", logits);
         if (tokenizer.is_stop(best)) break;
         const std::string label = i + 1 == trace_position ? "greedy." + std::to_string(i + 1) : "";
@@ -155,8 +206,10 @@ static int run(int argc, char ** argv) {
     if (!tokenizer.decode(generated, text)) return 16;
     std::ofstream(out + "/generated.txt") << text;
     std::ofstream summary(out + "/native-summary.json");
-    summary << "{\"prompt_tokens\":" << ids.size() << ",\"image_tokens\":" << image.grid[1] * image.grid[2] / 4
-            << ",\"teacher_positions\":" << teacher_count << ",\"generated_tokens\":" << generated.size()
+    summary << "{\"prompt_tokens\":" << ids.size() << ",\"image_tokens\":" << image.grid[1] * image.grid[2] / 4;
+    if (model.text.decoder.upstream_physical)
+        summary << ",\"source_fed_vision\":" << (source_vision ? "true" : "false") << ",\"upstream_physical\":true";
+    summary << ",\"teacher_positions\":" << teacher_count << ",\"generated_tokens\":" << generated.size()
             << ",\"eos\":" << (tokenizer.is_stop(generated.back()) ? "true" : "false") << ",\"cap\":" << cap << "}\n";
     std::cout << "LIGHTON4B_NATIVE_DOCUMENT completed=1 teacher_positions=" << teacher_count
               << " generated=" << generated.size() << "\n";

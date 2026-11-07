@@ -1,3 +1,4 @@
+#include "lighton4b_upstream_physical_semantics.h"
 #include "qwen35_delta.h"
 #include "core/env_gate.h"
 #include "ggml-backend.h"
@@ -18,6 +19,7 @@ static float sigmoid(float x) {
 
 bool linear_core_cpu(const linear_inputs & in, linear_outputs & out) {
     out = {};
+    if (in.a_is_pretransformed) return false; // physical profile is strictly grouped16/32
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !in.qkv || !in.z || !in.a || !in.b || !in.conv_weights || !in.a_log ||
         !in.dt_bias || !in.norm_weights || in.batch < 1 || in.batch > 4 || in.tokens < 1 || in.tokens > 4096 ||
         in.heads < 1 || in.heads > 128 || in.width < 1 || in.width > 256 || in.conv_kernel < 1 || in.conv_kernel > 16 ||
@@ -90,6 +92,8 @@ bool linear_core_cpu(const linear_inputs & in, linear_outputs & out) {
 
 bool linear_grouped_core_cpu(const linear_inputs & in, int key_heads, linear_outputs & out) {
     out = {};
+    if (in.a_is_pretransformed && (!lighton4b_upstream_physical_mode_valid(true) || key_heads != 16 ||
+        in.heads != 32 || in.width != 128 || in.batch != 1 || in.tokens < 1 || in.tokens > 16)) return false;
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !core_env::on("CRISPEMBED_QWEN35_GDN_GROUPED_HEADS") ||
         key_heads < 1 || key_heads > 128 || in.heads < key_heads || in.heads > 128 || in.heads % key_heads)
         return false;
@@ -151,7 +155,8 @@ bool linear_grouped_core_cpu(const linear_inputs & in, int key_heads, linear_out
                 const size_t index = (size_t(batch) * in.tokens + token) * heads + head;
                 const float time = in.a[index] + in.dt_bias[head];
                 const float softplus = time > 20.0f ? time : std::log1p(std::exp(time));
-                g[index] = -std::exp(in.a_log[head]) * softplus;
+                if (in.a_is_pretransformed && !(in.a_log[head] < 0.0f)) { out = {}; return false; }
+                g[index] = (in.a_is_pretransformed ? in.a_log[head] : -std::exp(in.a_log[head])) * softplus;
                 beta[index] = sigmoid(in.b[index]);
             }
         }

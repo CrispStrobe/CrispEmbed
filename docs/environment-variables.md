@@ -221,7 +221,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-462 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+464 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -551,7 +551,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_JOSEV_BACKBONE` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/qwen35_decoder.cpp` |  |
 | `CRISPEMBED_JOSEV_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/josev2b_text_frontend.cpp` |  |
-| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +21 | 'minicpm-ocr' registry alias (same default as the HTTP server). The decoder reuses the qwen35 kernels, so both gates are still required. |
+| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +22 | else |
 | `CRISPEMBED_QWEN35_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_native_context.h` +3 |  |
 
 ### josev2b_composed
@@ -634,15 +634,15 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h` | else |
-| `CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_native_context.h`, `src/qwen35_linear.cpp` |  |
-| `CRISPEMBED_LIGHTON4B_QUANT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_model_owner.h`, `src/lighton4b_native_context.h` +2 | Converter stores all norms/biases in F32 in both F16 recipes. Frozen Q8/Q4 candidates protect every vision tensor as F32. |
+| `CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_upstream_physical_semantics.h` | else |
+| `CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_native_context.h`, `src/lighton4b_physical_native_ops.h` +1 |  |
+| `CRISPEMBED_LIGHTON4B_QUANT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_model_owner.h`, `src/lighton4b_native_context.h` +3 | Converter stores all norms/biases in F32 in both F16 recipes. Frozen Q8/Q4 candidates protect every vision tensor as F32. |
 
 ### lighton4b_bf16_linear
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_BF16_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_linear.h`, `src/qwen35_delta.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_BF16_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_linear.h`, `src/lighton4b_upstream_physical_semantics.h`, `src/qwen35_delta.cpp` |  |
 
 ### lighton4b_decoder_compose
 
@@ -671,7 +671,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_HEAD_BF16` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_head_bf16.h` |  |
+| `CRISPEMBED_LIGHTON4B_HEAD_BF16` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_head_bf16.h`, `src/lighton4b_upstream_physical_semantics.h` |  |
 
 ### lighton4b_image_compose
 
@@ -694,11 +694,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_parallel_dequant.h` |  |
 
-### lighton4b_q6_policy
+### lighton4b_physical_native_ops
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_Q6_K` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_q6_policy.h` | else |
+| `CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_native_ops.h` |  |
+| `CRISPEMBED_LIGHTON4B_Q6_K` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_native_ops.h`, `src/lighton4b_q6_policy.h` | else |
 
 ### lighton4b_rotary_table
 
@@ -711,6 +712,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_FRONTEND` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_tokenizer.cpp` |  |
+
+### lighton4b_upstream_physical_semantics
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_upstream_physical_semantics.h` | else |
 
 ### lighton4b_vision_bf16
 
