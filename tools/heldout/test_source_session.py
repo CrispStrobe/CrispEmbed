@@ -10,6 +10,12 @@ class Lifecycle(unittest.TestCase):
    with self.assertRaises(ValueError):
     with m.Session([sys.executable,'-S','-c','import time; time.sleep(60)'],Path(d)/'stop.log',dict(os.environ),15)as session:raise ValueError('intentional control')
    self.assertIsNotNone(session.proc.poll());self.assertEqual(session.stats['status'],'failed')
+ def test_monitor_start_failure_reaps_started_server(self):
+  with tempfile.TemporaryDirectory()as d:
+   session=m.Session([sys.executable,'-S','-c','import time;time.sleep(60)'],Path(d)/'start.log',dict(os.environ),15)
+   with patch.object(m.threading.Thread,'start',side_effect=m.WorkerDeadline('setup interrupted')):
+    with self.assertRaises(m.WorkerDeadline):session.__enter__()
+   self.assertIsNotNone(session.proc.poll());self.assertTrue(session.file.closed);self.assertEqual(session.stats['status'],'failed_during_session_setup')
  def test_closed_deadline_not_swallowed(self):
   session=m.Session([],Path('unused'),{},15);session.deadline=time.monotonic()-1;session.proc=Mock();session.proc.poll.return_value=None
   with patch.object(m,'api')as api:

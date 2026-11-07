@@ -40,7 +40,13 @@ class Session:
       try:os.killpg(self.proc.pid,signal.SIGTERM)
       except ProcessLookupError:pass
      return
-  self.thread=threading.Thread(target=watch,daemon=True);self.thread.start();return self
+  self.thread=threading.Thread(target=watch,daemon=True)
+  try:self.thread.start()
+  except BaseException:
+   try:stop(self.proc)
+   finally:self.done.set();self.file.close();self.stats.update(status='failed_during_session_setup',returncode=self.proc.returncode,elapsed_seconds=time.monotonic()-self.started)
+   raise
+  return self
  def ready(self,port):
   startup_deadline=min(self.deadline,time.monotonic()+180)
   for _ in range(360):
