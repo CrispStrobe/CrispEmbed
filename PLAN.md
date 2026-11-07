@@ -3176,3 +3176,7 @@ fullcomposed table/Arabic andrepresentativeheldout gates remain.
 ## Corrected composed table/Arabic closure
 
 Source `a03412aeb` completed: merged upstream vision exact for both cases; native all282/6 score rows and38 text stages match frozen source-feature baselines. Arabic6EOS exact; table282EOS remains349/607 CER versus upstream348/607, WER97/106 both. No ship. See [results](docs/lighton4b-composed-vision-calibration-results.md). Next bounded lane is actual upstream text-stage attribution, not another vision change.
+
+### Upstream text trace initial setup negative — 7 November 2026
+
+[Preserved source9986 attempt](docs/lighton4b-upstream-text-trace-results.md) stopped before upstream build/model transfer/forward: an extra guard incorrectly equated canonical recompressed PNG bytes with original PNG bytes. All preceding immutable receipt/artifact checks passed. Narrow corrected admission must retain both hashes and require exact original/canonical/authenticated RGB pixels; six local controls pass. No intermediate, observer-neutrality or quality result yet; no release/default change.
