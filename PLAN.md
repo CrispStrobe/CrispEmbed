@@ -2028,3 +2028,21 @@ storage immutability; no dot arithmetic changes are needed. The decoder owner
 lane supplies separately gated Q6-head recipe admission. All execution is a
 bounded Kaggle CPU control, combined with that lane where possible; no GitHub
 model/CI run, full model, quantization, public alias or release qualification.
+
+### LightOn4B weighted Q4KM-style complete calibration continuation — 7 November
+
+Prepared a separate Kaggle CPU continuation which authenticates the producer
+receipt, complete candidate SHA and preserved executable/library manifest before
+opening either calibration input. It reuses the exact producer binaries and
+original arithmetic, requires identical prefill and common stage hashes, then
+records every independent greedy row, token, text and actual EOS or 256-token cap.
+The earlier 45-minute table timeout is addressed by a 75-minute table child,
+20-minute Arabic child, 105-minute controller and 120-minute service budget.
+No GPU backend is admitted by these CPU binaries. The worker reads table/Arabic
+only and compares raw CER/WER to the observed upstream calibration floor; it
+cannot authorize shipping or infer heldout quality. Dispatch remains dependent
+on a successful producer's immutable receipt/model and an exclusive worker slot.
+Receipt admission rejects authenticated failed controls, wrong schedules,
+protected-payload failures, wrong source/case sets and tampering. Bootstrap and
+controller compilation plus two local trust-boundary tests pass; inference has
+not been dispatched by this preparation.
