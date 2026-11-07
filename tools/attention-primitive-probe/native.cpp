@@ -1,6 +1,8 @@
 // Diagnostic only: actual native input -> duplicate unchanged block -> strict main-trace closure.
 #include "lighton4b_attention_block.h"
 #include "ggml.h"
+#include "ggml-backend.h"
+#include "ggml-cpu.h"
 #include <cstring>
 #include <cstdlib>
 #include <filesystem>
@@ -29,9 +31,21 @@ int main(int argc, char ** argv) try {
     // All borrowed tensors together are <65MiB. No model/head or whole-model F32 cache.
     std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(ggml_init({80ull << 20, nullptr, false}), ggml_free);
     require(bool(ctx), "context");
+    using buffer_ptr = std::unique_ptr<ggml_backend_buffer, decltype(&ggml_backend_buffer_free)>;
+    std::vector<buffer_ptr> storage;
     auto tensor = [&](const char * name, ggml_type type, int width, int rows = 1) {
         auto * t = ggml_new_tensor_2d(ctx.get(), type, width, rows);
-        read(weights / (std::string(name) + ".bin"), t->data, ggml_nbytes(t)); return t;
+        read(weights / (std::string(name) + ".bin"), t->data, ggml_nbytes(t));
+        // Real loader tensors are backend-backed; tensor_floats intentionally
+        // uses backend_tensor_get. Preserve that contract for this borrowed
+        // diagnostic tensor rather than weakening production access checks.
+        auto * buffer = ggml_backend_buft_alloc_buffer(ggml_backend_cpu_buffer_type(), ggml_nbytes(t));
+        require(buffer != nullptr, "weight backend buffer");
+        storage.emplace_back(buffer, ggml_backend_buffer_free);
+        void * base = ggml_backend_buffer_get_base(buffer);
+        require(base != nullptr && ggml_backend_buffer_is_host(buffer), "host weight buffer");
+        std::memcpy(base, t->data, ggml_nbytes(t)); t->data = base; t->buffer = buffer;
+        return t;
     };
     decoder_layer_weights w{}; w.full_attention = true; w.upstream_physical = true; w.attention.upstream_physical = true;
     w.input_norm = tensor("blk.3.attn_norm.weight", GGML_TYPE_F32, 2560);
