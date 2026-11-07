@@ -15,8 +15,13 @@ PROFILE={'BUILD_SHARED_LIBS':'ON','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA
 def validate_response(response,frozen):
  require(response['tokens']==frozen['tokens']and response['content']==frozen['content']and response['completion_probabilities']==frozen['completion_probabilities'],'all actual282 source IDs/text/probability records unchanged')
  require(len(response['tokens'])==282 and response['tokens_evaluated']==86 and response['stop']and response['stop_type']=='eos'and not response['truncated']and response['tokens'][-1]==248046,'independent complete source EOS/prompt')
+def validate_png_inputs(original,canonical,rgb):
+ from PIL import Image
+ a=Image.open(original).convert('RGB');b=Image.open(canonical).convert('RGB')
+ require(Image.__version__=='11.3.0'and a.size==b.size and a.tobytes()==b.tobytes()==Path(rgb).read_bytes(),'same authenticated actual RGB pixels across PNG containers')
 def main():
  import numpy as np
+ from PIL import Image
  require(np.__version__=='2.3.5'and sys.byteorder=='little'and platform.system()=='Linux'and platform.machine().lower()in['x86_64','amd64']and Path('/kaggle/input').is_dir()and not list(Path('/dev').glob('nvidia[0-9]*')),'pinned CPU/array profile')
  out=Path(os.environ['HEAVY_OUT']);out.mkdir(exist_ok=True);work=Path(os.environ['HEAVY_SCRATCH'])/'text-trace';work.mkdir();started=time.monotonic();active=None;arm_end=[None];deadline=Deadline(3600);deadline.__enter__()
  report={'schema':'lighton4b-upstream-text-trace/v1','status':'failed','commands':{},'arms':{},'native_forward_executed':False,'original_bf16_forward_executed':False,'f32_model_instantiated':False,'quality_qualified':False}
@@ -49,7 +54,7 @@ def main():
   native=tp.parent/'native'
   for name,row in table['artifacts'].items():
    if name.startswith('native/prefill.')or name in ['native/greedy.126.logits.f32']or name.startswith('upstream-on/source.logits.')or name in ['upstream-on/source.vision.0.f32','upstream-on/'+dispatch.OUTPUT]:verify(tp.parent/name,row)
-  protocol=json.loads((ROOT/'docs/lighton4b-upstream-physical-decode-v1.json').read_text());case=next(x for x in protocol['cases']if x['id']=='simple_table');prompt=[int(x)for x in(folder/'upstream_features/prompt.ids').read_text().split()];require(len(prompt)==86 and sha(ROOT/case['image'])==case['image_sha256']and sha(folder/'input.png')==case['image_sha256'],'same immutable PNG/prompt');require(protocol['upstream_commit']==source_patch.SOURCE==observer.SOURCE and protocol['model_revision']=='8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01','pinned source/checkpoint')
+  protocol=json.loads((ROOT/'docs/lighton4b-upstream-physical-decode-v1.json').read_text());case=next(x for x in protocol['cases']if x['id']=='simple_table');prompt=[int(x)for x in(folder/'upstream_features/prompt.ids').read_text().split()];require(len(prompt)==86 and sha(ROOT/case['image'])==case['image_sha256'],'same immutable PNG/prompt');validate_png_inputs(ROOT/case['image'],folder/'input.png',folder/'input.rgb');require(protocol['upstream_commit']==source_patch.SOURCE==observer.SOURCE and protocol['model_revision']=='8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01','pinned source/checkpoint')
   repo=work/'upstream'
   for label,args in [('init',['git','init',repo]),('remote',['git','-C',repo,'remote','add','origin',protocol['upstream_repo']]),('fetch',['git','-C',repo,'fetch','--depth','1','origin',source_patch.SOURCE]),('checkout',['git','-C',repo,'checkout','--detach','FETCH_HEAD'])]:run(label,args)
   require(subprocess.check_output(['git','-C',repo,'rev-parse','HEAD'],text=True).strip()==source_patch.SOURCE,'exact upstream');report['feature_sampler_patch']=observer.patch(repo);report['dispatch_patch']=dispatch.patch(repo);report['text_live_patch']=source_patch.patch(repo);save()
