@@ -1,0 +1,13 @@
+{
+  "current_q4_shipping_approved": false,
+  "error": "bounded model-free controls failed",
+  "error_type": "CalledProcessError",
+  "model_forward_executed": false,
+  "model_payload_bytes": 0,
+  "quality_qualified": false,
+  "schema": "lighton4b-imatrix-q4km-controls/v1",
+  "source_sha": "e0c60e0ed420754d839c10a6bfc7687cc2b54867",
+  "stage": "q6-tied-head-and-public-fence",
+  "status": "failed",
+  "weight_quantization_executed": false
+}

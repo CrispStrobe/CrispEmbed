@@ -1,0 +1,63 @@
+[ 20%] Built target ggml-base
+[ 60%] Built target ggml-cpu
+[ 60%] Built target ggml
+[ 60%] Building CXX object CMakeFiles/crispembed-core.dir/src/core/gguf_loader.cpp.o
+[ 60%] Building CXX object CMakeFiles/crispembed-core.dir/src/core/mel.cpp.o
+[ 60%] Building CXX object CMakeFiles/crispembed-core.dir/src/core/image_out.cpp.o
+[ 60%] Building C object CMakeFiles/crispembed-core.dir/src/core/shortest_double.c.o
+[ 60%] Linking CXX static library libcrispembed-core.a
+[ 60%] Built target crispembed-core
+[ 60%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_delta.cpp.o
+[ 60%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_linear.cpp.o
+[ 60%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_attention.cpp.o
+[ 80%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_decoder.cpp.o
+[ 80%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_vision.cpp.o
+[ 80%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/lighton4b_vision_owner.cpp.o
+[ 80%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_norm.cpp.o
+[ 80%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_profile.cpp.o
+[ 80%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_positions.cpp.o
+[ 80%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_image.cpp.o
+[ 80%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_tokenizer.cpp.o
+[ 80%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_ocr.cpp.o
+[100%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/lighton4b_vision_bf16.cpp.o
+[100%] Linking CXX static library libcrispembed-qwen35-delta.a
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-imatrix-q4km-recipe.dir/tests/test_lighton4b_imatrix_q4km_recipe.cpp.o
+[100%] Linking CXX executable test-lighton4b-imatrix-q4km-recipe
+[100%] Built target test-lighton4b-imatrix-q4km-recipe
+[ 20%] Built target ggml-base
+[ 60%] Built target ggml-cpu
+[ 60%] Built target ggml
+[ 60%] Built target crispembed-core
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-q6-policy.dir/tests/test_lighton4b_q6_policy.cpp.o
+[100%] Linking CXX executable test-lighton4b-q6-policy
+[100%] Built target test-lighton4b-q6-policy
+[ 20%] Built target ggml-base
+[ 60%] Built target ggml-cpu
+[ 60%] Built target ggml
+[ 60%] Built target crispembed-core
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-gdn-out-q6-recipe.dir/tests/test_lighton4b_gdn_out_q6_recipe.cpp.o
+[100%] Linking CXX executable test-lighton4b-gdn-out-q6-recipe
+[100%] Built target test-lighton4b-gdn-out-q6-recipe
+[ 20%] Built target ggml-base
+[ 60%] Built target ggml-cpu
+[ 60%] Built target ggml
+[ 60%] Built target crispembed-core
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-gdn-out-recipe.dir/tests/test_lighton4b_gdn_out_recipe.cpp.o
+[100%] Linking CXX executable test-lighton4b-gdn-out-recipe
+[100%] Built target test-lighton4b-gdn-out-recipe
+/kaggle/working/lighton-q4km-controls-source/src/qwen35_delta.cpp: In lambda function:
+/kaggle/working/lighton-q4km-controls-source/src/qwen35_delta.cpp:219:41: warning: ‘ggml_tensor* ggml_add1(ggml_context*, ggml_tensor*, ggml_tensor*)’ is deprecated: use ggml_add instead [-Wdeprecated-declarations]
+  219 |             ggml_sqrt(context, ggml_add1(context, ggml_sum_rows(context, ggml_sqr(context, tensor)), epsilon));
+      |                                ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /kaggle/working/lighton-q4km-controls-source/ggml/src/../include/ggml-backend.h:3,
+                 from /kaggle/working/lighton-q4km-controls-source/src/qwen35_delta.cpp:3:
+/kaggle/working/lighton-q4km-controls-source/ggml/src/../include/ggml.h:929:51: note: declared here
+  929 |     GGML_DEPRECATED(GGML_API struct ggml_tensor * ggml_add1(
+      |                                                   ^~~~~~~~~
+/kaggle/working/lighton-q4km-controls-source/ggml/src/../include/ggml.h:192:41: note: in definition of macro ‘GGML_DEPRECATED’
+  192 | #    define GGML_DEPRECATED(func, hint) func __attribute__((deprecated(hint)))
+      |                                         ^~~~

@@ -28,3 +28,5 @@ tests/results/qwen35-ocr/lightonocr3-4b-independent-llama/** whitespace=-trailin
 # Raw Kaggle bootstrap bytes are SHA-pinned, including Git's trailing-space hints.
 tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4/bootstrap-v*/bootstrap.log -text whitespace=-trailing-space
 tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4/bootstrap-v*/lighton-weighted-q4-results/bootstrap.log -text whitespace=-trailing-space
+# Byte-pinned Kaggle component-control logs retain compiler/Git whitespace.
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-controls/**/*.log -text whitespace=-trailing-space,-blank-at-eof

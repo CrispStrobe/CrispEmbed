@@ -2874,3 +2874,18 @@ quality proof yet; current goal remains matching actual upstreamQ4M outputs.
 Next source-fed upstream MTMD feature+native decoder and composed three-case
 comparison are separately pinned and queued after the weighted candidate job.
 No default/alias/release/public admission or full F32 model.
+
+### Guarded 33-Q6-head capability and public no-ship boundary verified
+
+[Complete model-free evidence](docs/lighton4b-imatrix-q4km-controls.md) preserves
+Kaggle namespace/link fixture negatives and source 6d751828e PASS: new 1,147,
+old 713/700/112, independent head 84/65,792 values, public boundary 39, all 248
+importance hashes and 15 historical source pins. PR155 integration 69abebb7e
+merges main additively and preserves 21 tested source blobs; raw upstream qwen35
+and experimental formats 5/6 reject before public backend/payload loading, with
+no registry/release alias or shipping approval. A later allocation-reuse
+preflight 11131b7fc stops before any checkpoint; its 31 raw logs remain, and the
+quality producer a4f2c908f restores original streamed arithmetic. Original-F16
+one-pass weighted 216-Q4/33-Q6 and complete table/Arabic decoded evaluation remain
+pending; the previous 225-row timeout is not decoded-quality proof. No GH job,
+F32 reference model, heldout read, new PR or quality promotion.

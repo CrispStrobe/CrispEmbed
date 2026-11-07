@@ -1,0 +1,24 @@
+[{"stream_name":"stdout","time":13.490614595,"data":"PHASE adapter-actual-means-and-legacy-controls\n"}
+,{"stream_name":"stdout","time":76.240028739,"data":"PHASE test_lighton4b_imatrix_q4km_recipe.py\n"}
+,{"stream_name":"stdout","time":76.688529115,"data":"PHASE test_lighton4b_q6_recipe.py\n"}
+,{"stream_name":"stdout","time":76.842852975,"data":"PHASE test_lighton4b_gdn_out_q6_recipe.py\n"}
+,{"stream_name":"stdout","time":77.054704842,"data":"PHASE fetch-frozen-receipt-commits\n"}
+,{"stream_name":"stdout","time":80.559810129,"data":"PHASE source-pin-check\n"}
+,{"stream_name":"stdout","time":80.809603682,"data":"PHASE build-policy-controls\n"}
+,{"stream_name":"stdout","time":113.372685046,"data":"PHASE new-q4km\n"}
+,{"stream_name":"stdout","time":113.401018939,"data":"PHASE old32-q8head\n"}
+,{"stream_name":"stdout","time":113.420055049,"data":"PHASE old24-q6out\n"}
+,{"stream_name":"stdout","time":113.441301367,"data":"PHASE old24-q8out\n"}
+,{"stream_name":"stdout","time":113.444415544,"data":"PHASE closed-cli-no-stats\n"}
+,{"stream_name":"stdout","time":113.447247419,"data":"PHASE closed-cli-wrong-method\n"}
+,{"stream_name":"stdout","time":113.491656045,"data":"PHASE closed-cli-override\n"}
+,{"stream_name":"stdout","time":113.535150462,"data":"PHASE closed-cli-legacy-header\n"}
+,{"stream_name":"stdout","time":113.578402269,"data":"PHASE closed-cli-wrong-original-source\n"}
+,{"stream_name":"stdout","time":113.626010301,"data":"PHASE q6-tied-head-and-public-fence\n"}
+,{"stream_name":"stderr","time":128.05537603,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":128.055416091,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":128.477632539,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":128.477660337,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":130.396610405,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":131.83680115,"data":"[NbConvertApp] Writing 293024 bytes to __results__.html\n"}
+]

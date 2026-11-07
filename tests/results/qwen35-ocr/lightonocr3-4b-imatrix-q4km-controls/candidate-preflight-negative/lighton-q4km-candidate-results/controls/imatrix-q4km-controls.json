@@ -1,0 +1,13 @@
+{
+  "current_q4_shipping_approved": false,
+  "error": "control failed: stream-graph-off-on",
+  "error_type": "ValueError",
+  "model_forward_executed": false,
+  "model_payload_bytes": 0,
+  "quality_qualified": false,
+  "schema": "lighton4b-imatrix-q4km-controls/v1",
+  "source_sha": "11131b7fc9eac80d5d82db70070d74725f62dcac",
+  "stage": "stream-graph-off-on",
+  "status": "failed",
+  "weight_quantization_executed": false
+}

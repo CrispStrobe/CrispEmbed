@@ -1,0 +1,2 @@
+STREAM_PROJECTION_CONTROLS pass=1 f32=1 f16=1 seams=1 independent_dot=1 legacy=1 gates=1 atomic_failure=1 observer=1
+STREAM_GRAPH_REUSE_CONTROLS mode=0 seconds=0.081965807 timing_is_operator_controls_only=1

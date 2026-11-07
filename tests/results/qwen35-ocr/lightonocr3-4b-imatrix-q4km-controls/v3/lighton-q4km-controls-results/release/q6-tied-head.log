@@ -1,0 +1,1 @@
+Q6_TIED_HEAD passed=1 checks=84 independent_scalar_values=65792 tied_alias=1 gathered_boundary_rows=1 streamed_odd_tiles=1 bf16_gate=1 storage_unchanged=1 model_payload=0
