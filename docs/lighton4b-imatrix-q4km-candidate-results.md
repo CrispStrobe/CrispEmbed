@@ -66,3 +66,10 @@ calibration asset paths before copying the model. Three local trust-boundary
 controls pass. A single corrected continuation is running on the same sealed
 candidate and original producer binaries; no quantization rerun or quality result
 is inferred from that setup correction.
+
+CPU metadata has a recorded limitation: four logical/affinity CPUs and cgroup
+quota `400000/100000` are present, but vendor/model/flags fields are empty because
+the producer did not strip whitespace from `/proc/cpuinfo` keys. The raw receipt
+is preserved unchanged. Exact null first-score admission remains valid; no CPU
+vendor is inferred. Future-worker metadata capture is corrected in `b978b1cef`,
+with a whitespace/tab fixture test. This does not rerun or relabel the producer.

@@ -2915,3 +2915,9 @@ argument guards and calibration asset paths before model copy. Three local
 trust-boundary controls pass; one corrected Kaggle CPUv2 is submitted with the
 same immutable candidate/binaries/precision and original budgets. No model rerun
 for conversion, recipe change or decoded-quality claim.
+
+Producer CPU metadata omission is explicit:4 logical/affinity CPUs and cgroup
+quota400000/100000 are recorded, but vendor/model/flags are blank due to unstripped
+`/proc/cpuinfo` keys. Raw receipts are unchanged and exact null firstscore gates
+still pass. Future sourceb978b1cef strips keys and covers tabs with a fixture test;
+no conversion rerun or inferred vendor follows from this metadata correction.
