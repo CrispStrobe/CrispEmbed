@@ -138,6 +138,15 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 7 November 2026 — OXR native-document rerun reviewed
+
+Heavy CPU run 41664201815 (`dd465a44`) reported `native=fail`. Review
+([receipt](tests/results/oxr/native-doc-41664201815-review.json)): Python replay, live
+requests and request sets are identical on all 5 cases; native D-FINE layout has identical
+block counts, types, order and text; only bbox floats differ, by at most 0.0004 px. The
+failing gate is the bit-exact bbox comparator, not a runtime regression. A tolerance is an
+owner decision (PLAN). Also closed handoff lanes A (main green at `cb56aeec`) and B (PR #163).
+
 ## 5 November 2026 — v0.17.15 published and verified
 
 [Release v0.17.15](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.15)
