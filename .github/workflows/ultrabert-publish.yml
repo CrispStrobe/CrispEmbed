@@ -1,0 +1,69 @@
+name: UltraBERT GGUF publication (owner-approved only)
+# Publishes the exact UltraBERT-Embed-150M Q4_K GGUF measured by the committed receipts
+# (docs/ultrabert-publication-v1.json): copied unchanged from the retained payload artifact,
+# hash-checked, uploaded with the verbatim Apache-2.0 text, upstream card, statement of changes
+# and manifest, then read back from an empty cache. tools/ci-heavy/ultrabert_publish.py holds every gate.
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Exact commit containing the publisher, protocol and receipts'
+        required: true
+        type: string
+      variant:
+        description: 'Variant from the protocol'
+        required: true
+        default: 'Q4_K-LAST-FOUR-FFN'
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ultrabert-publish
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      VARIANT: ${{ inputs.variant }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Publish-script controls (no network)
+        run: python tests/test_ultrabert_publish.py -v
+      - name: Protocol and receipts before any download or credential
+        run: |
+          python tools/ci-heavy/ultrabert_publish.py plan "$VARIANT"
+          echo "SOURCE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - run: python -m pip install -q "huggingface_hub>=0.36,<2"
+      - name: Retained measured model artifact (digest-checked) and exact member
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/gguf" "$RUNNER_TEMP/notices" "$RUNNER_TEMP/out"
+          read -r id digest < <(python -c "import json,os;a=json.load(open('docs/ultrabert-publication-v1.json'))['variants'][os.environ['VARIANT']]['source_artifact'];print(a['id'],a['digest'])")
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/$id/zip" > "$RUNNER_TEMP/payload.zip"
+          test "sha256:$(sha256sum "$RUNNER_TEMP/payload.zip" | cut -d' ' -f1)" = "$digest"
+          python tools/ci-heavy/ultrabert_publish.py extract "$VARIANT" "$RUNNER_TEMP/payload.zip" "$RUNNER_TEMP/gguf"
+          rm -f "$RUNNER_TEMP/payload.zip"
+      - name: Pinned LICENSE text and upstream card
+        run: python tools/ci-heavy/ultrabert_publish.py notices "$RUNNER_TEMP/notices"
+      - name: Upload, immutable LFS identity, empty-cache readback
+        env:
+          HF_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+          HF_HUB_DISABLE_XET: '1'
+          HEAVY_SCRATCH: ${{ runner.temp }}
+        run: python tools/ci-heavy/ultrabert_publish.py publish "$VARIANT" "$RUNNER_TEMP/gguf" "$RUNNER_TEMP/notices" "$RUNNER_TEMP/out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-publication-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: warn
+          retention-days: 90

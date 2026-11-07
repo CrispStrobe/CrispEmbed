@@ -1,8 +1,8 @@
 {
   "schema": "crispembed-josev-q4k-publication-recipe-v1",
   "published": false,
-  "dispatch_ready": false,
-  "note": "Prepared, not published. tools/ci-heavy/josev_publish.py uploads only the F32 file; it needs a quantized branch (quantize with the policy below, re-run the frozen four-case cosine gate, upload under a new immutable revision) before this recipe can be dispatched.",
+  "dispatch_ready": true,
+  "note": "Published by tools/ci-heavy/josev_quant_publish.py via josev-publish.yml (workflow_dispatch, variants). Each variant is re-quantized with the exact measured sweep recipe and must reproduce the receipt output SHA256.",
   "destination": "cstr/Josev-2B-SystemOne-GGUF",
   "source": {
     "filename": "josev2b-systemone-f32.gguf",
@@ -43,5 +43,8 @@
       "precision_tier": "q4_k",
       "precision_gate": "cosine"
     }
-  }
+  },
+  "approved_by_owner": true,
+  "approval": "Owner decision 7 November 2026: publish Q4_K_MIX (and Q8_0, whose gate passes) as EXPERIMENTAL into the existing repo, keeping the F32 file and notices.",
+  "status_label": "experimental"
 }
