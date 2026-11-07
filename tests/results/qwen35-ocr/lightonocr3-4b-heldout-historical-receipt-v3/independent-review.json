@@ -1,0 +1,90 @@
+{
+  "receipt_sha256": "8bf1ebbdf12b9dd2b20603c11a9b7d4c990e97e7f37a2f5aca3fb3324b3c8dfc",
+  "selected_owned_files_verified": 27,
+  "selected_owned_paths": [
+    "source-preflight.modalities.ids",
+    "source-preflight.json",
+    "source-preflight.prompt.ids",
+    "source-preflight.positions.f32",
+    "pre-forward-inputs.json",
+    "native-preflight/modalities.ids",
+    "native-preflight/grid.ids",
+    "native-preflight/prefill.positions.f32",
+    "native-preflight/prompt.ids",
+    "upstream-off/generated.ids",
+    "upstream-off/generated.txt",
+    "upstream-off/response.json",
+    "native-composed/generated.ids",
+    "native-composed/native-summary.json",
+    "native-composed/generated.txt",
+    "native-composed/vision.merged.f32",
+    "native-composed/prefill.logits.f32",
+    "upstream-on/generated.ids",
+    "upstream-on/generated.txt",
+    "upstream-on/source.vision.0.f32",
+    "upstream-on/first-score.f32",
+    "upstream-on/response.json",
+    "native-source-features/generated.ids",
+    "native-source-features/native-summary.json",
+    "native-source-features/generated.txt",
+    "native-source-features/vision.merged.f32",
+    "native-source-features/prefill.logits.f32"
+  ],
+  "metrics": {
+    "upstream-off": {
+      "raw_char_edits": 103,
+      "raw_char_total": 768,
+      "content_char_edits": 24,
+      "content_char_total": 768,
+      "word_edits": 18,
+      "word_total": 144,
+      "ids": 465,
+      "eos": true
+    },
+    "upstream-on": {
+      "raw_char_edits": 103,
+      "raw_char_total": 768,
+      "content_char_edits": 24,
+      "content_char_total": 768,
+      "word_edits": 18,
+      "word_total": 144,
+      "ids": 465,
+      "eos": true
+    },
+    "native-composed": {
+      "raw_char_edits": 104,
+      "raw_char_total": 768,
+      "content_char_edits": 25,
+      "content_char_total": 768,
+      "word_edits": 19,
+      "word_total": 144,
+      "ids": 469,
+      "eos": true
+    },
+    "native-source-features": {
+      "raw_char_edits": 104,
+      "raw_char_total": 768,
+      "content_char_edits": 25,
+      "content_char_total": 768,
+      "word_edits": 19,
+      "word_total": 144,
+      "ids": 469,
+      "eos": true
+    }
+  },
+  "firstscore_independently_recomputed": {
+    "rms": 0.1414597689510285,
+    "max_abs": 0.9869832992553711
+  },
+  "rms_recompute_difference_double_ulps": 1.0,
+  "max_exact": true,
+  "all_three_merged_vision_bytes_exact": true,
+  "merged_bytes": 2478080,
+  "native_all469_raw_row_hashes_equal_secondary": true,
+  "native_zip_archive_hashes_may_differ_due_to_zip_metadata": true,
+  "native_ids_text_equal_secondary": true,
+  "first_native_vs_source_token_difference": 130,
+  "source_internal_text_stages_captured": false,
+  "qualified": false,
+  "reference_limit": "Provisional prior transcription; no independent human adjudication."
+}

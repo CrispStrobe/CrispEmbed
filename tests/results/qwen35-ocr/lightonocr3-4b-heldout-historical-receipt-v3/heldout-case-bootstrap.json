@@ -1,0 +1,12 @@
+{
+  "schema": "lighton4b-heldout-case-bootstrap/v1",
+  "source_sha": "d378c6cc055e3a31b0d4cc9dad54a5b41f10d792",
+  "status": "completed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "bounded-worker",
+  "worker_sha256": "7c5eacc3af1b45dca066fc00b5707005bb227b3f72526de6cc5e8e4fa79021be",
+  "worker_status": "measured_provisional_heldout",
+  "elapsed_seconds": 2136.162447496
+}
