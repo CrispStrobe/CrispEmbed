@@ -48,3 +48,18 @@ F16 K/V defaults; native recurrence, gated norm, attention/cache/softmax and hea
 must be isolated on identical captured inputs. Controlled quant-only/RMS-only
 and layers/head ablations remain gated preparations, not quality claims. Actual
 upstream internal graph intermediates have not been captured by this closure.
+
+## Closed ablation controls, no quality promotion
+
+The [model-free ablation receipt](../tests/results/qwen35-ocr/lightonocr3-4b-physical-ablation-controls/prefix-primitives.json)
+(source `4a8821e3e919a7be4ff71bcafe13e7a6d0881f08`, SHA256
+`106be85f66de494c9bbde0abf9076526921d5b9332f1e8fb90abd78a105d32f8`)
+passes142 mode/cache/unknown/observer checks,557865 physical-policy/geometry
+checks, old stream controls and84 Q6/65792 scalar-value controls. Default full
+same-input RMS/direct/dequantized operators retain exact upstream equality.
+Selector `all` preserves the measured full alternative; `quant`, `rms`, `layers`,
+`head` and explicit off are closed diagnostic subsets. Unknown active physical
+modes reject before payload/profile admission and primitive use; cache mode masks
+reject subset changes. Master-off and nonphysical owners remain inert. This
+verification executes no learned model and does not overturn the actual full-mode
+negative. Selective integration is `ae2a61472`; bounded model ablations are separate.
