@@ -64,25 +64,36 @@ def main():
  def save(phase=None):
   if phase:report['phase']=phase;print('phase',phase,flush=True)
   (out/'physical-decode.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n')
- def interrupted(signum,frame):stop(active);save();raise SystemExit(128+signum)
+ def interrupted(signum,frame):report['interrupted_signal']=signum;stop(active);save();raise SystemExit(128+signum)
  signal.signal(signal.SIGTERM,interrupted);signal.signal(signal.SIGINT,interrupted);signal.signal(signal.SIGALRM,interrupted);signal.alarm(cfg['total_model_timeout_seconds'])
  def command(label,args,env=None,timeout=1800,on_tick=None):
   nonlocal active
-  save(label);start=time.monotonic()
+  save(label);start=time.monotonic();peak=0;failure=None;stage='spawn';process=None
   with(out/(label+'.log')).open('w')as f:
-   active=subprocess.Popen(list(map(str,args)),stdout=f,stderr=subprocess.STDOUT,env=env,cwd=ROOT,start_new_session=True)
    try:
-    peak=0
+    active=subprocess.Popen(list(map(str,args)),stdout=f,stderr=subprocess.STDOUT,env=env,cwd=ROOT,start_new_session=True);process=active
     while True:
-     require(time.monotonic()-start<timeout,label+' deadline')
-     if on_tick:on_tick()
+     stage='deadline'
+     if time.monotonic()-start>=timeout:raise TimeoutError(label+' deadline')
+     if on_tick:stage='on_tick';on_tick()
+     stage='memory_sample'
      try:
       rows=dict(line.split(':',1)for line in Path('/proc/'+str(active.pid)+'/status').read_text().splitlines());peak=max(peak,int(rows.get('VmHWM','0').split()[0])*1024)
      except(FileNotFoundError,ProcessLookupError):pass
+     stage='wait'
      try:code=active.wait(timeout=1);break
      except subprocess.TimeoutExpired:pass
-    report['process_resources'][label]={'peak_rss_bytes_observed':peak,'elapsed_seconds':time.monotonic()-start};require(code==0,label+' failed')
-   finally:stop(active);active=None
+    stage='exit_status';require(code==0,label+' failed')
+   except BaseException as error:
+    failure={'error_type':type(error).__name__,'failure_stage':stage}
+    if isinstance(error,(RuntimeError,ValueError,TimeoutError)):failure['reason']=str(error)
+    raise
+   finally:
+    try:stop(process)
+    finally:
+     report['process_resources'][label]={'peak_rss_bytes_observed':peak,'elapsed_seconds':time.monotonic()-start,'returncode':process.returncode if process is not None else None,'status':'failed'if failure else'completed'}
+     if failure:report['process_resources'][label].update(failure)
+     active=None;save()
   return time.monotonic()-start
  def fetch(url,path,expected,limit=4*1024**2):
   with urllib.request.urlopen(url,timeout=120)as r:b=r.read(limit+1)
@@ -101,6 +112,7 @@ def main():
   a=np.asarray(a,dtype=np.float64).reshape(-1);b=np.asarray(b,dtype=np.float64).reshape(-1);require(a.shape==b.shape and np.isfinite(a).all()and np.isfinite(b).all(),'finite same-shape comparison');d=a-b
   return {'bit_exact':a.astype('<f4').tobytes()==b.astype('<f4').tobytes(),'rms':float(np.sqrt(np.mean(d*d))),'max_abs':float(np.abs(d).max()),'reference_max_abs':float(np.abs(b).max()),'cosine':float(a@b/(np.linalg.norm(a)*np.linalg.norm(b)))}
  try:
+  require(cfg['arms']==['upstream_features'],'frozen source-feature-only scope; composed arm requires new protocol and conditionalized checks')
   require(report['preflight']['memory']['MemAvailable']>=cfg['minimum_available_memory_bytes'],'10GiB effective RAM before transfer');require(report['preflight']['scratch_free']>=cfg['minimum_scratch_free_bytes']and report['preflight']['output_free']>=cfg['minimum_output_free_bytes'],'24GiB scratch/8GiB output before transfer')
   command('host-cpu',['lscpu']);command('submodules',['git','-C',ROOT,'submodule','update','--init','--depth','1','--recursive'])
   repo=scratch/'llama.cpp'
@@ -160,5 +172,8 @@ def main():
     scores=np.fromfile(dest/'greedy.0.logits.f32',dtype='<f4');gold=np.fromfile(source/'source.logits.0.f32',dtype='<f4');require(scores.size==gold.size==248320 and ids[0]==int(scores.argmax()),'actual first score argmax');report['cases'][name]['arms'][arm]={'ids':ids,'decoded':text,'eog_completed':summary['eos'],'cap_hit':not summary['eos']and len(ids)==256,'elapsed_process_seconds':elapsed,'peak_rss_bytes_observed':report['process_resources'][name+'-'+arm]['peak_rss_bytes_observed'],'source_text_weights_same':True,'source_vision_features_same':arm=='upstream_features','actual_embedding_bytes_exact':True,'actual_image_positions_exact':True,'merged_feature_vs_source':diff(features,sourcefeatures),'first_score_vs_source':diff(scores,gold),'vs_retained_upstream':metric(ids,text,retained['tokens'],retained['content']),'vs_original_bf16':metric(ids,text,original['generated_ids'],original['decoded']),'summary':summary};save(name+'-'+arm+'-measured')
    report['cases'][name]['artifacts']={str(p.relative_to(folder)):{'bytes':p.stat().st_size,'sha256':sha(p)}for p in folder.rglob('*')if p.is_file()};save(name+'-complete')
   require(sha(up)==pack.UP_SHA and sha(candidate)==report['candidate_sha256'],'sources immutable after inference');report['status']='measured';report['generated_candidate_retained']=False;candidate.unlink()
+ except BaseException as error:
+  report['error_type']=type(error).__name__;report['error']='Worker phase failed; retain phase logs and partial captures'
+  raise
  finally:stop(active);save()
 if __name__=='__main__':main()

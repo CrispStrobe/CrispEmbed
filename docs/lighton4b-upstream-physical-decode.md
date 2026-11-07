@@ -55,3 +55,13 @@ imported quantized candidate is temporary and its full hash plus all tensor
 readbacks are retained. Large stage arrays stay in remote output. Submission
 must follow the separately running candidate-conversion worker; there is no new
 GitHub Actions dispatch or PR.
+
+Independent pre-dispatch review of the initial `3404916b0` harness found that a
+command timeout or byte-check callback failure skipped its memory/time receipt.
+No physical decoded worker had run. The corrected runner saves elapsed time,
+observed RSS peak, final return code and failure type/stage in `finally`, and
+retains the outer worker error type. Six small actual subprocess controls cover
+success, nonzero exit, timeout, callback mismatch, signal-like interruption and
+missing executable; all passed, with children stopped and receipts preserved.
+An explicit protocol guard rejects enabling the deferred composed arm before
+its source-feature-specific checks have been separately revised.
