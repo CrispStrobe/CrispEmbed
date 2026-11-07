@@ -5,6 +5,8 @@
 #include "ggml-alloc.h"
 #include "ggml-cpu.h"
 #include <cmath>
+#include <chrono>
+#include <cstring>
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
@@ -70,6 +72,16 @@ static int run() {
             if (!qwen35_ocr::project_rows_cpu(matrix, hidden.data(), width, tokens, 2, tile, output) ||
                 output.size() != size_t(rows * tokens))
                 return 1;
+            const bool reuse_on = std::getenv("CRISPEMBED_LIGHTON4B_STREAM_GRAPH_REUSE")[0] == '1';
+            if (reuse_on) {
+                std::vector<float> legacy;
+                env("CRISPEMBED_LIGHTON4B_STREAM_GRAPH_REUSE", "0");
+                const bool ok = qwen35_ocr::project_rows_cpu(matrix, hidden.data(), width, tokens, 2, tile, legacy);
+                env("CRISPEMBED_LIGHTON4B_STREAM_GRAPH_REUSE", "1");
+                if (!ok || legacy.size() != output.size() ||
+                    std::memcmp(legacy.data(), output.data(), output.size() * sizeof(float)))
+                    return 1;
+            }
             for (int t = 0; t < tokens; ++t)
                 for (int row = 0; row < rows; ++row) {
                     double expected = 0;
@@ -103,6 +115,16 @@ static int run() {
             if (!qwen35_ocr::project_rows_cpu(matrix, hidden.data(), width, tokens, 2, tile, output) ||
                 output.size() != size_t(rows * tokens))
                 return 1;
+            const bool reuse_on = std::getenv("CRISPEMBED_LIGHTON4B_STREAM_GRAPH_REUSE")[0] == '1';
+            if (reuse_on) {
+                std::vector<float> legacy;
+                env("CRISPEMBED_LIGHTON4B_STREAM_GRAPH_REUSE", "0");
+                const bool ok = qwen35_ocr::project_rows_cpu(matrix, hidden.data(), width, tokens, 2, tile, legacy);
+                env("CRISPEMBED_LIGHTON4B_STREAM_GRAPH_REUSE", "1");
+                if (!ok || legacy.size() != output.size() ||
+                    std::memcmp(legacy.data(), output.data(), output.size() * sizeof(float)))
+                    return 1;
+            }
             for (int t = 0; t < tokens; ++t)
                 for (int row = 0; row < rows; ++row) {
                     double expected = 0;
@@ -153,5 +175,13 @@ static int run() {
     return 0;
 }
 int main() {
-    core_util::clean_exit(run());
+    for (const char * mode : { "0", "1" }) {
+        env("CRISPEMBED_LIGHTON4B_STREAM_GRAPH_REUSE", mode);
+        const auto started = std::chrono::steady_clock::now();
+        if (run()) core_util::clean_exit(1);
+        const auto elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
+        std::printf("STREAM_GRAPH_REUSE_CONTROLS mode=%s seconds=%.9f timing_is_operator_controls_only=1\n", mode,
+                    elapsed);
+    }
+    core_util::clean_exit(0);
 }
