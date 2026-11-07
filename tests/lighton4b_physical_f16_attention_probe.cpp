@@ -3,6 +3,7 @@
 #include "core/clean_exit.h"
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -37,7 +38,7 @@ static int run(int argc,char ** argv){
     };
     invoke(0,4,nullptr,out/"prefill4");auto full=invoke(0,16,nullptr,out/"prefill16");attention_cache previous;
     for(int t=0;t<16;++t){char name[16];std::snprintf(name,sizeof(name),"step%02d",t);auto next=invoke(t,1,t?&previous:nullptr,out/name);previous=std::move(next);}
-    need(previous.keys==full.keys&&previous.values==full.values,"prefill/step canonical cache bytes");
+    need(previous.keys.size()==full.keys.size()&&previous.values.size()==full.values.size()&&!std::memcmp(previous.keys.data(),full.keys.data(),full.keys.size()*sizeof(float))&&!std::memcmp(previous.values.data(),full.values.data(),full.values.size()*sizeof(float)),"prefill/step canonical cache bytes");
     std::puts("PHYSICAL_F16_RUNTIME_SOURCEFED PASS prefill4 prefill16 steps16 canonical_cache_equal");return 0;
 }
 int main(int argc,char ** argv){int rc=1;try{rc=run(argc,argv);}catch(const std::exception & e){std::fprintf(stderr,"%s\n",e.what());}core_util::clean_exit(rc);}

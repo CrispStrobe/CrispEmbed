@@ -17,6 +17,7 @@ static void gate(const char * n,const char * v){
 #endif
 }
 static int run(){
+    auto bits=[](const std::vector<float>&a,const std::vector<float>&b){return a.size()==b.size()&&!std::memcmp(a.data(),b.data(),a.size()*sizeof(float));};
     int checks=0;auto check=[&](bool ok){++checks;if(!ok){std::fprintf(stderr,"F16 attention check %d failed\n",checks);std::exit(1);}};
     for(const char * n:{"CRISPEMBED_QWEN35_OCR","CRISPEMBED_QWEN35_QUANT","CRISPEMBED_LIGHTON4B_QUANT","CRISPEMBED_LIGHTON4B_Q6_K","CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT","CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL"})gate(n,"1");
     for(const char * n:{"CRISPEMBED_LIGHTON4B_BF16_LINEAR","CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS","CRISPEMBED_LIGHTON4B_HEAD_BF16","CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS"})gate(n,"0");
@@ -60,8 +61,8 @@ static int run(){
     gate("CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION","1");check(!attention_cpu(w,cfg,input.data(),positions,1,1,4,&off.cache,next)&&next.pooled.empty());
     check(attention_cpu(w,cfg,input.data(),positions,1,1,4,nullptr,on));check(on.cache.physical_f16_attention);check(attention_cpu(w,cfg,input.data(),positions,1,1,4,&on.cache,next));
     gate("CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION","off");check(!attention_cpu(w,cfg,input.data(),positions,1,1,4,&on.cache,next));
-    for(const char * value:{static_cast<const char *>(nullptr),"","0","false","off","no"}){gate("CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION",value);check(attention_cpu(w,cfg,input.data(),positions,1,1,4,nullptr,next));check(next.pooled==off.pooled&&next.cache.keys==off.cache.keys&&!next.cache.physical_f16_attention);}
-    w.upstream_physical=false;gate("CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION","0");check(attention_cpu(w,cfg,input.data(),positions,1,1,4,nullptr,off));gate("CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION","1");check(attention_cpu(w,cfg,input.data(),positions,1,1,4,nullptr,next));check(next.pooled==off.pooled&&next.cache.keys==off.cache.keys&&!next.cache.physical_f16_attention);
+    for(const char * value:{static_cast<const char *>(nullptr),"","0","false","off","no"}){gate("CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION",value);check(attention_cpu(w,cfg,input.data(),positions,1,1,4,nullptr,next));check(bits(next.pooled,off.pooled)&&bits(next.cache.keys,off.cache.keys)&&!next.cache.physical_f16_attention);}
+    w.upstream_physical=false;gate("CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION","0");check(attention_cpu(w,cfg,input.data(),positions,1,1,4,nullptr,off));gate("CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION","1");check(attention_cpu(w,cfg,input.data(),positions,1,1,4,nullptr,next));check(bits(next.pooled,off.pooled)&&bits(next.cache.keys,off.cache.keys)&&!next.cache.physical_f16_attention);
     std::printf("PHYSICAL_F16_ATTENTION PASS %d\n",checks);return 0;
 }
 

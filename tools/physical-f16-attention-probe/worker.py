@@ -58,7 +58,9 @@ def main():
         targets=['test-lighton4b-physical-f16-attention','test-lighton4b-physical-f16-unsupported','test-lighton4b-physical-f16-wasm-guard','lighton4b-physical-f16-attention-probe','test-lighton4b-physical-native-ops','test-lighton4b-upstream-physical','test-lighton4b-release-fence','test-lighton4b-hf-tiled-out-recipe','test-lighton4b-hf-tiled-out-operator','test-lighton4b-q6-tied-head']
         run('runtime-build',['cmake','--build',build,'--target',*targets,'--parallel','2'])
         for target in targets:
-            if target!='lighton4b-physical-f16-attention-probe':run(target,[build/target])
+            if target!='lighton4b-physical-f16-attention-probe':
+                run(target,[build/target])
+                if target=='test-lighton4b-physical-f16-attention':require('PHYSICAL_F16_ATTENTION PASS 'in(out/(target+'.log')).read_text(),'supported runtime controls required, not skipped')
         run('source-pins',['python3',ROOT/'tools/qwen35_source_pins.py','--check','--verify-git'])
         run('environment',['python3',ROOT/'tests/test_env_vars_documented.py'])
         run('runtime-sourcefed',[build/'lighton4b-physical-f16-attention-probe',frozen.parent/'native',out/'runtime'])
