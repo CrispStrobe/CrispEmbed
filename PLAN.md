@@ -2050,3 +2050,15 @@ semantics include six source FIM controls,243 UNUSED rows and source EOG248044/
 248046, without changing format5. Four Python controls pass; focused C++/Kaggle
 controls and actual same-weight decoded comparison are next, coordinated to avoid
 duplicate expensive workers. No quality/default/release/model alias claim.
+
+### Pending same-physical-upstream text decoder comparison
+
+The default-off format-6 importer and direct scalar/layout semantics passed
+focused model-free controls at `0610af26d9cb8972ecdfe55204e2306e9e740d5e`.
+The [bounded decoded protocol](docs/lighton4b-upstream-physical-decode.md) now
+predeclares source-feature versus composed-original-vision arms on three already
+observed frozen diagnostics, with pinned upstream observer OFF/ON controls and
+actual embedding/prefill/position byte checks. One sequential Kaggle CPU worker
+is prepared, not yet dispatched; original BF16 captures are reused, never rerun.
+Full text/EOG/cap evidence and first-score error remain acceptance gates; no
+same-weight runtime parity, human-gold OCR, general quality or release claim.
