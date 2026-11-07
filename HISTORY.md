@@ -21456,3 +21456,8 @@ controls plus unsupported/WASM and old physical guards, but its harness omits
 a required old-policy schema argument and stops before source-fed replay.
 The [initial receipt and limit](docs/lighton4b-attention-primitives.md) remain
 frozen; tools-only argument fix `6ed974440` does not change runtime blobs.
+
+Integration-control retry `6ed974440` retains a second harness CLI exit2 at
+release-fence output-path admission after supported255,297 and physical-policy
+557,865 controls pass. [Both initial negatives](docs/lighton4b-attention-primitives.md)
+remain explicit; no source-fed result or model-quality claim is made.

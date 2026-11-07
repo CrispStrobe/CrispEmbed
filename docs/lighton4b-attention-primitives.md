@@ -143,3 +143,12 @@ is a harness failure, not a numerical pass or runtime failure. Tools-only fix
 `6ed974440` admits the audited closed schema for both schema-consuming old
 controls and adds CLI regression checks, leaving all runtime blobs unchanged.
 Shared PR155 remains unchanged pending the complete hosted source-fed gates.
+
+The initial retry at `6ed974440` again passes255,297 supported runtime checks
+and now557,865 physical-policy controls, but stops at another omitted legacy
+CLI argument: the release-fence test requires an output fixture path. The
+[second setup-negative receipt](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/integration-v2-setup-negative/review.json)
+is retained, with zero source-fed cases claimed. Tools-only fix `4f243a180`
+checks invocation arity against all nine actual C++ test signatures, supplies
+the fixture path, and moves source-fed proof before unrelated compatibility
+controls. Runtime bytes remain unchanged and shared PR155 is still gated.
