@@ -2,7 +2,7 @@
 """Artifact-only correction; no model staging, build, encoding or decoding."""
 import hashlib,json,os,signal,sys,time
 from pathlib import Path
-import analysis
+import analysis,worker
 ROOT=Path(__file__).resolve().parents[2]
 PRODUCER='8df1604435314b09ea8cbb60f47833a04307a492349191901313ed9b39540186'
 TABLE='36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3'
@@ -17,7 +17,7 @@ def verify(root,name,row):
 def main():
  import numpy as np
  require(np.__version__=='2.3.5'and sys.byteorder=='little'and Path('/kaggle/input').is_dir()and not list(Path('/dev').glob('nvidia[0-9]*')),'bounded pinned CPU reader')
- out=Path(os.environ['HEAVY_OUT']);started=time.monotonic();report={'schema':'lighton4b-upstream-text-trace-reader/v1','status':'failed','inference_executed':False,'model_downloaded':False,'quality_qualified':False,'source_sha':os.environ['LIGHTON4B_EXPECTED_SOURCE'],'producer_receipt_sha256':PRODUCER,'table_receipt_sha256':TABLE}
+ require(worker.base.memory()['MemAvailable']>=2<<30,'bounded reader memory headroom');out=Path(os.environ['HEAVY_OUT']);started=time.monotonic();report={'schema':'lighton4b-upstream-text-trace-reader/v1','status':'failed','inference_executed':False,'model_downloaded':False,'quality_qualified':False,'source_sha':os.environ['LIGHTON4B_EXPECTED_SOURCE'],'producer_receipt_sha256':PRODUCER,'table_receipt_sha256':TABLE}
  def stop(sig,frame):raise TimeoutError('bounded300s artifact reader')
  old=signal.signal(signal.SIGALRM,stop);signal.alarm(300)
  try:
@@ -33,7 +33,7 @@ def main():
   names=[n for n in t['artifacts']if n.startswith('native/prefill.')or n=='native/greedy.126.logits.f32']
   for n in names:verify(tp.parent,n,t['artifacts'][n])
   native_ids=t['arms']['native']['generated_ids'];require(native_ids[:126]==frozen['tokens'][:126]and native_ids[126]!=frozen['tokens'][126],'shared actual causal126 prefix')
-  report['analysis']=analysis.analyze(pp.parent/'on',tp.parent/'native',pp.parent/'on/source.logits.0.f32',pp.parent/'on/source.logits.126.f32',frozen['tokens']);report['producer_seconds']=p['seconds'];report['source_arms']=p['arms'];report['status']='measured_neutral_aligned_text_trace';report['limits']=['One observed calibration table; no heldout or release qualification.','Original capture error retained; this corrects only causal admission of the pinned two-zero-token compatibility probe.','Actual source batching/cropping retained; unequal intermediate inputs/batching do not establish a pure operator defect.','Position126 native hidden states do not exist in this capture; only actual logits are compared there.']
+  report['analysis']=analysis.analyze(pp.parent/'on',tp.parent/'native',pp.parent/'on/source.logits.0.f32',pp.parent/'on/source.logits.126.f32',frozen['tokens']);report['producer_seconds']=p['seconds'];report['source_arms']=p['arms'];report['status']='measured_neutral_aligned_text_trace'if report['analysis']['comparison_status']=='aligned-actual-stages'else'measured_neutral_input_difference';report['limits']=['One observed calibration table; no heldout or release qualification.','Original capture error retained; this corrects only causal admission of the pinned two-zero-token compatibility probe.','Actual source batching/cropping retained; unequal intermediate inputs/batching do not establish a pure operator defect.','Position126 native hidden states do not exist in this capture; only actual logits are compared there.']
  except BaseException as e:report.update(error_type=type(e).__name__,error=str(e));raise
  finally:
   signal.alarm(0);signal.signal(signal.SIGALRM,old);report['seconds']=time.monotonic()-started;(out/'text-trace-analysis.json').write_text(json.dumps(report,indent=2,sort_keys=True,ensure_ascii=False)+'\n')
