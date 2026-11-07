@@ -30,29 +30,76 @@
       "note": "Neither the Hub repository nor the code repository at the pinned commit has a NOTICE file (HTTP 404, 2026-10-28), so none is redistributed; the card carries the attribution and statement of changes required by Apache-2.0 section 4."
     }
   },
-  "default_variants": ["F16"],
+  "default_variants": [
+    "F16"
+  ],
   "recipes": {
-    "F32": {"filename": "minicpm-ocr-1.0-f32.gguf", "from": "convert", "convert_args": ["--dtype", "f32"]},
-    "F16": {"filename": "minicpm-ocr-1.0-f16.gguf", "from": "convert", "convert_args": ["--dtype", "f16"]},
-    "Q8_0": {"filename": "minicpm-ocr-1.0-q8_0.gguf", "from": "F16", "type": "q8_0", "tensor_type": [],
-             "from_note": "Quantized from the F16 GGUF exactly as qualified in the precision receipt: crispembed-quantize flattens 4-D F32 tensors, which the runtime rejects for v.emb.patch_embedding.weight.",
-             "precision_receipt": "tests/results/minicpm-ocr/bench.json", "precision_dtype": "q8_0",
-             "precision_required_arms": ["q8_0-t4", "q8_0-t2"]},
-    "Q4_K_MIX": {"filename": "minicpm-ocr-1.0-q4_k-mix.gguf", "from": "F16", "type": "q8_0", "tensor_type": [],
-                 "quantize_env": {"CRISPEMBED_QUANTIZE_MINICPM_POLICY": "minicpm_q4k_v1"},
-                 "from_note": "Named policy minicpm_q4k_v1 (docs/minicpm-ocr-q4k.md): decoder, merger and tied embedding Q4_K, vision FFN IQ4_NL, vision attention Q8_0, ViT merger 4-bit; patch embedding and the 4304-wide vision fc2 F16.",
-                 "precision_receipt": "tests/results/minicpm-ocr/q4k-precision.json", "precision_dtype": "minicpm_q4k_v1",
-                 "precision_gate": "cosine", "precision_tier": "q4_k"}
+    "F32": {
+      "filename": "minicpm-ocr-1.0-f32.gguf",
+      "from": "convert",
+      "convert_args": [
+        "--dtype",
+        "f32"
+      ]
+    },
+    "F16": {
+      "filename": "minicpm-ocr-1.0-f16.gguf",
+      "from": "convert",
+      "convert_args": [
+        "--dtype",
+        "f16"
+      ]
+    },
+    "Q8_0": {
+      "filename": "minicpm-ocr-1.0-q8_0.gguf",
+      "from": "F16",
+      "type": "q8_0",
+      "tensor_type": [],
+      "from_note": "Quantized from the F16 GGUF exactly as qualified in the precision receipt: crispembed-quantize flattens 4-D F32 tensors, which the runtime rejects for v.emb.patch_embedding.weight.",
+      "precision_receipt": "tests/results/minicpm-ocr/bench.json",
+      "precision_dtype": "q8_0",
+      "precision_required_arms": [
+        "q8_0-t4",
+        "q8_0-t2"
+      ]
+    },
+    "Q4_K_MIX": {
+      "filename": "minicpm-ocr-1.0-q4_k-mix.gguf",
+      "from": "F16",
+      "type": "q8_0",
+      "tensor_type": [],
+      "quantize_env": {
+        "CRISPEMBED_QUANTIZE_MINICPM_POLICY": "minicpm_q4k_v1"
+      },
+      "from_note": "Named policy minicpm_q4k_v1 (docs/minicpm-ocr-q4k.md): decoder, merger and tied embedding Q4_K, vision FFN IQ4_NL, vision attention Q8_0, ViT merger 4-bit; patch embedding and the 4304-wide vision fc2 F16.",
+      "precision_receipt": "tests/results/minicpm-ocr/q4k-precision.json",
+      "precision_dtype": "minicpm_q4k_v1",
+      "precision_gate": "cosine",
+      "precision_tier": "q4_k"
+    }
   },
   "receipts": {
     "parity": "tests/results/minicpm-ocr/native-parity.json"
   },
-  "parity_arms": ["f32", "f16"],
-  "parity_cases": ["line", "para-en", "table", "tall", "tiny"],
+  "parity_arms": [
+    "f32",
+    "f16"
+  ],
+  "parity_cases": [
+    "line",
+    "para-en",
+    "table",
+    "tall",
+    "tiny"
+  ],
   "qualification": {
     "default_enabled": false,
     "receipts_precision": "F32 and F16 conversions, 5 cases, token-ID exact vs Transformers 5.21.0 (CPU, greedy)",
     "q8_0": "publishable only when the precision receipt shows every q8_0 case token-ID exact; tests/results/minicpm-ocr/bench.json (b42e094d) shows 5/5 exact at 2 and 4 threads",
     "registry_alias": "TODO(follow-up after upload): add a registry alias with the real published SHA256; none is added here"
+  },
+  "card_quality": {
+    "status_md": "**Status per file.** F16 and Q8_0 are **recommended** (token-ID exact against the original on every frozen case). **Experimental: Q4_K_MIX** - it clears the owner's Q4_K final-logit cosine bar (> 0.94) but is not token-ID exact on every case; do not use it where exact agreement with the original matters.",
+    "table_md": "| Precision | File size | Token IDs vs original (5 cases) | Decoded text / CER | Final-logit cosine min (teacher-forced, vs original) | Known divergences | Status |\n|---|---:|---|---|---|---|---|\n| F16 | 2,612,763,136 B | 5/5 exact (`tests/results/minicpm-ocr/native-parity.json`) | identical to original (CER 0) | not measured | none on the panel | recommended |\n| Q8_0 | 1,525,926,080 B | 5/5 exact at 2 and 4 threads (`tests/results/minicpm-ocr/bench.json`) | identical to original (CER 0) | 0.9998 (para-en; `docs/minicpm-ocr-q4k.md`, run 41591527932) | none on the panel | recommended |\n| Q4_K_MIX (`minicpm_q4k_v1`) | 970.8 MiB | 4/5 exact; `para-en` diverges at generated token 54 (`tests/results/minicpm-ocr/q4k-precision.json`) | 4/5 identical; `para-en` reads the umlaut line as `Gr×e, Stra×e, ×pfel` (CER not measured) | 0.9671 worst (para-en); line 0.9924, table 0.9886, tall 0.9937, tiny 0.9993 | `para-en` umlaut/box glyphs at token 54 in every 4-bit arm; representative real-page quality not measured; GPU not measured | **experimental** |"
   }
 }
