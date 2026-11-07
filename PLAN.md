@@ -3240,3 +3240,7 @@ The bounded `38171f0d4` worker passes actual source4/nativeOFF16/ON16 activation
 ### Actual early FFN quantization-threshold cause
 
 The bounded `2d78bc6a8` operator worker passes6actualprojection/32forcedRAW-Q8/allpackedendpoint controls. [Rawc936 and independent threshold/upstream audits](docs/lighton4b-ffn-postnorm-code-results.md) prove a1.26e-6 postnorm drift crosses exactlyone integer boundary, causing1.08e-4 reconstructed-activation drift and~4.95e-5/~4.70e-5 gate/up drift; integer-only corners reproduce it while scale-only effects are~2.7e-7/~2.5e-7. The drift starts before FFNnorm in attention output; embeddings/inputnorm/residualadds close exactly, and same-input Q4out route/projectedZab effects are isolated. Quantizer/RMSkernel bodies are unchanged; no quantizer hack or runtime change. Next is predeclared generic repack+GDN combined observed table/form A/B, retaining all single-gate decoded negatives/defaultOFF/no-ship constraints.
+
+## Combined GDN/repack observed result: unqualified
+
+Source `374d04387` completes four arms with OFF all282/167 rows/stages exact. Combined ON table282EOS exactly matches upstream IDs/text (348/607 characters,97/106 words). Form167EOS fails character floor194/656 versus upstream189, despite fewer word edits40/90 versus46. Both gates remain default-off; no promotion/ship or aggregate waiver. [Full mixed result and limits](docs/lighton4b-combined-gdn-repack-results.md). Next attribution requires actual same-weight upstream form text stages; no new model run is implied.
