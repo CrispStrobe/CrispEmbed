@@ -1,4 +1,4 @@
-# CrispEmbed plan — open work (updated 5 November 2026)
+# CrispEmbed plan — open work (updated 7 November 2026)
 
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
@@ -22,8 +22,8 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Releases / pub.dev / app pin | v0.17.15 published, pub.dev unqualified, app on 0.17.12 | Qualified assets and fresh consumers first | Release procedure in the pub.dev section |
 | OXR-1.0 quantized + GPU | Q8_0-large / Q4_K-head pass the owner bar (cos ≥ 0.998 vs F16, CPU/Metal/CUDA); German diverges 1 token from decode-step activation quantization | Opt-in F32-activation decode A/B (the recipes are already published and registered as `oxr-1.0-q8_0` / `oxr-1.0-q4_k-head`, PR #97) | A/B receipt; German page token-exact or the divergence attributed |
 | OXR native document route / D-FINE | [Run 42359526030](tests/results/oxr/native-doc-42359526030-v2.json) passes all five cases with 0.01 px bbox tolerance; strict bbox equality remains false | Profile the encoder; preserve comparator-v2 and strict results | Profile receipt and any performance action independently validated |
-| MinerU2.5-Pro full native doc route | 8/8 model-backed cases identical (41251475795); default-off | Owner: default-on or not (handoff "Owner decisions"); image-bearing-table fixture | Decision recorded; fixture receipt |
-| Marker-style pipeline / TeleOCR | Implemented and bounded-validated, default-off; TeleOCR strict numerics false at every precision | Representative licensed multilingual/layout gold corpus (needs owner-provided licensed annotations) | Corpus frozen; CER/WER/order receipts |
+| MinerU2.5-Pro full native doc route | Owner decision 7 Nov 2026: default-on for F16/F32 (8/8 identical, 41251475795), opt-in only for quantized GGUFs (Q8/Q4 6/8); default-gate rerun 42370991098 8/8 identical | Image-bearing-table fixture with the real model | Fixture receipt |
+| Marker-style pipeline / TeleOCR / real-page benchmarks | Gold corpus frozen: [`docs/ocr-gold-corpus-v1.json`](docs/ocr-gold-corpus-v1.json) (57 licensed pages, blocks/types/order/tables, derived vs manual provenance; [guide](docs/ocr-gold-corpus.md)); scorer `tools/ocr-gold-corpus/layout_score.py` | See "OCR gold corpus lanes" below | Per-engine CER/WER + block F1/IoU/type/tau/table-F1 receipts on the corpus |
 | Model-weight licences in apps | Registry/cards/gates corrected; CrispSorter PR20 at0af4c34 adds fail-closed OCR consent, typed Gemma terms, real0.17.12 pin and image backfill. Its reported Metal-feature cargo check passes; PR18 remains draft | Review/integrate [CrispSorter20](https://github.com/CrispStrobe/CrispSorter/pull/20) alongside18; retain Windows-helper/live-OCR gaps. Check CrispCalc consent separately. No vendor/app pin upgrade | Downstream acknowledgement PRs merged and actual consumer checks recorded |
 | **Release v0.17.15** | **Published 5 November 2026** from `d28ca2ea4`; full candidate gates and all 16 native/WASM assets verified | Fresh downstream consumer checks and owner-controlled pin updates; package publication separate | Consumer upgrades reviewed against immutable 0.17.15 artifacts |
 | CI selection after PR #134 | Merged; docs/evidence-only pushes run nothing, so the main head may have no Build run | Before tagging: `gh workflow run build.yml --ref main` (and build-wasm, build-wasm-embed, rust-crates, inpaint-cli); confirm the dynamic desktop matrix in build.yml evaluates on hosted runners | One full green Build on the main head |
@@ -33,6 +33,28 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | MI-GAN256 Metal/Q4_K | Metal F32/F16/Q8_0 pass; Q4_K fails (masked 0.81); GPU default off | Q4_K probes with sensitive layers at Q8_0 (`CRISPEMBED_QUANTIZE_MIGAN_Q8`); flip to the padded-K Metal path only after measuring delivery-5 CPU kernels on Apple CPU | Q4_K ≥ 0.94 masked or declined; A/B before any default flip |
 | Big-LaMa (research only) | Weights' rights unclear; kept on `feat/issue71-lama-research`, private Hub copy only | Nothing until the owner clarifies the weight licence | Licence clarified (then publish) or lane closed |
 | Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
+
+## OCR gold corpus lanes — 7 November 2026
+
+The corpus unblocks the Marker, TeleOCR and real-page lanes. Exact next steps:
+
+1. Review the derived annotations of the 37 new pages against their pinned scans (types,
+   order, table cells); turn corrections into `manual` ops in
+   `tools/ocr-gold-corpus/candidates.json`, rebuild (`build_corpus.py fetch`), rerun
+   `tools/ci-heavy/ocr_gold_corpus.sh` and commit its reviewed artifact as a new version.
+2. Marker lane: add a `--corpus docs/ocr-gold-corpus-v1.json` mode to the Marker validation
+   driver that exports per-page blocks (bbox, type, text, table HTML, order) from the
+   `crisp_marker` document JSON renderer and runs `layout_score.py` plus the CER/WER
+   scorer; one hosted CPU run with `CRISPEMBED_MARKER=1`, receipts under
+   `tests/results/marker/gold-v1/`.
+3. TeleOCR lane: same export from the TeleOCR parser output (published F16), receipts under
+   `tests/results/teleocr/gold-v1/`; quantized arms only after F16.
+4. Real-page benchmark lane: extend `tools/kaggle/ocr-real-scans/kernel.py` to read the v1
+   corpus (same sha256 gate), score text with `score.py` and layout with `layout_score.py`
+   for engines that emit blocks (MinerU full route, Marker, PP-Structure), with paired
+   timing spans; CPU sessions within the shared Kaggle capacity.
+5. Corpus gaps: more list/figure pages and French Fraktur-free degraded scans; CORD stays
+   partial (no header/address annotation).
 
 ## PP-OCRv6 detector empty/shape handling — issue #164
 
@@ -632,11 +654,12 @@ path is qualified or receives a published model alias. No existing model default
 release version, application pin or remote model artifact is changed here.
 
 Full native document route (`feat/mineru-native-doc`): C++ port of every
-mineru-vl-utils branch behind `CRISPEMBED_MINERU25_PRO_FULL_DOC` (default off),
+mineru-vl-utils branch behind `CRISPEMBED_MINERU25_PRO_FULL_DOC` (default on for F16/F32,
+opt-in for quantized GGUFs since the 7 November owner decision),
 composed from the layout/router/Marker-document components with an exact
 upstream output profile. Weight-free parity is identical (see the guide).
 Model-backed parity on hosted run 41251475795: 8/8 protocol cases identical.
-Next: review and decide default-on (keep basic/Python routes); add an
+Default decided (7 November; basic/Python routes kept). Next: add an
 image-bearing-table fixture to exercise masking with the real model; token-glyph pixels in image-bearing tables and
 cross-page table merge remain documented exceptions.
 
