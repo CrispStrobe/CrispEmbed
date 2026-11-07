@@ -168,3 +168,25 @@ activations; quantized matmuls quantize activations to Q8_K/Q8_0).
 policy (`dec_q8_0`, `dec_q6_k`, `dec_q5_k`). If Q8_0 is exact, the answer is weight precision and
 the smallest exact base is the candidate; if Q8_0 also drifts on the receipt, the remaining lever
 is a gated F16-activation decoder path.
+
+## 6. Round-2 results (run 42382978017) — weight precision confirmed
+
+| recipe | size | exact | CER (fox / receipt / form) | min logit cos |
+|---|---|---|---|---|
+| f16 (reference) | — | 3/3 | 0 / 0 / 0 | 1.0 |
+| published_q4k | — | 1/3 | 0 / 0.345 / 0.052 | 0.456 |
+| **dec_q8_0** | **600 MB** | **3/3** | **0 / 0 / 0** | **0.984** |
+| dec_q6_k | 503 MB | 2/3 | 0 / 0.356 / 0 | 0.937 |
+| dec_q5_k | 449 MB | 1/3 | 0 / 0.002 / 0.070 | 0.107 |
+
+Conclusion: CPU Q8 activation quantization is *not* the blocker — a Q8_0
+decoder (which also quantizes activations to Q8_0) is token-exact on all three
+pages. The failure is decoder weight precision below 8 bits on long greedy
+decodes (the receipt page diverges at token 83 for both Q6_K and Q4_K).
+An F16-activation path is therefore unnecessary.
+
+Recommendation: ship a `q8_0` GOT-OCR2 (Q8_0 decoder + Q8_0 vision, ~600 MB)
+as the non-F16 option; keep Q4_K labelled experimental (known drift on long
+pages); do not ship Q6_K/Q5_K. Done-when for publication: Q8_0 re-run on the
+full gold corpus with the standard OCR qualification lane, then publish via
+the HF workflow with LICENSE/NOTICE (Tongyi Qianwen research licence).
