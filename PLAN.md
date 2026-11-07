@@ -3051,3 +3051,7 @@ Kaggle CPU143174221/v1 completed atB2/C89 with candidateSHA`cc6ce27eded435b8ac27
 ### HF tiled-output artifact-only causal audit (2026-11-07)
 
 Kaggle143195841/v1 source0d90fd0b2 passes actual4GB model/all723payload hashes and independently authenticated699old/24original-F16 publisher payloads, allscore argmax/hash/finite controls. All3prefill inputs+positions exactold; earliest observed difference layer0 (tableerrorRMS0.00273095/max0.0423252, magnitudes0.202175→0.202302), layer31RMS0.0532514/max1.26601, firstlogitsRMS0.162988/max1.0. Formall182/Arabic6 causalrows compared; tableonly0..113 (firstselectiondiff303→430),142laterrows excluded. Full32stage/rawmagnitudes/counts and actualtranscriptions retained in [decoded negative](docs/lighton4b-hf-tiled-out-decoded-results.md). No new inference or same-weight originalBF16 parity claim; quality remains negative.
+
+### Physical F16 full-form initial setup negative
+
+The first full-form worker at `fb8a5ecf1` stopped before entering the model worker: a hosted `sitecustomize` warning polluted the stdlib guard test stdout. [Raw setup evidence](tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/full-form-v1-setup-negative/evidence.json) is retained. The one-line test isolation at `4a63d73be` passes all eight focused checks; numerical code, immutable weights/features and release fences are unchanged. The bounded retry is submitted; no decoded or speed result is claimed yet.

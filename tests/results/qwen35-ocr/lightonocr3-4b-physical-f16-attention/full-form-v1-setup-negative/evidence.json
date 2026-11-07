@@ -1,0 +1,22 @@
+{
+  "schema": "lighton4b-physical-f16-full-form-setup-negative/v1",
+  "source_sha": "fb8a5ecf1338ade9336633ecb500b5d7393c7699",
+  "bootstrap_sha256": "c153d5b8f4819ea0f078ef2ed85caf7ba4615b9ff90ded096d4ce352f74403e8",
+  "status": "setup_negative_before_worker",
+  "model_acquired": false,
+  "model_forward_executed": false,
+  "cause": "Hosted sitecustomize missing wrapt warning polluted exact stdout of stdlib environment-propagation test. Four other guard tests passed.",
+  "fix_source_sha": "4a63d73bee7289deab41fb20f67765d3c6800182",
+  "fix": "Python -S only for the stdlib environment-print child; production worker and numerical paths unchanged.",
+  "retry_status": "submitted_not_yet_reviewed",
+  "artifacts": {
+    "physical-f16-bootstrap.json": {
+      "bytes": 451,
+      "sha256": "19b84468ce113ca08fdbc84f2ad2dc14a621bc659e5fa86c1c4b4f8b8d3cd4fc"
+    },
+    "control-test_runtime_guard.py.log": {
+      "bytes": 1055,
+      "sha256": "bffd7bca7233c6b77053f585fde573fd4985ef71270f8e356ad2e8033e1c097e"
+    }
+  }
+}
