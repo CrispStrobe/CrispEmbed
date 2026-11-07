@@ -1,0 +1,11 @@
+{
+  "schema": "lighton4b-reconstructed-prefix-bootstrap/v1",
+  "source_sha": "dffc7780c8baf791c32a26259efdbd65953d4988",
+  "status": "completed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "operator-only-primitives",
+  "worker_sha256": "e2b8b61c3f7bc9b88145051ed88655d2ba2c96205be45faa1fa77203ea08a49f",
+  "worker_status": "measured_operator_only"
+}

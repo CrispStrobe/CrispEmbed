@@ -1,0 +1,30 @@
+{
+  "tested_source": "dffc7780c8baf791c32a26259efdbd65953d4988",
+  "fix_commits": [
+    "bb8960971",
+    "432eb8dc4",
+    "a3f4b87aa",
+    "dffc7780c"
+  ],
+  "physical_base": "ac34f72ca89823a177c538ad598dfa00fc69f124",
+  "files": {
+    "CMakeLists.txt": "6051ec16fe4645cc1a9aba02f0e12dfd5d8eaeaaf0792ddc9c5bb0afb37eba3d",
+    "PLAN.md": "277e516c9ac394fca59fc16f719e44b50854a43266543fa29944f0a3e7078772",
+    "docs/environment-variables.md": "68ae6f6b3cd52a0d431e741afaf1a5d3b1b53e0c06b441c2c7d68b016885cc10",
+    "src/lighton4b_attention_block.h": "389ec6e6030537c975643ddca6b1595db750c3af25bdbf2b4ca19824d05ead27",
+    "src/lighton4b_decoder_compose.h": "fd64d574812ffc16f52dcbd29ec742e3908a712df53d8fc31202c263a12b99d6",
+    "src/lighton4b_linear_block.h": "1fdba68d348d559a486ef7e2b4e116ecff22c548673e72fda1eb84683fc75a33",
+    "src/lighton4b_physical_native_ops.h": "379189bc31a19768eb552cd89312bc656d70012d6af1f2870c5ea412948fd72a",
+    "src/qwen35_attention.cpp": "e51a36342201563563156823f3f3712504ff8c61b847b64250cccc5a5fc1cb8b",
+    "src/qwen35_attention.h": "0311d03a3e9952267d6484f59162315ced6733a87ca011462a46ef68051c9411",
+    "src/qwen35_linear.cpp": "d9b0f496382eed58103f19935d459acc0879bff04616ddd0d3373c54191904ce",
+    "src/qwen35_math.h": "cc0a6df67af20d9383d91fbc2cb71d2d66521ba92f070571e15747683d936e5b",
+    "tests/lighton4b_native_document.cpp": "e0c40e20e024e3a7362ffcb437938f608f5688f674a85645b280814cb93572a3",
+    "tests/results/qwen35-ocr/source-pin-amendments.json": "8837e4280c1fca41544e26f44f53b99da52ad7c4ace863a210c24c1d03cd287a",
+    "tests/test_lighton4b_physical_native_ops.cpp": "b9e90c27dcbc084918ecee1db22329975a3590d3cf24a224d43763d3c060f04b",
+    "tools/kaggle/lighton4b_physical_prefix_primitives.py": "e2b8b61c3f7bc9b88145051ed88655d2ba2c96205be45faa1fa77203ea08a49f",
+    "tools/physical-primitive-probe/CMakeLists.txt": "068c9828719a44ee8f6bda6684204306aaf475cf9c542b0fdebbfa48a6de612a",
+    "tools/physical-primitive-probe/README.md": "1869f6cb8eda23af18be55b6e473e34a1c7bc4bd3c7168dd783036e43a5490f0",
+    "tools/physical-primitive-probe/main.cpp": "2d66183e6f15980d963d2f916a0b6db07ac25aba611aca0248ad5da22b100656"
+  }
+}
