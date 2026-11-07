@@ -2843,3 +2843,19 @@ Earlier wording that the revision was undisclosed was too strong. A declared
 revision is not independent source tensor-content verification, and does not pin
 the producing converter/quantizer commit or calibration corpus. Old raw evidence
 and its hashes remain unchanged; no quality, same-weight or release promotion.
+
+
+### Physical upstream import audit completed; runtime bridge next
+
+[Authorized CPU audit5199609f4](docs/lighton4b-upstream-physical-import.md)
+verifies all249 actual Q4/Q6 matrices native/independent F32 hashes bit-exact,
+426 frozen name/shape/type mappings,96 lossless row maps and168 out-dot bridges.
+Out-column128/256 block incompatibility is confirmed; negative unpermuted dots
+err0.00356691–2.58265. Inverse RMS subtraction loses4 values and inverse A log
+loses106, so physical source gamma/A must be consumed directly; conv/dt/linear
+norm inverse maps are exact. No inference/F32 model/requantization or quality
+claim. Root authorized narrow default-off runtime/import implementation plus
+focused Kaggle controls; coordinate owner/header integration with the separate
+weighted-HF recipe and avoid duplicate expensive workers. Same-source decoder
+comparison must freeze F32 head output (HEAD_BF16=0), not silently reuse the
+genuine-BF16-oracle head cast. All old alternatives/defaults remain unchanged.

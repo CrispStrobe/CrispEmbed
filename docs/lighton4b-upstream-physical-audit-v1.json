@@ -1,0 +1,58 @@
+{
+  "schema": "lighton4b-upstream-physical-audit/v1",
+  "upstream_source": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "model_repository": "richardyoung/LightOnOCR-3-4B-GGUF",
+  "model_revision": "8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01",
+  "upstream_file": {
+    "file": "LightOnOCR-3-4B-Q4_K_M.gguf",
+    "bytes": 2708804576,
+    "sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26",
+    "header_bytes": 10968032,
+    "header_sha256": "95d865c95703161726daedef09c031be4990517de36572072c1d0cd369a052c3"
+  },
+  "native_repository": "cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
+  "native_revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+  "native_file": {
+    "file": "lightonocr3-4b-q4_k-vision-f32.gguf",
+    "bytes": 4030957952,
+    "sha256": "f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91"
+  },
+  "maximum_chunk_elements": 65536,
+  "expected_upstream_census": {
+    "0": 177,
+    "12": 216,
+    "14": 33
+  },
+  "original_revision_declared_by_upstream_general_name": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+  "linear_geometry": {
+    "key_heads": 16,
+    "value_heads": 32,
+    "head_dim": 128,
+    "quant_block": 256
+  },
+  "fixed_out_projection_rows": [
+    0,
+    127,
+    128,
+    255,
+    256,
+    1023,
+    2559
+  ],
+  "deterministic_input": "x[i]=((37*i mod257)-128)/256, i=0..4095; no image or fitting",
+  "minimum_available_ram_bytes": 6442450944,
+  "minimum_scratch_free_bytes": 12884901888,
+  "minimum_output_free_bytes": 1073741824,
+  "total_timeout_seconds": 5400,
+  "model_inference_allowed": false,
+  "full_f32_model_allowed": false,
+  "quantization_or_requantization_allowed": false,
+  "outputs": "metadata,payload and bounded dequant hashes,permutation and scalar-transform controls only",
+  "predeclared_mapping_sha256": "cf3af1c7f7893a06cf1660358e3ec7084dd6352730e8bcfd384e749e4f11edb1",
+  "python_dependencies": [
+    "numpy==2.3.5",
+    "tqdm==4.67.1",
+    "PyYAML==6.0.3",
+    "requests==2.32.5"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "schema": "lighton4b-physical-audit-independent-review/v1",
+  "status": "passed",
+  "source_sha": "5199609f4425b006bb78f488703b42ec4410f3ac",
+  "exact_submitted_bootstrap_sha256": "b97bb944009daca968a97eecdc84fba1319538856bdc809a0082c280b1cdab9f",
+  "native_tsv_and_independent_f32_hashes_checked": 249,
+  "predeclared_full_mapping_sha256_checked": "cf3af1c7f7893a06cf1660358e3ec7084dd6352730e8bcfd384e749e4f11edb1",
+  "all426_names_shapes_types_checked": true,
+  "out_dot_real_valued_controls_checked": 168,
+  "unpermuted_negative_min_abs": 0.003566906787455082,
+  "unpermuted_negative_max_abs": 2.5826476817019284,
+  "shifted_norm_tensors": 81,
+  "shifted_norm_f32_transform_differences": 0,
+  "norm_inverse_values_lost": 4,
+  "A_inverse_values_lost": 106,
+  "physical_weight_payloads_downloaded_locally": false,
+  "inference_executed": false,
+  "full_f32_model_created": false,
+  "quality_qualified": false,
+  "raw_whitespace_note": "Preserved original git hint trailing spaces and CMakeCache final blank line; producer/output hashes remain unchanged."
+}
