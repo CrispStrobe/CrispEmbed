@@ -11,7 +11,7 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | MiniCPM-OCR Q4_K_MIX | [Published and re-verified](tests/results/minicpm-ocr/publication-42371025754.json) in [run 42371025754](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42371025754); immutable Hub commit `195ba6b111e8d2455fcde9c09903679317ce4e4b` | Review registry alias and actual downstream consumer coverage separately | Pinned alias and consumer receipts; retain numerical limits |
 | UltraBERT Q4_K last-four FFN | [Published and re-verified](tests/results/ultrabert/publication.json) by owner decision as experimental; strict vector and top-1 gates remain negative | Review registry/consumer admission; do not imply full quality qualification | Explicit gates and bounded consumer/retrieval evidence |
 | MoEdern 27M/115M Q4_K_MIX | [27M](tests/results/moedern-colbert/publication-q4k-27m.json) and [115M](tests/results/moedern-colbert/publication-q4k-115m.json) published and re-verified as experimental by owner decision | SciFact retrieval, public clients and GPU remain unmeasured | Reviewed downstream and retrieval evidence before any promotion |
-| Josev Q8_0/Q4_K_MIX | Owner-approved quantized publisher exists; [run 42371120858](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42371120858) in progress when checked | Review actual completion, per-variant hashes, upload and empty-cache readback before recording publication | Immutable receipts and explicit experimental limits |
+| Josev Q8_0/Q4_K_MIX | [Published and re-verified](tests/results/josev2b/publication-q4k.json) as experimental in [run 42371120858](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42371120858); immutable Hub commit `7bc8a7aeb6c6d862fc3e0cf55bee49afd79dccc2` | Review registry/consumer admission separately; retain typed-JSON and strict-stage failures | Explicit experimental limits and independently reviewed consumer evidence |
 | Unlimited-OCR-2 Q4_K_MIX | [Published and re-verified](tests/results/unlimited-ocr2/publication-42371027698.json) in [run 42371027698](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42371027698); immutable Hub commit `7f5f82c43a38054d8f7929029c14d35e3943ea5c` | Review registry alias and actual downstream consumer coverage separately; CUDA Q8 remains a distinct open lane | Pinned alias and consumer receipts; retain numerical limits |
 | `env_gate.h` false/off/no lockstep | CrispEmbed [PR163](https://github.com/CrispStrobe/CrispEmbed/pull/163) merged the companion update and tests | Recheck sibling sync when either header changes | Identical headers, tests in CI, sibling sync green |
 | Unlimited-OCR-2 Q8_0 on CUDA | 0.9555 < 0.97 (CPU 0.9739) | Search a CUDA-qualifying Q8_0 mix (F16 shared experts/attention) | ≥ 0.97 on CPU and CUDA |
@@ -333,8 +333,9 @@ Source: `docs/josev2b-q4k-sweep.md`. Portable hosted CPU, frozen original refere
 `josev_q4k_down8_v1` (2,952 MiB vs Q8_0 3,462) clears the Q4_K bar on head logits
 (0.99739) and final norm (0.94911); Q8_0 clears 0.97 (0.99995/0.99944).
 
-- The quantized publisher is implemented; run 42371120858 is in progress when checked.
-  Review its per-variant upload and immutable readback before recording publication.
+- Q8_0 and Q4_K_MIX were published experimentally and re-verified in run
+  42371120858; [the receipt](tests/results/josev2b/publication-q4k.json) records
+  exact bytes, hashes, precision limits and immutable readback.
 - No Q4_K recipe is typed-JSON exact (0/4; argmax 4/4). Strict 0.002/0.99999 stage
   budgets stay failed diagnostics.
 - CUDA: Josev's packed/composed runtime is CPU-only; a CUDA arm needs a backend path.
