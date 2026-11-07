@@ -41,6 +41,15 @@ def control_args(target,build,schema):
     return [build/target]
 
 
+BUILD_FLAGS={'CRISPEMBED_NATIVE':'OFF','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_LLAMAFILE':'ON','GGML_AVX512':'OFF','GGML_BLAS':'OFF','GGML_BACKEND_DL':'OFF','GGML_OPENMP':'OFF','GGML_CUDA':'OFF','GGML_VULKAN':'OFF'}
+
+def validate_profile(lines,reference=False):
+    for key,value in BUILD_FLAGS.items():
+        if reference and key=='CRISPEMBED_NATIVE':continue
+        if reference and key=='GGML_OPENMP':value='ON' # Actual pinned upstream build; native app uses OFF.
+        require(f'{key}:BOOL={value}'in lines,('reference'if reference else'native')+' profile '+key)
+
+
 def main():
     require(Path('/kaggle/working').is_dir()and Path('/kaggle/input').is_dir()and not list(Path('/dev').glob('nvidia[0-9]*')),'Kaggle CPU only')
     import numpy as np
@@ -79,11 +88,11 @@ def main():
         run('source-pins',['python3',ROOT/'tools/qwen35_source_pins.py','--check','--verify-git'])
         run('environment',['python3',ROOT/'tests/test_env_vars_documented.py'])
         build=work/'runtime-build'
-        flags={'CRISPEMBED_NATIVE':'OFF','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_LLAMAFILE':'ON','GGML_AVX512':'OFF','GGML_BLAS':'OFF','GGML_BACKEND_DL':'OFF','GGML_OPENMP':'OFF','GGML_CUDA':'OFF','GGML_VULKAN':'OFF'}
+        flags=dict(BUILD_FLAGS)
         run('runtime-configure',['cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release',*[f'-D{k}={v}'for k,v in flags.items()]])
         cache=(build/'CMakeCache.txt').read_text().splitlines()
-        for k,v in flags.items():require(f'{k}:BOOL={v}'in cache,'actual build profile '+k)
         shutil.copy(build/'CMakeCache.txt',out/'runtime-CMakeCache.txt')
+        validate_profile(cache)
         targets=['test-lighton4b-physical-f16-attention','test-lighton4b-physical-f16-unsupported','test-lighton4b-physical-f16-wasm-guard','lighton4b-physical-f16-attention-probe','test-lighton4b-physical-native-ops','test-lighton4b-upstream-physical','test-lighton4b-release-fence','test-lighton4b-hf-tiled-out-recipe','test-lighton4b-hf-tiled-out-operator','test-lighton4b-q6-tied-head']
         run('runtime-build',['cmake','--build',build,'--target',*targets,'--parallel','2'])
         sys.path.insert(0,str(ROOT/'tools'));from lighton4b_q6_recipe import plan
@@ -97,9 +106,9 @@ def main():
         ref=work/'reference-build'
         run('reference-configure',['cmake','-S',HERE,'-B',ref,'-DCMAKE_BUILD_TYPE=Release','-DGGML_SOURCE='+str(up/'ggml')])
         rc=(ref/'CMakeCache.txt').read_text().splitlines()
-        for k,v in flags.items():
-            if k!='CRISPEMBED_NATIVE':require(f'{k}:BOOL={v}'in rc,'reference profile '+k)
         shutil.copy(ref/'CMakeCache.txt',out/'reference-CMakeCache.txt')
+        validate_profile(rc,reference=True)
+        report['thread_engines']={'native_openmp':False,'pinned_upstream_reference_openmp':True}
         run('reference-build',['cmake','--build',ref,'--target','physical-f16-attention-reference','--parallel','2'])
         cases=[('prefill4',4,0),('prefill16',16,0)]+[(f'step{t:02}',1,t)for t in range(16)]
         for label,n,past in cases:

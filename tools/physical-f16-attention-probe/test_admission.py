@@ -3,7 +3,7 @@ from pathlib import Path
 import unittest
 import re
 sys.path.insert(0,str(Path(__file__).parent))
-from worker import control_args,text_schema,ROOT
+from worker import control_args,text_schema,ROOT,BUILD_FLAGS,validate_profile
 sys.path.insert(0,str(ROOT/'tools'))
 from lighton4b_q6_recipe import plan
 
@@ -38,6 +38,14 @@ class IntegrationAdmission(unittest.TestCase):
                 else:
                     self.assertNotRegex(code,r'\bargc\b|\bargv\b')
                     self.assertEqual(len(args),1)
+
+    def test_actual_native_and_reference_thread_profiles_are_distinct(self):
+        native=[f'{k}:BOOL={v}'for k,v in BUILD_FLAGS.items()]
+        reference=[f'{k}:BOOL={"ON"if k=="GGML_OPENMP"else v}'for k,v in BUILD_FLAGS.items()if k!='CRISPEMBED_NATIVE']
+        validate_profile(native)
+        validate_profile(reference,reference=True)
+        with self.assertRaises(RuntimeError):validate_profile(native,reference=True)
+        with self.assertRaises(RuntimeError):validate_profile(reference)
 
     def test_exact_closed426_schema(self):
         p=plan();lines=text_schema(p).splitlines()

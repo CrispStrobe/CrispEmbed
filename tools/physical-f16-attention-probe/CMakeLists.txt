@@ -8,6 +8,8 @@ set(GGML_NATIVE OFF CACHE BOOL "" FORCE)
 set(GGML_AVX2 ON CACHE BOOL "" FORCE)
 set(GGML_AVX512 OFF CACHE BOOL "" FORCE)
 set(GGML_BLAS OFF CACHE BOOL "" FORCE)
+# Actual pinned upstream server and source primitive builds use OpenMP ON.
+set(GGML_OPENMP ON CACHE BOOL "" FORCE)
 # Match both actual parent builds; standalone ggml otherwise defaults OFF.
 option(ATTENTION_DIAGNOSTIC_LLAMAFILE "Diagnostic dispatch control; actual profile is ON" ON)
 set(GGML_LLAMAFILE ${ATTENTION_DIAGNOSTIC_LLAMAFILE} CACHE BOOL "" FORCE)
