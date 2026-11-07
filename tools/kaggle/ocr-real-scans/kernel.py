@@ -34,8 +34,13 @@ sh(PY, '-m', 'pip', 'install', '-q', 'pillow==11.3.0', 'numpy==2.2.6', 'pyarrow=
 sh(sys.executable, '-m', 'pip', 'install', '-q', 'rapidfuzz==3.9.7')
 sys.path.insert(0, 'tools/kaggle/ocr-real-scans')
 NT = str(os.cpu_count())
-MANIFEST = 'docs/ocr-real-scans-v2.json'
-manifest = json.load(open(MANIFEST))
+MANIFEST = '@MANIFEST@'           # docs/ocr-real-scans-v2.json, or docs/ocr-gold-corpus-v1.json (rendered to text)
+if MANIFEST.startswith('@'): MANIFEST = 'docs/ocr-real-scans-v2.json'
+if MANIFEST == 'docs/ocr-gold-corpus-v1.json':
+    sh(sys.executable, 'tools/ocr-gold-corpus/to_text_manifest.py', MANIFEST, 'docs/ocr-real-scans-v2.json', TMP + '/gold-text.json')
+    manifest = json.load(open(TMP + '/gold-text.json'))
+else:
+    manifest = json.load(open(MANIFEST))
 from receipt import select_pages
 selected_pages = select_pages(manifest, PAGE_IDS)
 report = dict(schema='crispembed-ocr-real-scans-run-v1', mode=MODE, commit=COMMIT, manifest=MANIFEST, failed_pages=[], cpu_count=os.cpu_count(), images=[], runs=[],
@@ -133,9 +138,15 @@ def native(alias, arm, env_extra, extra_args):
         e = dict(env)
         if 'CRISPEMBED_MINICPM_OCR' in e:
             e['CRISPEMBED_MINICPM_OCR_DUMP'] = f"{TMP}/dump/{p['id']}"; os.makedirs(e['CRISPEMBED_MINICPM_OCR_DUMP'], exist_ok=True)
+        got_dump = f"{TMP}/dump/{p['id']}" if 'CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE' in e else None
+        if got_dump:
+            e['CRISPEMBED_GOT_OCR_DUMP_DIR'] = got_dump; os.makedirs(got_dump, exist_ok=True)
         code, out, err, wall, rss = run([cli, '-m', alias, '--ocr', p['path'], '--ocr-max-tokens', str(p['max_tokens']), '-t', NT] + extra_args, e)
         m = re.search(r'gen_ids \(\d+\):([^\n]*)', err)
         ids = [int(x) for x in m.group(1).split()] if m else None
+        if got_dump and os.path.exists(got_dump + '/gen_ids.txt'):
+            ids = [int(x) for x in open(got_dump + '/gen_ids.txt').read().split()]
+        if got_dump: subprocess.run(['rm', '-rf', got_dump])
         row.update(exit=code, wall_seconds=wall, peak_rss_mb=rss, n_ids=len(ids) if ids else None, ids=ids,
                    cap_hit=bool(ids) and len(ids) >= p['max_tokens'], text=out.strip(), stderr_tail=err[-1500:] if code else err[-300:])
         if code == 0: row.update(score(out, p['gt']))
@@ -194,6 +205,29 @@ try:
                                                        CRISPEMBED_QWEN35_GRAPH_MATMUL='f32', CRISPEMBED_MINICPM_OCR_VISION_F32='1',
                                                        CRISPEMBED_MINICPM_OCR_VISION_BATCH='1', CRISPEMBED_MINICPM_OCR_VISION_FLASH='1'),
                ['--ocr-prompt', 'Text Recognition:'])
+    elif MODE.startswith('native-got-'):
+        # GOT-OCR2 (Tongyi Qianwen research licence; evaluation only). The recipe is quantized here from
+        # the token-exact F16-r2 with crispembed-quantize, as in tools/ci-heavy/got_ocr2_q4_recipe_search.sh.
+        recipe = MODE[len('native-got-'):]
+        rules = {'f16': None, 'q8_0': ('q8_0', []),
+                 'q8_ffn_gu_q4k': ('q8_0', ['--tensor-type', 'l.blk.*.ffn_gate.weight=q4_k',
+                                            '--tensor-type', 'l.blk.*.ffn_up.weight=q4_k'])}[recipe]
+        os.environ['CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE'] = '1'
+        f16 = TMP + '/got-f16.gguf'
+        open(f16, 'wb').write(fetch('https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/'
+                                    'c0f1aa7b5b52c15002e911d5d630e6d0dcb3ba8f/got-ocr2-f16-r2.gguf'))
+        report['f16_sha256'] = hashlib.sha256(open(f16, 'rb').read()).hexdigest()
+        model = f16
+        if rules:
+            sh('git', 'submodule', 'update', '-q', '--init', '--depth', '1', 'ggml')
+            sh('cmake', '-S', '.', '-B', TMP + '/b', '-DCMAKE_BUILD_TYPE=Release', '-DGGML_NATIVE=OFF', '-DGGML_CUDA=OFF')
+            sh('cmake', '--build', TMP + '/b', '--target', 'crispembed-quantize', '--parallel', NT)
+            q = next(str(x) for x in __import__('pathlib').Path(TMP + '/b').rglob('crispembed-quantize') if x.is_file())
+            model = TMP + f'/got-{recipe}.gguf'
+            sh(q, f16, model, rules[0], *rules[1])
+            report['recipe'] = dict(name=recipe, base=rules[0], flags=rules[1], bytes=os.path.getsize(model),
+                                    sha256=hashlib.sha256(open(model, 'rb').read()).hexdigest())
+        native(model, 'got-' + recipe, {}, [])
     elif MODE == 'ref-uocr2':
         reference('uocr2', 'uocr2-original-f32', ['transformers==4.52.1', 'huggingface-hub==0.36.0', 'tokenizers==0.21.4',
                                                   'addict==2.4.0', 'einops==0.8.2', 'easydict==1.13'])
