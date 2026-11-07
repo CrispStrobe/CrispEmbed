@@ -1,0 +1,22 @@
+{
+  "receipt_sha256": "f69d23ffe6d65d9abf6c7c5c660723613ce84cc901383c5151e17d8f8dc5fe64",
+  "native_files_hash_verified": [
+    "arabic_printed_line/composed/generated.txt",
+    "arabic_printed_line/composed/native-summary.json",
+    "arabic_printed_line/composed/generated.ids",
+    "arabic_printed_line/source-features/generated.txt",
+    "arabic_printed_line/source-features/native-summary.json",
+    "arabic_printed_line/source-features/generated.ids",
+    "simple_table/composed/generated.txt",
+    "simple_table/composed/native-summary.json",
+    "simple_table/composed/generated.ids",
+    "simple_table/source-features/generated.txt",
+    "simple_table/source-features/native-summary.json",
+    "simple_table/source-features/generated.ids"
+  ],
+  "raw_arm_ids_and_text_equal": true,
+  "original_reference_edits_recomputed": true,
+  "all_eos": true,
+  "table_floor_met": false,
+  "limits": "Full score/stage hashes authenticated by producer; only small native outputs downloaded. Actual upstream text internal stages absent."
+}

@@ -3172,3 +3172,7 @@ rehashbeforeweights; Q4repack0/HEADBF160/F16attention1, same843e weights.
 Initial24.18s missing-dependency setupnegative retained. One teacherrow; BF16
 output reference isnot humanGT. No shipping/default/alias promotion; corrected
 fullcomposed table/Arabic andrepresentativeheldout gates remain.
+
+## Corrected composed table/Arabic closure
+
+Source `a03412aeb` completed: merged upstream vision exact for both cases; native all282/6 score rows and38 text stages match frozen source-feature baselines. Arabic6EOS exact; table282EOS remains349/607 CER versus upstream348/607, WER97/106 both. No ship. See [results](docs/lighton4b-composed-vision-calibration-results.md). Next bounded lane is actual upstream text-stage attribution, not another vision change.
