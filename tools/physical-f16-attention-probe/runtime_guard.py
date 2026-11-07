@@ -39,16 +39,33 @@ class Deadline:
         self.close()
 
 
-def command(args, log, timeout, receipt):
+def command(args, log, timeout, receipt, env=None, cwd=None, on_tick=None):
     started = time.monotonic()
     child = None
+    peak_rss = 0
+    before = resource.getrusage(resource.RUSAGE_CHILDREN)
     receipt.update(status='failed', returncode=None)
     try:
         with Path(log).open('w') as stream:
             child = subprocess.Popen(list(map(str, args)), stdout=stream, stderr=subprocess.STDOUT,
-                                     start_new_session=True)
+                                     start_new_session=True, env=env, cwd=cwd)
             receipt['pid'] = child.pid
-            code = child.wait(timeout=timeout)
+            while True:
+                remaining = timeout - (time.monotonic() - started)
+                if remaining <= 0:
+                    raise subprocess.TimeoutExpired(args, timeout)
+                try:
+                    rows = dict(x.split(':', 1) for x in Path(f'/proc/{child.pid}/status').read_text().splitlines())
+                    peak_rss = max(peak_rss, int(rows.get('VmHWM', '0').split()[0]) * 1024)
+                except (OSError, ValueError):
+                    pass
+                if on_tick is not None:
+                    on_tick()
+                try:
+                    code = child.wait(timeout=min(1, remaining))
+                    break
+                except subprocess.TimeoutExpired:
+                    continue
             receipt['returncode'] = code
             if code:
                 raise subprocess.CalledProcessError(code, args)
@@ -71,5 +88,7 @@ def command(args, log, timeout, receipt):
             receipt['returncode'] = child.returncode
         usage = resource.getrusage(resource.RUSAGE_CHILDREN)
         receipt.update(elapsed_seconds=time.monotonic() - started,
-                       child_user_seconds=usage.ru_utime, child_system_seconds=usage.ru_stime,
+                       child_user_seconds=usage.ru_utime - before.ru_utime, child_system_seconds=usage.ru_stime - before.ru_stime,
+                       peak_rss_bytes_observed=peak_rss,
+                       rss_sampling_scope="spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
                        cumulative_child_peak_rss_bytes=usage.ru_maxrss * 1024)

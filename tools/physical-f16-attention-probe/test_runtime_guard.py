@@ -42,6 +42,20 @@ class RuntimeGuardTests(unittest.TestCase):
             self.assertEqual(receipt['error_type'], 'WorkerDeadline')
             self.assertLess(receipt['returncode'], 0)
 
+    def test_environment_and_callback_failure_receipt(self):
+        with tempfile.TemporaryDirectory() as folder:
+            receipt = {}
+            command([sys.executable, '-c', 'import os; print(os.environ["TASK_TEST_VALUE"])'],
+                    Path(folder) / 'env', 2, receipt, env={**os.environ, 'TASK_TEST_VALUE': 'bounded'})
+            self.assertEqual((Path(folder) / 'env').read_text().strip(), 'bounded')
+            def broken():
+                raise ValueError('callback original cause')
+            receipt = {}
+            with self.assertRaisesRegex(ValueError, 'callback original cause'):
+                command(['sleep', '30'], Path(folder) / 'callback', 10, receipt, on_tick=broken)
+            self.assertEqual(receipt['error_type'], 'ValueError')
+            self.assertLess(receipt['returncode'], 0)
+
     def test_nonzero_and_success(self):
         with tempfile.TemporaryDirectory() as folder:
             receipt = {}
