@@ -29,6 +29,7 @@ FORM = '0a0c2084baa4e46aa80f09f7ae94fd4b1c56ccae2bbf2f9ef6210e81e8cf1d01'
 PHYSICAL = '712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2'
 CALIBRATION = '7639d6559da7cc58443ccfbe1dac518af0d70f3e7a83718d037a97bb147eb2b7'
 EXTENDED = '36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3'
+CONTROLS = '52fd2ccd26c9387b8ed459c0c9be9e7d813e65bc9a3b9c37274fd002ce022b4d'
 SOURCE = '4a63d73bee7289deab41fb20f67765d3c6800182'
 
 
@@ -105,6 +106,11 @@ def main():
                                    output_free=shutil.disk_usage(out).free, load=os.getloadavg())
         require(report['preflight']['memory']['MemAvailable'] >= 10 << 30 and
                 report['preflight']['scratch_free'] >= 25 << 30 and report['preflight']['output_free'] >= 8 << 30, 'effective capacity')
+        if not options.controls_only:
+            proofpath=locate('composed-vision.json',CONTROLS);proof=json.loads(proofpath.read_text())
+            require(proof['status']=='model_free_controls_pass' and proof['source_sha']=='91025dd4e588d5f550f6051454c584587dc15fb3' and
+                    proof['model_acquisition_performed'] is False and proof['actual_cli_controls']==9, 'hosted controls prerequisite')
+            report['model_free_controls_receipt_sha256']=CONTROLS
         fp = locate('physical-f16-full-form.json', FORM); form = json.loads(fp.read_text())
         pp = locate('physical-decode.json', PHYSICAL); physical = json.loads(pp.read_text())
         cp = locate('physical-f16-calibration.json', CALIBRATION); calibration = json.loads(cp.read_text())
