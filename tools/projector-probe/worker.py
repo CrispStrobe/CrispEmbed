@@ -41,6 +41,7 @@ def range_download(url,path,start,end,total):
 
 def main():
  import numpy as np
+ require(np.__version__=='2.3.5','pinned parameter serializer')
  require(Path('/kaggle/input').is_dir()and not list(Path('/dev').glob('nvidia[0-9]*'))and sys.byteorder=='little','Kaggle CPU/little-endian')
  cfgpath=ROOT/'docs/lighton4b-projector-canonical-v1.json';cfg=json.loads(cfgpath.read_text());canonical.admit(cfg)
  out=Path(os.environ['HEAVY_OUT']);work=Path(os.environ['HEAVY_SCRATCH'])/'projector';work.mkdir();started=time.monotonic();deadline=Deadline(3600);deadline.__enter__()
@@ -56,7 +57,7 @@ def main():
   r['preflight']=dict(memory=base.memory(),scratch_free=shutil.disk_usage(work).free,output_free=shutil.disk_usage(out).free,load=os.getloadavg())
   require(r['preflight']['memory']['MemAvailable']>=4<<30 and r['preflight']['scratch_free']>=8<<30 and r['preflight']['output_free']>=2<<30,'projector-only resource guard')
   fp=locate('composed-vision.json',cfg['form_receipt_sha256']);form=json.loads(fp.read_text());require(form['status']=='measured_observed_projector_pair'and form['case']=='simple_form','complete observed form')
-  ap=locate('physical-pack.json',cfg['native_pack_receipt_sha256']);audit=json.loads(ap.read_text());require(audit['status']=='converted'and audit['candidate_sha256']==form['candidate_sha256'],'whole-file authenticated protected-source audit')
+  ap=fp.parent/'physical-pack.json';require(ap.is_file()and sha(ap)==cfg['native_pack_receipt_sha256'],'exact pack proof co-located with authenticated form');audit=json.loads(ap.read_text());require(audit['status']=='converted'and audit['candidate_sha256']==form['candidate_sha256'],'whole-file authenticated protected-source audit')
   native_rows={x['name']:x for x in audit['tensors']if x['protected_vision']};require(len(native_rows)==297,'all protected projector tensors')
   for row in cfg['tensors']:
    actual=native_rows[row['native_name']];require(row['native_offset']==actual['source_offset']and row['native_sha256']==actual['source_packed_sha256']and row['native_bytes']==actual['bytes'],'canonical manifest provenance')
