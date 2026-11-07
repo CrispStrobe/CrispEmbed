@@ -1,6 +1,8 @@
 """Bounded localhost source session; no external messages or floating source."""
-import json,os,resource,signal,socket,subprocess,threading,time,urllib.request
+import json,os,resource,signal,socket,subprocess,sys,threading,time,urllib.request
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"physical-f16-attention-probe"))
+from runtime_guard import WorkerDeadline
 
 class ArmDeadline(TimeoutError):pass
 
@@ -45,7 +47,7 @@ class Session:
    if time.monotonic()>=startup_deadline-12:raise ArmDeadline('source startup arm deadline')
    if self.proc.poll()is not None:raise RuntimeError('source server stopped during startup')
    try:api(port,'/health',None,min(startup_deadline,time.monotonic()+14));return
-   except ArmDeadline:raise
+   except (ArmDeadline,WorkerDeadline):raise
    except Exception:
     remaining=startup_deadline-time.monotonic()-12
     if remaining<=0:raise TimeoutError('source startup deadline')

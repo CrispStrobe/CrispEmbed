@@ -20,6 +20,11 @@ class Lifecycle(unittest.TestCase):
   with patch.object(m,'api',side_effect=[TimeoutError('transport'),{}])as api,patch.object(m.time,'sleep')as sleep:session.ready(1);self.assertEqual(api.call_count,2);sleep.assert_called_once()
   with patch.object(m,'api',side_effect=m.ArmDeadline('closed')):
    with self.assertRaises(m.ArmDeadline):session.ready(1)
+ def test_whole_worker_alarm_inside_health_not_swallowed(self):
+  session=m.Session([],Path('unused'),{},1200);session.deadline=time.monotonic()+1200;session.proc=Mock();session.proc.poll.return_value=None
+  with patch.object(m,'api',side_effect=m.WorkerDeadline('whole worker expired')),patch.object(m.time,'sleep')as sleep:
+   with self.assertRaises(m.WorkerDeadline):session.ready(1)
+   sleep.assert_not_called()
  def test_budget_rejects_unbounded(self):
   for n in[0,-1,1201]:
    with self.assertRaises(ValueError):m.Session([],Path('unused'),{},n)
