@@ -3,6 +3,8 @@
 #include "qwen35_positions.h"
 #include "qwen35_vision.h"
 #include "lighton4b_vision_bf16.h"
+#include "lighton4b_pillow_resize.h"
+#include "lighton4b_physical_f16_vision.h"
 #include "core/env_gate.h"
 #include <algorithm>
 #include <cmath>
@@ -15,14 +17,19 @@ inline bool lighton4b_image_enabled() {
 // Still-image component for the pinned Qwen3VLProcessor, P16/T2/M2,
 // min/max pixels 65536/16777216. Native execution remains bounded to1024
 // patches; this does not admit the original processor's entire size range.
-inline bool lighton4b_preprocess_rgb(const uint8_t * rgb, int height, int width, image_inputs & output) {
+inline bool lighton4b_preprocess_rgb(const uint8_t * rgb, int height, int width, image_inputs & output,
+                                         bool upstream_physical_owner = false) {
     output = {};
-    return lighton4b_image_enabled() && preprocess_rgb(rgb, height, width, image_config{}, output);
+    if (!lighton4b_image_enabled()) return false;
+    if (upstream_physical_owner && core_env::on("CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE"))
+        return lighton4b_pillow_preprocess_rgb(rgb, height, width, upstream_physical_owner, output);
+    return preprocess_rgb(rgb, height, width, image_config{}, output);
 }
 // Use the config produced by map_lighton4b_vision. No payload ownership or
 // checkpoint admission is inferred from a shape match. Caller owns weights.
 inline bool lighton4b_image_vision_cpu(const vision_weights & weights, const vision_config & config,
-                                       const image_inputs & image, int threads, vision_outputs & output) {
+                                       const image_inputs & image, int threads, vision_outputs & output,
+                                       bool upstream_physical_owner = false) {
     output = {};
     if (!lighton4b_image_enabled() || !core_env::on("CRISPEMBED_LIGHTON4B_VISION_OWNER") || config.width != 1024 ||
         config.heads != 16 || config.intermediate != 4096 || config.output != 2560 || config.patch_width != 1536 ||
@@ -35,6 +42,10 @@ inline bool lighton4b_image_vision_cpu(const vision_weights & weights, const vis
     if (tokens > 1024 || image.patches.size() != tokens * 1536 ||
         !std::all_of(image.patches.begin(), image.patches.end(), [](float v) { return std::isfinite(v); }))
         return false;
+    if (lighton4b_physical_f16_vision_mode(upstream_physical_owner)) {
+        if (!lighton4b_physical_f16_vision_valid(upstream_physical_owner)) return false;
+        return lighton4b_physical_f16_vision_cpu(weights, config, image, threads, upstream_physical_owner, output);
+    }
     vision_outputs candidate;
     const bool bf16 = core_env::on("CRISPEMBED_LIGHTON4B_VISION_BF16");
     const bool ok =

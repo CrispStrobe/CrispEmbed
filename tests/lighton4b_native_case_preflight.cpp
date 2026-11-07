@@ -32,7 +32,8 @@ static int crispembed_test_main(int argc, char ** argv) {
     std::vector<uint8_t> rgb((std::istreambuf_iterator<char>(input)), {});
     if (rgb.size() != size_t(height) * width * 3) return 5;
     image_inputs image;
-    if (!lighton4b_preprocess_rgb(rgb.data(), height, width, image)) return 6;
+    if (!lighton4b_preprocess_rgb(rgb.data(), height, width, image,
+                                  policy == lighton4b_quant_recipe::upstream_physical_q4km)) return 6;
     std::vector<int> ids, mods;
     std::string rendered;
     if (!tokenizer.image_prompt("", image.grid[1] * image.grid[2] / 4, ids, mods, rendered)) return 7;

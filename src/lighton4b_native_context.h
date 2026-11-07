@@ -3,6 +3,7 @@
 #include "lighton4b_decoder_compose.h"
 #include "ggml-cpu.h"
 #include "lighton4b_q4km_types.h"
+#include "lighton4b_physical_f16_vision.h"
 
 namespace qwen35_ocr {
 enum class lighton4b_quant_recipe { q8_0, q4_k, attention_q8_ffn_q4, q4km_q6_q8head, gdn_out_q8, gdn_out_q6, imatrix_q4km_q6head, upstream_physical_q4km, hf_tiled_out_q4km };
@@ -14,7 +15,7 @@ inline bool lighton4b_quant_recipe_matches(const decoder_weights & decoder, ligh
         return false;
     auto type = [](const ggml_tensor * t, ggml_type expected) { return t && t->type == expected; };
     if (recipe == lighton4b_quant_recipe::upstream_physical_q4km)
-        return lighton4b_q6_enabled() && lighton4b_upstream_physical_mode_valid(true) && lighton4b_physical_f16_attention_valid(true) &&
+        return lighton4b_q6_enabled() && lighton4b_upstream_physical_mode_valid(true) && lighton4b_physical_f16_attention_valid(true) && lighton4b_physical_f16_vision_valid(true) &&
             lighton4b_q4km_types_match(decoder, GGML_TYPE_Q6_K);
     const bool tiled = recipe == lighton4b_quant_recipe::hf_tiled_out_q4km;
     if (tiled && !lighton4b_hf_tiled_out_mode_valid(true,false)) return false;
@@ -62,7 +63,7 @@ inline bool lighton4b_select_recipe(const decoder_weights & decoder, const std::
         if (tag != lighton4b_hf_tiled_out_recipe || !lighton4b_hf_tiled_out_mode_valid(true,false)) return false;
         recipe = lighton4b_quant_recipe::hf_tiled_out_q4km;
     } else if (physical) {
-        if (tag != lighton4b_upstream_physical_recipe || !lighton4b_physical_native_ops_valid(true) || !lighton4b_physical_f16_attention_valid(true)) return false;
+        if (tag != lighton4b_upstream_physical_recipe || !lighton4b_physical_native_ops_valid(true) || !lighton4b_physical_f16_attention_valid(true) || !lighton4b_physical_f16_vision_valid(true)) return false;
         recipe = lighton4b_quant_recipe::upstream_physical_q4km;
     } else if (tag == lighton4b_imatrix_q4km_recipe) {
         if (!lighton4b_imatrix_q4km_enabled() || mixed || out8 || out6) return false;

@@ -358,6 +358,10 @@ list(APPEND CRISPEMBED_SOURCES src/mixtex_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/qwen2vl_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/mineru_ocr.cpp src/mineru_document.cpp src/mineru_postprocess.cpp
      src/mineru_table_image.cpp)
+# Match pinned upstream Pillow scalar double coefficient operation order.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set_source_files_properties(src/lighton4b_pillow_resize.cpp src/lighton4b_physical_f16_vision.cpp PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
+endif()
 # Exact Python float semantics (bbox ratios, luminance): never fuse mul+add.
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set_source_files_properties(src/mineru_document.cpp src/mineru_postprocess.cpp src/mineru_table_image.cpp
@@ -409,7 +413,7 @@ list(APPEND CRISPEMBED_SOURCES src/bert_ner.cpp)
 list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lfm2_vl_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lightonocr.cpp)
-list(APPEND CRISPEMBED_SOURCES src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/lighton4b_vision_owner.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/lighton4b_vision_owner.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/lighton4b_pillow_resize.cpp src/lighton4b_physical_f16_vision.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
 # Main native/WASM shared decoder resolves the helper to its closed stub. The
 # supported private ABI definition remains PRIVATE to crispembed-qwen35-delta.
 list(APPEND CRISPEMBED_SOURCES src/lighton4b_physical_f16_attention.cpp)
@@ -470,7 +474,7 @@ if(EMSCRIPTEN)
         src/oxr_ocr.cpp src/oxr_api.cpp src/oxr_layout_api.cpp
         src/oxr_document.cpp src/oxr_document_text.cpp src/oxr_document_api.cpp
         src/marker.cpp src/marker_document.cpp src/marker_backend.cpp
-        src/qwen35_ocr.cpp src/qwen35_vision.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp  # Ovis/Qwen3.5-OCR
+        src/qwen35_ocr.cpp src/qwen35_vision.cpp src/qwen35_image.cpp src/lighton4b_pillow_resize.cpp src/lighton4b_physical_f16_vision.cpp src/qwen35_tokenizer.cpp  # Ovis/Qwen3.5-OCR
         src/minicpm_ocr_vision.cpp src/minicpm_ocr.cpp src/qwen35_graph_decoder.cpp src/qwen35_graph_kv_decoder.cpp
         src/unlimited_ocr.cpp src/unlimited_ocr2_dash.cpp
         src/got_ocr.cpp src/glm_ocr.cpp src/internvl2_ocr.cpp src/granite_vision_ocr.cpp
@@ -914,7 +918,7 @@ target_link_libraries(test-lfm2-shortconv PRIVATE crispembed)
 
 # Experimental Qwen3.5 recurrence boundary, independently testable before the
 # full OCR engine is wired. No production C ABI or registry exposure yet.
-add_library(crispembed-qwen35-delta STATIC src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/lighton4b_vision_owner.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
+add_library(crispembed-qwen35-delta STATIC src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/lighton4b_vision_owner.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/lighton4b_pillow_resize.cpp src/lighton4b_physical_f16_vision.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
 target_sources(crispembed-qwen35-delta PRIVATE src/lighton4b_vision_bf16.cpp)
 target_sources(crispembed-qwen35-delta PRIVATE src/lighton4b_physical_f16_attention.cpp)
 # Private ABI is deliberately closed to the exact hosted CPU profile first.
@@ -1830,3 +1834,15 @@ target_link_libraries(lighton4b-physical-f16-attention-probe PRIVATE crispembed-
 
 add_executable(test-lighton4b-main-f16-link EXCLUDE_FROM_ALL tests/test_lighton4b_main_f16_link.cpp)
 target_link_libraries(test-lighton4b-main-f16-link PRIVATE crispembed crispembed-core)
+
+# Model-free physical-image resize/gate controls; reference probe only.
+add_executable(test-lighton4b-pillow-resize EXCLUDE_FROM_ALL tests/test_lighton4b_pillow_resize.cpp)
+target_link_libraries(test-lighton4b-pillow-resize PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(test-lighton4b-physical-f16-vision EXCLUDE_FROM_ALL tests/test_lighton4b_physical_f16_vision.cpp)
+target_link_libraries(test-lighton4b-physical-f16-vision PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-lighton4b-physical-f16-vision-main-stub EXCLUDE_FROM_ALL tests/test_lighton4b_physical_f16_vision.cpp)
+target_link_libraries(test-lighton4b-physical-f16-vision-main-stub PRIVATE crispembed crispembed-core)
+
+add_executable(test-lighton4b-pillow-resize-main EXCLUDE_FROM_ALL tests/test_lighton4b_pillow_resize.cpp)
+target_link_libraries(test-lighton4b-pillow-resize-main PRIVATE crispembed crispembed-core)

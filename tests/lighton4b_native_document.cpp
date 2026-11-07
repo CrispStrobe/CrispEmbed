@@ -43,8 +43,11 @@ static int run(int argc, char ** argv) {
     std::ifstream file(argv[2], std::ios::binary);
     std::vector<uint8_t> rgb((std::istreambuf_iterator<char>(file)), {});
     if (rgb.size() != size_t(h) * w * 3) return 5;
+    auto context = lighton4b_native_context::open(argv[1]);
+    if (!context) return 3;
+    const auto & model = context->model();
     image_inputs image;
-    if (!lighton4b_preprocess_rgb(rgb.data(), h, w, image)) return 6;
+    if (!lighton4b_preprocess_rgb(rgb.data(), h, w, image, model.text.decoder.upstream_physical)) return 6;
     emit("processor.patches", image.patches);
     ids_write("processor.grid", image.grid);
     std::vector<int> ids, mods;
@@ -54,9 +57,6 @@ static int run(int argc, char ** argv) {
     ids_write("prompt", ids);
     ids_write("modalities", mods);
     std::ofstream(out + "/rendered.txt") << rendered;
-    auto context = lighton4b_native_context::open(argv[1]);
-    if (!context) return 3;
-    const auto & model = context->model();
     vision_outputs vision;
     if (source_vision) {
         // Explicit reference-fed diagnostic in this test executable only. It is
@@ -68,7 +68,7 @@ static int run(int argc, char ** argv) {
         f.seekg(0); vision.merged.resize(count); f.read(reinterpret_cast<char *>(vision.merged.data()), count * sizeof(float));
         if (!f || !std::all_of(vision.merged.begin(), vision.merged.end(), [](float x) { return std::isfinite(x); })) return 18;
     } else {
-        if (!lighton4b_image_vision_cpu(model.vision, model.vision_parameters, image, threads, vision)) return 8;
+        if (!lighton4b_image_vision_cpu(model.vision, model.vision_parameters, image, threads, vision, model.text.decoder.upstream_physical)) return 8;
         emit("vision.patch", vision.patch);
         emit("vision.position", vision.position);
         emit("vision.embedded", vision.embedded);
