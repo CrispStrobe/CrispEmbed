@@ -10,6 +10,7 @@ struct attention_weights {
     ggml_tensor * out;
     ggml_tensor * q_norm;
     ggml_tensor * k_norm;
+    bool upstream_physical = false;
 };
 struct attention_config {
     int query_heads = 8, kv_heads = 2, head_dim = 256, rotary_dim = 64;
@@ -20,6 +21,7 @@ struct attention_config {
 struct attention_cache {
     int batch = 0, heads = 0, tokens = 0, width = 0;
     std::vector<float> keys, values;
+    bool upstream_physical = false;
 };
 struct attention_outputs {
     std::vector<float> q, k, v, q_norm, k_norm, pooled, attention;

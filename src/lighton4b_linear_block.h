@@ -2,6 +2,7 @@
 #include "qwen35_lighton4b_text.h"
 #include "qwen35_math.h"
 #include "lighton4b_bf16_linear.h"
+#include "lighton4b_upstream_physical_semantics.h"
 #include <algorithm>
 #include <cmath>
 #include <set>
@@ -11,6 +12,7 @@ struct lighton4b_linear_cache {
     int tokens = 0;
     bool bf16_activations = false;
     std::vector<float> conv, recurrent;
+    bool upstream_physical = false;
 };
 struct lighton4b_linear_block_outputs {
     std::vector<float> input_norm, attention, attention_residual, post_norm, gate, up, activation, down, hidden;
@@ -31,6 +33,9 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
         return std::all_of(v.begin(), v.end(), [](float x) { return std::isfinite(x); });
     };
     const bool bf16 = lighton4b_bf16_linear_enabled();
+    if (!lighton4b_upstream_physical_mode_valid(w.upstream_physical) ||
+        w.linear.upstream_physical != w.upstream_physical ||
+        (previous && previous->upstream_physical != w.upstream_physical)) return false;
     const int past = previous ? previous->tokens : 0;
     if (past < 0 || past > 4096 - tokens ||
         (previous && (previous->bf16_activations != bf16 || past == 0 || previous->conv.size() != 32768 ||
@@ -60,7 +65,7 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
             const size_t base = size_t(token) * 2560;
             const float scale = bf16 ? lighton4b_bf16_rms_scale(x.data() + base, 2560, 1e-6f)
                                      : rms_scale_cpu(x.data() + base, 2560, 1e-6f);
-            for (int i = 0; i < 2560; ++i) y[base + i] = (x[base + i] * scale) * (1.0f + weights[i]);
+            for (int i = 0; i < 2560; ++i) y[base + i] = (x[base + i] * scale) * lighton4b_upstream_gamma(weights[i], w.upstream_physical);
         }
         if (bf16) lighton4b_bf16_round(y);
         return finite(y);
@@ -104,6 +109,7 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     if (!finite(candidate.hidden)) return false;
     candidate.cache.tokens = past + tokens;
     candidate.cache.bf16_activations = bf16;
+    candidate.cache.upstream_physical = w.upstream_physical;
     candidate.cache.conv = std::move(linear.core.conv_history);
     candidate.cache.recurrent = std::move(linear.core.state);
     output = std::move(candidate);

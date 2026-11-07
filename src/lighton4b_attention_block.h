@@ -1,3 +1,4 @@
+#include "lighton4b_upstream_physical_semantics.h"
 #pragma once
 #include "qwen35_lighton4b_text.h"
 #include "qwen35_math.h"
@@ -42,6 +43,8 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
         !shape(w.attention.v, 2560, 1024, 1, true) || !shape(w.attention.out, 4096, 2560, 1, true) ||
         !shape(w.attention.q_norm, 256) || !shape(w.attention.k_norm, 256))
         return false;
+    if (!lighton4b_upstream_physical_mode_valid(w.upstream_physical) ||
+        w.attention.upstream_physical != w.upstream_physical) return false;
     lighton4b_attention_block_outputs candidate;
     candidate.hidden.assign(input, input + size_t(tokens) * 2560);
     if (!finite(candidate.hidden)) return false;
@@ -52,7 +55,7 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
         for (int token = 0; token < tokens; ++token) {
             const size_t base = size_t(token) * 2560;
             const float scale = rms_scale_cpu(x.data() + base, 2560, 1e-6f);
-            for (int i = 0; i < 2560; ++i) y[base + i] = (x[base + i] * scale) * (1.0f + weights[i]);
+            for (int i = 0; i < 2560; ++i) y[base + i] = (x[base + i] * scale) * lighton4b_upstream_gamma(weights[i], w.upstream_physical);
         }
         return finite(y);
     };

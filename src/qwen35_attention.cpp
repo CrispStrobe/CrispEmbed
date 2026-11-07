@@ -1,3 +1,4 @@
+#include "lighton4b_upstream_physical_semantics.h"
 #include "qwen35_attention.h"
 #include "qwen35_math.h"
 #include "core/env_gate.h"
@@ -13,9 +14,9 @@ static bool matrix(ggml_tensor * t, int64_t columns, int64_t rows) {
 static bool finite(const std::vector<float> & x) {
     return std::all_of(x.begin(), x.end(), [](float v) { return std::isfinite(v); });
 }
-static void norm_head(const float * x, const float * weights, int width, float eps, float * y) {
+static void norm_head(const float * x, const float * weights, int width, float eps, float * y, bool physical) {
     const float scale = rms_scale_cpu(x, width, eps);
-    for (int i = 0; i < width; ++i) y[i] = (x[i] * scale) * (1.0f + weights[i]);
+    for (int i = 0; i < width; ++i) y[i] = (x[i] * scale) * lighton4b_upstream_gamma(weights[i], physical);
 }
 static void rotate(float * x, const attention_config & c, const float * positions, int bt, int count) {
     const int half = c.rotary_dim / 2;
@@ -45,6 +46,9 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
         if (section < 0 || section > c.rotary_dim / 2) return false;
     if (c.mrope_section[0] + c.mrope_section[1] + c.mrope_section[2] != c.rotary_dim / 2) return false;
     const int width = int(w.q->ne[0]), d = c.head_dim, qh = c.query_heads, kh = c.kv_heads;
+    if (w.upstream_physical && (!lighton4b_upstream_physical_mode_valid(true) || batch != 1 || tokens > 16 ||
+        width != 2560 || d != 256 || qh != 16 || kh != 4 || c.rotary_dim != 64)) return false;
+    if (previous && previous->upstream_physical != w.upstream_physical) return false;
     if (width < 1 || width > 8192 || !matrix(w.q, width, 2 * qh * d) || !matrix(w.k, width, kh * d) ||
         !matrix(w.v, width, kh * d) || !matrix(w.out, qh * d, width) || !matrix(w.q_norm, d, 1) ||
         !matrix(w.k_norm, d, 1))
@@ -72,10 +76,10 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
     for (int bt = 0; bt < count; ++bt) {
         for (int h = 0; h < qh; ++h)
             norm_head(output.q.data() + (size_t(bt) * qh + h) * 2 * d, qweight.data(), d, c.eps,
-                      output.q_norm.data() + (size_t(bt) * qh + h) * d);
+                      output.q_norm.data() + (size_t(bt) * qh + h) * d, w.upstream_physical);
         for (int h = 0; h < kh; ++h)
             norm_head(output.k.data() + (size_t(bt) * kh + h) * d, kweight.data(), d, c.eps,
-                      output.k_norm.data() + (size_t(bt) * kh + h) * d);
+                      output.k_norm.data() + (size_t(bt) * kh + h) * d, w.upstream_physical);
     }
     auto queries = output.q_norm, keys = output.k_norm;
     for (int bt = 0; bt < count; ++bt) {
@@ -83,6 +87,7 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
         for (int h = 0; h < kh; ++h) rotate(keys.data() + (size_t(bt) * kh + h) * d, c, positions, bt, count);
     }
     auto & cache = output.cache;
+    cache.upstream_physical = w.upstream_physical;
     cache.batch = batch;
     cache.heads = kh;
     cache.tokens = total;

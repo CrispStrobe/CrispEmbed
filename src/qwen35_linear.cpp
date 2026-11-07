@@ -1,3 +1,4 @@
+#include "lighton4b_upstream_physical_semantics.h"
 #include "qwen35_linear.h"
 #include "lighton4b_parallel_dequant.h"
 #include "lighton4b_bf16_dequant_weights.h"
@@ -311,6 +312,7 @@ bool linear_cpu(const linear_weights & weights, const float * hidden, int batch,
                 const float * conv_history, const float * state, projected_linear_outputs & output,
                 converted_weight_cache * weights_cache) {
     output = {};
+    if (weights.upstream_physical) return false;
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !hidden || batch < 1 || batch > 4 || tokens < 1 || tokens > 4096 ||
         threads < 1 || threads > 256 || !weights.a_log || !weights.norm || !weights.qkv || !weights.conv)
         return false;
@@ -384,6 +386,8 @@ bool linear_grouped_cpu(const linear_weights & weights, int key_heads, const flo
         output = {};
         return false;
     }
+    if (weights.upstream_physical && (!lighton4b_upstream_physical_mode_valid(true) || key_heads != 16 ||
+        heads != 32 || width != 128 || hidden_width != 2560 || batch != 1 || tokens > 16)) return false;
     const int64_t group = heads * width, channels = (2 * int64_t(key_heads) + heads) * width;
     if (!shape(weights.a_log, heads, 1) || !shape(weights.dt_bias, heads, 1) || !shape(weights.norm, width, 1) ||
         !shape(weights.qkv, hidden_width, channels) || !shape(weights.z, hidden_width, group) ||
@@ -408,15 +412,22 @@ bool linear_grouped_cpu(const linear_weights & weights, int key_heads, const flo
     if (!tensor_floats(weights.conv, conv.data()) || !tensor_floats(weights.a_log, a_log.data()) ||
         !tensor_floats(weights.dt_bias, dt_bias.data()) || !tensor_floats(weights.norm, norm.data()))
         return fail();
-    const linear_inputs input{
+    linear_inputs input{
         batch,           tokens,      int(heads),        int(width),      int(kernel),
         threads,         1e-6f,       output.qkv.data(), output.z.data(), output.a.data(),
         output.b.data(), conv.data(), a_log.data(),      dt_bias.data(),  norm.data(),
         conv_history,    state,
     };
+    input.a_is_pretransformed = weights.upstream_physical;
     if (!linear_grouped_core_cpu(input, key_heads, output.core)) return fail();
     projections.clear();
-    if (!project_cpu({ weights.out }, output.core.values.data(), int(group), batch * tokens, threads, projections,
+    std::vector<float> tiled;
+    const float * out_input = output.core.values.data();
+    if (weights.upstream_physical) {
+        if (!lighton4b_upstream_v_to_tiled(output.core.values, tokens, tiled)) return fail();
+        out_input = tiled.data();
+    }
+    if (!project_cpu({ weights.out }, out_input, int(group), batch * tokens, threads, projections,
                      weights_cache))
         return fail();
     output.attention = std::move(projections[0]);

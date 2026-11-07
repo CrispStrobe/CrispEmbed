@@ -12,12 +12,14 @@ struct decoder_layer_weights {
     ggml_tensor * gate = nullptr;
     ggml_tensor * up = nullptr;
     ggml_tensor * down = nullptr;
+    bool upstream_physical = false;
 };
 struct decoder_weights {
     std::vector<decoder_layer_weights> layers;
     ggml_tensor * norm = nullptr;
     ggml_tensor * embedding = nullptr;
     ggml_tensor * head = nullptr;
+    bool upstream_physical = false;
 };
 struct decoder_layer_cache {
     std::vector<float> conv, recurrent;

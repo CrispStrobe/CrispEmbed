@@ -19,6 +19,7 @@ struct linear_inputs {
     const float * norm_weights;
     const float * conv_history; // [B,3*H*D,K], nullptr for a fresh request
     const float * state;        // [B,H,D,D], nullptr for a fresh request
+    bool a_is_pretransformed = false;
 };
 struct linear_outputs {
     std::vector<float> values;       // [B,T,H,D], after gated normalization
