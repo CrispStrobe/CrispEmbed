@@ -1,0 +1,4725 @@
+{
+  "actual_projection_closures": {
+    "off16-gate": {
+      "bit_exact": true,
+      "candidate_rms_magnitude": 0.2787617998833693,
+      "different_f32_words": 0,
+      "elements": 147456,
+      "max_abs": 0.0,
+      "reference_max_abs": 3.8245978355407715,
+      "reference_rms_magnitude": 0.2787617998833693,
+      "rms": 0.0
+    },
+    "off16-up": {
+      "bit_exact": true,
+      "candidate_rms_magnitude": 0.24273402818976478,
+      "different_f32_words": 0,
+      "elements": 147456,
+      "max_abs": 0.0,
+      "reference_max_abs": 3.0016121864318848,
+      "reference_rms_magnitude": 0.24273402818976478,
+      "rms": 0.0
+    },
+    "on16-gate": {
+      "bit_exact": true,
+      "candidate_rms_magnitude": 0.27876180411261486,
+      "different_f32_words": 0,
+      "elements": 147456,
+      "max_abs": 0.0,
+      "reference_max_abs": 3.824599504470825,
+      "reference_rms_magnitude": 0.27876180411261486,
+      "rms": 0.0
+    },
+    "on16-up": {
+      "bit_exact": true,
+      "candidate_rms_magnitude": 0.24273403156057716,
+      "different_f32_words": 0,
+      "elements": 147456,
+      "max_abs": 0.0,
+      "reference_max_abs": 3.0016117095947266,
+      "reference_rms_magnitude": 0.24273403156057716,
+      "rms": 0.0
+    },
+    "source4-gate": {
+      "bit_exact": true,
+      "candidate_rms_magnitude": 0.22776664960285287,
+      "different_f32_words": 0,
+      "elements": 36864,
+      "max_abs": 0.0,
+      "reference_max_abs": 3.8247461318969727,
+      "reference_rms_magnitude": 0.22776664960285287,
+      "rms": 0.0
+    },
+    "source4-up": {
+      "bit_exact": true,
+      "candidate_rms_magnitude": 0.19947203393320811,
+      "different_f32_words": 0,
+      "elements": 36864,
+      "max_abs": 0.0,
+      "reference_max_abs": 3.001612424850464,
+      "reference_rms_magnitude": 0.19947203393320811,
+      "rms": 0.0
+    }
+  },
+  "artifacts": {
+    "cases/off1/native-codes.bin": {
+      "bytes": 2920,
+      "sha256": "3f94725bb33ea46d307b9ee5f6f9bf496d99b692d2f1e6156ebbe3cc44289416"
+    },
+    "cases/off1/native-gate-preferred.f32": {
+      "bytes": 36864,
+      "sha256": "0f626330f857ef5d327b329ab558315fd6c6216ac2e0d0135305b7cd149e007b"
+    },
+    "cases/off1/native-gate-prequantized.f32": {
+      "bytes": 36864,
+      "sha256": "3c213b67cc005f6a96478f42828377d2bcaea6ac3b5f3afa8e5fadc018d7a743"
+    },
+    "cases/off1/native-gate-raw.f32": {
+      "bytes": 36864,
+      "sha256": "3c213b67cc005f6a96478f42828377d2bcaea6ac3b5f3afa8e5fadc018d7a743"
+    },
+    "cases/off1/native-up-preferred.f32": {
+      "bytes": 36864,
+      "sha256": "d58d20413b76c67472087632b709f3419189d03748a6280be352972a866a0782"
+    },
+    "cases/off1/native-up-prequantized.f32": {
+      "bytes": 36864,
+      "sha256": "5c620750b1348851945987d1decaa520742adcf69dea76d0923dbfc21bfe1f04"
+    },
+    "cases/off1/native-up-raw.f32": {
+      "bytes": 36864,
+      "sha256": "5c620750b1348851945987d1decaa520742adcf69dea76d0923dbfc21bfe1f04"
+    },
+    "cases/off1/upstream-codes.bin": {
+      "bytes": 2920,
+      "sha256": "3f94725bb33ea46d307b9ee5f6f9bf496d99b692d2f1e6156ebbe3cc44289416"
+    },
+    "cases/off1/upstream-gate-preferred.f32": {
+      "bytes": 36864,
+      "sha256": "0f626330f857ef5d327b329ab558315fd6c6216ac2e0d0135305b7cd149e007b"
+    },
+    "cases/off1/upstream-gate-prequantized.f32": {
+      "bytes": 36864,
+      "sha256": "3c213b67cc005f6a96478f42828377d2bcaea6ac3b5f3afa8e5fadc018d7a743"
+    },
+    "cases/off1/upstream-gate-raw.f32": {
+      "bytes": 36864,
+      "sha256": "3c213b67cc005f6a96478f42828377d2bcaea6ac3b5f3afa8e5fadc018d7a743"
+    },
+    "cases/off1/upstream-up-preferred.f32": {
+      "bytes": 36864,
+      "sha256": "d58d20413b76c67472087632b709f3419189d03748a6280be352972a866a0782"
+    },
+    "cases/off1/upstream-up-prequantized.f32": {
+      "bytes": 36864,
+      "sha256": "5c620750b1348851945987d1decaa520742adcf69dea76d0923dbfc21bfe1f04"
+    },
+    "cases/off1/upstream-up-raw.f32": {
+      "bytes": 36864,
+      "sha256": "5c620750b1348851945987d1decaa520742adcf69dea76d0923dbfc21bfe1f04"
+    },
+    "cases/off16/native-codes.bin": {
+      "bytes": 46720,
+      "sha256": "2b86816ebcf546c7c28ec1bd9d49741db311e21e33fd3df3b2035a05ed99a019"
+    },
+    "cases/off16/native-gate-preferred.f32": {
+      "bytes": 589824,
+      "sha256": "6e7a8b19a7b26c3442fef61ebf46721ba6e85916c455cbc356d4879555b68ddd"
+    },
+    "cases/off16/native-gate-prequantized.f32": {
+      "bytes": 589824,
+      "sha256": "45b2d553dceed3fd9d39b052df95464b922837b80a8021fe45e82f3deb1a8e6f"
+    },
+    "cases/off16/native-gate-raw.f32": {
+      "bytes": 589824,
+      "sha256": "45b2d553dceed3fd9d39b052df95464b922837b80a8021fe45e82f3deb1a8e6f"
+    },
+    "cases/off16/native-up-preferred.f32": {
+      "bytes": 589824,
+      "sha256": "8e7282297b7cc5a6825150fc6ffecaeac58cdec1a34752985c88b993dafb3933"
+    },
+    "cases/off16/native-up-prequantized.f32": {
+      "bytes": 589824,
+      "sha256": "3d9651988eb4b05d28ac72bfbdd6e1cd05d60f1d25afa789fb5d8185cf543690"
+    },
+    "cases/off16/native-up-raw.f32": {
+      "bytes": 589824,
+      "sha256": "3d9651988eb4b05d28ac72bfbdd6e1cd05d60f1d25afa789fb5d8185cf543690"
+    },
+    "cases/off16/upstream-codes.bin": {
+      "bytes": 46720,
+      "sha256": "2b86816ebcf546c7c28ec1bd9d49741db311e21e33fd3df3b2035a05ed99a019"
+    },
+    "cases/off16/upstream-gate-preferred.f32": {
+      "bytes": 589824,
+      "sha256": "6e7a8b19a7b26c3442fef61ebf46721ba6e85916c455cbc356d4879555b68ddd"
+    },
+    "cases/off16/upstream-gate-prequantized.f32": {
+      "bytes": 589824,
+      "sha256": "dafc9875df452d238b03b325f0b7229c813e10e17e495ae391691f1589ea966e"
+    },
+    "cases/off16/upstream-gate-raw.f32": {
+      "bytes": 589824,
+      "sha256": "dafc9875df452d238b03b325f0b7229c813e10e17e495ae391691f1589ea966e"
+    },
+    "cases/off16/upstream-up-preferred.f32": {
+      "bytes": 589824,
+      "sha256": "8e7282297b7cc5a6825150fc6ffecaeac58cdec1a34752985c88b993dafb3933"
+    },
+    "cases/off16/upstream-up-prequantized.f32": {
+      "bytes": 589824,
+      "sha256": "a6543397d150dd2a4e5c82618134ec5860c373c281c6fe6e6cd01c95f49ad424"
+    },
+    "cases/off16/upstream-up-raw.f32": {
+      "bytes": 589824,
+      "sha256": "a6543397d150dd2a4e5c82618134ec5860c373c281c6fe6e6cd01c95f49ad424"
+    },
+    "cases/off4/native-codes.bin": {
+      "bytes": 11680,
+      "sha256": "fcb12b6dee62a1d2ff4b6c5c30289f3ce494c862604c43f5f86e683fe7991571"
+    },
+    "cases/off4/native-gate-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "6b3c2ad67663d2439bb940addfb34e2c4bcf52cf6c22102018ac8bb9aebe5731"
+    },
+    "cases/off4/native-gate-prequantized.f32": {
+      "bytes": 147456,
+      "sha256": "ef058fd49b8746cfbc5da5b1cb25d4c9fc6591a456214a8ef0db72aa0677ced5"
+    },
+    "cases/off4/native-gate-raw.f32": {
+      "bytes": 147456,
+      "sha256": "ef058fd49b8746cfbc5da5b1cb25d4c9fc6591a456214a8ef0db72aa0677ced5"
+    },
+    "cases/off4/native-up-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "e224cbe0f630d1fd9f255c3d1dd598100019566a26335f27f2e1e83f3c2ae479"
+    },
+    "cases/off4/native-up-prequantized.f32": {
+      "bytes": 147456,
+      "sha256": "69d3f0cf61c4f07e8193b707e38cafff858f7a9e0570d9e4a42d4ee6e2e08d07"
+    },
+    "cases/off4/native-up-raw.f32": {
+      "bytes": 147456,
+      "sha256": "69d3f0cf61c4f07e8193b707e38cafff858f7a9e0570d9e4a42d4ee6e2e08d07"
+    },
+    "cases/off4/upstream-codes.bin": {
+      "bytes": 11680,
+      "sha256": "fcb12b6dee62a1d2ff4b6c5c30289f3ce494c862604c43f5f86e683fe7991571"
+    },
+    "cases/off4/upstream-gate-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "6b3c2ad67663d2439bb940addfb34e2c4bcf52cf6c22102018ac8bb9aebe5731"
+    },
+    "cases/off4/upstream-gate-prequantized.f32": {
+      "bytes": 147456,
+      "sha256": "ef058fd49b8746cfbc5da5b1cb25d4c9fc6591a456214a8ef0db72aa0677ced5"
+    },
+    "cases/off4/upstream-gate-raw.f32": {
+      "bytes": 147456,
+      "sha256": "ef058fd49b8746cfbc5da5b1cb25d4c9fc6591a456214a8ef0db72aa0677ced5"
+    },
+    "cases/off4/upstream-up-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "e224cbe0f630d1fd9f255c3d1dd598100019566a26335f27f2e1e83f3c2ae479"
+    },
+    "cases/off4/upstream-up-prequantized.f32": {
+      "bytes": 147456,
+      "sha256": "69d3f0cf61c4f07e8193b707e38cafff858f7a9e0570d9e4a42d4ee6e2e08d07"
+    },
+    "cases/off4/upstream-up-raw.f32": {
+      "bytes": 147456,
+      "sha256": "69d3f0cf61c4f07e8193b707e38cafff858f7a9e0570d9e4a42d4ee6e2e08d07"
+    },
+    "cases/on1/native-codes.bin": {
+      "bytes": 2920,
+      "sha256": "9550c3ec79e4c52f27b6135e77d773d6c8ac3d6c9d70eeb155ad39344c77f5d7"
+    },
+    "cases/on1/native-gate-preferred.f32": {
+      "bytes": 36864,
+      "sha256": "4ca01c7b1b6e9de262d7d566c781a9589154cf682e13b7a0c5e61a6e66060366"
+    },
+    "cases/on1/native-gate-prequantized.f32": {
+      "bytes": 36864,
+      "sha256": "d8f9de2ab28feb220f17ab28bcd3105707334b64cd407cacc82f7c227fd9fcbf"
+    },
+    "cases/on1/native-gate-raw.f32": {
+      "bytes": 36864,
+      "sha256": "d8f9de2ab28feb220f17ab28bcd3105707334b64cd407cacc82f7c227fd9fcbf"
+    },
+    "cases/on1/native-up-preferred.f32": {
+      "bytes": 36864,
+      "sha256": "07799855e62ec131c67e3b53a8a3183720d6c4babcd8c52c8e9f41b34f45eaa0"
+    },
+    "cases/on1/native-up-prequantized.f32": {
+      "bytes": 36864,
+      "sha256": "8cdd014a6c31b486e4bffb0d9b367687345ff68e7a08ec68aa11bf1374b1e862"
+    },
+    "cases/on1/native-up-raw.f32": {
+      "bytes": 36864,
+      "sha256": "8cdd014a6c31b486e4bffb0d9b367687345ff68e7a08ec68aa11bf1374b1e862"
+    },
+    "cases/on1/upstream-codes.bin": {
+      "bytes": 2920,
+      "sha256": "9550c3ec79e4c52f27b6135e77d773d6c8ac3d6c9d70eeb155ad39344c77f5d7"
+    },
+    "cases/on1/upstream-gate-preferred.f32": {
+      "bytes": 36864,
+      "sha256": "4ca01c7b1b6e9de262d7d566c781a9589154cf682e13b7a0c5e61a6e66060366"
+    },
+    "cases/on1/upstream-gate-prequantized.f32": {
+      "bytes": 36864,
+      "sha256": "d8f9de2ab28feb220f17ab28bcd3105707334b64cd407cacc82f7c227fd9fcbf"
+    },
+    "cases/on1/upstream-gate-raw.f32": {
+      "bytes": 36864,
+      "sha256": "d8f9de2ab28feb220f17ab28bcd3105707334b64cd407cacc82f7c227fd9fcbf"
+    },
+    "cases/on1/upstream-up-preferred.f32": {
+      "bytes": 36864,
+      "sha256": "07799855e62ec131c67e3b53a8a3183720d6c4babcd8c52c8e9f41b34f45eaa0"
+    },
+    "cases/on1/upstream-up-prequantized.f32": {
+      "bytes": 36864,
+      "sha256": "8cdd014a6c31b486e4bffb0d9b367687345ff68e7a08ec68aa11bf1374b1e862"
+    },
+    "cases/on1/upstream-up-raw.f32": {
+      "bytes": 36864,
+      "sha256": "8cdd014a6c31b486e4bffb0d9b367687345ff68e7a08ec68aa11bf1374b1e862"
+    },
+    "cases/on16/native-codes.bin": {
+      "bytes": 46720,
+      "sha256": "5339cba8fe1b80b10b7f5c5043a6e3aa7b04380be1be94300bee3d40351152a6"
+    },
+    "cases/on16/native-gate-preferred.f32": {
+      "bytes": 589824,
+      "sha256": "43e3b7025aa44b4a37bee9fc910c5f54eb2df676e6387ec05a45dd673367a87b"
+    },
+    "cases/on16/native-gate-prequantized.f32": {
+      "bytes": 589824,
+      "sha256": "38d50eadb915b19098a877075f51ee1304f52c189dd718142e9bfea23190128f"
+    },
+    "cases/on16/native-gate-raw.f32": {
+      "bytes": 589824,
+      "sha256": "38d50eadb915b19098a877075f51ee1304f52c189dd718142e9bfea23190128f"
+    },
+    "cases/on16/native-up-preferred.f32": {
+      "bytes": 589824,
+      "sha256": "f5a9a57b15dde03055fae1c985dfbdb351edb2362205a9a9ce6152df4f5e24e4"
+    },
+    "cases/on16/native-up-prequantized.f32": {
+      "bytes": 589824,
+      "sha256": "9bb7814fa77266819af355b02e53463eedd416ab2a057cb44b0e6a57e9b1af3d"
+    },
+    "cases/on16/native-up-raw.f32": {
+      "bytes": 589824,
+      "sha256": "9bb7814fa77266819af355b02e53463eedd416ab2a057cb44b0e6a57e9b1af3d"
+    },
+    "cases/on16/upstream-codes.bin": {
+      "bytes": 46720,
+      "sha256": "5339cba8fe1b80b10b7f5c5043a6e3aa7b04380be1be94300bee3d40351152a6"
+    },
+    "cases/on16/upstream-gate-preferred.f32": {
+      "bytes": 589824,
+      "sha256": "43e3b7025aa44b4a37bee9fc910c5f54eb2df676e6387ec05a45dd673367a87b"
+    },
+    "cases/on16/upstream-gate-prequantized.f32": {
+      "bytes": 589824,
+      "sha256": "0acc11bb43337f709d7f00a8f1aba48b78b84dfc8ef777bfbd0d5037816c7702"
+    },
+    "cases/on16/upstream-gate-raw.f32": {
+      "bytes": 589824,
+      "sha256": "0acc11bb43337f709d7f00a8f1aba48b78b84dfc8ef777bfbd0d5037816c7702"
+    },
+    "cases/on16/upstream-up-preferred.f32": {
+      "bytes": 589824,
+      "sha256": "f5a9a57b15dde03055fae1c985dfbdb351edb2362205a9a9ce6152df4f5e24e4"
+    },
+    "cases/on16/upstream-up-prequantized.f32": {
+      "bytes": 589824,
+      "sha256": "639f0640624eded9e6cda43fbd074642c28b2aeaf18f9667c263414fba25cfaf"
+    },
+    "cases/on16/upstream-up-raw.f32": {
+      "bytes": 589824,
+      "sha256": "639f0640624eded9e6cda43fbd074642c28b2aeaf18f9667c263414fba25cfaf"
+    },
+    "cases/on4/native-codes.bin": {
+      "bytes": 11680,
+      "sha256": "ccadb04f22c0bedec5c13f3ffbbed9ec3f7618900230231610ac9c19313f3a79"
+    },
+    "cases/on4/native-gate-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "1a42857654306326c9246d427b6b22bb9e37d00f8744d5076a4439e473a02e57"
+    },
+    "cases/on4/native-gate-prequantized.f32": {
+      "bytes": 147456,
+      "sha256": "2ad7391371806a0d56c7fc53d5c1b31854f7f251339c8680e9b52af47e8021b2"
+    },
+    "cases/on4/native-gate-raw.f32": {
+      "bytes": 147456,
+      "sha256": "2ad7391371806a0d56c7fc53d5c1b31854f7f251339c8680e9b52af47e8021b2"
+    },
+    "cases/on4/native-up-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "dfdbb03367eb0773c3b110e11c6de23e35502aa5a29db137bb5d9244f613c008"
+    },
+    "cases/on4/native-up-prequantized.f32": {
+      "bytes": 147456,
+      "sha256": "7a444525593f4c4bc35ab89618c64e17ae9a0ef69ae9923cd6a70213f2a2f33d"
+    },
+    "cases/on4/native-up-raw.f32": {
+      "bytes": 147456,
+      "sha256": "7a444525593f4c4bc35ab89618c64e17ae9a0ef69ae9923cd6a70213f2a2f33d"
+    },
+    "cases/on4/upstream-codes.bin": {
+      "bytes": 11680,
+      "sha256": "ccadb04f22c0bedec5c13f3ffbbed9ec3f7618900230231610ac9c19313f3a79"
+    },
+    "cases/on4/upstream-gate-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "1a42857654306326c9246d427b6b22bb9e37d00f8744d5076a4439e473a02e57"
+    },
+    "cases/on4/upstream-gate-prequantized.f32": {
+      "bytes": 147456,
+      "sha256": "2ad7391371806a0d56c7fc53d5c1b31854f7f251339c8680e9b52af47e8021b2"
+    },
+    "cases/on4/upstream-gate-raw.f32": {
+      "bytes": 147456,
+      "sha256": "2ad7391371806a0d56c7fc53d5c1b31854f7f251339c8680e9b52af47e8021b2"
+    },
+    "cases/on4/upstream-up-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "dfdbb03367eb0773c3b110e11c6de23e35502aa5a29db137bb5d9244f613c008"
+    },
+    "cases/on4/upstream-up-prequantized.f32": {
+      "bytes": 147456,
+      "sha256": "7a444525593f4c4bc35ab89618c64e17ae9a0ef69ae9923cd6a70213f2a2f33d"
+    },
+    "cases/on4/upstream-up-raw.f32": {
+      "bytes": 147456,
+      "sha256": "7a444525593f4c4bc35ab89618c64e17ae9a0ef69ae9923cd6a70213f2a2f33d"
+    },
+    "cases/source1/native-codes.bin": {
+      "bytes": 2920,
+      "sha256": "5329930991235c489c6b1029e1916b8028c16ac95d6fb18a0f655a8bb78aa9b7"
+    },
+    "cases/source1/native-gate-preferred.f32": {
+      "bytes": 36864,
+      "sha256": "f9325498d71ac93302c152be4716410a3c6179bf21dd92fdfae17bc4cb97f89f"
+    },
+    "cases/source1/native-gate-prequantized.f32": {
+      "bytes": 36864,
+      "sha256": "6e09caa2337bf56b243950601568247876c188d895808137ebc000b151d1f3e0"
+    },
+    "cases/source1/native-gate-raw.f32": {
+      "bytes": 36864,
+      "sha256": "6e09caa2337bf56b243950601568247876c188d895808137ebc000b151d1f3e0"
+    },
+    "cases/source1/native-up-preferred.f32": {
+      "bytes": 36864,
+      "sha256": "a79d2c1e79fd478dbc235ad51d6e9751c074bb3f2220e2f1e1d8f5b6d0fb7a61"
+    },
+    "cases/source1/native-up-prequantized.f32": {
+      "bytes": 36864,
+      "sha256": "48e661ac567f830e396a18b617b83ad35608458e44dd78b5d50b839b6bb29764"
+    },
+    "cases/source1/native-up-raw.f32": {
+      "bytes": 36864,
+      "sha256": "48e661ac567f830e396a18b617b83ad35608458e44dd78b5d50b839b6bb29764"
+    },
+    "cases/source1/upstream-codes.bin": {
+      "bytes": 2920,
+      "sha256": "5329930991235c489c6b1029e1916b8028c16ac95d6fb18a0f655a8bb78aa9b7"
+    },
+    "cases/source1/upstream-gate-preferred.f32": {
+      "bytes": 36864,
+      "sha256": "f9325498d71ac93302c152be4716410a3c6179bf21dd92fdfae17bc4cb97f89f"
+    },
+    "cases/source1/upstream-gate-prequantized.f32": {
+      "bytes": 36864,
+      "sha256": "6e09caa2337bf56b243950601568247876c188d895808137ebc000b151d1f3e0"
+    },
+    "cases/source1/upstream-gate-raw.f32": {
+      "bytes": 36864,
+      "sha256": "6e09caa2337bf56b243950601568247876c188d895808137ebc000b151d1f3e0"
+    },
+    "cases/source1/upstream-up-preferred.f32": {
+      "bytes": 36864,
+      "sha256": "a79d2c1e79fd478dbc235ad51d6e9751c074bb3f2220e2f1e1d8f5b6d0fb7a61"
+    },
+    "cases/source1/upstream-up-prequantized.f32": {
+      "bytes": 36864,
+      "sha256": "48e661ac567f830e396a18b617b83ad35608458e44dd78b5d50b839b6bb29764"
+    },
+    "cases/source1/upstream-up-raw.f32": {
+      "bytes": 36864,
+      "sha256": "48e661ac567f830e396a18b617b83ad35608458e44dd78b5d50b839b6bb29764"
+    },
+    "cases/source4/native-codes.bin": {
+      "bytes": 11680,
+      "sha256": "1349a935f83cf81950215946e115d2ff41a8d2f10308397bb7068a0e8b000354"
+    },
+    "cases/source4/native-gate-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "7e42b847af6c67420a2c435a10f909f9c2f71b9355b851d469c8f08fe8bfb52f"
+    },
+    "cases/source4/native-gate-prequantized.f32": {
+      "bytes": 147456,
+      "sha256": "689e810e23b2d29f332cccc150c434b50d2ecb1c329fa8dc946abb1683c3ea4b"
+    },
+    "cases/source4/native-gate-raw.f32": {
+      "bytes": 147456,
+      "sha256": "689e810e23b2d29f332cccc150c434b50d2ecb1c329fa8dc946abb1683c3ea4b"
+    },
+    "cases/source4/native-up-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "2e998f1a8b77fa9a0f8f053576560e870e07df3b65c919d4e0ff49852e24f46d"
+    },
+    "cases/source4/native-up-prequantized.f32": {
+      "bytes": 147456,
+      "sha256": "7214aec70087a1a27f6e23e31ddc0540cd96717ec3293d2c4c63e5d2808f9732"
+    },
+    "cases/source4/native-up-raw.f32": {
+      "bytes": 147456,
+      "sha256": "7214aec70087a1a27f6e23e31ddc0540cd96717ec3293d2c4c63e5d2808f9732"
+    },
+    "cases/source4/upstream-codes.bin": {
+      "bytes": 11680,
+      "sha256": "1349a935f83cf81950215946e115d2ff41a8d2f10308397bb7068a0e8b000354"
+    },
+    "cases/source4/upstream-gate-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "7e42b847af6c67420a2c435a10f909f9c2f71b9355b851d469c8f08fe8bfb52f"
+    },
+    "cases/source4/upstream-gate-prequantized.f32": {
+      "bytes": 147456,
+      "sha256": "689e810e23b2d29f332cccc150c434b50d2ecb1c329fa8dc946abb1683c3ea4b"
+    },
+    "cases/source4/upstream-gate-raw.f32": {
+      "bytes": 147456,
+      "sha256": "689e810e23b2d29f332cccc150c434b50d2ecb1c329fa8dc946abb1683c3ea4b"
+    },
+    "cases/source4/upstream-up-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "2e998f1a8b77fa9a0f8f053576560e870e07df3b65c919d4e0ff49852e24f46d"
+    },
+    "cases/source4/upstream-up-prequantized.f32": {
+      "bytes": 147456,
+      "sha256": "7214aec70087a1a27f6e23e31ddc0540cd96717ec3293d2c4c63e5d2808f9732"
+    },
+    "cases/source4/upstream-up-raw.f32": {
+      "bytes": 147456,
+      "sha256": "7214aec70087a1a27f6e23e31ddc0540cd96717ec3293d2c4c63e5d2808f9732"
+    },
+    "corners/off/native/native/gate.f32": {
+      "bytes": 147456,
+      "sha256": "ef058fd49b8746cfbc5da5b1cb25d4c9fc6591a456214a8ef0db72aa0677ced5"
+    },
+    "corners/off/native/native/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "fcb12b6dee62a1d2ff4b6c5c30289f3ce494c862604c43f5f86e683fe7991571"
+    },
+    "corners/off/native/native/up.f32": {
+      "bytes": 147456,
+      "sha256": "69d3f0cf61c4f07e8193b707e38cafff858f7a9e0570d9e4a42d4ee6e2e08d07"
+    },
+    "corners/off/native/native_qs_source_scale/gate.f32": {
+      "bytes": 147456,
+      "sha256": "1aa7c4213497695dfd523cc9f9a893d4e8fc3fa4c57f6bc8476b8cefc4a0246a"
+    },
+    "corners/off/native/native_qs_source_scale/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "37eab7ee3e441050fa6dde8f9a93b0a481ec2eaae7a6577d6056ac5f2308b7b2"
+    },
+    "corners/off/native/native_qs_source_scale/up.f32": {
+      "bytes": 147456,
+      "sha256": "aa6e7a894e8858a7f4c43ee1908d6bbffaec8a635101ff0854236f9e57d23c6d"
+    },
+    "corners/off/native/source/gate.f32": {
+      "bytes": 147456,
+      "sha256": "689e810e23b2d29f332cccc150c434b50d2ecb1c329fa8dc946abb1683c3ea4b"
+    },
+    "corners/off/native/source/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "1349a935f83cf81950215946e115d2ff41a8d2f10308397bb7068a0e8b000354"
+    },
+    "corners/off/native/source/up.f32": {
+      "bytes": 147456,
+      "sha256": "7214aec70087a1a27f6e23e31ddc0540cd96717ec3293d2c4c63e5d2808f9732"
+    },
+    "corners/off/native/source_qs_native_scale/gate.f32": {
+      "bytes": 147456,
+      "sha256": "860226b465ad7440b67c87ace52771e5aa05848e0d91181866029fbe7c279539"
+    },
+    "corners/off/native/source_qs_native_scale/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "40347ca1fd03e629e701ed60d71c0494889830ab9ffc9d73ef3501882723e925"
+    },
+    "corners/off/native/source_qs_native_scale/up.f32": {
+      "bytes": 147456,
+      "sha256": "4c0290e9c90529b08ed28bee1007afa7904c13192bf9117e034ef3edd7210558"
+    },
+    "corners/off/upstream/native/gate.f32": {
+      "bytes": 147456,
+      "sha256": "ef058fd49b8746cfbc5da5b1cb25d4c9fc6591a456214a8ef0db72aa0677ced5"
+    },
+    "corners/off/upstream/native/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "fcb12b6dee62a1d2ff4b6c5c30289f3ce494c862604c43f5f86e683fe7991571"
+    },
+    "corners/off/upstream/native/up.f32": {
+      "bytes": 147456,
+      "sha256": "69d3f0cf61c4f07e8193b707e38cafff858f7a9e0570d9e4a42d4ee6e2e08d07"
+    },
+    "corners/off/upstream/native_qs_source_scale/gate.f32": {
+      "bytes": 147456,
+      "sha256": "1aa7c4213497695dfd523cc9f9a893d4e8fc3fa4c57f6bc8476b8cefc4a0246a"
+    },
+    "corners/off/upstream/native_qs_source_scale/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "37eab7ee3e441050fa6dde8f9a93b0a481ec2eaae7a6577d6056ac5f2308b7b2"
+    },
+    "corners/off/upstream/native_qs_source_scale/up.f32": {
+      "bytes": 147456,
+      "sha256": "aa6e7a894e8858a7f4c43ee1908d6bbffaec8a635101ff0854236f9e57d23c6d"
+    },
+    "corners/off/upstream/source/gate.f32": {
+      "bytes": 147456,
+      "sha256": "689e810e23b2d29f332cccc150c434b50d2ecb1c329fa8dc946abb1683c3ea4b"
+    },
+    "corners/off/upstream/source/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "1349a935f83cf81950215946e115d2ff41a8d2f10308397bb7068a0e8b000354"
+    },
+    "corners/off/upstream/source/up.f32": {
+      "bytes": 147456,
+      "sha256": "7214aec70087a1a27f6e23e31ddc0540cd96717ec3293d2c4c63e5d2808f9732"
+    },
+    "corners/off/upstream/source_qs_native_scale/gate.f32": {
+      "bytes": 147456,
+      "sha256": "860226b465ad7440b67c87ace52771e5aa05848e0d91181866029fbe7c279539"
+    },
+    "corners/off/upstream/source_qs_native_scale/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "40347ca1fd03e629e701ed60d71c0494889830ab9ffc9d73ef3501882723e925"
+    },
+    "corners/off/upstream/source_qs_native_scale/up.f32": {
+      "bytes": 147456,
+      "sha256": "4c0290e9c90529b08ed28bee1007afa7904c13192bf9117e034ef3edd7210558"
+    },
+    "corners/on/native/native/gate.f32": {
+      "bytes": 147456,
+      "sha256": "2ad7391371806a0d56c7fc53d5c1b31854f7f251339c8680e9b52af47e8021b2"
+    },
+    "corners/on/native/native/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "ccadb04f22c0bedec5c13f3ffbbed9ec3f7618900230231610ac9c19313f3a79"
+    },
+    "corners/on/native/native/up.f32": {
+      "bytes": 147456,
+      "sha256": "7a444525593f4c4bc35ab89618c64e17ae9a0ef69ae9923cd6a70213f2a2f33d"
+    },
+    "corners/on/native/native_qs_source_scale/gate.f32": {
+      "bytes": 147456,
+      "sha256": "1aa7c4213497695dfd523cc9f9a893d4e8fc3fa4c57f6bc8476b8cefc4a0246a"
+    },
+    "corners/on/native/native_qs_source_scale/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "37eab7ee3e441050fa6dde8f9a93b0a481ec2eaae7a6577d6056ac5f2308b7b2"
+    },
+    "corners/on/native/native_qs_source_scale/up.f32": {
+      "bytes": 147456,
+      "sha256": "aa6e7a894e8858a7f4c43ee1908d6bbffaec8a635101ff0854236f9e57d23c6d"
+    },
+    "corners/on/native/source/gate.f32": {
+      "bytes": 147456,
+      "sha256": "689e810e23b2d29f332cccc150c434b50d2ecb1c329fa8dc946abb1683c3ea4b"
+    },
+    "corners/on/native/source/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "1349a935f83cf81950215946e115d2ff41a8d2f10308397bb7068a0e8b000354"
+    },
+    "corners/on/native/source/up.f32": {
+      "bytes": 147456,
+      "sha256": "7214aec70087a1a27f6e23e31ddc0540cd96717ec3293d2c4c63e5d2808f9732"
+    },
+    "corners/on/native/source_qs_native_scale/gate.f32": {
+      "bytes": 147456,
+      "sha256": "0f1dbc678266a61df526f7cfa9067d4a1958c040a9132cad42cf76e0289e8681"
+    },
+    "corners/on/native/source_qs_native_scale/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "a13f38d0ea5af09a7fc82958bee4f75863555edaa390da9de198593c4c19eeba"
+    },
+    "corners/on/native/source_qs_native_scale/up.f32": {
+      "bytes": 147456,
+      "sha256": "27487b8e5887e85090af66c55568225997bc46fba971ff3a1bb7e79829a6c866"
+    },
+    "corners/on/upstream/native/gate.f32": {
+      "bytes": 147456,
+      "sha256": "2ad7391371806a0d56c7fc53d5c1b31854f7f251339c8680e9b52af47e8021b2"
+    },
+    "corners/on/upstream/native/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "ccadb04f22c0bedec5c13f3ffbbed9ec3f7618900230231610ac9c19313f3a79"
+    },
+    "corners/on/upstream/native/up.f32": {
+      "bytes": 147456,
+      "sha256": "7a444525593f4c4bc35ab89618c64e17ae9a0ef69ae9923cd6a70213f2a2f33d"
+    },
+    "corners/on/upstream/native_qs_source_scale/gate.f32": {
+      "bytes": 147456,
+      "sha256": "1aa7c4213497695dfd523cc9f9a893d4e8fc3fa4c57f6bc8476b8cefc4a0246a"
+    },
+    "corners/on/upstream/native_qs_source_scale/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "37eab7ee3e441050fa6dde8f9a93b0a481ec2eaae7a6577d6056ac5f2308b7b2"
+    },
+    "corners/on/upstream/native_qs_source_scale/up.f32": {
+      "bytes": 147456,
+      "sha256": "aa6e7a894e8858a7f4c43ee1908d6bbffaec8a635101ff0854236f9e57d23c6d"
+    },
+    "corners/on/upstream/source/gate.f32": {
+      "bytes": 147456,
+      "sha256": "689e810e23b2d29f332cccc150c434b50d2ecb1c329fa8dc946abb1683c3ea4b"
+    },
+    "corners/on/upstream/source/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "1349a935f83cf81950215946e115d2ff41a8d2f10308397bb7068a0e8b000354"
+    },
+    "corners/on/upstream/source/up.f32": {
+      "bytes": 147456,
+      "sha256": "7214aec70087a1a27f6e23e31ddc0540cd96717ec3293d2c4c63e5d2808f9732"
+    },
+    "corners/on/upstream/source_qs_native_scale/gate.f32": {
+      "bytes": 147456,
+      "sha256": "0f1dbc678266a61df526f7cfa9067d4a1958c040a9132cad42cf76e0289e8681"
+    },
+    "corners/on/upstream/source_qs_native_scale/q8_codes.bin": {
+      "bytes": 11680,
+      "sha256": "a13f38d0ea5af09a7fc82958bee4f75863555edaa390da9de198593c4c19eeba"
+    },
+    "corners/on/upstream/source_qs_native_scale/up.f32": {
+      "bytes": 147456,
+      "sha256": "27487b8e5887e85090af66c55568225997bc46fba971ff3a1bb7e79829a6c866"
+    },
+    "cpu.log": {
+      "bytes": 3071,
+      "sha256": "37c6c78792e9e491c751a01fd3215751a1292a0c9a218023dccde67341fea8df"
+    },
+    "inputs/off1/gate.f32": {
+      "bytes": 36864,
+      "sha256": "3c213b67cc005f6a96478f42828377d2bcaea6ac3b5f3afa8e5fadc018d7a743"
+    },
+    "inputs/off1/postnorm.f32": {
+      "bytes": 10240,
+      "sha256": "1691975740de107b44f5b8016787c691cb007047c0e4275eafdc3999f9fcb792"
+    },
+    "inputs/off1/up.f32": {
+      "bytes": 36864,
+      "sha256": "5c620750b1348851945987d1decaa520742adcf69dea76d0923dbfc21bfe1f04"
+    },
+    "inputs/off16/gate.f32": {
+      "bytes": 589824,
+      "sha256": "45b2d553dceed3fd9d39b052df95464b922837b80a8021fe45e82f3deb1a8e6f"
+    },
+    "inputs/off16/postnorm.f32": {
+      "bytes": 163840,
+      "sha256": "57f78abc599666ff2d54c01abbccc2655431dcac82e32ee6f5cc2d1f85237f11"
+    },
+    "inputs/off16/up.f32": {
+      "bytes": 589824,
+      "sha256": "3d9651988eb4b05d28ac72bfbdd6e1cd05d60f1d25afa789fb5d8185cf543690"
+    },
+    "inputs/off4/gate.f32": {
+      "bytes": 147456,
+      "sha256": "ef058fd49b8746cfbc5da5b1cb25d4c9fc6591a456214a8ef0db72aa0677ced5"
+    },
+    "inputs/off4/postnorm.f32": {
+      "bytes": 40960,
+      "sha256": "30a400ee1a55e924592b585224f591f825b5d99fb1c65752c0bfe67a6f00dfd0"
+    },
+    "inputs/off4/up.f32": {
+      "bytes": 147456,
+      "sha256": "69d3f0cf61c4f07e8193b707e38cafff858f7a9e0570d9e4a42d4ee6e2e08d07"
+    },
+    "inputs/on1/gate.f32": {
+      "bytes": 36864,
+      "sha256": "d8f9de2ab28feb220f17ab28bcd3105707334b64cd407cacc82f7c227fd9fcbf"
+    },
+    "inputs/on1/postnorm.f32": {
+      "bytes": 10240,
+      "sha256": "997af9aa814fe8384c7ff60e8a103d217553b7b894426465c3f583611ed9719b"
+    },
+    "inputs/on1/up.f32": {
+      "bytes": 36864,
+      "sha256": "8cdd014a6c31b486e4bffb0d9b367687345ff68e7a08ec68aa11bf1374b1e862"
+    },
+    "inputs/on16/gate.f32": {
+      "bytes": 589824,
+      "sha256": "38d50eadb915b19098a877075f51ee1304f52c189dd718142e9bfea23190128f"
+    },
+    "inputs/on16/postnorm.f32": {
+      "bytes": 163840,
+      "sha256": "9709c47066424b1aa26076141b69c1b1e91c9c60ca80e32eece13041fe3443c4"
+    },
+    "inputs/on16/up.f32": {
+      "bytes": 589824,
+      "sha256": "9bb7814fa77266819af355b02e53463eedd416ab2a057cb44b0e6a57e9b1af3d"
+    },
+    "inputs/on4/gate.f32": {
+      "bytes": 147456,
+      "sha256": "2ad7391371806a0d56c7fc53d5c1b31854f7f251339c8680e9b52af47e8021b2"
+    },
+    "inputs/on4/postnorm.f32": {
+      "bytes": 40960,
+      "sha256": "8b37a066be3ab5392a29052e9c2bd761f8cb4abac93bad3a06ea8c51713549b2"
+    },
+    "inputs/on4/up.f32": {
+      "bytes": 147456,
+      "sha256": "7a444525593f4c4bc35ab89618c64e17ae9a0ef69ae9923cd6a70213f2a2f33d"
+    },
+    "inputs/source1/gate.f32": {
+      "bytes": 36864,
+      "sha256": "ae913227111b29056d97f21571e4fb51b35435d4a360538d6b125c68d5a77fb0"
+    },
+    "inputs/source1/postnorm.f32": {
+      "bytes": 10240,
+      "sha256": "93eea5a4fa82109e27e289321fed3dfd7ef78868b1d4483187e677dad5ae0d43"
+    },
+    "inputs/source1/up.f32": {
+      "bytes": 36864,
+      "sha256": "84e6e9ef01271b5ca2320b5facc68eb37b858581c12f678398172bf9d1f146aa"
+    },
+    "inputs/source4/gate.f32": {
+      "bytes": 147456,
+      "sha256": "7e42b847af6c67420a2c435a10f909f9c2f71b9355b851d469c8f08fe8bfb52f"
+    },
+    "inputs/source4/postnorm.f32": {
+      "bytes": 40960,
+      "sha256": "54b7073707c3693830e390eae944187acc2d6e6317bea4385c40a9e2585436b3"
+    },
+    "inputs/source4/up.f32": {
+      "bytes": 147456,
+      "sha256": "2e998f1a8b77fa9a0f8f053576560e870e07df3b65c919d4e0ff49852e24f46d"
+    },
+    "native-CMakeCache.txt": {
+      "bytes": 27629,
+      "sha256": "75e297d7ec4c1d211e328b68ab1adb850e89c096557735b706d0c92bd4cbc5b1"
+    },
+    "native-build.log": {
+      "bytes": 2478,
+      "sha256": "9df903af03828d9f26c2fc6a61c3645e9971c60373e048cf0da62880326c9372"
+    },
+    "native-configure.log": {
+      "bytes": 1266,
+      "sha256": "63b086b8c669e96693ec4163e3d794adb23f8983e8f27a2b8668e9ed3f051217"
+    },
+    "native-controls.log": {
+      "bytes": 105,
+      "sha256": "7c1a1013bf063ce288339ce118983f8426dc2c7a060d6b53f34cfa5fe2484e19"
+    },
+    "native-noargs.log": {
+      "bytes": 51,
+      "sha256": "40bdf3dcae4ca016ca93ee1a4ece5627c89b501f77652552bf73d06eecfb798c"
+    },
+    "native-submodule.log": {
+      "bytes": 231,
+      "sha256": "e5846d73421ee25ebef29b752913d5c4bdfcc54630a4c12b1bc8a8b3c5cc61a1"
+    },
+    "off-native-native-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-native-native-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-native-native_qs_source_scale-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-native-native_qs_source_scale-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-native-source-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-native-source-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-native-source_qs_native_scale-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-native-source_qs_native_scale-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-upstream-native-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-upstream-native-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-upstream-native_qs_source_scale-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-upstream-native_qs_source_scale-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-upstream-source-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-upstream-source-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-upstream-source_qs_native_scale-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off-upstream-source_qs_native_scale-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off1-native-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off1-native-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "off1-native-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off1-native-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off1-native-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "off1-native-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off1-native-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off1-upstream-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off1-upstream-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "off1-upstream-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off1-upstream-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off1-upstream-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "off1-upstream-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off1-upstream-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off16-native-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off16-native-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "off16-native-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off16-native-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off16-native-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "off16-native-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off16-native-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off16-upstream-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off16-upstream-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "off16-upstream-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off16-upstream-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off16-upstream-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "off16-upstream-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off16-upstream-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off4-native-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off4-native-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "off4-native-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off4-native-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off4-native-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "off4-native-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off4-native-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off4-upstream-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off4-upstream-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "off4-upstream-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off4-upstream-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off4-upstream-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "off4-upstream-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "off4-upstream-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-native-native-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-native-native-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-native-native_qs_source_scale-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-native-native_qs_source_scale-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-native-source-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-native-source-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-native-source_qs_native_scale-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-native-source_qs_native_scale-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-upstream-native-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-upstream-native-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-upstream-native_qs_source_scale-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-upstream-native_qs_source_scale-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-upstream-source-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-upstream-source-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-upstream-source_qs_native_scale-gate.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on-upstream-source_qs_native_scale-up.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on1-native-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on1-native-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "on1-native-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on1-native-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on1-native-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "on1-native-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on1-native-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on1-upstream-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on1-upstream-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "on1-upstream-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on1-upstream-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on1-upstream-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "on1-upstream-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on1-upstream-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on16-native-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on16-native-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "on16-native-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on16-native-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on16-native-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "on16-native-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on16-native-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on16-upstream-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on16-upstream-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "on16-upstream-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on16-upstream-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on16-upstream-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "on16-upstream-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on16-upstream-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on4-native-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on4-native-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "on4-native-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on4-native-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on4-native-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "on4-native-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on4-native-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on4-upstream-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on4-upstream-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "on4-upstream-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on4-upstream-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on4-upstream-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "on4-upstream-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "on4-upstream-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "d91dd1b0c7d9aaee9e3f67db5b5b46a6acfcf829672b71df1d09d318960f2323"
+    },
+    "source1-native-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source1-native-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "source1-native-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source1-native-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source1-native-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "source1-native-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source1-native-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source1-upstream-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source1-upstream-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "source1-upstream-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source1-upstream-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source1-upstream-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "source1-upstream-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source1-upstream-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source4-native-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source4-native-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "source4-native-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source4-native-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source4-native-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "source4-native-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source4-native-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source4-upstream-codes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source4-upstream-gate-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "source4-upstream-gate-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source4-upstream-gate-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source4-upstream-up-preferred.log": {
+      "bytes": 37,
+      "sha256": "59f48e21db4f9c4af60fa2688f81381603b38ec779fadc0fbc39a7f6c5e648a7"
+    },
+    "source4-upstream-up-prequantized.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source4-upstream-up-raw.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "up-checkout.log": {
+      "bytes": 84,
+      "sha256": "401b0f35047d9999135ce240162909f4d3b9be4cafce7c16c1eafb93d3b7bff7"
+    },
+    "up-fetch.log": {
+      "bytes": 119,
+      "sha256": "5537e1fa1b4cf8d84bd910e3fed8a4a9e0803b4bddddf1cf9b9182e0f1b00983"
+    },
+    "up-init.log": {
+      "bytes": 588,
+      "sha256": "5b7f85410794661659632b8e2d3831556bb654bd07f4778d63e2aa3df6d762ba"
+    },
+    "up-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "upstream-CMakeCache.txt": {
+      "bytes": 27925,
+      "sha256": "e20d807c37b1570b5fa11f2c6c20cdfb4383394b7cd5d3f31b49cd8b53630389"
+    },
+    "upstream-build.log": {
+      "bytes": 4231,
+      "sha256": "0242b51c8e1dcf737206b3fba564540d33685ee72ca637375a50b361964f3dc4"
+    },
+    "upstream-configure.log": {
+      "bytes": 1267,
+      "sha256": "5ce0bb0d016aa1c885723f82ff9a57ec5adaf334c231a689adb78e288f597d77"
+    },
+    "upstream-controls.log": {
+      "bytes": 105,
+      "sha256": "7c1a1013bf063ce288339ce118983f8426dc2c7a060d6b53f34cfa5fe2484e19"
+    },
+    "upstream-noargs.log": {
+      "bytes": 51,
+      "sha256": "40bdf3dcae4ca016ca93ee1a4ece5627c89b501f77652552bf73d06eecfb798c"
+    }
+  },
+  "capacity": {
+    "memory": {
+      "MemAvailable": 31516901376,
+      "SwapFree": 0,
+      "SwapTotal": 0,
+      "cgroup_observed": 1,
+      "finite_cgroup_bounds": 1
+    },
+    "output": 20940431360,
+    "scratch": 1037739671552
+  },
+  "cases": {
+    "off1": {
+      "converter_native_vs_upstream": {
+        "blocks": 10,
+        "decoded_activation_difference": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.37848441311272546,
+          "different_f32_words": 0,
+          "elements": 2560,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.601095199584961,
+          "reference_rms_magnitude": 0.37848441311272546,
+          "rms": 0.0
+        },
+        "different_bsums": 0,
+        "different_qs": 0,
+        "different_scales": 0,
+        "scale_sign_changes": 0,
+        "scope": "Public converter/code-input interventions; not directly observed CPU_REPACK buffers"
+      },
+      "native-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.18095203643403862,
+          "different_f32_words": 0,
+          "elements": 9216,
+          "max_abs": 0.0,
+          "reference_max_abs": 1.4610599279403687,
+          "reference_rms_magnitude": 0.18095203643403862,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.1809520362373561,
+          "different_f32_words": 7423,
+          "elements": 9216,
+          "max_abs": 2.384185791015625e-07,
+          "reference_max_abs": 1.4610599279403687,
+          "reference_rms_magnitude": 0.18095203643403862,
+          "rms": 4.3431382242848974e-08
+        }
+      },
+      "native-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.16832708215652215,
+          "different_f32_words": 0,
+          "elements": 9216,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.0016121864318848,
+          "reference_rms_magnitude": 0.16832708215652215,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.16832708121135068,
+          "different_f32_words": 7450,
+          "elements": 9216,
+          "max_abs": 2.384185791015625e-07,
+          "reference_max_abs": 3.0016121864318848,
+          "reference_rms_magnitude": 0.16832708215652215,
+          "rms": 4.11757666388637e-08
+        }
+      },
+      "upstream-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.18095203643403862,
+          "different_f32_words": 0,
+          "elements": 9216,
+          "max_abs": 0.0,
+          "reference_max_abs": 1.4610599279403687,
+          "reference_rms_magnitude": 0.18095203643403862,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.1809520362373561,
+          "different_f32_words": 7423,
+          "elements": 9216,
+          "max_abs": 2.384185791015625e-07,
+          "reference_max_abs": 1.4610599279403687,
+          "reference_rms_magnitude": 0.18095203643403862,
+          "rms": 4.3431382242848974e-08
+        }
+      },
+      "upstream-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.16832708215652215,
+          "different_f32_words": 0,
+          "elements": 9216,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.0016121864318848,
+          "reference_rms_magnitude": 0.16832708215652215,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.16832708121135068,
+          "different_f32_words": 7450,
+          "elements": 9216,
+          "max_abs": 2.384185791015625e-07,
+          "reference_max_abs": 3.0016121864318848,
+          "reference_rms_magnitude": 0.16832708215652215,
+          "rms": 4.11757666388637e-08
+        }
+      }
+    },
+    "off16": {
+      "converter_native_vs_upstream": {
+        "blocks": 160,
+        "decoded_activation_difference": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.5615568545218146,
+          "different_f32_words": 0,
+          "elements": 40960,
+          "max_abs": 0.0,
+          "reference_max_abs": 4.66926908493042,
+          "reference_rms_magnitude": 0.5615568545218146,
+          "rms": 0.0
+        },
+        "different_bsums": 0,
+        "different_qs": 0,
+        "different_scales": 0,
+        "scale_sign_changes": 0,
+        "scope": "Public converter/code-input interventions; not directly observed CPU_REPACK buffers"
+      },
+      "native-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.2787617998833693,
+          "different_f32_words": 0,
+          "elements": 147456,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.8245978355407715,
+          "reference_rms_magnitude": 0.2787617998833693,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.27876179954356084,
+          "different_f32_words": 122199,
+          "elements": 147456,
+          "max_abs": 1.1920928955078125e-06,
+          "reference_max_abs": 3.8245978355407715,
+          "reference_rms_magnitude": 0.2787617998833693,
+          "rms": 1.0342667830748642e-07
+        }
+      },
+      "native-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.24273402818976478,
+          "different_f32_words": 0,
+          "elements": 147456,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.0016121864318848,
+          "reference_rms_magnitude": 0.24273402818976478,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.24273402847500988,
+          "different_f32_words": 121509,
+          "elements": 147456,
+          "max_abs": 1.0728836059570312e-06,
+          "reference_max_abs": 3.0016121864318848,
+          "reference_rms_magnitude": 0.24273402818976478,
+          "rms": 9.816366948638311e-08
+        }
+      },
+      "upstream-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.27876180019985014,
+          "different_f32_words": 0,
+          "elements": 147456,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.8245978355407715,
+          "reference_rms_magnitude": 0.27876180019985014,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.27876179954356084,
+          "different_f32_words": 133516,
+          "elements": 147456,
+          "max_abs": 1.1920928955078125e-06,
+          "reference_max_abs": 3.8245978355407715,
+          "reference_rms_magnitude": 0.27876180019985014,
+          "rms": 9.121525588436752e-08
+        }
+      },
+      "upstream-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.24273402833203603,
+          "different_f32_words": 0,
+          "elements": 147456,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.0016119480133057,
+          "reference_rms_magnitude": 0.24273402833203603,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.24273402847500988,
+          "different_f32_words": 134651,
+          "elements": 147456,
+          "max_abs": 7.748603820800781e-07,
+          "reference_max_abs": 3.0016119480133057,
+          "reference_rms_magnitude": 0.24273402833203603,
+          "rms": 8.635163131208275e-08
+        }
+      }
+    },
+    "off4": {
+      "converter_native_vs_upstream": {
+        "blocks": 40,
+        "decoded_activation_difference": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.44647183461713674,
+          "different_f32_words": 0,
+          "elements": 10240,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.901759624481201,
+          "reference_rms_magnitude": 0.44647183461713674,
+          "rms": 0.0
+        },
+        "different_bsums": 0,
+        "different_qs": 0,
+        "different_scales": 0,
+        "scale_sign_changes": 0,
+        "scope": "Public converter/code-input interventions; not directly observed CPU_REPACK buffers"
+      },
+      "native-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.2277666332983577,
+          "different_f32_words": 0,
+          "elements": 36864,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.8245978355407715,
+          "reference_rms_magnitude": 0.2277666332983577,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.22776663307894687,
+          "different_f32_words": 32569,
+          "elements": 36864,
+          "max_abs": 1.1920928955078125e-06,
+          "reference_max_abs": 3.8245978355407715,
+          "reference_rms_magnitude": 0.2277666332983577,
+          "rms": 1.0038952321658035e-07
+        }
+      },
+      "native-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.19947189646484995,
+          "different_f32_words": 0,
+          "elements": 36864,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.0016121864318848,
+          "reference_rms_magnitude": 0.19947189646484995,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.19947189619657782,
+          "different_f32_words": 32553,
+          "elements": 36864,
+          "max_abs": 5.364418029785156e-07,
+          "reference_max_abs": 3.0016121864318848,
+          "reference_rms_magnitude": 0.19947189646484995,
+          "rms": 9.02798648751315e-08
+        }
+      },
+      "upstream-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.2277666332983577,
+          "different_f32_words": 0,
+          "elements": 36864,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.8245978355407715,
+          "reference_rms_magnitude": 0.2277666332983577,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.22776663307894687,
+          "different_f32_words": 32569,
+          "elements": 36864,
+          "max_abs": 1.1920928955078125e-06,
+          "reference_max_abs": 3.8245978355407715,
+          "reference_rms_magnitude": 0.2277666332983577,
+          "rms": 1.0038952321658035e-07
+        }
+      },
+      "upstream-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.19947189646484995,
+          "different_f32_words": 0,
+          "elements": 36864,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.0016121864318848,
+          "reference_rms_magnitude": 0.19947189646484995,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.19947189619657782,
+          "different_f32_words": 32553,
+          "elements": 36864,
+          "max_abs": 5.364418029785156e-07,
+          "reference_max_abs": 3.0016121864318848,
+          "reference_rms_magnitude": 0.19947189646484995,
+          "rms": 9.02798648751315e-08
+        }
+      }
+    },
+    "on1": {
+      "converter_native_vs_upstream": {
+        "blocks": 10,
+        "decoded_activation_difference": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.378484387459685,
+          "different_f32_words": 0,
+          "elements": 2560,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.601095676422119,
+          "reference_rms_magnitude": 0.378484387459685,
+          "rms": 0.0
+        },
+        "different_bsums": 0,
+        "different_qs": 0,
+        "different_scales": 0,
+        "scale_sign_changes": 0,
+        "scope": "Public converter/code-input interventions; not directly observed CPU_REPACK buffers"
+      },
+      "native-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.1809520231720765,
+          "different_f32_words": 0,
+          "elements": 9216,
+          "max_abs": 0.0,
+          "reference_max_abs": 1.4610600471496582,
+          "reference_rms_magnitude": 0.1809520231720765,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.18095202353977852,
+          "different_f32_words": 7428,
+          "elements": 9216,
+          "max_abs": 3.5762786865234375e-07,
+          "reference_max_abs": 1.4610600471496582,
+          "reference_rms_magnitude": 0.1809520231720765,
+          "rms": 4.4359952556088485e-08
+        }
+      },
+      "native-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.16832706841072942,
+          "different_f32_words": 0,
+          "elements": 9216,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.0016117095947266,
+          "reference_rms_magnitude": 0.16832706841072942,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.168327068157316,
+          "different_f32_words": 7339,
+          "elements": 9216,
+          "max_abs": 1.7881393432617188e-07,
+          "reference_max_abs": 3.0016117095947266,
+          "reference_rms_magnitude": 0.16832706841072942,
+          "rms": 4.0654957605455404e-08
+        }
+      },
+      "upstream-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.1809520231720765,
+          "different_f32_words": 0,
+          "elements": 9216,
+          "max_abs": 0.0,
+          "reference_max_abs": 1.4610600471496582,
+          "reference_rms_magnitude": 0.1809520231720765,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.18095202353977852,
+          "different_f32_words": 7428,
+          "elements": 9216,
+          "max_abs": 3.5762786865234375e-07,
+          "reference_max_abs": 1.4610600471496582,
+          "reference_rms_magnitude": 0.1809520231720765,
+          "rms": 4.4359952556088485e-08
+        }
+      },
+      "upstream-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.16832706841072942,
+          "different_f32_words": 0,
+          "elements": 9216,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.0016117095947266,
+          "reference_rms_magnitude": 0.16832706841072942,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.168327068157316,
+          "different_f32_words": 7339,
+          "elements": 9216,
+          "max_abs": 1.7881393432617188e-07,
+          "reference_max_abs": 3.0016117095947266,
+          "reference_rms_magnitude": 0.16832706841072942,
+          "rms": 4.0654957605455404e-08
+        }
+      }
+    },
+    "on16": {
+      "converter_native_vs_upstream": {
+        "blocks": 160,
+        "decoded_activation_difference": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.5615568607922377,
+          "different_f32_words": 0,
+          "elements": 40960,
+          "max_abs": 0.0,
+          "reference_max_abs": 4.6692681312561035,
+          "reference_rms_magnitude": 0.5615568607922377,
+          "rms": 0.0
+        },
+        "different_bsums": 0,
+        "different_qs": 0,
+        "different_scales": 0,
+        "scale_sign_changes": 0,
+        "scope": "Public converter/code-input interventions; not directly observed CPU_REPACK buffers"
+      },
+      "native-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.27876180411261486,
+          "different_f32_words": 0,
+          "elements": 147456,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.824599504470825,
+          "reference_rms_magnitude": 0.27876180411261486,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.2787618039427373,
+          "different_f32_words": 122267,
+          "elements": 147456,
+          "max_abs": 1.1920928955078125e-06,
+          "reference_max_abs": 3.824599504470825,
+          "reference_rms_magnitude": 0.27876180411261486,
+          "rms": 1.0382952328380714e-07
+        }
+      },
+      "native-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.24273403156057716,
+          "different_f32_words": 0,
+          "elements": 147456,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.0016117095947266,
+          "reference_rms_magnitude": 0.24273403156057716,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.24273403191010165,
+          "different_f32_words": 121656,
+          "elements": 147456,
+          "max_abs": 9.5367431640625e-07,
+          "reference_max_abs": 3.0016117095947266,
+          "reference_rms_magnitude": 0.24273403156057716,
+          "rms": 9.837984937326348e-08
+        }
+      },
+      "upstream-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.27876180451922966,
+          "different_f32_words": 0,
+          "elements": 147456,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.824599266052246,
+          "reference_rms_magnitude": 0.27876180451922966,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.2787618039427373,
+          "different_f32_words": 133653,
+          "elements": 147456,
+          "max_abs": 1.1026859283447266e-06,
+          "reference_max_abs": 3.824599266052246,
+          "reference_rms_magnitude": 0.27876180451922966,
+          "rms": 9.160791664691052e-08
+        }
+      },
+      "upstream-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.24273403171352076,
+          "different_f32_words": 0,
+          "elements": 147456,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.0016117095947266,
+          "reference_rms_magnitude": 0.24273403171352076,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.24273403191010165,
+          "different_f32_words": 134643,
+          "elements": 147456,
+          "max_abs": 8.344650268554688e-07,
+          "reference_max_abs": 3.0016117095947266,
+          "reference_rms_magnitude": 0.24273403171352076,
+          "rms": 8.643122881136744e-08
+        }
+      }
+    },
+    "on4": {
+      "converter_native_vs_upstream": {
+        "blocks": 40,
+        "decoded_activation_difference": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.44647187492602214,
+          "different_f32_words": 0,
+          "elements": 10240,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.901759147644043,
+          "reference_rms_magnitude": 0.44647187492602214,
+          "rms": 0.0
+        },
+        "different_bsums": 0,
+        "different_qs": 0,
+        "different_scales": 0,
+        "scale_sign_changes": 0,
+        "scope": "Public converter/code-input interventions; not directly observed CPU_REPACK buffers"
+      },
+      "native-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.22776666044261376,
+          "different_f32_words": 0,
+          "elements": 36864,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.824599504470825,
+          "reference_rms_magnitude": 0.22776666044261376,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.2277666603156979,
+          "different_f32_words": 32611,
+          "elements": 36864,
+          "max_abs": 1.1920928955078125e-06,
+          "reference_max_abs": 3.824599504470825,
+          "reference_rms_magnitude": 0.22776666044261376,
+          "rms": 1.0221773367715758e-07
+        }
+      },
+      "native-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.199471916172791,
+          "different_f32_words": 0,
+          "elements": 36864,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.0016117095947266,
+          "reference_rms_magnitude": 0.199471916172791,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.1994719166126865,
+          "different_f32_words": 32534,
+          "elements": 36864,
+          "max_abs": 5.662441253662109e-07,
+          "reference_max_abs": 3.0016117095947266,
+          "reference_rms_magnitude": 0.199471916172791,
+          "rms": 9.116205149383756e-08
+        }
+      },
+      "upstream-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.22776666044261376,
+          "different_f32_words": 0,
+          "elements": 36864,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.824599504470825,
+          "reference_rms_magnitude": 0.22776666044261376,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.2277666603156979,
+          "different_f32_words": 32611,
+          "elements": 36864,
+          "max_abs": 1.1920928955078125e-06,
+          "reference_max_abs": 3.824599504470825,
+          "reference_rms_magnitude": 0.22776666044261376,
+          "rms": 1.0221773367715758e-07
+        }
+      },
+      "upstream-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.199471916172791,
+          "different_f32_words": 0,
+          "elements": 36864,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.0016117095947266,
+          "reference_rms_magnitude": 0.199471916172791,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.1994719166126865,
+          "different_f32_words": 32534,
+          "elements": 36864,
+          "max_abs": 5.662441253662109e-07,
+          "reference_max_abs": 3.0016117095947266,
+          "reference_rms_magnitude": 0.199471916172791,
+          "rms": 9.116205149383756e-08
+        }
+      }
+    },
+    "source1": {
+      "converter_native_vs_upstream": {
+        "blocks": 10,
+        "decoded_activation_difference": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.3784844566907928,
+          "different_f32_words": 0,
+          "elements": 2560,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.6010959148406982,
+          "reference_rms_magnitude": 0.3784844566907928,
+          "rms": 0.0
+        },
+        "different_bsums": 0,
+        "different_qs": 0,
+        "different_scales": 0,
+        "scale_sign_changes": 0,
+        "scope": "Public converter/code-input interventions; not directly observed CPU_REPACK buffers"
+      },
+      "native-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.18095205613911683,
+          "different_f32_words": 0,
+          "elements": 9216,
+          "max_abs": 0.0,
+          "reference_max_abs": 1.4610601663589478,
+          "reference_rms_magnitude": 0.18095205613911683,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.18095205583841917,
+          "different_f32_words": 7403,
+          "elements": 9216,
+          "max_abs": 2.980232238769531e-07,
+          "reference_max_abs": 1.4610601663589478,
+          "reference_rms_magnitude": 0.18095205613911683,
+          "rms": 4.3737511240293e-08
+        }
+      },
+      "native-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.16832709961227837,
+          "different_f32_words": 0,
+          "elements": 9216,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.001612424850464,
+          "reference_rms_magnitude": 0.16832709961227837,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.16832709940295318,
+          "different_f32_words": 7365,
+          "elements": 9216,
+          "max_abs": 2.384185791015625e-07,
+          "reference_max_abs": 3.001612424850464,
+          "reference_rms_magnitude": 0.16832709961227837,
+          "rms": 4.084939872403216e-08
+        }
+      },
+      "upstream-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.18095205613911683,
+          "different_f32_words": 0,
+          "elements": 9216,
+          "max_abs": 0.0,
+          "reference_max_abs": 1.4610601663589478,
+          "reference_rms_magnitude": 0.18095205613911683,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.18095205583841917,
+          "different_f32_words": 7403,
+          "elements": 9216,
+          "max_abs": 2.980232238769531e-07,
+          "reference_max_abs": 1.4610601663589478,
+          "reference_rms_magnitude": 0.18095205613911683,
+          "rms": 4.3737511240293e-08
+        }
+      },
+      "upstream-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.16832709961227837,
+          "different_f32_words": 0,
+          "elements": 9216,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.001612424850464,
+          "reference_rms_magnitude": 0.16832709961227837,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.16832709940295318,
+          "different_f32_words": 7365,
+          "elements": 9216,
+          "max_abs": 2.384185791015625e-07,
+          "reference_max_abs": 3.001612424850464,
+          "reference_rms_magnitude": 0.16832709961227837,
+          "rms": 4.084939872403216e-08
+        }
+      }
+    },
+    "source4": {
+      "converter_native_vs_upstream": {
+        "blocks": 40,
+        "decoded_activation_difference": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.4464721806170834,
+          "different_f32_words": 0,
+          "elements": 10240,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.9017605781555176,
+          "reference_rms_magnitude": 0.4464721806170834,
+          "rms": 0.0
+        },
+        "different_bsums": 0,
+        "different_qs": 0,
+        "different_scales": 0,
+        "scale_sign_changes": 0,
+        "scope": "Public converter/code-input interventions; not directly observed CPU_REPACK buffers"
+      },
+      "native-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.22776665011975133,
+          "different_f32_words": 0,
+          "elements": 36864,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.824747085571289,
+          "reference_rms_magnitude": 0.22776665011975133,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.22776664960285287,
+          "different_f32_words": 32391,
+          "elements": 36864,
+          "max_abs": 1.1920928955078125e-06,
+          "reference_max_abs": 3.824747085571289,
+          "reference_rms_magnitude": 0.22776665011975133,
+          "rms": 1.0026180695847015e-07
+        }
+      },
+      "native-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.19947203340121075,
+          "different_f32_words": 0,
+          "elements": 36864,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.001612424850464,
+          "reference_rms_magnitude": 0.19947203340121075,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.19947203393320811,
+          "different_f32_words": 32521,
+          "elements": 36864,
+          "max_abs": 6.556510925292969e-07,
+          "reference_max_abs": 3.001612424850464,
+          "reference_rms_magnitude": 0.19947203340121075,
+          "rms": 9.010380529116305e-08
+        }
+      },
+      "upstream-gate": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.22776665011975133,
+          "different_f32_words": 0,
+          "elements": 36864,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.824747085571289,
+          "reference_rms_magnitude": 0.22776665011975133,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.22776664960285287,
+          "different_f32_words": 32391,
+          "elements": 36864,
+          "max_abs": 1.1920928955078125e-06,
+          "reference_max_abs": 3.824747085571289,
+          "reference_rms_magnitude": 0.22776665011975133,
+          "rms": 1.0026180695847015e-07
+        }
+      },
+      "upstream-up": {
+        "forced_q8_raw_output_closure": {
+          "bit_exact": true,
+          "candidate_rms_magnitude": 0.19947203340121075,
+          "different_f32_words": 0,
+          "elements": 36864,
+          "max_abs": 0.0,
+          "reference_max_abs": 3.001612424850464,
+          "reference_rms_magnitude": 0.19947203340121075,
+          "rms": 0.0
+        },
+        "preferred_vs_raw": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.19947203393320811,
+          "different_f32_words": 32521,
+          "elements": 36864,
+          "max_abs": 6.556510925292969e-07,
+          "reference_max_abs": 3.001612424850464,
+          "reference_rms_magnitude": 0.19947203340121075,
+          "rms": 9.010380529116305e-08
+        }
+      }
+    }
+  },
+  "code_corners": {
+    "off": {
+      "native": {
+        "gate": {
+          "native": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.2277666332983577,
+            "different_f32_words": 34804,
+            "elements": 36864,
+            "max_abs": 0.00036591291427612305,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 4.948689827388863e-05
+          },
+          "native_qs_source_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.22776671029894127,
+            "different_f32_words": 9215,
+            "elements": 36864,
+            "max_abs": 0.00036585330963134766,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 4.9485813853985504e-05
+          },
+          "source": {
+            "bit_exact": true,
+            "candidate_rms_magnitude": 0.22776665011975133,
+            "different_f32_words": 0,
+            "elements": 36864,
+            "max_abs": 0.0,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 0.0
+          },
+          "source_qs_native_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.2277665731364751,
+            "different_f32_words": 34469,
+            "elements": 36864,
+            "max_abs": 4.76837158203125e-06,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 2.73409989263078e-07
+          }
+        },
+        "up": {
+          "native": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.19947189646484995,
+            "different_f32_words": 34798,
+            "elements": 36864,
+            "max_abs": 0.00034581124782562256,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 4.699556940498137e-05
+          },
+          "native_qs_source_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.19947196040034276,
+            "different_f32_words": 9214,
+            "elements": 36864,
+            "max_abs": 0.0003460049629211426,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 4.6992184449090814e-05
+          },
+          "source": {
+            "bit_exact": true,
+            "candidate_rms_magnitude": 0.19947203340121075,
+            "different_f32_words": 0,
+            "elements": 36864,
+            "max_abs": 0.0,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 0.0
+          },
+          "source_qs_native_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.19947196926999497,
+            "different_f32_words": 34437,
+            "elements": 36864,
+            "max_abs": 2.5033950805664062e-06,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 2.4660106916805654e-07
+          }
+        }
+      },
+      "upstream": {
+        "gate": {
+          "native": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.2277666332983577,
+            "different_f32_words": 34804,
+            "elements": 36864,
+            "max_abs": 0.00036591291427612305,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 4.948689827388863e-05
+          },
+          "native_qs_source_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.22776671029894127,
+            "different_f32_words": 9215,
+            "elements": 36864,
+            "max_abs": 0.00036585330963134766,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 4.9485813853985504e-05
+          },
+          "source": {
+            "bit_exact": true,
+            "candidate_rms_magnitude": 0.22776665011975133,
+            "different_f32_words": 0,
+            "elements": 36864,
+            "max_abs": 0.0,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 0.0
+          },
+          "source_qs_native_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.2277665731364751,
+            "different_f32_words": 34469,
+            "elements": 36864,
+            "max_abs": 4.76837158203125e-06,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 2.73409989263078e-07
+          }
+        },
+        "up": {
+          "native": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.19947189646484995,
+            "different_f32_words": 34798,
+            "elements": 36864,
+            "max_abs": 0.00034581124782562256,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 4.699556940498137e-05
+          },
+          "native_qs_source_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.19947196040034276,
+            "different_f32_words": 9214,
+            "elements": 36864,
+            "max_abs": 0.0003460049629211426,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 4.6992184449090814e-05
+          },
+          "source": {
+            "bit_exact": true,
+            "candidate_rms_magnitude": 0.19947203340121075,
+            "different_f32_words": 0,
+            "elements": 36864,
+            "max_abs": 0.0,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 0.0
+          },
+          "source_qs_native_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.19947196926999497,
+            "different_f32_words": 34437,
+            "elements": 36864,
+            "max_abs": 2.5033950805664062e-06,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 2.4660106916805654e-07
+          }
+        }
+      }
+    },
+    "on": {
+      "native": {
+        "gate": {
+          "native": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.22776666044261376,
+            "different_f32_words": 35137,
+            "elements": 36864,
+            "max_abs": 0.00036591291427612305,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 4.948700834143386e-05
+          },
+          "native_qs_source_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.22776671029894127,
+            "different_f32_words": 9215,
+            "elements": 36864,
+            "max_abs": 0.00036585330963134766,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 4.9485813853985504e-05
+          },
+          "source": {
+            "bit_exact": true,
+            "candidate_rms_magnitude": 0.22776665011975133,
+            "different_f32_words": 0,
+            "elements": 36864,
+            "max_abs": 0.0,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 0.0
+          },
+          "source_qs_native_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.22776660031093188,
+            "different_f32_words": 34771,
+            "elements": 36864,
+            "max_abs": 3.5762786865234375e-06,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 2.57208149792732e-07
+          }
+        },
+        "up": {
+          "native": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.199471916172791,
+            "different_f32_words": 35159,
+            "elements": 36864,
+            "max_abs": 0.00034606456756591797,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 4.6993612347251805e-05
+          },
+          "native_qs_source_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.19947196040034276,
+            "different_f32_words": 9214,
+            "elements": 36864,
+            "max_abs": 0.0003460049629211426,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 4.6992184449090814e-05
+          },
+          "source": {
+            "bit_exact": true,
+            "candidate_rms_magnitude": 0.19947203340121075,
+            "different_f32_words": 0,
+            "elements": 36864,
+            "max_abs": 0.0,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 0.0
+          },
+          "source_qs_native_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.199471989063339,
+            "different_f32_words": 34763,
+            "elements": 36864,
+            "max_abs": 2.1457672119140625e-06,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 2.3579389268058587e-07
+          }
+        }
+      },
+      "upstream": {
+        "gate": {
+          "native": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.22776666044261376,
+            "different_f32_words": 35137,
+            "elements": 36864,
+            "max_abs": 0.00036591291427612305,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 4.948700834143386e-05
+          },
+          "native_qs_source_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.22776671029894127,
+            "different_f32_words": 9215,
+            "elements": 36864,
+            "max_abs": 0.00036585330963134766,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 4.9485813853985504e-05
+          },
+          "source": {
+            "bit_exact": true,
+            "candidate_rms_magnitude": 0.22776665011975133,
+            "different_f32_words": 0,
+            "elements": 36864,
+            "max_abs": 0.0,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 0.0
+          },
+          "source_qs_native_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.22776660031093188,
+            "different_f32_words": 34771,
+            "elements": 36864,
+            "max_abs": 3.5762786865234375e-06,
+            "reference_max_abs": 3.824747085571289,
+            "reference_rms_magnitude": 0.22776665011975133,
+            "rms": 2.57208149792732e-07
+          }
+        },
+        "up": {
+          "native": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.199471916172791,
+            "different_f32_words": 35159,
+            "elements": 36864,
+            "max_abs": 0.00034606456756591797,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 4.6993612347251805e-05
+          },
+          "native_qs_source_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.19947196040034276,
+            "different_f32_words": 9214,
+            "elements": 36864,
+            "max_abs": 0.0003460049629211426,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 4.6992184449090814e-05
+          },
+          "source": {
+            "bit_exact": true,
+            "candidate_rms_magnitude": 0.19947203340121075,
+            "different_f32_words": 0,
+            "elements": 36864,
+            "max_abs": 0.0,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 0.0
+          },
+          "source_qs_native_scale": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.199471989063339,
+            "different_f32_words": 34763,
+            "elements": 36864,
+            "max_abs": 2.1457672119140625e-06,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203340121075,
+            "rms": 2.3579389268058587e-07
+          }
+        }
+      }
+    }
+  },
+  "commands": {
+    "cpu": {
+      "child_system_seconds": 0.003498,
+      "child_user_seconds": 0.0,
+      "cumulative_child_peak_rss_bytes": 43511808,
+      "elapsed_seconds": 0.01727352699998619,
+      "peak_rss_bytes_observed": 4096,
+      "pid": 58,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "native-build": {
+      "child_system_seconds": 3.2576430000000007,
+      "child_user_seconds": 53.950582000000004,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 32.278993540000045,
+      "peak_rss_bytes_observed": 9691136,
+      "pid": 193,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "native-configure": {
+      "child_system_seconds": 0.3594630000000001,
+      "child_user_seconds": 0.45589799999999947,
+      "cumulative_child_peak_rss_bytes": 71168000,
+      "elapsed_seconds": 1.7676943170000072,
+      "peak_rss_bytes_observed": 12320768,
+      "pid": 116,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "native-controls": {
+      "child_system_seconds": 0.016254999999999242,
+      "child_user_seconds": 0.05737300000001255,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.06427721699998301,
+      "peak_rss_bytes_observed": 81920,
+      "pid": 423,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "native-noargs": {
+      "child_system_seconds": 0.0,
+      "child_user_seconds": 0.0019119999999901438,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.007967679000046246,
+      "error": "Command '[PosixPath('/tmp/lighton4b-ffn-postnorm-codes-v1/postnorm-probe/native-build/ffn-postnorm-probe')]' returned non-zero exit status 1.",
+      "error_type": "CalledProcessError",
+      "peak_rss_bytes_observed": 204800,
+      "pid": 422,
+      "returncode": 1,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed_expected_failure"
+    },
+    "native-submodule": {
+      "child_system_seconds": 0.6105470000000001,
+      "child_user_seconds": 8.977208,
+      "cumulative_child_peak_rss_bytes": 71168000,
+      "elapsed_seconds": 8.771371410000029,
+      "peak_rss_bytes_observed": 4046848,
+      "pid": 74,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-native-native-gate": {
+      "child_system_seconds": 0.016337000000000046,
+      "child_user_seconds": 0.01633699999999294,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03222893299999896,
+      "peak_rss_bytes_observed": 237568,
+      "pid": 1180,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-native-native-up": {
+      "child_system_seconds": 0.014262999999999693,
+      "child_user_seconds": 0.018067000000002054,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03235756300000503,
+      "peak_rss_bytes_observed": 241664,
+      "pid": 1184,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-native-native_qs_source_scale-gate": {
+      "child_system_seconds": 0.013571000000000666,
+      "child_user_seconds": 0.018417999999996937,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03231562199999871,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1196,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-native-native_qs_source_scale-up": {
+      "child_system_seconds": 0.0165349999999993,
+      "child_user_seconds": 0.01556199999998853,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03220795200002158,
+      "peak_rss_bytes_observed": 188416,
+      "pid": 1200,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-native-source-gate": {
+      "child_system_seconds": 0.016292999999999225,
+      "child_user_seconds": 0.017311000000006516,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03214253300001246,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1172,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-native-source-up": {
+      "child_system_seconds": 0.011408000000001195,
+      "child_user_seconds": 0.020931999999987738,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032331982000016524,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1176,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-native-source_qs_native_scale-gate": {
+      "child_system_seconds": 0.014116999999998825,
+      "child_user_seconds": 0.01788100000001691,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032177491999959784,
+      "peak_rss_bytes_observed": 192512,
+      "pid": 1188,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-native-source_qs_native_scale-up": {
+      "child_system_seconds": 0.015741000000000227,
+      "child_user_seconds": 0.016725000000008095,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03222329200002605,
+      "peak_rss_bytes_observed": 208896,
+      "pid": 1192,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-upstream-native-gate": {
+      "child_system_seconds": 0.013382000000000005,
+      "child_user_seconds": 0.018161000000020522,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03221421199998531,
+      "peak_rss_bytes_observed": 286720,
+      "pid": 1212,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-upstream-native-up": {
+      "child_system_seconds": 0.011057000000000983,
+      "child_user_seconds": 0.01935100000000034,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03202096300003632,
+      "peak_rss_bytes_observed": 180224,
+      "pid": 1216,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-upstream-native_qs_source_scale-gate": {
+      "child_system_seconds": 0.011459999999999582,
+      "child_user_seconds": 0.020989000000014357,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03235433300000068,
+      "peak_rss_bytes_observed": 348160,
+      "pid": 1228,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-upstream-native_qs_source_scale-up": {
+      "child_system_seconds": 0.013071000000000055,
+      "child_user_seconds": 0.021116000000006352,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032200422000016715,
+      "peak_rss_bytes_observed": 188416,
+      "pid": 1232,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-upstream-source-gate": {
+      "child_system_seconds": 0.012040999999999968,
+      "child_user_seconds": 0.01940300000001116,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032602632000021003,
+      "peak_rss_bytes_observed": 430080,
+      "pid": 1204,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-upstream-source-up": {
+      "child_system_seconds": 0.013424999999999798,
+      "child_user_seconds": 0.01917899999997985,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032142323000016404,
+      "peak_rss_bytes_observed": 167936,
+      "pid": 1208,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-upstream-source_qs_native_scale-gate": {
+      "child_system_seconds": 0.014288000000000523,
+      "child_user_seconds": 0.017138999999986027,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03211707299999489,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1220,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off-upstream-source_qs_native_scale-up": {
+      "child_system_seconds": 0.014822999999999809,
+      "child_user_seconds": 0.017787999999995918,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03206863200000498,
+      "peak_rss_bytes_observed": 180224,
+      "pid": 1224,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off1-native-codes": {
+      "child_system_seconds": 0.001730999999999483,
+      "child_user_seconds": 0.0017320000000040636,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.0037992800000097304,
+      "peak_rss_bytes_observed": 176128,
+      "pid": 872,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off1-native-gate-preferred": {
+      "child_system_seconds": 0.015214999999999534,
+      "child_user_seconds": 0.013186000000004583,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03241522199999736,
+      "peak_rss_bytes_observed": 483328,
+      "pid": 877,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off1-native-gate-prequantized": {
+      "child_system_seconds": 0.01568200000000175,
+      "child_user_seconds": 0.010143999999996822,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032176473000049555,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 881,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off1-native-gate-raw": {
+      "child_system_seconds": 0.014865999999999602,
+      "child_user_seconds": 0.011148999999988973,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032143681999968976,
+      "peak_rss_bytes_observed": 258048,
+      "pid": 873,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off1-native-up-preferred": {
+      "child_system_seconds": 0.01981900000000003,
+      "child_user_seconds": 0.007927999999992608,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03232043300005216,
+      "peak_rss_bytes_observed": 180224,
+      "pid": 889,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off1-native-up-prequantized": {
+      "child_system_seconds": 0.01209400000000116,
+      "child_user_seconds": 0.013024000000001479,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032292782000013176,
+      "peak_rss_bytes_observed": 237568,
+      "pid": 893,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off1-native-up-raw": {
+      "child_system_seconds": 0.014608999999998318,
+      "child_user_seconds": 0.010730000000009454,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032187981999982185,
+      "peak_rss_bytes_observed": 98304,
+      "pid": 885,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off1-upstream-codes": {
+      "child_system_seconds": 0.0,
+      "child_user_seconds": 0.003231999999997015,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.003852480999967156,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 897,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off1-upstream-gate-preferred": {
+      "child_system_seconds": 0.013585000000000846,
+      "child_user_seconds": 0.012614999999996712,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03214047199998049,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 902,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off1-upstream-gate-prequantized": {
+      "child_system_seconds": 0.014118999999999104,
+      "child_user_seconds": 0.012236000000001468,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032387901999982205,
+      "peak_rss_bytes_observed": 262144,
+      "pid": 906,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off1-upstream-gate-raw": {
+      "child_system_seconds": 0.016814999999999358,
+      "child_user_seconds": 0.007913000000002057,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032040391999998974,
+      "peak_rss_bytes_observed": 192512,
+      "pid": 898,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off1-upstream-up-preferred": {
+      "child_system_seconds": 0.010509000000000768,
+      "child_user_seconds": 0.017198000000007596,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032099482000035096,
+      "peak_rss_bytes_observed": 180224,
+      "pid": 914,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off1-upstream-up-prequantized": {
+      "child_system_seconds": 0.01374599999999937,
+      "child_user_seconds": 0.011781999999996629,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032080032000010306,
+      "peak_rss_bytes_observed": 192512,
+      "pid": 918,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off1-upstream-up-raw": {
+      "child_system_seconds": 0.012024999999999508,
+      "child_user_seconds": 0.013874000000001274,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032091182999977264,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 910,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off16-native-codes": {
+      "child_system_seconds": 0.0009399999999999409,
+      "child_user_seconds": 0.002819999999985612,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.007810189999986505,
+      "peak_rss_bytes_observed": 167936,
+      "pid": 972,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off16-native-gate-preferred": {
+      "child_system_seconds": 0.013355000000000672,
+      "child_user_seconds": 0.02861799999999448,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032415792999984205,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 977,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off16-native-gate-prequantized": {
+      "child_system_seconds": 0.012716999999998535,
+      "child_user_seconds": 0.03619399999999473,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03235360200000059,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 981,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off16-native-gate-raw": {
+      "child_system_seconds": 0.01347600000000071,
+      "child_user_seconds": 0.03753600000001711,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.06421367499996222,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 973,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off16-native-up-preferred": {
+      "child_system_seconds": 0.013811000000000462,
+      "child_user_seconds": 0.02663400000000138,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03210939299998472,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 989,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off16-native-up-prequantized": {
+      "child_system_seconds": 0.011720000000000397,
+      "child_user_seconds": 0.03711500000000001,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032146561999979895,
+      "peak_rss_bytes_observed": 188416,
+      "pid": 993,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off16-native-up-raw": {
+      "child_system_seconds": 0.018024000000000484,
+      "child_user_seconds": 0.032044000000013284,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03223125199997412,
+      "peak_rss_bytes_observed": 253952,
+      "pid": 985,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off16-upstream-codes": {
+      "child_system_seconds": 0.0011700000000001154,
+      "child_user_seconds": 0.0023389999999778865,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.007815510000000359,
+      "peak_rss_bytes_observed": 208896,
+      "pid": 997,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off16-upstream-gate-preferred": {
+      "child_system_seconds": 0.015572999999999837,
+      "child_user_seconds": 0.026271999999977425,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03208533200000829,
+      "peak_rss_bytes_observed": 176128,
+      "pid": 1002,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off16-upstream-gate-prequantized": {
+      "child_system_seconds": 0.014672000000000907,
+      "child_user_seconds": 0.029345000000006394,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03231875299997,
+      "peak_rss_bytes_observed": 282624,
+      "pid": 1006,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off16-upstream-gate-raw": {
+      "child_system_seconds": 0.018008999999999276,
+      "child_user_seconds": 0.024644000000023425,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032160933000000114,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 998,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off16-upstream-up-preferred": {
+      "child_system_seconds": 0.01978899999999939,
+      "child_user_seconds": 0.025728999999984126,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.06441712399998778,
+      "peak_rss_bytes_observed": 274432,
+      "pid": 1014,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off16-upstream-up-prequantized": {
+      "child_system_seconds": 0.01840699999999984,
+      "child_user_seconds": 0.02615800000000945,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03207817300000215,
+      "peak_rss_bytes_observed": 241664,
+      "pid": 1018,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off16-upstream-up-raw": {
+      "child_system_seconds": 0.017530999999999963,
+      "child_user_seconds": 0.027271000000013146,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03218338199997106,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1010,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off4-native-codes": {
+      "child_system_seconds": 0.0029930000000000234,
+      "child_user_seconds": 0.0009979999999956135,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.008139679999999316,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 922,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off4-native-gate-preferred": {
+      "child_system_seconds": 0.013959999999999084,
+      "child_user_seconds": 0.018612000000004514,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03226386299996875,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 927,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off4-native-gate-prequantized": {
+      "child_system_seconds": 0.015464000000001477,
+      "child_user_seconds": 0.01739699999998834,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03239146199996412,
+      "peak_rss_bytes_observed": 163840,
+      "pid": 931,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off4-native-gate-raw": {
+      "child_system_seconds": 0.01995800000000081,
+      "child_user_seconds": 0.012973000000002344,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03213792200000398,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 923,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off4-native-up-preferred": {
+      "child_system_seconds": 0.013899000000000328,
+      "child_user_seconds": 0.01886199999998439,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032277911999983644,
+      "peak_rss_bytes_observed": 274432,
+      "pid": 939,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off4-native-up-prequantized": {
+      "child_system_seconds": 0.015830999999998596,
+      "child_user_seconds": 0.016821000000021513,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03219040299995868,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 943,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off4-native-up-raw": {
+      "child_system_seconds": 0.012470999999999677,
+      "child_user_seconds": 0.020147000000008575,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03213210300003766,
+      "peak_rss_bytes_observed": 192512,
+      "pid": 935,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off4-upstream-codes": {
+      "child_system_seconds": 0.0016310000000014924,
+      "child_user_seconds": 0.0016310000000032687,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.003708220000021356,
+      "peak_rss_bytes_observed": 258048,
+      "pid": 947,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off4-upstream-gate-preferred": {
+      "child_system_seconds": 0.012624999999999886,
+      "child_user_seconds": 0.018450999999998885,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032171021999999994,
+      "peak_rss_bytes_observed": 180224,
+      "pid": 952,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off4-upstream-gate-prequantized": {
+      "child_system_seconds": 0.01791399999999932,
+      "child_user_seconds": 0.010947999999984859,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032269232999965425,
+      "peak_rss_bytes_observed": 278528,
+      "pid": 956,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off4-upstream-gate-raw": {
+      "child_system_seconds": 0.011787999999999244,
+      "child_user_seconds": 0.019646999999991976,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03199846299997944,
+      "peak_rss_bytes_observed": 237568,
+      "pid": 948,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off4-upstream-up-preferred": {
+      "child_system_seconds": 0.020112999999998493,
+      "child_user_seconds": 0.011063999999976204,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03215721300000496,
+      "peak_rss_bytes_observed": 167936,
+      "pid": 964,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off4-upstream-up-prequantized": {
+      "child_system_seconds": 0.01702500000000029,
+      "child_user_seconds": 0.015022000000016078,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03210861200000181,
+      "peak_rss_bytes_observed": 208896,
+      "pid": 968,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "off4-upstream-up-raw": {
+      "child_system_seconds": 0.0196890000000014,
+      "child_user_seconds": 0.013792000000023563,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03221562300001324,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 960,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-native-native-gate": {
+      "child_system_seconds": 0.012717999999999563,
+      "child_user_seconds": 0.020544000000001006,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03226570199996104,
+      "peak_rss_bytes_observed": 188416,
+      "pid": 1244,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-native-native-up": {
+      "child_system_seconds": 0.016443999999999903,
+      "child_user_seconds": 0.017410999999981414,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03218827200004171,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1248,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-native-native_qs_source_scale-gate": {
+      "child_system_seconds": 0.014920000000000044,
+      "child_user_seconds": 0.016784999999998718,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03212596200000917,
+      "peak_rss_bytes_observed": 237568,
+      "pid": 1260,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-native-native_qs_source_scale-up": {
+      "child_system_seconds": 0.01288000000000089,
+      "child_user_seconds": 0.01840000000001396,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03210499200002914,
+      "peak_rss_bytes_observed": 262144,
+      "pid": 1264,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-native-source-gate": {
+      "child_system_seconds": 0.016629000000000005,
+      "child_user_seconds": 0.015649999999993724,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032205181999984234,
+      "peak_rss_bytes_observed": 208896,
+      "pid": 1236,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-native-source-up": {
+      "child_system_seconds": 0.01236399999999982,
+      "child_user_seconds": 0.02089300000000094,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03260413199996037,
+      "peak_rss_bytes_observed": 270336,
+      "pid": 1240,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-native-source_qs_native_scale-gate": {
+      "child_system_seconds": 0.01023400000000052,
+      "child_user_seconds": 0.020469000000019832,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03214354300001787,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1252,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-native-source_qs_native_scale-up": {
+      "child_system_seconds": 0.01901499999999956,
+      "child_user_seconds": 0.018988999999976386,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032281732000001284,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1256,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-upstream-native-gate": {
+      "child_system_seconds": 0.01456800000000058,
+      "child_user_seconds": 0.018452999999993835,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03234811199996557,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1276,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-upstream-native-up": {
+      "child_system_seconds": 0.01330800000000032,
+      "child_user_seconds": 0.019011000000006106,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03220396299997219,
+      "peak_rss_bytes_observed": 208896,
+      "pid": 1280,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-upstream-native_qs_source_scale-gate": {
+      "child_system_seconds": 0.01591499999999968,
+      "child_user_seconds": 0.017904000000015685,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.0321909220000407,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1292,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-upstream-native_qs_source_scale-up": {
+      "child_system_seconds": 0.01361699999999999,
+      "child_user_seconds": 0.020304999999979145,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032135212000014235,
+      "peak_rss_bytes_observed": 176128,
+      "pid": 1296,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-upstream-source-gate": {
+      "child_system_seconds": 0.014440999999999704,
+      "child_user_seconds": 0.018195999999989,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03219886300001917,
+      "peak_rss_bytes_observed": 270336,
+      "pid": 1268,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-upstream-source-up": {
+      "child_system_seconds": 0.01372999999999891,
+      "child_user_seconds": 0.019608000000005177,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032271661999971,
+      "peak_rss_bytes_observed": 180224,
+      "pid": 1272,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-upstream-source_qs_native_scale-gate": {
+      "child_system_seconds": 0.01054000000000066,
+      "child_user_seconds": 0.022182000000015023,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03231154200000219,
+      "peak_rss_bytes_observed": 237568,
+      "pid": 1284,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on-upstream-source_qs_native_scale-up": {
+      "child_system_seconds": 0.014623000000000275,
+      "child_user_seconds": 0.03702999999998724,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.06447142500002201,
+      "peak_rss_bytes_observed": 258048,
+      "pid": 1288,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on1-native-codes": {
+      "child_system_seconds": 0.0,
+      "child_user_seconds": 0.0033950000000118052,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.0036891799999807517,
+      "peak_rss_bytes_observed": 184320,
+      "pid": 1022,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on1-native-gate-preferred": {
+      "child_system_seconds": 0.014829999999999899,
+      "child_user_seconds": 0.01384199999998259,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03222394199997325,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1027,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on1-native-gate-prequantized": {
+      "child_system_seconds": 0.014676999999998941,
+      "child_user_seconds": 0.011008000000003904,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03210516199999347,
+      "peak_rss_bytes_observed": 266240,
+      "pid": 1031,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on1-native-gate-raw": {
+      "child_system_seconds": 0.015873000000000914,
+      "child_user_seconds": 0.010269999999991342,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03196394200000441,
+      "peak_rss_bytes_observed": 184320,
+      "pid": 1023,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on1-native-up-preferred": {
+      "child_system_seconds": 0.013066999999999496,
+      "child_user_seconds": 0.016081999999983054,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03209036200001947,
+      "peak_rss_bytes_observed": 241664,
+      "pid": 1039,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on1-native-up-prequantized": {
+      "child_system_seconds": 0.01639800000000058,
+      "child_user_seconds": 0.0100230000000181,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032236772999965524,
+      "peak_rss_bytes_observed": 163840,
+      "pid": 1043,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on1-native-up-raw": {
+      "child_system_seconds": 0.012669000000000707,
+      "child_user_seconds": 0.014617000000015423,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03212598300001446,
+      "peak_rss_bytes_observed": 188416,
+      "pid": 1035,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on1-upstream-codes": {
+      "child_system_seconds": 0.0008679999999987587,
+      "child_user_seconds": 0.0026069999999833726,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.0037627900000529735,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1047,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on1-upstream-gate-preferred": {
+      "child_system_seconds": 0.015773000000001147,
+      "child_user_seconds": 0.011829000000005863,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03206372299996474,
+      "peak_rss_bytes_observed": 176128,
+      "pid": 1052,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on1-upstream-gate-prequantized": {
+      "child_system_seconds": 0.01116900000000065,
+      "child_user_seconds": 0.014892000000003236,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032301683000014236,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1056,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on1-upstream-gate-raw": {
+      "child_system_seconds": 0.01437199999999983,
+      "child_user_seconds": 0.012456000000014456,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03204247299998997,
+      "peak_rss_bytes_observed": 176128,
+      "pid": 1048,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on1-upstream-up-preferred": {
+      "child_system_seconds": 0.018081000000000458,
+      "child_user_seconds": 0.009040999999996302,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03236525199997686,
+      "peak_rss_bytes_observed": 188416,
+      "pid": 1064,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on1-upstream-up-prequantized": {
+      "child_system_seconds": 0.011472999999998734,
+      "child_user_seconds": 0.01529700000000389,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03217142200003309,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1068,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on1-upstream-up-raw": {
+      "child_system_seconds": 0.011450999999999212,
+      "child_user_seconds": 0.015267999999991844,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03231440299998667,
+      "peak_rss_bytes_observed": 249856,
+      "pid": 1060,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on16-native-codes": {
+      "child_system_seconds": 0.0019650000000002166,
+      "child_user_seconds": 0.0019649999999842294,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.00797779999999193,
+      "peak_rss_bytes_observed": 77824,
+      "pid": 1122,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on16-native-gate-preferred": {
+      "child_system_seconds": 0.011577000000000837,
+      "child_user_seconds": 0.02990800000000604,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.06448606499998277,
+      "peak_rss_bytes_observed": 258048,
+      "pid": 1127,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on16-native-gate-prequantized": {
+      "child_system_seconds": 0.015406000000000475,
+      "child_user_seconds": 0.036587999999994736,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.06456578500001342,
+      "peak_rss_bytes_observed": 196608,
+      "pid": 1131,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on16-native-gate-raw": {
+      "child_system_seconds": 0.013553999999999178,
+      "child_user_seconds": 0.03872599999999693,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.06450520300001017,
+      "peak_rss_bytes_observed": 208896,
+      "pid": 1123,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on16-native-up-preferred": {
+      "child_system_seconds": 0.013122000000000966,
+      "child_user_seconds": 0.031866000000007944,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.06449206500002447,
+      "peak_rss_bytes_observed": 352256,
+      "pid": 1139,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on16-native-up-prequantized": {
+      "child_system_seconds": 0.015983999999999554,
+      "child_user_seconds": 0.033966999999989866,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.06441662499997847,
+      "peak_rss_bytes_observed": 180224,
+      "pid": 1143,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on16-native-up-raw": {
+      "child_system_seconds": 0.01621799999999851,
+      "child_user_seconds": 0.03530000000000655,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.06444835600001397,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1135,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on16-upstream-codes": {
+      "child_system_seconds": 0.0011950000000009453,
+      "child_user_seconds": 0.0023889999999937572,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.007860351000033461,
+      "peak_rss_bytes_observed": 180224,
+      "pid": 1147,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on16-upstream-gate-preferred": {
+      "child_system_seconds": 0.01561099999999982,
+      "child_user_seconds": 0.02634700000001544,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03227336300000161,
+      "peak_rss_bytes_observed": 196608,
+      "pid": 1152,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on16-upstream-gate-prequantized": {
+      "child_system_seconds": 0.017126000000001085,
+      "child_user_seconds": 0.02663999999998623,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03241083199998229,
+      "peak_rss_bytes_observed": 196608,
+      "pid": 1156,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on16-upstream-gate-raw": {
+      "child_system_seconds": 0.013724999999999099,
+      "child_user_seconds": 0.030392000000006192,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03242598200000657,
+      "peak_rss_bytes_observed": 499712,
+      "pid": 1148,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on16-upstream-up-preferred": {
+      "child_system_seconds": 0.01560899999999954,
+      "child_user_seconds": 0.026341000000002168,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032305132999965736,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1164,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on16-upstream-up-prequantized": {
+      "child_system_seconds": 0.013538000000000494,
+      "child_user_seconds": 0.03094400000000519,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032267632000014146,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1168,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on16-upstream-up-raw": {
+      "child_system_seconds": 0.01622399999999935,
+      "child_user_seconds": 0.029405999999994492,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03224173199998859,
+      "peak_rss_bytes_observed": 176128,
+      "pid": 1160,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on4-native-codes": {
+      "child_system_seconds": 0.0009440000000005,
+      "child_user_seconds": 0.0028319999999837364,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.008055119999994531,
+      "peak_rss_bytes_observed": 188416,
+      "pid": 1072,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on4-native-gate-preferred": {
+      "child_system_seconds": 0.013745000000000118,
+      "child_user_seconds": 0.020618000000013126,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03250261299996282,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1077,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on4-native-gate-prequantized": {
+      "child_system_seconds": 0.014230999999998772,
+      "child_user_seconds": 0.018025999999991882,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032316871999967134,
+      "peak_rss_bytes_observed": 245760,
+      "pid": 1081,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on4-native-gate-raw": {
+      "child_system_seconds": 0.017091000000000633,
+      "child_user_seconds": 0.015196000000003096,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032310581999979604,
+      "peak_rss_bytes_observed": 262144,
+      "pid": 1073,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on4-native-up-preferred": {
+      "child_system_seconds": 0.016605000000000203,
+      "child_user_seconds": 0.017582000000004427,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032301772999971945,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1089,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on4-native-up-prequantized": {
+      "child_system_seconds": 0.0168689999999998,
+      "child_user_seconds": 0.014969000000007782,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03216498199998341,
+      "peak_rss_bytes_observed": 200704,
+      "pid": 1093,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on4-native-up-raw": {
+      "child_system_seconds": 0.015093000000000245,
+      "child_user_seconds": 0.016978999999992084,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03218121200001178,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1085,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on4-upstream-codes": {
+      "child_system_seconds": 0.002619000000001037,
+      "child_user_seconds": 0.0008729999999843585,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.003817260999994687,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1097,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on4-upstream-gate-preferred": {
+      "child_system_seconds": 0.01994000000000007,
+      "child_user_seconds": 0.010966999999993732,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03241627300002392,
+      "peak_rss_bytes_observed": 270336,
+      "pid": 1102,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on4-upstream-gate-prequantized": {
+      "child_system_seconds": 0.016054000000000457,
+      "child_user_seconds": 0.016053999999996904,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032188241999961065,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1106,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on4-upstream-gate-raw": {
+      "child_system_seconds": 0.013873999999999498,
+      "child_user_seconds": 0.018829000000010865,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03229225200004748,
+      "peak_rss_bytes_observed": 180224,
+      "pid": 1098,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on4-upstream-up-preferred": {
+      "child_system_seconds": 0.01421399999999906,
+      "child_user_seconds": 0.01705599999999663,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03225980199999867,
+      "peak_rss_bytes_observed": 188416,
+      "pid": 1114,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on4-upstream-up-prequantized": {
+      "child_system_seconds": 0.014489000000001084,
+      "child_user_seconds": 0.017448000000001684,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032173891999946136,
+      "peak_rss_bytes_observed": 196608,
+      "pid": 1118,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "on4-upstream-up-raw": {
+      "child_system_seconds": 0.02041799999999938,
+      "child_user_seconds": 0.013612000000023272,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03231639199998426,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 1110,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source": {
+      "child_system_seconds": 0.0,
+      "child_user_seconds": 0.00147,
+      "cumulative_child_peak_rss_bytes": 43511808,
+      "elapsed_seconds": 0.0018327989999988858,
+      "peak_rss_bytes_observed": 208896,
+      "pid": 57,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source1-native-codes": {
+      "child_system_seconds": 0.0010530000000006368,
+      "child_user_seconds": 0.0031599999999940565,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.016110100999981114,
+      "peak_rss_bytes_observed": 81920,
+      "pid": 772,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source1-native-gate-preferred": {
+      "child_system_seconds": 0.0113530000000015,
+      "child_user_seconds": 0.017034999999992806,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03224126300000307,
+      "peak_rss_bytes_observed": 237568,
+      "pid": 777,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source1-native-gate-prequantized": {
+      "child_system_seconds": 0.011510999999998717,
+      "child_user_seconds": 0.016308000000009315,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03236935199998925,
+      "peak_rss_bytes_observed": 208896,
+      "pid": 781,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source1-native-gate-raw": {
+      "child_system_seconds": 0.01603299999999841,
+      "child_user_seconds": 0.01131700000000535,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032271173000026465,
+      "peak_rss_bytes_observed": 208896,
+      "pid": 773,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source1-native-up-preferred": {
+      "child_system_seconds": 0.018919999999999604,
+      "child_user_seconds": 0.009957999999997469,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03221198200003528,
+      "peak_rss_bytes_observed": 184320,
+      "pid": 789,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source1-native-up-prequantized": {
+      "child_system_seconds": 0.011782999999999433,
+      "child_user_seconds": 0.01540800000000786,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03239658299997927,
+      "peak_rss_bytes_observed": 278528,
+      "pid": 793,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source1-native-up-raw": {
+      "child_system_seconds": 0.008633000000001445,
+      "child_user_seconds": 0.01918399999999565,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.0326055730000121,
+      "peak_rss_bytes_observed": 352256,
+      "pid": 785,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source1-upstream-codes": {
+      "child_system_seconds": 0.0018159999999998178,
+      "child_user_seconds": 0.001815999999990936,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.008087230999990425,
+      "peak_rss_bytes_observed": 208896,
+      "pid": 797,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source1-upstream-gate-preferred": {
+      "child_system_seconds": 0.016448000000000462,
+      "child_user_seconds": 0.011307999999999652,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032389951999959976,
+      "peak_rss_bytes_observed": 188416,
+      "pid": 802,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source1-upstream-gate-prequantized": {
+      "child_system_seconds": 0.01239200000000018,
+      "child_user_seconds": 0.014456999999993059,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03231609300001992,
+      "peak_rss_bytes_observed": 192512,
+      "pid": 806,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source1-upstream-gate-raw": {
+      "child_system_seconds": 0.01531899999999986,
+      "child_user_seconds": 0.012447000000008757,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03217007199998534,
+      "peak_rss_bytes_observed": 192512,
+      "pid": 798,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source1-upstream-up-preferred": {
+      "child_system_seconds": 0.014399000000000939,
+      "child_user_seconds": 0.014399999999994861,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03234862299996166,
+      "peak_rss_bytes_observed": 180224,
+      "pid": 814,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source1-upstream-up-prequantized": {
+      "child_system_seconds": 0.014955999999999747,
+      "child_user_seconds": 0.010967000000007943,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032422722999967846,
+      "peak_rss_bytes_observed": 278528,
+      "pid": 818,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source1-upstream-up-raw": {
+      "child_system_seconds": 0.009589999999999321,
+      "child_user_seconds": 0.01726200000000233,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03223948199996585,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 810,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source4-native-codes": {
+      "child_system_seconds": 0.0009289999999992915,
+      "child_user_seconds": 0.0027879999999953498,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.007870460999981788,
+      "peak_rss_bytes_observed": 188416,
+      "pid": 822,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source4-native-gate-preferred": {
+      "child_system_seconds": 0.014477999999998659,
+      "child_user_seconds": 0.019304000000005317,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03228647199995294,
+      "peak_rss_bytes_observed": 86016,
+      "pid": 827,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source4-native-gate-prequantized": {
+      "child_system_seconds": 0.014623999999999526,
+      "child_user_seconds": 0.019497999999998683,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032308353000019,
+      "peak_rss_bytes_observed": 274432,
+      "pid": 831,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source4-native-gate-raw": {
+      "child_system_seconds": 0.018412000000001427,
+      "child_user_seconds": 0.014313999999998828,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03227588300001116,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 823,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source4-native-up-preferred": {
+      "child_system_seconds": 0.015525999999999485,
+      "child_user_seconds": 0.01746599999999887,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032187181999972836,
+      "peak_rss_bytes_observed": 188416,
+      "pid": 839,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source4-native-up-prequantized": {
+      "child_system_seconds": 0.01688500000000026,
+      "child_user_seconds": 0.014898999999999774,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03226270300001488,
+      "peak_rss_bytes_observed": 241664,
+      "pid": 843,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source4-native-up-raw": {
+      "child_system_seconds": 0.010599000000000913,
+      "child_user_seconds": 0.021199999999993224,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032257061999985126,
+      "peak_rss_bytes_observed": 249856,
+      "pid": 835,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source4-upstream-codes": {
+      "child_system_seconds": 0.0,
+      "child_user_seconds": 0.003242000000000189,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.0038129499999968175,
+      "peak_rss_bytes_observed": 180224,
+      "pid": 847,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source4-upstream-gate-preferred": {
+      "child_system_seconds": 0.016895999999999134,
+      "child_user_seconds": 0.01391399999999976,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03220184299999573,
+      "peak_rss_bytes_observed": 274432,
+      "pid": 852,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source4-upstream-gate-prequantized": {
+      "child_system_seconds": 0.013545999999999836,
+      "child_user_seconds": 0.017444999999995048,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032247202000007746,
+      "peak_rss_bytes_observed": 356352,
+      "pid": 856,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source4-upstream-gate-raw": {
+      "child_system_seconds": 0.010943000000001035,
+      "child_user_seconds": 0.020891000000005988,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032243131999962316,
+      "peak_rss_bytes_observed": 262144,
+      "pid": 848,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source4-upstream-up-preferred": {
+      "child_system_seconds": 0.017846999999999724,
+      "child_user_seconds": 0.014088999999998464,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03230924199999663,
+      "peak_rss_bytes_observed": 192512,
+      "pid": 864,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source4-upstream-up-prequantized": {
+      "child_system_seconds": 0.016828000000000287,
+      "child_user_seconds": 0.01583800000000224,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.03209592299998576,
+      "peak_rss_bytes_observed": 196608,
+      "pid": 868,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source4-upstream-up-raw": {
+      "child_system_seconds": 0.011043000000000802,
+      "child_user_seconds": 0.019326000000006616,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.032167532999949344,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 860,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "up-checkout": {
+      "child_system_seconds": 0.28038799999999997,
+      "child_user_seconds": 0.48740300000000003,
+      "cumulative_child_peak_rss_bytes": 71168000,
+      "elapsed_seconds": 0.866664706999984,
+      "peak_rss_bytes_observed": 94208,
+      "pid": 72,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "up-fetch": {
+      "child_system_seconds": 0.398447,
+      "child_user_seconds": 1.4967270000000001,
+      "cumulative_child_peak_rss_bytes": 47116288,
+      "elapsed_seconds": 5.066597516999991,
+      "peak_rss_bytes_observed": 16953344,
+      "pid": 61,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "up-init": {
+      "child_system_seconds": 0.0030640000000000003,
+      "child_user_seconds": 0.001022,
+      "cumulative_child_peak_rss_bytes": 46985216,
+      "elapsed_seconds": 0.008119448000002194,
+      "peak_rss_bytes_observed": 376832,
+      "pid": 59,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "up-remote": {
+      "child_system_seconds": 0.001580999999999999,
+      "child_user_seconds": 0.0,
+      "cumulative_child_peak_rss_bytes": 47116288,
+      "elapsed_seconds": 0.003974539000012101,
+      "peak_rss_bytes_observed": 249856,
+      "pid": 60,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "upstream-build": {
+      "child_system_seconds": 3.521141,
+      "child_user_seconds": 61.53026200000001,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 34.881157213999984,
+      "peak_rss_bytes_observed": 10002432,
+      "pid": 517,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "upstream-configure": {
+      "child_system_seconds": 0.23604300000000045,
+      "child_user_seconds": 0.3864119999999929,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.6663781440000207,
+      "peak_rss_bytes_observed": 90112,
+      "pid": 436,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "upstream-controls": {
+      "child_system_seconds": 0.019424000000000774,
+      "child_user_seconds": 0.031449000000009164,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.06448449499998787,
+      "peak_rss_bytes_observed": 163840,
+      "pid": 759,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "upstream-noargs": {
+      "child_system_seconds": 0.0016769999999990404,
+      "child_user_seconds": 0.0008379999999874599,
+      "cumulative_child_peak_rss_bytes": 433565696,
+      "elapsed_seconds": 0.003911109999990003,
+      "error": "Command '[PosixPath('/tmp/lighton4b-ffn-postnorm-codes-v1/postnorm-probe/upstream-build/ffn-postnorm-probe')]' returned non-zero exit status 1.",
+      "error_type": "CalledProcessError",
+      "peak_rss_bytes_observed": 208896,
+      "pid": 758,
+      "returncode": 1,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed_expected_failure"
+    }
+  },
+  "decoded_generated": false,
+  "full_f32_model_created": false,
+  "heldout_used": false,
+  "input_effects": {
+    "off": {
+      "actual_postnorm": {
+        "bit_exact": false,
+        "candidate_rms_magnitude": 0.446532863394816,
+        "different_f32_words": 10063,
+        "elements": 10240,
+        "max_abs": 8.798204362392426e-06,
+        "reference_max_abs": 3.9017608165740967,
+        "reference_rms_magnitude": 0.4465329171525552,
+        "rms": 1.2611334037053923e-06
+      },
+      "native_codes": {
+        "blocks": 40,
+        "decoded_activation_difference": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.44647183461713674,
+          "different_f32_words": 9005,
+          "elements": 10240,
+          "max_abs": 0.010936535894870758,
+          "reference_max_abs": 3.9017605781555176,
+          "reference_rms_magnitude": 0.4464721806170834,
+          "rms": 0.00010807747865767676
+        },
+        "different_bsums": 1,
+        "different_qs": 1,
+        "different_scales": 36,
+        "scale_sign_changes": 0,
+        "scope": "Public converter/code-input interventions; not directly observed CPU_REPACK buffers"
+      },
+      "roles": {
+        "gate": {
+          "decomposition_max_abs": 0.0,
+          "fixed_preferred_route_input_effect": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.22776663307894687,
+            "different_f32_words": 34590,
+            "elements": 36864,
+            "max_abs": 0.00036579370498657227,
+            "reference_max_abs": 3.8247461318969727,
+            "reference_rms_magnitude": 0.22776664960285287,
+            "rms": 4.948690261454678e-05
+          },
+          "input_rms_over_total_rms": 0.9999848821058998,
+          "prefix4_vs_actual_native16": {
+            "bit_exact": true,
+            "candidate_rms_magnitude": 0.2277666332983577,
+            "different_f32_words": 0,
+            "elements": 36864,
+            "max_abs": 0.0,
+            "reference_max_abs": 3.8245978355407715,
+            "reference_rms_magnitude": 0.2277666332983577,
+            "rms": 0.0
+          },
+          "same_input_route_effect": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.2277666332983577,
+            "different_f32_words": 32569,
+            "elements": 36864,
+            "max_abs": 1.1920928955078125e-06,
+            "reference_max_abs": 3.8245975971221924,
+            "reference_rms_magnitude": 0.22776663307894687,
+            "rms": 1.0038952321658035e-07
+          },
+          "total_native_raw_vs_actual_source": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.2277666332983577,
+            "different_f32_words": 35203,
+            "elements": 36864,
+            "max_abs": 0.00036591291427612305,
+            "reference_max_abs": 3.8247461318969727,
+            "reference_rms_magnitude": 0.22776664960285287,
+            "rms": 4.948765076361029e-05
+          }
+        },
+        "up": {
+          "decomposition_max_abs": 0.0,
+          "fixed_preferred_route_input_effect": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.19947189619657782,
+            "different_f32_words": 34589,
+            "elements": 36864,
+            "max_abs": 0.0003456920385360718,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203393320811,
+            "rms": 4.6994365170909723e-05
+          },
+          "input_rms_over_total_rms": 0.9999670530164987,
+          "prefix4_vs_actual_native16": {
+            "bit_exact": true,
+            "candidate_rms_magnitude": 0.19947189646484995,
+            "different_f32_words": 0,
+            "elements": 36864,
+            "max_abs": 0.0,
+            "reference_max_abs": 3.0016121864318848,
+            "reference_rms_magnitude": 0.19947189646484995,
+            "rms": 0.0
+          },
+          "same_input_route_effect": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.19947189646484995,
+            "different_f32_words": 32553,
+            "elements": 36864,
+            "max_abs": 5.364418029785156e-07,
+            "reference_max_abs": 3.0016119480133057,
+            "reference_rms_magnitude": 0.19947189619657782,
+            "rms": 9.02798648751315e-08
+          },
+          "total_native_raw_vs_actual_source": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.19947189646484995,
+            "different_f32_words": 35193,
+            "elements": 36864,
+            "max_abs": 0.00034578144550323486,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203393320811,
+            "rms": 4.69959135444979e-05
+          }
+        }
+      },
+      "upstream_codes": {
+        "blocks": 40,
+        "decoded_activation_difference": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.44647183461713674,
+          "different_f32_words": 9005,
+          "elements": 10240,
+          "max_abs": 0.010936535894870758,
+          "reference_max_abs": 3.9017605781555176,
+          "reference_rms_magnitude": 0.4464721806170834,
+          "rms": 0.00010807747865767676
+        },
+        "different_bsums": 1,
+        "different_qs": 1,
+        "different_scales": 36,
+        "scale_sign_changes": 0,
+        "scope": "Public converter/code-input interventions; not directly observed CPU_REPACK buffers"
+      }
+    },
+    "on": {
+      "actual_postnorm": {
+        "bit_exact": false,
+        "candidate_rms_magnitude": 0.4465328557344174,
+        "different_f32_words": 10056,
+        "elements": 10240,
+        "max_abs": 7.748603820800781e-06,
+        "reference_max_abs": 3.9017608165740967,
+        "reference_rms_magnitude": 0.4465329171525552,
+        "rms": 1.271985776258359e-06
+      },
+      "native_codes": {
+        "blocks": 40,
+        "decoded_activation_difference": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.44647187492602214,
+          "different_f32_words": 9530,
+          "elements": 10240,
+          "max_abs": 0.010936468839645386,
+          "reference_max_abs": 3.9017605781555176,
+          "reference_rms_magnitude": 0.4464721806170834,
+          "rms": 0.00010807668914551969
+        },
+        "different_bsums": 1,
+        "different_qs": 1,
+        "different_scales": 38,
+        "scale_sign_changes": 0,
+        "scope": "Public converter/code-input interventions; not directly observed CPU_REPACK buffers"
+      },
+      "roles": {
+        "gate": {
+          "decomposition_max_abs": 0.0,
+          "fixed_preferred_route_input_effect": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.2277666603156979,
+            "different_f32_words": 35310,
+            "elements": 36864,
+            "max_abs": 0.00036585330963134766,
+            "reference_max_abs": 3.8247461318969727,
+            "reference_rms_magnitude": 0.22776664960285287,
+            "rms": 4.948592620086955e-05
+          },
+          "input_rms_over_total_rms": 0.999962912362552,
+          "prefix4_vs_actual_native16": {
+            "bit_exact": true,
+            "candidate_rms_magnitude": 0.22776666044261376,
+            "different_f32_words": 0,
+            "elements": 36864,
+            "max_abs": 0.0,
+            "reference_max_abs": 3.824599504470825,
+            "reference_rms_magnitude": 0.22776666044261376,
+            "rms": 0.0
+          },
+          "same_input_route_effect": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.22776666044261376,
+            "different_f32_words": 32611,
+            "elements": 36864,
+            "max_abs": 1.1920928955078125e-06,
+            "reference_max_abs": 3.824599266052246,
+            "reference_rms_magnitude": 0.2277666603156979,
+            "rms": 1.0221773367715758e-07
+          },
+          "total_native_raw_vs_actual_source": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.22776666044261376,
+            "different_f32_words": 35299,
+            "elements": 36864,
+            "max_abs": 0.00036591291427612305,
+            "reference_max_abs": 3.8247461318969727,
+            "reference_rms_magnitude": 0.22776664960285287,
+            "rms": 4.948776158502933e-05
+          }
+        },
+        "up": {
+          "decomposition_max_abs": 0.0,
+          "fixed_preferred_route_input_effect": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.1994719166126865,
+            "different_f32_words": 35351,
+            "elements": 36864,
+            "max_abs": 0.0003460496664047241,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203393320811,
+            "rms": 4.699420170335969e-05
+          },
+          "input_rms_over_total_rms": 1.0000052620068378,
+          "prefix4_vs_actual_native16": {
+            "bit_exact": true,
+            "candidate_rms_magnitude": 0.199471916172791,
+            "different_f32_words": 0,
+            "elements": 36864,
+            "max_abs": 0.0,
+            "reference_max_abs": 3.0016117095947266,
+            "reference_rms_magnitude": 0.199471916172791,
+            "rms": 0.0
+          },
+          "same_input_route_effect": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.199471916172791,
+            "different_f32_words": 32534,
+            "elements": 36864,
+            "max_abs": 5.662441253662109e-07,
+            "reference_max_abs": 3.0016119480133057,
+            "reference_rms_magnitude": 0.1994719166126865,
+            "rms": 9.116205149383756e-08
+          },
+          "total_native_raw_vs_actual_source": {
+            "bit_exact": false,
+            "candidate_rms_magnitude": 0.199471916172791,
+            "different_f32_words": 35368,
+            "elements": 36864,
+            "max_abs": 0.0003460347652435303,
+            "reference_max_abs": 3.001612424850464,
+            "reference_rms_magnitude": 0.19947203393320811,
+            "rms": 4.699395442085019e-05
+          }
+        }
+      },
+      "upstream_codes": {
+        "blocks": 40,
+        "decoded_activation_difference": {
+          "bit_exact": false,
+          "candidate_rms_magnitude": 0.44647187492602214,
+          "different_f32_words": 9530,
+          "elements": 10240,
+          "max_abs": 0.010936468839645386,
+          "reference_max_abs": 3.9017605781555176,
+          "reference_rms_magnitude": 0.4464721806170834,
+          "rms": 0.00010807668914551969
+        },
+        "different_bsums": 1,
+        "different_qs": 1,
+        "different_scales": 38,
+        "scale_sign_changes": 0,
+        "scope": "Public converter/code-input interventions; not directly observed CPU_REPACK buffers"
+      }
+    }
+  },
+  "limits": [
+    "Observed table layer0 first4 only; no heldout/tensor-selection/model inference.",
+    "Actual source/native inputs remain distinct; route and code interventions hold weights fixed.",
+    "Public Q8_K vectors are not directly captured CPU_REPACK buffers. RAW forced-input output closure is measured per case/role/backend.",
+    "Crossed scale/integer vectors are synthetic code-space interventions, not model states. Interpret sign changes and coupled representations explicitly.",
+    "Previous GDN decoded regression remains binding; component amplification does not establish a safe runtime fix."
+  ],
+  "model_forward_executed": false,
+  "operator_compute_executed": true,
+  "parameter_bytes": 26542080,
+  "phase": "on-upstream-native_qs_source_scale-up",
+  "quality_qualified": false,
+  "schema": "lighton4b-ffn-postnorm-codes/v1",
+  "seconds": 93.17300935399999,
+  "source_sha": "2d78bc6a84ac6af811293f3eeb6d4f83253b32ba",
+  "status": "measured_actual_postnorm_code_attribution"
+}
