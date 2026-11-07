@@ -2028,3 +2028,19 @@ storage immutability; no dot arithmetic changes are needed. The decoder owner
 lane supplies separately gated Q6-head recipe admission. All execution is a
 bounded Kaggle CPU control, combined with that lane where possible; no GitHub
 model/CI run, full model, quantization, public alias or release qualification.
+
+### Weighted Q4KM-style reproducible harness integration — 7 November
+
+Additive [source/tool integration](docs/lighton4b-imatrix-q4km-reproduction.md)
+preserves actual producera4f2c908f and corrected complete-decode sourcee822a6de8,
+including its initial unavailable-timer negative. The closed original-F16 producer,
+sealed runtime/model continuation, separate post-selection form and authenticated
+BF16-score diagnostics are explicit Kaggle tools, excluded from production
+artifacts. Existing source/runtime bytes and old recipes remain unchanged; the
+only C++ delta is an additional HF-profile metadata check in the test preflight.
+Ten focused Python controls and15 historical source-pin checks pass. Native
+preflight plus legacy stream controls already ran in the authenticated producer;
+no local native build, GitHub dispatch or extra model run is needed for this copy.
+Complete table/Arabic evaluation remains running; form follows on its lane while
+the independent physical same-weight diagnostic may run in parallel. No shipping,
+default, publisher-byte-equivalence or broad heldout-quality claim is made.
