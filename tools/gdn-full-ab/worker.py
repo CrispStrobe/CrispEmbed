@@ -73,6 +73,9 @@ def main():
    try:run('cli-'+flag,[native,work/'missing',work/'missing.rgb',1,1,work/'missing.ids',out,512,4,'greedy-full',flag],off,30)
    except subprocess.CalledProcessError as e:require(e.returncode==expected,'closed actual CLI')
    else:raise ValueError('missing model admitted')
+  bundle=out/'runtime';(bundle/'bin').mkdir(parents=True);(bundle/'lib').mkdir();shutil.copy2(native,bundle/'bin'/native.name)
+  for lib in libs:shutil.copy2(lib,bundle/'lib'/lib.name)
+  r['runtime_bundle']={str(p.relative_to(bundle)):dict(bytes=p.stat().st_size,sha256=sha(p))for p in bundle.rglob('*')if p.is_file()};save()
   sys.path.insert(0,str(ROOT/'tools'));import lighton4b_upstream_physical_pack as pack
   modelcfg=json.loads((ROOT/'docs/lighton4b-composed-form-vision-v1.json').read_text());row=modelcfg['models']['Q4_K_M'];upmodel=work/row['file'];base.download('https://huggingface.co/'+modelcfg['model_repo']+'/resolve/'+modelcfg['model_revision']+'/'+row['file'],upmodel,row['bytes'],row['sha256']);row=modelcfg['base_model'];protected=work/row['file'];base.download('https://huggingface.co/'+row['repository']+'/resolve/'+row['revision']+'/'+row['file'],protected,row['bytes'],row['sha256']);candidate=work/'candidate.gguf';audit=pack.convert(protected,upmodel,candidate,out/'physical-pack.json');require(audit['candidate_sha256']==cfg['candidate_sha256'],'unchanged immutable model');protected.unlink()
   for case,count,receiptp,receipt,prefix,gold,inp,original,up,anchors,visual,reference in prepared:
