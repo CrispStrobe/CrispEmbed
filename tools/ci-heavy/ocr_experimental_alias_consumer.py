@@ -19,6 +19,9 @@ MODELS = {
     'unlimited': ('unlimited-ocr2-q4_k-mix-experimental', 'unlimited-ocr-2-q4_k-mix.gguf',
                   'b71f158d36713e1c7ee39b7fb48193aa87a8592bca666f92caeae41093da493a',
                   {'CRISPEMBED_UNLIMITED_OCR2': '1'}, 'CRISPEMBED_UNLIMITED_OCR2'),
+    'got': ('got-ocr2-q4_k-experimental', 'got-ocr2-q4_k.gguf',
+            'ba276f2e246273af7d1bcd58f35ac7bae09c30340b923ed4440effe82d5e7613',
+            {'CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE': '1'}, 'CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE'),
 }
 
 
@@ -48,7 +51,7 @@ def decoded(result):
 
 def main():
     if len(sys.argv) != 2 or sys.argv[1] not in MODELS:
-        raise SystemExit('choose minicpm or unlimited')
+        raise SystemExit('choose minicpm, unlimited or got')
     key = sys.argv[1]
     alias, filename, expected, gates, gate = MODELS[key]
     OUT.mkdir(parents=True, exist_ok=True)
