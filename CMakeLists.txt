@@ -1773,3 +1773,7 @@ add_executable(test-lighton4b-q6-tied-head tests/test_lighton4b_q6_tied_head.cpp
 target_link_libraries(test-lighton4b-q6-tied-head PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-lighton4b-release-fence tests/test_lighton4b_release_fence.cpp)
 target_link_libraries(test-lighton4b-release-fence PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Physical upstream import semantics and model-free closed admission controls.
+add_executable(test-lighton4b-upstream-physical EXCLUDE_FROM_ALL tests/test_lighton4b_upstream_physical.cpp)
+target_link_libraries(test-lighton4b-upstream-physical PRIVATE crispembed-qwen35-delta crispembed-core)

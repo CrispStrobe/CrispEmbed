@@ -56,3 +56,34 @@ After the physical operator result, any production activation/A/norm bridge and
 same-input first-score/full-decoded comparison need separate gated integration.
 Our source-exact protected vision and upstream F16 vision remain different
 controls until actual upstream feature rows are captured and admitted.
+
+## Experimental native format6 implementation
+
+The [completed physical audit](https://github.com/CrispStrobe/CrispEmbed/blob/36fd281b498d416b6c276dfa073a3a67bc246520/docs/lighton4b-upstream-physical-import.md)
+now supports a separate `lighton4b-upstream-q4km-physical-v1` import. It uses
+`general.architecture=qwen35_ocr`, profile`lightonocr3-4b`, format_version UINT32=6
+and zero_centered_text_norm BOOL=false. Exact publisher/protected-source/map/code
+provenance is mandatory; the new `CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL` gate
+and native Q6 gate must be on. Public loaders/release paths remain closed.
+This tag cannot select the separate weighted HF-layout profile or older recipes.
+
+The packer preserves297 source vision tensors byte-for-byte, transports all426
+physical text tensors, inverse-copies only whole rows, retains24 physical out
+matrices and uses source gamma/pretransformed A unchanged. No quantizer or F32
+model is created. Source files are rehashed before/after and all723 persisted
+tensor spans are rehashed. Full vocabulary/merges/template equivalence is checked:
+243 upstream UNUSED labels map to empty native rows; six FIM CONTROL tokens gain
+source suppression only in format6. The pinned upstream EOG set248044/248046 is
+explicit, while old format5 keeps its primary248046 behavior.
+
+Runtime source-layout flags are set only by the new admitted owner. Its RMS paths
+consume direct gamma, grouped recurrence consumes direct negative A, and the
+pre-out activation is tiled without touching quant blocks or HF-order state.
+Cache tags reject crossing source domains. Unsupported BF16 activation/weight/head
+casts fail closed; the upstream experiment keeps F32 head output. All old owners
+have false default flags and retain their old operations. WASM rejects this path.
+
+Four model-free Python transport/header controls pass; full geometry/metadata/
+legacy and direct-A C++ controls are prepared for focused Kaggle execution. No
+physical candidate decoded result is claimed before those controls and an actual
+same-weight comparison. No existing default, alias, release or app pin changes.

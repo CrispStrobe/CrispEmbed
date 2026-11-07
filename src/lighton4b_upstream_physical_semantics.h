@@ -8,7 +8,11 @@ namespace qwen35_ocr {
 // Only the independently authenticated physical upstream profile may set the
 // per-owner flag. This never infers a layout from quantization types alone.
 inline bool lighton4b_upstream_physical_enabled() {
+#if defined(__EMSCRIPTEN__)
+    return false; // native experiment; WASM remains explicitly unsupported
+#else
     return core_env::on("CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL");
+#endif
 }
 inline bool lighton4b_upstream_physical_mode_valid(bool physical) {
     return !physical || (lighton4b_upstream_physical_enabled() &&

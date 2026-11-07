@@ -2038,3 +2038,15 @@ storage immutability; no dot arithmetic changes are needed. The decoder owner
 lane supplies separately gated Q6-head recipe admission. All execution is a
 bounded Kaggle CPU control, combined with that lane where possible; no GitHub
 model/CI run, full model, quantization, public alias or release qualification.
+
+
+### Format6 physical upstream importer and paired runtime semantics prepared
+
+`lighton4b-upstream-q4km-physical-v1` is separate from format5 HF-weighted recipes.
+[Implementation scope](docs/lighton4b-upstream-physical-import.md) retains all
+physical quant blocks, inverse whole rows, direct gamma/A and tiled pre-out input;
+source-domain cache tags and BF16-cast conflicts fail closed. Complete tokenizer
+semantics include six source FIM controls,243 UNUSED rows and source EOG248044/
+248046, without changing format5. Four Python controls pass; focused C++/Kaggle
+controls and actual same-weight decoded comparison are next, coordinated to avoid
+duplicate expensive workers. No quality/default/release/model alias claim.
