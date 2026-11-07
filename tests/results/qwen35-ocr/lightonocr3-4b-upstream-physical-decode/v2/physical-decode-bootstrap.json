@@ -1,0 +1,12 @@
+{
+  "schema": "lighton4b-physical-decode-kaggle-bootstrap/v1",
+  "source_sha": "ac34f72ca89823a177c538ad598dfa00fc69f124",
+  "status": "completed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "physical-comparison",
+  "worker_sha256": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+  "protocol_sha256": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d",
+  "worker_status": "measured"
+}

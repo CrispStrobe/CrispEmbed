@@ -1,0 +1,229 @@
+{
+  "index": 0,
+  "content": "أب",
+  "tokens": [
+    67321,
+    20704
+  ],
+  "id_slot": 0,
+  "stop": true,
+  "model": "/tmp/lighton4b-upstream-physical-decode-v1/physical-decode/LightOnOCR-3-4B-Q4_K_M.gguf",
+  "tokens_predicted": 2,
+  "tokens_evaluated": 82,
+  "generation_settings": {
+    "seed": 0,
+    "temperature": 0.0,
+    "dynatemp_range": 0.0,
+    "dynatemp_exponent": 1.0,
+    "top_k": 1,
+    "top_p": 1.0,
+    "min_p": 0.0,
+    "top_n_sigma": -1.0,
+    "xtc_probability": 0.0,
+    "xtc_threshold": 0.10000000149011612,
+    "typical_p": 1.0,
+    "repeat_last_n": 64,
+    "repeat_penalty": 1.0,
+    "presence_penalty": 0.0,
+    "frequency_penalty": 0.0,
+    "dry_multiplier": 0.0,
+    "dry_base": 1.75,
+    "dry_allowed_length": 2,
+    "dry_penalty_last_n": 64,
+    "dry_sequence_breakers": [
+      "\n",
+      ":",
+      "\"",
+      "*"
+    ],
+    "mirostat": 0,
+    "mirostat_tau": 5.0,
+    "mirostat_eta": 0.10000000149011612,
+    "adaptive_target": -1.0,
+    "adaptive_decay": 0.8999999761581421,
+    "stop": [],
+    "max_tokens": 2,
+    "n_predict": 2,
+    "n_keep": 0,
+    "n_discard": 0,
+    "ignore_eos": false,
+    "stream": false,
+    "logit_bias": [],
+    "n_probs": 5,
+    "min_keep": 0,
+    "grammar": "",
+    "grammar_lazy": false,
+    "grammar_triggers": [],
+    "preserved_tokens": [],
+    "chat_format": "Content-only",
+    "reasoning_format": "deepseek",
+    "reasoning_in_content": false,
+    "generation_prompt": "",
+    "samplers": [
+      "penalties",
+      "dry",
+      "top_n_sigma",
+      "top_k",
+      "typ_p",
+      "top_p",
+      "min_p",
+      "xtc",
+      "temperature"
+    ],
+    "speculative.types": "none",
+    "timings_per_token": false,
+    "post_sampling_probs": false,
+    "backend_sampling": false,
+    "lora": []
+  },
+  "prompt": "<|im_start|>user\n<|vision_start|><|vision_end|><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "has_new_line": false,
+  "truncated": false,
+  "stop_type": "limit",
+  "stopping_word": "",
+  "tokens_cached": 83,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 82,
+    "prompt_ms": 4884.757,
+    "prompt_per_token_ms": 59.57020731707317,
+    "prompt_per_second": 16.786914886451875,
+    "predicted_n": 2,
+    "predicted_ms": 107.477,
+    "predicted_per_token_ms": 107.477,
+    "predicted_per_second": 9.304316272318728
+  },
+  "completion_probabilities": [
+    {
+      "id": 67321,
+      "token": "أ",
+      "bytes": [
+        216,
+        163
+      ],
+      "logprob": -0.14519770443439484,
+      "top_logprobs": [
+        {
+          "id": 67321,
+          "token": "أ",
+          "bytes": [
+            216,
+            163
+          ],
+          "logprob": -0.14519770443439484
+        },
+        {
+          "id": 68216,
+          "token": "اب",
+          "bytes": [
+            216,
+            167,
+            216,
+            168
+          ],
+          "logprob": -3.6618192195892334
+        },
+        {
+          "id": 177842,
+          "token": "الأ",
+          "bytes": [
+            216,
+            167,
+            217,
+            132,
+            216,
+            163
+          ],
+          "logprob": -4.121903419494629
+        },
+        {
+          "id": 71093,
+          "token": "```",
+          "bytes": [
+            96,
+            96,
+            96
+          ],
+          "logprob": -4.6131744384765625
+        },
+        {
+          "id": 30350,
+          "token": "ال",
+          "bytes": [
+            216,
+            167,
+            217,
+            132
+          ],
+          "logprob": -4.734872817993164
+        }
+      ]
+    },
+    {
+      "id": 20704,
+      "token": "ب",
+      "bytes": [
+        216,
+        168
+      ],
+      "logprob": -0.03291440010070801,
+      "top_logprobs": [
+        {
+          "id": 20704,
+          "token": "ب",
+          "bytes": [
+            216,
+            168
+          ],
+          "logprob": -0.03291440010070801
+        },
+        {
+          "id": 205723,
+          "token": "بحاث",
+          "bytes": [
+            216,
+            168,
+            216,
+            173,
+            216,
+            167,
+            216,
+            171
+          ],
+          "logprob": -4.346121788024902
+        },
+        {
+          "id": 150765,
+          "token": "َب",
+          "bytes": [
+            217,
+            142,
+            216,
+            168
+          ],
+          "logprob": -5.0735673904418945
+        },
+        {
+          "id": 62422,
+          "token": "ُ",
+          "bytes": [
+            217,
+            143
+          ],
+          "logprob": -6.059161186218262
+        },
+        {
+          "id": 201262,
+          "token": "ُب",
+          "bytes": [
+            217,
+            143,
+            216,
+            168
+          ],
+          "logprob": -6.322175025939941
+        }
+      ]
+    }
+  ]
+}

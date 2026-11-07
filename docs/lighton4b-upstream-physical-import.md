@@ -162,3 +162,13 @@ initial CLI feature-capture site; the corrected hook targets the shared
 pins the previously verified audit dependencies, imports them before transfers,
 and requires the same complete candidate file hash. Its runtime behavior and
 source-feature-only scope remain unchanged and default-off.
+
+## Full same-feature result
+
+The [complete three-case decoded comparison](lighton4b-upstream-physical-decoded-results.md)
+now records actual source-controlled outputs: form174/EOS fails the character
+edit floor (202 versus llama.cpp189), table256/cap remains incomplete despite
+smaller edit counts, and Arabic6/EOS is exact. Exact physical text weights and
+actual prefill bytes do not establish whole-runtime parity. Both experimental
+gates remain off; component controls and future arithmetic ablations must not
+be promoted from this negative result.

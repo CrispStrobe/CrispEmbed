@@ -2983,3 +2983,15 @@ heldoutclaim, recipe/default/release/shippingchange. Root-approvednext bounded
 lane is original-F16→24tiledQ4 tensorreproduction, then distinctHF-tiled-out tag
 with699otherpayloads/HFgamma/logA unchanged andONLY outputactivationP; do not apply
 physical-format6 scalar mode to HF tensors. No newmodeljob from this evidence.
+
+### Physical same-weight baseline complete: no promotion
+
+The [actual three-case source-feature decode](docs/lighton4b-upstream-physical-decoded-results.md)
+is complete at frozen `ac34f72ca`: exact physical text/captured-feature/prompt
+controls pass, but form174/EOS has202 character edits versus upstream189;
+table256/cap has no EOS; Arabic6/EOS matches. Word edits improve on form, both
+edit distances improve on table, but the required floor/completeness is not met.
+All81 small raw outputs, full ID/text evidence, source/max-error magnitudes and
+independent metrics are preserved; arrays stay remote. The separate arithmetic
+smoke and actual-main primitive closure are independent receipts. No alias,
+release, default, heldout or full-runtime-parity qualification.
