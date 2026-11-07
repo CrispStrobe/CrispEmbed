@@ -1785,3 +1785,7 @@ target_link_libraries(test-lighton4b-physical-native-ops PRIVATE crispembed-qwen
 add_executable(test-lighton4b-physical-runtime-primitive EXCLUDE_FROM_ALL tools/physical-primitive-probe/main.cpp)
 target_compile_definitions(test-lighton4b-physical-runtime-primitive PRIVATE CRISPEMBED_PHYSICAL_RUNTIME_PROBE=1)
 target_link_libraries(test-lighton4b-physical-runtime-primitive PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Reference-only captured-input attention probe; excluded from production/default builds.
+add_executable(lighton4b-attention-native-probe EXCLUDE_FROM_ALL tools/attention-primitive-probe/native.cpp)
+target_link_libraries(lighton4b-attention-native-probe PRIVATE crispembed-qwen35-delta crispembed-core)
