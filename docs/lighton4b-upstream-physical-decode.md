@@ -74,3 +74,14 @@ boundary, after encoding and before consuming the same `encoded_embd` pointer.
 The pinned source hashes, exact OFF/ON prefix controls and all production blobs
 remain unchanged. The initial submission is retained as a setup negative; a
 missing source feature fails closed before native full generation.
+
+The first worker stopped after the actual lossless import, before either engine
+forward: pinned upstream gguf-py imports PyYAML, absent from the initial minimal
+NumPy/Pillow environment. Both executables built successfully. Its complete
+723-tensor persisted readback produced 4,041,905,760 bytes with SHA-256
+`843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43`,
+including 474 F32 protected/scalar tensors, 216 Q4_K and 33 Q6_K matrices.
+The retry reuses the independently tested physical-audit dependency pins,
+imports gguf-py before build/download, and requires the exact same generated
+candidate file hash before inference. This is setup and transport evidence,
+not decoded or first-score quality evidence.

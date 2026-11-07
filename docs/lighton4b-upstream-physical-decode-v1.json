@@ -108,5 +108,17 @@
   "failure_receipt": "Every spawned command records elapsed time, observed RSS peak, final return code and failure stage/type in finally, including timeout, byte-check callback failure, signal, nonzero exit and spawn failure. Partial raw output remains retained.",
   "frozen_source_feature_scope_guard": true,
   "upstream_feature_capture_boundary": "mtmd_helper_decode_image_chunk(encoded_embd), shared by server batched-media and CLI paths, after encoding/before consuming identical pointer",
-  "initial_routing_setup_source": "a6644247c48cb25e1b7e4b8da9e8ff91644eaca7"
+  "initial_routing_setup_source": "a6644247c48cb25e1b7e4b8da9e8ff91644eaca7",
+  "python_pins": {
+    "numpy": "2.3.5",
+    "pillow": "11.3.0",
+    "PyYAML": "6.0.3",
+    "tqdm": "4.67.1",
+    "requests": "2.32.5",
+    "charset-normalizer": "3.5.2",
+    "idna": "3.20",
+    "urllib3": "2.8.0",
+    "certifi": "2026.10.23"
+  },
+  "expected_candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43"
 }
