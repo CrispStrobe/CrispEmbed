@@ -1,4 +1,5 @@
 {
+  "artifact_only_extension": "Three-point FFN mechanism analysis from existing live/retained operator outputs; no new inference.",
   "files": {
     "audit.json": {
       "bytes": 12729,
@@ -43,6 +44,30 @@
     "capture/upstream-text-trace.log": {
       "bytes": 3041,
       "sha256": "6325e104969a49699df84735180f165bcda50a12a827e47a17b44d6e90d17951"
+    },
+    "ffn-three-point/A-native-raw.f32": {
+      "bytes": 147456,
+      "sha256": "ef058fd49b8746cfbc5da5b1cb25d4c9fc6591a456214a8ef0db72aa0677ced5"
+    },
+    "ffn-three-point/B-source-preferred-native-input.f32": {
+      "bytes": 147456,
+      "sha256": "6b3c2ad67663d2439bb940addfb34e2c4bcf52cf6c22102018ac8bb9aebe5731"
+    },
+    "ffn-three-point/C-live-source-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "7e42b847af6c67420a2c435a10f909f9c2f71b9355b851d469c8f08fe8bfb52f"
+    },
+    "ffn-three-point/audit.json": {
+      "bytes": 4210,
+      "sha256": "6efc281286f49656302b51723379d9dfe3d0c13ecd1d5be00d33bb86a68602d1"
+    },
+    "ffn-three-point/native-postnorm16.f32": {
+      "bytes": 163840,
+      "sha256": "57f78abc599666ff2d54c01abbccc2655431dcac82e32ee6f5cc2d1f85237f11"
+    },
+    "ffn-three-point/source-postnorm4.f32": {
+      "bytes": 40960,
+      "sha256": "54b7073707c3693830e390eae944187acc2d6e6317bea4385c40a9e2585436b3"
     },
     "live-fixtures/graph-1.alpha-0.bin": {
       "bytes": 512,

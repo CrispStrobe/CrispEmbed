@@ -1,0 +1,108 @@
+{
+  "A": "borrowed native operator on actual native postnorm first4",
+  "A_minus_B_route_only": {
+    "bit_exact": false,
+    "candidate_max_abs": 3.8245978355407715,
+    "candidate_rms_magnitude": 0.22776663329835767,
+    "different_bits": 32569,
+    "different_numeric": 32569,
+    "elements": 36864,
+    "error_max_abs": 1.1920928955078125e-06,
+    "error_rms": 1.0038952321658035e-07,
+    "reference_max_abs": 3.8245975971221924,
+    "reference_rms_magnitude": 0.22776663307894687
+  },
+  "A_minus_C_total": {
+    "bit_exact": false,
+    "candidate_max_abs": 3.8245978355407715,
+    "candidate_rms_magnitude": 0.22776663329835767,
+    "different_bits": 35203,
+    "different_numeric": 35203,
+    "elements": 36864,
+    "error_max_abs": 0.00036591291427612305,
+    "error_rms": 4.948765076361029e-05,
+    "reference_max_abs": 3.8247461318969727,
+    "reference_rms_magnitude": 0.22776664960285287
+  },
+  "B": "preferred upstream operator on the SAME actual native postnorm first4",
+  "B_minus_C_input_only": {
+    "bit_exact": false,
+    "candidate_max_abs": 3.8245975971221924,
+    "candidate_rms_magnitude": 0.22776663307894687,
+    "different_bits": 34590,
+    "different_numeric": 34590,
+    "elements": 36864,
+    "error_max_abs": 0.00036579370498657227,
+    "error_rms": 4.948690261454678e-05,
+    "reference_max_abs": 3.8247461318969727,
+    "reference_rms_magnitude": 0.22776664960285287
+  },
+  "C": "actual live preferred upstream operator on actual source postnorm first4",
+  "files": {
+    "A-native-raw.f32": {
+      "bytes": 147456,
+      "sha256": "ef058fd49b8746cfbc5da5b1cb25d4c9fc6591a456214a8ef0db72aa0677ced5"
+    },
+    "B-source-preferred-native-input.f32": {
+      "bytes": 147456,
+      "sha256": "6b3c2ad67663d2439bb940addfb34e2c4bcf52cf6c22102018ac8bb9aebe5731"
+    },
+    "C-live-source-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "7e42b847af6c67420a2c435a10f909f9c2f71b9355b851d469c8f08fe8bfb52f"
+    },
+    "native-postnorm16.f32": {
+      "bytes": 163840,
+      "sha256": "57f78abc599666ff2d54c01abbccc2655431dcac82e32ee6f5cc2d1f85237f11"
+    },
+    "source-postnorm4.f32": {
+      "bytes": 40960,
+      "sha256": "54b7073707c3693830e390eae944187acc2d6e6317bea4385c40a9e2585436b3"
+    }
+  },
+  "inference_executed": false,
+  "input_delta_native_vs_source": {
+    "bit_exact": false,
+    "candidate_max_abs": 3.901759624481201,
+    "candidate_rms_magnitude": 0.446532863394816,
+    "different_bits": 10063,
+    "different_numeric": 10063,
+    "elements": 10240,
+    "error_max_abs": 8.798204362392426e-06,
+    "error_rms": 1.2611334037053923e-06,
+    "reference_max_abs": 3.9017608165740967,
+    "reference_rms_magnitude": 0.4465329171525552
+  },
+  "input_only_rms_fraction_of_total_rms": 0.9999848821058998,
+  "limits": [
+    "One observed calibration text-prefix4, no heldout or quality selection.",
+    "Input sensitivity is demonstrated on the same quantized source operator; exact Q8 activation-code changes are not yet captured.",
+    "This is not a selective runtime candidate or a decoded-quality improvement."
+  ],
+  "native_input16_sha256": "57f78abc599666ff2d54c01abbccc2655431dcac82e32ee6f5cc2d1f85237f11",
+  "native_prefix_control": {
+    "bit_exact": true,
+    "max_abs": 0.0,
+    "reference_max_abs": 3.8245978355407715,
+    "rms": 0.0
+  },
+  "operator_tensor_sha256": {
+    "native": "2c7b3c2cfebc0ca1e12795d8998b60ae8d89e9453124073635dc9a735ab8051e",
+    "source": "2c7b3c2cfebc0ca1e12795d8998b60ae8d89e9453124073635dc9a735ab8051e"
+  },
+  "receipt_sha256": {
+    "operator": "4dc28c17717082a36e9f2cad3729a31a83a97c3234b07d3c00002232744a66f5",
+    "producer": "8df1604435314b09ea8cbb60f47833a04307a492349191901313ed9b39540186",
+    "table": "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3",
+    "trace": "5a8a1aaedb41aa4a485d1f9927c9e0ae5c19e02c69f9ba0d2c34fc319a4dc9b3"
+  },
+  "schema": "lighton4b-live-ffn-three-point/v1",
+  "source_input4_sha256": "54b7073707c3693830e390eae944187acc2d6e6317bea4385c40a9e2585436b3",
+  "source_preferred_cross_version_control": {
+    "bit_exact": true,
+    "max_abs": 0.0,
+    "reference_max_abs": 3.8245975971221924,
+    "rms": 0.0
+  },
+  "status": "verified_same_weight_artifact_decomposition"
+}
