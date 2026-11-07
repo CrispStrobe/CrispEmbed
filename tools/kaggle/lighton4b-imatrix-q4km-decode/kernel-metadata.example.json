@@ -1,5 +1,5 @@
 {
-  "id": "__OWNER__/lighton4b-imatrix-q4km-decode",
+  "id": "__OWNER__/lighton4b-q4km-complete-calibration-decode",
   "title": "LightOn4B Q4KM complete calibration decode",
   "code_file": "kernel.py",
   "language": "python",
