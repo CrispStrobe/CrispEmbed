@@ -2046,3 +2046,18 @@ Receipt admission rejects authenticated failed controls, wrong schedules,
 protected-payload failures, wrong source/case sets and tampering. Bootstrap and
 controller compilation plus two local trust-boundary tests pass; inference has
 not been dispatched by this preparation.
+
+The requested third case is prepared as a separate post-selection form worker,
+using the same sealed candidate and preserved binaries. It authenticates the
+original BF16 capture (`170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a`),
+177 IDs/EOS, original checkpoint revision and all723 BF16 parameters. Canonical
+NumPy serialization of all five actual preflight inputs must match that capture's
+original array hashes; no source arrays or model are substituted as native inputs.
+A90-minute child/105-minute controller/120-minute service permits complete output.
+Raw text/IDs/EOS and CER/WER are compared with both the BF16 transcription and the
+pinned llama.cpp Q4_K_M form transcription (189/656 character edits,46/90 word
+edits against BF16, EOS). Form has no earlier producer prefill control: that
+absence is recorded rather than invented, while native prefill/teacher0/greedy0
+must agree exactly. This previously observed case is not heldout; it cannot change
+the already fixed recipe. Compilation and receipt-admission tests pass; dispatch
+awaits the producer and an exclusive queued slot.
