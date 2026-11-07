@@ -33,9 +33,12 @@ def text_schema(plan):
 
 def control_args(target,build,schema):
     schema_targets={'test-lighton4b-upstream-physical','test-lighton4b-hf-tiled-out-recipe'}
-    noarg_targets={'test-lighton4b-physical-f16-attention','test-lighton4b-physical-f16-unsupported','test-lighton4b-physical-f16-wasm-guard','test-lighton4b-physical-native-ops','test-lighton4b-release-fence','test-lighton4b-hf-tiled-out-operator','test-lighton4b-q6-tied-head'}
-    require(target in schema_targets|noarg_targets,'unknown control CLI')
-    return [build/target,schema]if target in schema_targets else[build/target]
+    fixture_targets={'test-lighton4b-release-fence'}
+    noarg_targets={'test-lighton4b-physical-f16-attention','test-lighton4b-physical-f16-unsupported','test-lighton4b-physical-f16-wasm-guard','test-lighton4b-physical-native-ops','test-lighton4b-hf-tiled-out-operator','test-lighton4b-q6-tied-head'}
+    require(target in schema_targets|fixture_targets|noarg_targets,'unknown control CLI')
+    if target in schema_targets:return [build/target,schema]
+    if target in fixture_targets:return [build/target,schema.parent/'release-fence-fixture.gguf']
+    return [build/target]
 
 
 def main():
@@ -79,8 +82,9 @@ def main():
         run('runtime-build',['cmake','--build',build,'--target',*targets,'--parallel','2'])
         sys.path.insert(0,str(ROOT/'tools'));from lighton4b_q6_recipe import plan
         schema=out/'closed426.tsv';schema.write_text(text_schema(plan()))
+        primary={'test-lighton4b-physical-f16-attention','test-lighton4b-physical-f16-unsupported','test-lighton4b-physical-f16-wasm-guard'}
         for target in targets:
-            if target!='lighton4b-physical-f16-attention-probe':
+            if target in primary:
                 run(target,control_args(target,build,schema))
                 if target=='test-lighton4b-physical-f16-attention':require('PHYSICAL_F16_ATTENTION PASS 'in(out/(target+'.log')).read_text(),'supported runtime controls required, not skipped')
         run('source-pins',['python3',ROOT/'tools/qwen35_source_pins.py','--check','--verify-git'])
@@ -105,6 +109,8 @@ def main():
             require(report['sourcefed'][label]['bit_exact'],'runtime/source byte closure '+label)
             if past==0 and n in(4,16):require(gold.read_bytes()==(frozen.parent/f'upstream/{n}/f16/observed/gated.f32').read_bytes(),'fresh original source profile '+label)
         require((out/'runtime/prefill16/keys.f32').read_bytes()==(out/'runtime/step15/keys.f32').read_bytes()and(out/'runtime/prefill16/values.f32').read_bytes()==(out/'runtime/step15/values.f32').read_bytes(),'prefill/tokenwise canonical cache identity')
+        for target in targets:
+            if target not in primary and target!='lighton4b-physical-f16-attention-probe':run(target,control_args(target,build,schema))
         report['status']='model_free_sourcefed_pass';report['legacy_gates_default_unchanged']=True;report['public_release_fence_preserved']=True
     except BaseException as error:report['error_type'],report['error']=type(error).__name__,str(error);raise
     finally:
