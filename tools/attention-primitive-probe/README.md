@@ -37,3 +37,16 @@ batched4/16 controls; tokenwise replay is explicitly not yet implemented and
 cannot be inferred from these results. The protocol
 freezes eleven whole source tensor ranges (including native layer3 FFN solely
 for actual-helper byte closure), three actual capture hashes and resource caps.
+
+Pre-dispatch review found and corrected two setup defects: scalar logits had
+been scaled/causally restricted while source graph logits are raw QK over all
+populated keys; and command-only timeouts did not bound HTTP/scalar work or
+compiler descendants. The corrected probe stores raw all-key logits separately
+from scaled causal softmax scores, uses a whole-worker SIGALRM deadline and
+process-group cleanup, checkpoints command phases, validates all three actual
+build caches, and reports all predeclared scalar rounding arms. Focused tests
+cover the raw/future/padding distinction, deadline interruption, descendant
+cleanup, success/nonzero receipts and build-profile mutations. The initial
+descendant test used a 0.2-second Python startup window and timed out before
+creating its fixture; its bounded two-second fixture window passes. No model
+or operator result follows from these setup controls.

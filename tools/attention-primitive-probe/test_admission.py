@@ -3,6 +3,10 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
+import tempfile
+import sys
+sys.path.insert(0, str(Path(__file__).parent))
+from worker import validate_cache
 
 ROOT = Path(__file__).parent
 spec = importlib.util.spec_from_file_location('attention_admission', ROOT / 'admission.py')
@@ -29,6 +33,20 @@ class AttentionAdmission(unittest.TestCase):
                 p[field] = value
                 with self.assertRaises(ValueError):
                     a.validate(p)
+
+    def test_actual_build_profiles(self):
+        flags = {'GGML_LLAMAFILE': 'ON', 'GGML_AVX2': 'ON', 'GGML_NATIVE': 'OFF',
+                 'GGML_AVX512': 'OFF', 'GGML_BLAS': 'OFF', 'CRISPEMBED_NATIVE': 'OFF'}
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'CMakeCache.txt'
+            path.write_text('\n'.join(f'{k}:BOOL={v}' for k, v in flags.items()))
+            validate_cache(path, runtime=True)
+            for key in flags:
+                changed = dict(flags)
+                changed[key] = 'OFF' if changed[key] == 'ON' else 'ON'
+                path.write_text('\n'.join(f'{k}:BOOL={v}' for k, v in changed.items()))
+                with self.subTest(key=key), self.assertRaises(RuntimeError):
+                    validate_cache(path, runtime=True)
 
     def test_range_mutations(self):
         for field, value in [('bytes', 1), ('type', 1), ('source_offset', -1),

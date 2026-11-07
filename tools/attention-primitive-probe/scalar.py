@@ -30,12 +30,13 @@ def attention(q, k, v, gate, cache_f16=False, query_f16=False, probability_f16=F
     for t in range(n):
         for h in range(16):
             scores = []
-            for s in range(t + 1):
+            for s in range(n):
                 dot = np.float32(0)
                 for i in range(256):
                     dot = np.float32(dot + np.float32(q[t, h, i] * k[s, h // 4, i]))
-                scores.append(np.float32(dot * np.float32(.0625)))
-            logits[h, t, :t + 1] = scores
+                logits[h, t, s] = dot
+                if s <= t:
+                    scores.append(np.float32(dot * np.float32(.0625)))
             maximum = max(scores)
             values = [expf(np.float32(x - maximum)) for x in scores]
             total = np.float32(0)

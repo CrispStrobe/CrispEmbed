@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import resource
 from pathlib import Path
 import shutil
 import subprocess
@@ -9,6 +10,7 @@ import sys
 import time
 import urllib.request
 from admission import load, digest, admit_capture_files
+from runtime_guard import Deadline, command
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).parent
@@ -17,6 +19,16 @@ HERE = Path(__file__).parent
 def require(ok, message):
     if not ok:
         raise RuntimeError(message)
+
+
+def validate_cache(path, runtime=False):
+    flags = {'GGML_LLAMAFILE': 'ON', 'GGML_AVX2': 'ON', 'GGML_NATIVE': 'OFF',
+             'GGML_AVX512': 'OFF', 'GGML_BLAS': 'OFF'}
+    if runtime:
+        flags['CRISPEMBED_NATIVE'] = 'OFF'
+    contents = Path(path).read_text().splitlines()
+    for name, value in flags.items():
+        require(f'{name}:BOOL={value}' in contents, 'actual CMake profile drift: ' + name)
 
 
 def main():
@@ -29,18 +41,32 @@ def main():
     out = Path(os.environ['HEAVY_OUT'])
     scratch = Path(os.environ['HEAVY_SCRATCH']) / 'attention-primitives'
     scratch.mkdir()
+    out.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()
     report = {'schema': cfg['schema'], 'status': 'failed', 'actual_source_hidden_captured': False,
               'actual_native_hidden_closed': False, 'model_forward_executed': False,
               'quality_qualified': False, 'protocol_sha256': digest(HERE / 'protocol-v1.json')}
 
+    report['commands'] = {}
+    deadline = Deadline(cfg['total_timeout_seconds'])
+    deadline.__enter__()
+
+    def checkpoint():
+        path = out / 'attention-primitives.json'
+        temporary = out / 'attention-primitives.pending'
+        temporary.write_text(json.dumps(report, indent=2) + '\n')
+        temporary.replace(path)
+
     def run(label, args):
         report['phase'] = label
+        checkpoint()
         remaining = cfg['total_timeout_seconds'] - (time.monotonic() - started)
         require(remaining > 0, 'total deadline')
-        with (out / (label + '.log')).open('w') as log:
-            subprocess.run(list(map(str, args)), stdout=log, stderr=subprocess.STDOUT, check=True,
-                           timeout=min(remaining, 900))
+        receipt = report['commands'][label] = {}
+        try:
+            command(args, out / (label + '.log'), min(remaining, 900), receipt)
+        finally:
+            checkpoint()
 
     def diff(x, y):
         require(x.shape == y.shape and np.isfinite(x).all() and np.isfinite(y).all(), 'finite same shape')
@@ -49,7 +75,8 @@ def main():
                 'max_abs': float(abs(delta).max()), 'reference_max_abs': float(abs(y).max())}
 
     try:
-        source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+        run('source-pin', ['git', '-C', ROOT, 'rev-parse', 'HEAD'])
+        source = (out / 'source-pin.log').read_text().strip()
         require(source == os.environ['LIGHTON4B_EXPECTED_SOURCE'], 'source pin')
         report['source_sha'] = source
         available = int(next(x.split()[1] for x in Path('/proc/meminfo').read_text().splitlines() if x.startswith('MemAvailable:'))) * 1024
@@ -83,11 +110,14 @@ def main():
                             ('up-checkout', ['git', '-C', up, 'checkout', '--detach', 'FETCH_HEAD']),
                             ('native-submodule', ['git', '-C', ROOT, 'submodule', 'update', '--init', 'ggml'])]:
             run(label, args)
-        require(subprocess.check_output(['git', '-C', ROOT / 'ggml', 'rev-parse', 'HEAD'], text=True).strip() == cfg['native_ggml_commit'], 'native ggml pin')
+        run('ggml-pin', ['git', '-C', ROOT / 'ggml', 'rev-parse', 'HEAD'])
+        require((out / 'ggml-pin.log').read_text().strip() == cfg['native_ggml_commit'], 'native ggml pin')
         for name, expected in cfg['source_function_sha256'].items():
             require(digest(up / name) == expected, 'source function authentication')
         build = scratch / 'runtime-build'
         run('runtime-configure', ['cmake', '-S', ROOT, '-B', build, '-DCMAKE_BUILD_TYPE=Release', '-DGGML_NATIVE=OFF', '-DCRISPEMBED_NATIVE=OFF', '-DGGML_AVX2=ON', '-DGGML_AVX512=OFF', '-DGGML_BLAS=OFF', '-DGGML_LLAMAFILE=ON', '-DGGML_CUDA=OFF', '-DGGML_VULKAN=OFF'])
+        shutil.copy(build / 'CMakeCache.txt', out / 'runtime-CMakeCache.txt')
+        validate_cache(out / 'runtime-CMakeCache.txt', runtime=True)
         run('runtime-build', ['cmake', '--build', build, '--target', 'lighton4b-attention-native-probe', '--parallel', '2'])
         exported = out / 'native'
         run('actual-native-closure', [build / 'lighton4b-attention-native-probe', weights, case, exported])
@@ -100,6 +130,7 @@ def main():
             run(tag + '-build', ['cmake', '--build', b, '--target', 'attention-primitive', '--parallel', '2'])
             binaries[tag] = b / 'attention-primitive'
             shutil.copy(b / 'CMakeCache.txt', out / (tag + '-CMakeCache.txt'))
+            validate_cache(out / (tag + '-CMakeCache.txt'))
         report['comparisons'] = {}
         for n in (4, 16):
             for kind in ('f16', 'f32'):
@@ -115,16 +146,22 @@ def main():
                     y = np.fromfile(out / 'upstream' / str(n) / kind / 'observed' / (stage + '.f32'), dtype='<f4')
                     report['comparisons'][f'{n}/{kind}/{stage}/backend'] = diff(x, y)
                     if stage != 'sigmoid':
-                        scalar = np.fromfile(out / 'scalar' / str(n) / ('kv_f16' if kind == 'f16' else 'f32') / (stage + '.f32'), dtype='<f4')
-                        report['comparisons'][f'{n}/{kind}/{stage}/scalar'] = diff(scalar, y)
+                        arms = ('kv_f16', 'kvq_f16', 'kvqp_f16') if kind == 'f16' else ('f32',)
+                        for arm in arms:
+                            scalar = np.fromfile(out / 'scalar' / str(n) / arm / (stage + '.f32'), dtype='<f4')
+                            report['comparisons'][f'{n}/{kind}/{stage}/scalar/{arm}'] = diff(scalar, y)
         report['status'] = 'measured_operator_only'
         report['tokenwise_cache_replay_complete'] = False
         report['limitation'] = 'Batch4/16 only; tokenwise cache replay remains a separate prerequisite for any cache-semantics attribution.'
-    except Exception as error:
+    except BaseException as error:
         report['error_type'], report['error'] = type(error).__name__, str(error)
         raise
     finally:
+        deadline.close()
         report['elapsed_seconds'] = time.monotonic() - started
+        usage = resource.getrusage(resource.RUSAGE_SELF)
+        report['worker_peak_rss_bytes'] = usage.ru_maxrss * 1024
+        report['worker_user_seconds'], report['worker_system_seconds'] = usage.ru_utime, usage.ru_stime
         report['artifacts'] = {str(p.relative_to(out)): {'sha256': digest(p), 'bytes': p.stat().st_size}
                                for p in sorted(out.rglob('*')) if p.is_file() and p.name != 'attention-primitives.json'}
         (out / 'attention-primitives.json').write_text(json.dumps(report, indent=2) + '\n')
