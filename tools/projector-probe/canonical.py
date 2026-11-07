@@ -79,8 +79,10 @@ def audit(cfg,native_suffix,projector):
             require(s['type']in(0,1)and 0<=s['offset']<s['offset']+s['bytes']<=cfg['projector_bytes'],'source tensor range/type')
             dtype='<f2'if s['type']==1 else'<f4';parts.append(np.memmap(projector,mode='r',dtype=dtype,offset=s['offset'],shape=tuple(reversed(s['shape']))))
         b=temporal_join(parts)if len(parts)==2 else parts[0].reshape(-1)
-        result=compare(a,b);result.update(native_sha256=row['native_sha256'],source_names=[s['name']for s in row['upstream']],transform=row['transform']);results[row['native_name']]=result
+        result=compare(a,b);types=[s['type']for s in row['upstream']];require(types in([0],[1],[1,1]),'declared precision domain')
+        result.update(native_sha256=row['native_sha256'],source_names=[s['name']for s in row['upstream']],source_types=types,transform=row['transform'],source_precision_transform_bit_exact=(result['bit_exact']if types==[0]else result['different_after_native_f16_round']==0));results[row['native_name']]=result
         del a,b,parts
     return dict(native_tensors=297,upstream_tensors=298,tensors=results,all_canonical_f32_bit_exact=all(r['bit_exact']for r in results.values()),
+                all_source_precision_transforms_bit_exact=all(r['source_precision_transform_bit_exact']for r in results.values()),
                 all_native_f16_round_equal=all(r['different_after_native_f16_round']==0 for r in results.values()),all_native_f16_round_numeric_equal=all(r['different_after_f16_round_numeric']==0 for r in results.values()),
                 original_checkpoint_identity_proven=False,scope='These two admitted projector payloads only; no assertion about unpublished prequantization checkpoints.')
