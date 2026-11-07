@@ -29,7 +29,7 @@
     "No heldout or shipping claim"
   ],
   "model_inference_allowed": false,
-  "model_report_sha256": "sealed from final complete output before dispatch",
+  "model_report_sha256": "63a586c07b0c2125e448e4f425bc9760ff9b5eb7c3123c7de0a60fde0a790361",
   "model_source": "b2a3778e424559b7216e1b11f21c7b38b71b02d8",
   "old_calibration_report_sha256": "1f296b54b74e2660f81f7fa7d9aae9850bb3d22fb19c5024c7a28908248090e7",
   "old_form_report_sha256": "a483fe4d56cfdde2c3835d2cf7ca1f322d09c4594664405e0faa8da073230643",
