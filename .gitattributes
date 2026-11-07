@@ -57,3 +57,7 @@ tests/results/qwen35-ocr/lightonocr3-4b-gdn-source-primitives/** -text whitespac
 # Preserve HF-layout synthetic backend-fixture negative byte hashes.
 tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v2-negative/**/*.log -text whitespace=-trailing-space,-blank-at-eof
 tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v2-negative/**/CMakeCache.txt -text whitespace=-trailing-space,-blank-at-eof
+
+# Retain exact passing HF-layout native controls and build cache bytes.
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v3/**/*.log -text whitespace=-trailing-space,-blank-at-eof
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v3/**/CMakeCache.txt -text whitespace=-trailing-space,-blank-at-eof

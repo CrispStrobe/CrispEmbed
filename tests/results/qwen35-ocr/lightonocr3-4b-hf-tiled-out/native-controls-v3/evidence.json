@@ -1,0 +1,143 @@
+{
+  "checks": {
+    "hf-tiled-fullwidth-operator": 39,
+    "hf-tiled-recipe": 66710,
+    "old-hf-imatrix-recipe": 1147,
+    "old-physical-modes": 142,
+    "old-q6-tied-head": 84,
+    "old-stream-projection": null,
+    "public-release-fence": 39
+  },
+  "kernel_id": 143171211,
+  "limitations": [
+    "Full-width synthetic projection and owner/cache controls only.",
+    "Actual4B candidate packing and full decoded quality remain separate; prior form CER failure is preserved.",
+    "No default, production alias or release qualification."
+  ],
+  "model_forward_executed": false,
+  "model_payload_bytes": 0,
+  "python_tests": 8,
+  "raw_files": {
+    "lighton-hf-tiled-out-native-controls/CMakeCache.txt": {
+      "bytes": 29259,
+      "sha256": "be0e2e18bb9ad21a318b045d0d4dc5bb1774e35e566c0e3be65bec772b63bf7e"
+    },
+    "lighton-hf-tiled-out-native-controls/bootstrap-receipt.json": {
+      "bytes": 1031,
+      "sha256": "8e49c7f1ebb7bf62e47e8590a0ff70faf5cc74424d4c729cbfcf117fc16af87a"
+    },
+    "lighton-hf-tiled-out-native-controls/build.log": {
+      "bytes": 8973,
+      "sha256": "273e883a5a68875ff2775632f2233732ad7bfba33f9d705ea872b60d7a7d3aec"
+    },
+    "lighton-hf-tiled-out-native-controls/checkout.log": {
+      "bytes": 91,
+      "sha256": "10b8478f993bdfb9eb746c6da281b70e1b1538611da844a313b908a6aafbce0f"
+    },
+    "lighton-hf-tiled-out-native-controls/closed426.tsv": {
+      "bytes": 21774,
+      "sha256": "1f3dae72f4b1f4beb80772f48d908181d372520df4961f70d8f6655e8a6c5021"
+    },
+    "lighton-hf-tiled-out-native-controls/configure.log": {
+      "bytes": 2089,
+      "sha256": "46d37e87a0815d53874abf407cabba4ca224f157e1b1dc02592a3d1398766850"
+    },
+    "lighton-hf-tiled-out-native-controls/dependency-preflight.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-native-controls/environment-inventory.log": {
+      "bytes": 3,
+      "sha256": "a12b7cb43c9d9134b5bb1b35e9096b66775d9e92e7611d1cc92b02edd6782a87"
+    },
+    "lighton-hf-tiled-out-native-controls/fetch-frozen-receipts.log": {
+      "bytes": 275,
+      "sha256": "725df7c1a7fda21ba1fb7377d190662619b07760d9eb47a7bae5aeaee49f8b59"
+    },
+    "lighton-hf-tiled-out-native-controls/fetch.log": {
+      "bytes": 123,
+      "sha256": "773f1a809e24aeaa3ba7fe5c98ea10bb561e181544ad18af61a0340c929a03cb"
+    },
+    "lighton-hf-tiled-out-native-controls/hf-tiled-fullwidth-operator.log": {
+      "bytes": 103,
+      "sha256": "586f2e5c355e94d02b7d93facce25ff5e4525f46d9c5be5f850538bb080d03b3"
+    },
+    "lighton-hf-tiled-out-native-controls/hf-tiled-recipe.log": {
+      "bytes": 42,
+      "sha256": "c2915815cbb5dcd0f56a56dc058300ee896f5adf366e074fe6dbc8591083e5f2"
+    },
+    "lighton-hf-tiled-out-native-controls/init.log": {
+      "bytes": 587,
+      "sha256": "42f9a45a86c0c33bd9a8d3247e0f2193053f95f7b7aed7c2e9e945c081cf86f0"
+    },
+    "lighton-hf-tiled-out-native-controls/native-controls.json": {
+      "bytes": 425,
+      "sha256": "fb2cd16e87c278dc197207eebbc20e4640cf86e2ef7288a8746b0c52f4e764d0"
+    },
+    "lighton-hf-tiled-out-native-controls/native-controls.log": {
+      "bytes": 187,
+      "sha256": "2a05220e3eee990043137f2626b703e219093d5712e5d5960ff1b31eacde3755"
+    },
+    "lighton-hf-tiled-out-native-controls/old-hf-imatrix-recipe.log": {
+      "bytes": 41,
+      "sha256": "b718a90496d487001c277195421800d1ace06518c39c469ad78d97fa1a3e9774"
+    },
+    "lighton-hf-tiled-out-native-controls/old-physical-modes.log": {
+      "bytes": 194,
+      "sha256": "55be879453faae1ad12ba240d135d6b094020c1bed1c23945f07eb0c373b1063"
+    },
+    "lighton-hf-tiled-out-native-controls/old-q6-tied-head.log": {
+      "bytes": 171,
+      "sha256": "9481438a41c398f486457154426d6fd0656dc8b13ec6eb171cb3a1d9c8d885cd"
+    },
+    "lighton-hf-tiled-out-native-controls/old-stream-projection.log": {
+      "bytes": 117,
+      "sha256": "f97cf909c059b4d9e12404a53a7cca90b33e9e04732621589fb8599dfc1748d6"
+    },
+    "lighton-hf-tiled-out-native-controls/packages.log": {
+      "bytes": 3548,
+      "sha256": "f09c5ef0a245df634ac247dd9a9a52cbdf1f891bc53a1cf2770a87b71d6d28f6"
+    },
+    "lighton-hf-tiled-out-native-controls/public-release-fence.log": {
+      "bytes": 152,
+      "sha256": "ca59706d04d01d7cdab43a22aef465f7086edbd4ed87541e81564fa80ebbe887"
+    },
+    "lighton-hf-tiled-out-native-controls/python-controls.log": {
+      "bytes": 106,
+      "sha256": "40ca486838d221c325895202ea121c5971fc2f6911a6dac3a4c81e3511c0952a"
+    },
+    "lighton-hf-tiled-out-native-controls/remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-native-controls/runtime-manifest.json": {
+      "bytes": 1735,
+      "sha256": "1278cf36f67f1cc6098d465e6c602c4bc2ffad702c185eede4f9deee662a96d0"
+    },
+    "lighton-hf-tiled-out-native-controls/source-pins.log": {
+      "bytes": 45,
+      "sha256": "286d64b42ca5d0653f39f75075fbdf6a62f6e2b124cdefaf3181887f5469dfcd"
+    },
+    "lighton-hf-tiled-out-native-controls/submodule.log": {
+      "bytes": 364,
+      "sha256": "aed02f5ea51e9df37f2ddb5edfe78838ac8e7f72c6b20b97ecb96cbe7e8cc16f"
+    },
+    "lighton-hf-tiled-out-native-controls/venv-prefix.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-native-controls/venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton4b-hf-tiled-out-native-controls.log": {
+      "bytes": 2011,
+      "sha256": "c7b5f2b5200f739a9342e60fe87bd7485592895e2d1903d28248cbb5d1e8d7f5"
+    }
+  },
+  "schema": "lighton4b-hf-tiled-out-native-controls-evidence/v1",
+  "seconds": 134.97522146699998,
+  "source_sha": "c89aaa4cb0c33d73d121b83b33d42d4bfcb20204",
+  "status": "passed",
+  "version": 3
+}

@@ -1,0 +1,50 @@
+{
+  "files": {
+    "bin/lighton4b-native-case-preflight": {
+      "bytes": 401696,
+      "sha256": "b3ec64cbed8e9d9d91b03ad594a4d8a64ed7a89114f762866201a8b5582d7cf3"
+    },
+    "bin/lighton4b-native-document": {
+      "bytes": 747672,
+      "sha256": "4dc0de2f4ce8128387b149341303a2ff8954b6333adcdd15f83c7c0b50374afe"
+    },
+    "lib/libggml-base.so": {
+      "bytes": 917880,
+      "sha256": "3a20d2937ae9dbd9df696a7e2ec68ff18d62c6a92a5a4a58b7e075d2307bfc70"
+    },
+    "lib/libggml-base.so.0": {
+      "bytes": 917880,
+      "sha256": "3a20d2937ae9dbd9df696a7e2ec68ff18d62c6a92a5a4a58b7e075d2307bfc70"
+    },
+    "lib/libggml-base.so.0.17.0": {
+      "bytes": 917880,
+      "sha256": "3a20d2937ae9dbd9df696a7e2ec68ff18d62c6a92a5a4a58b7e075d2307bfc70"
+    },
+    "lib/libggml-cpu.so": {
+      "bytes": 1162152,
+      "sha256": "05240bb1d73a646734b1327662bfc6ced45006c8106c872694824dd4b0882949"
+    },
+    "lib/libggml-cpu.so.0": {
+      "bytes": 1162152,
+      "sha256": "05240bb1d73a646734b1327662bfc6ced45006c8106c872694824dd4b0882949"
+    },
+    "lib/libggml-cpu.so.0.17.0": {
+      "bytes": 1162152,
+      "sha256": "05240bb1d73a646734b1327662bfc6ced45006c8106c872694824dd4b0882949"
+    },
+    "lib/libggml.so": {
+      "bytes": 56376,
+      "sha256": "3c880c23f5042f47c95e7840d466f13720e273e28bef873bf105409609fa933b"
+    },
+    "lib/libggml.so.0": {
+      "bytes": 56376,
+      "sha256": "3c880c23f5042f47c95e7840d466f13720e273e28bef873bf105409609fa933b"
+    },
+    "lib/libggml.so.0.17.0": {
+      "bytes": 56376,
+      "sha256": "3c880c23f5042f47c95e7840d466f13720e273e28bef873bf105409609fa933b"
+    }
+  },
+  "ggml_sha": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "source_sha": "c89aaa4cb0c33d73d121b83b33d42d4bfcb20204"
+}

@@ -3036,3 +3036,8 @@ head0.1039377). Every arm is only `<figure`, cap2/noEOS. No promotion or recipe
 selection; ordered timings cannot waive quality. Next bounded lane is actual-input
 source attention/F16-cache/softmax primitive attribution, with no speculative
 production change or full-model qualification claim.
+
+
+### LightOn4B HF-only tiled-output native controls — 7 November2026
+
+Kaggle CPU143171211/v3 atc89aaa4cb passed66,710 profile/type/metadata/permutation +39 full-width output/cache controls and all selected old recipe/physical/Q6/stream/public-fence controls,134.98s/no checkpoint. [Raw receipts and both preserved fixture negatives](docs/lighton4b-hf-tiled-out-controls-results.md). Exact runner/library bundle retained remotely. Next is independently audited699-protected/24-replaced candidate packing and full observed form/table/Arabic decode with adequate90min case caps; default/release/quality fences remain unchanged.
