@@ -2242,3 +2242,7 @@ Full composed aec0/sourceb985 preservesold194EOS/all194rows/38text+29vision anch
 ### Default-off physical GDN source-operator integration
 
 Integrate the exact reviewed/tested `cd50e9e691530525fb998edda8a449cc0725be91` helper, cache fingerprint, unit and bounded source-fed harness. The separate `CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS` gate retains scalar log1p softplus and matches pinned source postnorm/state/FIFO on allfour fixed operator inputs, including actual nonzero-state continuation; old native16 attention and20 gate/cache controls pass. [Immutable operator evidence and both initial negatives](https://github.com/CrispStrobe/CrispEmbed/blob/638aac0ed/docs/lighton4b-live-gdn-replay-results.md#hybrid-actual-input-component-pass) retain the6b1f receipt and N16 RAW output-projection residual. Quantized projections/global repack/default-off release fences remain unchanged. Same-feature table/form full decoded A/B is still required; this integration makes no quality or shipping claim.
+
+## Physical GDN decoded regression: gate stays off
+
+Full table/form A/B at `f6a1e60d3` closes OFF all282/167 rows+38 text anchors. GDN ON table294EOS worsens349→364/607 character edits,97→104/106 words; form167EOS raw IDs/text unchanged. Both first-score errors improve, without decoded quality parity. Keep default-off/unqualified and no ship; [evidence and limits](docs/lighton4b-physical-gdn-source-ops.md). No runtime/default/alias/release change.
