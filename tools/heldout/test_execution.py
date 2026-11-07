@@ -22,6 +22,9 @@ class Contracts(unittest.TestCase):
    with self.assertRaises(ValueError):m.source_response(bad,3)
   bad=copy.deepcopy(r);bad['content']='changed'
   with self.assertRaises(ValueError):m.neutral(r,bad)
+ def test_actual_worker_syntax(self):
+  import ast
+  ast.parse((m.ROOT/'tools/heldout/worker.py').read_text())
  def test_observed_full_text_anchor_scope(self):
   self.assertEqual(len(m.OBSERVED_TEXT_ANCHORS),38);self.assertEqual(len(set(m.OBSERVED_TEXT_ANCHORS)),38)
   for key in ['prefill.norm.f32','teacher.0.logits.f32','greedy.0.logits.f32','prefill.layer.31.f32']:self.assertIn(key,m.OBSERVED_TEXT_ANCHORS)
