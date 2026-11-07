@@ -30,12 +30,15 @@ to reject experimentalformat6 and no application model alias is added.
 [Retained qualification evidence](https://github.com/CrispStrobe/CrispEmbed/blob/efc8e24c5626076a22e977aff1523b16b124ddb9/docs/lighton4b-projector-attribution.md)
 records model-free resize/synthetic/gate controls and the actual observed-form
 component at sourceb59. All28 live upstream visual arrays match byte-for-byte,
-and29 legacy anchors remain exact. This is one-image component evidence;
-The complete composed form now emits167tokens/EOS and reproduces every retained
+and29 legacy anchors remain exact.
+
+The [complete composed form](https://github.com/CrispStrobe/CrispEmbed/blob/788b013532e2cc7d521d39f453259715953b88ff/docs/lighton4b-composed-form-vision-results.md)
+emits167tokens/EOS and reproduces every retained
 source-feature decode row. Character edits against the frozen BF16 output
 reference fall259→175/656 and word edits47→45/90, versus actual upstream189/46.
-This meets the observed form floor; broader reference checks remain required. Both gates remain off and the candidate remains unqualified. No
-runtime release or quality promotion follows from this component result.
+This meets the observed form floor; broader reference checks remain required.
+Both gates remain off and the candidate remains unqualified. No runtime release
+or general quality promotion follows from this observed result.
 
 Reference tools and test executables are excluded from default builds and
 production artifacts. The adapter map-gate setup failure is preserved separately;
