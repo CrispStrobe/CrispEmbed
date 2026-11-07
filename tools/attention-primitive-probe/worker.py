@@ -21,8 +21,8 @@ def require(ok, message):
         raise RuntimeError(message)
 
 
-def validate_cache(path, runtime=False):
-    flags = {'GGML_LLAMAFILE': 'ON', 'GGML_AVX2': 'ON', 'GGML_NATIVE': 'OFF',
+def validate_cache(path, runtime=False, llamafile=True):
+    flags = {'GGML_LLAMAFILE': 'ON' if llamafile else 'OFF', 'GGML_AVX2': 'ON', 'GGML_NATIVE': 'OFF',
              'GGML_AVX512': 'OFF', 'GGML_BLAS': 'OFF'}
     if runtime:
         flags['CRISPEMBED_NATIVE'] = 'OFF'

@@ -39,7 +39,7 @@ int main(int argc, char ** argv) try {
         need(overflow_rejected,"F16 overflow must reject");
         std::cout<<"PAIRED_F16_SYMBOL_OVERFLOW_CONTROLS PASS 2\n";return 0;
     }
-    need(argc == 4, "usage: paired INPUT OUTPUT {4,16}"); const fs::path root=argv[1], out=argv[2];
+    need(argc == 4 || argc == 5, "usage: paired INPUT OUTPUT {4,16} [EXACT_SOURCE_PROBS]"); const fs::path root=argv[1], out=argv[2];
     const int n=std::stoi(argv[3]); need(n==4 || n==16, "tokens"); fs::create_directories(out);
     std::unique_ptr<ggml_context,decltype(&ggml_free)> ctx(ggml_init({8ull<<20,nullptr,false}),ggml_free);
     std::unique_ptr<ggml_backend,decltype(&ggml_backend_free)> backend(ggml_backend_cpu_init(),ggml_backend_free);
@@ -61,7 +61,11 @@ int main(int argc, char ** argv) try {
     need(ggml_backend_graph_compute(backend.get(),graph)==GGML_STATUS_SUCCESS,"softmax/sigmoid graph");
     std::copy_n(static_cast<float *>(probability->data),probs.size(),probs.data());
     std::copy_n(static_cast<float *>(sig->data),sigmoid.size(),sigmoid.data());
-    auto ph=half(probs);
+    // Optional exact source probabilities isolate PV from propagated QK and
+    // softmax differences. Keep the composed arm above and label isolated PV.
+    const bool source_p = argc == 5;
+    const auto pv_probs = source_p ? read(argv[4],size_t(16)*n*256) : probs;
+    auto ph=half(pv_probs);
     auto rounded = [&](const char * name, const std::vector<ggml_fp16_t> & values) {
         std::vector<float> f(values.size());ggml_fp16_to_fp32_row(values.data(),f.data(),int64_t(values.size()));dump(out/name,f);
     };
@@ -76,6 +80,6 @@ std::vector<ggml_fp16_t> lane(256,ggml_fp32_to_fp16(0.f));
             gated[ix]=context[ix]*sigmoid[ix];
         }
     }
-    dump(out/"logits.f32",logits);dump(out/"probs.f32",probs);dump(out/"context.f32",context);dump(out/"sigmoid.f32",sigmoid);dump(out/"gated.f32",gated);
+    dump(out/"logits.f32",logits);dump(out/"probs.f32",probs);dump(out/(source_p?"context.sourceP.f32":"context.f32"),context);dump(out/"sigmoid.f32",sigmoid);dump(out/(source_p?"gated.sourceP.f32":"gated.f32"),gated);
     std::cout<<"PAIRED_F16_OPERATOR_ONLY PASS tokens="<<n<<'\n';return 0;
 }catch(const std::exception & e){std::cerr<<e.what()<<'\n';return 1;}
