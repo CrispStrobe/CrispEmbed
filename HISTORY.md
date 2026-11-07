@@ -21438,3 +21438,9 @@ controls on both pinned backends; all10 paired helper stage hashes match. It
 retains a source-graph numerical residual and one F16 probability rounding
 boundary; [evidence and limitations](docs/lighton4b-attention-primitives.md)
 preserve the negative without vendor changes or decoded-quality claims.
+
+Captured-input attention follow-up `b46bd2b99` replays all10 actual ON-profile
+source stages exactly, isolates source-P PV to RMS2.343e-8 and confirms original
+paired-F16 QK equals upstream LLAMAFILE-OFF dispatch. The actual ON-profile
+residual and diagnostic-only OFF distinction are preserved in the
+[review](docs/lighton4b-attention-primitives.md); no decoded or production claim.

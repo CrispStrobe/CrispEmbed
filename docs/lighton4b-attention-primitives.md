@@ -74,3 +74,33 @@ residual cannot yet be attributed independently to PV. Next controlled checks
 feed exact retained source probabilities into PV and isolate actual QK graph
 dispatch. This is a private-backend-ABI operator experiment, not a production
 implementation or decoded-quality proof; no fallback or vendor mutation occurred.
+
+## Exact source-P PV and QK dispatch isolation
+
+The bounded follow-up at source `b46bd2b99` completed in164.22 seconds.
+Regenerated upstream ON reproduces all ten frozen source graph stages bytewise
+before interpreting other arms; all eight composed/observed pairs pass. The
+[report](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/dispatch-v1/attention-dispatch.json)
+SHA256 is `d5b7ad89bc6f175e3ef5162bb6ab5b036a3e8acec261c83b191928af05638677`.
+Independent readback authenticates ten selected vectors (2,621,440 bytes),
+recomputes eight metrics (exact maximum errors, RMS within one binary64 ULP),
+and checks the eight observer hash pairs.
+
+Feeding the exact retained source probabilities into paired-F16 PV reduces N16
+context RMS from0.0000118884 to0.0000000234302 (max0.000000476837), and gated
+RMS from0.000000691884 to0.00000000216636 (max0.000000119209). Most previous
+context error therefore propagated from QK/softmax through a probability rounding
+boundary; an independent large PV defect is not supported.
+
+Original paired-F16 raw QK is byte-identical to the upstream graph with LLAMAFILE
+disabled at both N4 and N16. Actual source LLAMAFILE ON retains QK RMS
+0.00000206412/max0.0000610352. The remaining small QK residual is attributable
+to that dispatch/reduction choice on these exact inputs. OFF is a diagnostic
+profile and must never replace the actual ON reference or its qualification
+settings. Native ON/OFF both retain the intentional F16-by-F32 operand behavior.
+
+This closes primitive attribution only. A physical-only implementation can now
+be investigated without changing global vendor traits, but must preserve
+measured residuals, fail closed on unsupported backends and pass decoded gates
+before any promotion. No model forward, production math or shipping policy
+changed in this experiment.
