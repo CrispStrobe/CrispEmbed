@@ -30,13 +30,22 @@ def load_graphs(folder):
   require('model.input_embed'in arrays,'actual model input required');emb=records['model.input_embed'];require(int(emb['type'])==0 and emb['ne'][0]==2560 and emb['ne'][2:]==[1,1],'actual decoder input matrix');n=emb['ne'][1];require(1<=n<=128 and 'inp_pos'in arrays,'bounded actual token block/positions');phases={int(r['sample_count'])for r in rows};require(len(phases)==1,'one graph sampling phase');graphs.append({'index':i,'tokens':n,'sample_count':phases.pop(),'records':records,'arrays':arrays})
  require([int(x)for x in(folder/'sampling-steps.tsv').read_text().split()]==list(range(282)),'actual282 sampling calls, captured only declared phases');return graphs,total
 
+def select_prefill(graphs):
+ """Exclude only pinned common_context_can_seq_rm's independently identified probe."""
+ import numpy as np
+ prefill=[g for g in graphs if g['sample_count']==0];excluded=[]
+ if sum(g['tokens']for g in prefill)==88:
+  g=prefill[0];a=g['arrays'];require(g['index']==0 and g['tokens']==2 and a.get('inp_tokens',np.array([])).tolist()==[0,0]and a.get('inp_pos',np.array([])).tolist()==[0,1]*4,'exact pinned sequence-removal compatibility probe')
+  excluded=[{'graph':0,'tokens':[0,0],'positions_4axes':[[0,1]]*4,'reason':'Pinned common_context_can_seq_rm probes two zero IDs then clears memory and synchronizes before actual prompt.','common_cpp_sha256':'1b41b3613a10d579e2808bf5e1a73531980ca836d0f4d23dba22d7130d78985e','server_context_cpp_sha256':'e0e43f22fd2357a1e76ad6b8996b099d62615dd973de33feaa02fa0ee1a2a973'}];prefill=prefill[1:]
+ require(sum(g['tokens']for g in prefill)==86,'actual table prompt token census');return prefill,excluded
+
 def analyze(folder,native_folder,first_score,step_score,source_ids):
  import numpy as np
- all_graphs,total=load_graphs(folder);graphs=[g for g in all_graphs if g['sample_count']==0];steps=[g for g in all_graphs if g['sample_count']==126];require(len(steps)==1 and steps[0]['tokens']==1,'one actual same-prefix126 graph');native=Path(native_folder);count=sum(g['tokens']for g in graphs);require(count==86,'actual table prompt token census');input_native=np.fromfile(native/'prefill.input.f32',dtype='<f4').reshape(86,2560);pos_native=np.fromfile(native/'prefill.positions.f32',dtype='<f4').reshape(3,86);emb=np.concatenate([g['arrays']['model.input_embed'].reshape(g['tokens'],2560)for g in graphs]);pos=[];offset=0
+ all_graphs,total=load_graphs(folder);graphs,excluded=select_prefill(all_graphs);steps=[g for g in all_graphs if g['sample_count']==126];require(len(steps)==1 and steps[0]['tokens']==1,'one actual same-prefix126 graph');native=Path(native_folder);count=sum(g['tokens']for g in graphs);require(count==86,'actual table prompt token census');input_native=np.fromfile(native/'prefill.input.f32',dtype='<f4').reshape(86,2560);pos_native=np.fromfile(native/'prefill.positions.f32',dtype='<f4').reshape(3,86);emb=np.concatenate([g['arrays']['model.input_embed'].reshape(g['tokens'],2560)for g in graphs]);pos=[];offset=0
  for g in graphs:
   n=g['tokens'];a=g['arrays']['inp_pos'];require(a.size in[3*n,4*n],'source MRoPE axes');p=a.reshape(a.size//n,n);pos.append(p[:3]);g['offset']=offset;offset+=n
  positions=np.concatenate(pos,axis=1);same_input=emb.tobytes()==input_native.tobytes();same_pos=np.array_equal(positions.astype('f4'),pos_native)
- result={'actual_graph_token_counts':[g['tokens']for g in graphs],'captured_bytes':total,'total_prompt_tokens':count,'same_model_input_bits':same_input,'same_positions_first3_axes':bool(same_pos),'input_delta':delta(input_native,emb),'tensor_metadata':[{k:v for k,v in g.items()if k!='arrays'}for g in all_graphs],'comparisons':{},'unsupported':[],'scope':'Actual source batching is retained; no tensor values or missing stages are inferred.'}
+ result={'excluded_nonprompt_graphs':excluded,'actual_graph_token_counts':[g['tokens']for g in graphs],'captured_bytes':total,'total_prompt_tokens':count,'same_model_input_bits':same_input,'same_positions_first3_axes':bool(same_pos),'input_delta':delta(input_native,emb),'tensor_metadata':[{k:v for k,v in g.items()if k!='arrays'}for g in all_graphs],'comparisons':{},'unsupported':[],'scope':'Actual source batching is retained; no tensor values or missing stages are inferred.'}
  source_first=np.fromfile(first_score,dtype='<f4');require(source_first.size==248320 and np.isfinite(source_first).all(),'authenticated first source vocabulary row');matches=[]
  for g in graphs:
   a=g['arrays'].get('result_output')
@@ -63,6 +72,6 @@ def analyze(folder,native_folder,first_score,step_score,source_ids):
  stages=[('attn_norm-0','input_norm',2560,None),('linear_attn_qkv_mixed-0','qkv',8192,'qkv'),('z-0','z',4096,'z'),('alpha-0','a',32,'a'),('beta-0','b',32,'b'),('linear_attn_out-0','attention',2560,None),('attn_residual-0','attention_residual',2560,None),('attn_post_norm-0','post_norm',2560,None),('ffn_gate-0','gate',9216,None),('ffn_up-0','up',9216,None),('ffn_swiglu-0','activation',9216,None),('ffn_out-0','down',2560,None)]
  result['comparisons']['layer0_first_block']=[]
  for source,name,width,role in stages:
-  if source not in raw:result['unsupported'].append({'graph':0,'stage':source,'reason':'not captured/materialized'});continue
+  if source not in raw:result['unsupported'].append({'graph':g['index'],'stage':source,'reason':'not captured/materialized'});continue
   a=raw[source].reshape(-1,width)[:take];a=a[:,row_map(role,width)]if role else a;b=np.fromfile(native/f'prefill.first_chunk.layer0.{name}.f32',dtype='<f4').reshape(-1,width)[:take];result['comparisons']['layer0_first_block'].append({'source_stage':source,'native_stage':name,'tokens':take,'source_graph_tokens':g['tokens'],'native_chunk_tokens':16,**delta(b,a)})
  result['comparison_status']='aligned-actual-stages';return result
