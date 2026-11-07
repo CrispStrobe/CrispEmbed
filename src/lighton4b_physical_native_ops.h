@@ -2,6 +2,7 @@
 #include "lighton4b_upstream_physical_semantics.h"
 #include "lighton4b_physical_f16_attention.h"
 #include "qwen35_weight_cache.h"
+#include "lighton4b_physical_q6_tiled.h"
 #include "ggml.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -49,6 +50,11 @@ inline bool lighton4b_physical_q4_repack_valid(bool physical) {
            (lighton4b_physical_native_component(physical, 1) &&
             lighton4b_physical_f16_attention_available());
 }
+inline bool lighton4b_physical_q6_tiled_valid(bool physical) {
+    return !lighton4b_physical_q6_tiled_mode(physical) ||
+           (lighton4b_physical_native_component(physical,1) && lighton4b_physical_f16_attention_available() &&
+            lighton4b_physical_q6_tiled_available());
+}
 // Borrow original quant storage, or retain explicitly owned Q4 repacked bytes.
 // No F32 weight materialization/cache and no shared trait mutation.
 inline bool lighton4b_physical_matmul(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width,
@@ -59,7 +65,7 @@ inline bool lighton4b_physical_matmul(const std::vector<ggml_tensor *> & matrice
         matrices.size() > 4 || width < 1 || width > 32768 || tokens < 1 || tokens > 16 || threads < 1 || threads > 256)
         return false;
     const bool repack = lighton4b_physical_q4_repack_mode(true);
-    if (!lighton4b_physical_q4_repack_valid(true) ||
+    if (!lighton4b_physical_q4_repack_valid(true) || !lighton4b_physical_q6_tiled_valid(true) ||
         (!head && bool(weights_cache && weights_cache->physical_repack_enabled()) != repack)) return false;
     size_t elements = size_t(width) * tokens;
     for (auto * m : matrices) {
@@ -81,8 +87,16 @@ inline bool lighton4b_physical_matmul(const std::vector<ggml_tensor *> & matrice
     std::memcpy(input->data, hidden, size_t(width) * tokens * sizeof(float));
     auto * graph = ggml_new_graph(ctx.get());
     std::vector<ggml_tensor *> results;
+    std::vector<std::vector<float>> tiled_results(
+        lighton4b_physical_q6_tiled_mode(true) && tokens >= 8 ? matrices.size() : 0);
     std::vector<std::shared_ptr<ggml_tensor>> leases;
     for (auto * source : matrices) {
+        if (source->type == GGML_TYPE_Q6_K && tokens >= 8 && lighton4b_physical_q6_tiled_mode(true)) {
+            auto & values=tiled_results[results.size()];
+            if (!lighton4b_physical_q6_tiled_cpu(source->data,ggml_nbytes(source),hidden,width,source->ne[1],tokens,threads,values)) return false;
+            results.push_back(nullptr);
+            continue;
+        }
         ggml_tensor * weight = nullptr;
         if (repack && source->type == GGML_TYPE_Q4_K) {
             if (head || !weights_cache) return false; // authenticated physical head is Q6
@@ -101,9 +115,12 @@ inline bool lighton4b_physical_matmul(const std::vector<ggml_tensor *> & matrice
         ggml_build_forward_expand(graph, result);
         results.push_back(result);
     }
-    if (ggml_backend_graph_compute(backend.get(), graph) != GGML_STATUS_SUCCESS) return false;
+    if (std::any_of(results.begin(),results.end(),[](auto * value){return value!=nullptr;}) &&
+        ggml_backend_graph_compute(backend.get(), graph) != GGML_STATUS_SUCCESS) return false;
     std::vector<std::vector<float>> complete;
-    for (auto * result : results) {
+    for (size_t i=0;i<results.size();++i) {
+        auto * result=results[i];
+        if (!result) {complete.push_back(std::move(tiled_results[i]));continue;}
         auto * values = static_cast<const float *>(result->data);
         const auto count = size_t(ggml_nelements(result));
         if (!std::all_of(values, values + count, [](float x) { return std::isfinite(x); })) return false;

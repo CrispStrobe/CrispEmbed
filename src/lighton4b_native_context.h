@@ -16,7 +16,7 @@ inline bool lighton4b_quant_recipe_matches(const decoder_weights & decoder, ligh
         return false;
     auto type = [](const ggml_tensor * t, ggml_type expected) { return t && t->type == expected; };
     if (recipe == lighton4b_quant_recipe::upstream_physical_q4km)
-        return lighton4b_q6_enabled() && lighton4b_upstream_physical_mode_valid(true) && lighton4b_physical_f16_attention_valid(true) && lighton4b_physical_f16_vision_valid(true) && lighton4b_physical_q4_repack_valid(true) &&
+        return lighton4b_physical_q6_tiled_valid(true) && lighton4b_q6_enabled() && lighton4b_upstream_physical_mode_valid(true) && lighton4b_physical_f16_attention_valid(true) && lighton4b_physical_f16_vision_valid(true) && lighton4b_physical_q4_repack_valid(true) &&
             lighton4b_q4km_types_match(decoder, GGML_TYPE_Q6_K);
     const bool tiled = recipe == lighton4b_quant_recipe::hf_tiled_out_q4km;
     if (tiled && !lighton4b_hf_tiled_out_mode_valid(true,false)) return false;
