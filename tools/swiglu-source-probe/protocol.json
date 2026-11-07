@@ -1,0 +1,185 @@
+{
+  "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "native_ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "source_url": "https://huggingface.co/richardyoung/LightOnOCR-3-4B-GGUF/resolve/8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01/LightOnOCR-3-4B-Q4_K_M.gguf",
+  "source_bytes": 2708804576,
+  "source_sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26",
+  "capture_receipt_sha256": "8df1604435314b09ea8cbb60f47833a04307a492349191901313ed9b39540186",
+  "reader_receipt_sha256": "5a8a1aaedb41aa4a485d1f9927c9e0ae5c19e02c69f9ba0d2c34fc319a4dc9b3",
+  "minimum_available_memory_bytes": 4294967296,
+  "minimum_scratch_bytes": 6442450944,
+  "minimum_output_bytes": 1073741824,
+  "schema": "lighton4b-swiglu-source-probe/v1",
+  "scope": "Observed table same-input FFN operator attribution; no model inference, heldout, recipe selection or quality claim",
+  "ab_receipt_sha256": "40b20127fe0a0ffbbbc227f40a847a31a5ac6c0c8c231edff24aa17ce1c6cdc5",
+  "pack_receipt": {
+    "bytes": 483048,
+    "sha256": "920b4d5db276414bdd743fcc80a7ed1033ed1c0ca3b76859ef922aa667de9dee"
+  },
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "tokens": {
+    "source": [
+      1,
+      4
+    ],
+    "off": [
+      1,
+      4,
+      16
+    ],
+    "on": [
+      1,
+      4,
+      16
+    ]
+  },
+  "threads": 4,
+  "build_threads": 2,
+  "total_timeout_seconds": 1800,
+  "model_forward_allowed": false,
+  "full_f32_model_allowed": false,
+  "source_functions": {
+    "src/llama-graph.cpp": "cf2e6b6574737cf0f038922d8e12bf8950ee2058c6d9417315c2b1ba49ee9159",
+    "src/models/qwen35.cpp": "3387cf23a95ca71d2a38fac4b32708d6424fc9888273148ff6b4db5e510c9406"
+  },
+  "native_sources": {
+    "src/lighton4b_linear_block.h": "608f9ba483726da0630352ac5a942aa2248a6da1da59339f11d240ea2b89a8dc",
+    "src/lighton4b_attention_block.h": "b272fb56a09ffeacae226d0da613aa99d09ece4346cb4d25bbf616c368894a33"
+  },
+  "weights": [
+    {
+      "physical_name": "blk.0.ffn_gate.weight",
+      "source_offset": 574915552,
+      "bytes": 13271040,
+      "source_packed_sha256": "2c7b3c2cfebc0ca1e12795d8998b60ae8d89e9453124073635dc9a735ab8051e",
+      "source_shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "sha256": "2c7b3c2cfebc0ca1e12795d8998b60ae8d89e9453124073635dc9a735ab8051e",
+      "whole_rows_permuted": 0,
+      "quant_blocks_unchanged": true,
+      "role": "gate",
+      "file": "gate.quant"
+    },
+    {
+      "physical_name": "blk.0.ffn_up.weight",
+      "source_offset": 588186592,
+      "bytes": 13271040,
+      "source_packed_sha256": "fff0e9e1587dee9e918262450ca644141f889c488d6861979dc8635563b02345",
+      "source_shape": [
+        2560,
+        9216
+      ],
+      "type": 12,
+      "sha256": "fff0e9e1587dee9e918262450ca644141f889c488d6861979dc8635563b02345",
+      "whole_rows_permuted": 0,
+      "quant_blocks_unchanged": true,
+      "role": "up",
+      "file": "up.quant"
+    },
+    {
+      "physical_name": "blk.0.ffn_down.weight",
+      "source_offset": 555561952,
+      "bytes": 19353600,
+      "source_packed_sha256": "ecaa1f50a85afde1ccc0bba5aefe5afd8de851698a02430ed770265941a9c11f",
+      "source_shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "sha256": "ecaa1f50a85afde1ccc0bba5aefe5afd8de851698a02430ed770265941a9c11f",
+      "whole_rows_permuted": 0,
+      "quant_blocks_unchanged": true,
+      "role": "down",
+      "file": "down.quant"
+    }
+  ],
+  "parameter_bytes": 45895680,
+  "source_inputs": {
+    "postnorm": {
+      "file": "on/graph-1.attn_post_norm-0.bin",
+      "bytes": 40960,
+      "sha256": "54b7073707c3693830e390eae944187acc2d6e6317bea4385c40a9e2585436b3"
+    },
+    "gate": {
+      "file": "on/graph-1.ffn_gate-0.bin",
+      "bytes": 147456,
+      "sha256": "7e42b847af6c67420a2c435a10f909f9c2f71b9355b851d469c8f08fe8bfb52f"
+    },
+    "up": {
+      "file": "on/graph-1.ffn_up-0.bin",
+      "bytes": 147456,
+      "sha256": "2e998f1a8b77fa9a0f8f053576560e870e07df3b65c919d4e0ff49852e24f46d"
+    },
+    "activation": {
+      "file": "on/graph-1.ffn_swiglu-0.bin",
+      "bytes": 147456,
+      "sha256": "3edff227a6fe462ffd7ec4ace787ef8bfc2eb07a4f82ee67bfe734a074b11bff"
+    },
+    "down": {
+      "file": "on/graph-1.ffn_out-0.bin",
+      "bytes": 40960,
+      "sha256": "2a9c6968d89d6fc445287928b12a19594c1ebd7383eb3ae80f1397d8f15fa60d"
+    }
+  },
+  "native_inputs": {
+    "off": {
+      "post_norm": {
+        "file": "simple_table/off/prefill.first_chunk.layer0.post_norm.f32",
+        "bytes": 163840,
+        "sha256": "57f78abc599666ff2d54c01abbccc2655431dcac82e32ee6f5cc2d1f85237f11"
+      },
+      "gate": {
+        "file": "simple_table/off/prefill.first_chunk.layer0.gate.f32",
+        "bytes": 589824,
+        "sha256": "45b2d553dceed3fd9d39b052df95464b922837b80a8021fe45e82f3deb1a8e6f"
+      },
+      "up": {
+        "file": "simple_table/off/prefill.first_chunk.layer0.up.f32",
+        "bytes": 589824,
+        "sha256": "3d9651988eb4b05d28ac72bfbdd6e1cd05d60f1d25afa789fb5d8185cf543690"
+      },
+      "activation": {
+        "file": "simple_table/off/prefill.first_chunk.layer0.activation.f32",
+        "bytes": 589824,
+        "sha256": "cfdf336771348cfd4f7a631384cabe19a98206779b9284c49cd0a0fff15c4dcd"
+      },
+      "down": {
+        "file": "simple_table/off/prefill.first_chunk.layer0.down.f32",
+        "bytes": 163840,
+        "sha256": "f8be8f28a16f8f6b87df57cb309e51bbfff3526d5e14f3aafd77565eed14eb99"
+      }
+    },
+    "on": {
+      "post_norm": {
+        "file": "simple_table/on/prefill.first_chunk.layer0.post_norm.f32",
+        "bytes": 163840,
+        "sha256": "9709c47066424b1aa26076141b69c1b1e91c9c60ca80e32eece13041fe3443c4"
+      },
+      "gate": {
+        "file": "simple_table/on/prefill.first_chunk.layer0.gate.f32",
+        "bytes": 589824,
+        "sha256": "38d50eadb915b19098a877075f51ee1304f52c189dd718142e9bfea23190128f"
+      },
+      "up": {
+        "file": "simple_table/on/prefill.first_chunk.layer0.up.f32",
+        "bytes": 589824,
+        "sha256": "9bb7814fa77266819af355b02e53463eedd416ab2a057cb44b0e6a57e9b1af3d"
+      },
+      "activation": {
+        "file": "simple_table/on/prefill.first_chunk.layer0.activation.f32",
+        "bytes": 589824,
+        "sha256": "5351fed659df4041a5b871170fc9d3aa42056bd2e464454cfb070cd360db9011"
+      },
+      "down": {
+        "file": "simple_table/on/prefill.first_chunk.layer0.down.f32",
+        "bytes": 163840,
+        "sha256": "c59e51d9a35de17bc49a1ef693b2aa6d8e465df8ee251460b003897e3a1ba9ae"
+      }
+    }
+  },
+  "adapter_cpp_sha256": "43cdcf727da8496a056d55979b9d013084da78475743ad925326c39bacea61cf",
+  "adapter_cmake_sha256": "8e20f0ca65fe4a9dcd8172b9675780dc6e1bcb5dee60ec4348f4e74218458d43"
+}

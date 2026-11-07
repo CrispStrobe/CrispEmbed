@@ -2246,3 +2246,8 @@ Integrate the exact reviewed/tested `cd50e9e691530525fb998edda8a449cc0725be91` h
 ## Physical GDN decoded regression: gate stays off
 
 Full table/form A/B at `f6a1e60d3` closes OFF all282/167 rows+38 text anchors. GDN ON table294EOS worsens349→364/607 character edits,97→104/106 words; form167EOS raw IDs/text unchanged. Both first-score errors improve, without decoded quality parity. Keep default-off/unqualified and no ship; [evidence and limits](docs/lighton4b-physical-gdn-source-ops.md). No runtime/default/alias/release change.
+
+
+### Bounded source-fed FFN SwiGLU attribution
+
+The hybrid GDN full decode remains a binding negative and stays off. The next tools-only [predeclared operator protocol](tools/swiglu-source-probe/protocol.json) compares actual captured upstream4/nativeOFF16/nativeON16 gate/up inputs using scalar versus native/upstream fused SwiGLU. Whole actual activation and projection closures precede interpretation. Gate/up are Q4_K; down is Q6_K, all45,895,680 original published GGUF bytes independently range/hash checked against physical-pack920b, without changing a tensor recipe or global repack. Public Q8_K converter interventions are distinguished from live internal buffers; forced-input output equivalence is measured. No model inference, heldout tuning, runtime change or quality claim is authorized by component results alone.
