@@ -21,7 +21,7 @@ base=module('physical',ROOT/'tools/kaggle/lighton4b_upstream_physical_decode.py'
 f=module('fullform',ROOT/'tools/kaggle/lighton4b_physical_f16_full_form.py')
 require=base.require;sha=base.sha
 STAGES=list(f.STAGES)+['teacher.0.logits.f32']
-CFG_SHA='dd75032362d4e2a8b101eef2140d921a2eb24ffd03df64105135ae86c129c3ac'
+CFG_SHA='2696c6b1aee915a839043ead76ffbd4dec616c575f90b8b99008d8f72f511283'
 def admit_protocol(path):
  require(sha(path)==CFG_SHA,'immutable frozen protocol');return json.loads(Path(path).read_text())
 def gates(env):

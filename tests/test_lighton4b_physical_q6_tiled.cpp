@@ -15,10 +15,10 @@ static void need(bool ok,const char * why){if(!ok)throw std::runtime_error(why);
 static void analytical(size_t & checks){
  for(int width:{256,768,9216})for(int tokens:{8,9})for(int threads:{1,4}){
   const int rows=17,blocks=width/256;std::vector<unsigned char> packed(size_t(rows)*blocks*210);std::vector<float> x(size_t(tokens)*width);
-  for(int t=0;t<tokens;++t)for(int k=0;k<width;++k)x[size_t(t)*width+k]=float((k+t*17)%256-128)/128.0f;
+  for(int t=0;t<tokens;++t)for(int k=0;k<width;++k)x[size_t(t)*width+k]=float((k+t*17)%255-127)/128.0f;
   for(int r=0;r<rows;++r)for(int b=0;b<blocks;++b){auto*p=packed.data()+(size_t(r)*blocks+b)*210;std::fill_n(p,128,0x11);std::fill_n(p+128,64,0xaa);for(int g=0;g<16;++g)p[192+g]=static_cast<unsigned char>(((r+g)%2)?-1:1);const auto d=ggml_fp32_to_fp16(1.0f/16);std::memcpy(p+208,&d,2);}
   std::vector<float> y;need(lighton4b_physical_q6_tiled_cpu(packed.data(),packed.size(),x.data(),width,rows,tokens,threads,y),"analytical multi-block Q6");
-  for(int t=0;t<tokens;++t)for(int r=0;r<rows;++r){int sum=0;for(int k=0;k<width;++k)sum+=(((r+(k%256)/16)%2)?-1:1)*((k+t*17)%256-128);need(y[size_t(t)*rows+r]==float(sum)/2048.0f,"independent dyadic integer result");}++checks;
+  for(int t=0;t<tokens;++t)for(int r=0;r<rows;++r){int sum=0;for(int k=0;k<width;++k)sum+=(((r+(k%256)/16)%2)?-1:1)*((k+t*17)%255-127);need(y[size_t(t)*rows+r]==float(sum)/2048.0f,"independent dyadic integer result");}++checks;
  }
 }
 static void actual_route(size_t & checks){
