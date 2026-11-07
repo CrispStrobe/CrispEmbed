@@ -3180,3 +3180,7 @@ Source `a03412aeb` completed: merged upstream vision exact for both cases; nativ
 ### Upstream text trace initial setup negative — 7 November 2026
 
 [Preserved source9986 attempt](docs/lighton4b-upstream-text-trace-results.md) stopped before upstream build/model transfer/forward: an extra guard incorrectly equated canonical recompressed PNG bytes with original PNG bytes. All preceding immutable receipt/artifact checks passed. Narrow corrected admission must retain both hashes and require exact original/canonical/authenticated RGB pixels; six local controls pass. No intermediate, observer-neutrality or quality result yet; no release/default change.
+
+### Provisional held-out executor controls (2026-11-07)
+
+Source874728 model-free CPU controls pass632.16s, raw7b090c04; all28owned artifact hashes independently exact. Actual10CLI gates, synthetic24-layer vision37/F16attention255297, both native/upstream metadata adapter builds and18Python tests pass. No checkpoint acquisition or heldout forward. Freeze this receipt before case execution; require actual source/native IDs/modalities/3-axis positions and observed167 replay before any heldout forward. References remain provisional/unadjudicated with rights limits; no release/quality claim.

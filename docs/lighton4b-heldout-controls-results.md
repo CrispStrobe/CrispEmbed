@@ -1,0 +1,7 @@
+# Provisional held-out executor controls
+
+Pinned source `874728b71d113bb1a02f7a1fa97717ec2b6281b5` completed model-free Kaggle CPU controls in 632.16 seconds. [Raw receipt](../tests/results/qwen35-ocr/lightonocr3-4b-heldout-controls-v1/heldout-result.json) SHA256 is `7b090c04f11cd48e27e49dd290fef1b5405bfbd058d658b6ee13e44e5315bc07`; independent review rehashed all 28 owned artifacts. No checkpoint was acquired and no held-out forward ran.
+
+Both reference executables compiled. Ten actual CLI checks retained old 256/512 admissions, admitted only the gated four-thread 1536 paths, and rejected invalid cap/mode/thread/gate combinations before model loading. The primary upstream metadata adapter linked and rejected missing arguments. The actual synthetic 24-layer vision fixture passed 37 controls; F16 attention passed 255,297 controls. Four Python suites passed 18 tests.
+
+The adapter uses pinned upstream `6c01da6278ab6c69ed67d9124806b50d2b299ba7` public vocabulary-only/tokenize APIs, with warmup disabled and no encode/decode call. Actual source/native prompt IDs, modalities and positional bytes must still match before a held-out forward. The frozen three-case protocol uses provisional transcriptions, not adjudicated ground truth. These controls establish executable admission, not held-out quality or release eligibility.
