@@ -1,0 +1,64 @@
+Setting up EMSDK environment (suppress these messages with EMSDK_QUIET=1)
+Adding directories to PATH:
+PATH += /tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk
+PATH += /tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk/upstream/emscripten
+
+Setting environment variables:
+PATH = /tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk:/tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk/upstream/emscripten:/opt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/tools/node/bin:/tools/google-cloud-sdk/bin
+EMSDK = /tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk
+EMSDK_NODE = /tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk/node/24.19.0_64bit/bin/node
+[  2%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml.c.o
+[  5%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml.cpp.o
+[  8%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o
+[ 11%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o
+[ 14%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o
+[ 17%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o
+[ 20%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o
+[ 23%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o
+[ 26%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/gguf.cpp.o
+[ 29%] Linking CXX static library libggml-base.a
+[ 29%] Built target ggml-base
+[ 32%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o
+[ 35%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o
+[ 38%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o
+[ 41%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o
+[ 44%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o
+[ 47%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o
+[ 50%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o
+[ 52%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o
+[ 55%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o
+[ 58%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o
+[ 61%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o
+[ 64%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o
+[ 67%] Linking CXX static library libggml-cpu.a
+[ 67%] Built target ggml-cpu
+[ 70%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o
+[ 73%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o
+[ 76%] Linking CXX static library libggml.a
+[ 76%] Built target ggml
+[ 79%] Building CXX object CMakeFiles/physical_shared_attention.dir/tmp/lighton4b-physical-f16-sdk-link-v1/source/src/qwen35_attention.cpp.o
+[ 82%] Building CXX object CMakeFiles/physical_shared_attention.dir/tmp/lighton4b-physical-f16-sdk-link-v1/source/src/qwen35_linear.cpp.o
+[ 85%] Building CXX object CMakeFiles/physical_shared_attention.dir/tmp/lighton4b-physical-f16-sdk-link-v1/source/src/qwen35_delta.cpp.o
+[ 88%] Building CXX object CMakeFiles/physical_shared_attention.dir/tmp/lighton4b-physical-f16-sdk-link-v1/source/src/qwen35_profile.cpp.o
+/tmp/lighton4b-physical-f16-sdk-link-v1/source/src/qwen35_delta.cpp:224:32: warning: 'ggml_add1' is deprecated: use ggml_add instead [-Wdeprecated-declarations]
+  224 |             ggml_sqrt(context, ggml_add1(context, ggml_sum_rows(context, ggml_sqr(context, tensor)), epsilon));
+      |                                ^
+/tmp/lighton4b-physical-f16-sdk-link-v1/source/ggml/src/../include/ggml.h:929:5: note: 'ggml_add1' has been explicitly marked deprecated here
+  929 |     GGML_DEPRECATED(GGML_API struct ggml_tensor * ggml_add1(
+      |     ^
+/tmp/lighton4b-physical-f16-sdk-link-v1/source/ggml/src/../include/ggml.h:192:61: note: expanded from macro 'GGML_DEPRECATED'
+  192 | #    define GGML_DEPRECATED(func, hint) func __attribute__((deprecated(hint)))
+      |                                                             ^
+1 warning generated.
+[ 91%] Building CXX object CMakeFiles/physical_shared_attention.dir/tmp/lighton4b-physical-f16-sdk-link-v1/source/src/lighton4b_physical_f16_attention.cpp.o
+[ 94%] Linking CXX static library libphysical_shared_attention.a
+[ 94%] Built target physical_shared_attention
+[ 97%] Building CXX object CMakeFiles/physical-f16-shared-link.dir/tmp/lighton4b-physical-f16-sdk-link-v1/source/tests/test_lighton4b_main_f16_link.cpp.o
+[100%] Linking CXX executable physical-f16-shared-link.js
+wasm-ld: error: ggml/src/libggml-cpu.a(ggml-cpu.c.o): undefined symbol: quantize_row_q8_0_wasm_nearest
+wasm-ld: error: ggml/src/libggml-cpu.a(ggml-cpu.c.o): undefined symbol: quantize_row_q8_0_wasm_nearest
+em++: error: '/tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk/upstream/bin/wasm-ld -o physical-f16-shared-link.wasm /tmp/tmpcn2hv6orlibemscripten_js_symbols.so -Bstatic --strip-debug --export=_emscripten_stack_alloc --export=__funcs_on_exit --export=__wasm_call_ctors --export=emscripten_stack_get_current --export=_emscripten_stack_restore --export-if-defined=__start_em_asm --export-if-defined=__stop_em_asm --export-if-defined=__start_em_lib_deps --export-if-defined=__stop_em_lib_deps --export-if-defined=__start_em_js --export-if-defined=__stop_em_js --export-if-defined=main --export-if-defined=__main_argc_argv --export-if-defined=fflush --export-table -z stack-size=65536 --max-memory=2147483648 --initial-heap=16777216 --no-entry --no-stack-first --table-base=1 --global-base=1024 CMakeFiles/physical-f16-shared-link.dir/tmp/lighton4b-physical-f16-sdk-link-v1/source/tests/test_lighton4b_main_f16_link.cpp.o libphysical_shared_attention.a ggml/src/libggml.a ggml/src/libggml-cpu.a ggml/src/libggml-base.a -L/tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten -L/tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk/upstream/emscripten/src/lib -lGL-getprocaddr -lal -lhtml5 -lstubs -lc -ldlmalloc -lclang_rt.builtins -lc++-noexcept -lc++abi-noexcept -lsockets -mllvm -combiner-global-alias-analysis=false -mllvm -enable-emscripten-sjlj -mllvm -disable-lsr' failed (returned 1)
+gmake[3]: *** [CMakeFiles/physical-f16-shared-link.dir/build.make:104: physical-f16-shared-link.js] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:196: CMakeFiles/physical-f16-shared-link.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:203: CMakeFiles/physical-f16-shared-link.dir/rule] Error 2
+gmake: *** [Makefile:182: physical-f16-shared-link] Error 2

@@ -3055,3 +3055,7 @@ Kaggle143195841/v1 source0d90fd0b2 passes actual4GB model/all723payload hashes a
 ### Physical F16 full-form initial setup negative
 
 The first full-form worker at `fb8a5ecf1` stopped before entering the model worker: a hosted `sitecustomize` warning polluted the stdlib guard test stdout. [Raw setup evidence](tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/full-form-v1-setup-negative/evidence.json) is retained. The one-line test isolation at `4a63d73be` passes all eight focused checks; numerical code, immutable weights/features and release fences are unchanged. The bounded retry is submitted; no decoded or speed result is claimed yet.
+
+### Main SDK linkage and first real-WASM control
+
+The actual native main archive now passes all five closed-helper link checks. The first Emscripten 6.0.2 control compiled the actual shared attention/helper objects, then failed final linking because its standalone harness omitted production `EMSCRIPTEN_SYSTEM_PROCESSOR=wasm` and excluded the vendor WASM quantizer source. [Raw native pass and WASM setup negative](tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/sdk-link-v1-negative/evidence.json) are preserved; `d7a35a13d` corrects only the harness profile and adds source-membership guards. No full WASM or decoded qualification is claimed.
