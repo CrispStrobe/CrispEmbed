@@ -2265,3 +2265,8 @@ Relay transport rehashed all915files/633MB successfully (~40s); reader6.263s the
 ### Observed-table source-fed GDN mechanism replay —7 November2026
 
 Prepare `tools/gdn-trace-replay` after merging current main cc519. Reuse immutable0bbe GDN blueprint and actual source5a8 capture: native16 actual GDN/quantizedRAW-attention byte closure first; actual upstream4 convolution/SiLU/postnorm/preferred-attention closure before interpreting counterfactuals. Ten predeclared operator runs separate preferred Z/alpha/beta inputs from current/native-source graph math; no model/decode/heldout/recipe selection. Five original publisher spans6,030,080B only, no F32 weight matrix.4GiBRAM/6GiBscratch,1800sCPUworker/2100sbootstrap, builds+backend setup beforeparametertransfer. Four tiny protocol controls pass; hosted compile/source-backed replay remains pending independent review. No runtime fix inferred from algebra.
+
+
+### Default-off physical GDN source-operator candidate
+
+The actual-input replay `2f1261053` closes source convolution, SiLU, post-normalization, preferred output and nonzero next state. A separate unqualified candidate `CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS` retains the existing scalar log1p softplus (already exact upstream) and tests source-shaped convolution/QK RMS/K1 recurrence/post-RMS/SiLU operators. It preserves all quantized projections, output routes, old code when disabled, and distinct cache-mode rejection. The [bounded operator protocol](tools/gdn-hybrid-probe/protocol.json) predeclares 14 runs and an actual nonzero-state continuation; synthetic cache/gate controls execute before five parameter ranges are fetched. Hosted compilation and source-fed equivalence remain pending; no decoded or held-out qualification is claimed.

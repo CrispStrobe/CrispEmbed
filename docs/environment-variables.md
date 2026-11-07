@@ -731,6 +731,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_gdn_source_ops.h` | Physical LightOn4B only; source-shaped GDN graph retaining scalar log1p softplus. Default off; separate cache mode; no decoded qualification. |
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_native_ops.h` |  |
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION` | value | unset | string | tuning / config | `src/lighton4b_physical_native_ops.h` |  |
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_native_ops.h` |  |

@@ -1,6 +1,7 @@
 #pragma once
 #include "lighton4b_hf_tiled_out.h"
 #include "lighton4b_physical_native_ops.h"
+#include "lighton4b_physical_gdn_source_ops.h"
 #include "qwen35_lighton4b_text.h"
 #include "qwen35_math.h"
 #include "lighton4b_bf16_linear.h"
@@ -18,6 +19,7 @@ struct lighton4b_linear_cache {
     uint8_t physical_native_ops = 0;
     bool hf_tiled_out = false;
     bool physical_q4_repack = false;
+    bool physical_gdn_source_ops = false;
 };
 struct lighton4b_linear_block_outputs {
     std::vector<float> input_norm, attention, attention_residual, post_norm, gate, up, activation, down, hidden;
@@ -39,6 +41,8 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     };
     const bool bf16 = lighton4b_bf16_linear_enabled();
     const bool repack = lighton4b_physical_q4_repack_mode(w.upstream_physical);
+    const bool source_gdn = lighton4b_physical_gdn_source_ops_mode(w.upstream_physical);
+    if (previous && previous->physical_gdn_source_ops != source_gdn) return false;
     if (!lighton4b_physical_q4_repack_valid(w.upstream_physical) || w.physical_q4_repack != repack ||
         w.linear.physical_q4_repack != repack ||
         bool(w.physical_weights_cache && w.physical_weights_cache->physical_repack_enabled()) != repack ||
@@ -127,6 +131,7 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     candidate.cache.upstream_physical = w.upstream_physical;
     candidate.cache.physical_native_ops = lighton4b_physical_native_ops_mode(w.upstream_physical);
     candidate.cache.physical_q4_repack = repack;
+    candidate.cache.physical_gdn_source_ops = source_gdn;
     candidate.cache.conv = std::move(linear.core.conv_history);
     candidate.cache.recurrent = std::move(linear.core.state);
     output = std::move(candidate);
