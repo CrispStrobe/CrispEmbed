@@ -14,6 +14,8 @@ class Controls(unittest.TestCase):
    if name.startswith('mixed'):self.assertEqual([x for a,b in slices for x in range(a,b)],list(range(144)))
  def test_map(self):
   mapping=worker.base.row_map('qkv',8192);self.assertEqual(sorted(mapping),list(range(8192)));self.assertEqual(mapping[:4096],list(range(4096)))
+ def test_lifecycle_and_unwritten_output(self):
+  text=(Path(__file__).parent/"worker.py").read_text();self.assertIn("signal.SIGTERM,signal.SIGINT",text);self.assertIn("physical.memory()",text);self.assertIn("signal.signal(sig,handler)",text);self.assertIn("quiet_NaN()",(Path(__file__).parent/"probe.cpp").read_text())
  def test_closures_and_profiles(self):
   text=(Path(__file__).parent/'worker.py').read_text();self.assertIn('full actual source Q6 batch closure',text);self.assertIn('actual native first16 closure',text);self.assertIn("['ON','OFF']",text);self.assertNotIn('except Exception',text)
 if __name__=='__main__':unittest.main()

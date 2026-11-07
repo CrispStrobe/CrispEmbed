@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Fixed actual Q6 inputs, full-vector closure, no model inference."""
-import csv,hashlib,importlib.util,json,os,shutil,subprocess,sys,time
+import csv,hashlib,importlib.util,json,os,shutil,signal,subprocess,sys,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 def load(name,path):
@@ -20,6 +20,8 @@ def batch_plans(batches):
 def main():
  import numpy as np
  cfg=json.loads((Path(__file__).parent/'protocol.json').read_text());admit(cfg);require(np.__version__=='2.3.5'and Path('/kaggle/input').is_dir()and not list(Path('/dev').glob('nvidia[0-9]*')),'CPU array profile');out=Path(os.environ['HEAVY_OUT']);work=Path(os.environ['HEAVY_SCRATCH'])/'q6-batch';work.mkdir();started=time.monotonic();deadline=Deadline(2400);deadline.__enter__();r={'schema':cfg['schema'],'status':'failed','commands':{},'cases':{},'model_forward_executed':False,'quality_qualified':False,'retained_outputs':[]}
+ def interrupted(sig,frame):raise SystemExit(128+sig)
+ prior={sig:signal.signal(sig,interrupted)for sig in [signal.SIGTERM,signal.SIGINT]}
  def save():(out/'q6-qkv-batch.json').write_text(json.dumps(r,indent=2)+'\n')
  def run(label,args,limit=600):
   r['phase']=label;r['commands'][label]={};save();print('PHASE '+label,flush=True)
@@ -29,7 +31,7 @@ def main():
   paths=[p for p in Path('/kaggle/input').rglob(name)if p.is_file()and p.stat().st_size<4<<20 and sha(p)==digest];require(len(paths)==1,'one exact completed '+name);return paths[0]
  def verify(path,record):require(path.stat().st_size==record['bytes']and sha(path)==record['sha256'],'immutable actual array '+path.name)
  try:
-  run('source',['git','rev-parse','HEAD']);r['source_sha']=(out/'source.log').read_text().strip();require(r['source_sha']==os.environ['LIGHTON4B_EXPECTED_SOURCE'],'exact source');require(shutil.disk_usage(work).free>=6<<30,'bounded disk');memory={a.split(':',1)[0]:int(a.split()[1])*1024 for a in Path('/proc/meminfo').read_text().splitlines()if a.startswith('MemAvailable:')};require(memory['MemAvailable']>=4<<30,'bounded build RAM');flags=next(x.split(':',1)[1].split()for x in Path('/proc/cpuinfo').read_text().splitlines()if x.startswith('flags'));require({'avx2','fma','f16c'}<=set(flags),'actual portable AVX2 profile');r['capacity']={'memory':memory,'scratch_free':shutil.disk_usage(work).free};tp=locate('form-text-trace.json',cfg['trace_sha256']);trace=json.loads(tp.read_text());cp=locate('combined-gdn-repack-ab.json',cfg['combined_sha256']);combined=json.loads(cp.read_text());require(trace['status']=='measured_neutral_form_text_trace'and trace['all170_scores_observer_neutral']and trace['analysis']['same_model_input_bits']and trace['analysis']['same_positions_first3_axes'],'actual neutral aligned trace');require(combined['status']=='measured_combined_gdn_repack_ab','completed native context');row=cfg['matrix'];inputs=[];expected=[]
+  run('source',['git','rev-parse','HEAD']);r['source_sha']=(out/'source.log').read_text().strip();require(r['source_sha']==os.environ['LIGHTON4B_EXPECTED_SOURCE'],'exact source');require(shutil.disk_usage(work).free>=6<<30,'bounded disk');physical=load('physicalcapacity',ROOT/'tools/kaggle/lighton4b_upstream_physical_decode.py');memory=physical.memory();require(memory['MemAvailable']>=4<<30,'bounded build RAM');flags=next(x.split(':',1)[1].split()for x in Path('/proc/cpuinfo').read_text().splitlines()if x.startswith('flags'));require({'avx2','fma','f16c'}<=set(flags),'actual portable AVX2 profile');r['capacity']={'memory':memory,'scratch_free':shutil.disk_usage(work).free};tp=locate('form-text-trace.json',cfg['trace_sha256']);trace=json.loads(tp.read_text());cp=locate('combined-gdn-repack-ab.json',cfg['combined_sha256']);combined=json.loads(cp.read_text());require(trace['status']=='measured_neutral_form_text_trace'and trace['all170_scores_observer_neutral']and trace['analysis']['same_model_input_bits']and trace['analysis']['same_positions_first3_axes'],'actual neutral aligned trace');require(combined['status']=='measured_combined_gdn_repack_ab','completed native context');row=cfg['matrix'];inputs=[];expected=[]
   for graph,n in [(1,4),(2,140)]:
    values=[]
    for name,width in [('attn_norm-0',2560),('linear_attn_qkv_mixed-0',8192)]:
@@ -64,5 +66,7 @@ def main():
   require(r['cases']['upstream-ON/t4/source140']['vs_actual_source']['bit_exact']and r['cases']['upstream-ON/t4/source4']['vs_actual_source']['bit_exact'],'full actual source Q6 batch closure');require(r['cases']['native-ON/t4/mixed144-chunk16']['first16_vs_actual_native']['bit_exact'],'actual native first16 closure');r['actual_source_and_native_closures_exact']=True;r['status']='measured_source_fed_q6_batch_operators';r['limits']=['Fixed observed form inputs; operator-only, no decoded improvement claim.','Cross-version comparisons include declared OpenMP profile differences; LLAMAFILE toggles and threads are separately measured.']
  except BaseException as error:r['error_type']=type(error).__name__;r['error']=str(error);raise
  finally:
-  deadline.close();r['seconds']=time.monotonic()-started;owned={n+'.log'for n in r['commands']}|{k+'-CMakeCache.txt'for k in ['native-ON','native-OFF','upstream-ON','upstream-OFF']}|set(r['retained_outputs']);r['artifacts']={p.name:{'bytes':p.stat().st_size,'sha256':sha(p)}for p in out.iterdir()if p.is_file()and p.name in owned};save()
+  deadline.close()
+  for sig,handler in prior.items():signal.signal(sig,handler)
+  r['seconds']=time.monotonic()-started;owned={n+'.log'for n in r['commands']}|{k+'-CMakeCache.txt'for k in ['native-ON','native-OFF','upstream-ON','upstream-OFF']}|set(r['retained_outputs']);r['artifacts']={p.name:{'bytes':p.stat().st_size,'sha256':sha(p)}for p in out.iterdir()if p.is_file()and p.name in owned};save()
 if __name__=='__main__':main()

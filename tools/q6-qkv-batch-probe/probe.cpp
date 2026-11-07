@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -35,7 +36,7 @@ int main(int argc,char **argv){try{
  std::vector<float> result(size_t(rows)*tokens);auto started=std::chrono::steady_clock::now();
  for(int offset=0;offset<tokens;offset+=chunk){const int count=std::min(chunk,tokens-offset);
   std::unique_ptr<ggml_context,decltype(&ggml_free)> ctx(ggml_init({32*1024*1024,nullptr,false}),ggml_free);require(bool(ctx),"bounded graph context");
-  auto * x=ggml_new_tensor_2d(ctx.get(),GGML_TYPE_F32,width,count);std::memcpy(x->data,input.data()+size_t(offset)*width,size_t(count)*width*sizeof(float));auto * y=ggml_mul_mat(ctx.get(),weight,x);ggml_mul_mat_set_prec(y,GGML_PREC_F32);require(ggml_backend_dev_supports_op(device,y),"actual CPU supports selected buffer operation");auto * graph=ggml_new_graph_custom(ctx.get(),32,false);ggml_build_forward_expand(graph,y);require(ggml_backend_graph_compute(backend.get(),graph)==GGML_STATUS_SUCCESS,"selected matmul compute");
+  auto * x=ggml_new_tensor_2d(ctx.get(),GGML_TYPE_F32,width,count);std::memcpy(x->data,input.data()+size_t(offset)*width,size_t(count)*width*sizeof(float));auto * y=ggml_mul_mat(ctx.get(),weight,x);std::fill_n(static_cast<float*>(y->data),size_t(rows)*count,std::numeric_limits<float>::quiet_NaN());ggml_mul_mat_set_prec(y,GGML_PREC_F32);require(ggml_backend_dev_supports_op(device,y),"actual CPU supports selected buffer operation");auto * graph=ggml_new_graph_custom(ctx.get(),32,false);ggml_build_forward_expand(graph,y);require(ggml_backend_graph_compute(backend.get(),graph)==GGML_STATUS_SUCCESS,"selected matmul compute");
   auto * values=static_cast<float*>(y->data);require(std::all_of(values,values+size_t(rows)*count,[](float v){return std::isfinite(v);}),"finite projection output");std::memcpy(result.data()+size_t(offset)*rows,values,size_t(rows)*count*sizeof(float));
  }
  const double seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-started).count();auto * values=result.data();
