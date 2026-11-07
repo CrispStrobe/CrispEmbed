@@ -22,6 +22,7 @@ def row_map(role,rows):
 ROWS_SHA='bacc606e79697828d923543b7cc66080540f7372548ac46fd915875ef7cefe55'
 def admit(cfg):
  require(cfg['schema']=='lighton4b-source-repack-operator/v1'and cfg['tokens']==[1,4,16]and cfg['threads']==4 and cfg['worker_seconds']==1800,'closed operator scope')
+ require(cfg['transport_audit_sha256']=='920b4d5db276414bdd743fcc80a7ed1033ed1c0ca3b76859ef922aa667de9dee','frozen transport audit')
  require(cfg['actual_receipt_sha256']=='36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3'and cfg['native_ggml_source']=='3a27b6c665b191cb230be367db5c52d81dd3e2ac'and cfg['upstream_source']=='6c01da6278ab6c69ed67d9124806b50d2b299ba7','frozen actual/source pins')
  require([r['role']for r in cfg['matrices']]==['qkv','z','a','b','gate']and [r['type']for r in cfg['matrices']]==[14,12,12,12,12],'closed actual matrix types')
  require(hashlib.sha256(json.dumps(cfg['matrices'],sort_keys=True,separators=(',',':')).encode()).hexdigest()==ROWS_SHA,'immutable authenticated matrix manifest')
@@ -29,6 +30,10 @@ def admit(cfg):
  require(sum(r['bytes']for r in cfg['matrices'])==36464640 and cfg['maximum_transfer_bytes']==40<<20,'bounded whole matrices')
  for row in cfg['matrices']:
   width,rows=row['source_shape'];require(width==2560 and sorted(row_map(row['role'],rows))==list(range(rows))and row['source_offset']>=0 and row['source_offset']+row['bytes']<=cfg['source_model_bytes'],'whole valid row mapping/range')
+def selected_dispatch(rows,matrices):
+ wanted={row['physical_name']for row in matrices};chosen=[row for row in rows if row['name']in wanted]
+ require(len(chosen)==len(wanted)and {row['name']for row in chosen}==wanted,'unique selected actual tensor dispatch names')
+ return {row['name']:row for row in chosen}
 def download_range(cfg,row,path):
  start=row['source_offset'];end=start+row['bytes']-1;request=urllib.request.Request(cfg['source_model_url']+f'?download=true&repack_range={start}-{end}',headers={'Range':f'bytes={start}-{end}','Accept-Encoding':'identity'})
  with urllib.request.urlopen(request,timeout=120)as response,path.open('xb')as f:
@@ -54,10 +59,10 @@ def main():
   run('source-pin',['git','rev-parse','HEAD']);r['source_sha']=(out/'source-pin.log').read_text().strip();require(r['source_sha']==os.environ['LIGHTON4B_EXPECTED_SOURCE'],'exact controller source')
   s=importlib.util.spec_from_file_location('base',ROOT/'tools/kaggle/lighton4b_upstream_physical_decode.py');base=importlib.util.module_from_spec(s);s.loader.exec_module(base);r['preflight']={'memory':base.memory(),'scratch_free':shutil.disk_usage(work).free,'load':os.getloadavg()};require(r['preflight']['memory']['MemAvailable']>=4<<30 and r['preflight']['scratch_free']>=8<<30,'bounded CPU build capacity')
   receipts=[p for p in Path('/kaggle/input').rglob('physical-f16-table512.json')if p.is_file()and p.stat().st_size<4<<20 and sha(p)==cfg['actual_receipt_sha256']];require(len(receipts)==1,'one exact completed actual input receipt');rp=receipts[0];actual=json.loads(rp.read_text());require(actual['status']=='measured_extended_table'and actual['source_sha']=='f789609c2f1ff1a9527c8d02545d096ed10446b0'and actual['old_cap256_prefix_anchors_exact']and actual['source_observer_full_neutral'],'actual native/source closure');r['actual_receipt_sha256']=sha(rp)
-  dispatch=actual['arms']['upstream-on']['tensor_dispatch'];observed={x['name']:x for x in dispatch}
+  dispatch=actual['arms']['upstream-on']['tensor_dispatch'];observed=selected_dispatch(dispatch,cfg['matrices'])
   prepared=[]
   for row in cfg['matrices']:
-   x=rp.parent/row['input'];y=rp.parent/row['output'];verify(x,actual['artifacts'][row['input']]);verify(y,actual['artifacts'][row['output']]);width,rows=row['source_shape'];data=np.fromfile(x,dtype='<f4').reshape(16,width);expected=np.fromfile(y,dtype='<f4').reshape(16,rows);require(np.isfinite(data).all()and np.isfinite(expected).all(),'finite actual captured input/output');metadata=observed[row['physical_name']];require(int(metadata['type'])==row['type']and metadata['buffer_type']==('CPU_Mapped'if row['type']==14 else'CPU_REPACK')and metadata['extra']==('0'if row['type']==14 else'1'),'actual loaded source buffer route');prepared.append((row,data,expected))
+   x=rp.parent/row['input'];y=rp.parent/row['output'];verify(x,actual['artifacts'][row['input']]);verify(y,actual['artifacts'][row['output']]);width,rows=row['source_shape'];data=np.fromfile(x,dtype='<f4').reshape(16,width);expected=np.fromfile(y,dtype='<f4').reshape(16,rows);require(np.isfinite(data).all()and np.isfinite(expected).all(),'finite actual captured input/output');metadata=observed[row['physical_name']];require([int(metadata['ne0']),int(metadata['ne1'])]==row['source_shape']and int(metadata['ne2'])==int(metadata['ne3'])==1 and int(metadata['type'])==row['type']and metadata['buffer_type']==('CPU_Mapped'if row['type']==14 else'CPU_REPACK')and metadata['extra']==('0'if row['type']==14 else'1'),'actual loaded source buffer route');prepared.append((row,data,expected))
   run('native-submodule',['git','submodule','update','--init','ggml']);require(subprocess.check_output(['git','-C',ROOT/'ggml','rev-parse','HEAD'],text=True).strip()==cfg['native_ggml_source'],'native GGML pin')
   upstream=work/'upstream'
   for label,args in [('up-init',['git','init',upstream]),('up-remote',['git','-C',upstream,'remote','add','origin','https://github.com/ggml-org/llama.cpp.git']),('up-fetch',['git','-C',upstream,'fetch','--depth','1','origin',cfg['upstream_source']]),('up-checkout',['git','-C',upstream,'checkout','--detach','FETCH_HEAD'])]:run(label,args)

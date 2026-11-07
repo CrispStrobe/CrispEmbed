@@ -5,7 +5,7 @@ class Admission(unittest.TestCase):
  def test_exact_protocol(self):m.admit(json.loads((ROOT/'docs/lighton4b-source-repack-operator-v1.json').read_text()))
  def test_closed_mutations(self):
   c=json.loads((ROOT/'docs/lighton4b-source-repack-operator-v1.json').read_text())
-  for k,v in [('actual_receipt_sha256','0'*64),('native_ggml_source','0'*40),('upstream_source','0'*40),('source_model_bytes',1),('source_model_url','https://example.com'),('maximum_transfer_bytes',1),('tokens',[16]),('threads',2),('worker_seconds',3600)]:
+  for k,v in [('actual_receipt_sha256','0'*64),('transport_audit_sha256','0'*64),('native_ggml_source','0'*40),('upstream_source','0'*40),('source_model_bytes',1),('source_model_url','https://example.com'),('maximum_transfer_bytes',1),('tokens',[16]),('threads',2),('worker_seconds',3600)]:
    with self.subTest(key=k):
     x=copy.deepcopy(c);x[k]=v
     with self.assertRaises(RuntimeError):m.admit(x)
@@ -18,4 +18,9 @@ class Admission(unittest.TestCase):
    values=m.row_map(role,rows);self.assertEqual(sorted(values),list(range(rows)))
   self.assertEqual(m.row_map('a',32)[:4],[0,16,1,17]);self.assertEqual(m.row_map('qkv',8192)[:4096],list(range(4096)))
   with self.assertRaises(RuntimeError):m.row_map('unknown',32)
+ def test_selected_dispatch_rejects_duplicate_names(self):
+  cfg=json.loads((ROOT/'docs/lighton4b-source-repack-operator-v1.json').read_text());rows=[{'name':row['physical_name']}for row in cfg['matrices']]
+  self.assertEqual(len(m.selected_dispatch(rows+[{'name':'token_embd.weight'},{'name':'token_embd.weight'}],cfg['matrices'])),5)
+  with self.assertRaises(RuntimeError):m.selected_dispatch(rows+[rows[0]],cfg['matrices'])
+  with self.assertRaises(RuntimeError):m.selected_dispatch(rows[:-1],cfg['matrices'])
 if __name__=='__main__':unittest.main()
