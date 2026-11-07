@@ -1,6 +1,6 @@
 {
   "schema": "crispembed-josev-q4k-publication-recipe-v1",
-  "published": false,
+  "published": true,
   "dispatch_ready": true,
   "note": "Published by tools/ci-heavy/josev_quant_publish.py via josev-publish.yml (workflow_dispatch, variants). Each variant is re-quantized with the exact measured sweep recipe and must reproduce the receipt output SHA256.",
   "destination": "cstr/Josev-2B-SystemOne-GGUF",
@@ -46,5 +46,10 @@
   },
   "approved_by_owner": true,
   "approval": "Owner decision 7 November 2026: publish Q4_K_MIX (and Q8_0, whose gate passes) as EXPERIMENTAL into the existing repo, keeping the F32 file and notices.",
-  "status_label": "experimental"
+  "status_label": "experimental",
+  "publication": {
+    "run": 42371120858,
+    "hub_commit": "7bc8a7aeb6c6d862fc3e0cf55bee49afd79dccc2",
+    "receipt": "tests/results/josev2b/publication-q4k.json"
+  }
 }
