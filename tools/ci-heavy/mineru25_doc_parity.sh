@@ -4,7 +4,12 @@
 #
 #   gh workflow run heavy-cpu.yml -R CrispStrobe/CrispEmbed --ref feat/mineru-native-doc \
 #       -f script=tools/ci-heavy/mineru25_doc_parity.sh -f isolated_lane=mineru-native-doc \
-#       [-f args="CASE_IDS MAX_TOKENS SYNTHETIC"]
+#       [-f args="CASE_IDS MAX_TOKENS SYNTHETIC ROUTE_ENV"]
+#
+# ROUTE_ENV=explicit (historical default, run 41251475795) exports
+# CRISPEMBED_MINERU25_PRO_FULL_DOC=1; ROUTE_ENV=default leaves it UNSET so the
+# shipped default (on for F16/F32, opt-in for quantized) is what is measured,
+# and additionally checks the resolved gate through the C ABI.
 #
 # 1. Weight-free: test-mineru-doc self, test-otsl-table, regex and function
 #    differential fuzz, synthetic page parity (every helper branch).
@@ -19,6 +24,7 @@ set -uo pipefail
 CASE_IDS=${1:-all}
 MAX_TOKENS=${2:-2048}
 SYNTHETIC=${3:-300}
+ROUTE_ENV=${4:-explicit}
 THREADS=4
 GGUF_URL=https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF/resolve/e63c95cfd4e9f753783f588a187b9a3b89a7c201/mineru25-pro-2604-f16.gguf
 GGUF_SHA=7d464d375f7c20dd3e2bae7e20fed1f80485ae9ca69aaad201897652c74d746b
@@ -75,7 +81,32 @@ echo "$GGUF_SHA  $S/mineru25-pro-f16.gguf" | sha256sum -c - || exit 5
 echo "::endgroup::"
 
 echo "::group::model-backed protocol cases"
-export CRISPEMBED_MINERU25_PRO=1 CRISPEMBED_MINERU25_PRO_FULL_DOC=1 QWEN2VL_OCR_FORCE_CPU=1
+export CRISPEMBED_MINERU25_PRO=1 QWEN2VL_OCR_FORCE_CPU=1
+case "$ROUTE_ENV" in
+    explicit) export CRISPEMBED_MINERU25_PRO_FULL_DOC=1 ;;
+    default) unset CRISPEMBED_MINERU25_PRO_FULL_DOC ;;
+    *) echo "ROUTE_ENV must be explicit or default" >&2; exit 2 ;;
+esac
+note route_env "$ROUTE_ENV (CRISPEMBED_MINERU25_PRO_FULL_DOC=${CRISPEMBED_MINERU25_PRO_FULL_DOC-<unset>})"
+gate_probe() { # expected_enabled, then env assignments
+    local want=$1; shift
+    env "$@" python -I -c "
+import ctypes, sys
+lib = ctypes.CDLL(sys.argv[1]); p = ctypes.c_void_p
+lib.crispembed_mineru_init.restype = p; lib.crispembed_mineru_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+for f in ('crispembed_mineru_full_doc_enabled', 'crispembed_mineru_is_quantized', 'crispembed_mineru_free'):
+    getattr(lib, f).argtypes = [p]
+ctx = lib.crispembed_mineru_init(sys.argv[2].encode(), 1)
+assert ctx, 'init failed'
+q, on = lib.crispembed_mineru_is_quantized(ctx), lib.crispembed_mineru_full_doc_enabled(ctx)
+lib.crispembed_mineru_free(ctx)
+print('quantized', q, 'full_doc', on)
+sys.exit(0 if (q == 0 and on == int(sys.argv[3])) else 1)" "$LIB" "$S/mineru25-pro-f16.gguf" "$want"
+}
+if [ "$ROUTE_ENV" = default ]; then
+    gate full_doc_gate_f16_unset gate_probe 1 -u CRISPEMBED_MINERU25_PRO_FULL_DOC
+    gate full_doc_gate_f16_off gate_probe 0 CRISPEMBED_MINERU25_PRO_FULL_DOC=0
+fi
 export OMP_NUM_THREADS=$THREADS PYTHONPATH=python
 gate protocol_cases python tools/mineru_doc/model_parity.py --lib "$LIB" --gguf "$S/mineru25-pro-f16.gguf" \
     --cases "$CASE_IDS" --max-tokens "$MAX_TOKENS" --threads "$THREADS" --out "$OUT/cases" \
