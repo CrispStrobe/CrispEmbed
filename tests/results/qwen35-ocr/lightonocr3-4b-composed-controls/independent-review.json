@@ -1,0 +1,202 @@
+{
+  "schema": "lighton4b-composed-controls-review/v1",
+  "source_sha": "91025dd4e588d5f550f6051454c584587dc15fb3",
+  "receipt_sha256": "52fd2ccd26c9387b8ed459c0c9be9e7d813e65bc9a3b9c37274fd002ce022b4d",
+  "source_production_unchanged": true,
+  "supported_checks": 255297,
+  "actual_cli_controls": 9,
+  "model_acquisition_performed": false,
+  "quality_qualified": false,
+  "preserved_files": {
+    "composed-vision.json": {
+      "bytes": 15593,
+      "sha256": "52fd2ccd26c9387b8ed459c0c9be9e7d813e65bc9a3b9c37274fd002ce022b4d"
+    },
+    "supported-host.log": {
+      "bytes": 35,
+      "sha256": "5892c49ef41bc582baf756071bcb35987aa815a18b8e88452d1cfa601f57cdef"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "4ab7c584f294093f3942b1aef37351b7a08b253fbdf92e9523549efc3412da92"
+    },
+    "production-tree.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "build.log": {
+      "bytes": 6150,
+      "sha256": "b06a8554d951c3063468dd8be258cb49a72c1e4f2a9f20b9facfbd924e4978c8"
+    },
+    "configure.log": {
+      "bytes": 2048,
+      "sha256": "56617256d4b10a7d4dc607609f84d889211e5844e6cc941d158c4fdd121f4484"
+    },
+    "CMakeCache.txt": {
+      "bytes": 29208,
+      "sha256": "2d72a0d23c4b7daff7bf5134ddae717eb31b66e65f4da30cdce95eda7913fc46"
+    },
+    "cli-new-composed.log": {
+      "bytes": 266,
+      "sha256": "e1c7d62fb0a31f360d8f2d034a9e2f9ee34d622c6679eef8300102ba023f563f"
+    },
+    "cli-reject-unknown.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-reject513.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-unflagged512.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-table-legacy.log": {
+      "bytes": 266,
+      "sha256": "e1c7d62fb0a31f360d8f2d034a9e2f9ee34d622c6679eef8300102ba023f563f"
+    },
+    "cli-reject-mode.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-old256.log": {
+      "bytes": 266,
+      "sha256": "e1c7d62fb0a31f360d8f2d034a9e2f9ee34d622c6679eef8300102ba023f563f"
+    },
+    "cli-new-fed.log": {
+      "bytes": 266,
+      "sha256": "e1c7d62fb0a31f360d8f2d034a9e2f9ee34d622c6679eef8300102ba023f563f"
+    },
+    "cli-reject-threads.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "complete_download_inventory": {
+    "cli-new-composed.log": {
+      "bytes": 266,
+      "sha256": "e1c7d62fb0a31f360d8f2d034a9e2f9ee34d622c6679eef8300102ba023f563f"
+    },
+    "dependency-check.log": {
+      "bytes": 132,
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    "cli-reject-unknown.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "bounded-worker.log": {
+      "bytes": 421,
+      "sha256": "dd9f6503162a21e0bc2803ed2e6c1d4efa037b6ab27e3368866b6c9c52698ce3"
+    },
+    "venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "CMakeCache.txt": {
+      "bytes": 29208,
+      "sha256": "2d72a0d23c4b7daff7bf5134ddae717eb31b66e65f4da30cdce95eda7913fc46"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "4ab7c584f294093f3942b1aef37351b7a08b253fbdf92e9523549efc3412da92"
+    },
+    "build.log": {
+      "bytes": 6150,
+      "sha256": "b06a8554d951c3063468dd8be258cb49a72c1e4f2a9f20b9facfbd924e4978c8"
+    },
+    "supported-host.log": {
+      "bytes": 35,
+      "sha256": "5892c49ef41bc582baf756071bcb35987aa815a18b8e88452d1cfa601f57cdef"
+    },
+    "source-checkout.log": {
+      "bytes": 93,
+      "sha256": "75218b610db3fa84a5aa7fe1c864559d771a8575203d01f2f2bbf40a0e86ee48"
+    },
+    "cli-reject513.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-unflagged512.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "pip-resolution.json": {
+      "bytes": 205584,
+      "sha256": "182672f676b0fee31e2e2cba68c6296615ab0a90bc9ac93c4c61da17a66f3934"
+    },
+    "dependencies.log": {
+      "bytes": 2562,
+      "sha256": "2070107653e9502736133c8805cf87b6f511f1e81a3a3c4f9f454bf9be4448e2"
+    },
+    "cli-table-legacy.log": {
+      "bytes": 266,
+      "sha256": "e1c7d62fb0a31f360d8f2d034a9e2f9ee34d622c6679eef8300102ba023f563f"
+    },
+    "physical-f16-bootstrap.json": {
+      "bytes": 402,
+      "sha256": "9e90a40f9d1014a03c9da0776dd4fc4386c71cac305ff15463f6397485bfe11e"
+    },
+    "configure.log": {
+      "bytes": 2048,
+      "sha256": "56617256d4b10a7d4dc607609f84d889211e5844e6cc941d158c4fdd121f4484"
+    },
+    "cli-reject-mode.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-old256.log": {
+      "bytes": 266,
+      "sha256": "e1c7d62fb0a31f360d8f2d034a9e2f9ee34d622c6679eef8300102ba023f563f"
+    },
+    "control-test_runtime_guard.py.log": {
+      "bytes": 205,
+      "sha256": "d8307866cd6aab4856eeab5c83efbde639d4a7f395ff1381e789aca3aa8f1779"
+    },
+    "source-fetch.log": {
+      "bytes": 123,
+      "sha256": "6340dcc01878e4a9d2ce351e8d27bf90f86b30757fa69012bd1f9b62b9e03a5c"
+    },
+    "cli-new-fed.log": {
+      "bytes": 266,
+      "sha256": "e1c7d62fb0a31f360d8f2d034a9e2f9ee34d622c6679eef8300102ba023f563f"
+    },
+    "submodule.log": {
+      "bytes": 237,
+      "sha256": "398f2c0f015de8a867a9ac6c094c4c47c200866c195c2bd452c5080ce14dffa8"
+    },
+    "composed-vision.json": {
+      "bytes": 15593,
+      "sha256": "52fd2ccd26c9387b8ed459c0c9be9e7d813e65bc9a3b9c37274fd002ce022b4d"
+    },
+    "fetch-production.log": {
+      "bytes": 125,
+      "sha256": "8fb01e74a80c0e675f9847b756878fbb5b596e78530bb292913b2191e874c52f"
+    },
+    "cli-reject-threads.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source-init.log": {
+      "bytes": 577,
+      "sha256": "889ffaa3fd139cf5e81bba3e18de8d4b8201b592ecb8a496bb99be65ddc6193d"
+    },
+    "production-tree.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "control-test_composed_executor.py.log": {
+      "bytes": 203,
+      "sha256": "2604a624728c4e3ec8be82e31dbb6aee4130dac58ef109bd63d0a7232586269d"
+    },
+    "lighton4b-composed-vision-model-free-controls-v1.log": {
+      "bytes": 2676,
+      "sha256": "d7969938f66ade6841d881c91e6bc0198ed006e920537f7a706ae4540b23250e"
+    }
+  }
+}
