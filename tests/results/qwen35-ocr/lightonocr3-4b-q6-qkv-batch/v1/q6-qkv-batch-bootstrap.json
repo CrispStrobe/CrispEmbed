@@ -1,0 +1,24 @@
+{
+  "schema": "lighton4b-q6-qkv-batch-bootstrap/v1",
+  "source_sha": "17cc4304876a0e778a73e7090c6f078f76e93d15",
+  "bootstrap_sha256": "93132a5bc3638bfa571158494acf4c6f50f847d30483aafa1dbf884077cc8b86",
+  "status": "completed",
+  "gpu_requested": false,
+  "model_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "q6-qkv-batch",
+  "source_file_sha256": {
+    "tools/q6-qkv-batch-probe/worker.py": "ed8aeaa7e15f4bcdd7381ce81bd7a7f9b3e5cc7e2a5c029461ddb331494cf820",
+    "tools/q6-qkv-batch-probe/probe.cpp": "14f972e94f294869e3b3a9f59e5cf97c6887024aaeb4390b0fad1fab71765e6d",
+    "tools/q6-qkv-batch-probe/CMakeLists.txt": "ceb8ef2f0f9a67b22bd6d9311b0c620562c43da57baf376453b7a7117d167b9c",
+    "tools/q6-qkv-batch-probe/protocol.json": "308f4c6e23bdbe947fe014b8c579dc3fa290e95c9e4efa0e9dc2e5dccdde54b6",
+    "tools/q6-qkv-batch-probe/test_controls.py": "2f198edb53613f98114882ba2e6cdeebbae3972e9e9a1b6f9830950428d340fe",
+    "tools/q6-qkv-batch-probe/README.md": "78f65ae76962d79ae8621907dc70a7d3fab233607d2efb05b269b8ae8fb655c7",
+    "tools/repack-probe/worker.py": "942bf150e767a761b28a7ac9883d22bfd400a86cf2ff0c22ea25d3ea591f811b",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21"
+  },
+  "worker_status": "measured_source_fed_q6_batch_operators",
+  "elapsed_seconds": 276.539880083
+}

@@ -73,3 +73,5 @@ tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/teacher-readback-
 tests/results/qwen35-ocr/lightonocr3-4b-live-gdn-replay/hybrid-v3/*-CMakeCache.txt -text whitespace=-blank-at-eof
 tests/results/qwen35-ocr/lightonocr3-4b-swiglu-source-probe/v1/*-CMakeCache.txt -text whitespace=-blank-at-eof
 tests/results/qwen35-ocr/lightonocr3-4b-ffn-postnorm-codes/v1/*-CMakeCache.txt -text whitespace=-blank-at-eof
+
+tests/results/qwen35-ocr/lightonocr3-4b-q6-qkv-batch/v1/*CMakeCache.txt -text whitespace=-blank-at-eof

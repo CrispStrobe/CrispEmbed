@@ -1,0 +1,13 @@
+{
+  "upstream-tiled-kernel.h": "0d729f5a6b4cd1584bd181fbc882e39f64fd41bf66ac1a9c009025d2b09ff23e",
+  "upstream-tiled-tiled.h": "684aaa5320e20eadfc799c8ce04c52bf7c0d32b323f395de59ce469bda254a72",
+  "upstream-tiled-kernel.cpp": "1d311e25a1da81029ff3644505e1c63b5f65711ad44edb10ac20d1349f8ba5f1",
+  "upstream-tiled-tiled.cpp": "a5d92ce8f617696778e225de6658180649143fec3792c5cfef84170641f2d06e",
+  "upstream-ggml-cpu.c": "a498026d9138c271de877e0f6b99805693c640e4c4c4c82f480e42578d3ab9b5",
+  "upstream-ggml-cpu.cpp": "ccf382d3fbf126b5ddb5850a0a970656fb24e00587da4003419439277c91cd01",
+  "native-ggml-cpu.c": "9a85d2bf58f99e885106cac024d7585f079f16ba7df9a68ef0bb03d9bc860f14",
+  "upstream-CMakeLists.txt": "b69ed1a14063642c47c70b7b4c67177388e02ee3c27d2e7adfde9ed5ba5859bf",
+  "native-ggml-cpu.cpp": "898063fa671f65e5cee7b9a6520e7fedf2125765015f5c16eb3675be2c79af7e",
+  "upstream-arch-x86-quants.c": "777d0a4c1caf0e5b2589e8e77eb376a10691155deb5589d981838f9fef286c52",
+  "native-arch-x86-quants.c": "2909f2c8d2aca218244fa6a816061647f8073fb8d1b07759779cc40240be85a6"
+}
