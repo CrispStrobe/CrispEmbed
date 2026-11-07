@@ -4,6 +4,24 @@ import numpy as np
 HERE=Path(__file__).parent
 s=importlib.util.spec_from_file_location('gdn_full_ab',HERE/'worker.py');w=importlib.util.module_from_spec(s);s.loader.exec_module(w)
 class Controls(unittest.TestCase):
+ def test_outer_receipts_remain_outside_child_inventory(self):
+  with tempfile.TemporaryDirectory()as d:
+   p=Path(d);(p/'outer.log').write_text('active');(p/'bootstrap.json').write_text('active');(p/'done.log').write_text('closed');(p/'CMakeCache.txt').write_text('closed');(p/'case').mkdir();(p/'case/generated.txt').write_text('closed')
+   self.assertEqual(set(w.artifacts(p,{'done':{}})),{'done.log','CMakeCache.txt','case/generated.txt'})
+ def test_transfer_retries_owned_partial_only_and_deadline_closed(self):
+  with tempfile.TemporaryDirectory()as d:
+   p=Path(d)/'owned';records=[]
+   def fetch(*args):
+    self.assertFalse(p.exists());p.write_bytes(b'x')
+    if len(records)==1:raise TimeoutError('transport')
+   w.transfer(fetch,'unused',p,1,'frozen',records);self.assertEqual([r['status']for r in records],['transport_failure','authenticated'])
+   with self.assertRaises(RuntimeError):w.transfer(fetch,'unused',p,1,'frozen',[])
+  for error in [w.WorkerDeadline('global'),ValueError('integrity')]:
+   with tempfile.TemporaryDirectory()as d:
+    p=Path(d)/'owned';records=[]
+    def fail(*args):raise error
+    with self.assertRaises(type(error)):w.transfer(fail,'unused',p,1,'frozen',records)
+    self.assertEqual(len(records),1)
  def test_worker_syntax_and_frozen_protocol(self):
   ast.parse((HERE/'worker.py').read_text());w.admit_protocol(w.ROOT/'docs/lighton4b-gdn-full-ab-v1.json')
   with tempfile.TemporaryDirectory()as d:

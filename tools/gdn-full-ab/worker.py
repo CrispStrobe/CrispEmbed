@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Frozen observed form/table GDN OFF/ON; no reference forward or qualification."""
-import hashlib,importlib.util,json,os,shutil,signal,subprocess,sys,time
+import hashlib,importlib.util,json,os,shutil,signal,subprocess,sys,time,urllib.error
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools/physical-f16-attention-probe'))
-from runtime_guard import Deadline,command
+from runtime_guard import Deadline,WorkerDeadline,command
 GATE='CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS'
 PROOF='6b1f4f9c3150d06df0a195c1f21c42136874e69934b9586205712114354e798d'
 SOURCE='cd50e9e691530525fb998edda8a449cc0725be91'
@@ -28,6 +28,19 @@ def rows(dest,ids,np):
  for i,token in enumerate(ids):
   p=dest/f'greedy.{i}.logits.f32';x=np.fromfile(p,dtype='<f4');require(x.size==248320 and np.isfinite(x).all()and int(x.argmax())==token,'complete finite greedy argmax');
  require(sha(dest/'prefill.logits.f32')==sha(dest/'teacher.0.logits.f32')==sha(dest/'greedy.0.logits.f32'),'same first vocabulary row')
+def artifacts(out,commands):
+ owned={label+'.log'for label in commands}|{'CMakeCache.txt','physical-pack.json'}
+ return {str(p.relative_to(out)):dict(bytes=p.stat().st_size,sha256=sha(p))for p in out.rglob('*')if p.is_file()and(p.parent!=out or p.name in owned)}
+def transfer(fetch,url,path,size,digest,records):
+ require(not Path(path).exists(),'fresh owned download destination')
+ for attempt in range(1,4):
+  row=dict(attempt=attempt,expected_bytes=size);records.append(row)
+  try:fetch(url,path,size,digest);row['status']='authenticated';return
+  except WorkerDeadline:row['status']='worker_deadline';raise
+  except (TimeoutError,ConnectionError,urllib.error.URLError)as e:
+   row.update(status='transport_failure',error_type=type(e).__name__,partial_bytes=Path(path).stat().st_size if Path(path).exists()else 0)
+   if Path(path).exists():Path(path).unlink()
+   if attempt==3:raise RuntimeError('bounded authenticated transfer failed: '+Path(path).name)from None
 def main():
  import numpy as np
  require(np.__version__=='2.3.5'and Path('/kaggle/input').is_dir()and not list(Path('/dev').glob('nvidia[0-9]*')),'pinned Kaggle CPU')
@@ -77,7 +90,11 @@ def main():
   for lib in libs:shutil.copy2(lib,bundle/'lib'/lib.name)
   r['runtime_bundle']={str(p.relative_to(bundle)):dict(bytes=p.stat().st_size,sha256=sha(p))for p in bundle.rglob('*')if p.is_file()};save()
   sys.path.insert(0,str(ROOT/'tools'));import lighton4b_upstream_physical_pack as pack
-  modelcfg=json.loads((ROOT/'docs/lighton4b-composed-form-vision-v1.json').read_text());row=modelcfg['models']['Q4_K_M'];upmodel=work/row['file'];base.download('https://huggingface.co/'+modelcfg['model_repo']+'/resolve/'+modelcfg['model_revision']+'/'+row['file'],upmodel,row['bytes'],row['sha256']);row=modelcfg['base_model'];protected=work/row['file'];base.download('https://huggingface.co/'+row['repository']+'/resolve/'+row['revision']+'/'+row['file'],protected,row['bytes'],row['sha256']);candidate=work/'candidate.gguf';audit=pack.convert(protected,upmodel,candidate,out/'physical-pack.json');require(audit['candidate_sha256']==cfg['candidate_sha256'],'unchanged immutable model');protected.unlink()
+  def download(url,path,size,digest):
+   r['phase']='download-'+Path(path).name;records=r.setdefault('downloads',{}).setdefault(Path(path).name,[]);save()
+   try:transfer(base.download,url,path,size,digest,records)
+   finally:save()
+  modelcfg=json.loads((ROOT/'docs/lighton4b-composed-form-vision-v1.json').read_text());row=modelcfg['models']['Q4_K_M'];upmodel=work/row['file'];download('https://huggingface.co/'+modelcfg['model_repo']+'/resolve/'+modelcfg['model_revision']+'/'+row['file'],upmodel,row['bytes'],row['sha256']);row=modelcfg['base_model'];protected=work/row['file'];download('https://huggingface.co/'+row['repository']+'/resolve/'+row['revision']+'/'+row['file'],protected,row['bytes'],row['sha256']);candidate=work/'candidate.gguf';audit=pack.convert(protected,upmodel,candidate,out/'physical-pack.json');require(audit['candidate_sha256']==cfg['candidate_sha256'],'unchanged immutable model');protected.unlink()
   for case,count,receiptp,receipt,prefix,gold,inp,original,up,anchors,visual,reference in prepared:
    # Dimensions authenticated by the frozen source protocol, never inferred from outputs.
    sourcecfg=json.loads((ROOT/'docs/lighton4b-upstream-physical-decode-v1.json').read_text());c=next(c for c in sourcecfg['cases']if c['id']==case);from PIL import Image
@@ -110,5 +127,5 @@ def main():
  finally:
   deadline.close()
   for s,h in prior.items():signal.signal(s,h)
-  r['elapsed_seconds']=time.monotonic()-start;r['artifacts']={str(p.relative_to(out)):dict(bytes=p.stat().st_size,sha256=sha(p))for p in out.rglob('*')if p.is_file()and p.name!='gdn-full-ab.json'};save()
+  r['elapsed_seconds']=time.monotonic()-start;r['artifacts']=artifacts(out,r['commands']);save()
 if __name__=='__main__':main()
