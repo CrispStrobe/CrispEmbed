@@ -1,0 +1,39 @@
+{
+  "schema": "lighton4b-q4-repack-table512/v1",
+  "case": "simple_table",
+  "arms": [
+    "off",
+    "on"
+  ],
+  "cap": 512,
+  "threads": 4,
+  "context": 2048,
+  "total_timeout_seconds": 2700,
+  "per_arm_timeout_seconds": 900,
+  "controls_source_sha": "5f6dfb9f09b49002201c7702ff71a5e345294af2",
+  "controls_receipt_sha256": "c7130c6d7b54e6859439bbf87c8e54880c30bd5d2db33c3571ded179e6711cf5",
+  "table_receipt_sha256": "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3",
+  "table_source_sha": "f789609c2f1ff1a9527c8d02545d096ed10446b0",
+  "model_repo": "richardyoung/LightOnOCR-3-4B-GGUF",
+  "model_revision": "8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01",
+  "models": {
+    "Q4_K_M": {
+      "file": "LightOnOCR-3-4B-Q4_K_M.gguf",
+      "bytes": 2708804576,
+      "sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26"
+    }
+  },
+  "base_model": {
+    "repository": "cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
+    "revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+    "file": "lightonocr3-4b-q4_k-vision-f32.gguf",
+    "bytes": 4030957952,
+    "sha256": "f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91"
+  },
+  "expected_candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "driver_source_sha256": "24becb20a71c2659766275121928b7a0d185d38d9a2a0fa2fa38b62fe2eaf425",
+  "minimum_available_memory_bytes": 10737418240,
+  "minimum_scratch_free_bytes": 26843545600,
+  "minimum_output_free_bytes": 4294967296,
+  "scope": "Same frozen source-feature table, existing raw282/EOS and38stage OFF anchors; quant storage only. No upstream/original forward, composition or heldout qualification."
+}

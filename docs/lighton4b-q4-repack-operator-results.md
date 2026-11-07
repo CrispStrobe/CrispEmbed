@@ -68,3 +68,58 @@ The main unsupported stub is tested; actual new-code WASM linkage is not newly
 qualified. Next is one bounded source-feature table512 OFF/ON model diagnostic,
 requiring every old282 raw row and38 stages before evaluating the alternative.
 All existing observed/composed/held-out release gates remain in force.
+
+## Completed table OFF/ON: decoded regression, gate unqualified
+
+The physical-only Q4 repack gate remains **default-off and unqualified**.
+Same-feature model source `f079dcec64a799a23d2bdcc25c0da0fee6c49d8c` completed
+in684.813s with [raw receipt](../tests/results/qwen35-ocr/lightonocr3-4b-q4-repack-table512/v1/q4-repack-table512.json)
+SHA256 `5acbdab91bf45752d06faf712856cb0eab82ab116657fc43e590166db4e03d48`.
+Candidate SHA256 stayed `843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43`.
+Both fresh processes used the same actual upstream vision features, prompt,
+physical weight bytes, F16 attention, Q6 tied head, context2048 and cap512.
+Only `CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK` changed.
+
+| Measure | OFF | ON |
+|---|---:|---:|
+| Generated IDs / completion |282 / EOS|295 / EOS|
+| Character edits vs original BF16 (607 codepoints) |349|365|
+| Word edits vs original BF16 (106 words) |97|104|
+| Character / word edits vs actual upstream |9 /7|19 /17|
+| Matching upstream token prefix |126|113|
+| First-score RMS vs upstream |0.188628814|0.202156367|
+| First-score maximum absolute error |1.06177521|1.31582272|
+| Child wall seconds |178.576|181.195|
+| Observed peak RSS bytes |2,958,786,560|4,632,313,856|
+| Retained Q4 cache entries / bytes |0 /0|216 /1,662,861,312|
+| Converted F32 weight entries / bytes |0 /0|0 /0|
+
+OFF reproduced **all282 frozen raw score rows,38 prefill stages, IDs, raw text
+and EOS** before ON began. Both independent outputs reached actual EOS without
+capping; all greedy rows were finite and argmax-checked. The original upstream
+reference itself has348/607 character edits and97/106 word edits against the
+unchanged BF16 reference. The comparison uses one teacher row plus full
+independent greedy rows, not a222-position teacher panel.
+
+The first measured native OFF/ON hidden difference is layer0: RMS3.26613e-5,
+maximum0.000956059 against OFF magnitude11.5994. It grows to layer31 RMS0.0762301,
+maximum3.13368 against OFF magnitude79.8810. These are **native OFF versus ON**,
+not actual upstream hidden stages; actual upstream text hidden states were not
+captured. The source-fed preferred-buffer operator proof therefore does not
+close whole-model parity or locate the earliest actual upstream discrepancy.
+
+[Independent review](../tests/results/qwen35-ocr/lightonocr3-4b-q4-repack-table512/v1/independent-review.json)
+rehashed all six downloaded text/ID/summary artifacts and recomputed raw char/word
+edits against both authenticated references. [Raw text diff](../tests/results/qwen35-ocr/lightonocr3-4b-q4-repack-table512/v1/off-on.diff)
+shows changed numerical values and added temperature units. Full scores/stages
+remain remote with source-bound hash/finite/argmax/anchor receipts. Child RSS
+uses up-to-1s VmHWM sampling and may miss short peaks. OFF-first/ON-second timing
+includes loading, prefill and score writes, uses different token counts, and
+is not a balanced speed result.
+
+No default, alias, release or app pin is promoted. Preserve the alternative as
+a diagnostic; do not enable it as a quality fix. Prioritize the independently
+measured composed-vision discrepancy and its actual source stages. Additional
+text-kernel changes need an actual source-stage boundary; no such internal
+upstream text capture is claimed here. All observed/composed/held-out gates
+remain pending.

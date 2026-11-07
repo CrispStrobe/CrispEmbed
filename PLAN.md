@@ -3132,3 +3132,15 @@ preserves the initial compile negative and stale outer-bootstrap inventory
 limitation. No model forward/decoded or new real-WASM qualification. Next is
 the reviewed table512 OFF282row/38stage anchor then ON comparison; no promotion
 until all observed/composed/held-out gates pass.
+
+### Physical Q4 repack model negative: keep gate off
+
+[Completed same-feature table OFF/ON](docs/lighton4b-q4-repack-operator-results.md)
+source `f079dcec6`, receipt `5acbdab9`,684.813s: OFF closesall282raw/38stage
+anchors and282EOS; ON295EOS regresses CER349→365/607 andWER97→104/106.
+First-scoreRMS0.188629→0.202156; actual216-entry1.663GBquantcache/zeroF32
+weightcache costs sampledRSS2.959→4.632GB. Alternative staysdefault-off and
+unqualified, with no speed or quality promotion. NativepairedstageL0RMS
+3.266e-5 growsL31RMS0.07623; actualupstreamtextinternalstageswerenotcaptured.
+Prioritize composed-vision attribution/fix; do not infer a new text-kernel fix
+from this negative. Preserve all raw text,IDs,receipts and immutable sources.

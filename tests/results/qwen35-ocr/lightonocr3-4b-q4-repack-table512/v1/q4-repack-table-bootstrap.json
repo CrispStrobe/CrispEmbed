@@ -1,0 +1,25 @@
+{
+  "schema": "lighton4b-source-repack-operator-bootstrap/v1",
+  "source_sha": "f079dcec64a799a23d2bdcc25c0da0fee6c49d8c",
+  "bootstrap_sha256": "0b78edab792950330de056e620cec35cef2402ffcbe1b5f02bc2d27b18645d5a",
+  "status": "completed",
+  "gpu_requested": false,
+  "model_forward_executed": true,
+  "model_quality_qualified": false,
+  "phase": "paired-table-model",
+  "source_file_sha256": {
+    "tools/kaggle/lighton4b_q4_repack_table512.py": "a51b6d7d39fba2c966f880e8a5b33d4272e434a2b6cac3d5d586a3d8a1b8936f",
+    "tools/physical-f16-attention-probe/test_repack_table512_admission.py": "fbb6b713623124f418963e3874495e7da75946d98cfb8aae76dd5c63b625b4b3",
+    "docs/lighton4b-q4-repack-table512-v1.json": "ca3aa4971317e1176d5158615b77e7a96501d7ecffb60bfcc747f94e7010363a",
+    "docs/lighton4b-upstream-physical-decode-v1.json": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d",
+    "tools/kaggle/lighton4b_physical_f16_full_form.py": "fd417f272f522e63d103f091589952f43a14c36a8c7068edee33a19cc2202c86",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "tools/lighton4b_upstream_physical_pack.py": "0f86cd619b1b25c419bd643a549786cc35d0c546b0bcab382e2efb77e3b24910",
+    "tests/lighton4b_native_document.cpp": "24becb20a71c2659766275121928b7a0d185d38d9a2a0fa2fa38b62fe2eaf425",
+    "src/lighton4b_native_context.h": "6e38cdcddbfbcf157adadea426d373120592a7b6c85191fff62cd9546c6b99c7"
+  },
+  "worker_status": "measured_same_feature_table_repack",
+  "elapsed_seconds": 707.061350697
+}
