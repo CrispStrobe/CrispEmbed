@@ -66,10 +66,6 @@ def main():
   native_stages=['processor.patches.f32','vision.patch.f32','vision.position.f32','vision.embedded.f32','vision.merged.f32']+[f'vision.layer.{i}.f32'for i in range(24)]
   for name in native_stages:verify(fp.parent/'composed'/name,form['artifacts']['composed/'+name])
   source_feature=folder/'observer-on/source.vision.0.f32';verify(source_feature,art['observer-on/source.vision.0.f32']);r['inputs_authenticated']=True;save()
-  projector=work/'mmproj.gguf';suffix=work/'native-vision.f32';r['phase']='projector-only-transfer';save()
-  base.download(cfg['projector_url'],projector,cfg['projector_bytes'],cfg['projector_sha256']);start,end=cfg['native_vision_range'];range_download(cfg['native_base_url'],suffix,start,end,cfg['native_base_bytes'])
-  require(projector.stat().st_size+suffix.stat().st_size<=cfg['maximum_download_bytes'],'total transfer quota');r['downloaded_weight_bytes']=projector.stat().st_size+suffix.stat().st_size
-  r['phase']='canonical-all-parameters';save();r['canonical']=canonical.audit(cfg,suffix,projector);r['canonical_weight_equivalence_proven']=r['canonical']['all_canonical_f32_bit_exact'];save()
   upstream=work/'upstream'
   for label,args in [('up-init',['git','init',upstream]),('up-remote',['git','-C',upstream,'remote','add','origin','https://github.com/ggml-org/llama.cpp.git']),('up-fetch',['git','-C',upstream,'fetch','--depth','1','origin',cfg['upstream_commit']]),('up-checkout',['git','-C',upstream,'checkout','--detach','FETCH_HEAD'])]:run(label,args)
   require(subprocess.check_output(['git','-C',upstream,'rev-parse','HEAD'],text=True).strip()==cfg['upstream_commit'],'pinned source')
@@ -84,6 +80,14 @@ def main():
   if not program.exists():program=build/'crisp-projector-probe'
   require(program.is_file(),'actual standalone source program');r['source_binary_sha256']=sha(program)
   env=dict(os.environ);env.pop('CRISP_PROJECTOR_CAPTURE',None);env['LD_LIBRARY_PATH']=':'.join(sorted({str(p.parent)for p in build.rglob('*.so*')if p.is_file()}))
+  try:run('source-cli-noargs',[program],env,30)
+  except subprocess.CalledProcessError as e:require(e.returncode==1,'standalone CLI expected argument rejection')
+  else:raise ValueError('standalone CLI must reject missing arguments')
+  require('projector RGB height width output-prefix required'in(out/'source-cli-noargs.log').read_text(),'standalone loader/CLI closure')
+  projector=work/'mmproj.gguf';suffix=work/'native-vision.f32';r['phase']='projector-only-transfer';save()
+  base.download(cfg['projector_url'],projector,cfg['projector_bytes'],cfg['projector_sha256']);start,end=cfg['native_vision_range'];range_download(cfg['native_base_url'],suffix,start,end,cfg['native_base_bytes'])
+  require(projector.stat().st_size+suffix.stat().st_size<=cfg['maximum_download_bytes'],'total transfer quota');r['downloaded_weight_bytes']=projector.stat().st_size+suffix.stat().st_size
+  r['phase']='canonical-all-parameters';save();r['canonical']=canonical.audit(cfg,suffix,projector);r['canonical_weight_equivalence_proven']=r['canonical']['all_canonical_f32_bit_exact'];save()
   for arm in ['off','on']:
    dest=out/arm;dest.mkdir();child=dict(env)
    if arm=='on':child['CRISP_PROJECTOR_CAPTURE']=str(dest)
