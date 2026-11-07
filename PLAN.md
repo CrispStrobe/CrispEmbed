@@ -3206,3 +3206,8 @@ Artifact-only FFNthree-point closure on the same Q4 matrix: A=borrowed(nativepos
 ### Frozen two-column provisional result preserved without literary text (2026-11-07)
 
 Unchangedd378 completes2623.38s/rawprivate9b88195d: all4EOS654source/697native, fullsourceobserverneutral, metadata/observed167guards pass. Independentcontent526→373/2981chars,146→111/556words; provisionalfloortrue, notadjudicatedGT/qualification. All27selectedhashes+firstscore/threevisionvectors independentlyverified; merged2,580,480bytes exact andall697native rows/IDs equal sourcefeaturecounterfactual. Publicrights-safe summary/hashbinding/reader/metadata only; rawrecognizedtext/IDs/fullreport remainprivate. Pre-model audit also closespreviousreceipt304files2.017GB+1570rows finite/argmax/SHA. Inventoryunchanged/sourcefixed, reviewednextauditcase2 304files2.671GB/2215rows. No tuning/default/release promotion.
+
+
+### Observed table GDN source-fed replay
+
+Source `2f1261053` completed the bounded actual-input GDN replay, closing live source four-token conv/SiLU/postnorm/preferred output and native sixteen-token baseline, plus all 524,288 values of the actual next nonzero state. [Evidence and arithmetic limits](docs/lighton4b-live-gdn-replay-results.md) retain exact receipts, magnitudes and counterfactual errors. Native GGML softplus differs from pinned upstream; existing decoder scalar softplus is already exact and will be retained in a separately gated hybrid experiment. No decoded validation, model quality promotion, held-out selection or global repack change occurred.
