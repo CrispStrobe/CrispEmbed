@@ -101,3 +101,42 @@ The sparse test is removed before real acquisition; it reads no weights and runs
 no forward. Source/GGML/CMake/numerical-unit bytes stay strictly equal to the
 passing controls; the reference-only adapter exception has its own reviewed
 hash. Seven local controls pass. Retry results remain separate and unqualified.
+
+## Actual-component V2: all28 vision stages byte-exact
+
+Corrected worker source `b59e5d3a9` completed280.59seconds. [Raw receipt and index](../tests/results/qwen35-ocr/lightonocr3-4b-vision-profile-component/v2-exact/index.json)
+SHA256 `039b024f41b499cfd8344cb4e89835bbfe559a1f298225866c691000d4e6c8c0`.
+The new metadata-only admission passed before transfer. All297 native vision
+parameters were authenticated, with198 sourceF32 parameters retained asF32 and
+99 matrices rounded to their100 sourceF16 tensors. No text checkpoint, original
+Torch/BF16 reference or new upstream forward was instantiated.
+
+The retained legacy path reproduces all28 visual arrays plus processor patches
+exactly. The new F16-matrix/F32-state path then matches **all28 actual live source
+arrays byte-for-byte**: patch+bias, learned position, embedded input, every24
+block output and final merged features. Every measured RMS and maximum error is
+zero. Actual resized RGB and normalized packed patches also match source bytes.
+This is a real-weight/source-stage result on the observed form; it does not imply
+all inputs, text-decoder parity or OCR quality qualification.
+
+[Independent review](../tests/results/qwen35-ocr/lightonocr3-4b-vision-profile-component/v2-exact/independent-review.json)
+verified nine selected actual files totaling18,206,720bytes, including raw bytes
+for initial stages, blocks0/23, merged features and preprocessing. All28 reported
+new hashes cross-close against both the output manifest and retained source
+manifest; all29 legacy hashes cross-close against the old composed receipt.
+The full73-owned-file and28-source-file remote rehash remains an explicit
+pre-model gate in the composed-form follow-up, avoiding local bulk arrays.
+
+| Ordered vision-only arm | Elapsed | Sampled process peak RSS |
+| --- | ---: | ---: |
+| Legacy Torch/BF16 path | 138.00s | 1,504,272,384bytes |
+| Source F16-matrix/F32-state path | 15.47s | 1,508,159,488bytes |
+
+These single ordered component timings include their diagnostic snapshots and
+are not a balanced speed benchmark or full decode measurement. Both use the
+same weights, image and four threads. Gate/owner setup is explicit in the
+reference adapter; its recorded launch environment is not the complete effective
+in-process gate tuple. Production numerical code is unchanged from the passing
+controls. Defaults remain off. Complete independently decoded composed-form
+comparison is next; the candidate remains unqualified until broader evidence and
+reference limitations are resolved.
