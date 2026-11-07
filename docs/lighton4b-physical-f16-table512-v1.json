@@ -1,0 +1,19 @@
+{
+  "schema": "lighton4b-physical-f16-table512/v1",
+  "case": "simple_table",
+  "cap": 512,
+  "threads": 4,
+  "context": 2048,
+  "form_receipt_sha256": "0a0c2084baa4e46aa80f09f7ae94fd4b1c56ccae2bbf2f9ef6210e81e8cf1d01",
+  "physical_receipt_sha256": "712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2",
+  "calibration_receipt_sha256": "7639d6559da7cc58443ccfbe1dac518af0d70f3e7a83718d037a97bb147eb2b7",
+  "arms": [
+    "upstream-off",
+    "upstream-on",
+    "native"
+  ],
+  "total_timeout_seconds": 3600,
+  "per_arm_timeout_seconds": 1200,
+  "quality_qualified": false,
+  "scope": "Extended completion diagnostic, originalcap256negativepreserved. Actualpinnedupstream observerOFF/ONfull512strictneutrality, exactoldsource256IDs/probs+features+first2scoreanchors, exactformnativebinary/gates+oldnative256IDs/firstscoreanchors. No heldout or composedvisionqualification."
+}
