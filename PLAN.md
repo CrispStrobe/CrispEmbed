@@ -3115,3 +3115,11 @@ same-feature decoded comparison; current Q4 is not qualified.
 ### ProjectorV2 qualified evidence and observer invalidation (2026-11-07)
 
 [PreservedV2](docs/lighton4b-projector-attribution.md): raw64eb/sourcec010 completes318.87s, canonical297/298 allauthenticated333.5Mvalues (198F32exact/99F16 max2^-25;287nativeF16roundexact/10edgecasesunresolved), actualsourceOFF/ONmergedbyteclosure and validpreprocessingRMS.000221817/max.0156863. Postcomputeintermediatebuffersalias, so rejectALLintermediatemagnitudes despite rawmeasuredstatus/nonzero/finalneutrality. CorrectedreferenceLIVEcallback+arithmeticclosures+RGB/resize/normalizationdecompositionpreparedc1ed, no productfix orqualityclaim; awaitpeerreview/boundedretry.
+
+Physical Q4 repack initial hosted runtime controls at `26763167f` pass57
+supported lifecycle checks and2 main closed-stub checks, then stop before
+source-fed work on a reference-adapter missing-declaration compile error.
+[Preserved partial receipt](docs/lighton4b-q4-repack-operator-results.md) keeps
+that distinction explicit. Reviewed include/build-order repair `5f6dfb9f0`
+leaves runtime bytes unchanged; one bounded retry is pending, with no model
+inference or promotion.

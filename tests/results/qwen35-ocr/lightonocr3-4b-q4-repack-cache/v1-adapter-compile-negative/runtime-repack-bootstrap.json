@@ -1,0 +1,23 @@
+{
+  "schema": "lighton4b-source-repack-operator-bootstrap/v1",
+  "source_sha": "26763167f70e2dce6cf187caacc5164e95d01432",
+  "bootstrap_sha256": "10edc7001dbad0ed3b20d9b52459e15dc1eb2d04f82c3b6add6993c542ad3a9c",
+  "status": "failed",
+  "gpu_requested": false,
+  "model_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "runtime-repack-controls",
+  "source_file_sha256": {
+    "tools/repack-probe/runtime_worker.py": "955d052bb12a74370548e3ceb3896eb0e6987aae5fd15ff26b0d2711186d3fd4",
+    "tests/lighton4b_physical_q4_repack_probe.cpp": "dc17b63205f3516f4d4115ce74eedc5f3a4c0103dd86ea37a434189ee14bb56b",
+    "tests/test_lighton4b_physical_q4_repack.cpp": "bcbaef0fb766fcb3695cb0172d8b31ee145f20d23b4013128ebb9e7c8d6cfb43",
+    "tools/repack-probe/worker.py": "942bf150e767a761b28a7ac9883d22bfd400a86cf2ff0c22ea25d3ea591f811b",
+    "tools/repack-probe/probe.cpp": "997fe02ee144a457f8d20a03d2b4adac8419d473bf5f49b60afad343b31c16f6",
+    "tools/repack-probe/CMakeLists.txt": "dc72c505100d2199a14d75ce443745efda1a259b2e3411357d9c2aae0805c495",
+    "tools/repack-probe/test_admission.py": "8bbcfcbca2bbb90091f4f2d1491d87484403c7929ecbf480ae4606c78da9ace7",
+    "docs/lighton4b-source-repack-operator-v1.json": "6ac20d68c87348396f04d655ad81ca94ea504dc3a268280423a13fa70559cb81"
+  },
+  "error_type": "RuntimeError",
+  "error": "runtime-repack-controls nonzero",
+  "elapsed_seconds": 463.96807696
+}

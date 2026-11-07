@@ -28,3 +28,19 @@ follows from this operator result. A separate default-off physical Q4 buffer
 cache needs lifecycle/budget/cache-mode controls, actual runtime source-fed
 equality and same-feature decoded OFF/ON evidence before integration. Global
 vendor traits and the public release fence stay unchanged.
+
+## Initial runtime-cache controls
+
+Source `26763167f` compiled the gated runtime and passed the supported
+lifecycle/budget/cache-mode unit (57 checks, 2.034 seconds) and the main-library
+closed-stub unit (2 checks). The worker then failed at reference-only adapter
+compilation: the adapter omitted `qwen35_math.h`, which declares `project_cpu`.
+[Initial receipt and compiler log](../tests/results/qwen35-ocr/lightonocr3-4b-q4-repack-cache/v1-adapter-compile-negative/index.json)
+preserve the 443.392-second partial result. No tensor ranges were downloaded,
+no source-fed projections ran, and remaining compatibility controls were not
+executed. This is a harness compile negative, not an arithmetic failure.
+
+Independently reviewed source `5f6dfb9f0` adds the missing direct include and
+compiles the adapter before the expensive main-library build; all runtime
+bytes remain unchanged. A bounded retry is pending. No quality or release
+claim follows from the initial unit passes.
