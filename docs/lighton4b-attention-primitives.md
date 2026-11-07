@@ -129,3 +129,17 @@ platforms, actual upstream hidden2 or decoded outputs. A separate experimental
 physical-only integration must fail closed where unsupported, preserve old
 paths and source pins, and pass same-feature full-score/decoded gates before
 any promotion. The public loader fence and unqualified-Q4 restriction remain.
+
+## Initial gated integration controls: retained harness failure
+
+The default-off physical-only integration at source `5a8e954a3` compiled and
+passes255,297 supported runtime checks,5 unsupported-build checks,5 simulated
+WASM-guard checks and142 old physical-native-operator controls. Its [initial
+receipt](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/integration-v1-setup-negative/physical-f16-controls.json)
+is preserved with the logs. At119.53 seconds the harness invoked the old
+physical-policy executable without its required426-row schema argument; exit2
+stopped the worker before any actual source-fed N1/N4/N16 comparison. This
+is a harness failure, not a numerical pass or runtime failure. Tools-only fix
+`6ed974440` admits the audited closed schema for both schema-consuming old
+controls and adds CLI regression checks, leaving all runtime blobs unchanged.
+Shared PR155 remains unchanged pending the complete hosted source-fed gates.

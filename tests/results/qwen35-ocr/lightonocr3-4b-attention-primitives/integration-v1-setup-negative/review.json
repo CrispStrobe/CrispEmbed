@@ -1,0 +1,18 @@
+{
+  "schema": "lighton4b-physical-f16-integration-initial-review/v1",
+  "source_sha": "5a8e954a3cf455f5dbc73fed89d496f32bf876be",
+  "report_sha256": "7369b6168e89b5cd5c3b8b9a6eff871c25ff506081681ed9f04a41e973d35720",
+  "status": "harness_failed_after_supported_unit_pass",
+  "supported_runtime_controls_passed": 255297,
+  "unsupported_controls_passed": 5,
+  "simulated_wasm_guard_controls_passed": 5,
+  "old_physical_native_ops_controls_passed": 142,
+  "phase": "test-lighton4b-upstream-physical",
+  "elapsed_seconds": 119.52500466999999,
+  "cause": "Missing required closed426 schema argv for old physical-policy executable; exit2, not a runtime or numerical failure.",
+  "actual_sourcefed_cases_compared": 0,
+  "model_forward_executed": false,
+  "quality_qualified": false,
+  "proposed_fix_source_sha": "6ed974440",
+  "fix_scope": "Tools-only argument admission and audited426-row schema, no runtime blob change."
+}

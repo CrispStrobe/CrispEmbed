@@ -21450,3 +21450,9 @@ stages bytewise and12 observer pairs on pinned hosted CPU backends. The
 [review](docs/lighton4b-attention-primitives.md) preserves linkage/threadpool
 proof and five independent vector readbacks; N1/cache/decoded/platform gates
 remain unproven, with no vendor mutation or production promotion.
+
+Physical F16 integration initial source `5a8e954a3` passes255,297 supported
+controls plus unsupported/WASM and old physical guards, but its harness omits
+a required old-policy schema argument and stops before source-fed replay.
+The [initial receipt and limit](docs/lighton4b-attention-primitives.md) remain
+frozen; tools-only argument fix `6ed974440` does not change runtime blobs.
