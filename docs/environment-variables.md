@@ -221,7 +221,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-459 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+461 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -998,11 +998,13 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_PPOCRV6_CONV_DIRECT` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp`, `src/ppocrv6_ocr.cpp` |  |
+| `CRISPEMBED_PPOCRV6_DET_ACCEPT_EMPTY` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` | Accept an empty detection only for a complete, finite probability map. |
 | `CRISPEMBED_PPOCRV6_DET_BENCH` | on | off | bool | debug | `src/ppocrv6_det.cpp` |  |
 | `CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` | resident half weights. Keep CPU graph parity in F32 and provide an explicit F32 override for backend-diff debugging. |
 | `CRISPEMBED_PPOCRV6_DET_GPU` | value | unset | value | tuning / config | `src/ppocrv6_det.cpp` |  |
 | `CRISPEMBED_PPOCRV6_DET_GPU_LOAD` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` |  |
 | `CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` |  |
+| `CRISPEMBED_PPOCRV6_DET_GRAPH_REBUILD` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` | Rebuild the single retained detector graph when input dimensions change. |
 | `CRISPEMBED_PPOCRV6_DET_PROFILE` | on | off | bool | debug | `src/ppocrv6_det.cpp` |  |
 | `CRISPEMBED_PPOCRV6_DET_SCALAR` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` | (the CPU-scalar medium detector was why the medium tier timed out in every benchmark). German CER graph 0.04856 vs scalar 0.04955. |
 

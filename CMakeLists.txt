@@ -736,6 +736,10 @@ target_link_libraries(test-ocr-crop PRIVATE crispembed)
 add_executable(test-ocr-detect-diff tests/test_ocr_detect_diff.cpp)
 target_link_libraries(test-ocr-detect-diff PRIVATE crispembed)
 
+add_executable(test-ppocrv6-det-live EXCLUDE_FROM_ALL tests/ppocrv6_det_live.cpp)
+target_include_directories(test-ppocrv6-det-live PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-ppocrv6-det-live PRIVATE crispembed)
+
 add_executable(test-ppocrv6-det-diff tests/test_ppocrv6_det_diff.cpp)
 target_link_libraries(test-ppocrv6-det-diff PRIVATE crispembed)
 
@@ -877,6 +881,8 @@ target_include_directories(test-no-repeat-ngram PRIVATE src)
 # presence-based inversion where `FOO=0` ENABLED the gate.
 add_executable(test-env-gate tests/test_env_gate.cpp)
 target_include_directories(test-env-gate PRIVATE src)
+add_executable(test-ppocrv6-det-policy tests/test_ppocrv6_det_policy.cpp)
+target_include_directories(test-ppocrv6-det-policy PRIVATE src)
 add_executable(test-env-gate-words tests/test_env_gate_words.cpp)
 target_include_directories(test-env-gate-words PRIVATE src)
 
