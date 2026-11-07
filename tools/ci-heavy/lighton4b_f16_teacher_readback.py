@@ -15,6 +15,8 @@ def locate(root,pattern,digest):
 def verify(p,row):
  require(p.stat().st_size==row['bytes']and sha(p)==row['sha256'],'actual artifact length/hash: '+p.name);return p
 
+def source_revision():return subprocess.check_output(['git','rev-parse','HEAD'],cwd=Path(__file__).resolve().parents[2],text=True).strip()
+
 def metrics(reference,candidate,selected):
  import numpy as np
  require(reference.shape==candidate.shape and reference.ndim==1 and np.isfinite(reference).all()and np.isfinite(candidate).all(),'finite equal full vocabulary rows');require(0<=selected<reference.size,'selected token domain')
@@ -34,7 +36,7 @@ def main(mount,output):
   prompt=verify(base/'f16-full/prompt.ids',art['f16-full/prompt.ids']);inputrow=original['prepared_inputs']['input_ids'];ip=locate(root,inputrow['file'],inputrow['sha256']);inputs=np.load(ip,allow_pickle=False);require(inputs.shape==(1,154)and inputs.dtype==np.int64 and [int(x)for x in prompt.read_text().split()]==inputs.reshape(-1).tolist(),'same original prompt token IDs')
   for name,gname in [('prefill.input.f32','off/prefill.input.f32'),('prefill.positions.f32','off/prefill.positions.f32'),('vision.merged.f32','observer-on/source.vision.0.f32')]:
    verify(base/'f16-full'/name,art['f16-full/'+name]);verify(gbase/gname,gart[gname]);require(art['f16-full/'+name]['sha256']==gart[gname]['sha256'],'same actual pinned upstream input/features/positions')
-  result.update(source_sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),original_receipt_sha256=ORIGINAL,native_receipt_sha256=NATIVE,golden_receipt_sha256=GOLD,native_source_sha=NATIVE_SOURCE,candidate_sha256=CANDIDATE,original_source_sha=original['source_sha'],teacher_ids=ids,teacher_contexts_authenticated=True,original_parameter_dtype_counts=original['parameter_dtype_counts'],decoded_comparisons=native['arms']['f16-full']['vs_original_bf16'],upstream_decoded_comparison=native['arms']['f16-full']['vs_retained_upstream'])
+  result.update(source_sha=source_revision(),original_receipt_sha256=ORIGINAL,native_receipt_sha256=NATIVE,golden_receipt_sha256=GOLD,native_source_sha=NATIVE_SOURCE,candidate_sha256=CANDIDATE,original_source_sha=original['source_sha'],teacher_ids=ids,teacher_contexts_authenticated=True,original_parameter_dtype_counts=original['parameter_dtype_counts'],decoded_comparisons=native['arms']['f16-full']['vs_original_bf16'],upstream_decoded_comparison=native['arms']['f16-full']['vs_retained_upstream'])
   scoreparent=locate(root,original['scores'][0]['file'],original['scores'][0]['sha256']).parent
   def row(p,record):
    verify(p,record);require(record['bytes']==993280,'whole248320-row only');v=np.fromfile(p,dtype='<f4');require(v.shape==(248320,)and np.isfinite(v).all(),'finite complete vocabulary');return v
