@@ -49,6 +49,7 @@ class Controls(unittest.TestCase):
  def test_health_deadline_not_swallowed(self):
   import worker
   self.assertTrue(issubclass(worker.WorkerDeadline,OSError))
+  self.assertIn("except WorkerDeadline:raise\n  except Exception as error:report",(Path(__file__).parent/"worker.py").read_text())
   text=(Path(__file__).parent/"worker.py").read_text()
   self.assertIn("except WorkerDeadline:raise\n      except (OSError,urllib.error.URLError)",text)
  def test_protocol_closed(self):

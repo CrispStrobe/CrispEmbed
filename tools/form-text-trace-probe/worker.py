@@ -103,6 +103,7 @@ def main():
   try:
    report['analysis']=analysis.analyze(out/'on',native,out/'on/source.logits.0.f32',out/'on/source.logits.31.f32',frozen['tokens']);report['analysis']['native_step31_intermediates_available']=False
    ordered=['attn_norm-0','linear_attn_qkv_mixed-0','z-0','alpha-0','beta-0','linear_attn_out-0','attn_residual-0','attn_post_norm-0','ffn_gate-0','ffn_up-0','ffn_swiglu-0','ffn_out-0'];pairs=report['analysis'].get('comparisons',{}).get('layer0_first_block',[]);report['first_different_layer0_stage']=next((name for name in ordered if any(v['source_stage']==name and not v['bit_exact']for v in pairs)),None)
+  except WorkerDeadline:raise
   except Exception as error:report['analysis']={'comparison_status':'blocked-reader','error_type':type(error).__name__,'error':str(error),'scope':'Capture is valid; no missing or mismatched source stages inferred.'}
   report['status']='measured_neutral_form_text_trace';report['limits']=['Observed form only; sourceOFF/ON observer closure and original174IDs/text/probabilities/EOS/twooriginal rawscore anchors required.','Actual source prefill batching/crops retained; layer0/nativefirst16 and all32prefill layers compared only on authenticated aligned inputs.','Only source step31 states exist; native step31 hidden/positions are not inferred. Native/source31 share actual token prefix.','Quantized GGUF source only; no originalBF16 orF32 model instantiated; no runtime/recipe/heldout change or quality promotion.']
 
