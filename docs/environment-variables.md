@@ -1577,3 +1577,11 @@ explicit paired-F16 dot path; larger query batches require the supported SGEMM
 operator, with no kernel substitution. Cache mode is immutable, prior F16 cache
 values must be canonical, and output commits on success. This gate is inert for
 nonphysical owners. It does not qualify decoded quality or create a release alias.
+
+### Reference-only provisional held-out control
+
+`CRISPEMBED_LIGHTON4B_PROVISIONAL_HELDOUT=1` admits only the test executable's
+explicit `--provisional-heldout-cap1536` mode, with four threads, greedy-full,
+prompt≤512/image≤256 and total context≤2048. It does not change public runtime
+admission or the existing256/512 modes. This diagnostic variable is outside the
+runtime-source inventory above; unset and standard false values reject the mode.
