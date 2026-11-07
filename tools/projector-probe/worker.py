@@ -76,7 +76,7 @@ def main():
   r['reference_patch']=source_patch.patch(upstream);save()
   shutil.copy(ROOT/'tools/projector-probe/source.cpp',upstream/'crisp-projector-probe.cpp')
   with(upstream/'CMakeLists.txt').open('a')as f:f.write('\nadd_executable(crisp-projector-probe crisp-projector-probe.cpp)\ntarget_include_directories(crisp-projector-probe PRIVATE tools/mtmd)\ntarget_link_libraries(crisp-projector-probe PRIVATE mtmd common)\n')
-  build=work/'build';flags={'LLAMA_BUILD_TESTS':'OFF','LLAMA_BUILD_EXAMPLES':'OFF','LLAMA_BUILD_TOOLS':'ON','LLAMA_BUILD_SERVER':'OFF','MTMD_VIDEO':'OFF','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_AVX512':'OFF','GGML_LLAMAFILE':'ON','GGML_OPENMP':'ON','GGML_BACKEND_DL':'OFF','GGML_BLAS':'OFF','GGML_CUDA':'OFF','GGML_VULKAN':'OFF'}
+  build=work/'build';flags={'BUILD_SHARED_LIBS':'ON','GGML_CPU_REPACK':'ON','GGML_OPENMP_FETCH':'OFF','LLAMA_BUILD_TESTS':'OFF','LLAMA_BUILD_EXAMPLES':'OFF','LLAMA_BUILD_TOOLS':'ON','LLAMA_BUILD_SERVER':'OFF','MTMD_VIDEO':'OFF','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_AVX512':'OFF','GGML_LLAMAFILE':'ON','GGML_OPENMP':'ON','GGML_BACKEND_DL':'OFF','GGML_BLAS':'OFF','GGML_CUDA':'OFF','GGML_VULKAN':'OFF'}
   run('configure',['cmake','-S',upstream,'-B',build,'-DCMAKE_BUILD_TYPE=Release',*[f'-D{k}={v}'for k,v in flags.items()]])
   cache=(build/'CMakeCache.txt').read_text().splitlines()
   for k,v in flags.items():require(f'{k}:BOOL={v}'in cache,'actual reference profile '+k)
