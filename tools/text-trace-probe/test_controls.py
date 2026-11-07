@@ -26,6 +26,21 @@ class Controls(unittest.TestCase):
   self.assertEqual(analysis.select_prefill(actual)[1],[])
   for bad in [graph(0,2,[0,1],[0,1]*4),graph(0,2,[0,0],[1,2]*4),graph(0,3,[0,0,0],list(range(3))*4)]:
    with self.assertRaises(ValueError):analysis.select_prefill([bad]+actual)
+ def test_private_relay_transport(self):
+  import relay,io,time
+  from unittest.mock import patch
+  for url in ['http://www.kaggleusercontent.com/a','https://example.com/a','https://user:secret@www.kaggleusercontent.com/a']:
+   with self.assertRaises(ValueError):relay.safe_url(url)
+  for name in ['../escape','/absolute','a//b']:
+   with self.assertRaises(ValueError):relay.closed_name(name)
+  class Response(io.BytesIO):
+   def geturl(self):return 'https://www.kaggleusercontent.com/artifact?private-capability'
+  class Opener:
+   def open(self,*args,**kwargs):return Response(b'abc')
+  with tempfile.TemporaryDirectory()as d,patch.object(relay.urllib.request,'build_opener',return_value=Opener()):
+   root=Path(d);row={'bytes':3,'sha256':hashlib.sha256(b'abc').hexdigest()};self.assertEqual(relay.fetch('on/array.bin',row,'https://www.kaggleusercontent.com/a?secret',root,time.monotonic()+30),3)
+   with self.assertRaisesRegex(RuntimeError,'retained artifact transfer rejected')as error:relay.fetch('bad.bin',{'bytes':3,'sha256':'0'*64},'https://www.kaggleusercontent.com/a?secret',root,time.monotonic()+30)
+   self.assertNotIn('secret',str(error.exception));self.assertFalse((root/'bad.bin.partial').exists());self.assertFalse((root/'bad.bin').exists())
  def test_phase_closed(self):
   self.assertIn('(n==0||n==126)',source_patch.HELPER)
   self.assertIn('ggml_backend_tensor_get(t,v.data(),0,bytes)',source_patch.HELPER)

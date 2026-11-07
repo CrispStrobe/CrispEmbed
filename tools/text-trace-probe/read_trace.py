@@ -11,7 +11,10 @@ def sha(p):
 def require(x,m):
  if not x:raise ValueError(m)
 def locate(name,digest):
- rows=[p for p in Path('/kaggle/input').rglob(name)if p.is_file()and p.stat().st_size<4<<20 and sha(p)==digest];require(len(rows)==1,'one complete immutable '+name);return rows[0]
+ roots=[Path('/kaggle/input')]
+ if name=='text-trace.json'and os.environ.get('LIGHTON4B_RETAINED_TRACE_ROOT'):
+  retained=Path(os.environ['LIGHTON4B_RETAINED_TRACE_ROOT']);require(retained==Path(os.environ['HEAVY_OUT'])/'retained-source-capture','task-owned retained capture location');roots=[retained]
+ rows=[p for root in roots for p in root.rglob(name)if p.is_file()and p.stat().st_size<4<<20 and sha(p)==digest];require(len(rows)==1,'one complete immutable '+name);return rows[0]
 def verify(root,name,row):
  path=Path(name);require(not path.is_absolute()and'..'not in path.parts and (root/path).is_file(),'closed retained artifact name');p=root/path;require(p.stat().st_size==row['bytes']and sha(p)==row['sha256'],'retained artifact bytes/hash '+name)
 def main():
