@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Frozen source-feature Q4 repack OFF/ON table; no reference/model precision change."""
-import hashlib,importlib.util,io,json,os,shutil,subprocess,sys,time
+import hashlib,importlib.util,io,json,os,shutil,signal,subprocess,sys,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'tools/physical-f16-attention-probe'))
 from runtime_guard import Deadline,command
@@ -38,12 +38,17 @@ def cli_controls(native,work,out,run,env):
   require(code==expected,'actual reference CLI '+label);rows.append({'case':label,'returncode':code})
  return rows
 
+def interrupted(signum,frame):
+ raise SystemExit(128+signum)
+
 def main():
  import numpy as np
  from PIL import Image
  require(Path('/kaggle/input').is_dir()and Path('/kaggle/working').is_dir()and not list(Path('/dev').glob('nvidia[0-9]*')),'Kaggle CPU only');require(np.__version__=='2.3.5'and Image.__version__=='11.3.0','serializer pins')
  cfgpath=ROOT/'docs/lighton4b-q4-repack-table512-v1.json';cfg=json.loads(cfgpath.read_text());admit(cfg)
  out=Path(os.environ['HEAVY_OUT']);work=Path(os.environ['HEAVY_SCRATCH'])/'q4-repack-table';work.mkdir();start=time.monotonic();deadline=Deadline(2700);deadline.__enter__()
+ handlers={sig:signal.getsignal(sig)for sig in [signal.SIGTERM,signal.SIGINT]}
+ for sig in handlers:signal.signal(sig,interrupted)
  base=module('physical',ROOT/'tools/kaggle/lighton4b_upstream_physical_decode.py');sys.path.insert(0,str(ROOT/'tools'));import lighton4b_upstream_physical_pack as pack
  r={'schema':cfg['schema'],'status':'failed','commands':{},'arms':{},'quality_qualified':False,'upstream_forward_executed':False,'original_bf16_forward_executed':False,'cap256_evidence_replaced':False,'f32_model_instantiated':False}
  def save():(out/'q4-repack-table512.json').write_text(json.dumps(r,indent=2,ensure_ascii=False)+'\n')
@@ -112,5 +117,7 @@ def main():
   r['paired_prefill_layers']={'scope':'Native OFF versus ON, not actual upstream hidden','first_different_layer':next((x['layer']for x in stages if not x['bit_exact']),None),'layers':stages};require(sha(candidate)==cfg['expected_candidate_sha256']and sha(source)==cfg['models']['Q4_K_M']['sha256'],'unchanged weights');candidate.unlink();r['status']='measured_same_feature_table_repack'
  except BaseException as e:r['error_type']=type(e).__name__;r['error']=str(e);raise
  finally:
-  deadline.close();r['elapsed_seconds']=time.monotonic()-start;r['artifacts']={str(p.relative_to(out)):{'bytes':p.stat().st_size,'sha256':sha(p)}for arm in cfg['arms']for p in(out/arm).rglob('*')if p.is_file()};save()
+  deadline.close()
+  for sig,handler in handlers.items():signal.signal(sig,handler)
+  r['elapsed_seconds']=time.monotonic()-start;r['artifacts']={str(p.relative_to(out)):{'bytes':p.stat().st_size,'sha256':sha(p)}for arm in cfg['arms']for p in(out/arm).rglob('*')if p.is_file()};save()
 if __name__=='__main__':main()

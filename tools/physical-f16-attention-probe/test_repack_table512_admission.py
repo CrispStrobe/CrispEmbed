@@ -33,6 +33,9 @@ class Admission(unittest.TestCase):
    for raw in [np.zeros(248319,dtype='<f4'),np.full(248320,np.nan,dtype='<f4')]:
     raw.tofile(root/'bad.f32')
     with self.assertRaises(RuntimeError):m.score_row(root/'bad.f32',np)
+ def test_cancel_raises_for_group_cleanup(self):
+  with self.assertRaises(SystemExit)as caught:m.interrupted(m.signal.SIGTERM,None)
+  self.assertEqual(caught.exception.code,143)
  def test_scope_wrong_code_rejects(self):
   with self.assertRaises(RuntimeError):m.cli_controls(Path('n'),Path('w'),Path('o'),lambda *args:None,{})
 if __name__=='__main__':unittest.main()
