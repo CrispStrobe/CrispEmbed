@@ -24,7 +24,7 @@ def main():
  import numpy as np
  require(np.__version__=='2.3.5'and sys.byteorder=='little'and Path('/kaggle/input').is_dir()and not list(Path('/dev').glob('nvidia[0-9]*')),'pinned CPU/endian/numpy')
  out=Path(os.environ['HEAVY_OUT']);out.mkdir(parents=True,exist_ok=True);work=Path(os.environ['HEAVY_SCRATCH'])/'vision-controls';work.mkdir();start=time.monotonic()
- report=dict(schema='lighton4b-physical-vision-controls/v1',status='failed',commands={},model_acquisition=False,vision_forward_executed=False,quality_qualified=False,resize_cases=[])
+ report=dict(schema='lighton4b-physical-vision-controls/v1',status='failed',commands={},model_acquisition=False,checkpoint_vision_forward_executed=False,synthetic_vision_component_executed=False,quality_qualified=False,resize_cases=[])
  def save():(out/'vision-controls.json').write_text(json.dumps(report,indent=2)+'\n')
  def run(label,args,limit=900):
   report['phase']=label;report['commands'][label]={};save();print('phase',label,flush=True)
@@ -45,6 +45,7 @@ def main():
   for target in TARGETS:
    run('build-'+target,['cmake','--build',native,'--target',target,'--parallel','2'])
    if target!='lighton4b-vision-profile-probe':run('run-'+target,[native/target])
+  require('PHYSICAL_F16_VISION_SYNTHETIC PASS 'in(out/'run-test-lighton4b-physical-f16-vision.log').read_text(),'synthetic valid production graph required');report['synthetic_vision_component_executed']=True
   require('PHYSICAL_F16_VISION PASS 'in(out/'run-test-lighton4b-physical-f16-vision.log').read_text(),'supported real production implementation')
   require('PHYSICAL_F16_VISION_UNSUPPORTED PASS 'in(out/'run-test-lighton4b-physical-f16-vision-main-stub.log').read_text(),'main stub closed')
   upstream=work/'upstream'
