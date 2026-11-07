@@ -21,7 +21,7 @@ base=module('physical',ROOT/'tools/kaggle/lighton4b_upstream_physical_decode.py'
 f=module('fullform',ROOT/'tools/kaggle/lighton4b_physical_f16_full_form.py')
 require=base.require;sha=base.sha
 STAGES=list(f.STAGES)+['teacher.0.logits.f32']
-CFG_SHA='2ec6dd119843309d4b9c47f7ebc559f98249d6f890451fde09787a22202975c1'
+CFG_SHA='dd75032362d4e2a8b101eef2140d921a2eb24ffd03df64105135ae86c129c3ac'
 def admit_protocol(path):
  require(sha(path)==CFG_SHA,'immutable frozen protocol');return json.loads(Path(path).read_text())
 def gates(env):
@@ -78,7 +78,7 @@ def main():
    for name in anchors+['prompt.ids','modalities.ids']:verify(receiptp.parent/prefix/name,receipt['artifacts'][prefix+'/'+name])
    scorepath=tablep.parent/'upstream-on/source.logits.0.f32'if case=='simple_table'else inp/'observer-on/source.logits.0.f32';scoremeta=table['artifacts']['upstream-on/source.logits.0.f32']if case=='simple_table'else art['observer-on/source.logits.0.f32'];verify(scorepath,scoremeta);reference=np.fromfile(scorepath,dtype='<f4');require(reference.size==248320 and np.isfinite(reference).all(),'finite full upstream reference row')
    prepared.append((case,count,receiptp,receipt,prefix,gold,inp,original,up,anchors,visual,reference))
-  run('fetch-tested',['git','fetch','--depth','1','origin',SOURCE]);run('tested-bytes',['git','diff','--exit-code',SOURCE,'HEAD','--','src','ggml','src/lighton4b_physical_q6_tiled.cpp']);require(sha(ROOT/'CMakeLists.txt')==cfg['cmake_sha256']and sha(ROOT/'tests/lighton4b_native_document.cpp')==cfg['reference_driver_sha256'],'explicit test-only build/summary amendments');run('submodule',['git','submodule','update','--init','ggml'])
+  run('fetch-tested',['git','fetch','--depth','1','origin',SOURCE]);run('tested-bytes',['git','diff','--exit-code',SOURCE,'HEAD','--','src','ggml','src/lighton4b_physical_q6_tiled.cpp']);require(sha(ROOT/'tests/test_lighton4b_physical_q6_tiled.cpp')==cfg['structural_unit_sha256'],'exact structural controls');require(sha(ROOT/'CMakeLists.txt')==cfg['cmake_sha256']and sha(ROOT/'tests/lighton4b_native_document.cpp')==cfg['reference_driver_sha256'],'explicit test-only build/summary amendments');run('submodule',['git','submodule','update','--init','ggml'])
   build=work/'build';flags={'CRISPEMBED_NATIVE':'OFF','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_LLAMAFILE':'ON','GGML_CPU_REPACK':'ON','GGML_AVX512':'OFF','GGML_BLAS':'OFF','GGML_BACKEND_DL':'OFF','GGML_OPENMP':'OFF','GGML_CUDA':'OFF','GGML_VULKAN':'OFF'}
   run('configure',['cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release',*[f'-D{k}={v}'for k,v in flags.items()]]);cache=(build/'CMakeCache.txt').read_text().splitlines()
   for k,v in flags.items():require(f'{k}:BOOL={v}'in cache,'matched native profile '+k)

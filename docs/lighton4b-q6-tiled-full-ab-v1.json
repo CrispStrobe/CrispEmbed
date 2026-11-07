@@ -22,5 +22,6 @@
   ],
   "combined_receipt": "4428c4a2d8a877f64488847dfd7145fb0ccd1ba26810e6c0edf2229e6e40eac9",
   "cmake_sha256": "0f972ed3ab6b828e946c02f9c3ceabeb265ec86cf7d44db031b75f3a534db88f",
-  "reference_driver_sha256": "ac06aa6a25ae43e5ac2a2bf5dfe96b046608ccb0c7d5d9dd53a2f84c44b004fd"
+  "reference_driver_sha256": "ac06aa6a25ae43e5ac2a2bf5dfe96b046608ccb0c7d5d9dd53a2f84c44b004fd",
+  "structural_unit_sha256": "6188bedf0f11af8bacfba4d18b5f9e5bf185c9cf2a5469758779e7d44d256ba7"
 }
