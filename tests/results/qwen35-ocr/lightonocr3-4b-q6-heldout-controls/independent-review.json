@@ -1,0 +1,130 @@
+{
+  "schema": "lighton4b-q6-heldout-controls-independent-review/v1",
+  "source": "001a7cc958badfecf8fd2c4698f4bbe3d235bb4f",
+  "receipt_sha256": "f8d7857e672bc7b5f094a9ca00fd63dac482d190816938f43ddfe7888c019f14",
+  "status": "passed",
+  "all_owned_members_rehashed": 22,
+  "actual_cli_controls": 10,
+  "model_acquisition": false,
+  "model_forward": false,
+  "units": {
+    "Q6": 38,
+    "GDN": 20,
+    "Q4_repack": 57,
+    "F16_attention": 255297,
+    "F16_vision": 37,
+    "F16_vision_synthetic": true
+  },
+  "elapsed_seconds": 131.89351245300003,
+  "scope": "Model-free build, units and actual CLI only. No panel quality, output or qualification result.",
+  "files": {
+    "cli-disabled.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-native-source-features.log": {
+      "bytes": 236,
+      "sha256": "09f02851567ba4ca8bc7315b2f750691cc439b3744720caab7627d8541dc975c"
+    },
+    "cli-old512.log": {
+      "bytes": 236,
+      "sha256": "09f02851567ba4ca8bc7315b2f750691cc439b3744720caab7627d8541dc975c"
+    },
+    "test-lighton4b-physical-q4-repack.log": {
+      "bytes": 101,
+      "sha256": "3c9df6965787489db5717598b1e39e2d8ca31d7273e512cc53fbb587bf1b80dd"
+    },
+    "CMakeCache.txt": {
+      "bytes": 29123,
+      "sha256": "b8eb0c033eda386ff9754e20be771514b396dfb17ea867194b323a8133ddcfc9"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "292813929d2c1a5c00584916330b7aa7c7dea7fc9c3c871777e014e7cc2857b0"
+    },
+    "source-admission.json": {
+      "bytes": 2801,
+      "sha256": "af9a271a9bb6589ed91f84ee8abf37a78e1cecb71c8603676b1f9edea972f7e1"
+    },
+    "ggml.log": {
+      "bytes": 232,
+      "sha256": "296fa3e9b3d0db37237d02fc1ffcd03c5a7af1719cd0218f77be723b26a7847b"
+    },
+    "build.log": {
+      "bytes": 8676,
+      "sha256": "e42bc2b5739021a0cfe4aa180abcf5509b95774c2bcf43ff3ef51f54562bd3f7"
+    },
+    "client-submission-negative.json": {
+      "bytes": 197,
+      "sha256": "3ea7189b6deaf898827b8d7442735fb20e9ecc5e1831988873bf69d825c94a90"
+    },
+    "protocol.json": {
+      "bytes": 1892,
+      "sha256": "bb43eee1f6717b21d3625693c9b1934c0c6f16ccc2a6c7b7a3d25426e95649c4"
+    },
+    "q6-heldout.json": {
+      "bytes": 19138,
+      "sha256": "f8d7857e672bc7b5f094a9ca00fd63dac482d190816938f43ddfe7888c019f14"
+    },
+    "test-lighton4b-physical-f16-vision.log": {
+      "bytes": 101,
+      "sha256": "d58c15e1a57af3d53eada05f045b41d5fdb56580fc6854f8021f06a8bb03c7f2"
+    },
+    "cli-unflagged.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-threads.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-cap-low.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "bootstrap.py": {
+      "bytes": 6906,
+      "sha256": "e521e0fe17e0f6ec80f82df9dfaa324937ce3985255bf315b3204d27813f3eb5"
+    },
+    "configure.log": {
+      "bytes": 2018,
+      "sha256": "186229d240495ed20e60ed78a7902f10ba80978be74b216f9b27f79b50bbec91"
+    },
+    "cli-old256.log": {
+      "bytes": 236,
+      "sha256": "09f02851567ba4ca8bc7315b2f750691cc439b3744720caab7627d8541dc975c"
+    },
+    "test-lighton4b-physical-q6-tiled.log": {
+      "bytes": 68,
+      "sha256": "406d8fc763654ed18ae54a066fa10e8eb857f95a2c6a39efe05b753fe10ee55e"
+    },
+    "cli-mode.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "production-bytes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "fetch-production.log": {
+      "bytes": 125,
+      "sha256": "879d2160fe83817755666037e2a0cc701afc4de473bd6222ea9fed2d855f4d5f"
+    },
+    "test-lighton4b-physical-f16-attention.log": {
+      "bytes": 35,
+      "sha256": "5892c49ef41bc582baf756071bcb35987aa815a18b8e88452d1cfa601f57cdef"
+    },
+    "cli-cap-high.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-native-composed.log": {
+      "bytes": 236,
+      "sha256": "09f02851567ba4ca8bc7315b2f750691cc439b3744720caab7627d8541dc975c"
+    },
+    "test-lighton4b-physical-gdn-source-ops.log": {
+      "bytes": 74,
+      "sha256": "79542376e42103fed64742e365b7d0e5d0285c49763fe6006e1052f488e6d1d6"
+    }
+  }
+}

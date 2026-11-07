@@ -1,0 +1,39 @@
+{
+  "schema": "lighton4b-q6-provisional-heldout/v1",
+  "selection_protocol_sha256": "1a5cf84d5d83c22a041e774aaa00e682a28d302a2542ef02606e5dfa0ef3cd4b",
+  "frozen_executor_sha256": "bdd80e7f7c3c7a578478bd9c16d94dc07c32e86220c6a337629e0c95498aaf5f",
+  "production_source": "00c5faebd728c5b0694b10197d7ca971d803cbac",
+  "observed_receipt_sha256": "f5d0077052b907e2d674caef9e7c4ae09b08456ff48a79f327cbdfd030b2dcc9",
+  "cases": [
+    "historical-receipt",
+    "two-column-page",
+    "inventory-table"
+  ],
+  "cap": 1536,
+  "context": 2048,
+  "maximum_prompt_tokens": 512,
+  "maximum_image_tokens": 256,
+  "threads": 4,
+  "build_threads": 2,
+  "worker_seconds": 6000,
+  "arm_seconds": 1200,
+  "qualified": false,
+  "references_expert_adjudicated": false,
+  "changed_gates": [
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED"
+  ],
+  "reference_forward_allowed": false,
+  "heldout_tuning_allowed": false,
+  "model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "old_case_receipts": {
+    "historical-receipt": "8bf1ebbdf12b9dd2b20603c11a9b7d4c990e97e7f37a2f5aca3fb3324b3c8dfc",
+    "two-column-page": "9b88195d5a8058dea4fab87472009d3826bc1fa3b5d0575aa2e33698316d5722",
+    "inventory-table": "d5b7f992249a3f6b553bd3e41f73cc5e590eeaae2d1380d9d34d81aaf3d316e8"
+  },
+  "source_scope": "Immutable historical complete upstream OFF/ON references and ON raw rows, no new reference forward. Source OFF raw vocabulary was not captured.",
+  "scope": "Three-gate combined correction against prior published configuration, not single-factor attribution. Same provisional labels; no qualification or shipping.",
+  "driver_sha256": "d275388577e24b05151f2f9c50b684c414442ab55080205164c70c32cccd3b2a",
+  "cmake_sha256": "0f972ed3ab6b828e946c02f9c3ceabeb265ec86cf7d44db031b75f3a534db88f"
+}

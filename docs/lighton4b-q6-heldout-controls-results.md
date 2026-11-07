@@ -1,0 +1,11 @@
+# Corrected Q6 panel executor controls
+
+The bounded model-free CPU controls passed from source `001a7cc95` in131.89 seconds. [The exact receipt](../tests/results/qwen35-ocr/lightonocr3-4b-q6-heldout-controls/q6-heldout.json) SHA is `f8d7857e672bc7b5f094a9ca00fd63dac482d190816938f43ddfe7888c019f14`. No models were acquired or forwarded. Independent review rehashed all22 owned members and checked all ten actual CLI return codes.
+
+The actual supported units passed Q6 structural38, GDN20, Q4 repack57, F16 attention255297 and F16 vision37 checks, including synthetic vision execution. The explicit provisional1536 diagnostic CLI admits composed/source-feature roles only with four threads, the gate and full greedy mode; wrong caps, roles and disabled/unflagged paths reject. Default256 and observed512 admission remain intact. Production source/GGML bytes match `00c5faebd728c5b0694b10197d7ca971d803cbac`; the CLI-only amendment restores the frozen d378 capacity controls. The CMake/unit context is the actually tested `8fcdf1f73` configuration.
+
+A client-side SDK timeout-format error occurred before any service request; [the preserved negative](../tests/results/qwen35-ocr/lightonocr3-4b-q6-heldout-controls/client-submission-negative.json) records no submitted worker. Integer timeout seconds fixed submission. The single accepted worker passed; this was not a failed model run or arithmetic result.
+
+[The frozen replay protocol](../tests/results/qwen35-ocr/lightonocr3-4b-q6-heldout-controls/protocol.json) retains all three original provisional cases, source/gold/scorer hashes, cap1536/context2048 and input seals. Historical upstream OFF/ON references are reused with exact identity checks, not rerun. Each case must first replay old and corrected observed167 outputs and its entire old native baseline, then compare corrected pixels and source-feature arms. GDN, Q4 repack and Q6 tiled arithmetic change together; this is not single-factor attribution. Copyright-sensitive two-column output stays private, with public metrics/hash-only evidence.
+
+These controls do not establish heldout quality, source parity or shipping qualification. Original provisional-label limitations and earlier receipt/table negatives remain binding. Defaults, releases, model recipes, public fences and application aliases are unchanged.

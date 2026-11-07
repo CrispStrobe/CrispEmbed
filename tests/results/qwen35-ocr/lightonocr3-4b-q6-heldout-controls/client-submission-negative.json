@@ -1,0 +1,7 @@
+{
+  "phase": "local_sdk_timeout_argument",
+  "exception": "ValueError",
+  "reason": "SDK requires integer seconds, received duration string",
+  "worker_submitted": false,
+  "source": "001a7cc95"
+}
