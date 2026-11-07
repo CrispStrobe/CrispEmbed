@@ -1,0 +1,143 @@
+# GOT-OCR2 Q4: prior art, diagnosis and experiment plan
+
+Status: research (7 November 2026). Nothing in this document changes a default, a published file
+or an alias. GOT-OCR2 is covered by the Tongyi Qianwen RESEARCH LICENSE (research/evaluation
+only; `CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1`), so every experiment here is evaluation
+work. Nothing below is offered as a commercial build.
+
+## Problem
+
+F16-r2 (`got-ocr2-f16`, Hub `c0f1aa7b`) is token-exact against the original
+`stepfun-ai/GOT-OCR2_0` `chat()` pipeline on the frozen panel. The published Q4_K
+(`got-ocr2-q4_k-experimental`) is not. On the **3-case** panel (fox / receipt_example /
+simple_form; "83 / 20" in PLAN is the first divergent token on the two failing cases, not a
+20-case panel) it is 1/3 token-exact. receipt_example diverges at token 83 (char ratio 0.8041)
+and simple_form at token 20 (0.9679). Receipts: `tests/results/got-ocr2-f16/qualify-41588457181-orig-ref/`,
+[quantized-models.md](quantized-models.md#got-ocr2-research-licence).
+
+## 1. Prior art
+
+| Project | Licence (as stated by that repo) | What is quantized | What stays high precision | Method | Reported quality |
+|---|---|---|---|---|---|
+| [mlx-community/GOT-OCR2_0-4bit](https://huggingface.co/mlx-community/GOT-OCR2_0-4bit) ([config](https://huggingface.co/mlx-community/GOT-OCR2_0-4bit/raw/main/config.json)) | card says apache-2.0. Not our licence reading; we keep the Tongyi research gate | all 169 language-model matrices, **including the tied embeddings / LM head** | **SAM vision tower and projector in bf16** ("by design", 96.7M of 560.5M params) | MLX affine, 4 bit, group 64, no calibration. Activations stay bf16 (weight-only dequant matmul) | 6 synthetic documents: CER vs bf16 **0.0116** at 4-bit; 8-bit byte-identical to bf16. Final-position logits of MLX bf16 vs PyTorch fp32: cosine 0.99979 |
+| [MosRat/got.cpp](https://github.com/MosRat/got.cpp) + [got_decoder-Q4_K_M-GGUF](https://huggingface.co/MosRat/got_decoder-Q4_K_M-GGUF) (credited in the [official repo](https://github.com/Ucas-HaoranWei/GOT-OCR2.0)) | MIT (code). The weights card names no licence | decoder only, as a stock `qwen2` GGUF with llama.cpp k-quants (Q2_K … Q8_0) | vision encoder runs **outside** llama.cpp in ONNX Runtime (Olive export, precision not stated) | stock `llama-quantize` presets (gguf-my-repo tag); no imatrix mentioned | none published |
+| [Jerry666/GOT-OCR2_0-716M-BF16-GGUF](https://huggingface.co/Jerry666/GOT-OCR2_0-716M-BF16-GGUF) | — | nothing (BF16) | everything | — | none |
+| llama.cpp mainline | MIT | no `got_ocr` architecture; the only path is the decoder-as-qwen2 route above | — | — | — |
+| Transformers `GotOcr2ForConditionalGeneration` (≥ 4.49) | — | no published bitsandbytes/AWQ/GPTQ GOT-OCR2 checkpoint found | — | generic bnb/AWQ would apply; ONNX INT4 tooling (e.g. NVIDIA ModelOpt) excludes the LM head by default | none found |
+| [Qwen/Qwen1.5-0.5B-Chat-GGUF](https://huggingface.co/Qwen/Qwen1.5-0.5B-Chat-GGUF) (same decoder family, text only) | tongyi-qianwen-research | stock llama.cpp presets | per preset | — | wiki perplexity fp16 34.20, q8_0 34.22, **q4_k_m 34.27**, q3_k_m 38.25, q2_k 62.14 |
+
+What llama.cpp's Q4_K_M actually does
+([src/llama-quant.cpp](https://github.com/ggml-org/llama.cpp/blob/master/src/llama-quant.cpp)):
+the base type is Q4_K. The output tensor, and `token_embd` when it is tied (as in GOT/Qwen-0.5B), go to
+**Q6_K**. `attn_v` and `ffn_down` go to **Q6_K** on the "use_more_bits" layers
+`i < n/8 || i >= 7n/8 || (i - n/8) % 3 == 2`. For n = 24 those are layers
+0,1,2,5,8,11,14,17,20,21,22,23. On CPU the activations of a K-quant matmul are quantized to
+Q8_K (Q8_0 for Q8_0 weights); F16 weights take F16 activations.
+
+Takeaways:
+1. Nobody publishes a token-exact 4-bit GOT-OCR2. The one measured 4-bit build (MLX) reports
+   CER 0.0116 vs bf16 on six documents. Do not expect all-token exactness from a 4-bit decoder
+   on long receipts. The PLAN's alternative bar (> 0.94 with divergences documented) is realistic.
+2. Every serious port keeps the **vision tower and projector unquantized** (MLX: bf16 by design;
+   got.cpp: not in GGUF at all). Ours quantizes them to Q8_0.
+3. The 0.5B Qwen decoder itself tolerates Q4_K_M well on text (ppl +0.2%).
+
+## 2. Our recipe and runtime
+
+The tensor census of the published `got-ocr2-q4_k.gguf` (Hub `5a0b0a1adc`) was read from the
+GGUF header over an HTTP range request, without downloading the whole file:
+
+| Group | Count | Type |
+|---|---|---|
+| decoder matrices `l.blk.*.{attn_q,k,v,o, ffn_gate,up,down}` | 168 | **Q4_K** (pure; no Q6_K layers) |
+| decoder norms / q,k,v biases | 120 | F32 |
+| `l.embed_tokens.weight` (151860×1024; **tied LM head**, no `l.lm_head`) | 1 | **Q8_0** (generic `is_embd` rule) |
+| SAM `v.blk.*` qkv / proj / ffn | 48 | **Q8_0** (generic `is_vision_weight` floor) |
+| SAM `v.blk.*.attn_rel_pos_{h,w}` (64×27 tables) | 24 | **Q8_0** |
+| `v.pos_embed` (additive 4096×768 table) | 1 | **Q8_0** |
+| neck convs, `net_2`, `net_3`, `v.projector` | 5 | **Q8_0** |
+| `v.patch_embed`, LN weights | 27 | F16 |
+| biases, LN biases | 76 | F32 |
+
+Runtime (`src/got_ocr.cpp`): KV cache F16 (also in the exact F16-r2 path, so it is not the cause).
+`flash_attn_ext`, NEOX RoPE θ = 1e6 (1-D; GOT has no 2-D RoPE), logits = `mul_mat(embed_tokens, x)`.
+The logits therefore come from a Q8_0 matrix with Q8_0-quantized activations. On CPU every
+quantized matmul quantizes its activation input (Q8_K for Q4_K, Q8_0 for Q8_0).
+
+Stage evidence already on record (`qualify-41588457181-orig-ref/summary.md`, `probe-41387019092`,
+the stage diff against the Python F32 reference):
+
+- F16-r2: all 19 stages cos 1.000000.
+- Published Q4_K: **vis_layer_0 already 0.999213 (max_abs 0.77)**, vis_layer_5 0.997745,
+  vis_layer_11 0.998014 (max_abs 3.62), projector 0.999013. The decoder then reads 0.995236 at
+  llm_layer_0.
+- The Q8_0-from-F16 arm has **identical** vision numbers. The vision drift comes only from the Q8_0
+  vision policy, not from Q4_K.
+
+## 3. Diagnosis
+
+Ranked by expected impact relative to cost:
+
+1. **Quantized SAM tower, projector and additive tables (high impact, about +85 MB).** The vision
+   error is visible from layer 0 and is the same at Q8_0 and Q4_K. Every one of the 256 image
+   tokens the decoder attends to is perturbed. Prior art keeps this F16/bf16. MinerU2.5 showed the
+   mechanism in this repo: Q8_0 weights with F32 activations stay ≥ 0.999, while the CPU
+   quantized-activation matmul against outlier channels does not. `pos_embed` and `rel_pos` at Q8_0
+   are additive tables, quantized for no real size gain.
+2. **Pure Q4_K decoder, no Q6_K "more bits" layers, no imatrix (medium).** This is weaker than
+   llama.cpp Q4_K_M, which is the configuration with the +0.2% perplexity evidence. Our audit puts
+   the worst tensors at layer 0 (`ffn_down`, `attn_q`) and `ffn_down` everywhere. Those are exactly
+   the tensors Q4_K_M protects.
+3. **Attention at Q4_K (medium, cheap to test).** Attention mixes the image tokens into the text
+   stream (cf. the InternVL2 attention finding in `tools/quantize.cpp`). Q8_0 attention costs about
+   +25 MB here.
+4. **Tied LM head at Q8_0 with Q8 activations (low).** It is already above llama.cpp's Q6_K, and MLX
+   runs it at 4-bit with CER 0.0116. Test it once (embed F16, +150 MB) for attribution only.
+5. **Runtime precision (low; F16-r2 is exact on the same runtime).** KV F16, flash attention and RoPE
+   are shared with the exact path. The only runtime lever is activation quantization inside
+   quantized matmuls. Keeping F32/F16 activations for the decoder would need a dequantize-to-F16
+   weight path. That is follow-up only if the recipes plateau.
+
+## 4. Experiment plan
+
+Every recipe is produced from F16-r2 with existing quantizer flags (default policy unchanged) and
+measured in one hosted lane: `tools/ci-heavy/got_ocr2_q4_recipe_search.sh` on `heavy-cpu.yml`.
+Measurements per recipe, on fox / receipt_example / simple_form:
+
+- **token-ID agreement** vs the original `chat()` pipeline: exact?, first divergent token
+- **CER** and character ratio vs the original text
+- **teacher-forced final-logit cosine** vs F16-r2 on F16-r2's own (original-exact) token stream:
+  min / mean over steps, top-1 agreement. This uses the new diagnostic env vars
+  `CRISPEMBED_GOT_OCR_FORCE_IDS` / `CRISPEMBED_GOT_OCR_LOGITS_OUT`, which are inert when unset.
+- min stage cosine (19 stages) vs the Python F32 reference, and file size
+
+| ID | Recipe (base `q4_k`) | Question it answers |
+|---|---|---|
+| E0 `q4k_repro` | default policy | does it reproduce the published 1/3 (control)? |
+| E1 `dec_f16` | `--decoder-f16` | how much of the drift is vision Q8_0 alone? |
+| E2 `vis_f16` | `--tensor-type 'v.*=f16'` | vision/projector/tables F16, decoder pure Q4_K |
+| E3 `vis_f16_km` | E2 + Q6_K `attn_v`/`ffn_down` on layers 0,1,2,5,8,11,14,17,20,21,22,23 | Q4_K_M-equivalent decoder |
+| E4 `vis_f16_attn_q8` | E2 + `l.blk.*.attn_?.weight=q8_0` | attention sensitivity |
+| E5 `vis_f16_emb_f16` | E2 + `l.embed_tokens.weight=f16` | LM-head attribution |
+| E6 `vis_f16_imat` | E2 + `--imatrix` | calibration effect |
+| E7 `vis_f16_km_imat` | E3 + `--imatrix` | best expected 4-bit-class recipe |
+
+The imatrix is collected by the GOT runtime (`crispembed_imatrix_install`, a no-op unless
+`CRISPEMBED_IMATRIX_OUT` is set) on F16-r2 over six CC0 repository images that are **not** in the
+panel (licences in `tests/regression/images/cc0/MANIFEST.json`).
+
+**Done when** (unchanged from PLAN): a recipe is token-exact on all three cases, or the smallest
+recipe with min teacher-forced logit cosine > 0.94 and documented divergences goes to the owner.
+Publication, if any, follows the existing licence-gated publish lane and is not part of this lane.
+
+Dispatch (research only; it never uploads):
+
+```
+gh workflow run heavy-cpu.yml --ref <branch> -f script=tools/ci-heavy/got_ocr2_q4_recipe_search.sh \
+  -f isolated_lane=got-q4-search -f timeout_minutes=300 \
+  -f pip="torch transformers>=4.49 accelerate pillow gguf numpy safetensors huggingface_hub"
+```
+
+Follow-ups if E2–E7 plateau: Q5_K decoder (`q5_k` base plus the same vision rule), and a gated
+F16-activation decoder path (dequantize the weight to F16 per matmul) to separate weight error
+from activation-quantization error.
