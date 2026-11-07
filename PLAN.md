@@ -3211,3 +3211,6 @@ Unchangedd378 completes2623.38s/rawprivate9b88195d: all4EOS654source/697native, 
 ### Observed table GDN source-fed replay
 
 Source `2f1261053` completed the bounded actual-input GDN replay, closing live source four-token conv/SiLU/postnorm/preferred output and native sixteen-token baseline, plus all 524,288 values of the actual next nonzero state. [Evidence and arithmetic limits](docs/lighton4b-live-gdn-replay-results.md) retain exact receipts, magnitudes and counterfactual errors. Native GGML softplus differs from pinned upstream; existing decoder scalar softplus is already exact and will be retained in a separately gated hybrid experiment. No decoded validation, model quality promotion, held-out selection or global repack change occurred.
+
+
+The first hybrid GDN worker (`a6e5b3d3d`) failed closed before compilation/parameter transfer because the inherited compile-entry count excluded the new cache-test target. [Raw setup negative](docs/lighton4b-live-gdn-replay-results.md#hybrid-setup-negative) is preserved; `fcb9d6c72` strictly audits both targets and both helper files with unchanged contraction requirements. No operator/decoded result exists for that attempt.

@@ -1,0 +1,21 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+PHASE source
+PHASE cpu
+PHASE up-init
+PHASE up-remote
+PHASE up-fetch
+PHASE up-checkout
+PHASE native-submodule
+PHASE native-configure
+Traceback (most recent call last):
+  File "/tmp/lighton4b-physical-gdn-hybrid-v1/source/tools/gdn-hybrid-probe/worker.py", line 140, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/tmp/lighton4b-physical-gdn-hybrid-v1/source/tools/gdn-hybrid-probe/worker.py", line 108, in main
+    entries=[e for e in json.loads((build/'compile_commands.json').read_text())if Path(e['file']).name=='qwen35_delta.cpp'];require(len(entries)==1 and '-ffp-contract=off'in entries[0].get('command',' '.join(entries[0].get('arguments',[]))),'actual native helper contraction rule');report['native_delta_compile_entry']=entries[0]
+                                                                                                                            ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-physical-gdn-hybrid-v1/source/tools/kaggle/lighton4b_upstream_physical_decode.py", line 7, in require
+    if not ok:raise RuntimeError(msg)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: actual native helper contraction rule

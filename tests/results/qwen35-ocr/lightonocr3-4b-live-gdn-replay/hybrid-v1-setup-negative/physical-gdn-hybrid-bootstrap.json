@@ -1,0 +1,33 @@
+{
+  "schema": "lighton4b-physical-gdn-hybrid-bootstrap/v1",
+  "source_sha": "a6e5b3d3d2ec24ab7fc9efe240dbbf59acc01546",
+  "bootstrap_sha256": "e60b4c85a0a8a9f4581a44eb582c5f0bd58db9fe2b273cf80d9ecfd97b0a15e8",
+  "status": "failed",
+  "gpu_requested": false,
+  "model_forward_executed": null,
+  "model_quality_qualified": false,
+  "phase": "gdn-hybrid-probe",
+  "source_file_sha256": {
+    "tools/gdn-hybrid-probe/main.cpp": "d820ead782fada74ad0e1eb769f27c3703cef9ac095b52e5ae7435bafb2a9063",
+    "tools/gdn-hybrid-probe/CMakeLists.txt": "16fd304db63d6f9e73f3ccf1870c0e3e8160dc7507e408c00e82557506b5b6ed",
+    "tools/gdn-hybrid-probe/protocol.json": "ea010c8b95a4c15180a052917c8fb55a703b8f999a2a3fc176cb17d829cff53e",
+    "tools/gdn-hybrid-probe/worker.py": "15fe63ad578719ee81c1222316697d2dd28b21ea685880c0f23f83e5943eb5cf",
+    "tools/gdn-hybrid-probe/test_protocol.py": "ef51d4540f492c645b861733786c921a0b0d1362d324a0aa52b9052ab990e660",
+    "tools/gdn-hybrid-probe/README.md": "12f530d50cb34ee41565994b3bf301ff7cca16f77b8b97fefd7a6ca365ab28c9",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "src/qwen35_delta.cpp": "ddd1e2b48427553dc2377dbbe238de4707300a7d5511e45f6c9182c679fc3bb8",
+    "src/qwen35_delta.h": "95a47622a26c498fdab71630472bca2fd80e5c61a11a6e95ed250baa6577d75a",
+    "src/lighton4b_upstream_physical_semantics.h": "ceda0f3fc21d14a5edfe288858b339ccc82e1e629cb5ba2cb18e9bc73127cedc",
+    "src/core/env_gate.h": "2370e31636ea25bc1e5ca63e1e606f4cd3c07c65e0f4d1347b2ec6daf57eaa0e",
+    "src/lighton4b_physical_gdn_source_ops.cpp": "21ced9cceb3b989026d47be9cd9913dbf8cd8ebcf4c6cf514fef68bb64116492",
+    "src/lighton4b_physical_gdn_source_ops.h": "3521d513a0dde4423f7ef3f027b3f11bde259d0dbb8346ebe6a17eb34051597f",
+    "src/lighton4b_linear_block.h": "608f9ba483726da0630352ac5a942aa2248a6da1da59339f11d240ea2b89a8dc",
+    "src/lighton4b_decoder_compose.h": "a45e303578887058497cc4247997a2bb6dd7254674c5fd2b8613edef9903f647",
+    "tests/test_lighton4b_physical_gdn_source_ops.cpp": "97c454564c8dab7b5f65b2a36ff6b7bc38c3d0b9baa4c4ed787cfff34e2f5d9e"
+  },
+  "error_type": "RuntimeError",
+  "error": "gdn-hybrid-probe nonzero",
+  "elapsed_seconds": 43.67269379300001
+}
