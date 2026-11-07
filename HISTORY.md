@@ -21444,3 +21444,9 @@ source stages exactly, isolates source-P PV to RMS2.343e-8 and confirms original
 paired-F16 QK equals upstream LLAMAFILE-OFF dispatch. The actual ON-profile
 residual and diagnostic-only OFF distinction are preserved in the
 [review](docs/lighton4b-attention-primitives.md); no decoded or production claim.
+
+Explicit F16 SGEMM operator source `b4a1a8dcf` closes all40 conditional source
+stages bytewise and12 observer pairs on pinned hosted CPU backends. The
+[review](docs/lighton4b-attention-primitives.md) preserves linkage/threadpool
+proof and five independent vector readbacks; N1/cache/decoded/platform gates
+remain unproven, with no vendor mutation or production promotion.

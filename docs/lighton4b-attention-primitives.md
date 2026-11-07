@@ -104,3 +104,28 @@ be investigated without changing global vendor traits, but must preserve
 measured residuals, fail closed on unsupported backends and pass decoded gates
 before any promotion. No model forward, production math or shipping policy
 changed in this experiment.
+
+## Explicit F16 SGEMM operator closes the actual ON-profile primitives
+
+Tools-only source `b4a1a8dcf6204a6e06902362af1628b59783f735` uses custom
+ggml nodes with the same public four-thread pool installed in the CPU backend.
+Callbacks compile against the exact private compute-params header and call the
+existing F16/F16 SGEMM with actual source strides. Global traits and vendor
+sources remain unchanged; an unsupported private call fails without substitution.
+
+All40 N4/N16 stage comparisons are byte-exact against the original ON-profile
+source graph, for both native/upstream backends and composed/exact-source-P
+arms. Twelve observer-neutrality pairs pass. The
+[report](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/sgemm-v1/attention-sgemm.json)
+has SHA256 `361259199df487c630465336c97619ea5eb801ac1c70a040e7ba78ca49b39928`;
+elapsed137.68 seconds. Independent review checks all40 stage hashes directly
+against the original source receipt, all12 observer pairs, and downloads only
+five needed native N16 stage vectors (1,310,720 bytes), each byte-identical to
+the previously authenticated source vector.
+
+This is safe-linkage and conditional operator proof for the exact pinned hosted
+CPU profile. It does not cover N1 decode, cache append/toggle behavior, other
+platforms, actual upstream hidden2 or decoded outputs. A separate experimental
+physical-only integration must fail closed where unsupported, preserve old
+paths and source pins, and pass same-feature full-score/decoded gates before
+any promotion. The public loader fence and unqualified-Q4 restriction remain.

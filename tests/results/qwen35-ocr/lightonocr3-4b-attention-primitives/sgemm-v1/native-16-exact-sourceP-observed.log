@@ -1,0 +1,1 @@
+PHYSICAL_F16_SGEMM_PRIVATE_OPERATOR PASS tokens=16 threads=4 observed=1
