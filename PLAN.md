@@ -3188,3 +3188,7 @@ Source874728 model-free CPU controls pass632.16s, raw7b090c04; all28owned artifa
 ### First provisional held-out transport negative (2026-11-07)
 
 Source6ec3 receipt attempt stopped799.77s on nativebase4GBHTTP read timeout after successfulcontrols/inputadmission, before candidate conversion/observed167/anyheldoutforward. Rawfailure/stack/controlmarkers/hashreview preserved. No heldoutoutput/qualityresult or othercase submitted. Scoped0d175 retry max3transportattempts keeps completeSHAverification, explicitWorkerDeadlinerethrow, integrityfailclosed and taskownedpartialcleanup; inputs/selection/scoring/arithmetic unchanged.
+
+### Provisional held-out metadata axis negative (2026-11-07)
+
+Authenticated0d175 retry stops993.23s beforeanyheldoutforward: promptIDs/modalities/geometry agree, but referenceadapter t,x,y differs actual6c01batch t,y,x. Actual256tokens/768F32positions:462scalars,231tokens differ,max21/RMS7.12262; correctedreferenceplanes byteexactnative. Nativeproductionpositions unchanged. Raw14e5b81b+smallmetadata arrays/primarysource hash preserved; independent49observedtextfiles andall167rows exactAEC0. Referencefixd8a addsdistinct-axisCLI beforeweights; fullbyteadmission retained. Noheldoutqualityresult; remainingcasesunsubmitted.
