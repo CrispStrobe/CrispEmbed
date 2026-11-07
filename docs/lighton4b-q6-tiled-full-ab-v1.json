@@ -1,0 +1,26 @@
+{
+  "schema": "lighton4b-q6-tiled-full-ab/v1",
+  "proof_receipt": "2d9e32d3c7ba4ed5ccffc73a3f4e488943ad737896211533097dac17b9c9cbfc",
+  "production_source": "00c5faebd728c5b0694b10197d7ca971d803cbac",
+  "cases": [
+    "simple_table",
+    "simple_form"
+  ],
+  "cap": 512,
+  "threads": 4,
+  "context": 2048,
+  "arms": [
+    "off",
+    "on"
+  ],
+  "whole_seconds": 6000,
+  "arm_seconds": 900,
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "scope": "Observed-case single Q6 mechanism diagnostic. Combined GDN/repack stays ON in both arms. No promotion or heldout qualification.",
+  "changed_gates": [
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED"
+  ],
+  "combined_receipt": "4428c4a2d8a877f64488847dfd7145fb0ccd1ba26810e6c0edf2229e6e40eac9",
+  "cmake_sha256": "0f972ed3ab6b828e946c02f9c3ceabeb265ec86cf7d44db031b75f3a534db88f",
+  "reference_driver_sha256": "ac06aa6a25ae43e5ac2a2bf5dfe96b046608ccb0c7d5d9dd53a2f84c44b004fd"
+}
