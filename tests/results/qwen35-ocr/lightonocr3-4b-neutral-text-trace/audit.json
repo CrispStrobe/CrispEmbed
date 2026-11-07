@@ -1,0 +1,370 @@
+{
+  "all282_source_responses_independently_exact": true,
+  "decoded": {
+    "both282_ids_eos": true,
+    "native_vs_bf16": {
+      "character_edits": 349,
+      "decoded_exact": false,
+      "matching_prefix_ids": 37,
+      "raw_ids_exact": false,
+      "reference_codepoints": 607,
+      "reference_words": 106,
+      "word_edits": 97
+    },
+    "native_vs_upstream": {
+      "character_edits": 9,
+      "decoded_exact": false,
+      "matching_prefix_ids": 126,
+      "raw_ids_exact": false,
+      "reference_codepoints": 822,
+      "reference_words": 162,
+      "word_edits": 7
+    },
+    "upstream_vs_bf16": {
+      "character_edits": 348,
+      "decoded_exact": false,
+      "matching_prefix_ids": 37,
+      "raw_ids_exact": false,
+      "reference_codepoints": 607,
+      "reference_words": 106,
+      "word_edits": 97
+    }
+  },
+  "final_norm": [
+    {
+      "bit_exact": false,
+      "candidate_max_abs": 27.341148376464844,
+      "candidate_rms_magnitude": 2.885640549311869,
+      "different_bits": 2560,
+      "different_numeric": 2560,
+      "elements": 2560,
+      "error_max_abs": 1.7088816165924072,
+      "error_rms": 0.2994516069528143,
+      "graph": 4,
+      "native_global_token_rows": [
+        85
+      ],
+      "reference_max_abs": 26.633953094482422,
+      "reference_rms_magnitude": 2.8956349980469653,
+      "source_batch_tokens": 4
+    }
+  ],
+  "firstscore": {
+    "bit_exact": false,
+    "candidate_max_abs": 20.240833282470703,
+    "candidate_rms_magnitude": 1.767414817501814,
+    "different_bits": 248320,
+    "different_numeric": 248320,
+    "elements": 248320,
+    "error_max_abs": 1.0617752075195312,
+    "error_rms": 0.18862881433829073,
+    "reference_max_abs": 20.541553497314453,
+    "reference_rms_magnitude": 1.7855181153937745
+  },
+  "inference_executed": false,
+  "limits": [
+    "One observed calibration table; no heldout or release qualification.",
+    "First4 Z/alpha/beta discrepancy is fully attributed; imageN72/native16 and cumulative hidden drift remain separate.",
+    "Prior full-repack decoded negative prohibits promoting repack from these operator closures.",
+    "Layer31 and finalnorm cover only the retained last prompt token; earlier weighted layers cover86 tokens.",
+    "No source stages or native126hidden values were inferred."
+  ],
+  "live_z_alpha_beta_route_closure": {
+    "a": {
+      "actual_native16_input_sha256": "41b5419e7f5bcd9c18e50f760a4ea64814d3ad6c8f23cc5fa621dcfd9161ce93",
+      "actual_native16_raw_sha256": "3f32a89600be6926fa56024633e9a944c931c1d1e51836c45ff4a9d841c13fd1",
+      "actual_source_output_sha256": "1ba23904a0f53abe1bbc0114ff6d2f4fbab79d396e6bde8ad18b79532176be87",
+      "live_error_max_abs": 2.86102294921875e-06,
+      "live_error_rms": 8.158385753631592e-07,
+      "mapped_native_preferred_sha256": "1dc925017d78155594b1447d64149f4da75a5cbc13fd1dcfcf9049cd223633a5",
+      "native4_raw_sha256": "1a459a13784c2322fd8a2a958b049fa56dc38cf532b2a716c314e7745db4f2ec",
+      "native_tensor_sha256": "e6adef6deda6f1a857c50da502ef586ae8b7871a1d3eabee8b88f0f965671ea6",
+      "same_input_output_route_attribution": "Actual preferred source4 output equals independent source/native preferred4; actual native16 equals raw16, whose first4 equal raw4. Thus the route explains the complete live first4 residual.",
+      "source_max_abs": 17.691314697265625,
+      "source_rms_magnitude": 5.720084116186153,
+      "source_tensor_sha256": "bf8d98dea7d466d7b584768922455e4be5b279adf329a74bd34493f8861cd795"
+    },
+    "b": {
+      "actual_native16_input_sha256": "41b5419e7f5bcd9c18e50f760a4ea64814d3ad6c8f23cc5fa621dcfd9161ce93",
+      "actual_native16_raw_sha256": "985b5eb47b652c4033e199708242de5f069d6c42ac6400920bc1c7bfd8bbac48",
+      "actual_source_output_sha256": "402553981ed70551decaf99b3f6bbcaddd2142c9746ebd89aacf44e69cde3f92",
+      "live_error_max_abs": 1.1920928955078125e-06,
+      "live_error_rms": 3.891546729165349e-07,
+      "mapped_native_preferred_sha256": "f3fb0c016613db558feaa7fef1dc29eefe6606c196ca102add8646b51caf2dc0",
+      "native4_raw_sha256": "91030da4b8d716bc998d03ae4497d17b726abdfbb770b6148695eaafc3d87c3e",
+      "native_tensor_sha256": "d599e24008e52cf3471e09ce4b5daaf4d93334e431a8c698965de215f891b162",
+      "same_input_output_route_attribution": "Actual preferred source4 output equals independent source/native preferred4; actual native16 equals raw16, whose first4 equal raw4. Thus the route explains the complete live first4 residual.",
+      "source_max_abs": 4.26880407333374,
+      "source_rms_magnitude": 1.8658074754687666,
+      "source_tensor_sha256": "aac964631a29d404b54d6f16f1a4229f4b16ed6c9a7c530327d9d9c92c4e9f06"
+    },
+    "z": {
+      "actual_native16_input_sha256": "41b5419e7f5bcd9c18e50f760a4ea64814d3ad6c8f23cc5fa621dcfd9161ce93",
+      "actual_native16_raw_sha256": "65e0479873e0740c82e8c3c4a21681e58cb428149d1b8be605026974f369737b",
+      "actual_source_output_sha256": "603e4e2a68780f046e25c222c424a06761c7c8cac65ac7d4c249227eea9e12a6",
+      "live_error_max_abs": 3.814697265625e-06,
+      "live_error_rms": 3.6038712188264025e-07,
+      "mapped_native_preferred_sha256": "36efcf4af7f57fb5b525455e8a9efc5906de6905938db452ffda1ac154edd02e",
+      "native4_raw_sha256": "5987490988483be5ff4016b88683666c61c56c29b841d1b541b1cfb9aa03c6b5",
+      "native_tensor_sha256": "4224974b23af7a2e78f515d45dc0e73a9ac064d5fd2e5710c6bad5b377e8e870",
+      "same_input_output_route_attribution": "Actual preferred source4 output equals independent source/native preferred4; actual native16 equals raw16, whose first4 equal raw4. Thus the route explains the complete live first4 residual.",
+      "source_max_abs": 13.319679260253906,
+      "source_rms_magnitude": 1.4223029487335754,
+      "source_tensor_sha256": "73298ca6d6137e900af591c0f174e255d9316d0626ad7d48a2b7baffdb5c365d"
+    }
+  },
+  "quality_qualified": false,
+  "same_actual86token_input_and_positions": true,
+  "same_prefix126": {
+    "bit_exact": false,
+    "candidate_max_abs": 24.423721313476562,
+    "candidate_rms_magnitude": 1.7336424091166296,
+    "different_bits": 248320,
+    "different_numeric": 248320,
+    "elements": 248320,
+    "error_max_abs": 0.32122886180877686,
+    "error_rms": 0.0603224247509397,
+    "native_argmax": 20,
+    "native_top2_margin": 0.009769439697265625,
+    "reference_max_abs": 24.439138412475586,
+    "reference_rms_magnitude": 1.742901730491093,
+    "source_argmax": 18,
+    "source_token": 18,
+    "source_top2_margin": 0.04192924499511719
+  },
+  "schema": "lighton4b-neutral-text-independent-audit/v1",
+  "source_receipt_sha256": {
+    "calibration": "f69d23ffe6d65d9abf6c7c5c660723613ce84cc901383c5151e17d8f8dc5fe64",
+    "operator": "4dc28c17717082a36e9f2cad3729a31a83a97c3234b07d3c00002232744a66f5",
+    "producer": "8df1604435314b09ea8cbb60f47833a04307a492349191901313ed9b39540186",
+    "table": "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3",
+    "trace": "5a8a1aaedb41aa4a485d1f9927c9e0ae5c19e02c69f9ba0d2c34fc319a4dc9b3"
+  },
+  "status": "verified",
+  "weighted_layer_progression": [
+    {
+      "layer": 0,
+      "max_abs": 0.0009560585021972656,
+      "rms": 4.0324458721768526e-05,
+      "source_rms_magnitude": 0.20189871304359283,
+      "token_rows": 86
+    },
+    {
+      "layer": 1,
+      "max_abs": 0.012946605682373047,
+      "rms": 0.00044485929110920676,
+      "source_rms_magnitude": 0.20617794630071878,
+      "token_rows": 86
+    },
+    {
+      "layer": 2,
+      "max_abs": 0.024923324584960938,
+      "rms": 0.0009857966569303141,
+      "source_rms_magnitude": 0.18775868192048334,
+      "token_rows": 86
+    },
+    {
+      "layer": 3,
+      "max_abs": 0.03564167022705078,
+      "rms": 0.0015714018033378397,
+      "source_rms_magnitude": 0.20763697224731742,
+      "token_rows": 86
+    },
+    {
+      "layer": 4,
+      "max_abs": 0.04356193542480469,
+      "rms": 0.0020940144146560356,
+      "source_rms_magnitude": 0.2107016646944161,
+      "token_rows": 86
+    },
+    {
+      "layer": 5,
+      "max_abs": 0.05602741241455078,
+      "rms": 0.002890983651803678,
+      "source_rms_magnitude": 0.2161143484480873,
+      "token_rows": 86
+    },
+    {
+      "layer": 6,
+      "max_abs": 0.10663270950317383,
+      "rms": 0.004138085907564352,
+      "source_rms_magnitude": 0.2593399528553405,
+      "token_rows": 86
+    },
+    {
+      "layer": 7,
+      "max_abs": 0.10339927673339844,
+      "rms": 0.004708097616513473,
+      "source_rms_magnitude": 0.2507384504754944,
+      "token_rows": 86
+    },
+    {
+      "layer": 8,
+      "max_abs": 0.12577486038208008,
+      "rms": 0.004803193759164382,
+      "source_rms_magnitude": 0.24096381052319601,
+      "token_rows": 86
+    },
+    {
+      "layer": 9,
+      "max_abs": 0.12826204299926758,
+      "rms": 0.0050277394129817545,
+      "source_rms_magnitude": 0.23847734316707372,
+      "token_rows": 86
+    },
+    {
+      "layer": 10,
+      "max_abs": 0.10746121406555176,
+      "rms": 0.005403177438760537,
+      "source_rms_magnitude": 0.24238809530861272,
+      "token_rows": 86
+    },
+    {
+      "layer": 11,
+      "max_abs": 0.1275467872619629,
+      "rms": 0.005964212963648429,
+      "source_rms_magnitude": 0.24320177526926104,
+      "token_rows": 86
+    },
+    {
+      "layer": 12,
+      "max_abs": 0.13378667831420898,
+      "rms": 0.005997505803224275,
+      "source_rms_magnitude": 0.2387530817979678,
+      "token_rows": 86
+    },
+    {
+      "layer": 13,
+      "max_abs": 0.1193382740020752,
+      "rms": 0.006323179069996489,
+      "source_rms_magnitude": 0.24126883012626618,
+      "token_rows": 86
+    },
+    {
+      "layer": 14,
+      "max_abs": 0.14115381240844727,
+      "rms": 0.006739820008450011,
+      "source_rms_magnitude": 0.25506358705219306,
+      "token_rows": 86
+    },
+    {
+      "layer": 15,
+      "max_abs": 0.22120767831802368,
+      "rms": 0.007356924085294589,
+      "source_rms_magnitude": 0.2761820511265517,
+      "token_rows": 86
+    },
+    {
+      "layer": 16,
+      "max_abs": 0.2637397050857544,
+      "rms": 0.008250624009638798,
+      "source_rms_magnitude": 0.29317460272672774,
+      "token_rows": 86
+    },
+    {
+      "layer": 17,
+      "max_abs": 0.18331730365753174,
+      "rms": 0.00896177087313584,
+      "source_rms_magnitude": 0.30346014908616276,
+      "token_rows": 86
+    },
+    {
+      "layer": 18,
+      "max_abs": 0.1493382453918457,
+      "rms": 0.01001211427507465,
+      "source_rms_magnitude": 0.31055713613191327,
+      "token_rows": 86
+    },
+    {
+      "layer": 19,
+      "max_abs": 0.23471927642822266,
+      "rms": 0.012865644996122751,
+      "source_rms_magnitude": 0.383572080545021,
+      "token_rows": 86
+    },
+    {
+      "layer": 20,
+      "max_abs": 0.3341531753540039,
+      "rms": 0.014075653920104618,
+      "source_rms_magnitude": 0.40996755928993167,
+      "token_rows": 86
+    },
+    {
+      "layer": 21,
+      "max_abs": 0.38254404067993164,
+      "rms": 0.015735594033647028,
+      "source_rms_magnitude": 0.4511403453161077,
+      "token_rows": 86
+    },
+    {
+      "layer": 22,
+      "max_abs": 0.8558330535888672,
+      "rms": 0.017600428818521207,
+      "source_rms_magnitude": 0.4696640967397196,
+      "token_rows": 86
+    },
+    {
+      "layer": 23,
+      "max_abs": 0.6053276062011719,
+      "rms": 0.019791904807011842,
+      "source_rms_magnitude": 0.5036850389729,
+      "token_rows": 86
+    },
+    {
+      "layer": 24,
+      "max_abs": 0.7234907150268555,
+      "rms": 0.021202184473005467,
+      "source_rms_magnitude": 0.5302441896615211,
+      "token_rows": 86
+    },
+    {
+      "layer": 25,
+      "max_abs": 0.8119440078735352,
+      "rms": 0.02286101423147748,
+      "source_rms_magnitude": 0.5492034284161003,
+      "token_rows": 86
+    },
+    {
+      "layer": 26,
+      "max_abs": 1.4233055114746094,
+      "rms": 0.025822659451716266,
+      "source_rms_magnitude": 0.5746420850282288,
+      "token_rows": 86
+    },
+    {
+      "layer": 27,
+      "max_abs": 1.1328182220458984,
+      "rms": 0.03049476776456335,
+      "source_rms_magnitude": 0.610142559976314,
+      "token_rows": 86
+    },
+    {
+      "layer": 28,
+      "max_abs": 1.0827674865722656,
+      "rms": 0.03513624882334252,
+      "source_rms_magnitude": 0.6772606942024184,
+      "token_rows": 86
+    },
+    {
+      "layer": 29,
+      "max_abs": 0.9337215423583984,
+      "rms": 0.04200559263291237,
+      "source_rms_magnitude": 0.7523316167325056,
+      "token_rows": 86
+    },
+    {
+      "layer": 30,
+      "max_abs": 0.851819634437561,
+      "rms": 0.05280448476973123,
+      "source_rms_magnitude": 0.8000858340543349,
+      "token_rows": 86
+    },
+    {
+      "layer": 31,
+      "max_abs": 0.689208984375,
+      "rms": 0.12963076627068798,
+      "source_rms_magnitude": 1.3773462240526404,
+      "token_rows": 1
+    }
+  ]
+}

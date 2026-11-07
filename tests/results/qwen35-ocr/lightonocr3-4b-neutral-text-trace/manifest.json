@@ -1,0 +1,111 @@
+{
+  "files": {
+    "audit.json": {
+      "bytes": 12729,
+      "sha256": "65c819ce4e455b544b01b10eb4a6027847002f023527cd3e038a629951fdf4e6"
+    },
+    "capture/on/graph-0.tsv": {
+      "bytes": 4700,
+      "sha256": "44a77666bd15ef63e7dcb76938ca9398ae2176db22df3a03c96070570f0d1f2e"
+    },
+    "capture/on/graph-1.tsv": {
+      "bytes": 4696,
+      "sha256": "bf2d511f3161931347995de45f2a584037c495a3faa925c997b70f345468ef65"
+    },
+    "capture/on/graph-2.tsv": {
+      "bytes": 4907,
+      "sha256": "fb482bbd6c953a9c3cc24f152758f7b3b3defdea2a07fb9cf1eaf1910019d4da"
+    },
+    "capture/on/graph-3.tsv": {
+      "bytes": 4696,
+      "sha256": "61e376738e7b2e7c63be4bed9eda66b092c635f84bfb3fd4c4f35fd74cef6352"
+    },
+    "capture/on/graph-4.tsv": {
+      "bytes": 4727,
+      "sha256": "68fbb96ccce3bf8acb578d8c268a554fa6807f0ec2d608afd1d2d795c3f9a001"
+    },
+    "capture/on/graph-5.tsv": {
+      "bytes": 4810,
+      "sha256": "b0746237033b1e0fca705d943c13add8b66daa062628c62bff0e50dae7ccf28f"
+    },
+    "capture/on/sampling-steps.tsv": {
+      "bytes": 1018,
+      "sha256": "70c6f036ddd33cb990696b59d888695b4b7905e68a34b88e6863eddc468f194d"
+    },
+    "capture/text-trace.json": {
+      "bytes": 150446,
+      "sha256": "8df1604435314b09ea8cbb60f47833a04307a492349191901313ed9b39540186"
+    },
+    "capture/upstream-text-trace-bootstrap.json": {
+      "bytes": 1812,
+      "sha256": "f7641cff9936bab93c3f782397fcd6f81bf2aecf3042a23bbbd182c918aa2d44"
+    },
+    "capture/upstream-text-trace.log": {
+      "bytes": 3041,
+      "sha256": "6325e104969a49699df84735180f165bcda50a12a827e47a17b44d6e90d17951"
+    },
+    "live-fixtures/graph-1.alpha-0.bin": {
+      "bytes": 512,
+      "sha256": "1ba23904a0f53abe1bbc0114ff6d2f4fbab79d396e6bde8ad18b79532176be87"
+    },
+    "live-fixtures/graph-1.attn_norm-0.bin": {
+      "bytes": 40960,
+      "sha256": "7a3fafed50f68cfdf0e41c2dadb3310c0512d8296155ad95de45567560064a96"
+    },
+    "live-fixtures/graph-1.beta-0.bin": {
+      "bytes": 512,
+      "sha256": "402553981ed70551decaf99b3f6bbcaddd2142c9746ebd89aacf44e69cde3f92"
+    },
+    "live-fixtures/graph-1.z-0.bin": {
+      "bytes": 65536,
+      "sha256": "603e4e2a68780f046e25c222c424a06761c7c8cac65ac7d4c249227eea9e12a6"
+    },
+    "live-fixtures/source.tensor-dispatch.tsv": {
+      "bytes": 981,
+      "sha256": "c96ee9270d87024724608ca55b280828bb46d40bbc1db966703506320b9302c4"
+    },
+    "reader-axis-negative/text-trace-analysis.json": {
+      "bytes": 629,
+      "sha256": "341fad71719b312b73e3c90163cbb01fe62a125e7588f408acf56cd83253aeae"
+    },
+    "reader-axis-negative/text-trace-relay.json": {
+      "bytes": 405,
+      "sha256": "a76377e14aed62209868408622b8fa23e701768f0dc66a0807dad10cf55cffe5"
+    },
+    "reader-axis-negative/upstream-text-trace-bootstrap.json": {
+      "bytes": 2032,
+      "sha256": "0a99f8f7031ae8a9c631c5409050131efcdfbb03e3f50b3ea46ca4c6ed928f11"
+    },
+    "reader-axis-negative/upstream-text-trace.log": {
+      "bytes": 904,
+      "sha256": "4ee5d736dd6a19299e8e338de641363f602a96db3efdd0de4617bbcfe3259a4a"
+    },
+    "reader-final/off/response.json": {
+      "bytes": 342793,
+      "sha256": "5580ec04c254fdbb4fad9eb209f67f3a889a03b2b9246087e533881ba1cca712"
+    },
+    "reader-final/on/response.json": {
+      "bytes": 342791,
+      "sha256": "d6d0c10a2d7a2b22765d6c01627489a04a02060bc64684014ddccee031c8cb63"
+    },
+    "reader-final/text-trace-analysis.json": {
+      "bytes": 368291,
+      "sha256": "5a8a1aaedb41aa4a485d1f9927c9e0ae5c19e02c69f9ba0d2c34fc319a4dc9b3"
+    },
+    "reader-final/text-trace-relay.json": {
+      "bytes": 331,
+      "sha256": "4b80c570e643dd4b9446c8b1727ed3e7fb89220642b4d77ae5106f772e2f09a7"
+    },
+    "reader-final/upstream-text-trace-bootstrap.json": {
+      "bytes": 2020,
+      "sha256": "71e38a9369074660aa1b3779c4d678441d5f3715615cd15e5c3470ccdb7f34cf"
+    },
+    "reader-mount-negative/upstream-text-trace-bootstrap.json": {
+      "bytes": 1953,
+      "sha256": "1346c268b2d88915f72c084c451bac7a76ae602da9b057bd3c8a745bc8913626"
+    }
+  },
+  "large_capture": "The complete915-file633351140-byte source capture is retained in completed artifact-only reader outputs; all files rehashed before interpretation.",
+  "model_or_inference_rerun_in_artifact_readers": false,
+  "schema": "lighton4b-neutral-text-evidence-manifest/v1"
+}
