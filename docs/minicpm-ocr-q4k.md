@@ -160,7 +160,7 @@ CRISPEMBED_QUANTIZE_MINICPM_POLICY=minicpm_q4k_v1 crispembed-quantize minicpm-oc
 run 41628919702 (worst 0.9671; `minicpm_ocr_publish.py` accepts it). `tools/ci-heavy/minicpm_ocr_publish.py` now accepts a cosine-gated receipt:
 every case must be above the tier's bar, the build must be portable and the receipt
 must name the GGUF hash. Policy switches travel to the workflow as environment. The
-recipe was published and re-verified in [run 42371025754](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42371025754); [the receipt](../tests/results/minicpm-ocr/publication-42371025754.json) records the immutable commit and hashes. Publication does not itself establish a runtime alias or downstream qualification. Apache-2.0 licence handling is unchanged.
+recipe was published experimentally and re-verified in [run 42371025754](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42371025754); [the receipt](../tests/results/minicpm-ocr/publication-42371025754.json) records the immutable commit and hashes. Publication does not itself establish a runtime alias or downstream qualification. Apache-2.0 licence handling is unchanged.
 
 ## Reproduce
 
