@@ -2062,3 +2062,12 @@ ON RMS0.1296631 vs OFF/reference0.1023485; all38 OFF stage hashes match ac34,
 but cap2 `<figure`/noEOS is not quality proof. Keep the gate and shipping fences
 unchanged. [Immutable evidence](https://github.com/CrispStrobe/CrispEmbed/blob/678d3ca790fbdbf8eec69dda9cbcbc2996170186/docs/lighton4b-physical-native-ops-negative.md)
 also closes actual first4 operator reconstruction/all664 per-case artifacts.
+
+Closed physical diagnostic ablations are verified at4a8821e3e:142 mode/cache/
+unknown/observer controls,557865 physical-policy/geometry checks, old stream and
+84 Q6 controls/65792 scalar values pass. The existing master stays default-off;
+unset/`all` preserves its previously measured full mode, while `quant`, `rms`,
+`layers`, `head` and explicit off select bounded components. Unknown active
+physical modes reject before payload/profile admission and primitive calls;
+cache masks reject subset switches. No learned-model ablation or quality
+qualification follows. The composed full-mode negative remains preserved.

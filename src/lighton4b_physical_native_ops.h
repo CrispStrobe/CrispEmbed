@@ -6,7 +6,7 @@
 #include <memory>
 #include <cstring>
 namespace qwen35_ocr {
-inline bool lighton4b_physical_native_ops(bool physical) {
+inline bool lighton4b_physical_native_ops_master(bool physical) {
 #if defined(__EMSCRIPTEN__)
     return false;
 #else
@@ -15,12 +15,37 @@ inline bool lighton4b_physical_native_ops(bool physical) {
            core_env::on("CRISPEMBED_LIGHTON4B_Q6_K") && core_env::on("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS");
 #endif
 }
+// Diagnostic selector is inert unless the explicit physical master is enabled.
+// Bit1=layer projections, bit2=RMS, bit4=tied head. Unknown values fail closed.
+inline uint8_t lighton4b_physical_native_ops_mode(bool physical) {
+    if (!lighton4b_physical_native_ops_master(physical)) return 0;
+    const char * value = std::getenv("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION");
+    if (!value || !*value || std::strcmp(value, "all") == 0) return 7;
+    if (core_env::spells_off(value)) return 0;
+    if (std::strcmp(value, "quant") == 0) return 5;
+    if (std::strcmp(value, "rms") == 0) return 2;
+    if (std::strcmp(value, "layers") == 0) return 1;
+    if (std::strcmp(value, "head") == 0) return 4;
+    return 255;
+}
+inline bool lighton4b_physical_native_ops_valid(bool physical) {
+    return lighton4b_physical_native_ops_mode(physical) != 255;
+}
+inline bool lighton4b_physical_native_ops(bool physical) {
+    const auto mode = lighton4b_physical_native_ops_mode(physical);
+    return mode != 0 && mode != 255;
+}
+inline bool lighton4b_physical_native_component(bool physical, uint8_t bit) {
+    const auto mode = lighton4b_physical_native_ops_mode(physical);
+    return mode != 255 && (mode & bit) != 0;
+}
 // Only borrowed host-backed quant storage; no F32 weight materialization/cache.
 inline bool lighton4b_physical_matmul(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width,
-                                      int tokens, int threads, std::vector<std::vector<float>> & output) {
+                                      int tokens, int threads, std::vector<std::vector<float>> & output,
+                                      bool head = false) {
     output.clear();
-    if (!lighton4b_physical_native_ops(true) || !hidden || matrices.empty() || matrices.size() > 4 || width < 1 ||
-        width > 32768 || tokens < 1 || tokens > 16 || threads < 1 || threads > 256)
+    if (!lighton4b_physical_native_component(true, head ? 4 : 1) || !hidden || matrices.empty() ||
+        matrices.size() > 4 || width < 1 || width > 32768 || tokens < 1 || tokens > 16 || threads < 1 || threads > 256)
         return false;
     size_t elements = size_t(width) * tokens;
     for (auto * m : matrices) {
@@ -66,7 +91,7 @@ inline bool lighton4b_physical_matmul(const std::vector<ggml_tensor *> & matrice
 inline bool lighton4b_physical_rms(const float * hidden, const float * gamma, int width, int tokens, int threads,
                                    std::vector<float> & output, float eps = 1e-6f) {
     output.clear();
-    if (!lighton4b_physical_native_ops(true) || !hidden || !gamma || width < 1 || width > 4096 || tokens < 1 ||
+    if (!lighton4b_physical_native_component(true, 2) || !hidden || !gamma || width < 1 || width > 4096 || tokens < 1 ||
         tokens > 4096 || size_t(width) * tokens > 1048576 || threads < 1 || threads > 256 || !std::isfinite(eps) ||
         eps <= 0 || !std::all_of(hidden, hidden + size_t(width) * tokens, [](float x) { return std::isfinite(x); }) ||
         !std::all_of(gamma, gamma + width, [](float x) { return std::isfinite(x); }))

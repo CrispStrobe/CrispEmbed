@@ -19,7 +19,11 @@ static void gate(const char * n, const char * v) {
         unsetenv(n);
 #endif
 }
+static bool throwing_head_observer(const char *, const float *, int, int, void *) {
+    throw 7;
+}
 static int run() {
+    gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION", nullptr);
     int checks = 0;
     auto check = [&](bool ok) {
         ++checks;
@@ -102,13 +106,66 @@ static int run() {
         attention_outputs first, next;
         check(attention_cpu(aw, config, cache_input.data(), positions, 1, 1, 2, nullptr, first));
         check(attention_cpu(aw, config, cache_input.data(), positions, 1, 1, 2, &first.cache, next));
-        check(next.cache.tokens == 2 && next.cache.physical_native_ops == lighton4b_physical_native_ops(true));
+        check(next.cache.tokens == 2 && next.cache.physical_native_ops == lighton4b_physical_native_ops_mode(true));
         gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS", mode[0] == '0' ? "1" : "0");
         next.attention = { 42 };
         check(!attention_cpu(aw, config, cache_input.data(), positions, 1, 1, 2, &first.cache, next) &&
               next.attention.empty());
     }
+    gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS", "0");
+    std::vector<std::vector<float>> legacy_layers;
+    std::vector<float> legacy_head, direct_head, direct_rms;
+    check(project_cpu({ q6 }, input.data(), width, tokens, 2, legacy_layers, nullptr, true));
+    check(project_rows_cpu(q6, input.data(), width, tokens, 2, 31, legacy_head, true));
     gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS", "1");
+    gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION", "all");
+    std::vector<std::vector<float>> direct_layers;
+    check(project_cpu({ q6 }, input.data(), width, tokens, 2, direct_layers, nullptr, true));
+    check(project_rows_cpu(q6, input.data(), width, tokens, 2, 31, direct_head, true));
+    check(lighton4b_physical_rms(input.data(), gamma.data(), width, tokens, 2, direct_rms));
+    const std::pair<const char *, uint8_t> modes[] = { { "all", 7 },    { "quant", 5 }, { "rms", 2 },
+                                                       { "layers", 1 }, { "head", 4 },  { "off", 0 } };
+    for (const auto & mode : modes) {
+        gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION", mode.first);
+        check(lighton4b_physical_native_ops_mode(true) == mode.second);
+        check(project_cpu({ q6 }, input.data(), width, tokens, 2, got, nullptr, true) &&
+              bits(got, (mode.second & 1) ? direct_layers : legacy_layers));
+        check(project_rows_cpu(q6, input.data(), width, tokens, 2, 31, flat, true));
+        const auto & wanted = (mode.second & 4) ? direct_head : legacy_head;
+        check(flat.size() == wanted.size() &&
+              std::memcmp(flat.data(), wanted.data(), flat.size() * sizeof(float)) == 0);
+        const bool ok = lighton4b_physical_rms(input.data(), gamma.data(), width, tokens, 2, rms);
+        check(ok == bool(mode.second & 2));
+        if (ok)
+            check(rms == direct_rms);
+        else
+            check(rms.empty());
+        attention_outputs first, next;
+        check(attention_cpu(aw, config, cache_input.data(), positions, 1, 1, 2, nullptr, first));
+        check(attention_cpu(aw, config, cache_input.data(), positions, 1, 1, 2, &first.cache, next));
+        check(first.cache.physical_native_ops == mode.second);
+        gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION", mode.second == 7 ? "quant" : "all");
+        check(!attention_cpu(aw, config, cache_input.data(), positions, 1, 1, 2, &first.cache, next));
+    }
+    gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION", "unknown");
+    check(!lighton4b_physical_native_ops_valid(true) && lighton4b_physical_native_ops_valid(false));
+    got = { { 42 } };
+    check(!project_cpu({ q6 }, input.data(), width, tokens, 2, got, nullptr, true) && got.empty());
+    check(project_cpu({ q6 }, input.data(), width, tokens, 2, got, nullptr, false) && bits(got, legacy_layers));
+    flat = { 42 };
+    check(!project_rows_cpu(q6, input.data(), width, tokens, 2, 31, flat, true) && flat.empty());
+    rms = { 42 };
+    check(!lighton4b_physical_rms(input.data(), gamma.data(), width, tokens, 2, rms) && rms.empty());
+    attention_outputs rejected;
+    check(!attention_cpu(aw, config, cache_input.data(), positions, 1, 1, 2, nullptr, rejected));
+    gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION", nullptr);
+    gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS", "1");
+    gate("CRISPEMBED_QWEN35_IMATRIX", "1");
+    check(set_projection_observer(throwing_head_observer, nullptr));
+    flat = { 42 };
+    check(!project_rows_cpu(q6, input.data(), width, tokens, 2, 31, flat, true) && flat.empty());
+    check(set_projection_observer(nullptr, nullptr));
+    gate("CRISPEMBED_QWEN35_IMATRIX", "0");
     check(lighton4b_physical_rms(input.data(), gamma.data(), width, tokens, 2, rms));
     check(rms.size() == input.size());
     // Failure must clear stale caller outputs, including nonfinite input.
@@ -125,9 +182,10 @@ static int run() {
         gate(conflict, "0");
     }
     check(!lighton4b_physical_native_ops(false));
-    std::printf("PHYSICAL_NATIVE_OPS pass=1 checks=%d gate_off_legacy_exact=1 nonphysical_unchanged=1 "
-                "streamed_head_exact=1 physical_cache_toggle=1 learned_model_forward=0\n",
-                checks);
+    std::printf(
+        "PHYSICAL_NATIVE_OPS pass=1 checks=%d gate_off_legacy_exact=1 nonphysical_unchanged=1 "
+        "streamed_head_exact=1 physical_cache_toggle=1 closed_ablations=1 unknown_rejected=1 learned_model_forward=0\n",
+        checks);
     return 0;
 }
 int main() {

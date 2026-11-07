@@ -16,7 +16,7 @@ static bool finite(const std::vector<float> & x) {
     return std::all_of(x.begin(), x.end(), [](float v) { return std::isfinite(v); });
 }
 static bool norm_head(const float * x, const float * weights, int width, float eps, float * y, bool physical) {
-    if (lighton4b_physical_native_ops(physical)) {
+    if (lighton4b_physical_native_component(physical,2)) {
         std::vector<float> values;
         if (!lighton4b_physical_rms(x, weights, width, 1, 1, values, eps)) return false;
         std::copy(values.begin(), values.end(), y); return true;
@@ -55,7 +55,8 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
     const int width = int(w.q->ne[0]), d = c.head_dim, qh = c.query_heads, kh = c.kv_heads;
     if (w.upstream_physical && (!lighton4b_upstream_physical_mode_valid(true) || batch != 1 || tokens > 16 ||
         width != 2560 || d != 256 || qh != 16 || kh != 4 || c.rotary_dim != 64)) return false;
-    if (previous && (previous->upstream_physical != w.upstream_physical || previous->physical_native_ops != lighton4b_physical_native_ops(w.upstream_physical))) return false;
+    if (!lighton4b_physical_native_ops_valid(w.upstream_physical)) return false;
+    if (previous && (previous->upstream_physical != w.upstream_physical || previous->physical_native_ops != lighton4b_physical_native_ops_mode(w.upstream_physical))) return false;
     if (width < 1 || width > 8192 || !matrix(w.q, width, 2 * qh * d) || !matrix(w.k, width, kh * d) ||
         !matrix(w.v, width, kh * d) || !matrix(w.out, qh * d, width) || !matrix(w.q_norm, d, 1) ||
         !matrix(w.k_norm, d, 1))
@@ -95,7 +96,7 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
     }
     auto & cache = output.cache;
     cache.upstream_physical = w.upstream_physical;
-    cache.physical_native_ops = lighton4b_physical_native_ops(w.upstream_physical);
+    cache.physical_native_ops = lighton4b_physical_native_ops_mode(w.upstream_physical);
     cache.batch = batch;
     cache.heads = kh;
     cache.tokens = total;

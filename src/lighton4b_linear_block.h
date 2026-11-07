@@ -14,7 +14,7 @@ struct lighton4b_linear_cache {
     bool bf16_activations = false;
     std::vector<float> conv, recurrent;
     bool upstream_physical = false;
-    bool physical_native_ops = false;
+    uint8_t physical_native_ops = 0;
 };
 struct lighton4b_linear_block_outputs {
     std::vector<float> input_norm, attention, attention_residual, post_norm, gate, up, activation, down, hidden;
@@ -35,9 +35,9 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
         return std::all_of(v.begin(), v.end(), [](float x) { return std::isfinite(x); });
     };
     const bool bf16 = lighton4b_bf16_linear_enabled();
-    if (!lighton4b_upstream_physical_mode_valid(w.upstream_physical) ||
+    if (!lighton4b_upstream_physical_mode_valid(w.upstream_physical) || !lighton4b_physical_native_ops_valid(w.upstream_physical) ||
         w.linear.upstream_physical != w.upstream_physical ||
-        (previous && (previous->upstream_physical != w.upstream_physical || previous->physical_native_ops != lighton4b_physical_native_ops(w.upstream_physical)))) return false;
+        (previous && (previous->upstream_physical != w.upstream_physical || previous->physical_native_ops != lighton4b_physical_native_ops_mode(w.upstream_physical)))) return false;
     const int past = previous ? previous->tokens : 0;
     if (past < 0 || past > 4096 - tokens ||
         (previous && (previous->bf16_activations != bf16 || past == 0 || previous->conv.size() != 32768 ||
@@ -62,7 +62,7 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     auto rms = [&](const std::vector<float> & x, ggml_tensor * norm, std::vector<float> & y) {
         std::vector<float> weights(2560);
         if (!tensor_floats(norm, weights.data()) || !finite(weights)) return false;
-        if (lighton4b_physical_native_ops(w.upstream_physical))
+        if (lighton4b_physical_native_component(w.upstream_physical,2))
             return lighton4b_physical_rms(x.data(), weights.data(), 2560, tokens, threads, y);
         y.resize(x.size());
         for (int token = 0; token < tokens; ++token) {
@@ -114,7 +114,7 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     candidate.cache.tokens = past + tokens;
     candidate.cache.bf16_activations = bf16;
     candidate.cache.upstream_physical = w.upstream_physical;
-    candidate.cache.physical_native_ops = lighton4b_physical_native_ops(w.upstream_physical);
+    candidate.cache.physical_native_ops = lighton4b_physical_native_ops_mode(w.upstream_physical);
     candidate.cache.conv = std::move(linear.core.conv_history);
     candidate.cache.recurrent = std::move(linear.core.state);
     output = std::move(candidate);
