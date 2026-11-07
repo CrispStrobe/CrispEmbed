@@ -52,6 +52,13 @@ def main():
   run('source',['git','rev-parse','HEAD']);r['source_sha']=(out/'source.log').read_text().strip();require(r['source_sha']==os.environ['LIGHTON4B_EXPECTED_SOURCE'],'exact source');run('cpu',['lscpu'])
   r['preflight']={'memory':base.memory(),'scratch_free':shutil.disk_usage(work).free,'output_free':shutil.disk_usage(out).free};require(r['preflight']['memory']['MemAvailable']>=cfg['minimum_available_memory_bytes']and r['preflight']['scratch_free']>=cfg['minimum_scratch_free_bytes']and r['preflight']['output_free']>=cfg['minimum_output_free_bytes'],'resource admission before weights')
   proofp=locate('runtime-repack-controls.json',cfg['controls_receipt_sha256']);proof=json.loads(proofp.read_text());require(proof['status']=='passed_operator_cache_controls'and proof['source_sha']==PROOF_SOURCE and len(proof['sourcefed'])==30 and all(v['metric']['bit_exact']for v in proof['sourcefed'].values())and not proof['model_forward_executed'],'completed supported/cache/sourcefed controls');r['controls_receipt_sha256']=sha(proofp)
+  # The outer bootstrap finalizes after its child: never trust its pre-final artifact row.
+  proof_members=['CMakeCache.txt']+['run-'+target+'.log'for target in ['test-lighton4b-physical-q4-repack','test-lighton4b-physical-q4-repack-main-stub','test-lighton4b-physical-f16-attention','test-lighton4b-physical-native-ops','test-lighton4b-hf-tiled-out-operator','test-lighton4b-q6-tied-head','test-lighton4b-main-f16-link']]
+  for name in proof_members:verify(proofp.parent/name,proof['artifacts'][name])
+  require('PHYSICAL_Q4_REPACK PASS 57'in(proofp.parent/'run-test-lighton4b-physical-q4-repack.log').read_text(),'closed actual supported controls')
+  for label,row in proof['sourcefed'].items():
+   name=label+'.f32';verify(proofp.parent/name,proof['artifacts'][name]);require(sha(proofp.parent/name)==row['output_sha256'],'all30 actual runtime output bytes')
+  r['controls_closed_members_rehashed']=38
   run('fetch-tested',['git','fetch','--depth','1','origin',PROOF_SOURCE]);run('tested-runtime',['git','diff','--exit-code',PROOF_SOURCE,'HEAD','--','src','ggml','CMakeLists.txt'])
   tp=locate('physical-f16-table512.json',TABLE);old=json.loads(tp.read_text());require(old['status']=='measured_extended_table'and old['source_sha']==cfg['table_source_sha']and old['source_observer_full_neutral']and old['old_cap256_prefix_anchors_exact'],'frozen complete table');r['table_receipt_sha256']=sha(tp)
   pp=locate('physical-decode.json',PHYSICAL);physical=json.loads(pp.read_text());require(physical['status']=='measured'and physical['source_sha']=='ac34f72ca89823a177c538ad598dfa00fc69f124','frozen physical input provenance');r['physical_receipt_sha256']=sha(pp)
