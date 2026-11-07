@@ -3,7 +3,7 @@
 import hashlib,importlib.util,json,os,platform,shutil,signal,subprocess,sys,time,urllib.request
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'tools/physical-f16-attention-probe'));from runtime_guard import Deadline,command
-CFG_SHA='948a8fb058465313cfad3153185d90c9acd5c2b5375be46f9d2e64f1b1a0968f'
+CFG_SHA='66422460ac5a0234ae91e0ed591866b9fe74852b8f0788c3ca780ab8cb5456f7'
 PROFILE={'BUILD_SHARED_LIBS':'ON','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_AVX512':'OFF','GGML_CPU_REPACK':'ON','GGML_OPENMP':'ON','GGML_LLAMAFILE':'ON','GGML_BACKEND_DL':'OFF','GGML_BLAS':'OFF','GGML_CUDA':'OFF','GGML_VULKAN':'OFF'}
 def module(name,path):
  s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
