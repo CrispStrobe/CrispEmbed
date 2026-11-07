@@ -1,0 +1,108 @@
+{
+  "all_two_observed_calibration_floors_met": true,
+  "bootstrap_sha256": "8bc640586a09baa5953ba6c1bcd7dac6f5431281e5c1f9460f7a84400f469f5d",
+  "candidate_bytes": 4041905312,
+  "candidate_sha256": "5d133ae02c12611572c02e2d43bd06f4fecc5e059f94709a13bdb36458fadb29",
+  "derived_reference_texts": {
+    "references/arabic_printed_line/original-bf16.txt": {
+      "bytes": 23,
+      "derivation": "Exact decoded field from authenticated frozen capture/report; no new reference inference.",
+      "sha256": "24de6e789e4550dec9afdb7013d4e7d455b99f6a7ba75f2d166c0f20a896cc39"
+    },
+    "references/arabic_printed_line/pinned-llama-q4km.txt": {
+      "bytes": 23,
+      "derivation": "Exact decoded field from authenticated frozen capture/report; no new reference inference.",
+      "sha256": "24de6e789e4550dec9afdb7013d4e7d455b99f6a7ba75f2d166c0f20a896cc39"
+    },
+    "references/simple_table/original-bf16.txt": {
+      "bytes": 629,
+      "derivation": "Exact decoded field from authenticated frozen capture/report; no new reference inference.",
+      "sha256": "4ffbf7029cdc1a3a8b8a544b21709b16dd96c55ffbe88445b752b6e942b486bd"
+    },
+    "references/simple_table/pinned-llama-q4km.txt": {
+      "bytes": 785,
+      "derivation": "Exact decoded field from authenticated frozen capture/report; no new reference inference.",
+      "sha256": "4b5923bfbc35a9760a6a00b6a340fc81e73c029042d801525d9d515b4392a261"
+    }
+  },
+  "f32_model_instantiated": false,
+  "fixed_remote_expiry_guaranteed": false,
+  "form_outcome": "pending separate fixed-model post-selection diagnostic",
+  "heldout_qualified": false,
+  "independent_review_sha256": "6233ebc63c655f5caf5535d52fc3c6e3a528ceadce51d426d5eb12d5a74d6a3f",
+  "large_model_and_score_arrays_retained_remotely": true,
+  "large_model_or_score_arrays_downloaded_locally": false,
+  "original_model_rerun": false,
+  "raw_api_files": {
+    "lighton-q4km-decode-results/arabic_printed_line-complete-greedy.log": {
+      "bytes": 70,
+      "sha256": "f3ffdb6adabd88655399d54f5fe7888bc7ca768069db14c7cabd1edf7337bf7b"
+    },
+    "lighton-q4km-decode-results/arabic_printed_line-preflight.log": {
+      "bytes": 88,
+      "sha256": "87c9f28be99e61cca579a0ea360b2a6da026cb88d4e6642cbb774eeba39d1aaf"
+    },
+    "lighton-q4km-decode-results/arabic_printed_line/native/generated.ids": {
+      "bytes": 39,
+      "sha256": "c619a15be2844fa72f35be1d86c09c04e28a1e58ff63bc96d68303d13616559b"
+    },
+    "lighton-q4km-decode-results/arabic_printed_line/native/generated.txt": {
+      "bytes": 23,
+      "sha256": "24de6e789e4550dec9afdb7013d4e7d455b99f6a7ba75f2d166c0f20a896cc39"
+    },
+    "lighton-q4km-decode-results/arabic_printed_line/native/native-summary.json": {
+      "bytes": 103,
+      "sha256": "fa3f81ab4a433506137007838143a19dc609fb5efb4edb10e5c72259db28560c"
+    },
+    "lighton-q4km-decode-results/bootstrap-receipt.json": {
+      "bytes": 841,
+      "sha256": "eda51258efaeaaeefe182fea24328fd0c5c43ab34a03bad5fdc0d0cfb695509c"
+    },
+    "lighton-q4km-decode-results/bootstrap.log": {
+      "bytes": 1131,
+      "sha256": "a449d82cb11e140215cfea99ed6b74dfb3aeaa82c5d65ac2470f196b1dc898b0"
+    },
+    "lighton-q4km-decode-results/controller.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-q4km-decode-results/packages.log": {
+      "bytes": 3103,
+      "sha256": "1616dc74461c16f9746f52f653664413bab5bb0cd3f5f9beae698510a819a30f"
+    },
+    "lighton-q4km-decode-results/q4km-complete-decode.json": {
+      "bytes": 133758,
+      "sha256": "1f296b54b74e2660f81f7fa7d9aae9850bb3d22fb19c5024c7a28908248090e7"
+    },
+    "lighton-q4km-decode-results/simple_table-complete-greedy.log": {
+      "bytes": 72,
+      "sha256": "ddd6caad020aad16fad37e87fdcba27b6020730366f203da58bad70e10b9b68c"
+    },
+    "lighton-q4km-decode-results/simple_table-preflight.log": {
+      "bytes": 88,
+      "sha256": "434497c54aca1e8f9044435ca4369595675c40933490f3e923ba9b8a00579c60"
+    },
+    "lighton-q4km-decode-results/simple_table/native/generated.ids": {
+      "bytes": 897,
+      "sha256": "30e2f3406e7a79752d5991c7326d715f9c6579b0073f4ad4e5d62ddc6c07320c"
+    },
+    "lighton-q4km-decode-results/simple_table/native/generated.txt": {
+      "bytes": 684,
+      "sha256": "845481e8e1645fc8a39cf3763f96c7b5ed92c9adbb5e5a457c07ac88585b06fe"
+    },
+    "lighton-q4km-decode-results/simple_table/native/native-summary.json": {
+      "bytes": 105,
+      "sha256": "64b86d039ae00157e352bc8aee0299215268278d673f0f495d5e83f3f6c3630e"
+    },
+    "lighton4b-q4km-complete-calibration-decode.log": {
+      "bytes": 1186,
+      "sha256": "5105f4237c1da2bff94b932c72e785191b6f771fbeb58562163843c2b479ccab"
+    }
+  },
+  "raw_greedy_rows_verified_by_hosted_controller": 220,
+  "same_producer_stage_pairs": 140,
+  "schema": "lighton4b-q4km-complete-calibration-evidence/v1",
+  "shipping_approved": false,
+  "source_sha": "e822a6de84c8fb546623a464c7e9c79a62e19bbc",
+  "status": "measured"
+}

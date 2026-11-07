@@ -1,0 +1,66 @@
+{
+  "bootstrap_sha256": "8bc640586a09baa5953ba6c1bcd7dac6f5431281e5c1f9460f7a84400f469f5d",
+  "cases": {
+    "arabic_printed_line": {
+      "actual_eos": true,
+      "all_row_manifest_controls": true,
+      "cap_hit": false,
+      "decoded_sha256": "24de6e789e4550dec9afdb7013d4e7d455b99f6a7ba75f2d166c0f20a896cc39",
+      "edit_distances": {
+        "BF16": {
+          "character_edits": 0,
+          "reference_codepoints": 12,
+          "reference_words": 2,
+          "word_edits": 0
+        },
+        "llama_Q4_K_M": {
+          "character_edits": 0,
+          "reference_codepoints": 12,
+          "reference_words": 2,
+          "word_edits": 0
+        }
+      },
+      "generated_ids_sha256": "c619a15be2844fa72f35be1d86c09c04e28a1e58ff63bc96d68303d13616559b",
+      "observed_floor_met": true,
+      "same_producer_stages": 70,
+      "text_codepoints": 12,
+      "text_words": 2,
+      "token_count": 6
+    },
+    "simple_table": {
+      "actual_eos": true,
+      "all_row_manifest_controls": true,
+      "cap_hit": false,
+      "decoded_sha256": "845481e8e1645fc8a39cf3763f96c7b5ed92c9adbb5e5a457c07ac88585b06fe",
+      "edit_distances": {
+        "BF16": {
+          "character_edits": 160,
+          "reference_codepoints": 607,
+          "reference_words": 106,
+          "word_edits": 47
+        },
+        "llama_Q4_K_M": {
+          "character_edits": 231,
+          "reference_codepoints": 769,
+          "reference_words": 151,
+          "word_edits": 67
+        }
+      },
+      "generated_ids_sha256": "30e2f3406e7a79752d5991c7326d715f9c6579b0073f4ad4e5d62ddc6c07320c",
+      "observed_floor_met": true,
+      "same_producer_stages": 70,
+      "text_codepoints": 673,
+      "text_words": 120,
+      "token_count": 214
+    }
+  },
+  "large_score_arrays_downloaded": false,
+  "model_downloaded": false,
+  "new_inference": false,
+  "producer_receipt_sha256": "e16d484e308795a50d8d71f416517c67bd3235e631a8aa524308535765dea0df",
+  "receipt_sha256": "1f296b54b74e2660f81f7fa7d9aae9850bb3d22fb19c5024c7a28908248090e7",
+  "schema": "lighton4b-q4km-complete-calibration-independent-review/v1",
+  "scope": "Fresh small actual IDs/text plus receipt/source/hash/EOS/row-manifest and independently recomputed edit distances; hosted controller checks every raw vocabulary row.",
+  "source_sha": "e822a6de84c8fb546623a464c7e9c79a62e19bbc",
+  "status": "passed"
+}

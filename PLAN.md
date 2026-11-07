@@ -2936,3 +2936,20 @@ now preserves the actual 723-tensor readback and full candidate hash, both built
 executables and initial missing-PyYAML failure before either engine forward.
 The corrected source-feature-only Kaggle retry is pending its measured result;
 no decoded quality, performance or release qualification follows from this proof.
+
+### Weighted Q4KM-style complete calibration — 7 November
+
+[Full receipts/transcriptions](docs/lighton4b-imatrix-q4km-full-calibration-results.md)
+from immutable sourcee822a6de8 finish table214IDs/EOS (no cap), CER160/607=.263591
+and WER47/106=.443396 against frozenBF16, beating the pinned llamaQ4_K_M table
+315/607=.518946 and88/106=.830189 with256cap/noEOS. Arabic6IDs/EOS/text match both
+exactly (CER/WER0). CandidateSHA5d133ae0… and original producer binaries are fixed;
+wholemodelrehash, five inputs/case,140 same-native-producer stage pairs and220 raw
+vocabulary rows pass controls. Actual small token/text bytes and independently
+recomputed distances are retained, with16 raw API files and exact hashes. Table
+stilldiffers fromBF16 atID39 and has160char/47word edits; these are not BF16stage
+parity or humanOCR accuracy claims. Controller3927.82s/table3676.83s/Arabic210.24s;
+CPU/system/explicitlycumulativeRSS scope and earlier negatives remain preserved.
+No new original/F32model, heldout read, recipe/default/shipping/release change.
+Separate fixed-model post-selection form is running sourceb978b1cef/bootstrap0faac598…;
+physical same-weight diagnostics proceed in parallel and remain separate.

@@ -94,3 +94,9 @@ against both earlier arms. Table's mean logit shift is`-0.527828`, explaining wh
 its raw RMS worsens despite a smaller centered error. This is a one-position,
 posthoc distribution diagnostic, not the publisher's corpus KLD benchmark or
 proof of complete decoded quality. The recipe remains fixed during full decode.
+
+The [complete table/Arabic continuation](lighton4b-imatrix-q4km-full-calibration-results.md)
+subsequently finished: table214 IDs/EOS, CER160/607 and WER47/106 against BF16,
+better than the pinned llama Q4_K_M table315/607 and88/106 (256 cap/no EOS).
+Arabic6 IDs/EOS/text match both exactly. Both observed calibration floors pass;
+form is pending, BF16 table parity and shipping remain unqualified.

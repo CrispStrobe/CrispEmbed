@@ -34,3 +34,6 @@ tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-controls/**/*.log -text whi
 tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/**/*.log -text whitespace=-trailing-space,-blank-at-eof
 # Preserve exact remote physical-import setup logs and their SHA evidence.
 tests/results/qwen35-ocr/lightonocr3-4b-upstream-physical-decode/**/*.log -text whitespace=-trailing-space,-blank-at-eof
+# Exact decoded/token bytes include the pinned capped baseline's trailing space.
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/full-calibration-v2/**/*.txt -text whitespace=-trailing-space,-blank-at-eof
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/full-calibration-v2/**/*.ids -text
