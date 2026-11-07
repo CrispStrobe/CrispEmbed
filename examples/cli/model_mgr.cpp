@@ -1663,7 +1663,8 @@ static const ModelEntry k_registry[] = {
     // Experimental quantized publications (owner decision 7 November 2026). Quality per model and
     // variant: docs/quantized-models.md. Do not mix quantized vectors into an index built with F32.
     { "ultrabert-q4k-experimental", "ultrabert-embed-150m-q4_k-last-four-ffn.gguf",
-      "https://huggingface.co/cstr/UltraBERT-Embed-150M-CrispEmbed-GGUF/resolve/5105fa99950961e1bfd82b7fd300b9912c5be0dc/"
+      "https://huggingface.co/cstr/UltraBERT-Embed-150M-CrispEmbed-GGUF/resolve/"
+      "5105fa99950961e1bfd82b7fd300b9912c5be0dc/"
       "ultrabert-embed-150m-q4_k-last-four-ffn.gguf",
       "UltraBERT-Embed-150M EXPERIMENTAL Q4_K (last-four FFN; min cos 0.9779, SciFact nDCG@10 -0.0018; do not mix with "
       "F32 index; gated CRISPEMBED_ULTRABERT=1 CRISPEMBED_ULTRABERT_QUANT=1 CRISPEMBED_ULTRABERT_UNICODE_PRETOKEN=1 "
@@ -1691,7 +1692,8 @@ static const ModelEntry k_registry[] = {
     { "josev2b-systemone-q4k-mix-experimental", "josev2b-systemone-q4_k-down8.gguf",
       "https://huggingface.co/cstr/Josev-2B-SystemOne-GGUF/resolve/7bc8a7aeb6c6d862fc3e0cf55bee49afd79dccc2/"
       "josev2b-systemone-q4_k-down8.gguf",
-      "Josev-2B SystemOne EXPERIMENTAL q4_k mix josev_q4k_down8_v1 (typed JSON not exact; gated incl. CRISPEMBED_JOSEV_QUANT)",
+      "Josev-2B SystemOne EXPERIMENTAL q4_k mix josev_q4k_down8_v1 (typed JSON not exact; gated incl. "
+      "CRISPEMBED_JOSEV_QUANT)",
       "3.10 GB", "apache-2.0", "https://huggingface.co/cstr/Josev-2B-SystemOne-GGUF" },
     { "minicpm-ocr-q4_k-mix-experimental", "minicpm-ocr-1.0-q4_k-mix.gguf",
       "https://huggingface.co/cstr/MiniCPM-OCR-1.0-GGUF/resolve/"
@@ -1703,14 +1705,14 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/"
       "7f5f82c43a38054d8f7929029c14d35e3943ea5c/unlimited-ocr-2-q4_k-mix.gguf",
       "Unlimited-OCR-2 (Baidu; EXPERIMENTAL mixed 4-bit policy unlimited_ocr2_q4k_shared8_v1, final-logit cos "
-      "0.9634 CPU / 0.9540 CUDA, box coordinates differ; gated CRISPEMBED_UNLIMITED_OCR2)", "2.3 GB", "mit",
-      "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF" },
+      "0.9634 CPU / 0.9540 CUDA, box coordinates differ; gated CRISPEMBED_UNLIMITED_OCR2)",
+      "2.3 GB", "mit", "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF" },
     { "got-ocr2-q4_k-experimental", "got-ocr2-q4_k.gguf",
       "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/f557899a7dc82b979d335406d64d9d44e54b8fbe/"
       "got-ocr2-q4_k.gguf",
       "GOT-OCR2 document OCR, Q4_K EXPERIMENTAL (diverges from the original at token 83/20 on 2 of 3 cases; "
-      "use got-ocr2-f16; research-only Tongyi Qianwen license)", "445 MB",
-      "tongyi-qianwen-research", "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
+      "use got-ocr2-f16; research-only Tongyi Qianwen license)",
+      "445 MB", "tongyi-qianwen-research", "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
     { "ovisocr2-f16", "ovisocr2-f16.gguf",
       "https://huggingface.co/cstr/OvisOCR2-GGUF/resolve/b7229e46f31bcf342d0999966bae8a03bf02bb07/ovisocr2-f16.gguf",
       "OvisOCR2 experimental CPU OCR (853M, f16, format2; gated, <=1024 patches)", "1.717 GB", "apache-2.0",
@@ -1808,8 +1810,8 @@ static const ModelEntry k_registry[] = {
     { "migan512-f16", "migan-512-places2-f16.gguf",
       "https://huggingface.co/cstr/MI-GAN-512-GGUF/resolve/e1481f21784f99ec9d53ee935b978264be36abbb/"
       "migan-512-places2-f16.gguf",
-      "MI-GAN 512 inpainting, Places2 (f16, recommended; MIT; gated CRISPEMBED_MIGAN + CRISPEMBED_MIGAN512)", "18 MB", "mit",
-      "https://huggingface.co/cstr/MI-GAN-512-GGUF" },
+      "MI-GAN 512 inpainting, Places2 (f16, recommended; MIT; gated CRISPEMBED_MIGAN + CRISPEMBED_MIGAN512)", "18 MB",
+      "mit", "https://huggingface.co/cstr/MI-GAN-512-GGUF" },
     { "migan512-q8_0", "migan-512-places2-q8_0.gguf",
       "https://huggingface.co/cstr/MI-GAN-512-GGUF/resolve/e1481f21784f99ec9d53ee935b978264be36abbb/"
       "migan-512-places2-q8_0.gguf",
@@ -1898,8 +1900,9 @@ static const ModelEntry k_registry[] = {
     { "got-ocr2", "got-ocr2-f16-r2.gguf",
       "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/c0f1aa7b5b52c15002e911d5d630e6d0dcb3ba8f/"
       "got-ocr2-f16-r2.gguf",
-      "GOT-OCR2 document OCR, F16 token-exact (SAM-ViT-B + Qwen1.5-0.5B, 0.7B, text/LaTeX/tables; research/evaluation only)", "1.44 GB",
-      "tongyi-qianwen-research", "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
+      "GOT-OCR2 document OCR, F16 token-exact (SAM-ViT-B + Qwen1.5-0.5B, 0.7B, text/LaTeX/tables; research/evaluation "
+      "only)",
+      "1.44 GB", "tongyi-qianwen-research", "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
     // F16: the first upload (got-ocr2-f16.gguf, Hub 5a0b0a1adc) has an 8 MiB block of zero bytes
     // inside l.embed_tokens.weight and decodes "colorcolor..." on every backend; it is kept on the
     // Hub for provenance and superseded by this verified reconversion (stage cos 1.000000 x19 vs
