@@ -31,10 +31,15 @@ to reject experimentalformat6 and no application model alias is added.
 records model-free resize/synthetic/gate controls and the actual observed-form
 component at sourceb59. All28 live upstream visual arrays match byte-for-byte,
 and29 legacy anchors remain exact. This is one-image component evidence;
-complete independently decoded comparison and broader reference checks remain
-required. Both gates remain off and the candidate remains unqualified. No
+The complete composed form now emits167tokens/EOS and reproduces every retained
+source-feature decode row. Character edits against the frozen BF16 output
+reference fall259→175/656 and word edits47→45/90, versus actual upstream189/46.
+This meets the observed form floor; broader reference checks remain required. Both gates remain off and the candidate remains unqualified. No
 runtime release or quality promotion follows from this component result.
 
 Reference tools and test executables are excluded from default builds and
 production artifacts. The adapter map-gate setup failure is preserved separately;
 its corrected metadata-only admission now precedes all weight transfer.
+
+The [runtime pin amendment](lighton4b-source-vision-runtime-amendment-20261107.json)
+records the tested driver transition while preserving all historical protocols.
