@@ -1,0 +1,35 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+Collecting numpy==2.3.5
+  Downloading numpy-2.3.5-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+Collecting pillow==11.3.0
+  Downloading pillow-11.3.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (9.0 kB)
+Collecting PyYAML==6.0.3
+  Downloading pyyaml-6.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+Collecting tqdm==4.67.1
+  Downloading tqdm-4.67.1-py3-none-any.whl.metadata (57 kB)
+Collecting requests==2.32.5
+  Downloading requests-2.32.5-py3-none-any.whl.metadata (4.9 kB)
+Collecting charset-normalizer==3.5.2
+  Downloading charset_normalizer-3.5.2-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (46 kB)
+Collecting idna==3.20
+  Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Collecting urllib3==2.8.0
+  Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+Collecting certifi==2026.10.23
+  Downloading certifi-2026.10.23-py3-none-any.whl.metadata (2.5 kB)
+Downloading numpy-2.3.5-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.6 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.6/16.6 MB 212.2 MB/s  0:00:00
+Downloading pillow-11.3.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (6.6 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.6/6.6 MB 365.7 MB/s  0:00:00
+Downloading pyyaml-6.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (801 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 801.6/801.6 kB 601.8 MB/s  0:00:00
+Downloading tqdm-4.67.1-py3-none-any.whl (78 kB)
+Downloading requests-2.32.5-py3-none-any.whl (64 kB)
+Downloading charset_normalizer-3.5.2-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (254 kB)
+Downloading idna-3.20-py3-none-any.whl (69 kB)
+Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+Downloading certifi-2026.10.23-py3-none-any.whl (135 kB)
+Installing collected packages: urllib3, tqdm, PyYAML, pillow, numpy, idna, charset-normalizer, certifi, requests
+
+Successfully installed PyYAML-6.0.3 certifi-2026.10.23 charset-normalizer-3.5.2 idna-3.20 numpy-2.3.5 pillow-11.3.0 requests-2.32.5 tqdm-4.67.1 urllib3-2.8.0

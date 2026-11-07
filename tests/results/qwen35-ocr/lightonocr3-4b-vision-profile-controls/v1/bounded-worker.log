@@ -1,0 +1,37 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+phase source
+phase ggml-init
+phase native-configure
+phase build-test-lighton4b-pillow-resize
+phase run-test-lighton4b-pillow-resize
+phase build-test-lighton4b-physical-f16-vision
+phase run-test-lighton4b-physical-f16-vision
+phase build-lighton4b-vision-profile-probe
+phase build-test-lighton4b-pillow-resize-main
+phase run-test-lighton4b-pillow-resize-main
+phase build-test-lighton4b-physical-f16-vision-main-stub
+phase run-test-lighton4b-physical-f16-vision-main-stub
+phase up-init
+phase up-remote
+phase up-fetch
+phase up-checkout
+phase up-configure
+phase up-build
+phase resize-0-native
+phase resize-0-source
+phase resize-1-native
+phase resize-1-source
+phase resize-2-native
+phase resize-2-source
+phase resize-3-native
+phase resize-3-source
+phase resize-4-native
+phase resize-4-source
+phase resize-5-native
+phase resize-5-source
+phase resize-6-native
+phase resize-6-source
+phase resize-7-native
+phase resize-7-source
+phase actual-preprocess

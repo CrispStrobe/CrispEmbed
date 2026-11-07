@@ -38,3 +38,41 @@ Actual resized RGB differs in341 of430,080 channels, maximum2 uint8 levels. On i
 | Merged features | .0112370 | 1.68147 | 5.43132 |
 
 These are the same observed form and authenticated parameters, with different computation semantics: native Torch/BF16 vision versus upstream F16 matrices/F32 states and upstream resize. The live-stage evidence justifies separately gated corrections and source-fed checks; it does not show decoded improvement or held-out generalization. No text model or original BF16 forward ran in this projector-only worker. Experimental defaults remain unchanged and the composed candidate remains unqualified.
+
+## Separately gated implementation: model-free controls pass
+
+The source-compatible draft at `0eca8d13f` adds two default-off paths: Pillow22
+resize/source normalization, and F16-matrix/F32-state vision under verified
+physical ownership. Existing Torch/BF16 arithmetic and defaults remain. The
+vision path explicitly constructs F16 im2col and paired SGEMM, avoiding the
+preserved fork's F32 convolution promotion. It uses source precision for every
+parameter and F32 states, residuals and GGML operators. The Linux fixed-AVX2
+private ABI/four-thread profile is closed; the main-library implementation stays
+an unsupported stub. No vendor trait is changed.
+
+The model-free worker completed690.72seconds, [raw receipt](../tests/results/qwen35-ocr/lightonocr3-4b-vision-profile-controls/v1/vision-controls.json)
+SHA256 `31e6d6e54ec5a26c464e0e0f7a151e2408f04c4ec517b59648997a76a3f5ee09`.
+[Independent review](../tests/results/qwen35-ocr/lightonocr3-4b-vision-profile-controls/v1/independent-review.json)
+rehashed all58 owned output files. Eight predeclared synthetic resize shapes
+match the actual pinned upstream22-bit implementation byte-for-byte. The actual
+form's430,080 resized RGB channels and860,160 packed F32 values also match live
+V3 source bytes exactly. These directly close the previously observed341-channel
+resize and normalization discrepancy.
+
+The supported unit executes the complete24-block vision graph on a minimum2×2
+synthetic grid with shared64MiB aligned zero matrices and unit norm scales:
+37 checks verify execution, shapes, finite zeros and gate clearing. Main-library
+unsupported guards pass7 checks; Pillow/gate and main-link units pass17 each.
+These are synthetic component controls, **not actual-weight vision-stage or
+decoded-quality proof**. No checkpoint was acquired and no original BF16/text
+forward ran. Timing includes native/source builds and is not a runtime speed
+comparison. The initial title/slug400 submission rejection is retained separately;
+it created no accepted worker.
+
+Next is one bounded projector-only actual-weight comparison: authenticate all297
+tensors of the1.334GB protected vision suffix, reproduce retained native legacy
+stages first, then compare actual source stages and meaningful magnitudes. This
+requires the passing controls receipt, source-declared precision guard and exact
+RGB/packed-pixel admission before interpretation. Full composed decode follows
+only if component evidence supports it. The candidate remains unqualified;
+no release/default change or held-out claim is made.
