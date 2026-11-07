@@ -74,7 +74,10 @@ def main():
         subprocess.run(['cmake', '--build', str(build), '--target', 'crispembed-cli', '--parallel', '2'], check=True)
         cli = build / 'crispembed'
         def args(model):
-            return [cli, '-m', model, '--ocr', image, '--ocr-max-tokens', '32', '--json', '-t', '2']
+            result = [cli, '-m', model, '--ocr', image, '--ocr-max-tokens', '32', '--json', '-t', '2']
+            if key == 'got':
+                result.extend(['--accept-license', 'tongyi-qianwen-research'])
+            return result
         online = decoded(run(args(alias), env, 'online'))
         matches = list(cache.rglob(filename))
         assert len(matches) == 1 and sha(matches[0]) == expected, 'immutable model SHA mismatch'
