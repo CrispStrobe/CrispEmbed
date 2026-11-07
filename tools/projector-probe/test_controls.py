@@ -13,6 +13,12 @@ class Controls(unittest.TestCase):
   for key,value in [('native_offset',0),('native_sha256','0'*64)]:
    c=copy.deepcopy(cfg);c['tensors'][0][key]=value
    with self.assertRaises(ValueError):m.admit(c)
+ def test_source_provenance_mutations_rejected(self):
+  cfg=json.loads((ROOT/'docs/lighton4b-projector-canonical-v1.json').read_text())
+  for key in m.PINS:
+   changed=copy.deepcopy(cfg);changed[key]=1 if isinstance(cfg[key],int) else 'mutated'
+   with self.subTest(key=key):
+    with self.assertRaises(ValueError):m.admit(changed)
  def test_temporal_order_and_precision(self):
   import numpy as np
   original=np.arange(2*3*2*2*2,dtype='<f4').reshape(2,3,2,2,2)

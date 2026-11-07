@@ -14,7 +14,10 @@ def sha(path):
 
 ROWS_SHA = 'd3dc056b29d3b2b57b50297c40928d69a3b4a215cbfde434d5db2a87cc2cca3c'
 
+PINS = {'upstream_commit': '6c01da6278ab6c69ed67d9124806b50d2b299ba7', 'publisher_revision': '8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01', 'native_base_url': 'https://huggingface.co/cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2/resolve/a7ec2e54103165a96b8bb6dc3478a2887edd7459/lightonocr3-4b-q4_k-vision-f32.gguf', 'projector_url': 'https://huggingface.co/richardyoung/LightOnOCR-3-4B-GGUF/resolve/8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01/mmproj-LightOnOCR-3-4B-F16.gguf', 'native_base_bytes': 4030957952, 'form_receipt_sha256': '1458d07e6098b4b1b8fa078c18fe0b636f832a0d1219f789b035e1a033ef4ba0', 'native_pack_receipt_sha256': '920b4d5db276414bdd743fcc80a7ed1033ed1c0ca3b76859ef922aa667de9dee', 'projector_file': 'mmproj-LightOnOCR-3-4B-F16.gguf'}
+
 def admit(cfg):
+    require({key:cfg.get(key) for key in PINS}==PINS, 'closed source/provenance/receipt pins')
     require(hashlib.sha256(json.dumps(cfg['tensors'],sort_keys=True,separators=(',',':')).encode()).hexdigest()==ROWS_SHA, 'frozen tensor mapping/offset/hash manifest')
     require(cfg['schema']=='lighton4b-projector-canonical/v1' and len(cfg['tensors'])==297, 'fixed projector domain')
     require(cfg['native_vision_range']==[2696900992,4030957951] and
