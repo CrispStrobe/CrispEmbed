@@ -101,6 +101,8 @@ def main():
    summary=json.loads((dest/'native-summary.json').read_text());generated=list(map(int,(dest/'generated.ids').read_text().split()));text=(dest/'generated.txt').read_bytes().decode('utf-8');require(generated and len(generated)<=cap and summary['eos']==(generated[-1]in[248044,248046])and(summary['eos']or len(generated)==cap),'actual independent greedy/EOS/cap closure')
    require((dest/'prompt.ids').read_bytes()==(folder/'off/prompt.ids').read_bytes()and sha(dest/'vision.merged.f32')==art['observer-on/source.vision.0.f32']['sha256']and sha(dest/'prefill.input.f32')==art['off/prefill.input.f32']['sha256']and sha(dest/'prefill.positions.f32')==art['off/prefill.positions.f32']['sha256'],'same actual prompt/features/positions')
    if arm=='baseline-prefix':
+    require(generated==gold['cases']['simple_form']['arms']['on']['ids'],'unchanged full baseline two-token IDs')
+    for j in range(len(generated)):require(sha(dest/f'greedy.{j}.logits.f32')==art[f'on/greedy.{j}.logits.f32']['sha256'],'unchanged baseline raw greedy row')
     for rel in STAGES:require(sha(dest/rel)==art['on/'+rel]['sha256'],'unchanged gate-OFF golden stage '+rel)
    teacher_count=1 if arm=='baseline-prefix'else 177;require(summary['teacher_positions']==teacher_count,'actual full teacher scope')
    for j in range(teacher_count):
