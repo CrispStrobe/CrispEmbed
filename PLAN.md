@@ -2062,3 +2062,14 @@ actual embedding/prefill/position byte checks. One sequential Kaggle CPU worker
 is prepared, not yet dispatched; original BF16 captures are reused, never rerun.
 Full text/EOG/cap evidence and first-score error remain acceptance gates; no
 same-weight runtime parity, human-gold OCR, general quality or release claim.
+
+### Bounded same-physical primitive attribution
+
+Physical source-feature form firstscore differs by RMS0.1023485/max0.5765 despite
+exact embedding, feature splice and positions. Prepare a standalone diagnostic
+against pinned native/upstream ggml: direct-gamma RMS, same-input QKV/Z/a/b with
+quantized and dequantized-F32 weights, then separately composed upstream-norm
+inputs. Compare native actual first4 prefix and16-token probe independently;
+upstream image batching differs. Await actual retained capture hashes before any
+Kaggle primitive execution. No active-job change, reference graph callback,
+full F32 model, decode, tolerance waiver or release promotion.
