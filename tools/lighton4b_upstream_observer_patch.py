@@ -16,11 +16,13 @@ def patch(root):
   p=root/name;actual=hashlib.sha256(p.read_bytes()).hexdigest()
   if actual!=expected:raise ValueError('pinned upstream observer source differs: '+name)
   result[name]={'original_sha256':actual}
- helper=root/'tools/mtmd/mtmd-helper.cpp';s=helper.read_text();needle='        float * embd = mtmd_get_output_embd(ctx);';assert s.count(needle)==1
+ helper=root/'tools/mtmd/mtmd-helper.cpp';s=helper.read_text();needle='    int n_mmproj_embd = llama_model_n_embd_inp(model);';assert s.count(needle)==1
  insert=r'''
-        // Test-only observer, after encoding and before consuming the same pointer.
+        // Test-only observer at the shared server/CLI decode boundary.
+        // Encoding has finished; consume and capture the same unchanged pointer.
         if (const char * dir = std::getenv("CRISPEMBED_TEST_UPSTREAM_OBSERVER_DIR")) {
             if (chunk_type != MTMD_INPUT_CHUNK_TYPE_IMAGE) throw std::runtime_error("image-only source probe");
+            const float * embd = encoded_embd;
             const auto tokens = mtmd_input_chunk_get_n_tokens(chunk);
             const auto dim = llama_model_n_embd_inp(llama_get_model(lctx));
             if (tokens < 1 || tokens > 256 || dim != 2560 || !embd) throw std::runtime_error("bounded source feature geometry");

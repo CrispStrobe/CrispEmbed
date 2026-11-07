@@ -106,5 +106,7 @@
   "execution_order": "Authenticate and capture all three source observer controls first, then full same-feature native form/table/Arabic. Composed original vision deferred.",
   "budget_basis": "Prior actual native throughput approximately225 decode rows/45min; allow90min per native case,6h outer including build/download/import.",
   "failure_receipt": "Every spawned command records elapsed time, observed RSS peak, final return code and failure stage/type in finally, including timeout, byte-check callback failure, signal, nonzero exit and spawn failure. Partial raw output remains retained.",
-  "frozen_source_feature_scope_guard": true
+  "frozen_source_feature_scope_guard": true,
+  "upstream_feature_capture_boundary": "mtmd_helper_decode_image_chunk(encoded_embd), shared by server batched-media and CLI paths, after encoding/before consuming identical pointer",
+  "initial_routing_setup_source": "a6644247c48cb25e1b7e4b8da9e8ff91644eaca7"
 }

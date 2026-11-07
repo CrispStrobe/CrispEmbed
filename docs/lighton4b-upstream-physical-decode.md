@@ -65,3 +65,12 @@ success, nonzero exit, timeout, callback mismatch, signal-like interruption and
 missing executable; all passed, with children stopped and receipts preserved.
 An explicit protocol guard rejects enabling the deferred composed arm before
 its source-feature-specific checks have been separately revised.
+
+The first submitted source `a6644247c` patched the CLI/single-chunk evaluator's
+feature getter. Further primary-source tracing showed that the pinned server
+uses batched media encoding and calls `mtmd_helper_decode_image_chunk` directly,
+bypassing that evaluator. The correction moves capture to this shared decode
+boundary, after encoding and before consuming the same `encoded_embd` pointer.
+The pinned source hashes, exact OFF/ON prefix controls and all production blobs
+remain unchanged. The initial submission is retained as a setup negative; a
+missing source feature fails closed before native full generation.
