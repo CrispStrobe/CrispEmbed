@@ -2180,3 +2180,17 @@ upstream forward, composition, held-out qualification or promotion.
 ### Model-free physical vision controls passed; component stage next (2026-11-07)
 
 Pinned source0eca worker passed in690.72s, receipt31e6d6e5. Independently verified58 owned output hashes, all8 fixed synthetic resize pairs versus actual pinned upstream22-bit resizer, and actual form RGB/normalized packed patches exactly against liveV3 captures. Supported synthetic2×2/24block vision graph37checks, main unsupported7, Pillow17+main17 pass; no checkpoint weights acquired. Initial submission title/id400 preserved separately, no worker ran from it. Freeze actual source/control receipt in next projector-only worker: complete1.334GB protected vision suffix/all297 tensor SHA, no text weights/fullF32model, exact retained legacy stages before source-F16/F32-state comparison. Actual-weight graph and decoded quality are still unqualified; no default/release promotion.
+
+### Actual-stage-admitted composed form vision follow-up
+
+Tools-only `lighton4b_composed_form_vision.py` freezes component receipt
+`039b024f`/source`b59e5d3a9`, rehashes every owned component artifact and all28
+actual source stages before model acquisition. The same physical843e weights,
+RGB/prompt/positions and decoder/F16-attention gates are fixed; Q4 repack and
+BF16 head remain0. Old composed194EOS must reproduce all194raw rows,38text
+stages and29vision/processor anchors before changing ONLY Pillow/F16vision
+gates. Fixed mode runs full independent greedy to EOS/cap512, records original
+177-reference/upstream rawmetrics and checks all167 retained source-feature
+rows/stages without discarding a completed negative. One teacher row, no new
+reference forward, no human-GT/heldout/general qualification or promotion.
+Protocol and controls require independent review before one bounded hosted run.
