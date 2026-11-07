@@ -410,6 +410,9 @@ list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lfm2_vl_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lightonocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/lighton4b_vision_owner.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
+# Main native/WASM shared decoder resolves the helper to its closed stub. The
+# supported private ABI definition remains PRIVATE to crispembed-qwen35-delta.
+list(APPEND CRISPEMBED_SOURCES src/lighton4b_physical_f16_attention.cpp)
 # Experimental MiniCPM-OCR-1.0 (default-off: CRISPEMBED_MINICPM_OCR); reuses the qwen35 decoder.
 list(APPEND CRISPEMBED_SOURCES src/minicpm_ocr_vision.cpp src/minicpm_ocr.cpp src/qwen35_graph_decoder.cpp
      src/qwen35_graph_kv_decoder.cpp)
@@ -1824,3 +1827,6 @@ endforeach()
 target_compile_definitions(test-lighton4b-physical-f16-wasm-guard PRIVATE __EMSCRIPTEN__=1 CRISPEMBED_LIGHTON4B_F16_SGEMM_ABI=1)
 add_executable(lighton4b-physical-f16-attention-probe EXCLUDE_FROM_ALL tests/lighton4b_physical_f16_attention_probe.cpp)
 target_link_libraries(lighton4b-physical-f16-attention-probe PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(test-lighton4b-main-f16-link EXCLUDE_FROM_ALL tests/test_lighton4b_main_f16_link.cpp)
+target_link_libraries(test-lighton4b-main-f16-link PRIVATE crispembed crispembed-core)
