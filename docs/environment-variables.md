@@ -221,7 +221,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-461 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+463 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -634,7 +634,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h` | else |
+| `CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_upstream_physical_semantics.h` | else |
 | `CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_native_context.h`, `src/qwen35_linear.cpp` |  |
 | `CRISPEMBED_LIGHTON4B_QUANT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_model_owner.h`, `src/lighton4b_native_context.h` +2 | Converter stores all norms/biases in F32 in both F16 recipes. Frozen Q8/Q4 candidates protect every vision tensor as F32. |
 
@@ -642,7 +642,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_BF16_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_linear.h`, `src/qwen35_delta.cpp` |  |
+| `CRISPEMBED_LIGHTON4B_BF16_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_linear.h`, `src/lighton4b_upstream_physical_semantics.h`, `src/qwen35_delta.cpp` |  |
 
 ### lighton4b_decoder_compose
 
@@ -671,7 +671,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_HEAD_BF16` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_head_bf16.h` |  |
+| `CRISPEMBED_LIGHTON4B_HEAD_BF16` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_head_bf16.h`, `src/lighton4b_upstream_physical_semantics.h` |  |
 
 ### lighton4b_image_compose
 
@@ -684,6 +684,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_IMATRIX_Q4KM_Q6HEAD` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h`, `src/lighton4b_q6_policy.h` |  |
 | `CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
 | `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q8` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_native_context.h` |  |
 
@@ -710,6 +711,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_FRONTEND` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_tokenizer.cpp` |  |
+
+### lighton4b_upstream_physical_semantics
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_upstream_physical_semantics.h` |  |
 
 ### lighton4b_vision_bf16
 

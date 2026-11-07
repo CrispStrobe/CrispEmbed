@@ -14,6 +14,7 @@
 
 #include "../src/core/imatrix_alias.h"
 #include "../src/core/lighton4b_imatrix.h"
+#include "../src/core/lighton4b_imatrix_q4km.h"
 #include "../src/core/gguf_file_type.h"
 #include "../src/core/json.h"
 #include "../src/core/sha256.h"
@@ -53,6 +54,7 @@ static std::map<std::string, std::string> g_metadata_strings;
 static bool g_decoder_f16 = false;
 static bool g_decoder_attn_q8 = false;
 static bool g_ppocrv6_q8_head = false;
+static bool g_lighton_q4km_style = false;
 
 struct TensorTypeOverride {
     std::string pattern;
@@ -654,6 +656,11 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         fprintf(stderr, "adapted imatrix target tensor domain/coverage rejected\n");
         gguf_free(ctx_in); ggml_free(ctx_in_ggml); return false;
     }
+    if (g_lighton_q4km_style && (!g_lighton_imatrix || qtype != GGML_TYPE_Q4_K ||
+        !lighton4b_imatrix_q4km::manifest_valid() || core_sha256::file(fname_inp) != lighton4b_imatrix_q4km::source_sha)) {
+        fprintf(stderr, "closed LightOn4B Q4KM-style original source/profile rejected\n");
+        gguf_free(ctx_in); ggml_free(ctx_in_ggml); return false;
+    }
 
     // Build output GGUF with same metadata
     struct gguf_context * ctx_out = gguf_init_empty();
@@ -662,6 +669,15 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         gguf_set_val_str(ctx_out, "crispembed.quantization.imatrix_source_sha256", lighton4b_imatrix::source_sha);
         gguf_set_val_str(ctx_out, "crispembed.quantization.imatrix_profile", lighton4b_imatrix::profile);
         gguf_set_val_u32(ctx_out, "crispembed.quantization.imatrix_expected_entries", 248);
+    }
+    if (g_lighton_q4km_style) {
+        gguf_set_val_str(ctx_out, "qwen35_ocr.mixed_quant_recipe", lighton4b_imatrix_q4km::recipe);
+        gguf_set_val_str(ctx_out, "qwen35_ocr.q6_names_sha256", lighton4b_imatrix_q4km::names_sha);
+        gguf_set_val_str(ctx_out, "qwen35_ocr.quant_source_f16_sha256", lighton4b_imatrix_q4km::source_sha);
+        gguf_set_val_str(ctx_out, "qwen35_ocr.quant_coordinate_profile", "hf-grouped-v1");
+        gguf_set_val_u32(ctx_out, "qwen35_ocr.q6_tensor_count", 33);
+        // Reserve before writing offsets, then fill the actual value after quantization.
+        gguf_set_val_u32(ctx_out, "crispembed.quantization.imatrix_applied_entries", 0);
     }
 
     gguf_set_val_u32(ctx_out, "general.quantization_version", GGML_QNT_VERSION);
@@ -673,7 +689,10 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         ggml_free(ctx_in_ggml);
         return false;
     }
-    const auto file_type = standard_header ? core_gguf_file_type::standard(ftype) : uint32_t(ftype);
+    // This closed216-Q4/33-Q6 schedule uses the standard mixed type bucket.
+    // Its custom recipe/coordinate tag remains mandatory; never an upstream-byte alias.
+    const auto file_type = g_lighton_q4km_style ? uint32_t(15) :
+                           standard_header ? core_gguf_file_type::standard(ftype) : uint32_t(ftype);
     if (file_type == core_gguf_file_type::unknown) {
         fprintf(stderr, "no standard GGUF file type for this method\n");
         gguf_free(ctx_out);
@@ -1550,6 +1569,10 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                 if (tensor_name_matches(rule.pattern, sname)) qtype_used = rule.type;
             }
         }
+        if (g_lighton_q4km_style) {
+            qtype_used = lighton4b_imatrix_q4km::type(sname);
+            quantize = qtype_used != GGML_TYPE_F32;
+        }
         int64_t qk = ggml_blck_size(qtype_used);
 
         // Fallback chain for K-quants: if row width isn't 256-aligned,
@@ -1765,6 +1788,19 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         fprintf(stderr, "adapted imatrix applied coverage differs from248\n"); fclose(fin); fclose(fout);
         gguf_free(ctx_in); gguf_free(ctx_out); ggml_free(ctx_in_ggml); return false;
     }
+    if (g_lighton_q4km_style) {
+        int counts[3] = {0, 0, 0}; bool exact = n_tensors == 723;
+        for (int i=0;i<n_tensors;++i) {
+            const auto actual=gguf_get_tensor_type(ctx_out,i);
+            exact = exact && actual == lighton4b_imatrix_q4km::type(gguf_get_tensor_name(ctx_out,i));
+            if(actual==GGML_TYPE_F32)++counts[0]; else if(actual==GGML_TYPE_Q4_K)++counts[1]; else if(actual==GGML_TYPE_Q6_K)++counts[2];
+        }
+        if (!exact || counts[0]!=474 || counts[1]!=216 || counts[2]!=33) {
+            fprintf(stderr,"closed LightOn4B Q4KM-style named type schedule rejected\n");fclose(fin);fclose(fout);
+            gguf_free(ctx_in);gguf_free(ctx_out);ggml_free(ctx_in_ggml);return false;
+        }
+        gguf_set_val_u32(ctx_out,"crispembed.quantization.imatrix_applied_entries",uint32_t(n_imatrix));
+    }
     // Rewrite metadata header now that tensor types/offsets are final
     rewind(fout);
     gguf_get_meta_data(ctx_out, meta_data.data());
@@ -1813,6 +1849,8 @@ int main(int argc, char ** argv) {
             g_decoder_attn_q8 = true;
         else if (a == "--ppocrv6-q8-head")
             g_ppocrv6_q8_head = true;
+        else if (a == "--lighton4b-imatrix-q4km-style")
+            g_lighton_q4km_style = true;
         else if (a == "--metadata-string") {
             if (i + 1 >= argc) {
                 fprintf(stderr, "--metadata-string requires KEY=VALUE\n");
@@ -1872,7 +1910,8 @@ int main(int argc, char ** argv) {
                         "                        also CRISPEMBED_QUANTIZE_STANDARD_FTYPE=1); tensor bytes unchanged\n");
         fprintf(stderr, "  --legacy-file-type-header  explicit internal-enum header (the default)\n");
         fprintf(stderr,
-                "  --metadata-string KEY=VALUE  replace an existing string profile key; tensor policy unchanged\n");
+                "  --metadata-string KEY=VALUE  replace an existing string profile key; tensor policy unchanged\n"
+                "  --lighton4b-imatrix-q4km-style  closed native-HF216Q4/33Q6 schedule; original source/adapted stats required\n");
         fprintf(stderr, "  --imatrix <f> use a CrispEmbed importance matrix (from a calibration run\n");
         fprintf(stderr, "                with CRISPEMBED_IMATRIX_OUT set) to improve k-quant/IQ accuracy\n");
         fprintf(stderr, "  --tensor-type GLOB=TYPE  override eligible matrix precision\n"
@@ -1978,6 +2017,13 @@ int main(int argc, char ** argv) {
     if (!imatrix_path.empty()) {
         if (!load_imatrix(imatrix_path)) { fprintf(stderr, "requested imatrix contains no usable vectors\n"); return 1; }
         init_qkv_imatrix_mode();
+    }
+    if (g_lighton_q4km_style) {
+        if (!g_lighton_imatrix || it->second != GGML_FTYPE_MOSTLY_Q4_K || g_legacy_file_type_header ||
+            g_decoder_f16 || g_decoder_attn_q8 || g_ppocrv6_q8_head || !g_tensor_types.empty() || !g_metadata_strings.empty()) {
+            fprintf(stderr,"closed LightOn4B Q4KM-style requires adapted imatrix and unmodified q4_k policy\n");return 1;
+        }
+        g_standard_file_type_header = true;
     }
 
     // Adapted-profile output is published only after exact248 applied coverage.

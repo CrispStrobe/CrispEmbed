@@ -2024,3 +2024,17 @@ candidate must retain out blocks and reorder activations; whole-row QKV/Z/a/b
 copies remain possible. No image-specific fit, requantization or full F32 model.
 One authorized Kaggle CPU metadata/operator job only, RAM/disk guards before
 transfers, no inference; preserve all negatives before runtime import design.
+### No shipping currentQ4; Q6 tied-head capability controls
+
+The production audit finds no LightOn4B CLI model alias/payload, no format5
+public loader admission, and no experimental probes in explicit release binary
+lists. CurrentQ4 remains unqualified/capped and must not ship. The output-quality
+target is the actual llama.cpp Q4_K_M baseline, not a naming/type-count claim.
+[Production fence](docs/lighton4b-production-fence.md) records exact boundaries.
+
+A separate checkpoint-free control adds independent Q6_K gathered embedding and
+aliased head tests with odd tiles/last row, BF16/quant/explicit-off gates and
+storage immutability; no dot arithmetic changes are needed. The decoder owner
+lane supplies separately gated Q6-head recipe admission. All execution is a
+bounded Kaggle CPU control, combined with that lane where possible; no GitHub
+model/CI run, full model, quantization, public alias or release qualification.

@@ -1766,3 +1766,10 @@ target_link_libraries(test-lighton4b-gdn-out-recipe PRIVATE crispembed-qwen35-de
 add_executable(lighton4b-upstream-dequant-audit EXCLUDE_FROM_ALL tools/lighton4b_upstream_dequant_audit.cpp)
 target_include_directories(lighton4b-upstream-dequant-audit PRIVATE src)
 target_link_libraries(lighton4b-upstream-dequant-audit PRIVATE ggml)
+# Experimental native-HF weighted Q4KM-style schedule; metadata/shape controls only.
+add_executable(test-lighton4b-imatrix-q4km-recipe tests/test_lighton4b_imatrix_q4km_recipe.cpp)
+target_link_libraries(test-lighton4b-imatrix-q4km-recipe PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-lighton4b-q6-tied-head tests/test_lighton4b_q6_tied_head.cpp)
+target_link_libraries(test-lighton4b-q6-tied-head PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-lighton4b-release-fence tests/test_lighton4b_release_fence.cpp)
+target_link_libraries(test-lighton4b-release-fence PRIVATE crispembed-qwen35-delta crispembed-core)
