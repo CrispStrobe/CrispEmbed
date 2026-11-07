@@ -162,6 +162,14 @@ for final verdicts, live jobs and remaining tasks.
   that the API-reported size of paged renders is wrong (served at 1920px) for 36 pages;
   sizes are now measured. Layout scorer (block IoU/text matching, type accuracy, Kendall
   tau-b, table cell F1) with unit tests. [Guide](docs/ocr-gold-corpus.md).
+## 7 November 2026 — GOT-OCR2 quantization search closed
+
+Rounds 1–3 (heavy-cpu runs 42375883471, 42382978017, 42392365607) and a 57-page gold-corpus run on
+Kaggle: the 4-bit decoder drift is weight precision, not vision quantization or CPU activation
+quantization. A full Q8_0 decoder is exact on the 3-case panel but only 17/55 token-exact on the gold
+corpus; Q8_0 and the mixed `q8_ffn_gu_q4k` are on par with F16 on gold CER (0.357 / 0.345 vs 0.363).
+Details: [docs/got-ocr2-q4-research.md](docs/got-ocr2-q4-research.md).
+
 ## 7 November 2026 — `got-ocr2` alias now resolves to F16-r2
 
 Owner decision: the default `got-ocr2` alias points to the token-exact F16-r2 at pinned Hub
