@@ -36,3 +36,11 @@ cases, with original negative results and limitations retained. No F32 original
 model is a prerequisite for the BF16 source comparison. Current capped or
 incorrect Q4 output remains a rejection; it is not replaced by a favorable
 component or prefix result.
+
+The public OCR dispatcher rejects raw `qwen35` and experimental LightOn4B
+format 5/6 metadata before backend selection and payload loading, even when
+prototype gates are enabled. Supported custom formats 1–4 and unrelated legacy
+architectures retain their existing dispatch. The physical format-6 prototype
+uses its separate experimental context; this fence does not admit it publicly.
+The model-free controls exercise the shared metadata predicate and direct public
+Qwen35 rejection, with a source check for its early dispatcher placement.
