@@ -2028,21 +2028,3 @@ storage immutability; no dot arithmetic changes are needed. The decoder owner
 lane supplies separately gated Q6-head recipe admission. All execution is a
 bounded Kaggle CPU control, combined with that lane where possible; no GitHub
 model/CI run, full model, quantization, public alias or release qualification.
-
-### Bounded LightOn4B streamed-head allocation reuse
-
-An isolated default-off `CRISPEMBED_LIGHTON4B_STREAM_GRAPH_REUSE` prototype
-reuses one full-tile F32 head graph/backend within a projection call. The final
-short tile and WASM use the original path. It retains quant storage and bounded
-single-tile memory, with no persistent converted model. The existing path creates
-about 970 head graphs/backends per token at 248320 vocabulary rows and a 256-row
-tile. This structural count is not a measured explanation of cross-host runtime.
-Quantized matrices still undergo full dequantization on each decode step, and
-the current converted-weight cache admits F32/F16 only.
-
-Before integration: one Kaggle model-free control must show bit-identical
-OFF/ON F32/F16/Q8/Q4 seam outputs and independent Q6 tied-head scalar results;
-then compare all 248320 real row-zero logits on one authenticated input and
-same-worker alternating timings. Preserve original source pins and qualification
-settings. Direct quantized dots quantize activations (Q8_0/Q8_K) and therefore do
-not preserve these F32-dot semantics. No default, alias or quality promotion.

@@ -86,26 +86,23 @@ static int run() {
             for (int id : ids)
                 expected.insert(expected.end(), values.begin() + id * width, values.begin() + (id + 1) * width);
             check(embed_cpu(embedding, ids, got) && same(got, expected));
-            for (const char * mode : { "0", "1" }) {
-                gate("CRISPEMBED_LIGHTON4B_STREAM_GRAPH_REUSE", mode);
-                for (int tile : { 17, 31, 256 }) {
-                    scores = { 42 };
-                    const bool ok = project_rows_cpu(head, hidden.data(), width, tokens, 2, tile, scores);
-                    if (!q6 || *q6 != '1') {
-                        check(!ok && scores.empty());
-                        continue;
-                    }
-                    check(ok && scores.size() == rows * tokens);
-                    // Dyadic inputs keep every partial sum exact in F32; no dot-order tolerance.
-                    expected.assign(rows * tokens, 0);
-                    for (int t = 0; t < tokens; ++t)
-                        for (int row = 0; row < rows; ++row) {
-                            float sum = 0;
-                            for (int k = 0; k < width; ++k) sum += values[row * width + k] * hidden[t * width + k];
-                            expected[t * rows + row] = sum;
-                        }
-                    check(same(scores, expected));
+            for (int tile : { 17, 31, 256 }) {
+                scores = { 42 };
+                const bool ok = project_rows_cpu(head, hidden.data(), width, tokens, 2, tile, scores);
+                if (!q6 || *q6 != '1') {
+                    check(!ok && scores.empty());
+                    continue;
                 }
+                check(ok && scores.size() == rows * tokens);
+                // Dyadic inputs keep every partial sum exact in F32; no dot-order tolerance.
+                expected.assign(rows * tokens, 0);
+                for (int t = 0; t < tokens; ++t)
+                    for (int row = 0; row < rows; ++row) {
+                        float sum = 0;
+                        for (int k = 0; k < width; ++k) sum += values[row * width + k] * hidden[t * width + k];
+                        expected[t * rows + row] = sum;
+                    }
+                check(same(scores, expected));
             }
         }
     }
