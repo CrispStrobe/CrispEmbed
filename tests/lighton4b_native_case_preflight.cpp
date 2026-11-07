@@ -21,6 +21,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     if (policy == lighton4b_quant_recipe::q4km_q6_q8head && !header->q6_profile_header()) return 3;
     if (policy == lighton4b_quant_recipe::imatrix_q4km_q6head && !header->imatrix_q4km_profile_header()) return 3;
     if (policy == lighton4b_quant_recipe::upstream_physical_q4km && !header->upstream_physical_profile_header()) return 3;
+    if (policy == lighton4b_quant_recipe::hf_tiled_out_q4km && !header->hf_tiled_out_profile_header()) return 3;
     if (policy == lighton4b_quant_recipe::gdn_out_q8 && !header->gdn_out_recipe_metadata_matches()) return 3;
     if (policy == lighton4b_quant_recipe::gdn_out_q6 && !header->gdn_out_q6_metadata_matches()) return 3;
     auto * meta = core_gguf::open_metadata(argv[1]);

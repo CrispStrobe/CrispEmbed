@@ -21,12 +21,12 @@ static int run(int argc,char ** argv) {
     for(auto * name:{"CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL","CRISPEMBED_LIGHTON4B_IMATRIX_Q4KM_Q6HEAD","CRISPEMBED_LIGHTON4B_BF16_LINEAR"})gate(name,"0");
     check(lighton4b_imatrix_q4km::manifest_valid());
     auto * ctx=ggml_init({426*ggml_tensor_overhead()+8192,nullptr,true});check(ctx!=nullptr);core_gguf::tensor_map tensors;
-    std::ifstream input(argv[1]);std::string name;int kind;int64_t ne[4];int q6=0,q4=0,f32=0;
-    while(input>>name>>kind>>ne[0]>>ne[1]>>ne[2]>>ne[3]){
+    std::ifstream schema_input(argv[1]);std::string name;int kind;int64_t ne[4];int q6=0,q4=0,f32=0;
+    while(schema_input>>name>>kind>>ne[0]>>ne[1]>>ne[2]>>ne[3]){
         auto * t=ggml_new_tensor(ctx,ggml_type(kind),4,ne);check(t&&!t->data&&tensors.emplace(name,t).second);
         check(t->type==lighton4b_imatrix_q4km::type(name));if(kind==14)++q6;else if(kind==12)++q4;else if(kind==0)++f32;
     }
-    check(input.eof()&&tensors.size()==426&&q6==33&&q4==216&&f32==177);
+    check(schema_input.eof()&&tensors.size()==426&&q6==33&&q4==216&&f32==177);
     lighton4b_text_owner owner;gate("CRISPEMBED_LIGHTON4B_Q6_K","0");check(!map_lighton4b_text(tensors,owner));gate("CRISPEMBED_LIGHTON4B_Q6_K","1");check(map_lighton4b_text(tensors,owner));check(owner.decoder.head==owner.decoder.embedding&&owner.decoder.head->type==GGML_TYPE_Q6_K);
     check(lighton4b_q4km_types_match(owner.decoder,GGML_TYPE_Q6_K));
     lighton4b_quant_recipe chosen;gate("CRISPEMBED_LIGHTON4B_HF_TILED_OUT","0");check(!lighton4b_select_recipe(owner.decoder,lighton4b_hf_tiled_out_recipe,chosen));gate("CRISPEMBED_LIGHTON4B_HF_TILED_OUT","1");check(lighton4b_select_recipe(owner.decoder,lighton4b_hf_tiled_out_recipe,chosen)&&chosen==lighton4b_quant_recipe::hf_tiled_out_q4km);
