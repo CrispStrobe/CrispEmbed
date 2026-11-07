@@ -152,6 +152,19 @@
             "bb896097173d937ec482592f5aa27311ed848347 Prototype physical-only retained quantized projection and ggml RMS [skip ci]"
           ],
           "reason": "Closed physical-only quant/RMS/layers/head ablation selector preserves full default opt-in; head observer failure remains atomic."
+        },
+        {
+          "from_sha256": "e69233a8e8f0abf5b36b90a2dc75868697f84c5f8d385a829f4b7eee39115951",
+          "to_sha256": "d167064d077b4b21c7f62949fd809e99ac1b6adae2f3530dcd32d5a635014c1f",
+          "to_blob": "dc1270cdb6551c159617ba0435ffc78e005a45a0",
+          "recorded_at_commit": "9b5dd25e0b33a29096c86b16d1da2d54dbed13af",
+          "recorded": "2026-11-07",
+          "changed_by": [
+            "9b5dd25e0b33a29096c86b16d1da2d54dbed13af feat: gate proven HF tiled GDN output profile [skip ci]",
+            "ae2a61472a268af1fc4e9f4bc2ee0d94d403f57e Integrate verified closed physical arithmetic ablation controls [skip ci]",
+            "d0eed902b6373537cdb0b19454ac87e981dd15f4 Integrate closed physical upstream import and gated native arithmetic [skip ci]"
+          ],
+          "reason": "Distinct default-off HF tiled-output owner changes only the proven24 recurrent output activation coordinates; old/physical projection paths are preserved, pending hosted controls and decoded qualification."
         }
       ]
     },
