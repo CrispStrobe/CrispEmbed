@@ -9,6 +9,7 @@
 #include <chrono>
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 using namespace qwen35_ocr;
 static int run(int argc, char ** argv) {
     if (argc != 10 && argc != 12) return 2; // optional test-only --upstream-vision feature.f32
@@ -90,7 +91,7 @@ static int run(int argc, char ** argv) {
         lighton4b_linear_block_outputs block;
         if (!lighton4b_linear_block_cpu(model.text.decoder.layers[0], prefill.hidden.data(), count, threads, nullptr, block) ||
             initial.hidden.size() != 32 || initial.hidden[0].size() < block.hidden.size() ||
-            !std::equal(block.hidden.begin(), block.hidden.end(), initial.hidden[0].begin())) return 19;
+            std::memcmp(block.hidden.data(), initial.hidden[0].data(), block.hidden.size() * sizeof(float)) != 0) return 19;
         emit("prefill.first_chunk.layer0.input_norm", block.input_norm);
         emit("prefill.first_chunk.layer0.attention", block.attention);
         emit("prefill.first_chunk.layer0.attention_residual", block.attention_residual);
