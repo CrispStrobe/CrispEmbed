@@ -1,0 +1,30 @@
+{
+  "schema": "lighton4b-q6-arabic-bootstrap/v1",
+  "source_sha": "991fa04b0278c58919e3dc9c064fceca40b6db1e",
+  "bootstrap_sha256": "0b758afb705f673438450b22b1b68bce26b3f8c651bff20f6e95dcf470cb61ca",
+  "status": "completed",
+  "gpu_requested": false,
+  "model_forward_executed": true,
+  "model_quality_qualified": false,
+  "phase": "q6-arabic",
+  "source_file_sha256": {
+    "tools/q6-arabic/worker.py": "ee7d425574a492083ca92f4fb608c47812c0e94dca2feacf1a4d2cad71a473a5",
+    "tools/q6-arabic/test_controls.py": "c3e8632e2b779f584051e2659f95bbb25c5ec5cf6b019e697245f0cff6ed8811",
+    "docs/lighton4b-q6-arabic-v1.json": "4c2f8a65b30fe4087adfe68eeb161ae8425570fb48fb5afaf86f3fb68d90d4c3",
+    "tools/kaggle/lighton4b_physical_f16_full_form.py": "fd417f272f522e63d103f091589952f43a14c36a8c7068edee33a19cc2202c86",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "tools/lighton4b_upstream_physical_pack.py": "0f86cd619b1b25c419bd643a549786cc35d0c546b0bcab382e2efb77e3b24910",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "docs/lighton4b-upstream-physical-decode-v1.json": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d",
+    "docs/lighton4b-composed-form-vision-v1.json": "bfc3fbb1d856c36525c7a11bddb68184d92114c5f1a051786fc7bf0988753d90",
+    "docs/lighton4b-physical-f16-full-form-v1.json": "da10739fba67295a43ad796c9a3c7b37dc89f9bfbcfcf821d9f2a25d7a753370",
+    "tests/lighton4b_native_document.cpp": "ac06aa6a25ae43e5ac2a2bf5dfe96b046608ccb0c7d5d9dd53a2f84c44b004fd",
+    "CMakeLists.txt": "0f972ed3ab6b828e946c02f9c3ceabeb265ec86cf7d44db031b75f3a534db88f",
+    "tests/test_lighton4b_physical_q6_tiled.cpp": "b4bd6705c5fe7ca6a23719889fae2200150af04504e648fbcfc83f16865737ce",
+    "tools/q6-tiled-full-ab/worker.py": "5b5249fddaf60f0fe98828f16b6ae9b057095621a77fd3f3a67f315a4e4a9359",
+    "docs/lighton4b-q6-tiled-full-ab-v1.json": "2696c6b1aee915a839043ead76ffbd4dec616c575f90b8b99008d8f72f511283"
+  },
+  "worker_status": "measured_q6_arabic",
+  "elapsed_seconds": 274.875702545
+}
