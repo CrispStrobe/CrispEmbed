@@ -80,6 +80,7 @@ def main():
     env.pop('CRISPEMBED_OFFLINE', None)
     for gate in GATES:
         env['CRISPEMBED_MOEDERN_' + gate] = '1'
+    base_env = env
     try:
         subprocess.run(['cmake', '-S', str(ROOT), '-B', str(build), '-DCMAKE_BUILD_TYPE=Release',
                         '-DGGML_NATIVE=OFF', '-DCRISPEMBED_NATIVE=OFF', '-DGGML_LLAMAFILE=ON'], check=True)
@@ -92,6 +93,10 @@ def main():
             report['models'][model] = {'variants': {}, 'comparisons': {}, 'rankings': {}}
             results, vectors = {}, {}
             for kind, (alias, filename, expected) in variants.items():
+                env = dict(base_env)
+                if kind == 'f32':
+                    env['CRISPEMBED_MOEDERN_Q4_K_PADDED'] = '0'
+                    env['CRISPEMBED_MOEDERN_Q4_K_MIXED'] = '0'
                 directory = OUT / model / kind
                 directory.mkdir(parents=True, exist_ok=True)
                 results[kind], vectors[kind] = {}, {}
