@@ -2237,3 +2237,8 @@ Protocol and controls require independent review before one bounded hosted run.
 ### Composed form verified; source-vision integration ready (2026-11-07)
 
 Full composed aec0/sourceb985 preservesold194EOS/all194rows/38text+29vision anchors, then fixed167EOS matchesall167retainedsource-feature rows/stages andactual28sourcevision arrays, with source_fed_vision=false. FrozenBF16-reference CER259→175/656, WER47→45/90; actualupstream189/46. This observed form meetsfloor, not heldout/general qualification. Bothgates remainoff. Integration unionscurrentmain17098/PR1559ca/testedb59 plusfourtestedformharnessfiles; producttree exactb59. Added explicit immutable historicaldriver amendment ratherthanquietrepinning. Runtime preparescomposedtable/Arabic; no release/default promotion.
+
+
+### Default-off physical GDN source-operator integration
+
+Integrate the exact reviewed/tested `cd50e9e691530525fb998edda8a449cc0725be91` helper, cache fingerprint, unit and bounded source-fed harness. The separate `CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS` gate retains scalar log1p softplus and matches pinned source postnorm/state/FIFO on allfour fixed operator inputs, including actual nonzero-state continuation; old native16 attention and20 gate/cache controls pass. [Immutable operator evidence and both initial negatives](https://github.com/CrispStrobe/CrispEmbed/blob/638aac0ed/docs/lighton4b-live-gdn-replay-results.md#hybrid-actual-input-component-pass) retain the6b1f receipt and N16 RAW output-projection residual. Quantized projections/global repack/default-off release fences remain unchanged. Same-feature table/form full decoded A/B is still required; this integration makes no quality or shipping claim.

@@ -1,4 +1,5 @@
 #include "lighton4b_upstream_physical_semantics.h"
+#include "lighton4b_physical_gdn_source_ops.h"
 #include "qwen35_delta.h"
 #include "core/env_gate.h"
 #include "ggml-backend.h"
@@ -102,6 +103,8 @@ bool linear_grouped_core_cpu(const linear_inputs & in, int key_heads, linear_out
         out = {};
         return false;
     }
+    if (lighton4b_physical_gdn_source_ops_mode(in.a_is_pretransformed))
+        return lighton4b_physical_gdn_source_ops_cpu(in, key_heads, out);
     if (!in.qkv || !in.z || !in.a || !in.b || !in.conv_weights || !in.a_log || !in.dt_bias || !in.norm_weights ||
         in.batch < 1 || in.batch > 4 || in.tokens < 1 || in.tokens > 4096 || in.width < 1 || in.width > 256 ||
         in.conv_kernel < 1 || in.conv_kernel > 16 || in.threads < 1 || in.threads > 256 ||
