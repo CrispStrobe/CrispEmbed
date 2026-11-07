@@ -5,7 +5,7 @@ s=importlib.util.spec_from_file_location('extended',ROOT/'tools/kaggle/lighton4b
 class Admission(unittest.TestCase):
  def test_closed_protocol(self):
   cfg=json.loads((ROOT/'docs/lighton4b-physical-f16-table512-v1.json').read_text());m.admit(cfg)
-  for k,v in [('case','simple_form'),('cap',256),('threads',2),('context',4096),('form_receipt_sha256','0'*64),('physical_receipt_sha256','0'*64),('calibration_receipt_sha256','0'*64),('total_timeout_seconds',0),('per_arm_timeout_seconds',1500),('arms',['native'])]:
+  for k,v in [('case','simple_form'),('cap',256),('threads',2),('context',4096),('form_receipt_sha256','0'*64),('physical_receipt_sha256','0'*64),('calibration_receipt_sha256','0'*64),('total_timeout_seconds',0),('per_arm_timeout_seconds',1500),('arms',['native']),('driver_source_sha256','0'*64)]:
    with self.subTest(key=k):
     c=copy.deepcopy(cfg);c[k]=v
     with self.assertRaises(RuntimeError):m.admit(c)

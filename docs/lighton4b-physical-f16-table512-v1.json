@@ -15,5 +15,7 @@
   "total_timeout_seconds": 3600,
   "per_arm_timeout_seconds": 1200,
   "quality_qualified": false,
-  "scope": "Extended completion diagnostic; preserve the original cap256 negative. Require full upstream observer OFF/ON neutrality, exact old source256 IDs/probabilities and feature/first-two-score anchors, plus the unchanged native binary/gates and exact old native256 IDs/first-score anchors. No held-out or composed-vision qualification."
+  "scope": "Extended completion diagnostic; preserve the original cap256 negative. Rebuild the unchanged production runtime/profile with only an explicit reference-driver cap512 opt-in. Require full source observer OFF/ON neutrality and old source256 IDs/probabilities/features/first-two-score anchors; require all old native256 raw score hashes/IDs and all38 native prefill stages exactly. No held-out or composed-vision qualification.",
+  "original_driver_source_sha256": "2739c5fd733c167f06afcb298e8befdadeeaa649b74a396284d24c93566bbd00",
+  "driver_source_sha256": "d987b199a402d0b69373c8f1eb10fb99857fd7d436d0ddf9a15f3717885d62e2"
 }

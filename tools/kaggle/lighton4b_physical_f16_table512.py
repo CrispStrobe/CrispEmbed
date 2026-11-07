@@ -14,6 +14,7 @@ def admit(cfg):
  require(cfg['form_receipt_sha256']==FORM and cfg['physical_receipt_sha256']==PHYSICAL and cfg['calibration_receipt_sha256']==CALIB,'immutable three receipts')
  require(cfg['threads']==4 and cfg['context']==2048 and cfg['total_timeout_seconds']==3600 and cfg['per_arm_timeout_seconds']==1200,'bounded execution')
  require(cfg['arms']==['upstream-off','upstream-on','native'],'fixed observer controls then native')
+ require(cfg['driver_source_sha256']==sha(ROOT/'tests/lighton4b_native_document.cpp'),'explicit test-driver-only source change')
 def remaining_budget(started,arm_deadline=None,now=None):
  now=time.monotonic()if now is None else now
  remaining=3600-(now-started)
@@ -23,6 +24,15 @@ def remaining_budget(started,arm_deadline=None,now=None):
 def validate_source(response,old):
  require(not response['truncated']and response['tokens_evaluated']==86 and response['stop']and response['tokens'][:256]==old['tokens']and response['completion_probabilities'][:256]==old['completion_probabilities'],'exact old source256 prefix/probabilities')
  require(1<=len(response['tokens'])<=512 and len(response['completion_probabilities'])==len(response['tokens'])and response['stop_type']in['eos','limit']and(response['stop_type']=='eos')==(response['tokens'][-1]in[248044,248046])and(response['stop_type']!='limit'or len(response['tokens'])==512),'source EOS/cap closure')
+def driver_scope_controls(native,work,out,loader):
+ results=[];env=dict(os.environ);env['LD_LIBRARY_PATH']=loader
+ base=[str(native),str(work/'absent.gguf'),str(work/'absent.rgb'),'1','1',str(work/'absent.ids'),str(out),'256','4','greedy-full','--upstream-vision',str(work/'absent.feature')]
+ for label,cap,threads,mode,flag,expected in [('legacy256',256,4,'greedy-full',None,4),('legacy257',257,4,'greedy-full',None,2),('legacy512',512,4,'greedy-full',None,2),('extended512',512,4,'greedy-full','--extended-table-cap512',4),('extended513',513,4,'greedy-full','--extended-table-cap512',2),('wrongthreads',512,2,'greedy-full','--extended-table-cap512',2),('wrongmode',512,4,'full','--extended-table-cap512',2),('wrongflag',512,4,'greedy-full','--unknown',2),('extended256',256,4,'greedy-full','--extended-table-cap512',2)]:
+  args=list(base);args[7]=str(cap);args[8]=str(threads);args[9]=mode
+  if flag:args.append(flag)
+  with(out/('scope-'+label+'.log')).open('w')as log:code=subprocess.run(args,env=env,stdout=log,stderr=subprocess.STDOUT,timeout=10).returncode
+  require(code==expected,'actual reference CLI scope '+label);results.append({'case':label,'returncode':code})
+ return results
 def main():
  import numpy as np
  from PIL import Image
@@ -50,9 +60,17 @@ def main():
   fp=locate('physical-f16-full-form.json',FORM);form=json.loads(fp.read_text());pp=locate('physical-decode.json',PHYSICAL);physical=json.loads(pp.read_text());cp=locate('physical-f16-calibration.json',CALIB);calib=json.loads(cp.read_text());require(form['status']=='measured_full_form'and physical['status']=='measured'and calib['status']=='measured_two_case_calibration','complete predecessor receipts');require(calib['binary_sha256']==form['binary_sha256']and calib['gates']==form['arms']['f16-full']['gates']and calib['candidate_sha256']==form['candidate_sha256'],'identical preceding configuration')
   source_bundle=fp.parent/'runtime'
   for rel,row in form['runtime_bundle'].items():verify(source_bundle/rel,row)
-  bundle=work/'runtime';shutil.copytree(source_bundle,bundle)
-  for rel,row in form['runtime_bundle'].items():verify(bundle/rel,row)
-  native=bundle/'bin/lighton4b-native-document';native.chmod(0o755);require(sha(native)==form['binary_sha256'],'same completed form binary');r['native_binary_sha256']=sha(native);r['gates']=form['arms']['f16-full']['gates'];r['predecessor_receipts']={'form':FORM,'physical':PHYSICAL,'calibration':CALIB}
+  r['original_form_binary_sha256']=form['binary_sha256'];r['gates']=form['arms']['f16-full']['gates'];r['predecessor_receipts']={'form':FORM,'physical':PHYSICAL,'calibration':CALIB}
+  run('fetch-form-source',['git','fetch','--depth','1','origin',form['source_sha']]);run('unchanged-production-source',['git','diff','--exit-code',form['source_sha'],'HEAD','--','src','ggml','CMakeLists.txt'])
+  old_driver=subprocess.check_output(['git','show',form['source_sha']+':tests/lighton4b_native_document.cpp']);require(hashlib.sha256(old_driver).hexdigest()==cfg['original_driver_source_sha256'],'exact original cap256 driver')
+  run('native-submodule',['git','submodule','update','--init','ggml']);nb=work/'native-build';nf={'CRISPEMBED_NATIVE':'OFF','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_LLAMAFILE':'ON','GGML_AVX512':'OFF','GGML_BLAS':'OFF','GGML_BACKEND_DL':'OFF','GGML_OPENMP':'OFF','GGML_CUDA':'OFF','GGML_VULKAN':'OFF'}
+  run('native-configure',['cmake','-S',ROOT,'-B',nb,'-DCMAKE_BUILD_TYPE=Release',*[f'-D{k}={v}'for k,v in nf.items()]]);nc=(nb/'CMakeCache.txt').read_text().splitlines()
+  for k,v in nf.items():require(f'{k}:BOOL={v}'in nc,'unchanged native profile '+k)
+  shutil.copy(nb/'CMakeCache.txt',out/'native-CMakeCache.txt');run('native-build',['cmake','--build',nb,'--target','lighton4b-native-document','--parallel','2'],timeout=1200);native=nb/'lighton4b-native-document';r['native_binary_sha256']=sha(native);r['test_driver_source_sha256']=sha(ROOT/'tests/lighton4b_native_document.cpp')
+  libraries=sorted(p for p in nb.rglob('libggml*.so*')if p.is_file());require(libraries,'actual native CPU libraries');native_loader=':'.join(sorted({str(p.parent)for p in libraries}));bundle=out/'runtime';(bundle/'bin').mkdir(parents=True);(bundle/'lib').mkdir();shutil.copy2(native,bundle/'bin'/native.name)
+  for library in libraries:shutil.copy2(library,bundle/'lib'/library.name)
+  r['rebuilt_runtime_bundle']={str(p.relative_to(bundle)):{'bytes':p.stat().st_size,'sha256':sha(p)}for p in bundle.rglob('*')if p.is_file()}
+  r['scope_controls']=driver_scope_controls(native,work,out,native_loader)
   protocol=json.loads((ROOT/'docs/lighton4b-upstream-physical-decode-v1.json').read_text());case=next(x for x in protocol['cases']if x['id']=='simple_table');folder=pp.parent/'simple_table';art=physical['cases']['simple_table']['artifacts']
   for rel in ['input.png','input.rgb','original.json','retained-upstream-response.json','upstream_features/prompt.ids','observer-on/source.vision.0.f32','observer-on/source.logits.0.f32','observer-on/source.logits.1.f32']:verify(folder/rel,art[rel])
   original=json.loads((folder/'original.json').read_text());old_source=json.loads((folder/'retained-upstream-response.json').read_text());old_native=calib['cases']['simple_table'];require(len(old_source['tokens'])==len(old_native['generated_ids'])==256 and not old_native['summary']['eos']and old_source['stop_type']=='limit','retain actual old cap256 negative')
@@ -93,8 +111,11 @@ def main():
   require((out/'upstream-off'/dispatch.OUTPUT).read_bytes()==(out/'upstream-on'/dispatch.OUTPUT).read_bytes(),'same actual source dispatch with observer OFF/ON')
   require(responses[0]['tokens']==responses[1]['tokens']and responses[0]['content']==responses[1]['content']and responses[0]['completion_probabilities']==responses[1]['completion_probabilities']and responses[0]['stop_type']==responses[1]['stop_type'],'full source observer neutral')
   for rel in ['source.vision.0.f32','source.logits.0.f32','source.logits.1.f32']:require(sha(out/'upstream-on'/rel)==art['observer-on/'+rel]['sha256'],'source feature/first2 raw score anchor '+rel)
-  env=dict(os.environ);env.update({k:'0'for k in env if k.startswith('CRISPEMBED_')});env.update(form['arms']['f16-full']['gates']);env['LD_LIBRARY_PATH']=str(bundle/'lib');teacher=work/'one.ids';teacher.write_text(str(original['generated_ids'][0])+'\n');dest=out/'native';dest.mkdir();run('native',[native,candidate,folder/'input.rgb',image.height,image.width,teacher,dest,512,4,'greedy-full','--upstream-vision',out/'upstream-on/source.vision.0.f32'],env,1200)
-  summary=json.loads((dest/'native-summary.json').read_text());ids=list(map(int,(dest/'generated.ids').read_text().split()));text=(dest/'generated.txt').read_bytes().decode('utf8');require(summary['eos']==(ids[-1]in[248044,248046])and(len(ids)==512 or summary['eos'])and ids[:256]==old_native['generated_ids'],'native extended EOS/old256 prefix');require(sha(dest/'greedy.0.logits.f32')==calib['artifacts']['simple_table/greedy.0.logits.f32']['sha256'],'native firstscore anchor');require(sha(dest/'prefill.input.f32')==art['upstream_features/prefill.input.f32']['sha256']and sha(dest/'prefill.positions.f32')==art['upstream_features/prefill.positions.f32']['sha256'],'same actual inputs/positions')
+  env=dict(os.environ);env.update({k:'0'for k in env if k.startswith('CRISPEMBED_')});env.update(form['arms']['f16-full']['gates']);env['LD_LIBRARY_PATH']=native_loader;teacher=work/'one.ids';teacher.write_text(str(original['generated_ids'][0])+'\n');dest=out/'native';dest.mkdir();run('native',[native,candidate,folder/'input.rgb',image.height,image.width,teacher,dest,512,4,'greedy-full','--upstream-vision',out/'upstream-on/source.vision.0.f32','--extended-table-cap512'],env,1200)
+  summary=json.loads((dest/'native-summary.json').read_text());ids=list(map(int,(dest/'generated.ids').read_text().split()));text=(dest/'generated.txt').read_bytes().decode('utf8');require(summary['eos']==(ids[-1]in[248044,248046])and(len(ids)==512 or summary['eos'])and ids[:256]==old_native['generated_ids'],'native extended EOS/old256 prefix');
+  for j in range(256):require(sha(dest/f'greedy.{j}.logits.f32')==calib['artifacts'][f'simple_table/greedy.{j}.logits.f32']['sha256'],'all256 native raw score anchors')
+  for rel in f.STAGES:require(sha(dest/rel)==calib['artifacts']['simple_table/'+rel]['sha256'],'all38 native prefill stage anchors')
+  require(sha(dest/'prefill.input.f32')==art['upstream_features/prefill.input.f32']['sha256']and sha(dest/'prefill.positions.f32')==art['upstream_features/prefill.positions.f32']['sha256'],'same actual inputs/positions')
   for j,token in enumerate(ids):
    row=np.fromfile(dest/f'greedy.{j}.logits.f32',dtype='<f4');require(row.size==248320 and np.isfinite(row).all()and int(row.argmax())==token,'finite exact greedy argmax')
   r['arms']['native']={'summary':summary,'generated_ids':ids,'decoded':text,'vs_original_bf16':f.metric(base,ids,text,original['generated_ids'],original['decoded']),'vs_extended_upstream':f.metric(base,ids,text,responses[0]['tokens'],responses[0]['content']),'resources':r['commands']['native']};r['source_observer_full_neutral']=True;r['old_cap256_prefix_anchors_exact']=True;require(sha(candidate)==form['candidate_sha256'],'unchanged weights');candidate.unlink();r['status']='measured_extended_table'
