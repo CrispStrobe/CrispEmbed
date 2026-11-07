@@ -2132,3 +2132,48 @@ ProjectorV2 retained complete canonical297/298 parameter authentication and stri
 ### Physical F16 vision/resize draft (2026-11-07; unqualified)
 
 Separately gated Pillow22 RGB resize and source-compatible F16-matrix/F32-state vision are drafted from pinned llama.cpp6c01. The source path uses explicit F16 im2col and paired F16 SGEMM, F32 parameters/residuals and source GGML GELU, preserving the existing Torch/BF16 path and all defaults. Physical owner, supported CPU/private ABI, four-thread and geometry guards fail closed. Added model-free resize/gate and main-library stub/link targets; no local C++ build/model forward and no hosted numerical qualification yet. Next is bounded hosted compilation, source-fed actual observed-form stage controls and complete decoded comparison only after byte controls pass. ProjectorV3 live captures establish source-declared precision transforms for all297 native/298 source tensors; source F32 parameters must remain F32, while only source F16 matrices are rounded. Reference probes remain separate from production.
+### Bounded physical Q4 CPU_REPACK experiment (2026-11-07)
+
+The same-input operator source `3b41475c88f570cf899bac12ae6c4f80e4eb3400`
+measured report SHA256 `4dc28c17717082a36e9f2cad3729a31a83a97c3234b07d3c00002232744a66f5`.
+All five N16 borrowed projections close actual captured native outputs; the
+four Q4 preferred-buffer projections agree across both pinned backends and
+whole-row transports. Repack versus raw differences are small (maximum
+6.12065196e-6); the separate Q6 N16 backend residual is not fixed by repacking.
+These are operator measurements, not decoded attribution or qualification.
+
+The isolated implementation adds default-off
+`CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK`, physical-owner-only supported-CPU
+admission, immutable decoder/cache tags and public CPU_REPACK buffer allocation.
+Quantized storage stays quantized; a separate bounded 2 GiB manager retains
+preferred buffers, charges outstanding leases after clear, rejects source-header
+mutation and never populates the existing F32 converted-weight cache. It does
+not change vendor traits, the public release fence, Q6 head dispatch or other
+models. Unsupported SDK/WASM profiles reject the option.
+
+Pending: independently reviewed hosted lifecycle/budget/toggle controls, legacy
+compatibility, actual source-fed preferred projection equality, then a bounded
+same-feature full-score and independent decoded OFF/ON comparison. No default
+or release change is authorized by component equality; current Q4 remains
+unqualified.
+
+### Physical Q4 repack controls passed; paired table512 next
+
+Kaggle controls source `5f6dfb9f09b49002201c7702ff71a5e345294af2` completed
+in491.644s with receipt SHA256
+`c7130c6d7b54e6859439bbf87c8e54880c30bd5d2db33c3571ded179e6711cf5`.
+All30 actual-input OFF/ON projections match the sealed raw/preferred operator
+outputs bytewise. Supported lifecycle57, F16-attention255297, native-ops142,
+HF-layout39, Q6-head84 (65,792 independent values), main SDK5 and closed
+main-stub2 controls pass. Initial reference-adapter compile failure remains
+preserved; no model forward or decoded claim follows from this panel.
+
+[Paired table protocol](docs/lighton4b-q4-repack-table512-v1.json) freezes a
+single bounded worker: exact existing source-feature table, published physical
+weights, F16-attention and all other gates unchanged; fresh OFF then ON child
+processes, greedy cap512/context2048. OFF must reproduce all282 completed raw
+rows,38 prefill stages, IDs/text/EOS from `36a9b14b`. ON must retain actual
+216-entry bounded quant cache and zero converted F32 weight entries/bytes.
+Only reference-CLI cap512 admission and cache-accounting summary are added to
+the tested source; production runtime bytes remain identical. No original or
+upstream forward, composition, held-out qualification or promotion.

@@ -49,6 +49,11 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
         (previous && previous->physical_f16_attention != lighton4b_physical_f16_attention_mode(w.upstream_physical)) ||
         !lighton4b_upstream_physical_mode_valid(w.upstream_physical) || !lighton4b_physical_native_ops_valid(w.upstream_physical) ||
         w.attention.upstream_physical != w.upstream_physical) return false;
+    const bool repack = lighton4b_physical_q4_repack_mode(w.upstream_physical);
+    if (!lighton4b_physical_q4_repack_valid(w.upstream_physical) || w.physical_q4_repack != repack ||
+        w.attention.physical_q4_repack != repack ||
+        bool(w.physical_weights_cache && w.physical_weights_cache->physical_repack_enabled()) != repack ||
+        (previous && previous->physical_q4_repack != repack)) return false;
     lighton4b_attention_block_outputs candidate;
     candidate.hidden.assign(input, input + size_t(tokens) * 2560);
     if (!finite(candidate.hidden)) return false;
@@ -73,7 +78,7 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
     config.rotary_dim = 64;
     attention_outputs attention;
     if (!attention_cpu(w.attention, config, candidate.input_norm.data(), positions, 1, tokens, threads, previous,
-                       attention))
+                       attention, w.physical_weights_cache))
         return false;
     candidate.q = std::move(attention.q);
     candidate.k = std::move(attention.k);
@@ -88,7 +93,7 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
     candidate.attention_residual = candidate.hidden;
     if (!rms(candidate.hidden, w.post_norm, candidate.post_norm)) return false;
     std::vector<std::vector<float>> projections;
-    if (!project_cpu({ w.gate, w.up }, candidate.post_norm.data(), 2560, tokens, threads, projections, nullptr, w.upstream_physical)) return false;
+    if (!project_cpu({ w.gate, w.up }, candidate.post_norm.data(), 2560, tokens, threads, projections, w.physical_weights_cache, w.upstream_physical)) return false;
     candidate.gate = std::move(projections[0]);
     candidate.up = std::move(projections[1]);
     candidate.activation.resize(candidate.gate.size());
@@ -97,7 +102,7 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
         candidate.activation[i] = (gate / (1.0f + std::exp(-gate))) * candidate.up[i];
     }
     projections.clear();
-    if (!project_cpu({ w.down }, candidate.activation.data(), 9216, tokens, threads, projections, nullptr, w.upstream_physical)) return false;
+    if (!project_cpu({ w.down }, candidate.activation.data(), 9216, tokens, threads, projections, w.physical_weights_cache, w.upstream_physical)) return false;
     candidate.down = std::move(projections[0]);
     for (size_t i = 0; i < candidate.hidden.size(); ++i) candidate.hidden[i] += candidate.down[i];
     if (!finite(candidate.hidden)) return false;

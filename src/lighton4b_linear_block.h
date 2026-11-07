@@ -17,6 +17,7 @@ struct lighton4b_linear_cache {
     bool upstream_physical = false;
     uint8_t physical_native_ops = 0;
     bool hf_tiled_out = false;
+    bool physical_q4_repack = false;
 };
 struct lighton4b_linear_block_outputs {
     std::vector<float> input_norm, attention, attention_residual, post_norm, gate, up, activation, down, hidden;
@@ -37,6 +38,11 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
         return std::all_of(v.begin(), v.end(), [](float x) { return std::isfinite(x); });
     };
     const bool bf16 = lighton4b_bf16_linear_enabled();
+    const bool repack = lighton4b_physical_q4_repack_mode(w.upstream_physical);
+    if (!lighton4b_physical_q4_repack_valid(w.upstream_physical) || w.physical_q4_repack != repack ||
+        w.linear.physical_q4_repack != repack ||
+        bool(w.physical_weights_cache && w.physical_weights_cache->physical_repack_enabled()) != repack ||
+        (previous && previous->physical_q4_repack != repack)) return false;
     if (!lighton4b_hf_tiled_out_mode_valid(w.linear.hf_tiled_out,w.upstream_physical) ||
         (previous && previous->hf_tiled_out != w.linear.hf_tiled_out)) return false;
     if (!lighton4b_upstream_physical_mode_valid(w.upstream_physical) || !lighton4b_physical_native_ops_valid(w.upstream_physical) ||
@@ -85,7 +91,7 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
                                                              previous ? previous->recurrent.data() : nullptr, linear)
                                 : linear_grouped_cpu(w.linear, 16, candidate.input_norm.data(), 1, tokens, threads,
                                                      previous ? previous->conv.data() : nullptr,
-                                                     previous ? previous->recurrent.data() : nullptr, linear);
+                                                     previous ? previous->recurrent.data() : nullptr, linear, w.physical_weights_cache);
     if (!linear_ok) return false;
     candidate.attention = std::move(linear.attention);
     if (candidate.attention.size() != candidate.hidden.size() || !finite(candidate.attention)) return false;
@@ -94,7 +100,7 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     candidate.attention_residual = candidate.hidden;
     if (!rms(candidate.hidden, w.post_norm, candidate.post_norm)) return false;
     std::vector<std::vector<float>> projections;
-    if (!project_cpu({ w.gate, w.up }, candidate.post_norm.data(), 2560, tokens, threads, projections, nullptr, w.upstream_physical)) return false;
+    if (!project_cpu({ w.gate, w.up }, candidate.post_norm.data(), 2560, tokens, threads, projections, w.physical_weights_cache, w.upstream_physical)) return false;
     candidate.gate = std::move(projections[0]);
     candidate.up = std::move(projections[1]);
     if (bf16) {
@@ -109,7 +115,7 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
                                        : activated * candidate.up[i];
     }
     projections.clear();
-    if (!project_cpu({ w.down }, candidate.activation.data(), 9216, tokens, threads, projections, nullptr, w.upstream_physical)) return false;
+    if (!project_cpu({ w.down }, candidate.activation.data(), 9216, tokens, threads, projections, w.physical_weights_cache, w.upstream_physical)) return false;
     candidate.down = std::move(projections[0]);
     if (bf16) lighton4b_bf16_round(candidate.down);
     for (size_t i = 0; i < candidate.hidden.size(); ++i) candidate.hidden[i] += candidate.down[i];
@@ -120,6 +126,7 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     candidate.cache.bf16_activations = bf16;
     candidate.cache.upstream_physical = w.upstream_physical;
     candidate.cache.physical_native_ops = lighton4b_physical_native_ops_mode(w.upstream_physical);
+    candidate.cache.physical_q4_repack = repack;
     candidate.cache.conv = std::move(linear.core.conv_history);
     candidate.cache.recurrent = std::move(linear.core.state);
     output = std::move(candidate);

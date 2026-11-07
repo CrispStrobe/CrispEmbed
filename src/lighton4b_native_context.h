@@ -4,6 +4,7 @@
 #include "ggml-cpu.h"
 #include "lighton4b_q4km_types.h"
 #include "lighton4b_physical_f16_vision.h"
+#include <set>
 
 namespace qwen35_ocr {
 enum class lighton4b_quant_recipe { q8_0, q4_k, attention_q8_ffn_q4, q4km_q6_q8head, gdn_out_q8, gdn_out_q6, imatrix_q4km_q6head, upstream_physical_q4km, hf_tiled_out_q4km };
@@ -15,7 +16,7 @@ inline bool lighton4b_quant_recipe_matches(const decoder_weights & decoder, ligh
         return false;
     auto type = [](const ggml_tensor * t, ggml_type expected) { return t && t->type == expected; };
     if (recipe == lighton4b_quant_recipe::upstream_physical_q4km)
-        return lighton4b_q6_enabled() && lighton4b_upstream_physical_mode_valid(true) && lighton4b_physical_f16_attention_valid(true) && lighton4b_physical_f16_vision_valid(true) &&
+        return lighton4b_q6_enabled() && lighton4b_upstream_physical_mode_valid(true) && lighton4b_physical_f16_attention_valid(true) && lighton4b_physical_f16_vision_valid(true) && lighton4b_physical_q4_repack_valid(true) &&
             lighton4b_q4km_types_match(decoder, GGML_TYPE_Q6_K);
     const bool tiled = recipe == lighton4b_quant_recipe::hf_tiled_out_q4km;
     if (tiled && !lighton4b_hf_tiled_out_mode_valid(true,false)) return false;
@@ -102,6 +103,7 @@ public:
     lighton4b_native_context(const lighton4b_native_context &) = delete;
     lighton4b_native_context & operator=(const lighton4b_native_context &) = delete;
     ~lighton4b_native_context() {
+        model_.text.decoder.physical_weights_cache.reset();
         core_gguf::free_weights(loaded_);
         if (backend_) ggml_backend_free(backend_);
     }
@@ -137,10 +139,34 @@ public:
         if (recipe == lighton4b_quant_recipe::upstream_physical_q4km) {
             auto & weights = candidate->model_.text.decoder;
             weights.upstream_physical = true;
+            weights.physical_q4_repack = lighton4b_physical_q4_repack_mode(true);
+            if (weights.physical_q4_repack) {
+                if (!lighton4b_physical_q4_repack_valid(true)) return nullptr;
+                std::size_t reserve = 0, count = 0;
+                std::set<const ggml_tensor *> seen;
+                for (const auto & item : candidate->loaded_.tensors) {
+                    const auto * tensor = item.second;
+                    if (tensor->type != GGML_TYPE_Q4_K || !seen.insert(tensor).second) continue;
+                    const auto amount = ggml_nbytes(tensor) + converted_weight_cache::physical_repack_entry_overhead;
+                    if (amount > converted_weight_cache::maximum_physical_repack_budget - reserve) return nullptr;
+                    reserve += amount; ++count;
+                }
+                if (count != 216) return nullptr;
+                auto cache = std::make_shared<converted_weight_cache>(0); // no converted F32 matrices
+                if (!cache->enable_physical_repack(true)) return nullptr;
+                weights.physical_weights_cache = std::move(cache);
+            }
             for (auto & layer : weights.layers) {
                 layer.upstream_physical = true;
-                if (layer.full_attention) layer.attention.upstream_physical = true;
-                else layer.linear.upstream_physical = true;
+                layer.physical_q4_repack = weights.physical_q4_repack;
+                layer.physical_weights_cache = weights.physical_weights_cache.get();
+                if (layer.full_attention) {
+                    layer.attention.upstream_physical = true;
+                    layer.attention.physical_q4_repack = weights.physical_q4_repack;
+                } else {
+                    layer.linear.upstream_physical = true;
+                    layer.linear.physical_q4_repack = weights.physical_q4_repack;
+                }
             }
         }
         return candidate;

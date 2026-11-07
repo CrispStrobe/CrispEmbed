@@ -110,7 +110,7 @@ static int run(int argc, char ** argv) {
         emit("prefill.first_chunk.layer0.down", block.down);
         std::vector<std::vector<float>> projected;
         const auto & w = model.text.decoder.layers[0].linear;
-        if (!project_cpu({ w.qkv, w.z, w.a, w.b }, block.input_norm.data(), 2560, count, threads, projected, nullptr, model.text.decoder.upstream_physical)) return 19;
+        if (!project_cpu({ w.qkv, w.z, w.a, w.b }, block.input_norm.data(), 2560, count, threads, projected, model.text.decoder.physical_weights_cache.get(), model.text.decoder.upstream_physical)) return 19;
         const char * names[]{"qkv", "z", "a", "b"};
         for (int i = 0; i < 4; ++i) emit(std::string("prefill.first_chunk.layer0.") + names[i], projected[size_t(i)]);
     }
@@ -149,7 +149,7 @@ static int run(int argc, char ** argv) {
                 const auto & weights = model.text.decoder.layers[0].linear;
                 std::vector<std::vector<float>> projected;
                 if (!project_cpu({ weights.qkv, weights.z, weights.a, weights.b }, block.input_norm.data(), 2560, 1,
-                                 threads, projected, nullptr, model.text.decoder.upstream_physical))
+                                 threads, projected, model.text.decoder.physical_weights_cache.get(), model.text.decoder.upstream_physical))
                     return false;
                 const char * names[] = { "qkv", "z", "a", "b" };
                 for (size_t i = 0; i < 4; ++i) emit(label + ".layer0." + names[i], projected[i]);
@@ -217,6 +217,15 @@ static int run(int argc, char ** argv) {
     summary << "{\"prompt_tokens\":" << ids.size() << ",\"image_tokens\":" << image.grid[1] * image.grid[2] / 4;
     if (model.text.decoder.upstream_physical)
         summary << ",\"source_fed_vision\":" << (source_vision ? "true" : "false") << ",\"upstream_physical\":true";
+    if (model.text.decoder.upstream_physical) {
+        const auto * cache = model.text.decoder.physical_weights_cache.get();
+        summary << ",\"physical_q4_repack\":" << (model.text.decoder.physical_q4_repack ? "true" : "false")
+                << ",\"physical_repack_entries\":" << (cache ? cache->physical_repack_entries() : 0)
+                << ",\"physical_repack_bytes\":" << (cache ? cache->physical_repack_bytes() : 0)
+                << ",\"physical_repack_hits\":" << (cache ? cache->physical_repack_hits() : 0)
+                << ",\"converted_f32_weight_entries\":" << (cache ? cache->entries() : 0)
+                << ",\"converted_f32_weight_bytes\":" << (cache ? cache->bytes() : 0);
+    }
     summary << ",\"teacher_positions\":" << teacher_count << ",\"generated_tokens\":" << generated.size()
             << ",\"eos\":" << (tokenizer.is_stop(generated.back()) ? "true" : "false") << ",\"cap\":" << cap << "}\n";
     std::cout << "LIGHTON4B_NATIVE_DOCUMENT completed=1 teacher_positions=" << teacher_count

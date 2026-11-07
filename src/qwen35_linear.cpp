@@ -9,6 +9,7 @@
 #include "qwen35_weight_cache.h"
 #include "core/env_gate.h"
 #include "ggml-backend.h"
+#include "ggml-alloc.h"
 #include "ggml-cpu.h"
 #include "ggml.h"
 
@@ -20,6 +21,8 @@
 #include <memory>
 #include <limits>
 #include <new>
+#include <atomic>
+#include <mutex>
 #include <thread>
 
 namespace qwen35_ocr {
@@ -106,6 +109,130 @@ bool tensor_floats(ggml_tensor * source, float * target, int threads) {
     return std::all_of(target, target + count, [](float x) { return std::isfinite(x); });
 }
 
+// Independent quantized storage; never populates the legacy F32 entries.
+struct converted_weight_cache::physical_storage {
+    struct accounting {
+        std::atomic<std::size_t> bytes{0}, live{0};
+    };
+    struct value {
+        ggml_context * context = nullptr;
+        ggml_backend_buffer_t buffer = nullptr;
+        ggml_tensor * tensor = nullptr;
+        const void * source_data = nullptr;
+        ggml_backend_buffer_t source_buffer = nullptr;
+        int64_t width = 0, rows = 0;
+        std::shared_ptr<accounting> account;
+        std::size_t charge = 0;
+        ~value() {
+            if (buffer) ggml_backend_buffer_free(buffer);
+            if (context) ggml_free(context);
+            if (account && charge) {
+                account->bytes.fetch_sub(charge, std::memory_order_relaxed);
+                account->live.fetch_sub(1, std::memory_order_relaxed);
+            }
+        }
+    };
+    static constexpr std::size_t metadata_bytes = 65536;
+    static constexpr std::size_t metadata_charge = metadata_bytes + 4096;
+    const std::size_t budget;
+    std::shared_ptr<accounting> account = std::make_shared<accounting>();
+    mutable std::mutex mutex;
+    std::map<const ggml_tensor *, std::shared_ptr<value>> entries;
+    std::size_t hits = 0;
+    explicit physical_storage(std::size_t limit) : budget(limit) {}
+    void clear() {
+        std::lock_guard<std::mutex> lock(mutex);
+        entries.clear();
+        hits = 0; // outstanding aliases keep their allocation charged
+    }
+    std::shared_ptr<ggml_tensor> get(ggml_tensor * source, ggml_backend_dev_t device) {
+        if (!source || source->type != GGML_TYPE_Q4_K || !source->data || !source->buffer ||
+            !ggml_backend_buffer_is_host(source->buffer) || !ggml_is_contiguous(source) ||
+            source->ne[0] < 256 || source->ne[0] > 32768 || source->ne[0] % 256 ||
+            source->ne[1] < 8 || source->ne[1] > 300000 || source->ne[1] % 8 ||
+            source->ne[2] != 1 || source->ne[3] != 1 || !device ||
+            ggml_backend_dev_type(device) != GGML_BACKEND_DEVICE_TYPE_CPU) return {};
+        std::lock_guard<std::mutex> lock(mutex);
+        const auto found = entries.find(source);
+        if (found != entries.end()) {
+            const auto & v = found->second;
+            if (v->source_data != source->data || v->source_buffer != source->buffer ||
+                v->width != source->ne[0] || v->rows != source->ne[1]) return {};
+            ++hits;
+            return std::shared_ptr<ggml_tensor>(v, v->tensor);
+        }
+        const auto used = account->bytes.load(std::memory_order_relaxed);
+        const auto packed = ggml_nbytes(source);
+        if (account->live.load(std::memory_order_relaxed) >= 256 || used > budget ||
+            packed > budget - used || physical_repack_entry_overhead > budget - used - packed) return {};
+        auto * registry = ggml_backend_dev_backend_reg(device);
+        if (!registry) return {};
+        const auto function = (ggml_backend_dev_get_extra_bufts_t)
+            ggml_backend_reg_get_proc_address(registry, "ggml_backend_dev_get_extra_bufts");
+        if (!function) return {};
+        auto ** types = function(device);
+        ggml_backend_buffer_type_t selected = nullptr;
+        for (std::size_t i = 0; types && types[i] && i < 32; ++i) {
+            if (std::strcmp(ggml_backend_buft_name(types[i]), "CPU_REPACK") == 0) {
+                if (selected) return {};
+                selected = types[i];
+            }
+        }
+        if (!selected || ggml_backend_buft_get_alignment(selected) > 4096) return {};
+        try {
+            auto v = std::make_shared<value>();
+            v->context = ggml_init({metadata_bytes, nullptr, true});
+            if (!v->context) return {};
+            v->tensor = ggml_new_tensor_2d(v->context, source->type, source->ne[0], source->ne[1]);
+            ggml_set_name(v->tensor, ggml_get_name(source));
+            v->buffer = ggml_backend_alloc_ctx_tensors_from_buft(v->context, selected);
+            if (!v->buffer || !v->tensor->data || !v->tensor->extra) return {};
+            const auto allocated = ggml_backend_buffer_get_size(v->buffer);
+            if (allocated < packed || allocated > packed + 8192 || metadata_charge > budget - used ||
+                allocated > budget - used - metadata_charge) return {};
+            ggml_backend_buffer_set_usage(v->buffer, GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
+            ggml_backend_tensor_set(v->tensor, source->data, 0, packed);
+            v->source_data = source->data;
+            v->source_buffer = source->buffer;
+            v->width = source->ne[0]; v->rows = source->ne[1];
+            v->account = account; v->charge = allocated + metadata_charge;
+            account->bytes.fetch_add(v->charge, std::memory_order_relaxed);
+            account->live.fetch_add(1, std::memory_order_relaxed);
+            entries.emplace(source, v);
+            return std::shared_ptr<ggml_tensor>(v, v->tensor);
+        } catch (const std::bad_alloc &) {
+            return {}; // no arithmetic fallback or uncharged retained allocation
+        }
+    }
+};
+bool converted_weight_cache::enable_physical_repack(bool physical_owner, std::size_t budget) {
+    if (!physical_owner || !lighton4b_physical_q4_repack_mode(true) ||
+        !lighton4b_physical_q4_repack_valid(true) || !budget || budget > maximum_physical_repack_budget) return false;
+    if (physical_) return physical_->budget == budget;
+    try { physical_ = std::make_unique<physical_storage>(budget); }
+    catch (const std::bad_alloc &) { return false; }
+    return true;
+}
+bool converted_weight_cache::physical_repack_enabled() const { return bool(physical_); }
+std::shared_ptr<ggml_tensor> converted_weight_cache::get_physical_repacked(ggml_tensor * source,
+                                                                        ggml_backend_device * device) {
+    if (!physical_ || !lighton4b_physical_q4_repack_mode(true) || !lighton4b_physical_q4_repack_valid(true)) return {};
+    return physical_->get(source, device);
+}
+std::size_t converted_weight_cache::physical_repack_bytes() const {
+    return physical_ ? physical_->account->bytes.load(std::memory_order_relaxed) : 0;
+}
+std::size_t converted_weight_cache::physical_repack_entries() const {
+    if (!physical_) return 0;
+    std::lock_guard<std::mutex> lock(physical_->mutex);
+    return physical_->entries.size();
+}
+std::size_t converted_weight_cache::physical_repack_hits() const {
+    if (!physical_) return 0;
+    std::lock_guard<std::mutex> lock(physical_->mutex);
+    return physical_->hits;
+}
+
 struct converted_weight_cache::entry {
     ggml_backend_buffer_t buffer = nullptr;
     ~entry() {
@@ -128,6 +255,7 @@ converted_weight_cache::~converted_weight_cache() = default;
 void converted_weight_cache::clear() {
     entries_.clear();
     bytes_ = hits_ = 0;
+    if (physical_) physical_->clear();
 }
 const float * converted_weight_cache::get(ggml_tensor * source, int threads) {
     if (!core_env::on("CRISPEMBED_QWEN35_WEIGHT_CACHE") || !budget_ || !source ||
@@ -167,7 +295,10 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !hidden || matrices.empty() || matrices.size() > 4 || width < 1 ||
         width > 32768 || tokens < 1 || tokens > 16384 || threads < 1 || threads > 256)
         return false;
-    if (!lighton4b_physical_native_ops_valid(upstream_physical)) return false;
+    if (!lighton4b_physical_native_ops_valid(upstream_physical) ||
+        !lighton4b_physical_q4_repack_valid(upstream_physical) ||
+        (upstream_physical && bool(weights_cache && weights_cache->physical_repack_enabled()) !=
+                                  lighton4b_physical_q4_repack_mode(true))) return false;
     const bool native_ops = lighton4b_physical_native_component(upstream_physical,1);
     constexpr size_t limit = 512ull * 1024 * 1024;
     size_t elements = size_t(width) * tokens;
@@ -183,7 +314,7 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
         for (auto * matrix : matrices)
             if (!observer(ggml_get_name(matrix), hidden, width, tokens, observer_user)) return false;
     if (native_ops)
-        return lighton4b_physical_matmul(matrices, hidden, width, tokens, threads, output);
+        return lighton4b_physical_matmul(matrices, hidden, width, tokens, threads, output, false, weights_cache);
     profile_timer stage(profile_event::project_setup);
     std::array<const float *, 4> cached{};
     size_t scratch_elements = elements;
@@ -402,6 +533,10 @@ bool linear_grouped_cpu(const linear_weights & weights, int key_heads, const flo
         output = {};
         return false;
     }
+    const bool repack = lighton4b_physical_q4_repack_mode(weights.upstream_physical);
+    if (!lighton4b_physical_q4_repack_valid(weights.upstream_physical) ||
+        weights.physical_q4_repack != repack ||
+        (weights.upstream_physical && bool(weights_cache && weights_cache->physical_repack_enabled()) != repack)) return false;
     if (!lighton4b_hf_tiled_out_mode_valid(weights.hf_tiled_out, weights.upstream_physical)) return false;
     if (weights.hf_tiled_out && (key_heads != 16 || heads != 32 || width != 128 || hidden_width != 2560 || batch != 1 || tokens > 16)) return false;
     if (weights.upstream_physical && (!lighton4b_upstream_physical_mode_valid(true) || key_heads != 16 ||

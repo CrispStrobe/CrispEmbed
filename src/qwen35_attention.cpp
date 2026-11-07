@@ -59,6 +59,10 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
     if (!lighton4b_physical_native_ops_valid(w.upstream_physical) ||
         !lighton4b_physical_f16_attention_valid(w.upstream_physical)) return false;
     const bool physical_f16 = lighton4b_physical_f16_attention_mode(w.upstream_physical);
+    const bool repack = lighton4b_physical_q4_repack_mode(w.upstream_physical);
+    if (!lighton4b_physical_q4_repack_valid(w.upstream_physical) || w.physical_q4_repack != repack ||
+        (w.upstream_physical && bool(weights_cache && weights_cache->physical_repack_enabled()) != repack) ||
+        (previous && previous->physical_q4_repack != repack)) return false;
     if (previous && (previous->upstream_physical != w.upstream_physical || previous->physical_native_ops != lighton4b_physical_native_ops_mode(w.upstream_physical) || previous->physical_f16_attention != physical_f16)) return false;
     if (width < 1 || width > 8192 || !matrix(w.q, width, 2 * qh * d) || !matrix(w.k, width, kh * d) ||
         !matrix(w.v, width, kh * d) || !matrix(w.out, qh * d, width) || !matrix(w.q_norm, d, 1) ||
@@ -102,6 +106,7 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
     cache.upstream_physical = w.upstream_physical;
     cache.physical_native_ops = lighton4b_physical_native_ops_mode(w.upstream_physical);
     cache.physical_f16_attention = physical_f16;
+    cache.physical_q4_repack = repack;
     cache.batch = batch;
     cache.heads = kh;
     cache.tokens = total;

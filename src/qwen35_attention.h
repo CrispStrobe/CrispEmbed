@@ -12,6 +12,7 @@ struct attention_weights {
     ggml_tensor * q_norm;
     ggml_tensor * k_norm;
     bool upstream_physical = false;
+    bool physical_q4_repack = false;
 };
 struct attention_config {
     int query_heads = 8, kv_heads = 2, head_dim = 256, rotary_dim = 64;
@@ -25,6 +26,7 @@ struct attention_cache {
     bool upstream_physical = false;
     uint8_t physical_native_ops = 0;
     bool physical_f16_attention = false;
+    bool physical_q4_repack = false;
 };
 struct attention_outputs {
     std::vector<float> q, k, v, q_norm, k_norm, pooled, attention;

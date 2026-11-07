@@ -165,6 +165,17 @@
             "d0eed902b6373537cdb0b19454ac87e981dd15f4 Integrate closed physical upstream import and gated native arithmetic [skip ci]"
           ],
           "reason": "Distinct default-off HF tiled-output owner changes only the proven24 recurrent output activation coordinates; old/physical projection paths are preserved, pending hosted controls and decoded qualification."
+        },
+        {
+          "from_sha256": "d167064d077b4b21c7f62949fd809e99ac1b6adae2f3530dcd32d5a635014c1f",
+          "to_sha256": "fecc278344d1343d67cba01b59ed6565787cf89b28f46b397bc865bd20f1b6b7",
+          "to_blob": "93635367b3881e4f518d4583812c5bd67b25fce4",
+          "recorded_at_commit": "460ee198208b5b60c34d25626db87897d275cbc7",
+          "recorded": "2026-11-07",
+          "changed_by": [
+            "460ee198208b5b60c34d25626db87897d275cbc7 Experimentally cache physical Q4 preferred buffers [skip ci]"
+          ],
+          "reason": "Default-off physical Q4 CPU_REPACK buffer cache; preserve legacy converted F32 storage and all off paths. Hosted verification pending."
         }
       ]
     },
