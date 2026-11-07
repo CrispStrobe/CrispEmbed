@@ -9,9 +9,10 @@ new distribution of uncertain embedded text.
 
 The [execution amendment](lighton4b-heldout-executor-v1.json) freezes the corrected
 same-weight candidate, tested vision/text gate tuple and reference executables.
-Its model path remains blocked until a hosted model-free CLI/build-control
-receipt is pinned. No held-out candidate output has been read or inference run
-while preparing this source. This is source preparation, not a passed benchmark.
+The hosted model-free CLI/build controls passed in 632.16 seconds; receipt
+`7b090c04f11cd48e27e49dd290fef1b5405bfbd058d658b6ee13e44e5315bc07`
+is now pinned. No held-out candidate output has been read or inference run
+while preparing this source. This is executable preparation, not a passed benchmark.
 
 The new reference-only `--provisional-heldout-cap1536` driver flag additionally
 requires `CRISPEMBED_LIGHTON4B_PROVISIONAL_HELDOUT=1`, four threads and greedy-full.
