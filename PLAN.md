@@ -3244,3 +3244,5 @@ The bounded `2d78bc6a8` operator worker passes6actualprojection/32forcedRAW-Q8/a
 ## Combined GDN/repack observed result: unqualified
 
 Source `374d04387` completes four arms with OFF all282/167 rows/stages exact. Combined ON table282EOS exactly matches upstream IDs/text (348/607 characters,97/106 words). Form167EOS fails character floor194/656 versus upstream189, despite fewer word edits40/90 versus46. Both gates remain default-off; no promotion/ship or aggregate waiver. [Full mixed result and limits](docs/lighton4b-combined-gdn-repack-results.md). Next attribution requires actual same-weight upstream form text stages; no new model run is implied.
+
+- Form live text trace v1 stopped during immutable response admission before checkout/build/weights/forward: source count was incorrectly174 (old native arm), while authenticated original source response is170 IDs including EOS. Raw negative preserved under `tests/results/qwen35-ocr/lightonocr3-4b-upstream-form-text-trace/v1`; count-only correction preserves all original hashes and same-prefix31. No numerical or quality result.
