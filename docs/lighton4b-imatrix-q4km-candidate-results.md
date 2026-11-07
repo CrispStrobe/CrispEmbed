@@ -55,3 +55,14 @@ A separate form diagnostic follows against frozen BF16 and the pinned llama.cpp
 Q4_K_M transcription, with original prepared-input hashes and a producer-score
 platform control. All three cases require complete independent token/text/EOS
 receipts; the previously observed form is post-selection, not heldout.
+
+The initial complete-decode continuation stopped before model forward: this
+Kaggle image has no `/usr/bin/time`. Its8 small raw files are
+[preserved](../tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/decode-v1-negative/evidence.json).
+Model/runtime authentication, Arabic preflight and all five original prepared
+input hashes passed first. The corrected source `e822a6de8` uses Python child
+resource accounting and checks both executable loaders/argument guards and all
+calibration asset paths before copying the model. Three local trust-boundary
+controls pass. A single corrected continuation is running on the same sealed
+candidate and original producer binaries; no quantization rerun or quality result
+is inferred from that setup correction.

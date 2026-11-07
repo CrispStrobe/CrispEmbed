@@ -1,0 +1,19 @@
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: is subject to change. To configure the initial branch name to use in all
+hint: of your new repositories, which will suppress this warning, call:
+hint: 
+hint: 	git config --global init.defaultBranch <name>
+hint: 
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint: 
+hint: 	git branch -m <name>
+Initialized empty Git repository in /kaggle/working/lighton-q4km-decode-source/.git/
+From https://github.com/CrispStrobe/CrispEmbed
+ * branch            191406b823bcd6a61f88b6ee92f821acc40d8ca8 -> FETCH_HEAD
+HEAD is now at 191406b Admit form worker arithmetic against producer row [skip ci]
+Submodule 'ggml' (https://github.com/CrispStrobe/ggml.git) registered for path 'ggml'
+Cloning into '/kaggle/working/lighton-q4km-decode-source/ggml'...
+From https://github.com/CrispStrobe/ggml
+ * branch            3a27b6c665b191cb230be367db5c52d81dd3e2ac -> FETCH_HEAD
+Submodule path 'ggml': checked out '3a27b6c665b191cb230be367db5c52d81dd3e2ac'

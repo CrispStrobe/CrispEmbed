@@ -2906,3 +2906,12 @@ All63 small files are retained with exact hashes; full candidate and rawhead sta
 remote without an asserted fixed Kaggle retention expiry. Complete table/Arabic
 continuation is running from sealed source191406b82 with exact preserved producer
 binaries; separate post-selection form follows, then the physical same-weight lane.
+
+Complete-decodev1 setup negative is retained with8 raw files: missing
+`/usr/bin/time` stopped native process creation after authenticated runtime/model
+and exact Arabic prepared inputs. Corrected sourcee822a6de8 replaces the external
+timer with Python child resource accounting and checks native executable loaders,
+argument guards and calibration asset paths before model copy. Three local
+trust-boundary controls pass; one corrected Kaggle CPUv2 is submitted with the
+same immutable candidate/binaries/precision and original budgets. No model rerun
+for conversion, recipe change or decoded-quality claim.

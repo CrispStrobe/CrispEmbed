@@ -1,0 +1,36 @@
+[{"stream_name":"stdout","time":58.445755071,"data":"PHASE arabic_printed_line-preflight\n"}
+,{"stream_name":"stdout","time":59.429940705,"data":"PHASE arabic_printed_line-complete-greedy\n"}
+,{"stream_name":"stderr","time":59.437805677,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":59.439524846,"data":"  File \"/kaggle/working/lighton-q4km-decode-source/tools/ci-heavy/lighton4b_imatrix_q4km_decode.py\", line 109, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":59.439555422,"data":"    if __name__=='__main__':main()\n"}
+,{"stream_name":"stderr","time":59.439561301,"data":"                            ~~~~^^\n"}
+,{"stream_name":"stderr","time":59.439565962,"data":"  File \"/kaggle/working/lighton-q4km-decode-source/tools/ci-heavy/lighton4b_imatrix_q4km_decode.py\", line 95, in main\n"}
+,{"stream_name":"stderr","time":59.439571302,"data":"    save();run(case+'-complete-greedy',['/usr/bin/time','-v','-o',folder/'native-time.txt',runtime/'bin/lighton4b-native-document',model,rgb_path,image.height,image.width,teacher,native,cap,4,'smoke'],env,deadline)\n"}
+,{"stream_name":"stderr","time":59.439577929,"data":"           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":59.439583398,"data":"  File \"/kaggle/working/lighton-q4km-decode-source/tools/ci-heavy/lighton4b_imatrix_q4km_decode.py\", line 40, in run\n"}
+,{"stream_name":"stderr","time":59.439588469,"data":"    active=subprocess.Popen(list(map(str,args)),cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)\n"}
+,{"stream_name":"stderr","time":59.439593261,"data":"  File \"/usr/lib/python3.13/subprocess.py\", line 1040, in __init__\n"}
+,{"stream_name":"stderr","time":59.439598468,"data":"    self._execute_child(args, executable, preexec_fn, close_fds,\n"}
+,{"stream_name":"stderr","time":59.439601586,"data":"    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":59.439604732,"data":"                        pass_fds, cwd, env,\n"}
+,{"stream_name":"stderr","time":59.439607809,"data":"                        ^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":59.439610877,"data":"    ...\u003c5 lines\u003e...\n"}
+,{"stream_name":"stderr","time":59.439614037,"data":"                        gid, gids, uid, umask,\n"}
+,{"stream_name":"stderr","time":59.439617257,"data":"                        ^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":59.439620282,"data":"                        start_new_session, process_group)\n"}
+,{"stream_name":"stderr","time":59.439623335,"data":"                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":59.439626454,"data":"  File \"/usr/lib/python3.13/subprocess.py\", line 1992, in _execute_child\n"}
+,{"stream_name":"stderr","time":59.439629757,"data":"    raise child_exception_type(errno_num, err_msg, err_filename)\n"}
+,{"stream_name":"stderr","time":59.439633079,"data":"FileNotFoundError: [Errno 2] No such file or directory: '/usr/bin/time'\n"}
+,{"stream_name":"stderr","time":60.035825327,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":60.036387263,"data":"  File \"/kaggle/src/script.py\", line 44, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":60.036412799,"data":"    receipt=json.loads((out/'q4km-complete-decode.json').read_text());assert code==0 and receipt['status']=='measured'and len(receipt['cases'])==2;report['status']='measured';report['model_forward_executed']=True;report['calibration_floors_met']=receipt['all_two_calibration_floors_met']\n"}
+,{"stream_name":"stderr","time":60.036437376,"data":"                                                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":60.036443771,"data":"AssertionError\n"}
+,{"stream_name":"stderr","time":63.208035007,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":63.208075565,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":63.70124547,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":63.701282097,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":64.956401469,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":66.530201709,"data":"[NbConvertApp] Writing 300034 bytes to __results__.html\n"}
+]
