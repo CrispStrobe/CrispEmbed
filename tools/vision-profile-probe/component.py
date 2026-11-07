@@ -17,6 +17,17 @@ def require(ok,why):
  if not ok:raise ValueError(why)
 def admit_control(passed):
  require(passed['status']=='passed_model_free_vision_controls'and passed['source_sha']==CONTROL_SOURCE and passed['model_acquisition']is False and passed['checkpoint_vision_forward_executed']is False and passed['actual_form_preprocessing_exact']is True and passed['synthetic_vision_component_executed']is True,'completed supported synthetic/resize controls')
+def admit_canonical(cfg,source):
+ rows=source['canonical']['tensors'];require(set(rows)=={r['native_name']for r in cfg['tensors']},'all canonical native names')
+ counts={0:0,1:0};unneeded=[];zero_sign={0:0,1:0};elements=0
+ for row in cfg['tensors']:
+  actual=rows[row['native_name']];types={x['type']for x in row['upstream']};require(len(types)==1 and types<={0,1},'one declared source precision per canonical tensor');dtype=next(iter(types))
+  require(actual['native_sha256']==row['native_sha256']and actual['elements']==row['native_bytes']//4,'canonical report bound to authenticated native spans')
+  require(actual['bit_exact']is True if dtype==0 else actual['different_after_native_f16_round']==0,'source-declared precision transform exact')
+  counts[dtype]+=1;elements+=actual['elements'];zero_sign[dtype]+=actual['zero_sign_only_after_f16_round']
+  if dtype==0 and actual['different_after_native_f16_round']:unneeded.append(row['native_name'])
+ require(counts=={0:198,1:99}and elements==333514240,'complete canonical precision domain')
+ return dict(source_F32_parameters_kept_F32=counts[0],native_matrices_rounded_to_source_F16=counts[1],native_elements=elements,all_required_precision_transforms_bit_exact=True,unneeded_F32_to_F16_cast_mismatch_tensors=unneeded,signed_zero_only_after_hypothetical_half_round_by_source_type=zero_sign,original_checkpoint_identity_proven=False)
 def locate(name,digest):
  matches=[p for p in Path('/kaggle/input').rglob(name)if p.is_file()and p.stat().st_size<4<<20 and canonical.sha(p)==digest]
  require(len(matches)==1,'one immutable '+name);return matches[0]
@@ -48,7 +59,7 @@ def main():
   run('fetch-tested',['git','fetch','--depth','1','origin',CONTROL_SOURCE]);run('runtime-byte-guard',['git','diff','--exit-code',CONTROL_SOURCE,'HEAD','--','src','ggml','CMakeLists.txt','tests/test_lighton4b_physical_f16_vision.cpp','tests/test_lighton4b_pillow_resize.cpp','tools/vision-profile-probe/native.cpp'])
   pp=locate('projector-audit.json',controls.PROJECTOR);source=json.loads(pp.read_text());require(source['source_observer_byte_neutral']and source['live_arithmetic_closures_exact'],'valid actual source observer')
   fp=locate('composed-vision.json',FORM);form=json.loads(fp.read_text());require(form['status']=='measured_observed_projector_pair'and form['case']=='simple_form','frozen observed form only')
-  cfg=json.loads((ROOT/'docs/lighton4b-projector-canonical-v1.json').read_text());canonical.admit(cfg)
+  cfg=json.loads((ROOT/'docs/lighton4b-projector-canonical-v1.json').read_text());canonical.admit(cfg);report['canonical_precision_policy']=admit_canonical(cfg,source);save()
   stages={'vision.patch.f32':'on/patch_bias.f32','vision.position.f32':'on/learned_pos.f32','vision.embedded.f32':'on/inp_pos_emb.f32',**{f'vision.layer.{i}.f32':f'on/layer_out-{i}.f32'for i in range(24)},'vision.merged.f32':'on/source.merged.f32'}
   for name,target in stages.items():verify(pp.parent/target,source['artifacts'][target]);verify(fp.parent/'composed'/name,form['artifacts']['composed/'+name])
   for name in['on/source.input.rgb','on/resized.rgb','source.patches.f32']:verify(pp.parent/name,source['artifacts'][name])

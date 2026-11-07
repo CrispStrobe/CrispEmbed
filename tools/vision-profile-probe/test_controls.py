@@ -24,6 +24,16 @@ class Controls(unittest.TestCase):
   self.assertEqual(len(module.CONTROL_SOURCE),40);self.assertEqual(len(module.CONTROL_RECEIPT),64)
   text=Path(__file__).with_name('component.py').read_text()
   self.assertIn("report['downloaded_weight_bytes']==1334056960",text)
+ def test_canonical_uses_declared_precision(self):
+  import sys,json,copy
+  sys.path.insert(0,str(Path(__file__).parent));module=load('component_canonical_test',Path(__file__).with_name('component.py'))
+  cfg=json.loads((ROOT/'docs/lighton4b-projector-canonical-v1.json').read_text());rows={r['native_name']:dict(native_sha256=r['native_sha256'],elements=r['native_bytes']//4,bit_exact=True,different_after_native_f16_round=0,zero_sign_only_after_f16_round=0)for r in cfg['tensors']};source={'canonical':{'tensors':rows}}
+  module.admit_canonical(cfg,source)
+  f32=next(r['native_name']for r in cfg['tensors']if r['upstream'][0]['type']==0);half=next(r['native_name']for r in cfg['tensors']if r['upstream'][0]['type']==1)
+  rows[f32]['different_after_native_f16_round']=1;module.admit_canonical(cfg,source) # This cast must never be applied.
+  for key,value,name in [('bit_exact',False,f32),('different_after_native_f16_round',1,half),('native_sha256','0'*64,half)]:
+   bad=copy.deepcopy(source);bad['canonical']['tensors'][name][key]=value
+   with self.assertRaises(ValueError):module.admit_canonical(cfg,bad)
  def test_explicit_model_free(self):
   text=Path(__file__).with_name('controls.py').read_text();self.assertIn('model_acquisition=False',text);self.assertNotIn('range_download(',text);self.assertNotIn('urlopen(',text)
  def test_reference_not_production(self):
