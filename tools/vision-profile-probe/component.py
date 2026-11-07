@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Prepared projector-only actual-input comparison; blocked until controls frozen."""
-import hashlib,importlib.util,json,os,shutil,signal,subprocess,sys,time
+import hashlib,importlib.util,json,math,os,shutil,signal,subprocess,sys,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools/physical-f16-attention-probe'))
@@ -11,6 +11,7 @@ spec=importlib.util.spec_from_file_location('projector_reference',ROOT/'tools/pr
 spec=importlib.util.spec_from_file_location('vision_controls',Path(__file__).with_name('controls.py'));controls=importlib.util.module_from_spec(spec);spec.loader.exec_module(controls)
 CONTROL_SOURCE='0eca8d13ff55169ad47efcb446fa32786bbf9d3e'
 CONTROL_RECEIPT='31e6d6e54ec5a26c464e0e0f7a151e2408f04c4ec517b59648997a76a3f5ee09'
+APPROVED_ADAPTER_SHA256='548b27df8873191cc82b312978e3d52d55d06fe8baf180b74c1872f685245b71'
 FORM='1458d07e6098b4b1b8fa078c18fe0b636f832a0d1219f789b035e1a033ef4ba0'
 LEGACY_GATES=tuple('CRISPEMBED_LIGHTON4B_VISION_'+s for s in ('BF16','BF16_NORM','BF16_FMA_NORM','BF16_LINEAR','BF16_CONV','BF16_ATTENTION','BF16_SOFTMAX_AVX2','BF16_GELU_AVX2','BF16_MERGER_ERF_AVX2','BF16_ROTARY_TABLE'))
 def require(ok,why):
@@ -32,6 +33,14 @@ def locate(name,digest):
  matches=[p for p in Path('/kaggle/input').rglob(name)if p.is_file()and p.stat().st_size<4<<20 and canonical.sha(p)==digest]
  require(len(matches)==1,'one immutable '+name);return matches[0]
 def verify(path,meta):require(path.stat().st_size==meta['bytes']and canonical.sha(path)==meta['sha256'],'authenticated '+path.name)
+def write_schema(cfg,path):
+ cursor=0;start=cfg['native_vision_range'][0]
+ with Path(path).open('w')as table:
+  for row in sorted(cfg['tensors'],key=lambda x:x['native_offset']):
+   relative=row['native_offset']-start;shape=row['native_shape']+[1]*(4-len(row['native_shape']))
+   require(relative==cursor and len(shape)==4 and all(isinstance(n,int)and n>0 for n in shape)and math.prod(shape)*4==row['native_bytes'],'closed complete F32 metadata schema')
+   table.write(' '.join(map(str,[row['native_name'],*shape,relative,row['native_bytes']]))+'\n');cursor+=row['native_bytes']
+ require(cursor==1334056960,'complete297 schema bytes');return canonical.sha(path)
 def metric(a,b):
  import numpy as np
  x=np.fromfile(a,dtype='<f4');y=np.fromfile(b,dtype='<f4');require(x.size and x.shape==y.shape and np.isfinite(x).all()and np.isfinite(y).all(),'same finite stage')
@@ -56,7 +65,7 @@ def main():
   for name,meta in passed['artifacts'].items():verify(cp.parent/name,meta)
   controls.profile.validate_profile((cp.parent/'native-CMakeCache.txt').read_text().splitlines())
   require('PHYSICAL_F16_VISION_SYNTHETIC PASS 'in(cp.parent/'run-test-lighton4b-physical-f16-vision.log').read_text(),'actual supported synthetic control marker')
-  run('fetch-tested',['git','fetch','--depth','1','origin',CONTROL_SOURCE]);run('runtime-byte-guard',['git','diff','--exit-code',CONTROL_SOURCE,'HEAD','--','src','ggml','CMakeLists.txt','tests/test_lighton4b_physical_f16_vision.cpp','tests/test_lighton4b_pillow_resize.cpp','tools/vision-profile-probe/native.cpp'])
+  run('fetch-tested',['git','fetch','--depth','1','origin',CONTROL_SOURCE]);require(canonical.sha(ROOT/'tools/vision-profile-probe/native.cpp')==APPROVED_ADAPTER_SHA256,'reviewed reference-only adapter exception');run('runtime-byte-guard',['git','diff','--exit-code',CONTROL_SOURCE,'HEAD','--','src','ggml','CMakeLists.txt','tests/test_lighton4b_physical_f16_vision.cpp','tests/test_lighton4b_pillow_resize.cpp'])
   pp=locate('projector-audit.json',controls.PROJECTOR);source=json.loads(pp.read_text());require(source['source_observer_byte_neutral']and source['live_arithmetic_closures_exact'],'valid actual source observer')
   fp=locate('composed-vision.json',FORM);form=json.loads(fp.read_text());require(form['status']=='measured_observed_projector_pair'and form['case']=='simple_form','frozen observed form only')
   cfg=json.loads((ROOT/'docs/lighton4b-projector-canonical-v1.json').read_text());canonical.admit(cfg);report['canonical_precision_policy']=admit_canonical(cfg,source);save()
@@ -68,16 +77,21 @@ def main():
   run('ggml-init',['git','submodule','update','--init','ggml']);require(subprocess.check_output(['git','-C',ROOT/'ggml','rev-parse','HEAD'],text=True).strip()==controls.NATIVE,'exact native ggml')
   build=work/'build';run('configure',['cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release',*[f'-D{k}={v}'for k,v in controls.profile.BUILD_FLAGS.items()],'-DGGML_CPU_REPACK=ON']);controls.profile.validate_profile((build/'CMakeCache.txt').read_text().splitlines());shutil.copyfile(build/'CMakeCache.txt',out/'CMakeCache.txt')
   run('build',['cmake','--build',build,'--target','test-lighton4b-physical-f16-vision','lighton4b-vision-profile-probe','--parallel','2']);run('synthetic',[build/'test-lighton4b-physical-f16-vision']);require('PHYSICAL_F16_VISION_SYNTHETIC PASS 'in(out/'synthetic.log').read_text(),'valid graph closes before parameter transfers')
+  schema=work/'vision.schema';report['vision_schema_sha256']=write_schema(cfg,schema)
+  sparse=work/'metadata-only.sparse'
+  with sparse.open('xb')as f:f.truncate(1334056960)
+  closed_env=dict(os.environ);closed_env.update({k:'0'for k in closed_env if k.startswith('CRISPEMBED_')})
+  run('metadata-before-weights',[build/'lighton4b-vision-profile-probe','--metadata-controls',sparse,schema],env=closed_env)
+  require('VISION_METADATA_CONTROLS PASS tensors=297 checkpoint_bytes=0'in(out/'metadata-before-weights.log').read_text(),'actual metadata map/gate admission before transfers');sparse.unlink();report['metadata_controls_before_weights']=True;save()
   start,end=cfg['native_vision_range'];suffix=work/'vision-only.f32';reference.range_download(cfg['native_base_url'],suffix,start,end,cfg['native_base_bytes']);report['downloaded_weight_bytes']=suffix.stat().st_size;require(report['downloaded_weight_bytes']==1334056960,'only complete vision suffix acquired')
-  schema=work/'vision.schema';cursor=0
-  with schema.open('w')as table:
-   for row in sorted(cfg['tensors'],key=lambda x:x['native_offset']):
-    relative=row['native_offset']-start;require(relative==cursor,'no omitted protected tensor bytes');h=hashlib.sha256()
-    with suffix.open('rb')as f:
-     f.seek(relative);remaining=row['native_bytes']
-     while remaining:
-      chunk=f.read(min(1<<20,remaining));require(bool(chunk),'complete tensor span');h.update(chunk);remaining-=len(chunk)
-    require(h.hexdigest()==row['native_sha256'],'actual complete tensor SHA '+row['native_name']);shape=row['native_shape']+[1]*(4-len(row['native_shape']));table.write(' '.join(map(str,[row['native_name'],*shape,relative,row['native_bytes']]))+'\n');cursor+=row['native_bytes']
+  cursor=0
+  for row in sorted(cfg['tensors'],key=lambda x:x['native_offset']):
+   relative=row['native_offset']-start;require(relative==cursor,'no omitted protected tensor bytes');h=hashlib.sha256()
+   with suffix.open('rb')as f:
+    f.seek(relative);remaining=row['native_bytes']
+    while remaining:
+     chunk=f.read(min(1<<20,remaining));require(bool(chunk),'complete tensor span');h.update(chunk);remaining-=len(chunk)
+   require(h.hexdigest()==row['native_sha256'],'actual complete tensor SHA '+row['native_name']);cursor+=row['native_bytes']
   require(cursor==suffix.stat().st_size,'all297 protected vision tensors authenticated');report['vision_tensor_count']=297;report['full_native_container_downloaded']=False;report['whole_native_container_sha_recomputed']=False;report['vision_schema_sha256']=canonical.sha(schema);save()
   env=dict(os.environ);env.update({k:'0'for k in env if k.startswith('CRISPEMBED_')});env.update({k:'1'for k in LEGACY_GATES});env['CRISPEMBED_LIGHTON4B_VISION_OWNER']='1';report['legacy_gate_tuple']={k:v for k,v in env.items()if k.startswith('CRISPEMBED_')}
   for mode in['legacy','f16']:

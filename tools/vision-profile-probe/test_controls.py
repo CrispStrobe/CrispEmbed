@@ -34,6 +34,15 @@ class Controls(unittest.TestCase):
   for key,value,name in [('bit_exact',False,f32),('different_after_native_f16_round',1,half),('native_sha256','0'*64,half)]:
    bad=copy.deepcopy(source);bad['canonical']['tensors'][name][key]=value
    with self.assertRaises(ValueError):module.admit_canonical(cfg,bad)
+ def test_exact_native_schema_before_weights(self):
+  import sys,json,copy
+  sys.path.insert(0,str(Path(__file__).parent));module=load('component_schema_test',Path(__file__).with_name('component.py'))
+  cfg=json.loads((ROOT/'docs/lighton4b-projector-canonical-v1.json').read_text())
+  with tempfile.TemporaryDirectory()as d:
+   path=Path(d)/'metadata';self.assertEqual(module.write_schema(cfg,path),'1de40b987ba017a8c583e96ada32f8155a63383ed82be0f1702d7ff43fb9b6db');self.assertEqual(len(path.read_text().splitlines()),297)
+   for key,value in [('native_offset',0),('native_bytes',4)]:
+    bad=copy.deepcopy(cfg);bad['tensors'][0][key]=value
+    with self.assertRaises(ValueError):module.write_schema(bad,path)
  def test_explicit_model_free(self):
   text=Path(__file__).with_name('controls.py').read_text();self.assertIn('model_acquisition=False',text);self.assertNotIn('range_download(',text);self.assertNotIn('urlopen(',text)
  def test_reference_not_production(self):
