@@ -100,3 +100,9 @@ subsequently finished: table214 IDs/EOS, CER160/607 and WER47/106 against BF16,
 better than the pinned llama Q4_K_M table315/607 and88/106 (256 cap/no EOS).
 Arabic6 IDs/EOS/text match both exactly. Both observed calibration floors pass;
 form is pending, BF16 table parity and shipping remain unqualified.
+
+A later [named packed-payload comparison](lighton4b-weighted-publisher-payload-comparison.md)
+finds225/249 quantized tensors byte-identical to the publisher after verified
+whole-row mapping, including all33 Q6 tensors and the tied head. The24 remaining
+hash differences are output matrices in different column coordinates; they are
+not yet a canonical dequantized error or decoded-quality attribution.

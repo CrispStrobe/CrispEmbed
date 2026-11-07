@@ -2953,3 +2953,17 @@ CPU/system/explicitlycumulativeRSS scope and earlier negatives remain preserved.
 No new original/F32model, heldout read, recipe/default/shipping/release change.
 Separate fixed-model post-selection form is running sourceb978b1cef/bootstrap0faac598…;
 physical same-weight diagnostics proceed in parallel and remain separate.
+
+### Named quantized-payload attribution — 7 November
+
+[Read-only named comparison](docs/lighton4b-weighted-publisher-payload-comparison.md)
+joins the original-F16 weighted723-payload audit with the completed physical
+import:225/249 quantized tensors byte-identical after96 verified whole-row maps,
+including all33Q6/tiedhead and192Q4 (2,552,432,640 bytes). Only24GDN out_proj raw
+hashes differ (141,557,760 bytes), with HF versus retained physical column order.
+Every native256-element block maps across2physical256blocks under the exact128
+head-tile permutation; source/maps/all249namedSHA/type/shape/offset records are
+retained. Raw out-hash differences are NOT a canonical dequantized-weight error
+measurement or decoded-quality cause. Floating norm/A, vision inputs and actual
+quantized-activation versus dequant-F32 arithmetic remain separate. No model,
+quantization, reference forward, default or shipping change; fullform is pending.
