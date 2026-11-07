@@ -2995,3 +2995,12 @@ All81 small raw outputs, full ID/text evidence, source/max-error magnitudes and
 independent metrics are preserved; arrays stay remote. The separate arithmetic
 smoke and actual-main primitive closure are independent receipts. No alias,
 release, default, heldout or full-runtime-parity qualification.
+
+Physical native-ops actual negative and actual-main trace closure are preserved in
+[the bounded result](docs/lighton4b-physical-native-ops-negative.md):38 OFF stage
+hashes exactly close to fresh ac34; ON firstscore worsens RMS0.1023485→0.1296631
+and max0.576516→0.752944 despite faster ordered prefix timing. Cap2/noEOS is not
+quality proof. Independent read-only closure verifies664 raw per-case hashes and
+actual first4 input/RMS/QKV/Z/a/b plus first16 layer0 main output. Keep master off;
+next is source-fed GDN/attention attribution and focused closed ablation controls,
+not promotion or another unbounded model panel.

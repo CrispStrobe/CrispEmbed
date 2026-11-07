@@ -1,0 +1,76 @@
+{
+  "schema": "lighton4b-physical-native-ops-smoke-review/v1",
+  "source_sha": "285ab5a4e9d669746a3664ec7804783ca06cc6dd",
+  "report_sha256": "1694d990aa2b23c17685025134b0c565aff844369ef823a46bfc6a8933a219a1",
+  "baseline_source": "ac34f72ca89823a177c538ad598dfa00fc69f124",
+  "native_model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "same_frozen_upstream_source_firstscore_sha256": "4cbf1fcfb2f356e7e484474240e4cecca110010116b55efd835cfdb3e891d415",
+  "reference_off_stage_sha256_exact_count": 38,
+  "reference_off_firstscore_bytes_exact": true,
+  "independent_score_hashes_verified": 3,
+  "metric_recompute_max_fp64_ulp": 1,
+  "quality_result": "ON regresses same-source firstscore; two-token prefix only, no EOS or quality promotion.",
+  "timing_limit": "Ordered reference/OFF/ON includes cold-load and prefill; not a balanced benchmark.",
+  "small_downloaded_files": {
+    "native-ops-smoke-bootstrap.json": {
+      "bytes": 454,
+      "sha256": "7c7094aadbe6ceabf91f136bae150d1623c6eadbf1f6215cf507aeed53461ef8"
+    },
+    "physical-native-ops-smoke.json": {
+      "bytes": 54432,
+      "sha256": "1694d990aa2b23c17685025134b0c565aff844369ef823a46bfc6a8933a219a1"
+    },
+    "simple_form/on/generated.txt": {
+      "bytes": 7,
+      "sha256": "750224b0d3f877b79f4ccb5e434e59109173d8ca1625491c6cd8aca6abc1ca8b"
+    },
+    "simple_form/on/native-summary.json": {
+      "bytes": 154,
+      "sha256": "70c921fe272e375cba0a831500f208460773434d1128ca397b2f4a8295faf24a"
+    },
+    "simple_form/on/greedy.0.logits.f32": {
+      "bytes": 993280,
+      "sha256": "39832f083bd8e0d7f950950d8b984d3ffc3d3138edaccfc06709cd13d1788d35"
+    },
+    "simple_form/on/generated.ids": {
+      "bytes": 9,
+      "sha256": "8ca3f862b28f3484a355682f0dc4bc03893ee594828fda6fb1a24b81bf587dbc"
+    },
+    "simple_form/reference/generated.txt": {
+      "bytes": 7,
+      "sha256": "750224b0d3f877b79f4ccb5e434e59109173d8ca1625491c6cd8aca6abc1ca8b"
+    },
+    "simple_form/reference/native-summary.json": {
+      "bytes": 154,
+      "sha256": "70c921fe272e375cba0a831500f208460773434d1128ca397b2f4a8295faf24a"
+    },
+    "simple_form/reference/greedy.0.logits.f32": {
+      "bytes": 993280,
+      "sha256": "20b175750a9fc31330e728977e3b22f4e878f7347c0c7c8c37eb90696b319965"
+    },
+    "simple_form/reference/generated.ids": {
+      "bytes": 9,
+      "sha256": "8ca3f862b28f3484a355682f0dc4bc03893ee594828fda6fb1a24b81bf587dbc"
+    },
+    "simple_form/off/generated.txt": {
+      "bytes": 7,
+      "sha256": "750224b0d3f877b79f4ccb5e434e59109173d8ca1625491c6cd8aca6abc1ca8b"
+    },
+    "simple_form/off/native-summary.json": {
+      "bytes": 154,
+      "sha256": "70c921fe272e375cba0a831500f208460773434d1128ca397b2f4a8295faf24a"
+    },
+    "simple_form/off/greedy.0.logits.f32": {
+      "bytes": 993280,
+      "sha256": "20b175750a9fc31330e728977e3b22f4e878f7347c0c7c8c37eb90696b319965"
+    },
+    "simple_form/off/generated.ids": {
+      "bytes": 9,
+      "sha256": "8ca3f862b28f3484a355682f0dc4bc03893ee594828fda6fb1a24b81bf587dbc"
+    },
+    "simple_form/observer-on/source.logits.0.f32": {
+      "bytes": 993280,
+      "sha256": "4cbf1fcfb2f356e7e484474240e4cecca110010116b55efd835cfdb3e891d415"
+    }
+  }
+}

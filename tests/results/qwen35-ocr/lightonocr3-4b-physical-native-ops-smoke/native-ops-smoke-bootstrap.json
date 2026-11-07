@@ -1,0 +1,11 @@
+{
+  "schema": "lighton4b-physical-native-ops-smoke-bootstrap/v1",
+  "source_sha": "285ab5a4e9d669746a3664ec7804783ca06cc6dd",
+  "status": "completed",
+  "gpu_requested": false,
+  "full_completion_executed": false,
+  "quality_qualified": false,
+  "phase": "same-feature-smoke",
+  "worker_sha256": "6a2ca78f4ecd243673793083bae7b1132009b132ca71f09331c61c6cc8e9430e",
+  "protocol_sha256": "805efa2be85b0c73d8268677ac31e45bd2ef21895ba507e73800b5f73407f015"
+}
