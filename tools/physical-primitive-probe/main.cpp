@@ -70,17 +70,20 @@ static int run(int argc, char ** argv) {
     weight->buffer = host_buffer;
     weight->data = ggml_backend_buffer_get_base(host_buffer);
     std::memcpy(weight->data, raw.data(), raw.size());
-    std::vector<float> values;
+    std::vector<float> runtime_values;
     if (op == "norm") {
-        if (!qwen35_ocr::lighton4b_physical_rms(x, static_cast<const float *>(weight->data), width, tokens, 4, values))
+        if (!qwen35_ocr::lighton4b_physical_rms(x, static_cast<const float *>(weight->data), width, tokens, 4,
+                                                runtime_values))
             return 1;
     } else {
         std::vector<std::vector<float>> results;
         if (!qwen35_ocr::project_cpu({ weight }, x, width, tokens, 4, results, nullptr, op == "direct")) return 1;
-        values = std::move(results[0]);
+        runtime_values = std::move(results[0]);
     }
     std::ofstream output(argv[7], std::ios::binary);
-    return output.write(reinterpret_cast<const char *>(values.data()), values.size() * sizeof(float)) ? 0 : 1;
+    return output.write(reinterpret_cast<const char *>(runtime_values.data()), runtime_values.size() * sizeof(float))
+               ? 0
+               : 1;
 #endif
     ggml_tensor * result;
     if (op == "norm")
