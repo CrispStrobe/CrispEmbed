@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2];HERE=Path(__file__).parent;sys.path.insert(0,str(HERE));import execution as ex
 sys.path.insert(0,str(ROOT/'tools/physical-f16-attention-probe'));from runtime_guard import Deadline,command
 from source_session import Session,api,port
+from transfer import download as authenticated_transfer
 require=ex.require;sha=ex.sha
 
 def module(name,path):
@@ -68,15 +69,19 @@ def main():
   if opt.controls_only:r['status']='passed_model_free_heldout_controls';return
   require(len(cfg['controls_receipt_sha256'])==64,'hosted controls must be frozen before case execution');controlp=locate('heldout-result.json',cfg['controls_receipt_sha256']);control=json.loads(controlp.read_text());require(control['status']=='passed_model_free_heldout_controls'and control['model_acquisition']is False,'actual model-free controls passed')
   for name,meta in control['artifacts'].items():verify(controlp.parent/name,meta)
-  archive=work/'prepared.zip';base.download(selection['prepared_archive']['url'],archive,selection['prepared_archive']['bytes'],selection['prepared_archive']['sha256']);r['input_preparation']=ex.prepare.prepare(selection,archive);require(r['input_preparation']['candidate_outputs_read']is False,'all frozen inputs admitted before model');case=next(c for c in selection['cases']if c['id']==opt.case);case_out=out/'inputs';case_out.mkdir()
+  def download(url,path,size,digest):
+   r['phase']='download-'+Path(path).name;r.setdefault('downloads',{}).setdefault(Path(path).name,[]);save()
+   try:authenticated_transfer(base.download,url,path,size,digest,r['downloads'][Path(path).name])
+   finally:save()
+  archive=work/'prepared.zip';download(selection['prepared_archive']['url'],archive,selection['prepared_archive']['bytes'],selection['prepared_archive']['sha256']);r['input_preparation']=ex.prepare.prepare(selection,archive);require(r['input_preparation']['candidate_outputs_read']is False,'all frozen inputs admitted before model');case=next(c for c in selection['cases']if c['id']==opt.case);case_out=out/'inputs';case_out.mkdir()
   with zipfile.ZipFile(archive)as z:
    names=[n for n in z.namelist()if Path(n).name==case['prepared']['file']];require(len(names)==1,'one immutable prepared PNG');png=case_out/'input.png';png.write_bytes(z.read(names[0]))
   image=Image.open(png).convert('RGB');rgb=case_out/'input.rgb';rgb.write_bytes(image.tobytes());require(sha(png)==case['prepared']['png_sha256']and sha(rgb)==case['prepared']['rgb_sha256'],'prepared case bytes')
   formp=locate('composed-form-vision.json',cfg['observed_form_receipt_sha256']);form=json.loads(formp.read_text());require(form['status']=='measured_composed_form_vision'and form['arms']['fixed']['expected_text_and_rows_exact'],'observed complete pixel form prerequisite')
   env.update({k:'0'for k in env if k.startswith('CRISPEMBED_')});env.update(form['arms']['fixed']['gates']);require(all(env[k]=='1'for k in['CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE','CRISPEMBED_LIGHTON4B_PHYSICAL_F16_VISION','CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION'])and all(env[k]=='0'for k in['CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK','CRISPEMBED_LIGHTON4B_HEAD_BF16','CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS','CRISPEMBED_LIGHTON4B_BF16_LINEAR']),'frozen selected candidate gate tuple');env['CRISPEMBED_LIGHTON4B_PROVISIONAL_HELDOUT']='1';env['CRISPEMBED_LIGHTON4B_FROZEN_CASES']='1';r['native_gates']={k:v for k,v in env.items()if k.startswith('CRISPEMBED_')}
   r['model_acquisition']=True;save();prefix='https://huggingface.co/'+cfg['model_repo']+'/resolve/'+cfg['model_revision']+'/';up_model=work/cfg['models']['Q4_K_M']['file'];projector=work/cfg['projector']['file']
-  for path,row in[(up_model,cfg['models']['Q4_K_M']),(projector,cfg['projector'])]:base.download(prefix+path.name,path,row['bytes'],row['sha256'])
-  row=cfg['base_model'];protected=work/row['file'];base.download('https://huggingface.co/'+row['repository']+'/resolve/'+row['revision']+'/'+row['file'],protected,row['bytes'],row['sha256']);candidate=work/'candidate.gguf';audit=pack.convert(protected,up_model,candidate,out/'physical-pack.json');require(audit['candidate_sha256']==cfg['candidate_sha256'],'same immutable physical model');protected.unlink()
+  for path,row in[(up_model,cfg['models']['Q4_K_M']),(projector,cfg['projector'])]:download(prefix+path.name,path,row['bytes'],row['sha256'])
+  row=cfg['base_model'];protected=work/row['file'];download('https://huggingface.co/'+row['repository']+'/resolve/'+row['revision']+'/'+row['file'],protected,row['bytes'],row['sha256']);candidate=work/'candidate.gguf';audit=pack.convert(protected,up_model,candidate,out/'physical-pack.json');require(audit['candidate_sha256']==cfg['candidate_sha256'],'same immutable physical model');protected.unlink()
   # Before any held-out forward, require the ordinary512 driver path to reproduce
   # the previously observed167-token image decode and all retained raw scores.
   baseline=out/'observed-control';baseline.mkdir();physical_recipe='lighton4b-upstream-q4km-physical-v1'
