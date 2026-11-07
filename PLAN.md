@@ -2859,3 +2859,18 @@ focused Kaggle controls; coordinate owner/header integration with the separate
 weighted-HF recipe and avoid duplicate expensive workers. Same-source decoder
 comparison must freeze F32 head output (HEAD_BF16=0), not silently reuse the
 genuine-BF16-oracle head cast. All old alternatives/defaults remain unchanged.
+
+
+### Format6 physical import controls pass; same-feature decode next
+
+[Focused Kaggle controls](docs/lighton4b-upstream-physical-import.md#format6-runtime-and-no-checkpoint-controls)
+at0610af26d pass557857 physical checks,1147 HF-weighted,713 oldQ6,84 tied-head,
+39 publicfence with four actual header-only public rejections, all native/mixed/
+BF16 legacy controls and actual native-document/preflight builds. Six Python
+transport/header/map cases pass. Initialv1 missing-protocol setup failure remains
+retained;v2 compiles/tests without checkpoints. All19 actual source blobs and30
+small outputs independently rehashed. No full imported candidate or decoded
+quality proof yet; current goal remains matching actual upstreamQ4M outputs.
+Next source-fed upstream MTMD feature+native decoder and composed three-case
+comparison are separately pinned and queued after the weighted candidate job.
+No default/alias/release/public admission or full F32 model.

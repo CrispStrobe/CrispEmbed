@@ -1,0 +1,150 @@
+[  0%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml.c.o
+[  0%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml.cpp.o
+[  0%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o
+[  0%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o
+[  0%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o
+[  0%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o
+[ 16%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o
+[ 16%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o
+[ 16%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/gguf.cpp.o
+[ 16%] Linking CXX shared library libggml-base.so
+[ 16%] Built target ggml-base
+[ 16%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o
+[ 16%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o
+[ 16%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o
+[ 16%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o
+[ 16%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o
+[ 16%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile/sgemm.cpp.o
+[ 33%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o
+[ 50%] Linking CXX shared library libggml-cpu.so
+[ 50%] Built target ggml-cpu
+[ 66%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o
+[ 66%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o
+[ 66%] Linking CXX shared library libggml.so
+[ 66%] Built target ggml
+[ 66%] Building CXX object CMakeFiles/crispembed-core.dir/src/core/gguf_loader.cpp.o
+[ 66%] Building CXX object CMakeFiles/crispembed-core.dir/src/core/mel.cpp.o
+[ 66%] Building CXX object CMakeFiles/crispembed-core.dir/src/core/image_out.cpp.o
+[ 66%] Building C object CMakeFiles/crispembed-core.dir/src/core/shortest_double.c.o
+[ 66%] Linking CXX static library libcrispembed-core.a
+[ 66%] Built target crispembed-core
+[ 66%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_delta.cpp.o
+[ 66%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_linear.cpp.o
+[ 66%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_attention.cpp.o
+[ 66%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_decoder.cpp.o
+/tmp/lighton4b-upstream-physical-controls-v1/source/src/qwen35_delta.cpp: In lambda function:
+/tmp/lighton4b-upstream-physical-controls-v1/source/src/qwen35_delta.cpp:224:41: warning: ‘ggml_tensor* ggml_add1(ggml_context*, ggml_tensor*, ggml_tensor*)’ is deprecated: use ggml_add instead [-Wdeprecated-declarations]
+  224 |             ggml_sqrt(context, ggml_add1(context, ggml_sum_rows(context, ggml_sqr(context, tensor)), epsilon));
+      |                                ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /tmp/lighton4b-upstream-physical-controls-v1/source/ggml/src/../include/ggml-backend.h:3,
+                 from /tmp/lighton4b-upstream-physical-controls-v1/source/src/qwen35_delta.cpp:4:
+/tmp/lighton4b-upstream-physical-controls-v1/source/ggml/src/../include/ggml.h:929:51: note: declared here
+  929 |     GGML_DEPRECATED(GGML_API struct ggml_tensor * ggml_add1(
+      |                                                   ^~~~~~~~~
+/tmp/lighton4b-upstream-physical-controls-v1/source/ggml/src/../include/ggml.h:192:41: note: in definition of macro ‘GGML_DEPRECATED’
+  192 | #    define GGML_DEPRECATED(func, hint) func __attribute__((deprecated(hint)))
+      |                                         ^~~~
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_vision.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/lighton4b_vision_owner.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_norm.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_profile.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_positions.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_image.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_tokenizer.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_ocr.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/lighton4b_vision_bf16.cpp.o
+[ 83%] Linking CXX static library libcrispembed-qwen35-delta.a
+[ 83%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-upstream-physical.dir/tests/test_lighton4b_upstream_physical.cpp.o
+[100%] Linking CXX executable test-lighton4b-upstream-physical
+[100%] Built target test-lighton4b-upstream-physical
+[ 16%] Built target ggml-base
+[ 50%] Built target ggml-cpu
+[ 66%] Built target ggml
+[ 66%] Built target crispembed-core
+[ 83%] Built target crispembed-qwen35-delta
+[ 83%] Building CXX object CMakeFiles/test-lighton4b-imatrix-q4km-recipe.dir/tests/test_lighton4b_imatrix_q4km_recipe.cpp.o
+[100%] Linking CXX executable test-lighton4b-imatrix-q4km-recipe
+[100%] Built target test-lighton4b-imatrix-q4km-recipe
+[ 20%] Built target ggml-base
+[ 60%] Built target ggml-cpu
+[ 80%] Built target ggml
+[ 80%] Built target crispembed-core
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-q6-policy.dir/tests/test_lighton4b_q6_policy.cpp.o
+[100%] Linking CXX executable test-lighton4b-q6-policy
+[100%] Built target test-lighton4b-q6-policy
+[ 20%] Built target ggml-base
+[ 60%] Built target ggml-cpu
+[ 80%] Built target ggml
+[ 80%] Built target crispembed-core
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-q6-tied-head.dir/tests/test_lighton4b_q6_tied_head.cpp.o
+[100%] Linking CXX executable test-lighton4b-q6-tied-head
+[100%] Built target test-lighton4b-q6-tied-head
+[ 20%] Built target ggml-base
+[ 60%] Built target ggml-cpu
+[ 80%] Built target ggml
+[ 80%] Built target crispembed-core
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-release-fence.dir/tests/test_lighton4b_release_fence.cpp.o
+[100%] Linking CXX executable test-lighton4b-release-fence
+[100%] Built target test-lighton4b-release-fence
+[ 20%] Built target ggml-base
+[ 60%] Built target ggml-cpu
+[ 80%] Built target ggml
+[ 80%] Built target crispembed-core
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-native-context.dir/tests/test_lighton4b_native_context.cpp.o
+[100%] Linking CXX executable test-lighton4b-native-context
+[100%] Built target test-lighton4b-native-context
+[ 20%] Built target ggml-base
+[ 60%] Built target ggml-cpu
+[ 80%] Built target ggml
+[ 80%] Built target crispembed-core
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-mixed-policy.dir/tests/test_lighton4b_mixed_policy.cpp.o
+[100%] Linking CXX executable test-lighton4b-mixed-policy
+[100%] Built target test-lighton4b-mixed-policy
+[ 20%] Built target ggml-base
+[ 60%] Built target ggml-cpu
+[ 80%] Built target ggml
+[ 80%] Built target crispembed-core
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-bf16-linear-controls.dir/tests/test_lighton4b_bf16_linear_controls.cpp.o
+[100%] Linking CXX executable test-lighton4b-bf16-linear-controls
+[100%] Built target test-lighton4b-bf16-linear-controls
+[ 20%] Built target ggml-base
+[ 60%] Built target ggml-cpu
+[ 80%] Built target ggml
+[ 80%] Built target crispembed-core
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-bf16-dequant-weights.dir/tests/test_lighton4b_bf16_dequant_weights.cpp.o
+[100%] Linking CXX executable test-lighton4b-bf16-dequant-weights
+[100%] Built target test-lighton4b-bf16-dequant-weights
+[ 20%] Built target ggml-base
+[ 60%] Built target ggml-cpu
+[ 80%] Built target ggml
+[ 80%] Built target crispembed-core
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/lighton4b-native-document.dir/src/lighton4b_tokenizer.cpp.o
+[100%] Building CXX object CMakeFiles/lighton4b-native-document.dir/tests/lighton4b_native_document.cpp.o
+[100%] Linking CXX executable lighton4b-native-document
+[100%] Built target lighton4b-native-document
+[ 20%] Built target ggml-base
+[ 60%] Built target ggml-cpu
+[ 80%] Built target ggml
+[ 80%] Built target crispembed-core
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/lighton4b-native-case-preflight.dir/tests/lighton4b_native_case_preflight.cpp.o
+[100%] Building CXX object CMakeFiles/lighton4b-native-case-preflight.dir/src/lighton4b_tokenizer.cpp.o
+[100%] Linking CXX executable lighton4b-native-case-preflight
+[100%] Built target lighton4b-native-case-preflight

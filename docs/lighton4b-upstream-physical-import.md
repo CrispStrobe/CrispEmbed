@@ -96,3 +96,46 @@ After the physical operator result, any production activation/A/norm bridge and
 same-input first-score/full-decoded comparison need separate gated integration.
 Our source-exact protected vision and upstream F16 vision remain different
 controls until actual upstream feature rows are captured and admitted.
+
+## Format6 runtime and no-checkpoint controls
+
+Kaggle CPU controls version2 passes at source
+`0610af26d9cb8972ecdfe55204e2306e9e740d5e`, based on stable PR15569abebb7e.
+The [frozen protocol](lighton4b-upstream-physical-controls-v1.json) and
+[complete result](../tests/results/qwen35-ocr/lightonocr3-4b-upstream-physical-controls/physical-controls.json)
+cover557,857 physical dtype/gate/metadata/lane/scalar checks,1,147 HF-weighted
+profile controls,713 oldQ6,84 tied-head,39 public-fence (four actual header-only
+public rejections),9 old native,74 mixed,20 BF16-linear and16 BF16-weight checks.
+Six unique Python transport/header/mapping cases pass. Actual native-document and
+preflight binaries build. No checkpoint/model payload or learned-model inference
+is used. The synthetic grouped core proves direct−1 equals legacy−exp(0) bitwise
+for values/state, an incorrectly re-exponentiated physical A differs, and gate-off
+legacy repeat remains bit-exact. Full16-token-chunk/4096-lane permutations pass.
+
+The source now has a separate experimental format6/type-tag/domain: direct gamma
+and A, HF recurrent state with tiled pre-out inputs, explicit incompatible BF16
+cast rejection and cache-domain tags. It retains every format5 default. The
+physical tokenizer metadata mirrors upstream CONTROL suppression and dual EOG
+248044/248046; original format5 retains primary248046 only. Vocabulary audit
+finds248,077 identical real strings/merges/template and243 upstream UNUSED labels
+that decode empty like native empty rows. Six FIM tokens are additionally CONTROL
+in the upstream profile, so only format6 changes their suppression. No output
+fixture chooses those rules. Native Q6 is required and WASM remains unsupported.
+
+The lossless importer copies297 protected vision tensors and transports426
+physical text tensors using whole rows/blocks; it does not create a full F32
+model or call a quantizer. Public loaders reject format6 even when experimental
+gates are on, and no alias/payload/default/release is added. Current controls do
+not yet prove a persisted full imported candidate or decoded quality. Next is a
+coordinated Kaggle same-feature/source-provenance harness and actual composed
+form/table/Arabic decodes against the retained upstream and BF16 references.
+
+The [independent review](../tests/results/qwen35-ocr/lightonocr3-4b-upstream-physical-controls/independent-review.json)
+rehashes all19 reported runtime source blobs against the exact Git tree and all30
+small remote outputs (149,915 bytes). Submitted
+[bootstrap](../tests/results/qwen35-ocr/lightonocr3-4b-upstream-physical-controls/kaggle-bootstrap-v2.py)
+SHA256 is `990cee747ec07da9ecd341dd680dfb1b411c604e1ea79a08c0323df805867283`,
+verified through the service API; private service binding stays outside Git.
+Initial version1's missing protocol path is preserved: it stops after dependency
+checks and before compilation/model access. The corrected protocol/path was
+validated before version2. No GitHub job or duplicate worker is launched.
