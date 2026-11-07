@@ -2061,3 +2061,18 @@ alias/default/release or BF16-reference change follows from component evidence.
 ### LightOn4B original-F16 tiled-output isolation — 7 November 2026
 
 Decoder lane prepares a no-inference [paired coordinate reproducer](docs/lighton4b-hf-tiled-out-reproducer.md) after the preserved form CER failure. Five local Python protocol/negative tests pass; hosted synthetic helper compilation and numerical controls remain pending. No checkpoint worker or new runtime gate is dispatched by this change. Exact original-F16/HF and upstream-coordinate payload equality is required before preparing a distinct HF-tiled-output candidate; no quality promotion or release change.
+
+The physical native-ops form smoke at285ab5a4e is a composed numerical negative:
+ON RMS0.1296631 vs OFF/reference0.1023485; all38 OFF stage hashes match ac34,
+but cap2 `<figure`/noEOS is not quality proof. Keep the gate and shipping fences
+unchanged. [Immutable evidence](https://github.com/CrispStrobe/CrispEmbed/blob/678d3ca790fbdbf8eec69dda9cbcbc2996170186/docs/lighton4b-physical-native-ops-negative.md)
+also closes actual first4 operator reconstruction/all664 per-case artifacts.
+
+Closed physical diagnostic ablations are verified at4a8821e3e:142 mode/cache/
+unknown/observer controls,557865 physical-policy/geometry checks, old stream and
+84 Q6 controls/65792 scalar values pass. The existing master stays default-off;
+unset/`all` preserves its previously measured full mode, while `quant`, `rms`,
+`layers`, `head` and explicit off select bounded components. Unknown active
+physical modes reject before payload/profile admission and primitive calls;
+cache masks reject subset switches. No learned-model ablation or quality
+qualification follows. The composed full-mode negative remains preserved.

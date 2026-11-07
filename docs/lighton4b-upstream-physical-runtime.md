@@ -46,3 +46,16 @@ The source-feature override belongs only to the document test executable, which
 can preserve partial IDs/text and stage arrays for the bounded same-feature
 comparison. No original BF16 forward, full F32 model, image-specific fitted
 constants or release change is introduced.
+
+## Actual composed negative: keep native-ops disabled
+
+The matched-profile source-fed projection/RMS controls pass, but the actual
+same-feature form replay is a numerical regression with
+`CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS=1`: firstscore RMS0.1023485→0.1296631,
+max0.576516→0.752944 versus pinned upstream. New OFF closes all38 stage hashes
+to fresh ac34 exactly. Every arm emits only `<figure` at cap2/noEOS. Faster
+ordered prefix timing is not decoded-quality proof; keep this gate default-off,
+retain all shipping/alias fences, and do not ship the current Q4 candidate.
+The [immutable negative and actual-main closure](https://github.com/CrispStrobe/CrispEmbed/blob/678d3ca790fbdbf8eec69dda9cbcbc2996170186/docs/lighton4b-physical-native-ops-negative.md)
+preserve raw receipts and limitations. Controlled ablations and source-fed
+GDN/attention/cache/softmax attribution are separate pending work.

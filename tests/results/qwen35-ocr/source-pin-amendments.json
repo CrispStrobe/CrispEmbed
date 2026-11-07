@@ -141,6 +141,17 @@
             "7c5f738a12f341c76f231a7e787307d25c35849f Scope physical upstream scale A and activation layout semantics [skip ci]"
           ],
           "reason": "Default-off physical-profile retained-quantized matmul; prototype owner flag required; legacy and BF16 modes unchanged."
+        },
+        {
+          "from_sha256": "d9b0f496382eed58103f19935d459acc0879bff04616ddd0d3373c54191904ce",
+          "to_sha256": "e69233a8e8f0abf5b36b90a2dc75868697f84c5f8d385a829f4b7eee39115951",
+          "to_blob": "e316d6dc0b12f3616a8e3bcff3d577a5ed806da7",
+          "recorded_at_commit": "9918eae569bd8003a236b08ab1c44a30db83bab7",
+          "recorded": "2026-11-07",
+          "changed_by": [
+            "bb896097173d937ec482592f5aa27311ed848347 Prototype physical-only retained quantized projection and ggml RMS [skip ci]"
+          ],
+          "reason": "Closed physical-only quant/RMS/layers/head ablation selector preserves full default opt-in; head observer failure remains atomic."
         }
       ]
     },

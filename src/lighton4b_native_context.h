@@ -56,7 +56,7 @@ inline bool lighton4b_select_recipe(const decoder_weights & decoder, const std::
     const bool q6head = core_env::on("CRISPEMBED_LIGHTON4B_IMATRIX_Q4KM_Q6HEAD");
     if (int(mixed) + int(out8) + int(out6) + int(q6head) + int(physical) > 1) return false;
     if (physical) {
-        if (tag != lighton4b_upstream_physical_recipe) return false;
+        if (tag != lighton4b_upstream_physical_recipe || !lighton4b_physical_native_ops_valid(true)) return false;
         recipe = lighton4b_quant_recipe::upstream_physical_q4km;
     } else if (tag == lighton4b_imatrix_q4km_recipe) {
         if (!lighton4b_imatrix_q4km_enabled() || mixed || out8 || out6) return false;
