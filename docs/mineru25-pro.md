@@ -138,7 +138,8 @@ exception was not exercised by the model run
 ([receipt](../tests/results/mineru25/native-doc-model-parity.json)).
 This evidence is the basis of the F16/F32 default; the basic and Python routes are kept.
 The default-on lane (`mineru25_doc_parity.sh` with `ROUTE_ENV=default`, the gate unset) is
-the regression check for the shipped default; see PERFORMANCE/HISTORY for its receipt.
+the regression check for the shipped default: hosted run 42370991098 is 8/8 identical with
+the gate unset ([receipt](../tests/results/mineru25/native-doc-default-42370991098.json)).
 
 ```bash
 CRISPEMBED_MINERU25_PRO=1 ./build/crispembed \

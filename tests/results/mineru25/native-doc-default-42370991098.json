@@ -1,0 +1,91 @@
+{
+ "schema": "crispembed-mineru-native-doc-default-v1",
+ "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42370991098",
+ "source": "222563d7deb6e085e8f27067ca53434559b766b1",
+ "decision": "owner 7 Nov 2026: full native document route default-on for F16/F32, opt-in for quantized",
+ "script": "tools/ci-heavy/mineru25_doc_parity.sh all 2048 300 default",
+ "env": "CRISPEMBED_MINERU25_PRO_FULL_DOC unset (shipped default)",
+ "model": "mineru25-pro-2604-f16.gguf sha256 7d464d375f7c20dd3e2bae7e20fed1f80485ae9ca69aaad201897652c74d746b",
+ "gates": {
+  "unicode_tables": "regenerated for reference CPython 3.12.16 15.0.0",
+  "self": "pass",
+  "otsl_golden": "pass",
+  "mineru_layout_unit": "pass",
+  "marker_document_unit": "pass",
+  "fuzz_regex": "pass",
+  "fuzz_postprocess": "pass",
+  "synthetic_pages": "pass",
+  "route_env": "default (CRISPEMBED_MINERU25_PRO_FULL_DOC=<unset>)",
+  "full_doc_gate_f16_unset": "pass",
+  "full_doc_gate_f16_off": "pass",
+  "protocol_cases": "pass",
+  "recorded_replay": "pass"
+ },
+ "cases": [
+  {
+   "case": "formula",
+   "result": "identical",
+   "regions": 2,
+   "capped": 0,
+   "python_s": 257.8,
+   "native_s": 258.5
+  },
+  {
+   "case": "table",
+   "result": "identical",
+   "regions": 3,
+   "capped": 0,
+   "python_s": 279.4,
+   "native_s": 278.8
+  },
+  {
+   "case": "receipt",
+   "result": "identical",
+   "regions": 8,
+   "capped": 0,
+   "python_s": 345.3,
+   "native_s": 345.8
+  },
+  {
+   "case": "german",
+   "result": "identical",
+   "regions": 19,
+   "capped": 0,
+   "python_s": 682.1,
+   "native_s": 684.4
+  },
+  {
+   "case": "japanese",
+   "result": "identical",
+   "regions": 4,
+   "capped": 0,
+   "python_s": 286.8,
+   "native_s": 283.7
+  },
+  {
+   "case": "arabic",
+   "result": "identical",
+   "regions": 2,
+   "capped": 0,
+   "python_s": 257.8,
+   "native_s": 257.5
+  },
+  {
+   "case": "layout-page",
+   "result": "identical",
+   "regions": 10,
+   "capped": 0,
+   "python_s": 385.5,
+   "native_s": 386.7
+  },
+  {
+   "case": "layout-rot90",
+   "result": "identical",
+   "regions": 2,
+   "capped": 0,
+   "python_s": 520.7,
+   "native_s": 518.7
+  }
+ ],
+ "summary": "8/8 identical (blocks JSON, Markdown, per-region requests); recorded replay pass; reproduces 41251475795"
+}

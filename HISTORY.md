@@ -2,6 +2,31 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 7 November 2026 — MinerU full native document route default (owner decision) and OCR gold corpus v1
+
+- **MinerU default.** `CRISPEMBED_MINERU25_PRO_FULL_DOC` is now quantization-aware: default-on
+  for F16/F32 GGUFs, opt-in only (`=1`) when the loaded GGUF has any quantized tensor (detected
+  from tensor header types at `crispembed_mineru_init`; new C ABI
+  `crispembed_mineru_is_quantized` / `crispembed_mineru_full_doc_enabled`). `=0` restores the
+  basic route everywhere. Hosted run [42370991098](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42370991098)
+  at `222563d7` re-ran the MinerU route panel with the gate **unset**: 8/8 protocol cases
+  identical to the original pipeline (blocks JSON, Markdown, per-region requests), recorded
+  replay and all weight-free gates pass, and the C ABI reports F16 unquantized/route on
+  (unset) and off (`=0`) ([receipt](tests/results/mineru25/native-doc-default-42370991098.json)).
+  No frozen panel needed a `=0` pin: the qualification lanes call the basic C API or the
+  Python helper directly, and the only orchestrator users (`ocr_wrappers.sh`) are
+  interface-only checks on F16, already on the full route since `03b3e9f5`.
+- **OCR gold corpus v1.** [`docs/ocr-gold-corpus-v1.json`](docs/ocr-gold-corpus-v1.json): 57
+  licensed pages (17 en / 13 de / 12 fr Wikisource Validated, 15 CORD receipts), all 20 v2
+  pages reused with unchanged pins, block types/order/tables with derived-vs-manual
+  provenance; reused v2 pages reproduce their v2 ground truth with CER 0. Hosted run
+  [42372548797](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42372548797)
+  verified 40/42 Wikimedia pins (two DjVu render variants recorded, not accepted), pinned the
+  new CORD bytes, and aligned Tesseract 5.3.4 word boxes: 307/381 blocks boxed. It also found
+  that the API-reported size of paged renders is wrong (served at 1920px) for 36 pages;
+  sizes are now measured. Layout scorer (block IoU/text matching, type accuracy, Kendall
+  tau-b, table cell F1) with unit tests. [Guide](docs/ocr-gold-corpus.md).
+
 ## 7 November 2026 — OXR native document parity passes (comparator v2)
 
 Heavy CPU run 42359526030 (`f8ec7329`, `tools/ci-heavy/oxr_native_doc.sh dfine native`):
