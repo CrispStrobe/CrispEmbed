@@ -46,6 +46,11 @@ except Exception as e:
  report['error_type']=type(e).__name__;report['error']='bounded CPU-only weighted-Q4 bootstrap or controller failed'
  raise
 finally:
+ controller_receipt=out/'q4km-complete-decode.json'
+ if controller_receipt.is_file():
+  try:
+   partial=json.loads(controller_receipt.read_text());report['model_forward_executed']=partial.get('model_forward_executed');report['model_forward_attempted']=partial.get('model_forward_attempted',False);report['controller_status']=partial.get('status')
+  except (OSError,ValueError):report['partial_controller_receipt_unreadable']=True
  (out/'bootstrap-receipt.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
  # Only fresh task-owned transient checkout/builds are removed; all receipts/stats/logs remain.
  for folder in reversed(created):shutil.rmtree(folder)
