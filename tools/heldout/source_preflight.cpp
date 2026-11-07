@@ -12,7 +12,14 @@
 #include <vector>
 #include <utility>
 static void need(bool ok,const char*why){if(!ok)throw std::runtime_error(why);}
+// Upstream decode_embd_batch::set_position_mrope_2d packs t,y,x,z;
+// decoder_pos field declaration order is t,x,y,z and is not batch order.
+static std::array<uint32_t,3> source_axes(const mtmd_decoder_pos&p){return {p.t,p.y,p.x};}
 int main(int argc,char**argv){try{
+ if(argc==2&&std::string(argv[1])=="--axis-control"){
+  need(source_axes(mtmd_decoder_pos{7,11,13,0})==std::array<uint32_t,3>{7,13,11},"actual source t,y,x batch axes");
+  std::cout<<"SOURCE_HELDOUT_AXIS PASS t,y,x\n";return 0;
+ }
  need(argc==8,"Q4 model projector RGB height width template output-prefix required");
  int h=std::stoi(argv[4]),w=std::stoi(argv[5]);need(h>0&&w>0&&h<=4096&&w<=4096,"bounded RGB");
  std::ifstream rf(argv[3],std::ios::binary);std::vector<unsigned char>rgb(size_t(h)*w*3);rf.read(reinterpret_cast<char*>(rgb.data()),rgb.size());need(size_t(rf.gcount())==rgb.size()&&rf.peek()==EOF,"exact RGB bytes");
@@ -29,7 +36,7 @@ int main(int argc,char**argv){try{
  std::vector<llama_token>ids;std::vector<int>modalities;std::vector<std::array<uint32_t,3>>positions;llama_pos past=0;size_t image_count=0,image_tokens=0;
  for(size_t i=0;i<mtmd_input_chunks_size(chunks.get());++i){const auto*chunk=mtmd_input_chunks_get(chunks.get(),i);const auto kind=mtmd_input_chunk_get_type(chunk);
   if(kind==MTMD_INPUT_CHUNK_TYPE_TEXT){size_t n=0;const auto*t=mtmd_input_chunk_get_tokens_text(chunk,&n);need(t&&n<512,"bounded text chunk");for(size_t j=0;j<n;++j){ids.push_back(t[j]);modalities.push_back(0);positions.push_back({uint32_t(past+j),uint32_t(past+j),uint32_t(past+j)});}past+=n;}
-  else{need(kind==MTMD_INPUT_CHUNK_TYPE_IMAGE&&++image_count==1,"one still image only");const auto*im=mtmd_input_chunk_get_tokens_image(chunk);const size_t n=mtmd_input_chunk_get_n_tokens(chunk);need(im&&n>0&&n<=256,"bounded merged image tokens");std::vector<mtmd_decoder_pos>pos(n);mtmd_helper_image_get_decoder_pos(im,past,pos.data());for(const auto&p:pos){need(p.z==0,"reserved source image axis");ids.push_back(pad[0]);modalities.push_back(1);positions.push_back({p.t,p.x,p.y});}image_tokens=n;past+=mtmd_input_chunk_get_n_pos(chunk);}
+  else{need(kind==MTMD_INPUT_CHUNK_TYPE_IMAGE&&++image_count==1,"one still image only");const auto*im=mtmd_input_chunk_get_tokens_image(chunk);const size_t n=mtmd_input_chunk_get_n_tokens(chunk);need(im&&n>0&&n<=256,"bounded merged image tokens");std::vector<mtmd_decoder_pos>pos(n);mtmd_helper_image_get_decoder_pos(im,past,pos.data());for(const auto&p:pos){need(p.z==0,"reserved source image axis");ids.push_back(pad[0]);modalities.push_back(1);positions.push_back(source_axes(p));}image_tokens=n;past+=mtmd_input_chunk_get_n_pos(chunk);}
  }
  need(image_count==1&&ids.size()<=512&&ids.size()+1536<=2048,"frozen context budget before forward");const std::string out=argv[7];
  for(auto item:{std::pair<const char*,const std::vector<llama_token>*>{"prompt",&ids}}){std::ofstream f(out+"."+item.first+".ids");for(auto t:*item.second)f<<t<<'\n';need(bool(f),"prompt output");}

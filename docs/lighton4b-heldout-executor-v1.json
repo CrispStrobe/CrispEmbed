@@ -30,7 +30,7 @@
   "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
   "driver_sha256": "912b5d0d34f13589e3848b419cfb51c3854acdbbe5f0380526d313c9c77cf879",
   "native_preflight_sha256": "09b45d7195bd5832ac6e209b62eb4028ae7b4a39f1b558f53607480a2eaff5cf",
-  "source_preflight_sha256": "867b4dd7d86dc9a8b9e0ffcc7617098cf62a4abf5dd281412f791b2939546f36",
+  "source_preflight_sha256": "c416a1ba7628191715dc5bee2bd07d9fc170e0c1c58c56e5bf0e03abe02c0860",
   "controls_receipt_sha256": "7b090c04f11cd48e27e49dd290fef1b5405bfbd058d658b6ee13e44e5315bc07",
   "observed_form_receipt_sha256": "aec0d0b10befb5b3498b55a87f9cda785998242c0d9f49a4a1b3f72a92ed160b",
   "expected_media_prompt": "<|im_start|>user\n<__media__><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",

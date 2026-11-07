@@ -56,3 +56,5 @@ and an observed floor are distinct from general/release qualification.
 
 Primary API sources: [pinned mtmd public interface](https://github.com/ggml-org/llama.cpp/blob/6c01da6278ab6c69ed67d9124806b50d2b299ba7/tools/mtmd/mtmd.h),
 [pinned model interface](https://github.com/ggml-org/llama.cpp/blob/6c01da6278ab6c69ed67d9124806b50d2b299ba7/include/llama.h).
+
+The first real-input metadata admission exposed a reference-adapter error before any held-out forward: decoder position fields are declared `t,x,y,z`, while the primary source [batch writer](https://github.com/ggml-org/llama.cpp/blob/6c01da6278ab6c69ed67d9124806b50d2b299ba7/tools/mtmd/mtmd-helper-common.h#L101) packs `t,y,x,z`. The corrected reference adapter follows that writer and adds a distinct-coordinate CLI control before weight transfers. Native production positions remain unchanged; the full actual source/native position comparison remains mandatory.

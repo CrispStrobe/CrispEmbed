@@ -65,6 +65,7 @@ def main():
   else:raise ValueError('source preflight unexpectedly admitted noargs')
   require('required'in(out/'source-preflight-noargs.log').read_text(),'actual source metadata CLI linked');run('server-help',[server,'--help'],limit=30)
   for flag in ['--cache-type-k','--cache-type-v','--no-context-shift','--no-warmup']:require(flag in(out/'server-help.log').read_text(),'pinned source CLI '+flag)
+  run('source-preflight-axis',[source_preflight,'--axis-control'],limit=30);require('SOURCE_HELDOUT_AXIS PASS t,y,x'in(out/'source-preflight-axis.log').read_text(),'actual source batch spatial axis packing')
   r['native_binary_sha256']=sha(native);r['source_binary_sha256']=sha(server);r['source_preflight_binary_sha256']=sha(source_preflight)
   if opt.controls_only:r['status']='passed_model_free_heldout_controls';return
   require(len(cfg['controls_receipt_sha256'])==64,'hosted controls must be frozen before case execution');controlp=locate('heldout-result.json',cfg['controls_receipt_sha256']);control=json.loads(controlp.read_text());require(control['status']=='passed_model_free_heldout_controls'and control['model_acquisition']is False,'actual model-free controls passed')
