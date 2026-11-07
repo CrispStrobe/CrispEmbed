@@ -21,10 +21,10 @@ class Controls(unittest.TestCase):
  def test_nonprompt_probe_closed(self):
   import numpy as np
   def graph(index,n,tokens=None,positions=None):return {'index':index,'sample_count':0,'tokens':n,'arrays':{'inp_tokens':np.array(tokens if tokens is not None else [1]*n),'inp_pos':np.array(positions if positions is not None else list(range(n))*4)}}
-  actual=[graph(1,4),graph(2,72),graph(3,6),graph(4,4)];probe=graph(0,2,[0,0],[0,1]*4)
+  actual=[graph(1,4),graph(2,72),graph(3,6),graph(4,4)];probe=graph(0,2,[0,0],[0,1]*3+[0,0])
   selected,excluded=analysis.select_prefill([probe]+actual);self.assertEqual(selected,actual);self.assertEqual(excluded[0]['graph'],0)
   self.assertEqual(analysis.select_prefill(actual)[1],[])
-  for bad in [graph(0,2,[0,1],[0,1]*4),graph(0,2,[0,0],[1,2]*4),graph(0,3,[0,0,0],list(range(3))*4)]:
+  for bad in [graph(0,2,[0,1],[0,1]*4),graph(0,2,[0,0],[1,2]*4),graph(0,2,[0,0],[0,1]*4),graph(0,3,[0,0,0],list(range(3))*4)]:
    with self.assertRaises(ValueError):analysis.select_prefill([bad]+actual)
  def test_private_relay_transport(self):
   import relay,io,time

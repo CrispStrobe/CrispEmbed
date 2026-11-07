@@ -35,8 +35,8 @@ def select_prefill(graphs):
  import numpy as np
  prefill=[g for g in graphs if g['sample_count']==0];excluded=[]
  if sum(g['tokens']for g in prefill)==88:
-  g=prefill[0];a=g['arrays'];require(g['index']==0 and g['tokens']==2 and a.get('inp_tokens',np.array([])).tolist()==[0,0]and a.get('inp_pos',np.array([])).tolist()==[0,1]*4,'exact pinned sequence-removal compatibility probe')
-  excluded=[{'graph':0,'tokens':[0,0],'positions_4axes':[[0,1]]*4,'reason':'Pinned common_context_can_seq_rm probes two zero IDs then clears memory and synchronizes before actual prompt.','common_cpp_sha256':'1b41b3613a10d579e2808bf5e1a73531980ca836d0f4d23dba22d7130d78985e','server_context_cpp_sha256':'e0e43f22fd2357a1e76ad6b8996b099d62615dd973de33feaa02fa0ee1a2a973'}];prefill=prefill[1:]
+  g=prefill[0];a=g['arrays'];require(g['index']==0 and g['tokens']==2 and a.get('inp_tokens',np.array([])).tolist()==[0,0]and a.get('inp_pos',np.array([])).tolist()==[0,1]*3+[0,0],'exact pinned sequence-removal compatibility probe')
+  excluded=[{'graph':0,'tokens':[0,0],'positions_4axes':[[0,1]]*3+[[0,0]],'reason':'Pinned common_context_can_seq_rm probes two zero IDs then clears memory and synchronizes before actual prompt.','common_cpp_sha256':'1b41b3613a10d579e2808bf5e1a73531980ca836d0f4d23dba22d7130d78985e','server_context_cpp_sha256':'e0e43f22fd2357a1e76ad6b8996b099d62615dd973de33feaa02fa0ee1a2a973'}];prefill=prefill[1:]
  require(sum(g['tokens']for g in prefill)==86,'actual table prompt token census');return prefill,excluded
 
 def analyze(folder,native_folder,first_score,step_score,source_ids):
