@@ -17,3 +17,7 @@ set(GGML_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory("${GGML_SOURCE}" ggml)
 add_executable(attention-primitive graph.cpp)
 target_link_libraries(attention-primitive PRIVATE ggml ggml-cpu)
+
+# Private backend symbol experiment: explicit original F16 dot, no trait mutation.
+add_executable(attention-paired-f16 paired.cpp)
+target_link_libraries(attention-paired-f16 PRIVATE ggml ggml-cpu)
