@@ -2097,3 +2097,8 @@ remain unchanged. Next gates are hosted supported/stub/WASM-guard controls,
 source-fed N4/N16 plus16 N1 cache replays against pinned upstream, then a bounded
 same-feature full-score and independent decoded comparison. Unsupported profiles
 must fail closed; no shipping/quality claim follows from the operator proof.
+
+
+### Executed HF-tiled artifact-only reader integrated (2026-11-07)
+
+Selective four-file integration preserves byte-exact reader/test/protocol source`0d90fd0b2a24fc7990cbd8bc052c478bd28bf0f2`, executed on Kaggle143195841/v1. Sealed producer report63a586c0 and reader reportcb7a0a3e prove actual4GB/723payload hashes, allcurrent score finite/hash/argmax controls and only common-prefix historical-native comparisons; complete evidence is PR157commit`3b8436830`. [Protocol](docs/lighton4b-hf-tiled-out-readback-protocol-v1.json), [artifact consumer](tools/ci-heavy/lighton4b_hf_tiled_out_readback.py), [Kaggle controller](tools/kaggle/lighton4b_hf_tiled_out_readback.py). No inference/build/quantization, new source stages, runtime/header/CMake/workflow/default changes, or quality promotion; fullform/table negative remains. Actual tested source remains distinct from this integration source.
