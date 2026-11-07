@@ -3009,3 +3009,8 @@ not promotion or another unbounded model panel.
 ### LightOn4B tiled-output helper controls — 7 November 2026
 
 Kaggle CPU 143168048/v1 at617534eff passed19 synthetic checks plus19 retained-bundle repeats and5 Python protocol tests in76.18s, with zero checkpoint/inference. [Receipts and limitations](docs/lighton4b-hf-tiled-out-controls-results.md) retain exact source/helper/runtime hashes. Original-F1624tensor reproduction is a separate pending gate; no new runtime recipe or quality promotion.
+
+
+### LightOn4B actual original-F16 output-coordinate proof — 7 November2026
+
+Kaggle CPU143168450/v1 at24208e2ac reproduced all24 old-HF payloads and all24 publisher-tiled payloads directly from immutable original F16, with48 statistics hashes and72 independent dequant hashes exact,294.67s/no forward. [Full evidence and magnitudes](docs/lighton4b-hf-tiled-out-controls-results.md) preserve canonical weight RMS0.000596409/max0.0468936 and slightly worse tiled unweighted source RMSE. The remaining24 packed differences are coordinate-dependent quantization; no decoded promotion follows. A distinctly gated HF-only output-layout candidate/699 protected-payload audit and decoded tests remain next.

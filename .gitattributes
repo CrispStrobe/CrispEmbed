@@ -44,3 +44,6 @@ tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/form-postselectio
 # Retain exact source-pinned synthetic helper logs/cache bytes.
 tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/controls-v1/**/*.log -text whitespace=-trailing-space,-blank-at-eof
 tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/controls-v1/**/CMakeCache.txt -text whitespace=-trailing-space,-blank-at-eof
+
+# Preserve exact actual original-F16 paired-proof remote logs.
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/original-f16-proof-v1/**/*.log -text whitespace=-trailing-space,-blank-at-eof
