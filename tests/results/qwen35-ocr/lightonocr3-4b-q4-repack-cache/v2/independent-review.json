@@ -1,0 +1,9 @@
+{
+  "receipt_sha256": "c7130c6d7b54e6859439bbf87c8e54880c30bd5d2db33c3571ded179e6711cf5",
+  "source_sha": "5f6dfb9f09b49002201c7702ff71a5e345294af2",
+  "status": "independently_reviewed_operator_controls",
+  "all30_metric_bit_exact": true,
+  "closed_unit_and_profile_members_hash_verified": 8,
+  "outer_bootstrap_final_status": "completed",
+  "artifact_manifest_limit": "Child report includes a stale outer-bootstrap artifact entry captured before outer finalization. Excluded from immutable member claims; actual final bootstrap retained and hashed independently here. Unit/profile artifacts and all30 comparison metrics remain valid. No full model/decoded test executed."
+}

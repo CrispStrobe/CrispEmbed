@@ -44,3 +44,27 @@ Independently reviewed source `5f6dfb9f0` adds the missing direct include and
 compiles the adapter before the expensive main-library build; all runtime
 bytes remain unchanged. A bounded retry is pending. No quality or release
 claim follows from the initial unit passes.
+
+## Complete runtime-cache controls
+
+Retry source `5f6dfb9f09b49002201c7702ff71a5e345294af2` completed in491.644s.
+[Raw receipt](../tests/results/qwen35-ocr/lightonocr3-4b-q4-repack-cache/v2/runtime-repack-controls.json)
+SHA256 `c7130c6d7b54e6859439bbf87c8e54880c30bd5d2db33c3571ded179e6711cf5`
+records all30 actual-input runtime OFF/ON outputs byte-identical to the sealed
+raw/preferred operator outputs. Supported lifecycle57, F16-attention255297,
+native-ops142, HF-layout39, Q6-head84 (65,792 independent scalar values), main
+SDK5 and main closed-stub2 controls pass. All eight downloaded unit/profile
+files match the child receipt hashes; runtime and sealed native operator
+builds have equal GGML Boolean options. This is supported execution, not an unsupported-path skip.
+
+The child artifact inventory includes one stale outer-bootstrap JSON entry
+because the outer process finalizes after the child. That row is excluded from
+immutable artifact claims. The independently completed final bootstrap and
+its actual hash are preserved separately in the evidence index. This metadata
+limitation does not change the closed unit outputs or30 measured comparisons.
+
+No full model, real Emscripten rebuild or decoded comparison ran in this worker.
+The main unsupported stub is tested; actual new-code WASM linkage is not newly
+qualified. Next is one bounded source-feature table512 OFF/ON model diagnostic,
+requiring every old282 raw row and38 stages before evaluating the alternative.
+All existing observed/composed/held-out release gates remain in force.

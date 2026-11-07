@@ -3123,3 +3123,12 @@ source-fed work on a reference-adapter missing-declaration compile error.
 that distinction explicit. Reviewed include/build-order repair `5f6dfb9f0`
 leaves runtime bytes unchanged; one bounded retry is pending, with no model
 inference or promotion.
+
+Q4 repack cache retry source `5f6dfb9f0` passes the complete bounded control
+worker (`c7130c6d`,491.644s): all30 actual-input OFF/ON projection bytes exact,
+lifecycle57 plus255297/142/39/84/5/2 compatibility controls.
+[Raw and independently qualified evidence](docs/lighton4b-q4-repack-operator-results.md)
+preserves the initial compile negative and stale outer-bootstrap inventory
+limitation. No model forward/decoded or new real-WASM qualification. Next is
+the reviewed table512 OFF282row/38stage anchor then ON comparison; no promotion
+until all observed/composed/held-out gates pass.
