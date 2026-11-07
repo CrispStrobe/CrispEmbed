@@ -2056,3 +2056,9 @@ closed. The ongoing same-feature baseline is immutable, with exact actual input
 bytes but nonzero first-score differences; full quality, actual-main primitive
 closure and a fixed-runtime same-feature rerun remain acceptance gates. No
 alias/default/release or BF16-reference change follows from component evidence.
+
+The physical native-ops form smoke at285ab5a4e is a composed numerical negative:
+ON RMS0.1296631 vs OFF/reference0.1023485; all38 OFF stage hashes match ac34,
+but cap2 `<figure`/noEOS is not quality proof. Keep the gate and shipping fences
+unchanged. [Immutable evidence](https://github.com/CrispStrobe/CrispEmbed/blob/678d3ca790fbdbf8eec69dda9cbcbc2996170186/docs/lighton4b-physical-native-ops-negative.md)
+also closes actual first4 operator reconstruction/all664 per-case artifacts.
