@@ -1,4 +1,4 @@
-import copy,importlib.util,json,unittest
+import copy,importlib.util,json,stat,tempfile,unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 s=importlib.util.spec_from_file_location('calibration',ROOT/'tools/kaggle/lighton4b_composed_vision_calibration.py');m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
@@ -10,6 +10,14 @@ class Admission(unittest.TestCase):
    with self.subTest(key=key):
     c=copy.deepcopy(cfg);c[key]=value
     with self.assertRaises(RuntimeError):m.admit(c)
+ def test_staged_mount_mode(self):
+  with tempfile.TemporaryDirectory()as folder:
+   p=Path(folder)/'native';p.write_bytes(b'fixture');p.chmod(0o444);m.stage_executable(p);self.assertTrue(p.stat().st_mode&stat.S_IXUSR)
+ def test_closed_profile(self):
+  lines=[f'{k}:BOOL={v}'for k,v in m.PROFILE.items()];m.validate_cache(lines)
+  for key in m.PROFILE:
+   with self.subTest(key=key):
+    with self.assertRaises(RuntimeError):m.validate_cache([x for x in lines if not x.startswith(key+':')])
  def test_cpu_profile_closed(self):
   m.cpu_admit('Linux','x86_64',['fma','avx2','f16c'])
   for args in [('Darwin','x86_64',['fma','avx2','f16c']),('Linux','aarch64',['fma','avx2','f16c']),('Linux','x86_64',['fma','avx2'])]:

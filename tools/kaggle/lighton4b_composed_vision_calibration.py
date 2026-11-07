@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Observed table/Arabic corrected-vision diagnostic, same actual form binary."""
-import hashlib,importlib.util,io,json,os,platform,shutil,signal,subprocess,sys,time
+import hashlib,importlib.util,io,json,os,platform,shutil,signal,stat,subprocess,sys,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'tools/physical-f16-attention-probe'))
 from runtime_guard import Deadline,command
@@ -21,6 +21,11 @@ def admit_form(form):
  require(form['status']=='measured_composed_form_vision'and form['source_sha']==SOURCE and form['all_component_owned_members_rehashed']==73,'actual completed form')
  for arm,count in [('old',194),('fixed',167)]:require(form['arms'][arm]['expected_text_and_rows_exact']and form['arms'][arm]['all_vision_processor_anchors_exact']and form['arms'][arm]['summary']['eos']and not form['arms'][arm]['summary']['source_fed_vision']and len(form['arms'][arm]['generated_ids'])==count,'complete pixel-only form anchors')
  gates=form['arms']['fixed']['gates'];require(all(gates[k]=='1'for k in ['CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE','CRISPEMBED_LIGHTON4B_PHYSICAL_F16_VISION','CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION'])and all(gates[k]=='0'for k in ['CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK','CRISPEMBED_LIGHTON4B_HEAD_BF16','CRISPEMBED_LIGHTON4B_BF16_LINEAR','CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS']),'frozen corrected vision/text gates')
+PROFILE={'CRISPEMBED_NATIVE':'OFF','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_LLAMAFILE':'ON','GGML_OPENMP':'OFF','GGML_BLAS':'OFF','GGML_CPU_REPACK':'ON','GGML_AVX512':'OFF','GGML_BACKEND_DL':'OFF','GGML_CUDA':'OFF','GGML_VULKAN':'OFF'}
+def validate_cache(lines):
+ for key,value in PROFILE.items():require(f'{key}:BOOL={value}'in lines,'actual producer profile '+key)
+def stage_executable(path):
+ require(path.is_file(),'staged executable exists');path.chmod(path.stat().st_mode|stat.S_IXUSR)
 def cpu_admit(system,machine,flags):require(system=='Linux'and machine.lower()in['x86_64','amd64']and {'avx2','fma','f16c'}<=set(flags),'supported private ABI host')
 def args(native,candidate,rgb,h,w,teacher,dest,arm,feature):
  require(arm in ARMS,'closed arm');a=[native,candidate,rgb,h,w,teacher,dest,512,4,'greedy-full']
@@ -49,11 +54,11 @@ def main():
   base=load('physical_base',ROOT/'tools/kaggle/lighton4b_upstream_physical_decode.py');r['capacity']=dict(memory=base.memory(),scratch_free=shutil.disk_usage(work).free,output_free=shutil.disk_usage(out).free);require(r['capacity']['memory']['MemAvailable']>=10<<30 and r['capacity']['scratch_free']>=25<<30 and r['capacity']['output_free']>=4<<30,'resource admission before weights')
   fp=locate('composed-form-vision.json',FORM);form=json.loads(fp.read_text());admit_form(form);r['actual_form_receipt_sha256']=FORM;r['runtime_producer_source_sha']=SOURCE
   verify(fp.parent/'CMakeCache.txt',form['artifacts']['CMakeCache.txt']);cache=(fp.parent/'CMakeCache.txt').read_text().splitlines()
-  for key,value in {'CRISPEMBED_NATIVE':'OFF','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_LLAMAFILE':'ON','GGML_OPENMP':'OFF','GGML_BLAS':'OFF','GGML_CPU_REPACK':'ON','GGML_AVX512':'OFF'}.items():require(f'{key}:BOOL={value}'in cache,'actual producer profile '+key)
+  validate_cache(cache)
   bundle=out/'runtime'
   for name,meta in form['runtime_bundle'].items():
    source=fp.parent/'runtime'/name;verify(source,meta);dest=bundle/name;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source,dest);verify(dest,meta)
-  r['runtime_bundle']=form['runtime_bundle'];native=bundle/'bin/lighton4b-native-document';require(native.is_file(),'actual producer native executable')
+  r['runtime_bundle']=form['runtime_bundle'];native=bundle/'bin/lighton4b-native-document';require(native.is_file(),'actual producer native executable');stage_executable(native)
   env=dict(os.environ);env.update({k:'0'for k in env if k.startswith('CRISPEMBED_')});env.update(form['arms']['fixed']['gates']);env['LD_LIBRARY_PATH']=str(bundle/'lib');r['gates']=form['arms']['fixed']['gates']
   for arm in ARMS:
    try:run('cli-'+arm,args(native,work/'missing.gguf',work/'missing.rgb',1,1,work/'missing.ids',out,arm,work/'missing.feature'),env,30)
