@@ -12,12 +12,15 @@
 #include <cstring>
 using namespace qwen35_ocr;
 static int run(int argc, char ** argv) {
-    if (argc != 10 && argc != 12) return 2; // optional test-only --upstream-vision feature.f32
-    const bool source_vision = argc == 12 && std::string(argv[10]) == "--upstream-vision";
-    if (argc == 12 && !source_vision) return 2;
+    if (argc != 10 && argc != 12 && argc != 13) return 2; // optional reference-only source vision and cap extension
+    const bool source_vision = argc >= 12 && std::string(argv[10]) == "--upstream-vision";
+    const bool extended_table_cap = argc == 13 && source_vision &&
+        std::string(argv[12]) == "--extended-table-cap512";
+    if ((argc >= 12 && !source_vision) || (argc == 13 && !extended_table_cap)) return 2;
     const int h = std::stoi(argv[3]), w = std::stoi(argv[4]), cap = std::stoi(argv[7]), threads = std::stoi(argv[8]);
     const std::string mode = argv[9], out = argv[6];
-    if (h < 1 || w < 1 || h > 4096 || w > 4096 || cap < 1 || cap > 256 || threads < 1 || threads > 16 ||
+    if (extended_table_cap && (cap != 512 || threads != 4 || mode != "greedy-full")) return 2;
+    if (h < 1 || w < 1 || h > 4096 || w > 4096 || cap < 1 || cap > (extended_table_cap ? 512 : 256) || threads < 1 || threads > 16 ||
         (mode != "smoke" && mode != "full" && mode != "greedy-full"))
         return 2;
     auto emit = [&](const std::string & name, const std::vector<float> & v) {
@@ -209,6 +212,15 @@ static int run(int argc, char ** argv) {
     summary << "{\"prompt_tokens\":" << ids.size() << ",\"image_tokens\":" << image.grid[1] * image.grid[2] / 4;
     if (model.text.decoder.upstream_physical)
         summary << ",\"source_fed_vision\":" << (source_vision ? "true" : "false") << ",\"upstream_physical\":true";
+    if (model.text.decoder.upstream_physical) {
+        const auto * cache = model.text.decoder.physical_weights_cache.get();
+        summary << ",\"physical_q4_repack\":" << (model.text.decoder.physical_q4_repack ? "true" : "false")
+                << ",\"physical_repack_entries\":" << (cache ? cache->physical_repack_entries() : 0)
+                << ",\"physical_repack_bytes\":" << (cache ? cache->physical_repack_bytes() : 0)
+                << ",\"physical_repack_hits\":" << (cache ? cache->physical_repack_hits() : 0)
+                << ",\"converted_f32_weight_entries\":" << (cache ? cache->entries() : 0)
+                << ",\"converted_f32_weight_bytes\":" << (cache ? cache->bytes() : 0);
+    }
     summary << ",\"teacher_positions\":" << teacher_count << ",\"generated_tokens\":" << generated.size()
             << ",\"eos\":" << (tokenizer.is_stop(generated.back()) ? "true" : "false") << ",\"cap\":" << cap << "}\n";
     std::cout << "LIGHTON4B_NATIVE_DOCUMENT completed=1 teacher_positions=" << teacher_count

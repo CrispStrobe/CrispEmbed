@@ -2136,3 +2136,24 @@ compatibility, actual source-fed preferred projection equality, then a bounded
 same-feature full-score and independent decoded OFF/ON comparison. No default
 or release change is authorized by component equality; current Q4 remains
 unqualified.
+
+### Physical Q4 repack controls passed; paired table512 next
+
+Kaggle controls source `5f6dfb9f09b49002201c7702ff71a5e345294af2` completed
+in491.644s with receipt SHA256
+`c7130c6d7b54e6859439bbf87c8e54880c30bd5d2db33c3571ded179e6711cf5`.
+All30 actual-input OFF/ON projections match the sealed raw/preferred operator
+outputs bytewise. Supported lifecycle57, F16-attention255297, native-ops142,
+HF-layout39, Q6-head84 (65,792 independent values), main SDK5 and closed
+main-stub2 controls pass. Initial reference-adapter compile failure remains
+preserved; no model forward or decoded claim follows from this panel.
+
+[Paired table protocol](docs/lighton4b-q4-repack-table512-v1.json) freezes a
+single bounded worker: exact existing source-feature table, published physical
+weights, F16-attention and all other gates unchanged; fresh OFF then ON child
+processes, greedy cap512/context2048. OFF must reproduce all282 completed raw
+rows,38 prefill stages, IDs/text/EOS from `36a9b14b`. ON must retain actual
+216-entry bounded quant cache and zero converted F32 weight entries/bytes.
+Only reference-CLI cap512 admission and cache-accounting summary are added to
+the tested source; production runtime bytes remain identical. No original or
+upstream forward, composition, held-out qualification or promotion.
