@@ -3214,3 +3214,6 @@ Source `2f1261053` completed the bounded actual-input GDN replay, closing live s
 
 
 The first hybrid GDN worker (`a6e5b3d3d`) failed closed before compilation/parameter transfer because the inherited compile-entry count excluded the new cache-test target. [Raw setup negative](docs/lighton4b-live-gdn-replay-results.md#hybrid-setup-negative) is preserved; `fcb9d6c72` strictly audits both targets and both helper files with unchanged contraction requirements. No operator/decoded result exists for that attempt.
+
+
+Hybrid GDN V2 compiled all targets but stopped before parameter transfer at a synthetic Q6 fixture missing the existing native-context gate. [Raw negative](docs/lighton4b-live-gdn-replay-results.md#hybrid-fixture-negative) preserves the failed positive control; `cd50e9e69` explicitly tests rejection with that gate absent and enables it for the positive control. No source-fed numerical result or decoded qualification exists yet.

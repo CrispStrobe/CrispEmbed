@@ -1,0 +1,326 @@
+{
+  "artifacts": {
+    "cpu.log": {
+      "bytes": 3127,
+      "sha256": "e68a238f7eb1b51e17602a78cf401768f91461e9b818feb2d5c1c51571c5d5d8"
+    },
+    "hybrid-cache-build.log": {
+      "bytes": 2450,
+      "sha256": "f72bef5e73db7bec55ed6e0c49f38f6091b54a50a1727ed4406d674108866ad3"
+    },
+    "hybrid-cache-controls.log": {
+      "bytes": 25,
+      "sha256": "45b48bc45ff4729b4381c8024de0c131b11a3d7c1a8844aa52045e8de4b969a8"
+    },
+    "native-CMakeCache.txt": {
+      "bytes": 29619,
+      "sha256": "6cf88b1d63b529ca5742f1cbde91e932b1890e7c83a8af9caeb002983d976200"
+    },
+    "native-backend-control.log": {
+      "bytes": 84,
+      "sha256": "6fbb1d0ec6d9b72d6bb174346ca72631a88946d1edd80105d1e1173406a9ea44"
+    },
+    "native-build.log": {
+      "bytes": 5242,
+      "sha256": "2599c69446cfd34204d1fc3225c945d7010a82ba4380dfce8309ad34d5125c39"
+    },
+    "native-configure.log": {
+      "bytes": 1408,
+      "sha256": "5a06b02e863d65402bf979185a579fcbfba2cb3daa86c5a3035bb80f7c90589a"
+    },
+    "native-noargs.log": {
+      "bytes": 65,
+      "sha256": "839484d7b9755f0c8df542d048db6537cb505afc3292a3809a8d8cf918ba2c28"
+    },
+    "native-submodule.log": {
+      "bytes": 232,
+      "sha256": "a87d3d2efaf9ccded985110b1bc5bb8f4e14f5627f46930b4f91d6950fa580d8"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "dd112e83535d5e1a4cd14fa7c97a07d76737a19f74cb3910e93d4103443c36df"
+    },
+    "up-checkout.log": {
+      "bytes": 84,
+      "sha256": "401b0f35047d9999135ce240162909f4d3b9be4cafce7c16c1eafb93d3b7bff7"
+    },
+    "up-fetch.log": {
+      "bytes": 119,
+      "sha256": "5537e1fa1b4cf8d84bd910e3fed8a4a9e0803b4bddddf1cf9b9182e0f1b00983"
+    },
+    "up-init.log": {
+      "bytes": 584,
+      "sha256": "0c39b9fc1bf9112da71a10b9dd0fd30c09a79afe8bb048c55a49417868ddaaf5"
+    },
+    "up-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "upstream-CMakeCache.txt": {
+      "bytes": 29780,
+      "sha256": "b426e2a3392ed724dbcb3f967618d37237fe6a932c9ba772d8c6dcb868d8d444"
+    },
+    "upstream-backend-control.log": {
+      "bytes": 84,
+      "sha256": "6fbb1d0ec6d9b72d6bb174346ca72631a88946d1edd80105d1e1173406a9ea44"
+    },
+    "upstream-build.log": {
+      "bytes": 5522,
+      "sha256": "ee508ae677755f3e7ce3d5f4040cf43b9b5253b8c9c7da67b207eca1e61d108e"
+    },
+    "upstream-configure.log": {
+      "bytes": 1409,
+      "sha256": "5f8b23acb75f0617451da16acbe5f99cb80f32289fa183ca6e4a5a73615bd4ba"
+    },
+    "upstream-noargs.log": {
+      "bytes": 65,
+      "sha256": "839484d7b9755f0c8df542d048db6537cb505afc3292a3809a8d8cf918ba2c28"
+    }
+  },
+  "capacity": {
+    "memory": {
+      "MemAvailable": 31515742208,
+      "SwapFree": 0,
+      "SwapTotal": 0,
+      "cgroup_observed": 1,
+      "finite_cgroup_bounds": 1
+    },
+    "output_free": 20940427264,
+    "scratch_free": 1037739618304
+  },
+  "cases": {},
+  "commands": {
+    "cpu": {
+      "child_system_seconds": 0.004448,
+      "child_user_seconds": 0.0008889999999999999,
+      "cumulative_child_peak_rss_bytes": 41529344,
+      "elapsed_seconds": 0.018868991999966056,
+      "peak_rss_bytes_observed": 4096,
+      "pid": 58,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "hybrid-cache-build": {
+      "child_system_seconds": 0.8468669999999996,
+      "child_user_seconds": 9.642111999999997,
+      "cumulative_child_peak_rss_bytes": 434294784,
+      "elapsed_seconds": 6.169107703000009,
+      "peak_rss_bytes_observed": 10027008,
+      "pid": 876,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "hybrid-cache-controls": {
+      "child_system_seconds": 0.016823999999999728,
+      "child_user_seconds": 0.005976000000003978,
+      "cumulative_child_peak_rss_bytes": 434294784,
+      "elapsed_seconds": 0.03270683000005192,
+      "error": "Command '[PosixPath('/tmp/lighton4b-physical-gdn-hybrid-v2/gdn-trace/native-build/gdn-hybrid-cache-controls')]' returned non-zero exit status 1.",
+      "error_type": "CalledProcessError",
+      "peak_rss_bytes_observed": 204800,
+      "pid": 949,
+      "returncode": 1,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "failed"
+    },
+    "native-backend-control": {
+      "child_system_seconds": 0.023698999999999693,
+      "child_user_seconds": 0.07502499999999657,
+      "cumulative_child_peak_rss_bytes": 434294784,
+      "elapsed_seconds": 0.06465429200000017,
+      "peak_rss_bytes_observed": 241664,
+      "pid": 489,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "native-build": {
+      "child_system_seconds": 5.11412,
+      "child_user_seconds": 90.457693,
+      "cumulative_child_peak_rss_bytes": 434294784,
+      "elapsed_seconds": 50.996140481,
+      "peak_rss_bytes_observed": 9711616,
+      "pid": 249,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "native-configure": {
+      "child_system_seconds": 0.6354570000000002,
+      "child_user_seconds": 1.101256000000003,
+      "cumulative_child_peak_rss_bytes": 71049216,
+      "elapsed_seconds": 4.7708069440000145,
+      "peak_rss_bytes_observed": 16826368,
+      "pid": 116,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "native-noargs": {
+      "child_system_seconds": 0.002222999999999864,
+      "child_user_seconds": 0.0011130000000036944,
+      "cumulative_child_peak_rss_bytes": 434294784,
+      "elapsed_seconds": 0.008334412999943197,
+      "error": "Command '[PosixPath('/tmp/lighton4b-physical-gdn-hybrid-v2/gdn-trace/native-build/gdn-hybrid-probe')]' returned non-zero exit status 1.",
+      "error_type": "CalledProcessError",
+      "peak_rss_bytes_observed": 204800,
+      "pid": 488,
+      "returncode": 1,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed_expected_failure"
+    },
+    "native-submodule": {
+      "child_system_seconds": 0.885754,
+      "child_user_seconds": 15.244122,
+      "cumulative_child_peak_rss_bytes": 71049216,
+      "elapsed_seconds": 10.013359701000013,
+      "peak_rss_bytes_observed": 4014080,
+      "pid": 74,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source": {
+      "child_system_seconds": 0.002482,
+      "child_user_seconds": 0.0,
+      "cumulative_child_peak_rss_bytes": 41529344,
+      "elapsed_seconds": 0.004564919000017653,
+      "peak_rss_bytes_observed": 163840,
+      "pid": 57,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "up-checkout": {
+      "child_system_seconds": 0.316539,
+      "child_user_seconds": 0.7883830000000001,
+      "cumulative_child_peak_rss_bytes": 71049216,
+      "elapsed_seconds": 1.1659465139999838,
+      "peak_rss_bytes_observed": 66756608,
+      "pid": 72,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "up-fetch": {
+      "child_system_seconds": 0.551874,
+      "child_user_seconds": 2.347267,
+      "cumulative_child_peak_rss_bytes": 50966528,
+      "elapsed_seconds": 4.819800950000001,
+      "peak_rss_bytes_observed": 17027072,
+      "pid": 61,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "up-init": {
+      "child_system_seconds": 0.004605000000000001,
+      "child_user_seconds": 0.0011509999999999997,
+      "cumulative_child_peak_rss_bytes": 50966528,
+      "elapsed_seconds": 0.01687330100003237,
+      "peak_rss_bytes_observed": 176128,
+      "pid": 59,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "up-remote": {
+      "child_system_seconds": 0.0018799999999999997,
+      "child_user_seconds": 0.0009400000000000003,
+      "cumulative_child_peak_rss_bytes": 50966528,
+      "elapsed_seconds": 0.004405308000002606,
+      "peak_rss_bytes_observed": 389120,
+      "pid": 60,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "upstream-backend-control": {
+      "child_system_seconds": 0.023651000000000977,
+      "child_user_seconds": 0.0721460000000036,
+      "cumulative_child_peak_rss_bytes": 434294784,
+      "elapsed_seconds": 0.06572425000001658,
+      "peak_rss_bytes_observed": 188416,
+      "pid": 872,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "upstream-build": {
+      "child_system_seconds": 5.223466999999999,
+      "child_user_seconds": 101.019574,
+      "cumulative_child_peak_rss_bytes": 434294784,
+      "elapsed_seconds": 57.599781740000026,
+      "peak_rss_bytes_observed": 9945088,
+      "pid": 630,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "upstream-configure": {
+      "child_system_seconds": 0.5035250000000007,
+      "child_user_seconds": 0.9322269999999975,
+      "cumulative_child_peak_rss_bytes": 434294784,
+      "elapsed_seconds": 1.4670439369999713,
+      "peak_rss_bytes_observed": 18440192,
+      "pid": 493,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "upstream-noargs": {
+      "child_system_seconds": 0.001246999999999332,
+      "child_user_seconds": 0.002493999999984453,
+      "cumulative_child_peak_rss_bytes": 434294784,
+      "elapsed_seconds": 0.004361668999990798,
+      "error": "Command '[PosixPath('/tmp/lighton4b-physical-gdn-hybrid-v2/gdn-trace/upstream-build/gdn-hybrid-probe')]' returned non-zero exit status 1.",
+      "error_type": "CalledProcessError",
+      "peak_rss_bytes_observed": 245760,
+      "pid": 871,
+      "returncode": 1,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed_expected_failure"
+    }
+  },
+  "decoded_generated": false,
+  "error": "actual expected loader returncode",
+  "error_type": "RuntimeError",
+  "full_f32_model_created": false,
+  "heldout_used": false,
+  "model_forward_executed": false,
+  "native_helper_compile_entries": [
+    {
+      "command": "/usr/bin/c++ -DCRISPEMBED_GDN_RUNTIME_PROBE=1 -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -I/tmp/lighton4b-physical-gdn-hybrid-v2/source/src -I/tmp/lighton4b-physical-gdn-hybrid-v2/source/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -ffp-contract=off -o CMakeFiles/gdn-hybrid-probe.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp.o -c /tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp",
+      "directory": "/tmp/lighton4b-physical-gdn-hybrid-v2/gdn-trace/native-build",
+      "file": "/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp",
+      "output": "CMakeFiles/gdn-hybrid-probe.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp.o"
+    },
+    {
+      "command": "/usr/bin/c++ -DCRISPEMBED_GDN_RUNTIME_PROBE=1 -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -I/tmp/lighton4b-physical-gdn-hybrid-v2/source/src -I/tmp/lighton4b-physical-gdn-hybrid-v2/source/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -ffp-contract=off -o CMakeFiles/gdn-hybrid-probe.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/lighton4b_physical_gdn_source_ops.cpp.o -c /tmp/lighton4b-physical-gdn-hybrid-v2/source/src/lighton4b_physical_gdn_source_ops.cpp",
+      "directory": "/tmp/lighton4b-physical-gdn-hybrid-v2/gdn-trace/native-build",
+      "file": "/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/lighton4b_physical_gdn_source_ops.cpp",
+      "output": "CMakeFiles/gdn-hybrid-probe.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/lighton4b_physical_gdn_source_ops.cpp.o"
+    },
+    {
+      "command": "/usr/bin/c++ -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -I/tmp/lighton4b-physical-gdn-hybrid-v2/source/src -I/tmp/lighton4b-physical-gdn-hybrid-v2/source/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -ffp-contract=off -o CMakeFiles/gdn-hybrid-cache-controls.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp.o -c /tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp",
+      "directory": "/tmp/lighton4b-physical-gdn-hybrid-v2/gdn-trace/native-build",
+      "file": "/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp",
+      "output": "CMakeFiles/gdn-hybrid-cache-controls.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp.o"
+    },
+    {
+      "command": "/usr/bin/c++ -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -I/tmp/lighton4b-physical-gdn-hybrid-v2/source/src -I/tmp/lighton4b-physical-gdn-hybrid-v2/source/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -ffp-contract=off -o CMakeFiles/gdn-hybrid-cache-controls.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/lighton4b_physical_gdn_source_ops.cpp.o -c /tmp/lighton4b-physical-gdn-hybrid-v2/source/src/lighton4b_physical_gdn_source_ops.cpp",
+      "directory": "/tmp/lighton4b-physical-gdn-hybrid-v2/gdn-trace/native-build",
+      "file": "/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/lighton4b_physical_gdn_source_ops.cpp",
+      "output": "CMakeFiles/gdn-hybrid-cache-controls.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/lighton4b_physical_gdn_source_ops.cpp.o"
+    }
+  ],
+  "operator_compute_executed": false,
+  "phase": "hybrid-cache-controls",
+  "quality_qualified": false,
+  "schema": "lighton4b-physical-gdn-hybrid/v1",
+  "seconds": 140.208974473,
+  "source_sha": "fcb9d6c7206ba6b3db1d4eb3a2673eec31f34813",
+  "status": "failed"
+}
