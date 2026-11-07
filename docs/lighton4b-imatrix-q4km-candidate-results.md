@@ -73,3 +73,24 @@ the producer did not strip whitespace from `/proc/cpuinfo` keys. The raw receipt
 is preserved unchanged. Exact null first-score admission remains valid; no CPU
 vendor is inferred. Future-worker metadata capture is corrected in `b978b1cef`,
 with a whitespace/tab fixture test. This does not rerun or relabel the producer.
+
+A [read-only independent consumer](../tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/independent-consumer.json)
+authenticated only six existing BF16-expanded score rows (two BF16 original and
+four candidate/null rows), checked every serialized value, and reproduced the
+producer's IDs, probabilities, RMS and maximum errors within`1e-12`. The
+[diagnostics source](https://github.com/CrispStrobe/CrispEmbed/commit/8bae598d3)
+uses `math.fsum`; three focused tests cover additive-shift invariance, KLD
+direction, ties and malformed inputs. No model or original forward was run.
+
+| First-position diagnostic | Plain Q4 | Prior weighted plain Q4 | New weighted Q4KM-style |
+|---|---:|---:|---:|
+| Table centered logit RMS |0.685013|0.623312|0.569416|
+| Table original-BF16-to-candidate KLD |0.181511|0.125953|0.137862|
+| Arabic centered logit RMS |0.364349|0.360166|0.330996|
+| Arabic original-BF16-to-candidate KLD |0.030166|0.015504|0.032228|
+
+The new candidate improves centered RMS for both cases while Arabic KLD worsens
+against both earlier arms. Table's mean logit shift is`-0.527828`, explaining why
+its raw RMS worsens despite a smaller centered error. This is a one-position,
+posthoc distribution diagnostic, not the publisher's corpus KLD benchmark or
+proof of complete decoded quality. The recipe remains fixed during full decode.

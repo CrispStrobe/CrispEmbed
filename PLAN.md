@@ -2921,3 +2921,12 @@ quota400000/100000 are recorded, but vendor/model/flags are blank due to unstrip
 `/proc/cpuinfo` keys. Raw receipts are unchanged and exact null firstscore gates
 still pass. Future sourceb978b1cef strips keys and covers tabs with a fixture test;
 no conversion rerun or inferred vendor follows from this metadata correction.
+
+Read-only independent score consumer authenticates six selected BF16-expanded
+rows and reproduces firstscore controls within1e-12, with no model/original forward.
+Table centeredRMS.685013→.569416 and source||candidateKLD.181511→.137862
+(prior weighted plainQ4.623312/.125953); Arabic centeredRMS.364349→.330996 while
+KLD.030166→.032228 (prior weighted plainQ4.360166/.015504). These mixed one-position
+posthoc metrics do not select a quality winner or compare with publisher corpus
+KLD. Reproducible source8bae598d3 has3 focused mathematical controls; full decoded
+calibration remains running on its immutable source, and the recipe is unchanged.
