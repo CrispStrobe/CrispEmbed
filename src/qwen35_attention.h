@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <cstdint>
 struct ggml_tensor;
 namespace qwen35_ocr {
 class converted_weight_cache;
@@ -22,7 +23,7 @@ struct attention_cache {
     int batch = 0, heads = 0, tokens = 0, width = 0;
     std::vector<float> keys, values;
     bool upstream_physical = false;
-    bool physical_native_ops = false;
+    uint8_t physical_native_ops = 0;
 };
 struct attention_outputs {
     std::vector<float> q, k, v, q_norm, k_norm, pooled, attention;

@@ -51,8 +51,15 @@ def main():
   for tag,source in [('native',ROOT/'ggml'),('upstream',up/'ggml')]:
    build=scratch/(tag+'-build');run(tag+'-configure',['cmake','-S',ROOT/'tools/physical-primitive-probe','-B',build,'-DCMAKE_BUILD_TYPE=Release','-DGGML_SOURCE='+str(source)]);run(tag+'-build',['cmake','--build',build,'--target','physical-primitive','--parallel','2']);binaries[tag]=build/'physical-primitive';shutil.copy(build/'CMakeCache.txt',out/(tag+'-CMakeCache.txt'))
   build=scratch/'runtime-build';run('runtime-configure',['cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_AVX2=ON','-DGGML_AVX512=OFF','-DGGML_BLAS=OFF','-DGGML_LLAMAFILE=ON','-DGGML_CUDA=OFF','-DGGML_VULKAN=OFF'])
-  run('runtime-build',['cmake','--build',build,'--target','test-lighton4b-physical-native-ops','test-lighton4b-physical-runtime-primitive','lighton4b-native-document','test-qwen35-stream-projection','test-lighton4b-q6-tied-head','--parallel','2'])
+  run('runtime-build',['cmake','--build',build,'--target','test-lighton4b-physical-native-ops','test-lighton4b-upstream-physical','test-lighton4b-physical-runtime-primitive','lighton4b-native-document','test-qwen35-stream-projection','test-lighton4b-q6-tied-head','--parallel','2'])
   for target in ('test-lighton4b-physical-native-ops','test-qwen35-stream-projection','test-lighton4b-q6-tied-head'):run(target,[build/target])
+  sys.path.insert(0,str(ROOT/'tools'));from lighton4b_q6_recipe import plan
+  physical=[]
+  for row in plan()['all_tensors']:
+   if not row['name'].startswith('l.'):continue
+   dims=list(reversed(row['source_shape']));dims += [1]*(4-len(dims));kind=14 if row['name']=='l.embed_tokens.weight' else row['type'];physical.append(row['name']+'\t'+str(kind)+'\t'+'\t'.join(map(str,dims))+'\n')
+  schema=out/'physical-schema.tsv';schema.write_text(''.join(physical));run('physical-policy-ablation-guards',[build/'test-lighton4b-upstream-physical',schema])
+
   binaries['runtime']=build/'test-lighton4b-physical-runtime-primitive';shutil.copy(build/'CMakeCache.txt',out/'runtime-CMakeCache.txt')
   for tag in ('native','upstream','runtime'):require('GGML_LLAMAFILE:BOOL=ON' in (out/(tag+'-CMakeCache.txt')).read_text(),'same explicit LLAMAFILE profile')
   gamma=rows['blk.0.attn_norm.weight'][1];report['norm']={}

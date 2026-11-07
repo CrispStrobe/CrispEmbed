@@ -14,7 +14,7 @@ struct lighton4b_decoder_cache {
     bool bf16_quant_weights = false;
     std::vector<lighton4b_layer_cache> layers;
     bool upstream_physical = false;
-    bool physical_native_ops = false;
+    uint8_t physical_native_ops = 0;
 };
 struct lighton4b_decoder_outputs {
     std::vector<std::vector<float>> hidden;
@@ -38,9 +38,9 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
         norm->ne[1] != 1 || norm->ne[2] != 1 || norm->ne[3] != 1)
         return false;
     const bool bf16_quant_weights = lighton4b_bf16_dequant_weights_mode();
-    if (!lighton4b_upstream_physical_mode_valid(weights.upstream_physical) ||
+    if (!lighton4b_upstream_physical_mode_valid(weights.upstream_physical) || !lighton4b_physical_native_ops_valid(weights.upstream_physical) ||
         (previous && (previous->upstream_physical != weights.upstream_physical ||
-                      previous->physical_native_ops != lighton4b_physical_native_ops(weights.upstream_physical)))) return false;
+                      previous->physical_native_ops != lighton4b_physical_native_ops_mode(weights.upstream_physical)))) return false;
     if (previous && previous->bf16_quant_weights != bf16_quant_weights) return false;
     const int past = previous ? previous->tokens : 0;
     if (past < 0 || past > 4096 - tokens || (previous && (past == 0 || previous->layers.size() != 32))) return false;
@@ -78,7 +78,7 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
     candidate.cache.tokens = past + tokens;
     candidate.cache.bf16_quant_weights = bf16_quant_weights;
     candidate.cache.upstream_physical = weights.upstream_physical;
-    candidate.cache.physical_native_ops = lighton4b_physical_native_ops(weights.upstream_physical);
+    candidate.cache.physical_native_ops = lighton4b_physical_native_ops_mode(weights.upstream_physical);
     std::vector<float> hidden(input, input + size_t(tokens) * 2560);
     for (size_t i = 0; i < 32; ++i) {
         const auto & w = weights.layers[i];
@@ -103,7 +103,7 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
         candidate.cache.layers.push_back(std::move(next));
     }
     candidate.norm.resize(hidden.size());
-    if (lighton4b_physical_native_ops(weights.upstream_physical)) {
+    if (lighton4b_physical_native_component(weights.upstream_physical,2)) {
         if (!lighton4b_physical_rms(hidden.data(), norm_weights.data(), 2560, tokens, threads, candidate.norm)) return false;
     } else for (int token = 0; token < tokens; ++token) {
         const size_t base = size_t(token) * 2560;

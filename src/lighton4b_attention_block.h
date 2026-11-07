@@ -44,7 +44,7 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
         !shape(w.attention.v, 2560, 1024, 1, true) || !shape(w.attention.out, 4096, 2560, 1, true) ||
         !shape(w.attention.q_norm, 256) || !shape(w.attention.k_norm, 256))
         return false;
-    if (!lighton4b_upstream_physical_mode_valid(w.upstream_physical) ||
+    if (!lighton4b_upstream_physical_mode_valid(w.upstream_physical) || !lighton4b_physical_native_ops_valid(w.upstream_physical) ||
         w.attention.upstream_physical != w.upstream_physical) return false;
     lighton4b_attention_block_outputs candidate;
     candidate.hidden.assign(input, input + size_t(tokens) * 2560);
@@ -52,7 +52,7 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
     auto rms = [&](const std::vector<float> & x, ggml_tensor * norm, std::vector<float> & y) {
         std::vector<float> weights(2560);
         if (!tensor_floats(norm, weights.data()) || !finite(weights)) return false;
-        if (lighton4b_physical_native_ops(w.upstream_physical))
+        if (lighton4b_physical_native_component(w.upstream_physical,2))
             return lighton4b_physical_rms(x.data(), weights.data(), 2560, tokens, threads, y);
         y.resize(x.size());
         for (int token = 0; token < tokens; ++token) {

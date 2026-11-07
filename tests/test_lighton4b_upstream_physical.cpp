@@ -34,6 +34,16 @@ static int run(int argc, char ** argv) {
     }
     gate("CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL", "1");
     check(lighton4b_select_recipe(owner.decoder, lighton4b_upstream_physical_recipe, recipe) && recipe == lighton4b_quant_recipe::upstream_physical_q4km);
+    gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS","1");
+    for(const char * mode:{"all","quant","rms","layers","head","off"}) {
+        gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION",mode);
+        check(lighton4b_select_recipe(owner.decoder,lighton4b_upstream_physical_recipe,recipe));
+    }
+    gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION","unknown");
+    check(!lighton4b_select_recipe(owner.decoder,lighton4b_upstream_physical_recipe,recipe));
+    gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS","0");
+    check(lighton4b_select_recipe(owner.decoder,lighton4b_upstream_physical_recipe,recipe));
+    gate("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION",nullptr);
     check(!lighton4b_select_recipe(owner.decoder, lighton4b_imatrix_q4km_recipe, recipe)); check(!lighton4b_select_recipe(owner.decoder, "", recipe));
     for (auto & pair : tensors) if (pair.second->type != GGML_TYPE_F32) {
         const auto saved = pair.second->type; pair.second->type = saved == GGML_TYPE_Q6_K ? GGML_TYPE_Q4_K : GGML_TYPE_Q6_K;

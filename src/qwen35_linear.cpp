@@ -166,7 +166,8 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !hidden || matrices.empty() || matrices.size() > 4 || width < 1 ||
         width > 32768 || tokens < 1 || tokens > 16384 || threads < 1 || threads > 256)
         return false;
-    const bool native_ops = lighton4b_physical_native_ops(upstream_physical);
+    if (!lighton4b_physical_native_ops_valid(upstream_physical)) return false;
+    const bool native_ops = lighton4b_physical_native_component(upstream_physical,1);
     constexpr size_t limit = 512ull * 1024 * 1024;
     size_t elements = size_t(width) * tokens;
     for (auto * matrix : matrices) {
@@ -180,7 +181,7 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
     if (observer && core_env::on("CRISPEMBED_QWEN35_IMATRIX"))
         for (auto * matrix : matrices)
             if (!observer(ggml_get_name(matrix), hidden, width, tokens, observer_user)) return false;
-    if (lighton4b_physical_native_ops(upstream_physical))
+    if (native_ops)
         return lighton4b_physical_matmul(matrices, hidden, width, tokens, threads, output);
     profile_timer stage(profile_event::project_setup);
     std::array<const float *, 4> cached{};
@@ -260,10 +261,15 @@ bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int
          !ggml_get_type_traits(matrix->type)->to_float))
         return false;
     if (!std::all_of(hidden, hidden + size_t(width) * tokens, [](float x) { return std::isfinite(x); })) return false;
-    if (lighton4b_physical_native_ops(upstream_physical)) {
-        std::vector<std::vector<float>> result;
-        if (!project_cpu({matrix}, hidden, width, tokens, threads, result, nullptr, true)) return false;
-        output = std::move(result[0]); return true;
+    if (!lighton4b_physical_native_ops_valid(upstream_physical)) return false;
+    if (lighton4b_physical_native_component(upstream_physical,4)) {
+        try {
+            if (observer && core_env::on("CRISPEMBED_QWEN35_IMATRIX") &&
+                !observer(ggml_get_name(matrix), hidden, width, tokens, observer_user)) return false;
+            std::vector<std::vector<float>> result;
+            if (!lighton4b_physical_matmul({matrix}, hidden, width, tokens, threads, result, true)) return false;
+            output = std::move(result[0]); return true;
+        } catch (...) { return false; }
     }
     try {
         // Preserve calibration identity: observe the original named matrix once,

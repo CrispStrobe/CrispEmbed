@@ -2091,3 +2091,22 @@ legacy; BF16 oracle modes are excluded. Before any model replay, one Kaggle
 control must verify exact same-input outputs against pinned upstream ggml,
 synthetic gate-off byte identity, admission/atomic failures and compile all actual
 native-driver/header paths. Active workers and shipping settings remain frozen.
+
+### Physical native-ops negative and bounded ablations
+
+The actual same-feature cap2 replay at source `285ab5a4e` closes all38 new-OFF
+stage hashes to regenerated `ac34f72ca` reference. Full native-ops ON worsens
+same-upstream firstscore RMS0.1023485→0.1296631/max0.576516→0.752944. All arms
+emit only `<figure`, cap2/noEOS. Ordered process times137.50/137.75/21.63s are
+diagnostic, not balanced throughput proof. No quality promotion; master stays off.
+Actual-main prefix closure independently verifies all664 case files/584443630B:
+first4 input/RMS and row-permuted dequantized QKV/Z/a/b exactly reproduce actual
+native outputs, so no observed16-vs4 batching residual there.
+
+Prepare closed `PHYSICAL_NATIVE_OPS_ABLATION` selector under the existing master:
+`all` (unchanged full mode), `quant`, `rms`, `layers`, `head`, and explicit off.
+Unknown values reject at profile selection and primitive boundaries; cache mode
+masks reject subset changes. Focused model-free controls precede any new model
+ablations. Full-GDN/attention/softmax attribution uses actual captured inputs and
+pinned upstream operators; source-fused GDN and F16 K/V defaults must be modeled
+explicitly rather than assumed equivalent to legacy scalar arithmetic.
