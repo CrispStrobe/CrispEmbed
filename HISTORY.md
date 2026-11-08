@@ -34,8 +34,10 @@ for final verdicts, live jobs and remaining tasks.
   `unlimited-ocr2-q8_0-experimental` (SHA-pinned); Kaggle consumer receipt passes
   ([receipts](tests/results/unlimited-ocr2/q8sh16-publication/)).
 - GOT-OCR2: the original pipeline on all 57 gold pages (F16-r2 42/55 token-exact) and an F32 attribution of
-  the four early divergences: F32 diverges at the same tokens, so the cause is a pipeline difference, not
-  precision ([research §9–10](docs/got-ocr2-q4-research.md)).
+  the four early divergences: F32 diverges at the same tokens, then pixel/teacher-forced attribution: pixels
+  equal the original on PIL-decoded input and the divergences are raw-argmax near-ties (margins 0.002–0.21
+  logits) from floating-point accumulation order, not a pipeline difference; lane closed
+  ([research §9–11](docs/got-ocr2-q4-research.md)).
 
 ## 7 November 2026 — GOT-OCR2 quantization search closed
 
