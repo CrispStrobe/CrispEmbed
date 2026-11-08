@@ -33,7 +33,7 @@ Kaggle: the 4-bit decoder drift is weight precision, not vision quantization or 
 quantization. A full Q8_0 decoder is exact on the 3-case panel but only 17/55 token-exact on the gold
 corpus; Q8_0 and the mixed `q8_ffn_gu_q4k` are on par with F16 on gold CER (0.357 / 0.345 vs 0.363).
 Details: [docs/got-ocr2-q4-research.md](docs/got-ocr2-q4-research.md).
-Owner decision: both published as experimental at Hub `fcd5c99c` (`got-ocr2-q8_0-r2.gguf`, `got-ocr2-q8-q4k-mix.gguf`; run 42414908797, rebuilt bytes equal the Kaggle-evaluated sha256, LFS + empty-cache readback match, LICENSE/NOTICE present). Aliases `got-ocr2-q8_0-experimental`, `got-ocr2-q8-q4k-mix-experimental` (SHA-pinned); `got-ocr2-q4_k-experimental` marked superseded. Consumer receipt for the new aliases still to do (PLAN row on experimental publications).
+Owner decision: both published as experimental at Hub `fcd5c99c` (`got-ocr2-q8_0-r2.gguf`, `got-ocr2-q8-q4k-mix.gguf`; run 42414908797, rebuilt bytes equal the Kaggle-evaluated sha256, LFS + empty-cache readback match, LICENSE/NOTICE present). Aliases `got-ocr2-q8_0-experimental`, `got-ocr2-q8-q4k-mix-experimental` (SHA-pinned); `got-ocr2-q4_k-experimental` marked superseded. Consumer receipt (Kaggle `crispembed-got-alias-consumer`, 8 Nov): both aliases download with matching SHA-256, decode `fox.png`, reuse offline, equal the explicit-path output and are rejected with the licence gate off ([receipts](tests/results/got-ocr2-q4/alias-consumer-kaggle-20261108/)).
 
 ## 7 November 2026 — `got-ocr2` alias now resolves to F16-r2
 
