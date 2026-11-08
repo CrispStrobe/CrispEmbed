@@ -59,6 +59,9 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
     if (!lighton4b_physical_native_ops_valid(w.upstream_physical) ||
         !lighton4b_physical_f16_attention_valid(w.upstream_physical)) return false;
     const bool physical_f16 = lighton4b_physical_f16_attention_mode(w.upstream_physical);
+    const bool source_chunks=lighton4b_source_prefill_chunks_mode(w.upstream_physical);
+    if (!lighton4b_source_prefill_chunks_valid(w.upstream_physical) ||
+        (previous && previous->physical_source_prefill_chunks != source_chunks)) return false;
     const bool q6_tiled=lighton4b_physical_q6_tiled_mode(w.upstream_physical);
     if (!lighton4b_physical_q6_tiled_valid(w.upstream_physical) || (previous && previous->physical_q6_tiled != q6_tiled)) return false;
     const bool repack = lighton4b_physical_q4_repack_mode(w.upstream_physical);
@@ -110,6 +113,7 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
     cache.physical_f16_attention = physical_f16;
     cache.physical_q4_repack = repack;
     cache.physical_q6_tiled = q6_tiled;
+    cache.physical_source_prefill_chunks = source_chunks;
     cache.batch = batch;
     cache.heads = kh;
     cache.tokens = total;

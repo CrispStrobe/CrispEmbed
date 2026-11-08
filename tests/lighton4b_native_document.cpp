@@ -54,6 +54,7 @@ static int run(int argc, char ** argv) {
     std::string rendered;
     if (!tokenizer.image_prompt("", image.grid[1] * image.grid[2] / 4, ids, mods, rendered)) return 7;
     if (observed_composed_cap && ids.size() + size_t(cap) > 2048) return 2;
+    if (lighton4b_source_prefill_chunks_mode(model.text.decoder.upstream_physical) && ids.size()>512) return 2;
     ids_write("prompt", ids);
     ids_write("modalities", mods);
     std::ofstream(out + "/rendered.txt") << rendered;
@@ -86,16 +87,23 @@ static int run(int argc, char ** argv) {
     embedded.clear();
     emit("prefill.input", prefill.hidden);
     emit("prefill.positions", prefill.positions.axes);
+    std::vector<int> chunk_sizes;
+    if(lighton4b_source_prefill_chunks_mode(model.text.decoder.upstream_physical)){
+        std::vector<lighton4b_prefill_chunk> plan;
+        if(!lighton4b_source_prefill_plan(mods,plan))return 2;
+        for(const auto & chunk:plan)chunk_sizes.push_back(chunk.tokens);
+    }else for(int offset=0;offset<int(ids.size());offset+=16)chunk_sizes.push_back(std::min(16,int(ids.size())-offset));
+    ids_write("prefill.chunk_sizes",chunk_sizes);
     lighton4b_decoder_outputs initial;
     if (!lighton4b_prefill_cpu(model.text.decoder, prefill.hidden.data(), prefill.positions.axes.data(),
-                               int(ids.size()), threads, nullptr, initial))
+                               int(ids.size()), threads, nullptr, initial, &mods))
         return 11;
     for (size_t i = 0; i < initial.hidden.size(); ++i) emit("prefill.layer." + std::to_string(i), initial.hidden[i]);
     emit("prefill.norm", initial.norm);
     if (model.text.decoder.upstream_physical) {
         // Observer-only duplicate first block, checked against the actual main
         // prefill. Its first text rows permit same-input source operator replay.
-        const int count = std::min<int>(16, int(ids.size()));
+        const int count = chunk_sizes.front();
         lighton4b_linear_block_outputs block;
         if (!lighton4b_linear_block_cpu(model.text.decoder.layers[0], prefill.hidden.data(), count, threads, nullptr, block) ||
             initial.hidden.size() != 32 || initial.hidden[0].size() < block.hidden.size() ||
@@ -220,6 +228,7 @@ static int run(int argc, char ** argv) {
     if (model.text.decoder.upstream_physical) {
         const auto * cache = model.text.decoder.physical_weights_cache.get();
         summary << ",\"physical_q6_tiled\":" << (greedy_cache.physical_q6_tiled ? "true" : "false");
+        summary << ",\"physical_source_prefill_chunks\":" << (greedy_cache.physical_source_prefill_chunks ? "true" : "false");
         summary << ",\"physical_q4_repack\":" << (model.text.decoder.physical_q4_repack ? "true" : "false")
                 << ",\"physical_repack_entries\":" << (cache ? cache->physical_repack_entries() : 0)
                 << ",\"physical_repack_bytes\":" << (cache ? cache->physical_repack_bytes() : 0)

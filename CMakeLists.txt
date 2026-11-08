@@ -1868,3 +1868,7 @@ target_link_libraries(test-lighton4b-physical-gdn-source-ops PRIVATE crispembed-
 add_executable(test-lighton4b-physical-q6-tiled EXCLUDE_FROM_ALL tests/test_lighton4b_physical_q6_tiled.cpp)
 target_include_directories(test-lighton4b-physical-q6-tiled PRIVATE src ggml/include)
 target_link_libraries(test-lighton4b-physical-q6-tiled PRIVATE crispembed-qwen35-delta crispembed-core)
+
+# Source-boundary scheduling controls; synthetic and excluded from install.
+add_executable(test-lighton4b-source-prefill-chunks EXCLUDE_FROM_ALL tests/test_lighton4b_source_prefill_chunks.cpp)
+target_link_libraries(test-lighton4b-source-prefill-chunks PRIVATE crispembed-qwen35-delta crispembed-core)
