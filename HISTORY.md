@@ -26,9 +26,18 @@ for final verdicts, live jobs and remaining tasks.
   that the API-reported size of paged renders is wrong (served at 1920px) for 36 pages;
   sizes are now measured. Layout scorer (block IoU/text matching, type accuracy, Kendall
   tau-b, table cell F1) with unit tests. [Guide](docs/ocr-gold-corpus.md).
-## 8 November 2026 — GOT-OCR2 gold attribution closed
+## 8 November 2026 — Unlimited-OCR-2 Q8_0 (q8sh16) published; GOT-OCR2 gold attribution
 
-Original pipeline on all 57 gold pages: F16-r2 42/55 token-exact. F32 diverges at the same tokens as F16, and with PIL-decoded input the native pixels equal the original bit for bit; the four early divergences are teacher-forced raw-argmax near-ties (margins 0.002–0.21 logits) from floating-point accumulation order, not a pipeline difference ([research §9–11](docs/got-ocr2-q4-research.md)).
+- Unlimited-OCR-2 `q8sh16` (Q8_0, shared experts F16; 0.9728 CPU / 0.9762 CUDA) published experimental as
+  `unlimited-ocr-2-q8_0-sh16.gguf` at Hub `238d25ee` from Kaggle `crispembed-uocr2-q8sh16-publish`: census equal
+  to the evaluated file, local = LFS = empty-cache readback sha256 `db317f10…`. Alias
+  `unlimited-ocr2-q8_0-experimental` (SHA-pinned); Kaggle consumer receipt passes
+  ([receipts](tests/results/unlimited-ocr2/q8sh16-publication/)).
+- GOT-OCR2: the original pipeline on all 57 gold pages (F16-r2 42/55 token-exact) and an F32 attribution of
+  the four early divergences: F32 diverges at the same tokens, then pixel/teacher-forced attribution: pixels
+  equal the original on PIL-decoded input and the divergences are raw-argmax near-ties (margins 0.002–0.21
+  logits) from floating-point accumulation order, not a pipeline difference; lane closed
+  ([research §9–11](docs/got-ocr2-q4-research.md)).
 
 ## 7 November 2026 — GOT-OCR2 quantization search closed
 
