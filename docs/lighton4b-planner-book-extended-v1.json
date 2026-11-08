@@ -4,9 +4,8 @@
   "compiled_source": "a6164205620c71427a39c97ab386591406c4ca73",
   "failed_receipt_sha256": "f231ab48c9bff411a1f9c96cfb79eda084f2f0b7cee46f9ea747ccc734d5f8e6",
   "original_receipt_sha256": "9b88195d5a8058dea4fab87472009d3826bc1fa3b5d0575aa2e33698316d5722",
-  "timeout_audit_sha256": "COMPLETED_TIMEOUT_AUDIT_REQUIRED",
-  "inventory_receipt_sha256": "COMPLETED_INVENTORY_RECEIPT_REQUIRED",
-  "runtime_manifest_sha256": "COMPLETED_TESTED_RUNTIME_MANIFEST_REQUIRED",
+  "timeout_audit_sha256": "4906aa6e171cb5f92816a7a9e98e177a7ccbfd5f5406f2f2b1e353acb852ef06",
+  "runtime_manifest_sha256": "540aa9983faf570e46e9e6708f745dbd3cbd5f8354276f3fddb301e7fe9e65d7",
   "selection_protocol_sha256": "1a5cf84d5d83c22a041e774aaa00e682a28d302a2542ef02606e5dfa0ef3cd4b",
   "model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
   "prefix_rows": 1054,
@@ -21,5 +20,6 @@
   "input_or_label_change_allowed": false,
   "qualified": false,
   "scope": "Resource-only fresh independent planner-ON pixel replay, not cached-state continuation. All 1054 retained rows and prior prefill stages must reproduce before accepting additional rows. Same cap, labels, weights, inputs and gates; no tuning. No paired source-feature decode is claimed by this extension.",
-  "frozen_executor_sha256": "bdd80e7f7c3c7a578478bd9c16d94dc07c32e86220c6a337629e0c95498aaf5f"
+  "frozen_executor_sha256": "bdd80e7f7c3c7a578478bd9c16d94dc07c32e86220c6a337629e0c95498aaf5f",
+  "runtime_receipt_sha256": "fe81ad1d46bd519d0a46c01820af3355c29e81aa3f022d42fd068cc9ece1eab1"
 }

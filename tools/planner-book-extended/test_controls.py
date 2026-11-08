@@ -9,8 +9,10 @@ class Controls(unittest.TestCase):
    with self.assertRaises(ValueError):worker.admit(bad)
  def test_pending_bindings_fail_closed(self):
   cfg=json.loads((worker.ROOT/'docs/lighton4b-planner-book-extended-v1.json').read_text())
+  worker.bind_complete(cfg)
+  cfg['timeout_audit_sha256']='pending'
   with self.assertRaises(ValueError):worker.bind_complete(cfg)
-  for key in['timeout_audit_sha256','inventory_receipt_sha256','runtime_manifest_sha256']:cfg[key]='1'*64
+  for key in['timeout_audit_sha256','runtime_receipt_sha256','runtime_manifest_sha256']:cfg[key]='1'*64
   worker.bind_complete(cfg)
   for value in['','pending','X'*64,'a'*63]:
    bad=dict(cfg);bad['runtime_manifest_sha256']=value

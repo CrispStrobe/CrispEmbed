@@ -10,7 +10,7 @@ ex=contracts.ex;require=contracts.require;sha=contracts.sha
 sys.path.insert(0,str(ROOT/'tools/physical-f16-attention-probe'));from runtime_guard import Deadline,WorkerDeadline,command
 sys.path.insert(0,str(ROOT/'tools/heldout'));from transfer import download as authenticated_transfer
 PROFILE={'CRISPEMBED_NATIVE':'OFF','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_LLAMAFILE':'ON','GGML_CPU_REPACK':'ON','GGML_AVX512':'OFF','GGML_BLAS':'OFF','GGML_BACKEND_DL':'OFF','GGML_OPENMP':'OFF','GGML_CUDA':'OFF','GGML_VULKAN':'OFF'}
-CFG_SHA='d6c9a086c540edf614b8b8a7c4cd311ce3b343f832c2b575e1df0bb3b8def5f0'
+CFG_SHA='e8e783b3526f56208e4d5f6cbf496afd2f286853f76e2d975c41092a0142d2e6'
 def admit(cfg):
  require(hashlib.sha256((json.dumps(cfg,indent=2)+'\n').encode()).hexdigest()==CFG_SHA,'immutable extended protocol')
  require(cfg['case']=='two-column-page'and cfg['compiled_source']=='a6164205620c71427a39c97ab386591406c4ca73'and cfg['prefix_rows']==1054,'fixed source and retained prefix')
@@ -24,7 +24,7 @@ def admit(cfg):
  return selected
 
 def bind_complete(cfg):
- for k in['timeout_audit_sha256','inventory_receipt_sha256','runtime_manifest_sha256']:
+ for k in['timeout_audit_sha256','runtime_receipt_sha256','runtime_manifest_sha256']:
   s=cfg[k];require(isinstance(s,str)and len(s)==64 and all(c in'0123456789abcdef'for c in s),'actual completed '+k+' required')
 def prefix_keys(receipt):
  rows=[]
@@ -51,10 +51,12 @@ def main():
   run('source',['git','rev-parse','HEAD']);r['source_sha']=(out/'source.log').read_text().strip();require(r['source_sha']==os.environ['LIGHTON4B_EXPECTED_SOURCE'],'exact controller');base=load('physical_base',ROOT/'tools/kaggle/lighton4b_upstream_physical_decode.py');r['capacity']=dict(memory=base.memory(),scratch=shutil.disk_usage(work).free,output=shutil.disk_usage(out).free);require(r['capacity']['memory']['MemAvailable']>=10<<30 and r['capacity']['scratch']>=25<<30 and r['capacity']['output']>=6<<30,'bounded replay capacity')
   fp,failed=locate('planner-heldout.json',cfg['failed_receipt_sha256']);require(failed['status']=='failed'and failed['error_type']=='TimeoutExpired'and failed['phase']=='corrected-composed'and failed['case']==cfg['case']and failed['source_sha']==cfg['compiled_source']and failed['old_baseline_all_rows_stages_exact'],'exact original timeout');prefix=prefix_keys(failed)
   ap,audit=locate('raw-audit.json',cfg['timeout_audit_sha256']);require(audit['status']=='complete-timeout-integrity'and audit['receipt_sha256']==sha(fp)and audit['partial_rows']==1054 and audit['all_rows_finite_argmax_audited']and not audit['completed_planner_output'],'independent actual prefix integrity');r['timeout_receipt_sha256']=sha(fp);r['timeout_audit_sha256']=sha(ap)
-  ip,inventory=locate('planner-heldout.json',cfg['inventory_receipt_sha256']);mp,manifest=locate('retained-runtime.json',cfg['runtime_manifest_sha256']);require(inventory['source_sha']==manifest['source_sha']==cfg['compiled_source']and manifest['case_receipt_sha256']==sha(ip)and inventory['status']=='measured_provisional_planner_heldout'and inventory['old_baseline_all_rows_stages_exact'],'completed tested binary producer');require(manifest['native_binary_sha256']==inventory['native_binary_sha256'],'actual tested native binary')
+  ip,inventory=locate('planner-heldout.json',cfg['runtime_receipt_sha256']);mp,manifest=locate('runtime-bundle.json',cfg['runtime_manifest_sha256']);require(inventory['source_sha']==manifest['source_sha']==cfg['compiled_source']and manifest['producer_receipt_sha256']==sha(ip)and inventory['status']=='passed_model_free_planner_heldout_controls'and inventory['model_acquisition']is False and inventory['heldout_forward_executed']is False and inventory['actual_cli_controls']==10 and inventory['position_export_control']and manifest['status']=='tested-model-free-runtime-bundle','completed tested binary producer');require(manifest['native_binary_sha256']==inventory['native_binary_sha256'],'actual tested native binary')
+  for name,row in inventory['artifacts'].items():verify(ip.parent/name,row)
+  r['all_actual_model_free_control_members_authenticated']=True
   runtime=work/'runtime';total=0;require(2<=len(manifest['files'])<=20,'bounded bundle file count')
   for name,row in manifest['files'].items():
-   n=Path(name);require(not n.is_absolute()and '..'not in n.parts and n.parts[0]in['bin','lib']and 0<row['bytes']<=64<<20,'closed bundle member');total+=row['bytes'];require(total<=256<<20,'bundle total bound');src=mp.parent/'retained-runtime'/n;verify(src,row);dest=runtime/n;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(src,dest);verify(dest,row)
+   n=Path(name);require(not n.is_absolute()and '..'not in n.parts and n.parts[0]in['bin','lib']and 0<row['bytes']<=64<<20,'closed bundle member');total+=row['bytes'];require(total<=256<<20,'bundle total bound');src=mp.parent/'runtime'/n;verify(src,row);dest=runtime/n;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(src,dest);verify(dest,row)
   native=runtime/'bin/lighton4b-native-document';require(sha(native)==manifest['native_binary_sha256'],'owned tested binary');native.chmod(native.stat().st_mode|stat.S_IXUSR);cache=ip.parent/'CMakeCache.txt';verify(cache,inventory['artifacts']['CMakeCache.txt']);require(sha(cache)==manifest['cmake_cache_sha256'],'tested profile identity');lines=cache.read_text().splitlines();require(all(f'{k}:BOOL={v}'in lines for k,v in PROFILE.items()),'actual supported compiled profile');shutil.copyfile(cache,out/'CMakeCache.txt');r['runtime_manifest_sha256']=sha(mp);r['native_binary_sha256']=sha(native)
   # Authenticate the entire earlier baseline and immutable inputs; never rerun it.
   priorarm=failed['arms']['baseline-old'];require(priorarm['complete']and len(priorarm['ids'])==660,'previous complete baseline');contracts.archive_closed(fp.parent/'baseline-old',priorarm)
