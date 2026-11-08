@@ -1,0 +1,14 @@
+{
+ "positions": 139,
+ "ref_floats": 17969920,
+ "cand_floats": 17969920,
+ "complete": true,
+ "final_cos_min": 0.9866905653795895,
+ "final_cos_mean": 0.9994312732774405,
+ "worst_position": 72,
+ "top1_agreement": 0.9928057553956835,
+ "top1_disagreements": [
+  7
+ ],
+ "max_abs": 6.836255073547363
+}

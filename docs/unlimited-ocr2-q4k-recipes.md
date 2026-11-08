@@ -139,3 +139,20 @@ is **below the 0.97 Q8_0 bar** (0.9555; CPU 0.9739): TODO, a Q8_0 recipe for CUD
 shared experts / attention F16) before the published Q8_0 is claimed qualified on CUDA.
 (`q8` is quantized from the published F16 with `c.pos_embed` F16, so it is not
 byte-identical to the published F32-sourced Q8_0; the published file was not re-scored.)
+
+## Round 3: CUDA Q8_0 lane (Kaggle T4, 8 November 2026, source 15d8fefe)
+
+[Summary](../tests/results/unlimited-ocr2/q4k-sweep/kaggle-cuda-v3/summary.md). Same kernel and T4 as v1/v2.
+The current runtime has moved: the F16 CUDA control's paragraphs case is now 0.9989 (v2 0.9879) and plain
+`q8` is **0.97000** (v2 0.9555), exactly on the bar. Keeping decoder groups at F16 adds margin:
+
+| recipe | MiB | CUDA final cos min (case) |
+|---|---|---|
+| q8 | 3397 | 0.9700 (paragraphs) |
+| q8at16 (attention F16) | 3468 | 0.9726 (receipt) |
+| q8hd16 (head + embedding F16) | 3693 | 0.9737 (receipt) |
+| q8sh16 (shared experts F16) | 3465 | 0.9762 (receipt) |
+| q8sa16 (shared + attention F16) | 3535 | 0.9791 (german) — equal to the F16 CUDA control (0.9789) |
+
+All recipes keep box-stripped text equal to F16 on 4/4. The CPU leg of the "≥ 0.97 on CPU and CUDA" bar has
+not been re-measured for the new recipes or the current runtime.

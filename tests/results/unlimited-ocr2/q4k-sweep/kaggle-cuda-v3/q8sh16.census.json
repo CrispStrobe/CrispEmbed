@@ -1,0 +1,187 @@
+{
+ "file": "q8sh16.gguf",
+ "file_bytes": 3633432192,
+ "file_mib": 3465.1,
+ "tensors": 739,
+ "type_counts": {
+  "Q8_0": 318,
+  "F16": 421
+ },
+ "type_bytes": {
+  "Q8_0": 3467145376,
+  "F16": 161565184
+ },
+ "types": {
+  "l.lm_head.weight": "Q8_0",
+  "l.embed_tokens.weight": "Q8_0",
+  "v.image_newline": "F16",
+  "l.blk.0.input_layernorm.weight": "F16",
+  "l.blk.0.ffn_down.weight": "Q8_0",
+  "l.blk.0.ffn_gate.weight": "Q8_0",
+  "l.blk.0.ffn_up.weight": "Q8_0",
+  "l.blk.0.post_attention_layernorm.weight": "F16",
+  "l.blk.0.attn_dash.head_cls": "F16",
+  "l.blk.0.attn_dash.k_norm.weight": "F16",
+  "l.blk.0.attn_dash.k_proj.weight": "Q8_0",
+  "l.blk.0.attn_dash.q_norm.weight": "F16",
+  "l.blk.0.attn_dash.q_proj.weight": "Q8_0",
+  "l.blk.0.attn_idx.k_norm.weight": "F16",
+  "l.blk.0.attn_idx.k_proj.weight": "Q8_0",
+  "l.blk.0.attn_idx.q_norm.weight": "F16",
+  "l.blk.0.attn_idx.q_proj.weight": "Q8_0",
+  "l.blk.0.attn_k.weight": "Q8_0",
+  "l.blk.0.attn_o.weight": "Q8_0",
+  "l.blk.0.attn_q.weight": "Q8_0",
+  "l.blk.0.attn_v.weight": "Q8_0",
+  "l.blk.1.input_layernorm.weight": "F16",
+  "l.blk.1.mlp_gate.weight": "Q8_0",
+  "l.blk.1.shared_exp.ffn_down.weight": "F16",
+  "l.blk.1.shared_exp.ffn_gate.weight": "F16",
+  "l.blk.1.shared_exp.ffn_up.weight": "F16",
+  "l.blk.1.post_attention_layernorm.weight": "F16",
+  "l.blk.1.attn_dash.head_cls": "F16",
+  "l.blk.1.attn_dash.k_norm.weight": "F16",
+  "l.blk.1.attn_dash.k_proj.weight": "Q8_0",
+  "l.blk.1.attn_dash.q_norm.weight": "F16",
+  "l.blk.1.attn_dash.q_proj.weight": "Q8_0",
+  "l.blk.1.attn_idx.k_norm.weight": "F16",
+  "l.blk.1.attn_idx.k_proj.weight": "Q8_0",
+  "l.blk.1.attn_idx.q_norm.weight": "F16",
+  "l.blk.1.attn_idx.q_proj.weight": "Q8_0",
+  "l.blk.1.attn_k.weight": "Q8_0",
+  "l.blk.1.attn_o.weight": "Q8_0",
+  "l.blk.1.attn_q.weight": "Q8_0",
+  "l.blk.1.attn_v.weight": "Q8_0",
+  "l.blk.11.input_layernorm.weight": "F16",
+  "l.blk.11.mlp_gate.weight": "Q8_0",
+  "l.blk.11.shared_exp.ffn_down.weight": "F16",
+  "l.blk.11.shared_exp.ffn_gate.weight": "F16",
+  "l.blk.11.shared_exp.ffn_up.weight": "F16",
+  "l.blk.11.post_attention_layernorm.weight": "F16",
+  "l.blk.11.attn_dash.head_cls": "F16",
+  "l.blk.11.attn_dash.k_norm.weight": "F16",
+  "l.blk.11.attn_dash.k_proj.weight": "Q8_0",
+  "l.blk.11.attn_dash.q_norm.weight": "F16",
+  "l.blk.11.attn_dash.q_proj.weight": "Q8_0",
+  "l.blk.11.attn_idx.k_norm.weight": "F16",
+  "l.blk.11.attn_idx.k_proj.weight": "Q8_0",
+  "l.blk.11.attn_idx.q_norm.weight": "F16",
+  "l.blk.11.attn_idx.q_proj.weight": "Q8_0",
+  "l.blk.11.attn_k.weight": "Q8_0",
+  "l.blk.11.attn_o.weight": "Q8_0",
+  "l.blk.11.attn_q.weight": "Q8_0",
+  "l.blk.11.attn_v.weight": "Q8_0",
+  "l.output_norm.weight": "F16",
+  "proj.bias": "F16",
+  "proj.weight": "Q8_0",
+  "v.neck_conv1.weight": "Q8_0",
+  "v.neck_ln1.bias": "F16",
+  "v.neck_ln1.weight": "F16",
+  "v.neck_conv2.weight": "Q8_0",
+  "v.neck_ln2.bias": "F16",
+  "v.neck_ln2.weight": "F16",
+  "v.net_2.weight": "Q8_0",
+  "v.net_3.weight": "Q8_0",
+  "v.patch_embed.bias": "F16",
+  "v.patch_embed.weight": "F16",
+  "v.pos_embed": "F16",
+  "v.view_separator": "F16",
+  "c.cls_token": "F16",
+  "c.patch_embed.weight": "F16",
+  "c.pos_embed": "F16",
+  "c.pre_ln.bias": "F16",
+  "c.pre_ln.weight": "F16",
+  "l.blk.1.ffn_down_exps.weight": "Q8_0",
+  "l.blk.1.ffn_gate_exps.weight": "Q8_0",
+  "l.blk.1.ffn_up_exps.weight": "Q8_0",
+  "l.blk.11.ffn_down_exps.weight": "Q8_0",
+  "l.blk.11.ffn_gate_exps.weight": "Q8_0",
+  "l.blk.11.ffn_up_exps.weight": "Q8_0"
+ },
+ "protected": {
+  "v.pos_embed": {
+   "type": "F16",
+   "source_shape": [
+    3145728,
+    1
+   ],
+   "stored_shape": [
+    3145728
+   ],
+   "byte_exact": true,
+   "semantic_shape_equal": true
+  },
+  "v.patch_embed.weight": {
+   "type": "F16",
+   "source_shape": [
+    768,
+    768
+   ],
+   "stored_shape": [
+    768,
+    768
+   ],
+   "byte_exact": true,
+   "semantic_shape_equal": true
+  },
+  "c.patch_embed.weight": {
+   "type": "F16",
+   "source_shape": [
+    588,
+    1024
+   ],
+   "stored_shape": [
+    588,
+    1024
+   ],
+   "byte_exact": true,
+   "semantic_shape_equal": true
+  },
+  "v.image_newline": {
+   "type": "F16",
+   "source_shape": [
+    1280
+   ],
+   "stored_shape": [
+    1280
+   ],
+   "byte_exact": true,
+   "semantic_shape_equal": true
+  },
+  "v.view_separator": {
+   "type": "F16",
+   "source_shape": [
+    1280
+   ],
+   "stored_shape": [
+    1280
+   ],
+   "byte_exact": true,
+   "semantic_shape_equal": true
+  },
+  "c.cls_token": {
+   "type": "F16",
+   "source_shape": [
+    1024
+   ],
+   "stored_shape": [
+    1024
+   ],
+   "byte_exact": true,
+   "semantic_shape_equal": true
+  },
+  "l.output_norm.weight": {
+   "type": "F16",
+   "source_shape": [
+    1280
+   ],
+   "stored_shape": [
+    1280
+   ],
+   "byte_exact": true,
+   "semantic_shape_equal": true
+  }
+ },
+ "protected_ok": true,
+ "q4_0_tensors": []
+}
