@@ -5537,6 +5537,8 @@ extern "C" void crispembed_free(crispembed_context * ctx) {
 #include "ocr_pipeline.h"
 #include "ocr_pipeline_pool.h"
 #include "ocr_orchestrator.h"
+#include "ocr_review.h"
+#include <limits>
 #include "layout_detect.h"
 
 struct ocr_pipeline_wrapper {
@@ -5682,6 +5684,9 @@ struct ocr_pipeline_orch_wrapper {
     std::vector<crispembed_ocr_stage_metric> c_stage_metrics;
     std::string full_text;
     std::string markdown;
+    std::string review_json;
+    bool has_run = false;
+    bool punctuation_configured = false;
     void * punct = nullptr; // optional post-OCR punctuation/spacing restorer
 };
 
@@ -5788,6 +5793,7 @@ extern "C" void * crispembed_ocr_pipeline_init(const crispembed_ocr_pipeline_par
         return nullptr;
     }
     if (params->punct_model && *params->punct_model) {
+        w->punctuation_configured = true;
         w->punct = crispembed_punct_init(params->punct_model, n_threads);
     }
     return w;
@@ -5799,9 +5805,13 @@ extern "C" const crispembed_ocr_result * crispembed_ocr_pipeline_run(void * ctx,
     if (out_n) *out_n = 0;
     if (out_full_text) *out_full_text = nullptr;
     if (out_mean_conf) *out_mean_conf = 0.0f;
-    if (!ctx || !image_path) return nullptr;
+    if (!ctx) return nullptr;
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    w->review_json.clear();
+    w->has_run = false;
+    if (!image_path) return nullptr;
     w->last = ocr_orchestrator::run_file(w->ctx, image_path);
+    w->has_run = true;
     w->full_text = w->last.full_text;
     w->markdown = w->last.markdown;
     // Optional post-OCR restore: punctuation / capitalization / spacing.
@@ -5858,6 +5868,29 @@ extern "C" const char * crispembed_ocr_pipeline_markdown(void * ctx, int * out_l
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;
     if (out_len) *out_len = (int)w->markdown.size();
     return w->markdown.empty() ? nullptr : w->markdown.c_str();
+}
+
+extern "C" const char * crispembed_ocr_pipeline_review_json(void * ctx, int * out_len) {
+    if (out_len) *out_len = 0;
+    if (!ctx) return nullptr;
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    if (!w->has_run) return nullptr;
+    try {
+        auto capabilities = ocr_orchestrator::get_capabilities(w->ctx);
+        capabilities.punctuation_configured = w->punctuation_configured;
+        capabilities.punctuation_loaded = w->punct != nullptr;
+        w->review_json = ocr_review::render(w->last, capabilities, w->full_text, w->markdown);
+        if (w->review_json.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
+            w->review_json.clear();
+            return nullptr;
+        }
+        if (out_len) *out_len = static_cast<int>(w->review_json.size());
+        return w->review_json.c_str();
+    } catch (...) {
+        // Allocation/serialization exceptions must not cross the C ABI.
+        w->review_json.clear();
+        return nullptr;
+    }
 }
 
 static ocr_orchestrator::engine map_engine(int e) {
@@ -6025,6 +6058,7 @@ extern "C" void * crispembed_ocr_pipeline_init_stages(int router, const char * n
         return nullptr;
     }
     if (punct_model && *punct_model) {
+        w->punctuation_configured = true;
         w->punct = crispembed_punct_init(punct_model, n_threads);
     }
     return w;
@@ -7036,8 +7070,12 @@ extern "C" char * crispembed_ocr_render(const crispembed_ocr_result * results, i
     ocr_render_add_page(r, &page);
     ocr_render_end(r);
 
+    if (ocr_render_error(r)) {
+        ocr_render_free(r);
+        return nullptr;
+    }
     int size = ocr_render_output_size(r);
-    char * out = (char *)malloc(size + 1);
+    char * out = (char *)malloc(size_t(size) + 1);
     if (out) {
         memcpy(out, ocr_render_output(r), size);
         out[size] = '\0';

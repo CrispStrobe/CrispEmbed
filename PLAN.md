@@ -1,5 +1,51 @@
 # CrispEmbed plan — open work (updated 7 November 2026)
 
+## OCR review workspace integration — 8 November 2026
+
+Owner lane: `feature/ocr-production-workspace`, based on
+`20d271f56ab948aa9347d1b1644a508a08bf9c7c`, paired with the same feature branch in
+[CrispSorter](https://github.com/CrispStrobe/CrispSorter/tree/feature/ocr-production-workspace).
+Expose the existing orchestrator's rich results through an additive, versioned
+JSON review snapshot: region and character confidence provenance, reading order,
+layout, tables, formulas, language, stage metrics and explicit coordinate-space
+validity. Keep existing C structs and inference/default behavior unchanged.
+
+Acceptance: model-free serialization and geometry-policy tests; C declaration,
+Rust/Python/Dart clients and CLI/HTTP access; hosted native and binding builds.
+The application can continue using its immutable native release with reduced
+diagnostics; consuming the new accessor requires a matching library and binding.
+Do not mix arbitrary native headers and released binaries or infer model-quality
+qualification from metadata tests. Release assets and publication are separate.
+
+Implemented: additive C accessor; safe Rust and optional Python/Dart methods;
+explicit CLI/HTTP review response; coordinate/score provenance and model-free
+serialization tests. Standalone C++ contract and four Python copy/availability
+tests pass. The schema and consumer contract are documented in
+[docs/ocr-review-snapshot.md](docs/ocr-review-snapshot.md).
+Optional language identification, truecasing and punctuation stages now report
+compiled/configured/loaded availability separately, with explicit missing-stage
+warnings. The extended model-free serializer test passes. Hosted formatting and
+environment inventory passed at the preceding source; final-source native and
+binding checks remain required.
+Export hardening in progress: native PDF now decodes PNG/JPEG to RGB, embeds
+an original metric font with Unicode maps, constructs complete page/xref trees,
+and scales images/text together to caller-supplied physical sizes. The checked
+Rust API preserves actionable errors; unsupported archival mode produces no
+file. ALTO no longer truncates long corrected text and XML control characters
+are replaced safely. Local independent-reader tests pass for 125 pages, five
+raster encodings, supplementary Unicode, 11.9 KB corrected paragraphs, long
+XML and failure cases. The dedicated `OCR export artifacts` workflow retains
+actual files and a validation receipt. Right-to-left scripts and directional
+controls now fail explicitly for PDF until a complete bidi implementation is
+qualified; hOCR/ALTO/text remain lossless. A 65542-scalar case checks font subsets
+with three independent readers, avoiding surrogate-valued CIDs that one reader
+misdecoded. Text-only PDFs stay ASCII-safe for legacy string callers. Final
+source and hosted native integration checks remain required.
+
+Remaining: hosted native/C API lifecycle and binding build validation. The
+legacy engine interface cannot distinguish a blank page from several failures;
+the snapshot explicitly labels this uncertainty rather than fabricating success.
+
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
 [the 3 November handoff](docs/handoff-2026-11-03.md) and

@@ -1,15 +1,34 @@
 // ocr_render.cpp — OCR result renderers.
 //
 // Implements plain text, hOCR, ALTO, and searchable PDF output.
-// No external dependencies (PDF is a minimal subset: one image + text layer
-// per page, no fonts beyond a base Type1 invisible text font).
+// PDF uses the existing image decoder and an original embedded metric font.
+// Page images are visible; Unicode OCR text is searchable but never painted.
 
 #include "ocr_render.h"
+#include "ocr_pdf_font.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <iomanip>
+#include <limits>
+#include <locale>
+#include <map>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
+
+// Implemented once in image_preprocess.cpp and core/image_out.cpp.
+extern "C" {
+int stbi_info(const char * filename, int * x, int * y, int * comp);
+unsigned char * stbi_load(const char * filename, int * x, int * y, int * comp, int req_comp);
+void stbi_image_free(void * data);
+unsigned char * stbi_zlib_compress(unsigned char * data, int data_len, int * out_len, int quality);
+}
 
 // ---------------------------------------------------------------------------
 // Renderer state
@@ -28,6 +47,7 @@ struct stored_line {
 struct stored_page {
     std::vector<stored_line> lines;
     int width, height;
+    double width_points, height_points;
     std::string image_path; // for PDF image embedding
 };
 
@@ -36,8 +56,11 @@ struct ocr_renderer {
     std::string separator; // page separator for text mode
     std::string output;    // accumulated output
     int page_count;
+    bool begun = false, ended = false;
     std::vector<stored_page> pages; // for PDF deferred rendering
-    bool pdfa = false;              // PDF/A-2b compliance
+    bool pdfa = false;              // retained request flag; archival conformance is unsupported
+    std::string error;
+    double next_width_points = 0, next_height_points = 0;
 
     ocr_renderer() : format(OCR_RENDER_TEXT), separator("\f"), page_count(0) {}
 };
@@ -46,11 +69,56 @@ struct ocr_renderer {
 // XML helpers
 // ---------------------------------------------------------------------------
 
+// Consume Unicode scalars, replacing malformed UTF-8. Never copy an invalid
+// byte sequence into XML or encode a surrogate as an independent PDF glyph.
+static std::vector<uint32_t> unicode_scalars(const char * text) {
+    std::vector<uint32_t> out;
+    if (!text) return out;
+    const auto * s = reinterpret_cast<const unsigned char *>(text);
+    const size_t size = std::strlen(text);
+    for (size_t i = 0; i < size;) {
+        const unsigned char c = s[i];
+        size_t n = c < 0x80                 ? 1
+                   : c >= 0xc2 && c <= 0xdf ? 2
+                   : c >= 0xe0 && c <= 0xef ? 3
+                   : c >= 0xf0 && c <= 0xf4 ? 4
+                                            : 0;
+        uint32_t cp = n == 1 ? c : n == 2 ? c & 0x1f : n == 3 ? c & 0x0f : c & 0x07;
+        bool valid = n != 0 && n <= size - i;
+        for (size_t j = 1; valid && j < n; j++) {
+            valid = (s[i + j] & 0xc0) == 0x80;
+            cp = (cp << 6) | (s[i + j] & 0x3f);
+        }
+        valid = valid && !(n == 2 && cp < 0x80) && !(n == 3 && cp < 0x800) && !(n == 4 && cp < 0x10000) &&
+                cp <= 0x10ffff && !(cp >= 0xd800 && cp <= 0xdfff);
+        out.push_back(valid ? cp : 0xfffd);
+        i += valid ? n : 1;
+    }
+    return out;
+}
+
+static void append_utf8(std::string & out, uint32_t cp) {
+    if (cp < 0x80) {
+        out += char(cp);
+    } else if (cp < 0x800) {
+        out += char(0xc0 | (cp >> 6));
+        out += char(0x80 | (cp & 0x3f));
+    } else if (cp < 0x10000) {
+        out += char(0xe0 | (cp >> 12));
+        out += char(0x80 | ((cp >> 6) & 0x3f));
+        out += char(0x80 | (cp & 0x3f));
+    } else {
+        out += char(0xf0 | (cp >> 18));
+        out += char(0x80 | ((cp >> 12) & 0x3f));
+        out += char(0x80 | ((cp >> 6) & 0x3f));
+        out += char(0x80 | (cp & 0x3f));
+    }
+}
+
 static std::string xml_escape(const char * s) {
     std::string out;
-    if (!s) return out;
-    for (; *s; s++) {
-        switch (*s) {
+    for (uint32_t cp : unicode_scalars(s)) {
+        switch (cp) {
         case '&':
             out += "&amp;";
             break;
@@ -63,12 +131,33 @@ static std::string xml_escape(const char * s) {
         case '"':
             out += "&quot;";
             break;
+        case '\n':
+            out += "&#xA;";
+            break;
+        case '\r':
+            out += "&#xD;";
+            break;
+        case '\t':
+            out += "&#x9;";
+            break;
         default:
-            out += *s;
+            // XML 1.0 forbids other C0 controls, U+FFFE and U+FFFF.
+            append_utf8(out, cp < 0x20 || cp == 0xfffe || cp == 0xffff ? 0xfffd : cp);
             break;
         }
     }
     return out;
+}
+
+static double bounded_confidence(float value) {
+    return std::isfinite(value) ? std::max(0.0, std::min(1.0, double(value))) : 0.0;
+}
+
+static std::string decimal(double value, int precision = 16) {
+    std::ostringstream out;
+    out.imbue(std::locale::classic());
+    out << std::fixed << std::setprecision(precision) << value;
+    return out.str();
 }
 
 // ---------------------------------------------------------------------------
@@ -149,10 +238,14 @@ static void hocr_add_page(ocr_renderer * r, const ocr_render_page * page) {
         for (int j = 0; j < line->n_words; j++) {
             const ocr_render_word * w = &line->words[j];
             int wid = j + 1;
+            const std::string confidence =
+                std::isfinite(w->confidence) && w->confidence >= 0
+                    ? "; x_wconf " + std::to_string(int(bounded_confidence(w->confidence) * 100))
+                    : "";
             snprintf(buf, sizeof(buf),
                      "      <span class=\"ocrx_word\" id=\"word_%d_%d_%d\" "
-                     "title=\"bbox %d %d %d %d; x_wconf %d\">",
-                     pid, lid, wid, w->x, w->y, w->x + w->w, w->y + w->h, (int)(w->confidence * 100));
+                     "title=\"bbox %d %d %d %d%s\">",
+                     pid, lid, wid, w->x, w->y, w->x + w->w, w->y + w->h, confidence.c_str());
             r->output += buf;
             r->output += xml_escape(w->text);
             r->output += "</span>\n";
@@ -212,11 +305,12 @@ static void alto_add_page(ocr_renderer * r, const ocr_render_page * page) {
 
         for (int j = 0; j < line->n_words; j++) {
             const ocr_render_word * w = &line->words[j];
-            snprintf(buf, sizeof(buf),
-                     "            <String CONTENT=\"%s\" HPOS=\"%d\" VPOS=\"%d\" "
-                     "WIDTH=\"%d\" HEIGHT=\"%d\" WC=\"%.2f\" />\n",
-                     xml_escape(w->text).c_str(), w->x, w->y, w->w, w->h, w->confidence);
-            r->output += buf;
+            r->output += "            <String CONTENT=\"" + xml_escape(w->text) + "\" HPOS=\"" + std::to_string(w->x) +
+                         "\" VPOS=\"" + std::to_string(w->y) + "\" WIDTH=\"" + std::to_string(w->w) + "\" HEIGHT=\"" +
+                         std::to_string(w->h) + "\"";
+            if (std::isfinite(w->confidence) && w->confidence >= 0)
+                r->output += " WC=\"" + decimal(bounded_confidence(w->confidence), 2) + "\"";
+            r->output += " />\n";
 
             // Add space after word (except last)
             if (j < line->n_words - 1) {
@@ -241,31 +335,118 @@ static void alto_end(ocr_renderer * r) {
 }
 
 // ---------------------------------------------------------------------------
-// Searchable PDF renderer (minimal PDF 1.4 subset)
+// Searchable PDF renderer
 // ---------------------------------------------------------------------------
-// Approach: for each page, embed the original image as a full-page XObject,
-// then overlay invisible text using a base font with zero rendering mode.
-// This creates a PDF where the image is visible but the text is selectable.
-//
-// We use PDF's text rendering mode 3 (invisible) for the text layer.
-// Font: built-in Helvetica (no embedding needed).
-//
-// This is a minimal PDF writer — no external library required.
+// Every used Unicode scalar gets a CID and a ToUnicode mapping. An original
+// embedded metric font gives selection predictable bounds without relying on
+// installed fonts. Text rendering mode 3 hides its geometric glyphs. Images
+// are decoded and flattened to RGB before being compressed as PDF image data.
+// Object bodies are assembled before offsets: page counts have no fixed cap.
 
-struct pdf_object {
-    int id;
-    int offset;
+struct pdf_document {
+    std::vector<std::string> objects{ "" }; // object zero is the free xref entry
+    size_t body_bytes = 0;
+
+    int reserve() {
+        if (objects.size() >= size_t(std::numeric_limits<int>::max()))
+            throw std::runtime_error("PDF has too many objects");
+        objects.emplace_back();
+        return int(objects.size() - 1);
+    }
+    void set(int id, std::string body) {
+        body_bytes -= objects.at(size_t(id)).size();
+        if (body.size() > size_t(std::numeric_limits<int>::max()) - body_bytes)
+            throw std::runtime_error("PDF exceeds the renderer byte-count limit");
+        body_bytes += body.size();
+        objects[size_t(id)] = std::move(body);
+    }
+    int add(std::string body) {
+        const int id = reserve();
+        set(id, std::move(body));
+        return id;
+    }
+    int stream(const std::string & bytes, const std::string & properties = "") {
+        return add("<< " + properties + " /Length " + std::to_string(bytes.size()) + " >>\nstream\n" + bytes +
+                   "\nendstream");
+    }
+    int hex_stream(const std::string & bytes, const std::string & properties = "") {
+        constexpr char digits[] = "0123456789ABCDEF";
+        std::string encoded;
+        encoded.reserve(bytes.size() * 2 + 1);
+        for (unsigned char byte : bytes) {
+            encoded += digits[byte >> 4];
+            encoded += digits[byte & 15];
+        }
+        encoded += '>';
+        return stream(encoded, properties + " /Filter /ASCIIHexDecode");
+    }
 };
+
+static std::string pdf_ref(int id) {
+    return std::to_string(id) + " 0 R";
+}
+
+static void hex16(std::string & out, uint32_t value) {
+    constexpr char digits[] = "0123456789ABCDEF";
+    for (int shift = 12; shift >= 0; shift -= 4) out += digits[(value >> shift) & 15];
+}
+
+static void utf16_hex(std::string & out, uint32_t cp) {
+    if (cp <= 0xffff) {
+        hex16(out, cp);
+    } else {
+        cp -= 0x10000;
+        hex16(out, 0xd800 + (cp >> 10));
+        hex16(out, 0xdc00 + (cp & 0x3ff));
+    }
+}
+
+// CID numbers are not Unicode, but some independent readers first decode
+// Identity-H bytes as UTF-16. Avoid surrogate-valued CID slots so adjacent
+// glyphs cannot accidentally collapse into one supplementary character.
+static constexpr size_t pdf_cids_per_font = 65535 - 2048;
+static uint32_t pdf_cid(size_t index) {
+    const uint32_t code = uint32_t(index + 1);
+    return code >= 0xd800 ? code + 0x800 : code;
+}
+
+static bool needs_bidirectional_layout(uint32_t cp) {
+    // Conservative script-block guard, including reserved RTL ranges from
+    // Unicode 17 DerivedBidiClass. A correct full UAX #9 implementation is
+    // required before these can be enabled; reversing whole strings is unsafe
+    // for mixed scripts, numbers, combining marks and directional isolates.
+    // https://www.unicode.org/Public/17.0.0/ucd/extracted/DerivedBidiClass.txt
+    return (cp >= 0x0590 && cp <= 0x08ff) || (cp >= 0xfb1d && cp <= 0xfdff) || (cp >= 0xfe70 && cp <= 0xfeff) ||
+           (cp >= 0x10800 && cp <= 0x10fff) || (cp >= 0x1e800 && cp <= 0x1efff) || cp == 0x200e || cp == 0x200f ||
+           (cp >= 0x202a && cp <= 0x202e) || (cp >= 0x2066 && cp <= 0x2069);
+}
+
+static void validate_physical_size(double width, double height) {
+    if (!std::isfinite(width) || !std::isfinite(height) || width <= 0 || height <= 0)
+        throw std::runtime_error("Physical PDF page dimensions must be finite and positive");
+    if (width < 0.01 || height < 0.01 || width > 14400 || height > 14400)
+        throw std::runtime_error(
+            "Physical PDF page dimensions must be between 0.01 and 14400 points; set a page resolution");
+}
+
+static std::string pdf_unicode_string(const std::vector<uint32_t> & text) {
+    std::string out = "<FEFF";
+    for (uint32_t cp : text) utf16_hex(out, cp);
+    return out + ">";
+}
 
 static void pdf_begin(ocr_renderer * r) {
     r->pages.clear();
+    if (r->pdfa) throw std::runtime_error("PDF/A conformance is not supported by this renderer");
 }
 
 static void pdf_add_page(ocr_renderer * r, const ocr_render_page * page) {
-    // Store page data for deferred rendering in pdf_end
     stored_page sp;
     sp.width = page->page_width;
     sp.height = page->page_height;
+    sp.width_points = r->next_width_points > 0 ? r->next_width_points : sp.width;
+    sp.height_points = r->next_height_points > 0 ? r->next_height_points : sp.height;
+    validate_physical_size(sp.width_points, sp.height_points);
     if (page->image_path) sp.image_path = page->image_path;
     for (int i = 0; i < page->n_lines; i++) {
         const ocr_render_line * line = &page->lines[i];
@@ -278,357 +459,402 @@ static void pdf_add_page(ocr_renderer * r, const ocr_render_page * page) {
             const ocr_render_word * w = &line->words[j];
             sl.words.push_back({ w->text ? w->text : "", w->x, w->y, w->w, w->h, w->confidence });
         }
-        sp.lines.push_back(sl);
+        sp.lines.push_back(std::move(sl));
     }
     r->pages.push_back(std::move(sp));
     r->page_count++;
 }
 
-// PDF string escaping: escape parens and backslashes
-static std::string pdf_escape(const std::string & s) {
-    std::string out;
-    for (char c : s) {
-        if (c == '(' || c == ')' || c == '\\') out += '\\';
-        out += c;
+static std::vector<int> pdf_fonts(pdf_document & doc, const std::map<uint32_t, size_t> & characters) {
+    if (characters.empty()) return {};
+    const int font_file =
+        doc.hex_stream(std::string(reinterpret_cast<const char *>(ocr_pdf_font), sizeof(ocr_pdf_font)),
+                       "/Length1 " + std::to_string(sizeof(ocr_pdf_font)));
+    const int descriptor = doc.add("<< /Type /FontDescriptor /FontName /CrispOcrInvisible /Flags 5 "
+                                   "/FontBBox [0 0 1000 1000] /ItalicAngle 0 /Ascent 1000 /Descent 0 /CapHeight 1000 "
+                                   "/StemV 80 /MissingWidth 1000 /FontFile2 " +
+                                   pdf_ref(font_file) + " >>");
+    std::vector<std::vector<uint32_t>> subsets((characters.size() + pdf_cids_per_font - 1) / pdf_cids_per_font);
+    for (const auto & entry : characters) subsets[(entry.second - 1) / pdf_cids_per_font].push_back(entry.first);
+    std::vector<int> fonts;
+    for (size_t f = 0; f < subsets.size(); f++) {
+        const auto & subset = subsets[f];
+        std::string cmap = "/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n"
+                           "/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n"
+                           "/CMapName /CrispOcrUnicode" +
+                           std::to_string(f + 1) +
+                           " def\n/CMapType 2 def\n"
+                           "1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n";
+        for (size_t start = 0; start < subset.size(); start += 100) {
+            const size_t end = std::min(start + 100, subset.size());
+            cmap += std::to_string(end - start) + " beginbfchar\n";
+            for (size_t i = start; i < end; i++) {
+                cmap += '<';
+                hex16(cmap, pdf_cid(i));
+                cmap += "> <";
+                utf16_hex(cmap, subset[i]);
+                cmap += ">\n";
+            }
+            cmap += "endbfchar\n";
+        }
+        cmap += "endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n";
+        const int unicode = doc.stream(cmap);
+        std::string gids((pdf_cid(subset.size() - 1) + 1) * 2, '\0');
+        for (size_t i = 0; i < subset.size(); i++) gids[pdf_cid(i) * 2 + 1] = 1;
+        const int gid_map = doc.hex_stream(gids);
+        const int descendant = doc.add("<< /Type /Font /Subtype /CIDFontType2 /BaseFont /CrispOcrInvisible "
+                                       "/CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> "
+                                       "/FontDescriptor " +
+                                       pdf_ref(descriptor) + " /DW 1000 /CIDToGIDMap " + pdf_ref(gid_map) + " >>");
+        fonts.push_back(doc.add("<< /Type /Font /Subtype /Type0 /BaseFont /CrispOcrInvisible "
+                                "/Encoding /Identity-H /DescendantFonts [" +
+                                pdf_ref(descendant) + "] /ToUnicode " + pdf_ref(unicode) + " >>"));
     }
-    return out;
+    return fonts;
+}
+
+static int pdf_image(pdf_document & doc, const stored_page & page) {
+    if (page.image_path.empty()) return 0; // callers may intentionally export a text-only layer
+    int width = 0, height = 0, channels = 0;
+    if (!stbi_info(page.image_path.c_str(), &width, &height, &channels) || width <= 0 || height <= 0)
+        throw std::runtime_error("Could not read PDF page image: " + page.image_path);
+    if (width != page.width || height != page.height)
+        throw std::runtime_error("PDF page image dimensions do not match the OCR coordinate space");
+    constexpr size_t max_pixels = 256 * 1024 * 1024 / 4; // at most 256 MiB decoded RGBA per page
+    if (size_t(width) > max_pixels / size_t(height))
+        throw std::runtime_error("PDF page image exceeds the 256 MiB decoded-image limit");
+    std::unique_ptr<unsigned char, decltype(&stbi_image_free)> rgba(
+        stbi_load(page.image_path.c_str(), &width, &height, &channels, 4), &stbi_image_free);
+    if (!rgba) throw std::runtime_error("Could not decode PDF page image: " + page.image_path);
+    if (width != page.width || height != page.height)
+        throw std::runtime_error("PDF page image changed dimensions while being read");
+    const size_t pixels = size_t(width) * size_t(height);
+    std::string rgb(pixels * 3, '\0');
+    for (size_t i = 0; i < pixels; i++) {
+        const unsigned int alpha = rgba.get()[i * 4 + 3];
+        for (size_t c = 0; c < 3; c++)
+            rgb[i * 3 + c] = char((rgba.get()[i * 4 + c] * alpha + 255 * (255 - alpha) + 127) / 255);
+    }
+    rgba.reset();
+    int compressed_size = 0;
+    std::unique_ptr<unsigned char, decltype(&std::free)> compressed(
+        stbi_zlib_compress(reinterpret_cast<unsigned char *>(&rgb[0]), int(rgb.size()), &compressed_size, 8),
+        &std::free);
+    if (!compressed || compressed_size <= 0) throw std::runtime_error("Could not compress PDF page image");
+    return doc.stream(std::string(reinterpret_cast<char *>(compressed.get()), size_t(compressed_size)),
+                      "/Type /XObject /Subtype /Image /Width " + std::to_string(width) + " /Height " +
+                          std::to_string(height) +
+                          " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Interpolate false /Filter /FlateDecode");
+}
+
+static void pdf_word(std::string & content, const stored_word & word, int page_height,
+                     const std::map<uint32_t, size_t> & characters, bool trailing_space) {
+    const auto text = unicode_scalars(word.text.c_str());
+    if (text.empty()) return;
+    std::vector<std::vector<uint32_t>> rows(1);
+    for (size_t i = 0; i < text.size(); i++) {
+        if (text[i] == '\n' || text[i] == '\r') {
+            if (text[i] == '\r' && i + 1 < text.size() && text[i + 1] == '\n') i++;
+            rows.emplace_back();
+        } else {
+            rows.back().push_back(text[i]);
+        }
+    }
+    // A corrected paragraph can occupy one region. Extremely narrow glyph
+    // advances make readers discard repeated letters as duplicate overprints.
+    // Wrap only these overfull rows, preserving all scalars and preferring
+    // existing spaces. Explicit line breaks remain hard boundaries. This is
+    // an estimated text layer, not recovered character/typographic geometry.
+    const double original_height = double(word.h) / double(rows.size());
+    std::vector<std::vector<uint32_t>> wrapped;
+    for (const auto & row : rows) {
+        if (row.size() * original_height <= word.w * 6.0) {
+            wrapped.push_back(row);
+            continue;
+        }
+        const size_t count = size_t(std::ceil(std::sqrt(row.size() * original_height / (2.0 * word.w))));
+        const size_t columns = std::max(size_t(1), (row.size() + count - 1) / count);
+        for (size_t start = 0; start < row.size();) {
+            size_t end = std::min(start + columns, row.size());
+            if (end < row.size()) {
+                for (size_t boundary = end; boundary > start + columns / 2; boundary--) {
+                    if (row[boundary - 1] == ' ') {
+                        end = boundary;
+                        break;
+                    }
+                }
+            }
+            wrapped.emplace_back(row.begin() + start, row.begin() + end);
+            start = end;
+        }
+    }
+    rows = std::move(wrapped);
+    const double height = double(word.h) / double(rows.size());
+    for (size_t row = 0; row < rows.size(); row++) {
+        auto & scalars = rows[row];
+        if (scalars.empty()) continue;
+        if (trailing_space && row + 1 == rows.size() && scalars.back() != ' ') scalars.push_back(' ');
+        const double advance = double(word.w) / double(scalars.size());
+        const double y = double(page_height) - word.y - (row + 1) * height;
+        content += "/Span << /ActualText " + pdf_unicode_string(scalars) + " >> BDC\nBT\n3 Tr\n";
+        for (size_t start = 0; start < scalars.size();) {
+            const size_t font = (characters.at(scalars[start]) - 1) / pdf_cids_per_font;
+            size_t end = start;
+            std::string encoded = "<";
+            while (end < scalars.size() && (characters.at(scalars[end]) - 1) / pdf_cids_per_font == font) {
+                hex16(encoded, pdf_cid((characters.at(scalars[end]) - 1) % pdf_cids_per_font));
+                end++;
+            }
+            encoded += "> Tj\n";
+            content += "/F" + std::to_string(font + 1) + " 1 Tf\n" + decimal(advance) + " 0 0 " + decimal(height) +
+                       " " + decimal(word.x + start * advance) + " " + decimal(y) + " Tm\n" + encoded;
+            start = end;
+        }
+        content += "ET\nEMC\n";
+    }
 }
 
 static void pdf_end(ocr_renderer * r) {
-    // Build a complete PDF with invisible text layer per page.
-    // Text rendering mode 3 = invisible (for searchable PDF).
-    // Font: Helvetica (built-in, no embedding needed).
-    // Coordinate system: PDF y-axis is bottom-up; OCR y-axis is top-down.
-
-    std::string & out = r->output;
-    out = "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n";
-
-    std::vector<pdf_object> objects;
-    int next_id = 1;
-    char buf[1024];
-
-    auto obj_start = [&](int id) {
-        objects.push_back({ id, (int)out.size() });
-        snprintf(buf, sizeof(buf), "%d 0 obj\n", id);
-        out += buf;
-    };
-
-    // Object 1: Catalog (placeholder — patched at end for PDF/A refs)
-    int cat_id = next_id++;
-    obj_start(cat_id);
-    int cat_body_offset = (int)out.size();
-    out += std::string(512, ' ');
-    out += "\nendobj\n";
-
-    // Object 2: Pages (placeholder — we'll patch Kids/Count below)
-    int pages_id = next_id++;
-    obj_start(pages_id);
-    int pages_body_offset = (int)out.size();
-    // Reserve space — will be overwritten
-    out += std::string(256, ' ');
-    out += "\nendobj\n";
-
-    // Object 3: Font
-    int font_id = next_id++;
-    obj_start(font_id);
-    out += "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n";
-
-    // Per-page objects: each page needs a Page dict + content stream
-    // and optionally an image XObject.
-    //
-    // Text rendering approach (from Tesseract pdfrenderer.cpp, Apache-2.0):
-    // - Use text matrix `Tm` with affine coefficients for rotation-aware
-    //   positioning (not simple `Td`).
-    // - Scale font size so rendered text width matches bounding box width.
-    //   Helvetica average glyph width ≈ 0.6 * font_size.
-    // - Rendering mode 3 = invisible text (selectable but not drawn).
+    if (r->pages.empty()) throw std::runtime_error("A PDF document must contain at least one page");
+    pdf_document doc;
+    const int catalog = doc.reserve();
+    const int pages = doc.reserve();
+    std::map<uint32_t, size_t> characters;
+    characters.emplace(' ', 0);
+    for (const auto & page : r->pages)
+        for (const auto & line : page.lines)
+            for (const auto & word : line.words)
+                for (uint32_t cp : unicode_scalars(word.text.c_str())) {
+                    if (needs_bidirectional_layout(cp))
+                        throw std::runtime_error("Searchable PDF for right-to-left scripts or directional controls "
+                                                 "requires a verified bidirectional layout engine; export hOCR, ALTO "
+                                                 "or text to preserve the reviewed Unicode text");
+                    characters.emplace(cp, 0);
+                }
+    size_t next_character = 1;
+    for (auto & entry : characters) entry.second = next_character++;
+    const auto fonts = pdf_fonts(doc, characters);
+    std::string font_resources = " /Font <<";
+    for (size_t f = 0; f < fonts.size(); f++) font_resources += " /F" + std::to_string(f + 1) + " " + pdf_ref(fonts[f]);
+    font_resources += " >>";
     std::vector<int> page_ids;
-    for (auto & sp : r->pages) {
-        // Build content stream
-        std::string content;
-
-        // If image path is provided, embed as JPEG XObject
-        // (image drawn first, text overlaid on top)
-        int img_obj_id = 0;
-        std::vector<uint8_t> jpeg_data;
-        if (!sp.image_path.empty()) {
-            // Read the image file as raw bytes (assume JPEG or re-encode)
-            FILE * imgf = fopen(sp.image_path.c_str(), "rb");
-            if (imgf) {
-                fseek(imgf, 0, SEEK_END);
-                long sz = ftell(imgf);
-                fseek(imgf, 0, SEEK_SET);
-                jpeg_data.resize(sz);
-                fread(jpeg_data.data(), 1, sz, imgf);
-                fclose(imgf);
-            }
-        }
-
-        if (!jpeg_data.empty()) {
-            // Draw image as full-page background
-            // cm = Coordinate Transform Matrix: scale to page size
-            snprintf(buf, sizeof(buf), "q\n%d 0 0 %d 0 0 cm\n/Im1 Do\nQ\n", sp.width, sp.height);
-            content += buf;
-        }
-
-        // Invisible text layer
-        content += "BT\n";
-        content += "3 Tr\n"; // Rendering mode 3 = invisible
-
-        for (auto & sl : sp.lines) {
-            for (auto & sw : sl.words) {
-                if (sw.text.empty()) continue;
-
-                // PDF coordinates: y is bottom-up
-                double pdf_x = (double)sw.x;
-                double pdf_y = (double)(sp.height - sw.y - sw.h);
-
-                // Compute font size to match word width.
-                // Helvetica average glyph width ≈ 0.55 * font_size.
-                // We want: text_length ≈ word_width_in_points
-                int n_chars = (int)sw.text.size();
-                double desired_width = (double)sw.w;
-                double font_size = (n_chars > 0) ? desired_width / (n_chars * 0.55) : (double)sw.h;
-                font_size = std::max(4.0, std::min(200.0, font_size));
-
-                // Use Tm (text matrix) for positioning.
-                // For horizontal text: a=1, b=0, c=0, d=1, e=x, f=y
-                // This allows easy extension to rotated text later.
-                snprintf(buf, sizeof(buf),
-                         "/F1 %.1f Tf\n"
-                         "1 0 0 1 %.1f %.1f Tm\n"
-                         "(%s) Tj\n",
-                         font_size, pdf_x, pdf_y, pdf_escape(sw.text).c_str());
-                content += buf;
-            }
-        }
-        content += "ET\n";
-
-        // Image XObject (if image data available)
-        if (!jpeg_data.empty()) {
-            img_obj_id = next_id++;
-            obj_start(img_obj_id);
-
-            // Detect if JPEG (starts with FF D8) or PNG
-            bool is_jpeg = jpeg_data.size() >= 2 && jpeg_data[0] == 0xFF && jpeg_data[1] == 0xD8;
-            const char * filter = is_jpeg ? "/DCTDecode" : "/FlateDecode";
-            // For simplicity, only JPEG is truly embedded; PNG would need
-            // decompression + re-encoding. Just embed raw bytes with DCTDecode.
-
-            snprintf(buf, sizeof(buf),
-                     "<< /Type /XObject /Subtype /Image\n"
-                     "   /Width %d /Height %d\n"
-                     "   /ColorSpace /DeviceRGB\n"
-                     "   /BitsPerComponent 8\n"
-                     "   /Filter %s\n"
-                     "   /Length %d >>\nstream\n",
-                     sp.width, sp.height, filter, (int)jpeg_data.size());
-            out += buf;
-            out.append((const char *)jpeg_data.data(), jpeg_data.size());
-            out += "\nendstream\nendobj\n";
-        }
-
-        // Content stream object
-        int stream_id = next_id++;
-        obj_start(stream_id);
-        snprintf(buf, sizeof(buf), "<< /Length %d >>\nstream\n", (int)content.size());
-        out += buf;
-        out += content;
-        out += "endstream\nendobj\n";
-
-        // Page object
-        int page_id = next_id++;
-        page_ids.push_back(page_id);
-        obj_start(page_id);
-
-        // Resources: font + optional image
-        std::string resources = "<< /Font << /F1 " + std::to_string(font_id) + " 0 R >>";
-        if (img_obj_id > 0) resources += " /XObject << /Im1 " + std::to_string(img_obj_id) + " 0 R >>";
+    for (const auto & page : r->pages) {
+        const int image = pdf_image(doc, page);
+        std::string content = "q\n" + decimal(page.width_points / page.width) + " 0 0 " +
+                              decimal(page.height_points / page.height) + " 0 0 cm\n";
+        if (image)
+            content +=
+                "q\n" + std::to_string(page.width) + " 0 0 " + std::to_string(page.height) + " 0 0 cm\n/Im1 Do\nQ\n";
+        for (const auto & line : page.lines)
+            for (size_t i = 0; i < line.words.size(); i++)
+                pdf_word(content, line.words[i], page.height, characters, i + 1 < line.words.size());
+        content += "Q\n";
+        const int stream = doc.stream(content);
+        std::string resources = "<<" + font_resources;
+        if (image) resources += " /XObject << /Im1 " + pdf_ref(image) + " >>";
         resources += " >>";
-
-        snprintf(buf, sizeof(buf),
-                 "<< /Type /Page /Parent %d 0 R "
-                 "/MediaBox [0 0 %d %d] "
-                 "/Contents %d 0 R "
-                 "/Resources %s "
-                 ">>\nendobj\n",
-                 pages_id, sp.width, sp.height, stream_id, resources.c_str());
-        out += buf;
+        page_ids.push_back(doc.add("<< /Type /Page /Parent " + pdf_ref(pages) + " /MediaBox [0 0 " +
+                                   decimal(page.width_points) + " " + decimal(page.height_points) + "] /Contents " +
+                                   pdf_ref(stream) + " /Resources " + resources + " >>"));
     }
+    std::string kids = "<< /Type /Pages /Kids [";
+    for (int page : page_ids) kids += pdf_ref(page) + " ";
+    doc.set(pages, kids + "] /Count " + std::to_string(page_ids.size()) + " >>");
+    doc.set(catalog, "<< /Type /Catalog /Pages " + pdf_ref(pages) + " >>");
+    const int info = doc.add(std::string("<< /Producer (") + producer_name() + ") /Creator (CrispEmbed OCR) >>");
 
-    // Patch the Pages object with actual Kids and Count
-    {
-        std::string pages_body = "<< /Type /Pages /Kids [";
-        for (size_t i = 0; i < page_ids.size(); i++) {
-            if (i > 0) pages_body += " ";
-            snprintf(buf, sizeof(buf), "%d 0 R", page_ids[i]);
-            pages_body += buf;
-        }
-        snprintf(buf, sizeof(buf), "] /Count %d >>", (int)page_ids.size());
-        pages_body += buf;
-        // Overwrite the placeholder
-        if ((int)pages_body.size() <= 256) {
-            pages_body.resize(256, ' ');
-            memcpy(&out[pages_body_offset], pages_body.data(), 256);
-        }
+    // Keep text-only PDFs safe for legacy NUL-terminated UTF-8 callers. The
+    // small binary font/map streams above use ASCIIHex. Image-bearing PDFs
+    // require the binary-safe output-size/checked APIs.
+    const bool binary_images = std::any_of(r->pages.begin(), r->pages.end(),
+                                           [](const stored_page & page) { return !page.image_path.empty(); });
+    std::string out = binary_images ? "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n" : "%PDF-1.4\n%CrispEmbed\n";
+    std::vector<size_t> offsets(doc.objects.size());
+    for (size_t id = 1; id < doc.objects.size(); id++) {
+        offsets[id] = out.size();
+        if (doc.objects[id].size() + 64 > size_t(std::numeric_limits<int>::max()) - out.size())
+            throw std::runtime_error("PDF exceeds the renderer byte-count limit");
+        out += std::to_string(id) + " 0 obj\n" + doc.objects[id] + "\nendobj\n";
     }
-
-    // PDF/A-2b: add XMP metadata stream + OutputIntent with sRGB profile
-    int metadata_id = 0, output_intent_id = 0;
-    if (r->pdfa) {
-        // XMP metadata stream (declares PDF/A-2b conformance)
-        std::string xmp =
-            "<?xpacket begin=\"\xef\xbb\xbf\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n"
-            "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">\n"
-            "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n"
-            "  <rdf:Description rdf:about=\"\"\n"
-            "    xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n"
-            "    xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\"\n"
-            "    xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\">\n"
-            "    <pdfaid:part>2</pdfaid:part>\n"
-            "    <pdfaid:conformance>B</pdfaid:conformance>\n"
-            "    <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">OCR Document</rdf:li></rdf:Alt></dc:title>\n"
-            "    <dc:creator><rdf:Seq><rdf:li>CrispEmbed</rdf:li></rdf:Seq></dc:creator>\n"
-            "    <xmp:CreatorTool>CrispEmbed OCR " CRISPEMBED_VERSION_STR "</xmp:CreatorTool>\n"
-            "    <xmp:ProducerTool>CrispEmbed " CRISPEMBED_VERSION_STR "</xmp:ProducerTool>\n"
-            "  </rdf:Description>\n"
-            "</rdf:RDF>\n"
-            "</x:xmpmeta>\n"
-            "<?xpacket end=\"w\"?>";
-
-        metadata_id = next_id++;
-        obj_start(metadata_id);
-        snprintf(buf, sizeof(buf), "<< /Type /Metadata /Subtype /XML /Length %d >>\nstream\n", (int)xmp.size());
-        out += buf;
-        out += xmp;
-        out += "\nendstream\nendobj\n";
-
-        // OutputIntent with sRGB IEC61966-2.1 (minimal — just the intent dict,
-        // no embedded ICC profile binary for size reasons; validators may flag
-        // this but it's the common minimal-compliance approach)
-        output_intent_id = next_id++;
-        obj_start(output_intent_id);
-        out += "<< /Type /OutputIntent\n"
-               "   /S /GTS_PDFA1\n"
-               "   /OutputConditionIdentifier (sRGB IEC61966-2.1)\n"
-               "   /RegistryName (http://www.color.org)\n"
-               "   /Info (sRGB IEC61966-2.1)\n"
-               ">>\nendobj\n";
-    }
-
-    // Patch the Catalog object
-    {
-        std::string cat_body = "<< /Type /Catalog /Pages " + std::to_string(pages_id) + " 0 R";
-        if (metadata_id > 0) cat_body += " /Metadata " + std::to_string(metadata_id) + " 0 R";
-        if (output_intent_id > 0) cat_body += " /OutputIntents [" + std::to_string(output_intent_id) + " 0 R]";
-        cat_body += " >>";
-        if ((int)cat_body.size() <= 512) {
-            cat_body.resize(512, ' ');
-            memcpy(&out[cat_body_offset], cat_body.data(), 512);
-        }
-    }
-
-    // Xref table
-    int xref_offset = (int)out.size();
-    out += "xref\n";
-    snprintf(buf, sizeof(buf), "0 %d\n", next_id);
-    out += buf;
-    out += "0000000000 65535 f \n";
-    for (auto & obj : objects) {
-        snprintf(buf, sizeof(buf), "%010d 00000 n \n", obj.offset);
-        out += buf;
-    }
-
-    // Trailer
-    out += "trailer\n";
-    snprintf(buf, sizeof(buf), "<< /Size %d /Root %d 0 R >>\n", next_id, cat_id);
-    out += buf;
-    out += "startxref\n";
-    snprintf(buf, sizeof(buf), "%d\n", xref_offset);
-    out += buf;
-    out += "%%EOF\n";
+    const size_t xref = out.size();
+    std::ostringstream table;
+    table.imbue(std::locale::classic());
+    table << "xref\n0 " << doc.objects.size() << "\n0000000000 65535 f \n";
+    for (size_t id = 1; id < offsets.size(); id++)
+        table << std::setfill('0') << std::setw(10) << offsets[id] << " 00000 n \n";
+    table << "trailer\n<< /Size " << doc.objects.size() << " /Root " << pdf_ref(catalog) << " /Info " << pdf_ref(info)
+          << " >>\nstartxref\n"
+          << xref << "\n%%EOF\n";
+    const std::string trailer = table.str();
+    if (trailer.size() > size_t(std::numeric_limits<int>::max()) - out.size())
+        throw std::runtime_error("PDF exceeds the renderer byte-count limit");
+    r->output = std::move(out);
+    r->output += trailer;
 }
 
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
+template <typename Function> static void render_guard(ocr_renderer * r, Function function) {
+    if (!r || !r->error.empty()) return;
+    try {
+        function();
+        if (r->output.size() > size_t(std::numeric_limits<int>::max()))
+            throw std::runtime_error("Document exceeds the renderer byte-count limit");
+    } catch (const std::exception & error) {
+        r->output.clear();
+        r->error = error.what();
+    } catch (...) {
+        r->output.clear();
+        r->error = "Unknown document rendering failure";
+    }
+}
+
 ocr_renderer * ocr_render_create(ocr_render_format format) {
-    auto * r = new ocr_renderer();
-    r->format = format;
-    return r;
+    if (format < OCR_RENDER_TEXT || format > OCR_RENDER_PDF) return nullptr;
+    try {
+        auto * r = new ocr_renderer();
+        r->format = format;
+        return r;
+    } catch (...) {
+        return nullptr;
+    }
+}
+
+uint32_t crispembed_ocr_render_capabilities(void) {
+    return OCR_RENDER_CAP_PDF | OCR_RENDER_CAP_UNICODE | OCR_RENDER_CAP_RASTER_IMAGES;
 }
 
 void ocr_render_set_separator(ocr_renderer * r, const char * sep) {
-    if (r && sep) r->separator = sep;
+    render_guard(r, [&] {
+        if (sep) r->separator = sep;
+    });
 }
 
 void ocr_render_set_pdfa(ocr_renderer * r, int enabled) {
     if (r) r->pdfa = (enabled != 0);
 }
 
+void ocr_render_set_page_size_points(ocr_renderer * r, double width, double height) {
+    render_guard(r, [&] {
+        if (!r->begun || r->ended) throw std::runtime_error("Set page size after begin and before add_page");
+        validate_physical_size(width, height);
+        r->next_width_points = width;
+        r->next_height_points = height;
+    });
+}
+
 void ocr_render_begin(ocr_renderer * r) {
     if (!r) return;
     r->output.clear();
+    r->error.clear();
+    r->pages.clear();
     r->page_count = 0;
-    switch (r->format) {
-    case OCR_RENDER_TEXT:
-        text_begin(r);
-        break;
-    case OCR_RENDER_HOCR:
-        hocr_begin(r);
-        break;
-    case OCR_RENDER_ALTO:
-        alto_begin(r);
-        break;
-    case OCR_RENDER_PDF:
-        pdf_begin(r);
-        break;
+    r->next_width_points = r->next_height_points = 0;
+    r->begun = true;
+    r->ended = false;
+    render_guard(r, [&] {
+        switch (r->format) {
+        case OCR_RENDER_TEXT:
+            text_begin(r);
+            break;
+        case OCR_RENDER_HOCR:
+            hocr_begin(r);
+            break;
+        case OCR_RENDER_ALTO:
+            alto_begin(r);
+            break;
+        case OCR_RENDER_PDF:
+            pdf_begin(r);
+            break;
+        }
+    });
+}
+
+static void validate_page(const ocr_render_page * page, bool pdf) {
+    if (!page) throw std::runtime_error("Page is null");
+    if (page->n_lines < 0 || (page->n_lines > 0 && !page->lines))
+        throw std::runtime_error("Page line array is invalid");
+    if (pdf && (page->page_width <= 0 || page->page_height <= 0))
+        throw std::runtime_error("PDF page dimensions must be positive");
+    for (int i = 0; i < page->n_lines; i++) {
+        const auto & line = page->lines[i];
+        if (line.n_words < 0 || (line.n_words > 0 && !line.words))
+            throw std::runtime_error("Page word array is invalid");
+        if (int64_t(line.x) + line.w > std::numeric_limits<int>::max() ||
+            int64_t(line.y) + line.h > std::numeric_limits<int>::max() || line.x < 0 || line.y < 0 || line.w < 0 ||
+            line.h < 0)
+            throw std::runtime_error("Line bounds are invalid");
+        for (int j = 0; j < line.n_words; j++) {
+            const auto & word = line.words[j];
+            const int64_t right = int64_t(word.x) + word.w, bottom = int64_t(word.y) + word.h;
+            if (word.x < 0 || word.y < 0 || word.w < 0 || word.h < 0 || right > std::numeric_limits<int>::max() ||
+                bottom > std::numeric_limits<int>::max())
+                throw std::runtime_error("Word bounds are invalid");
+            if (pdf && word.text && *word.text &&
+                (word.w <= 0 || word.h <= 0 || right > page->page_width || bottom > page->page_height))
+                throw std::runtime_error("PDF text bounds must fit the page image coordinate space");
+        }
     }
 }
 
 void ocr_render_add_page(ocr_renderer * r, const ocr_render_page * page) {
-    if (!r || !page) return;
-    switch (r->format) {
-    case OCR_RENDER_TEXT:
-        text_add_page(r, page);
-        break;
-    case OCR_RENDER_HOCR:
-        hocr_add_page(r, page);
-        break;
-    case OCR_RENDER_ALTO:
-        alto_add_page(r, page);
-        break;
-    case OCR_RENDER_PDF:
-        pdf_add_page(r, page);
-        break;
-    }
+    render_guard(r, [&] {
+        if (!r->begun || r->ended) throw std::runtime_error("Add pages between begin and end");
+        validate_page(page, r->format == OCR_RENDER_PDF);
+        switch (r->format) {
+        case OCR_RENDER_TEXT:
+            text_add_page(r, page);
+            break;
+        case OCR_RENDER_HOCR:
+            hocr_add_page(r, page);
+            break;
+        case OCR_RENDER_ALTO:
+            alto_add_page(r, page);
+            break;
+        case OCR_RENDER_PDF:
+            pdf_add_page(r, page);
+            break;
+        }
+        r->next_width_points = r->next_height_points = 0;
+    });
 }
 
 void ocr_render_end(ocr_renderer * r) {
-    if (!r) return;
-    switch (r->format) {
-    case OCR_RENDER_TEXT:
-        text_end(r);
-        break;
-    case OCR_RENDER_HOCR:
-        hocr_end(r);
-        break;
-    case OCR_RENDER_ALTO:
-        alto_end(r);
-        break;
-    case OCR_RENDER_PDF:
-        pdf_end(r);
-        break;
-    }
+    render_guard(r, [&] {
+        if (!r->begun || r->ended) throw std::runtime_error("End requires an unfinished document");
+        if (r->format == OCR_RENDER_PDF && r->pdfa)
+            throw std::runtime_error("PDF/A conformance is not supported by this renderer");
+        switch (r->format) {
+        case OCR_RENDER_TEXT:
+            text_end(r);
+            break;
+        case OCR_RENDER_HOCR:
+            hocr_end(r);
+            break;
+        case OCR_RENDER_ALTO:
+            alto_end(r);
+            break;
+        case OCR_RENDER_PDF:
+            pdf_end(r);
+            break;
+        }
+        r->ended = true;
+    });
+}
+
+const char * ocr_render_error(const ocr_renderer * r) {
+    return !r ? "Renderer is null" : r->error.empty() ? nullptr : r->error.c_str();
 }
 
 const char * ocr_render_output(const ocr_renderer * r) {
-    return r ? r->output.c_str() : "";
+    return r && r->error.empty() ? r->output.c_str() : "";
 }
 
 int ocr_render_output_size(const ocr_renderer * r) {
-    return r ? (int)r->output.size() : 0;
+    return r && r->error.empty() && r->output.size() <= size_t(std::numeric_limits<int>::max()) ? int(r->output.size())
+                                                                                                : 0;
 }
 
 void ocr_render_free(ocr_renderer * r) {

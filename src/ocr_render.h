@@ -42,7 +42,7 @@ extern "C" {
 typedef struct ocr_render_word {
     const char * text; // UTF-8 text
     int x, y, w, h;    // bounding box in page coordinates
-    float confidence;  // [0, 1]
+    float confidence;  // [0, 1]; negative means unknown/omit optional XML score
 } ocr_render_word;
 
 /// OCR line: a group of words on the same baseline.
@@ -70,24 +70,46 @@ typedef enum ocr_render_format {
 
 typedef struct ocr_renderer ocr_renderer;
 
+/// Feature bits returned by crispembed_ocr_render_capabilities().
+typedef enum ocr_render_capability {
+    OCR_RENDER_CAP_PDF = 1,
+    OCR_RENDER_CAP_UNICODE = 2,
+    OCR_RENDER_CAP_RASTER_IMAGES = 4,
+    OCR_RENDER_CAP_ARCHIVAL = 8,
+} ocr_render_capability;
+
+/// No model load required. Archival conformance is currently unsupported.
+CRISPEMBED_API uint32_t crispembed_ocr_render_capabilities(void);
+
 /// Create a renderer for the given format.
 CRISPEMBED_API ocr_renderer * ocr_render_create(ocr_render_format format);
 
 /// Set the page separator for plain text output (default: "\f").
 CRISPEMBED_API void ocr_render_set_separator(ocr_renderer * r, const char * sep);
 
-/// Enable PDF/A-2b compliance (adds XMP metadata + sRGB OutputIntent).
+/// Retained for ABI compatibility. Requesting PDF/A currently fails explicitly:
+/// no output is produced and ocr_render_error() explains the unsupported mode.
 /// Must be called before ocr_render_begin(). Only affects PDF format.
 CRISPEMBED_API void ocr_render_set_pdfa(ocr_renderer * r, int enabled);
 
 /// Begin a document.
 CRISPEMBED_API void ocr_render_begin(ocr_renderer * r);
 
+/// Physical PDF dimensions for the NEXT added page (72 points = 1 inch).
+/// Set after begin(), before add_page(). Image and text coordinates scale
+/// together from pixels into this size. The setting resets after add_page().
+/// Without this call the legacy convention is one pixel per point.
+CRISPEMBED_API void ocr_render_set_page_size_points(ocr_renderer * r, double width, double height);
+
 /// Add a page of OCR results.
 CRISPEMBED_API void ocr_render_add_page(ocr_renderer * r, const ocr_render_page * page);
 
 /// End the document and finalize output.
 CRISPEMBED_API void ocr_render_end(ocr_renderer * r);
+
+/// Null on success; otherwise an owned error message, valid until begin/free.
+/// Any failure clears output. No partial PDF or XML should be published.
+CRISPEMBED_API const char * ocr_render_error(const ocr_renderer * r);
 
 /// Get the rendered output as a string. Valid until free.
 /// For PDF format, returns the raw PDF bytes (use ocr_render_output_size

@@ -1,0 +1,67 @@
+name: OCR export artifacts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/ocr_render.*'
+      - 'src/ocr_pdf_font.h'
+      - 'tests/*ocr_render*'
+      - 'tools/generate_ocr_font.py'
+      - '.github/workflows/ocr-render.yml'
+  pull_request:
+    paths:
+      - 'src/ocr_render.*'
+      - 'src/ocr_pdf_font.h'
+      - 'tests/*ocr_render*'
+      - 'tools/generate_ocr_font.py'
+      - '.github/workflows/ocr-render.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  artifact-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install independent readers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+          python -m pip install 'Pillow==13.0.0' 'pypdf==6.21.4' 'PyMuPDF==1.26.6'
+      - name: Build model-free native renderer
+        run: |
+          mkdir -p build-ocr-render/artifacts
+          c++ -std=c++17 -O1 -fPIC -shared -DCRISPEMBED_BUILD \
+            '-DCRISPEMBED_VERSION_STR="0.17.16"' -Isrc \
+            src/ocr_render.cpp tests/ocr_render_stb.cpp -o build-ocr-render/libocr_render_test.so
+          c++ -std=c++17 -Wall -Wextra -Werror -Isrc \
+            tests/test_ocr_render.cpp -Lbuild-ocr-render -locr_render_test \
+            -Wl,-rpath,'$ORIGIN' -o build-ocr-render/test-ocr-render
+          git rev-parse HEAD > build-ocr-render/artifacts/source.txt
+      - name: Validate PDF, image, text and XML artifacts
+        run: |
+          ./build-ocr-render/test-ocr-render
+          python tests/test_ocr_render_artifacts.py \
+            --library build-ocr-render/libocr_render_test.so \
+            --artifacts build-ocr-render/artifacts -v
+      - name: Preserve exported files and validation receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-export-artifacts
+          path: build-ocr-render/artifacts
+          if-no-files-found: error
+          retention-days: 7

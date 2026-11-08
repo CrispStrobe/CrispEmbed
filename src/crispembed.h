@@ -921,6 +921,16 @@ CRISPEMBED_API const int * crispembed_ocr_pipeline_reading_order(void * ctx, int
 /// Lightweight Markdown export from the most recent pipeline run.
 CRISPEMBED_API const char * crispembed_ocr_pipeline_markdown(void * ctx, int * out_len);
 
+/// Versioned JSON snapshot for document review. Contains geometry provenance,
+/// regions, confidence availability/units, reading order, layout, tables,
+/// formulas, language and stage metrics. See docs/ocr-review-snapshot.md.
+/// No inference is performed and no confidence is claimed to be calibrated.
+/// Returns NULL before the first run, on allocation failure or for NULL ctx.
+/// UTF-8 bytes are owned by ctx and valid until the next run/review_json/free;
+/// *out_len is the byte length excluding the terminating NUL (0 on failure).
+/// This additive accessor does not change existing public C struct layouts.
+CRISPEMBED_API const char * crispembed_ocr_pipeline_review_json(void * ctx, int * out_len);
+
 typedef struct crispembed_ocr_stage_metric {
     int index;
     const char * engine;
@@ -955,9 +965,12 @@ CRISPEMBED_API int crispembed_ocr_pipeline_capabilities(void * ctx, crispembed_o
 /// Per-region recognition confidence (mean per-char softmax) from the last run.
 CRISPEMBED_API float crispembed_ocr_pipeline_region_rec_confidence(void * ctx, int region_idx);
 
-/// Per-character confidence for a region from the last run. Returns a pointer to
+/// Legacy sequence confidence for a region from the last run. Depending on the
+/// engine these are character or token scores, without certified text offsets.
+/// Use the review snapshot for units before character-level highlighting.
+/// Returns a pointer to
 /// `*out_len` floats (owned by ctx, valid until the next run/free), or NULL when
-/// the recognizer doesn't expose per-character confidence (e.g. VLM engines).
+/// the recognizer doesn't expose sequence confidence.
 CRISPEMBED_API const float * crispembed_ocr_pipeline_region_char_conf(void * ctx, int region_idx, int * out_len);
 
 CRISPEMBED_API void crispembed_ocr_pipeline_free(void * ctx);
@@ -1500,8 +1513,9 @@ CRISPEMBED_API const char * crispembed_punct_process(void * ctx, const char * te
 
 /// Render OCR results (from crispembed_ocr_pipeline_run) to a format string.
 /// format: "text" | "hocr" | "alto" | "pdf"
-/// Returns newly allocated string (caller frees with free()).
-/// For multi-page: call repeatedly and concatenate, or use ocr_render.h directly.
+/// Returns a newly allocated string (caller frees with free()), or null on failure.
+/// PDF here is text-only and ASCII-encoded. For image-bearing or multi-page
+/// output use the binary-safe ocr_render.h lifecycle; do not concatenate PDFs/XML.
 CRISPEMBED_API char * crispembed_ocr_render(const crispembed_ocr_result * results, int n_results, int page_width,
                                             int page_height, const char * format);
 

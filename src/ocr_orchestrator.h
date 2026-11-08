@@ -200,6 +200,18 @@ struct result {
         float mean_confidence = 0.0f;
     };
     std::vector<stage_metric> stage_metrics;
+
+    // Review metadata only: these fields do not change inference or the
+    // existing C result layout. Regions use recognition-image pixels; layout
+    // uses effective-input pixels. Internal cleanup/SR may separate those
+    // spaces. Consumers must not overlay them on the original image blindly.
+    int input_width = 0, input_height = 0;
+    int recognition_width = 0, recognition_height = 0;
+    int selected_stage = 0; // one-based stage metric index; 0 if no result selected
+    bool cleanup_applied = false;
+    bool super_resolution_applied = false;
+    bool coordinates_valid_for_input = false;
+    bool accepted = false;
 };
 
 struct context;
@@ -209,6 +221,10 @@ struct capabilities {
     bool tables = false;
     bool formulas = false;
     bool image_text_fallback = true;
+    // Internal diagnostics only; the public C capabilities struct is unchanged.
+    bool lid_compiled = false, lid_configured = false, lid_loaded = false;
+    bool truecase_compiled = false, truecase_configured = false, truecase_loaded = false;
+    bool punctuation_compiled = true, punctuation_configured = false, punctuation_loaded = false;
 };
 
 // Build a pipeline context. Engines/models are lazily loaded on first use so an

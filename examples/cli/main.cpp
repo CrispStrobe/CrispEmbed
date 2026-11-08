@@ -178,6 +178,7 @@ static void print_usage(const char * prog) {
                     "       (default provider), or --oxr-layout F: D-FINE batch response JSON;\n"
                     "       --oxr-doc-options JSON; --oxr-doc-format upstream|markdown|html|json|chunks\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
+    fprintf(stderr, "       --output-format review-json  versioned geometry/confidence/layout review snapshot\n");
     fprintf(stderr, "       --ocr-engine N  primary engine "
                     "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen35-ocr|"
                     "ovisocr2|ovisocr3|minicpm-ocr|teleocr|mineru25-pro|oxr|qwen3vl|"
@@ -1712,6 +1713,22 @@ static int cli_main(int argc, char ** argv) {
         float mean_conf = 0.0f;
         const crispembed_ocr_result * res =
             crispembed_ocr_pipeline_run(pctx, ocr_pipeline_path.c_str(), &n_res, &full_text, &mean_conf);
+
+        // An explicit review request emits one JSON object, without mixed
+        // Markdown/status output. Existing text/JSON/render modes stay stable.
+        if (output_format == "review-json") {
+            int review_length = 0;
+            const char * review = crispembed_ocr_pipeline_review_json(pctx, &review_length);
+            if (!review || review_length <= 0) {
+                fprintf(stderr, "error: cannot serialize OCR review snapshot\n");
+                crispembed_ocr_pipeline_free(pctx);
+                return 1;
+            }
+            fwrite(review, 1, static_cast<size_t>(review_length), stdout);
+            fputc('\n', stdout);
+            crispembed_ocr_pipeline_free(pctx);
+            return 0;
+        }
 
         // Output in requested format
         if (!output_format.empty() && output_format != "text") {

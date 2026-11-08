@@ -493,6 +493,11 @@ typedef CrispembedOcrPipelineRunDart = Pointer<Void> Function(
 typedef CrispembedOcrPipelineFreeNative = Void Function(Pointer<Void> ctx);
 typedef CrispembedOcrPipelineFreeDart = void Function(Pointer<Void> ctx);
 
+typedef CrispembedOcrPipelineReviewNative = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Int32> outLength);
+typedef CrispembedOcrPipelineReviewDart = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Int32> outLength);
+
 typedef CrispembedOcrPipelineDefaultsNative = Void Function(
     Pointer<Void> outParams);
 typedef CrispembedOcrPipelineDefaultsDart = void Function(
