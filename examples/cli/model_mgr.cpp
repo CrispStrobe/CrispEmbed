@@ -1710,7 +1710,8 @@ static const ModelEntry k_registry[] = {
     { "got-ocr2-q4_k-experimental", "got-ocr2-q4_k.gguf",
       "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/f557899a7dc82b979d335406d64d9d44e54b8fbe/"
       "got-ocr2-q4_k.gguf",
-      "GOT-OCR2 document OCR, Q4_K EXPERIMENTAL (SUPERSEDED by got-ocr2-q8-q4k-mix-experimental; diverges from the original at token 83/20 on 2 of 3 cases; "
+      "GOT-OCR2 document OCR, Q4_K EXPERIMENTAL (SUPERSEDED by got-ocr2-q8-q4k-mix-experimental; diverges from the "
+      "original at token 83/20 on 2 of 3 cases; "
       "use got-ocr2-f16; research-only Tongyi Qianwen license)",
       "445 MB", "tongyi-qianwen-research", "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
     { "got-ocr2-q8_0-experimental", "got-ocr2-q8_0-r2.gguf",
