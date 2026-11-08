@@ -2,6 +2,14 @@ import ast,copy,json,unittest
 from pathlib import Path
 import worker
 class Controls(unittest.TestCase):
+ def test_synthetic_outputs_never_alias_inputs(self):
+  work=Path('/task');inputs={work/name for name in ['zero.bin','zero.f32','zero.mods','zero.positions','zero.gamma']}
+  outputs=set()
+  for mode in ['source-q6','source-plan']:
+   prefix=worker.synthetic_prefix(work,mode)
+   for suffix in ['.f32','.normalized.f32','.positions.f32','.plan.tsv','.json']:
+    output=Path(str(prefix)+suffix);self.assertNotIn(output,inputs);self.assertNotIn(output,outputs);outputs.add(output)
+  with self.assertRaises(RuntimeError):worker.synthetic_prefix(work,'zero')
  def test_immutable_scope(self):
   cfg=json.loads((Path(__file__).parent/'protocol.json').read_text());worker.admit(cfg)
   for name,value in [('worker_seconds',0),('heldout_allowed',True),('model_forward_allowed',True),('prompt_tokens',155)]:

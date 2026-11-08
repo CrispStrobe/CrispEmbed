@@ -12,6 +12,9 @@ def admit(cfg):
  require(hashlib.sha256(json.dumps(cfg,sort_keys=True,separators=(',',':')).encode()).hexdigest()==CFG_SHA,'immutable source-prefill proof protocol')
  require(cfg['input_norm']['type']==0 and cfg['input_norm']['source_shape']==[2560]and cfg['input_norm']['sha256']==cfg['input_norm']['source_packed_sha256'],'direct original gamma storage')
  require(cfg['worker_seconds']==1800 and not cfg['model_forward_allowed']and not cfg['heldout_allowed'],'operator-only bounded scope')
+def synthetic_prefix(work,mode):
+ require(mode in ['source-q6','source-plan'],'closed synthetic mode')
+ return work/('synthetic-'+mode)
 def source_graphs(trace):
  records=trace['analysis']['excluded_nonprompt_graphs'];require(len(records)==1 and records[0]['graph']==0 and records[0]['tokens']==[0,0]and records[0]['positions_4axes']==[[0,1]]*3+[[0,0]],'exact admitted startup probe')
  excluded={g['graph']for g in records}
@@ -52,7 +55,7 @@ def main():
   program=build/'lighton4b-source-prefill-probe';zero=work/'zero.bin';zero.write_bytes(bytes(cfg['matrix']['bytes']));zx=work/'zero.f32';np.zeros((20,2560),dtype='<f4').tofile(zx);zm=work/'zero.mods';zm.write_text('1\n'*20);zp=work/'zero.positions';np.zeros(60,dtype='<f4').tofile(zp)
   zg=work/'zero.gamma';np.ones(2560,dtype='<f4').tofile(zg)
   for mode in ['source-q6','source-plan']:
-   prefixout=work/'zero';run('synthetic-'+mode,[program,zero,zx,14,2560,8192,20,mode,prefixout,4,16,zm,zp,zg,zx],30,op_env);require(not np.any(np.fromfile(str(prefixout)+'.f32',dtype='<f4')),'synthetic balanced-tail zero Q6')
+   prefixout=synthetic_prefix(work,mode);run('synthetic-'+mode,[program,zero,zx,14,2560,8192,20,mode,prefixout,4,16,zm,zp,zg,zx],30,op_env);require(not np.any(np.fromfile(str(prefixout)+'.f32',dtype='<f4')),'synthetic balanced-tail zero Q6')
   gamma=work/'gamma.f32';base.download_range(cfg,cfg['input_norm'],gamma);r['source_gamma_bytes_read']=cfg['input_norm']['bytes'];r['source_gamma_sha256']=sha(gamma)
   weight=work/'qkv.bin';base.download_range(cfg,cfg['matrix'],weight);r['weight_sha256']=sha(weight);r['checkpoint_quantized_tensor_bytes_read']=cfg['matrix']['bytes']
   for threads in[1,4]:
