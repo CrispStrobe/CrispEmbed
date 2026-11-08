@@ -260,3 +260,26 @@ four are early: `fr-old-tachard-siam-102` (token 3), `de-table-meyers-b1-168` (1
 original runs to 2972), `receipt-cord-test-20` (25), `de-table-rgbl-1867-403` (52; 458 vs 1542 tokens).
 Open: attribute those four (F16 weights/KV vs the F32 original is the first suspect; an F32 native GGUF run
 of the same pages separates precision from a pipeline difference). Gold quality is on par in aggregate.
+
+## 10. F32 attribution of the four early divergences (Kaggle CPU, 8 November 2026)
+
+Mode `native-got-f32` converts the original checkpoint at the probe's pinned revision to an F32 GGUF on the
+runner; a same-host F16-r2 control ran the same four pages.
+[Receipts](../tests/results/got-ocr2-q4/attr-f32-20261108/).
+
+| page | original tokens | F16 first divergence | F32 first divergence |
+|---|---|---|---|
+| fr-old-tachard-siam-102 | 355 | 3 | 3 |
+| de-table-meyers-b1-168 | 2972 | 12 (stops at 215) | 12 (stops at 215) |
+| receipt-cord-test-20 | 81 | 25 | 25 |
+| de-table-rgbl-1867-403 | 1542 | 52 (stops at 458) | 34 (stops at 1018) |
+
+The F16 control reproduces the gold run exactly (deterministic). F32 diverges at the same tokens on three of
+four pages, so **weight precision is not the cause**: a pipeline difference vs the original remains. The
+3-case panel (small images) is exact, and these are large real pages, so the first suspect is image
+preprocessing (the original resizes the PIL image to 1024x1024 with torchvision BICUBIC, antialiased on PIL
+input); the second is the no_repeat_ngram_size=20 logits processor (two pages stop early).
+Next (done-when: the earliest differing stage is named): dump native `pixels.f32`
+(`CRISPEMBED_GOT_OCR_DUMP_DIR`) and the original `orig.<case>.pixels.npy`
+(`tools/ci-heavy/got_ocr2_orig_probe.py`) for `fr-old-tachard-siam-102` and compare; if pixels match,
+teacher-force the original IDs and compare per-step logits to find the first divergent step.

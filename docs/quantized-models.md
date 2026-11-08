@@ -38,6 +38,7 @@ below, whose descriptions say so). All aliases are pinned to a Hub commit and SH
 | GOT-OCR2 | `got-ocr2-q4_k-experimental` | Q4_K | superseded | 1/3 token-exact; diverges at token 83 / 20 |
 | MiniCPM-OCR-1.0 | `minicpm-ocr-q4_k-mix-experimental` | Q4_K_MIX | experimental | 4/5 token-exact; cosine 0.9671 |
 | Unlimited-OCR-2 | `unlimited-ocr2-q4_k-mix-experimental` | Q4_K_MIX | experimental | 0/4 token-exact vs F16; text equal, boxes differ |
+| Unlimited-OCR-2 | `unlimited-ocr2-q8_0-experimental` | Q8_0, shared experts F16 (`q8sh16`) | experimental | final-output cos 0.9728 CPU / 0.9762 CUDA (bar 0.97); box-stripped text = F16 4/4; boxes can differ |
 | TeleOCR | `teleocr-q4_k-mix` | Q4_K_MIX | experimental | 5/6 token-exact; three CJK characters change |
 | MinerU2.5-Pro-2604 | `mineru25-pro-q4_k-mix` | Q4_K_MIX | experimental | 6/8 token-exact; layout differences |
 | MI-GAN 512 | `migan512-f16` | F16 | recommended | cosine 0.999998 |
