@@ -23,6 +23,8 @@ class Controls(unittest.TestCase):
   with self.assertRaises(ValueError):worker.prefix_keys(cfg)
  def test_no_inference_before_admission_or_forced_prefix(self):
   text=Path(worker.__file__).read_text();ast.parse(text);self.assertNotIn("'cmake'",text);self.assertNotIn("'--source-vision'",text);self.assertIn("teacher.write_text('248046\\n')",text);self.assertIn("checked[0]<min(1054,n-1)",text);self.assertLess(text.index("bind_complete(cfg)"),text.index("import lighton4b_upstream_physical_pack"));self.assertLess(text.index("strict earlier1054 raw-row prefix"),text.index("r['strict_1054_prefix_and_stages_reproduced']=True"))
+ def test_integrity_precedes_measured_status(self):
+  text=Path(worker.__file__).read_text();self.assertLess(text.index("require(sha(candidate)==cfg['model_sha256']"),text.index("r['status']='measured_extended_planner_book'"));self.assertIn("actual first-row triple identity",text)
  def test_deadline_is_not_swallowed(self):
   text=Path(worker.__file__).read_text();self.assertIn('except WorkerDeadline:raise',text);self.assertNotIn('except Exception',text);self.assertIn('signal.SIGTERM,signal.SIGINT',text);self.assertIn('deadline.close()',text)
 if __name__=='__main__':unittest.main()
