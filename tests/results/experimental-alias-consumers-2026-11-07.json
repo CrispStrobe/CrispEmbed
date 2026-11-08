@@ -1,0 +1,502 @@
+{
+  "schema": "experimental-alias-consumer-receipts-v1",
+  "scope": "Frozen bounded CLI consumer smokes; not quality or release qualification.",
+  "runs": {
+    "moedern": {
+      "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42382680852",
+      "report": {
+        "schema": "moedern-experimental-alias-consumers-v1",
+        "source_commit": "71d3c4a2e0f4c844847ad870965521ac46187164",
+        "scope": "Six frozen raw-text cases, three-document within-precision ranking; no SciFact or model-quality qualification.",
+        "models": {
+          "27m": {
+            "variants": {
+              "f32": {
+                "alias": "moedern-27m",
+                "filename": "moedern-27m-text-f32.gguf",
+                "sha256": "e836acbb507ebf9d26ad6a3f5e5712487f1b90f1430b1174acb07de07e85ce18",
+                "offline_equal": true,
+                "explicit_path_equal": true,
+                "score": 15.9580812,
+                "independent_score": 15.958082006907931
+              },
+              "q4": {
+                "alias": "moedern-27m-q4k-experimental",
+                "filename": "moedern-27m-text-q4_k-mix.gguf",
+                "sha256": "5d31ac7e5495690e9f3bbe428166764bfee980b3697916ae71366bf717f70d62",
+                "offline_equal": true,
+                "explicit_path_equal": true,
+                "score": 15.8655815,
+                "independent_score": 15.865581592314609,
+                "gate_off_rejected_and_recovered": true
+              }
+            },
+            "comparisons": {
+              "q-de": {
+                "rows": 32,
+                "min_cosine": 0.9694126555861012,
+                "mean_cosine": 0.9973990582252527,
+                "max_abs": 0.0628190953,
+                "rms": 0.006374928704526074,
+                "f32_norm": 5.656854246109594,
+                "q4_norm": 5.656854275286628
+              },
+              "q-empty": {
+                "rows": 32,
+                "min_cosine": 0.9686853927407364,
+                "mean_cosine": 0.998079868906898,
+                "max_abs": 0.059114037999999994,
+                "rms": 0.005477412518993,
+                "f32_norm": 5.65685425667664,
+                "q4_norm": 5.656854295812275
+              },
+              "q-markers": {
+                "rows": 32,
+                "min_cosine": 0.9786160066875296,
+                "mean_cosine": 0.9981218909278724,
+                "max_abs": 0.055110572809999994,
+                "rms": 0.005417144405299278,
+                "f32_norm": 5.656854278096234,
+                "q4_norm": 5.65685420006033
+              },
+              "d-de": {
+                "rows": 26,
+                "min_cosine": 0.9864097712419985,
+                "mean_cosine": 0.9980598043836676,
+                "max_abs": 0.047027599,
+                "rms": 0.005505956454393402,
+                "f32_norm": 5.099019495964355,
+                "q4_norm": 5.099019496247251
+              },
+              "d-unicode": {
+                "rows": 16,
+                "min_cosine": 0.98864460882852,
+                "mean_cosine": 0.9980951830614617,
+                "max_abs": 0.039643192699999996,
+                "rms": 0.0054555259902142085,
+                "f32_norm": 4.0000000126105455,
+                "q4_norm": 4.000000034365655
+              },
+              "d-punctuation": {
+                "rows": 15,
+                "min_cosine": 0.99739549201925,
+                "mean_cosine": 0.9990320855368453,
+                "max_abs": 0.02017309519999999,
+                "rms": 0.00388891552838978,
+                "f32_norm": 3.8729833913139213,
+                "q4_norm": 3.8729833786915266
+              }
+            },
+            "rankings": {
+              "f32": {
+                "q-de": {
+                  "scores": {
+                    "d-de": 15.958082006907931,
+                    "d-unicode": 12.535780765426814,
+                    "d-punctuation": 13.180979816388856
+                  },
+                  "order": [
+                    "d-de",
+                    "d-punctuation",
+                    "d-unicode"
+                  ]
+                },
+                "q-empty": {
+                  "scores": {
+                    "d-de": 19.501323955072387,
+                    "d-unicode": 21.320454230346165,
+                    "d-punctuation": 20.39871571462695
+                  },
+                  "order": [
+                    "d-unicode",
+                    "d-punctuation",
+                    "d-de"
+                  ]
+                },
+                "q-markers": {
+                  "scores": {
+                    "d-de": 21.105626887302893,
+                    "d-unicode": 23.182271392788948,
+                    "d-punctuation": 22.490769197592364
+                  },
+                  "order": [
+                    "d-unicode",
+                    "d-punctuation",
+                    "d-de"
+                  ]
+                }
+              },
+              "q4": {
+                "q-de": {
+                  "scores": {
+                    "d-de": 15.865581592314609,
+                    "d-unicode": 12.456191194935565,
+                    "d-punctuation": 13.063830060556107
+                  },
+                  "order": [
+                    "d-de",
+                    "d-punctuation",
+                    "d-unicode"
+                  ]
+                },
+                "q-empty": {
+                  "scores": {
+                    "d-de": 19.38457282092196,
+                    "d-unicode": 21.367015187608217,
+                    "d-punctuation": 20.25706547071334
+                  },
+                  "order": [
+                    "d-unicode",
+                    "d-punctuation",
+                    "d-de"
+                  ]
+                },
+                "q-markers": {
+                  "scores": {
+                    "d-de": 21.080764871620083,
+                    "d-unicode": 23.233051449428373,
+                    "d-punctuation": 22.437210057355728
+                  },
+                  "order": [
+                    "d-unicode",
+                    "d-punctuation",
+                    "d-de"
+                  ]
+                }
+              }
+            },
+            "top1_agreement": 3
+          },
+          "115m": {
+            "variants": {
+              "f32": {
+                "alias": "moedern-115m",
+                "filename": "moedern-115m-text-f32.gguf",
+                "sha256": "4150412f66caaa058c90ad0ed6cc4e318a0ea146f4ce9e59de62f83975903766",
+                "offline_equal": true,
+                "explicit_path_equal": true,
+                "score": 14.8423223,
+                "independent_score": 14.842322529230367
+              },
+              "q4": {
+                "alias": "moedern-115m-q4k-experimental",
+                "filename": "moedern-115m-text-q4_k-mix.gguf",
+                "sha256": "01d0e507430ba2f839709648272e3e3e622e02cc98aafac5b179e36b145db110",
+                "offline_equal": true,
+                "explicit_path_equal": true,
+                "score": 14.8137293,
+                "independent_score": 14.813729401125157,
+                "gate_off_rejected_and_recovered": true
+              }
+            },
+            "comparisons": {
+              "q-de": {
+                "rows": 32,
+                "min_cosine": 0.9930693888007153,
+                "mean_cosine": 0.9975346758403734,
+                "max_abs": 0.026222467200000002,
+                "rms": 0.0062065038102273665,
+                "f32_norm": 5.6568542708649545,
+                "q4_norm": 5.656854207704628
+              },
+              "q-empty": {
+                "rows": 32,
+                "min_cosine": 0.9867796499596632,
+                "mean_cosine": 0.9975778203680984,
+                "max_abs": 0.0425640652,
+                "rms": 0.006151955601653813,
+                "f32_norm": 5.65685430614656,
+                "q4_norm": 5.6568542951850205
+              },
+              "q-markers": {
+                "rows": 32,
+                "min_cosine": 0.9935289758159129,
+                "mean_cosine": 0.9968226132601976,
+                "max_abs": 0.02976909043,
+                "rms": 0.007046039174859176,
+                "f32_norm": 5.656854320780309,
+                "q4_norm": 5.6568542059765905
+              },
+              "d-de": {
+                "rows": 26,
+                "min_cosine": 0.9897976020929432,
+                "mean_cosine": 0.996915758312245,
+                "max_abs": 0.03413238222,
+                "rms": 0.006941993660932864,
+                "f32_norm": 5.099019473316637,
+                "q4_norm": 5.099019509711116
+              },
+              "d-unicode": {
+                "rows": 16,
+                "min_cosine": 0.9933095211104584,
+                "mean_cosine": 0.9968008926554772,
+                "max_abs": 0.032466779439999996,
+                "rms": 0.007070081541135504,
+                "f32_norm": 4.000000030742105,
+                "q4_norm": 4.000000003124061
+              },
+              "d-punctuation": {
+                "rows": 15,
+                "min_cosine": 0.995062271364993,
+                "mean_cosine": 0.9975838477469613,
+                "max_abs": 0.027152042800000005,
+                "rms": 0.006144296499203931,
+                "f32_norm": 3.8729833477160835,
+                "q4_norm": 3.872983398823621
+              }
+            },
+            "rankings": {
+              "f32": {
+                "q-de": {
+                  "scores": {
+                    "d-de": 14.842322529230367,
+                    "d-unicode": 11.048397952942995,
+                    "d-punctuation": 10.814883227845817
+                  },
+                  "order": [
+                    "d-de",
+                    "d-unicode",
+                    "d-punctuation"
+                  ]
+                },
+                "q-empty": {
+                  "scores": {
+                    "d-de": 13.873098461982249,
+                    "d-unicode": 15.163936883460941,
+                    "d-punctuation": 13.14280749410076
+                  },
+                  "order": [
+                    "d-unicode",
+                    "d-de",
+                    "d-punctuation"
+                  ]
+                },
+                "q-markers": {
+                  "scores": {
+                    "d-de": 12.261288370827359,
+                    "d-unicode": 16.512360303466664,
+                    "d-punctuation": 14.986118404874457
+                  },
+                  "order": [
+                    "d-unicode",
+                    "d-punctuation",
+                    "d-de"
+                  ]
+                }
+              },
+              "q4": {
+                "q-de": {
+                  "scores": {
+                    "d-de": 14.813729401125157,
+                    "d-unicode": 10.833679457807365,
+                    "d-punctuation": 10.887605914128446
+                  },
+                  "order": [
+                    "d-de",
+                    "d-punctuation",
+                    "d-unicode"
+                  ]
+                },
+                "q-empty": {
+                  "scores": {
+                    "d-de": 14.060267680350936,
+                    "d-unicode": 14.752815506675084,
+                    "d-punctuation": 13.29054199020204
+                  },
+                  "order": [
+                    "d-unicode",
+                    "d-de",
+                    "d-punctuation"
+                  ]
+                },
+                "q-markers": {
+                  "scores": {
+                    "d-de": 12.432247059522382,
+                    "d-unicode": 15.96353188603398,
+                    "d-punctuation": 15.04059853441157
+                  },
+                  "order": [
+                    "d-unicode",
+                    "d-punctuation",
+                    "d-de"
+                  ]
+                }
+              }
+            },
+            "top1_agreement": 3
+          }
+        },
+        "passed": true
+      }
+    },
+    "minicpm": {
+      "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42382606231",
+      "report": {
+        "schema": "ocr-experimental-alias-consumer-v1",
+        "source_commit": "e091ba6d2e6fe3853e4aca76fb1543e1950159d6",
+        "alias": "minicpm-ocr-q4_k-mix-experimental",
+        "filename": "minicpm-ocr-1.0-q4_k-mix.gguf",
+        "sha256": "5ba6cd538fd166a0243f08d49101fe1d07d8f353f7b554078b42d057c5c511ed",
+        "image": "tests/regression/images/fox.png",
+        "image_sha256": "d139a96e514217e63970cea943e93b82a02521108ce2a2367069a14d57c87f39",
+        "max_tokens": 32,
+        "scope": "Single bounded image CLI/cache smoke; no EOS, original/F16 comparison, GPU or quality qualification.",
+        "passed": true,
+        "decoded": {
+          "text": "The quick brown fox jumps over the lazy dog. 12345"
+        },
+        "offline_equal": true,
+        "explicit_path_equal": true,
+        "gate_off_rejected": true
+      }
+    },
+    "unlimited": {
+      "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42382608272",
+      "report": {
+        "schema": "ocr-experimental-alias-consumer-v1",
+        "source_commit": "e091ba6d2e6fe3853e4aca76fb1543e1950159d6",
+        "alias": "unlimited-ocr2-q4_k-mix-experimental",
+        "filename": "unlimited-ocr-2-q4_k-mix.gguf",
+        "sha256": "b71f158d36713e1c7ee39b7fb48193aa87a8592bca666f92caeae41093da493a",
+        "image": "tests/regression/images/fox.png",
+        "image_sha256": "d139a96e514217e63970cea943e93b82a02521108ce2a2367069a14d57c87f39",
+        "max_tokens": 32,
+        "scope": "Single bounded image CLI/cache smoke; no EOS, original/F16 comparison, GPU or quality qualification.",
+        "passed": true,
+        "decoded": {
+          "text": "<PAGE><BLOCK>text[33, 196, 636, 752]<FORK>The quick brown fox jumps over the lazy dog. 12345"
+        },
+        "offline_equal": true,
+        "explicit_path_equal": true,
+        "gate_off_rejected": true
+      }
+    },
+    "got": {
+      "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42382775744",
+      "report": {
+        "schema": "ocr-experimental-alias-consumer-v1",
+        "source_commit": "6612cda49630845b854984040d2ee6637e83bb86",
+        "alias": "got-ocr2-q4_k-experimental",
+        "filename": "got-ocr2-q4_k.gguf",
+        "sha256": "ba276f2e246273af7d1bcd58f35ac7bae09c30340b923ed4440effe82d5e7613",
+        "image": "tests/regression/images/fox.png",
+        "image_sha256": "d139a96e514217e63970cea943e93b82a02521108ce2a2367069a14d57c87f39",
+        "max_tokens": 32,
+        "scope": "Single bounded image CLI/cache smoke; no EOS, original/F16 comparison, GPU or quality qualification.",
+        "passed": true,
+        "decoded": {
+          "text": "The quick brown fox jumps over the lazy dog. 12345"
+        },
+        "offline_equal": true,
+        "explicit_path_equal": true,
+        "gate_off_rejected": true
+      }
+    },
+    "ultrabert": {
+      "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42376709212",
+      "report": {
+        "schema": "ultrabert-experimental-alias-consumer-v1",
+        "source_commit": "eec0ee63b887d32fc5795ad8e0eeffc8186d8d13",
+        "alias": "ultrabert-q4k-experimental",
+        "filename": "ultrabert-embed-150m-q4_k-last-four-ffn.gguf",
+        "sha256": "087c9be0fa50ba57db74e650889521c985d306863c94aabf731764538eb4533c",
+        "scope": "Three-text CLI and cache smoke; no F32, original, SciFact, GPU or model quality qualification.",
+        "passed": true,
+        "dimensions": 768,
+        "row_norms": [
+          0.9999996259659301,
+          1.0000006210503072,
+          0.9999994880063688
+        ],
+        "pairwise_cosine": [
+          [
+            0.9999999999999999,
+            0.41474669158792904,
+            0.05813597596407391
+          ],
+          [
+            0.41474669158792904,
+            1.0,
+            0.07438516690282465
+          ],
+          [
+            0.05813597596407391,
+            0.07438516690282465,
+            1.000000000000001
+          ]
+        ],
+        "offline_equal": true,
+        "explicit_path_equal": true,
+        "gate_off_rejected_and_recovered": true
+      }
+    },
+    "josev": {
+      "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42376962559",
+      "report": {
+        "schema": "josev-experimental-alias-consumers-v1",
+        "source_commit": "03749fa855e8d044f78e44324510a5d60cda8dd4",
+        "scope": "Four frozen typed requests through the published CLI; no independent task panel, GPU or model-quality qualification.",
+        "models": {
+          "Q8_0": {
+            "alias": "josev2b-systemone-q8_0-experimental",
+            "filename": "josev2b-systemone-q8_0.gguf",
+            "sha256": "fc1663bbd050938ff0bdb1b20ca52bd9ff7579dca63c0f7f9a15b3c3b7e36b85",
+            "cases": {
+              "mixed-de": {
+                "typed_json_exact": false,
+                "max_numeric_abs": 0.009300000000000086
+              },
+              "null-and-options": {
+                "typed_json_exact": false,
+                "max_numeric_abs": 0.0006999999999999992
+              },
+              "json-unicode": {
+                "typed_json_exact": false,
+                "max_numeric_abs": 0.0044000000000000705
+              },
+              "state-only-clip": {
+                "typed_json_exact": true,
+                "max_numeric_abs": 0.0
+              }
+            },
+            "offline_equal": true,
+            "explicit_path_equal": true,
+            "gate_off_rejected_and_recovered": true
+          },
+          "Q4_K_MIX": {
+            "alias": "josev2b-systemone-q4k-mix-experimental",
+            "filename": "josev2b-systemone-q4_k-down8.gguf",
+            "sha256": "adc7fa473febfef3fac10eac6fa0bebb6f68932675d1613e24706a3b74d5e582",
+            "cases": {
+              "mixed-de": {
+                "typed_json_exact": false,
+                "max_numeric_abs": 0.007800000000000001
+              },
+              "null-and-options": {
+                "typed_json_exact": false,
+                "max_numeric_abs": 0.0155
+              },
+              "json-unicode": {
+                "typed_json_exact": false,
+                "max_numeric_abs": 0.0413
+              },
+              "state-only-clip": {
+                "typed_json_exact": false,
+                "max_numeric_abs": 0.005499999999999949
+              }
+            },
+            "offline_equal": true,
+            "explicit_path_equal": true,
+            "gate_off_rejected_and_recovered": true
+          }
+        },
+        "passed": true
+      }
+    }
+  },
+  "ocr_gate_diagnostics": {
+    "minicpm": "error: failed to load OCR model",
+    "unlimited": "unlimited_ocr: Unlimited-OCR-2 model requires CRISPEMBED_UNLIMITED_OCR2=1",
+    "got": "CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1"
+  }
+}
