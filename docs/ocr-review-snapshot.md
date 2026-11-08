@@ -119,6 +119,16 @@ Applications should retain it for review or retry and surface their engine
 initialization diagnostics. recognized means the configured acceptance gate
 passed, not that human review or a quality benchmark passed.
 
+The capabilities object also contains language_identification, truecase and
+punctuation objects, each with compiled, configured and loaded booleans.
+These distinguish optional backend support from a requested model and successful
+model initialization. For example, a minimal native build without the optional
+language/truecasing libraries can accept the corresponding configuration fields
+while lacking those backends. The snapshot explicitly warns when a requested
+stage is unavailable or its model failed to load. loaded does not establish that
+an individual page produced a language prediction or changed text. Consumers
+of older snapshots without these fields must report availability as unknown.
+
 Table HTML and Markdown are document data. Render them through the application's
 sanitizer or show them as text; do not execute source content in a webview.
 The text_postprocessed field covers the optional wrapper punctuation restorer.

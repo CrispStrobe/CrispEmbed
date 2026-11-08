@@ -97,6 +97,25 @@ static int crispembed_test_main() {
         CHECK(field(json, "stages").a.size() == 2);
         CHECK(field(field(json, "stages").a[1], "elapsed_ms").number() == 15.25);
 
+        // Build support, requested configuration and loaded models are distinct.
+        // An optional backend compiled out of a minimal library must not silently
+        // look like a successfully applied language/truecasing stage.
+        ocr_orchestrator::capabilities optional;
+        optional.lid_configured = true;
+        optional.truecase_compiled = optional.truecase_configured = true;
+        optional.punctuation_configured = true;
+        auto availability =
+            core_json_value::parser(ocr_review::render(result, optional, result.full_text, result.markdown)).parse();
+        const auto & languages = field(field(availability, "capabilities"), "language_identification");
+        CHECK(!field(languages, "compiled").b && field(languages, "configured").b && !field(languages, "loaded").b);
+        CHECK(field(availability, "warnings").a.size() == 3);
+        optional.lid_compiled = optional.lid_loaded = true;
+        optional.truecase_loaded = optional.punctuation_loaded = true;
+        availability =
+            core_json_value::parser(ocr_review::render(result, optional, result.full_text, result.markdown)).parse();
+        CHECK(field(field(field(availability, "capabilities"), "truecase"), "loaded").b);
+        CHECK(field(availability, "warnings").a.empty());
+
         // Quotes, control bytes, UTF-8 and embedded NUL survive JSON encoding.
         result.regions[0].text = std::string("A\0B", 3) + "\"\t\n\\ <tag> € 日本語";
         json = snapshot(result);

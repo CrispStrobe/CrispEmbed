@@ -2357,11 +2357,21 @@ bool load(context ** out, const config & cfg, int n_threads) {
 
 capabilities get_capabilities(const context * ctx) {
     capabilities out;
+    out.lid_compiled = CRISPEMBED_HAS_LID != 0;
+    out.truecase_compiled = CRISPEMBED_HAS_TRUECASE != 0;
     if (!ctx) return out;
     out.layout = !ctx->cfg.layout_model.empty();
     out.tables = ctx->cfg.route_tables && !ctx->cfg.table_model.empty();
     out.formulas = ctx->cfg.route_formulas && !ctx->cfg.formula_model.empty();
     out.image_text_fallback = ctx->cfg.image_text_fallback;
+    out.lid_configured = !ctx->cfg.lid_model.empty();
+    out.truecase_configured = !ctx->cfg.truecase_model.empty();
+#if CRISPEMBED_HAS_LID
+    out.lid_loaded = ctx->lid != nullptr;
+#endif
+#if CRISPEMBED_HAS_TRUECASE
+    out.truecase_loaded = ctx->tc != nullptr;
+#endif
     return out;
 }
 

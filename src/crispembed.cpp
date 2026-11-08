@@ -5686,6 +5686,7 @@ struct ocr_pipeline_orch_wrapper {
     std::string markdown;
     std::string review_json;
     bool has_run = false;
+    bool punctuation_configured = false;
     void * punct = nullptr; // optional post-OCR punctuation/spacing restorer
 };
 
@@ -5792,6 +5793,7 @@ extern "C" void * crispembed_ocr_pipeline_init(const crispembed_ocr_pipeline_par
         return nullptr;
     }
     if (params->punct_model && *params->punct_model) {
+        w->punctuation_configured = true;
         w->punct = crispembed_punct_init(params->punct_model, n_threads);
     }
     return w;
@@ -5874,8 +5876,10 @@ extern "C" const char * crispembed_ocr_pipeline_review_json(void * ctx, int * ou
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;
     if (!w->has_run) return nullptr;
     try {
-        w->review_json =
-            ocr_review::render(w->last, ocr_orchestrator::get_capabilities(w->ctx), w->full_text, w->markdown);
+        auto capabilities = ocr_orchestrator::get_capabilities(w->ctx);
+        capabilities.punctuation_configured = w->punctuation_configured;
+        capabilities.punctuation_loaded = w->punct != nullptr;
+        w->review_json = ocr_review::render(w->last, capabilities, w->full_text, w->markdown);
         if (w->review_json.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
             w->review_json.clear();
             return nullptr;
@@ -6054,6 +6058,7 @@ extern "C" void * crispembed_ocr_pipeline_init_stages(int router, const char * n
         return nullptr;
     }
     if (punct_model && *punct_model) {
+        w->punctuation_configured = true;
         w->punct = crispembed_punct_init(punct_model, n_threads);
     }
     return w;

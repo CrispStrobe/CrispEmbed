@@ -221,6 +221,10 @@ struct capabilities {
     bool tables = false;
     bool formulas = false;
     bool image_text_fallback = true;
+    // Internal diagnostics only; the public C capabilities struct is unchanged.
+    bool lid_compiled = false, lid_configured = false, lid_loaded = false;
+    bool truecase_compiled = false, truecase_configured = false, truecase_loaded = false;
+    bool punctuation_compiled = true, punctuation_configured = false, punctuation_loaded = false;
 };
 
 // Build a pipeline context. Engines/models are lazily loaded on first use so an

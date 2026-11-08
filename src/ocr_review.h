@@ -57,6 +57,10 @@ inline void score(std::ostream & out, float value) {
         out << "null";
 }
 
+inline void optional_stage(std::ostream & out, bool compiled, bool configured, bool loaded) {
+    out << "{\"compiled\":" << compiled << ",\"configured\":" << configured << ",\"loaded\":" << loaded << '}';
+}
+
 inline void box(std::ostream & out, float x, float y, float width, float height) {
     out << '[';
     number(out, x);
@@ -186,7 +190,14 @@ inline std::string render(const ocr_orchestrator::result & value, const ocr_orch
         score(out, value.lang_confidence);
     out << ",\"capabilities\":{\"layout_configured\":" << capabilities.layout
         << ",\"tables_configured\":" << capabilities.tables << ",\"formulas_configured\":" << capabilities.formulas
-        << ",\"image_text_fallback\":" << capabilities.image_text_fallback << '}';
+        << ",\"image_text_fallback\":" << capabilities.image_text_fallback << ",\"language_identification\":";
+    optional_stage(out, capabilities.lid_compiled, capabilities.lid_configured, capabilities.lid_loaded);
+    out << ",\"truecase\":";
+    optional_stage(out, capabilities.truecase_compiled, capabilities.truecase_configured, capabilities.truecase_loaded);
+    out << ",\"punctuation\":";
+    optional_stage(out, capabilities.punctuation_compiled, capabilities.punctuation_configured,
+                   capabilities.punctuation_loaded);
+    out << '}';
     out << ",\"reading_order\":";
     indices(out, reading_order(value.regions.size(), value.reading_order));
     out << ",\"regions\":[";
@@ -311,6 +322,16 @@ inline std::string render(const ocr_orchestrator::result & value, const ocr_orch
         text(out, message);
         warning_written = true;
     };
+    if (capabilities.lid_configured && !capabilities.lid_compiled)
+        warning("Language identification was requested but this library was built without its optional backend.");
+    else if (capabilities.lid_configured && !capabilities.lid_loaded)
+        warning("Language identification was requested but its model could not be loaded.");
+    if (capabilities.truecase_configured && !capabilities.truecase_compiled)
+        warning("Truecasing was requested but this library was built without its optional backend.");
+    else if (capabilities.truecase_configured && !capabilities.truecase_loaded)
+        warning("Truecasing was requested but its model could not be loaded.");
+    if (capabilities.punctuation_configured && !capabilities.punctuation_loaded)
+        warning("Punctuation restoration was requested but its model could not be loaded.");
     if (!input_valid) warning("Input image dimensions are unavailable; recognition may not have run.");
     if (value.regions.empty())
         warning("No text returned. This does not distinguish a blank page from an engine failure.");

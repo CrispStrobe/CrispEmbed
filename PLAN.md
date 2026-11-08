@@ -22,6 +22,11 @@ explicit CLI/HTTP review response; coordinate/score provenance and model-free
 serialization tests. Standalone C++ contract and four Python copy/availability
 tests pass. The schema and consumer contract are documented in
 [docs/ocr-review-snapshot.md](docs/ocr-review-snapshot.md).
+Optional language identification, truecasing and punctuation stages now report
+compiled/configured/loaded availability separately, with explicit missing-stage
+warnings. The extended model-free serializer test passes. Hosted formatting and
+environment inventory passed at the preceding source; final-source native and
+binding checks remain required.
 Remaining: hosted native/C API lifecycle and binding build validation. The
 legacy engine interface cannot distinguish a blank page from several failures;
 the snapshot explicitly labels this uncertainty rather than fabricating success.
