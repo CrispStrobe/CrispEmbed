@@ -260,3 +260,27 @@ four are early: `fr-old-tachard-siam-102` (token 3), `de-table-meyers-b1-168` (1
 original runs to 2972), `receipt-cord-test-20` (25), `de-table-rgbl-1867-403` (52; 458 vs 1542 tokens).
 Open: attribute those four (F16 weights/KV vs the F32 original is the first suspect; an F32 native GGUF run
 of the same pages separates precision from a pipeline difference). Gold quality is on par in aggregate.
+
+## 11. Pixel, decoder and teacher-forced attribution (Kaggle CPU, 8 November 2026)
+
+Kernel `tools/kaggle/got-pixel-attr` ([attribution.json](../tests/results/got-ocr2-q4/pixel-attr-20261108/attribution.json)),
+the four early-diverging pages, native F16-r2:
+
+| page | pixels, pinned JPEG vs original (max abs) | pixels, PIL-decoded PNG vs original | first divergence (JPEG / PNG) | teacher-forced first raw-argmax flip | margin (logits) | flips over all steps |
+|---|---|---|---|---|---|---|
+| fr-old-tachard-siam-102 | 0.030 (2.2% of values) | 0 | 3 / 3 | step 3 | 0.0020 | 1 / 355 |
+| de-table-meyers-b1-168 | 0.030 | 0 | 12 / 12 | step 12 | 0.041 | 274 / 2972 |
+| receipt-cord-test-20 (PNG source) | 0 | 0 | 25 / 25 | step 25 | 0.0082 | 1 / 81 |
+| de-table-rgbl-1867-403 | 0.015 | 0 | 52 / 52 | step 52 | 0.214 | 64 / 1542 |
+
+Findings:
+- Preprocessing is exact once the decoded RGB matches: on a PIL-decoded PNG the native pixels equal the
+  original bit for bit on all four pages. The JPEG decoder (stb_image vs Pillow/libjpeg) does change pixels
+  (max 0.030 after normalisation) but does **not** move any first divergence here.
+- With identical pixels and the original's prefix, native's raw argmax flips exactly at the divergence step,
+  with the original's token losing by 0.002–0.21 logits: near-ties decided by floating-point accumulation
+  order (ggml CPU F16/F32 kernels vs PyTorch F32), not a pipeline or logic difference. Greedy decoding then
+  amplifies the flip on long tables (meyers/rgbl).
+- Lane closed: F16-r2 stays the recommended exact-on-panel variant; gold-corpus exactness 42/55 is the
+  documented numerical limit. Optional, not required: a gated libjpeg-compatible JPEG decode would make
+  pixel parity exact on JPEG input (no measured token benefit on these pages).

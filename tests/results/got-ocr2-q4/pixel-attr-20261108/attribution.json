@@ -1,0 +1,102 @@
+{
+ "fr-old-tachard-siam-102": {
+  "src": {
+   "first_divergence_vs_original": 3,
+   "pixel_max_abs": 0.03001558780670166,
+   "pixel_mean_abs": 0.0003256849304307252,
+   "pixel_frac_diff": 0.022245089213053387
+  },
+  "pilpng": {
+   "first_divergence_vs_original": 3,
+   "pixel_max_abs": 0.0,
+   "pixel_mean_abs": 0.0,
+   "pixel_frac_diff": 0.0
+  },
+  "orig_src_vs_orig_pilpng_max_abs": 0.0,
+  "forced": {
+   "steps": 355,
+   "first_raw_argmax_mismatch": 3,
+   "mismatches": 1,
+   "at_step": {
+    "orig_token": 11169,
+    "native_argmax": 53,
+    "margin_native_minus_orig": 0.0020294189453125
+   }
+  }
+ },
+ "de-table-meyers-b1-168": {
+  "src": {
+   "first_divergence_vs_original": 12,
+   "pixel_max_abs": 0.03001558780670166,
+   "pixel_mean_abs": 0.00014471160829998553,
+   "pixel_frac_diff": 0.009900093078613281
+  },
+  "pilpng": {
+   "first_divergence_vs_original": 12,
+   "pixel_max_abs": 0.0,
+   "pixel_mean_abs": 0.0,
+   "pixel_frac_diff": 0.0
+  },
+  "orig_src_vs_orig_pilpng_max_abs": 0.0,
+  "forced": {
+   "steps": 2972,
+   "first_raw_argmax_mismatch": 12,
+   "mismatches": 274,
+   "at_step": {
+    "orig_token": 25917,
+    "native_argmax": 569,
+    "margin_native_minus_orig": 0.0411834716796875
+   }
+  }
+ },
+ "receipt-cord-test-20": {
+  "src": {
+   "first_divergence_vs_original": 25,
+   "pixel_max_abs": 0.0,
+   "pixel_mean_abs": 0.0,
+   "pixel_frac_diff": 0.0
+  },
+  "pilpng": {
+   "first_divergence_vs_original": 25,
+   "pixel_max_abs": 0.0,
+   "pixel_mean_abs": 0.0,
+   "pixel_frac_diff": 0.0
+  },
+  "orig_src_vs_orig_pilpng_max_abs": 0.0,
+  "forced": {
+   "steps": 81,
+   "first_raw_argmax_mismatch": 25,
+   "mismatches": 1,
+   "at_step": {
+    "orig_token": 21,
+    "native_argmax": 16,
+    "margin_native_minus_orig": 0.008230209350585938
+   }
+  }
+ },
+ "de-table-rgbl-1867-403": {
+  "src": {
+   "first_divergence_vs_original": 52,
+   "pixel_max_abs": 0.015007883310317993,
+   "pixel_mean_abs": 4.7285186155932024e-05,
+   "pixel_frac_diff": 0.0032367706298828125
+  },
+  "pilpng": {
+   "first_divergence_vs_original": 52,
+   "pixel_max_abs": 0.0,
+   "pixel_mean_abs": 0.0,
+   "pixel_frac_diff": 0.0
+  },
+  "orig_src_vs_orig_pilpng_max_abs": 0.0,
+  "forced": {
+   "steps": 1542,
+   "first_raw_argmax_mismatch": 52,
+   "mismatches": 64,
+   "at_step": {
+    "orig_token": 18962,
+    "native_argmax": 374,
+    "margin_native_minus_orig": 0.21390438079833984
+   }
+  }
+ }
+}
