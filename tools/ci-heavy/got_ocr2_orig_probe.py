@@ -37,9 +37,8 @@ SYSTEM = """<|im_start|>system
         You should follow the instructions carefully and explain your answers in detail."""
 
 
-def main():
-    out, max_new, ngrams = sys.argv[1], int(sys.argv[2]), [int(x) for x in sys.argv[3].split(",")]
-    cases = [a.split("=", 1) for a in sys.argv[4:]]
+def load_chat():
+    """Tokenizer, F32 CPU model, remote-code module, image processor and chat() prompt IDs (guarded)."""
     torch.manual_seed(0)
     torch.set_num_threads(os.cpu_count() or 4)
     tok = AutoTokenizer.from_pretrained(REPO, revision=REV, trust_remote_code=True)
@@ -65,6 +64,26 @@ def main():
     conv.append_message(conv.roles[1], None)
     prompt = conv.get_prompt()
     input_ids = torch.as_tensor(tok([prompt]).input_ids)
+    return tok, model, mod, proc, prompt, input_ids
+
+
+def generate(tok, model, mod, input_ids, px, max_new, ngram=20):
+    """chat()'s greedy generation; returns (token_ids, text)."""
+    stop = mod.KeywordsStoppingCriteria(["<|im_end|>"], tok, input_ids)
+    with torch.no_grad():
+        gen = model.generate(input_ids, images=[px.unsqueeze(0)], do_sample=False, num_beams=1,
+                             no_repeat_ngram_size=ngram, max_new_tokens=max_new, stopping_criteria=[stop])
+    ids = gen[0, input_ids.shape[1]:].tolist()
+    text = tok.decode(ids).strip()
+    if text.endswith("<|im_end|>"):
+        text = text[:-len("<|im_end|>")]
+    return ids, text.strip()
+
+
+def main():
+    out, max_new, ngrams = sys.argv[1], int(sys.argv[2]), [int(x) for x in sys.argv[3].split(",")]
+    cases = [a.split("=", 1) for a in sys.argv[4:]]
+    tok, model, mod, proc, prompt, input_ids = load_chat()
     prompt_ids = input_ids[0].tolist()
 
     rec = {"model": REPO, "revision": REV, "transformers_remote_code": True, "device": "cpu", "dtype": "float32",
@@ -92,18 +111,9 @@ def main():
              "pixels_mean": float(arr.mean()), "pixels_min": float(arr.min()), "pixels_max": float(arr.max()),
              "runs": {}}
         for ng in ngrams:
-            stop = mod.KeywordsStoppingCriteria(["<|im_end|>"], tok, input_ids)
             t0 = time.time()
-            with torch.no_grad():
-                gen = model.generate(input_ids, images=[px.unsqueeze(0)], do_sample=False, num_beams=1,
-                                     no_repeat_ngram_size=ng, max_new_tokens=max_new,
-                                     stopping_criteria=[stop])
+            ids, text = generate(tok, model, mod, input_ids, px, max_new, ng)
             dt = time.time() - t0
-            ids = gen[0, input_ids.shape[1]:].tolist()
-            text = tok.decode(ids).strip()
-            if text.endswith("<|im_end|>"):
-                text = text[:-len("<|im_end|>")]
-            text = text.strip()
             c["runs"][str(ng)] = {"token_ids": ids, "text": text, "n_tokens": len(ids), "seconds": round(dt, 2),
                                   "hit_cap": len(ids) >= max_new and ids[-1] not in (151643, 151645)}
             print(f"{cid} ngram={ng} n={len(ids)} {dt:.1f}s {text[:80]!r}", flush=True)

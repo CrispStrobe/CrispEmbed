@@ -12,8 +12,8 @@ import subprocess
 import sys
 
 COMMIT = "@COMMIT@"
-RECIPES = "q4kn,q8"
-FREE = "f16,f16cuda,q4kn,q8"
+RECIPES = "@RECIPES@" if not "@RECIPES@".startswith("@") else "q4kn,q8"
+FREE = "@FREE@" if not "@FREE@".startswith("@") else "f16,f16cuda,q4kn,q8"
 REPO_DIR = "/kaggle/temp/ce"
 
 

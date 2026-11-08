@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Original PyTorch/Transformers OCR on the real-scan set (hosted only: Kaggle / GitHub Actions).
 
-usage: ref_worker.py {uocr2|minicpm} PAGES_JSON OUT_JSON DEADLINE_EPOCH
+usage: ref_worker.py {uocr2|minicpm|got} PAGES_JSON OUT_JSON DEADLINE_EPOCH
 PAGES_JSON: [{"id", "path", "max_tokens"}] in run order. Pinned checkpoints and loaders come from
-tools/unlimited-ocr2/reference.py and tools/minicpm-ocr/reference.py (same contracts as the parity work).
+tools/unlimited-ocr2/reference.py and tools/minicpm-ocr/reference.py, and for got tools/ci-heavy/got_ocr2_orig_probe.py (same contracts as the parity work).
 Writes after every page; per page: text, generated ids, seconds, process peak RSS so far.
 """
 import importlib.util, json, os, resource, sys, time
@@ -52,6 +52,15 @@ def main(kind, pages_json, out_json, deadline):
                 if res.get(k) is not None:
                     v = res[k]; ids = v.tolist() if hasattr(v, 'tolist') else list(v); break
             return res.get('text'), ids
+    elif kind == 'got':
+        R = load(ROOT / 'tools/ci-heavy/got_ocr2_orig_probe.py')
+        tok, model, mod, proc, _, input_ids = R.load_chat()
+        cfg = dict(revision=R.REV)
+        from PIL import Image
+
+        def run(p):
+            px = proc(Image.open(p['path']).convert('RGB'))
+            return R.generate(tok, model, mod, input_ids, px, int(p['max_tokens']))[::-1]
     else:
         R = load(ROOT / 'tools/minicpm-ocr/reference.py')
         cfg = json.loads(R.CONTRACT.read_text()); R.fetch(cfg, model_dir)

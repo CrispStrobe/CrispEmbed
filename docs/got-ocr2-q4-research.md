@@ -240,3 +240,23 @@ Recommendation: replace the experimental Q4_K with `q8_ffn_gu_q4k` (still `-expe
 on par with F16 on the gold corpus, not token-exact), optionally also publish Q8_0 as experimental;
 F16-r2 stays the default exact variant. Publication goes through the HF workflow with
 LICENSE/NOTICE under the Tongyi Qianwen research licence.
+
+## 9. Original pipeline on the gold corpus (Kaggle CPU, 8 November 2026)
+
+Mode `ref-got` (`tools/kaggle/ocr-real-scans/kernel.py`, original `stepfun-ai/GOT-OCR2_0` `chat()` contract from
+`tools/ci-heavy/got_ocr2_orig_probe.py`, F32 CPU, transformers 4.37.2 / torch 2.4.1), three page shards; all
+57 pages completed (the pin-retry fix fetched both previously failing pages).
+[Receipt](../tests/results/got-ocr2-q4/gold-orig-kaggle-20261108/original.json).
+
+| arm | pages | token-exact vs original | mean CER (same pages) |
+|---|---|---|---|
+| original F32 | 57 | - | 0.351 (0.359 on the 55) |
+| native F16-r2 | 55 | **42/55** | 0.363 |
+| native Q8_0 | 55 | 17/55 | 0.357 |
+| native q8_ffn_gu_q4k | 57 | 11/57 | 0.346 |
+
+F16-r2 diverges from the original on 13 pages; most divergences are late (token >= 120) and CER-neutral, but
+four are early: `fr-old-tachard-siam-102` (token 3), `de-table-meyers-b1-168` (12; native stops at 215 tokens,
+original runs to 2972), `receipt-cord-test-20` (25), `de-table-rgbl-1867-403` (52; 458 vs 1542 tokens).
+Open: attribute those four (F16 weights/KV vs the F32 original is the first suspect; an F32 native GGUF run
+of the same pages separates precision from a pipeline difference). Gold quality is on par in aggregate.
