@@ -1,0 +1,47 @@
+{
+  "schema": "lighton4b-planner-book-extended-index/v1",
+  "qualified": false,
+  "status": "audited-capped-incomplete-negative",
+  "receipt_sha256": "d2ea232376c2fa4697613d615d33b8b10a4dc0d5ab987fdac7d1ed3d99561760",
+  "files": {
+    "runtime-bundle.json": {
+      "bytes": 2090,
+      "sha256": "540aa9983faf570e46e9e6708f745dbd3cbd5f8354276f3fddb301e7fe9e65d7"
+    },
+    "source-admission.json": {
+      "bytes": 757,
+      "sha256": "9b8aca2b602545fd5a22919f49973182e9309477a6fccdc95ebfb7cc7d0cb06b"
+    },
+    "raw-audit.json": {
+      "bytes": 892,
+      "sha256": "4ce163be541c39526241549f1e95d6b471e6b582325d0079ac83d36fce6e8696"
+    },
+    "public-safe-result.json": {
+      "bytes": 20786,
+      "sha256": "72e507a03e9785f8a8b004441c869c33e9e9985104b891a62f24ded81a4a87cd"
+    },
+    "protocol.json": {
+      "bytes": 1516,
+      "sha256": "e8e783b3526f56208e4d5f6cbf496afd2f286853f76e2d975c41092a0142d2e6"
+    },
+    "audit.py": {
+      "bytes": 7260,
+      "sha256": "f65d24918155536725458229473e4652cad24d1d6359ffbef8066ef39bdbf39a"
+    },
+    "independent-selected-review.json": {
+      "bytes": 1784,
+      "sha256": "d1a5236b465f5e7607897cf8269596ac5660d0dc32619007fa5ecfcf46d241a4"
+    },
+    "model-free-bundle-admission.json": {
+      "bytes": 4427,
+      "sha256": "5d2a8db14f07d0bc6a0428ad53bb3bbe769fc3e4dbbe8c5a54e655cc7615ebd7"
+    },
+    "raw-audit-bootstrap.json": {
+      "bytes": 381,
+      "sha256": "262a5039f82f35cbfe27dd87ac2b23452134f45c39f2d00e9f39bf5ff4f722d6"
+    }
+  },
+  "scope": "One fixed-budget fresh planner-ON primary replay only; no baseline/source/source-feature decode. Cap without EOS is incomplete and fails the floor. Receipt failure remains binding, no tuning, aggregate waiver, numerical/speed qualification or release.",
+  "rights": "Protected recognized book text, token-ID sequences and full producer report remain private. Counts/metrics/hashes only.",
+  "audit_sha256": "4ce163be541c39526241549f1e95d6b471e6b582325d0079ac83d36fce6e8696"
+}

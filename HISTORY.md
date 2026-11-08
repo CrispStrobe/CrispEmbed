@@ -21486,3 +21486,5 @@ tree; full-score/decoded gates remain pending.
 - 8 November2026: scheduler-only fixedbook diagnostic retains an audited timeout, not completedquality:1054rows/noEOSat1200s; prior660baseline andallinput/observedcontrols matched. Private relay+4906forensics preserve1457files/2.735GB/all2049rows withoutmodelreruns; protectedtext/IDs remainprivate. Firstreceiptnegative/no-ship stillbinds, resource-onlycontinuation requiresstrictprefixandtestedbundle. See docs/lighton4b-planner-heldout-provisional-results.md.
 
 - Preserved successful frozen planner inventory child and separate post-retention NameError; independent remote audit closes472 files/1,761,212,921 bytes/1079 rows without inference rerun. Receipt failure and incomplete book timeout remain binding; no qualification.
+
+- Preserved fixed-budget planner book replay:1536 cap/no EOS, all1054 prior rows+82 stages exact, independent98-file/1,745,200,955-byte/1536-row audit. Native1664.23s wall/6.234GB sampledRSS; capped diagnostic edits3716/955 versus complete upstream526/146. Frozen planner provisional panel1/3, unqualified/no ship; no further inference retry.
