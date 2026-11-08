@@ -33,6 +33,11 @@ class ConsumerProtocolTest(unittest.TestCase):
         with self.assertRaises(AssertionError):
             smoke.check_gate_rejected(result(0, '{"text":"fox"}', diagnostic), 'unlimited')
 
+    def test_got_variants_share_the_licence_diagnostic(self):
+        diagnostic = 'got_ocr: set CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1'
+        for key in ('got', 'got-q8', 'got-mix'):
+            smoke.check_gate_rejected(result(1, '', diagnostic), key)
+
 
 if __name__ == '__main__':
     unittest.main()

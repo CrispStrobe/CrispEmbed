@@ -22,6 +22,12 @@ MODELS = {
     'got': ('got-ocr2-q4_k-experimental', 'got-ocr2-q4_k.gguf',
             'ba276f2e246273af7d1bcd58f35ac7bae09c30340b923ed4440effe82d5e7613',
             {'CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE': '1'}, 'CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE'),
+    'got-q8': ('got-ocr2-q8_0-experimental', 'got-ocr2-q8_0-r2.gguf',
+               '15920499f65b71bcfbf4d44d0e92ffbaf7f7c4523ad13f7b7bef160dc5edf098',
+               {'CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE': '1'}, 'CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE'),
+    'got-mix': ('got-ocr2-q8-q4k-mix-experimental', 'got-ocr2-q8-q4k-mix.gguf',
+                '5ccd3d291e52cb9a0f923ccd1b7f70f7c25469382bbe7492e7373ac1bd2b73b5',
+                {'CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE': '1'}, 'CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE'),
 }
 
 
@@ -53,7 +59,7 @@ def check_gate_rejected(result, key):
     expected = {'minicpm': 'failed to load OCR model',
                 'unlimited': 'requires CRISPEMBED_UNLIMITED_OCR2=1',
                 'got': 'CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1'}
-    if expected[key] not in result.stderr:
+    if expected[key.split('-')[0]] not in result.stderr:
         raise AssertionError('gate-off failure lacked the expected engine diagnostic')
     try:
         decoded(result)
@@ -64,7 +70,7 @@ def check_gate_rejected(result, key):
 
 def main():
     if len(sys.argv) != 2 or sys.argv[1] not in MODELS:
-        raise SystemExit('choose minicpm, unlimited or got')
+        raise SystemExit('choose ' + ', '.join(MODELS))
     key = sys.argv[1]
     alias, filename, expected, gates, gate = MODELS[key]
     OUT.mkdir(parents=True, exist_ok=True)
@@ -88,7 +94,7 @@ def main():
         cli = build / 'crispembed'
         def args(model):
             result = [cli, '-m', model, '--ocr', image, '--ocr-max-tokens', '32', '--json', '-t', '2']
-            if key == 'got':
+            if key.startswith('got'):
                 result.extend(['--accept-license', 'tongyi-qianwen-research'])
             return result
         online = decoded(run(args(alias), env, 'online'))
