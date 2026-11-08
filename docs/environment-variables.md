@@ -855,6 +855,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
+| `CRISPEMBED_OXR_DECODE_F32_ACT` | on | off | bool | default-off experimental / opt-in | `src/oxr_ocr.cpp` |  |
 | `CRISPEMBED_OXR_DEQUANT_VISION` | on | off | bool | default-off experimental / opt-in | `src/oxr_ocr.cpp` |  |
 | `CRISPEMBED_OXR_FLASH_ATTN` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/oxr_ocr.cpp` |  |
 | `CRISPEMBED_OXR_FORCE_CPU` | on | off | bool | default-off experimental / opt-in | `src/oxr_ocr.cpp` |  |

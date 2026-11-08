@@ -541,6 +541,7 @@ Strict results are still recorded per case (`*_identical`, report `strict_all_id
 | `CRISPEMBED_OXR_GPU_FLASH_CPU=1` | GPU: the original PREC_F32 flash node, which ggml-metal refuses and the scheduler runs on the CPU in every layer. |
 | `CRISPEMBED_OXR_GPU_F16_HALF_ACT=1` | GPU: F16-weight products without PREC_F32 (half-staged activations). |
 | `CRISPEMBED_OXR_GPU_SPLIT_F16=1` | GPU: F32/F16 products as hi/lo half-kernel terms (`core/split_f16_matmul.h`). |
+| `CRISPEMBED_OXR_DECODE_F32_ACT=1` | A/B only: quantized weights outside the vision tower (LLM layers, `lm_head`, visual head) are widened to F32 in-graph, so prefill and decode products take unquantized F32 activations (slower; default path unchanged). |
 | `CRISPEMBED_OXR_VTE_Q8=1` | Store the transposed visual table as Q8_0 (68 MiB instead of 256 MiB). |
 | `CRISPEMBED_OXR_TIMING=1` | Per-stage wall times on stderr (vision+vocabulary, prefill, decode). |
 | `CRISPEMBED_OXR_FLASH_ATTN=0` | Select dense attention instead of the default flash-attention path. |
