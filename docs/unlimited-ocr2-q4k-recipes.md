@@ -156,3 +156,15 @@ The current runtime has moved: the F16 CUDA control's paragraphs case is now 0.9
 
 All recipes keep box-stripped text equal to F16 on 4/4. The CPU leg of the "≥ 0.97 on CPU and CUDA" bar has
 not been re-measured for the new recipes or the current runtime.
+
+CPU leg (Kaggle CPU kernel `crispembed-uocr2-q8-cpu`, same source; [summary](../tests/results/unlimited-ocr2/q4k-sweep/kaggle-cpu-v3/summary.md)):
+
+| recipe | MiB | CPU min | CUDA min | min of both |
+|---|---|---|---|---|
+| q8 | 3397 | 0.9743 | 0.9700 | 0.9700 (on the bar) |
+| q8sh16 | 3465 | 0.9728 | 0.9762 | **0.9728** |
+| q8sa16 | 3535 | 0.9729 | 0.9791 | 0.9729 |
+
+All three pass "≥ 0.97 on CPU and CUDA"; box-stripped text equals F16 4/4 on both. Recommended:
+`q8sh16` (+68 MiB over q8, same CPU/CUDA margin as q8sa16 at half the extra size). Publication needs an
+owner decision.
