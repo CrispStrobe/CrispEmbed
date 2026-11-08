@@ -1710,9 +1710,22 @@ static const ModelEntry k_registry[] = {
     { "got-ocr2-q4_k-experimental", "got-ocr2-q4_k.gguf",
       "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/f557899a7dc82b979d335406d64d9d44e54b8fbe/"
       "got-ocr2-q4_k.gguf",
-      "GOT-OCR2 document OCR, Q4_K EXPERIMENTAL (diverges from the original at token 83/20 on 2 of 3 cases; "
+      "GOT-OCR2 document OCR, Q4_K EXPERIMENTAL (SUPERSEDED by got-ocr2-q8-q4k-mix-experimental; diverges from the "
+      "original at token 83/20 on 2 of 3 cases; "
       "use got-ocr2-f16; research-only Tongyi Qianwen license)",
       "445 MB", "tongyi-qianwen-research", "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
+    { "got-ocr2-q8_0-experimental", "got-ocr2-q8_0-r2.gguf",
+      "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/fcd5c99c58186cf4e24e3345896e5eac12c83fdc/"
+      "got-ocr2-q8_0-r2.gguf",
+      "GOT-OCR2 document OCR, Q8_0 EXPERIMENTAL (gold-corpus mean CER 0.357 vs F16 0.363, token-exact vs F16 "
+      "on 17/55 pages; use got-ocr2-f16 for exact output; research-only Tongyi Qianwen license)",
+      "600 MB", "tongyi-qianwen-research", "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
+    { "got-ocr2-q8-q4k-mix-experimental", "got-ocr2-q8-q4k-mix.gguf",
+      "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/fcd5c99c58186cf4e24e3345896e5eac12c83fdc/"
+      "got-ocr2-q8-q4k-mix.gguf",
+      "GOT-OCR2 document OCR, Q8_0 + Q4_K FFN gate/up EXPERIMENTAL (gold-corpus mean CER 0.345 vs F16 0.363, "
+      "~3x faster decode, token-exact vs F16 on 11/55 pages; research-only Tongyi Qianwen license)",
+      "530 MB", "tongyi-qianwen-research", "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
     { "ovisocr2-f16", "ovisocr2-f16.gguf",
       "https://huggingface.co/cstr/OvisOCR2-GGUF/resolve/b7229e46f31bcf342d0999966bae8a03bf02bb07/ovisocr2-f16.gguf",
       "OvisOCR2 experimental CPU OCR (853M, f16, format2; gated, <=1024 patches)", "1.717 GB", "apache-2.0",
