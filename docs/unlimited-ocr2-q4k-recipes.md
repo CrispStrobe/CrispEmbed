@@ -168,3 +168,19 @@ CPU leg (Kaggle CPU kernel `crispembed-uocr2-q8-cpu`, same source; [summary](../
 All three pass "≥ 0.97 on CPU and CUDA"; box-stripped text equals F16 4/4 on both. Recommended:
 `q8sh16` (+68 MiB over q8, same CPU/CUDA margin as q8sa16 at half the extra size). Publication needs an
 owner decision.
+
+## Round 4: Q4_K_MIX re-score on the current runtime (Kaggle T4 + CPU, 8 November 2026)
+
+[CUDA](../tests/results/unlimited-ocr2/q4k-sweep/kaggle-cuda-v4/summary.md),
+[CPU](../tests/results/unlimited-ocr2/q4k-sweep/kaggle-cpu-v4/summary.md); source `3bb0e47f`.
+
+| recipe | MiB | CPU min (3 Nov) | CPU min (now) | CUDA min (3 Nov) | CUDA min (now) |
+|---|---|---|---|---|---|
+| q4kns (= published Q4_K_MIX) | 2189 | 0.9634 | 0.9320 (german) | 0.9540 | 0.9291 (german) |
+| q4kns16 (shared experts F16) | 2256 | - | 0.9283 (german) | - | 0.9326 (german) |
+
+The same recipe and F16 reference now score ~0.03 lower on both backends, worst on the German case, while
+Q8_0 moved the other way (round 3). Box-stripped text still equals F16 4/4. Keeping the shared experts F16
+does not help, so the loss sits in the 4-bit routed experts/attention. **Open:** attribute the runtime change
+between the 3 November sweep and now (candidates: the F32-vision default flip and any decoder/MoE kernel
+changes); bisect with the round-1 commit vs current on the German case before any new Q4 search.
