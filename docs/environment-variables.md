@@ -237,7 +237,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-430 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+431 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -855,6 +855,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
+| `CRISPEMBED_OXR_DECODE_F32_ACT` | on | off | bool | default-off experimental / opt-in | `src/oxr_ocr.cpp` |  |
 | `CRISPEMBED_OXR_DEQUANT_VISION` | on | off | bool | default-off experimental / opt-in | `src/oxr_ocr.cpp` |  |
 | `CRISPEMBED_OXR_FLASH_ATTN` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/oxr_ocr.cpp` |  |
 | `CRISPEMBED_OXR_FORCE_CPU` | on | off | bool | default-off experimental / opt-in | `src/oxr_ocr.cpp` |  |

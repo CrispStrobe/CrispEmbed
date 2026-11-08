@@ -91,6 +91,18 @@ mirroring its sidecars ([amendment](docs/inpaint-publication-v1-amendment-202611
 A private granite Q4_K_M repo was kept (no byte-identical public copy). All other private repos
 are kept by owner decision.
 
+## 8 November 2026 — OXR quantized German divergence attributed
+
+Kaggle CPU A/B ([receipt](tests/results/oxr/kaggle-cpu-act-ab/report.json), commit `012f1e11`,
+kernel `tools/kaggle/oxr-cpu-act-ab`) of the published `oxr-1.0-q8_0` and `oxr-1.0-q4_k-head`
+GGUFs vs F16 with the new opt-in `CRISPEMBED_OXR_DECODE_F32_ACT=1` (quantized weights outside the
+vision tower widened to F32 in-graph, so no Q8_0/Q8_K activation quantization). German, first
+divergence vs F16: gate off token 55 (F16 13 vs 220) for both recipes; gate on token 209
+(F16 5649 vs 356), with identical IDs for both recipes, so the head type does not matter and the
+remainder comes from the shared Q8_0 LLM weights. German prefill logits cosine vs F16: Q8_0
+0.99956 -> 0.99977, Q4_K-head 0.99905 -> 0.99966. Formula, Japanese, table and receipt are
+token-exact both ways. Defaults unchanged; the gate costs 3-4x decode time on German.
+
 ## 7 November 2026 — OXR native document parity passes (comparator v2)
 
 Heavy CPU run 42359526030 (`f8ec7329`, `tools/ci-heavy/oxr_native_doc.sh dfine native`):

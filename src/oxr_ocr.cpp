@@ -172,9 +172,18 @@ bool g_split_f16 = false;
 // Q8_0-vision runs collapsed vision.layer.26 to cosine 0.55 on the German page
 // while Metal's F32-activation _hp route kept 0.88 row-min and decoded exactly.
 bool g_dequant_vision = false;
+// Opt-in CRISPEMBED_OXR_DECODE_F32_ACT=1: the A/B counterpart for everything
+// outside the vision tower (llm.* layers, lm_head and the visual head). Their
+// quantized weights are widened to F32 in-graph, so prefill and every decode
+// step multiply unquantized F32 activations with the stored quantized values.
+// Tests whether the German one-token divergence of the quantized recipes comes
+// from activation quantization rather than from the weights themselves.
+bool g_decode_f32_act = false;
 ggml_tensor * mm(ggml_context * g, ggml_tensor * w, ggml_tensor * x) {
     if (g_dequant_vision && ggml_is_quantized(w->type) && std::strncmp(w->name, "vit.", 4) == 0)
         w = ggml_cast(g, w, GGML_TYPE_F32); // CPU dup supports quantized -> F32 only
+    else if (g_decode_f32_act && ggml_is_quantized(w->type) && std::strncmp(w->name, "vit.", 4) != 0)
+        w = ggml_cast(g, w, GGML_TYPE_F32);
     if (g_split_f16 && (w->type == GGML_TYPE_F32 || w->type == GGML_TYPE_F16)) return core_split_f16::mul_mat(g, w, x);
     auto * out = ggml_mul_mat(g, w, x);
     if (!(g_f16_half_act && w->type == GGML_TYPE_F16)) ggml_mul_mat_set_prec(out, GGML_PREC_F32);
@@ -404,6 +413,7 @@ void load(oxr_ocr_context & c, const char * path) {
     g_f16_half_act = !ggml_backend_is_cpu(c.backend) && core_env::on("CRISPEMBED_OXR_GPU_F16_HALF_ACT");
     g_split_f16 = !ggml_backend_is_cpu(c.backend) && core_env::on("CRISPEMBED_OXR_GPU_SPLIT_F16");
     g_dequant_vision = core_env::on("CRISPEMBED_OXR_DEQUANT_VISION");
+    g_decode_f32_act = core_env::on("CRISPEMBED_OXR_DECODE_F32_ACT");
     c.cpu = ggml_backend_is_cpu(c.backend) ? c.backend : ggml_backend_cpu_init();
     if (!c.cpu) throw std::runtime_error("OXR CPU fallback initialization failed");
     ggml_backend_cpu_set_n_threads(c.cpu, c.threads);
