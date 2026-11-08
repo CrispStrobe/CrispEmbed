@@ -102,6 +102,7 @@ static void set_env_if_unset(const char * name, const char * value) {
 // STB_IMAGE_IMPLEMENTATION; forward-declare what we use rather than re-include.
 extern "C" {
 unsigned char * stbi_load(const char * filename, int * x, int * y, int * channels_in_file, int desired_channels);
+int stbi_info(const char * filename, int * x, int * y, int * comp);
 void stbi_image_free(void * retval_from_stbi_load);
 }
 
