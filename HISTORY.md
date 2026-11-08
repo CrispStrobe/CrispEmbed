@@ -26,6 +26,10 @@ for final verdicts, live jobs and remaining tasks.
   that the API-reported size of paged renders is wrong (served at 1920px) for 36 pages;
   sizes are now measured. Layout scorer (block IoU/text matching, type accuracy, Kendall
   tau-b, table cell F1) with unit tests. [Guide](docs/ocr-gold-corpus.md).
+## 8 November 2026 — GOT-OCR2 gold attribution closed
+
+Original pipeline on all 57 gold pages: F16-r2 42/55 token-exact. F32 diverges at the same tokens as F16, and with PIL-decoded input the native pixels equal the original bit for bit; the four early divergences are teacher-forced raw-argmax near-ties (margins 0.002–0.21 logits) from floating-point accumulation order, not a pipeline difference ([research §9–11](docs/got-ocr2-q4-research.md)).
+
 ## 7 November 2026 — GOT-OCR2 quantization search closed
 
 Rounds 1–3 (heavy-cpu runs 42375883471, 42382978017, 42392365607) and a 57-page gold-corpus run on
