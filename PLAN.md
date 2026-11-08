@@ -27,6 +27,18 @@ compiled/configured/loaded availability separately, with explicit missing-stage
 warnings. The extended model-free serializer test passes. Hosted formatting and
 environment inventory passed at the preceding source; final-source native and
 binding checks remain required.
+Export hardening in progress: native PDF now decodes PNG/JPEG to RGB, embeds
+an original metric font with Unicode maps, constructs complete page/xref trees,
+and scales images/text together to caller-supplied physical sizes. The checked
+Rust API preserves actionable errors; unsupported archival mode produces no
+file. ALTO no longer truncates long corrected text and XML control characters
+are replaced safely. Local independent-reader tests pass for 125 pages, five
+raster encodings, supplementary Unicode, 11.9 KB corrected paragraphs, long
+XML and failure cases. The dedicated `OCR export artifacts` workflow retains
+actual files and a validation receipt. Mixed RTL text ordering is under review;
+no complete bidirectional-layout claim is made. Final source and hosted native
+integration checks remain required.
+
 Remaining: hosted native/C API lifecycle and binding build validation. The
 legacy engine interface cannot distinguish a blank page from several failures;
 the snapshot explicitly labels this uncertainty rather than fabricating success.

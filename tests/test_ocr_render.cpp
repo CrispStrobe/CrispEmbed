@@ -166,14 +166,76 @@ static void test_pdf_renderer() {
 
     const char * out = ocr_render_output(r);
     int size = ocr_render_output_size(r);
+    const std::string pdf(out, size_t(size));
 
     check("PDF header", size > 0 && strncmp(out, "%PDF-1.4", 8) == 0);
-    check("has %%EOF", contains(out, "%%EOF"));
-    check("has xref", contains(out, "xref"));
-    check("has Catalog", contains(out, "/Catalog"));
-    check("has Helvetica font", contains(out, "/Helvetica"));
+    check("has %%EOF", pdf.find("%%EOF") != std::string::npos);
+    check("has xref", pdf.find("xref") != std::string::npos);
+    check("has Catalog", pdf.find("/Catalog") != std::string::npos);
+    check("has Unicode map", pdf.find("/ToUnicode") != std::string::npos);
+    check("has embedded font", pdf.find("/FontFile2") != std::string::npos);
+    check("no renderer error", ocr_render_error(r) == nullptr);
+    check("PDF capabilities are explicit", crispembed_ocr_render_capabilities() == 7);
 
     ocr_render_free(r);
+}
+
+static void test_render_failures_and_long_text() {
+    printf("\n=== Errors and long corrections ===\n");
+    std::string text(10000, 'x');
+    text += "\n\t\r日本語 😀 & <tag> \"end\"";
+    ocr_render_word word = { text.c_str(), 0, 0, 200, 30, 0.8f };
+    ocr_render_line line = { &word, 1, 0, 0, 200, 30 };
+    ocr_render_page page = { &line, 1, 200, 100, nullptr };
+    auto * renderer = ocr_render_create(OCR_RENDER_ALTO);
+    ocr_render_begin(renderer);
+    ocr_render_add_page(renderer, &page);
+    ocr_render_end(renderer);
+    const std::string xml(ocr_render_output(renderer));
+    check("long ALTO content is complete", xml.find(std::string(10000, 'x')) != std::string::npos);
+    check("ALTO retains Unicode suffix", xml.find("日本語 😀 &amp; &lt;tag&gt; &quot;end&quot;") != std::string::npos);
+    check("ALTO attribute whitespace survives XML parsing", xml.find("&#xA;&#x9;&#xD;") != std::string::npos);
+    ocr_render_free(renderer);
+
+    for (ocr_render_format format : { OCR_RENDER_HOCR, OCR_RENDER_ALTO }) {
+        renderer = ocr_render_create(format);
+        word.confidence = -1;
+        ocr_render_begin(renderer);
+        ocr_render_add_page(renderer, &page);
+        ocr_render_end(renderer);
+        const std::string unknown(ocr_render_output(renderer));
+        check("unknown confidence is omitted",
+              unknown.find("x_wconf") == std::string::npos && unknown.find(" WC=") == std::string::npos);
+        word.confidence = 0;
+        ocr_render_begin(renderer);
+        ocr_render_add_page(renderer, &page);
+        ocr_render_end(renderer);
+        const std::string zero(ocr_render_output(renderer));
+        check("genuine zero confidence is preserved",
+              zero.find("x_wconf 0") != std::string::npos || zero.find("WC=\"0.00\"") != std::string::npos);
+        ocr_render_free(renderer);
+    }
+
+    renderer = ocr_render_create(OCR_RENDER_PDF);
+    ocr_render_set_pdfa(renderer, 1);
+    ocr_render_begin(renderer);
+    ocr_render_add_page(renderer, &page);
+    ocr_render_end(renderer);
+    check("unsupported archival mode fails explicitly", ocr_render_error(renderer) != nullptr);
+    check("failed renderer has no partial output", ocr_render_output_size(renderer) == 0);
+    ocr_render_set_pdfa(renderer, 0);
+    ocr_render_begin(renderer);
+    page.image_path = "missing-ocr-render-test-image.png";
+    ocr_render_add_page(renderer, &page);
+    ocr_render_end(renderer);
+    check("missing PDF image fails explicitly", ocr_render_error(renderer) != nullptr);
+    check("missing image does not silently disappear", ocr_render_output_size(renderer) == 0);
+    ocr_render_begin(renderer);
+    page.image_path = nullptr;
+    word.w = 201;
+    ocr_render_add_page(renderer, &page);
+    check("out-of-page text is rejected", ocr_render_error(renderer) != nullptr);
+    ocr_render_free(renderer);
 }
 
 static void test_xml_escaping() {
@@ -205,6 +267,7 @@ static int crispembed_test_main() {
     test_alto_renderer();
     test_pdf_renderer();
     test_xml_escaping();
+    test_render_failures_and_long_text();
 
     printf("\n=== Results: %d passed, %d failed ===\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;

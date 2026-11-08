@@ -1734,14 +1734,17 @@ pub struct OcrRenderPage {
 
 extern "C" {
     /// format: 0=text, 1=hocr, 2=alto, 3=pdf (matches `ocr_render_format`).
+    pub fn crispembed_ocr_render_capabilities() -> u32;
     pub fn ocr_render_create(format: c_int) -> *mut c_void;
     pub fn ocr_render_set_separator(r: *mut c_void, sep: *const c_char);
-    /// Enable PDF/A-2b compliance (XMP metadata + sRGB OutputIntent). Must be
-    /// called before `ocr_render_begin`; only affects the PDF format.
+    /// Request archival mode before begin. Currently unsupported: rendering
+    /// fails explicitly rather than emitting unvalidated compliance metadata.
     pub fn ocr_render_set_pdfa(r: *mut c_void, enabled: c_int);
     pub fn ocr_render_begin(r: *mut c_void);
+    pub fn ocr_render_set_page_size_points(r: *mut c_void, width: f64, height: f64);
     pub fn ocr_render_add_page(r: *mut c_void, page: *const OcrRenderPage);
     pub fn ocr_render_end(r: *mut c_void);
+    pub fn ocr_render_error(r: *const c_void) -> *const c_char;
     /// Rendered output. For PDF this is binary — use `ocr_render_output_size`.
     pub fn ocr_render_output(r: *const c_void) -> *const c_char;
     pub fn ocr_render_output_size(r: *const c_void) -> c_int;

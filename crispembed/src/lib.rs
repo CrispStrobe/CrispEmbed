@@ -3536,42 +3536,96 @@ pub struct OcrRenderPageInput<'a> {
     pub image_path: Option<&'a str>,
 }
 
-/// Render one or more pages to **bytes** via the lower-level `ocr_render.h` API
-/// (`create → begin → add_page* → end → output_size`). Unlike [`ocr_render`]
-/// (one-shot, `String`, single-page, NUL-truncated), this is:
-///   - **binary-safe** — uses `output_size`, so searchable **PDF** works;
-///   - **multi-page** — emits a single document spanning all pages.
-///
-/// `format`: `"text"` | `"hocr"` | `"alto"` | `"pdf"`. Each region becomes a
-/// one-word line (the orchestrator emits region-level boxes). `pdfa` enables
-/// PDF/A-2b archival compliance (XMP metadata + sRGB OutputIntent) — only
-/// affects the `"pdf"` format; ignored otherwise. Returns `None` on
-/// allocation/render failure.
+/// Renderer capability bits: PDF=1, Unicode text=2, decoded raster images=4,
+/// validated archival conformance=8. Does not load any recognition model.
+/// Requires the matching native library that exports this accessor.
+pub fn ocr_render_capabilities() -> u32 {
+    unsafe { crispembed_sys::crispembed_ocr_render_capabilities() }
+}
+
+/// Render a document to binary-safe bytes. Returns `None` on rendering errors.
+/// For actionable errors and physical PDF dimensions use
+/// [`ocr_render_pages_checked_with_sizes`]. PDF/A is explicitly unsupported.
 pub fn ocr_render_pages(pages: &[OcrRenderPageInput], format: &str, pdfa: bool) -> Option<Vec<u8>> {
+    ocr_render_pages_checked(pages, format, pdfa).ok()
+}
+
+/// Render pages with an owned error message on failure. The legacy pixel-to-point
+/// convention is retained; use the sized variant to preserve physical page size.
+pub fn ocr_render_pages_checked(
+    pages: &[OcrRenderPageInput],
+    format: &str,
+    pdfa: bool,
+) -> Result<Vec<u8>, String> {
+    ocr_render_pages_checked_with_sizes(pages, format, pdfa, None)
+}
+
+/// Render multi-page text/hOCR/ALTO/PDF without truncating Unicode or binary data.
+/// `sizes`, when present, contains one `(width_points, height_points)` per page.
+/// Images and text scale together from page pixels to these physical PDF sizes.
+/// One inch is 72 points. Existing input structs and C struct layouts are unchanged.
+/// NUL-containing text/paths and invalid coordinates fail rather than disappearing.
+/// Requires a matching native library; archival/PDF-A output is unsupported.
+pub fn ocr_render_pages_checked_with_sizes(
+    pages: &[OcrRenderPageInput],
+    format: &str,
+    pdfa: bool,
+    sizes: Option<&[(f32, f32)]>,
+) -> Result<Vec<u8>, String> {
+    if let Some(sizes) = sizes {
+        if sizes.len() != pages.len()
+            || sizes
+                .iter()
+                .any(|(w, h)| !w.is_finite() || !h.is_finite() || *w <= 0.0 || *h <= 0.0)
+        {
+            return Err("Supply one finite positive physical size per page".to_string());
+        }
+    }
+    for page in pages {
+        if page.regions.len() > i32::MAX as usize || page.image_path.is_some_and(|p| p.contains('\0')) {
+            return Err("Page count or image path is invalid".to_string());
+        }
+        for reg in page.regions {
+            if reg.text.contains('\0')
+                || [reg.x, reg.y, reg.w, reg.h]
+                    .iter()
+                    .any(|v| !v.is_finite() || *v < 0.0 || *v >= i32::MAX as f32)
+            {
+                return Err("OCR text contains NUL or a region has invalid coordinates".to_string());
+            }
+        }
+    }
     use crispembed_sys::{OcrRenderLine, OcrRenderPage, OcrRenderWord};
     let fmt = match format {
         "hocr" => 1,
         "alto" => 2,
         "pdf" => 3,
-        _ => 0,
+        "text" => 0,
+        _ => return Err(format!("Unsupported OCR export format: {format}")),
     };
     let r = unsafe { crispembed_sys::ocr_render_create(fmt) };
     if r.is_null() {
-        return None;
+        return Err("Could not allocate OCR renderer".to_string());
     }
-    // PDF/A-2b must be set before begin(); no-op for non-PDF formats.
+    // Retained flag fails explicitly in a matching native renderer.
     if pdfa {
         unsafe { crispembed_sys::ocr_render_set_pdfa(r, 1) };
     }
     unsafe { crispembed_sys::ocr_render_begin(r) };
 
-    for page in pages {
+    for (page_index, page) in pages.iter().enumerate() {
+        if let Some(sizes) = sizes {
+            let (width, height) = sizes[page_index];
+            unsafe {
+                crispembed_sys::ocr_render_set_page_size_points(r, width as f64, height as f64)
+            };
+        }
         // Build per-page C structs. The renderer copies the data during
         // add_page, so these buffers only need to live for that call.
         let texts: Vec<std::ffi::CString> = page
             .regions
             .iter()
-            .map(|reg| std::ffi::CString::new(reg.text.as_str()).unwrap_or_default())
+            .map(|reg| std::ffi::CString::new(reg.text.as_str()).expect("NUL checked before allocation"))
             .collect();
         let words: Vec<OcrRenderWord> = page
             .regions
@@ -3600,7 +3654,9 @@ pub fn ocr_render_pages(pages: &[OcrRenderPageInput], format: &str, pdfa: bool) 
                 h: reg.h as i32,
             })
             .collect();
-        let img = page.image_path.and_then(|p| std::ffi::CString::new(p).ok());
+        let img = page
+            .image_path
+            .map(|p| std::ffi::CString::new(p).expect("NUL checked before allocation"));
         let c_page = OcrRenderPage {
             lines: lines.as_ptr(),
             n_lines: lines.len() as i32,
@@ -3613,6 +3669,12 @@ pub fn ocr_render_pages(pages: &[OcrRenderPageInput], format: &str, pdfa: bool) 
     }
 
     unsafe { crispembed_sys::ocr_render_end(r) };
+    let error = unsafe { crispembed_sys::ocr_render_error(r) };
+    if !error.is_null() {
+        let message = unsafe { CStr::from_ptr(error) }.to_string_lossy().into_owned();
+        unsafe { crispembed_sys::ocr_render_free(r) };
+        return Err(message);
+    }
     let size = unsafe { crispembed_sys::ocr_render_output_size(r) };
     let ptr = unsafe { crispembed_sys::ocr_render_output(r) } as *const u8;
     let bytes = if ptr.is_null() || size <= 0 {
@@ -3621,7 +3683,7 @@ pub fn ocr_render_pages(pages: &[OcrRenderPageInput], format: &str, pdfa: bool) 
         unsafe { std::slice::from_raw_parts(ptr, size as usize) }.to_vec()
     };
     unsafe { crispembed_sys::ocr_render_free(r) };
-    Some(bytes)
+    Ok(bytes)
 }
 
 // ---------------------------------------------------------------------------
