@@ -1,0 +1,33 @@
+{
+  "schema": "lighton4b-planner-inventory-index/v1",
+  "qualified": false,
+  "status": "audited-provisional-inventory-child",
+  "files": {
+    "relay-copy.json": {
+      "bytes": 237,
+      "sha256": "490f5bc4c521770d2d181bc038e0f0d4e4b6295e218d7427b18019dbefed47fb"
+    },
+    "relay-copy.py": {
+      "bytes": 4516,
+      "sha256": "e1cc69ef69cb243ef6785e185137773e5bf075e680671bdcfcb32480fc186cb1"
+    },
+    "raw-audit.json": {
+      "bytes": 13252,
+      "sha256": "36456a67426621655c3896ef321dc686e9cdec4fc1debac1a3c5c04830dfe362"
+    },
+    "audit.py": {
+      "bytes": 11165,
+      "sha256": "8cd218182b2801c43d50620a6475c6840f9bf568ae9dc2d1acf25a40afca30cf"
+    },
+    "public-safe-inventory.json": {
+      "bytes": 87270,
+      "sha256": "600bc5e8783aa24dd4113c37dd7ea9fe83d04004494088cc1c7f5adce0c2252b"
+    },
+    "outer-retention-error.json": {
+      "bytes": 416,
+      "sha256": "c06a6f09352ee0f7dcc5cc93dc79b15c02ecf7b144441db5a511068134433d06"
+    }
+  },
+  "scope": "Successful inventory child; outer binary-retention wrapper failed afterward. No inventory inference rerun. Receipt failure remains binding; book timeout remains incomplete.",
+  "rights": "No recognized text or token-ID sequences published. Frozen provisional labels are not expert ground truth."
+}
