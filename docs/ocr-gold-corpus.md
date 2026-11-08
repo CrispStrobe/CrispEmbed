@@ -99,3 +99,11 @@ gh workflow run heavy-cpu.yml --ref <branch> -f script=tools/ci-heavy/ocr_gold_c
 ```
 
 The CI artifact `ocr-gold-corpus-v1.json` replaces the committed file only after review.
+
+### Intermittent thumbnail bytes (7 November 2026)
+
+In the GOT-OCR2 gold run, `en-form-economic-journal-67` and `en-register-1758-16` failed their sha256 pin in
+two of three parallel Kaggle sessions, while the third session fetched the pinned bytes from the same
+revision-qualified URL. The pins are correct; Wikimedia's thumbnail CDN intermittently serves other bytes.
+`tools/kaggle/ocr-real-scans/kernel.py` now retries all pinned URLs for up to four rounds and records every
+attempt's sha256; pins are never changed by a fetch.

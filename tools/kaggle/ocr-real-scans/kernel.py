@@ -92,9 +92,21 @@ for p in selected_pages:
                 rec['revision_ok'] = (pg['sha1'], pg['timestamp']) == (im['revision']['file_sha1'], im['revision']['timestamp'])
                 if not rec['revision_ok']:
                     rec['revision_seen'] = dict(file_sha1=pg['sha1'], timestamp=pg['timestamp'])
-            for url in [im['url']] + im.get('fallback_urls', []):
-                data = fetch(url); rec['fetched_url'] = url
-                if hashlib.sha256(data).hexdigest() == im['sha256']: break
+            # Wikimedia's CDN intermittently serves different thumbnail bytes for the same pinned URL
+            # (gold run 2026-11-07: identical URL, pinned bytes in one session, other bytes in two). Retry
+            # every pinned URL for a few rounds before declaring a mismatch; every attempt is recorded and
+            # the pin is never changed.
+            rec['attempts'] = []; data = b''
+            for rnd in range(4):
+                for url in [im['url']] + im.get('fallback_urls', []):
+                    try: data = fetch(url)
+                    except Exception as e: rec['attempts'].append(dict(url=url, error=repr(e)[:200])); continue
+                    rec['fetched_url'] = url; h = hashlib.sha256(data).hexdigest()
+                    rec['attempts'].append(dict(url=url, sha256=h))
+                    if h == im['sha256']: break
+                else:
+                    time.sleep(30 * (rnd + 1)); continue
+                break
         rec['sha256'] = hashlib.sha256(data).hexdigest(); rec['sha256_ok'] = rec['sha256'] == im['sha256']
         if not rec['sha256_ok'] or rec.get('revision_ok') is False:
             raise RuntimeError(f"PINNED IMAGE MISMATCH for {p['id']}: got sha256 {rec['sha256']}, expected {im['sha256']}"
