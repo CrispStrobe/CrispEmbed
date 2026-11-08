@@ -1,0 +1,233 @@
+{
+  "schema": "lighton4b-source-prefill-proof/v1",
+  "status": "failed",
+  "commands": {
+    "source": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 57,
+      "elapsed_seconds": 0.003945678000008002,
+      "child_user_seconds": 0.0,
+      "child_system_seconds": 0.001758,
+      "peak_rss_bytes_observed": 176128,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 42713088
+    },
+    "cpu": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 58,
+      "elapsed_seconds": 0.009060506999986728,
+      "child_user_seconds": 0.0,
+      "child_system_seconds": 0.004116,
+      "peak_rss_bytes_observed": 4096,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 45596672
+    },
+    "compiler": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 59,
+      "elapsed_seconds": 0.03369040699999459,
+      "child_user_seconds": 0.000472,
+      "child_system_seconds": 0.0018900000000000002,
+      "peak_rss_bytes_observed": 4096,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 45596672
+    },
+    "ggml": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 60,
+      "elapsed_seconds": 9.369037837000008,
+      "child_user_seconds": 14.535255,
+      "child_system_seconds": 0.560258,
+      "peak_rss_bytes_observed": 4169728,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 65675264
+    },
+    "configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 102,
+      "elapsed_seconds": 2.818401090000009,
+      "child_user_seconds": 1.2906849999999999,
+      "child_system_seconds": 0.5695790000000001,
+      "peak_rss_bytes_observed": 21553152,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 65675264
+    },
+    "build": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 180,
+      "elapsed_seconds": 79.30547078700002,
+      "child_user_seconds": 129.227958,
+      "child_system_seconds": 6.874232,
+      "peak_rss_bytes_observed": 10018816,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434216960
+    },
+    "test-lighton4b-source-prefill-chunks": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 704,
+      "elapsed_seconds": 0.21590493800005106,
+      "child_user_seconds": 0.27730900000000247,
+      "child_system_seconds": 0.055626000000000175,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434216960
+    },
+    "test-lighton4b-physical-q6-tiled": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 951,
+      "elapsed_seconds": 0.11444844999999759,
+      "child_user_seconds": 0.08158900000000813,
+      "child_system_seconds": 0.026673000000000613,
+      "peak_rss_bytes_observed": 200704,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434216960
+    },
+    "synthetic-source-q6": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1066,
+      "elapsed_seconds": 0.11561050100004877,
+      "child_user_seconds": 0.22712999999998829,
+      "child_system_seconds": 0.024361999999999995,
+      "peak_rss_bytes_observed": 208896,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434216960
+    },
+    "synthetic-source-plan": {
+      "status": "failed",
+      "returncode": 1,
+      "pid": 1079,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/build/lighton4b-source-prefill-probe'), PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/zero.bin'), PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/zero.f32'), 14, 2560, 8192, 20, 'source-plan', PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/zero'), 4, 16, PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/zero.mods'), PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/zero.positions'), PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/zero.gamma'), PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/zero.f32')]' returned non-zero exit status 1.",
+      "elapsed_seconds": 0.032425255000021025,
+      "child_user_seconds": 0.00572800000000484,
+      "child_system_seconds": 0.01618199999999881,
+      "peak_rss_bytes_observed": 155648,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434216960
+    }
+  },
+  "cases": {},
+  "model_forward_executed": false,
+  "heldout_data_accessed": false,
+  "quality_qualified": false,
+  "phase": "synthetic-source-plan",
+  "source_sha": "1e3b0071de99fad19694a40ee694e88a42acc119",
+  "capacity": {
+    "memory": {
+      "MemAvailable": 31511441408,
+      "SwapTotal": 0,
+      "SwapFree": 0,
+      "cgroup_observed": 1,
+      "finite_cgroup_bounds": 1
+    },
+    "scratch": 1037739089920
+  },
+  "logical_source_batches": [
+    4,
+    140,
+    6,
+    4
+  ],
+  "actual_native_input_first16_exact": true,
+  "operator_gates": {
+    "CRISPEMBED_BUILD_MODE": "0",
+    "CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT": "1",
+    "CRISPEMBED_LIGHTON4B_QUANT": "1",
+    "CRISPEMBED_QWEN35_QUANT": "1",
+    "CRISPEMBED_LIGHTON4B_GGUF_INSPECTION": "1",
+    "CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER": "1",
+    "CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_OWNER": "1",
+    "CRISPEMBED_QWEN35_OCR": "1",
+    "CRISPEMBED_LIGHTON4B_DECODER_COMPOSE": "1",
+    "CRISPEMBED_LIGHTON4B_LINEAR_BLOCK": "1",
+    "CRISPEMBED_LIGHTON4B_ATTENTION_BLOCK": "1",
+    "CRISPEMBED_QWEN35_GDN_GROUPED_HEADS": "1",
+    "CRISPEMBED_QWEN35_STREAM_PROJECTION": "1",
+    "CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE": "1",
+    "CRISPEMBED_LIGHTON4B_FRONTEND": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_NORM": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_CONV": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_TABLE": "1",
+    "CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL": "1",
+    "CRISPEMBED_LIGHTON4B_Q6_K": "1",
+    "CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT": "1",
+    "CRISPEMBED_LIGHTON4B_HEAD_BF16": "0",
+    "CRISPEMBED_LIGHTON4B_BF16_LINEAR": "0",
+    "CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS": "0",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION": "all",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_F16_VISION": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL": "0"
+  },
+  "error_type": "CalledProcessError",
+  "error": "Command '[PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/build/lighton4b-source-prefill-probe'), PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/zero.bin'), PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/zero.f32'), 14, 2560, 8192, 20, 'source-plan', PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/zero'), 4, 16, PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/zero.mods'), PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/zero.positions'), PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/zero.gamma'), PosixPath('/tmp/lighton4b-source-prefill-proof-v1/source-prefill-proof/zero.f32')]' returned non-zero exit status 1.",
+  "seconds": 93.371618783,
+  "artifacts": {
+    "ggml.log": {
+      "bytes": 233,
+      "sha256": "a0c217b634f0d831eb4e22825856e47c05e0a71ed1093a1914e7ee2c6aa64754"
+    },
+    "CMakeCache.txt": {
+      "bytes": 29185,
+      "sha256": "c80f5117e6c1f42edfddc7933394289d0568166d87bdd34ef7ade5abe2e436ba"
+    },
+    "synthetic-source-plan.log": {
+      "bytes": 18,
+      "sha256": "9631b65d9bff649c2924e4c7c88d7a75d5f4d2feba8a44095423c021ed6dbbd3"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "2e73ba53ee36680f2327dadbf5fe953bd57630b26afc46f79cd97200208e0897"
+    },
+    "compiler.log": {
+      "bytes": 246,
+      "sha256": "88b7c4b67564a146863224148116065fee418539f0a408f3636a68f3bde51805"
+    },
+    "test-lighton4b-physical-q6-tiled.log": {
+      "bytes": 68,
+      "sha256": "406d8fc763654ed18ae54a066fa10e8eb857f95a2c6a39efe05b753fe10ee55e"
+    },
+    "synthetic-source-q6.log": {
+      "bytes": 42,
+      "sha256": "92cd64e1ec2b73edc94c3d50d7b32c7d2012c1e918fb1774d4c90b0a0a46421f"
+    },
+    "cpu.log": {
+      "bytes": 3127,
+      "sha256": "3a5ffaa2d0a41e88cd63c0ee2a6284d586368000d2aeb9d1f087778cb137b160"
+    },
+    "test-lighton4b-source-prefill-chunks.log": {
+      "bytes": 74,
+      "sha256": "4fe75532b6dc8266154352e1594d163316f52d9fd993a4bf299a4bb9ca889655"
+    },
+    "configure.log": {
+      "bytes": 2033,
+      "sha256": "530ab537ae240f3229fcc23ba5bb9c004418a843cfb71f6bad7b624e6d4e3c5c"
+    },
+    "build.log": {
+      "bytes": 7330,
+      "sha256": "8faf821e4d07b7dfe809ce105b7f491b0e5336d4b483a1b47a6a73679a377e9a"
+    }
+  }
+}
