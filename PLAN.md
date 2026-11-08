@@ -1,5 +1,25 @@
 # CrispEmbed plan — open work (updated 7 November 2026)
 
+## OCR review workspace integration — 8 November 2026
+
+Owner lane: `feature/ocr-production-workspace`, based on
+`20d271f56ab948aa9347d1b1644a508a08bf9c7c`, paired with the same feature branch in
+[CrispSorter](https://github.com/CrispStrobe/CrispSorter/tree/feature/ocr-production-workspace).
+Expose the existing orchestrator's rich results through an additive, versioned
+JSON review snapshot: region and character confidence provenance, reading order,
+layout, tables, formulas, language, stage metrics and explicit coordinate-space
+validity. Keep existing C structs and inference/default behavior unchanged.
+
+Acceptance: model-free serialization and geometry-policy tests; C declaration,
+Rust/Python/Dart clients and CLI/HTTP access; hosted native and binding builds.
+The application can continue using its immutable native release with reduced
+diagnostics; consuming the new accessor requires a matching library and binding.
+Do not mix arbitrary native headers and released binaries or infer model-quality
+qualification from metadata tests. Release assets and publication are separate.
+
+Remaining: implementation and hosted validation. The schema and consumer
+contract will be documented in `docs/ocr-review-snapshot.md`.
+
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
 [the 3 November handoff](docs/handoff-2026-11-03.md) and
