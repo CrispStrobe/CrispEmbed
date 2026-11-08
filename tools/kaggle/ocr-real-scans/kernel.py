@@ -224,6 +224,19 @@ try:
         # GOT-OCR2 (Tongyi Qianwen research licence; evaluation only). The recipe is quantized here from
         # the token-exact F16-r2 with crispembed-quantize, as in tools/ci-heavy/got_ocr2_q4_recipe_search.sh.
         recipe = MODE[len('native-got-'):]
+        if recipe == 'f32':
+            # Native F32 GGUF converted here from the original checkpoint at the probe's pinned revision
+            # (attribution: separates F16 weight/KV precision from a pipeline difference vs the original).
+            sh(PY, '-m', 'pip', 'install', '-q', 'gguf==0.17.1', 'safetensors', 'huggingface_hub', 'torch==2.4.1',
+               '--extra-index-url', 'https://download.pytorch.org/whl/cpu')
+            model, ck = TMP + '/got-f32.gguf', TMP + '/got-ckpt'
+            sh(PY, '-c', 'import sys; from huggingface_hub import snapshot_download as s; '
+               's("stepfun-ai/GOT-OCR2_0", revision="979938bf89ccdc949c0131ddd3841e24578a4742", local_dir=sys.argv[1])', ck)
+            sh(PY, 'models/convert-got-ocr-to-gguf.py', '--model', ck, '--output', model,
+               '--dtype', 'f32', '--verify')
+            report['f32_sha256'] = hashlib.sha256(open(model, 'rb').read()).hexdigest()
+            native(model, 'got-f32', {}, [])
+            raise SystemExit(0)
         rules = {'f16': None, 'q8_0': ('q8_0', []),
                  'q8_ffn_gu_q4k': ('q8_0', ['--tensor-type', 'l.blk.*.ffn_gate.weight=q4_k',
                                             '--tensor-type', 'l.blk.*.ffn_up.weight=q4_k'])}[recipe]
