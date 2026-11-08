@@ -33,6 +33,8 @@ static void actual_route(size_t & checks){
  setenv("CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED","1",1);
 }
 static void planner_controls(size_t & checks){
+ for(int past=0;past<=512;++past)for(int count=1;count<=512;++count)need(lighton4b_source_prefill_budget(count,past)==(past+count<=512),"cumulative source checkpoint bound");++checks;
+ need(!lighton4b_source_prefill_budget(1,-1)&&!lighton4b_source_prefill_budget(500,100),"invalid cumulative prefix rejected");++checks;
  for(int total=1;total<=512;++total)for(int period:{1,2,5,7,8,15,16,17}){
   std::vector<int> mods(total);for(int j=0;j<total;++j)mods[j]=(j/period)%2;
   std::vector<lighton4b_prefill_chunk> plan;need(lighton4b_source_prefill_plan(mods,plan),"arbitrary modality plan");

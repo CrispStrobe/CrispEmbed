@@ -13,6 +13,9 @@ inline bool lighton4b_source_prefill_chunks_mode(bool physical) {
     return physical && core_env::on("CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL");
 #endif
 }
+inline bool lighton4b_source_prefill_budget(int tokens,int past=0) {
+    return tokens>=1 && past>=0 && past<=512 && tokens<=512-past;
+}
 struct lighton4b_prefill_chunk {
     int offset, tokens, logical_offset, logical_tokens;
 };

@@ -186,7 +186,8 @@ inline bool lighton4b_prefill_cpu(const decoder_weights & weights, const float *
     const bool source_chunks=lighton4b_source_prefill_chunks_mode(weights.upstream_physical);
     std::vector<lighton4b_prefill_chunk> plan;
     if (!lighton4b_source_prefill_chunks_valid(weights.upstream_physical) ||
-        (source_chunks && (!modalities || modalities->size()!=size_t(tokens) || !lighton4b_source_prefill_plan(*modalities,plan))))return false;
+        (source_chunks && (!lighton4b_source_prefill_budget(tokens,previous?previous->tokens:0) ||
+                           !modalities || modalities->size()!=size_t(tokens) || !lighton4b_source_prefill_plan(*modalities,plan))))return false;
     lighton4b_decoder_outputs candidate;
     lighton4b_decoder_cache cache;
     for (int offset = 0,part = 0; offset < tokens; ++part) {
