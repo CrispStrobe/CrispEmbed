@@ -348,6 +348,8 @@ CONSUMERS = {
 ALWAYS_RUN = {
     "tests/test_ci_selection.py", "tools/ci_selection.py", "tests/test_lfm2_performance_process.py",
     "tests/test_pubdev_release_gate.py", "tests/test_unlimited_ocr2_quant_policy.py",
+    # Model-free ctypes controls run unconditionally in build.yml's guards job.
+    "tests/test_ocr_review_binding.py",
 }
 ORDINARY = ("build.yml", "build-wasm.yml", "build-wasm-embed.yml", "rust-crates.yml", "inpaint-cli.yml")
 LITERAL = re.compile(r"^(?:tools|tests|docs|models|scripts|examples|src|wasm)/[\w./+-]+$")
