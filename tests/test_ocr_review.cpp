@@ -102,6 +102,18 @@ static int crispembed_test_main() {
         json = snapshot(result);
         CHECK(field(field(json, "regions").a[0], "text").s == result.regions[0].text);
 
+        // Invalid decoder bytes remain recoverable while JSON stays UTF-8.
+        result.regions[0].text = std::string("A") + "\xff\xc0\x80";
+        json = snapshot(result);
+        CHECK(field(field(json, "regions").a[0], "text").s == "A\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd");
+        CHECK(field(field(json, "regions").a[0], "text_bytes_hex").s == "41ffc080");
+
+        // The PP-OCRv6 legacy rec field is actually a detector-score copy.
+        result.used_engine = ocr_orchestrator::engine::ppocrv6;
+        json = snapshot(result);
+        CHECK(field(field(json, "regions").a[0], "confidence_source").s == "detector");
+        CHECK(field(field(json, "regions").a[0], "recognition_confidence").kind == value::null_t);
+
         // A VLM's legacy placeholder score of one is not proof of certainty.
         result.used_engine = ocr_orchestrator::engine::qwen2vl;
         result.regions[0].confidence = 1.0f;

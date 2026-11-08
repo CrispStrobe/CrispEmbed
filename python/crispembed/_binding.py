@@ -4414,16 +4414,16 @@ class CrispOcrOrchestrator:
         return json.loads(ctypes.string_at(pointer, length.value).decode("utf-8"))
 
     def region_char_conf(self, region_idx: int) -> np.ndarray:
-        """Return per-character confidence scores for a region.
+        """Return legacy sequence confidence scores for a region.
 
         Args:
             region_idx: Zero-based index into the regions array from the last
                 ``run()`` call.
 
         Returns:
-            numpy float32 array of per-character confidence scores. Returns an
-            empty array when the recognizer does not expose character-level
-            confidence or the index is out of range.
+            numpy float32 array of engine-dependent character or token scores.
+            Text offsets are not certified; use review_snapshot() for provenance.
+            Returns an empty array when unavailable or the index is out of range.
         """
         out_len = ctypes.c_int(0)
         ptr = self._lib.crispembed_ocr_pipeline_region_char_conf(

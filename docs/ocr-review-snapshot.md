@@ -53,7 +53,7 @@ should assign their own durable page and region IDs when persisting edits.
 | detected_language / language_confidence | Language identifier and score, or null when unavailable |
 | capabilities | Configured layout/table/formula backends and text fallback; configuration does not prove successful inference |
 | layout / tables / formulas | Existing structured regions, table HTML and formula LaTeX |
-| routing | Layout dispatch decisions, text-to-layout indices and suppressed text indices |
+| routing | Layout dispatch decisions, text-to-layout indices and the text-suppression mask |
 | warnings | Explicit missing-result, coordinate and text-provenance limitations |
 
 ### Geometry
@@ -97,6 +97,13 @@ Some whole-page engines use a legacy engine score of 1 when no measurement is
 available; the snapshot does not promote that placeholder to full certainty.
 Invalid/out-of-range scores and nonfinite numbers serialize as null, not invalid
 JSON. UI clients must not index Unicode characters with model-token positions.
+The PP-OCRv6 orchestrator currently copies its detector score into the legacy
+recognition field; the snapshot identifies that score as detector confidence.
+
+Malformed UTF-8 decoder bytes are replacement-decoded for JSON transport. An
+additional sibling field such as text_bytes_hex preserves the exact original
+bytes whenever display text needed repair. Valid multilingual text and embedded
+NUL/control characters round-trip unchanged through JSON escaping.
 
 The stage metric's text_bytes is a UTF-8 byte count, despite the historical
 native field name text_chars. cleanup_requested reports that existing metric's

@@ -3,18 +3,40 @@
 
 #include "ocr_orchestrator.h"
 #include "core/json.h"
+#include "core/token_utf8.h"
 
 #include <cmath>
 #include <iomanip>
 #include <locale>
+#include <limits>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace ocr_review {
 
+inline std::string valid_utf8(const std::string & value) {
+    if (value.size() > static_cast<size_t>(std::numeric_limits<int>::max()))
+        throw std::length_error("OCR review string exceeds the C ABI byte limit");
+    return core_utf8::token_utf8_lossy(value.data(), static_cast<int>(value.size()));
+}
+
 inline void text(std::ostream & out, const std::string & value) {
-    out << '"' << core_json::json_escape_strict(value) << '"';
+    out << '"' << core_json::json_escape_strict(valid_utf8(value)) << '"';
+}
+
+// Preserve malformed decoder bytes alongside replacement-decoded display text.
+inline void document_text(std::ostream & out, const std::string & value, const char * field) {
+    const auto safe = valid_utf8(value);
+    text(out, safe);
+    if (safe == value) return;
+    out << ',';
+    text(out, std::string(field) + "_bytes_hex");
+    out << ":\"";
+    static const char hex[] = "0123456789abcdef";
+    for (unsigned char byte : value) out << hex[byte >> 4] << hex[byte & 15];
+    out << '"';
 }
 
 inline void number(std::ostream & out, double value) {
@@ -87,7 +109,7 @@ inline const char * source_type(ocr_orchestrator::source_type source) {
 
 inline bool detection_score_available(ocr_orchestrator::engine engine) {
     using E = ocr_orchestrator::engine;
-    return engine == E::dbnet_trocr || engine == E::surya;
+    return engine == E::dbnet_trocr || engine == E::surya || engine == E::ppocrv6;
 }
 
 inline const char * sequence_unit(ocr_orchestrator::engine engine) {
@@ -145,11 +167,11 @@ inline std::string render(const ocr_orchestrator::result & value, const ocr_orch
         << ",\"cleanup_applied\":" << value.cleanup_applied
         << ",\"super_resolution_applied\":" << value.super_resolution_applied << '}';
     out << ",\"text\":";
-    text(out, full_text);
+    document_text(out, full_text, "text");
     out << ",\"recognition_text\":";
-    text(out, value.full_text);
+    document_text(out, value.full_text, "recognition_text");
     out << ",\"text_postprocessed\":" << (full_text != value.full_text) << ",\"markdown\":";
-    text(out, markdown);
+    document_text(out, markdown, "markdown");
     out << ",\"mean_engine_confidence\":";
     score(out, value.mean_confidence);
     out << ",\"confidence_calibrated\":false,\"detected_language\":";
@@ -171,13 +193,16 @@ inline std::string render(const ocr_orchestrator::result & value, const ocr_orch
     for (size_t i = 0; i < value.regions.size(); ++i) {
         if (i) out << ',';
         const auto & region = value.regions[i];
-        const bool has_recognition =
-            valid_score(region.rec_confidence) && (!region.char_conf.empty() || region.rec_confidence > 0.0f);
+        // PP-OCRv6's legacy orchestrator copies its detection score into both
+        // confidence fields; it is not a measured recognition probability.
+        const bool has_recognition = value.used_engine != ocr_orchestrator::engine::ppocrv6 &&
+                                     valid_score(region.rec_confidence) &&
+                                     (!region.char_conf.empty() || region.rec_confidence > 0.0f);
         const bool has_detection = detection_score_available(value.used_engine) && valid_score(region.confidence);
         out << "{\"id\":";
         text(out, "region-" + std::to_string(i));
         out << ",\"index\":" << i << ",\"text\":";
-        text(out, region.text);
+        document_text(out, region.text, "text");
         out << ",\"bbox\":";
         box(out, region.box.x, region.box.y, region.box.w, region.box.h);
         out << ",\"confidence\":";
@@ -251,7 +276,8 @@ inline std::string render(const ocr_orchestrator::result & value, const ocr_orch
         out << ",\"bbox\":";
         box(out, table.x1, table.y1, table.x2 - table.x1, table.y2 - table.y1);
         out << ",\"html\":";
-        text(out, table.html);
+        document_text(out, table.html, "html");
+        out << ",\"confidence_source\":\"layout_detector\"";
         out << '}';
     }
     out << "],\"formulas\":[";
@@ -263,7 +289,7 @@ inline std::string render(const ocr_orchestrator::result & value, const ocr_orch
         out << ",\"bbox\":";
         box(out, formula.x1, formula.y1, formula.x2 - formula.x1, formula.y2 - formula.y1);
         out << ",\"latex\":";
-        text(out, formula.latex);
+        document_text(out, formula.latex, "latex");
         out << '}';
     }
     out << "],\"routing\":{\"decisions\":[";
