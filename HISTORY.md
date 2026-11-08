@@ -26,6 +26,17 @@ for final verdicts, live jobs and remaining tasks.
   that the API-reported size of paged renders is wrong (served at 1920px) for 36 pages;
   sizes are now measured. Layout scorer (block IoU/text matching, type accuracy, Kendall
   tau-b, table cell F1) with unit tests. [Guide](docs/ocr-gold-corpus.md).
+## 8 November 2026 — Unlimited-OCR-2 Q8_0 (q8sh16) published; GOT-OCR2 gold attribution
+
+- Unlimited-OCR-2 `q8sh16` (Q8_0, shared experts F16; 0.9728 CPU / 0.9762 CUDA) published experimental as
+  `unlimited-ocr-2-q8_0-sh16.gguf` at Hub `238d25ee` from Kaggle `crispembed-uocr2-q8sh16-publish`: census equal
+  to the evaluated file, local = LFS = empty-cache readback sha256 `db317f10…`. Alias
+  `unlimited-ocr2-q8_0-experimental` (SHA-pinned); Kaggle consumer receipt passes
+  ([receipts](tests/results/unlimited-ocr2/q8sh16-publication/)).
+- GOT-OCR2: the original pipeline on all 57 gold pages (F16-r2 42/55 token-exact) and an F32 attribution of
+  the four early divergences: F32 diverges at the same tokens, so the cause is a pipeline difference, not
+  precision ([research §9–10](docs/got-ocr2-q4-research.md)).
+
 ## 7 November 2026 — GOT-OCR2 quantization search closed
 
 Rounds 1–3 (heavy-cpu runs 42375883471, 42382978017, 42392365607) and a 57-page gold-corpus run on

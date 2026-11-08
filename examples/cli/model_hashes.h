@@ -520,6 +520,8 @@ static const ModelHash k_model_hashes[] = {
       "5ba6cd538fd166a0243f08d49101fe1d07d8f353f7b554078b42d057c5c511ed" },
     { "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/7f5f82c43a38054d8f7929029c14d35e3943ea5c/unlimited-ocr-2-q4_k-mix.gguf",
       "b71f158d36713e1c7ee39b7fb48193aa87a8592bca666f92caeae41093da493a" },
+    { "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/238d25ee2f87c6587bc285c1548d77fe2edcb407/unlimited-ocr-2-q8_0-sh16.gguf",
+      "db317f1066a4653dfa81dc481529c3f5259ab26a612fee02a5c835cde0fd7f48" },
     { "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/f557899a7dc82b979d335406d64d9d44e54b8fbe/got-ocr2-q4_k.gguf",
       "ba276f2e246273af7d1bcd58f35ac7bae09c30340b923ed4440effe82d5e7613" },
     { "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/fcd5c99c58186cf4e24e3345896e5eac12c83fdc/got-ocr2-q8_0-r2.gguf",

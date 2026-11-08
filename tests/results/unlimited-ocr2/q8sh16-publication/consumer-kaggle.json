@@ -1,0 +1,18 @@
+{
+  "schema": "ocr-experimental-alias-consumer-v1",
+  "source_commit": "e35de6f7cffe44c3d1b683687d8d12eb778963d8",
+  "alias": "unlimited-ocr2-q8_0-experimental",
+  "filename": "unlimited-ocr-2-q8_0-sh16.gguf",
+  "sha256": "db317f1066a4653dfa81dc481529c3f5259ab26a612fee02a5c835cde0fd7f48",
+  "image": "tests/regression/images/fox.png",
+  "image_sha256": "d139a96e514217e63970cea943e93b82a02521108ce2a2367069a14d57c87f39",
+  "max_tokens": 32,
+  "scope": "Single bounded image CLI/cache smoke; no EOS, original/F16 comparison, GPU or quality qualification.",
+  "passed": true,
+  "decoded": {
+    "text": "<PAGE><BLOCK>text[33, 196, 636, 740]<FORK>The quick brown fox jumps over the lazy dog. 12345"
+  },
+  "offline_equal": true,
+  "explicit_path_equal": true,
+  "gate_off_rejected": true
+}

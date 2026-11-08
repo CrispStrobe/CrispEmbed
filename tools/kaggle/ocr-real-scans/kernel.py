@@ -224,6 +224,7 @@ try:
         # GOT-OCR2 (Tongyi Qianwen research licence; evaluation only). The recipe is quantized here from
         # the token-exact F16-r2 with crispembed-quantize, as in tools/ci-heavy/got_ocr2_q4_recipe_search.sh.
         recipe = MODE[len('native-got-'):]
+        os.environ['CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE'] = '1'
         if recipe == 'f32':
             # Native F32 GGUF converted here from the original checkpoint at the probe's pinned revision
             # (attribution: separates F16 weight/KV precision from a pipeline difference vs the original).
