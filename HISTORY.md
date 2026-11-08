@@ -21478,3 +21478,5 @@ legacy/fallback/fence/HF/Q6 gates. The
 [independent review](docs/lighton4b-attention-primitives.md) preserves seven vector readbacks and
 all four setup negatives. Existing PR155 contains the exact tested default-off
 tree; full-score/decoded gates remain pending.
+
+- 8 November2026: independently closed corrected physical-Q6 provisional regressions remain mixed: receipt still fails its source floor25/19 versus24/18, while two-column improves to297/87 versus source526/146. Source52e1cfcec preserves exact old baselines/input seals and paired pixel/source-feature identity; independent remote audits close1739 and2351 raw rows. Copyright-sensitive book outputs stay private. No qualification, default/release or alias change; fixed inventory remains pending. See `docs/lighton4b-q6-heldout-provisional-results.md`.

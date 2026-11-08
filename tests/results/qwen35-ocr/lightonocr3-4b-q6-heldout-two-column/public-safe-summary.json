@@ -1,0 +1,409 @@
+{
+  "schema": "lighton4b-q6-heldout-rights-limited-summary/v1",
+  "case": "two-column-page",
+  "status": "measured_provisional_q6_heldout",
+  "source_sha": "52e1cfcec5b515b4f4483fbeb86817250868f1f4",
+  "receipt_sha256": "e3fb9b5b8dddcbed51678c27d203fbc2bfec645966e94f846fd31f956c84f9a3",
+  "reference_receipt_sha256": "9b88195d5a8058dea4fab87472009d3826bc1fa3b5d0575aa2e33698316d5722",
+  "qualified": false,
+  "references_expert_adjudicated": false,
+  "rights_limit": "Recognized literary text, generated token IDs and complete raw result remain private. Public evidence is counts, metrics, hashes and audit only.",
+  "scope": "Three-gate combined correction against prior published configuration, not single-factor attribution. Same provisional labels; no qualification or shipping.",
+  "elapsed_seconds": 2423.545513083,
+  "old_baseline_all_rows_stages_exact": true,
+  "observed_control_byte_guards": {
+    "observed-old": true,
+    "observed-corrected": true
+  },
+  "pre_forward_input_seal_sha256": "cbdc21be0e226c58cd3cb44341cc640616f4aa29ae42ffde16d664e20a6a4ed1",
+  "changed_gates": [
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED"
+  ],
+  "source_raw_scope": "Observer OFF retains full IDs/probabilities/text; observer ON retains all raw logits after complete neutrality. No claim of unobserved OFF raw-vocabulary bytes.",
+  "reference_forward_executed": false,
+  "primary_meets_provisional_source_floor": true,
+  "all_primary_complete": true,
+  "reference_counts": {
+    "upstream-off": {
+      "tokens": 654,
+      "eos": true,
+      "content": {
+        "char_edits": 526,
+        "char_count": 2981,
+        "word_edits": 146,
+        "word_count": 556
+      },
+      "raw": {
+        "char_edits": 588,
+        "char_count": 2981,
+        "word_edits": 148,
+        "word_count": 556
+      }
+    },
+    "upstream-on": {
+      "tokens": 654,
+      "eos": true,
+      "content": {
+        "char_edits": 526,
+        "char_count": 2981,
+        "word_edits": 146,
+        "word_count": 556
+      },
+      "raw": {
+        "char_edits": 588,
+        "char_count": 2981,
+        "word_edits": 148,
+        "word_count": 556
+      }
+    }
+  },
+  "arms": {
+    "baseline-old": {
+      "counts": {
+        "tokens": 697,
+        "eos": true,
+        "text_sha256": "678a446f1504344fcff2f042c218efeabe36e13358b66af46df8e22e60f723ca",
+        "ids_sha256": "b21196cda9c4634e9e025ffd5ce0a54cc7fdb5346a7a3f1992eb61a9f3edceaa",
+        "content": {
+          "char_edits": 373,
+          "char_count": 2981,
+          "word_edits": 111,
+          "word_count": 556
+        },
+        "raw": {
+          "char_edits": 443,
+          "char_count": 2981,
+          "word_edits": 113,
+          "word_count": 556
+        },
+        "firstscore": {
+          "rms": 0.16594781263025712,
+          "max_abs": 0.8499665260314941,
+          "rms_double_ulp_difference": 0.0
+        }
+      },
+      "summary": {
+        "prompt_tokens": 266,
+        "image_tokens": 252,
+        "source_fed_vision": false,
+        "upstream_physical": true,
+        "provisional_heldout_cap": 1536,
+        "physical_q6_tiled": false,
+        "physical_q4_repack": false,
+        "physical_repack_entries": 0,
+        "physical_repack_bytes": 0,
+        "converted_f32_weight_entries": 0,
+        "converted_f32_weight_bytes": 0,
+        "teacher_positions": 1,
+        "generated_tokens": 697,
+        "eos": true
+      },
+      "firstscore_vs_source": {
+        "rms": 0.16594781263025712,
+        "max_abs": 0.8499665260314941,
+        "source_max_abs": 21.07120132446289
+      },
+      "merged_vs_source": {
+        "bit_exact": true,
+        "rms": 0.0,
+        "max_abs": 0.0
+      },
+      "raw_rows": {
+        "archive": {
+          "file": "greedy-raw-rows.zip",
+          "bytes": 692398208,
+          "sha256": "9ab7281a5724014994203c408a866baadd8e2d0ebcc7702b6b5c1b85007b9d2e"
+        },
+        "row_count": 697,
+        "ordered_row_sha256": "a5ace467a81d5a7ca2fd82aedc4fe1b00c4878a4e613066a2fa8396370652973",
+        "scope": "Per-row argmax IDs and raw archives remain private; independent auditor checks all rows remotely."
+      },
+      "resources": {
+        "status": "completed",
+        "returncode": 0,
+        "elapsed_seconds": 550.245751211,
+        "child_user_seconds": 1460.1043560000003,
+        "child_system_seconds": 58.28148200000001,
+        "peak_rss_bytes_observed": 4457435136,
+        "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+        "cumulative_child_peak_rss_bytes": 5978595328
+      },
+      "gates": {
+        "CRISPEMBED_BUILD_MODE": "0",
+        "CRISPEMBED_LIGHTON4B_PROVISIONAL_HELDOUT": "1",
+        "CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT": "1",
+        "CRISPEMBED_LIGHTON4B_QUANT": "1",
+        "CRISPEMBED_QWEN35_QUANT": "1",
+        "CRISPEMBED_LIGHTON4B_GGUF_INSPECTION": "1",
+        "CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER": "1",
+        "CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_OWNER": "1",
+        "CRISPEMBED_QWEN35_OCR": "1",
+        "CRISPEMBED_LIGHTON4B_DECODER_COMPOSE": "1",
+        "CRISPEMBED_LIGHTON4B_LINEAR_BLOCK": "1",
+        "CRISPEMBED_LIGHTON4B_ATTENTION_BLOCK": "1",
+        "CRISPEMBED_QWEN35_GDN_GROUPED_HEADS": "1",
+        "CRISPEMBED_QWEN35_STREAM_PROJECTION": "1",
+        "CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE": "1",
+        "CRISPEMBED_LIGHTON4B_FRONTEND": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_NORM": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_CONV": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_TABLE": "1",
+        "CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL": "1",
+        "CRISPEMBED_LIGHTON4B_Q6_K": "1",
+        "CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT": "1",
+        "CRISPEMBED_LIGHTON4B_HEAD_BF16": "0",
+        "CRISPEMBED_LIGHTON4B_BF16_LINEAR": "0",
+        "CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS": "0",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION": "all",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_F16_VISION": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK": "0",
+        "CRISPEMBED_LIGHTON4B_FROZEN_CASES": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS": "0",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED": "0"
+      }
+    },
+    "corrected-composed": {
+      "counts": {
+        "tokens": 660,
+        "eos": true,
+        "text_sha256": "d4ec7319fa7691cc09a28703f54bd042fdf1e84f2c4281383340079d520d92ea",
+        "ids_sha256": "e8040f2cdc5a6e9697d64aa3583a354efd6d9ef4e12854e78256d58dc6bbdf85",
+        "content": {
+          "char_edits": 297,
+          "char_count": 2981,
+          "word_edits": 87,
+          "word_count": 556
+        },
+        "raw": {
+          "char_edits": 361,
+          "char_count": 2981,
+          "word_edits": 88,
+          "word_count": 556
+        },
+        "firstscore": {
+          "rms": 0.1289436345602451,
+          "max_abs": 0.8440775871276855,
+          "rms_double_ulp_difference": 1.0
+        }
+      },
+      "summary": {
+        "prompt_tokens": 266,
+        "image_tokens": 252,
+        "source_fed_vision": false,
+        "upstream_physical": true,
+        "provisional_heldout_cap": 1536,
+        "physical_q6_tiled": true,
+        "physical_q4_repack": true,
+        "physical_repack_entries": 216,
+        "physical_repack_bytes": 1662861312,
+        "converted_f32_weight_entries": 0,
+        "converted_f32_weight_bytes": 0,
+        "teacher_positions": 1,
+        "generated_tokens": 660,
+        "eos": true
+      },
+      "firstscore_vs_source": {
+        "rms": 0.12894363456024513,
+        "max_abs": 0.8440775871276855,
+        "source_max_abs": 21.07120132446289
+      },
+      "merged_vs_source": {
+        "bit_exact": true,
+        "rms": 0.0,
+        "max_abs": 0.0
+      },
+      "raw_rows": {
+        "archive": {
+          "file": "greedy-raw-rows.zip",
+          "bytes": 655642482,
+          "sha256": "06fc9c33443b03c56e05f1e5e170ed9ef5677dda53f5ec61167c02d94c5017fb"
+        },
+        "row_count": 660,
+        "ordered_row_sha256": "98cd5d3f6a191e638f83c8a7a45ceaee3f653408be6d0cf2c55c5e5afc81375d",
+        "scope": "Per-row argmax IDs and raw archives remain private; independent auditor checks all rows remotely."
+      },
+      "resources": {
+        "status": "completed",
+        "returncode": 0,
+        "elapsed_seconds": 607.7617025069999,
+        "child_user_seconds": 1498.628428,
+        "child_system_seconds": 137.63359599999998,
+        "peak_rss_bytes_observed": 6071484416,
+        "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+        "cumulative_child_peak_rss_bytes": 6071484416
+      },
+      "gates": {
+        "CRISPEMBED_BUILD_MODE": "0",
+        "CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT": "1",
+        "CRISPEMBED_LIGHTON4B_QUANT": "1",
+        "CRISPEMBED_QWEN35_QUANT": "1",
+        "CRISPEMBED_LIGHTON4B_GGUF_INSPECTION": "1",
+        "CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER": "1",
+        "CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_OWNER": "1",
+        "CRISPEMBED_QWEN35_OCR": "1",
+        "CRISPEMBED_LIGHTON4B_DECODER_COMPOSE": "1",
+        "CRISPEMBED_LIGHTON4B_LINEAR_BLOCK": "1",
+        "CRISPEMBED_LIGHTON4B_ATTENTION_BLOCK": "1",
+        "CRISPEMBED_QWEN35_GDN_GROUPED_HEADS": "1",
+        "CRISPEMBED_QWEN35_STREAM_PROJECTION": "1",
+        "CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE": "1",
+        "CRISPEMBED_LIGHTON4B_FRONTEND": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_NORM": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_CONV": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_TABLE": "1",
+        "CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL": "1",
+        "CRISPEMBED_LIGHTON4B_Q6_K": "1",
+        "CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT": "1",
+        "CRISPEMBED_LIGHTON4B_HEAD_BF16": "0",
+        "CRISPEMBED_LIGHTON4B_BF16_LINEAR": "0",
+        "CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS": "0",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION": "all",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_F16_VISION": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED": "1",
+        "CRISPEMBED_LIGHTON4B_PROVISIONAL_HELDOUT": "1",
+        "CRISPEMBED_LIGHTON4B_FROZEN_CASES": "1"
+      }
+    },
+    "corrected-source-features": {
+      "counts": {
+        "tokens": 660,
+        "eos": true,
+        "text_sha256": "d4ec7319fa7691cc09a28703f54bd042fdf1e84f2c4281383340079d520d92ea",
+        "ids_sha256": "e8040f2cdc5a6e9697d64aa3583a354efd6d9ef4e12854e78256d58dc6bbdf85",
+        "content": {
+          "char_edits": 297,
+          "char_count": 2981,
+          "word_edits": 87,
+          "word_count": 556
+        },
+        "raw": {
+          "char_edits": 361,
+          "char_count": 2981,
+          "word_edits": 88,
+          "word_count": 556
+        },
+        "firstscore": {
+          "rms": 0.1289436345602451,
+          "max_abs": 0.8440775871276855,
+          "rms_double_ulp_difference": 1.0
+        }
+      },
+      "summary": {
+        "prompt_tokens": 266,
+        "image_tokens": 252,
+        "source_fed_vision": true,
+        "upstream_physical": true,
+        "provisional_heldout_cap": 1536,
+        "physical_q6_tiled": true,
+        "physical_q4_repack": true,
+        "physical_repack_entries": 216,
+        "physical_repack_bytes": 1662861312,
+        "converted_f32_weight_entries": 0,
+        "converted_f32_weight_bytes": 0,
+        "teacher_positions": 1,
+        "generated_tokens": 660,
+        "eos": true
+      },
+      "firstscore_vs_source": {
+        "rms": 0.12894363456024513,
+        "max_abs": 0.8440775871276855,
+        "source_max_abs": 21.07120132446289
+      },
+      "merged_vs_source": {
+        "bit_exact": true,
+        "rms": 0.0,
+        "max_abs": 0.0
+      },
+      "raw_rows": {
+        "archive": {
+          "file": "greedy-raw-rows.zip",
+          "bytes": 655642482,
+          "sha256": "3ee058fb2230e9a4821dee96890c836f48ce8a97411a2d9eb86add0e7028ae6d"
+        },
+        "row_count": 660,
+        "ordered_row_sha256": "98cd5d3f6a191e638f83c8a7a45ceaee3f653408be6d0cf2c55c5e5afc81375d",
+        "scope": "Per-row argmax IDs and raw archives remain private; independent auditor checks all rows remotely."
+      },
+      "resources": {
+        "status": "completed",
+        "returncode": 0,
+        "elapsed_seconds": 601.4718350799999,
+        "child_user_seconds": 1464.4791439999995,
+        "child_system_seconds": 128.00676600000003,
+        "peak_rss_bytes_observed": 4741451776,
+        "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+        "cumulative_child_peak_rss_bytes": 6071484416
+      },
+      "gates": {
+        "CRISPEMBED_BUILD_MODE": "0",
+        "CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT": "1",
+        "CRISPEMBED_LIGHTON4B_QUANT": "1",
+        "CRISPEMBED_QWEN35_QUANT": "1",
+        "CRISPEMBED_LIGHTON4B_GGUF_INSPECTION": "1",
+        "CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER": "1",
+        "CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_OWNER": "1",
+        "CRISPEMBED_QWEN35_OCR": "1",
+        "CRISPEMBED_LIGHTON4B_DECODER_COMPOSE": "1",
+        "CRISPEMBED_LIGHTON4B_LINEAR_BLOCK": "1",
+        "CRISPEMBED_LIGHTON4B_ATTENTION_BLOCK": "1",
+        "CRISPEMBED_QWEN35_GDN_GROUPED_HEADS": "1",
+        "CRISPEMBED_QWEN35_STREAM_PROJECTION": "1",
+        "CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE": "1",
+        "CRISPEMBED_LIGHTON4B_FRONTEND": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_NORM": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_CONV": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2": "1",
+        "CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_TABLE": "1",
+        "CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL": "1",
+        "CRISPEMBED_LIGHTON4B_Q6_K": "1",
+        "CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT": "1",
+        "CRISPEMBED_LIGHTON4B_HEAD_BF16": "0",
+        "CRISPEMBED_LIGHTON4B_BF16_LINEAR": "0",
+        "CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS": "0",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION": "all",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_F16_VISION": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS": "1",
+        "CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED": "1",
+        "CRISPEMBED_LIGHTON4B_PROVISIONAL_HELDOUT": "1",
+        "CRISPEMBED_LIGHTON4B_FROZEN_CASES": "1"
+      }
+    }
+  }
+}

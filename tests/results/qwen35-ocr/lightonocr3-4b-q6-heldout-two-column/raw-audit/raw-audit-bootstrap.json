@@ -1,0 +1,17 @@
+{
+  "status": "complete",
+  "case": "two-column-page",
+  "model_forward_executed": false,
+  "model_acquisition": false,
+  "qualified": false,
+  "capacity": {
+    "MemAvailable": 32173232128,
+    "SwapTotal": 0,
+    "SwapFree": 0,
+    "cgroup_observed": 1,
+    "finite_cgroup_bounds": 1
+  },
+  "auditor_sha256": "cbd38cca098033b7354c464403be818b8f3f53eb1074ad94533e726af03edfd8",
+  "phase": "audit",
+  "elapsed_seconds": 64.66613060699996
+}
