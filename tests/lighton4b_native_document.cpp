@@ -19,13 +19,17 @@ static int run(int argc, char ** argv) {
     const bool observed_composed_cap =
         (argc == 11 && std::string(argv[10]) == "--observed-composed-cap512") ||
         (argc == 13 && source_vision && std::string(argv[12]) == "--observed-composed-cap512");
-    if ((argc >= 12 && !source_vision) || (argc == 11 && !observed_composed_cap) ||
-        (argc == 13 && !extended_table_cap && !observed_composed_cap)) return 2;
+    const bool heldout_cap =
+        (argc == 11 && std::string(argv[10]) == "--provisional-heldout-cap1536") ||
+        (argc == 13 && source_vision && std::string(argv[12]) == "--provisional-heldout-cap1536");
+    if ((argc >= 12 && !source_vision) || (argc == 11 && !observed_composed_cap && !heldout_cap) ||
+        (argc == 13 && !extended_table_cap && !observed_composed_cap && !heldout_cap)) return 2;
     const int h = std::stoi(argv[3]), w = std::stoi(argv[4]), cap = std::stoi(argv[7]), threads = std::stoi(argv[8]);
     const std::string mode = argv[9], out = argv[6];
     const bool extended_cap = extended_table_cap || observed_composed_cap;
+    if (heldout_cap && (!core_env::on("CRISPEMBED_LIGHTON4B_PROVISIONAL_HELDOUT") || cap != 1536 || threads != 4 || mode != "greedy-full")) return 2;
     if (extended_cap && (cap != 512 || threads != 4 || mode != "greedy-full")) return 2;
-    if (h < 1 || w < 1 || h > 4096 || w > 4096 || cap < 1 || cap > (extended_cap ? 512 : 256) || threads < 1 || threads > 16 ||
+    if (h < 1 || w < 1 || h > 4096 || w > 4096 || cap < 1 || cap > (heldout_cap ? 1536 : extended_cap ? 512 : 256) || threads < 1 || threads > 16 ||
         (mode != "smoke" && mode != "full" && mode != "greedy-full")) return 2;
     auto emit = [&](const std::string & name, const std::vector<float> & v) {
         std::ofstream f(out + "/" + name + ".f32", std::ios::binary);
@@ -53,7 +57,8 @@ static int run(int argc, char ** argv) {
     std::vector<int> ids, mods;
     std::string rendered;
     if (!tokenizer.image_prompt("", image.grid[1] * image.grid[2] / 4, ids, mods, rendered)) return 7;
-    if (observed_composed_cap && ids.size() + size_t(cap) > 2048) return 2;
+    if ((observed_composed_cap || heldout_cap) && ids.size() + size_t(cap) > 2048) return 2;
+    if (heldout_cap && (ids.size() > 512 || size_t(image.grid[1]) * image.grid[2] / 4 > 256)) return 2;
     if (lighton4b_source_prefill_chunks_mode(model.text.decoder.upstream_physical) && ids.size()>512) return 2;
     ids_write("prompt", ids);
     ids_write("modalities", mods);
@@ -225,6 +230,7 @@ static int run(int argc, char ** argv) {
     summary << "{\"prompt_tokens\":" << ids.size() << ",\"image_tokens\":" << image.grid[1] * image.grid[2] / 4;
     if (model.text.decoder.upstream_physical)
         summary << ",\"source_fed_vision\":" << (source_vision ? "true" : "false") << ",\"upstream_physical\":true";
+    if (heldout_cap) summary << ",\"provisional_heldout_cap\":1536";
     if (model.text.decoder.upstream_physical) {
         const auto * cache = model.text.decoder.physical_weights_cache.get();
         summary << ",\"physical_q6_tiled\":" << (greedy_cache.physical_q6_tiled ? "true" : "false");
