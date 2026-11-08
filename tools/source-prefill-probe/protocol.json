@@ -58,7 +58,7 @@
     "src/lighton4b_physical_q6_tiled.cpp": "097955fe71ef054741bd946c7c94129b71ad820d6a18902d4db8034edc29b898",
     "src/lighton4b_physical_q6_tiled.h": "bf965a7ddbf92a94ceb74a01d5f9c63ed26566e5507fd85e456f78198e2f2951",
     "src/lighton4b_source_prefill_chunks.h": "5f9758f19b22a32190752339efb20e3a443dd8401aeab6001900b1e30b155a8a",
-    "tests/test_lighton4b_source_prefill_chunks.cpp": "ed26f97ef2d89db0e93fa83ed1470801a98ab89911835231227687d648df6039",
+    "tests/test_lighton4b_source_prefill_chunks.cpp": "16d348b3b95fc6e456bdb7657745fc6803ecee4c09de3687e6c9571b1da2517b",
     "tests/lighton4b_native_document.cpp": "5641cf885268aae8b85b73716ba6394f93594c841dac95073b54019c8c13484b",
     "CMakeLists.txt": "e226d2764eb16e1904cd59bbda72064f0ff4e8e0e0629dc6913fdfb3db563b89"
   },

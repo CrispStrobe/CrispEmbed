@@ -7,7 +7,7 @@ def load(name,path):
  s=importlib.util.spec_from_file_location(name,path);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);return m
 base=load('rangebase',ROOT/'tools/repack-probe/worker.py');require=base.require;sha=base.sha
 sys.path.insert(0,str(ROOT/'tools/physical-f16-attention-probe'));from runtime_guard import Deadline,command
-CFG_SHA='65e70e1c18b42d461f4ef49c5108fb0122f67786e192c3eec8b9be13494599c3'
+CFG_SHA='7a8be08c1e6086892f2a9c36c433e9901c0e5f3640f12f490b1f7bb5d9711c0c'
 def admit(cfg):
  require(hashlib.sha256(json.dumps(cfg,sort_keys=True,separators=(',',':')).encode()).hexdigest()==CFG_SHA,'immutable source-prefill proof protocol')
  require(cfg['input_norm']['type']==0 and cfg['input_norm']['source_shape']==[2560]and cfg['input_norm']['sha256']==cfg['input_norm']['source_packed_sha256'],'direct original gamma storage')

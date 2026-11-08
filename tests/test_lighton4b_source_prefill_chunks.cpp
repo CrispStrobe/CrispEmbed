@@ -1,5 +1,6 @@
 // Model-free lifecycle/gate/cache controls. Source-fed numerical proof is separate.
 #include "lighton4b_linear_block.h"
+#include "lighton4b_attention_block.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include <algorithm>
@@ -110,5 +111,15 @@ int main(){try{
  need(lighton4b_linear_block_cpu(w,input.data(),1,4,&schedule_on.cache,schedule_next)&&schedule_next.cache.tokens==2&&schedule_next.cache.physical_source_prefill_chunks,"planned cache continues");++checks;
  setenv(scheduler,"0",1);need(!lighton4b_linear_block_cpu(w,input.data(),1,4,&schedule_on.cache,rejected)&&rejected.hidden.empty(),"planned-to-legacy cache rejected");++checks;
  need(schedule_off.cache.tokens==1&&!schedule_off.cache.physical_source_prefill_chunks&&schedule_on.cache.tokens==1&&schedule_on.cache.physical_source_prefill_chunks,"previous scheduling caches immutable");++checks;
+ setenv("CRISPEMBED_LIGHTON4B_ATTENTION_BLOCK","1",1);setenv("CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION","1",1);
+ decoder_layer_weights aw{};aw.full_attention=true;aw.upstream_physical=true;aw.input_norm=w.input_norm;aw.post_norm=w.post_norm;aw.gate=w.gate;aw.up=w.up;aw.down=w.down;aw.attention.upstream_physical=true;
+ aw.attention.q=tensor(GGML_TYPE_Q6_K,2560,8192,1,zeros.get());aw.attention.k=tensor(GGML_TYPE_Q6_K,2560,1024,1,zeros.get());aw.attention.v=tensor(GGML_TYPE_Q6_K,2560,1024,1,zeros.get());aw.attention.out=tensor(GGML_TYPE_Q6_K,4096,2560,1,zeros.get());aw.attention.q_norm=tensor(GGML_TYPE_F32,256,1,1,ones.get());aw.attention.k_norm=tensor(GGML_TYPE_F32,256,1,1,ones.get());
+ lighton4b_attention_block_outputs attention_off,attention_on,attention_next,attention_rejected;float position0[3]={0,0,0},position1[3]={1,1,1};
+ setenv(scheduler,"0",1);need(lighton4b_attention_block_cpu(aw,input.data(),position0,1,4,nullptr,attention_off)&&!attention_off.cache.physical_source_prefill_chunks,"actual old attention cache");++checks;
+ setenv(scheduler,"1",1);need(!lighton4b_attention_block_cpu(aw,input.data(),position1,1,4,&attention_off.cache,attention_rejected)&&attention_rejected.hidden.empty(),"attention old-to-planned rejected");++checks;
+ need(lighton4b_attention_block_cpu(aw,input.data(),position0,1,4,nullptr,attention_on)&&attention_on.cache.physical_source_prefill_chunks,"actual planned attention cache");++checks;
+ need(lighton4b_attention_block_cpu(aw,input.data(),position1,1,4,&attention_on.cache,attention_next)&&attention_next.cache.tokens==2&&attention_next.cache.physical_source_prefill_chunks&&attention_next.hidden.size()==input.size()&&!std::memcmp(attention_next.hidden.data(),input.data(),input.size()*4),"planned attention continuation preserves analytic input");++checks;
+ setenv(scheduler,"0",1);need(!lighton4b_attention_block_cpu(aw,input.data(),position1,1,4,&attention_on.cache,attention_rejected)&&attention_rejected.hidden.empty(),"attention planned-to-old rejected");++checks;
+ need(attention_off.cache.tokens==1&&!attention_off.cache.physical_source_prefill_chunks&&attention_on.cache.tokens==1&&attention_on.cache.physical_source_prefill_chunks,"previous attention caches immutable");++checks;
  std::printf("SOURCE_PREFILL_CHUNKS_CONTROLS PASS checks=%zu model_payload=0 decoded=0\n",checks);return 0;
 }catch(const std::exception&e){std::fprintf(stderr,"%s\n",e.what());return 1;}}
