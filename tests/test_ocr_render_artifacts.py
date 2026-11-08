@@ -215,6 +215,33 @@ class ArtifactTests(unittest.TestCase):
         document.close()
         self.receipt["tests"].append({"page_count": 125, "page_tree": "parsed_without_repair"})
 
+    def test_unicode_font_subset_boundary(self):
+        # Private-use scalars exercise more than 65535 distinct CIDs without
+        # involving shaping, missing display fonts or script direction rules.
+        scalars = [cp for cp in range(0xF0000, 0x100008) if cp not in (0xFFFFE, 0xFFFFF)]
+        text = "".join(chr(cp) for cp in scalars)
+        path = self.render("unicode-subsets.pdf", [{"regions": [(text, 10, 10, 300, 220)]}])
+        reader, document = self.read_pdf(path)
+        self.assertEqual(len(reader.pages[0]["/Resources"]["/Font"]), 2)
+        for source, extracted in (("PyMuPDF", document[0].get_text()), ("Poppler", self.poppler_text(path)),
+                                  ("pypdf", reader.pages[0].extract_text())):
+            self.assertTrue(extracted.replace("\n", "").replace("\f", "") == text,
+                            source + " lost characters at the CID subset boundary")
+        document.close()
+        self.receipt["tests"].append({"unique_scalars": len(scalars), "font_subsets": 2})
+
+    def test_text_only_pdf_is_safe_for_legacy_string_callers(self):
+        text = "Text-only café 中文 😀"
+        path = self.render("text-only.pdf", [{"regions": [(text, 10, 30, 300, 30)]}])
+        data = path.read_bytes()
+        self.assertTrue(data.isascii())
+        self.assertNotIn(b"\0", data)
+        reader, document = self.read_pdf(path)
+        self.assertIn(text, document[0].get_text())
+        self.assertIn(text, self.poppler_text(path))
+        self.assertIn(text, reader.pages[0].extract_text())
+        document.close()
+
     def test_long_xml_and_invalid_controls(self):
         text = ("文 & <tag> \"quoted\" 😀\n\t\r" * 400) + "FINAL_終"
         for fmt, suffix in ((1, "hocr"), (2, "alto")):
@@ -236,6 +263,20 @@ class ArtifactTests(unittest.TestCase):
         self.render("outside.pdf", [{"regions": [("outside", 310, 0, 50, 20)]}], expected_error="bounds")
         self.render("empty.pdf", [], expected_error="at least one page")
         self.render("invalid-size.pdf", [{"points": (float("nan"), 120)}], expected_error="finite")
+        self.render("huge-size.pdf", [{"points": (20000, 120)}], expected_error="14400")
+        self.render("tiny-size.pdf", [{"points": (0.000001, 120)}], expected_error="0.01")
+
+    def test_bidirectional_pdf_fails_without_corrupting_other_formats(self):
+        for text in ("العربية 123 ABC", "שלום 123", "\u202eoverride\u202c", "\u2067isolate\u2069", "\U0001e900"):
+            with self.subTest(text=text):
+                page = {"regions": [(text, 10, 30, 300, 30)]}
+                self.render("unsupported-rtl.pdf", [page], expected_error="right-to-left")
+                alto = self.render("rtl.alto", [page], fmt=2)
+                root = ET.fromstring(alto.read_bytes())
+                self.assertEqual([node.attrib["CONTENT"] for node in root.iter() if "CONTENT" in node.attrib], [text])
+                plain = self.render("rtl.txt", [page], fmt=0)
+                self.assertEqual(plain.read_text(), text + "\n")
+        self.receipt["tests"].append({"bidi_pdf": "explicit_unsupported_error", "bidi_alto_text": "exact"})
 
 
 if __name__ == "__main__":

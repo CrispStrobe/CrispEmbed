@@ -42,7 +42,7 @@ extern "C" {
 typedef struct ocr_render_word {
     const char * text; // UTF-8 text
     int x, y, w, h;    // bounding box in page coordinates
-    float confidence;  // [0, 1]
+    float confidence;  // [0, 1]; negative means unknown/omit optional XML score
 } ocr_render_word;
 
 /// OCR line: a group of words on the same baseline.

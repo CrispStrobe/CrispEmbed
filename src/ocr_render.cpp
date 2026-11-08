@@ -153,7 +153,7 @@ static double bounded_confidence(float value) {
     return std::isfinite(value) ? std::max(0.0, std::min(1.0, double(value))) : 0.0;
 }
 
-static std::string decimal(double value, int precision = 8) {
+static std::string decimal(double value, int precision = 16) {
     std::ostringstream out;
     out.imbue(std::locale::classic());
     out << std::fixed << std::setprecision(precision) << value;
@@ -369,6 +369,17 @@ struct pdf_document {
         return add("<< " + properties + " /Length " + std::to_string(bytes.size()) + " >>\nstream\n" + bytes +
                    "\nendstream");
     }
+    int hex_stream(const std::string & bytes, const std::string & properties = "") {
+        constexpr char digits[] = "0123456789ABCDEF";
+        std::string encoded;
+        encoded.reserve(bytes.size() * 2 + 1);
+        for (unsigned char byte : bytes) {
+            encoded += digits[byte >> 4];
+            encoded += digits[byte & 15];
+        }
+        encoded += '>';
+        return stream(encoded, properties + " /Filter /ASCIIHexDecode");
+    }
 };
 
 static std::string pdf_ref(int id) {
@@ -390,6 +401,34 @@ static void utf16_hex(std::string & out, uint32_t cp) {
     }
 }
 
+// CID numbers are not Unicode, but some independent readers first decode
+// Identity-H bytes as UTF-16. Avoid surrogate-valued CID slots so adjacent
+// glyphs cannot accidentally collapse into one supplementary character.
+static constexpr size_t pdf_cids_per_font = 65535 - 2048;
+static uint32_t pdf_cid(size_t index) {
+    const uint32_t code = uint32_t(index + 1);
+    return code >= 0xd800 ? code + 0x800 : code;
+}
+
+static bool needs_bidirectional_layout(uint32_t cp) {
+    // Conservative script-block guard, including reserved RTL ranges from
+    // Unicode 17 DerivedBidiClass. A correct full UAX #9 implementation is
+    // required before these can be enabled; reversing whole strings is unsafe
+    // for mixed scripts, numbers, combining marks and directional isolates.
+    // https://www.unicode.org/Public/17.0.0/ucd/extracted/DerivedBidiClass.txt
+    return (cp >= 0x0590 && cp <= 0x08ff) || (cp >= 0xfb1d && cp <= 0xfdff) || (cp >= 0xfe70 && cp <= 0xfeff) ||
+           (cp >= 0x10800 && cp <= 0x10fff) || (cp >= 0x1e800 && cp <= 0x1efff) || cp == 0x200e || cp == 0x200f ||
+           (cp >= 0x202a && cp <= 0x202e) || (cp >= 0x2066 && cp <= 0x2069);
+}
+
+static void validate_physical_size(double width, double height) {
+    if (!std::isfinite(width) || !std::isfinite(height) || width <= 0 || height <= 0)
+        throw std::runtime_error("Physical PDF page dimensions must be finite and positive");
+    if (width < 0.01 || height < 0.01 || width > 14400 || height > 14400)
+        throw std::runtime_error(
+            "Physical PDF page dimensions must be between 0.01 and 14400 points; set a page resolution");
+}
+
 static std::string pdf_unicode_string(const std::vector<uint32_t> & text) {
     std::string out = "<FEFF";
     for (uint32_t cp : text) utf16_hex(out, cp);
@@ -407,6 +446,7 @@ static void pdf_add_page(ocr_renderer * r, const ocr_render_page * page) {
     sp.height = page->page_height;
     sp.width_points = r->next_width_points > 0 ? r->next_width_points : sp.width;
     sp.height_points = r->next_height_points > 0 ? r->next_height_points : sp.height;
+    validate_physical_size(sp.width_points, sp.height_points);
     if (page->image_path) sp.image_path = page->image_path;
     for (int i = 0; i < page->n_lines; i++) {
         const ocr_render_line * line = &page->lines[i];
@@ -427,15 +467,15 @@ static void pdf_add_page(ocr_renderer * r, const ocr_render_page * page) {
 
 static std::vector<int> pdf_fonts(pdf_document & doc, const std::map<uint32_t, size_t> & characters) {
     if (characters.empty()) return {};
-    const int font_file = doc.stream(std::string(reinterpret_cast<const char *>(ocr_pdf_font), sizeof(ocr_pdf_font)),
-                                     "/Length1 " + std::to_string(sizeof(ocr_pdf_font)));
+    const int font_file =
+        doc.hex_stream(std::string(reinterpret_cast<const char *>(ocr_pdf_font), sizeof(ocr_pdf_font)),
+                       "/Length1 " + std::to_string(sizeof(ocr_pdf_font)));
     const int descriptor = doc.add("<< /Type /FontDescriptor /FontName /CrispOcrInvisible /Flags 5 "
                                    "/FontBBox [0 0 1000 1000] /ItalicAngle 0 /Ascent 1000 /Descent 0 /CapHeight 1000 "
                                    "/StemV 80 /MissingWidth 1000 /FontFile2 " +
                                    pdf_ref(font_file) + " >>");
-    // A font uses CIDs 1..65535. Additional subsets cover the full scalar space.
-    std::vector<std::vector<uint32_t>> subsets((characters.size() + 65534) / 65535);
-    for (const auto & entry : characters) subsets[(entry.second - 1) / 65535].push_back(entry.first);
+    std::vector<std::vector<uint32_t>> subsets((characters.size() + pdf_cids_per_font - 1) / pdf_cids_per_font);
+    for (const auto & entry : characters) subsets[(entry.second - 1) / pdf_cids_per_font].push_back(entry.first);
     std::vector<int> fonts;
     for (size_t f = 0; f < subsets.size(); f++) {
         const auto & subset = subsets[f];
@@ -450,7 +490,7 @@ static std::vector<int> pdf_fonts(pdf_document & doc, const std::map<uint32_t, s
             cmap += std::to_string(end - start) + " beginbfchar\n";
             for (size_t i = start; i < end; i++) {
                 cmap += '<';
-                hex16(cmap, uint32_t(i + 1));
+                hex16(cmap, pdf_cid(i));
                 cmap += "> <";
                 utf16_hex(cmap, subset[i]);
                 cmap += ">\n";
@@ -459,9 +499,9 @@ static std::vector<int> pdf_fonts(pdf_document & doc, const std::map<uint32_t, s
         }
         cmap += "endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n";
         const int unicode = doc.stream(cmap);
-        std::string gids((subset.size() + 1) * 2, '\0');
-        for (size_t i = 1; i <= subset.size(); i++) gids[i * 2 + 1] = 1;
-        const int gid_map = doc.stream(gids);
+        std::string gids((pdf_cid(subset.size() - 1) + 1) * 2, '\0');
+        for (size_t i = 0; i < subset.size(); i++) gids[pdf_cid(i) * 2 + 1] = 1;
+        const int gid_map = doc.hex_stream(gids);
         const int descendant = doc.add("<< /Type /Font /Subtype /CIDFontType2 /BaseFont /CrispOcrInvisible "
                                        "/CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> "
                                        "/FontDescriptor " +
@@ -558,11 +598,11 @@ static void pdf_word(std::string & content, const stored_word & word, int page_h
         const double y = double(page_height) - word.y - (row + 1) * height;
         content += "/Span << /ActualText " + pdf_unicode_string(scalars) + " >> BDC\nBT\n3 Tr\n";
         for (size_t start = 0; start < scalars.size();) {
-            const size_t font = (characters.at(scalars[start]) - 1) / 65535;
+            const size_t font = (characters.at(scalars[start]) - 1) / pdf_cids_per_font;
             size_t end = start;
             std::string encoded = "<";
-            while (end < scalars.size() && (characters.at(scalars[end]) - 1) / 65535 == font) {
-                hex16(encoded, uint32_t((characters.at(scalars[end]) - 1) % 65535 + 1));
+            while (end < scalars.size() && (characters.at(scalars[end]) - 1) / pdf_cids_per_font == font) {
+                hex16(encoded, pdf_cid((characters.at(scalars[end]) - 1) % pdf_cids_per_font));
                 end++;
             }
             encoded += "> Tj\n";
@@ -584,7 +624,13 @@ static void pdf_end(ocr_renderer * r) {
     for (const auto & page : r->pages)
         for (const auto & line : page.lines)
             for (const auto & word : line.words)
-                for (uint32_t cp : unicode_scalars(word.text.c_str())) characters.emplace(cp, 0);
+                for (uint32_t cp : unicode_scalars(word.text.c_str())) {
+                    if (needs_bidirectional_layout(cp))
+                        throw std::runtime_error("Searchable PDF for right-to-left scripts or directional controls "
+                                                 "requires a verified bidirectional layout engine; export hOCR, ALTO "
+                                                 "or text to preserve the reviewed Unicode text");
+                    characters.emplace(cp, 0);
+                }
     size_t next_character = 1;
     for (auto & entry : characters) entry.second = next_character++;
     const auto fonts = pdf_fonts(doc, characters);
@@ -617,7 +663,12 @@ static void pdf_end(ocr_renderer * r) {
     doc.set(catalog, "<< /Type /Catalog /Pages " + pdf_ref(pages) + " >>");
     const int info = doc.add(std::string("<< /Producer (") + producer_name() + ") /Creator (CrispEmbed OCR) >>");
 
-    std::string out = "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n";
+    // Keep text-only PDFs safe for legacy NUL-terminated UTF-8 callers. The
+    // small binary font/map streams above use ASCIIHex. Image-bearing PDFs
+    // require the binary-safe output-size/checked APIs.
+    const bool binary_images = std::any_of(r->pages.begin(), r->pages.end(),
+                                           [](const stored_page & page) { return !page.image_path.empty(); });
+    std::string out = binary_images ? "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n" : "%PDF-1.4\n%CrispEmbed\n";
     std::vector<size_t> offsets(doc.objects.size());
     for (size_t id = 1; id < doc.objects.size(); id++) {
         offsets[id] = out.size();
@@ -688,8 +739,7 @@ void ocr_render_set_pdfa(ocr_renderer * r, int enabled) {
 void ocr_render_set_page_size_points(ocr_renderer * r, double width, double height) {
     render_guard(r, [&] {
         if (!r->begun || r->ended) throw std::runtime_error("Set page size after begin and before add_page");
-        if (!std::isfinite(width) || !std::isfinite(height) || width <= 0 || height <= 0)
-            throw std::runtime_error("Physical PDF page dimensions must be finite and positive");
+        validate_physical_size(width, height);
         r->next_width_points = width;
         r->next_height_points = height;
     });

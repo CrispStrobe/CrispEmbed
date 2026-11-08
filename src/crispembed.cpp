@@ -7070,8 +7070,12 @@ extern "C" char * crispembed_ocr_render(const crispembed_ocr_result * results, i
     ocr_render_add_page(r, &page);
     ocr_render_end(r);
 
+    if (ocr_render_error(r)) {
+        ocr_render_free(r);
+        return nullptr;
+    }
     int size = ocr_render_output_size(r);
-    char * out = (char *)malloc(size + 1);
+    char * out = (char *)malloc(size_t(size) + 1);
     if (out) {
         memcpy(out, ocr_render_output(r), size);
         out[size] = '\0';

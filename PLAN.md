@@ -35,9 +35,12 @@ file. ALTO no longer truncates long corrected text and XML control characters
 are replaced safely. Local independent-reader tests pass for 125 pages, five
 raster encodings, supplementary Unicode, 11.9 KB corrected paragraphs, long
 XML and failure cases. The dedicated `OCR export artifacts` workflow retains
-actual files and a validation receipt. Mixed RTL text ordering is under review;
-no complete bidirectional-layout claim is made. Final source and hosted native
-integration checks remain required.
+actual files and a validation receipt. Right-to-left scripts and directional
+controls now fail explicitly for PDF until a complete bidi implementation is
+qualified; hOCR/ALTO/text remain lossless. A 65542-scalar case checks font subsets
+with three independent readers, avoiding surrogate-valued CIDs that one reader
+misdecoded. Text-only PDFs stay ASCII-safe for legacy string callers. Final
+source and hosted native integration checks remain required.
 
 Remaining: hosted native/C API lifecycle and binding build validation. The
 legacy engine interface cannot distinguish a blank page from several failures;
