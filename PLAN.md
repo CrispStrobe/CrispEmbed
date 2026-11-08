@@ -62,6 +62,7 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 
 | Lane | State | Next action | Done when |
 |---|---|---|---|
+| Unlimited-OCR-2 Q4_K_MIX regression | Published Q4_K_MIX (q4kns) re-scored 8 Nov: CPU 0.9634→0.9320, CUDA 0.9540→0.9291, worst German; text = F16 4/4 ([round 4](docs/unlimited-ocr2-q4k-recipes.md)) | Bisect the runtime between the 3 Nov sweep source and current on the German case (Kaggle CPU, `tools/kaggle/unlimited-ocr2-q4k-cuda` with DEVICE=cpu) | Change attributed; Q4 card numbers corrected or the regression fixed |
 | Experimental quantized publications (7 Nov owner decision) | Closed: all published, read back from an empty cache and registered with pinned SHA-256 `-experimental` aliases; quality tables in [docs/quantized-models.md](docs/quantized-models.md) and HISTORY 7 November | Downstream consumer receipts for the new aliases (UltraBERT, MoEdern, Josev, MiniCPM/Unlimited Q4_K_MIX, GOT-OCR2 Q4_K; GOT-OCR2 Q8_0/mix done 8 Nov, see HISTORY); SciFact/client panels for MoEdern Q4 | Consumer receipts; no promotion out of experimental without new quality evidence |
 | `env_gate.h` false/off/no lockstep | CrispEmbed [PR163](https://github.com/CrispStrobe/CrispEmbed/pull/163) merged the companion update and tests | Recheck sibling sync when either header changes | Identical headers, tests in CI, sibling sync green |
 | Server load control (PR124) | Merged, gates default-off | Live A/B with a real GGUF; concurrent latency; chat-route parity | Receipts per item in the section below |
