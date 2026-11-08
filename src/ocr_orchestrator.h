@@ -200,6 +200,18 @@ struct result {
         float mean_confidence = 0.0f;
     };
     std::vector<stage_metric> stage_metrics;
+
+    // Review metadata only: these fields do not change inference or the
+    // existing C result layout. Regions use recognition-image pixels; layout
+    // uses effective-input pixels. Internal cleanup/SR may separate those
+    // spaces. Consumers must not overlay them on the original image blindly.
+    int input_width = 0, input_height = 0;
+    int recognition_width = 0, recognition_height = 0;
+    int selected_stage = 0; // one-based stage metric index; 0 if no result selected
+    bool cleanup_applied = false;
+    bool super_resolution_applied = false;
+    bool coordinates_valid_for_input = false;
+    bool accepted = false;
 };
 
 struct context;

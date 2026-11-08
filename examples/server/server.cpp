@@ -2694,6 +2694,22 @@ int main(int argc, char ** argv) {
         const crispembed_ocr_result * results =
             crispembed_ocr_pipeline_run(ocr_orch_ctx, image_path.c_str(), &n_results, &full_text, &mean_conf);
 
+        // Explicit response shape opt-in, serialized under the same context
+        // lock as recognition so concurrent requests cannot mix page results.
+        std::vector<std::string> response_formats;
+        json_extract_strings(body, "response_format", response_formats);
+        if (response_formats.size() == 1 && response_formats.front() == "review-json") {
+            int review_length = 0;
+            const char * review = crispembed_ocr_pipeline_review_json(ocr_orch_ctx, &review_length);
+            if (!review || review_length <= 0) {
+                res.status = 500;
+                res.set_content("{\"error\":\"cannot serialize OCR review snapshot\"}", "application/json");
+            } else {
+                res.set_content(std::string(review, static_cast<size_t>(review_length)), "application/json");
+            }
+            return;
+        }
+
         auto t1 = std::chrono::high_resolution_clock::now();
         double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
 

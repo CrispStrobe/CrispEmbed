@@ -12,6 +12,7 @@
 #include "tesseract_pageseg.h"
 #include "core/clean_exit.h"
 #include "crispembed.h"
+#include "core/json_value.h"
 
 // stbi_write_png is exported by the crispembed lib.
 extern "C" int stbi_write_png(char const * filename, int w, int h, int comp, const void * data, int stride_in_bytes);
@@ -529,6 +530,9 @@ static void test_chain_selection() {
 // ═══════════════════════════════════════════════════════════════════════
 static void test_c_api() {
     printf("── C API ──\n");
+    int review_length = -1;
+    CHECK(crispembed_ocr_pipeline_review_json(nullptr, &review_length) == nullptr && review_length == 0,
+          "review snapshot rejects NULL context and clears length");
 
     // defaults
     crispembed_ocr_pipeline_params pp = crispembed_ocr_pipeline_defaults();
@@ -546,6 +550,9 @@ static void test_c_api() {
     CHECK(ctx != nullptr, "C API init with NULL models succeeds");
 
     if (ctx) {
+        review_length = -1;
+        CHECK(crispembed_ocr_pipeline_review_json(ctx, &review_length) == nullptr && review_length == 0,
+              "review snapshot is unavailable before a run");
         crispembed_ocr_capabilities caps{};
         CHECK(crispembed_ocr_pipeline_capabilities(ctx, &caps) == 1, "C API capabilities query succeeds");
         CHECK(caps.layout == 0 && caps.tables == 0 && caps.formulas == 0, "default C API has no structured backends");
@@ -568,6 +575,30 @@ static void test_c_api() {
             CHECK(metrics != nullptr, "C API stage metrics pointer is present");
             CHECK(metrics[0].index >= 0 && metrics[0].elapsed_ms >= 0.0, "C API stage metric fields are valid");
         }
+
+        const char * review = crispembed_ocr_pipeline_review_json(ctx, &review_length);
+        CHECK(review != nullptr && review_length > 0, "review snapshot is available after an empty run");
+        if (review) {
+            const std::string owned(review, static_cast<size_t>(review_length));
+            try {
+                const auto json = core_json_value::parser(owned).parse();
+                const auto * schema = json.get("schema");
+                const auto * status = json.get("status");
+                const auto * geometry = json.get("geometry");
+                CHECK(schema && schema->s == "crispembed.ocr.review", "review snapshot schema is explicit");
+                CHECK(status && status->s == "no_text", "no-model empty run is not reported as successful recognition");
+                CHECK(geometry && geometry->get("input_width") && geometry->get("input_width")->i == 100,
+                      "review snapshot retains actual input dimensions");
+                const char * repeated = crispembed_ocr_pipeline_review_json(ctx, nullptr);
+                CHECK(repeated && owned == repeated, "repeat snapshots preserve exact content");
+            } catch (const std::exception &) {
+                CHECK(false, "review snapshot parses as valid JSON");
+            }
+        }
+        crispembed_ocr_pipeline_run(ctx, nullptr, nullptr, nullptr, nullptr);
+        review_length = -1;
+        CHECK(crispembed_ocr_pipeline_review_json(ctx, &review_length) == nullptr && review_length == 0,
+              "invalid run cannot expose a stale review snapshot");
 
         crispembed_ocr_pipeline_free(ctx);
     }

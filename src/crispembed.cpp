@@ -5537,6 +5537,8 @@ extern "C" void crispembed_free(crispembed_context * ctx) {
 #include "ocr_pipeline.h"
 #include "ocr_pipeline_pool.h"
 #include "ocr_orchestrator.h"
+#include "ocr_review.h"
+#include <limits>
 #include "layout_detect.h"
 
 struct ocr_pipeline_wrapper {
@@ -5682,6 +5684,8 @@ struct ocr_pipeline_orch_wrapper {
     std::vector<crispembed_ocr_stage_metric> c_stage_metrics;
     std::string full_text;
     std::string markdown;
+    std::string review_json;
+    bool has_run = false;
     void * punct = nullptr; // optional post-OCR punctuation/spacing restorer
 };
 
@@ -5799,9 +5803,13 @@ extern "C" const crispembed_ocr_result * crispembed_ocr_pipeline_run(void * ctx,
     if (out_n) *out_n = 0;
     if (out_full_text) *out_full_text = nullptr;
     if (out_mean_conf) *out_mean_conf = 0.0f;
-    if (!ctx || !image_path) return nullptr;
+    if (!ctx) return nullptr;
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    w->review_json.clear();
+    w->has_run = false;
+    if (!image_path) return nullptr;
     w->last = ocr_orchestrator::run_file(w->ctx, image_path);
+    w->has_run = true;
     w->full_text = w->last.full_text;
     w->markdown = w->last.markdown;
     // Optional post-OCR restore: punctuation / capitalization / spacing.
@@ -5858,6 +5866,27 @@ extern "C" const char * crispembed_ocr_pipeline_markdown(void * ctx, int * out_l
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;
     if (out_len) *out_len = (int)w->markdown.size();
     return w->markdown.empty() ? nullptr : w->markdown.c_str();
+}
+
+extern "C" const char * crispembed_ocr_pipeline_review_json(void * ctx, int * out_len) {
+    if (out_len) *out_len = 0;
+    if (!ctx) return nullptr;
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    if (!w->has_run) return nullptr;
+    try {
+        w->review_json =
+            ocr_review::render(w->last, ocr_orchestrator::get_capabilities(w->ctx), w->full_text, w->markdown);
+        if (w->review_json.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
+            w->review_json.clear();
+            return nullptr;
+        }
+        if (out_len) *out_len = static_cast<int>(w->review_json.size());
+        return w->review_json.c_str();
+    } catch (...) {
+        // Allocation/serialization exceptions must not cross the C ABI.
+        w->review_json.clear();
+        return nullptr;
+    }
 }
 
 static ocr_orchestrator::engine map_engine(int e) {

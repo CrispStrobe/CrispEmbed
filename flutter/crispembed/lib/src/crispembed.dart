@@ -4254,6 +4254,28 @@ class CrispOcrOrchestrator {
     return (text: text, nRegions: n, meanConfidence: conf);
   }
 
+  /// Copy the versioned review snapshot after run(). Returns null before a run,
+  /// after disposal, or with a native library predating the additive accessor.
+  /// Check geometry validity and score units before drawing region overlays or
+  /// character confidence; the legacy sequence array can contain token scores.
+  Map<String, dynamic>? reviewSnapshot() {
+    if (_disposed ||
+        !_lib.providesSymbol('crispembed_ocr_pipeline_review_json')) {
+      return null;
+    }
+    final review = _lib.lookupFunction<CrispembedOcrPipelineReviewNative,
+        CrispembedOcrPipelineReviewDart>('crispembed_ocr_pipeline_review_json');
+    final length = calloc<Int32>();
+    try {
+      final pointer = review(_ctx, length);
+      if (pointer == nullptr || length.value <= 0) return null;
+      return jsonDecode(pointer.toDartString(length: length.value))
+          as Map<String, dynamic>;
+    } finally {
+      calloc.free(length);
+    }
+  }
+
   void dispose() {
     if (!_disposed) {
       _freeFn(_ctx);

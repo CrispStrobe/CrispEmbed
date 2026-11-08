@@ -792,6 +792,10 @@ target_link_libraries(test-scan-cleanup PRIVATE crispembed)
 add_executable(test-ocr-orchestrator tests/test_ocr_orchestrator.cpp)
 target_link_libraries(test-ocr-orchestrator PRIVATE crispembed)
 
+# Model-free snapshot contract: no model/GPU library is needed by this target.
+add_executable(test-ocr-review tests/test_ocr_review.cpp)
+target_include_directories(test-ocr-review PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 add_executable(test-conv-ext tests/test_conv_ext.cpp)
 target_link_libraries(test-conv-ext PRIVATE crispembed)
 

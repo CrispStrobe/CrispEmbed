@@ -921,6 +921,16 @@ CRISPEMBED_API const int * crispembed_ocr_pipeline_reading_order(void * ctx, int
 /// Lightweight Markdown export from the most recent pipeline run.
 CRISPEMBED_API const char * crispembed_ocr_pipeline_markdown(void * ctx, int * out_len);
 
+/// Versioned JSON snapshot for document review. Contains geometry provenance,
+/// regions, confidence availability/units, reading order, layout, tables,
+/// formulas, language and stage metrics. See docs/ocr-review-snapshot.md.
+/// No inference is performed and no confidence is claimed to be calibrated.
+/// Returns NULL before the first run, on allocation failure or for NULL ctx.
+/// UTF-8 bytes are owned by ctx and valid until the next run/review_json/free;
+/// *out_len is the byte length excluding the terminating NUL (0 on failure).
+/// This additive accessor does not change existing public C struct layouts.
+CRISPEMBED_API const char * crispembed_ocr_pipeline_review_json(void * ctx, int * out_len);
+
 typedef struct crispembed_ocr_stage_metric {
     int index;
     const char * engine;

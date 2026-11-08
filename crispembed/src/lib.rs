@@ -2662,8 +2662,9 @@ pub struct OcrPipelineRegion {
     pub confidence: f32,
     /// Recognition confidence (mean per-char softmax); 0 if unavailable.
     pub rec_confidence: f32,
-    /// Per-character confidence; empty when the recognizer doesn't expose it
-    /// (e.g. VLM engines). Aligns with `text`'s characters when present.
+    /// Legacy sequence confidence. Depending on the engine these are character
+    /// or token scores; they are not guaranteed to align with Unicode characters.
+    /// Use the review snapshot for units and availability before highlighting.
     pub char_conf: Vec<f32>,
 }
 
@@ -2935,6 +2936,28 @@ impl CrispOcrPipeline {
             reading_order,
             markdown,
         })
+    }
+
+    /// Copy the versioned JSON review snapshot from the most recent run.
+    ///
+    /// Includes geometry provenance, nullable confidence with source/units,
+    /// layout/tables/formulas, stage metrics, detected language and reading
+    /// order. No inference is performed. Returns None before a run or if the
+    /// native library cannot serialize the result. The returned string owns
+    /// its bytes and survives subsequent runs.
+    ///
+    /// Requires a library exposing crispembed_ocr_pipeline_review_json; use
+    /// the native library built from the same source as this Rust binding.
+    pub fn review_json(&self) -> Option<String> {
+        let mut length: std::os::raw::c_int = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_ocr_pipeline_review_json(self.ctx, &mut length)
+        };
+        if ptr.is_null() || length <= 0 {
+            return None;
+        }
+        let bytes = unsafe { std::slice::from_raw_parts(ptr.cast::<u8>(), length as usize) };
+        std::str::from_utf8(bytes).ok().map(str::to_owned)
     }
 
     /// Return the ISO 639-1 language code detected by the LID model after the

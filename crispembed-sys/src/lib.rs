@@ -917,6 +917,12 @@ extern "C" {
     pub fn crispembed_ocr_pipeline_markdown(ctx: *mut c_void, out_len: *mut c_int)
         -> *const c_char;
 
+    /// Additive JSON review snapshot. Owned by ctx; copy before another call.
+    pub fn crispembed_ocr_pipeline_review_json(
+        ctx: *mut c_void,
+        out_len: *mut c_int,
+    ) -> *const c_char;
+
     pub fn crispembed_ocr_pipeline_free(ctx: *mut c_void);
 
     /// Full per-stage builder: a flat array of stages grouped into per-source-

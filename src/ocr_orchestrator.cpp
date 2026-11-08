@@ -2485,6 +2485,10 @@ static void postprocess(context * ctx, result & r) {
 result run_file(context * ctx, const char * image_path) {
     result best;
     if (!ctx || !image_path) return best;
+    int input_width = 0, input_height = 0, input_channels = 0;
+    stbi_info(image_path, &input_width, &input_height, &input_channels);
+    best.input_width = input_width;
+    best.input_height = input_height;
     bool verbose = ctx->cfg.verbose;
     const bool bench = ctx->bench;
     auto t_total = std::chrono::steady_clock::now();
@@ -2519,6 +2523,7 @@ result run_file(context * ctx, const char * image_path) {
     const auto layout_regions = detect_layout(ctx, effective_path);
     best.page_width = page_width;
     best.page_height = page_height;
+    best.super_resolution_applied = !sr_path.empty();
     best.layout = layout_regions;
 
     int tried = 0;
@@ -2623,6 +2628,15 @@ result run_file(context * ctx, const char * image_path) {
         result r = assemble(run_engine(ctx, s, ocr_path, img_px, img_w, img_h), s.eng, st);
         r.page_width = page_width;
         r.page_height = page_height;
+        r.input_width = input_width;
+        r.input_height = input_height;
+        r.recognition_width = img_w;
+        r.recognition_height = img_h;
+        r.selected_stage = tried;
+        r.cleanup_applied = cleaned_in_memory || !tmp.empty();
+        r.super_resolution_applied = !sr_path.empty();
+        r.coordinates_valid_for_input = img_px && input_width > 0 && input_height > 0 && img_w == input_width &&
+                                        img_h == input_height && !r.cleanup_applied && !r.super_resolution_applied;
         r.layout = layout_regions;
         std::vector<ocr_detect::text_box> text_boxes;
         text_boxes.reserve(r.regions.size());
@@ -2643,6 +2657,7 @@ result run_file(context * ctx, const char * image_path) {
         const float stage_ms =
             (float)std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_stage).count();
         bool passed = passes_gate(r, s.accept);
+        r.accepted = passed;
         stage_metrics.push_back({ tried, engine_name(s.eng), stage_ms, stage_cleanup.enabled, passed,
                                   (int)r.full_text.size(), r.mean_confidence });
         r.stage_metrics = stage_metrics;

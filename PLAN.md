@@ -17,8 +17,14 @@ diagnostics; consuming the new accessor requires a matching library and binding.
 Do not mix arbitrary native headers and released binaries or infer model-quality
 qualification from metadata tests. Release assets and publication are separate.
 
-Remaining: implementation and hosted validation. The schema and consumer
-contract will be documented in `docs/ocr-review-snapshot.md`.
+Implemented: additive C accessor; safe Rust and optional Python/Dart methods;
+explicit CLI/HTTP review response; coordinate/score provenance and model-free
+serialization tests. Standalone C++ contract and four Python copy/availability
+tests pass. The schema and consumer contract are documented in
+[docs/ocr-review-snapshot.md](docs/ocr-review-snapshot.md).
+Remaining: hosted native/C API lifecycle and binding build validation. The
+legacy engine interface cannot distinguish a blank page from several failures;
+the snapshot explicitly labels this uncertainty rather than fabricating success.
 
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with

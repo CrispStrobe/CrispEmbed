@@ -6,6 +6,7 @@ cross-encoder reranking  - all via a single shared library.
 
 import ctypes
 import glob
+import json
 import os
 import platform
 import numpy as np
@@ -4255,6 +4256,12 @@ def _setup_ocr_orchestrator_signatures(lib):
     lib.crispembed_ocr_pipeline_free.argtypes = [ctypes.c_void_p]
     lib.crispembed_ocr_pipeline_free.restype = None
 
+    # Additive API: older native libraries still support the existing run path.
+    review = getattr(lib, "crispembed_ocr_pipeline_review_json", None)
+    if review is not None:
+        review.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_int)]
+        review.restype = ctypes.POINTER(ctypes.c_char)
+
     lib.crispembed_ocr_pipeline_region_rec_confidence.argtypes = [
         ctypes.c_void_p, ctypes.c_int]
     lib.crispembed_ocr_pipeline_region_rec_confidence.restype = ctypes.c_float
@@ -4388,6 +4395,23 @@ class CrispOcrOrchestrator:
         """
         return float(self._lib.crispembed_ocr_pipeline_region_rec_confidence(
             self._ctx, ctypes.c_int(region_idx)))
+
+    def review_snapshot(self) -> Optional[dict]:
+        """Copy the versioned OCR review snapshot after run().
+
+        Returns None before a run, on native serialization failure, or when the
+        loaded native library predates this additive accessor. Geometry and
+        confidence availability/units are explicit; sequence scores must not be
+        treated as character offsets. The returned dictionary owns its data.
+        """
+        review = getattr(self._lib, "crispembed_ocr_pipeline_review_json", None)
+        if review is None or not self._ctx:
+            return None
+        length = ctypes.c_int(0)
+        pointer = review(self._ctx, ctypes.byref(length))
+        if not pointer or length.value <= 0:
+            return None
+        return json.loads(ctypes.string_at(pointer, length.value).decode("utf-8"))
 
     def region_char_conf(self, region_idx: int) -> np.ndarray:
         """Return per-character confidence scores for a region.
