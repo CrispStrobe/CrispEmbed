@@ -43,8 +43,11 @@ else:
     manifest = json.load(open(MANIFEST))
 from receipt import select_pages
 selected_pages = select_pages(manifest, PAGE_IDS)
+SHARD = '@SHARD@'               # 'i/n': run every n-th page from i (parallel sessions); unrendered = all
+if not SHARD.startswith('@'):
+    i, n = map(int, SHARD.split('/')); selected_pages = selected_pages[i::n]
 report = dict(schema='crispembed-ocr-real-scans-run-v1', mode=MODE, commit=COMMIT, manifest=MANIFEST, failed_pages=[], cpu_count=os.cpu_count(), images=[], runs=[],
-              scope=dict(full_manifest=not PAGE_IDS, selected_page_ids=[p['id']for p in selected_pages],
+              scope=dict(full_manifest=not PAGE_IDS and SHARD.startswith('@'), shard=SHARD, selected_page_ids=[p['id']for p in selected_pages],
                          manifest_sha256=hashlib.sha256(open(MANIFEST,'rb').read()).hexdigest()),
               pages_meta={p['id']: dict(priority=p['priority'], tags=p['tags'], max_tokens=p['max_tokens']) for p in manifest['pages']})
 try:
@@ -166,8 +169,8 @@ def native(alias, arm, env_extra, extra_args):
         print(f"{arm} {p['id']} exit={code} {wall}s rss={rss} ids={row['n_ids']} cer={row.get('cer')} rec={row.get('word_recall')}", flush=True)
 
 
-def reference(kind, arm, pins):
-    sh(PY, '-m', 'pip', 'install', '-q', 'torch==2.13.0', 'torchvision', '--index-url', 'https://download.pytorch.org/whl/cpu')
+def reference(kind, arm, pins, torch_pins=('torch==2.13.0', 'torchvision')):
+    sh(PY, '-m', 'pip', 'install', '-q', *torch_pins, '--index-url', 'https://download.pytorch.org/whl/cpu')
     sh(PY, '-m', 'pip', 'install', '-q', *pins)
     lst = TMP + '/ref-pages.json'
     json.dump([dict(id=p['id'], path=p['path'], max_tokens=p['max_tokens']) for p in pages], open(lst, 'w'))
@@ -243,6 +246,11 @@ try:
     elif MODE == 'ref-uocr2':
         reference('uocr2', 'uocr2-original-f32', ['transformers==4.52.1', 'huggingface-hub==0.36.0', 'tokenizers==0.21.4',
                                                   'addict==2.4.0', 'einops==0.8.2', 'easydict==1.13'])
+    elif MODE == 'ref-got':
+        # Original stepfun-ai/GOT-OCR2_0 chat() pipeline, F32 CPU, at the probe's pinned revision and versions.
+        reference('got', 'got-original-f32', ['transformers==4.37.2', 'tokenizers<0.16', 'tiktoken', 'verovio',
+                                              'accelerate', 'safetensors', 'numpy<2'],
+                  ('torch==2.4.1', 'torchvision==0.19.1'))
     elif MODE == 'ref-minicpm':
         reference('minicpm', 'minicpm-original-f32', ['transformers==5.21.0'])
     else:
