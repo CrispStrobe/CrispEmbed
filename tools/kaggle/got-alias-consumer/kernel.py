@@ -9,7 +9,8 @@ sh('git', 'clone', '-q', '--filter=blob:none', 'https://github.com/CrispStrobe/C
 os.chdir(TMP + '/ce'); sh('git', 'checkout', '-q', COMMIT, check=True)
 sh('git', 'submodule', 'update', '-q', '--init', '--depth', '1', 'ggml', check=True)
 fail = 0
-for key in ('got-q8', 'got-mix'):
+KEYS = '@KEYS@'
+for key in (('got-q8', 'got-mix') if KEYS.startswith('@') else KEYS.split(',')):
     env = dict(os.environ, HEAVY_OUT=f'{OUT}/{key}', HEAVY_SCRATCH=f'{TMP}/s-{key}')
     r = sh(sys.executable, 'tools/ci-heavy/ocr_experimental_alias_consumer.py', key, env=env)
     print(key, 'exit', r.returncode, flush=True); fail |= r.returncode != 0

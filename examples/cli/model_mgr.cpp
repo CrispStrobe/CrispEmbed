@@ -1707,6 +1707,12 @@ static const ModelEntry k_registry[] = {
       "Unlimited-OCR-2 (Baidu; EXPERIMENTAL mixed 4-bit policy unlimited_ocr2_q4k_shared8_v1, final-logit cos "
       "0.9634 CPU / 0.9540 CUDA, box coordinates differ; gated CRISPEMBED_UNLIMITED_OCR2)",
       "2.3 GB", "mit", "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF" },
+    { "unlimited-ocr2-q8_0-experimental", "unlimited-ocr-2-q8_0-sh16.gguf",
+      "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/"
+      "238d25ee2f87c6587bc285c1548d77fe2edcb407/unlimited-ocr-2-q8_0-sh16.gguf",
+      "Unlimited-OCR-2 (Baidu; EXPERIMENTAL Q8_0 with F16 shared experts, recipe q8sh16, final-output cos "
+      "0.9728 CPU / 0.9762 CUDA, box coordinates can differ; gated CRISPEMBED_UNLIMITED_OCR2)",
+      "3.6 GB", "mit", "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF" },
     { "got-ocr2-q4_k-experimental", "got-ocr2-q4_k.gguf",
       "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/f557899a7dc82b979d335406d64d9d44e54b8fbe/"
       "got-ocr2-q4_k.gguf",
