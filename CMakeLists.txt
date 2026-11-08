@@ -1872,3 +1872,6 @@ target_link_libraries(test-lighton4b-physical-q6-tiled PRIVATE crispembed-qwen35
 # Source-boundary scheduling controls; synthetic and excluded from install.
 add_executable(test-lighton4b-source-prefill-chunks EXCLUDE_FROM_ALL tests/test_lighton4b_source_prefill_chunks.cpp)
 target_link_libraries(test-lighton4b-source-prefill-chunks PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(lighton4b-source-prefill-probe EXCLUDE_FROM_ALL tools/source-prefill-probe/probe.cpp)
+target_link_libraries(lighton4b-source-prefill-probe PRIVATE crispembed-qwen35-delta crispembed-core)
