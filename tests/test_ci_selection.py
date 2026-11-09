@@ -342,6 +342,7 @@ CONSUMERS = {
     "tools/prepare_migan_inpaint.py": ("inpaint_python",),
     "tests/test_ultrabert_api_log.py": ("native", "native_tests"),
     "tests/test_vendored_kaggle_harness.py": ("native", "native_tests"),
+    "tests/test_teleocr_loader.py": ("native", "native_tests"),
     "tools/wasm_size_report.py": ("wasm_ocr",),
     "scripts/check-cpu-baseline.py": ("native", "native_windows", "native_macos"),
 }
