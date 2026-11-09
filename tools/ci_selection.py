@@ -82,7 +82,7 @@ SOURCE_PREFLIGHT_FIXTURES = frozenset(
         "tokenizer_config.json", "chat_template.jinja", "model.safetensors.header.json",
         "README.md", "README.no_thinking.md", "NOTICE.md", "tokenizer_prefix_audit.json",
         "LightOnOCR-3-4B-tokenizer.prefix.txt", "LightOnOCR-3-0.8B-tokenizer.prefix.txt",
-        "LightOnOCR-Apache-2.0-LICENSE.txt",
+        "LightOnOCR-Apache-2.0-LICENSE.txt", "publisher-q4km-type-census.json",
     )
 )
 # Paths that no ordinary build lane compiles, packages or reads once the

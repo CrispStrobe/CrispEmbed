@@ -58,7 +58,8 @@ int main() {
         check(bool(ctx) && bool(zb) && bool(ob), "synthetic aligned CPU storage");
         auto * zero = static_cast<float *>(ggml_backend_buffer_get_base(zb.get()));
         auto * ones = static_cast<float *>(ggml_backend_buffer_get_base(ob.get()));
-        std::fill_n(zero, zero_count, 0.f); std::fill_n(ones, 4096, 1.f);
+        std::fill_n(zero, zero_count, 0.f);
+        std::fill_n(ones, 4096, 1.f);
         auto tensor = [&](int width, int rows, bool scale = false) {
             auto * t = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, width, rows);
             t->data = scale ? static_cast<void *>(ones) : static_cast<void *>(zero);
@@ -68,26 +69,40 @@ int main() {
         vision_layer_weights layer;
         layer.norm1 = layer.norm2 = tensor(1024, 1, true);
         layer.norm1_bias = layer.norm2_bias = tensor(1024, 1);
-        layer.qkv = tensor(1024, 3072); layer.qkv_bias = tensor(3072, 1);
-        layer.out = tensor(1024, 1024); layer.out_bias = tensor(1024, 1);
-        layer.up = tensor(1024, 4096); layer.up_bias = tensor(4096, 1);
-        layer.down = tensor(4096, 1024); layer.down_bias = tensor(1024, 1);
+        layer.qkv = tensor(1024, 3072);
+        layer.qkv_bias = tensor(3072, 1);
+        layer.out = tensor(1024, 1024);
+        layer.out_bias = tensor(1024, 1);
+        layer.up = tensor(1024, 4096);
+        layer.up_bias = tensor(4096, 1);
+        layer.down = tensor(4096, 1024);
+        layer.down_bias = tensor(1024, 1);
         weights.layers.assign(24, layer);
-        weights.patch = tensor(1536, 1024); weights.patch_bias = tensor(1024, 1);
+        weights.patch = tensor(1536, 1024);
+        weights.patch_bias = tensor(1024, 1);
         weights.position = tensor(1024, 2304);
-        weights.merger_norm = tensor(1024, 1, true); weights.merger_norm_bias = tensor(1024, 1);
-        weights.merger_up = tensor(4096, 4096); weights.merger_up_bias = tensor(4096, 1);
-        weights.merger_down = tensor(4096, 2560); weights.merger_down_bias = tensor(2560, 1);
-        config.width = 1024; config.heads = 16; config.intermediate = 4096; config.output = 2560;
-        image.grid = {1, 2, 2}; image.height = image.width = 32;
-        image.resized_rgb.assign(32 * 32 * 3, 0); image.patches.assign(4 * 1536, -1.f);
+        weights.merger_norm = tensor(1024, 1, true);
+        weights.merger_norm_bias = tensor(1024, 1);
+        weights.merger_up = tensor(4096, 4096);
+        weights.merger_up_bias = tensor(4096, 1);
+        weights.merger_down = tensor(4096, 2560);
+        weights.merger_down_bias = tensor(2560, 1);
+        config.width = 1024;
+        config.heads = 16;
+        config.intermediate = 4096;
+        config.output = 2560;
+        image.grid = { 1, 2, 2 };
+        image.height = image.width = 32;
+        image.resized_rgb.assign(32 * 32 * 3, 0);
+        image.patches.assign(4 * 1536, -1.f);
         check(lighton4b_physical_f16_vision_cpu(weights, config, image, 4, true, output),
               "synthetic minimum-grid production graph executes");
         auto zeros = [](const std::vector<float> & x, size_t count) {
-            return x.size() == count && std::all_of(x.begin(), x.end(), [](float f) { return std::isfinite(f) && f == 0.f; });
+            return x.size() == count &&
+                   std::all_of(x.begin(), x.end(), [](float f) { return std::isfinite(f) && f == 0.f; });
         };
         check(output.hidden.size() == 24 && zeros(output.patch, 4096) && zeros(output.position, 4096) &&
-              zeros(output.embedded, 4096) && zeros(output.merger_norm, 4096) && zeros(output.merged, 2560),
+                  zeros(output.embedded, 4096) && zeros(output.merger_norm, 4096) && zeros(output.merged, 2560),
               "synthetic shapes and expected finite zeros");
         for (const auto & hidden : output.hidden) check(zeros(hidden, 4096), "synthetic hidden zeros");
         flag("CRISPEMBED_LIGHTON4B_PHYSICAL_F16_VISION", "0");

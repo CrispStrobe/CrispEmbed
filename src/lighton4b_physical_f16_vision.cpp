@@ -172,9 +172,9 @@ bool lighton4b_physical_f16_vision_cpu(const vision_weights & w, const vision_co
                                        int threads, bool physical, vision_outputs & out) {
     out = {};
 #if defined(CRISPEMBED_LIGHTON4B_F16_SGEMM_ABI) && !defined(__EMSCRIPTEN__)
-    if (!lighton4b_physical_f16_vision_mode(physical) || !lighton4b_physical_f16_vision_valid(physical) || threads != 4 ||
-        !core_env::on("CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL") || !core_env::on("CRISPEMBED_QWEN35_OCR") ||
-        !core_env::on("CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE") ||
+    if (!lighton4b_physical_f16_vision_mode(physical) || !lighton4b_physical_f16_vision_valid(physical) ||
+        threads != 4 || !core_env::on("CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL") ||
+        !core_env::on("CRISPEMBED_QWEN35_OCR") || !core_env::on("CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE") ||
         !core_env::on("CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE") || cfg.width != 1024 || cfg.heads != 16 ||
         cfg.intermediate != 4096 || cfg.output != 2560 || cfg.patch_width != 1536 || cfg.merge != 2 ||
         cfg.position_side != 48 || cfg.eps != 1e-6f || cfg.theta != 10000.f || w.layers.size() != 24 ||

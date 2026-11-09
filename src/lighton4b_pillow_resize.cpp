@@ -80,7 +80,9 @@ bool dimensions(int h, int w) {
 } // namespace
 bool lighton4b_pillow_resize_rgb(const uint8_t * rgb, int h, int w, int oh, int ow, std::vector<uint8_t> & out) {
     out.clear();
-    if (!rgb || !dimensions(h, w) || !dimensions(oh, ow) || !dimensions(h, ow) || !std::numeric_limits<double>::is_iec559) return false;
+    if (!rgb || !dimensions(h, w) || !dimensions(oh, ow) || !dimensions(h, ow) ||
+        !std::numeric_limits<double>::is_iec559)
+        return false;
     const uint8_t * intermediate = rgb;
     std::vector<uint8_t> horizontal;
     if (ow != w) {

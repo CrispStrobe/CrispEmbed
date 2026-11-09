@@ -12,13 +12,14 @@ inline bool lighton4b_physical_f16_attention_mode(bool physical) {
 inline bool lighton4b_physical_f16_attention_valid(bool physical) {
     if (!lighton4b_physical_f16_attention_mode(physical)) return true;
     return core_env::on("CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL") && core_env::on("CRISPEMBED_QWEN35_OCR") &&
-        !core_env::on("CRISPEMBED_LIGHTON4B_BF16_LINEAR") && !core_env::on("CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS") &&
-        !core_env::on("CRISPEMBED_LIGHTON4B_HEAD_BF16") && lighton4b_physical_f16_attention_available();
+           !core_env::on("CRISPEMBED_LIGHTON4B_BF16_LINEAR") &&
+           !core_env::on("CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS") &&
+           !core_env::on("CRISPEMBED_LIGHTON4B_HEAD_BF16") && lighton4b_physical_f16_attention_available();
 }
 // Actual post-RoPE queries and fused raw Q/gate projections. Only new KV entries
 // are rounded; prior entries must already be canonical F16 represented in F32.
 // No model weights or full-model F32 cache are retained. Outputs commit on success.
-bool lighton4b_physical_f16_attention_cpu(const std::vector<float> & queries,
-    const std::vector<float> & fused_q_gate, const attention_cache & cache, int past, int tokens, int threads,
-    std::vector<float> & pooled, attention_cache & canonical_cache);
-}
+bool lighton4b_physical_f16_attention_cpu(const std::vector<float> & queries, const std::vector<float> & fused_q_gate,
+                                          const attention_cache & cache, int past, int tokens, int threads,
+                                          std::vector<float> & pooled, attention_cache & canonical_cache);
+} // namespace qwen35_ocr
