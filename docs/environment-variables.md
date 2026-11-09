@@ -49,7 +49,7 @@ inventory: *production default (opt-out)*, *default-off experimental / opt-in*,
 | `CRISPEMBED_CACHE_DIR` | platform cache | Model cache directory (also set by CLI `--cache-dir`). |
 | `CRISPEMBED_OFFLINE` | off | Never download; resolve only cached models (also honours `HF_HUB_OFFLINE`). |
 | `CRISPEMBED_ALLOW_UNPINNED_MODEL` | unset | One-off override that lets a registry URL without a SHA-256 pin download. |
-| `CRISPEMBED_ACCEPT_LICENSE`, `CRISPEMBED_ACCEPT_*_LICENSE`, `CRISPEMBED_ACCEPT_BIOMETRIC` | unset | Explicit licence / biometric acknowledgements required by specific models. |
+| `CRISPEMBED_ACCEPT_LICENSE`, `CRISPEMBED_ACCEPT_*_LICENSE`, `CRISPEMBED_ACCEPT_BIOMETRIC` | unset | Explicit licence / biometric acknowledgements required by specific models. `CRISPEMBED_ACCEPT_LICENSE` is process-wide (an exact tag, or `all`/`*`); apps with per-model consent should call `crispembed_resolve_model_accepting` instead of setting it. |
 | `CRISPEMBED_STRICT_HPARAMS`, `CRISPEMBED_ARCH_HPARAMS`, `CRISPEMBED_GGUF_REPARSE` | unset | GGUF metadata strictness and re-parse controls. |
 | `CRISPEMBED_SERVER_RERANK_RAW_SCORES` | off | `/v1/rerank` emits raw logits instead of `sigmoid(logit)`. |
 | `CRISPEMBED_SERVER_USAGE_TOKENS` | on | `=0` restores the historical `0` / text-count token usage on `/v1/embeddings` and `/api/embed`; the default reports the observed tokenizer ids. |

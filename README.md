@@ -866,6 +866,18 @@ consent to auto-download (interactive prompt, `--accept-license <spdx>`, or
 upstream terms — it does not grant rights you don't otherwise have. Audit the
 whole registry with `python tests/check_registry_licenses.py`.
 
+Apps that ask their own user for consent per model use the per-call C API
+instead of the process-wide variable:
+
+| Function | Purpose |
+|---|---|
+| `crispembed_model_license_info(name, &name, &spdx, &card_url, &display)` | Licence tag, model card URL and description of the entry `name` resolves to; returns `1` when a download needs acceptance, `0` when permissive, `-1` when unknown |
+| `crispembed_resolve_model_accepting(name, auto_download, spdx)` | Resolve/download, accepting exactly `spdx` for this call only; `all`, `*` and empty are refused, a model under a different licence is refused, nothing is stored, never prompts |
+
+Rust: `CrispEmbed::model_license_info(name)` / `CrispEmbed::resolve_model_accepting(name, auto_download, spdx)`;
+Python: `CrispEmbed.model_license_info(name)` / `CrispEmbed.resolve_model_accepting(...)`;
+Dart: `CrispEmbed.modelLicenseInfo(name)` / `CrispEmbed.resolveModelAccepting(...)`.
+
 **Check the base model, not just the fine-tune's tag.** A fine-tune cannot
 relicense what it was built on, and the declared tag is sometimes the author's
 optimism. The live trap in this family: **Qwen2.5-VL-3B-Instruct is

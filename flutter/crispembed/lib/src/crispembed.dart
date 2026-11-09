@@ -54,6 +54,23 @@ class ModelInfo {
   });
 }
 
+/// Licence facts for one registry entry ([CrispEmbed.modelLicenseInfo]).
+class ModelLicenseInfo {
+  final String name;
+  final String spdx;
+  final String modelCardUrl;
+  final String displayName;
+  final bool requiresAcceptance;
+
+  const ModelLicenseInfo({
+    required this.name,
+    required this.spdx,
+    required this.modelCardUrl,
+    required this.displayName,
+    required this.requiresAcceptance,
+  });
+}
+
 /// Text embedding model using ggml inference.
 ///
 /// Supports dense embeddings, sparse retrieval (BGE-M3/SPLADE), ColBERT
@@ -926,6 +943,63 @@ class CrispEmbed {
       return resolved;
     } finally {
       calloc.free(arg);
+    }
+  }
+
+  /// Resolve like [resolveModel], accepting exactly the one licence tag
+  /// [acceptedSpdx] for this call only. `all`, `*` and an empty tag are
+  /// refused, as is a model under a different licence. Never prompts.
+  static String resolveModelAccepting(String modelPath, String acceptedSpdx,
+      {String? libPath, bool? autoDownload}) {
+    if (acceptedSpdx.isEmpty || acceptedSpdx == 'all' || acceptedSpdx == '*') {
+      throw ArgumentError.value(
+          acceptedSpdx, 'acceptedSpdx', 'must be one exact licence tag');
+    }
+    final lib = _openNativeLib(libPath);
+    final fn = lib.lookupFunction<CrispembedResolveModelAcceptingNative,
+        CrispembedResolveModelAccepting>('crispembed_resolve_model_accepting');
+    final shouldDownload = autoDownload ??
+        (!modelPath.contains('.gguf') &&
+            !modelPath.contains('/') &&
+            !modelPath.contains('\\'));
+    final arg = modelPath.toNativeUtf8();
+    final spdx = acceptedSpdx.toNativeUtf8();
+    try {
+      final out = fn(arg, shouldDownload ? 1 : 0, spdx);
+      final resolved = out == nullptr ? '' : out.toDartString();
+      if (resolved.isEmpty) {
+        throw Exception('Could not resolve model: $modelPath');
+      }
+      return resolved;
+    } finally {
+      calloc.free(arg);
+      calloc.free(spdx);
+    }
+  }
+
+  /// Licence facts of the registry entry [modelName] resolves to, or `null`
+  /// when it is not in the registry.
+  static ModelLicenseInfo? modelLicenseInfo(String modelName,
+      {String? libPath}) {
+    final lib = _openNativeLib(libPath);
+    final fn = lib.lookupFunction<CrispembedModelLicenseInfoNative,
+        CrispembedModelLicenseInfo>('crispembed_model_license_info');
+    final arg = modelName.toNativeUtf8();
+    final outs = calloc<Pointer<Utf8>>(4);
+    try {
+      final rc = fn(arg, outs, outs + 1, outs + 2, outs + 3);
+      if (rc < 0) return null;
+      String read(int i) => outs[i] == nullptr ? '' : outs[i].toDartString();
+      return ModelLicenseInfo(
+        name: read(0),
+        spdx: read(1),
+        modelCardUrl: read(2),
+        displayName: read(3),
+        requiresAcceptance: rc == 1,
+      );
+    } finally {
+      calloc.free(arg);
+      calloc.free(outs);
     }
   }
 
