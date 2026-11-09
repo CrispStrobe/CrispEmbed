@@ -3,7 +3,8 @@
 
 Run with --library PATH to a matching native library. --artifacts DIR retains
 the generated PDFs, XML, source images and raster previews for independent QA.
-Requires Pillow, pypdf, PyMuPDF and the Poppler pdftotext/pdftoppm executables.
+Requires Pillow, pypdf, PyMuPDF, pypdfium2, fontTools and the Poppler
+pdftotext/pdftoppm executables.
 """
 
 import argparse
@@ -14,6 +15,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import struct
 import sys
 import tempfile
 import unittest
@@ -23,6 +25,7 @@ import fitz
 from PIL import Image, ImageChops, ImageDraw, ImageStat
 from pypdf import PdfReader
 from pypdf.generic import ContentStream
+from fontTools.ttLib import TTFont
 
 
 class Word(C.Structure):
@@ -158,6 +161,45 @@ class ArtifactTests(unittest.TestCase):
         record["exit_code"] = code
         receipt.write_text(json.dumps(record, ensure_ascii=False, indent=2))
         return record
+
+    def assert_embedded_metrics(self, page):
+        """Decode the actual font program and compare every PDF CID advance.
+
+        A matching PDF width alone does not prove that the embedded glyph has
+        valid metrics. Read the independent sfnt tables, outlines and checksum.
+        """
+        checked = 0
+        for resource in page["/Resources"]["/Font"].values():
+            descendant = resource.get_object()["/DescendantFonts"][0].get_object()
+            data = descendant["/FontDescriptor"]["/FontFile2"].get_data()
+            padded = data + b"\0" * (-len(data) % 4)
+            self.assertEqual(sum(struct.unpack(">" + "I" * (len(padded) // 4), padded)) & 0xffffffff,
+                             0xb1b0afba, "Embedded TrueType whole-font checksum is invalid")
+            with TTFont(BytesIO(data), checkChecksums=2) as font:
+                order = font.getGlyphOrder()
+                units = font["head"].unitsPerEm
+                self.assertEqual(units, 64)
+                self.assertEqual(font["hhea"].numberOfHMetrics, len(order))
+                mapping = descendant["/CIDToGIDMap"].get_data()
+                widths = descendant["/W"]
+                self.assertEqual(len(widths) % 2, 0)
+                for index in range(0, len(widths), 2):
+                    first, advances = int(widths[index]), widths[index + 1]
+                    for offset, advance in enumerate(advances):
+                        cid = first + offset
+                        gid = struct.unpack_from(">H", mapping, cid * 2)[0]
+                        self.assertLess(gid, len(order))
+                        name = order[gid]
+                        width, bearing = font["hmtx"].metrics[name]
+                        self.assertEqual(float(advance), width * 1000 / units,
+                                         "PDF width disagrees with the embedded glyph advance")
+                        glyph = font["glyf"][name]
+                        self.assertEqual((glyph.xMin, glyph.yMin, glyph.xMax, glyph.yMax),
+                                         (0, 0, width, units))
+                        self.assertEqual(bearing, 0)
+                        checked += 1
+        self.assertGreater(checked, 0)
+        return checked
 
     def test_raster_images_and_physical_size(self):
         for filename in ("rgb.png", "gray.png", "alpha.png", "palette.png", "rgb.jpg"):
@@ -346,6 +388,7 @@ class ArtifactTests(unittest.TestCase):
             ("isolate", "Report \u2067العربية 123\u2069: ABC"),
             ("override", "\u202eABCD\u202c 123"),
             ("supplementary", "\U0001e900\U0001e922 123 ABC"),
+            ("multiline", "العربية 123\nשלום ABC\r\nMixed العربية\u2028סיום\u2029Final ABC"),
             ("mapping-boundary", "א" * 180 + " " + "\U0001e900" * 100),
             ("combining-boundary", "מ" + "\u05b7" * 270 + " 123 ABC"),
         ]
@@ -357,14 +400,15 @@ class ArtifactTests(unittest.TestCase):
         # remaining isolated extraction checks, rather than truncate evidence.
         for name, text in cases:
             self.render("bidi-" + name + ".pdf", [{"image": self.root / "rgb.png",
-                "regions": [(text, 10, 30, 300, 1 if name.endswith("boundary") else 30)]}], pdfa=True, bidi=True)
+                "regions": [(text, 10, 30, 300, 1 if name.endswith("boundary") else 80 if name == "multiline" else 30)]}],
+                pdfa=True, bidi=True)
         for name, text in cases:
             with self.subTest(text=name):
                 path = self.root / ("bidi-" + name + ".pdf")
                 reader = PdfReader(path, strict=True)
                 searches = ["العربية", "ABC"] if name == "mixed-rtl" else [text] if name in ("arabic", "hebrew") else []
-                probes = {engine: self.probe_pdf(path, engine, searches if engine == "PyMuPDF" else ())
-                          for engine in ("PyMuPDF", "Poppler", "pypdf")}
+                probes = {engine: self.probe_pdf(path, engine, searches if engine in ("PyMuPDF", "PDFium") else ())
+                          for engine in ("PyMuPDF", "Poppler", "pypdf", "PDFium")}
                 extracted = {engine: probe.get("extracted") for engine, probe in probes.items()}
                 logical = "".join(str(operands[1]["/ActualText"])
                                   for operands, op in ContentStream(reader.pages[0]["/Contents"], reader).operations
@@ -376,11 +420,13 @@ class ArtifactTests(unittest.TestCase):
                 self.receipt["tests"].append(record)
                 (self.root / "validation.json").write_text(json.dumps(self.receipt, ensure_ascii=False, indent=2))
                 self.assertEqual(logical, text, "Logical source text changed in the PDF content")
+                record["verified_embedded_advances"] = self.assert_embedded_metrics(reader.pages[0])
                 mappings = []
                 for font in reader.pages[0]["/Resources"]["/Font"].values():
                     cmap = font.get_object()["/ToUnicode"].get_data()
                     mappings += re.findall(rb"<[0-9A-F]+>\s*<([0-9A-F]+)>", cmap)
                 self.assertTrue(all(len(value) // 2 <= 512 for value in mappings), "ToUnicode exceeds ISO string limit")
+                self.assertTrue(all(len(value) <= 252 for value in mappings), "ToUnicode exceeds reader token limit")
                 for engine, probe in probes.items():
                     with self.subTest(reader=engine):
                         self.assertEqual(probe["exit_code"], 0, engine + " failed: " + str(probe))

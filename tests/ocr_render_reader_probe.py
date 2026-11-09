@@ -12,11 +12,12 @@ import json
 from pathlib import Path
 import subprocess
 import traceback
+import xml.etree.ElementTree as ET
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--engine", choices=("PyMuPDF", "Poppler", "pypdf"), required=True)
+    parser.add_argument("--engine", choices=("PyMuPDF", "Poppler", "pypdf", "PDFium"), required=True)
     parser.add_argument("--pdf", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--search", action="append", default=[])
@@ -53,6 +54,21 @@ def main():
             record["pages"] = len(reader.pages)
             progress("extract_text")
             record["extracted"] = reader.pages[0].extract_text()
+        elif options.engine == "PDFium":
+            import pypdfium2 as pdfium
+            with pdfium.PdfDocument(options.pdf) as document:
+                record["pages"] = len(document)
+                with document[0] as page, page.get_textpage() as text:
+                    progress("extract_text")
+                    # GetText is UCS-2-limited; the bounded API preserves
+                    # supplementary Unicode and exposes PDFium's actual text.
+                    record["extracted"] = text.get_text_bounded(errors="strict")
+                    record["search"] = {}
+                    for query in options.search:
+                        progress("search:" + query)
+                        with text.search(query) as search:
+                            match = search.get_next()
+                            record["search"][query] = list(match) if match else []
         else:
             progress("extract_text")
             result = subprocess.run(["pdftotext", "-raw", "-enc", "UTF-8", str(options.pdf), "-"],
@@ -60,6 +76,15 @@ def main():
             record["reader_exit_code"] = result.returncode
             record["reader_stderr"] = result.stderr.decode("utf-8", errors="replace")
             record["extracted"] = result.stdout.decode("utf-8")
+            progress("extract_raw_words")
+            words = subprocess.run(["pdftotext", "-raw", "-bbox", "-enc", "UTF-8", str(options.pdf), "-"],
+                                   capture_output=True, timeout=60)
+            record["word_api_exit_code"] = words.returncode
+            record["word_api_stderr"] = words.stderr.decode("utf-8", errors="replace")
+            if not words.returncode:
+                root = ET.fromstring(words.stdout)
+                record["raw_words"] = [{"text": node.text or "", "bounds": node.attrib}
+                                       for node in root.iter() if node.tag.rsplit("}", 1)[-1] == "word"]
             if result.returncode or result.stderr:
                 raise RuntimeError("Poppler failed or reported a parsing warning")
         record["status"] = "passed"

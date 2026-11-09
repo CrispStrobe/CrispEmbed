@@ -43,7 +43,7 @@ def main():
     candidates = [path for path in candidates if not path.name.startswith("archival-control-")]
     expected = {"archival-" + name + ".pdf" for name in ("rgb", "gray", "alpha", "jpeg", "text")}
     expected.update("bidi-" + name + ".pdf" for name in (
-        "arabic", "hebrew", "mixed-rtl", "mixed-ltr", "marks", "isolate", "override", "supplementary",
+        "arabic", "hebrew", "mixed-rtl", "mixed-ltr", "marks", "isolate", "override", "supplementary", "multiline",
         "mapping-boundary", "combining-boundary"))
     missing = sorted(expected - {path.name for path in candidates})
     receipt = {"validator": subprocess.check_output([options.verapdf, "--version"], text=True).strip(),
