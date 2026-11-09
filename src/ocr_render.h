@@ -104,6 +104,15 @@ CRISPEMBED_API void ocr_render_set_pdf_bidi(ocr_renderer * r, int enabled);
 /// Begin a document.
 CRISPEMBED_API void ocr_render_begin(ocr_renderer * r);
 
+/// Lower the per-document PDF ceilings after begin(), before the first page.
+/// Defaults/hard maxima: 5000 pages and 128 MiB output. Additional fixed limits
+/// are 16 MiB input text/geometry, 1 MiB per region and 100000 bidi fragments.
+/// Values must be 1..5000 pages and 4096..134217728 bytes. begin() resets limits.
+/// This bounds an in-memory export; large source images still require separate
+/// decode/compression working memory. Any breach returns an error, never a
+/// truncated document. Export a smaller page selection or downsample images.
+CRISPEMBED_API void ocr_render_set_pdf_limits(ocr_renderer * r, int max_pages, int max_bytes);
+
 /// Physical PDF dimensions for the NEXT added page (72 points = 1 inch).
 /// Set after begin(), before add_page(). Image and text coordinates scale
 /// together from pixels into this size. The setting resets after add_page().

@@ -262,6 +262,58 @@ static void test_xml_escaping() {
     ocr_render_free(r);
 }
 
+static void test_pdf_document_limits() {
+    printf("\n=== Whole-document PDF limits ===\n");
+    ocr_render_word word = { "Reviewed page", 0, 0, 200, 20, 0.9f };
+    ocr_render_line line = { &word, 1, 0, 0, 200, 20 };
+    ocr_render_page page = { &line, 1, 200, 100, nullptr };
+    auto * renderer = ocr_render_create(OCR_RENDER_PDF);
+    ocr_render_begin(renderer);
+    ocr_render_set_pdf_limits(renderer, 2, 128 * 1024 * 1024);
+    ocr_render_add_page(renderer, &page);
+    ocr_render_add_page(renderer, &page);
+    check("configured page limit accepts its boundary", ocr_render_error(renderer) == nullptr);
+    ocr_render_add_page(renderer, &page);
+    check("page beyond configured limit fails before rendering",
+          ocr_render_error(renderer) && contains(ocr_render_error(renderer), "page limit"));
+    check("over-limit page count never returns partial PDF", ocr_render_output_size(renderer) == 0);
+
+    ocr_render_begin(renderer);
+    ocr_render_set_pdf_limits(renderer, 32, 4096);
+    for (int i = 0; i < 32; i++) ocr_render_add_page(renderer, &page);
+    ocr_render_end(renderer);
+    check("whole-document byte budget rejects accumulated pages",
+          ocr_render_error(renderer) && contains(ocr_render_error(renderer), "byte limit") &&
+              ocr_render_output_size(renderer) == 0);
+
+    ocr_render_begin(renderer);
+    std::string text(1024 * 1024, 'x');
+    word.text = text.c_str();
+    for (int i = 0; i < 17; i++) ocr_render_add_page(renderer, &page);
+    check("whole-document input budget rejects accumulated text",
+          ocr_render_error(renderer) && contains(ocr_render_error(renderer), "text/geometry limit") &&
+              ocr_render_output_size(renderer) == 0);
+
+    ocr_render_begin(renderer);
+    text += 'x';
+    word.text = text.c_str();
+    ocr_render_add_page(renderer, &page);
+    check("oversized single text region is rejected before layout",
+          ocr_render_error(renderer) && contains(ocr_render_error(renderer), "region exceeds 1 MiB"));
+
+    ocr_render_begin(renderer);
+    word.text = "Recovered after limit";
+    ocr_render_add_page(renderer, &page);
+    ocr_render_end(renderer);
+    check("begin resets budgets and recovers after failed job",
+          ocr_render_error(renderer) == nullptr && ocr_render_output_size(renderer) > 0);
+
+    ocr_render_begin(renderer);
+    ocr_render_set_pdf_limits(renderer, 5001, 4096);
+    check("callers cannot raise hard memory/page ceilings", ocr_render_error(renderer) != nullptr);
+    ocr_render_free(renderer);
+}
+
 static int crispembed_test_main() {
     printf("OCR renderer — unit tests\n");
 
@@ -271,6 +323,7 @@ static int crispembed_test_main() {
     test_pdf_renderer();
     test_xml_escaping();
     test_render_failures_and_long_text();
+    test_pdf_document_limits();
 
     printf("\n=== Results: %d passed, %d failed ===\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
