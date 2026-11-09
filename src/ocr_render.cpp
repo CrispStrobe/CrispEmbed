@@ -43,6 +43,7 @@ unsigned char * stbi_zlib_compress(unsigned char * data, int data_len, int * out
 // ceilings. Callers can lower the page/output ceilings for smaller devices.
 static constexpr size_t pdf_max_pages = 5000;
 static constexpr size_t pdf_max_bytes = 128 * 1024 * 1024;
+static constexpr uint64_t pdf_max_stream_bytes = uint64_t(2) * 1024 * 1024 * 1024;
 static constexpr size_t pdf_max_input_bytes = 16 * 1024 * 1024;
 static constexpr size_t pdf_max_region_bytes = 1024 * 1024;
 static constexpr size_t pdf_max_spans = 100000;
@@ -85,6 +86,8 @@ struct ocr_renderer {
     bool pdf_bidi = false;          // explicit Unicode layout opt-in
     size_t pdf_page_limit = pdf_max_pages, pdf_byte_limit = pdf_max_bytes;
     size_t pdf_input_bytes = 0;
+    ocr_render_write_callback pdf_writer = nullptr;
+    void * pdf_writer_context = nullptr;
     std::string error;
     double next_width_points = 0, next_height_points = 0;
 
@@ -371,23 +374,56 @@ static void alto_end(ocr_renderer * r) {
 
 struct pdf_document {
     std::vector<std::string> objects{ "" }; // object zero is the free xref entry
+    std::vector<uint64_t> offsets{ 0 };
+    std::vector<bool> finalized{ false };
     size_t body_bytes = 0;
     const size_t byte_limit;
+    const ocr_render_write_callback writer;
+    void * const writer_context;
+    uint64_t written_bytes = 0;
 
-    explicit pdf_document(size_t limit) : byte_limit(limit) {}
+    explicit pdf_document(size_t limit, ocr_render_write_callback callback = nullptr, void * context = nullptr)
+        : byte_limit(limit), writer(callback), writer_context(context) {}
 
     void check_bytes(size_t bytes) const {
-        if (bytes > byte_limit - body_bytes)
+        const uint64_t used = writer ? written_bytes : body_bytes;
+        if (used > byte_limit || uint64_t(bytes) > uint64_t(byte_limit) - used)
             throw std::runtime_error("PDF exceeds the document byte limit; export a smaller page selection");
     }
+
+    void write_bytes(const char * data, size_t size) {
+        check_bytes(size);
+        for (size_t offset = 0; offset < size;) {
+            const size_t length = std::min(size - offset, size_t(64 * 1024));
+            if (writer(writer_context, reinterpret_cast<const unsigned char *>(data + offset), length) != 0)
+                throw std::runtime_error("PDF output writer failed; discard the partial destination");
+            written_bytes += uint64_t(length); // checked against the cap before the first slice
+            offset += length;
+        }
+    }
+    void write_bytes(const std::string & bytes) { write_bytes(bytes.data(), bytes.size()); }
 
     int reserve() {
         if (objects.size() >= size_t(std::numeric_limits<int>::max()))
             throw std::runtime_error("PDF has too many objects");
         objects.emplace_back();
+        offsets.push_back(0);
+        finalized.push_back(false);
         return int(objects.size() - 1);
     }
     void set(int id, std::string body) {
+        if (writer) {
+            if (id <= 0 || size_t(id) >= objects.size() || finalized[size_t(id)])
+                throw std::runtime_error("PDF object was already finalized or has no reserved ID");
+            const std::string header = std::to_string(id) + " 0 obj\n";
+            check_bytes(header.size() + body.size() + 8);
+            offsets[size_t(id)] = written_bytes;
+            write_bytes(header);
+            write_bytes(body);
+            write_bytes("\nendobj\n", 8);
+            finalized[size_t(id)] = true;
+            return; // body storage is released immediately
+        }
         body_bytes -= objects.at(size_t(id)).size();
         check_bytes(body.size());
         body_bytes += body.size();
@@ -417,6 +453,25 @@ struct pdf_document {
         }
         encoded += '>';
         return stream(std::move(encoded), properties + " /Filter /ASCIIHexDecode");
+    }
+
+    void finish_stream(int catalog, int info, const std::string & identifier) {
+        for (size_t id = 1; id < finalized.size(); id++)
+            if (!finalized[id]) throw std::runtime_error("PDF contains an unfinalized object");
+        const uint64_t xref = written_bytes;
+        write_bytes("xref\n0 " + std::to_string(objects.size()) + "\n0000000000 65535 f \n");
+        for (size_t id = 1; id < offsets.size(); id++) {
+            if (offsets[id] > 9999999999ull) throw std::runtime_error("PDF cross-reference offset is too large");
+            char entry[32];
+            const int size =
+                std::snprintf(entry, sizeof(entry), "%010llu 00000 n \n", static_cast<unsigned long long>(offsets[id]));
+            if (size != 20) throw std::runtime_error("Could not encode PDF cross-reference offset");
+            write_bytes(entry, size_t(size));
+        }
+        write_bytes("trailer\n<< /Size " + std::to_string(objects.size()) + " /Root " + std::to_string(catalog) +
+                    " 0 R /Info " + std::to_string(info) + " 0 R" +
+                    (identifier.empty() ? "" : " /ID [" + identifier + " " + identifier + "]") + " >>\nstartxref\n" +
+                    std::to_string(xref) + "\n%%EOF\n");
     }
 };
 
@@ -980,7 +1035,7 @@ static std::string pdf_identifier() {
 
 static void pdf_end(ocr_renderer * r) {
     if (r->pages.empty()) throw std::runtime_error("A PDF document must contain at least one page");
-    pdf_document doc(r->pdf_byte_limit);
+    pdf_document doc(r->pdf_byte_limit, r->pdf_writer, r->pdf_writer_context);
     const int catalog = doc.reserve();
     const int pages = doc.reserve();
     std::map<uint32_t, size_t> characters;
@@ -1006,6 +1061,14 @@ static void pdf_end(ocr_renderer * r) {
             }
     size_t next_character = 1;
     for (auto & entry : characters) entry.second = next_character++;
+    const bool binary_images = std::any_of(r->pages.begin(), r->pages.end(),
+                                           [](const stored_page & page) { return !page.image_path.empty(); });
+    const std::string header = r->pdfa         ? "%PDF-1.7\n%\xe2\xe3\xcf\xd3\n"
+                               : binary_images ? "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n"
+                                               : "%PDF-1.4\n%CrispEmbed\n";
+    // Reserve the root IDs before emitting any forward references. Each
+    // later object reserves its ID before its finalized body reaches the sink.
+    if (doc.writer) doc.write_bytes(header);
     const auto fonts = pdf_fonts(doc, characters, sequences, metrics);
     std::string font_resources = " /Font <<";
     for (size_t f = 0; f < fonts.size(); f++) font_resources += " /F" + std::to_string(f + 1) + " " + pdf_ref(fonts[f]);
@@ -1040,14 +1103,15 @@ static void pdf_end(ocr_renderer * r) {
     doc.set(catalog, "<< /Type /Catalog /Pages " + pdf_ref(pages) + (r->pdfa ? pdf_archival_catalog(doc) : "") + " >>");
     const int info = doc.add(std::string("<< /Producer (") + producer_name() + ") /Creator (CrispEmbed OCR) >>");
 
+    if (doc.writer) {
+        doc.finish_stream(catalog, info, r->pdfa ? pdf_identifier() : "");
+        return;
+    }
+
     // Keep text-only PDFs safe for legacy NUL-terminated UTF-8 callers. The
     // small binary font/map streams above use ASCIIHex. Image-bearing PDFs
     // require the binary-safe output-size/checked APIs.
-    const bool binary_images = std::any_of(r->pages.begin(), r->pages.end(),
-                                           [](const stored_page & page) { return !page.image_path.empty(); });
-    std::string out = r->pdfa         ? "%PDF-1.7\n%\xe2\xe3\xcf\xd3\n"
-                      : binary_images ? "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n"
-                                      : "%PDF-1.4\n%CrispEmbed\n";
+    std::string out = header;
     std::vector<size_t> offsets(doc.objects.size());
     // Reserve once and release each object after appending it. Avoid growth
     // copies and avoid retaining two complete object sets while serializing.
@@ -1110,7 +1174,7 @@ ocr_renderer * ocr_render_create(ocr_render_format format) {
 
 uint32_t crispembed_ocr_render_capabilities(void) {
     return OCR_RENDER_CAP_PDF | OCR_RENDER_CAP_UNICODE | OCR_RENDER_CAP_RASTER_IMAGES | OCR_RENDER_CAP_ARCHIVAL |
-           OCR_RENDER_CAP_BIDI;
+           OCR_RENDER_CAP_BIDI | OCR_RENDER_CAP_STREAM;
 }
 
 void ocr_render_set_separator(ocr_renderer * r, const char * sep) {
@@ -1138,6 +1202,20 @@ void ocr_render_set_pdf_limits(ocr_renderer * r, int max_pages, int max_bytes) {
     });
 }
 
+void ocr_render_set_pdf_writer(ocr_renderer * r, ocr_render_write_callback callback, void * context,
+                               uint64_t max_output_bytes) {
+    render_guard(r, [&] {
+        if (r->format != OCR_RENDER_PDF || !r->begun || r->ended || r->page_count != 0)
+            throw std::runtime_error("Set a PDF writer after begin and before adding pages");
+        if (!callback) throw std::runtime_error("PDF output writer callback is required");
+        if (max_output_bytes < 4096 || max_output_bytes > pdf_max_stream_bytes)
+            throw std::runtime_error("PDF writer byte limit must be 4096-2147483648 bytes");
+        r->pdf_writer = callback;
+        r->pdf_writer_context = context;
+        r->pdf_byte_limit = size_t(max_output_bytes);
+    });
+}
+
 void ocr_render_set_page_size_points(ocr_renderer * r, double width, double height) {
     render_guard(r, [&] {
         if (!r->begun || r->ended) throw std::runtime_error("Set page size after begin and before add_page");
@@ -1156,6 +1234,8 @@ void ocr_render_begin(ocr_renderer * r) {
     r->pdf_page_limit = pdf_max_pages;
     r->pdf_byte_limit = pdf_max_bytes;
     r->pdf_input_bytes = 0;
+    r->pdf_writer = nullptr;
+    r->pdf_writer_context = nullptr;
     r->next_width_points = r->next_height_points = 0;
     r->begun = true;
     r->ended = false;

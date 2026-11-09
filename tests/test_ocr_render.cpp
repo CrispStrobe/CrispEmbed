@@ -1,6 +1,7 @@
 // tests/test_ocr_render.cpp — unit tests for OCR result renderers.
 #include "ocr_render.h"
 #include "core/clean_exit.h"
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -314,6 +315,77 @@ static void test_pdf_document_limits() {
     ocr_render_free(renderer);
 }
 
+struct pdf_sink_probe {
+    std::string bytes;
+    size_t calls = 0, largest_slice = 0, accept_bytes = size_t(-1);
+};
+
+static int write_pdf_probe(void * context, const unsigned char * data, size_t size) {
+    auto & sink = *static_cast<pdf_sink_probe *>(context);
+    sink.calls++;
+    sink.largest_slice = std::max(sink.largest_slice, size);
+    if (size > sink.accept_bytes - sink.bytes.size()) return 1;
+    sink.bytes.append(reinterpret_cast<const char *>(data), size);
+    return 0;
+}
+
+static void test_pdf_stream_writer() {
+    printf("\n=== Synchronous PDF writer ===\n");
+    ocr_render_word word = { "Reviewed streamed page", 0, 0, 200, 20, 0.9f };
+    ocr_render_line line = { &word, 1, 0, 0, 200, 20 };
+    ocr_render_page page = { &line, 1, 200, 100, nullptr };
+    auto * renderer = ocr_render_create(OCR_RENDER_PDF);
+    pdf_sink_probe sink;
+    check("stream capability is explicit", (crispembed_ocr_render_capabilities() & OCR_RENDER_CAP_STREAM) != 0);
+    ocr_render_begin(renderer);
+    ocr_render_set_pdf_writer(renderer, write_pdf_probe, &sink, 256ull * 1024 * 1024);
+    ocr_render_add_page(renderer, &page);
+    ocr_render_add_page(renderer, &page);
+    check("writer callbacks wait until synchronous end", sink.calls == 0);
+    ocr_render_end(renderer);
+    check("stream finalizes a complete two-page document", !ocr_render_error(renderer) &&
+                                                               contains(sink.bytes.c_str(), "/Count 2") &&
+                                                               contains(sink.bytes.c_str(), "%%EOF"));
+    check("stream emits incrementally in bounded slices", sink.calls > 10 && sink.largest_slice <= 64 * 1024);
+    check("stream retains no byte-returning PDF buffer", ocr_render_output_size(renderer) == 0);
+
+    ocr_render_begin(renderer);
+    sink = {};
+    sink.accept_bytes = 36;
+    ocr_render_set_pdf_writer(renderer, write_pdf_probe, &sink, 256ull * 1024 * 1024);
+    ocr_render_add_page(renderer, &page);
+    ocr_render_end(renderer);
+    check("writer rejection fails without advertising output",
+          ocr_render_error(renderer) && contains(ocr_render_error(renderer), "writer failed") &&
+              ocr_render_output_size(renderer) == 0);
+    const size_t failed_calls = sink.calls;
+    ocr_render_end(renderer);
+    check("no callback after writer failure", sink.calls == failed_calls);
+
+    ocr_render_begin(renderer); // must clear the old callback/context
+    ocr_render_add_page(renderer, &page);
+    ocr_render_end(renderer);
+    check("begin resets sink and recovers the original byte API",
+          !ocr_render_error(renderer) && ocr_render_output_size(renderer) > 0 && sink.calls == failed_calls);
+
+    ocr_render_begin(renderer);
+    sink = {};
+    ocr_render_set_pdf_writer(renderer, write_pdf_probe, &sink, 4096);
+    for (int i = 0; i < 32; i++) ocr_render_add_page(renderer, &page);
+    ocr_render_end(renderer);
+    check("stream cap rejects before writing beyond its limit",
+          ocr_render_error(renderer) && contains(ocr_render_error(renderer), "byte limit") &&
+              sink.bytes.size() <= 4096);
+
+    ocr_render_begin(renderer);
+    ocr_render_set_pdf_writer(renderer, write_pdf_probe, &sink, 2147483649ull);
+    check("stream cap cannot exceed 2 GiB", ocr_render_error(renderer) != nullptr);
+    ocr_render_begin(renderer);
+    ocr_render_set_pdf_writer(renderer, nullptr, &sink, 4096);
+    check("stream requires an actual callback", ocr_render_error(renderer) != nullptr);
+    ocr_render_free(renderer);
+}
+
 static int crispembed_test_main() {
     printf("OCR renderer — unit tests\n");
 
@@ -324,6 +396,7 @@ static int crispembed_test_main() {
     test_xml_escaping();
     test_render_failures_and_long_text();
     test_pdf_document_limits();
+    test_pdf_stream_writer();
 
     printf("\n=== Results: %d passed, %d failed ===\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;

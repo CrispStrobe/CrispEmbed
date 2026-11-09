@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 // DLL export/import (Windows) — without this the ocr_render_* symbols are not
@@ -77,6 +78,7 @@ typedef enum ocr_render_capability {
     OCR_RENDER_CAP_RASTER_IMAGES = 4,
     OCR_RENDER_CAP_ARCHIVAL = 8,
     OCR_RENDER_CAP_BIDI = 16,
+    OCR_RENDER_CAP_STREAM = 32,
 } ocr_render_capability;
 
 /// No model load required. ARCHIVAL declares PDF/A-2b; BIDI declares the
@@ -112,6 +114,23 @@ CRISPEMBED_API void ocr_render_begin(ocr_renderer * r);
 /// decode/compression working memory. Any breach returns an error, never a
 /// truncated document. Export a smaller page selection or downsample images.
 CRISPEMBED_API void ocr_render_set_pdf_limits(ocr_renderer * r, int max_pages, int max_bytes);
+
+/// Synchronous PDF byte sink. Return zero after consuming the complete slice,
+/// nonzero on failure. The data is valid only during this call; no exception
+/// may cross the C boundary. Do not re-enter this renderer from the callback.
+typedef int (*ocr_render_write_callback)(void * context, const unsigned char * data, size_t size);
+
+/// Stream the PDF to a caller-owned sink instead of accumulating output bytes.
+/// Set after begin(), before any page. The callback runs only during end(), in
+/// slices of at most 64 KiB, and is never called again after an error. The
+/// context must remain valid until end() returns. begin() clears the sink.
+/// max_output_bytes must be 4096..2147483648; callers may choose 256 MiB for a
+/// mobile destination. Page/text/image/layout limits remain in force.
+/// Any failure can leave a partial sink: write to a temporary destination and
+/// publish only after end() succeeds. output()/output_size() stay empty in
+/// this mode. The existing byte-returning API retains its 128 MiB ceiling.
+CRISPEMBED_API void ocr_render_set_pdf_writer(ocr_renderer * r, ocr_render_write_callback callback, void * context,
+                                              uint64_t max_output_bytes);
 
 /// Physical PDF dimensions for the NEXT added page (72 points = 1 inch).
 /// Set after begin(), before add_page(). Image and text coordinates scale

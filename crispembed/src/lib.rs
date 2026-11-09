@@ -3547,7 +3547,7 @@ pub struct OcrRenderPageInput<'a> {
 }
 
 /// Renderer capability bits: PDF=1, Unicode text=2, decoded raster images=4,
-/// PDF/A-2b archival conformance=8, explicit Unicode bidi layout=16.
+/// PDF/A-2b archival conformance=8, explicit Unicode bidi layout=16, PDF writer=32.
 /// Does not load any recognition model.
 /// Requires the matching native library that exports this accessor.
 pub fn ocr_render_capabilities() -> u32 {
@@ -3599,6 +3599,41 @@ pub fn ocr_render_pages_checked_with_options(
     sizes: Option<&[(f32, f32)]>,
     bidi: bool,
 ) -> Result<Vec<u8>, String> {
+    let renderer = ocr_render_document(pages, format, pdfa, sizes, bidi, |_| {})?;
+    let size = unsafe { crispembed_sys::ocr_render_output_size(renderer.0) };
+    let ptr = unsafe { crispembed_sys::ocr_render_output(renderer.0) } as *const u8;
+    Ok(if ptr.is_null() || size <= 0 {
+        Vec::new()
+    } else {
+        unsafe { std::slice::from_raw_parts(ptr, size as usize) }.to_vec()
+    })
+}
+
+struct OcrRendererGuard(*mut std::ffi::c_void);
+
+impl Drop for OcrRendererGuard {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::ocr_render_free(self.0) };
+    }
+}
+
+fn ocr_render_check(renderer: *mut std::ffi::c_void) -> Result<(), String> {
+    let error = unsafe { crispembed_sys::ocr_render_error(renderer) };
+    if error.is_null() {
+        Ok(())
+    } else {
+        Err(unsafe { CStr::from_ptr(error) }.to_string_lossy().into_owned())
+    }
+}
+
+fn ocr_render_document(
+    pages: &[OcrRenderPageInput],
+    format: &str,
+    pdfa: bool,
+    sizes: Option<&[(f32, f32)]>,
+    bidi: bool,
+    configure: impl FnOnce(*mut std::ffi::c_void),
+) -> Result<OcrRendererGuard, String> {
     if let Some(sizes) = sizes {
         if sizes.len() != pages.len()
             || sizes
@@ -3634,6 +3669,7 @@ pub fn ocr_render_pages_checked_with_options(
     if r.is_null() {
         return Err("Could not allocate OCR renderer".to_string());
     }
+    let renderer = OcrRendererGuard(r);
     if pdfa {
         unsafe { crispembed_sys::ocr_render_set_pdfa(r, 1) };
     }
@@ -3641,6 +3677,8 @@ pub fn ocr_render_pages_checked_with_options(
         unsafe { crispembed_sys::ocr_render_set_pdf_bidi(r, 1) };
     }
     unsafe { crispembed_sys::ocr_render_begin(r) };
+    configure(r);
+    ocr_render_check(r)?;
 
     for (page_index, page) in pages.iter().enumerate() {
         if let Some(sizes) = sizes {
@@ -3694,25 +3732,95 @@ pub fn ocr_render_pages_checked_with_options(
             image_path: img.as_ref().map_or(std::ptr::null(), |c| c.as_ptr()),
         };
         unsafe { crispembed_sys::ocr_render_add_page(r, &c_page) };
+        ocr_render_check(r)?;
         // texts/words/lines/img dropped here — safe (add_page copied).
     }
 
     unsafe { crispembed_sys::ocr_render_end(r) };
-    let error = unsafe { crispembed_sys::ocr_render_error(r) };
-    if !error.is_null() {
-        let message = unsafe { CStr::from_ptr(error) }.to_string_lossy().into_owned();
-        unsafe { crispembed_sys::ocr_render_free(r) };
-        return Err(message);
+    ocr_render_check(r)?;
+    Ok(renderer)
+}
+
+struct OcrPdfWriteState<'a, W: std::io::Write> {
+    writer: &'a mut W,
+    error: Option<std::io::Error>,
+    written: u64,
+}
+
+unsafe extern "C" fn ocr_pdf_write_callback<W: std::io::Write>(
+    context: *mut std::ffi::c_void,
+    data: *const u8,
+    size: usize,
+) -> std::ffi::c_int {
+    // The state is exclusively borrowed for the synchronous native end call.
+    // No Rust panic or I/O error may unwind through the C ABI.
+    let state = unsafe { &mut *context.cast::<OcrPdfWriteState<'_, W>>() };
+    if state.error.is_some() {
+        return 1;
     }
-    let size = unsafe { crispembed_sys::ocr_render_output_size(r) };
-    let ptr = unsafe { crispembed_sys::ocr_render_output(r) } as *const u8;
-    let bytes = if ptr.is_null() || size <= 0 {
-        Vec::new()
-    } else {
-        unsafe { std::slice::from_raw_parts(ptr, size as usize) }.to_vec()
+    if size == 0 {
+        return 0;
+    }
+    if data.is_null() {
+        state.error = Some(std::io::Error::new(std::io::ErrorKind::InvalidData, "PDF writer received a null slice"));
+        return 1;
+    }
+    let Some(total) = state.written.checked_add(size as u64) else {
+        state.error = Some(std::io::Error::new(std::io::ErrorKind::InvalidData, "PDF writer byte counter overflow"));
+        return 1;
     };
-    unsafe { crispembed_sys::ocr_render_free(r) };
-    Ok(bytes)
+    let bytes = unsafe { std::slice::from_raw_parts(data, size) };
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| state.writer.write_all(bytes))) {
+        Ok(Ok(())) => {
+            state.written = total;
+            0
+        }
+        Ok(Err(error)) => {
+            state.error = Some(error);
+            1
+        }
+        Err(_) => {
+            state.error = Some(std::io::Error::other("PDF writer panicked"));
+            1
+        }
+    }
+}
+
+/// Stream a reviewed PDF synchronously into a caller-owned writer.
+///
+/// Requires native capability 32. `max_output_bytes` must be 4096..2147483648;
+/// 256 MiB is suitable for callers with that mobile-provider output ceiling.
+/// Page/text/layout limits and each page's decode/compression working memory
+/// still apply. The native renderer does not accumulate the whole PDF.
+///
+/// Original writer I/O errors are returned unchanged. Native validation and
+/// rendering errors become `InvalidData`; callback panics become `Other`.
+/// The writer is flushed before success. Use a temporary file and publish it
+/// only after success; a failure can leave a partial destination. No callback
+/// or borrow outlives this function, and this function does not close the writer.
+pub fn ocr_render_pdf_to_writer_checked<W: std::io::Write>(
+    pages: &[OcrRenderPageInput],
+    pdfa: bool,
+    sizes: Option<&[(f32, f32)]>,
+    bidi: bool,
+    max_output_bytes: u64,
+    writer: &mut W,
+) -> std::io::Result<u64> {
+    if ocr_render_capabilities() & 32 == 0 {
+        return Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "Native PDF streaming is unavailable"));
+    }
+    let mut state = OcrPdfWriteState { writer, error: None, written: 0 };
+    let context = (&mut state as *mut OcrPdfWriteState<'_, W>).cast();
+    let result = ocr_render_document(pages, "pdf", pdfa, sizes, bidi, |renderer| unsafe {
+        crispembed_sys::ocr_render_set_pdf_writer(renderer, Some(ocr_pdf_write_callback::<W>), context, max_output_bytes);
+    });
+    if let Some(error) = state.error.take() {
+        return Err(error);
+    }
+    // Release native page/layout metadata before flushing the caller's sink.
+    drop(result.map_err(|message| std::io::Error::new(std::io::ErrorKind::InvalidData, message))?);
+    state.writer.flush()?;
+    Ok(state.written)
 }
 
 // ---------------------------------------------------------------------------
