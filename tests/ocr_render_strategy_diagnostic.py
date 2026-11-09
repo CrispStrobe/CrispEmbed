@@ -140,6 +140,9 @@ def scalar_pdf(source, destination, text, positions, visual, actual, clusters, l
     widths = sorted({g["metric"] for g in glyphs})
     names = [".notdef"] + [f"width{width}" for width in widths]
     program = TTFont(BytesIO(original_descriptor["/FontFile2"].get_data()))
+    # Decode tables against their original glyph order before replacing it.
+    # Lazy hmtx decoding otherwise indexes the newly shortened order.
+    program.ensureDecompiled()
     notdef = program["glyf"][".notdef"]
     program.setGlyphOrder(names)
     program["glyf"].glyphs = {".notdef": notdef}
@@ -152,8 +155,10 @@ def scalar_pdf(source, destination, text, positions, visual, actual, clusters, l
         name = f"width{width}"
         program["glyf"][name] = pen.glyph()
         program["hmtx"].metrics[name] = (width, 0)
-    for table in program["cmap"].tables:
-        table.cmap = {}
+    # CID fonts use the PDF CIDToGIDMap and may omit a font-internal cmap.
+    if "cmap" in program:
+        for table in program["cmap"].tables:
+            table.cmap = {}
     program["head"].unitsPerEm = 64
     program["hhea"].numberOfHMetrics = len(names)
     program["maxp"].numGlyphs = len(names)
