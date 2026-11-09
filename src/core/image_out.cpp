@@ -9,6 +9,9 @@
 // it, but this layer is lower and every target links it. Keep stdio in —
 // ocr_orchestrator writes crops by path and a test externs stbi_write_png.
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#ifdef _WIN32
+#define STBIW_WINDOWS_UTF8
+#endif
 #include "../../ggml/examples/stb_image_write.h"
 
 #ifdef CRISPEMBED_HAVE_C2PA

@@ -1,0 +1,3633 @@
+{
+  "source_sha": "2111db64d845b4ef6a374da2a2f69c202f1d1ce7",
+  "run_id": 42622422668,
+  "job_id": 129177662907,
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42622422668",
+  "conclusion": "failure",
+  "native_checks": {
+    "passed": 70,
+    "failed": 0
+  },
+  "production_rust_contracts": {
+    "passed": 9,
+    "failed": 0,
+    "large_case_separately_executed": true
+  },
+  "artifacts": [
+    {
+      "id": 13678541172,
+      "name": "ocr-writer-qualification",
+      "bytes": 745250,
+      "sha256": "98ec919c236dba40db0b3a13202836e1dbaea984e52c58f9833baac36bd3e2bf",
+      "retention_days": 90,
+      "download_digest_verified": true
+    },
+    {
+      "id": 13678735901,
+      "name": "ocr-writer-large-file",
+      "bytes": 151047286,
+      "sha256": "a32fb2d77abfaf87c85bcb9f705548778fff0dcf2500ed8eef92efbd79af8132",
+      "retention_days": 90,
+      "large_archive_downloaded": false
+    }
+  ],
+  "large_export": {
+    "pages": 11,
+    "source_pixels_per_page": [
+      2048,
+      2048
+    ],
+    "output_bytes": 138448604,
+    "output_sha256": "33ed00df313e6be4f169440d1ce55b4037265314288a95498f0d5383e5f3e28c",
+    "output_cap_bytes": 268435456,
+    "elapsed_seconds": 7.84,
+    "user_seconds": 6.81,
+    "system_seconds": 0.25,
+    "max_rss_kib": 59312,
+    "swaps": 0,
+    "scope": "One hosted seeded random RGB fixture; not a mobile or universal peak-memory guarantee"
+  },
+  "stream_validation": {
+    "source_sha": "2111db64d845b4ef6a374da2a2f69c202f1d1ce7",
+    "scope": "Qualified scalar Unicode, archival resources and synchronous bounded writer; bidi remains separate",
+    "validator": "veraPDF 1.30.2\nBuilt: Wed Jun 03 10:55:00 UTC 2026\nDeveloped and released by the veraPDF Consortium.\nFunded by the PREFORMA project.\nReleased under the GNU General Public License v3\nand the Mozilla Public License v2 or later.",
+    "positive": [
+      {
+        "file": "archival-rgb.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 14476,
+        "sha256": "132c584b992ba079f5ba3179dc03feb9c554727d53e045fd7270e3c39ccbb8a7"
+      },
+      {
+        "file": "archival-gray.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 14460,
+        "sha256": "03c6fb2017947a512b2778af1e3369dc15ff1ecf0bef7ab441fc910edc240f33"
+      },
+      {
+        "file": "archival-alpha.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 14306,
+        "sha256": "31de565dd91fd315a7b5487e31634b8c11b31bcaa756fac27561b9f0e06e0c81"
+      },
+      {
+        "file": "archival-jpeg.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 16614,
+        "sha256": "2401c9f8bc54c91033785b0592e71e636cf1432b33b4d8452104a9a5ce4cfce9"
+      },
+      {
+        "file": "archival-text.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 6993,
+        "sha256": "adf07acceb12980b82014e5fbe0174c3d3aa82728ab6659f589dd4279d7ce5a4"
+      },
+      {
+        "file": "archival-streamed-rgb.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 14445,
+        "sha256": "5d738b9a12ee8e7ccbc1e1cc40143fe80c05852d9d7cc0d90a4359bf500b6b07"
+      },
+      {
+        "file": "archival-streamed-gray.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 14429,
+        "sha256": "68ff83e413f3f5c39e91ba2dff13f047b70deb199e54335844e7c2ddd5afc15b"
+      },
+      {
+        "file": "archival-streamed-alpha.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 14275,
+        "sha256": "bdf3fa3f9fe2297147ea2dc9e0b1de775e1ca9fbe3e3aa5a80379641a95ba413"
+      },
+      {
+        "file": "archival-streamed-jpeg.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 16583,
+        "sha256": "46714654ba03579558962ff383969f05d52c9d635e0b53f0602574d33c0cd715"
+      },
+      {
+        "file": "archival-streamed-text.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 6962,
+        "sha256": "05609a428bbb0989406258597904c3df381936a17c1068c7e87a93eaf57a0ef6"
+      },
+      {
+        "file": "archival-rust-short.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 10111,
+        "sha256": "9e70a04aa51495a01e7a18cec9414bc501a74a27d2a66469372db14ec1a8932c"
+      },
+      {
+        "file": "archival-rust-file.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 14448,
+        "sha256": "9a548d8b1fe8b72a8cc5dc0659e6b22bf7e33f3c55c6c669da370c6bf505f7db"
+      },
+      {
+        "file": "archival-large-stream.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 138448604,
+        "sha256": "33ed00df313e6be4f169440d1ce55b4037265314288a95498f0d5383e5f3e28c"
+      }
+    ],
+    "negative": [
+      {
+        "file": "stream-no-intent.pdf",
+        "exit_code": 1,
+        "compliant": false,
+        "failed_rules": [
+          "<rule specification=\"ISO 19005-2:2011\" clause=\"6.2.4.3\" testNumber=\"2\" status=\"failed\" failedChecks=\"2\">\n            <description>DeviceRGB shall only be used if a device independent DefaultRGB colour space has been set when the DeviceRGB colour space is used, or if the file has a PDF/A OutputIntent that contains an RGB destination profile</description>\n            <object>PDDeviceRGB</object>\n            <test>gOutputCS != null &amp;&amp; gOutputCS == \"RGB \"</test>\n            <check status=\"failed\">\n              <context>root/document[0]/pages[0](11 0 obj PDPage)/contentStream[0](10 0 obj PDContentStream)/operators[4]/xObject[0](9 0 obj PDXImage)/imageCS[0]</context>\n              <errorMessage>DeviceRGB colour space is used without RGB output intent profile</errorMessage>\n            </check>\n            <check status=\"failed\">\n              <context>root/document[0]/pages[1](14 0 obj PDPage)/contentStream[0](13 0 obj PDContentStream)/operators[4]/xObject[0](12 0 obj PDXImage)/imageCS[0]</context>\n              <errorMessage>DeviceRGB colour space is used without RGB output intent profile</errorMessage>\n            </check>\n          </rule>\n        "
+        ]
+      },
+      {
+        "file": "stream-no-xmp.pdf",
+        "exit_code": 1,
+        "compliant": false,
+        "failed_rules": [
+          "<rule specification=\"ISO 19005-2:2011\" clause=\"6.6.2.1\" testNumber=\"1\" status=\"failed\" failedChecks=\"1\">\n            <description>The Catalog dictionary of a conforming file shall contain the Metadata key whose value is a metadata stream as defined in ISO 32000-1:2008, 14.3.2. The metadata stream dictionary shall contain entry Type with value /Metadata and entry Subtype with value /XML</description>\n            <object>PDDocument</object>\n            <test>containsMetadata == true</test>\n            <check status=\"failed\">\n              <context>root/document[0]</context>\n              <errorMessage>The document catalog dictionary doesn't contain metadata key or metadata stream dictionary does not contain either entry Type with value /Metadata or entry Subtype with value /XML</errorMessage>\n            </check>\n          </rule>\n        "
+        ]
+      }
+    ],
+    "missing": [],
+    "errors": [],
+    "reader_checks": [
+      {
+        "file": "archival-rust-short.pdf",
+        "expected_pages": 1,
+        "probes": [
+          {
+            "engine": "PyMuPDF",
+            "file": "archival-rust-short.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "versions": {
+              "pymupdf": "1.26.6",
+              "mupdf": "1.26.11"
+            },
+            "repaired": false,
+            "pages": 1,
+            "extracted": "Rust short writes café 中文 😀\n",
+            "glyph_trace": [
+              {
+                "dir": [
+                  1.0,
+                  0.0
+                ],
+                "font": "CrispOcrInvisible",
+                "wmode": 0,
+                "flags": 4,
+                "bidi_lvl": 0,
+                "bidi_dir": 2,
+                "ascender": 1.0,
+                "descender": 0.0,
+                "colorspace": 3,
+                "color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "size": 5.185184955596924,
+                "opacity": 1.0,
+                "linewidth": 0.2592592477798462,
+                "spacewidth": 5.185184955596924,
+                "type": 3,
+                "bbox": [
+                  10.0,
+                  24.814815521240234,
+                  150.00001525878906,
+                  30.0
+                ],
+                "layer": "",
+                "seqno": 1,
+                "chars": [
+                  [
+                    82,
+                    1,
+                    [
+                      10.0,
+                      30.0
+                    ],
+                    [
+                      10.0,
+                      24.814815521240234,
+                      15.185184478759766,
+                      30.0
+                    ]
+                  ],
+                  [
+                    117,
+                    1,
+                    [
+                      15.185184478759766,
+                      30.0
+                    ],
+                    [
+                      15.185184478759766,
+                      24.814815521240234,
+                      20.37036895751953,
+                      30.0
+                    ]
+                  ],
+                  [
+                    115,
+                    1,
+                    [
+                      20.37036895751953,
+                      30.0
+                    ],
+                    [
+                      20.37036895751953,
+                      24.814815521240234,
+                      25.555553436279297,
+                      30.0
+                    ]
+                  ],
+                  [
+                    116,
+                    1,
+                    [
+                      25.555553436279297,
+                      30.0
+                    ],
+                    [
+                      25.555553436279297,
+                      24.814815521240234,
+                      30.740737915039062,
+                      30.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      30.740737915039062,
+                      30.0
+                    ],
+                    [
+                      30.740737915039062,
+                      24.814815521240234,
+                      35.92592239379883,
+                      30.0
+                    ]
+                  ],
+                  [
+                    115,
+                    1,
+                    [
+                      35.92592239379883,
+                      30.0
+                    ],
+                    [
+                      35.92592239379883,
+                      24.814815521240234,
+                      41.111106872558594,
+                      30.0
+                    ]
+                  ],
+                  [
+                    104,
+                    1,
+                    [
+                      41.111106872558594,
+                      30.0
+                    ],
+                    [
+                      41.111106872558594,
+                      24.814815521240234,
+                      46.29629135131836,
+                      30.0
+                    ]
+                  ],
+                  [
+                    111,
+                    1,
+                    [
+                      46.29629135131836,
+                      30.0
+                    ],
+                    [
+                      46.29629135131836,
+                      24.814815521240234,
+                      51.481475830078125,
+                      30.0
+                    ]
+                  ],
+                  [
+                    114,
+                    1,
+                    [
+                      51.481475830078125,
+                      30.0
+                    ],
+                    [
+                      51.481475830078125,
+                      24.814815521240234,
+                      56.66666030883789,
+                      30.0
+                    ]
+                  ],
+                  [
+                    116,
+                    1,
+                    [
+                      56.66666030883789,
+                      30.0
+                    ],
+                    [
+                      56.66666030883789,
+                      24.814815521240234,
+                      61.851844787597656,
+                      30.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      61.851844787597656,
+                      30.0
+                    ],
+                    [
+                      61.851844787597656,
+                      24.814815521240234,
+                      67.03703308105469,
+                      30.0
+                    ]
+                  ],
+                  [
+                    119,
+                    1,
+                    [
+                      67.03703308105469,
+                      30.0
+                    ],
+                    [
+                      67.03703308105469,
+                      24.814815521240234,
+                      72.22222137451172,
+                      30.0
+                    ]
+                  ],
+                  [
+                    114,
+                    1,
+                    [
+                      72.22222137451172,
+                      30.0
+                    ],
+                    [
+                      72.22222137451172,
+                      24.814815521240234,
+                      77.40740966796875,
+                      30.0
+                    ]
+                  ],
+                  [
+                    105,
+                    1,
+                    [
+                      77.40740966796875,
+                      30.0
+                    ],
+                    [
+                      77.40740966796875,
+                      24.814815521240234,
+                      82.59259796142578,
+                      30.0
+                    ]
+                  ],
+                  [
+                    116,
+                    1,
+                    [
+                      82.59259796142578,
+                      30.0
+                    ],
+                    [
+                      82.59259796142578,
+                      24.814815521240234,
+                      87.77778625488281,
+                      30.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      87.77778625488281,
+                      30.0
+                    ],
+                    [
+                      87.77778625488281,
+                      24.814815521240234,
+                      92.96297454833984,
+                      30.0
+                    ]
+                  ],
+                  [
+                    115,
+                    1,
+                    [
+                      92.96297454833984,
+                      30.0
+                    ],
+                    [
+                      92.96297454833984,
+                      24.814815521240234,
+                      98.14816284179688,
+                      30.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      98.14816284179688,
+                      30.0
+                    ],
+                    [
+                      98.14816284179688,
+                      24.814815521240234,
+                      103.3333511352539,
+                      30.0
+                    ]
+                  ],
+                  [
+                    99,
+                    1,
+                    [
+                      103.3333511352539,
+                      30.0
+                    ],
+                    [
+                      103.3333511352539,
+                      24.814815521240234,
+                      108.51853942871094,
+                      30.0
+                    ]
+                  ],
+                  [
+                    97,
+                    1,
+                    [
+                      108.51853942871094,
+                      30.0
+                    ],
+                    [
+                      108.51853942871094,
+                      24.814815521240234,
+                      113.70372772216797,
+                      30.0
+                    ]
+                  ],
+                  [
+                    102,
+                    1,
+                    [
+                      113.70372772216797,
+                      30.0
+                    ],
+                    [
+                      113.70372772216797,
+                      24.814815521240234,
+                      118.888916015625,
+                      30.0
+                    ]
+                  ],
+                  [
+                    233,
+                    1,
+                    [
+                      118.888916015625,
+                      30.0
+                    ],
+                    [
+                      118.888916015625,
+                      24.814815521240234,
+                      124.07410430908203,
+                      30.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      124.07410430908203,
+                      30.0
+                    ],
+                    [
+                      124.07410430908203,
+                      24.814815521240234,
+                      129.25929260253906,
+                      30.0
+                    ]
+                  ],
+                  [
+                    20013,
+                    1,
+                    [
+                      129.25929260253906,
+                      30.0
+                    ],
+                    [
+                      129.25929260253906,
+                      24.814815521240234,
+                      134.44447326660156,
+                      30.0
+                    ]
+                  ],
+                  [
+                    25991,
+                    1,
+                    [
+                      134.44447326660156,
+                      30.0
+                    ],
+                    [
+                      134.44447326660156,
+                      24.814815521240234,
+                      139.62965393066406,
+                      30.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      139.62965393066406,
+                      30.0
+                    ],
+                    [
+                      139.62965393066406,
+                      24.814815521240234,
+                      144.81483459472656,
+                      30.0
+                    ]
+                  ],
+                  [
+                    128512,
+                    1,
+                    [
+                      144.81483459472656,
+                      30.0
+                    ],
+                    [
+                      144.81483459472656,
+                      24.814815521240234,
+                      150.00001525878906,
+                      30.0
+                    ]
+                  ]
+                ]
+              }
+            ],
+            "search": {},
+            "pixel_sha256": "7e74b9074b17b4091bdd2186c9994dbb71e0d59cbd05589fbcbf9bc75868727f",
+            "pixel_size": [
+              160,
+              120
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "Poppler",
+            "file": "archival-rust-short.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "reader_exit_code": 0,
+            "reader_stderr": "",
+            "extracted": "Rust short writes café 中文 😀\n\f",
+            "word_api_exit_code": 0,
+            "word_api_stderr": "",
+            "raw_words": [
+              {
+                "text": "Rust",
+                "bounds": {
+                  "xMin": "10.000000",
+                  "yMin": "15.000000",
+                  "xMax": "30.740741",
+                  "yMax": "35.250000"
+                }
+              },
+              {
+                "text": "short",
+                "bounds": {
+                  "xMin": "35.925926",
+                  "yMin": "15.000000",
+                  "xMax": "61.851852",
+                  "yMax": "35.250000"
+                }
+              },
+              {
+                "text": "writes",
+                "bounds": {
+                  "xMin": "67.037037",
+                  "yMin": "15.000000",
+                  "xMax": "98.148148",
+                  "yMax": "35.250000"
+                }
+              },
+              {
+                "text": "café",
+                "bounds": {
+                  "xMin": "103.333333",
+                  "yMin": "15.000000",
+                  "xMax": "124.074074",
+                  "yMax": "35.250000"
+                }
+              },
+              {
+                "text": "中文",
+                "bounds": {
+                  "xMin": "129.259259",
+                  "yMin": "15.000000",
+                  "xMax": "139.629630",
+                  "yMax": "35.250000"
+                }
+              },
+              {
+                "text": "😀",
+                "bounds": {
+                  "xMin": "144.814815",
+                  "yMin": "15.000000",
+                  "xMax": "150.000000",
+                  "yMax": "35.250000"
+                }
+              }
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "pypdf",
+            "file": "archival-rust-short.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "pages": 1,
+            "extracted": "Rust short writes café 中文 😀",
+            "exit_code": 0
+          },
+          {
+            "engine": "PDFium",
+            "file": "archival-rust-short.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "versions": {
+              "wrapper": "5.15.1",
+              "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+              "flags": []
+            },
+            "binary_sha256": {
+              "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+            },
+            "pages": 1,
+            "extracted": "Rust short writes café 中文 😀",
+            "character_unicode": [
+              82,
+              117,
+              115,
+              116,
+              32,
+              115,
+              104,
+              111,
+              114,
+              116,
+              32,
+              119,
+              114,
+              105,
+              116,
+              101,
+              115,
+              32,
+              99,
+              97,
+              102,
+              233,
+              32,
+              20013,
+              25991,
+              32,
+              55357,
+              56832
+            ],
+            "search": {},
+            "exit_code": 0
+          }
+        ],
+        "images": [
+          {
+            "page_index": 0,
+            "decoded_and_rendered_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0"
+          }
+        ],
+        "passed": true
+      },
+      {
+        "file": "archival-rust-file.pdf",
+        "expected_pages": 2,
+        "probes": [
+          {
+            "engine": "PyMuPDF",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "versions": {
+              "pymupdf": "1.26.6",
+              "mupdf": "1.26.11"
+            },
+            "repaired": false,
+            "pages": 2,
+            "extracted": "Rust file page one café 中文 😀\n",
+            "glyph_trace": [
+              {
+                "dir": [
+                  1.0,
+                  0.0
+                ],
+                "font": "CrispOcrInvisible",
+                "wmode": 0,
+                "flags": 4,
+                "bidi_lvl": 0,
+                "bidi_dir": 2,
+                "ascender": 1.0,
+                "descender": 0.0,
+                "colorspace": 3,
+                "color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "size": 5.0,
+                "opacity": 1.0,
+                "linewidth": 0.25,
+                "spacewidth": 5.0,
+                "type": 3,
+                "bbox": [
+                  10.0,
+                  25.0,
+                  150.0,
+                  30.0
+                ],
+                "layer": "",
+                "seqno": 1,
+                "chars": [
+                  [
+                    82,
+                    1,
+                    [
+                      10.0,
+                      30.0
+                    ],
+                    [
+                      10.0,
+                      25.0,
+                      15.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    117,
+                    1,
+                    [
+                      15.0,
+                      30.0
+                    ],
+                    [
+                      15.0,
+                      25.0,
+                      20.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    115,
+                    1,
+                    [
+                      20.0,
+                      30.0
+                    ],
+                    [
+                      20.0,
+                      25.0,
+                      25.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    116,
+                    1,
+                    [
+                      25.0,
+                      30.0
+                    ],
+                    [
+                      25.0,
+                      25.0,
+                      30.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      30.0,
+                      30.0
+                    ],
+                    [
+                      30.0,
+                      25.0,
+                      35.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    102,
+                    1,
+                    [
+                      35.0,
+                      30.0
+                    ],
+                    [
+                      35.0,
+                      25.0,
+                      40.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    105,
+                    1,
+                    [
+                      40.0,
+                      30.0
+                    ],
+                    [
+                      40.0,
+                      25.0,
+                      45.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    108,
+                    1,
+                    [
+                      45.0,
+                      30.0
+                    ],
+                    [
+                      45.0,
+                      25.0,
+                      50.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      50.0,
+                      30.0
+                    ],
+                    [
+                      50.0,
+                      25.0,
+                      55.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      55.0,
+                      30.0
+                    ],
+                    [
+                      55.0,
+                      25.0,
+                      60.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    112,
+                    1,
+                    [
+                      60.0,
+                      30.0
+                    ],
+                    [
+                      60.0,
+                      25.0,
+                      65.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    97,
+                    1,
+                    [
+                      65.0,
+                      30.0
+                    ],
+                    [
+                      65.0,
+                      25.0,
+                      70.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    103,
+                    1,
+                    [
+                      70.0,
+                      30.0
+                    ],
+                    [
+                      70.0,
+                      25.0,
+                      75.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      75.0,
+                      30.0
+                    ],
+                    [
+                      75.0,
+                      25.0,
+                      80.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      80.0,
+                      30.0
+                    ],
+                    [
+                      80.0,
+                      25.0,
+                      85.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    111,
+                    1,
+                    [
+                      85.0,
+                      30.0
+                    ],
+                    [
+                      85.0,
+                      25.0,
+                      90.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    110,
+                    1,
+                    [
+                      90.0,
+                      30.0
+                    ],
+                    [
+                      90.0,
+                      25.0,
+                      95.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      95.0,
+                      30.0
+                    ],
+                    [
+                      95.0,
+                      25.0,
+                      100.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      100.0,
+                      30.0
+                    ],
+                    [
+                      100.0,
+                      25.0,
+                      105.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    99,
+                    1,
+                    [
+                      105.0,
+                      30.0
+                    ],
+                    [
+                      105.0,
+                      25.0,
+                      110.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    97,
+                    1,
+                    [
+                      110.0,
+                      30.0
+                    ],
+                    [
+                      110.0,
+                      25.0,
+                      115.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    102,
+                    1,
+                    [
+                      115.0,
+                      30.0
+                    ],
+                    [
+                      115.0,
+                      25.0,
+                      120.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    233,
+                    1,
+                    [
+                      120.0,
+                      30.0
+                    ],
+                    [
+                      120.0,
+                      25.0,
+                      125.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      125.0,
+                      30.0
+                    ],
+                    [
+                      125.0,
+                      25.0,
+                      130.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    20013,
+                    1,
+                    [
+                      130.0,
+                      30.0
+                    ],
+                    [
+                      130.0,
+                      25.0,
+                      135.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    25991,
+                    1,
+                    [
+                      135.0,
+                      30.0
+                    ],
+                    [
+                      135.0,
+                      25.0,
+                      140.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      140.0,
+                      30.0
+                    ],
+                    [
+                      140.0,
+                      25.0,
+                      145.0,
+                      30.0
+                    ]
+                  ],
+                  [
+                    128512,
+                    1,
+                    [
+                      145.0,
+                      30.0
+                    ],
+                    [
+                      145.0,
+                      25.0,
+                      150.0,
+                      30.0
+                    ]
+                  ]
+                ]
+              }
+            ],
+            "search": {},
+            "pixel_sha256": "7e74b9074b17b4091bdd2186c9994dbb71e0d59cbd05589fbcbf9bc75868727f",
+            "pixel_size": [
+              160,
+              120
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "Poppler",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "reader_exit_code": 0,
+            "reader_stderr": "",
+            "extracted": "Rust file page one café 中文 😀\n\f",
+            "word_api_exit_code": 0,
+            "word_api_stderr": "",
+            "raw_words": [
+              {
+                "text": "Rust",
+                "bounds": {
+                  "xMin": "10.000000",
+                  "yMin": "15.000000",
+                  "xMax": "30.000000",
+                  "yMax": "35.250000"
+                }
+              },
+              {
+                "text": "file",
+                "bounds": {
+                  "xMin": "35.000000",
+                  "yMin": "15.000000",
+                  "xMax": "55.000000",
+                  "yMax": "35.250000"
+                }
+              },
+              {
+                "text": "page",
+                "bounds": {
+                  "xMin": "60.000000",
+                  "yMin": "15.000000",
+                  "xMax": "80.000000",
+                  "yMax": "35.250000"
+                }
+              },
+              {
+                "text": "one",
+                "bounds": {
+                  "xMin": "85.000000",
+                  "yMin": "15.000000",
+                  "xMax": "100.000000",
+                  "yMax": "35.250000"
+                }
+              },
+              {
+                "text": "café",
+                "bounds": {
+                  "xMin": "105.000000",
+                  "yMin": "15.000000",
+                  "xMax": "125.000000",
+                  "yMax": "35.250000"
+                }
+              },
+              {
+                "text": "中文",
+                "bounds": {
+                  "xMin": "130.000000",
+                  "yMin": "15.000000",
+                  "xMax": "140.000000",
+                  "yMax": "35.250000"
+                }
+              },
+              {
+                "text": "😀",
+                "bounds": {
+                  "xMin": "145.000000",
+                  "yMin": "15.000000",
+                  "xMax": "150.000000",
+                  "yMax": "35.250000"
+                }
+              }
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "pypdf",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "pages": 2,
+            "extracted": "Rust file page one café 中文 😀",
+            "exit_code": 0
+          },
+          {
+            "engine": "PDFium",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "versions": {
+              "wrapper": "5.15.1",
+              "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+              "flags": []
+            },
+            "binary_sha256": {
+              "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+            },
+            "pages": 2,
+            "extracted": "Rust file page one café 中文 😀",
+            "character_unicode": [
+              82,
+              117,
+              115,
+              116,
+              32,
+              102,
+              105,
+              108,
+              101,
+              32,
+              112,
+              97,
+              103,
+              101,
+              32,
+              111,
+              110,
+              101,
+              32,
+              99,
+              97,
+              102,
+              233,
+              32,
+              20013,
+              25991,
+              32,
+              55357,
+              56832
+            ],
+            "search": {},
+            "exit_code": 0
+          },
+          {
+            "engine": "PyMuPDF",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 1,
+            "stage": "complete",
+            "versions": {
+              "pymupdf": "1.26.6",
+              "mupdf": "1.26.11"
+            },
+            "repaired": false,
+            "pages": 2,
+            "extracted": "Rust file page two complete\n",
+            "glyph_trace": [
+              {
+                "dir": [
+                  1.0,
+                  0.0
+                ],
+                "font": "CrispOcrInvisible",
+                "wmode": 0,
+                "flags": 4,
+                "bidi_lvl": 0,
+                "bidi_dir": 2,
+                "ascender": 1.0,
+                "descender": 0.0,
+                "colorspace": 3,
+                "color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "size": 5.8333330154418945,
+                "opacity": 1.0,
+                "linewidth": 0.29166665077209475,
+                "spacewidth": 5.8333330154418945,
+                "type": 3,
+                "bbox": [
+                  11.25,
+                  27.916667938232422,
+                  168.75001525878906,
+                  33.75
+                ],
+                "layer": "",
+                "seqno": 1,
+                "chars": [
+                  [
+                    82,
+                    1,
+                    [
+                      11.25,
+                      33.75
+                    ],
+                    [
+                      11.25,
+                      27.916667938232422,
+                      17.083332061767578,
+                      33.75
+                    ]
+                  ],
+                  [
+                    117,
+                    1,
+                    [
+                      17.083332061767578,
+                      33.75
+                    ],
+                    [
+                      17.083332061767578,
+                      27.916667938232422,
+                      22.916664123535156,
+                      33.75
+                    ]
+                  ],
+                  [
+                    115,
+                    1,
+                    [
+                      22.916664123535156,
+                      33.75
+                    ],
+                    [
+                      22.916664123535156,
+                      27.916667938232422,
+                      28.749996185302734,
+                      33.75
+                    ]
+                  ],
+                  [
+                    116,
+                    1,
+                    [
+                      28.749998092651367,
+                      33.75
+                    ],
+                    [
+                      28.749998092651367,
+                      27.916667938232422,
+                      34.58333206176758,
+                      33.75
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      34.58332824707031,
+                      33.75
+                    ],
+                    [
+                      34.58332824707031,
+                      27.916667938232422,
+                      40.41666030883789,
+                      33.75
+                    ]
+                  ],
+                  [
+                    102,
+                    1,
+                    [
+                      40.416664123535156,
+                      33.75
+                    ],
+                    [
+                      40.416664123535156,
+                      27.916667938232422,
+                      46.249996185302734,
+                      33.75
+                    ]
+                  ],
+                  [
+                    105,
+                    1,
+                    [
+                      46.249996185302734,
+                      33.75
+                    ],
+                    [
+                      46.249996185302734,
+                      27.916667938232422,
+                      52.08332824707031,
+                      33.75
+                    ]
+                  ],
+                  [
+                    108,
+                    1,
+                    [
+                      52.08332824707031,
+                      33.75
+                    ],
+                    [
+                      52.08332824707031,
+                      27.916667938232422,
+                      57.91666030883789,
+                      33.75
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      57.91666030883789,
+                      33.75
+                    ],
+                    [
+                      57.91666030883789,
+                      27.916667938232422,
+                      63.74999237060547,
+                      33.75
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      63.74999237060547,
+                      33.75
+                    ],
+                    [
+                      63.74999237060547,
+                      27.916667938232422,
+                      69.58332824707031,
+                      33.75
+                    ]
+                  ],
+                  [
+                    112,
+                    1,
+                    [
+                      69.58332824707031,
+                      33.75
+                    ],
+                    [
+                      69.58332824707031,
+                      27.916667938232422,
+                      75.41666412353516,
+                      33.75
+                    ]
+                  ],
+                  [
+                    97,
+                    1,
+                    [
+                      75.41666412353516,
+                      33.75
+                    ],
+                    [
+                      75.41666412353516,
+                      27.916667938232422,
+                      81.25,
+                      33.75
+                    ]
+                  ],
+                  [
+                    103,
+                    1,
+                    [
+                      81.25,
+                      33.75
+                    ],
+                    [
+                      81.25,
+                      27.916667938232422,
+                      87.08333587646484,
+                      33.75
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      87.08333587646484,
+                      33.75
+                    ],
+                    [
+                      87.08333587646484,
+                      27.916667938232422,
+                      92.91667175292969,
+                      33.75
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      92.91667175292969,
+                      33.75
+                    ],
+                    [
+                      92.91667175292969,
+                      27.916667938232422,
+                      98.75000762939453,
+                      33.75
+                    ]
+                  ],
+                  [
+                    116,
+                    1,
+                    [
+                      98.75000762939453,
+                      33.75
+                    ],
+                    [
+                      98.75000762939453,
+                      27.916667938232422,
+                      104.58334350585938,
+                      33.75
+                    ]
+                  ],
+                  [
+                    119,
+                    1,
+                    [
+                      104.58334350585938,
+                      33.75
+                    ],
+                    [
+                      104.58334350585938,
+                      27.916667938232422,
+                      110.41667938232422,
+                      33.75
+                    ]
+                  ],
+                  [
+                    111,
+                    1,
+                    [
+                      110.41668701171875,
+                      33.75
+                    ],
+                    [
+                      110.41668701171875,
+                      27.916667938232422,
+                      116.2500228881836,
+                      33.75
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      116.2500228881836,
+                      33.75
+                    ],
+                    [
+                      116.2500228881836,
+                      27.916667938232422,
+                      122.08335876464844,
+                      33.75
+                    ]
+                  ],
+                  [
+                    99,
+                    1,
+                    [
+                      122.08335876464844,
+                      33.75
+                    ],
+                    [
+                      122.08335876464844,
+                      27.916667938232422,
+                      127.91669464111328,
+                      33.75
+                    ]
+                  ],
+                  [
+                    111,
+                    1,
+                    [
+                      127.91669464111328,
+                      33.75
+                    ],
+                    [
+                      127.91669464111328,
+                      27.916667938232422,
+                      133.75003051757812,
+                      33.75
+                    ]
+                  ],
+                  [
+                    109,
+                    1,
+                    [
+                      133.75003051757812,
+                      33.75
+                    ],
+                    [
+                      133.75003051757812,
+                      27.916667938232422,
+                      139.58335876464844,
+                      33.75
+                    ]
+                  ],
+                  [
+                    112,
+                    1,
+                    [
+                      139.5833740234375,
+                      33.75
+                    ],
+                    [
+                      139.5833740234375,
+                      27.916667938232422,
+                      145.4167022705078,
+                      33.75
+                    ]
+                  ],
+                  [
+                    108,
+                    1,
+                    [
+                      145.4167022705078,
+                      33.75
+                    ],
+                    [
+                      145.4167022705078,
+                      27.916667938232422,
+                      151.25003051757812,
+                      33.75
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      151.25003051757812,
+                      33.75
+                    ],
+                    [
+                      151.25003051757812,
+                      27.916667938232422,
+                      157.08335876464844,
+                      33.75
+                    ]
+                  ],
+                  [
+                    116,
+                    1,
+                    [
+                      157.08335876464844,
+                      33.75
+                    ],
+                    [
+                      157.08335876464844,
+                      27.916667938232422,
+                      162.91668701171875,
+                      33.75
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      162.91668701171875,
+                      33.75
+                    ],
+                    [
+                      162.91668701171875,
+                      27.916667938232422,
+                      168.75001525878906,
+                      33.75
+                    ]
+                  ]
+                ]
+              }
+            ],
+            "search": {},
+            "pixel_sha256": "e7ca6a34a84981c5c750f043419713c7f3aa7df81da79dd3ca9036c03430449e",
+            "pixel_size": [
+              180,
+              135
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "Poppler",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 1,
+            "stage": "complete",
+            "reader_exit_code": 0,
+            "reader_stderr": "",
+            "extracted": "Rust file page two complete\n\f",
+            "word_api_exit_code": 0,
+            "word_api_stderr": "",
+            "raw_words": [
+              {
+                "text": "Rust",
+                "bounds": {
+                  "xMin": "11.250000",
+                  "yMin": "16.875000",
+                  "xMax": "34.583333",
+                  "yMax": "39.656250"
+                }
+              },
+              {
+                "text": "file",
+                "bounds": {
+                  "xMin": "40.416667",
+                  "yMin": "16.875000",
+                  "xMax": "63.750000",
+                  "yMax": "39.656250"
+                }
+              },
+              {
+                "text": "page",
+                "bounds": {
+                  "xMin": "69.583333",
+                  "yMin": "16.875000",
+                  "xMax": "92.916667",
+                  "yMax": "39.656250"
+                }
+              },
+              {
+                "text": "two",
+                "bounds": {
+                  "xMin": "98.750000",
+                  "yMin": "16.875000",
+                  "xMax": "116.250000",
+                  "yMax": "39.656250"
+                }
+              },
+              {
+                "text": "complete",
+                "bounds": {
+                  "xMin": "122.083333",
+                  "yMin": "16.875000",
+                  "xMax": "168.750000",
+                  "yMax": "39.656250"
+                }
+              }
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "pypdf",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 1,
+            "stage": "complete",
+            "pages": 2,
+            "extracted": "Rust file page two complete",
+            "exit_code": 0
+          },
+          {
+            "engine": "PDFium",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 1,
+            "stage": "complete",
+            "versions": {
+              "wrapper": "5.15.1",
+              "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+              "flags": []
+            },
+            "binary_sha256": {
+              "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+            },
+            "pages": 2,
+            "extracted": "Rust file page two complete",
+            "character_unicode": [
+              82,
+              117,
+              115,
+              116,
+              32,
+              102,
+              105,
+              108,
+              101,
+              32,
+              112,
+              97,
+              103,
+              101,
+              32,
+              116,
+              119,
+              111,
+              32,
+              99,
+              111,
+              109,
+              112,
+              108,
+              101,
+              116,
+              101
+            ],
+            "search": {},
+            "exit_code": 0
+          }
+        ],
+        "images": [
+          {
+            "page_index": 0,
+            "decoded_and_rendered_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0"
+          },
+          {
+            "page_index": 1,
+            "decoded_and_rendered_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0"
+          }
+        ],
+        "passed": true
+      },
+      {
+        "file": "archival-large-stream.pdf",
+        "expected_pages": 11,
+        "probes": [
+          {
+            "engine": "PyMuPDF",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "versions": {
+              "pymupdf": "1.26.6",
+              "mupdf": "1.26.11"
+            },
+            "repaired": false,
+            "pages": 11,
+            "extracted": "Large streamed page 1 of 11 complete\n",
+            "glyph_trace": [
+              {
+                "dir": [
+                  1.0,
+                  0.0
+                ],
+                "font": "CrispOcrInvisible",
+                "wmode": 0,
+                "flags": 4,
+                "bidi_lvl": 0,
+                "bidi_dir": 2,
+                "ascender": 1.0,
+                "descender": 0.0,
+                "colorspace": 3,
+                "color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "size": 12.5,
+                "opacity": 1.0,
+                "linewidth": 0.625,
+                "spacewidth": 12.5,
+                "type": 3,
+                "bbox": [
+                  25.0,
+                  27.5,
+                  475.0,
+                  40.0
+                ],
+                "layer": "",
+                "seqno": 1,
+                "chars": [
+                  [
+                    76,
+                    1,
+                    [
+                      25.0,
+                      40.0
+                    ],
+                    [
+                      25.0,
+                      27.5,
+                      37.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    97,
+                    1,
+                    [
+                      37.5,
+                      40.0
+                    ],
+                    [
+                      37.5,
+                      27.5,
+                      50.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    114,
+                    1,
+                    [
+                      50.0,
+                      40.0
+                    ],
+                    [
+                      50.0,
+                      27.5,
+                      62.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    103,
+                    1,
+                    [
+                      62.5,
+                      40.0
+                    ],
+                    [
+                      62.5,
+                      27.5,
+                      75.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      75.0,
+                      40.0
+                    ],
+                    [
+                      75.0,
+                      27.5,
+                      87.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      87.5,
+                      40.0
+                    ],
+                    [
+                      87.5,
+                      27.5,
+                      100.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    115,
+                    1,
+                    [
+                      100.0,
+                      40.0
+                    ],
+                    [
+                      100.0,
+                      27.5,
+                      112.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    116,
+                    1,
+                    [
+                      112.5,
+                      40.0
+                    ],
+                    [
+                      112.5,
+                      27.5,
+                      125.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    114,
+                    1,
+                    [
+                      125.0,
+                      40.0
+                    ],
+                    [
+                      125.0,
+                      27.5,
+                      137.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      137.5,
+                      40.0
+                    ],
+                    [
+                      137.5,
+                      27.5,
+                      150.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    97,
+                    1,
+                    [
+                      150.0,
+                      40.0
+                    ],
+                    [
+                      150.0,
+                      27.5,
+                      162.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    109,
+                    1,
+                    [
+                      162.5,
+                      40.0
+                    ],
+                    [
+                      162.5,
+                      27.5,
+                      175.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      175.0,
+                      40.0
+                    ],
+                    [
+                      175.0,
+                      27.5,
+                      187.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    100,
+                    1,
+                    [
+                      187.5,
+                      40.0
+                    ],
+                    [
+                      187.5,
+                      27.5,
+                      200.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      200.0,
+                      40.0
+                    ],
+                    [
+                      200.0,
+                      27.5,
+                      212.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    112,
+                    1,
+                    [
+                      212.5,
+                      40.0
+                    ],
+                    [
+                      212.5,
+                      27.5,
+                      225.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    97,
+                    1,
+                    [
+                      225.0,
+                      40.0
+                    ],
+                    [
+                      225.0,
+                      27.5,
+                      237.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    103,
+                    1,
+                    [
+                      237.5,
+                      40.0
+                    ],
+                    [
+                      237.5,
+                      27.5,
+                      250.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      250.0,
+                      40.0
+                    ],
+                    [
+                      250.0,
+                      27.5,
+                      262.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      262.5,
+                      40.0
+                    ],
+                    [
+                      262.5,
+                      27.5,
+                      275.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    49,
+                    1,
+                    [
+                      275.0,
+                      40.0
+                    ],
+                    [
+                      275.0,
+                      27.5,
+                      287.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      287.5,
+                      40.0
+                    ],
+                    [
+                      287.5,
+                      27.5,
+                      300.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    111,
+                    1,
+                    [
+                      300.0,
+                      40.0
+                    ],
+                    [
+                      300.0,
+                      27.5,
+                      312.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    102,
+                    1,
+                    [
+                      312.5,
+                      40.0
+                    ],
+                    [
+                      312.5,
+                      27.5,
+                      325.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      325.0,
+                      40.0
+                    ],
+                    [
+                      325.0,
+                      27.5,
+                      337.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    49,
+                    1,
+                    [
+                      337.5,
+                      40.0
+                    ],
+                    [
+                      337.5,
+                      27.5,
+                      350.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    49,
+                    1,
+                    [
+                      350.0,
+                      40.0
+                    ],
+                    [
+                      350.0,
+                      27.5,
+                      362.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      362.5,
+                      40.0
+                    ],
+                    [
+                      362.5,
+                      27.5,
+                      375.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    99,
+                    1,
+                    [
+                      375.0,
+                      40.0
+                    ],
+                    [
+                      375.0,
+                      27.5,
+                      387.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    111,
+                    1,
+                    [
+                      387.5,
+                      40.0
+                    ],
+                    [
+                      387.5,
+                      27.5,
+                      400.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    109,
+                    1,
+                    [
+                      400.0,
+                      40.0
+                    ],
+                    [
+                      400.0,
+                      27.5,
+                      412.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    112,
+                    1,
+                    [
+                      412.5,
+                      40.0
+                    ],
+                    [
+                      412.5,
+                      27.5,
+                      425.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    108,
+                    1,
+                    [
+                      425.0,
+                      40.0
+                    ],
+                    [
+                      425.0,
+                      27.5,
+                      437.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      437.5,
+                      40.0
+                    ],
+                    [
+                      437.5,
+                      27.5,
+                      450.0,
+                      40.0
+                    ]
+                  ],
+                  [
+                    116,
+                    1,
+                    [
+                      450.0,
+                      40.0
+                    ],
+                    [
+                      450.0,
+                      27.5,
+                      462.5,
+                      40.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      462.5,
+                      40.0
+                    ],
+                    [
+                      462.5,
+                      27.5,
+                      475.0,
+                      40.0
+                    ]
+                  ]
+                ]
+              }
+            ],
+            "search": {},
+            "pixel_sha256": "6e0bd6f991f99f47ed283a47cec83366963c77c184ef251d8e7bc616128f6927",
+            "pixel_size": [
+              512,
+              512
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "Poppler",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "reader_exit_code": 0,
+            "reader_stderr": "",
+            "extracted": "Large streamed page 1 of 11 complete\n\f",
+            "word_api_exit_code": 0,
+            "word_api_stderr": "",
+            "raw_words": [
+              {
+                "text": "Large",
+                "bounds": {
+                  "xMin": "25.000000",
+                  "yMin": "25.000000",
+                  "xMax": "87.500000",
+                  "yMax": "45.250000"
+                }
+              },
+              {
+                "text": "streamed",
+                "bounds": {
+                  "xMin": "100.000000",
+                  "yMin": "25.000000",
+                  "xMax": "200.000000",
+                  "yMax": "45.250000"
+                }
+              },
+              {
+                "text": "page",
+                "bounds": {
+                  "xMin": "212.500000",
+                  "yMin": "25.000000",
+                  "xMax": "262.500000",
+                  "yMax": "45.250000"
+                }
+              },
+              {
+                "text": "1",
+                "bounds": {
+                  "xMin": "275.000000",
+                  "yMin": "25.000000",
+                  "xMax": "287.500000",
+                  "yMax": "45.250000"
+                }
+              },
+              {
+                "text": "of",
+                "bounds": {
+                  "xMin": "300.000000",
+                  "yMin": "25.000000",
+                  "xMax": "325.000000",
+                  "yMax": "45.250000"
+                }
+              },
+              {
+                "text": "11",
+                "bounds": {
+                  "xMin": "337.500000",
+                  "yMin": "25.000000",
+                  "xMax": "362.500000",
+                  "yMax": "45.250000"
+                }
+              },
+              {
+                "text": "complete",
+                "bounds": {
+                  "xMin": "375.000000",
+                  "yMin": "25.000000",
+                  "xMax": "475.000000",
+                  "yMax": "45.250000"
+                }
+              }
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "pypdf",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "pages": 11,
+            "extracted": "Large streamed page 1 of 11 complete",
+            "exit_code": 0
+          },
+          {
+            "engine": "PDFium",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "versions": {
+              "wrapper": "5.15.1",
+              "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+              "flags": []
+            },
+            "binary_sha256": {
+              "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+            },
+            "pages": 11,
+            "extracted": "Large streamed page 1 of 11 complete",
+            "character_unicode": [
+              76,
+              97,
+              114,
+              103,
+              101,
+              32,
+              115,
+              116,
+              114,
+              101,
+              97,
+              109,
+              101,
+              100,
+              32,
+              112,
+              97,
+              103,
+              101,
+              32,
+              49,
+              32,
+              111,
+              102,
+              32,
+              49,
+              49,
+              32,
+              99,
+              111,
+              109,
+              112,
+              108,
+              101,
+              116,
+              101
+            ],
+            "search": {},
+            "exit_code": 0
+          },
+          {
+            "engine": "PyMuPDF",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 10,
+            "stage": "complete",
+            "versions": {
+              "pymupdf": "1.26.6",
+              "mupdf": "1.26.11"
+            },
+            "repaired": false,
+            "pages": 11,
+            "extracted": "Large streamed page 11 of 11 complete\n",
+            "glyph_trace": [
+              {
+                "dir": [
+                  1.0,
+                  0.0
+                ],
+                "font": "CrispOcrInvisible",
+                "wmode": 0,
+                "flags": 4,
+                "bidi_lvl": 0,
+                "bidi_dir": 2,
+                "ascender": 1.0,
+                "descender": 0.0,
+                "colorspace": 3,
+                "color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "size": 12.162161827087402,
+                "opacity": 1.0,
+                "linewidth": 0.6081080913543702,
+                "spacewidth": 12.162161827087402,
+                "type": 3,
+                "bbox": [
+                  25.0,
+                  27.83783721923828,
+                  475.0000915527344,
+                  40.0
+                ],
+                "layer": "",
+                "seqno": 1,
+                "chars": [
+                  [
+                    76,
+                    1,
+                    [
+                      25.0,
+                      40.0
+                    ],
+                    [
+                      25.0,
+                      27.83783721923828,
+                      37.16216278076172,
+                      40.0
+                    ]
+                  ],
+                  [
+                    97,
+                    1,
+                    [
+                      37.16216278076172,
+                      40.0
+                    ],
+                    [
+                      37.16216278076172,
+                      27.83783721923828,
+                      49.32432556152344,
+                      40.0
+                    ]
+                  ],
+                  [
+                    114,
+                    1,
+                    [
+                      49.32432556152344,
+                      40.0
+                    ],
+                    [
+                      49.32432556152344,
+                      27.83783721923828,
+                      61.486488342285156,
+                      40.0
+                    ]
+                  ],
+                  [
+                    103,
+                    1,
+                    [
+                      61.486488342285156,
+                      40.0
+                    ],
+                    [
+                      61.486488342285156,
+                      27.83783721923828,
+                      73.64865112304688,
+                      40.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      73.64865112304688,
+                      40.0
+                    ],
+                    [
+                      73.64865112304688,
+                      27.83783721923828,
+                      85.8108139038086,
+                      40.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      85.8108139038086,
+                      40.0
+                    ],
+                    [
+                      85.8108139038086,
+                      27.83783721923828,
+                      97.97297668457031,
+                      40.0
+                    ]
+                  ],
+                  [
+                    115,
+                    1,
+                    [
+                      97.97297668457031,
+                      40.0
+                    ],
+                    [
+                      97.97297668457031,
+                      27.83783721923828,
+                      110.13513946533203,
+                      40.0
+                    ]
+                  ],
+                  [
+                    116,
+                    1,
+                    [
+                      110.13513946533203,
+                      40.0
+                    ],
+                    [
+                      110.13513946533203,
+                      27.83783721923828,
+                      122.29730224609375,
+                      40.0
+                    ]
+                  ],
+                  [
+                    114,
+                    1,
+                    [
+                      122.29730224609375,
+                      40.0
+                    ],
+                    [
+                      122.29730224609375,
+                      27.83783721923828,
+                      134.45945739746094,
+                      40.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      134.45945739746094,
+                      40.0
+                    ],
+                    [
+                      134.45945739746094,
+                      27.83783721923828,
+                      146.62161254882812,
+                      40.0
+                    ]
+                  ],
+                  [
+                    97,
+                    1,
+                    [
+                      146.62161254882812,
+                      40.0
+                    ],
+                    [
+                      146.62161254882812,
+                      27.83783721923828,
+                      158.7837677001953,
+                      40.0
+                    ]
+                  ],
+                  [
+                    109,
+                    1,
+                    [
+                      158.7837677001953,
+                      40.0
+                    ],
+                    [
+                      158.7837677001953,
+                      27.83783721923828,
+                      170.9459228515625,
+                      40.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      170.9459228515625,
+                      40.0
+                    ],
+                    [
+                      170.9459228515625,
+                      27.83783721923828,
+                      183.1080780029297,
+                      40.0
+                    ]
+                  ],
+                  [
+                    100,
+                    1,
+                    [
+                      183.1080780029297,
+                      40.0
+                    ],
+                    [
+                      183.1080780029297,
+                      27.83783721923828,
+                      195.27023315429688,
+                      40.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      195.27023315429688,
+                      40.0
+                    ],
+                    [
+                      195.27023315429688,
+                      27.83783721923828,
+                      207.43238830566406,
+                      40.0
+                    ]
+                  ],
+                  [
+                    112,
+                    1,
+                    [
+                      207.43238830566406,
+                      40.0
+                    ],
+                    [
+                      207.43238830566406,
+                      27.83783721923828,
+                      219.59454345703125,
+                      40.0
+                    ]
+                  ],
+                  [
+                    97,
+                    1,
+                    [
+                      219.59454345703125,
+                      40.0
+                    ],
+                    [
+                      219.59454345703125,
+                      27.83783721923828,
+                      231.75669860839844,
+                      40.0
+                    ]
+                  ],
+                  [
+                    103,
+                    1,
+                    [
+                      231.75669860839844,
+                      40.0
+                    ],
+                    [
+                      231.75669860839844,
+                      27.83783721923828,
+                      243.91885375976562,
+                      40.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      243.91885375976562,
+                      40.0
+                    ],
+                    [
+                      243.91885375976562,
+                      27.83783721923828,
+                      256.0810241699219,
+                      40.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      256.0810241699219,
+                      40.0
+                    ],
+                    [
+                      256.0810241699219,
+                      27.83783721923828,
+                      268.2431945800781,
+                      40.0
+                    ]
+                  ],
+                  [
+                    49,
+                    1,
+                    [
+                      268.2431945800781,
+                      40.0
+                    ],
+                    [
+                      268.2431945800781,
+                      27.83783721923828,
+                      280.4053649902344,
+                      40.0
+                    ]
+                  ],
+                  [
+                    49,
+                    1,
+                    [
+                      280.4053649902344,
+                      40.0
+                    ],
+                    [
+                      280.4053649902344,
+                      27.83783721923828,
+                      292.5675354003906,
+                      40.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      292.5675354003906,
+                      40.0
+                    ],
+                    [
+                      292.5675354003906,
+                      27.83783721923828,
+                      304.7297058105469,
+                      40.0
+                    ]
+                  ],
+                  [
+                    111,
+                    1,
+                    [
+                      304.7297058105469,
+                      40.0
+                    ],
+                    [
+                      304.7297058105469,
+                      27.83783721923828,
+                      316.8918762207031,
+                      40.0
+                    ]
+                  ],
+                  [
+                    102,
+                    1,
+                    [
+                      316.8918762207031,
+                      40.0
+                    ],
+                    [
+                      316.8918762207031,
+                      27.83783721923828,
+                      329.0540466308594,
+                      40.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      329.0540466308594,
+                      40.0
+                    ],
+                    [
+                      329.0540466308594,
+                      27.83783721923828,
+                      341.2162170410156,
+                      40.0
+                    ]
+                  ],
+                  [
+                    49,
+                    1,
+                    [
+                      341.2162170410156,
+                      40.0
+                    ],
+                    [
+                      341.2162170410156,
+                      27.83783721923828,
+                      353.3783874511719,
+                      40.0
+                    ]
+                  ],
+                  [
+                    49,
+                    1,
+                    [
+                      353.3783874511719,
+                      40.0
+                    ],
+                    [
+                      353.3783874511719,
+                      27.83783721923828,
+                      365.5405578613281,
+                      40.0
+                    ]
+                  ],
+                  [
+                    32,
+                    1,
+                    [
+                      365.5405578613281,
+                      40.0
+                    ],
+                    [
+                      365.5405578613281,
+                      27.83783721923828,
+                      377.7027282714844,
+                      40.0
+                    ]
+                  ],
+                  [
+                    99,
+                    1,
+                    [
+                      377.7027282714844,
+                      40.0
+                    ],
+                    [
+                      377.7027282714844,
+                      27.83783721923828,
+                      389.8648986816406,
+                      40.0
+                    ]
+                  ],
+                  [
+                    111,
+                    1,
+                    [
+                      389.8648986816406,
+                      40.0
+                    ],
+                    [
+                      389.8648986816406,
+                      27.83783721923828,
+                      402.0270690917969,
+                      40.0
+                    ]
+                  ],
+                  [
+                    109,
+                    1,
+                    [
+                      402.0270690917969,
+                      40.0
+                    ],
+                    [
+                      402.0270690917969,
+                      27.83783721923828,
+                      414.1892395019531,
+                      40.0
+                    ]
+                  ],
+                  [
+                    112,
+                    1,
+                    [
+                      414.1892395019531,
+                      40.0
+                    ],
+                    [
+                      414.1892395019531,
+                      27.83783721923828,
+                      426.3514099121094,
+                      40.0
+                    ]
+                  ],
+                  [
+                    108,
+                    1,
+                    [
+                      426.3514099121094,
+                      40.0
+                    ],
+                    [
+                      426.3514099121094,
+                      27.83783721923828,
+                      438.5135803222656,
+                      40.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      438.5135803222656,
+                      40.0
+                    ],
+                    [
+                      438.5135803222656,
+                      27.83783721923828,
+                      450.6757507324219,
+                      40.0
+                    ]
+                  ],
+                  [
+                    116,
+                    1,
+                    [
+                      450.6757507324219,
+                      40.0
+                    ],
+                    [
+                      450.6757507324219,
+                      27.83783721923828,
+                      462.8379211425781,
+                      40.0
+                    ]
+                  ],
+                  [
+                    101,
+                    1,
+                    [
+                      462.8379211425781,
+                      40.0
+                    ],
+                    [
+                      462.8379211425781,
+                      27.83783721923828,
+                      475.0000915527344,
+                      40.0
+                    ]
+                  ]
+                ]
+              }
+            ],
+            "search": {},
+            "pixel_sha256": "6e0bd6f991f99f47ed283a47cec83366963c77c184ef251d8e7bc616128f6927",
+            "pixel_size": [
+              512,
+              512
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "Poppler",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 10,
+            "stage": "complete",
+            "reader_exit_code": 0,
+            "reader_stderr": "",
+            "extracted": "Large streamed page 11 of 11 complete\n\f",
+            "word_api_exit_code": 0,
+            "word_api_stderr": "",
+            "raw_words": [
+              {
+                "text": "Large",
+                "bounds": {
+                  "xMin": "25.000000",
+                  "yMin": "25.000000",
+                  "xMax": "85.810811",
+                  "yMax": "45.250000"
+                }
+              },
+              {
+                "text": "streamed",
+                "bounds": {
+                  "xMin": "97.972973",
+                  "yMin": "25.000000",
+                  "xMax": "195.270270",
+                  "yMax": "45.250000"
+                }
+              },
+              {
+                "text": "page",
+                "bounds": {
+                  "xMin": "207.432432",
+                  "yMin": "25.000000",
+                  "xMax": "256.081081",
+                  "yMax": "45.250000"
+                }
+              },
+              {
+                "text": "11",
+                "bounds": {
+                  "xMin": "268.243243",
+                  "yMin": "25.000000",
+                  "xMax": "292.567568",
+                  "yMax": "45.250000"
+                }
+              },
+              {
+                "text": "of",
+                "bounds": {
+                  "xMin": "304.729730",
+                  "yMin": "25.000000",
+                  "xMax": "329.054054",
+                  "yMax": "45.250000"
+                }
+              },
+              {
+                "text": "11",
+                "bounds": {
+                  "xMin": "341.216216",
+                  "yMin": "25.000000",
+                  "xMax": "365.540541",
+                  "yMax": "45.250000"
+                }
+              },
+              {
+                "text": "complete",
+                "bounds": {
+                  "xMin": "377.702703",
+                  "yMin": "25.000000",
+                  "xMax": "475.000000",
+                  "yMax": "45.250000"
+                }
+              }
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "pypdf",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 10,
+            "stage": "complete",
+            "pages": 11,
+            "extracted": "Large streamed page 11 of 11 complete",
+            "exit_code": 0
+          },
+          {
+            "engine": "PDFium",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 10,
+            "stage": "complete",
+            "versions": {
+              "wrapper": "5.15.1",
+              "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+              "flags": []
+            },
+            "binary_sha256": {
+              "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+            },
+            "pages": 11,
+            "extracted": "Large streamed page 11 of 11 complete",
+            "character_unicode": [
+              76,
+              97,
+              114,
+              103,
+              101,
+              32,
+              115,
+              116,
+              114,
+              101,
+              97,
+              109,
+              101,
+              100,
+              32,
+              112,
+              97,
+              103,
+              101,
+              32,
+              49,
+              49,
+              32,
+              111,
+              102,
+              32,
+              49,
+              49,
+              32,
+              99,
+              111,
+              109,
+              112,
+              108,
+              101,
+              116,
+              101
+            ],
+            "search": {},
+            "exit_code": 0
+          }
+        ],
+        "images": [
+          {
+            "page_index": 0,
+            "decoded_and_rendered_sha256": "25a23d87635059f5a7e84ca2c17e14545c05f67db5742a41ca33e4d3faf8ad16"
+          },
+          {
+            "page_index": 10,
+            "decoded_and_rendered_sha256": "25a23d87635059f5a7e84ca2c17e14545c05f67db5742a41ca33e4d3faf8ad16"
+          }
+        ],
+        "output_limit": 268435456,
+        "exceeds_legacy_buffer_ceiling": true,
+        "passed": true
+      }
+    ]
+  },
+  "pdfium_supplementary_search_failures": [
+    {
+      "file": "archival-streamed-rgb.pdf",
+      "versions": {
+        "wrapper": "5.15.1",
+        "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+        "flags": []
+      },
+      "binary_sha256": {
+        "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+      },
+      "extracted": "Reviewed archive café 中文 😀 é",
+      "character_unicode": [
+        82,
+        101,
+        118,
+        105,
+        101,
+        119,
+        101,
+        100,
+        32,
+        97,
+        114,
+        99,
+        104,
+        105,
+        118,
+        101,
+        32,
+        99,
+        97,
+        102,
+        233,
+        32,
+        20013,
+        25991,
+        32,
+        55357,
+        56832,
+        32,
+        101,
+        769
+      ],
+      "search": {
+        "café": [
+          17,
+          4
+        ],
+        "😀": []
+      },
+      "exit_code": 0
+    },
+    {
+      "file": "archival-streamed-gray.pdf",
+      "versions": {
+        "wrapper": "5.15.1",
+        "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+        "flags": []
+      },
+      "binary_sha256": {
+        "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+      },
+      "extracted": "Reviewed archive café 中文 😀 é",
+      "character_unicode": [
+        82,
+        101,
+        118,
+        105,
+        101,
+        119,
+        101,
+        100,
+        32,
+        97,
+        114,
+        99,
+        104,
+        105,
+        118,
+        101,
+        32,
+        99,
+        97,
+        102,
+        233,
+        32,
+        20013,
+        25991,
+        32,
+        55357,
+        56832,
+        32,
+        101,
+        769
+      ],
+      "search": {
+        "café": [
+          17,
+          4
+        ],
+        "😀": []
+      },
+      "exit_code": 0
+    },
+    {
+      "file": "archival-streamed-alpha.pdf",
+      "versions": {
+        "wrapper": "5.15.1",
+        "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+        "flags": []
+      },
+      "binary_sha256": {
+        "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+      },
+      "extracted": "Reviewed archive café 中文 😀 é",
+      "character_unicode": [
+        82,
+        101,
+        118,
+        105,
+        101,
+        119,
+        101,
+        100,
+        32,
+        97,
+        114,
+        99,
+        104,
+        105,
+        118,
+        101,
+        32,
+        99,
+        97,
+        102,
+        233,
+        32,
+        20013,
+        25991,
+        32,
+        55357,
+        56832,
+        32,
+        101,
+        769
+      ],
+      "search": {
+        "café": [
+          17,
+          4
+        ],
+        "😀": []
+      },
+      "exit_code": 0
+    },
+    {
+      "file": "archival-streamed-jpeg.pdf",
+      "versions": {
+        "wrapper": "5.15.1",
+        "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+        "flags": []
+      },
+      "binary_sha256": {
+        "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+      },
+      "extracted": "Reviewed archive café 中文 😀 é",
+      "character_unicode": [
+        82,
+        101,
+        118,
+        105,
+        101,
+        119,
+        101,
+        100,
+        32,
+        97,
+        114,
+        99,
+        104,
+        105,
+        118,
+        101,
+        32,
+        99,
+        97,
+        102,
+        233,
+        32,
+        20013,
+        25991,
+        32,
+        55357,
+        56832,
+        32,
+        101,
+        769
+      ],
+      "search": {
+        "café": [
+          17,
+          4
+        ],
+        "😀": []
+      },
+      "exit_code": 0
+    },
+    {
+      "file": "archival-streamed-text.pdf",
+      "versions": {
+        "wrapper": "5.15.1",
+        "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+        "flags": []
+      },
+      "binary_sha256": {
+        "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+      },
+      "extracted": "Reviewed archive café 中文 😀 é",
+      "character_unicode": [
+        82,
+        101,
+        118,
+        105,
+        101,
+        119,
+        101,
+        100,
+        32,
+        97,
+        114,
+        99,
+        104,
+        105,
+        118,
+        101,
+        32,
+        99,
+        97,
+        102,
+        233,
+        32,
+        20013,
+        25991,
+        32,
+        55357,
+        56832,
+        32,
+        101,
+        769
+      ],
+      "search": {
+        "café": [
+          17,
+          4
+        ],
+        "😀": []
+      },
+      "exit_code": 0
+    }
+  ],
+  "other_failure": {
+    "case": "unicode-subsets.pdf",
+    "expected_scalars": 65542,
+    "reader": "Poppler",
+    "actual_exact_prefix_scalars": 50000,
+    "pdf_sha256": "ee9243c6fd476caec51819fae9cef9630213b320667856db22b53a63d3934ac8",
+    "diagnosis": "Separate local read-only evidence in poppler-dense-local-2111db6.json; source-based tiny-character guard inference"
+  },
+  "next_acceptance": "Separate writer/archive/exact-copy and BMP search from conspicuous strict supplementary-search and dense-page diagnostic jobs; retain all original assertions. Qualify the exact source with panic hardening and Windows UTF-8 path fix."
+}

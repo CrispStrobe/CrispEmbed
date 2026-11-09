@@ -3622,7 +3622,9 @@ fn ocr_render_check(renderer: *mut std::ffi::c_void) -> Result<(), String> {
     if error.is_null() {
         Ok(())
     } else {
-        Err(unsafe { CStr::from_ptr(error) }.to_string_lossy().into_owned())
+        Err(unsafe { CStr::from_ptr(error) }
+            .to_string_lossy()
+            .into_owned())
     }
 }
 
@@ -3644,7 +3646,9 @@ fn ocr_render_document(
         }
     }
     for page in pages {
-        if page.regions.len() > i32::MAX as usize || page.image_path.is_some_and(|p| p.contains('\0')) {
+        if page.regions.len() > i32::MAX as usize
+            || page.image_path.is_some_and(|p| p.contains('\0'))
+        {
             return Err("Page count or image path is invalid".to_string());
         }
         for reg in page.regions {
@@ -3692,7 +3696,9 @@ fn ocr_render_document(
         let texts: Vec<std::ffi::CString> = page
             .regions
             .iter()
-            .map(|reg| std::ffi::CString::new(reg.text.as_str()).expect("NUL checked before allocation"))
+            .map(|reg| {
+                std::ffi::CString::new(reg.text.as_str()).expect("NUL checked before allocation")
+            })
             .collect();
         let words: Vec<OcrRenderWord> = page
             .regions

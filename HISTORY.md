@@ -4,6 +4,23 @@ for final verdicts, live jobs and remaining tasks.
 
 ## 9 November 2026 — reviewed PDF export implementation checkpoint
 
+At [writer source `2111db64`](tests/results/ocr-render/writer-2111db6.json),
+70 C++ checks and nine production Rust writer contracts pass. Thirteen actual
+PDFs pass veraPDF PDF/A-2b and both damaged controls are rejected. A real
+138,448,604-byte streamed file preserves eleven pages, dimensions, text and
+source image pixels. The overall job remains failed on five PDFium
+supplementary searches and Poppler's 50,000-character exact prefix in the dense
+single-page test; both failures are retained separately. The
+[same-source strict reader run](tests/results/ocr-render/readers-2111db6.json)
+now has MuPDF 11/11 and pypdf 11/11 exact logical matches, but Poppler CLI 2/11
+and PDFium 1/11 keep bidi disabled. All 21 archival files pass and both damaged
+controls fail. These reports supersede the pending status below.
+
+The [first representation matrix](tests/results/ocr-render/strategies-3048ee7.json)
+retains 24 exercised native/run-fallback controls and 60 unexercised scalar
+controls that stopped in fontTools fixture construction. Those construction
+errors are not reader failures; the corrected source has its own hosted run.
+
 The [f06ea90 repaired-harness run](tests/results/ocr-render/readers-f06ea90.json)
 passes 59 native checks, all 16 veraPDF PDF/A-2b positives and two damaged
 controls. Its actual logical text matches are MuPDF 9/11, pypdf 11/11,

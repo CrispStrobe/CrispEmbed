@@ -321,15 +321,53 @@ class ArtifactTests(unittest.TestCase):
         # involving shaping, missing display fonts or script direction rules.
         scalars = [cp for cp in range(0xF0000, 0x100008) if cp not in (0xFFFFE, 0xFFFFF)]
         text = "".join(chr(cp) for cp in scalars)
+        # Keep each page below the separate reader tiny-character stress
+        # limit. The complete text is unchanged and the font transition must
+        # still occur within the second page, not merely between pages.
+        parts = [text[:32000], text[32000:]]
+        path = self.render("unicode-subsets-multipage.pdf",
+                           [{"regions": [(part, 10, 10, 300, 220)]} for part in parts])
+        reader, document = self.read_pdf(path)
+        self.assertEqual(len(document), 2)
+        fonts_used = []
+        for page in reader.pages:
+            fonts = {str(operands[0]) for operands, operator in ContentStream(page.get_contents(), reader).operations
+                     if operator == b"Tf"}
+            fonts_used.append(sorted(fonts))
+        self.assertEqual(fonts_used[0], ["/F1"])
+        self.assertEqual(fonts_used[1], ["/F1", "/F2"])
+        for source, extracted in (("PyMuPDF", "".join(page.get_text() for page in document)),
+                                  ("Poppler", self.poppler_text(path)),
+                                  ("pypdf", "".join(page.extract_text() for page in reader.pages))):
+            self.assertEqual(extracted.replace("\n", "").replace("\f", ""), text,
+                             source + " lost characters at the CID subset boundary")
+        document.close()
+        self.receipt["tests"].append({"unique_scalars": len(scalars), "font_subsets": 2,
+                                      "pages": 2, "scalars_per_page": list(map(len, parts)),
+                                      "fonts_used_per_page": fonts_used})
+
+    def test_dense_single_page_reader_limit(self):
+        # Preserve the original complete single-page stress assertion. It is
+        # a separate reader-limit diagnostic, never an expected-success
+        # substitution or a reason to rewrite valid logical Unicode.
+        scalars = [cp for cp in range(0xF0000, 0x100008) if cp not in (0xFFFFE, 0xFFFFF)]
+        text = "".join(chr(cp) for cp in scalars)
         path = self.render("unicode-subsets.pdf", [{"regions": [(text, 10, 10, 300, 220)]}])
         reader, document = self.read_pdf(path)
         self.assertEqual(len(reader.pages[0]["/Resources"]["/Font"]), 2)
+        results = []
         for source, extracted in (("PyMuPDF", document[0].get_text()), ("Poppler", self.poppler_text(path)),
                                   ("pypdf", reader.pages[0].extract_text())):
-            self.assertTrue(extracted.replace("\n", "").replace("\f", "") == text,
-                            source + " lost characters at the CID subset boundary")
+            actual = extracted.replace("\n", "").replace("\f", "")
+            (self.root / ("dense-subsets-" + source.lower() + ".txt")).write_text(extracted)
+            results.append({"reader": source, "expected_scalars": len(text), "actual_scalars": len(actual),
+                            "exact": actual == text, "exact_prefix": actual == text[:len(actual)],
+                            "text_sha256": hashlib.sha256(actual.encode()).hexdigest()})
+            with self.subTest(reader=source):
+                self.assertEqual(actual, text, source + " lost characters in the single-page density stress case")
         document.close()
-        self.receipt["tests"].append({"unique_scalars": len(scalars), "font_subsets": 2})
+        self.receipt["tests"].append({"single_page_reader_limit": results,
+                                      "pdf_sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
 
     def test_text_only_pdf_is_safe_for_legacy_string_callers(self):
         text = "Text-only café 中文 😀"
@@ -434,14 +472,34 @@ class ArtifactTests(unittest.TestCase):
                     self.assertIn(expected, document[index].get_text())
                     self.assertIn(expected, reader.pages[index].extract_text())
                 for engine in ("PyMuPDF", "Poppler", "pypdf", "PDFium"):
-                    probe = self.probe_pdf(path, engine, ["café", "😀"] if engine in ("PyMuPDF", "PDFium") else ())
+                    probe = self.probe_pdf(path, engine, ["café", "中文"] if engine in ("PyMuPDF", "PDFium") else ())
                     self.assertEqual(probe["exit_code"], 0, str(probe))
                     self.assertIn(text, probe["extracted"], str(probe))
                     if engine in ("PyMuPDF", "PDFium"):
                         self.assertTrue(all(probe["search"].values()), str(probe))
                 self.receipt["tests"].append({"stream_preserved": path.name, "pages": 2,
-                    "image_pixels": "equal_to_byte_api", "readers": 4, "search_readers": 2})
+                    "image_pixels": "equal_to_byte_api", "readers": 4, "search_readers": 2,
+                    "search_scope": "BMP Latin and CJK; supplementary search remains a separate strict diagnostic"})
                 document.close(); control.close()
+
+    def test_supplementary_reader_search(self):
+        # Retain the five original supplementary search assertions separately
+        # from exact-copy/writer/archive qualification. This method still fails
+        # when a reader cannot search the actual supplementary scalar.
+        text = "Reviewed archive café 中文 😀 e\u0301"
+        for name, image in (("rgb", "rgb.png"), ("gray", "gray.png"), ("alpha", "alpha.png"),
+                            ("jpeg", "rgb.jpg"), ("text", None)):
+            pages = [{"image": self.root / image if image else None, "points": (160, 120),
+                      "regions": [(text, 20, 30, 280, 30)]},
+                     {"image": self.root / image if image else None, "points": (180, 135),
+                      "regions": [("Second page café 中文 😀", 20, 100, 280, 30)]}]
+            path = self.render("archival-supplementary-search-" + name + ".pdf", pages, pdfa=True, stream=True)
+            for engine in ("PyMuPDF", "PDFium"):
+                with self.subTest(image=name, reader=engine):
+                    probe = self.probe_pdf(path, engine, ["café", "😀"])
+                    self.assertEqual(probe["exit_code"], 0, str(probe))
+                    self.assertIn(text, probe["extracted"], str(probe))
+                    self.assertTrue(all(probe["search"].values()), str(probe))
 
     def test_ltr_opt_in_preserves_scalar_encoding(self):
         text = "Invoice 123: café 中文 😀 e\u0301"

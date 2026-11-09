@@ -198,9 +198,48 @@ in all eleven cases; this alone does not qualify search/copy. The
 [older per-character experiment](../tests/results/ocr-render/character-593f827.json)
 preserves its negative results and the then-unexercised PDFium harness.
 
-The streaming/scalar-Unicode source `2111db64` has independent writer and
-strict bidi jobs. Its new results remain pending at this checkpoint. The
-bidirectional capability stays withheld; no failed assertion is converted
-into a pass or substituted with a more favorable extraction API. A broad
-conformance or reader-compatibility claim requires a passing report for the exact source.
-No release asset or application production pin changes as part of this lane.
+The [writer receipt at `2111db64`](../tests/results/ocr-render/writer-2111db6.json)
+records 70 native checks, nine production Rust contracts, thirteen PDF/A-2b
+positives and both damaged controls. An actual 11-page, 138,448,604-byte file
+retains every page and its physical size; the original random RGB pixels and
+text survive independent decoding. This hosted export takes 7.84 seconds with
+59,312 KiB maximum resident memory. Those measurements describe this fixture,
+not a device or universal memory guarantee. The overall job still fails five
+supplementary-search assertions and one extreme page-density assertion.
+
+The [strict reader receipt at the same source](../tests/results/ocr-render/readers-2111db6.json)
+has exact logical extraction in MuPDF 11/11 and pypdf 11/11, while Poppler CLI
+remains 2/11 and PDFium 1/11. All 21 archival positives pass veraPDF and both
+damaged controls fail. Bidirectional capability 16 remains withheld.
+
+### Explicit reader limits
+
+PDFium copies supplementary scalar text correctly through `ToUnicode`, but
+its pinned Linux core cannot find the complete emoji search needle in the
+five ordinary streamed fixtures. A
+[separate local independent-producer control](../tests/results/ocr-render/pdfium-supplementary-local-control.json)
+reproduces the copy/search difference. That producer initially emitted invalid
+five-digit CMap destinations; the invalid original is retained, and the valid
+control changes only those destinations to UTF-16BE surrogate pairs. The
+hosted diagnostic repeats both producer paths with the exact reader binary
+hash, full-scalar searches and diagnostic raw UTF-16-unit queries. Invalid
+query units never become PDF text or a production workaround.
+
+The [retained single-page density diagnosis](../tests/results/ocr-render/poppler-dense-local-2111db6.json)
+shows all 65,542 source characters in the PDF, while Poppler returns exactly
+the first 50,000. Its source has a tiny-character guard matching the threshold;
+the retrieved source snapshot predates the diagnosed binary, so this is a
+source-based inference rather than an instrumented build. The font transition
+occurs later, at character 63,486. The positive font-subset test therefore keeps
+the complete ground truth across two pages below that per-page count and
+requires both fonts within page 2. The original one-page test remains a strict,
+failing diagnostic; no text is deleted or relabeled as a pass.
+
+The writer workflow reports separate jobs for writer/archive/exact-copy and
+BMP search, and for strict supplementary search and dense-page limits. A failed
+diagnostic stays red and keeps its complete PDFs and reader output. The full
+artifact workflow also retains all original strict assertions. The next exact
+candidate includes panic-payload containment and the separate Windows Unicode
+image-path fix; their source-specific hosted gates must finish before an app
+pin changes. General bidi and universal search compatibility remain unqualified.
+No release asset changes as part of this lane.

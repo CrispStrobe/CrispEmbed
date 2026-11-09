@@ -11,9 +11,25 @@ failed CLI output. Neither source qualifies general bidi export.
 The writer source `2111db64` bounds output slices at 64 KiB and allows an
 explicit 4 KiB..2 GiB file limit while retaining page/input/image ceilings.
 Object bodies leave memory as they are emitted; the whole PDF is not retained.
-A hosted 11-page >128 MiB file under a 256 MiB ceiling is pending, with actual
-time/RSS and independent PDF readers/veraPDF required before recording a
-measured result. These design bounds are not a peak-memory guarantee.
+The [hosted writer receipt](tests/results/ocr-render/writer-2111db6.json) records
+an 11-page, 138,448,604-byte PDF under a 256 MiB ceiling, using 2048 by 2048
+seeded random RGB source pages. Export takes 7.84 seconds (6.81 user, 0.25
+system), with 59,312 KiB maximum resident memory and no swaps. All page sizes
+and text survive independent parsing; first/last decoded and rendered pixels
+match exactly. All thirteen positive PDFs pass veraPDF PDF/A-2b and both
+damaged controls fail. This is one hosted fixture, not a mobile timing,
+5,000-page throughput or universal peak-memory guarantee. Overall qualification
+still fails the separately retained reader-limit assertions.
+
+At the same source, bidi exact logical extraction improves to MuPDF 11/11 and
+pypdf 11/11; Poppler CLI 2/11 and PDFium 1/11 remain inadequate for enabling
+the option. Ordinary supplementary text copies correctly in four readers,
+but PDFium's complete emoji search fails in five streamed fixtures. The dense
+single-page CID test places all 65,542 scalars in the PDF; Poppler returns the
+exact first 50,000 before its font transition. The original failure and
+source-based tiny-character guard diagnosis remain preserved. A separate
+two-page CID test keeps the entire ground truth and crosses the font boundary
+within page 2; it isolates subset correctness without changing PDF text.
 
 At the [initial baseline](tests/results/ocr-render/baseline-87357610.json), five
 two-page archival cases (RGB, grayscale, alpha, JPEG, text-only) retain zero pixel

@@ -1,5 +1,17 @@
 # CrispEmbed plan — open work (updated 7 November 2026)
 
+## Windows document path boundary — 9 November 2026
+
+Owner lane: `feat/ocr-windows-unicode-paths`, based on frozen renderer candidate
+`2111db64d845b4ef6a374da2a2f69c202f1d1ce7`; main `e4ee7193` is already an ancestor.
+Enable the upstream Windows UTF-8 filename adapters in the actual production
+image loader/writer and their standalone OCR harness. This is a file-I/O boundary
+repair, preserving image math, inference defaults, releases and model aliases.
+The [Windows protocol](docs/ocr-windows-paths.md) executes production translation
+units, exact ASCII/Unicode pixel and patch comparisons, four independently read
+PDFs and a historical ANSI negative control. Hosted execution is pending; no
+native/model build is performed in the editing environment.
+
 ## Phone-photo geometry — 9 November 2026
 
 Owner lane: `feat/ocr-photo-preprocessing`, based on
@@ -97,8 +109,22 @@ failures remain. LTR uses scalar ToUnicode without redundant replacement text.
 Source-bound writer qualification includes partial-output limits, original
 I/O errors, cancellation, short/zero writes, panic containment, real files,
 independent image/text/page checks and a >128 MiB export under a 256 MiB cap.
-This gate and the separate unchanged strict bidi gate are pending. The app
-owns atomic publication and final paired native/mobile execution.
+The [source-bound receipt](tests/results/ocr-render/writer-2111db6.json) now
+records native 70/70, Rust 9/9, thirteen archival positives and both negative
+controls. The real 138,448,604-byte, 11-page file preserves text/pixels/pages;
+its measured time/RSS are fixture-specific. The overall gate fails five
+PDFium supplementary searches and the retained Poppler single-page density
+stress case. Strict bidi at the same source is MuPDF 11/11, pypdf 11/11,
+Poppler CLI 2/11 and PDFium 1/11, so bit16 remains withheld.
+
+Next exact candidate: combine `f39bcdf` panic-payload containment and the
+isolated Windows UTF-8 image-path fix. Qualify writer/archive/exact-copy/BMP
+search separately from still-failing supplementary-search and extreme-density
+diagnostic jobs, retaining every original assertion and the independent
+producer control. The positive CID-subset test keeps all 65,542 scalars across
+two pages, with both font subsets used inside page 2. Continue the separate
+scalar/cluster bidi matrix after its fontTools fixture fix. The app owns atomic
+publication and final paired native/mobile execution; no pending job is a pass.
 
 Preserved reader evidence: `f06ea90` exercises PDFium after repairing the
 harness; `ef8ab9a` fixes MuPDF's 32-scalar boundary but exposes inherited

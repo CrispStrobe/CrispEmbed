@@ -2,7 +2,7 @@ name: OCR bounded writer and archival qualification
 
 on:
   push:
-    branches: [feat/ocr-pdf-stream-writer, feat/ocr-pdf-stream-hardening]
+    branches: [feat/ocr-pdf-stream-writer, feat/ocr-pdf-stream-hardening, feat/ocr-pdf-writer-qualified]
     paths:
       - 'src/ocr_render.*'
       - 'src/ocr_pdf_*.h'
@@ -125,3 +125,69 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
           compression-level: 0
+      - name: Preserve exact native diagnostic library
+        if: always() && steps.native.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-writer-diagnostic-native
+          path: build-ocr-render/libocr_render_test.so
+          if-no-files-found: error
+          retention-days: 90
+
+  reader-limit-diagnostics:
+    name: Strict supplementary search and dense-page reader diagnostics
+    needs: writer-archival-unicode
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install the exact readers and independent producer font
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils fonts-dejavu-core
+          python -m pip install 'Pillow==13.0.0' 'pypdf==6.21.4' 'PyMuPDF==1.26.6' 'pypdfium2==5.15.1' 'fonttools==4.68.0'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ocr-writer-qualification
+          path: build-ocr-render/artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          name: ocr-writer-diagnostic-native
+          path: build-ocr-render
+      - name: Verify source and native binary identity
+        id: identity
+        run: |
+          sha256sum -c build-ocr-render/artifacts/native-sha256.txt
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          expected = Path('build-ocr-render/artifacts/source.txt').read_text().strip()
+          actual = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert expected == actual, (expected, actual)
+          PY
+      - name: Retain all original reader-limit assertions
+        if: always() && steps.identity.outcome == 'success'
+        run: |
+          python tests/test_ocr_render_artifacts.py \
+            --library build-ocr-render/libocr_render_test.so --artifacts build-ocr-render/reader-limits -v \
+            ArtifactTests.test_dense_single_page_reader_limit \
+            ArtifactTests.test_supplementary_reader_search
+      - name: Check raw search and a valid independent producer control
+        if: always() && steps.identity.outcome == 'success'
+        run: |
+          python tests/ocr_render_reader_limit_diagnostic.py \
+            --native-pdf build-ocr-render/artifacts/archival-streamed-rgb.pdf \
+            --font /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf \
+            --output build-ocr-render/reader-limits/independent
+      - name: Preserve failing diagnostics and independent originals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-reader-limit-diagnostics
+          path: build-ocr-render/reader-limits
+          if-no-files-found: error
+          retention-days: 90
