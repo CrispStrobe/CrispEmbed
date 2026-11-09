@@ -1,0 +1,15 @@
+{
+  "kind": "python-native-driver-attempt",
+  "name": "test_teleocr_loader",
+  "attempt": 2,
+  "source_commit": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+  "native_library_sha256": "decb81ce3f68f30db24cc6eb686f712750e86f68dbd5f9cc6930d65f87210328",
+  "probe_sha256": "cc87ae9f921aaad44a680bf6027dafc323c18448db862177a740ebb2440d3862",
+  "started_utc": "2026-11-09T11:09:34.379502+00:00",
+  "elapsed_seconds": 2.402,
+  "exit_code": 0,
+  "model_weights_used": false,
+  "passed": true,
+  "passed_count": 57,
+  "total_count": 57
+}

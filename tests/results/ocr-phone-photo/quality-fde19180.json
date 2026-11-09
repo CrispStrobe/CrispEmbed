@@ -1,0 +1,500 @@
+{
+  "schema": "crispembed-phone-photo-quality-v1",
+  "synthetic_only": true,
+  "source_files": {
+    "src/ocr_crop.cpp": "6888c26ff3c54042ca58811f5f60353b8b97d1e0da56a4a4df73816dbf334fc9",
+    "src/ocr_crop.h": "a984b6d1a98c67df87f42228b2ed58f2c763c4d9d4dc213c1080eac39c3a60b7",
+    "src/scan_cleanup.cpp": "a37bcae9f42b05afbffd5f103b2018f1be4f2c6ba738d8938d9b553f740386eb",
+    "src/scan_cleanup.h": "ec7039ecdad7f7c57f020813eab2066a65f19cf9f529bce4e76d3f95615d4d1e",
+    "src/ocr_photo.cpp": "d02dc3a776fdb1cfd617fe79f5cc951dea6951e168f99cc76923f0ae7aff2b5f",
+    "src/classical_preproc.cpp": "eb7cc3bbe87fef7bd7693027ecccb422540dfe3693602fcb95771a09d1fce042",
+    "src/morph_fast.cpp": "05859c804dd5e2c1c43e32bec1d306e162bcc912b3f50124c80140843b604aa6",
+    "tests/test_ocr_photo.cpp": "06dcc3d45274ef0f0a2ebf23fb0e77d4bd1bcbbe4940152312357c183c6e6135",
+    "tests/test_ocr_photo_quality.py": "9106bd29cfb5599af4e066038909ca64e074593ac8fd44b0362159922fff0580"
+  },
+  "binary_sha256": "f0c2f4316c8e6e27f96bfd4df164ece73fa7416b6725c4d120584794856f321b",
+  "recipe": "RGB deskew; existing grayscale background whitening for shadowed cases",
+  "recognition_engine": "tesseract 5.3.4",
+  "font": "DejaVuSans.ttf",
+  "font_sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280",
+  "ground_truth": "FIELD SERVICE INSPECTION\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+  "clean": {
+    "cer": 0.0,
+    "wer": 0.0,
+    "characters": 482,
+    "words": 71,
+    "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+    "seconds": 0.697
+  },
+  "cases": [
+    {
+      "case": "aligned",
+      "kind": "deskew",
+      "rotation_ccw_degrees": 0,
+      "raw": {
+        "cer": 0.0,
+        "wer": 0.0,
+        "characters": 482,
+        "words": 71,
+        "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+        "seconds": 0.6113
+      },
+      "arms": {
+        "legacy": {
+          "geometry": {
+            "angle": 0,
+            "width": 1400,
+            "height": 1800,
+            "seconds": 0.2971
+          },
+          "deskew_only": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.6126
+          },
+          "background_whitening": null,
+          "ocr": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.6126
+          }
+        },
+        "bounded": {
+          "geometry": {
+            "angle": 0,
+            "width": 1400,
+            "height": 1800,
+            "seconds": 0.1613
+          },
+          "deskew_only": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.6161
+          },
+          "background_whitening": null,
+          "ocr": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.6161
+          }
+        },
+        "public_api": {
+          "geometry": {
+            "angle": 0,
+            "correction_degrees": 0,
+            "width": 1400,
+            "height": 1800,
+            "seconds": 0.0877
+          },
+          "deskew_only": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.6106
+          },
+          "background_whitening": null,
+          "ocr": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.6106
+          }
+        }
+      }
+    },
+    {
+      "case": "clockwise",
+      "kind": "deskew",
+      "rotation_ccw_degrees": -4.2,
+      "raw": {
+        "cer": 0.026970954356846474,
+        "wer": 0.18309859154929578,
+        "characters": 482,
+        "words": 71,
+        "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document Capture Validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\n\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres Per minute,\nThe Safety valve Opened at the \u20acxpected limit.\nAll seals were Clean and the housing was dry.\nReplace the filter after 500 Operating hours.\n\nThe next Service requires a Signed work order,\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled Operation.",
+        "seconds": 0.6693
+      },
+      "arms": {
+        "legacy": {
+          "geometry": {
+            "angle": 4.2,
+            "width": 1665,
+            "height": 2005,
+            "seconds": 0.4242
+          },
+          "deskew_only": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.685
+          },
+          "background_whitening": null,
+          "ocr": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.685
+          }
+        },
+        "bounded": {
+          "geometry": {
+            "angle": 4.2,
+            "width": 1665,
+            "height": 2005,
+            "seconds": 0.2466
+          },
+          "deskew_only": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.6741
+          },
+          "background_whitening": null,
+          "ocr": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.6741
+          }
+        },
+        "public_api": {
+          "geometry": {
+            "angle": 4.2,
+            "correction_degrees": -4.2,
+            "width": 1665,
+            "height": 2005,
+            "seconds": 0.1691
+          },
+          "deskew_only": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.6773
+          },
+          "background_whitening": null,
+          "ocr": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.6773
+          }
+        }
+      }
+    },
+    {
+      "case": "counterclockwise_shadow",
+      "kind": "deskew",
+      "rotation_ccw_degrees": 6.7,
+      "raw": {
+        "cer": 0.02074688796680498,
+        "wer": 0.1267605633802817,
+        "characters": 480,
+        "words": 71,
+        "text": "FIELD SERVICE INSPECTION\nRecord 2048: pocument capture yalidation.\nCustomer: North River Engineering.\ninspection date: 09 November 2026.\nEquipment: Pump station 27.\npressure: 4.8 bat. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing Was dry.\nReplace the filter after 500 operating hours.\nThe next service requires 2 signed work order\ninspector Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+        "seconds": 0.7143
+      },
+      "arms": {
+        "legacy": {
+          "geometry": {
+            "angle": -6.7,
+            "width": 1819,
+            "height": 2126,
+            "seconds": 0.538
+          },
+          "deskew_only": {
+            "cer": 0.6742738589211619,
+            "wer": 0.7746478873239436,
+            "characters": 165,
+            "words": 28,
+            "text": "a\nitres per minute.\n1a Perexpected limit.\nul he wee was dry.\n) 500 operating hours.\nquires a signed work order.\norgan. eererence: 73915.\nved for scheduled operation.",
+            "seconds": 0.5045
+          },
+          "background_whitening": {
+            "width": 1819,
+            "height": 2126,
+            "seconds": 0.211
+          },
+          "ocr": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.7532
+          }
+        },
+        "bounded": {
+          "geometry": {
+            "angle": -6.7,
+            "width": 1819,
+            "height": 2126,
+            "seconds": 0.3124
+          },
+          "deskew_only": {
+            "cer": 0.6742738589211619,
+            "wer": 0.7746478873239436,
+            "characters": 165,
+            "words": 28,
+            "text": "a\nitres per minute.\n1a Perexpected limit.\nul he wee was dry.\n) 500 operating hours.\nquires a signed work order.\norgan. eererence: 73915.\nved for scheduled operation.",
+            "seconds": 0.5007
+          },
+          "background_whitening": {
+            "width": 1819,
+            "height": 2126,
+            "seconds": 0.2121
+          },
+          "ocr": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.7522
+          }
+        },
+        "public_api": {
+          "geometry": {
+            "angle": -6.7,
+            "correction_degrees": 6.7,
+            "width": 1819,
+            "height": 2126,
+            "seconds": 0.2001
+          },
+          "deskew_only": {
+            "cer": 0.6639004149377593,
+            "wer": 0.7746478873239436,
+            "characters": 172,
+            "words": 31,
+            "text": "Bi 7\ntres 43 minute.\nat th BP cected limit.\nthe how sing was dry.\ne 500 operating hours.\nquires a signed work order.\norgan. Reference: 73915.\nroved for scheduled operation.",
+            "seconds": 0.5062
+          },
+          "background_whitening": {
+            "width": 1819,
+            "height": 2126,
+            "seconds": 0.2105
+          },
+          "ocr": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.7585
+          }
+        }
+      }
+    },
+    {
+      "case": "steep_shadow",
+      "kind": "deskew",
+      "rotation_ccw_degrees": -10,
+      "raw": {
+        "cer": 0.12448132780082988,
+        "wer": 0.5352112676056338,
+        "characters": 475,
+        "words": 71,
+        "text": "FIELD SERVICE INSPECTion\nRecorg 2048. Document Capture Validation\nCustomer. North River \u201cNgineering,\nMspection date: 09 November 2026.\n\u201cquipment. Pump Station 27.\nPressure. 4.8 bar. Flow: 125 litres Per Minute.\nThe Safety Valve \u00b0Peneg at the ExPeCteg limit.\nAll S\u20acals Were Clean aNd the Nousing Was dry,\nReplace the filter after 500 \u00b0P\u20acrating hours.\nThe next SErvice requires 9 Signeg Work Order.\nspector. Alex Morgan, Reference. 73915\nStatus. Approve for Scheduleg Peration,",
+        "seconds": 0.7079
+      },
+      "arms": {
+        "legacy": {
+          "geometry": {
+            "angle": 10,
+            "width": 2017,
+            "height": 2280,
+            "seconds": 0.5884
+          },
+          "deskew_only": {
+            "cer": 0.8381742738589212,
+            "wer": 0.9014084507042254,
+            "characters": 88,
+            "words": 16,
+            "text": "4 fa\nS per minute.\nexpected limit.\nerating hours.\ngned work order.\nluled ! operation.\n\"1",
+            "seconds": 0.4733
+          },
+          "background_whitening": {
+            "width": 2017,
+            "height": 2280,
+            "seconds": 0.2444
+          },
+          "ocr": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.7969
+          }
+        },
+        "bounded": {
+          "geometry": {
+            "angle": 10,
+            "width": 2017,
+            "height": 2280,
+            "seconds": 0.3266
+          },
+          "deskew_only": {
+            "cer": 0.8381742738589212,
+            "wer": 0.9014084507042254,
+            "characters": 88,
+            "words": 16,
+            "text": "4 fa\nS per minute.\nexpected limit.\nerating hours.\ngned work order.\nluled ! operation.\n\"1",
+            "seconds": 0.4791
+          },
+          "background_whitening": {
+            "width": 2017,
+            "height": 2280,
+            "seconds": 0.2509
+          },
+          "ocr": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.7981
+          }
+        },
+        "public_api": {
+          "geometry": {
+            "angle": 10,
+            "correction_degrees": -10,
+            "width": 2017,
+            "height": 2280,
+            "seconds": 0.2106
+          },
+          "deskew_only": {
+            "cer": 0.7759336099585062,
+            "wer": 0.9014084507042254,
+            "characters": 123,
+            "words": 27,
+            "text": "j\nic atior ;\na\nE\np fmin ute.\nee ed limit.\nBing was dry.\ner sting hours.\nae work order.\nsrence: 73915.\nce\niled operation.\n\u201c1",
+            "seconds": 0.5064
+          },
+          "background_whitening": {
+            "width": 2017,
+            "height": 2280,
+            "seconds": 0.2507
+          },
+          "ocr": {
+            "cer": 0.0,
+            "wer": 0.0,
+            "characters": 482,
+            "words": 71,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.8038
+          }
+        }
+      }
+    },
+    {
+      "case": "perspective_shadow",
+      "kind": "projective",
+      "corners": [
+        [
+          170.0,
+          170.0
+        ],
+        [
+          1480.0,
+          70.0
+        ],
+        [
+          1240.0,
+          1830.0
+        ],
+        [
+          330.0,
+          1670.0
+        ]
+      ],
+      "raw": {
+        "cer": 0.14522821576763487,
+        "wer": 0.38028169014084506,
+        "characters": 496,
+        "words": 78,
+        "text": "CTION\nFIELD SERVICE INSPE\nidation.\n; t capture vali\nRecord 2048: Document cap\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\nEquipment: Pump station 27.\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve Opened at the \u20acxpected limit,\nAll seals were Clean and the housing was dry.\nReplace the filter after 500 Operating hours.\nThe next Service requires 4 Signed work Order.\n'Nspector: Alex Morgan, Reference. 73915,\nSi j\ntatus: Approved for Schedule Speration,",
+        "seconds": 0.6818
+      },
+      "arms": {
+        "legacy": {
+          "geometry": {
+            "width": 1314,
+            "height": 1776,
+            "seconds": 0.0428
+          },
+          "ocr": {
+            "cer": 0.008298755186721992,
+            "wer": 0.028169014084507043,
+            "characters": 486,
+            "words": 73,
+            "text": "FIELD SERVICE INSPECTION\n\nRecord 2048: Document capture validation.\n\nCustomer: North River Engineering.\n\nInspection date: 09 November 2026.\n\nEquipment: Pump station 27.\n\nPressure: 4.8 bar. Flow: 125 litres per minute.\n\nThe safety valve opened at the expected limit.\n\nAll seals were clean and the housing was dry.\n\nReplace the filter after 500 operating hours.\n\nThe next service requires a signed work order.\n\nInspector: Alex Morgan. Reference: 73915. |\nStatus: Approved for scheduled operation. |",
+            "seconds": 0.648
+          }
+        },
+        "projective": {
+          "geometry": {
+            "width": 1314,
+            "height": 1776,
+            "seconds": 0.0847
+          },
+          "ocr": {
+            "cer": 0.004149377593360996,
+            "wer": 0.014084507042253521,
+            "characters": 484,
+            "words": 72,
+            "text": "FIELD SERVICE INSPECTION\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\nInspection date: 09 November 2026.\n\n| Equipment: Pump station 27.\nPressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\nReplace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.6722
+          }
+        },
+        "public_api": {
+          "geometry": {
+            "width": 1315,
+            "height": 1777,
+            "seconds": 0.0889
+          },
+          "ocr": {
+            "cer": 0.012448132780082987,
+            "wer": 0.04225352112676056,
+            "characters": 488,
+            "words": 74,
+            "text": "FIELD SERVICE INSPECTION\nRecord 2048: Document capture validation.\nCustomer: North River Engineering.\n\nInspection date: 09 November 2026.\n\n| Equipment: Pump station 27.\n\n| Pressure: 4.8 bar. Flow: 125 litres per minute.\nThe safety valve opened at the expected limit.\nAll seals were clean and the housing was dry.\n\n| Replace the filter after 500 operating hours.\nThe next service requires a signed work order.\nInspector: Alex Morgan. Reference: 73915.\nStatus: Approved for scheduled operation.",
+            "seconds": 0.6802
+          }
+        }
+      }
+    }
+  ],
+  "failures": [],
+  "native_recognition_models_qualified": false,
+  "physical_devices_tested": false,
+  "passed": true
+}

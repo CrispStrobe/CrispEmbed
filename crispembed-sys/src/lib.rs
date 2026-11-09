@@ -4,6 +4,37 @@
 use std::ffi::{c_char, c_float, c_int};
 use std::os::raw::c_void;
 
+/// Immutable borrowed registry file metadata; NULL sha256 means unpinned.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct CrispembedModelDownloadFileV1 {
+    pub filename: *const c_char,
+    pub url: *const c_char,
+    pub sha256: *const c_char,
+}
+
+/// Fixed v1 layout. Do not extend; use a new version for any future layout.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct CrispembedModelDownloadInfoV1 {
+    pub name: *const c_char,
+    pub license: *const c_char,
+    pub model_card_url: *const c_char,
+    pub requires_license_acceptance: c_int,
+    pub primary: CrispembedModelDownloadFileV1,
+    pub companion: CrispembedModelDownloadFileV1,
+    pub has_companion: c_int,
+}
+
+extern "C" {
+    /// Exact-name, metadata-only lookup: 1 found, 0 unknown, -1 NULL argument.
+    /// Clears non-NULL output. Returned strings are immutable for process lifetime.
+    pub fn crispembed_get_model_download_info_v1(
+        exact_name: *const c_char,
+        out: *mut CrispembedModelDownloadInfoV1,
+    ) -> c_int;
+}
+
 #[repr(C)]
 pub struct CrispembedMarkerContext(c_void);
 
@@ -37,6 +68,13 @@ extern "C" {
     pub fn crispembed_marker_convert(ctx: *mut CrispembedMarkerContext, file: *const c_char) -> c_int;
     pub fn crispembed_marker_convert_raw(ctx: *mut CrispembedMarkerContext, pixels: *const u8,
         width: c_int, height: c_int, channels: c_int) -> c_int;
+    pub fn crispembed_marker_save_extraction(ctx: *mut CrispembedMarkerContext, path: *const c_char) -> c_int;
+    pub fn crispembed_marker_open_extraction(ctx: *mut CrispembedMarkerContext, path: *const c_char) -> c_int;
+    pub fn crispembed_marker_start(ctx: *mut CrispembedMarkerContext, input: *const c_char,
+        checkpoint: *const c_char, resume: c_int) -> c_int;
+    pub fn crispembed_marker_step(ctx: *mut CrispembedMarkerContext, page_budget: c_int) -> c_int;
+    pub fn crispembed_marker_cancel(ctx: *mut CrispembedMarkerContext);
+    pub fn crispembed_marker_progress(ctx: *mut CrispembedMarkerContext) -> *const c_char;
     pub fn crispembed_marker_render(ctx: *mut CrispembedMarkerContext, format: *const c_char) -> *const c_char;
     pub fn crispembed_marker_metadata(ctx: *mut CrispembedMarkerContext) -> *const c_char;
     pub fn crispembed_marker_error(ctx: *const CrispembedMarkerContext) -> *const c_char;
@@ -1185,6 +1223,42 @@ extern "C" {
     ) -> c_int;
 
     pub fn crispembed_scan_cleanup_free_image(pixels: *mut u8);
+
+    pub fn crispembed_scan_photo_angle(
+        pixels: *const u8,
+        pixels_len: usize,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        max_angle_deg: c_float,
+        out_correction_degrees: *mut c_float,
+    ) -> c_int;
+
+    pub fn crispembed_scan_photo_rotate(
+        pixels: *const u8,
+        pixels_len: usize,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        clockwise_degrees: c_float,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+
+    pub fn crispembed_scan_photo_perspective(
+        pixels: *const u8,
+        pixels_len: usize,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        corners_xy: *const c_float,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+
+    pub fn crispembed_scan_photo_free_image(pixels: *mut u8);
 
     pub fn crispembed_scan_cleanup_detect_page_split(
         pixels: *const u8,

@@ -280,6 +280,35 @@ CRISPEMBED_API const char * crispembed_model_size(int index);
 CRISPEMBED_API const char * crispembed_model_license(int index);
 CRISPEMBED_API const char * crispembed_model_card_url(int index);
 
+// Read-only, exact-name download metadata. This fixed v1 layout is additive;
+// future layouts use a new type/function rather than extending this struct.
+// All non-NULL strings point to immutable registry storage for process lifetime.
+// sha256 is NULL when the registry has no pin; never infer a digest from a URL.
+typedef struct crispembed_model_download_file_v1 {
+    const char * filename;
+    const char * url;
+    const char * sha256;
+} crispembed_model_download_file_v1;
+
+typedef struct crispembed_model_download_info_v1 {
+    const char * name;
+    const char * license;
+    const char * model_card_url;
+    int requires_license_acceptance;
+    crispembed_model_download_file_v1 primary;
+    crispembed_model_download_file_v1 companion;
+    int has_companion;
+} crispembed_model_download_info_v1;
+
+// 1 = exact name found, 0 = unknown name, -1 = NULL argument.
+// A non-NULL out is cleared before lookup, including failure/unknown results.
+// No fuzzy/filename/path matching, cache access, license acceptance, environment
+// mutation or networking occurs. A declared but incomplete companion is exposed
+// with its missing strings NULL so callers can reject it. This is metadata,
+// not permission to download or evidence that an unpinned payload is trusted.
+CRISPEMBED_API int crispembed_get_model_download_info_v1(const char * exact_name,
+                                                         crispembed_model_download_info_v1 * out);
+
 // Encode a single text string. Returns a pointer to a float array of
 // length *out_n_dim (the model's output embedding dimension). The
 // returned pointer is valid until the next encode() call or free().
@@ -1214,6 +1243,37 @@ CRISPEMBED_API int crispembed_scan_cleanup_process(void * ctx, const uint8_t * p
 
 CRISPEMBED_API void crispembed_scan_cleanup_free_image(uint8_t * pixels);
 
+/// Explicit photo-editor operations. Calling these APIs opts in; they never
+/// read or modify the legacy crop/deskew environment gates. Requires the paired
+/// library/bindings: these additive symbols are not present in older releases.
+/// Inputs are tightly packed uint8 gray/RGB/RGBA (channels 1/3/4); pixels_len
+/// must equal width*height*channels. Each axis is 3..32768, at most 64Mi pixels.
+/// All functions return 0 on success or -1 on invalid input/allocation failure,
+/// clear supplied outputs on failure and never let C++ exceptions cross C ABI.
+/// Operations do not mutate the source. Outputs retain the input channel count.
+///
+/// Returns the correction to apply, in clockwise degrees; a clockwise-tilted
+/// page receives a negative correction. max_angle_deg must be finite in (0,20].
+/// Analysis uses at most 1200 pixels on its longest side. Zero means already
+/// aligned OR no reliable estimate, not a measured confidence of 100 percent.
+CRISPEMBED_API int crispembed_scan_photo_angle(const uint8_t * pixels, size_t pixels_len, int width, int height,
+                                               int channels, float max_angle_deg, float * out_correction_degrees);
+/// Manually rotate by finite clockwise degrees in [-20,20]. Expands the canvas
+/// to preserve the page; white/opaque fill and bilinear sampling. Zero copies
+/// the exact bytes. Rejects output above 64Mi pixels or 32768 pixels per axis.
+CRISPEMBED_API int crispembed_scan_photo_rotate(const uint8_t * pixels, size_t pixels_len, int width, int height,
+                                                int channels, float clockwise_degrees, uint8_t ** out_pixels,
+                                                int * out_width, int * out_height);
+/// Four ordered TL,TR,BR,BL pixel-centre pairs, each in [0,width-1]/[0,height-1].
+/// Rejects repeated, concave, crossing, nonfinite or out-of-bounds corners.
+/// The true inverse homography preserves the supplied orientation. A full-frame
+/// quad is byte-exact; output uses the same limits as rotation. No auto-detection.
+CRISPEMBED_API int crispembed_scan_photo_perspective(const uint8_t * pixels, size_t pixels_len, int width, int height,
+                                                     int channels, const float corners_xy[8], uint8_t ** out_pixels,
+                                                     int * out_width, int * out_height);
+/// Release a buffer returned by the photo rotate/perspective calls; NULL is safe.
+CRISPEMBED_API void crispembed_scan_photo_free_image(uint8_t * pixels);
+
 /// Detect a two-up (double-page) book spread. Returns the gutter column to split
 /// at (0..width), or -1 for a single page. Input: RGB/grayscale uint8 (channels 1/3).
 CRISPEMBED_API int crispembed_scan_cleanup_detect_page_split(const uint8_t * pixels, int width, int height,
@@ -1691,14 +1751,45 @@ CRISPEMBED_API int crispembed_marker_convert(crispembed_marker_context * ctx, co
 /// Convert tightly packed gray/RGB/RGBA pixels as a single page (modes 0/2).
 CRISPEMBED_API int crispembed_marker_convert_raw(crispembed_marker_context * ctx, const uint8_t * pixels, int width,
                                                  int height, int channels);
+/// Versioned extraction artifacts, gated by CRISPEMBED_MARKER_ARTIFACTS=1.
+/// Open does not run OCR or load a model; initialize a text-mode context to use
+/// it without model weights. Save preserves the current complete/partial view.
+/// Both return 1 on success, 0 on failure. A failed open preserves the old view.
+CRISPEMBED_API int crispembed_marker_save_extraction(crispembed_marker_context * ctx, const char * path);
+CRISPEMBED_API int crispembed_marker_open_extraction(crispembed_marker_context * ctx, const char * path);
+
+typedef enum crispembed_marker_job_status {
+    CRISPEMBED_MARKER_JOB_ERROR = 0,
+    CRISPEMBED_MARKER_JOB_RUNNING = 1,
+    CRISPEMBED_MARKER_JOB_COMPLETE = 2,
+    CRISPEMBED_MARKER_JOB_CANCELLED = 3
+} crispembed_marker_job_status;
+/// Incremental extraction also requires CRISPEMBED_MARKER_INCREMENTAL=1.
+/// Start validates input/model/processing identities; resume=1 reads an existing
+/// raw checkpoint and rejects any identity/selection mismatch. checkpoint_path
+/// must name a file distinct from the input, model and PDFium library. Each
+/// completed page is atomically persisted. PDF input requires explicit PDFium.
+/// Start returns 1/0; step processes at most page_budget pages (1..64) and returns
+/// a job status. Page work is synchronous; cancellation takes effect at a page
+/// boundary. Completed pages remain inspectable after later failure/cancellation.
+CRISPEMBED_API int crispembed_marker_start(crispembed_marker_context * ctx, const char * file_path,
+                                           const char * checkpoint_path, int resume);
+CRISPEMBED_API crispembed_marker_job_status crispembed_marker_step(crispembed_marker_context * ctx, int page_budget);
+/// Thread-safe cancellation request; caller must keep ctx alive until it returns.
+CRISPEMBED_API void crispembed_marker_cancel(crispembed_marker_context * ctx);
+/// Owned progress JSON (schema crispembed.marker-progress/1), valid until next
+/// progress call/start/convert/free. Query between bounded step calls.
+CRISPEMBED_API const char * crispembed_marker_progress(crispembed_marker_context * ctx);
 /// Format is markdown, html, json or chunks. Owned result valid until next render,
-/// convert or free. JSON/chunks include provenance, warnings and block geometry.
+/// convert, start, step, open_extraction or free. JSON/chunks include provenance,
+/// warnings and block geometry.
 CRISPEMBED_API const char * crispembed_marker_render(crispembed_marker_context * ctx, const char * format);
 CRISPEMBED_API const char * crispembed_marker_metadata(crispembed_marker_context * ctx);
 /// NULL ctx returns this thread's last initialization/invalid-handle error.
 CRISPEMBED_API const char * crispembed_marker_error(const crispembed_marker_context * ctx);
 /// Image assets use safe generated basenames. Borrowed pointers remain valid
-/// until the next conversion or free. Client must synchronize borrowed reads.
+/// until the next convert/start/step/open_extraction or free. Client must
+/// synchronize borrowed reads.
 CRISPEMBED_API int crispembed_marker_asset_count(const crispembed_marker_context * ctx);
 CRISPEMBED_API const char * crispembed_marker_asset_name(const crispembed_marker_context * ctx, int index);
 CRISPEMBED_API const uint8_t * crispembed_marker_asset_data(const crispembed_marker_context * ctx, int index,

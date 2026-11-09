@@ -1,0 +1,26 @@
+{
+  "source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+  "pdfium_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+  "pdfium_version": "151.0.7891.0",
+  "pypdfium2_version": "5.10.1",
+  "scope": "Actual PDF parsing, text, Unicode, geometry, rotation, rasterization and C API on owned digital PDFs; no model weights",
+  "checks": [
+    {
+      "name": "test-marker-backend",
+      "exit_code": 0,
+      "passed": true,
+      "binary_sha256": "8cb435ada77e15ae4ccbc45c3ea99dc96224fe2133e83acb26720c7c483dbdaf",
+      "log_sha256": "487b1dc7f05ac39023fe13341c942423488b4028065d0ac928a44979c122eec6",
+      "log_file": "test-marker-backend-real-pdfium-attempt-1.log"
+    },
+    {
+      "name": "test-marker-api",
+      "exit_code": 0,
+      "passed": true,
+      "binary_sha256": "94c68a11a9a2bee74818f8676e13086df5021ca2a98491617373aaad3f1f818d",
+      "log_sha256": "9aebce8a389e149a605a95cc718034c5d025bb64d79a5060472d8f70fe9de783",
+      "log_file": "test-marker-api-real-pdfium-attempt-1.log"
+    }
+  ],
+  "passed": true
+}

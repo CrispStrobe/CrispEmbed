@@ -1,0 +1,27 @@
+Converted 31/31 tensors
+Converted 31/31 tensors
+Converted 31/31 tensors
+test_complete_schema_has_qk_norms_and_nonstandard_head_width (test_teleocr_converter.TeleOCRContractTests.test_complete_schema_has_qk_norms_and_nonstandard_head_width) ... ok
+test_conflicting_tied_head_is_rejected (test_teleocr_converter.TeleOCRContractTests.test_conflicting_tied_head_is_rejected) ... ok
+test_duplicate_header_key_and_shard_traversal_rejected (test_teleocr_converter.TeleOCRContractTests.test_duplicate_header_key_and_shard_traversal_rejected) ... ok
+test_extra_tensor_is_not_silently_discarded (test_teleocr_converter.TeleOCRContractTests.test_extra_tensor_is_not_silently_discarded) ... ok
+test_missing_duplicate_head_is_valid_when_tied (test_teleocr_converter.TeleOCRContractTests.test_missing_duplicate_head_is_valid_when_tied) ... ok
+test_missing_qk_norm_is_rejected (test_teleocr_converter.TeleOCRContractTests.test_missing_qk_norm_is_rejected) ... ok
+test_nested_config_and_mrope_validation (test_teleocr_converter.TeleOCRContractTests.test_nested_config_and_mrope_validation) ... ok
+test_nonfinite_weights_fail (test_teleocr_converter.TeleOCRContractTests.test_nonfinite_weights_fail) ... ok
+test_projection_shape_cannot_be_inferred_from_hidden_divided_by_heads (test_teleocr_converter.TeleOCRContractTests.test_projection_shape_cannot_be_inferred_from_hidden_divided_by_heads) ... ok
+test_q8_recipe_keeps_vision_and_output_projection_unquantized (test_teleocr_converter.TeleOCRContractTests.test_q8_recipe_keeps_vision_and_output_projection_unquantized) ... ok
+test_tokenizer_duplicate_id_and_missing_merge_fail (test_teleocr_converter.TeleOCRContractTests.test_tokenizer_duplicate_id_and_missing_merge_fail) ... ok
+test_tokenizer_preserves_reserved_rows_and_special_ids (test_teleocr_converter.TeleOCRContractTests.test_tokenizer_preserves_reserved_rows_and_special_ids) ... ok
+test_truncated_payload_rejected_before_conversion (test_teleocr_converter.TeleOCRContractTests.test_truncated_payload_rejected_before_conversion) ... ok
+test_wrong_preprocessing_is_rejected (test_teleocr_converter.TeleOCRContractTests.test_wrong_preprocessing_is_rejected) ... ok
+test_existing_output_is_preserved (test_teleocr_converter.TeleOCRRoundTripTests.test_existing_output_is_preserved) ... ok
+test_f16_roundtrip (test_teleocr_converter.TeleOCRRoundTripTests.test_f16_roundtrip) ... ok
+test_f32_roundtrip (test_teleocr_converter.TeleOCRRoundTripTests.test_f32_roundtrip) ... ok
+test_invalid_model_leaves_no_output (test_teleocr_converter.TeleOCRRoundTripTests.test_invalid_model_leaves_no_output) ... ok
+test_q8_roundtrip (test_teleocr_converter.TeleOCRRoundTripTests.test_q8_roundtrip) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 0.105s
+
+OK

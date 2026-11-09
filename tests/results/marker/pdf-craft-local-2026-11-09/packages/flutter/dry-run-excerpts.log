@@ -1,0 +1,80 @@
+Actual Dart pub commands; no upload. Exact assertions and limits are in receipt.json.
+
+Command: dart pub publish --dry-run
+Exit code: 1
+Resolving dependencies...
+Because crispembed requires the Flutter SDK, version solving failed.
+
+Flutter users should use `flutter pub` instead of `dart pub`.
+
+Command: dart pub publish --dry-run --skip-validation
+Exit code: 0
+Running with `skip-validation`. No client-side validation is done.
+Total compressed archive size: 80 KB.
+
+Command: dart pub --verbose publish --dry-run --skip-validation
+Exit code: 0
+FINE: Creating .tar.gz stream containing:
+    | ./.
+    | ./windows
+    | ./windows/CMakeLists.txt
+    | ./windows/lib
+    | ./example
+    | ./example/lfm2_encoder.dart
+    | ./example/feature_parity.dart
+    | ./example/README.md
+    | ./NOTICE.teleocr
+    | ./Apache-2.0.txt
+    | ./analysis_options.yaml
+    | ./NOTICE.marker
+    | ./lib
+    | ./lib/crispembed.dart
+    | ./lib/src
+    | ./lib/src/bttr_ocr.dart
+    | ./lib/src/oxr_layout.dart
+    | ./lib/src/layout.dart
+    | ./lib/src/omr.dart
+    | ./lib/src/marker.dart
+    | ./lib/src/oxr.dart
+    | ./lib/src/math_ocr_web.dart
+    | ./lib/src/scan_cleanup.dart
+    | ./lib/src/text_detect.dart
+    | ./lib/src/mineru.dart
+    | ./lib/src/crispembed.dart
+    | ./lib/src/crispembed_bindings.dart
+    | ./lib/src/math_ocr.dart
+    | ./lib/src/moedern_text.dart
+    | ./lib/src/systemone.dart
+    | ./lib/src/hmer_ocr.dart
+    | ./CHANGELOG.md
+    | ./linux
+    | ./linux/CMakeLists.txt
+    | ./linux/lib
+    | ./pubspec.yaml
+    | ./macos
+    | ./macos/Libs
+    | ./macos/flatten_dylibs.sh
+    | ./macos/crispembed.podspec
+    | ./macos/Notices
+    | ./macos/Notices/NOTICE.teleocr
+    | ./macos/Notices/Apache-2.0.txt
+    | ./macos/Notices/NOTICE.marker
+    | ./ios
+    | ./ios/Libs
+    | ./ios/Classes
+    | ./ios/crispembed.podspec
+    | ./ios/Notices
+    | ./ios/Notices/NOTICE.teleocr
+    | ./ios/Notices/Apache-2.0.txt
+    | ./ios/Notices/NOTICE.marker
+    | ./android
+    | ./android/build.gradle
+    | ./android/src
+    | ./android/src/main
+    | ./android/src/main/AndroidManifest.xml
+    | ./README.md
+    | ./LICENSE
+
+Total compressed archive size: 80 KB.
+The server may enforce additional checks.
+Package has 0 warnings.

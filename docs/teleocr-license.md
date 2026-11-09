@@ -1,6 +1,7 @@
 # TeleOCR: source license and provenance audit
 
-Audit date: 31 October 2026. The integration uses the published TeleOCR
+Audit date: 31 October 2026; converter metadata and gate-test correction:
+9 November 2026. The integration uses the published TeleOCR
 checkpoint, licensed model-code facts, CrispEmbed's existing native engine,
 and the Apache-2.0 Rust reference. It does not include or directly translate
 the official GitHub document client's unlicensed Python files.
@@ -42,7 +43,7 @@ document client and table postprocessor inspected here have no license header.
 | Source | Exact version | Observed declaration | Use in this integration |
 | --- | --- | --- | --- |
 | [CrispEmbed](https://github.com/CrispStrobe/CrispEmbed/tree/15adb672f71f8470a23db1284dafa102515adae9) | `15adb672f71f8470a23db1284dafa102515adae9` | MIT, with existing third-party notices | Existing ggml engine, public interfaces and newly authored converter |
-| [TeleOCR checkpoint and model card](https://huggingface.co/XingChen-AGI/TeleOCR/tree/b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d) | `b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d` | Model card declares `apache-2.0` | Weight tensors, tokenizer, configuration and evaluation images |
+| [TeleOCR checkpoint and model card](https://huggingface.co/XingChen-AGI/TeleOCR/tree/b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d) | `b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d` | Model card declares `apache-2.0`; inherited Qwen Research weight restrictions apply as documented above | Weight tensors, tokenizer, configuration and evaluation images |
 | [Checkpoint inference source](https://huggingface.co/XingChen-AGI/TeleOCR/blob/b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d/modeling_naviocr.py) | Same checkpoint revision | Explicit Apache-2.0 source header; Qwen/Hugging Face attribution | Architecture contract and original reference inference for parity |
 | [teleocr-rs](https://github.com/rzafiamy/teleocr-rs/tree/957cdbabe80e86d652c5fcc938ed7fbcf1eb2bbe) | `957cdbabe80e86d652c5fcc938ed7fbcf1eb2bbe` | Apache-2.0 `LICENSE`, explicit code license in README | Independent Rust implementation reference and adapted document-parser algorithms |
 | [Official Python repository](https://github.com/caipeng328/TeleOCR/tree/1e71f4fe792d12bbb86d2671c5ed6f3a1499b27d) | `1e71f4fe792d12bbb86d2671c5ed6f3a1499b27d` | GitHub API reports `license: null`; recursive tree has no `LICENSE`, `COPYING` or `NOTICE` | Read-only license/provenance inspection; no direct client/postprocessor translation |
@@ -88,10 +89,20 @@ Apache obligations. CrispEmbed can keep its MIT project license while carrying
 these third-party terms. Calling every incorporated portion "MIT-only" would
 be inaccurate.
 
-Converted checkpoints retain the publisher's Apache-2.0 declaration. The
-converter writes `general.license=apache-2.0`, the source revision and a tensor
-census. A changed storage format is not a change of license. A generated GGUF
-is also not a guarantee of inference parity; see the accompanying test results.
+Newly converted checkpoints record `general.license=qwen-research` and
+`general.license.link` pointing to the inherited
+[Qwen RESEARCH LICENSE](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/blob/main/LICENSE).
+The source-model URL, pinned source revision and tensor census remain available.
+The publisher's `apache-2.0` model-card declaration is retained as source
+evidence in the table above; it does not remove the inherited weight terms or
+change the separately Apache-licensed inference source.
+
+Earlier converter versions wrote `general.license=apache-2.0`. This metadata
+correction does not rewrite existing GGUFs, replace published hashes or relax
+the native acknowledgement gate, which identifies TeleOCR by its architecture.
+Distributors must still carry the applicable model agreement and notices. A
+changed storage format is not a change of license, and a generated GGUF is not
+a guarantee of inference parity; see the accompanying test results.
 
 ## Architecture and base-model provenance
 
@@ -99,14 +110,16 @@ The authors' [technical report, section 4](https://arxiv.org/html/2608.12898v2)
 describes a Qwen2.5-VL vision encoder, Qwen3-0.6B language model and an aligner
 trained from scratch. [Qwen3-0.6B](https://huggingface.co/Qwen/Qwen3-0.6B) declares
 Apache-2.0. The paper does not identify an exact Qwen2.5-VL vision checkpoint
-revision. Therefore this audit records the publisher's direct Apache-2.0
-declaration for TeleOCR and does not claim to have reconstructed the full
-training-weight lineage. This distinction matters because the separate
+revision. The subsequent
+[per-tensor lineage comparison](../tests/results/licenses/qwen-vision-lineage.json)
+supports the Qwen2.5-VL-3B origin summarized above and is the basis for
+CrispEmbed's restricted weight metadata and runtime acknowledgement. The separate
 [Qwen2.5-VL-3B](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct) distribution
 uses Qwen Research terms, while
 [Qwen2.5-VL-7B](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct) declares
-Apache-2.0. Identical architecture dimensions do not prove which weight
-distribution initialized TeleOCR.
+Apache-2.0. Identical architecture dimensions alone do not establish that
+lineage; the recorded comparison uses the weights themselves. This remains a
+bounded lineage audit, not a reconstruction of every training-data right.
 
 The model card's acknowledgement of MinerU is not used as permission to copy
 MinerU code or weights. No MinerU package is required by this integration.

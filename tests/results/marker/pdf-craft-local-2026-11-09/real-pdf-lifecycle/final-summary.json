@@ -1,0 +1,67 @@
+{
+  "kind": "marker-real-pdf-lifecycle-final-evidence",
+  "source_commit": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+  "native_library_sha256": "decb81ce3f68f30db24cc6eb686f712750e86f68dbd5f9cc6930d65f87210328",
+  "pdfium_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+  "reference_pdfium_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+  "pdfium_package": "pypdfium2==5.10.1",
+  "pdfium_version": "151.0.7891.0",
+  "python_version": "3.13.5",
+  "initial_attempts": "attempts.json",
+  "final_attempt": "attempt-5/receipt.json",
+  "cross_build": "cross-build/receipt.json",
+  "native_python_controls": [
+    {
+      "script": "tests/test_teleocr_loader.py",
+      "passed_count": 57,
+      "total_count": 57,
+      "passed": true,
+      "receipt": "final-native-python/test_teleocr_loader.json",
+      "source_sha256": "cc87ae9f921aaad44a680bf6027dafc323c18448db862177a740ebb2440d3862"
+    },
+    {
+      "script": "tests/test_unlimited_ocr_license.py",
+      "passed_count": 106,
+      "total_count": 106,
+      "passed": true,
+      "receipt": "final-native-python/test_unlimited_ocr_license.json",
+      "source_sha256": "76194a2217f253aba872a46097ab50c397a8e05dcddb41c3125deafb1ff88dd5"
+    },
+    {
+      "script": "tests/test_marker_lifecycle.py",
+      "passed_count": 33,
+      "total_count": 33,
+      "passed": true,
+      "receipt": "final-native-python/test_marker_lifecycle.json",
+      "source_sha256": "5d97d3cc732d64647a105a4b3795fdd565e731f86141f9b82e521d88ac2af25b"
+    }
+  ],
+  "final_native_python_passed_count": 258,
+  "final_native_python_total_count": 258,
+  "passed": true,
+  "corrected_runtime_omission": [
+    "layout_backend",
+    "marker_source_revision",
+    "surya_model_parity",
+    "text_quality_check"
+  ],
+  "comparison_exclusions": {
+    "separate_conversion_runs": [
+      "elapsed_seconds"
+    ],
+    "legacy_vs_incremental": [
+      "elapsed_seconds",
+      "completed_pages",
+      "next_page",
+      "extraction_phase",
+      "extraction_state"
+    ],
+    "processed_artifact_reopen": []
+  },
+  "check_count_change": "Attempt5 adds one actual-reference PDFium binary hash attribution assertion to the47 earlier checks.",
+  "prior_attempts_retained_unchanged": true,
+  "model_weights_used": false,
+  "general_pdf_or_ocr_quality_qualified": false,
+  "binary_extraction_artifacts_committed": false,
+  "scope": "Owned three-page digital-text PDF; no model inference or general corpus/rendering qualification."
+}

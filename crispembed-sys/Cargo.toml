@@ -21,6 +21,7 @@ build = "build.rs"
 include = [
     "src/**/*.rs",
     "build.rs",
+    "build_support.rs",
     "vendor/**",
 ]
 

@@ -1,5 +1,11 @@
 # Native Marker-style document conversion
 
+The 9 November feature branch adds opt-in [extraction artifacts](marker-artifact.md),
+[bounded processing and resume](marker-lifecycle.md), and
+[source-linked chunks, multilingual spacing and references](marker-source-links.md).
+Implementation and executed acceptance are tracked separately in
+[the PDF Craft task list](pdf-craft-tasks.md).
+
 CrispEmbed converts PDFs and page images into Markdown, HTML, nested JSON and
 document chunks through a native C++ pipeline. It combines PDFium text and
 geometry, optional TeleOCR GGUF/GGML layout and recognition, document structure
@@ -51,9 +57,33 @@ export CRISPEMBED_TELEOCR=1
 export CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1  # TeleOCR weights: Qwen RESEARCH LICENSE, non-commercial
 ```
 
-Both gates use `core_env::on`: unset, empty and literal `0` mean disabled;
-every other nonempty value, including `false`, means enabled. Use `0` to
-disable a gate. Text mode needs only `CRISPEMBED_MARKER`.
+All three gates use `core_env::on`: unset, empty, `0`, `false`, `off` and `no`
+mean disabled; the word forms are case-insensitive. Other nonempty values
+enable the gate. Text mode needs only `CRISPEMBED_MARKER`.
+
+### Optional repetition diagnostics
+
+Set `CRISPEMBED_MARKER_REPETITION_CHECK=1` to flag consecutive repeated text
+sequences after extraction. The diagnostic is default off. It checks Unicode
+characters: periods of 2–5 characters need 16 consecutive copies; periods of
+6–20 need 8. It applies to prose-like leaf blocks, including captions and
+footnotes, from both embedded PDF text and OCR. Tables, code, formulas,
+chemical content, images and their subtrees are excluded. Invalid UTF-8 keeps
+its existing separate diagnostic and is not used as repetition evidence.
+
+Matching blocks gain a `Possible repetitive n-gram output` warning visible in
+JSON and chunks. Metadata `configuration.repetition_check` is
+`unicode-tandem-v1`; `configuration.repetitive_blocks` is the decimal string
+count of flagged text blocks after list splitting. These keys are absent from fresh conversions
+when the gate is disabled. Markdown, HTML, text/raw values, source locations,
+model inference and PDF text selection are unchanged. A warning identifies a
+repeated span; intentional repetition may also match, so no text is removed or
+retried automatically.
+
+The bounded native implementation adapts the MIT-licensed PDF Craft n-gram
+check and retains its notice in `NOTICE.marker`. See the
+[source and license review](pdf-craft-adoption.md) for exclusions, the measured
+validation scope and subsequent work.
 
 ## Modes
 

@@ -1,0 +1,20 @@
+{
+  "tag": "v0.17.15",
+  "source_commit": "d28ca2ea43a95934d673d1a54177fdf721614ade",
+  "asset": {
+    "name": "crispembed-linux-x86_64.tar.gz",
+    "id": 714874378,
+    "bytes": 18151060,
+    "sha256": "b247e6bbf50b1d576af69335cbb098a8b120cc61d738dd3139eda9ec9bac4ea7",
+    "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-linux-x86_64.tar.gz",
+    "state": "uploaded"
+  },
+  "download_sha256": "b247e6bbf50b1d576af69335cbb098a8b120cc61d738dd3139eda9ec9bac4ea7",
+  "archive_sha256_verified_before_extract_or_load": true,
+  "bundle_runtime_sha256": {
+    "libggml-cpu.so.0.17.0": "09f2bc556ed7e29e56e5736bb9438f3dea0fbb66ca780fe5a2b4a3e460dfb06e",
+    "libcrispembed.so.0.17.15": "323560bd5272eaf32eb43b8740078d2fb1828b6dde174eb1e3cba3ee75ad94f0",
+    "libggml.so.0.17.0": "2167804b544a3b23d550683e051c4aa3d1d2a1a96284210736865eb017ff2e75",
+    "libggml-base.so.0.17.0": "efe6cea989f9a68d5446efbf184d96702df1000e6a3acfe56064f6efe17fbf6f"
+  }
+}

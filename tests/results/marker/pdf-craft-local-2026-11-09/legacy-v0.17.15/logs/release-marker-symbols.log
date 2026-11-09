@@ -1,0 +1,11 @@
+0000000000850800 T crispembed_marker_asset_count
+0000000000850890 T crispembed_marker_asset_data
+0000000000850830 T crispembed_marker_asset_name
+0000000000858530 T crispembed_marker_convert
+0000000000858760 T crispembed_marker_convert_raw
+000000000084fa40 T crispembed_marker_default_config
+0000000000850770 T crispembed_marker_error
+00000000008502e0 T crispembed_marker_free
+000000000084faa0 T crispembed_marker_init
+0000000000850660 T crispembed_marker_metadata
+0000000000850310 T crispembed_marker_render

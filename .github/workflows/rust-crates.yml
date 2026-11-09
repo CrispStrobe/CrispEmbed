@@ -210,17 +210,20 @@ jobs:
           : > "$work/prebuilt/libcrispembed.so"
           CARGO_MANIFEST_DIR="$work/consumer/crispembed-sys" \
             rustc --edition 2021 crispembed-sys/build.rs -o "$work/buildrs"
-          # Match on the trailing component rather than the absolute path: the
+          # Cargo always sets HOST and TARGET for build scripts; the link plan needs
+# them to tell native builds from cross-compiles (mobile never falls back to
+# host libraries), so this direct invocation sets them as Cargo would.
+# Match on the trailing component rather than the absolute path: the
           # emitted path is whatever the process sees, which is not always
           # byte-identical to the shell's $work.
-          out=$(CRISPEMBED_SYS_LIB_DIR="$work/prebuilt" CARGO_CFG_TARGET_OS=linux "$work/buildrs")
+          out=$(CRISPEMBED_SYS_LIB_DIR="$work/prebuilt" HOST=x86_64-unknown-linux-gnu TARGET=x86_64-unknown-linux-gnu CARGO_CFG_TARGET_OS=linux "$work/buildrs")
           echo "$out"
           grep -qE '^cargo:LIB_DIR=.*[/\\]prebuilt$' <<<"$out" || {
               echo "FAIL: build.rs did not link the prebuilt library" >&2; exit 1; }
           # And the sibling build/ probe, also without sources.
           mkdir -p "$work/consumer/build"
           : > "$work/consumer/build/libcrispembed.so"
-          out=$(CARGO_CFG_TARGET_OS=linux "$work/buildrs")
+          out=$(HOST=x86_64-unknown-linux-gnu TARGET=x86_64-unknown-linux-gnu CARGO_CFG_TARGET_OS=linux "$work/buildrs")
           grep -qE '^cargo:LIB_DIR=.*[/\\]build$' <<<"$out" || {
               echo "FAIL: build.rs did not find the sibling build/ directory" >&2; exit 1; }
           echo "OK: prebuilt paths work with no sources present"

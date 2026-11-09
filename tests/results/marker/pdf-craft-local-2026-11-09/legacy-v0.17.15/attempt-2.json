@@ -1,0 +1,480 @@
+{
+  "schema": "crispembed.marker-old-native-compatibility/1",
+  "source_commit": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+  "old_release_tag": "v0.17.15",
+  "old_release_source_commit": "d28ca2ea43a95934d673d1a54177fdf721614ade",
+  "selected_source_sha256": {
+    "python/crispembed/_marker.py": "dbba4c60926c931ffec8f9092ddb4a61a860e9cbfe1c4075d93ddb6a88756c9d",
+    "python/crispembed/_binding.py": "fae270e63eeccbb161396393314899a116dbd375534b463b6b42d2d4d977d7e8",
+    "flutter/crispembed/lib/src/marker.dart": "52317d8db12a28f93fd8f2cd03ea6c8fec34952158b3b0c7721d440de053abc6",
+    "tests/fixtures/marker/simpledigital.pdf": "5abed1c20795f862b63e3792f1964b2d5932c9d28ccaf8398e2e5b9ec0217374",
+    "tests/results/releases/v0.17.15.json": "f35039573be898914e023a4c7023283653674f6df75460dcd098a7e87b9142d1"
+  },
+  "probe_sha256": {
+    "python_legacy.py": "5755a73793c973534be5dd800f6f192527b7f0db9414674e7a25152712a69a01",
+    "dart_legacy.dart": "d073a28bdbfaeb080f5b35a8e6f0230350ca6f5183bfb95a6135164c600db196"
+  },
+  "library_sha256": "323560bd5272eaf32eb43b8740078d2fb1828b6dde174eb1e3cba3ee75ad94f0",
+  "pdfium_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+  "pdfium_version": "151.0.7891.0",
+  "pypdfium2_version": "5.10.1",
+  "attempt": 2,
+  "commands": [
+    {
+      "name": "python-legacy",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true,
+      "log": "logs/python-legacy-attempt-2.log",
+      "elapsed_seconds": 0.184
+    },
+    {
+      "name": "dart-resolve",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true,
+      "log": "logs/dart-resolve-attempt-2.log",
+      "elapsed_seconds": 0.018
+    },
+    {
+      "name": "dart-analyze",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true,
+      "log": "logs/dart-analyze-attempt-2.log",
+      "elapsed_seconds": 0.891
+    },
+    {
+      "name": "dart-build",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true,
+      "log": "logs/dart-build-attempt-2.log",
+      "elapsed_seconds": 1.175
+    },
+    {
+      "name": "dart-legacy",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true,
+      "log": "logs/dart-legacy-attempt-2.log",
+      "elapsed_seconds": 0.05
+    }
+  ],
+  "probes": [
+    {
+      "client": "Python",
+      "passed": true,
+      "result": {
+        "client": "Python",
+        "suite": "actual-v0.17.15-compatibility",
+        "passed": true,
+        "checks": [
+          {
+            "name": "old release exports every legacy Marker symbol",
+            "passed": true
+          },
+          {
+            "name": "old release lacks save_extraction",
+            "passed": true
+          },
+          {
+            "name": "old release lacks open_extraction",
+            "passed": true
+          },
+          {
+            "name": "old release lacks start",
+            "passed": true
+          },
+          {
+            "name": "old release lacks step",
+            "passed": true
+          },
+          {
+            "name": "old release lacks cancel",
+            "passed": true
+          },
+          {
+            "name": "old release lacks progress",
+            "passed": true
+          },
+          {
+            "name": "current Python wrapper converts the real owned PDF with v0.17.15",
+            "passed": true
+          },
+          {
+            "name": "legacy Markdown, visible HTML and JSON/chunk text match the owned gold",
+            "passed": true
+          },
+          {
+            "name": "legacy metadata and asset access remain usable",
+            "passed": true
+          },
+          {
+            "name": "save_extraction reports the unavailable native symbol",
+            "passed": true
+          },
+          {
+            "name": "save_extraction creates no artifact or checkpoint",
+            "passed": true
+          },
+          {
+            "name": "save_extraction failure preserves all four existing renders",
+            "passed": true
+          },
+          {
+            "name": "save_extraction failure permits later exact legacy conversion",
+            "passed": true
+          },
+          {
+            "name": "open_extraction reports the unavailable native symbol",
+            "passed": true
+          },
+          {
+            "name": "open_extraction creates no artifact or checkpoint",
+            "passed": true
+          },
+          {
+            "name": "open_extraction failure preserves all four existing renders",
+            "passed": true
+          },
+          {
+            "name": "open_extraction failure permits later exact legacy conversion",
+            "passed": true
+          },
+          {
+            "name": "start reports the unavailable native symbol",
+            "passed": true
+          },
+          {
+            "name": "start creates no artifact or checkpoint",
+            "passed": true
+          },
+          {
+            "name": "start failure preserves all four existing renders",
+            "passed": true
+          },
+          {
+            "name": "start failure permits later exact legacy conversion",
+            "passed": true
+          },
+          {
+            "name": "step reports the unavailable native symbol",
+            "passed": true
+          },
+          {
+            "name": "step creates no artifact or checkpoint",
+            "passed": true
+          },
+          {
+            "name": "step failure preserves all four existing renders",
+            "passed": true
+          },
+          {
+            "name": "step failure permits later exact legacy conversion",
+            "passed": true
+          },
+          {
+            "name": "cancel reports the unavailable native symbol",
+            "passed": true
+          },
+          {
+            "name": "cancel creates no artifact or checkpoint",
+            "passed": true
+          },
+          {
+            "name": "cancel failure preserves all four existing renders",
+            "passed": true
+          },
+          {
+            "name": "cancel failure permits later exact legacy conversion",
+            "passed": true
+          },
+          {
+            "name": "progress reports the unavailable native symbol",
+            "passed": true
+          },
+          {
+            "name": "progress creates no artifact or checkpoint",
+            "passed": true
+          },
+          {
+            "name": "progress failure preserves all four existing renders",
+            "passed": true
+          },
+          {
+            "name": "progress failure permits later exact legacy conversion",
+            "passed": true
+          }
+        ],
+        "total": 34,
+        "missing_symbols": {
+          "save_extraction": true,
+          "open_extraction": true,
+          "start": true,
+          "step": true,
+          "cancel": true,
+          "progress": true
+        },
+        "expected_unavailable_errors": [
+          {
+            "method": "save_extraction",
+            "error_type": "RuntimeError",
+            "message": "Native library does not provide Marker extraction artifacts/lifecycle",
+            "cause_type": "AttributeError",
+            "missing_symbol": "crispembed_marker_save_extraction"
+          },
+          {
+            "method": "open_extraction",
+            "error_type": "RuntimeError",
+            "message": "Native library does not provide Marker extraction artifacts/lifecycle",
+            "cause_type": "AttributeError",
+            "missing_symbol": "crispembed_marker_open_extraction"
+          },
+          {
+            "method": "start",
+            "error_type": "RuntimeError",
+            "message": "Native library does not provide Marker extraction artifacts/lifecycle",
+            "cause_type": "AttributeError",
+            "missing_symbol": "crispembed_marker_start"
+          },
+          {
+            "method": "step",
+            "error_type": "RuntimeError",
+            "message": "Native library does not provide Marker extraction artifacts/lifecycle",
+            "cause_type": "AttributeError",
+            "missing_symbol": "crispembed_marker_step"
+          },
+          {
+            "method": "cancel",
+            "error_type": "RuntimeError",
+            "message": "Native library does not provide Marker extraction artifacts/lifecycle",
+            "cause_type": "AttributeError",
+            "missing_symbol": "crispembed_marker_cancel"
+          },
+          {
+            "method": "progress",
+            "error_type": "RuntimeError",
+            "message": "Native library does not provide Marker extraction artifacts/lifecycle",
+            "cause_type": "AttributeError",
+            "missing_symbol": "crispembed_marker_progress"
+          }
+        ],
+        "library_sha256": "323560bd5272eaf32eb43b8740078d2fb1828b6dde174eb1e3cba3ee75ad94f0",
+        "wrapper_sha256": "dbba4c60926c931ffec8f9092ddb4a61a860e9cbfe1c4075d93ddb6a88756c9d",
+        "model_weights_used": false,
+        "real_pdfium_used": true
+      }
+    },
+    {
+      "client": "Dart",
+      "passed": true,
+      "result": {
+        "client": "Dart",
+        "suite": "actual-v0.17.15-compatibility",
+        "passed": true,
+        "checks": [
+          {
+            "name": "old release exports every legacy Marker symbol",
+            "passed": true
+          },
+          {
+            "name": "old release lacks save_extraction",
+            "passed": true
+          },
+          {
+            "name": "old release lacks open_extraction",
+            "passed": true
+          },
+          {
+            "name": "old release lacks start",
+            "passed": true
+          },
+          {
+            "name": "old release lacks step",
+            "passed": true
+          },
+          {
+            "name": "old release lacks cancel",
+            "passed": true
+          },
+          {
+            "name": "old release lacks progress",
+            "passed": true
+          },
+          {
+            "name": "current Dart wrapper converts the real owned PDF with v0.17.15",
+            "passed": true
+          },
+          {
+            "name": "legacy Markdown, visible HTML and JSON/chunk text match the owned gold",
+            "passed": true
+          },
+          {
+            "name": "legacy metadata and asset access remain usable",
+            "passed": true
+          },
+          {
+            "name": "save_extraction reports the unavailable native symbol",
+            "passed": true
+          },
+          {
+            "name": "save_extraction creates no artifact or checkpoint",
+            "passed": true
+          },
+          {
+            "name": "save_extraction failure preserves all four existing renders",
+            "passed": true
+          },
+          {
+            "name": "save_extraction failure permits later exact legacy conversion",
+            "passed": true
+          },
+          {
+            "name": "open_extraction reports the unavailable native symbol",
+            "passed": true
+          },
+          {
+            "name": "open_extraction creates no artifact or checkpoint",
+            "passed": true
+          },
+          {
+            "name": "open_extraction failure preserves all four existing renders",
+            "passed": true
+          },
+          {
+            "name": "open_extraction failure permits later exact legacy conversion",
+            "passed": true
+          },
+          {
+            "name": "start reports the unavailable native symbol",
+            "passed": true
+          },
+          {
+            "name": "start creates no artifact or checkpoint",
+            "passed": true
+          },
+          {
+            "name": "start failure preserves all four existing renders",
+            "passed": true
+          },
+          {
+            "name": "start failure permits later exact legacy conversion",
+            "passed": true
+          },
+          {
+            "name": "step reports the unavailable native symbol",
+            "passed": true
+          },
+          {
+            "name": "step creates no artifact or checkpoint",
+            "passed": true
+          },
+          {
+            "name": "step failure preserves all four existing renders",
+            "passed": true
+          },
+          {
+            "name": "step failure permits later exact legacy conversion",
+            "passed": true
+          },
+          {
+            "name": "cancel reports the unavailable native symbol",
+            "passed": true
+          },
+          {
+            "name": "cancel creates no artifact or checkpoint",
+            "passed": true
+          },
+          {
+            "name": "cancel failure preserves all four existing renders",
+            "passed": true
+          },
+          {
+            "name": "cancel failure permits later exact legacy conversion",
+            "passed": true
+          },
+          {
+            "name": "progress reports the unavailable native symbol",
+            "passed": true
+          },
+          {
+            "name": "progress creates no artifact or checkpoint",
+            "passed": true
+          },
+          {
+            "name": "progress failure preserves all four existing renders",
+            "passed": true
+          },
+          {
+            "name": "progress failure permits later exact legacy conversion",
+            "passed": true
+          }
+        ],
+        "total": 34,
+        "missing_symbols": {
+          "save_extraction": true,
+          "open_extraction": true,
+          "start": true,
+          "step": true,
+          "cancel": true,
+          "progress": true
+        },
+        "expected_unavailable_errors": [
+          {
+            "method": "save_extraction",
+            "error_type": "ArgumentError",
+            "missing_symbol": "crispembed_marker_save_extraction",
+            "message": "Invalid argument(s): Failed to lookup symbol 'crispembed_marker_save_extraction': <v0.17.15-bundle>/libcrispembed.so: undefined symbol: crispembed_marker_save_extraction"
+          },
+          {
+            "method": "open_extraction",
+            "error_type": "ArgumentError",
+            "missing_symbol": "crispembed_marker_open_extraction",
+            "message": "Invalid argument(s): Failed to lookup symbol 'crispembed_marker_open_extraction': <v0.17.15-bundle>/libcrispembed.so: undefined symbol: crispembed_marker_open_extraction"
+          },
+          {
+            "method": "start",
+            "error_type": "ArgumentError",
+            "missing_symbol": "crispembed_marker_start",
+            "message": "Invalid argument(s): Failed to lookup symbol 'crispembed_marker_start': <v0.17.15-bundle>/libcrispembed.so: undefined symbol: crispembed_marker_start"
+          },
+          {
+            "method": "step",
+            "error_type": "ArgumentError",
+            "missing_symbol": "crispembed_marker_step",
+            "message": "Invalid argument(s): Failed to lookup symbol 'crispembed_marker_step': <v0.17.15-bundle>/libcrispembed.so: undefined symbol: crispembed_marker_step"
+          },
+          {
+            "method": "cancel",
+            "error_type": "ArgumentError",
+            "missing_symbol": "crispembed_marker_cancel",
+            "message": "Invalid argument(s): Failed to lookup symbol 'crispembed_marker_cancel': <v0.17.15-bundle>/libcrispembed.so: undefined symbol: crispembed_marker_cancel"
+          },
+          {
+            "method": "progress",
+            "error_type": "ArgumentError",
+            "missing_symbol": "crispembed_marker_progress",
+            "message": "Invalid argument(s): Failed to lookup symbol 'crispembed_marker_progress': <v0.17.15-bundle>/libcrispembed.so: undefined symbol: crispembed_marker_progress"
+          }
+        ],
+        "model_weights_used": false,
+        "real_pdfium_used": true
+      }
+    }
+  ],
+  "passed": true,
+  "model_weights_used": false,
+  "real_pdfium_used": true,
+  "versions": {
+    "python": "Python 3.13.5",
+    "dart": "Dart SDK version: 3.13.7 (stable) (Thu Oct 22 14:28:57 2026 -0700) on \"linux_x64\""
+  },
+  "python_dependencies": {
+    "numpy": "2.3.5",
+    "Pillow": "12.0.0",
+    "pypdfium2": "5.10.1"
+  },
+  "assertions_passed": 68,
+  "sanitization": "Private path prefixes replaced with placeholders; hashes, checks and exit codes retained."
+}

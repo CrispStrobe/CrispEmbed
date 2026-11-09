@@ -1,0 +1,69 @@
+Actual Python packaging command excerpts. Exact archive assertions are in receipt.json.
+Build output is filtered to archive creation, native/notice entries and expected rejection diagnostics.
+
+Command: python setup.py bdist_wheel --dist-dir artifacts-wheel
+Label: checkout-wheel
+Exit code: 0
+running bdist_wheel
+copying crispembed/Apache-2.0.txt -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/NOTICE.marker -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/NOTICE.teleocr -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/libcrispembed.so -> build/lib.linux-x86_64-cpython-312/crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/libcrispembed.so -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/NOTICE.marker -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/Apache-2.0.txt -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/NOTICE.teleocr -> build/bdist.linux-x86_64/wheel/./crispembed
+creating 'artifacts-wheel/crispembed-0.17.16-cp312-cp312-linux_x86_64.whl' and adding 'build/bdist.linux-x86_64/wheel' to it
+adding 'crispembed/Apache-2.0.txt'
+adding 'crispembed/NOTICE.marker'
+adding 'crispembed/NOTICE.teleocr'
+adding 'crispembed/libcrispembed.so'
+
+Command: python setup.py sdist --dist-dir artifacts-sdist
+Label: checkout-sdist
+Exit code: 0
+running sdist
+copying crispembed/Apache-2.0.txt -> crispembed-0.17.16/crispembed
+copying crispembed/NOTICE.marker -> crispembed-0.17.16/crispembed
+copying crispembed/NOTICE.teleocr -> crispembed-0.17.16/crispembed
+copying crispembed/libcrispembed.so -> crispembed-0.17.16/crispembed
+Creating tar archive
+
+Command: python setup.py bdist_wheel --dist-dir rebuilt-wheel
+Label: isolated-sdist-wheel
+Exit code: 0
+running bdist_wheel
+copying crispembed/Apache-2.0.txt -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/NOTICE.marker -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/NOTICE.teleocr -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/libcrispembed.so -> build/lib.linux-x86_64-cpython-312/crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/libcrispembed.so -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/NOTICE.marker -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/Apache-2.0.txt -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/NOTICE.teleocr -> build/bdist.linux-x86_64/wheel/./crispembed
+creating 'rebuilt-wheel/crispembed-0.17.16-cp312-cp312-linux_x86_64.whl' and adding 'build/bdist.linux-x86_64/wheel' to it
+adding 'crispembed/Apache-2.0.txt'
+adding 'crispembed/NOTICE.marker'
+adding 'crispembed/NOTICE.teleocr'
+adding 'crispembed/libcrispembed.so'
+
+Command: python setup.py --name
+Label: reject-missing-NOTICE-marker
+Exit code: 1
+RuntimeError: Cannot bundle native CrispEmbed libraries without their Apache notices: NOTICE.marker. Build from a complete checkout or an sdist retaining the staged notice files.
+
+Command: python setup.py --name
+Label: reject-missing-NOTICE-teleocr
+Exit code: 1
+RuntimeError: Cannot bundle native CrispEmbed libraries without their Apache notices: NOTICE.teleocr. Build from a complete checkout or an sdist retaining the staged notice files.
+
+Command: python setup.py --name
+Label: reject-missing-Apache-2-0-txt
+Exit code: 1
+RuntimeError: Cannot bundle native CrispEmbed libraries without their Apache notices: Apache-2.0.txt. Build from a complete checkout or an sdist retaining the staged notice files.
+
+Command: python setup.py --name
+Label: reject-empty-apache-license
+Exit code: 1
+RuntimeError: Cannot bundle native CrispEmbed libraries without their Apache notices: Apache-2.0.txt. Build from a complete checkout or an sdist retaining the staged notice files.
+

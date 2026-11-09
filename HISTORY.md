@@ -2,6 +2,7 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+
 ## 9 November 2026 — DBNet text-mask fix approved by owner (issue 71)
 
 Owner re-reviewed the street/DBNet case after PR #197 (both subtitle lines covered in all five variants,
@@ -22,6 +23,44 @@ before, 1.0 / 1.0 after in every variant; 512-F32 masked PSNR 9.84 → 11.95 dB;
 the temporal metric are identical to the owner-review receipt, and the gate-off column reproduces it exactly.
 The mask also picks up more signage (11,949 → 21,430 px), so subtitle runs should add `--mask-region`.
 
+## 9 November 2026 — PDF Craft feature local execution
+
+The owner authorized bounded local CPU builds/tests while GitHub Actions was
+queued. Feature checkpoint [`16b544e`](https://github.com/CrispStrobe/CrispEmbed/commit/16b544e455309a367739bbd430aafdd817f77d87)
+retains [executed Linux x86_64 evidence](tests/results/marker/pdf-craft-local-2026-11-09/README.md)
+for native source `d4d508c460c6e172fd1d7d4afc6b9c78652ad607`: 185 document,
+87 artifact, 400 lifecycle and 38 save checks; 19 converter, 17 Python client,
+57 TeleOCR loader, 106 Jina/CC-BY-NC admission and 33 actual Python lifecycle
+checks; six actual Rust/Dart scenarios with 111 assertions; five repository
+guards. Actual PDFium 151.0.7891.0 adds 39 backend/86 C API checks and 112 checks
+across eight owned PDFs through Python/CLI/HTTP. Python wheel/sdist/rebuilt-wheel
+readback passes 26 checks with exact notices and native bytes. Dart's publish
+dry-run selects all nine notice copies, with 15 scoped checks; full Flutter
+validation and retained-archive readback remain open.
+
+Initial native artifact/lifecycle attempts failed before any checks because the
+default temporary directory was unavailable. Both passed unchanged after a
+task-local `TMPDIR` was supplied. Those failures, environment setup corrections,
+actual source/binary/toolchain hashes and qualified package limits are retained.
+No model weights, production dependency, release or default promotion followed.
+Windows/macOS and representative OCR/retrieval quality remain separate gates.
+
+The subsequent real-PDF lifecycle comparison found missing stable provenance in
+incremental views. A native regression and a strict real-PDF comparison reproduce
+the omission before correction. The follow-up stores the existing provenance
+in the initial raw checkpoint, so partial/final and raw-reopened views inherit
+extraction-time fields. Stored processed artifacts retain their original metadata.
+The [rebuilt-source receipt](tests/results/marker/pdf-craft-local-2026-11-09/final-receipt.json)
+at `891ea3d3632c6a3c3155e25b34705da6a02ec807` passes 480 native lifecycle,
+48 strict real-PDF and 14 cross-build checks, plus all native/public-client and
+admission replays. Real-PDF comparison allows only the five declared
+run/lifecycle metadata fields to differ; processed reopen compares all four
+outputs byte for byte. Current Python and Dart wrappers also pass 68 checks
+against immutable hash-verified v0.17.15, preserving legacy conversion despite
+the absence of all six new symbols. Initial helper failures and the genuine
+provenance defect remain separate from these final successes.
+
+
 ## 9 November 2026 — Inpainting owner review verdict (issue 71)
 
 Owner reviewed the 7-case panel (MI-GAN256 F32, MI-GAN512 F32/F16/Q8_0/Q4_K;
@@ -30,6 +69,46 @@ variant, including Q4_K: both exact-mask stills and all four video-pan frames. T
 (the 0.9019 Q4_K caveat case) leaves the first text line visible in **every** variant, F32 included, so the
 defect is DBNet mask coverage, not quantization. Q4_K stays published as experimental; the follow-up is
 detector mask coverage/dilation for the first line, not precision.
+
+## 9 November 2026 — explicit photo and mobile contract review
+
+At `fde19180`, [photo run 42590335637](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335637)
+passes actual public C geometry/blank controls, direct ASan/UBSan, three safe Rust
+wrapper tests and five synthetic downstream OCR cases. The PR merge source has
+the exact same tree as the feature head. [Prebuilt run 42590335633](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335633)
+passes six policy and four real build-script configuration tests; these use
+placeholder libraries and do not qualify a mobile binary.
+
+The [metadata run 42590335645](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335645)
+is a false green: both C and sanitizer processes abort because their test
+incorrectly requires HTTPS URLs for existing local-conversion entries. `tee`
+masks the failures; both JSON artifacts are empty. Four actual Rust wrapper
+tests pass separately. The correction preserves truthful empty URL/no-pin
+metadata, checks that case explicitly, retains downloadable HTTPS/pin checks,
+and enables pipeline failure propagation in the three focused workflows.
+Corrected hosted execution remains pending. The complete quality report, all
+negative measurements, original failed job log and checksummed artifacts are
+retained in [the review receipt](tests/results/ocr-phone-photo/hosted-contract-review-fde19180.json).
+No runtime code, registry entry, model pin, default or release changes.
+
+## 9 November 2026 — opt-in phone-photo geometry
+
+`feat/ocr-photo-preprocessing` adds true projective OCR-region crops and bounded
+deskew analysis while keeping defaults stable. Independent coordinate-ramp error
+falls from 11.1119 to 0.283081 in 8-bit units; all 24 corner permutations,
+disabled-gate byte controls and malformed-input controls pass. A five-case
+synthetic actual-OCR panel is positive after the declared phone recipe: three
+skewed text cases have CER/WER zero, while perspective/shadow CER is 0.00415.
+The initial deskew-only shadow failures remain retained and reported separately;
+the existing background whitening is required for those cases. See
+[the protocol and limitations](docs/ocr-phone-photo.md) and
+[the source-hashed quality receipt](tests/results/ocr-phone-photo/quality-v1.json).
+Hosted native run
+[42577017175](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42577017175)
+passed geometry, ASan/UBSan and all five actual text cases at `03a862a4`.
+The [run receipt](tests/results/ocr-phone-photo/hosted-42577017175.json) retains
+its immutable source/job/artifact identities. Real-camera/device evidence and
+recognition-model qualification remain separate. No runtime release or default changes.
 
 ## 9 November 2026 — Unlimited-OCR-2 Q4_K_MIX drop attributed
 

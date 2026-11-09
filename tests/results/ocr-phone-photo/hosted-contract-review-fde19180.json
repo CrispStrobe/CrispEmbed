@@ -1,0 +1,185 @@
+{
+  "schema": "crispembed-phone-photo-hosted-contract-review-v1",
+  "date": "2026-11-09",
+  "feature_head": "fde19180f4726a7708186eb130b9f37099a622c7",
+  "tested_checkout": "ab3af517a34543e049ec20f109ea84964f6549ca",
+  "base_main": "e4ee71937a68f1ff9d28f4d7cdbd66bda68ba05a",
+  "feature_and_tested_tree": "9f9a9771d1b502beccaf0d631dc669aae7757040",
+  "exact_tree_equality_verified": true,
+  "artifact_zip_digests_independently_verified": true,
+  "runs": [
+    {
+      "run_id": 42590335637,
+      "job_id": 129070132481,
+      "reported_conclusion": "success",
+      "completed_at": "2026-11-09T09:33:22Z",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335637",
+      "artifact": {
+        "id": 13662697232,
+        "name": "ocr-phone-photo-quality",
+        "sha256": "d9a990c2b4140e5b37629d7f34054ecd307bb35de236a3a30d7256ea08881377",
+        "zip_bytes": 20654706,
+        "expires_at": "2027-02-07T09:02:34Z",
+        "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335637/artifacts/13662697232"
+      },
+      "reviewed_result": "passed",
+      "coverage": {
+        "native_geometry_and_public_api_controls": true,
+        "asan_ubsan_direct_execution": true,
+        "rust_wrapper_tests_passed": 3,
+        "synthetic_ocr_cases_passed": 5,
+        "uniform_capture_widths": [
+          3,
+          90,
+          99,
+          100,
+          101,
+          160
+        ],
+        "uniform_capture_grays": [
+          0,
+          127,
+          255
+        ],
+        "corner_permutations": 24
+      }
+    },
+    {
+      "run_id": 42590335645,
+      "job_id": 129070132526,
+      "reported_conclusion": "success",
+      "completed_at": "2026-11-09T09:24:21Z",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335645",
+      "artifact": {
+        "id": 13662356780,
+        "name": "model-download-metadata-contract",
+        "sha256": "1d81d4f7ca74d4edc763ae95ea93152f14a460f94874961342f6beeb966c88e7",
+        "zip_bytes": 739,
+        "expires_at": "2027-02-07T09:02:34Z",
+        "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335645/artifacts/13662356780"
+      },
+      "reviewed_result": "failed_native_contract_false_green",
+      "native_c": "assertion_failed",
+      "native_asan_ubsan": "assertion_failed",
+      "rust_wrapper_tests_passed": 4,
+      "failure": "check_pin required a nonempty HTTPS URL for existing local-conversion/custom-model registry entries",
+      "masked_by": "bash -e without pipefail returned the successful tee exit status",
+      "empty_artifact_reports": [
+        "registry.json",
+        "sanitized.json"
+      ],
+      "required_correction": "Preserve empty URL/no pin for local-only entries; retain HTTPS and actual-pin checks for nonempty URLs; make pipelines propagate failure; rerun hosted contracts."
+    },
+    {
+      "run_id": 42590335633,
+      "job_id": 129070131144,
+      "reported_conclusion": "success",
+      "completed_at": "2026-11-09T09:21:51Z",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335633",
+      "artifact": {
+        "id": 13662311548,
+        "name": "rust-target-prebuilt-contract",
+        "sha256": "66ea67ce1a66e07d8da8371ca44fec935de272b787b5aa119f45f32ced9b285f",
+        "zip_bytes": 907,
+        "expires_at": "2027-02-07T09:02:34Z",
+        "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335633/artifacts/13662311548"
+      },
+      "reviewed_result": "passed_configuration_only",
+      "policy_tests_passed": 6,
+      "build_script_tests_passed": 4,
+      "native_binaries_linked_or_executed": false
+    }
+  ],
+  "complete_ocr_report": "quality-fde19180.json",
+  "complete_ocr_report_sha256": "6f6cd6e59bc1a2c1cd9984120b57983b903d95a5de7f1bb45500cdfb658357d1",
+  "ocr_reader": "tesseract 5.3.4",
+  "public_api_quality": [
+    {
+      "case": "aligned",
+      "raw_cer": 0.0,
+      "prepared_cer": 0.0,
+      "deskew_only_cer": 0.0,
+      "background_whitening_used": false
+    },
+    {
+      "case": "clockwise",
+      "raw_cer": 0.026970954356846474,
+      "prepared_cer": 0.0,
+      "deskew_only_cer": 0.0,
+      "background_whitening_used": false
+    },
+    {
+      "case": "counterclockwise_shadow",
+      "raw_cer": 0.02074688796680498,
+      "prepared_cer": 0.0,
+      "deskew_only_cer": 0.6639004149377593,
+      "background_whitening_used": true
+    },
+    {
+      "case": "steep_shadow",
+      "raw_cer": 0.12448132780082988,
+      "prepared_cer": 0.0,
+      "deskew_only_cer": 0.7759336099585062,
+      "background_whitening_used": true
+    },
+    {
+      "case": "perspective_shadow",
+      "raw_cer": 0.14522821576763487,
+      "prepared_cer": 0.012448132780082987,
+      "deskew_only_cer": null,
+      "background_whitening_used": false
+    }
+  ],
+  "preserved_limits": [
+    "Synthetic fixtures only. Native recognition models and physical devices remain unqualified.",
+    "Shadowed deskew alone worsens OCR; the declared recipe includes existing background whitening.",
+    "Public perspective CER 0.012448132780082987 is distinct from internal projective CER 0.004149377593360996 and legacy CER 0.008298755186721992.",
+    "Original metadata C and sanitizer failures remain failed despite the GitHub green conclusion.",
+    "Corrected metadata test and failure-propagation workflows require fresh hosted execution."
+  ],
+  "rust_crates_run": {
+    "run_id": 42590335517,
+    "status_at_review": "queued",
+    "job_id": 129081704028,
+    "job_name": "Select necessary CI",
+    "result_claimed": false
+  },
+  "retained_files": {
+    "contracts-fde19180/metadata-42590335645-job.log": {
+      "sha256": "8516a83fffb6d75eded4293e80cd5d8d8bab74c3e98e8be0a0c3432dc003e666",
+      "bytes": 33446
+    },
+    "contracts-fde19180/metadata-registry.json": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "contracts-fde19180/metadata-rust.txt": {
+      "sha256": "3408560ddd0ace6212553be3dad5fa992f0ced8ccca944be4506f2f2a8800639",
+      "bytes": 360
+    },
+    "contracts-fde19180/metadata-sanitized.json": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "contracts-fde19180/photo-geometry.json": {
+      "sha256": "4d4c31f9a98cd903c3c925b14e663b6ce34666c0d283891873a898e75dad79f1",
+      "bytes": 126
+    },
+    "contracts-fde19180/photo-rust.txt": {
+      "sha256": "de618bda899d547db204a9ec52a27cb265c1c77f789a328c4400272d03bad54e",
+      "bytes": 284
+    },
+    "contracts-fde19180/prebuilt-config.txt": {
+      "sha256": "3b75a252e49899729b0a8eb23106f9e334ffb593ab4c11754a8cef63c57daf2f",
+      "bytes": 688
+    },
+    "contracts-fde19180/prebuilt-policy.txt": {
+      "sha256": "cbeb677ee7e3c009959f1c7014bb45bde124f6880026e720f339f2c3289f8c1c",
+      "bytes": 570
+    },
+    "contracts-fde19180/source.txt": {
+      "sha256": "732cc1e4c6b04f7b1c6b8ebbc12fae5906640af881e7a818886831f939683991",
+      "bytes": 41
+    }
+  }
+}

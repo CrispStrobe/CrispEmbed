@@ -1,0 +1,14 @@
+CPU baseline check: <validation-workspace>/validation-pdf-craft/native/build/CMakeCache.txt (arch=x86_64)
+  CRISPEMBED_NATIVE    = OFF
+  GGML_NATIVE          = OFF
+  GGML_AMX_BF16        = OFF
+  GGML_AMX_INT8        = OFF
+  GGML_AMX_TILE        = OFF
+  GGML_AVX2            = ON
+  GGML_AVX512          = OFF
+  GGML_AVX512_BF16     = OFF
+  GGML_AVX512_VBMI     = OFF
+  GGML_AVX512_VNNI     = OFF
+  GGML_AVX_VNNI        = OFF
+
+OK: portable CPU baseline (scanned generated flags for 10 banned tokens).

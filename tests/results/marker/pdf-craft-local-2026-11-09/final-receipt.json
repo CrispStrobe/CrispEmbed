@@ -1,0 +1,266 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-09",
+  "native_source_commit": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+  "native_library_sha256": "decb81ce3f68f30db24cc6eb686f712750e86f68dbd5f9cc6930d65f87210328",
+  "previous_native_source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+  "change": "Preserve existing stable extraction provenance in raw checkpoints and incremental/reopened views",
+  "before_fix": {
+    "native_regression": "provenance/provenance-regression-before.json",
+    "strict_real_pdf_history": "real-pdf-lifecycle/attempts.json"
+  },
+  "native_tests": {
+    "document": 185,
+    "artifact": 87,
+    "lifecycle": 480,
+    "save": 38,
+    "backend_real_pdfium": 39,
+    "api_real_pdfium": 86
+  },
+  "actual_rust_dart": {
+    "scenarios": 6,
+    "assertions": 111,
+    "passed": true,
+    "scenarios_details": [
+      {
+        "client": "Rust",
+        "scenario": "artifacts-off",
+        "checks": 8
+      },
+      {
+        "client": "Rust",
+        "scenario": "incremental-off",
+        "checks": 6
+      },
+      {
+        "client": "Rust",
+        "scenario": "enabled",
+        "checks": 41
+      },
+      {
+        "client": "Dart",
+        "scenario": "artifacts-off",
+        "checks": 8
+      },
+      {
+        "client": "Dart",
+        "scenario": "incremental-off",
+        "checks": 6
+      },
+      {
+        "client": "Dart",
+        "scenario": "enabled",
+        "checks": 42
+      }
+    ],
+    "dependency_lock_sha256": {
+      "clients/Cargo.lock": "c2a720a0ce1a3499e76247d61c3565f7ae6fc628b066496c4a8dcaec6640bcc4",
+      "clients/pubspec.lock": "9c8e60d013eba45c06ab204f41557cfaa201d92910e3370c2649c99de2552994"
+    }
+  },
+  "real_pdf_public_surfaces": {
+    "passed": 112,
+    "total": 112,
+    "owned_pdf_cases": 8
+  },
+  "real_pdf_lifecycle": {
+    "passed": 48,
+    "total": 48,
+    "receipt": "real-pdf-lifecycle/attempt-5/receipt.json"
+  },
+  "processed_artifact_across_builds": {
+    "passed": 14,
+    "total": 14,
+    "receipt": "real-pdf-lifecycle/cross-build/receipt.json"
+  },
+  "native_python_replays": {
+    "teleocr_loader": 57,
+    "jina_license_admission": 106,
+    "python_lifecycle": 33,
+    "receipt": "real-pdf-lifecycle/final-summary.json"
+  },
+  "final_tests_executed_locally": true,
+  "new_model_weights": false,
+  "production_dependency_added": false,
+  "source_and_build_settings": "See receipt.json for unchanged compiler/configuration and pinned GGML; current native and client source hashes are in final-native/receipt.json and final-clients/results.json.",
+  "qualification_limits": [
+    "Linux x86_64 CPU; Windows/macOS results not inferred",
+    "No representative OCR/retrieval quality claim",
+    "Package notice proof retains its own earlier binary hash; package sources and notices were not changed by this correction",
+    "No release/publication/default promotion"
+  ],
+  "saved_evidence": [
+    {
+      "path": "final-native/receipt.json",
+      "original_sha256": "7ca65e8a5f372ac1cfb53f39c3e4c5231f73138a4f1293248ab357a4af97aafc",
+      "saved_sha256": "7ca65e8a5f372ac1cfb53f39c3e4c5231f73138a4f1293248ab357a4af97aafc",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-native/test-marker-api.log",
+      "original_sha256": "9aebce8a389e149a605a95cc718034c5d025bb64d79a5060472d8f70fe9de783",
+      "saved_sha256": "9aebce8a389e149a605a95cc718034c5d025bb64d79a5060472d8f70fe9de783",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-native/test-marker-artifact.log",
+      "original_sha256": "22e3444ce1a861e0028d469880bed1457f07857a69bf99024d7c1ca5d81eb2b6",
+      "saved_sha256": "22e3444ce1a861e0028d469880bed1457f07857a69bf99024d7c1ca5d81eb2b6",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-native/test-marker-backend.log",
+      "original_sha256": "487b1dc7f05ac39023fe13341c942423488b4028065d0ac928a44979c122eec6",
+      "saved_sha256": "487b1dc7f05ac39023fe13341c942423488b4028065d0ac928a44979c122eec6",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-native/test-marker-document.log",
+      "original_sha256": "79b23db02ed6b4a023fe40b8c533cfb165f27eb984107aae2f2edda6f913e843",
+      "saved_sha256": "79b23db02ed6b4a023fe40b8c533cfb165f27eb984107aae2f2edda6f913e843",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-native/test-marker-lifecycle.log",
+      "original_sha256": "dfbb6cdeda0c01cff98da3aa99cd28174710f6b9dbe68c16c3e611b50ddf1414",
+      "saved_sha256": "dfbb6cdeda0c01cff98da3aa99cd28174710f6b9dbe68c16c3e611b50ddf1414",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-native/test-marker-save.log",
+      "original_sha256": "087bc3dfe299813a79ad2e168a3b4b1d5eeca8dd716678fe681bd2c7873b97d2",
+      "saved_sha256": "087bc3dfe299813a79ad2e168a3b4b1d5eeca8dd716678fe681bd2c7873b97d2",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-public-surfaces/execution.json",
+      "original_sha256": "cc83db00eca85719a18b9135a22c73f5afc5ea86b937af3b452b69393e97109b",
+      "saved_sha256": "cc83db00eca85719a18b9135a22c73f5afc5ea86b937af3b452b69393e97109b",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-public-surfaces/execution.log",
+      "original_sha256": "5b9877c5ba28b5aabc5d8a6b486229c56637598ca33e2c8d3c160e668722e531",
+      "saved_sha256": "5b9877c5ba28b5aabc5d8a6b486229c56637598ca33e2c8d3c160e668722e531",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-public-surfaces/summary.json",
+      "original_sha256": "f5503abd35f98322f20962cb3312e498e75c435041f18a67f7abfb8c01755c5e",
+      "saved_sha256": "670a58b7888b70f7edb322c3b04a0223a202a459e9d687554e7c304970e5bf33",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "final-public-surfaces/http-server.log",
+      "original_sha256": "bd29470087be332a2459b24d21c841937b521d7cc5570f1160dbd545a4ab129b",
+      "saved_sha256": "338a98e2f82f3e415317991770402136b5ba6695ba318edf8a432d55397c6f5b",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "final-clients/results.json",
+      "original_sha256": "5ed9b6b30af93efdcb3634f8c19a4fcbe43fb750d4b7b6ee9d6d5eecfce90679",
+      "saved_sha256": "5ed9b6b30af93efdcb3634f8c19a4fcbe43fb750d4b7b6ee9d6d5eecfce90679",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-clients/execution.json",
+      "original_sha256": "bb033dd9f4f5250c9d2e72a798a20b12a3ca2d98e7bc6a20d3c7df63d004f787",
+      "saved_sha256": "bb033dd9f4f5250c9d2e72a798a20b12a3ca2d98e7bc6a20d3c7df63d004f787",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-clients/execution.log",
+      "original_sha256": "a8446f013c6dacf0e3ce4f5491c01960b2b787bb117488ebdeda70d1cc969c17",
+      "saved_sha256": "a8446f013c6dacf0e3ce4f5491c01960b2b787bb117488ebdeda70d1cc969c17",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-clients/logs/cargo-version.log",
+      "original_sha256": "c10ec31b8c6e6e2693cf65fc1971b41edbc3da1ae7db6f9f3f36c4823f8dcab5",
+      "saved_sha256": "c10ec31b8c6e6e2693cf65fc1971b41edbc3da1ae7db6f9f3f36c4823f8dcab5",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-clients/logs/dart-analyze.log",
+      "original_sha256": "bc95914562c3caba44089534e897de849f51aaf61714dafbb6dc83b2a6ac6c0d",
+      "saved_sha256": "bc95914562c3caba44089534e897de849f51aaf61714dafbb6dc83b2a6ac6c0d",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-clients/logs/dart-artifacts-off.log",
+      "original_sha256": "b827138413aa7ed1eaed23e084451e561c12194bf1ddacf04f04dbdf3409540f",
+      "saved_sha256": "b827138413aa7ed1eaed23e084451e561c12194bf1ddacf04f04dbdf3409540f",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-clients/logs/dart-build.log",
+      "original_sha256": "ee20f70472780c21ef5b8e528fa6e3e4c02956e930780b3d60fba253e70ff481",
+      "saved_sha256": "9138168d5b3c1931d04c0cc057bb14d6d20709b5b4e2bf9333ac20dbcbc47218",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "final-clients/logs/dart-enabled.log",
+      "original_sha256": "5c662f01a95bc284d3e28a24c4c669c5649abfdaa71f55fa20474f0638d69135",
+      "saved_sha256": "5c662f01a95bc284d3e28a24c4c669c5649abfdaa71f55fa20474f0638d69135",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-clients/logs/dart-incremental-off.log",
+      "original_sha256": "e9999ae6c53ca3e258742738446e8446426810f45f0d0577943014dc6906624c",
+      "saved_sha256": "e9999ae6c53ca3e258742738446e8446426810f45f0d0577943014dc6906624c",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-clients/logs/dart-resolve.log",
+      "original_sha256": "be199790216bed300ccef3847508510e54033bd81d63f09a7da87c00cafe6520",
+      "saved_sha256": "be199790216bed300ccef3847508510e54033bd81d63f09a7da87c00cafe6520",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-clients/logs/dart-version.log",
+      "original_sha256": "945e6a359e53647f8fd753347245ed78bc06c2808919b2d7749817181d010ff4",
+      "saved_sha256": "945e6a359e53647f8fd753347245ed78bc06c2808919b2d7749817181d010ff4",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-clients/logs/rust-artifacts-off.log",
+      "original_sha256": "08d8ac1013f645b1fb81bba359a6b29c5274059e99c36583f8b8fde0a3f62a4c",
+      "saved_sha256": "08d8ac1013f645b1fb81bba359a6b29c5274059e99c36583f8b8fde0a3f62a4c",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-clients/logs/rust-build.log",
+      "original_sha256": "6986eb037903131bff36522e80a484396c7b2d7e8b01d928c1422a79414cc402",
+      "saved_sha256": "c005fc47287db7af5f31d9d8bc8d7603c19b4071757ae59a23de13baea52b9d5",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "final-clients/logs/rust-enabled.log",
+      "original_sha256": "2e31963e2189701a1e01c2c06ee986ea206adfc546cdc43d9f2568031ea6f77d",
+      "saved_sha256": "2e31963e2189701a1e01c2c06ee986ea206adfc546cdc43d9f2568031ea6f77d",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-clients/logs/rust-incremental-off.log",
+      "original_sha256": "8313c5ed74b3b52204d3e86188454c29fbd398f97897881dd7eb51dcf5dd8dad",
+      "saved_sha256": "8313c5ed74b3b52204d3e86188454c29fbd398f97897881dd7eb51dcf5dd8dad",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "final-clients/logs/rustc-version.log",
+      "original_sha256": "f4d034f5660bb49f22bfcba3f3445be67e25b704c193ff421b53863b4faee148",
+      "saved_sha256": "f4d034f5660bb49f22bfcba3f3445be67e25b704c193ff421b53863b4faee148",
+      "path_redaction_applied": false
+    }
+  ],
+  "passed": true,
+  "build_log_sha256": "34f2d96a1f9bfc45f7d8c9831f4df54fb15f259eee7ec6ce4e2c1e85e2b2eefb",
+  "legacy_release_compatibility": {
+    "release": "v0.17.15",
+    "passed": 68,
+    "total": 68,
+    "evidence": "legacy-v0.17.15/README.md",
+    "scope": "Actual current Python/Dart wrappers with immutable older native binary; six missing new symbols; legacy convert and all four renders remain usable",
+    "receipt": "legacy-v0.17.15/summary.json"
+  }
+}

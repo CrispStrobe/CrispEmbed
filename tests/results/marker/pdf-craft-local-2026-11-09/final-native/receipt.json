@@ -1,0 +1,71 @@
+{
+  "source_commit": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+  "scope": "Final provenance fix; actual Linux x86_64 CPU tests, owned ABI and real PDFium fixtures",
+  "native_library_sha256": "decb81ce3f68f30db24cc6eb686f712750e86f68dbd5f9cc6930d65f87210328",
+  "pdfium_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+  "marker_source_sha256": "bab93411a253834aaa27452cca2d587a8e041dd10d5d8497865d6a30015de3f2",
+  "test_lifecycle_source_sha256": "d9009c4a95bd1735eb5f3cc319676213396a2f0164a1e6bf80af205c7a12ada6",
+  "checks": [
+    {
+      "name": "test-marker-document",
+      "exit_code": 0,
+      "timeout": false,
+      "passed": true,
+      "elapsed_seconds": 0.012,
+      "binary_sha256": "02a184bf2c5f66ea5fe79d0f91ae813ad1bd23bc6e5a89c3c4480bb2d391cef2",
+      "log_sha256": "79b23db02ed6b4a023fe40b8c533cfb165f27eb984107aae2f2edda6f913e843",
+      "log_file": "test-marker-document.log"
+    },
+    {
+      "name": "test-marker-artifact",
+      "exit_code": 0,
+      "timeout": false,
+      "passed": true,
+      "elapsed_seconds": 0.013,
+      "binary_sha256": "d40909392b2d847ad500de6cd6e49b6a9c75ac5f0e696ef9e1fb627c991f2950",
+      "log_sha256": "22e3444ce1a861e0028d469880bed1457f07857a69bf99024d7c1ca5d81eb2b6",
+      "log_file": "test-marker-artifact.log"
+    },
+    {
+      "name": "test-marker-lifecycle",
+      "exit_code": 0,
+      "timeout": false,
+      "passed": true,
+      "elapsed_seconds": 0.046,
+      "binary_sha256": "b2c9f5607627c59b43f7e526e7e0fb5c28830aa8e01fbb84c81cf9a1840d85c2",
+      "log_sha256": "dfbb6cdeda0c01cff98da3aa99cd28174710f6b9dbe68c16c3e611b50ddf1414",
+      "log_file": "test-marker-lifecycle.log"
+    },
+    {
+      "name": "test-marker-save",
+      "exit_code": 0,
+      "timeout": false,
+      "passed": true,
+      "elapsed_seconds": 0.004,
+      "binary_sha256": "1d1c136314ea51f42ce1972b2bd095d4ee151f0e9579c0c1058c8d2714ba8ee6",
+      "log_sha256": "087bc3dfe299813a79ad2e168a3b4b1d5eeca8dd716678fe681bd2c7873b97d2",
+      "log_file": "test-marker-save.log"
+    },
+    {
+      "name": "test-marker-backend",
+      "exit_code": 0,
+      "timeout": false,
+      "passed": true,
+      "elapsed_seconds": 0.015,
+      "binary_sha256": "8cb435ada77e15ae4ccbc45c3ea99dc96224fe2133e83acb26720c7c483dbdaf",
+      "log_sha256": "487b1dc7f05ac39023fe13341c942423488b4028065d0ac928a44979c122eec6",
+      "log_file": "test-marker-backend.log"
+    },
+    {
+      "name": "test-marker-api",
+      "exit_code": 0,
+      "timeout": false,
+      "passed": true,
+      "elapsed_seconds": 0.016,
+      "binary_sha256": "5f401ba5ddc07b1c9e06b4b45349c05f8f0459baa2e2d83474c19e0ad2b77aef",
+      "log_sha256": "9aebce8a389e149a605a95cc718034c5d025bb64d79a5060472d8f70fe9de783",
+      "log_file": "test-marker-api.log"
+    }
+  ],
+  "passed": true
+}

@@ -213,6 +213,15 @@ jobs:
       - name: Verify portable CPU baseline
         run: ${{ runner.os == 'Windows' && 'python' || 'python3' }} scripts/check-cpu-baseline.py build
 
+      - name: Validate Xcode configuration and CocoaPods syntax
+        if: runner.os == 'macOS' && needs.guards.outputs.native_tests == 'true'
+        run: |
+          cmake -S . -B build-xcode-check -G Xcode \
+            -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=ON \
+            -DCRISPEMBED_NATIVE=OFF ${{ matrix.cmake_args }}
+          ruby -c flutter/crispembed/ios/crispembed.podspec
+          ruby -c flutter/crispembed/macos/crispembed.podspec
+
       - name: Build all native targets
         if: needs.guards.outputs.native_tests == 'true'
         run: cmake --build build --config Release -j4
@@ -243,7 +252,7 @@ jobs:
                      test-qwen-pretokenize test-o200k-pretokenize test-bpe-pretokenize test-bert-pretokenize \
                      test-bert-norm test-spm-norm test-pair-truncation test-imatrix-alias test-no-repeat-ngram test-env-gate test-env-gate-words test-ocr-detect-score test-ppocrv6-det-policy test-low-memory \
                      test-lfm2-tiling test-pil-resize test-server-json-input test-server-load-control test-punct-marks test-qwen35-profile test-qwen35-materialize test-ultrabert-profile \
-                     test-marker-document test-marker-api test-license-consent test-marker-backend test-marker-save test-ocr-review test-ocr-orchestrator test-ocr-render \
+                     test-marker-document test-marker-api test-license-consent test-marker-backend test-marker-save test-ocr-review test-ocr-orchestrator test-ocr-render test-ocr-photo test-marker-artifact test-marker-lifecycle \
                      test-mineru25-profile test-lightonocr3-contract lightonocr3-trace test-xiaomi0-frontend test-xiaomi0-run test-xiaomi0-public test-nemotron-parse-geometry
           ./build/test-image-provenance
           ./build/test-provenance-marking
@@ -278,7 +287,10 @@ jobs:
           # here, executed by the separately dispatched metadata/reference lane.
           ./build/test-nemotron-parse-geometry self
           ./build/test-marker-document
+          ./build/test-marker-artifact
+          ./build/test-marker-lifecycle
           ./build/test-ocr-review
+          ./build/test-ocr-photo self
           ./build/test-ocr-render
           ./build/test-ocr-orchestrator
           ./build/test-marker-api
@@ -289,6 +301,53 @@ jobs:
           ./build/test-marker-backend
           python3 tests/test_ultrabert_api_log.py -v
           python3 tests/test_vendored_kaggle_harness.py
+
+      - name: Native OCR admission and Python Marker lifecycle (model-free, Linux)
+        if: runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
+        timeout-minutes: 5
+        run: |
+          python3 -m pip install numpy==2.3.5 gguf==0.19.0 pypdfium2==5.10.1
+          python3 tests/test_teleocr_loader.py --lib build/libcrispembed.so --report build/teleocr-loader.json
+          python3 tests/test_unlimited_ocr_license.py --lib build/libcrispembed.so --report build/unlimited-ocr-license.json
+          python3 tests/test_marker_lifecycle.py --lib build/libcrispembed.so --pdfium build/libmarker-pdfium-fixture.so --report build/marker-python-lifecycle.json
+          pdfium_library=$(python3 -c 'from pathlib import Path; import pypdfium2_raw; print(Path(pypdfium2_raw.__file__).with_name("libpdfium.so"))')
+          python3 tests/test_marker_real_pdf.py --lib build/libcrispembed.so --pdfium "$pdfium_library" --out build/marker-real-pdf
+
+      - name: Rust toolchain for actual Marker consumer
+        if: runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.95.0
+
+      - name: Dart toolchain for actual Marker consumer
+        if: runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.13.7
+
+      - name: Actual Rust and Dart Marker lifecycle (model-free, Linux)
+        if: runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
+        timeout-minutes: 20
+        run: >-
+          python3 tests/run_marker_binding_lifecycle.py
+          --lib build/libcrispembed.so
+          --pdfium build/libmarker-pdfium-fixture.so
+          --report build/marker-binding-lifecycle.json
+
+      - name: Retain native admission and Marker client diagnostics
+        if: always() && runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: teleocr-loader-${{ github.sha }}
+          path: |
+            build/teleocr-loader.json
+            build/unlimited-ocr-license.json
+            build/marker-python-lifecycle.json
+            build/marker-real-pdf/
+            build/marker-binding-lifecycle.json
+            build/marker-binding-lifecycle/
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
@@ -310,6 +369,21 @@ jobs:
       - name: Smoke test (explicit Metal)
         if: runner.os == 'macOS'
         run: ./build/test-backend-smoke metal
+
+      - name: Marker document, artifact and lifecycle controls (Windows)
+        if: runner.os == 'Windows' && needs.guards.outputs.native_tests == 'true'
+        shell: pwsh
+        run: |
+          $runtimeDirs = @(
+            "$PWD\build\Release",
+            "$PWD\build\bin\Release",
+            "$PWD\build\bin"
+          )
+          $env:PATH = ($runtimeDirs -join ';') + ';' + $env:PATH
+          foreach ($test in @('test-marker-document', 'test-marker-artifact', 'test-marker-lifecycle')) {
+            & ".\build\Release\${test}.exe"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
 
       # Install into a staging prefix so the shared library is bundled with its
       # ggml runtime dylibs/sos and rewritten to a relocatable @loader_path /
@@ -532,6 +606,16 @@ jobs:
 
           echo "=== Flutter plugin native libraries ==="
           find $PLUGIN -name '*.so' -o -name '*.dylib' -o -name '*.dll' -o -name '*.a' | sort
+
+      - name: Preserve native integration notices in the Flutter package
+        run: |
+          cp NOTICE.marker NOTICE.teleocr flutter/crispembed/
+          cp models/licenses/apache-2.0/LICENSE flutter/crispembed/Apache-2.0.txt
+          for platform in ios macos; do
+            cmp NOTICE.marker "flutter/crispembed/$platform/Notices/NOTICE.marker"
+            cmp NOTICE.teleocr "flutter/crispembed/$platform/Notices/NOTICE.teleocr"
+            cmp models/licenses/apache-2.0/LICENSE "flutter/crispembed/$platform/Notices/Apache-2.0.txt"
+          done
 
       - name: Upload bundled plugin
         uses: actions/upload-artifact@v4

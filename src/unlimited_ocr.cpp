@@ -587,10 +587,73 @@ static bool upcast_vision_f32(uocr_ctx & ctx) {
 // Load model
 // ---------------------------------------------------------------------------
 
-static bool load_hparams(uocr_ctx & ctx, const char * path) {
-    gguf_context * g = core_gguf::open_metadata(path);
-    if (!g) return false;
+// Metadata is the only identity available to direct-path callers. Match whole
+// ASCII words, case-insensitively, accepting punctuation/space/underscore word
+// separators used by model names, SPDX labels and source URLs. A Jina identity
+// remains restricted even when another field incorrectly claims MIT.
+static std::string license_words(const char * value) {
+    std::string words;
+    for (const unsigned char * p = (const unsigned char *)value; p && *p; ++p) {
+        unsigned char c = *p;
+        if (c >= 'A' && c <= 'Z') c = (unsigned char)(c - 'A' + 'a');
+        if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
+            words.push_back((char)c);
+        else if (!words.empty() && words.back() != '-')
+            words.push_back('-');
+    }
+    if (!words.empty() && words.back() == '-') words.pop_back();
+    return words;
+}
 
+static bool has_license_words(const std::string & value, const char * words) {
+    const size_t n = std::strlen(words);
+    for (size_t pos = value.find(words); pos != std::string::npos; pos = value.find(words, pos + 1)) {
+        if ((pos == 0 || value[pos - 1] == '-') && (pos + n == value.size() || value[pos + n] == '-')) return true;
+    }
+    return false;
+}
+
+static bool model_license_accepted(gguf_context * g) {
+    bool jina = false;
+    bool noncommercial = false;
+    for (const char * key : { "general.name", "general.source", "general.url", "general.source.url",
+                              "general.source.huggingface.repository", "general.license", "general.license.name",
+                              "general.license.link" }) {
+        const int k = gguf_find_key(g, key);
+        if (k < 0) continue;
+        // Silently defaulting a non-string identity/licence would let malformed
+        // metadata suppress a restriction. Acknowledgement cannot fix its type.
+        if (gguf_get_kv_type(g, k) != GGUF_TYPE_STRING) {
+            fprintf(stderr, "unlimited_ocr: malformed license/identity metadata: %s must be a string\n", key);
+            return false;
+        }
+        const std::string value = license_words(gguf_get_val_str(g, k));
+        if (std::strncmp(key, "general.license", std::strlen("general.license")) == 0) {
+            noncommercial = noncommercial || has_license_words(value, "cc-by-nc") ||
+                            has_license_words(value, "creativecommons-org-licenses-by-nc") ||
+                            has_license_words(value, "creative-commons-attribution-noncommercial") ||
+                            has_license_words(value, "creative-commons-attribution-non-commercial");
+        } else {
+            // Includes jinaai/jina-ocr-v1 and cstr/jina-ocr-v1-GGUF, even when
+            // mirrored or paired with conflicting licence/source fields.
+            jina = jina || has_license_words(value, "jina-ocr-v1");
+        }
+    }
+    if (!(jina || noncommercial)) return true;
+    // Jina OCR v1 weights are CC BY-NC 4.0 (docs/jina-ocr-license-gate.md).
+    // This loader gate also covers cached and local/direct C API loads.
+    if (!core_env::on("CRISPEMBED_ACCEPT_CC_BY_NC_LICENSE")) {
+        fprintf(stderr,
+                "unlimited_ocr: %s requires noncommercial model license acknowledgement. "
+                "Set CRISPEMBED_ACCEPT_CC_BY_NC_LICENSE=1 to acknowledge the applicable CC BY-NC terms; "
+                "this does not grant commercial-use rights. See docs/jina-ocr-license-gate.md.\n",
+                jina ? "Jina OCR v1 (CC BY-NC 4.0)" : "declared CC BY-NC metadata");
+        return false;
+    }
+    return true;
+}
+
+static void load_hparams(uocr_ctx & ctx, gguf_context * g) {
     auto u32 = [&](const char * k, uint32_t d) { return core_gguf::kv_u32(g, k, d); };
     auto f32v = [&](const char * k, float d) { return core_gguf::kv_f32(g, k, d); };
 
@@ -674,9 +737,6 @@ static bool load_hparams(uocr_ctx & ctx, const char * path) {
         ctx.merge_rank.reserve(n * 2);
         for (int i = 0; i < n; i++) ctx.merge_rank[gguf_get_arr_str(g, merges_idx, i)] = i;
     }
-
-    core_gguf::free_metadata(g);
-    return true;
 }
 
 static bool load_tensors(uocr_ctx & ctx, const char * path) {
@@ -3959,17 +4019,27 @@ extern "C" int unlimited_ocr_get_max_tokens(const unlimited_ocr_context * ctx) {
 unlimited_ocr_context * unlimited_ocr_init(const char * model_path, int n_threads) {
     // Same RAM preflight as deepseek_ocr2 (core/ram_guard.h).
     if (!core_ram::preflight("unlimited_ocr", model_path)) return nullptr;
+    gguf_context * g = core_gguf::open_metadata(model_path);
+    if (!g) return nullptr;
+    // Reject restricted/malformed metadata before creating a model context,
+    // populating tokenizer vectors, or initializing backend/weight resources.
+    if (!model_license_accepted(g)) {
+        core_gguf::free_metadata(g);
+        return nullptr;
+    }
+    if (gguf_get_n_tensors(g) == 0) {
+        fprintf(stderr, "unlimited_ocr: GGUF contains no model tensors\n");
+        core_gguf::free_metadata(g);
+        return nullptr;
+    }
     auto * c = new unlimited_ocr_context;
     auto & ctx = c->inner;
     ctx.n_threads = n_threads;
 
     if (const char * ref = getenv("UOCR_REF")) ctx.diff_ref_path = ref;
 
-    if (!load_hparams(ctx, model_path)) {
-        fprintf(stderr, "unlimited_ocr: failed to load hparams\n");
-        delete c;
-        return nullptr;
-    }
+    load_hparams(ctx, g);
+    core_gguf::free_metadata(g);
 
     // Only the separately measured second-generation path opts into this
     // cache and row-parallel projector. Keep the first-generation route intact.
