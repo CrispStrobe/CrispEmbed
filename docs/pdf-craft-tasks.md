@@ -156,6 +156,14 @@ model-quality gaps retain their own open boxes.
 
 ## Review corrections
 
+- [x] Reproduce missing stable provenance in incremental views with the real
+  PDF parser and a native regression, preserving the failing attempts.
+- [x] Use one provenance helper for legacy completion and initial raw
+  checkpoints, so partial/final/raw-reopened views inherit extraction-time
+  metadata without overwriting stored processed-artifact provenance.
+- [x] Add a supervised owned real-PDF lifecycle regression to the Linux native
+  lane using the existing pinned PDFium test dependency.
+- [ ] Record rebuilt-source provenance and strict real-PDF lifecycle results.
 - [x] Pin the actually loaded PDFium library digest; reject stale live handles
   after the selected library file changes. Add an owned replacement regression.
 - [x] Include image-resize runtime settings, C/C++ compiler settings and selected

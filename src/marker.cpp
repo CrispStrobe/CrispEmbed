@@ -349,17 +349,21 @@ void extract_page(crispembed_marker_context & ctx, page & p, const image * raste
     p.extraction_method = used_ocr ? (used_pdf ? "pdftext+teleocr" : "teleocr") : "pdftext";
 }
 
+void extraction_provenance(document & doc, const options & opts) {
+    doc.metadata["implementation"] = "crispembed-marker-native";
+    doc.metadata["software_version"] = CRISPEMBED_VERSION_STR;
+    doc.metadata["marker_source_revision"] = "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4";
+    doc.metadata["schema"] = "crispembed.marker/1";
+    doc.metadata["surya_model_parity"] = "not_claimed";
+    doc.metadata["text_quality_check"] = "deterministic_unicode_heuristic";
+    doc.metadata["layout_backend"] = opts.mode == 1 ? "pdftext_heuristics" : "teleocr_ggml";
+    if (!opts.model_path.empty() && opts.mode != 1)
+        doc.metadata["model_file"] = std::filesystem::path(opts.model_path).filename().string();
+}
+
 void finish(crispembed_marker_context & ctx, std::chrono::steady_clock::time_point start) {
     process_document(ctx.doc, ctx.opts);
-    ctx.doc.metadata["implementation"] = "crispembed-marker-native";
-    ctx.doc.metadata["software_version"] = CRISPEMBED_VERSION_STR;
-    ctx.doc.metadata["marker_source_revision"] = "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4";
-    ctx.doc.metadata["schema"] = "crispembed.marker/1";
-    ctx.doc.metadata["surya_model_parity"] = "not_claimed";
-    ctx.doc.metadata["text_quality_check"] = "deterministic_unicode_heuristic";
-    ctx.doc.metadata["layout_backend"] = ctx.opts.mode == 1 ? "pdftext_heuristics" : "teleocr_ggml";
-    if (!ctx.opts.model_path.empty() && ctx.opts.mode != 1)
-        ctx.doc.metadata["model_file"] = std::filesystem::path(ctx.opts.model_path).filename().string();
+    extraction_provenance(ctx.doc, ctx.opts);
     ctx.doc.metadata["elapsed_seconds"] =
         std::to_string(std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count());
     ctx.metadata = render_metadata(ctx.doc);
@@ -549,8 +553,6 @@ void require_incremental(const crispembed_marker_context & c) {
 void job_view(crispembed_marker_context & c) {
     c.doc = c.job->snapshot.value;
     process_document(c.doc, c.opts);
-    c.doc.metadata["implementation"] = "crispembed-marker-native";
-    c.doc.metadata["software_version"] = CRISPEMBED_VERSION_STR;
     c.doc.metadata["extraction_state"] = c.job->snapshot.complete ? "complete" : "partial";
     c.doc.metadata["completed_pages"] = std::to_string(c.job->snapshot.value.pages.size());
     c.doc.metadata["next_page"] = std::to_string(c.job->snapshot.next_page);
@@ -632,6 +634,10 @@ extern "C" int crispembed_marker_start(crispembed_marker_context * ctx, const ch
             next->snapshot.next_page = ctx->opts.first_page;
             next->snapshot.value.source_name = std::filesystem::u8path(file_path).filename().u8string();
             next->snapshot.value.backend = ctx->opts.mode == 1 ? "pdfium-text" : "crispembed-teleocr";
+            // Persist extraction-time provenance in the raw checkpoint too.
+            // Reopened views retain these fields without deriving them from a
+            // viewer's potentially different model or processing options.
+            extraction_provenance(next->snapshot.value, ctx->opts);
             checkpoint(*next, context_artifact_limits(*ctx));
         }
         next->status = next->snapshot.complete ? CRISPEMBED_MARKER_JOB_COMPLETE : CRISPEMBED_MARKER_JOB_RUNNING;

@@ -350,6 +350,7 @@ CONSUMERS = {
     "tests/test_teleocr_loader.py": ("native", "native_tests"),
     "tests/test_unlimited_ocr_license.py": ("native", "native_tests"),
     "tests/test_marker_lifecycle.py": ("native", "native_tests"),
+    "tests/test_marker_real_pdf.py": ("native", "native_tests"),
     "tests/run_marker_binding_lifecycle.py": ("native", "native_tests"),
     "tools/wasm_size_report.py": ("wasm_ocr",),
     "scripts/check-cpu-baseline.py": ("native", "native_windows", "native_macos"),

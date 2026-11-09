@@ -51,8 +51,16 @@ failed before any checks because the default temporary directory was absent;
 setting a task-local `TMPDIR` passes without source changes. Initial attempts,
 source/toolchain identities and limits are preserved in the receipts.
 
-Next: finish the real-PDF incremental/cancellation/resume probe; retain its
-reproducer and results. Read Windows/macOS results when available, complete
+The real-PDF continuation reproduced a provenance omission: incremental views
+lacked four stable legacy diagnostics. The correction stamps the existing
+provenance into the initial raw checkpoint and preserves it in partial, complete
+and reopened views. A native regression fails on the original build; the strict
+real-PDF comparison also fails without waiving those fields. The reproducible
+`tests/test_marker_real_pdf.py` is wired into the existing Linux native lane;
+rebuilt-source results will follow in a separate evidence checkpoint.
+
+Next: finish rebuilt-source provenance/real-PDF validation and actual legacy
+Python/Dart compatibility with the immutable older release. Read Windows/macOS results when available, complete
 Flutter archive/app qualification in an equipped environment, and qualify
 representative OCR/retrieval quality separately before any default promotion.
 

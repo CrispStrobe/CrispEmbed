@@ -1,0 +1,320 @@
+{
+  "kind": "marker-owned-real-pdf-lifecycle",
+  "source_commit": "16b544e455309a367739bbd430aafdd817f77d87",
+  "probe_sha256": "ef869bd829e7475ec322ab0b219faec62a72c54da5d35e0eabc4ab38c58d233e",
+  "wrapper_sha256": "dbba4c60926c931ffec8f9092ddb4a61a860e9cbfe1c4075d93ddb6a88756c9d",
+  "library_sha256": "0f1034b037ac2d3b09d8d80b5b956b53dc9c17f9ef77e871192acb1e56d9833a",
+  "pdfium_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+  "fixture_sha256": "6727732d064d04dd54bd554e02422058da6d8d6c0df3efc1cb998099fcdaf641",
+  "dependencies": {
+    "numpy": "2.3.5",
+    "pypdfium2": "5.10.1"
+  },
+  "pdfium_version": "151.0.7891.0",
+  "python_version": "3.13.5",
+  "model_weights_used": false,
+  "general_pdf_or_ocr_quality_qualified": false,
+  "fixture_page_count": 3,
+  "expected_printed_labels": [
+    "iv",
+    "章-2",
+    "📖-3"
+  ],
+  "checks": [
+    {
+      "name": "real PDFium accepts three owned pages",
+      "passed": true
+    },
+    {
+      "name": "real PDFium decodes printed labels",
+      "passed": true
+    },
+    {
+      "name": "authored page 0 text is exact",
+      "passed": true
+    },
+    {
+      "name": "authored page 1 text is exact",
+      "passed": true
+    },
+    {
+      "name": "authored page 2 text is exact",
+      "passed": true
+    },
+    {
+      "name": "all four renderers preserve current gate-off output (0)",
+      "passed": true
+    },
+    {
+      "name": "all four renderers preserve current gate-off output (FaLsE)",
+      "passed": true
+    },
+    {
+      "name": "all four renderers preserve current gate-off output (OfF)",
+      "passed": true
+    },
+    {
+      "name": "all four renderers preserve current gate-off output (nO)",
+      "passed": true
+    },
+    {
+      "name": "artifact/lifecycle gates alone preserve legacy four-renderer output",
+      "passed": true
+    },
+    {
+      "name": "legacy: physical page indices and labels",
+      "passed": true
+    },
+    {
+      "name": "legacy: physical source records",
+      "passed": true
+    },
+    {
+      "name": "legacy: exact UTF-8 source-range reconstruction",
+      "passed": true
+    },
+    {
+      "name": "legacy: retrieval chunks retain physical provenance",
+      "passed": true
+    },
+    {
+      "name": "real PDF start creates durable empty checkpoint",
+      "passed": true
+    },
+    {
+      "name": "one-page budget commits only page zero",
+      "passed": true
+    },
+    {
+      "name": "cancellation preserves committed real PDF checkpoint",
+      "passed": true
+    },
+    {
+      "name": "fresh context resumes one committed page",
+      "passed": true
+    },
+    {
+      "name": "resumed one-page budget commits page one",
+      "passed": true
+    },
+    {
+      "name": "resumed job completes three real PDF pages",
+      "passed": true
+    },
+    {
+      "name": "incremental markdown equals legacy except declared run/lifecycle metadata",
+      "passed": true
+    },
+    {
+      "name": "incremental html equals legacy except declared run/lifecycle metadata",
+      "passed": true
+    },
+    {
+      "name": "incremental json equals legacy except declared run/lifecycle metadata",
+      "passed": false
+    }
+  ],
+  "comparison_exclusions": {
+    "separate_conversion_runs": [
+      "elapsed_seconds"
+    ],
+    "legacy_vs_incremental": [
+      "elapsed_seconds",
+      "completed_pages",
+      "next_page",
+      "extraction_phase",
+      "extraction_state"
+    ],
+    "processed_artifact_reopen": []
+  },
+  "comparison_metadata_differences": [
+    {
+      "name": "gate-0",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.005277",
+          "expected": "0.006801"
+        }
+      }
+    },
+    {
+      "name": "gate-0",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.005277",
+          "expected": "0.006801"
+        }
+      }
+    },
+    {
+      "name": "gate-FaLsE",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.005221",
+          "expected": "0.006801"
+        }
+      }
+    },
+    {
+      "name": "gate-FaLsE",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.005221",
+          "expected": "0.006801"
+        }
+      }
+    },
+    {
+      "name": "gate-OfF",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.004977",
+          "expected": "0.006801"
+        }
+      }
+    },
+    {
+      "name": "gate-OfF",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.004977",
+          "expected": "0.006801"
+        }
+      }
+    },
+    {
+      "name": "gate-nO",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.005620",
+          "expected": "0.006801"
+        }
+      }
+    },
+    {
+      "name": "gate-nO",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.005620",
+          "expected": "0.006801"
+        }
+      }
+    },
+    {
+      "name": "artifact-gates-only",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.096983",
+          "expected": "0.006801"
+        }
+      }
+    },
+    {
+      "name": "artifact-gates-only",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.096983",
+          "expected": "0.006801"
+        }
+      }
+    },
+    {
+      "name": "incremental-vs-legacy",
+      "format": "json",
+      "configuration_differences": {
+        "completed_pages": {
+          "actual": "3",
+          "expected": null
+        },
+        "elapsed_seconds": {
+          "actual": null,
+          "expected": "0.090390"
+        },
+        "extraction_phase": {
+          "actual": "processed",
+          "expected": null
+        },
+        "extraction_state": {
+          "actual": "complete",
+          "expected": null
+        },
+        "layout_backend": {
+          "actual": null,
+          "expected": "pdftext_heuristics"
+        },
+        "marker_source_revision": {
+          "actual": null,
+          "expected": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        },
+        "next_page": {
+          "actual": "3",
+          "expected": null
+        },
+        "surya_model_parity": {
+          "actual": null,
+          "expected": "not_claimed"
+        },
+        "text_quality_check": {
+          "actual": null,
+          "expected": "deterministic_unicode_heuristic"
+        }
+      }
+    }
+  ],
+  "output_sha256": {
+    "gate-unset.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-unset.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-unset.json": "30ffc2c3dbf697fd3115db8178a0b2c0861ea91547d17f694f09cfb002506c45",
+    "gate-unset.chunks": "0306728173049fe875d241abd41bf0c1c1918f70535d1967b07f5f641b692dce",
+    "gate-0.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-0.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-0.json": "dd5c1f6f6a0f0d29e6547ddf304d9326bfb7469b9bf330bdc99e6e3a12b0e13d",
+    "gate-0.chunks": "3a84f74a08954b6eb81f6090366214382972fcdaf6bf58472bf1d8df9bc6b9b3",
+    "gate-FaLsE.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-FaLsE.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-FaLsE.json": "d37fe817c8ec61729a489cec5773399df98932511f760c6b2e99e959619ca2e3",
+    "gate-FaLsE.chunks": "fb7cb005f5334224aa00ca66dd15a9a8b9ac168ddf41c78e35fa6e762b40746e",
+    "gate-OfF.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-OfF.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-OfF.json": "6e3b0a0d126f1993ec51c9d590b145147d54ef326bcb730f2a02007aef01486c",
+    "gate-OfF.chunks": "e4ca4dd39957fe086900235dcedc2976f6b92ed27e638822f404e71ad81dd016",
+    "gate-nO.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-nO.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-nO.json": "b3dd78e6b22393804efb8c74405fa38e28c5f123314d659556dcb618b4f8f7d4",
+    "gate-nO.chunks": "88d613998611727106d67f4c757aa3813dbb593e202ffebfdba3d41da1176445",
+    "artifact-gates-only.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "artifact-gates-only.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "artifact-gates-only.json": "b3eb7ea77b2f42365d0e299fa2ccbfed27b3a99e91c12156c454eef0b688ce88",
+    "artifact-gates-only.chunks": "092f0cd3182c2c5f25c3688da20ac96d3a8c57949bd6d29334f46fa69055662d",
+    "enabled-legacy.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "enabled-legacy.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "enabled-legacy.json": "6d5f648f0ee14fe2edbad1ca9f930d5ebc196734f70b6db7a409dc25c7907217",
+    "enabled-legacy.chunks": "ec7b4fb559ffc0e56e93238be6ccdf871482e87e14d570b6a078e0cd349889f6",
+    "incremental.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "incremental.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "incremental.json": "fe0c55668de1712762318d4af6a5e33583bdc929c2af0c955494549baebfdf74",
+    "incremental.chunks": "bda4edbaab3795a71d6bd4a426472558da534927e4658e9ea77fd22250a38540"
+  },
+  "passed_count": 22,
+  "total_count": 23,
+  "passed": false,
+  "error": "AssertionError: incremental json equals legacy except declared run/lifecycle metadata",
+  "supervisor": {
+    "returncode": 1,
+    "timed_out": false,
+    "stdout_sha256": "5b1d4ffb3f173afbc968087a1bfe0b01c66f024c5e91fd970fb64fe2a5737e76",
+    "stderr_sha256": "4eb5e5327a70253dca59b051149a4109d58c130c603af67f9ce15c2bc48498d6"
+  },
+  "acceptance_status": "Expected initial regression: native incremental provenance omission reproduced",
+  "native_build_source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607"
+}

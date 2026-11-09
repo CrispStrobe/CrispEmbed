@@ -286,6 +286,68 @@ void lifecycle(const fs::path & root, const fs::path & source) {
           "complete resume does not duplicate a page");
 }
 
+void view_provenance(const fs::path & root, const fs::path & source) {
+    auto legacy = create(config());
+    success(crispembed_marker_convert(legacy.get(), source.u8string().c_str()), legacy.get(),
+            "legacy provenance reference converts");
+    const auto baseline = root / "legacy-provenance.cemk";
+    success(crispembed_marker_save_extraction(legacy.get(), baseline.u8string().c_str()), legacy.get(),
+            "legacy provenance reference saves");
+    const auto expected = crisp_marker::load_extraction(baseline.u8string()).value.metadata;
+    const char * fields[] = { "implementation",     "software_version",   "marker_source_revision", "schema",
+                              "surya_model_parity", "text_quality_check", "layout_backend" };
+    for (const char * key : fields)
+        check(expected.count(key) && !expected.at(key).empty(), "legacy provenance field is present");
+    check(expected.at("surya_model_parity") == "not_claimed" && expected.at("layout_backend") == "pdftext_heuristics" &&
+              !expected.count("model_file"),
+          "text-only reference does not claim model inference");
+    const auto check_provenance = [&](const crisp_marker::extraction_snapshot & snapshot) {
+        for (const char * key : fields) {
+            const auto actual = snapshot.value.metadata.find(key);
+            if (actual == snapshot.value.metadata.end() || actual->second != expected.at(key))
+                std::fprintf(stderr, "Incremental provenance field differs: %s\n", key);
+            check(actual != snapshot.value.metadata.end() && actual->second == expected.at(key),
+                  "raw checkpoints and processed views preserve legacy provenance");
+        }
+    };
+
+    auto incremental = create(config());
+    const auto raw = root / "provenance-raw.cemk";
+    success(crispembed_marker_start(incremental.get(), source.u8string().c_str(), raw.u8string().c_str(), 0),
+            incremental.get(), "provenance job starts");
+    check_provenance(crisp_marker::load_extraction(raw.u8string()));
+    for (int budget : { 1, 64 }) {
+        const auto expected_status = budget == 1 ? CRISPEMBED_MARKER_JOB_RUNNING : CRISPEMBED_MARKER_JOB_COMPLETE;
+        check(crispembed_marker_step(incremental.get(), budget) == expected_status,
+              "provenance probe reaches partial and complete states");
+        const auto view = root / ("provenance-view-" + std::to_string(budget) + ".cemk");
+        success(crispembed_marker_save_extraction(incremental.get(), view.u8string().c_str()), incremental.get(),
+                "provenance view saves");
+        const auto snapshot = crisp_marker::load_extraction(view.u8string());
+        check_provenance(snapshot);
+        check_provenance(crisp_marker::load_extraction(raw.u8string()));
+        check(!snapshot.value.metadata.count("model_file") && !snapshot.value.metadata.count("elapsed_seconds"),
+              "incremental text views do not invent a model or uninterrupted timing");
+        const std::string metadata = crispembed_marker_metadata(incremental.get());
+        auto standalone_config = config();
+        standalone_config.pdfium_path = nullptr;
+        standalone_config.dpi += 1;
+        auto standalone = create(standalone_config);
+        success(crispembed_marker_open_extraction(standalone.get(), view.u8string().c_str()), standalone.get(),
+                "provenance view reopens without PDFium");
+        check(metadata == crispembed_marker_metadata(standalone.get()),
+              "partial and complete artifact reopen preserves all metadata bytes");
+
+        auto raw_reader = create(config());
+        success(crispembed_marker_open_extraction(raw_reader.get(), raw.u8string().c_str()), raw_reader.get(),
+                "raw checkpoint opens with matching processing settings");
+        const auto raw_view = root / ("provenance-raw-view-" + std::to_string(budget) + ".cemk");
+        success(crispembed_marker_save_extraction(raw_reader.get(), raw_view.u8string().c_str()), raw_reader.get(),
+                "raw checkpoint processing saves a view");
+        check_provenance(crisp_marker::load_extraction(raw_view.u8string()));
+    }
+}
+
 void identity_controls(const fs::path & root, const fs::path & source) {
     const auto raw = root / "identity.cemk";
     auto ctx = create(config());
@@ -503,6 +565,7 @@ int test_main() {
         check(fs::is_regular_file(fs::u8path(MARKER_FIXTURE_LIBRARY)), "explicit owned PDFium fixture exists");
         gate_controls(owned.path, source);
         lifecycle(owned.path, source);
+        view_provenance(owned.path, source);
         identity_controls(owned.path, source);
         failure_controls(owned.path, source, failing);
         alias_controls(owned.path, source);

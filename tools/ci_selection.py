@@ -63,6 +63,7 @@ NATIVE_PYTHON = (
     "tests/test_teleocr_loader.py",
     "tests/test_unlimited_ocr_license.py",
     "tests/test_marker_lifecycle.py",
+    "tests/test_marker_real_pdf.py",
     "tests/run_marker_binding_lifecycle.py",
     "kaggle_harness.py", "tools/kaggle/*/kaggle_harness.py",
     "tests/test_ultrabert_*.py", "tools/ultrabert*.py", "tools/dump_ultrabert*.py", "tools/ci-heavy/*ultrabert*.py",

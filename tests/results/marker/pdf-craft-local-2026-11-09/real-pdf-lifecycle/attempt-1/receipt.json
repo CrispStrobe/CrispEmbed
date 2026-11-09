@@ -1,0 +1,32 @@
+{
+  "kind": "marker-owned-real-pdf-lifecycle",
+  "source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+  "probe_sha256": "129568f01e87516069c8d4f218e523cbbe99eabf7285800c3f060847ab590a62",
+  "wrapper_sha256": "dbba4c60926c931ffec8f9092ddb4a61a860e9cbfe1c4075d93ddb6a88756c9d",
+  "library_sha256": "0f1034b037ac2d3b09d8d80b5b956b53dc9c17f9ef77e871192acb1e56d9833a",
+  "pdfium_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+  "fixture_sha256": "6727732d064d04dd54bd554e02422058da6d8d6c0df3efc1cb998099fcdaf641",
+  "dependencies": {
+    "numpy": "2.3.5",
+    "pypdfium2": "5.10.1"
+  },
+  "pdfium_version": null,
+  "python_version": "3.13.5",
+  "model_weights_used": false,
+  "general_pdf_or_ocr_quality_qualified": false,
+  "fixture_page_count": 3,
+  "expected_printed_labels": [
+    "iv",
+    "章-2",
+    "📖-3"
+  ],
+  "checks": [],
+  "output_sha256": {},
+  "passed_count": 0,
+  "total_count": 0,
+  "passed": false,
+  "error": "TypeError: 'PdfPage' object does not support the context manager protocol",
+  "failure_scope": "New probe helper stopped before CrispEmbed assertions.",
+  "correction": "Explicitly close PdfTextPage and PdfPage; preserve reference stdout/stderr.",
+  "native_build_source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607"
+}

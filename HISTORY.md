@@ -2,6 +2,35 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 9 November 2026 — PDF Craft feature local execution
+
+The owner authorized bounded local CPU builds/tests while GitHub Actions was
+queued. Feature checkpoint [`16b544e`](https://github.com/CrispStrobe/CrispEmbed/commit/16b544e455309a367739bbd430aafdd817f77d87)
+retains [executed Linux x86_64 evidence](tests/results/marker/pdf-craft-local-2026-11-09/README.md)
+for native source `d4d508c460c6e172fd1d7d4afc6b9c78652ad607`: 185 document,
+87 artifact, 400 lifecycle and 38 save checks; 19 converter, 17 Python client,
+57 TeleOCR loader, 106 Jina/CC-BY-NC admission and 33 actual Python lifecycle
+checks; six actual Rust/Dart scenarios with 111 assertions; five repository
+guards. Actual PDFium 151.0.7891.0 adds 39 backend/86 C API checks and 112 checks
+across eight owned PDFs through Python/CLI/HTTP. Python wheel/sdist/rebuilt-wheel
+readback passes 26 checks with exact notices and native bytes. Dart's publish
+dry-run selects all nine notice copies, with 15 scoped checks; full Flutter
+validation and retained-archive readback remain open.
+
+Initial native artifact/lifecycle attempts failed before any checks because the
+default temporary directory was unavailable. Both passed unchanged after a
+task-local `TMPDIR` was supplied. Those failures, environment setup corrections,
+actual source/binary/toolchain hashes and qualified package limits are retained.
+No model weights, production dependency, release or default promotion followed.
+Windows/macOS and representative OCR/retrieval quality remain separate gates.
+
+The subsequent real-PDF lifecycle comparison found missing stable provenance in
+incremental views. A native regression and a strict real-PDF comparison reproduce
+the omission before correction. The follow-up stores the existing provenance
+in the initial raw checkpoint, so partial/final and raw-reopened views inherit
+extraction-time fields. Stored processed artifacts retain their original metadata.
+Rebuilt-source results are recorded separately from the first checkpoint.
+
 ## 9 November 2026 — Inpainting owner review verdict (issue 71)
 
 Owner reviewed the 7-case panel (MI-GAN256 F32, MI-GAN512 F32/F16/Q8_0/Q4_K;

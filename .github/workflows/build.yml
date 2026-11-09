@@ -301,11 +301,14 @@ jobs:
 
       - name: Native OCR admission and Python Marker lifecycle (model-free, Linux)
         if: runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
+        timeout-minutes: 5
         run: |
-          python3 -m pip install numpy==2.3.5 gguf==0.19.0
+          python3 -m pip install numpy==2.3.5 gguf==0.19.0 pypdfium2==5.10.1
           python3 tests/test_teleocr_loader.py --lib build/libcrispembed.so --report build/teleocr-loader.json
           python3 tests/test_unlimited_ocr_license.py --lib build/libcrispembed.so --report build/unlimited-ocr-license.json
           python3 tests/test_marker_lifecycle.py --lib build/libcrispembed.so --pdfium build/libmarker-pdfium-fixture.so --report build/marker-python-lifecycle.json
+          pdfium_library=$(python3 -c 'from pathlib import Path; import pypdfium2_raw; print(Path(pypdfium2_raw.__file__).with_name("libpdfium.so"))')
+          python3 tests/test_marker_real_pdf.py --lib build/libcrispembed.so --pdfium "$pdfium_library" --out build/marker-real-pdf
 
       - name: Rust toolchain for actual Marker consumer
         if: runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
@@ -337,6 +340,7 @@ jobs:
             build/teleocr-loader.json
             build/unlimited-ocr-license.json
             build/marker-python-lifecycle.json
+            build/marker-real-pdf/
             build/marker-binding-lifecycle.json
             build/marker-binding-lifecycle/
           if-no-files-found: warn
