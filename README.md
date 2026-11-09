@@ -530,8 +530,10 @@ Three permissively-licensed engines, all auto-detected via `--ocr`:
   and published as `migan512-*`, `moebius-*`, `pixelhacker-*`, `sdxl-vae-inpaint-*`
   (non-F32 files also need `CRISPEMBED_INPAINT_QUANT=1`; MI-GAN512 Q4_K is below the
   0.94 bar on one street crop). Video: `--inpaint-stream` with temporal consistency
-  (`CRISPEMBED_INPAINT_STREAM=1`). Representative subtitle/video quality is not yet
-  qualified; LaMa is not implemented.
+  (`CRISPEMBED_INPAINT_STREAM=1`). DBNet text masks score thin subtitle lines over
+  thresholded pixels (`CRISPEMBED_INPAINT_TEXT_MASK_SCORE_UNDILATED=0` restores the old
+  scoring). Representative subtitle/video quality is not yet qualified; LaMa is not
+  implemented.
 - **PDF DPI profiling** — zero-dependency PDF parser computes effective page DPI
   to auto-select OCR resolution (downsample high-DPI, super-resolve low-DPI).
 - **Output formats** — plain text, hOCR, ALTO 3.1 XML, searchable PDF, with
