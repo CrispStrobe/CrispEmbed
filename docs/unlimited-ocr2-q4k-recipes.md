@@ -184,3 +184,25 @@ Q8_0 moved the other way (round 3). Box-stripped text still equals F16 4/4. Keep
 does not help, so the loss sits in the 4-bit routed experts/attention. **Open:** attribute the runtime change
 between the 3 November sweep and now (candidates: the F32-vision default flip and any decoder/MoE kernel
 changes); bisect with the round-1 commit vs current on the German case before any new Q4 search.
+
+## Round 4b: bisect of the Q4_K_MIX drop (Kaggle CPU, 9 November 2026)
+
+Same kernel, recipe `q4kns` (= published Q4_K_MIX), four frozen cases, each arm teacher-forced against its own
+native F16 run. Receipts: [old](../tests/results/unlimited-ocr2/q4k-sweep/bisect-old/summary.md),
+[now](../tests/results/unlimited-ocr2/q4k-sweep/bisect-now/summary.md),
+[now, VISION_F32=0](../tests/results/unlimited-ocr2/q4k-sweep/bisect-nowvf16/summary.md).
+
+| arm | source | final cos min (case) | per case |
+|---|---|---|---|
+| old | `1148513b` (3 Nov sweep) | 0.9634 (receipt) | paragraphs 0.9693, table 0.9674, receipt 0.9634, german 0.9679 |
+| now | current main | 0.9320 (german) | paragraphs 0.9482, table 0.9734, receipt 0.9648, german 0.9320 |
+| now, `CRISPEMBED_UNLIMITED_OCR2_VISION_F32=0` | current main | **0.9634 (receipt)** | identical to old, all four cases |
+
+Attributed: the drop is entirely the 3 November F32-vision default flip. Nothing else in the runtime changed the
+Q4_K_MIX numbers. With F32 vision the F16 reference itself runs F32 x F32 vision products (the variant that is
+more often exact against the original), while the Q4_K vision weights stay Q4-limited, so the Q4-vs-reference
+gap widens, mostly on the German page. This is a reference change, not a Q4 regression: the published file is
+byte-identical and decodes the same box-stripped text (4/4). The card and alias numbers are now stated for the
+default runtime (0.9320 CPU / 0.9291 CUDA), with the F16-vision path's 0.9634 / 0.9540 as the historical figure.
+A better 4-bit candidate would keep the SAM/CLIP block matrices above Q4 (the `sam`/`clip` round-1 arms showed
+SAM is the most Q4-sensitive group).
