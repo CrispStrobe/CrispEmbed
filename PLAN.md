@@ -8,9 +8,9 @@ upstream feature branch as requested; no main-branch or release changes.
 
 | Work | State | Acceptance |
 |---|---|---|
-| Audit PDF Craft `cf003c711b6a63cd0a0a64bfc490bd319ab20d92` | Source and dependency review in progress | Pin individual source provenance; exclude copyleft code/dependencies and preserve model restrictions |
-| Native OCR repetition diagnostics | Planned, default-off `CRISPEMBED_MARKER_REPETITION_CHECK` | Unicode consecutive n-grams, bounded work, asset exclusions, unchanged text/raw/geometry and default behavior; hosted model-free positive/negative controls |
-| TeleOCR weight-license metadata | Existing converter claims Apache-2.0 despite the documented Qwen Research vision lineage | Correct exported metadata and regression checks without changing model access or defaults |
+| Audit PDF Craft `cf003c711b6a63cd0a0a64bfc490bd319ab20d92` | [Source and dependency review](docs/pdf-craft-adoption.md) complete for the selected adaptation; MIT notice retained in the existing distributed `NOTICE.marker` | Excludes the Poppler/Qt/EasyDict dependency paths and the MinerU-referenced paragraph-merging material |
+| Native OCR repetition diagnostics | Implemented, default-off `CRISPEMBED_MARKER_REPETITION_CHECK`; hosted validation pending | Unicode consecutive n-grams, bounded work, asset exclusions, unchanged text/raw/geometry and default behavior; hosted model-free positive/negative controls |
+| TeleOCR weight-license metadata | Converter and docs corrected to Qwen Research weight terms; native acknowledgement controls expanded; hosted validation pending | Actual synthetic GGUF license readback and disabled-value/direct-loader tests; existing published files and hashes unchanged |
 
 The bounded runtime change reports suspicious OCR repetition; it does not delete
 content, retry inference, introduce models or qualify document accuracy. The

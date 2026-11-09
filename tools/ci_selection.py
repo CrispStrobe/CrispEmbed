@@ -60,6 +60,7 @@ INPAINT_NATIVE = (
 # what they import or read. Linux only: they are not run on Windows/macOS.
 NATIVE_PYTHON = (
     "tests/test_ultrabert_api_log.py", "tests/test_vendored_kaggle_harness.py",
+    "tests/test_teleocr_loader.py",
     "kaggle_harness.py", "tools/kaggle/*/kaggle_harness.py",
     "tests/test_ultrabert_*.py", "tools/ultrabert*.py", "tools/dump_ultrabert*.py", "tools/ci-heavy/*ultrabert*.py",
     "models/convert-ultrabert-to-gguf.py", "tests/results/ultrabert/*.json",

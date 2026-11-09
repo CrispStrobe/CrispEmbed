@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 // Native document processing adapted from Marker 2.1.0 (Datalab contributors)
 // and teleocr-rs (Ramahatratra Zafiamy and contributors). See NOTICE.marker.
+// Optional repetition diagnostics adapt PDF Craft's MIT-licensed n-gram check;
+// its copyright, permission notice and exact source are also in NOTICE.marker.
 // This is a deterministic alternative pipeline, not Surya model parity.
 #include "marker_document.h"
 #include "otsl_table.h"
+#include "core/env_gate.h"
 #include "core/json.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cmath>
 #include <functional>
@@ -989,6 +993,92 @@ std::string margin_signature(const std::string & value) {
     return out;
 }
 
+struct repetition_hit {
+    size_t period = 0, repeats = 0;
+};
+
+repetition_hit repetitive_ngram(const std::string & text) {
+    // PDF Craft cf003c711b6a63cd0a0a64bfc490bd319ab20d92:
+    // pdf_craft/pdf/ngrams.py and page_extractor.py (MIT, Tao Zeyu).
+    // Equal characters at distance n for n*(repeats-1) positions prove a
+    // tandem repeat. A fixed ring avoids substring allocations and the
+    // upstream nested rescans: O(20 * Unicode scalar count), O(20) storage.
+    if (text.size() < 32 || text.size() > text_limit) return {};
+    constexpr size_t max_period = 20;
+    std::array<uint32_t, max_period> previous{};
+    std::array<size_t, max_period + 1> equal_run{};
+    size_t count = 0;
+    repetition_hit hit;
+    for (size_t i = 0; i < text.size();) {
+        const unsigned char first = static_cast<unsigned char>(text[i]);
+        size_t length = first < 0x80                     ? 1
+                        : first >= 0xC2 && first <= 0xDF ? 2
+                        : first >= 0xE0 && first <= 0xEF ? 3
+                        : first >= 0xF0 && first <= 0xF4 ? 4
+                                                         : 0;
+        if (!length || length > text.size() - i) return {};
+        uint32_t cp = length == 1 ? first : length == 2 ? first & 0x1F : length == 3 ? first & 0x0F : first & 7;
+        for (size_t j = 1; j < length; ++j) {
+            const unsigned char next = static_cast<unsigned char>(text[i + j]);
+            if ((next & 0xC0) != 0x80) return {};
+            cp = (cp << 6) | (next & 0x3F);
+        }
+        if ((length == 2 && cp < 0x80) || (length == 3 && cp < 0x800) || (length == 4 && cp < 0x10000) ||
+            cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))
+            return {};
+        i += length;
+        // Validate the entire input even after a hit: invalid suffix bytes
+        // must not become repetition evidence through UTF-8 replacement.
+        if (hit.period) continue;
+        for (size_t period = 2; period <= max_period && period <= count; ++period) {
+            equal_run[period] = cp == previous[(count - period) % max_period] ? equal_run[period] + 1 : 0;
+            const size_t repeats = period <= 5 ? 16 : 8;
+            if (equal_run[period] >= period * (repeats - 1)) {
+                hit = { period, repeats };
+                break;
+            }
+        }
+        previous[count % max_period] = cp;
+        ++count;
+    }
+    return hit;
+}
+
+size_t annotate_repetitions(block & value, bool enabled, int depth = 0) {
+    if (depth > recursion_limit) throw std::length_error("Document structure exceeds the nesting limit.");
+    // Reprocessing an in-memory document must not retain stale diagnostics
+    // when its text/type changes or the caller disables the check.
+    value.warnings.erase(std::remove_if(value.warnings.begin(), value.warnings.end(),
+                                        [](const std::string & message) {
+                                            return starts(message, "Possible repetitive n-gram output (");
+                                        }),
+                         value.warnings.end());
+    // Repeated cells, source code, formula notation and image markup are
+    // legitimate; skip their entire subtrees rather than flagging text cells.
+    if (value.type == "Table" || value.type == "Code" || value.type == "Equation" || value.type == "ChemicalBlock" ||
+        value.type == "Picture" || value.type == "Figure" || value.type == "Diagram")
+        enabled = false;
+    size_t flagged = 0;
+    const bool prose = value.type == "Text" || value.type == "SectionHeader" || value.type == "Caption" ||
+                       value.type == "Footnote" || value.type == "ListItem" || value.type == "PageHeader" ||
+                       value.type == "PageFooter";
+    // List groups must be split before checking their items. Other containers
+    // may duplicate child text; a ListItem's own text remains distinct from
+    // any nested list and is therefore checked even when it has children.
+    if (enabled && prose && (value.children.empty() || value.type == "ListItem")) {
+        const auto hit = repetitive_ngram(value.text);
+        if (hit.period) {
+            const std::string message = "Possible repetitive n-gram output (" + std::to_string(hit.period) +
+                                        " Unicode characters repeated at least " + std::to_string(hit.repeats) +
+                                        " times); original text retained.";
+            warn(value.warnings, message);
+            flagged = 1;
+        }
+    }
+    for (auto & child : value.children) flagged += annotate_repetitions(child, enabled, depth + 1);
+    return flagged;
+}
+
 void normalize_block(block & value, double width, double height, int depth = 0) {
     if (depth > recursion_limit) throw std::length_error("Document structure exceeds the nesting limit.");
     if (value.text.size() > text_limit || value.raw.size() > text_limit || value.html.size() > text_limit)
@@ -1471,6 +1561,10 @@ void process_document(document & value, const options & opts) {
     value.metadata["surya_parity"] = "not claimed; alternative TeleOCR and deterministic processing";
     value.metadata["headers"] =
         opts.include_page_headers ? "included" : "suppressed in rendered text; retained in JSON";
+    const bool repetition_check = core_env::on("CRISPEMBED_MARKER_REPETITION_CHECK");
+    const bool had_repetition_check = value.metadata.erase("repetition_check") > 0;
+    const bool had_repetition_count = value.metadata.erase("repetitive_blocks") > 0;
+    size_t repetitive_blocks = 0;
     for (auto & p : value.pages) {
         if (!std::isfinite(p.width) || !std::isfinite(p.height) || p.width <= 0 || p.height <= 0)
             throw std::invalid_argument("Document page dimensions must be finite and positive.");
@@ -1484,7 +1578,13 @@ void process_document(document & value, const options & opts) {
         }
         for (auto & item : p.blocks) normalize_block(item, p.width, p.height);
         group_lists(p);
+        if (repetition_check || had_repetition_check || had_repetition_count)
+            for (auto & item : p.blocks) repetitive_blocks += annotate_repetitions(item, repetition_check);
         group_captions(p);
+    }
+    if (repetition_check) {
+        value.metadata["repetition_check"] = "unicode-tandem-v1";
+        value.metadata["repetitive_blocks"] = std::to_string(repetitive_blocks);
     }
     running_margins(value, opts);
     for (auto & p : value.pages) {

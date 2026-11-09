@@ -33,6 +33,11 @@ TYPE_ERROR = "TeleOCR: malformed metadata array or conflicting architecture pref
 PROFILE_ERROR = "TeleOCR: unsupported or inconsistent model metadata"
 TENSOR_TYPE_ERROR = "TeleOCR: incompatible tensor type or rank"
 LICENSE_ERROR = "Set CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 to acknowledge"
+OFF_VALUES = (
+    ("unset", None), ("empty", ""), ("zero", "0"),
+    ("false", "false"), ("off", "off"), ("no", "no"),
+    ("mixed-false", "FaLsE"), ("mixed-off", "OfF"), ("mixed-no", "nO"),
+)
 
 
 def probe(library: str, model: str) -> int:
@@ -65,11 +70,9 @@ def cases():
         "qwen2vl.rope_sections": ([16, 24, 24], kind.ARRAY, kind.UINT32),
     }
     yield "typed-array-control", base, "1", PROFILE_ERROR
-    for label, gate in (("unset", None), ("empty", ""), ("zero", "0")):
+    # core_env::on() recognizes all off spellings case-insensitively.
+    for label, gate in OFF_VALUES:
         yield f"gate-{label}", base, gate, GATE_ERROR
-    # Follow the repository-wide core_env contract: any nonempty value other
-    # than the literal "0" enables a gate. "false" is therefore truthy.
-    yield "gate-nonempty-false-is-on", base, "false", PROFILE_ERROR
     for name, replacement in (
         ("missing-format-version", None),
         ("unsupported-format-version", (2, kind.UINT32, None)),
@@ -182,18 +185,30 @@ def main() -> int:
             row["fixture_sha256"] = hashlib.sha256(model.read_bytes()).hexdigest()
             rows.append(row)
             print(f"{'PASS' if row['passed'] else 'FAIL'} {name}", flush=True)
-            if gate == "1" and expected != GATE_ERROR and not any(r["name"].startswith("license-") for r in rows):
-                # The same enabled, version-1 fixture without the license acknowledgement
-                # must stop at the Qwen Research License gate before any other check.
-                env.pop("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE", None)
-                result = subprocess.run(argv, capture_output=True, text=True, timeout=30, env=env)
-                lic = {"name": "license-gate-" + name, "gate": gate,
-                       "passed": result.returncode == 0 and LICENSE_ERROR in result.stderr and
-                                 "native loader returned null" in result.stdout,
-                       "returncode": result.returncode, "expected_diagnostic": LICENSE_ERROR,
-                       "stdout": result.stdout, "stderr": result.stderr}
-                rows.append(lic)
-                print(f"{'PASS' if lic['passed'] else 'FAIL'} {lic['name']}", flush=True)
+            if name == "typed-array-control":
+                # An enabled, version-1 fixture must stop at the license gate
+                # before any profile/backend checks for every off spelling.
+                # The acknowledgement=1 control above reaches PROFILE_ERROR.
+                for label, acknowledgement in OFF_VALUES:
+                    license_env = dict(env)
+                    if acknowledgement is None:
+                        license_env.pop("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE", None)
+                    else:
+                        license_env["CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE"] = acknowledgement
+                    lic = {"name": f"license-gate-{label}", "gate": gate,
+                           "license_acknowledgement": acknowledgement,
+                           "fixture_sha256": row["fixture_sha256"],
+                           "expected_diagnostic": LICENSE_ERROR}
+                    try:
+                        result = subprocess.run(argv, capture_output=True, text=True, timeout=30, env=license_env)
+                        lic.update({"passed": result.returncode == 0 and LICENSE_ERROR in result.stderr and
+                                              "native loader returned null" in result.stdout,
+                                    "returncode": result.returncode,
+                                    "stdout": result.stdout, "stderr": result.stderr})
+                    except subprocess.TimeoutExpired:
+                        lic.update({"passed": False, "error": "native load timed out"})
+                    rows.append(lic)
+                    print(f"{'PASS' if lic['passed'] else 'FAIL'} {lic['name']}", flush=True)
     report = {
         "kind": "teleocr-native-loader-metadata-validation",
         "model_weights_used": False,

@@ -105,6 +105,14 @@ qwen35 decoder kernels. All default off.
 
 ## OCR engines
 
+### Document repetition diagnostics
+
+`CRISPEMBED_MARKER_REPETITION_CHECK=1` enables the default-off Unicode tandem
+repeat diagnostic in native Marker document processing. It reports possible
+repeated prose through block warnings and document metadata, retaining all
+text and provenance. Structured assets and malformed UTF-8 are excluded. The
+bounded thresholds and output fields are in [the Marker guide](marker.md#optional-repetition-diagnostics).
+
 ### Unlimited-OCR-2 (`unlimited-ocr2`, `unlimited-ocr2-q8`; orchestrator engine 13)
 
 | Variable | Default | Meaning |
@@ -237,7 +245,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-431 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+432 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -677,6 +685,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/marker.cpp` +2 | TeleOCR's vision tower is under the Qwen RESEARCH LICENSE (docs/teleocr-license.md); the PDFium text mode loads no model and needs no acknowledgement. |
 | `CRISPEMBED_MARKER` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp` |  |
 | `CRISPEMBED_TELEOCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/marker.cpp` +3 |  |
+
+### marker_document
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_MARKER_REPETITION_CHECK` | on | off | bool | default-off experimental / opt-in | `src/marker_document.cpp` |  |
 
 ### math_ocr
 

@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <functional>
 #include <limits>
 #include <stdexcept>
@@ -518,6 +519,193 @@ void test_margins_and_continuation() {
           "metadata exposes incomplete generation counts");
 }
 
+void set_repetition_gate(const char * value) {
+#ifdef _WIN32
+    _putenv_s("CRISPEMBED_MARKER_REPETITION_CHECK", value ? value : "");
+#else
+    if (value)
+        setenv("CRISPEMBED_MARKER_REPETITION_CHECK", value, 1);
+    else
+        unsetenv("CRISPEMBED_MARKER_REPETITION_CHECK");
+#endif
+}
+
+struct repetition_gate_guard {
+    bool had_value = false;
+    std::string previous;
+    repetition_gate_guard() {
+        if (const char * value = std::getenv("CRISPEMBED_MARKER_REPETITION_CHECK")) {
+            had_value = true;
+            previous = value;
+        }
+    }
+    ~repetition_gate_guard() { set_repetition_gate(had_value ? previous.c_str() : nullptr); }
+};
+
+size_t repetition_warnings(const block & value) {
+    size_t count = 0;
+    for (const auto & warning : value.warnings)
+        if (contains(warning, "Possible repetitive n-gram output")) ++count;
+    for (const auto & child : value.children) count += repetition_warnings(child);
+    return count;
+}
+
+void test_repetition_diagnostics() {
+    repetition_gate_guard restore_gate;
+    const auto repeat = [](const std::string & unit, size_t count) {
+        std::string text;
+        for (size_t i = 0; i < count; ++i) text += unit;
+        return text;
+    };
+    const auto fixture = [](const std::string & text, const std::string & type = "Text") {
+        document d;
+        d.backend = "owned-repetition-fixture";
+        page p;
+        p.index = 0;
+        p.width = 600;
+        p.height = 800;
+        auto b = text_block(text, type, { 40, 100, 540, 200 });
+        b.raw = "Unmodified raw output: " + text;
+        p.blocks.push_back(std::move(b));
+        d.pages.push_back(std::move(p));
+        return d;
+    };
+    options opts;
+    opts.mode = 1;
+    const std::string repeated = repeat("ab", 16);
+    set_repetition_gate(nullptr);
+    auto baseline = fixture(repeated);
+    process_document(baseline, opts);
+    const std::string baseline_json = render_document(baseline, "json");
+    for (const char * off : { "", "0", "false", "off", "no", "FALSE", "Off", "NO" }) {
+        set_repetition_gate(off);
+        auto d = fixture(repeated);
+        process_document(d, opts);
+        check(render_document(d, "json") == baseline_json, "disabled repetition gate preserves complete JSON");
+        check(d.metadata.count("repetition_check") == 0 && d.metadata.count("repetitive_blocks") == 0,
+              "disabled repetition gate adds no metadata");
+    }
+    set_repetition_gate("1");
+    const auto flagged = [&](const std::string & text) {
+        auto d = fixture(text);
+        process_document(d, opts);
+        return repetition_warnings(d.pages[0].blocks[0]) == 1;
+    };
+    check(!flagged(repeat("ab", 15)) && flagged(repeated), "short-period repeat threshold is sixteen");
+    check(!flagged(repeat("abcde", 15)) && flagged(repeat("abcde", 16)), "five-codepoint short-period boundary");
+    check(!flagged(repeat("abcdef", 7)) && flagged(repeat("abcdef", 8)), "long-period repeat threshold is eight");
+    check(!flagged(repeat("abcdefghijklmnopqrst", 7)) && flagged(repeat("abcdefghijklmnopqrst", 8)),
+          "twenty-codepoint maximum-period boundary");
+    check(!flagged(repeat("abcdefghijklmnopqrstu", 8)), "period twenty-one is outside the bounded check");
+    check(!flagged(repeat("日本語", 15)) && flagged(repeat("日本語", 16)),
+          "UTF-8 repetitions count codepoints rather than bytes");
+    check(!flagged(repeat("🛰🌍", 15)) && flagged(repeat("🛰🌍", 16)),
+          "four-byte codepoints keep short-period threshold");
+    check(flagged("An ordinary prefix. " + repeated + " An ordinary suffix."), "repetition can begin inside a block");
+    check(!flagged(repeat("ab", 8) + "X" + repeat("ab", 8)), "interrupted repetitions do not accumulate");
+    check(!flagged("Ordinary text. Several words appear again, but ordinary words alone are not a repeated run."),
+          "ordinary repeated vocabulary does not trigger");
+    check(flagged(repeat(" \n", 16)), "whitespace is examined exactly without normalization");
+    check(!flagged(std::string("\xff") + repeated) && !flagged(repeated + std::string("\xe2\x82")),
+          "malformed UTF-8 is diagnosed separately without creating repetition evidence");
+    check(!flagged(""), "empty text has no repetitive run");
+
+    auto diagnosed = fixture(repeated);
+    const auto before = diagnosed.pages[0].blocks[0];
+    process_document(diagnosed, opts);
+    const auto & after = diagnosed.pages[0].blocks[0];
+    check(repetition_warnings(after) == 1 && !after.ignored, "diagnosis flags once without suppressing content");
+    check(after.text == before.text && after.raw == before.raw && after.source == before.source &&
+              after.bbox.x0 == before.bbox.x0 && after.bbox.y1 == before.bbox.y1,
+          "diagnosis retains exact text raw output source and geometry");
+    check(diagnosed.metadata.at("repetition_check") == "unicode-tandem-v1" &&
+              diagnosed.metadata.at("repetitive_blocks") == "1",
+          "metadata identifies the algorithm and flagged block count");
+    check(contains(render_document(diagnosed, "markdown"), repeated) &&
+              contains(render_document(diagnosed, "html"), repeated),
+          "diagnosed text remains visible in prose formats");
+    check(contains(render_document(diagnosed, "json"), "Possible repetitive n-gram output") &&
+              contains(render_document(diagnosed, "chunks"), "Possible repetitive n-gram output"),
+          "diagnostics reach JSON and retrieval chunks");
+
+    for (const char * type :
+         { "Text", "SectionHeader", "Caption", "Footnote", "ListItem", "PageHeader", "PageFooter" }) {
+        auto d = fixture(repeated, type);
+        process_document(d, opts);
+        check(repetition_warnings(d.pages[0].blocks[0]) == 1, "eligible text-bearing block type is diagnosed");
+    }
+    for (const char * type : { "Table", "Equation", "Code", "ChemicalBlock", "Picture", "Figure", "Diagram" }) {
+        auto d = fixture(repeated, type);
+        d.pages[0].blocks[0].children.push_back(text_block(repeated, "Text", { 50, 110, 300, 150 }));
+        process_document(d, opts);
+        check(repetition_warnings(d.pages[0].blocks[0]) == 0 && d.metadata.at("repetitive_blocks") == "0",
+              "structured non-prose block and its subtree are excluded");
+    }
+    auto nested = fixture(repeated, "ListGroup");
+    nested.pages[0].blocks[0].children.push_back(text_block(repeated, "Text", { 50, 110, 300, 150 }));
+    nested.pages[0].blocks[0].children.push_back(text_block(repeated, "Text", { 50, 155, 300, 190 }));
+    process_document(nested, opts);
+    check(nested.pages[0].blocks[0].warnings.empty() && repetition_warnings(nested.pages[0].blocks[0]) == 2 &&
+              nested.metadata.at("repetitive_blocks") == "2",
+          "containers are traversed without scanning aggregate text or collapsing equal leaf content");
+
+    auto unsplit_list = fixture("- " + repeated, "ListGroup");
+    process_document(unsplit_list, opts);
+    check(unsplit_list.pages[0].blocks[0].children.size() == 1 &&
+              repetition_warnings(unsplit_list.pages[0].blocks[0]) == 1 &&
+              unsplit_list.metadata.at("repetitive_blocks") == "1",
+          "OCR list text is diagnosed after its items are split");
+    const std::string list_json = render_document(unsplit_list, "json");
+    process_document(unsplit_list, opts);
+    check(render_document(unsplit_list, "json") == list_json &&
+              repetition_warnings(unsplit_list.pages[0].blocks[0]) == 1 &&
+              unsplit_list.metadata.at("repetitive_blocks") == "1",
+          "reprocessing an unchanged OCR list keeps diagnostics and counts stable");
+
+    auto nested_items = fixture(repeated, "ListItem");
+    block sublist;
+    sublist.type = "ListGroup";
+    sublist.bbox = { 60, 210, 540, 260 };
+    sublist.children.push_back(text_block(repeated, "ListItem", { 60, 210, 540, 260 }));
+    nested_items.pages[0].blocks[0].children.push_back(std::move(sublist));
+    process_document(nested_items, opts);
+    check(repetition_warnings(nested_items.pages[0].blocks[0]) == 2 &&
+              nested_items.metadata.at("repetitive_blocks") == "2",
+          "nested list items each retain their own text diagnosis");
+    process_document(nested_items, opts);
+    check(repetition_warnings(nested_items.pages[0].blocks[0]) == 2 &&
+              nested_items.metadata.at("repetitive_blocks") == "2",
+          "nested list reprocessing does not duplicate or lose warnings");
+
+    diagnosed.pages[0].blocks[0].warnings.push_back("Unrelated diagnostic retained.");
+    process_document(diagnosed, opts);
+    check(repetition_warnings(diagnosed.pages[0].blocks[0]) == 1 && diagnosed.metadata.at("repetitive_blocks") == "1",
+          "unchanged text reprocessing does not duplicate repetition warnings");
+    set_repetition_gate("0");
+    process_document(diagnosed, opts);
+    check(repetition_warnings(diagnosed.pages[0].blocks[0]) == 0 && diagnosed.metadata.count("repetition_check") == 0 &&
+              diagnosed.metadata.count("repetitive_blocks") == 0,
+          "disabling the gate removes prior owned diagnostics and metadata");
+    check(diagnosed.pages[0].blocks[0].warnings.size() == 1 &&
+              diagnosed.pages[0].blocks[0].warnings[0] == "Unrelated diagnostic retained.",
+          "diagnostic cleanup preserves unrelated block warnings");
+    set_repetition_gate("1");
+    process_document(diagnosed, opts);
+    check(repetition_warnings(diagnosed.pages[0].blocks[0]) == 1 && diagnosed.metadata.at("repetitive_blocks") == "1",
+          "reenabling the gate recomputes diagnostics for preserved text");
+    diagnosed.pages[0].blocks[0].text = "Corrected ordinary text.";
+    process_document(diagnosed, opts);
+    check(repetition_warnings(diagnosed.pages[0].blocks[0]) == 0 && diagnosed.metadata.at("repetitive_blocks") == "0" &&
+              diagnosed.pages[0].blocks[0].raw == before.raw && diagnosed.pages[0].blocks[0].warnings.size() == 1,
+          "editing text clears stale repetition evidence while retaining raw output and other warnings");
+
+    auto normal = fixture("A normal paragraph.");
+    process_document(normal, opts);
+    check(normal.metadata.at("repetitive_blocks") == "0", "enabled metadata distinguishes zero flagged blocks");
+    auto too_large = fixture(std::string(4 * 1024 * 1024 + 1, 'a'));
+    throws([&] { process_document(too_large, opts); }, "repetition diagnostics preserve the existing text limit");
+}
+
 } // namespace
 
 static int crispembed_test_main() {
@@ -528,6 +716,7 @@ static int crispembed_test_main() {
         test_layout_heuristics();
         test_processors_and_renderers();
         test_margins_and_continuation();
+        test_repetition_diagnostics();
     } catch (const std::exception & error) {
         ++failures;
         std::fprintf(stderr, "UNEXPECTED: %s\n", error.what());

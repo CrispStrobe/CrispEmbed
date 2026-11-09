@@ -288,6 +288,21 @@ jobs:
           python3 tests/test_ultrabert_api_log.py -v
           python3 tests/test_vendored_kaggle_harness.py
 
+      - name: TeleOCR native feature and license gates (model-free, Linux)
+        if: runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
+        run: |
+          python3 -m pip install numpy==2.3.5 gguf==0.19.0
+          python3 tests/test_teleocr_loader.py --lib build/libcrispembed.so --report build/teleocr-loader.json
+
+      - name: Retain TeleOCR loader diagnostics
+        if: always() && runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: teleocr-loader-${{ github.sha }}
+          path: build/teleocr-loader.json
+          if-no-files-found: warn
+          retention-days: 30
+
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
         run: |

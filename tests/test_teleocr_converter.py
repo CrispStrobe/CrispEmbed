@@ -221,6 +221,11 @@ class TeleOCRRoundTripTests(unittest.TestCase):
         self.assertTrue(report["tied_head_omitted"])
         self.assertEqual(report["output_sha256"], CONV.file_sha256(path))
         self.assertEqual(reader.fields["general.architecture"].contents(), "teleocr")
+        self.assertEqual(reader.fields["general.license"].contents(), "qwen-research")
+        self.assertEqual(reader.fields["general.license.link"].contents(),
+                         "https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/blob/main/LICENSE")
+        self.assertEqual(reader.fields["general.url"].contents(), "https://huggingface.co/XingChen-AGI/TeleOCR")
+        self.assertEqual(reader.fields["teleocr.source.revision"].contents(), "unit-test")
         self.assertEqual(reader.fields["qwen2vl.attention.head_dim"].contents(), 32)
         self.assertTrue(reader.fields["qwen2vl.has_qk_norm"].contents())
         self.assertEqual(reader.fields["tokenizer.ggml.eos_token_id"].contents(), 2)
