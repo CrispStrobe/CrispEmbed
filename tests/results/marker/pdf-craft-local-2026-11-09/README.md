@@ -1,12 +1,59 @@
 # PDF Craft feature: local execution evidence
 
+**Final corrected native source:**
+[`891ea3d3632c6a3c3155e25b34705da6a02ec807`](https://github.com/CrispStrobe/CrispEmbed/commit/891ea3d3632c6a3c3155e25b34705da6a02ec807).
+The [final receipt](final-receipt.json) binds successful replay to the rebuilt
+library SHA-256 `decb81ce3f68f30db24cc6eb686f712750e86f68dbd5f9cc6930d65f87210328`.
+The original execution and failures remain below and in separate attempt folders.
+
+## Final corrected-build results
+
+| Executed control | Result | Evidence |
+| --- | --- | --- |
+| Native document / artifact / lifecycle / save | 185 / 87 / 480 / 38 checks, all pass | [Native replay](final-native/receipt.json) |
+| Actual PDFium backend / C API | 39 / 86 checks, all pass | [Native replay](final-native/receipt.json) |
+| Actual Rust and Dart clients | Six scenarios, 111 assertions, all pass | [Full client results](final-clients/results.json) |
+| Python/CLI/HTTP on eight owned PDFs | 112/112 | [Public surfaces](final-public-surfaces/summary.json) |
+| Strict real-PDF lifecycle / cross-build artifacts | 48/48 and 14/14 | [Real-PDF summary](real-pdf-lifecycle/final-summary.json) |
+| TeleOCR loader / Jina admission / actual Python lifecycle | 57 / 106 / 33 checks, all pass | [Native Python replay](real-pdf-lifecycle/final-summary.json) |
+| Current Python/Dart wrappers with immutable older v0.17.15 | 68/68 | [Older-library compatibility](legacy-v0.17.15/README.md) |
+
+The real-PDF comparison exposed four stable provenance fields missing from
+incremental views. Both the [native regression](provenance/provenance-regression-before.json)
+and [strict real-PDF attempt 4](real-pdf-lifecycle/attempt-4/receipt.json) fail on
+the original build. The correction writes the existing provenance into the
+initial raw checkpoint, so empty/partial/complete snapshots and their processed
+views retain it. Processed reopening keeps the original artifact metadata.
+
+The final real-PDF test excludes only `elapsed_seconds` between separate runs,
+plus `completed_pages`, `next_page`, `extraction_phase` and `extraction_state`
+between ordinary and incremental APIs. Every other JSON/chunks field remains
+exact; Markdown/HTML match byte for byte. All four processed-artifact outputs
+are byte-exact with no exclusions. Fourteen cross-build checks preserve earlier
+processed bytes and metadata, while raw resume correctly rejects the changed
+build identity without modifying old files.
+
+Actual older-library probes verify that all six new symbols are absent in the
+hash-verified v0.17.15 binary. Each new-method failure preserves all four earlier
+renderings, and subsequent legacy conversion still works. No wrapper change was
+needed. Initial probe-only PDFium ownership and renderer/timing expectations are
+retained separately from the production provenance defect and final results.
+
+The 19 converter, 17 Python client and package-attribution controls below retain
+their initial source/binary identities. Their inputs were unchanged by the
+provenance correction. Final Rust/Dart dependency locks match the retained
+initial locks exactly. Windows/macOS execution, full Flutter/archive/app checks
+and representative OCR/retrieval quality remain unqualified.
+
+## Initial execution checkpoint
+
 The owner authorized local builds and tests on 9 November 2026 while GitHub
 Actions remained queued. This receipt records actual Linux x86_64 CPU execution
 of native source `d4d508c460c6e172fd1d7d4afc6b9c78652ad607` on feature branch
 `feature/pdf-craft-document-quality-20261109` ([draft PR 192](https://github.com/CrispStrobe/CrispEmbed/pull/192)).
 That source includes main through `dc4f51c755bf78139f1f6ea87941748b05e75971`.
 
-## Results
+### Initial results
 
 | Executed control | Result | Evidence |
 | --- | --- | --- |

@@ -119,6 +119,6 @@ These controls establish metadata and acknowledgement behavior. They make no
 OCR accuracy, performance, source-parity or model-publication claim.
 
 On 9 November 2026, the owner-authorized Linux CPU execution passed all 106
-controls against native source `d4d508c460c6e172fd1d7d4afc6b9c78652ad607`.
-The [retained report](../tests/results/marker/pdf-craft-local-2026-11-09/python/test_unlimited_ocr_license-attempt-1.json)
+controls against final native source `891ea3d3632c6a3c3155e25b34705da6a02ec807`.
+The [retained report](../tests/results/marker/pdf-craft-local-2026-11-09/real-pdf-lifecycle/final-native-python/test_unlimited_ocr_license.json)
 includes every fixture hash and observed diagnostic. No model weights were used.

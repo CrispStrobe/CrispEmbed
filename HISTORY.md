@@ -29,7 +29,15 @@ incremental views. A native regression and a strict real-PDF comparison reproduc
 the omission before correction. The follow-up stores the existing provenance
 in the initial raw checkpoint, so partial/final and raw-reopened views inherit
 extraction-time fields. Stored processed artifacts retain their original metadata.
-Rebuilt-source results are recorded separately from the first checkpoint.
+The [rebuilt-source receipt](tests/results/marker/pdf-craft-local-2026-11-09/final-receipt.json)
+at `891ea3d3632c6a3c3155e25b34705da6a02ec807` passes 480 native lifecycle,
+48 strict real-PDF and 14 cross-build checks, plus all native/public-client and
+admission replays. Real-PDF comparison allows only the five declared
+run/lifecycle metadata fields to differ; processed reopen compares all four
+outputs byte for byte. Current Python and Dart wrappers also pass 68 checks
+against immutable hash-verified v0.17.15, preserving legacy conversion despite
+the absence of all six new symbols. Initial helper failures and the genuine
+provenance defect remain separate from these final successes.
 
 ## 9 November 2026 — Inpainting owner review verdict (issue 71)
 

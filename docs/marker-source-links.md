@@ -217,7 +217,7 @@ characters, removal and insertion provenance, cross-page/footnote continuation,
 missing-page and capped-output controls, Unicode preservation, local/ambiguous/
 unresolved footnotes, physical/provider/observed page labels, and explicit empty
 provider labels. The owner-authorized Linux CPU execution passes all 185 document
-checks at native source `d4d508c460c6e172fd1d7d4afc6b9c78652ad607`; the actual
+checks at final native source `891ea3d3632c6a3c3155e25b34705da6a02ec807`; the actual
 Rust/Dart clients also pass exact source-map and four-render reopen checks.
 See [the execution evidence](../tests/results/marker/pdf-craft-local-2026-11-09/README.md).
 The existing hosted Marker document target retains the same controls.

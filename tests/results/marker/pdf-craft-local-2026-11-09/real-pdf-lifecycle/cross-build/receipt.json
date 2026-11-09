@@ -1,0 +1,83 @@
+{
+  "kind": "marker-cross-build-artifact-readback",
+  "source_commit": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+  "prior_library_sha256": "0f1034b037ac2d3b09d8d80b5b956b53dc9c17f9ef77e871192acb1e56d9833a",
+  "library_sha256": "decb81ce3f68f30db24cc6eb686f712750e86f68dbd5f9cc6930d65f87210328",
+  "pdfium_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+  "probe_sha256": "449e91f8fffef4ce76e7626066a38f89ca313fb54862e72e2c478b0a3f8d37ac",
+  "prior_input_sha256": {
+    "owned-three-page.pdf": "6727732d064d04dd54bd554e02422058da6d8d6c0df3efc1cb998099fcdaf641",
+    "resume.cemk": "7bb738a9d43cde9c6d44246ea574dd30403aac649e3faf1ff76f06b8c95125e7",
+    "processed.cemk": "54aa1be503ecfa45cae706db277e658b22891e71b2457ac3f0e2c54c18ef8c7d"
+  },
+  "rendered_sha256": {
+    "reopened.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "reopened.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "reopened.json": "fe0c55668de1712762318d4af6a5e33583bdc929c2af0c955494549baebfdf74",
+    "reopened.chunks": "bda4edbaab3795a71d6bd4a426472558da534927e4658e9ea77fd22250a38540"
+  },
+  "model_weights_used": false,
+  "general_pdf_or_ocr_quality_qualified": false,
+  "raw_rejection_diagnostic": "checkpoint input, model, processing identity or selection does not match",
+  "checks": [
+    {
+      "name": "native build differs from retained artifact producer",
+      "passed": true
+    },
+    {
+      "name": "source bytes and PDFium binary match prior producer",
+      "passed": true
+    },
+    {
+      "name": "prior markdown reference matches recorded producer hash",
+      "passed": true
+    },
+    {
+      "name": "new build reopens prior processed markdown byte-exact",
+      "passed": true
+    },
+    {
+      "name": "prior html reference matches recorded producer hash",
+      "passed": true
+    },
+    {
+      "name": "new build reopens prior processed html byte-exact",
+      "passed": true
+    },
+    {
+      "name": "prior json reference matches recorded producer hash",
+      "passed": true
+    },
+    {
+      "name": "new build reopens prior processed json byte-exact",
+      "passed": true
+    },
+    {
+      "name": "prior chunks reference matches recorded producer hash",
+      "passed": true
+    },
+    {
+      "name": "new build reopens prior processed chunks byte-exact",
+      "passed": true
+    },
+    {
+      "name": "old provenance remains unchanged without viewer metadata stamping",
+      "passed": true
+    },
+    {
+      "name": "new build rejects prior raw checkpoint identity",
+      "passed": true
+    },
+    {
+      "name": "rejected raw resume installs no active job",
+      "passed": true
+    },
+    {
+      "name": "all old source and artifact bytes remain unchanged",
+      "passed": true
+    }
+  ],
+  "passed_count": 14,
+  "total_count": 14,
+  "passed": true
+}

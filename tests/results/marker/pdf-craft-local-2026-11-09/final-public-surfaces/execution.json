@@ -1,0 +1,13 @@
+{
+  "source_commit": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+  "exit_code": 0,
+  "passed": true,
+  "binaries": {
+    "libcrispembed.so": "decb81ce3f68f30db24cc6eb686f712750e86f68dbd5f9cc6930d65f87210328",
+    "crispembed-marker": "1d12928bddac06435e59429ded364a8b91d60dd52e3c3c634ef1c464759b765b",
+    "crispembed-server": "6f47c7669bd647cc23d2cffa68527e9484a33e96cd5ceab9491b4d8ba322d9bc",
+    "libpdfium.so": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27"
+  },
+  "driver_sha256": "fd4695b1287f8956d01026a5d1ba6c9e436de92ea65f3462d7d1f501de552e6e",
+  "log_sha256": "5b9877c5ba28b5aabc5d8a6b486229c56637598ca33e2c8d3c160e668722e531"
+}

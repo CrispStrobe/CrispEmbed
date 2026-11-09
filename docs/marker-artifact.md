@@ -201,9 +201,14 @@ non-finite geometry and rejected archive symlinks. Failed-save fixtures verify
 that previous bytes remain unchanged and temporary siblings are absent.
 
 The owner-authorized Linux CPU run passes all 87 artifact checks at native source
-`d4d508c460c6e172fd1d7d4afc6b9c78652ad607`, together with 400 native lifecycle
+`891ea3d3632c6a3c3155e25b34705da6a02ec807`, together with 480 native lifecycle
 checks and actual Python/Rust/Dart reopen controls. The first artifact and
 lifecycle attempts failed before any checks because the environment had no
 default temporary directory. Both pass unchanged with a task-local `TMPDIR`;
 the [execution receipt](../tests/results/marker/pdf-craft-local-2026-11-09/README.md)
 retains both attempts. Windows-specific filesystem execution remains pending.
+
+Fourteen cross-build checks also confirm that the corrected library preserves
+all four outputs and original metadata of an earlier processed artifact, while
+rejecting raw resume after the build identity changes. New raw checkpoints
+retain stable extraction provenance from the initial empty snapshot onward.

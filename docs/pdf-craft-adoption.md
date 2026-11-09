@@ -178,7 +178,7 @@ retrieval provenance, and their upstream dependencies require their own review.
 ## Executed validation and remaining scope
 
 The owner-authorized Linux CPU execution at native source
-`d4d508c460c6e172fd1d7d4afc6b9c78652ad607` passes all 185 native document checks,
+`891ea3d3632c6a3c3155e25b34705da6a02ec807` passes all 185 native document checks,
 including the repetition diagnostic and the following controls. The
 [execution evidence](../tests/results/marker/pdf-craft-local-2026-11-09/README.md)
 also records native artifacts/lifecycle, public clients, model admission and

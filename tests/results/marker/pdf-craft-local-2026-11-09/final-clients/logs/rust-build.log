@@ -1,0 +1,13 @@
+    Updating crates.io index
+     Locking 14 packages to latest compatible versions
+      Adding serde_json v1.0.145 (available: v1.0.154)
+   Compiling libc v0.2.191
+   Compiling crispembed-sys v0.17.16 (<repo>/crispembed-sys)
+   Compiling serde_core v1.0.229
+   Compiling serde_json v1.0.145
+   Compiling ryu v1.0.23
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.19
+   Compiling crispembed v0.17.16 (<repo>/crispembed)
+   Compiling marker-probe v0.1.0 (<validation-workspace>/validation-pdf-craft/clients/tmp/marker-binding-lifecycle-vwstwtz7/rust)
+    Finished `release` profile [optimized] target(s) in 11.68s

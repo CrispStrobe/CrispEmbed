@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "<compatibility-workspace>/probes/python_legacy.py", line 89, in <module>
+    main()
+    ~~~~^^
+  File "<compatibility-workspace>/probes/python_legacy.py", line 52, in main
+    check(all(all(text in marker.render(fmt) for text in required) for fmt in formats),
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          "all four legacy renderers contain the owned text")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<compatibility-workspace>/probes/python_legacy.py", line 33, in check
+    raise AssertionError(name)
+AssertionError: all four legacy renderers contain the owned text

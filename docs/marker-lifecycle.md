@@ -125,16 +125,19 @@ restricted model.
 ## Validation tasks
 
 - [x] Artifact roundtrip, malformed-input and atomic-failure tests: 87 checks.
-- [x] Native lifecycle controls with an owned PDFium ABI fixture: 400 checks;
+- [x] Native lifecycle controls with an owned PDFium ABI fixture: 480 checks;
   budgets, Unicode labels, cancellation, fresh-context resume, stale identity,
   corrupted checkpoint and later-page failure.
 - [x] Actual-native Python lifecycle: 33 checks; the separate 17 Python client
   controls cover image alpha handling and bundle ownership/preflight.
-- [ ] Execute legacy conversion against an older native library lacking the
-  new lifecycle symbols; source review confirms lazy symbol lookup.
+- [x] Execute current Python/Dart legacy conversion against hash-verified
+  v0.17.15, which lacks all six new symbols: 68 checks also verify clean
+  unavailable-method errors and preserved rendering/conversion afterward.
 - [x] Actual Rust/Dart lifecycle execution in six separately gated
   scenarios, including partial/full four-render reopen and exact source maps.
   All 111 named assertions pass.
+- [x] Execute 48 strict real-PDF lifecycle and 14 cross-build artifact checks,
+  preserving earlier processed output exactly and rejecting old raw identity.
 - [ ] Hosted Windows document/artifact/lifecycle controls, Xcode generation
   and CocoaPods syntax checks.
 - [ ] Exact final-source ordinary CI and independent review recorded in the
@@ -144,10 +147,18 @@ The owned ABI fixture tests lifecycle and marshaling; it is not a substitute for
 real PDF rendering or representative model/document quality evaluation.
 
 Checked items above were executed on Linux CPU at native source
-`d4d508c460c6e172fd1d7d4afc6b9c78652ad607`. The
+`891ea3d3632c6a3c3155e25b34705da6a02ec807`, with older-library compatibility
+separately bound to immutable v0.17.15. The
 [retained evidence](../tests/results/marker/pdf-craft-local-2026-11-09/README.md)
 identifies toolchains, actual binaries and client sources, initial environment
 failures and remaining platform limits.
+
+Stable provenance is written into the initial raw checkpoint and inherited by
+partial/final views. It includes the original layout backend, software/source
+identities and explicit absence of a Surya model-parity claim. Standalone viewers
+retain the recorded extraction metadata. Incremental results do not report
+legacy `elapsed_seconds`, because paused/resumed work has no uninterrupted
+conversion-time measurement.
 
 The Linux Build job runs the real public clients through
 `tests/run_marker_binding_lifecycle.py`. It compiles isolated Rust and Dart

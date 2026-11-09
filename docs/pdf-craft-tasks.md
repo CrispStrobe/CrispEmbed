@@ -85,7 +85,7 @@ Owner: public lifecycle lane. Depends on artifact contract.
 - [x] Keep the existing all-or-nothing conversion API and ABI intact.
 - [x] Bind the lifecycle in C/Python/Rust/Dart and author interruption, identity,
   completed-resume and failure-recovery controls.
-- [x] Execute those controls on owned fixtures at the validated source: 400
+- [x] Execute those controls on owned fixtures at the validated source: 480
   native and 33 actual Python lifecycle checks pass on Linux CPU.
 
 ## 5. Multilingual whitespace and source offsets
@@ -129,6 +129,12 @@ Owner: document structure lane; PDF provider support owned by lifecycle lane.
   generation/CocoaPods syntax checks into the existing Build workflow.
 - [x] Read successful results for all six actual Rust/Dart scenarios: 111
   named assertions, all process exits successful.
+- [x] Exercise current Python/Dart wrappers against hash-verified v0.17.15:
+  68 checks cover legacy conversion, absent new symbols and recovery.
+- [x] Execute the strict real-PDF lifecycle regression: 48 checks, including
+  actual PDFium identity, source ranges, page labels and exact processed reopen.
+- [x] Verify cross-build processed-artifact retention and raw identity refusal:
+  14 checks preserve earlier outputs, metadata and artifact bytes.
 - [ ] Read the added Windows/macOS results; local Linux execution does not
   qualify those platforms.
 - [x] Verify actual Python wheel/sdist/rebuilt-wheel bytes and missing-notice
@@ -163,7 +169,8 @@ model-quality gaps retain their own open boxes.
   metadata without overwriting stored processed-artifact provenance.
 - [x] Add a supervised owned real-PDF lifecycle regression to the Linux native
   lane using the existing pinned PDFium test dependency.
-- [ ] Record rebuilt-source provenance and strict real-PDF lifecycle results.
+- [x] Record rebuilt-source provenance and strict real-PDF lifecycle results:
+  480 native lifecycle checks and 48 real-PDF checks pass at `891ea3d`.
 - [x] Pin the actually loaded PDFium library digest; reject stale live handles
   after the selected library file changes. Add an owned replacement regression.
 - [x] Include image-resize runtime settings, C/C++ compiler settings and selected
@@ -197,7 +204,7 @@ until its actual result is read; preserve hosted and platform gaps separately.
 
 ## Executed local evidence
 
-Native source `d4d508c460c6e172fd1d7d4afc6b9c78652ad607`, incorporating main
+Initial native source `d4d508c460c6e172fd1d7d4afc6b9c78652ad607`, incorporating main
 through `dc4f51c755bf78139f1f6ea87941748b05e75971`, builds successfully with GCC
 14.2.0, CMake 3.31.10, portable CPU flags and pinned GGML. All 185 document,
 87 artifact, 400 lifecycle and 38 save checks pass. Actual Python/Rust/Dart,
@@ -210,6 +217,15 @@ the default temporary directory was absent. Both passed unchanged after setting
 a task-local `TMPDIR`. Those attempts and exact binary/source hashes remain in
 the evidence. Rust/Dart fixture changes in this checkpoint are formatter output;
 their executed source hashes are recorded separately from the native commit.
+
+The final native source is `891ea3d3632c6a3c3155e25b34705da6a02ec807`.
+Its [receipt](../tests/results/marker/pdf-craft-local-2026-11-09/final-receipt.json)
+records the successful replay after the provenance correction: native lifecycle
+coverage grows from 400 to 480 checks, and 48 real-PDF plus 14 cross-build checks
+pass. Both new regressions fail against the original omission; the failed
+native log and strict real-PDF attempt remain preserved. The final real-PDF
+comparison excludes only five run/lifecycle metadata keys, and processed reopen
+compares all four complete output byte strings without exclusions.
 
 ## Historical hosted snapshots
 

@@ -21,14 +21,15 @@ native contracts; public API/bindings and final integration belong to this lane.
 | Jina/noncommercial native admission | 106 actual native direct, local and cached controls pass locally | Acknowledgement before backend/weight allocation; false values rejected; permissive models preserved |
 | Versioned native extraction artifacts | 87 native artifact checks and actual public-client reopen controls pass locally | Exact roundtrips, malformed-source-map/corruption/limit controls and standalone reopen; Windows filesystem execution remains open |
 | Source-linked chunks, whitespace and references | Three opt-in gates; covered by 185 passing document checks and actual client source-map checks | Exact immutable byte ranges, conservative joins, ambiguous links and page labels; disabled-output controls |
-| Bounded lifecycle and clients | 400 native, 33 actual Python and 111 Rust/Dart assertions pass locally | Durable page rollback, identity rejection, partial results; six Rust/Dart gate scenarios all pass; cross-platform execution remains open |
+| Bounded lifecycle and clients | 480 native, 33 actual Python and 111 Rust/Dart assertions pass locally on the corrected build | Durable page rollback, identity rejection, partial results and extraction provenance; six Rust/Dart gate scenarios all pass; cross-platform execution remains open |
 
 The bounded runtime change reports suspicious OCR repetition; it does not delete
 content, retry inference, introduce models or qualify document accuracy. The
 existing PDFium renderer and native model implementations remain the integration
 points. The authorized follow-ups are implemented and independently reviewed in
 source. [Local execution evidence](tests/results/marker/pdf-craft-local-2026-11-09/README.md)
-records Linux CPU validation at native source `d4d508c460c6e172fd1d7d4afc6b9c78652ad607`;
+records Linux CPU validation at final native source `891ea3d3632c6a3c3155e25b34705da6a02ec807`,
+preserving the initial `d4d508c460c6e172fd1d7d4afc6b9c78652ad607` results;
 Windows/macOS and hosted acceptance remain separate.
 
 Validation continuation: actual Rust/Dart lifecycle probes now cover six gated
@@ -56,11 +57,21 @@ lacked four stable legacy diagnostics. The correction stamps the existing
 provenance into the initial raw checkpoint and preserves it in partial, complete
 and reopened views. A native regression fails on the original build; the strict
 real-PDF comparison also fails without waiving those fields. The reproducible
-`tests/test_marker_real_pdf.py` is wired into the existing Linux native lane;
-rebuilt-source results will follow in a separate evidence checkpoint.
+`tests/test_marker_real_pdf.py` is wired into the existing Linux native lane.
+The [rebuilt-source receipt](tests/results/marker/pdf-craft-local-2026-11-09/final-receipt.json)
+passes 480 native lifecycle checks, 48 strict real-PDF checks and 14 cross-build
+checks. Native documents/artifacts/API/backend/save, 33 Python lifecycle checks,
+six Rust/Dart scenarios, both admission drivers and 112 Python/CLI/HTTP checks
+also pass on the corrected binary. The new viewer retains all four outputs and
+original metadata of an earlier processed artifact; old raw resume rejects the
+changed build identity without modifying its checkpoint.
 
-Next: finish rebuilt-source provenance/real-PDF validation and actual legacy
-Python/Dart compatibility with the immutable older release. Read Windows/macOS results when available, complete
+Actual current Python/Dart wrappers also pass 68 compatibility checks against
+hash-verified immutable v0.17.15: legacy conversion works, all six new symbols
+are absent, and each unavailable new method preserves the existing view and
+subsequent conversion. Initial probe-only renderer expectations are retained.
+
+Next: read Windows/macOS results when available, complete
 Flutter archive/app qualification in an equipped environment, and qualify
 representative OCR/retrieval quality separately before any default promotion.
 
