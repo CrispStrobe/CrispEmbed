@@ -2,6 +2,13 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 9 November 2026 — Unlimited-OCR-2 Q4_K_MIX drop attributed
+
+Kaggle CPU bisect: the published Q4_K_MIX scores 0.9634 at the 3 November source and 0.9320 on current main,
+and current main with `CRISPEMBED_UNLIMITED_OCR2_VISION_F32=0` reproduces 0.9634 on all four cases exactly. The
+drop is the F32-vision default flip changing the F16 reference, not a Q4 regression; quantized-models.md now
+states both figures ([round 4b](docs/unlimited-ocr2-q4k-recipes.md)).
+
 ## 7 November 2026 — MinerU full native document route default (owner decision) and OCR gold corpus v1
 
 - **MinerU default.** `CRISPEMBED_MINERU25_PRO_FULL_DOC` is now quantization-aware: default-on
