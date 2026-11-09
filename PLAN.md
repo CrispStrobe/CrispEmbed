@@ -1075,7 +1075,6 @@ runs on exactdd592, not the integrated tree; no assertion or source gate was
 weakened to claim combined-source qualification. Final source declarations and
 actual composite/runtime/platform gates remain required.
 
-
 ## Atomic LightOn4B model ownership — 5 November 2026
 
 Active bounded lane `feat/lighton4b-model-owner-20261105` stacks exact PR145 `882b8dded` text/grouped/export dependencies with unchanged PR144 `84e19504e` vision source/header. Adds atomic723-tensor borrowed ownership behind a separate default-off gate, globally rejects pointer alias/strides/unknown prefixes and preserves protected F32 norms/biases. Hosted header-derived controls only; no checkpoint payload, format5 admission, frontend, decoder execution, release or decoded parity claim. Grouped execution and streamed projection remain separate dependencies for future composed inference.
@@ -1270,7 +1269,6 @@ boundary candidate requires an original same-input oracle, local operator
 measurements and actual decoded A/B before any runtime/default/quality decision.
 No production source, VERSION, ggml, reference, budget or application pin changed.
 
-
 ### Reviewed LightOn4B same-input vision attribution — 5 November 2026
 
 [Operator42023264258](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42023264258)
@@ -1329,7 +1327,6 @@ cause to mean reduction before rsqrt. Pinned Torchcf30153c4c13 sum/mean/AVX2 sou
 motivates test-only grouped-order alternatives42029945232/215f463bc, with no
 production RMS change until actual mean/output comparison. All prior strict and
 decoded rejections remain. See [the completed operator split](docs/lighton4b-layer0-attribution-results.md#source-meanscale-isolation-closes-rsqrt-and-affine).
-
 
 ### LightOn4B verified vision math, bounded decoded negative — 5 November 2026
 
@@ -1420,7 +1417,6 @@ linear-boundary code is integrated into existing PR155 at7d1e73464; old path,
 quantized storage and known QKV failure remain. Assembled model-free/vision and
 full decoder/decoded/platform/release checks remain separate; no default change.
 
-
 ### LightOn4B actual vision operators integrated, Q4 decoded negative — 5 November2026
 
 PR155 preserves all earlier alternatives/defaults and decoder source. Full
@@ -1457,7 +1453,6 @@ with exact original and actual-native byte controls before rotation/QK/softmax/P
 attribution. Tiny GELU tails remain separate. This commit imports evidence only;
 actual runtime stays in existing PR155.
 
-
 ### 2026-11-05: source-exact vision attention, combined Q4 quality negative
 
 PR155 runtime head `26bce947d` preserves separate default-off gates. Retained
@@ -1482,7 +1477,6 @@ Full source/operator/negative receipts and 90-day artifact identities are under
 `tests/results/qwen35-ocr/lightonocr3-4b-{vision-attention,softmax}-*.json`.
 This qualification commit changes evidence only, not runtime or workflow.
 
-
 ### 2026-11-05: remaining first-block differences fully attributed
 
 Retained-only 42060487656 at `915c1cd325a0bbe9e77885c17354d0c706e6a3bd`
@@ -1498,7 +1492,6 @@ contains exact source/artifact identity (13432171897, SHA
 `77fac62ebb8f4e3bb073984927cc0158ec8977e38788b34fe24f808399ca32ac`, 90-day retention).
 Prior combined Q4 decoded-quality negative remains; no runtime/default promotion
 in this evidence-only qualification commit.
-
 
 ### 2026-11-05: verified GELU and actual MKL rotary backend, Q4 still negative
 
@@ -1534,7 +1527,6 @@ source/failure/MKL/negative receipts and 90-day artifact identities are under
 No further model jobs in this lane. A possible next bounded operator-only action
 is retained same-input merger GELU/erf attribution, keeping earliest MKL rotary
 dependency explicit. This qualification commit changes evidence only.
-
 
 ### 2026-11-05: final measured merger correction, Q4 quality still negative
 
@@ -1579,7 +1571,6 @@ dependency is added. Exact sources, raw-byte controls, observer scope, timings,
 90-day artifact identities and limitations are in the three merger-erf receipts
 under `tests/results/qwen35-ocr/`. No further work or runs in this lane.
 
-
 ### Genuine BF16 quantized-weight first-position oracle — complete, rejected
 
 Source `048fd683f` completed the single bounded CPU worker against immutable
@@ -1608,7 +1599,6 @@ prepared inputs and comparison gates before dispatch. This existing image is
 exploratory mechanism evidence after the Q4 observation, never new held-out
 calibration or architecture-quality selection. No mixed worker is dispatched.
 
-
 ### Fixed mixed original BF16 exploratory mechanism check — complete, rejected
 
 Source `50307be7f` completed exactly two one-token original BF16 prefills under
@@ -1628,7 +1618,6 @@ BF16-quant residual Q8 max0.46874571/RMS0.09304085, Q4 max0.76940751/RMS0.086280
 This mixes runtime and effective-weight precision, not isolated implementation
 error or subtractable quantization loss. No additional worker/runtime fix, model
 upload, default, alias, release or app-pin promotion follows.
-
 
 ### 2026-11-05: complete configured rotary arithmetic, vision raw parity and Q8 score improvement
 
@@ -1696,7 +1685,6 @@ app pin stay unchanged. This PR157 follow-up changes only receipts and plan/
 history; runtime and generated asset remain in PR155.
 
 ### Corrected native mixed form diagnostic
-
 
 ### Frozen-case runner and mixed storage admission — 5 November
 
@@ -1792,7 +1780,6 @@ metadata fix BF16. Reused binaries require exact source/build-receipt/executable
 hashes. Local transfer-overrun/hash/source/binary-tamper and selector controls
 pass; no broad CI or new PR is required.
 
-
 ### PR155 bounded gated BF16 vision norm integration — 5 November 2026
 
 Preserve all existing mixed-policy/preflight/inspection targets and legacy shared
@@ -1813,7 +1800,6 @@ Source-fed QKV selected-dot42030085653 is positive on2,378 positions, including
 all171 historical differences, but a linear runtime change needs full operator
 validation before another composed smoke. It is not part of this norm change.
 
-
 Initial assembled[42031440977](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42031440977)
 atb75e722a7 stops before artifact transfer/build/model execution because this
 branch's generic heavy job does not expose its read-only actions token. The
@@ -1821,7 +1807,6 @@ branch's generic heavy job does not expose its read-only actions token. The
 remains. The scoped workflow repair adds only read-only actions permission and
 `GH_TOKEN` to that existing job, preserving calibration-native exclusions/jobs.
 Runtime source and budgets stay unchanged; only the targeted assembled job retries.
-
 
 [Assembled retry42032227007](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42032227007)
 at16b849573 passes exact norm/source/raw-SHA/moments/gate controls and builds
@@ -1832,7 +1817,6 @@ print success, followed by undefined execution/spurious line98 failure. The
 is retained. Add only explicit helper `return0` and clearer failed-control
 metadata; preserve every assertion, runtime byte and numerical gate. Retry only
 the same targeted assembled-source job.
-
 
 [Assembled42033147414](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42033147414)
 at43b2d2c35 passes actual production norm/source-SHA/moments/gate controls,
@@ -1854,7 +1838,6 @@ no dot alternative/default/quality promotion is included. New model-free gate/
 rounding/delta-isolation controls require actual assembled hosted execution.
 Full attention/final norm, full decoded output and final platform/release checks
 remain separate; source-fed arrays/probes stay outside production artifacts.
-
 
 ### PR155 scoped vision nn.Linear and Conv3D assembly — 5 November 2026
 
@@ -1883,7 +1866,6 @@ Only this script's artifact retention is90 days; all other workflow retention
 stays unchanged. Reference/source probes remain test-only, with no bulk local
 artifact download or model forward in this assembled gate.
 
-
 [Assembled42038802495](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42038802495)
 atedbd2b782 passes exact norms, all four complete nn.Linear outputs at1/4
 threads, original Conv3D573,440 outputs at1/4/independent gates, old-path byte
@@ -1903,7 +1885,6 @@ Source/operator rechecks remain required; no default/quality/release promotion.
 Only the two task-owned integration/final-smoke scripts retain artifacts90 days;
 all unrelated workflow retention stays unchanged.
 
-
 Initial final-smoke[42040210848](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42040210848)
 at80a553c7b passes original layer0 and source-fed corrected operators, then
 stops before ordinary inference on an unnecessary absent historical norm-off
@@ -1914,7 +1895,6 @@ retains the old fallback protocol otherwise; no runtime, hashes, gold or budgets
 change. Retry only the same targeted Q4/legacy-decoder smoke. Previous actual
 source-order native candidate42033651799 completed in180.3s/4.51GB peak RSS;
 this diagnostic is not a speed claim or current whole-source qualification.
-
 
 [Final Q4 vision smoke42041219151](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42041219151)
 at3a0c7ffc6 completes with decoder candidate explicitly0 and all30 fixed
@@ -1935,7 +1915,6 @@ then compare Q/K rotation, BF16 QK matmul, F32 softmax and BF16 PV accumulation
 on identical original operands. Tiny GELU tail differences remain separate.
 No new full model batch or runtime attention fix precedes that attribution.
 
-
 ### PR155 partial attention dot-order correction — softmax still incomplete
 
 Source-fed42044794137 establishes exact Q/K rotations, first QK mismatch33 values
@@ -1952,7 +1931,6 @@ quality remains negative from42041219151. Focused assembled
 `tools/ci-heavy/lighton4b_vision_attention_integration.py` must reproduce exact
 primitives, verified partial candidate bytes, old gates, native build/context and
 decoder controls. Reference probes stay test-only; no model forward at this gate.
-
 
 [Focused assembled42048810358](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42048810358)
 atc3abc6057 passes exact QK/PV source primitives, original/actual/observer and
@@ -2346,7 +2324,6 @@ loss without establishing a full decoded result; no EOS/full/heldout claim.
 [Complete report and receipt](tests/results/qwen35-ocr/lightonocr3-4b-corrected-mixed-form/native-report.json)
 preserve exact model/table/profile/reference hashes and active/disabled gates.
 
-
 ### Corrected mixed form full177 comparison — prepared, waiting for native output
 
 Native job42109519607/source189fc91bb is still in progress. One bounded
@@ -2361,7 +2338,6 @@ Four new admission controls and existing model-free controls pass; actual Ref
 controls run inside the single hosted comparison. No dispatch before native
 completion; observed form remains exploratory, not held-out quality selection.
 No native/original inference, model upload, runtime/default/release change or newPR.
-
 
 ### Corrected mixed full form — complete numerical and decoded rejection
 
@@ -2395,7 +2371,6 @@ initial dependency-only failure, immutable source pins, original receipt cap,
 historical CPU-dispatch uncertainty and90-day remote arrays. Next correctness
 attribution belongs at the downstream native text/decoder boundary; full decoded
 quality remains open and all new gates remain default-off. No new PR or release.
-
 
 ### Genuine BF16 mixed full generation — complete, native residual confirmed
 
@@ -2468,7 +2443,6 @@ qualification. Only1 teacher row and2 IDs per arm; original numerical failure
 is unchanged. The source-pin amendment preserves all historical receipt bytes,
 and the nonpthreadWASM path explicitly excludes thread launch. Default stays off.
 [Full balanced receipt](tests/results/qwen35-ocr/lightonocr3-4b-parallel-dequant/balanced-ab.json).
-
 
 ### Mixed step33 precision attribution — complete, decoded correction verified
 
@@ -2606,7 +2580,6 @@ retains raw hashes,timing,stage magnitudes and the disjoint projection classes o
 GDN120: QKV24,Z24,a+b48,out24. Next calibration question can split these classes
 with high-precision controls; no production/model/default/release promotion.
 
-
 ### Unchanged Q4 full original/native mechanism comparison
 
 The [authenticated full Q4 comparison](docs/lighton4b-plain-q4-full-results.md)
@@ -2622,7 +2595,6 @@ exist, and F32-dequant versus BF16-rounded parameter representations remain
 separate. All three source-profile failures and the measured AMD/Intel split are
 retained. Next is complete read-only archival and, only if authorized, one
 observer-neutral same-prefix172-token stage replay; no new inference is dispatched.
-
 
 The read-only [Q4 archival consumer42192667516](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42192667516)
 finishes with expected numerical failure and reportstatus`compared`: actualRef
@@ -2751,7 +2723,6 @@ which is actually an A/logo65-tokenEOS source,not representative paragraph OCR.
 Receipt stays deferred/capped. Coordinate latest PR1554850481ba before integration;
 current model measurement remains frozen26e6ae663.
 
-
 ### 6 November2026 — unchanged GDN-out recipe heldout diagnostic completed
 
 [42209944112](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42209944112)
@@ -2767,7 +2738,6 @@ source/raw-text metrics and closes prior whole-archive rehash TODO. Legacy
 and originally capped; no promotion. Any next candidate/heldout or integration
 requires separate coordination and preservation of the frozen source/gates.
 
-
 ### Actual original-BF16 selective Q6 candidate: measured calibration only
 
 [Q6 conversion/screen42212846887](docs/lighton4b-q6-candidate-screen.md) atc3d6b5f88
@@ -2782,7 +2752,6 @@ Initial Q6 loader failure and713-pass/converter proofs are retained. Candidate a
 raw native first-score/prefill data are90-day remote artifact13500128433; no hub
 upload or further model job. Current decision is whether this mixed calibration
 screen justifies any later evaluation, separately from the held-out lane.
-
 
 ### Fixed24 GDN-output Q6 screen: first table token restored, full decode pending
 
@@ -2802,7 +2771,6 @@ artifact13503268909. No heldout, F32 model, new reference forward, model-hub upl
 default or release change. Next: review one bounded full-generation calibration
 worker for this exact candidate against frozen original/Q4/Q8-output decodes.
 
-
 ### Exact24-Q6 full calibration: equal Q8 decodes, residual original disagreement
 
 [Full42223984643](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42223984643)
@@ -2820,7 +2788,6 @@ not a controlled speed comparison. PR155 head90d2 was reverified; policies stay
 default-off. No heldout, release/model alias, new reference forward, full F32
 model, cap waiver or further model job. Remaining original-table disagreement
 and Arabic probability regression remain explicit limits.
-
 
 ### Fixed-Q6 observed-logo diagnostic: decoded disagreement unchanged
 
@@ -2851,7 +2818,6 @@ Q8→Q6 requantization. Model-free controls cover independent Q6 scalar decoding
 actual projection/BF16 conversion and header/type negatives; one bounded hosted
 model-free build is next. No model job or quality claim before calibration review.
 
-
 Initial Q6 model-free42206305308 compiles all targets but fails control703:
 actual project_rows_cpu still rejects Q6 while full projection/dequant controls
 pass. The negative is retained. Both streamed projection and grouped-GDN type
@@ -2859,13 +2825,11 @@ validators now gain the same default-off native Q6 admission, with explicit
 stream and synthetic grouped prefill/cached-decode equivalence tests. One bounded
 model-free retry follows; no checkpoint or calibration job is started.
 
-
 Q6 structural/operator controls now pass713 in42207472045, with old native/mixed/
 BF16 controls and native/preflight builds retained. Initial negative42206305308
 remains preserved. Guarded Q6 support is ready for scoped PR155 integration;
 actual candidate conversion/calibration remains pending the current recipe review.
 No Q6 model job has run.
-
 
 ### Integrated default-off24-output Q6 and verified Q8 native admission
 
@@ -2877,7 +2841,6 @@ no conversion worker or reference probe is added to runtime artifacts. See
 42218056668 and actual42219710049 supply the unchanged-source controls. No default,
 registry, release, EOS or full-decoded-quality promotion: separate calibration
 full generation remains pending; PR157 retains all score negatives and provenance.
-
 
 ### Reproducible BF16→Q6 tooling integrated with the guarded native owner
 
@@ -2894,7 +2857,6 @@ c7e6720ab tree, with compiled runtime hashes pinned to10d3/90d2. Calibration and
 logo evidence stay in PR157, including the remaining table/known-logo negatives.
 No additional model job, default/quality/release promotion or model-hub upload.
 
-
 ### External-text imatrix format/coordinates verified on Kaggle CPU
 
 [Complete verification](docs/lighton4b-imatrix-verification.md) preserves the
@@ -2909,7 +2871,6 @@ license and calibration source weights remain unauthenticated; no pretrained ima
 imatrix is assumed. Next is reviewed Kaggle-only fresh-source weighted plainQ4,
 with exact unweightedf873 control and248 actual application checks, preserving
 protected tensors/gates and all reference/model-quality limits.
-
 
 ### Independent upstream llama.cpp CPU baseline completed on observed cases
 
@@ -2958,7 +2919,6 @@ revision is not independent source tensor-content verification, and does not pin
 the producing converter/quantizer commit or calibration corpus. Old raw evidence
 and its hashes remain unchanged; no quality, same-weight or release promotion.
 
-
 ### Physical upstream import audit completed; runtime bridge next
 
 [Authorized CPU audit5199609f4](docs/lighton4b-upstream-physical-import.md)
@@ -2973,7 +2933,6 @@ focused Kaggle controls; coordinate owner/header integration with the separate
 weighted-HF recipe and avoid duplicate expensive workers. Same-source decoder
 comparison must freeze F32 head output (HEAD_BF16=0), not silently reuse the
 genuine-BF16-oracle head cast. All old alternatives/defaults remain unchanged.
-
 
 ### Format6 physical import controls pass; same-feature decode next
 
@@ -3119,16 +3078,13 @@ actual first4 input/RMS/QKV/Z/a/b plus first16 layer0 main output. Keep master o
 next is source-fed GDN/attention attribution and focused closed ablation controls,
 not promotion or another unbounded model panel.
 
-
 ### LightOn4B tiled-output helper controls — 7 November 2026
 
 Kaggle CPU 143168048/v1 at617534eff passed19 synthetic checks plus19 retained-bundle repeats and5 Python protocol tests in76.18s, with zero checkpoint/inference. [Receipts and limitations](docs/lighton4b-hf-tiled-out-controls-results.md) retain exact source/helper/runtime hashes. Original-F1624tensor reproduction is a separate pending gate; no new runtime recipe or quality promotion.
 
-
 ### LightOn4B actual original-F16 output-coordinate proof — 7 November2026
 
 Kaggle CPU143168450/v1 at24208e2ac reproduced all24 old-HF payloads and all24 publisher-tiled payloads directly from immutable original F16, with48 statistics hashes and72 independent dequant hashes exact,294.67s/no forward. [Full evidence and magnitudes](docs/lighton4b-hf-tiled-out-controls-results.md) preserve canonical weight RMS0.000596409/max0.0468936 and slightly worse tiled unweighted source RMSE. The remaining24 packed differences are coordinate-dependent quantization; no decoded promotion follows. A distinctly gated HF-only output-layout candidate/699 protected-payload audit and decoded tests remain next.
-
 
 ### Same-input GDN localization completed; no production correction
 
@@ -3151,16 +3107,13 @@ selection; ordered timings cannot waive quality. Next bounded lane is actual-inp
 source attention/F16-cache/softmax primitive attribution, with no speculative
 production change or full-model qualification claim.
 
-
 ### LightOn4B HF-only tiled-output native controls — 7 November2026
 
 Kaggle CPU143171211/v3 atc89aaa4cb passed66,710 profile/type/metadata/permutation +39 full-width output/cache controls and all selected old recipe/physical/Q6/stream/public-fence controls,134.98s/no checkpoint. [Raw receipts and both preserved fixture negatives](docs/lighton4b-hf-tiled-out-controls-results.md). Exact runner/library bundle retained remotely. Next is independently audited699-protected/24-replaced candidate packing and full observed form/table/Arabic decode with adequate90min case caps; default/release/quality fences remain unchanged.
 
-
 ### HF tiled-output complete decoded negative (2026-11-07)
 
 Kaggle CPU143174221/v1 completed atB2/C89 with candidateSHA`cc6ce27eded435b8ac278229a8c6ff553f1654d865ff14a1b67c597fa0ca5254`:699other payloads protected,24original-F16-proven tiled Q4 outputs exact. Form182EOS remains exactoldHF candidate andCER217/656 (llama189/656),WER43/90; table256cap/noEOS worsens fromold160/607,47/106 to237/607,70/106; Arabic6EOSexact. Independent rawIDs/text/EOS/Unicode-metric audit passes. No quality/shipping/heldout claim. Full report63a586c0 and allsmall artifacts/actualtranscriptions are preserved in [decoded results](docs/lighton4b-hf-tiled-out-decoded-results.md). Separate artifact-only common-prefix/stage/body audit pending, no new inference.
-
 
 ### HF tiled-output artifact-only causal audit (2026-11-07)
 
@@ -3182,7 +3135,6 @@ The actual native main archive now passes all five closed-helper link checks. Th
 
 [Corrected Emscripten control](tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/sdk-link-v2/evidence.json) at `d7a35a13d` passes the actual main SDK archive link and real Emscripten 6.0.2 shared-decoder/helper closure plus Node execution (five checks each, 456.24 s). The public helper remains the unsupported closed stub; only the experimental decoder target receives the private ABI definition. This verifies linkage, not a complete OCR WASM artifact or model qualification. V1 negative remains preserved.
 
-
 ### Actual177 original-prefix teacher scores after physical F16 attention (2026-11-07)
 
 Artifact-only Kaggle143200239/v3 sourcebcbd50b18 passes177whole-vocabulary originalBF16/nativehash+causalcontextguards, no inference. All43,952,640logits: RMS0.386425/max8.82935, original/nativeRMSmagnitudes2.28140/2.26667; meanKLD(BF16||native)0.0123239,169/177top1, nativeoriginaltokenprobabilitymean0.861789. Row0RMS0.335973/max1.60669;row1710.257192/1.35267;EOS1760.655251/3.33821. Pinnedupstreamonlyrow0 admitted(RMS0.105889/max0.558670,exactproducerclosure); no misalignedgreedyrowssubstituted. BothsetupnegativesV1/V2 retained, V3fourcontrols+independentaggregateauditpass. [Fullrawreceipts,magnitudes/probabilities/limits](docs/lighton4b-f16-teacher-results.md). Differentweight/vision/arithmeticdomainsremainexplicit; no sameweightparity/generalshippingclaim.
@@ -3191,11 +3143,9 @@ Artifact-only Kaggle143200239/v3 sourcebcbd50b18 passes177whole-vocabulary origi
 
 [Raw calibration evidence](tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/calibration-v1/evidence.json) at `fa3aab156` reuses the exact completed-form binary, ten library/binary hashes, gate tuple and physical weight bytes. All 222 table and six Arabic teacher positions complete. Table independent generation hits cap256 without EOS: BF16 CER316/607 and WER88/106 versus retained upstream315/607 and88/106; this is not a qualification pass. Arabic completes six tokens/EOS with exact IDs and text against both references. Worker413.19s; table219.14s, Arabic13.90s. The original cap256 negative stays fixed; a separately frozen extended-token upstream/native table comparison is authorized to determine completion, without promoting the gate.
 
-
 ### Frozen held-out selection (2026-11-07; no inference)
 
 Prepared [LightOn4B held-out v1](docs/lighton4b-heldout-v1.md) and its hashed-input [protocol](docs/lighton4b-heldout-v1.json): historical receipt, two-column page, owned inventory grid; two real documents plus one controlled table. Six source/gold hashes checked. No candidate outputs inspected or model jobs launched. Current LightOn4B cases, identical receipt aliases and derivatives excluded; historically used other OCR lanes, not pretraining-clean. German official-page reserve is explicitly outside primary quota. Prior visual annotations require expert-human adjudication, and embedded literary-text rights remain a distribution limitation. Execution blocked on generic cap1536/context2048 test driver with prompt<=512, exact source/binary/gate/prompt and geometry admission, licensing/reference review and separate hosted capacity authorization. Native composed vision is primary; source-feature decoder isolation cannot rescue a failed case. All three cases must independently meet actual upstream Q4_K_M CER/WER and completion, with positional inventory cell controls; no aggregate hides failures. Resource quotas and partial/raw retention are frozen.
-
 
 ### Composed projector executor controls (2026-11-07)
 
@@ -3205,11 +3155,9 @@ Prepared [LightOn4B held-out v1](docs/lighton4b-heldout-v1.md) and its hashed-in
 
 [Authenticated cap512 evidence](tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/table512-v1/evidence.json) at `f789609c2` completes upstream and native generation at 282 tokens/EOS. Native BF16 CER349/607 remains one character worse than upstream348/607; both WER97/106. The original cap256 result is not replaced. All old256 native raw-score hashes, all38 prefill stages and IDs reproduce exactly after the explicit test-driver-only cap opt-in; full upstream observer OFF/ON IDs, probabilities, decoded text and EOS are exact. Source69.47s/native182.16s on this worker are diagnostic timings, not a promotion. Actual loaded metadata confirms selected Q4 matrices use CPU_REPACK/extra while QKV Q6 and tied head use mapped buffers. A same-input operator probe must establish numerical consequences before any physical-only runtime fix; no global vendor change or release is authorized by this result.
 
-
 ### Observed composed-vision negative (2026-11-07)
 
 [Paired form result](docs/lighton4b-composed-vision-negative.md) source8be/receipt1458: source-fed167EOS175/656char45/90word vsoriginalreference, composed194EOS259/65647/90, actualupstream189/46. Both floors fail for composed; no ship. Oldsourcefed allrow+38stageanchors exact, pairedpatches/textembeddings/positions exact, earliestcomparable mergedvision RMS.011237/max1.68147; firstscoreRMS.192548 vsfed.105889. Independentrawtext/IDs/edits and12 vector hashes checked; firstscoreRMS FP64 reduction differences2/1ULP explicitly retained, maxexact. Fullvectors remainremote. No human-GT claim or canonicalprojectorweight-equivalence claim. Hold additional table/Arabic model runs while tracing actual F16projector canonicalweights/precision and earliestavailable sourcevisionstages; implement only measured gated corrections.
-
 
 ### Projector-only attribution initial setup negative (2026-11-07)
 
@@ -3224,7 +3172,6 @@ pinned backends while changing raw arithmetic slightly. Q6 N16 retains a
 separate backend residual. No decoded attribution follows. Next is bounded
 default-off physical buffer-cache lifecycle/source-fed verification, then
 same-feature decoded comparison; current Q4 is not qualified.
-
 
 ### ProjectorV2 qualified evidence and observer invalidation (2026-11-07)
 
@@ -3321,21 +3268,17 @@ Artifact-only FFNthree-point closure on the same Q4 matrix: A=borrowed(nativepos
 
 Unchangedd378 completes2623.38s/rawprivate9b88195d: all4EOS654source/697native, fullsourceobserverneutral, metadata/observed167guards pass. Independentcontent526→373/2981chars,146→111/556words; provisionalfloortrue, notadjudicatedGT/qualification. All27selectedhashes+firstscore/threevisionvectors independentlyverified; merged2,580,480bytes exact andall697native rows/IDs equal sourcefeaturecounterfactual. Publicrights-safe summary/hashbinding/reader/metadata only; rawrecognizedtext/IDs/fullreport remainprivate. Pre-model audit also closespreviousreceipt304files2.017GB+1570rows finite/argmax/SHA. Inventoryunchanged/sourcefixed, reviewednextauditcase2 304files2.671GB/2215rows. No tuning/default/release promotion.
 
-
 ### Observed table GDN source-fed replay
 
 Source `2f1261053` completed the bounded actual-input GDN replay, closing live source four-token conv/SiLU/postnorm/preferred output and native sixteen-token baseline, plus all 524,288 values of the actual next nonzero state. [Evidence and arithmetic limits](docs/lighton4b-live-gdn-replay-results.md) retain exact receipts, magnitudes and counterfactual errors. Native GGML softplus differs from pinned upstream; existing decoder scalar softplus is already exact and will be retained in a separately gated hybrid experiment. No decoded validation, model quality promotion, held-out selection or global repack change occurred.
 
-
 The first hybrid GDN worker (`a6e5b3d3d`) failed closed before compilation/parameter transfer because the inherited compile-entry count excluded the new cache-test target. [Raw setup negative](docs/lighton4b-live-gdn-replay-results.md#hybrid-setup-negative) is preserved; `fcb9d6c72` strictly audits both targets and both helper files with unchanged contraction requirements. No operator/decoded result exists for that attempt.
-
 
 Hybrid GDN V2 compiled all targets but stopped before parameter transfer at a synthetic Q6 fixture missing the existing native-context gate. [Raw negative](docs/lighton4b-live-gdn-replay-results.md#hybrid-fixture-negative) preserves the failed positive control; `cd50e9e69` explicitly tests rejection with that gate absent and enables it for the positive control. No source-fed numerical result or decoded qualification exists yet.
 
 ### Frozen provisional panel complete; receipt floor remains negative (2026-11-07)
 
 All three unchanged d378 cases and four arms per case reach EOS. Receipt source/native content edits are 24/25 of 768 characters and 18/19 of 144 words: the floor fails. Two-column improves 526→373/2,981 characters and 146→111/556 words against its provisional transcription; inventory has identical 248 IDs/UTF-8 across all arms, zero content edits and exact 15/15 authored cells. Actual merged vision is byte exact in all three; native/source-feature row hashes agree. First-score RMS/max remain nonzero after exact vision, with no source internal text stages captured here. Independent remote audits close 912 files / 5,992,579,885 bytes / 4,696 finite/argmax/SHA-verified rows. Final inventory-only read-only audit takes 37.08s, raw00f077ec, no models/build/inference. Rights-limited book text/IDs/full report stay private; public hashes/metrics bind raw9b88. Full inventory rawd5b7 and all positive/negative limits are preserved. No source/recipe/scorer tuning, default change, alias, release or qualification. Receipt negative and provisional/human-adjudication/representativeness limits remain; calibration attribution is separate.
-
 
 ### Hybrid GDN actual-input component proof
 
@@ -3345,11 +3288,9 @@ The bounded `cd50e9e69` worker passes20 gate/cache controls, actual old native16
 
 Source `f6a1e60d3` completed full table/form OFF/ON: OFF all282/167 rows and38 text anchors exact; ON table294EOS regresses349→364/607 character edits and97→104/106 words, while form167EOS text stays exactOFF. First-score RMS improves but does not rescue decoded quality. Gate remains default-off/unqualified; no ship. [Full evidence and limits](docs/lighton4b-gdn-full-ab-results.md). No new model job authorized by this result.
 
-
 ### SwiGLU same-input operator result
 
 The bounded `38171f0d4` worker passes actual source4/nativeOFF16/ON16 activation and all9 whole projection closures, proving the declared Q4/Q4/Q6 weights and layouts. [Rawd637 receipt and independent878,720-byte array audit](docs/lighton4b-swiglu-source-probe-results.md) establish native fusedGGML==upstream fusedGGML, while native scalar differs~1.4e-9 RMS onsource4. Crucially zero integer Q8_K codes/sums flip acrossall8sets; same-Q6 output effect~6.37e-9 RMS. All48forcedQ8/F32 output closures pass. This does not explain earlier large FFN amplification alone. Production/globalrepack remain unchanged and the prior GDN decoded negative remains binding. Next: bounded source-vs-native actual postnorm/Q4 gate-up code attribution; no heldout tuning or quality promotion.
-
 
 ### Actual early FFN quantization-threshold cause
 
@@ -3646,3 +3587,15 @@ Source-prefill bounded operator V2 PASS at `87d39abfe`: raw receipt `89f7738a02b
 - Preserved successful frozen planner inventory child and separate post-retention NameError; independent remote audit closes472 files/1,761,212,921 bytes/1079 rows without inference rerun. Receipt failure and incomplete book timeout remain binding; no qualification.
 
 - Preserved fixed-budget planner book replay:1536 cap/no EOS, all1054 prior rows+82 stages exact, independent98-file/1,745,200,955-byte/1536-row audit. Native1664.23s wall/6.234GB sampledRSS; capped diagnostic edits3716/955 versus complete upstream526/146. Frozen planner provisional panel1/3, unqualified/no ship; no further inference retry.
+
+## Bounded LightOn4B vision ownership — 4 November 2026
+
+Active branch `feat/lighton4b-vision-owner-20261104`, based on current main `17c96639a`. Adds an explicit default-off component mapping all 297 vision tensors and returning the 24-layer, width1024/head16/output2560 configuration. PR143 and the separate streamed projection work stay intact. The component validates names, shapes and F32/F16 types without reading payloads; malformed and missing tensors clear ownership. Hosted model-free and platform checks are required. Format5 production admission remains closed. Full 723-tensor ownership, original/native stage/logit/decoded parity, tokenizer and publication remain open; no release or support claim.
+
+Initial hosted Build [41926266003](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41926266003) exposes an audit-copy duplicate symbol and iOS standalone-target placement error. Both are corrected separately; retain the initial failure. Full Build dispatch has no mode input and selects the complete matrix, including the explicit model-free ownership binary.
+
+Corrected `fea7fc72f` actual full Build dispatch [41927088394](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41927088394) passes the Linux build and explicitly executes `test-lighton4b-vision-owner` with all297 per-tensor malformed controls. The complete dispatch passes all3 desktop builds, iOS, all3 Android legs, sibling, Flutter bundle and aggregate Build result. This is model-free ownership evidence only.
+
+The separate contract [41928007006](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928007006) correctly rejects drift of historically frozen `src/qwen35_vision.cpp` despite passing platform builds. Preserve this initial failure. The new ownership function is moved into `src/lighton4b_vision_owner.cpp`, restoring the historical vision implementation bytes exactly; no receipt hash, source amendment or gate is changed. Fresh hosted component build and contract evidence are required for this placement correction.
+
+Final isolated ownership source `2b248c9cb` passes full hosted Build [41928227750](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928227750), including actual Linux297-tensor controls, all3 desktops, iOS, Android3, sibling and bundle. Docs-only successor `daf5e5a28` passes the formerly failing [Ovis contracts41928385929](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928385929), [decoded controls41928385638](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41928385638) and lint41928384905 without altering historical pins. Remaining model acceptance gates are unchanged.
