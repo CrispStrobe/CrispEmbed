@@ -59,6 +59,15 @@ def main():
             record["extracted"] = reader.pages[0].extract_text()
         elif options.engine == "PDFium":
             import pypdfium2 as pdfium
+            import pypdfium2_raw as raw
+            import pypdfium2.version as version
+            record["versions"] = {"wrapper": str(version.PYPDFIUM_INFO),
+                                  "pdfium": str(version.PDFIUM_INFO),
+                                  "flags": list(version.PDFIUM_INFO.flags)}
+            binaries = sorted(Path(raw.__file__).parent.glob("*pdfium*.so"))
+            record["binary_sha256"] = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in binaries}
+            if len(binaries) != 1:
+                raise RuntimeError("Expected exactly one identifiable PDFium shared library")
             with pdfium.PdfDocument(options.pdf) as document:
                 record["pages"] = len(document)
                 page = document[0]
@@ -69,6 +78,8 @@ def main():
                         # GetText is UCS-2-limited; the bounded API preserves
                         # supplementary Unicode and exposes PDFium's actual text.
                         record["extracted"] = text.get_text_bounded(errors="strict")
+                        record["character_unicode"] = [int(raw.FPDFText_GetUnicode(text.raw, i))
+                                                       for i in range(text.count_chars())]
                         record["search"] = {}
                         for query in options.search:
                             progress("search:" + query)
