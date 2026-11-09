@@ -1079,7 +1079,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_SCAN_BOUNDED_DESKEW` | on | off | bool | default-off experimental / opt-in | `src/scan_cleanup.cpp` |  |
+| `CRISPEMBED_SCAN_BOUNDED_DESKEW` | on | off | bool | default-off experimental / opt-in | `src/scan_cleanup.cpp` | Avoid materializing a full-resolution float grayscale copy on the camera RGB path: the analysis buffer itself is bounded, not just Hough. |
 | `CRISPEMBED_SCAN_CLEANUP_BENCH` | on | off | bool | debug | `src/scan_cleanup.cpp` |  |
 
 ### scunet_denoise

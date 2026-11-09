@@ -6,7 +6,6 @@
 #include <array>
 #include <cmath>
 #include <cstring>
-#include <limits>
 #include <new>
 
 namespace ocr_crop {
@@ -16,24 +15,23 @@ namespace {
 // An inverse projective map from a unit output rectangle to the input quad.
 // Bilinear interpolation of corner *positions* cannot undo camera perspective:
 // it bends lines which do not run parallel to the interpolated edges.
-std::vector<uint8_t> extract_projective(const uint8_t * pixels, int width, int height, int channels,
-                                       const float qx[4], const float qy[4], int padding,
-                                       int * out_width, int * out_height) {
+std::vector<uint8_t> extract_projective(const uint8_t * pixels, int width, int height, int channels, const float qx[4],
+                                        const float qy[4], int padding, int * out_width, int * out_height) {
     if (channels != 1 && channels != 3 && channels != 4) return {};
     if (width > 32768 || height > 32768 || padding > 8192) return {};
-    std::array<int, 4> order{0, 1, 2, 3};
+    std::array<int, 4> order{ 0, 1, 2, 3 };
     double cx = 0, cy = 0;
     for (int i = 0; i < 4; ++i) {
-        if (!std::isfinite(qx[i]) || !std::isfinite(qy[i]) ||
-            std::abs(qx[i]) > 4.0 * width || std::abs(qy[i]) > 4.0 * height) return {};
+        if (!std::isfinite(qx[i]) || !std::isfinite(qy[i]) || std::abs(qx[i]) > 4.0 * width ||
+            std::abs(qy[i]) > 4.0 * height)
+            return {};
         cx += qx[i] * 0.25;
         cy += qy[i] * 0.25;
     }
     // Sorting around the centroid keeps all four corners distinct, including
     // 45-degree diamonds where sum/difference extrema can choose one twice.
-    std::sort(order.begin(), order.end(), [&](int a, int b) {
-        return std::atan2(qy[a] - cy, qx[a] - cx) < std::atan2(qy[b] - cy, qx[b] - cx);
-    });
+    std::sort(order.begin(), order.end(),
+              [&](int a, int b) { return std::atan2(qy[a] - cy, qx[a] - cx) < std::atan2(qy[b] - cy, qx[b] - cx); });
     auto first = std::min_element(order.begin(), order.end(), [&](int a, int b) {
         const double sa = double(qx[a]) + qy[a], sb = double(qx[b]) + qy[b];
         return sa == sb ? qy[a] < qy[b] : sa < sb;
@@ -56,7 +54,7 @@ std::vector<uint8_t> extract_projective(const uint8_t * pixels, int width, int h
     if (std::abs(det) < 1e-9) return {};
     const double g = (sx * dy2 - dx2 * sy) / det;
     const double h = (dx1 * sy - sx * dy1) / det;
-    if (std::min({1.0, 1.0 + g, 1.0 + h, 1.0 + g + h}) <= 1e-9) return {};
+    if (std::min({ 1.0, 1.0 + g, 1.0 + h, 1.0 + g + h }) <= 1e-9) return {};
     const double a = x[1] - x[0] + g * x[1], b = x[3] - x[0] + h * x[3];
     const double d = y[1] - y[0] + g * y[1], e = y[3] - y[0] + h * y[3];
     auto dist = [&](int i, int j) { return std::hypot(x[i] - x[j], y[i] - y[j]); };

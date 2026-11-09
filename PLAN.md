@@ -4,17 +4,20 @@
 
 Owner lane: `feat/ocr-photo-preprocessing`, based on
 `0b84869ba81e3ddd67605b54ab2a71312e9bd131`, paired with CrispSorter's
-`feat/industrial-ocr-workspace` application lane. Preserve the immutable app
+`feat/ocr-document-studio` application lane. Preserve the immutable app
 dependency and existing inference defaults. Two independent opt-in paths cover
 true projective OCR-region rectification and bounded-resolution deskew analysis;
 the final deskew rotation keeps the source pixel resolution.
 
-Acceptance: independent analytic geometry and malformed-input controls; all
-corner orders and disabled-gate byte controls; paired synthetic camera/skew/shadow
-text fixtures with actual downstream OCR CER/WER, plus a dedicated hosted native
-workflow. Record synthetic evidence separately from physical-device quality;
-representative real phone captures, every native model, and a future default
-promotion remain separate gates. No new model, alias, release or dependency pin.
+Local independent analytic geometry, 24 corner orders, disabled-gate byte and
+malformed-input controls pass. The paired five-case synthetic camera/skew/shadow
+panel passes actual downstream OCR CER/WER after applying the existing background
+whitening to shadowed deskew outputs. Keep the initial deskew-only failure receipt;
+rotation alone can worsen OCR on unevenly lit photos. See [the measured protocol](docs/ocr-phone-photo.md).
+
+Pending: the dedicated hosted native workflow, representative real phone captures,
+every native recognition model, and a separate decision on default promotion.
+No new model, alias, release or dependency pin.
 
 ## OCR review workspace integration — 8 November 2026
 

@@ -1,3 +1,17 @@
+## Phone-photo geometry (9 November 2026, bounded synthetic CPU panel)
+
+The source-hashed [five-case receipt](tests/results/ocr-phone-photo/quality-v1.json)
+records real native geometry and independent Tesseract CER/WER. Corrected skew
+cases are exact after shadow normalization; perspective CER is 0.00415 versus
+0.00830 for legacy quad sampling and 0.14523 on raw input. Geometry-ramp MAE is
+0.283081/255 versus 11.1119/255. Native preparation timing in the receipt includes
+test-driver decoding and duplicate angle observation; it is diagnostic and must
+not be described as an isolated detector benchmark. The bounded detector analyzes
+at most 1200 pixels on the long side and retains full-resolution output.
+Initial shadowed deskew-only harm remains in the [negative receipt](tests/results/ocr-phone-photo/initial-deskew-only.json).
+No physical device, representative camera corpus or native recognition model is
+qualified; gates stay disabled by default. [Protocol](docs/ocr-phone-photo.md).
+
 ## MinerU full native document route at the shipped default (7 November 2026, hosted x86 CPU, portable, 4 threads)
 
 Run 42370991098, F16 GGUF, gate unset: 8/8 cases identical to `two_step_extract`; per-case

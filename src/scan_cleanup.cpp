@@ -18,7 +18,6 @@
 #include <vector>
 #include <cstdio>
 #include <cstdlib>
-#include <limits>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -114,9 +113,8 @@ static uint8_t * gray_to_rgb_u8(const float * gray, int w, int h) {
 static bool valid_skew_input(const void * pixels, int w, int h, float max_angle_deg) {
     // Guard arithmetic before allocating Sobel, Hough or RGB buffers. Phone
     // callers must also validate the actual byte-buffer length at their ABI.
-    return pixels && w >= 3 && h >= 3 && w <= 32768 && h <= 32768 &&
-           size_t(w) * h <= 64u * 1024u * 1024u && std::isfinite(max_angle_deg) &&
-           max_angle_deg > 0.0f && max_angle_deg <= 45.0f;
+    return pixels && w >= 3 && h >= 3 && w <= 32768 && h <= 32768 && size_t(w) * h <= 64u * 1024u * 1024u &&
+           std::isfinite(max_angle_deg) && max_angle_deg > 0.0f && max_angle_deg <= 45.0f;
 }
 
 // A camera page can contain tens of megapixels; angle estimation does not
@@ -135,6 +133,27 @@ static std::vector<float> skew_analysis_image(const float * gray, int w, int h, 
             for (int sy = y0; sy < y1; ++sy)
                 for (int sx = x0; sx < x1; ++sx) sum += gray[size_t(sy) * w + sx];
             small[size_t(y) * *aw + x] = float(sum / ((y1 - y0) * (x1 - x0)));
+        }
+    }
+    return small;
+}
+
+static std::vector<float> skew_analysis_rgb(const uint8_t * pixels, int w, int h, int channels, int * aw, int * ah) {
+    const double scale = 1200.0 / std::max(w, h);
+    *aw = std::max(3, int(std::lround(w * scale)));
+    *ah = std::max(3, int(std::lround(h * scale)));
+    std::vector<float> small(size_t(*aw) * *ah);
+    for (int y = 0; y < *ah; ++y) {
+        const int y0 = int(int64_t(y) * h / *ah), y1 = std::max(y0 + 1, int(int64_t(y + 1) * h / *ah));
+        for (int x = 0; x < *aw; ++x) {
+            const int x0 = int(int64_t(x) * w / *aw), x1 = std::max(x0 + 1, int(int64_t(x + 1) * w / *aw));
+            double sum = 0;
+            for (int sy = y0; sy < y1; ++sy)
+                for (int sx = x0; sx < x1; ++sx) {
+                    const uint8_t * p = pixels + (size_t(sy) * w + sx) * channels;
+                    sum += channels == 1 ? p[0] : .299 * p[0] + .587 * p[1] + .114 * p[2];
+                }
+            small[size_t(y) * *aw + x] = float(sum / (255.0 * (y1 - y0) * (x1 - x0)));
         }
     }
     return small;
@@ -376,16 +395,21 @@ int scan_cleanup_deskew_rgb(const uint8_t * pixels, int w, int h, int channels, 
     if (out_pixels) *out_pixels = nullptr;
     if (out_w) *out_w = 0;
     if (out_h) *out_h = 0;
-    if (!valid_skew_input(pixels, w, h, max_angle_deg) || (channels != 1 && channels != 3 && channels != 4) || !out_pixels || !out_w ||
-        !out_h) {
+    if (!valid_skew_input(pixels, w, h, max_angle_deg) || (channels != 1 && channels != 3 && channels != 4) ||
+        !out_pixels || !out_w || !out_h) {
         return -1;
     }
     *out_pixels = nullptr;
     *out_w = w;
     *out_h = h;
 
-    std::vector<float> gray = to_gray_f32(pixels, w, h, channels);
-    float angle = scan_cleanup_detect_angle_consensus(gray.data(), w, h, max_angle_deg);
+    int aw = w, ah = h;
+    // Avoid materializing a full-resolution float grayscale copy on the
+    // camera RGB path: the analysis buffer itself is bounded, not just Hough.
+    std::vector<float> gray = core_env::on("CRISPEMBED_SCAN_BOUNDED_DESKEW") && std::max(w, h) > 1200
+                                  ? skew_analysis_rgb(pixels, w, h, channels, &aw, &ah)
+                                  : to_gray_f32(pixels, w, h, channels);
+    float angle = scan_cleanup_detect_angle_consensus(gray.data(), aw, ah, max_angle_deg);
     if (fabsf(angle) <= 0.1f) return 0; // straight enough — no output buffer
 
     // Correction rotation (same -angle convention as the grayscale pipeline),

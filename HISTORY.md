@@ -2,6 +2,21 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 9 November 2026 — opt-in phone-photo geometry
+
+`feat/ocr-photo-preprocessing` adds true projective OCR-region crops and bounded
+deskew analysis while keeping defaults stable. Independent coordinate-ramp error
+falls from 11.1119 to 0.283081 in 8-bit units; all 24 corner permutations,
+disabled-gate byte controls and malformed-input controls pass. A five-case
+synthetic actual-OCR panel is positive after the declared phone recipe: three
+skewed text cases have CER/WER zero, while perspective/shadow CER is 0.00415.
+The initial deskew-only shadow failures remain retained and reported separately;
+the existing background whitening is required for those cases. See
+[the protocol and limitations](docs/ocr-phone-photo.md) and
+[the source-hashed quality receipt](tests/results/ocr-phone-photo/quality-v1.json).
+Hosted native execution, real-camera/device evidence and recognition-model
+qualification remain separate. No runtime release or default changes.
+
 ## 7 November 2026 — MinerU full native document route default (owner decision) and OCR gold corpus v1
 
 - **MinerU default.** `CRISPEMBED_MINERU25_PRO_FULL_DOC` is now quantization-aware: default-on
