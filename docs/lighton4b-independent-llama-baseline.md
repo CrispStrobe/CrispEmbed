@@ -102,6 +102,11 @@ new PR, model publication, default or release change follows.
 
 ## Primary upstream and conversion evidence
 
+# Independent llama.cpp baseline: source review and frozen execution plan
+
+This is a distinct upstream implementation and published-weight baseline, not a
+same-weight CrispEmbed operator test. No benchmark result is claimed yet.
+
 The actual upstream code is pinned to
 [`6c01da6278ab6c69ed67d9124806b50d2b299ba7`](https://github.com/ggml-org/llama.cpp/tree/6c01da6278ab6c69ed67d9124806b50d2b299ba7).
 Its [`Qwen3_5TextModel`](https://github.com/ggml-org/llama.cpp/blob/6c01da6278ab6c69ed67d9124806b50d2b299ba7/conversion/qwen.py#L693)
@@ -141,3 +146,64 @@ including selected higher-bit V/down projections; it is neither our plain Q4_K
 nor the exact24-GDN-output recipe. The published Q6_K is a whole decoder recipe,
 not our24 selected Q6 matrices. No tensor/permutation or checkpoint-byte equality
 is asserted without a separate conversion audit.
+The [predeclared protocol](lighton4b-independent-llama-baseline-v1.json) pins every
+whole file, immutable model revision and the three already-observed input cases:
+form/table/Arabic. Existing original BF16 captures are rehashed and reused; no
+original forward or untouched heldout input is requested. The hosted-only
+[worker](../tools/ci-heavy/lighton4b_independent_llama_baseline.py) builds only the
+pinned upstream server and runs nine sequential fresh contexts, one CPU process
+per case/quant, four threads,256 greedy tokens, image-only transcription and
+thinking disabled. Q8 decoder with F16 projector is the affordable control;
+an8.4GB F16 decoder is excluded from the bounded standard CPU worker.
+
+Before inference, the upstream rendered chat must exactly equal the frozen source
+wrapper. Tokenizing its image-expanded form must reproduce each original `.npy`
+input-ID SHA; the actual request must use the same expected prompt/image token
+count. Canonical PNG transport preserves Pillow-decoded RGB while avoiding a new
+JPEG decoder difference. Image-token min/max64/256 match the admitted processor
+profile. Upstream interpolation and F16 vision arithmetic remain independent:
+these controls do not claim byte-exact vision features. Any prompt/geometry guard
+failure is retained instead of silently changing the comparison.
+
+The native `/completion` API retains raw response JSON, token IDs, decoded text,
+stop_type/EOS/cap, top probabilities, settings and inference timings. Raw IDs may
+exclude the EOG token; its presence is reported separately from server EOS. CER,
+WER and prefix agreement use original model text, not human OCR gold. Runtime
+startup/wall time and process peak RSS are recorded separately; no cross-engine
+speed claim follows. The exact native endpoint is chosen because the experimental
+mtmd CLI treats an empty `-p` as interactive, which would not run this input as
+intended.
+
+Preflight requires9GiB available cgroup-aware RAM,25GiB scratch and1GiB output.
+The four complete model/projector downloads total11,327,686,848 bytes; only one
+decoder is retained/loaded at a time and only verified task-owned files are
+removed. Build uses four jobs, CPU AVX2 with native/AVX512/GPU/BLAS off. Each request
+has1200 seconds and the entire worker a180-minute alarm, with task process-group
+cleanup on failure/cancel. Large model files remain hosted;90-day artifacts retain
+small reports/inputs/text/IDs/logs and source/version receipts. No shared runtime,
+new PR, release, alias or default changes. Dispatch requires review of the exact
+worker/protocol source and resources; preparation is not qualification.
+
+User-directed infrastructure change: initial GitHub42235476177 is cancelled after
+the pinned upstream build and before any inference (phase `download-projector`,
+no arms). Artifact13515095161 retains the partial report/build logs,59,677 bytes,
+SHA256 `3f977c197613323efe132fc2c8693ac2ec1899a124fc305da6bc0a092137a797`.
+The same model/input/prompt/generation protocol moves to authorized Kaggle CPU;
+provider admission and ancestor-aware cgroup inspection are explicit. No duplicate
+GitHub job or model comparison is dispatched.
+
+Initial Kaggle CPU version1 stops before resource preflight, upstream build or
+model access: worker source-identity lookup assumed the launch directory was the
+checkout. The exact submitted bootstrap is authenticated; setup logs and failed
+bootstrap receipt are retained. Corrected lookup uses the explicit source root,
+and the bootstrap launches in that checkout with an isolated Python environment.
+The retry preserves all model/input/protocol/generation pins.
+
+Kaggle CPU version2 passes source build, immutable projector/Q4 hashes, model
+load, exact source wrapper and original154-token prompt-ID hash, then rejects
+transport before vision/prefill. The native server overrides the default MTMD
+placeholder with a process-specific `media_marker` exposed by `/props`; passing
+the library default caused HTTP400 (zero markers for one image). Version3 reads
+that actual transport marker, requires exactly one occurrence and normalizes only
+it for the unchanged source-wrapper control. Prompt token bytes, all model/input
+pins and generation settings stay fixed. Version1/2 failures are retained.
