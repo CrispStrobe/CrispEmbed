@@ -32,6 +32,22 @@ Pending: public photo API hosted validation, representative real phone captures,
 every native recognition model, and a separate decision on default promotion.
 No new model, alias, release or dependency pin.
 
+## Mobile Rust prebuilt closure — 9 November 2026
+
+Owner lane: `feat/ocr-photo-preprocessing`, paired with CrispSorter's mobile
+OCR source work. The previous Rust build script always linked a shared library
+and could select host build output when Cargo targeted a phone. The explicit
+target policy now accepts a complete iOS merged archive with its platform
+frameworks and a verified Android shared-library closure. Mobile and other
+cross targets require an explicit `CRISPEMBED_SYS_LIB_DIR`; native desktop
+discovery/fallback remains unchanged. See [the contract](docs/rust-mobile-prebuilt.md).
+
+Hosted pure policy and real build-script configuration controls are prepared.
+Pending: their final-source result, same-source iOS/Android producer and actual
+Rust/application cross links, packaging and device execution. Configuration
+placeholder files do not qualify native binaries. This lane changes no release,
+model, inference default or existing immutable consumer pin.
+
 ## OCR review workspace integration — 8 November 2026
 
 Owner lane: `feature/ocr-production-workspace`, based on

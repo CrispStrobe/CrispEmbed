@@ -2,18 +2,18 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-fn print_link_info(lib_dir: &Path) {
+mod build_support;
+use build_support::{find_prebuilt, link_plan, select_explicit_prebuilt, LinkPlan};
+
+fn print_link_info(lib_dir: &Path, plan: &LinkPlan) {
     println!("cargo:rustc-link-search=native={}", lib_dir.display());
     println!(
         "cargo:rustc-link-search=native={}",
         lib_dir.join("Release").display()
     );
-    println!("cargo:rustc-link-lib=dylib=crispembed");
-
-    match env::var("CARGO_CFG_TARGET_OS").unwrap_or_default().as_str() {
-        "linux" => println!("cargo:rustc-link-lib=dylib=stdc++"),
-        "macos" => println!("cargo:rustc-link-lib=dylib=c++"),
-        _ => {}
+    println!("cargo:rustc-link-lib={}", plan.library_link);
+    for link in plan.extra_links {
+        println!("cargo:rustc-link-lib={link}");
     }
 }
 
@@ -59,13 +59,6 @@ fn emit_runtime_rpath(lib_dir: &Path) {
     }
 }
 
-fn has_prebuilt(dir: &Path) -> bool {
-    dir.join("crispembed.lib").exists()
-        || dir.join("Release").join("crispembed.lib").exists()
-        || dir.join("libcrispembed.so").exists()
-        || dir.join("libcrispembed.dylib").exists()
-}
-
 /// Look for an already-built `libcrispembed` before considering a source build.
 ///
 /// This deliberately takes `manifest_dir` rather than a resolved source root:
@@ -74,20 +67,22 @@ fn has_prebuilt(dir: &Path) -> bool {
 /// first meant a consumer holding a perfectly good `libcrispembed.so` still had
 /// to check out ~1 GB of sources plus the ggml submodule, or the build panicked
 /// before it ever looked. v0.16.1 did not have that constraint.
-fn try_prebuilt(manifest_dir: &Path) -> Option<PathBuf> {
-    if let Ok(dir) = env::var("CRISPEMBED_SYS_LIB_DIR") {
-        let path = PathBuf::from(dir);
-        if has_prebuilt(&path) {
-            return Some(path);
-        }
+fn try_prebuilt(manifest_dir: &Path, plan: &LinkPlan) -> Option<PathBuf> {
+    let configured_dir = env::var_os("CRISPEMBED_SYS_LIB_DIR").map(PathBuf::from);
+    match select_explicit_prebuilt(plan, configured_dir.as_deref(), Path::is_file) {
+        Ok(Some(dir)) => return Some(dir),
+        Err(message) => panic!("{message}"),
+        Ok(None) => {}
+    }
+    if let Some(path) = configured_dir {
         // Set but unusable. Say so — the alternative is a silent ~10-minute
         // source build (or a confusing "sources not found" panic) when the
         // user believed they had opted out of building entirely.
         println!(
             "cargo:warning=CRISPEMBED_SYS_LIB_DIR={} is set but contains no crispembed library \
-             (looked for crispembed.lib, Release/crispembed.lib, libcrispembed.so, \
-             libcrispembed.dylib) — ignoring it",
-            path.display()
+             (looked for {}) — ignoring it",
+            path.display(),
+            plan.library_files.join(", ")
         );
     }
 
@@ -109,7 +104,7 @@ fn try_prebuilt(manifest_dir: &Path) -> Option<PathBuf> {
                 root.join("build-vulkan"),
             ]
         })
-        .find(|path| has_prebuilt(path))
+        .find(|path| find_prebuilt(plan, path, Path::is_file).is_some())
 }
 
 fn run(cmd: &mut Command, what: &str) {
@@ -205,15 +200,27 @@ fn main() {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
     println!("cargo:rerun-if-env-changed=CRISPEMBED_SYS_LIB_DIR");
+    println!("cargo:rerun-if-env-changed=HOST");
+    println!("cargo:rerun-if-env-changed=TARGET");
+    println!("cargo:rerun-if-env-changed=CARGO_CFG_TARGET_OS");
+    println!("cargo:rerun-if-changed=build_support.rs");
+    println!("cargo:rerun-if-changed=build.rs");
+    let host = env::var("HOST").expect("Cargo HOST not set");
+    let target = env::var("TARGET").expect("Cargo TARGET not set");
+    let target_os = env::var("CARGO_CFG_TARGET_OS").expect("Cargo target OS not set");
+    let plan = link_plan(&host, &target, &target_os).unwrap_or_else(|message| panic!("{message}"));
 
     // Prebuilt first, and only resolve the C/C++ sources if we actually have to
     // build them. Resolving unconditionally made `resolve_src_root`'s panic
     // reachable for consumers who had a perfectly good prebuilt library,
     // defeating both `CRISPEMBED_SYS_LIB_DIR` and the `build/` probe.
-    let lib_dir = try_prebuilt(&manifest_dir)
+    let lib_dir = try_prebuilt(&manifest_dir, &plan)
         .unwrap_or_else(|| configure_and_build(&resolve_src_root(&manifest_dir)));
-    print_link_info(&lib_dir);
+    print_link_info(&lib_dir, &plan);
     emit_runtime_rpath(&lib_dir);
+    if let Some(library) = find_prebuilt(&plan, &lib_dir, Path::is_file) {
+        println!("cargo:rerun-if-changed={}", library.display());
+    }
 
     // Publish the resolved lib dir on Cargo's `links = "crispembed"`
     // metadata channel so direct dependents see `DEP_CRISPEMBED_LIB_DIR`

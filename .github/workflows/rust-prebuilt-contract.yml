@@ -1,0 +1,52 @@
+name: Rust target prebuilt contract
+
+on:
+  push:
+    branches: [main, feat/ocr-photo-preprocessing]
+    paths:
+      - 'crispembed-sys/build.rs'
+      - 'crispembed-sys/build_support.rs'
+      - 'crispembed-sys/Cargo.toml'
+      - 'tests/test_rust_prebuilt_config.py'
+      - '.github/workflows/rust-prebuilt-contract.yml'
+  pull_request:
+    paths:
+      - 'crispembed-sys/build.rs'
+      - 'crispembed-sys/build_support.rs'
+      - 'crispembed-sys/Cargo.toml'
+      - 'tests/test_rust_prebuilt_config.py'
+      - '.github/workflows/rust-prebuilt-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-prebuilt-contract-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  link-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Test pure target policy and actual build-script output
+        run: |
+          mkdir -p build-link-contract
+          rustc --edition=2021 --test crispembed-sys/build_support.rs -o build-link-contract/link-policy
+          build-link-contract/link-policy --nocapture | tee build-link-contract/policy.txt
+          CARGO_MANIFEST_DIR="$PWD/crispembed-sys" rustc --edition=2021 crispembed-sys/build.rs \
+            -o build-link-contract/build-script
+          CRISPEMBED_BUILD_SCRIPT_TEST_BIN="$PWD/build-link-contract/build-script" \
+            python3 tests/test_rust_prebuilt_config.py 2>&1 | tee build-link-contract/config.txt
+          git rev-parse HEAD > build-link-contract/source.txt
+      - name: Preserve configuration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-target-prebuilt-contract
+          path: build-link-contract/*.txt
+          if-no-files-found: error
+          retention-days: 90

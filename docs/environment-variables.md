@@ -59,7 +59,7 @@ inventory: *production default (opt-out)*, *default-off experimental / opt-in*,
 | `CRISPEMBED_SERVER_OPENAI_CHAT` | off | `POST /v1/chat/completions` + `GET /v1/models` for the `--ocr` model (one base64 data-URL image per request). |
 | `CRISPEMBED_SERVER_MAX_IMAGE_BYTES` | 64 MiB | Decoded image size limit for `/v1/chat/completions`. |
 | `CRISPEMBED_SERVER_LEGACY_JSON` | unset | Legacy server JSON shape. |
-| `CRISPEMBED_LIB` (Python/examples), `CRISPEMBED_SYS_LIB_DIR` (Rust build) | unset | Location of the native library. |
+| `CRISPEMBED_LIB` (Python/examples), `CRISPEMBED_SYS_LIB_DIR` (Rust build) | unset | Location of the native library. Rust mobile/cross builds require an explicit target prebuilt directory; see [the mobile link contract](rust-mobile-prebuilt.md). Native desktop discovery is unchanged. |
 
 ## Embeddings and tokenizers
 
@@ -253,7 +253,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-433 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+433 `CRISPEMBED_*` variables and 225 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -1294,6 +1294,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `HF_HUB_OFFLINE` | value | unset | value | tuning / config | `examples/cli/model_mgr.cpp` |  |
 | `HMER_OCR_SCALAR_ENCODER` | on | off | bool | default-off experimental / opt-in | `src/hmer_ocr.cpp` | Value-parsed: HMER_OCR_SCALAR_ENCODER=0 must mean "no", not "yes". The presence test this replaces turned the documented off-switch on. |
 | `HOME` | value | unset | value | tuning / config | `examples/cli/model_mgr.cpp`, `src/core/metal_pipeline_cache_policy.h` | else |
+| `HOST` | value | unset | value | tuning / config | `crispembed-sys/build.rs` |  |
 | `INSTRUCTIR_LEGACY` | on | off | bool | default-off experimental / opt-in | `src/instructir.cpp` |  |
 | `INTERNVL2_DECODE_CACHE` | on | off | bool | default-off experimental / opt-in | `src/internvl2_ocr.cpp` | Cache DECODE steps only (n_past > 0). Prefill (n_past == 0) has a different graph shape (image splice) and stays on the sched. |
 | `INTERNVL2_OCR_FORCE_CPU` | value | unset | int | tuning / config | `src/internvl2_ocr.cpp` | Init backend — prefer GPU when available |
@@ -1405,6 +1406,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `SWINIR_DUMP_DIR` | value | unset | path | debug | `src/swinir_sr.cpp` |  |
 | `SWINIR_SR_FORCE_CPU` | value | unset | int | tuning / config | `src/swinir_sr.cpp` |  |
 | `SWINIR_SR_SCALAR` | value | unset | int | tuning / config | `src/swinir_sr.cpp` | conv_after_body, upsample) with ggml_conv_2d on a dedicated CPU sched. The Swin window attention / norms / pixel-shuffle stay scalar. |
+| `TARGET` | value | unset | value | tuning / config | `crispembed-sys/build.rs` |  |
 | `TBSRN_SR_FORCE_CPU` | value | unset | int | tuning / config | `src/tbsrn_sr.cpp` |  |
 | `TBSRN_SR_SCALAR` | value | unset | int | tuning / config | `src/tbsrn_sr.cpp` | fused data where present). Kernels are custom-writer PyTorch [OC,IC,KH,KW]; reverse the 4 ne axes to ggml [KW,KH,IC,OC] over the same bytes. |
 | `TEMP` | value | unset | value | tuning / config | `src/core/temp_file.h` |  |
