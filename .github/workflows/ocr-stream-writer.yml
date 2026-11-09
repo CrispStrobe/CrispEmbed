@@ -172,7 +172,7 @@ jobs:
       - name: Retain all original reader-limit assertions
         if: always() && steps.identity.outcome == 'success'
         run: |
-          python tests/test_ocr_render_artifacts.py \
+          python tests/test_ocr_render_artifacts.py --reader-diagnostics \
             --library build-ocr-render/libocr_render_test.so --artifacts build-ocr-render/reader-limits -v \
             ArtifactTests.test_dense_single_page_reader_limit \
             ArtifactTests.test_supplementary_reader_search

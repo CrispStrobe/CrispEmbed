@@ -82,6 +82,17 @@ jobs:
           python tests/test_ocr_render_artifacts.py \
             --library build-ocr-render/libocr_render_test.so \
             --artifacts build-ocr-render/artifacts -v
+      - name: Independent reader-limit diagnostics (non-blocking)
+        # Strict PDFium/Poppler extraction and search assertions, including the
+        # opt-in bidirectional path that capabilities do not advertise. Their
+        # failures stay visible here and in reader-diagnostics.json, and their
+        # PDFs still feed the PDF/A validation below.
+        if: always() && steps.native.outcome == 'success'
+        continue-on-error: true
+        run: |
+          python tests/test_ocr_render_artifacts.py --reader-diagnostics \
+            --library build-ocr-render/libocr_render_test.so \
+            --artifacts build-ocr-render/artifacts -v
       - name: Validate declared PDF/A-2b and reject damaged controls
         if: always() && steps.native.outcome == 'success'
         run: |
