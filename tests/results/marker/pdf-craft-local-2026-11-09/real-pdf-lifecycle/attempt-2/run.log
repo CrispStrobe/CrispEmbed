@@ -1,0 +1,2 @@
+5/6 owned real-PDF checks passed
+AssertionError: all four renderers preserve current gate-off output (0)

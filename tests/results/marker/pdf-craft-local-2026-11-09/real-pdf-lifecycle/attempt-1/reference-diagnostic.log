@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "<string>", line 6, in <module>
+    with document[i] as page, page.get_textpage() as text:
+         ~~~~~~~~^^^
+TypeError: 'PdfPage' object does not support the context manager protocol

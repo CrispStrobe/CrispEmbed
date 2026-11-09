@@ -1,0 +1,30 @@
+{
+  "kind": "python-native-driver-attempt",
+  "script": "test_teleocr_loader.py",
+  "attempt": 1,
+  "source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+  "command": [
+    "<validation-workspace>/python-validation/venv/bin/python",
+    "-B",
+    "<repo>/tests/test_teleocr_loader.py",
+    "--lib",
+    "<validation-workspace>/validation-pdf-craft/native/build/libcrispembed.so",
+    "--report",
+    "<validation-workspace>/python-validation/reports/test_teleocr_loader-attempt-1.json"
+  ],
+  "source_sha256": "cc87ae9f921aaad44a680bf6027dafc323c18448db862177a740ebb2440d3862",
+  "native_library_sha256": "0f1034b037ac2d3b09d8d80b5b956b53dc9c17f9ef77e871192acb1e56d9833a",
+  "fixture_library_sha256": "15b3cff89cd52022ee0e0a55323c7056b3e1aca199c86431053f841c4d5cb9f1",
+  "started_utc": "2026-11-09T10:54:22.196439+00:00",
+  "elapsed_seconds": 2.43,
+  "exit_code": 0,
+  "model_weights_used": false,
+  "log_path": "<validation-workspace>/python-validation/logs/test_teleocr_loader-attempt-1.log",
+  "report_path": "<validation-workspace>/python-validation/reports/test_teleocr_loader-attempt-1.json",
+  "driver_summary": {
+    "passed": true,
+    "passed_count": 57,
+    "total_count": 57
+  },
+  "failing_checks": []
+}

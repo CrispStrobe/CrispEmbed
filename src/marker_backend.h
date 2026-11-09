@@ -13,6 +13,7 @@ public:
     pdf_provider(const pdf_provider &) = delete;
     pdf_provider & operator=(const pdf_provider &) = delete;
     int page_count() const;
+    std::string library_sha256() const;
     page read_page(int index, bool extract_text = true);
     image render_page(int index, int dpi, size_t max_pixels);
 

@@ -1,0 +1,2 @@
+Marker real PDF: FAIL (22/23 checks)
+AssertionError: incremental json equals legacy except declared run/lifecycle metadata

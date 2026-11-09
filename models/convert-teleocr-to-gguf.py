@@ -44,6 +44,8 @@ ARCH = "teleocr"
 PROFILE_VERSION = 1
 MODEL_ID = "XingChen-AGI/TeleOCR"
 MODEL_REVISION = "b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d"
+WEIGHT_LICENSE = "qwen-research"
+WEIGHT_LICENSE_URL = "https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/blob/main/LICENSE"
 DEFAULT_PROMPT = "Please output the text content from the image."
 
 
@@ -396,7 +398,10 @@ def write_metadata(writer: Any, profile: Profile, config: dict[str, Any], tokeni
         writer.add_key_value(key, value, gguf.GGUFValueType.ARRAY, sub_type=element_type)
 
     writer.add_string("general.name", "TeleOCR")
-    writer.add_string("general.license", "apache-2.0")
+    # The inference source is Apache-2.0, but the vision weights inherit
+    # Qwen2.5-VL-3B's non-commercial terms; see docs/teleocr-license.md.
+    writer.add_string("general.license", WEIGHT_LICENSE)
+    writer.add_string("general.license.link", WEIGHT_LICENSE_URL)
     writer.add_string("general.url", f"https://huggingface.co/{MODEL_ID}")
     writer.add_uint32("general.file_type", {"f32": 0, "f16": 1, "q8_0": 7}[dtype])
     if dtype == "q8_0":

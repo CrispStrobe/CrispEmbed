@@ -1,4 +1,79 @@
-# CrispEmbed plan — open work (updated 7 November 2026)
+# CrispEmbed plan — open work (updated 9 November 2026)
+
+## PDF Craft adoption — 9 November 2026
+
+Owner lane: `feature/pdf-craft-document-quality-20261109`, based on
+`e4ee71937a68f1ff9d28f4d7cdbd66bda68ba05a`. All checkpoints remain on the
+upstream feature branch as requested; no main-branch or release changes.
+
+The user authorized the complete follow-up roadmap on 9 November. The executable
+[task checklist](docs/pdf-craft-tasks.md) tracks implementation and validation
+separately: native noncommercial admission, versioned extraction artifacts,
+source-linked chunks, bounded cancellation/resume, multilingual whitespace and
+footnote/page-label identities. Three coordinated implementation lanes share the
+native contracts; public API/bindings and final integration belong to this lane.
+
+| Work | State | Acceptance |
+|---|---|---|
+| Audit PDF Craft `cf003c711b6a63cd0a0a64bfc490bd319ab20d92` | [Source and dependency review](docs/pdf-craft-adoption.md) complete for the selected adaptation; MIT notice retained in the existing distributed `NOTICE.marker` | Excludes the Poppler/Qt/EasyDict dependency paths and the MinerU-referenced paragraph-merging material |
+| Native OCR repetition diagnostics | Implemented, default-off `CRISPEMBED_MARKER_REPETITION_CHECK`; included in 185 passing native document checks | Unicode consecutive n-grams, bounded work, asset exclusions, unchanged text/raw/geometry and default behavior |
+| TeleOCR weight-license metadata | Qwen Research metadata corrected; 19 converter and 57 native loader controls pass locally | Actual synthetic GGUF license readback and disabled-value/direct-loader tests; existing published files and hashes unchanged |
+| Jina/noncommercial native admission | 106 actual native direct, local and cached controls pass locally | Acknowledgement before backend/weight allocation; false values rejected; permissive models preserved |
+| Versioned native extraction artifacts | 87 native artifact checks and actual public-client reopen controls pass locally | Exact roundtrips, malformed-source-map/corruption/limit controls and standalone reopen; Windows filesystem execution remains open |
+| Source-linked chunks, whitespace and references | Three opt-in gates; covered by 185 passing document checks and actual client source-map checks | Exact immutable byte ranges, conservative joins, ambiguous links and page labels; disabled-output controls |
+| Bounded lifecycle and clients | 480 native, 33 actual Python and 111 Rust/Dart assertions pass locally on the corrected build | Durable page rollback, identity rejection, partial results and extraction provenance; six Rust/Dart gate scenarios all pass; cross-platform execution remains open |
+
+The bounded runtime change reports suspicious OCR repetition; it does not delete
+content, retry inference, introduce models or qualify document accuracy. The
+existing PDFium renderer and native model implementations remain the integration
+points. The authorized follow-ups are implemented and independently reviewed in
+source. [Local execution evidence](tests/results/marker/pdf-craft-local-2026-11-09/README.md)
+records Linux CPU validation at final native source `891ea3d3632c6a3c3155e25b34705da6a02ec807`,
+preserving the initial `d4d508c460c6e172fd1d7d4afc6b9c78652ad607` results;
+Windows/macOS and hosted acceptance remain separate.
+
+Validation continuation: actual Rust/Dart lifecycle probes now cover six gated
+scenarios, and Windows native controls plus macOS Xcode/CocoaPods checks are wired
+into Build. Review corrected an Xcode per-source-definition incompatibility and
+shipped CocoaPods notice resources for local `:path` installs. Source review and
+available static checks are complete. Actual Python wheel/sdist readback passes
+26 checks; Dart's publish dry-run selects all nine exact notice files. Full
+Flutter validation and retained-archive byte readback remain open, as do the
+hosted platform checks in [the task checklist](docs/pdf-craft-tasks.md).
+
+The owner explicitly authorized local builds and tests on 9 November instead of
+waiting for the GitHub queue. Bounded Linux CPU validation executed after
+main's release-workflow updates through `dc4f51c755bf78139f1f6ea87941748b05e75971`
+were merged into the feature branch. Native document/artifact/lifecycle/save,
+Python/Rust/Dart, model admission and five repository guards pass. Real PDFium
+151.0.7891.0 also passes 39 backend and 86 C API checks, followed by 112 checks
+across eight owned PDFs and Python/CLI/HTTP. The first artifact/lifecycle attempts
+failed before any checks because the default temporary directory was absent;
+setting a task-local `TMPDIR` passes without source changes. Initial attempts,
+source/toolchain identities and limits are preserved in the receipts.
+
+The real-PDF continuation reproduced a provenance omission: incremental views
+lacked four stable legacy diagnostics. The correction stamps the existing
+provenance into the initial raw checkpoint and preserves it in partial, complete
+and reopened views. A native regression fails on the original build; the strict
+real-PDF comparison also fails without waiving those fields. The reproducible
+`tests/test_marker_real_pdf.py` is wired into the existing Linux native lane.
+The [rebuilt-source receipt](tests/results/marker/pdf-craft-local-2026-11-09/final-receipt.json)
+passes 480 native lifecycle checks, 48 strict real-PDF checks and 14 cross-build
+checks. Native documents/artifacts/API/backend/save, 33 Python lifecycle checks,
+six Rust/Dart scenarios, both admission drivers and 112 Python/CLI/HTTP checks
+also pass on the corrected binary. The new viewer retains all four outputs and
+original metadata of an earlier processed artifact; old raw resume rejects the
+changed build identity without modifying its checkpoint.
+
+Actual current Python/Dart wrappers also pass 68 compatibility checks against
+hash-verified immutable v0.17.15: legacy conversion works, all six new symbols
+are absent, and each unavailable new method preserves the existing view and
+subsequent conversion. Initial probe-only renderer expectations are retained.
+
+Next: read Windows/macOS results when available, complete
+Flutter archive/app qualification in an equipped environment, and qualify
+representative OCR/retrieval quality separately before any default promotion.
 
 ## Phone-photo geometry — 9 November 2026
 

@@ -1,0 +1,15 @@
+{
+  "kind": "python-native-driver-attempt",
+  "name": "test_marker_lifecycle",
+  "attempt": 2,
+  "source_commit": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+  "native_library_sha256": "decb81ce3f68f30db24cc6eb686f712750e86f68dbd5f9cc6930d65f87210328",
+  "probe_sha256": "5d97d3cc732d64647a105a4b3795fdd565e731f86141f9b82e521d88ac2af25b",
+  "started_utc": "2026-11-09T11:09:42.172062+00:00",
+  "elapsed_seconds": 0.193,
+  "exit_code": 0,
+  "model_weights_used": false,
+  "passed": true,
+  "passed_count": 33,
+  "total_count": 33
+}

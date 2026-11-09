@@ -1,0 +1,408 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-09",
+  "source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+  "branch": "feature/pdf-craft-document-quality-20261109",
+  "scope": "Owner-authorized Linux x86_64 CPU execution; model-free feature/admission contracts and real-PDFium owned-document integration",
+  "platform": "Linux x86_64",
+  "compiler": "GNU C/C++ 14.2.0",
+  "cmake": "3.31.10",
+  "ninja": "1.13.0.git.kitware.jobserver-pipe-1",
+  "ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "build_type": "Release",
+  "configuration": {
+    "CRISPEMBED_BUILD_SHARED": "ON",
+    "CRISPEMBED_NATIVE": "OFF",
+    "GGML_NATIVE": "OFF",
+    "GGML_BLAS": "OFF",
+    "GGML_LLAMAFILE": "ON",
+    "GGML_CUDA": "OFF",
+    "GGML_VULKAN": "OFF",
+    "GGML_METAL": "OFF"
+  },
+  "build_exit_code": 0,
+  "cpu_baseline_check_exit_code": 0,
+  "build_log_sha256": "7057cc5b0d2b6241e6acb1a0d8fa14e8d6d9b13590fe0bc9a6fa60c315fa4aaa",
+  "configure_log_sha256": "12143539c128c37a9f4439a935629540eb9eabb5bd497302b6ade8aba6f27080",
+  "binaries": {
+    "libcrispembed.so": {
+      "sha256": "0f1034b037ac2d3b09d8d80b5b956b53dc9c17f9ef77e871192acb1e56d9833a",
+      "bytes": 12586264
+    },
+    "libmarker-pdfium-fixture.so": {
+      "sha256": "15b3cff89cd52022ee0e0a55323c7056b3e1aca199c86431053f841c4d5cb9f1",
+      "bytes": 28688
+    },
+    "test-marker-document": {
+      "sha256": "02a184bf2c5f66ea5fe79d0f91ae813ad1bd23bc6e5a89c3c4480bb2d391cef2",
+      "bytes": 710936
+    },
+    "test-marker-artifact": {
+      "sha256": "d40909392b2d847ad500de6cd6e49b6a9c75ac5f0e696ef9e1fb627c991f2950",
+      "bytes": 275208
+    },
+    "test-marker-lifecycle": {
+      "sha256": "83273a62f5bae020b38b59b07e78f133ba4742f363deb93e6aaea75df0364980",
+      "bytes": 1858216
+    },
+    "test-marker-api": {
+      "sha256": "94c68a11a9a2bee74818f8676e13086df5021ca2a98491617373aaad3f1f818d",
+      "bytes": 1790560
+    },
+    "test-marker-backend": {
+      "sha256": "8cb435ada77e15ae4ccbc45c3ea99dc96224fe2133e83acb26720c7c483dbdaf",
+      "bytes": 1768360
+    },
+    "test-marker-save": {
+      "sha256": "1d1c136314ea51f42ce1972b2bd095d4ee151f0e9579c0c1058c8d2714ba8ee6",
+      "bytes": 103128
+    }
+  },
+  "observed_results": {
+    "document": {
+      "passed": 185,
+      "total": 185
+    },
+    "artifact": {
+      "passed": 87,
+      "total": 87,
+      "attempt": 2
+    },
+    "native_lifecycle": {
+      "passed": 400,
+      "total": 400,
+      "attempt": 2
+    },
+    "native_api_without_pdfium": {
+      "passed": 74,
+      "total": 74
+    },
+    "native_backend_without_pdfium": {
+      "passed": 18,
+      "total": 18,
+      "pdfium_checks_selected": false
+    },
+    "native_save": {
+      "passed": 38,
+      "total": 38
+    },
+    "native_backend_real_pdfium": {
+      "passed": 39,
+      "total": 39
+    },
+    "native_api_real_pdfium": {
+      "passed": 86,
+      "total": 86
+    },
+    "teleocr_converter": {
+      "passed": 19,
+      "total": 19
+    },
+    "marker_python_clients": {
+      "passed": 17,
+      "total": 17
+    },
+    "teleocr_loader": {
+      "passed": 57,
+      "total": 57
+    },
+    "unlimited_license_admission": {
+      "passed": 106,
+      "total": 106
+    },
+    "python_native_lifecycle": {
+      "passed": 33,
+      "total": 33
+    },
+    "repository_guards": {
+      "passed": 5,
+      "total": 5
+    },
+    "real_pdfium_python_cli_http": {
+      "passed": 112,
+      "total": 112,
+      "owned_pdf_cases": 8
+    },
+    "rust_dart_clients": {
+      "passed_scenarios": 6,
+      "total_scenarios": 6,
+      "passed_assertions": 111,
+      "total_assertions": 111
+    },
+    "python_packages": {
+      "passed": 26,
+      "total": 26
+    },
+    "flutter_notice_selection": {
+      "passed": 15,
+      "total": 15,
+      "full_flutter_validation": false,
+      "archive_byte_readback": false
+    }
+  },
+  "initial_failures": [
+    {
+      "kind": "execution_environment",
+      "attempt": "native-suite-attempt-1",
+      "tests": [
+        "test-marker-artifact",
+        "test-marker-lifecycle"
+      ],
+      "reason": "Default temporary directory unavailable; tests fail before any checks",
+      "correction": "Set TMPDIR to an existing task-owned writable directory",
+      "source_changed": false,
+      "retry": "native-suite-attempt-2"
+    },
+    {
+      "kind": "toolchain_setup",
+      "tool": "isolated system Python venv",
+      "reason": "ensurepip absent in the system interpreter",
+      "correction": "venv --without-pip plus existing primary-runtime pip --python targeting the isolated venv",
+      "source_changed": false
+    }
+  ],
+  "model_weights_downloaded": false,
+  "new_production_dependencies": false,
+  "qualification_limits": [
+    "Linux x86_64 only; no Windows/macOS runtime claim",
+    "Owned documents and metadata-only GGUFs; no OCR or retrieval quality claim",
+    "No release or default promotion",
+    "Rust/Dart and packaging outcomes are retained in their companion receipts; the only client fixture edits before execution were formatter output"
+  ],
+  "saved_evidence": [
+    {
+      "path": "native/native-suite-attempt-1.json",
+      "original_sha256": "25cb69b8d8326337b07050b069de39fed43651898521d3c5db5561d0de774323",
+      "saved_sha256": "25cb69b8d8326337b07050b069de39fed43651898521d3c5db5561d0de774323",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "native/native-suite-attempt-2.json",
+      "original_sha256": "4a9cfe83306efa68ba7c0b98540dd1515fffc24fbbc275c80a6637190676d3d9",
+      "saved_sha256": "4a9cfe83306efa68ba7c0b98540dd1515fffc24fbbc275c80a6637190676d3d9",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "native/real-pdfium-attempt-1.json",
+      "original_sha256": "2129a44325373201411788c21cc6cb8260df8d439c0a8417187b19e5f09fbd55",
+      "saved_sha256": "2129a44325373201411788c21cc6cb8260df8d439c0a8417187b19e5f09fbd55",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "native/test-marker-api-attempt-1.log",
+      "original_sha256": "5110d01c029c53feeb6505a177500f96aa85c1e3b4dcc60b126675e5f485be8f",
+      "saved_sha256": "5110d01c029c53feeb6505a177500f96aa85c1e3b4dcc60b126675e5f485be8f",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "native/test-marker-api-real-pdfium-attempt-1.log",
+      "original_sha256": "9aebce8a389e149a605a95cc718034c5d025bb64d79a5060472d8f70fe9de783",
+      "saved_sha256": "9aebce8a389e149a605a95cc718034c5d025bb64d79a5060472d8f70fe9de783",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "native/test-marker-artifact-attempt-1.log",
+      "original_sha256": "77d02b073588be4b9b87739f842955d680d21d3a65852ad4cfe250768a11a766",
+      "saved_sha256": "77d02b073588be4b9b87739f842955d680d21d3a65852ad4cfe250768a11a766",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "native/test-marker-artifact-attempt-2.log",
+      "original_sha256": "22e3444ce1a861e0028d469880bed1457f07857a69bf99024d7c1ca5d81eb2b6",
+      "saved_sha256": "22e3444ce1a861e0028d469880bed1457f07857a69bf99024d7c1ca5d81eb2b6",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "native/test-marker-backend-attempt-1.log",
+      "original_sha256": "91d18d69dd75c390426b7c5ce6d7058617c84e42770111e204c81a51f5b17a6d",
+      "saved_sha256": "91d18d69dd75c390426b7c5ce6d7058617c84e42770111e204c81a51f5b17a6d",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "native/test-marker-backend-real-pdfium-attempt-1.log",
+      "original_sha256": "487b1dc7f05ac39023fe13341c942423488b4028065d0ac928a44979c122eec6",
+      "saved_sha256": "487b1dc7f05ac39023fe13341c942423488b4028065d0ac928a44979c122eec6",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "native/test-marker-document-attempt-1.log",
+      "original_sha256": "79b23db02ed6b4a023fe40b8c533cfb165f27eb984107aae2f2edda6f913e843",
+      "saved_sha256": "79b23db02ed6b4a023fe40b8c533cfb165f27eb984107aae2f2edda6f913e843",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "native/test-marker-lifecycle-attempt-1.log",
+      "original_sha256": "931f09b72c7feaf1669851f7b153105cce981cc71000e893134852586fbea6a5",
+      "saved_sha256": "931f09b72c7feaf1669851f7b153105cce981cc71000e893134852586fbea6a5",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "native/test-marker-lifecycle-attempt-2.log",
+      "original_sha256": "87b3d339e5a7a3ee41450738ccb39912433ea82de62133b8de7a163ca9cf6f67",
+      "saved_sha256": "87b3d339e5a7a3ee41450738ccb39912433ea82de62133b8de7a163ca9cf6f67",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "native/test-marker-save-attempt-1.log",
+      "original_sha256": "087bc3dfe299813a79ad2e168a3b4b1d5eeca8dd716678fe681bd2c7873b97d2",
+      "saved_sha256": "087bc3dfe299813a79ad2e168a3b4b1d5eeca8dd716678fe681bd2c7873b97d2",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "native/cpu-baseline.log",
+      "original_sha256": "779360859047052ec44111f93bd5d60400304675936d72ec2530132b530bd379",
+      "saved_sha256": "32a43a9fbd0377af0c6ffef42660c6b24751193515eca83c56f683b45db08856",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "python/test_marker_clients-attempt-1.json",
+      "original_sha256": "dd49852ed494981ee078ce3661b3f869eeb9182c7bdd9e6d505615b8ec882a67",
+      "saved_sha256": "8fbd7deb3e5a2a93be6921615a3ad7c1f314b6343c91b5c95b02044ed49d7fbb",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "python/test_marker_lifecycle-attempt-1-receipt.json",
+      "original_sha256": "2dfb3aefb6aea6725301ee111ff5f8b08bc90ea69a65979d5f63b96695284428",
+      "saved_sha256": "7e880f5041a2f178b87ab05c50555e0632a5954b0dd2088a256f9a210728f0af",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "python/test_marker_lifecycle-attempt-1.json",
+      "original_sha256": "da3a774297984d913dd5a3d380c2b5e355a2cab46d2f9403212c8ae6a28f92e5",
+      "saved_sha256": "da3a774297984d913dd5a3d380c2b5e355a2cab46d2f9403212c8ae6a28f92e5",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "python/test_teleocr_converter-attempt-1.json",
+      "original_sha256": "956150a64ca5d4608fe2591f81d255da7a1774a079ff885177598ae9385ed03d",
+      "saved_sha256": "e7c13aaba3c31389525d1954f4dcdb1cdbf52575dd3ccfaf358923af18ae53c1",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "python/test_teleocr_loader-attempt-1-receipt.json",
+      "original_sha256": "05157b94bb3de86d5f564a672431e2908f11323087f6c4260bc1d89734246fdb",
+      "saved_sha256": "a825fe9ddf828d7cded4f0eecfe33ea825d0a98a35fb8169c0a6772b05a02a8f",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "python/test_teleocr_loader-attempt-1.json",
+      "original_sha256": "cbd78e044617271cc70db267d04c37a3ce744bbf2acaad95e455442f8ccaea3c",
+      "saved_sha256": "c3f37e1fbc29f075cddbf80f5edb85720c97d2ed8c3988460e0f331fad33d7e4",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "python/test_unlimited_ocr_license-attempt-1-receipt.json",
+      "original_sha256": "f4a0d11620d418e9387ea553071282150745bd0ce0c503ccb0125ecb4cb7e5f8",
+      "saved_sha256": "ca9075f107363c7f9a9e394244fac30218c0420970a299d7046257ffa865baf6",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "python/test_unlimited_ocr_license-attempt-1.json",
+      "original_sha256": "5261b4821fb0395929b3f6692f32052c8e3021cecac2ba44c613f1da02735846",
+      "saved_sha256": "5261b4821fb0395929b3f6692f32052c8e3021cecac2ba44c613f1da02735846",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "python/environment.json",
+      "original_sha256": "77970f859190c6fa25335f0e21657f9516ae77a4dc7573464d3b6019402be49b",
+      "saved_sha256": "a3fe6793206933d5937f47226c10ed152f036e8db4ac59a293c65dd839d80064",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "python/pdfium-environment.json",
+      "original_sha256": "144f42fb306ffe7175f53b5c1b12561de5d3a11ad7d9543efddc3e4dd18bcef0",
+      "saved_sha256": "9d472834b534ab0e55917f41ae5d2edc4683029b2cd51266d81a0ed8f6649f55",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "python/test_marker_clients-attempt-1.log",
+      "original_sha256": "b1f02236f9f90b4e019a48e5b26b027d7efcb803096f747c0678543c29bf9409",
+      "saved_sha256": "b1f02236f9f90b4e019a48e5b26b027d7efcb803096f747c0678543c29bf9409",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "python/test_marker_lifecycle-attempt-1.log",
+      "original_sha256": "a9b5e69f6a5ae2131ef2fc0596e96d3fd5264132e11bbbf55f682a07b92feeaa",
+      "saved_sha256": "a9b5e69f6a5ae2131ef2fc0596e96d3fd5264132e11bbbf55f682a07b92feeaa",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "python/test_teleocr_converter-attempt-1.log",
+      "original_sha256": "1a12e4516741939190e2eea7c9ccebdf604c82b3c1664444a3d0dbee0411f59b",
+      "saved_sha256": "1a12e4516741939190e2eea7c9ccebdf604c82b3c1664444a3d0dbee0411f59b",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "python/test_teleocr_loader-attempt-1.log",
+      "original_sha256": "659d25139bc2ef9792a85647ce775c2656c341d4d3885fc953c2f23e105ec8ff",
+      "saved_sha256": "659d25139bc2ef9792a85647ce775c2656c341d4d3885fc953c2f23e105ec8ff",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "python/test_unlimited_ocr_license-attempt-1.log",
+      "original_sha256": "efe968e0f027d051eaa5fbd33caf0916d24be8e0031c942173b3bc9a1f76faa5",
+      "saved_sha256": "efe968e0f027d051eaa5fbd33caf0916d24be8e0031c942173b3bc9a1f76faa5",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "guards/ci-selection.log",
+      "original_sha256": "f5ff30b4d3cacb2ec2c8e8285d2ca24f97cb42c628b1e4540812acb79f3ed0df",
+      "saved_sha256": "f5ff30b4d3cacb2ec2c8e8285d2ca24f97cb42c628b1e4540812acb79f3ed0df",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "guards/clean-exit.log",
+      "original_sha256": "aee45301d77bc4636b8729ae18ac7bbee58f71cbb7245b1f47a3fbee96ab2d19",
+      "saved_sha256": "aee45301d77bc4636b8729ae18ac7bbee58f71cbb7245b1f47a3fbee96ab2d19",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "guards/env-inventory.log",
+      "original_sha256": "91d1c3d57e3f6f0a14c17ed28aa3061e76e9719538f396b7f8aa52adf315ecb0",
+      "saved_sha256": "91d1c3d57e3f6f0a14c17ed28aa3061e76e9719538f396b7f8aa52adf315ecb0",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "guards/summary.json",
+      "original_sha256": "8f9173e90b714f1949d1ae95ba4c22f73ba2b5cb4b1d0a4d61221f4a45840d55",
+      "saved_sha256": "8f9173e90b714f1949d1ae95ba4c22f73ba2b5cb4b1d0a4d61221f4a45840d55",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "guards/workflow-pin-controls.log",
+      "original_sha256": "c2d2a7a7ec8923df4b70b27f9387c91f63649aa14e572d69a48df13e33868c7c",
+      "saved_sha256": "c2d2a7a7ec8923df4b70b27f9387c91f63649aa14e572d69a48df13e33868c7c",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "guards/workflow-pins.log",
+      "original_sha256": "139b4b27f1dd8d77902201559f80bd85d7ae34f7cd21e40ccd159bb4eb9c38bf",
+      "saved_sha256": "139b4b27f1dd8d77902201559f80bd85d7ae34f7cd21e40ccd159bb4eb9c38bf",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "real-pdf-clients/attempt-1-receipt.json",
+      "original_sha256": "fdb69f5fb632c650f8dc58e4b88abab35409f8e60e0366e00f9466efe15a4ea7",
+      "saved_sha256": "a82fed6421efb51550dc93abb8257618cc094ea89aa7543dba6a919a881e12f2",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "real-pdf-clients/attempt-1.log",
+      "original_sha256": "5b9877c5ba28b5aabc5d8a6b486229c56637598ca33e2c8d3c160e668722e531",
+      "saved_sha256": "5b9877c5ba28b5aabc5d8a6b486229c56637598ca33e2c8d3c160e668722e531",
+      "path_redaction_applied": false
+    },
+    {
+      "path": "real-pdf-clients/summary.json",
+      "original_sha256": "2135c78f87610e9d7f3e3f4d064c98449aab46efc727de9f8070fae41e4a1f65",
+      "saved_sha256": "6dcd7912575613eb24ae7263bea1eca9b7631a5e4c269a5337e3313b407f8aca",
+      "path_redaction_applied": true
+    },
+    {
+      "path": "real-pdf-clients/http-server.log",
+      "original_sha256": "f5990c3924d85e87da60984155e3229f3fcee628f2083127aeafd471a3bdc132",
+      "saved_sha256": "2f60cfd825665e1f1b508d0972b6fdbe53958727607e3c30d4e80b7618945bab",
+      "path_redaction_applied": true
+    }
+  ]
+}

@@ -34,7 +34,7 @@ pub use oxr::Oxr;
 mod oxr_layout;
 pub use oxr_layout::OxrLayout;
 pub mod marker;
-pub use marker::{Marker, MarkerMode, MarkerOptions};
+pub use marker::{Marker, MarkerJobStatus, MarkerMode, MarkerOptions};
 pub mod photo;
 pub use photo::CrispScanPhoto;
 pub mod model_download;

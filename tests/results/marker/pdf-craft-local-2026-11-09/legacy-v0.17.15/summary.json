@@ -1,0 +1,104 @@
+{
+  "schema": "crispembed.marker-old-native-compatibility-summary/1",
+  "passed": true,
+  "execution": "user-authorized local Linux x86_64",
+  "client_source_commit": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+  "client_wrapper_files_unchanged_between_attempts": true,
+  "old_release_tag": "v0.17.15",
+  "old_release_source_commit": "d28ca2ea43a95934d673d1a54177fdf721614ade",
+  "archive": {
+    "name": "crispembed-linux-x86_64.tar.gz",
+    "id": 714874378,
+    "bytes": 18151060,
+    "sha256": "b247e6bbf50b1d576af69335cbb098a8b120cc61d738dd3139eda9ec9bac4ea7",
+    "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-linux-x86_64.tar.gz",
+    "state": "uploaded"
+  },
+  "archive_verified_before_loading": true,
+  "old_library_sha256": "323560bd5272eaf32eb43b8740078d2fb1828b6dde174eb1e3cba3ee75ad94f0",
+  "real_pdfium": {
+    "pypdfium2_version": "5.10.1",
+    "pdfium_version": "151.0.7891.0",
+    "sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27"
+  },
+  "owned_input": {
+    "path": "tests/fixtures/marker/simpledigital.pdf",
+    "sha256": "5abed1c20795f862b63e3792f1964b2d5932c9d28ccaf8398e2e5b9ec0217374"
+  },
+  "model_weights_used": false,
+  "old_native_rebuilt": false,
+  "release_or_dependency_pin_changed": false,
+  "native_and_wrapper_source_fixes": [],
+  "symbols": {
+    "legacy_exports_present": 11,
+    "new_symbols_absent": [
+      "crispembed_marker_save_extraction",
+      "crispembed_marker_open_extraction",
+      "crispembed_marker_start",
+      "crispembed_marker_step",
+      "crispembed_marker_cancel",
+      "crispembed_marker_progress"
+    ]
+  },
+  "passing_attempt": 2,
+  "passing_assertions": 68,
+  "clients": [
+    {
+      "client": "Python",
+      "passed": true,
+      "assertions": 34,
+      "new_methods_rejected": 6,
+      "existing_four_render_outputs_preserved_after_each_rejection": true,
+      "exact_legacy_reconversion_after_each_rejection": true
+    },
+    {
+      "client": "Dart",
+      "passed": true,
+      "assertions": 34,
+      "new_methods_rejected": 6,
+      "existing_four_render_outputs_preserved_after_each_rejection": true,
+      "exact_legacy_reconversion_after_each_rejection": true
+    }
+  ],
+  "unavailable_symbol_errors": {
+    "Python": "RuntimeError with the native missing-symbol AttributeError as its cause",
+    "Dart": "ArgumentError naming the failed native symbol lookup"
+  },
+  "initial_failure": {
+    "attempt": 1,
+    "classification": "probe assertion error; not a native or wrapper regression",
+    "description": "The probe required a complete heading as one raw HTML substring. The released renderer correctly emits three strong elements for the heading.",
+    "observed_html": "<h1><strong>Native </strong><strong>document </strong><strong>test</strong></h1>",
+    "correction": "Compare visible HTML text and parsed JSON/chunk block.text values with owned gold. Retain exact four-render preservation checks around every unavailable method.",
+    "production_source_changed": false,
+    "release_pdfium_and_input_bytes_unchanged": true,
+    "receipt": "attempt-1.json",
+    "retained_probe_sources": "probes/attempt-1/"
+  },
+  "dependencies": {
+    "versions": {
+      "python": "Python 3.13.5",
+      "dart": "Dart SDK version: 3.13.7 (stable) (Thu Oct 22 14:28:57 2026 -0700) on \"linux_x64\""
+    },
+    "python": {
+      "numpy": "2.3.5",
+      "Pillow": "12.0.0",
+      "pypdfium2": "5.10.1"
+    },
+    "dart": {
+      "ffi": "2.2.0",
+      "resolved_lock": "dart-pubspec.lock",
+      "original_lock_filename": "pubspec.lock",
+      "sha256": "9c8e60d013eba45c06ab204f41557cfaa201d92910e3370c2649c99de2552994"
+    }
+  },
+  "selected_source_sha256": {
+    "python/crispembed/_marker.py": "dbba4c60926c931ffec8f9092ddb4a61a860e9cbfe1c4075d93ddb6a88756c9d",
+    "python/crispembed/_binding.py": "fae270e63eeccbb161396393314899a116dbd375534b463b6b42d2d4d977d7e8",
+    "flutter/crispembed/lib/src/marker.dart": "52317d8db12a28f93fd8f2cd03ea6c8fec34952158b3b0c7721d440de053abc6",
+    "tests/fixtures/marker/simpledigital.pdf": "5abed1c20795f862b63e3792f1964b2d5932c9d28ccaf8398e2e5b9ec0217374",
+    "tests/results/releases/v0.17.15.json": "f35039573be898914e023a4c7023283653674f6df75460dcd098a7e87b9142d1"
+  },
+  "scope": "Current Python/Dart lazy-symbol compatibility with immutable v0.17.15 on one owned digital PDF and real PDFium. Model inference and general document accuracy are outside this check.",
+  "results": "attempt-2.json"
+}

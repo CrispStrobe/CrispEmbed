@@ -1728,14 +1728,45 @@ CRISPEMBED_API int crispembed_marker_convert(crispembed_marker_context * ctx, co
 /// Convert tightly packed gray/RGB/RGBA pixels as a single page (modes 0/2).
 CRISPEMBED_API int crispembed_marker_convert_raw(crispembed_marker_context * ctx, const uint8_t * pixels, int width,
                                                  int height, int channels);
+/// Versioned extraction artifacts, gated by CRISPEMBED_MARKER_ARTIFACTS=1.
+/// Open does not run OCR or load a model; initialize a text-mode context to use
+/// it without model weights. Save preserves the current complete/partial view.
+/// Both return 1 on success, 0 on failure. A failed open preserves the old view.
+CRISPEMBED_API int crispembed_marker_save_extraction(crispembed_marker_context * ctx, const char * path);
+CRISPEMBED_API int crispembed_marker_open_extraction(crispembed_marker_context * ctx, const char * path);
+
+typedef enum crispembed_marker_job_status {
+    CRISPEMBED_MARKER_JOB_ERROR = 0,
+    CRISPEMBED_MARKER_JOB_RUNNING = 1,
+    CRISPEMBED_MARKER_JOB_COMPLETE = 2,
+    CRISPEMBED_MARKER_JOB_CANCELLED = 3
+} crispembed_marker_job_status;
+/// Incremental extraction also requires CRISPEMBED_MARKER_INCREMENTAL=1.
+/// Start validates input/model/processing identities; resume=1 reads an existing
+/// raw checkpoint and rejects any identity/selection mismatch. checkpoint_path
+/// must name a file distinct from the input, model and PDFium library. Each
+/// completed page is atomically persisted. PDF input requires explicit PDFium.
+/// Start returns 1/0; step processes at most page_budget pages (1..64) and returns
+/// a job status. Page work is synchronous; cancellation takes effect at a page
+/// boundary. Completed pages remain inspectable after later failure/cancellation.
+CRISPEMBED_API int crispembed_marker_start(crispembed_marker_context * ctx, const char * file_path,
+                                           const char * checkpoint_path, int resume);
+CRISPEMBED_API crispembed_marker_job_status crispembed_marker_step(crispembed_marker_context * ctx, int page_budget);
+/// Thread-safe cancellation request; caller must keep ctx alive until it returns.
+CRISPEMBED_API void crispembed_marker_cancel(crispembed_marker_context * ctx);
+/// Owned progress JSON (schema crispembed.marker-progress/1), valid until next
+/// progress call/start/convert/free. Query between bounded step calls.
+CRISPEMBED_API const char * crispembed_marker_progress(crispembed_marker_context * ctx);
 /// Format is markdown, html, json or chunks. Owned result valid until next render,
-/// convert or free. JSON/chunks include provenance, warnings and block geometry.
+/// convert, start, step, open_extraction or free. JSON/chunks include provenance,
+/// warnings and block geometry.
 CRISPEMBED_API const char * crispembed_marker_render(crispembed_marker_context * ctx, const char * format);
 CRISPEMBED_API const char * crispembed_marker_metadata(crispembed_marker_context * ctx);
 /// NULL ctx returns this thread's last initialization/invalid-handle error.
 CRISPEMBED_API const char * crispembed_marker_error(const crispembed_marker_context * ctx);
 /// Image assets use safe generated basenames. Borrowed pointers remain valid
-/// until the next conversion or free. Client must synchronize borrowed reads.
+/// until the next convert/start/step/open_extraction or free. Client must
+/// synchronize borrowed reads.
 CRISPEMBED_API int crispembed_marker_asset_count(const crispembed_marker_context * ctx);
 CRISPEMBED_API const char * crispembed_marker_asset_name(const crispembed_marker_context * ctx, int index);
 CRISPEMBED_API const uint8_t * crispembed_marker_asset_data(const crispembed_marker_context * ctx, int index,

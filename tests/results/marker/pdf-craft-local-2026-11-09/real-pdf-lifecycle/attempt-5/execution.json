@@ -1,0 +1,15 @@
+{
+  "kind": "python-native-driver-attempt",
+  "name": "marker-real-pdf",
+  "attempt": 5,
+  "source_commit": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+  "native_library_sha256": "decb81ce3f68f30db24cc6eb686f712750e86f68dbd5f9cc6930d65f87210328",
+  "probe_sha256": "15c83e108826042976ac9aa18f8896ebbbc0efb7e1791e396425a37ad47037da",
+  "started_utc": "2026-11-09T11:09:32.792205+00:00",
+  "elapsed_seconds": 1.331,
+  "exit_code": 0,
+  "model_weights_used": false,
+  "passed": true,
+  "passed_count": 48,
+  "total_count": 48
+}

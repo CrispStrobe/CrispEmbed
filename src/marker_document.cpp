@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 // Native document processing adapted from Marker 2.1.0 (Datalab contributors)
 // and teleocr-rs (Ramahatratra Zafiamy and contributors). See NOTICE.marker.
+// Optional repetition diagnostics adapt PDF Craft's MIT-licensed n-gram check;
+// its copyright, permission notice and exact source are also in NOTICE.marker.
 // This is a deterministic alternative pipeline, not Surya model parity.
 #include "marker_document.h"
 #include "otsl_table.h"
+#include "core/env_gate.h"
 #include "core/json.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cmath>
 #include <functional>
@@ -989,6 +993,92 @@ std::string margin_signature(const std::string & value) {
     return out;
 }
 
+struct repetition_hit {
+    size_t period = 0, repeats = 0;
+};
+
+repetition_hit repetitive_ngram(const std::string & text) {
+    // PDF Craft cf003c711b6a63cd0a0a64bfc490bd319ab20d92:
+    // pdf_craft/pdf/ngrams.py and page_extractor.py (MIT, Tao Zeyu).
+    // Equal characters at distance n for n*(repeats-1) positions prove a
+    // tandem repeat. A fixed ring avoids substring allocations and the
+    // upstream nested rescans: O(20 * Unicode scalar count), O(20) storage.
+    if (text.size() < 32 || text.size() > text_limit) return {};
+    constexpr size_t max_period = 20;
+    std::array<uint32_t, max_period> previous{};
+    std::array<size_t, max_period + 1> equal_run{};
+    size_t count = 0;
+    repetition_hit hit;
+    for (size_t i = 0; i < text.size();) {
+        const unsigned char first = static_cast<unsigned char>(text[i]);
+        size_t length = first < 0x80                     ? 1
+                        : first >= 0xC2 && first <= 0xDF ? 2
+                        : first >= 0xE0 && first <= 0xEF ? 3
+                        : first >= 0xF0 && first <= 0xF4 ? 4
+                                                         : 0;
+        if (!length || length > text.size() - i) return {};
+        uint32_t cp = length == 1 ? first : length == 2 ? first & 0x1F : length == 3 ? first & 0x0F : first & 7;
+        for (size_t j = 1; j < length; ++j) {
+            const unsigned char next = static_cast<unsigned char>(text[i + j]);
+            if ((next & 0xC0) != 0x80) return {};
+            cp = (cp << 6) | (next & 0x3F);
+        }
+        if ((length == 2 && cp < 0x80) || (length == 3 && cp < 0x800) || (length == 4 && cp < 0x10000) ||
+            cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))
+            return {};
+        i += length;
+        // Validate the entire input even after a hit: invalid suffix bytes
+        // must not become repetition evidence through UTF-8 replacement.
+        if (hit.period) continue;
+        for (size_t period = 2; period <= max_period && period <= count; ++period) {
+            equal_run[period] = cp == previous[(count - period) % max_period] ? equal_run[period] + 1 : 0;
+            const size_t repeats = period <= 5 ? 16 : 8;
+            if (equal_run[period] >= period * (repeats - 1)) {
+                hit = { period, repeats };
+                break;
+            }
+        }
+        previous[count % max_period] = cp;
+        ++count;
+    }
+    return hit;
+}
+
+size_t annotate_repetitions(block & value, bool enabled, int depth = 0) {
+    if (depth > recursion_limit) throw std::length_error("Document structure exceeds the nesting limit.");
+    // Reprocessing an in-memory document must not retain stale diagnostics
+    // when its text/type changes or the caller disables the check.
+    value.warnings.erase(std::remove_if(value.warnings.begin(), value.warnings.end(),
+                                        [](const std::string & message) {
+                                            return starts(message, "Possible repetitive n-gram output (");
+                                        }),
+                         value.warnings.end());
+    // Repeated cells, source code, formula notation and image markup are
+    // legitimate; skip their entire subtrees rather than flagging text cells.
+    if (value.type == "Table" || value.type == "Code" || value.type == "Equation" || value.type == "ChemicalBlock" ||
+        value.type == "Picture" || value.type == "Figure" || value.type == "Diagram")
+        enabled = false;
+    size_t flagged = 0;
+    const bool prose = value.type == "Text" || value.type == "SectionHeader" || value.type == "Caption" ||
+                       value.type == "Footnote" || value.type == "ListItem" || value.type == "PageHeader" ||
+                       value.type == "PageFooter";
+    // List groups must be split before checking their items. Other containers
+    // may duplicate child text; a ListItem's own text remains distinct from
+    // any nested list and is therefore checked even when it has children.
+    if (enabled && prose && (value.children.empty() || value.type == "ListItem")) {
+        const auto hit = repetitive_ngram(value.text);
+        if (hit.period) {
+            const std::string message = "Possible repetitive n-gram output (" + std::to_string(hit.period) +
+                                        " Unicode characters repeated at least " + std::to_string(hit.repeats) +
+                                        " times); original text retained.";
+            warn(value.warnings, message);
+            flagged = 1;
+        }
+    }
+    for (auto & child : value.children) flagged += annotate_repetitions(child, enabled, depth + 1);
+    return flagged;
+}
+
 void normalize_block(block & value, double width, double height, int depth = 0) {
     if (depth > recursion_limit) throw std::length_error("Document structure exceeds the nesting limit.");
     if (value.text.size() > text_limit || value.raw.size() > text_limit || value.html.size() > text_limit)
@@ -1333,6 +1423,451 @@ void mark_continuations(document & value) {
     }
 }
 
+// These source-link, whitespace and reference rules are independently authored.
+// They do not use PDF Craft's MinerU-derived paragraph-merging implementation.
+constexpr size_t source_record_limit = 100000;
+constexpr size_t source_byte_limit = 64 * 1024 * 1024;
+constexpr size_t source_range_limit = 16384;
+constexpr size_t document_range_limit = 262144;
+constexpr size_t reference_limit = 4096;
+
+bool prose_type(const std::string & type) {
+    return type == "Text" || type == "SectionHeader" || type == "Caption" || type == "Footnote" || type == "ListItem" ||
+           type == "PageHeader" || type == "PageFooter";
+}
+bool protected_text_type(const std::string & type) {
+    return type == "Code" || type == "Equation" || type == "ChemicalBlock" || type == "Table" || image_type(type);
+}
+bool scalar_at(const std::string & text, size_t pos, uint32_t & cp, size_t & length) {
+    if (pos >= text.size()) return false;
+    const unsigned char first = static_cast<unsigned char>(text[pos]);
+    length = first < 0x80                     ? 1
+             : first >= 0xC2 && first <= 0xDF ? 2
+             : first >= 0xE0 && first <= 0xEF ? 3
+             : first >= 0xF0 && first <= 0xF4 ? 4
+                                              : 0;
+    if (!length || length > text.size() - pos) return false;
+    cp = length == 1 ? first : length == 2 ? first & 0x1F : length == 3 ? first & 0x0F : first & 7;
+    for (size_t i = 1; i < length; ++i) {
+        const unsigned char next = static_cast<unsigned char>(text[pos + i]);
+        if ((next & 0xC0) != 0x80) return false;
+        cp = (cp << 6) | (next & 0x3F);
+    }
+    return !(length == 2 && cp < 0x80) && !(length == 3 && cp < 0x800) && !(length == 4 && cp < 0x10000) &&
+           cp <= 0x10FFFF && !(cp >= 0xD800 && cp <= 0xDFFF);
+}
+bool ascii_whitespace(unsigned char c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+}
+bool cjk_join_character(uint32_t cp) {
+    // Hangul, Thai and other scripts with meaningful word spaces are excluded.
+    return (cp >= 0x3400 && cp <= 0x4DBF) || (cp >= 0x4E00 && cp <= 0x9FFF) || (cp >= 0x20000 && cp <= 0x3134F) ||
+           (cp >= 0x3041 && cp <= 0x3096) || (cp >= 0x30A1 && cp <= 0x30FA);
+}
+uint32_t first_scalar(const std::string & text) {
+    uint32_t cp = 0;
+    size_t length = 0;
+    scalar_at(text, 0, cp, length);
+    return cp;
+}
+uint32_t last_scalar(const std::string & text) {
+    if (text.empty()) return 0;
+    size_t pos = text.size() - 1;
+    while (pos && (static_cast<unsigned char>(text[pos]) & 0xC0) == 0x80) --pos;
+    uint32_t cp = 0;
+    size_t length = 0;
+    return scalar_at(text, pos, cp, length) && pos + length == text.size() ? cp : 0;
+}
+
+using source_index = std::map<std::string, size_t>;
+bool source_ranges_match(const block & b, const document & d, const source_index & index) {
+    if (b.source_ranges.empty()) return b.text.empty();
+    if (b.source_ranges.size() > source_range_limit) return false;
+    size_t covered = 0;
+    for (const auto & range : b.source_ranges) {
+        const auto found = index.find(range.source_id);
+        if (found == index.end() || range.text_start != covered || range.text_end < range.text_start ||
+            range.text_end > b.text.size())
+            return false;
+        const auto & original = d.sources[found->second].text;
+        if (range.source_end < range.source_start || range.source_end > original.size()) return false;
+        if (range.transform == "copy") {
+            if (range.source_end - range.source_start != range.text_end - range.text_start ||
+                b.text.compare(range.text_start, range.text_end - range.text_start, original, range.source_start,
+                               range.source_end - range.source_start) != 0)
+                return false;
+        } else if (range.transform == "whitespace") {
+            if (range.text_end - range.text_start > 1 ||
+                (range.text_end > range.text_start && b.text[range.text_start] != ' '))
+                return false;
+            for (size_t i = range.source_start; i < range.source_end; ++i)
+                if (!ascii_whitespace(static_cast<unsigned char>(original[i]))) return false;
+        } else
+            return false;
+        covered = range.text_end;
+    }
+    return covered == b.text.size();
+}
+
+source_index capture_sources(document & d) {
+    source_index index;
+    std::set<int> pages;
+    for (const auto & p : d.pages) pages.insert(p.index);
+    size_t bytes = 0;
+    for (size_t i = 0; i < d.sources.size(); ++i) {
+        const auto & source = d.sources[i];
+        if (source.id.empty() || !index.emplace(source.id, i).second)
+            throw std::invalid_argument("Source records require unique nonempty IDs.");
+        if (!pages.count(source.page_index))
+            throw std::invalid_argument("Source record names a missing physical page.");
+        if (source.text.size() > text_limit ||
+            source.text.size() > source_byte_limit - std::min(bytes, source_byte_limit))
+            throw std::length_error("Document source text exceeds the 64 MiB limit.");
+        bytes += source.text.size();
+    }
+    if (d.sources.size() > source_record_limit) throw std::length_error("Document exceeds the source-record limit.");
+    for (auto & p : d.pages) {
+        walk_blocks(p.blocks, [&](block & b) {
+            if (b.text.empty() || (!b.children.empty() && b.type != "ListItem")) {
+                b.source_ranges.clear();
+                return;
+            }
+            if (source_ranges_match(b, d, index)) return;
+            if (d.sources.size() >= source_record_limit ||
+                b.text.size() > source_byte_limit - std::min(bytes, source_byte_limit))
+                throw std::length_error("Document source records exceed their count/64 MiB limit.");
+            source_record source;
+            source.id = "/page/" + std::to_string(p.index) + "/source/" + std::to_string(d.sources.size());
+            while (index.count(source.id)) source.id += "_";
+            source.text = b.text;
+            source.source = b.source;
+            source.page_index = p.index;
+            source.bbox = b.bbox;
+            source.polygon = b.polygon;
+            index[source.id] = d.sources.size();
+            b.source_ranges = { { source.id, 0, b.text.size(), 0, b.text.size(), "copy" } };
+            bytes += source.text.size();
+            d.sources.push_back(std::move(source));
+        });
+    }
+    d.metadata["source_links"] = "block-bytes-v1";
+    d.metadata["source_text_stage"] = "baseline-structure-before-optional-normalization";
+    d.metadata["source_range_units"] = "utf8-bytes";
+    return index;
+}
+
+bool normalize_prose_whitespace(block & b, size_t & range_budget) {
+    if (b.text.empty() || b.text.find_first_of("`$") != std::string::npos || b.text.find("\\(") != std::string::npos ||
+        b.text.find("\\[") != std::string::npos || valid_utf8(b.text) != b.text)
+        return false;
+    std::string out;
+    out.reserve(b.text.size());
+    std::vector<source_range> ranges;
+    const auto diagnose = [&](const char * message) {
+        if (std::find(b.warnings.begin(), b.warnings.end(), message) == b.warnings.end()) warn(b.warnings, message);
+    };
+    const size_t range_limit = std::min(source_range_limit, b.source_ranges.size() + range_budget);
+    const std::string source_id = b.source_ranges.empty() ? "" : b.source_ranges.front().source_id;
+    size_t copy_start = 0, i = 0;
+    uint32_t previous = 0;
+    auto copy = [&](size_t end) {
+        if (end == copy_start) return;
+        const size_t start = out.size();
+        out.append(b.text, copy_start, end - copy_start);
+        ranges.push_back({ source_id, copy_start, end, start, out.size(), "copy" });
+    };
+    while (i < b.text.size()) {
+        if (ascii_whitespace(static_cast<unsigned char>(b.text[i]))) {
+            copy(i);
+            const size_t start = i;
+            bool newline = false;
+            while (i < b.text.size() && ascii_whitespace(static_cast<unsigned char>(b.text[i]))) {
+                newline = newline || b.text[i] == '\n' || b.text[i] == '\r';
+                ++i;
+            }
+            uint32_t next = 0;
+            size_t length = 0;
+            if (i < b.text.size()) scalar_at(b.text, i, next, length);
+            const size_t output_start = out.size();
+            if (!(newline && cjk_join_character(previous) && cjk_join_character(next))) out += ' ';
+            ranges.push_back({ source_id, start, i, output_start, out.size(),
+                               i == start + 1 && b.text[start] == ' ' ? "copy" : "whitespace" });
+            copy_start = i;
+        } else {
+            size_t length = 0;
+            if (!scalar_at(b.text, i, previous, length)) return false;
+            i += length;
+        }
+        if (ranges.size() >= range_limit) {
+            diagnose("Multilingual normalization skipped: source-range limit exceeded.");
+            return false;
+        }
+    }
+    copy(b.text.size());
+    if (out == b.text) return false;
+    if (ranges.size() > range_limit) {
+        diagnose("Multilingual normalization skipped: source-range limit exceeded.");
+        return false;
+    }
+    // Repeated processing is idempotent. A preexisting nonidentity map cannot
+    // be overwritten with offsets against a different source string.
+    if (b.source_ranges.size() != 1 || b.source_ranges.front().transform != "copy" ||
+        b.source_ranges.front().source_start != 0 || b.source_ranges.front().source_end != b.text.size()) {
+        diagnose("Multilingual normalization skipped: existing source ranges require composition.");
+        return false;
+    }
+    range_budget += b.source_ranges.size();
+    range_budget -= ranges.size();
+    b.text = std::move(out);
+    b.source_ranges = std::move(ranges);
+    return true;
+}
+size_t normalize_multilingual(block & b, size_t & range_budget, bool enabled = true, int depth = 0) {
+    if (depth > recursion_limit) throw std::length_error("Document structure exceeds the nesting limit.");
+    enabled = enabled && !protected_text_type(b.type);
+    if (enabled && prose_type(b.type) && (b.children.empty() || b.type == "ListItem"))
+        normalize_prose_whitespace(b, range_budget);
+    size_t normalized = 0;
+    if (enabled && std::any_of(b.source_ranges.begin(), b.source_ranges.end(),
+                               [](const source_range & range) { return range.transform == "whitespace"; }))
+        normalized = 1;
+    for (auto & child : b.children) normalized += normalize_multilingual(child, range_budget, enabled, depth + 1);
+    return normalized;
+}
+
+void link_continuations(document & d) {
+    struct located {
+        block * value;
+        page * owner;
+    };
+    std::vector<located> flow;
+    for (auto & p : d.pages) {
+        walk_blocks(p.blocks, [](block & b) {
+            b.continuation_target.clear();
+            b.attributes.erase("continuation.status");
+            b.attributes.erase("continuation.candidate");
+        });
+        for (auto & b : p.blocks)
+            if (!b.ignored && b.type != "Footnote" && b.type != "PageHeader" && b.type != "PageFooter")
+                flow.push_back({ &b, &p });
+    }
+    for (size_t i = 1; i < flow.size(); ++i) {
+        auto & a = *flow[i - 1].value;
+        auto & b = *flow[i].value;
+        const auto & pa = *flow[i - 1].owner;
+        const auto & pb = *flow[i].owner;
+        if (a.type != "Text" || b.type != "Text" || a.text.empty() || b.text.empty()) continue;
+        const bool next_page = pb.index == pa.index + 1 && b.bbox.y0 < pb.height * 0.5 && a.bbox.y1 > pa.height * 0.65;
+        const bool next_column =
+            pb.index == pa.index && b.bbox.x0 > a.bbox.x1 + pa.width * 0.02 && b.bbox.y0 <= a.bbox.y0 + 1;
+        if (!next_page && !next_column) continue;
+        a.attributes["continuation.candidate"] = b.id;
+        a.attributes["continuation.status"] = "unresolved";
+        if (a.token_cap_reached || b.token_cap_reached || valid_utf8(a.text) != a.text || valid_utf8(b.text) != b.text)
+            continue;
+        const std::string left = trim(a.text), right = trim(b.text);
+        const uint32_t tail = last_scalar(left), head = first_scalar(right);
+        const bool stop = tail == '.' || tail == '!' || tail == '?' || tail == ':' || tail == ';' || tail == 0x3002 ||
+                          tail == 0xFF01 || tail == 0xFF1F || tail == 0xFF1A || tail == 0xFF1B;
+        bool geometry = false;
+        if (a.lines.size() >= 2 && !b.lines.empty()) {
+            const bool full = a.lines.back().bbox.x1 >= a.bbox.x1 - block_font(a) * 0.75;
+            double leftmost = b.lines.front().bbox.x0;
+            for (const auto & row : b.lines) leftmost = std::min(leftmost, row.bbox.x0);
+            geometry = full && b.lines.front().bbox.x0 <= leftmost + block_font(b) * 0.5;
+        }
+        const bool hyphen = hyphenated(left) && ascii_lower_start(right);
+        const bool language = ascii_lower_start(right) || (cjk_join_character(tail) && cjk_join_character(head));
+        if (!stop && (hyphen || (geometry && language))) {
+            a.continuation_target = b.id;
+            a.attributes["continuation.status"] = "resolved";
+        }
+    }
+    d.metadata["continuation_linker"] = "conservative-geometry-v1";
+}
+
+bool note_label(const std::string & label) {
+    if (label.empty() || label.size() > 12) return false;
+    if (label == "*" || label == "**" || label == "***" || label == "†" || label == "‡") return true;
+    return label.size() <= 4 &&
+           std::all_of(label.begin(), label.end(), [](unsigned char c) { return c >= '0' && c <= '9'; });
+}
+std::string definition_label(const std::string & input) {
+    const std::string text = trim(input);
+    if (text.empty()) return {};
+    if (text.front() == '[') {
+        const size_t end = text.find(']');
+        const size_t start = text.size() > 1 && text[1] == '^' ? 2 : 1;
+        if (end != std::string::npos && end > start && end <= 14 && note_label(text.substr(start, end - start)))
+            return text.substr(start, end - start);
+    }
+    size_t end = 0;
+    while (end < text.size() && !space(static_cast<unsigned char>(text[end])) && end < 14) ++end;
+    std::string label = text.substr(0, end);
+    if (!label.empty() && (label.back() == '.' || label.back() == ')')) label.pop_back();
+    return note_label(label) ? label : std::string();
+}
+bool printed_page_label(const std::string & label) {
+    if (label.empty() || label.size() > 12) return false;
+    const bool decimal = std::all_of(label.begin(), label.end(), [](unsigned char c) { return c >= '0' && c <= '9'; });
+    const bool roman = std::all_of(label.begin(), label.end(), [](unsigned char c) {
+        return c == 'i' || c == 'v' || c == 'x' || c == 'l' || c == 'c' || c == 'd' || c == 'm' || c == 'I' ||
+               c == 'V' || c == 'X' || c == 'L' || c == 'C' || c == 'D' || c == 'M';
+    });
+    if (decimal) return true;
+    if (!roman) return false;
+    std::string upper = label;
+    for (char & c : upper)
+        if (c >= 'a' && c <= 'z') c -= 'a' - 'A';
+    const auto digit = [](char c) {
+        return c == 'I' ? 1 : c == 'V' ? 5 : c == 'X' ? 10 : c == 'L' ? 50 : c == 'C' ? 100 : c == 'D' ? 500 : 1000;
+    };
+    int number = 0;
+    for (size_t i = 0; i < upper.size(); ++i) {
+        const int value = digit(upper[i]);
+        number += i + 1 < upper.size() && value < digit(upper[i + 1]) ? -value : value;
+    }
+    if (number < 1 || number > 3999) return false;
+    std::string canonical;
+    for (const auto & token : std::vector<std::pair<int, const char *>>{ { 1000, "M" },
+                                                                         { 900, "CM" },
+                                                                         { 500, "D" },
+                                                                         { 400, "CD" },
+                                                                         { 100, "C" },
+                                                                         { 90, "XC" },
+                                                                         { 50, "L" },
+                                                                         { 40, "XL" },
+                                                                         { 10, "X" },
+                                                                         { 9, "IX" },
+                                                                         { 5, "V" },
+                                                                         { 4, "IV" },
+                                                                         { 1, "I" } })
+        while (number >= token.first) {
+            canonical += token.second;
+            number -= token.first;
+        }
+    return canonical == upper;
+}
+void link_references(document & d) {
+    using label_key = std::pair<int, std::string>;
+    std::map<label_key, std::vector<std::string>> local;
+    std::map<std::string, std::vector<std::string>> global;
+    for (auto & p : d.pages) {
+        walk_blocks(p.blocks, [&](block & b) {
+            b.footnote_id.clear();
+            b.references.clear();
+            b.attributes.erase("footnote.label");
+            b.attributes.erase("footnote.status");
+            if (b.type != "Footnote") return;
+            b.footnote_id = b.id + "/note";
+            const std::string label = definition_label(b.text);
+            b.attributes["footnote.status"] = label.empty() ? "unlabeled" : "defined";
+            if (!label.empty()) {
+                b.attributes["footnote.label"] = label;
+                local[{ p.index, label }].push_back(b.footnote_id);
+                global[label].push_back(b.footnote_id);
+            }
+        });
+        std::set<std::string> labels;
+        for (const auto & b : p.blocks) {
+            const std::string text = trim(b.text);
+            if (b.type == "PageFooter" && printed_page_label(text)) labels.insert(text);
+        }
+        p.label_candidates.assign(labels.begin(), labels.end());
+        if (p.label_source == "pdfium-page-label" && p.label_status == "resolved") {
+            p.label_status = "resolved";
+        } else {
+            p.printed_label.clear();
+            p.label_source = labels.empty() ? "none" : "page-footer";
+            p.label_status = labels.size() == 1 ? "resolved" : labels.empty() ? "unavailable" : "ambiguous";
+            if (labels.size() == 1) p.printed_label = *labels.begin();
+        }
+    }
+    size_t total = 0, resolved = 0;
+    for (auto & p : d.pages) {
+        std::function<void(block &, bool, int)> visit = [&](block & b, bool enabled, int depth) {
+            if (depth > recursion_limit) throw std::length_error("Document structure exceeds the nesting limit.");
+            enabled = enabled && !protected_text_type(b.type);
+            if (enabled && prose_type(b.type) && b.type != "Footnote" && (b.children.empty() || b.type == "ListItem")) {
+                for (size_t pos = 0;
+                     pos < b.text.size() && b.references.size() < reference_limit && total < source_record_limit;
+                     ++pos) {
+                    if (b.text[pos] != '[' || (pos && b.text[pos - 1] == '\\')) continue;
+                    const size_t begin = pos + 1 + (pos + 1 < b.text.size() && b.text[pos + 1] == '^' ? 1 : 0);
+                    size_t end = begin;
+                    while (end < b.text.size() && end - begin <= 12 && b.text[end] != ']') ++end;
+                    if (end == b.text.size() || end - begin > 12 || b.text[end] != ']' ||
+                        (end + 1 < b.text.size() && b.text[end + 1] == '('))
+                        continue;
+                    const std::string label = b.text.substr(begin, end - begin);
+                    if (!note_label(label)) continue;
+                    footnote_reference reference;
+                    reference.start = pos;
+                    reference.end = end + 1;
+                    reference.label = label;
+                    const auto here = local.find({ p.index, label });
+                    if (here != local.end()) {
+                        reference.candidates.assign(here->second.begin(),
+                                                    here->second.begin() + static_cast<std::ptrdiff_t>(std::min<size_t>(
+                                                                               64, here->second.size())));
+                        reference.status = here->second.size() == 1 ? "resolved" : "ambiguous";
+                        if (here->second.size() == 1) {
+                            reference.target_id = here->second.front();
+                            ++resolved;
+                        }
+                    } else {
+                        reference.status = "unresolved";
+                        const auto elsewhere = global.find(label);
+                        if (elsewhere != global.end())
+                            reference.candidates.assign(
+                                elsewhere->second.begin(),
+                                elsewhere->second.begin() +
+                                    static_cast<std::ptrdiff_t>(std::min<size_t>(64, elsewhere->second.size())));
+                    }
+                    if (reference.candidates.size() > 64) reference.candidates.resize(64);
+                    b.references.push_back(std::move(reference));
+                    ++total;
+                    pos = end;
+                }
+                if (b.references.size() == reference_limit)
+                    warn(b.warnings, "Footnote references limited to 4096 per block; remaining text is unchanged.");
+            }
+            for (auto & child : b.children) visit(child, enabled, depth + 1);
+        };
+        for (auto & b : p.blocks) visit(b, true, 0);
+    }
+    d.metadata["footnote_linker"] = "explicit-bracket-same-page-v1";
+    d.metadata["footnote_references"] = std::to_string(total);
+    d.metadata["resolved_footnote_references"] = std::to_string(resolved);
+    if (total == source_record_limit)
+        warn(d.warnings, "Footnote references limited to 100000 per document; remaining text is unchanged.");
+}
+
+void process_source_features(document & d) {
+    const bool source_links = core_env::on("CRISPEMBED_MARKER_SOURCE_LINKS");
+    const bool multilingual = core_env::on("CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE");
+    const bool references = core_env::on("CRISPEMBED_MARKER_REFERENCES");
+    if (!source_links && !multilingual && !references) return;
+    capture_sources(d);
+    size_t range_count = 0;
+    for (auto & p : d.pages)
+        walk_blocks(p.blocks, [&](block & b) {
+            if (b.source_ranges.size() > document_range_limit - std::min(range_count, document_range_limit))
+                throw std::length_error("Document exceeds the 262144 source-range limit.");
+            range_count += b.source_ranges.size();
+        });
+    if (multilingual) {
+        size_t normalized = 0;
+        size_t range_budget = document_range_limit - range_count;
+        for (auto & p : d.pages)
+            for (auto & b : p.blocks) normalized += normalize_multilingual(b, range_budget);
+        d.metadata["multilingual_normalization"] = "ascii-whitespace-cjk-linebreak-v1";
+        d.metadata["normalized_blocks"] = std::to_string(normalized);
+    }
+    if (source_links) link_continuations(d);
+    if (references) link_references(d);
+}
+
 } // namespace
 
 void build_text_blocks(page & value) {
@@ -1471,6 +2006,10 @@ void process_document(document & value, const options & opts) {
     value.metadata["surya_parity"] = "not claimed; alternative TeleOCR and deterministic processing";
     value.metadata["headers"] =
         opts.include_page_headers ? "included" : "suppressed in rendered text; retained in JSON";
+    const bool repetition_check = core_env::on("CRISPEMBED_MARKER_REPETITION_CHECK");
+    const bool had_repetition_check = value.metadata.erase("repetition_check") > 0;
+    const bool had_repetition_count = value.metadata.erase("repetitive_blocks") > 0;
+    size_t repetitive_blocks = 0;
     for (auto & p : value.pages) {
         if (!std::isfinite(p.width) || !std::isfinite(p.height) || p.width <= 0 || p.height <= 0)
             throw std::invalid_argument("Document page dimensions must be finite and positive.");
@@ -1484,7 +2023,13 @@ void process_document(document & value, const options & opts) {
         }
         for (auto & item : p.blocks) normalize_block(item, p.width, p.height);
         group_lists(p);
+        if (repetition_check || had_repetition_check || had_repetition_count)
+            for (auto & item : p.blocks) repetitive_blocks += annotate_repetitions(item, repetition_check);
         group_captions(p);
+    }
+    if (repetition_check) {
+        value.metadata["repetition_check"] = "unicode-tandem-v1";
+        value.metadata["repetitive_blocks"] = std::to_string(repetitive_blocks);
     }
     running_margins(value, opts);
     for (auto & p : value.pages) {
@@ -1496,6 +2041,7 @@ void process_document(document & value, const options & opts) {
     }
     section_hierarchy(value);
     mark_continuations(value);
+    process_source_features(value);
 }
 
 namespace {
@@ -1738,6 +2284,159 @@ std::string strings_json(const std::map<std::string, std::string> & value) {
     }
     return out + "}";
 }
+
+std::string source_ranges_json(const std::vector<source_range> & ranges) {
+    std::string out = "[";
+    for (size_t i = 0; i < ranges.size(); ++i) {
+        if (i) out += ',';
+        const auto & r = ranges[i];
+        out += "{\"source_id\":" + (r.source_id.empty() ? "null" : quote(r.source_id)) +
+               ",\"source_start\":" + std::to_string(r.source_start) +
+               ",\"source_end\":" + std::to_string(r.source_end) + ",\"text_start\":" + std::to_string(r.text_start) +
+               ",\"text_end\":" + std::to_string(r.text_end) + ",\"transform\":" + quote(r.transform) + "}";
+    }
+    return out + "]";
+}
+std::string references_json(const std::vector<footnote_reference> & references) {
+    std::string out = "[";
+    for (size_t i = 0; i < references.size(); ++i) {
+        if (i) out += ',';
+        const auto & r = references[i];
+        out += "{\"start\":" + std::to_string(r.start) + ",\"end\":" + std::to_string(r.end) +
+               ",\"label\":" + quote(r.label) + ",\"status\":" + quote(r.status) +
+               ",\"target_id\":" + (r.target_id.empty() ? "null" : quote(r.target_id)) +
+               ",\"candidates\":" + warnings_json(r.candidates) + "}";
+    }
+    return out + "]";
+}
+std::string page_labels_json(const page & p) {
+    if (p.label_status.empty()) return {};
+    return ",\"physical_page_index\":" + std::to_string(p.index) + ",\"printed_page_label\":" +
+           (p.printed_label.empty() && p.label_status != "resolved" ? "null" : quote(p.printed_label)) +
+           ",\"page_label_source\":" + quote(p.label_source) + ",\"page_label_status\":" + quote(p.label_status) +
+           ",\"page_label_candidates\":" + warnings_json(p.label_candidates);
+}
+std::string sources_json(const document & d) {
+    std::string out = "[";
+    for (size_t i = 0; i < d.sources.size(); ++i) {
+        if (i) out += ',';
+        const auto & s = d.sources[i];
+        out += "{\"id\":" + quote(s.id) + ",\"text\":" + quote(s.text) + ",\"page\":" + std::to_string(s.page_index) +
+               ",\"source\":" + quote(s.source) + ",\"bbox\":" + box_json(s.bbox) +
+               ",\"polygon\":" + polygon_json(s.polygon) + malformed_bytes_field("text", s.text) + "}";
+    }
+    return out + "]";
+}
+
+struct linked_chunk {
+    std::string text, type, status = "complete";
+    std::vector<std::string> block_ids;
+    std::set<int> pages;
+    std::vector<source_range> ranges;
+    std::vector<footnote_reference> references;
+};
+bool remove_join_hyphen(linked_chunk & chunk) {
+    const size_t size = chunk.text.size();
+    if (!size || chunk.text.back() != '-') return false;
+    for (size_t i = chunk.ranges.size(); i-- > 0;) {
+        auto & r = chunk.ranges[i];
+        if (r.text_end != size || r.text_start == r.text_end) continue;
+        if (r.transform != "copy" || r.source_end - r.source_start != r.text_end - r.text_start) return false;
+        source_range removed{ r.source_id, r.source_end - 1, r.source_end, size - 1, size - 1, "dehyphenation" };
+        --r.source_end;
+        --r.text_end;
+        // A reopened artifact may already have removed trailing whitespace.
+        // Keep its zero-output evidence anchored after the deleted hyphen.
+        for (size_t j = i + 1; j < chunk.ranges.size(); ++j) {
+            auto & trailing = chunk.ranges[j];
+            if (trailing.text_start == size && trailing.text_end == size)
+                trailing.text_start = trailing.text_end = size - 1;
+        }
+        chunk.ranges.insert(chunk.ranges.begin() + static_cast<std::ptrdiff_t>(i + 1), std::move(removed));
+        chunk.text.pop_back();
+        return true;
+    }
+    return false;
+}
+std::string assembled_chunks_json(const document & d) {
+    struct located {
+        const block * value;
+        int page;
+    };
+    std::vector<located> order;
+    std::function<void(const block &, int, int)> visit = [&](const block & b, int page_index, int depth) {
+        if (depth > recursion_limit) throw std::length_error("Renderer nesting limit exceeded.");
+        if (b.ignored) return;
+        if (!b.text.empty() && (b.children.empty() || b.type == "ListItem" || protected_text_type(b.type)))
+            order.push_back({ &b, page_index });
+        if (!protected_text_type(b.type))
+            for (const auto & child : b.children) visit(child, page_index, depth + 1);
+    };
+    for (const auto & p : d.pages)
+        for (const auto & b : p.blocks) visit(b, p.index, 0);
+    std::map<std::string, size_t> by_id;
+    for (size_t i = 0; i < order.size(); ++i)
+        if (!by_id.emplace(order[i].value->id, i).second)
+            throw std::invalid_argument("Duplicate source-linked block ID.");
+    std::set<size_t> consumed;
+    std::string out = "[";
+    size_t chunk_count = 0;
+    for (size_t start = 0; start < order.size(); ++start) {
+        if (consumed.count(start)) continue;
+        linked_chunk chunk;
+        size_t current = start;
+        for (;;) {
+            const auto & b = *order[current].value;
+            const size_t offset = chunk.text.size();
+            chunk.text += b.text;
+            chunk.block_ids.push_back(b.id);
+            chunk.pages.insert(order[current].page);
+            chunk.type = chunk.block_ids.size() == 1 ? b.type : "Text";
+            for (auto range : b.source_ranges) {
+                range.text_start += offset;
+                range.text_end += offset;
+                chunk.ranges.push_back(std::move(range));
+            }
+            for (auto reference : b.references) {
+                reference.start += offset;
+                reference.end += offset;
+                chunk.references.push_back(std::move(reference));
+            }
+            consumed.insert(current);
+            if (b.continuation_target.empty()) break;
+            const auto target = by_id.find(b.continuation_target);
+            if (target == by_id.end() || target->second <= current || consumed.count(target->second) ||
+                b.type != "Text" || order[target->second].value->type != "Text") {
+                chunk.status = "unresolved-continuation";
+                break;
+            }
+            const auto & next = *order[target->second].value;
+            if (next.text.size() >= text_limit - std::min(chunk.text.size(), text_limit) ||
+                next.source_ranges.size() + chunk.ranges.size() + 2 > source_range_limit) {
+                chunk.status = "assembly-limit";
+                break;
+            }
+            const bool dehyphenated = hyphenated(b.text) && ascii_lower_start(next.text) && remove_join_hyphen(chunk);
+            const bool cjk = cjk_join_character(last_scalar(chunk.text)) && cjk_join_character(first_scalar(next.text));
+            if (!dehyphenated && !cjk) {
+                const size_t at = chunk.text.size();
+                chunk.text += ' ';
+                chunk.ranges.push_back({ "", 0, 0, at, at + 1, "inserted" });
+            }
+            current = target->second;
+        }
+        if (chunk_count) out += ',';
+        std::string pages = "[";
+        for (int p : chunk.pages) pages += (pages.size() > 1 ? "," : "") + std::to_string(p);
+        out += "{\"id\":" + quote("/chunk/" + std::to_string(chunk_count++)) + ",\"block_type\":" + quote(chunk.type) +
+               ",\"text\":" + quote(chunk.text) + ",\"block_ids\":" + warnings_json(chunk.block_ids) +
+               ",\"pages\":" + pages + "],\"source_ranges\":" + source_ranges_json(chunk.ranges) +
+               ",\"references\":" + references_json(chunk.references) + ",\"assembly_status\":" + quote(chunk.status) +
+               malformed_bytes_field("text", chunk.text) + "}";
+    }
+    return out + "]";
+}
+
 std::string lines_json(const std::vector<line> & values) {
     std::string out = "[";
     for (size_t i = 0; i < values.size(); ++i) {
@@ -1778,6 +2477,14 @@ std::string block_json(const block & value, bool inline_children = false, int pa
         ",\"has_continuation\":" + (value.continuation ? "true" : "false") +
         ",\"warnings\":" + warnings_json(value.warnings) + ",\"lines\":" + lines_json(value.lines);
     out += malformed_bytes_field("raw", value.raw) + malformed_bytes_field("text", value.text);
+    if (!value.source_ranges.empty()) out += ",\"source_ranges\":" + source_ranges_json(value.source_ranges);
+    if (!value.continuation_target.empty()) out += ",\"continuation_target\":" + quote(value.continuation_target);
+    if (!value.footnote_id.empty()) out += ",\"footnote_id\":" + quote(value.footnote_id);
+    if (!value.references.empty()) out += ",\"references\":" + references_json(value.references);
+    std::map<std::string, std::string> links;
+    for (const auto & entry : value.attributes)
+        if (starts(entry.first, "continuation.") || starts(entry.first, "footnote.")) links.insert(entry);
+    if (!links.empty()) out += ",\"document_links\":" + strings_json(links);
     if (page_index >= 0) out += ",\"page\":" + std::to_string(page_index);
     out += ",\"children\":";
     if (value.children.empty())
@@ -1911,14 +2618,16 @@ std::string render_document(const document & value, const std::string & format) 
                    ",\"layout_generated_tokens\":" + std::to_string(std::max(0, p.layout_generated_tokens)) +
                    ",\"layout_token_cap_reached\":" + (p.layout_token_cap_reached ? "true" : "false") +
                    ",\"warnings\":" + warnings_json(p.warnings) + malformed_bytes_field("raw_layout", p.raw_layout) +
-                   ",\"children\":[";
+                   page_labels_json(p) + ",\"children\":[";
             for (size_t j = 0; j < p.blocks.size(); ++j) {
                 if (j) out += ',';
                 out += block_json(p.blocks[j]);
             }
             out += "]}";
         }
-        return out + "],\"metadata\":" + render_metadata(value) + "}\n";
+        out += "],\"metadata\":" + render_metadata(value);
+        if (!value.sources.empty()) out += ",\"source_records\":" + sources_json(value);
+        return out + "}\n";
     }
     if (format == "chunks") {
         std::string out = "{\"blocks\":[", pages = "{";
@@ -1937,9 +2646,13 @@ std::string render_document(const document & value, const std::string & format) 
                      ",\"raw_layout\":" + quote(p.raw_layout) +
                      ",\"layout_generated_tokens\":" + std::to_string(std::max(0, p.layout_generated_tokens)) +
                      ",\"layout_token_cap_reached\":" + (p.layout_token_cap_reached ? "true" : "false") +
-                     malformed_bytes_field("raw_layout", p.raw_layout) + "}";
+                     malformed_bytes_field("raw_layout", p.raw_layout) + page_labels_json(p) + "}";
         }
-        return out + "],\"page_info\":" + pages + "},\"metadata\":" + render_metadata(value) + "}\n";
+        out += "],\"page_info\":" + pages + "},\"metadata\":" + render_metadata(value);
+        if (!value.sources.empty())
+            out +=
+                ",\"source_records\":" + sources_json(value) + ",\"assembled_chunks\":" + assembled_chunks_json(value);
+        return out + "}\n";
     }
     throw std::invalid_argument("Unknown document format '" + format + "' (expected markdown, html, json, or chunks).");
 }

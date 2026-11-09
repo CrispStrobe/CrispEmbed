@@ -13,6 +13,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/controls.yml'
+      - 'models/convert-teleocr-to-gguf.py'
+      - 'tests/test_teleocr_converter.py'
       - '.github/workflows/heavy-cpu.yml'
       - 'tools/ci-heavy/extract_ocr_nov4_evidence.py'
       - 'tools/ci-heavy/extract_ocr_followup_evidence.py'
@@ -141,6 +143,8 @@ on:
   pull_request:
     paths:
       - '.github/workflows/controls.yml'
+      - 'models/convert-teleocr-to-gguf.py'
+      - 'tests/test_teleocr_converter.py'
       - '.github/workflows/heavy-cpu.yml'
       - 'tools/ci-heavy/extract_ocr_nov4_evidence.py'
       - 'tools/ci-heavy/extract_ocr_followup_evidence.py'
@@ -335,6 +339,12 @@ jobs:
       - name: Install small numerical-control dependency
         if: ${{ !cancelled() }}
         run: python -m pip install numpy==2.3.5
+
+      - name: TeleOCR synthetic GGUF conversion and inherited license metadata
+        if: ${{ !cancelled() }}
+        run: |
+          python -m pip install gguf==0.19.0
+          python -m unittest discover -s tests -p test_teleocr_converter.py -v
 
       - name: OvisOCR3 separate document task and preserved plain OCR failure
         if: ${{ !cancelled() }}

@@ -153,6 +153,7 @@ class CrispMarker:
                  include_page_headers=False, extract_images=True, password="", lib_path=None):
         self._ctx = None
         self._lock = threading.RLock()
+        self._cancel_lock = threading.Lock()
         if mode not in ("auto", "text", "ocr"):
             raise ValueError("mode must be auto, text or ocr")
         lib = self._lib = _load_library(lib_path)
@@ -210,6 +211,71 @@ class CrispMarker:
     def _require_open(self):
         if not self._ctx:
             raise RuntimeError("Marker context is closed")
+
+    def _extension(self, name, args, result):
+        """Resolve additive APIs lazily so older native libraries still convert."""
+        try:
+            fn = getattr(self._lib, "crispembed_marker_" + name)
+        except AttributeError as exc:
+            raise RuntimeError("Native library does not provide Marker extraction artifacts/lifecycle") from exc
+        fn.argtypes, fn.restype = args, result
+        return fn
+
+    def save_extraction(self, path):
+        """Atomically save the current extracted view, assets and provenance."""
+        with self._lock:
+            self._require_open()
+            fn = self._extension("save_extraction", [ctypes.c_void_p, ctypes.c_char_p], ctypes.c_int)
+            if not fn(self._ctx, _encode(path, "path")):
+                raise RuntimeError(self._error())
+
+    def open_extraction(self, path, output_format="markdown"):
+        """Open a bounded extraction artifact without OCR; use mode='text'."""
+        with self._lock:
+            self._require_open()
+            fn = self._extension("open_extraction", [ctypes.c_void_p, ctypes.c_char_p], ctypes.c_int)
+            if not fn(self._ctx, _encode(path, "path")):
+                raise RuntimeError(self._error())
+            return self.render(output_format)
+
+    def start(self, path, checkpoint_path, *, resume=False):
+        """Start/resume extraction; step() durably commits bounded page batches."""
+        if not isinstance(resume, bool):
+            raise ValueError("resume must be bool")
+        with self._lock:
+            self._require_open()
+            fn = self._extension("start", [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int], ctypes.c_int)
+            if not fn(self._ctx, _encode(path, "path"), _encode(checkpoint_path, "checkpoint_path"), int(resume)):
+                raise RuntimeError(self._error())
+            return self.progress
+
+    def step(self, page_budget=1):
+        """Return progress after at most 1..64 pages; failures retain the checkpoint."""
+        if isinstance(page_budget, bool) or not isinstance(page_budget, int) or not 1 <= page_budget <= 64:
+            raise ValueError("page_budget must be an integer from 1 through 64")
+        with self._lock:
+            self._require_open()
+            fn = self._extension("step", [ctypes.c_void_p, ctypes.c_int], ctypes.c_int)
+            if fn(self._ctx, page_budget) == 0:
+                raise RuntimeError(self._error())
+            return self.progress
+
+    def cancel(self):
+        """Request cancellation at a page boundary, including from another thread."""
+        with self._cancel_lock:
+            self._require_open()
+            fn = self._extension("cancel", [ctypes.c_void_p], None)
+            fn(self._ctx)
+
+    @property
+    def progress(self):
+        with self._lock:
+            self._require_open()
+            fn = self._extension("progress", [ctypes.c_void_p], ctypes.c_char_p)
+            value = fn(self._ctx)
+            if value is None:
+                raise RuntimeError(self._error())
+            return json.loads(value)
 
     def convert(self, path, output_format="markdown"):
         """Convert a PDF or image, returning the requested UTF-8 output string."""
@@ -285,9 +351,10 @@ class CrispMarker:
 
     def close(self):
         with self._lock:
-            if self._ctx:
-                self._lib.crispembed_marker_free(self._ctx)
-                self._ctx = None
+            with self._cancel_lock:
+                if self._ctx:
+                    self._lib.crispembed_marker_free(self._ctx)
+                    self._ctx = None
 
     def __enter__(self):
         self._require_open()

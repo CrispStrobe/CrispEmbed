@@ -255,7 +255,8 @@ jobs:
           mkdir -p pkg/include
           cp src/crispembed.h pkg/include/ 2>/dev/null || true
           cp ggml/include/*.h pkg/include/ 2>/dev/null || true
-          cp README.md LICENSE pkg/ 2>/dev/null || true
+          cp README.md LICENSE NOTICE.marker NOTICE.teleocr pkg/
+          cp models/licenses/apache-2.0/LICENSE pkg/Apache-2.0.txt
           cp NOTICE.sheenbidi pkg/
           cp vendor/sheenbidi/LICENSE pkg/SheenBidi-LICENSE.txt
           cp src/ocr_render.h pkg/include/
@@ -394,7 +395,8 @@ jobs:
           Get-ChildItem "ggml/include/*.h" -ErrorAction SilentlyContinue | ForEach-Object {
             Copy-Item $_.FullName pkg/include/
           }
-          Copy-Item README.md, LICENSE pkg/ -ErrorAction SilentlyContinue
+          Copy-Item README.md, LICENSE, NOTICE.marker, NOTICE.teleocr pkg/ -ErrorAction Stop
+          Copy-Item models/licenses/apache-2.0/LICENSE pkg/Apache-2.0.txt -ErrorAction Stop
           Copy-Item NOTICE.sheenbidi pkg/
           Copy-Item vendor/sheenbidi/LICENSE pkg/SheenBidi-LICENSE.txt
           New-Item -ItemType Directory -Force -Path pkg/include
@@ -524,7 +526,8 @@ jobs:
           mkdir -p pkg/include
           cp src/crispembed.h pkg/include/ 2>/dev/null || true
           cp ggml/include/*.h pkg/include/ 2>/dev/null || true
-          cp README.md LICENSE pkg/ 2>/dev/null || true
+          cp README.md LICENSE NOTICE.marker NOTICE.teleocr pkg/
+          cp models/licenses/apache-2.0/LICENSE pkg/Apache-2.0.txt
           cp NOTICE.sheenbidi pkg/
           cp vendor/sheenbidi/LICENSE pkg/SheenBidi-LICENSE.txt
           cp src/ocr_render.h pkg/include/
@@ -792,7 +795,8 @@ jobs:
           Get-ChildItem "ggml/include/*.h" | ForEach-Object {
               Copy-Item $_.FullName pkg/include/
           }
-          Copy-Item README.md, LICENSE pkg/ -ErrorAction SilentlyContinue
+          Copy-Item README.md, LICENSE, NOTICE.marker, NOTICE.teleocr pkg/ -ErrorAction Stop
+          Copy-Item models/licenses/apache-2.0/LICENSE pkg/Apache-2.0.txt -ErrorAction Stop
           Copy-Item NOTICE.sheenbidi pkg/
           Copy-Item vendor/sheenbidi/LICENSE pkg/SheenBidi-LICENSE.txt
           New-Item -ItemType Directory -Force -Path pkg/include
@@ -877,7 +881,8 @@ jobs:
           Get-ChildItem "ggml/include/*.h" | ForEach-Object {
               Copy-Item $_.FullName pkg/include/
           }
-          Copy-Item README.md, LICENSE pkg/ -ErrorAction SilentlyContinue
+          Copy-Item README.md, LICENSE, NOTICE.marker, NOTICE.teleocr pkg/ -ErrorAction Stop
+          Copy-Item models/licenses/apache-2.0/LICENSE pkg/Apache-2.0.txt -ErrorAction Stop
           Copy-Item NOTICE.sheenbidi pkg/
           Copy-Item vendor/sheenbidi/LICENSE pkg/SheenBidi-LICENSE.txt
           New-Item -ItemType Directory -Force -Path pkg/include
@@ -924,9 +929,12 @@ jobs:
           cmake --build build --target crispembed-shared -j4
       - name: Package
         run: |
-          cp NOTICE.sheenbidi build/
-          cp vendor/sheenbidi/LICENSE build/SheenBidi-LICENSE.txt
-          tar -czf crispembed-android-${{ matrix.abi }}.tar.gz -C build libcrispembed.so NOTICE.sheenbidi SheenBidi-LICENSE.txt
+          mkdir -p android-package
+          cp -L build/libcrispembed.so android-package/libcrispembed.so
+          cp LICENSE NOTICE.marker NOTICE.teleocr NOTICE.sheenbidi android-package/
+          cp vendor/sheenbidi/LICENSE android-package/SheenBidi-LICENSE.txt
+          cp models/licenses/apache-2.0/LICENSE android-package/Apache-2.0.txt
+          tar -czf crispembed-android-${{ matrix.abi }}.tar.gz -C android-package .
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
@@ -979,9 +987,10 @@ jobs:
           assert len(archives)==len(set(archives))
           subprocess.run(['xcrun','libtool','-static','-o','ios-package/libcrispembed-static.a',*map(str,archives)],check=True)
           PYCODE
-          cp NOTICE.sheenbidi ios-package/
+          cp LICENSE NOTICE.marker NOTICE.teleocr NOTICE.sheenbidi ios-package/
           cp vendor/sheenbidi/LICENSE ios-package/SheenBidi-LICENSE.txt
-          tar -czf crispembed-ios-arm64.tar.gz -C ios-package libcrispembed-static.a NOTICE.sheenbidi SheenBidi-LICENSE.txt
+          cp models/licenses/apache-2.0/LICENSE ios-package/Apache-2.0.txt
+          tar -czf crispembed-ios-arm64.tar.gz -C ios-package .
       - name: Upload
         uses: actions/upload-artifact@v4
         with:

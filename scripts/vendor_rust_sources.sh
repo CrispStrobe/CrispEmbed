@@ -7,7 +7,8 @@
 # publish` uploads a crate that cannot build for anyone, with no warning.
 # Run this before `cargo package`/`cargo publish` (CI does it automatically).
 #
-# What is vendored: CMakeLists.txt, VERSION (CMakeLists file(READ)s it), LICENSE, cmake/,
+# What is vendored: CMakeLists.txt, VERSION (CMakeLists file(READ)s it), LICENSE,
+# native integration notices and their Apache license, cmake/,
 # src/, examples/ (the library itself compiles examples/cli/model_mgr.cpp), the
 # ggml submodule, and the test *sources* — but NOT the 33 MB of test fixtures,
 # which would blow the crates.io size limit.
@@ -61,7 +62,8 @@ copy_tracked() {   # $1 = git dir, $2 = destination prefix, rest = pathspecs
         | tar -C "$vendor/$prefix" -xf -
 }
 
-copy_tracked "$repo_root" ""      CMakeLists.txt VERSION LICENSE NOTICE.sheenbidi cmake src examples
+copy_tracked "$repo_root" ""      CMakeLists.txt VERSION LICENSE NOTICE.marker NOTICE.teleocr NOTICE.sheenbidi \
+    models/licenses/apache-2.0/LICENSE licenses/oxr-LICENSE licenses/oxr-NOTICE cmake src examples
 # The OCR PDF Unicode engine is compiled directly into the native target.
 copy_tracked "$repo_root" ""      vendor/sheenbidi
 # Sources only from tests/ and tools/ — their fixtures/models are the 33 MB we
@@ -75,7 +77,11 @@ n=$(find "$vendor" -type f | wc -l | tr -d ' ')
 echo "vendored $n tracked files -> ${vendor#"$repo_root"/}"
 
 # Guard against a partial copy shipping a crate that cannot build.
-for required in CMakeLists.txt VERSION LICENSE ggml/CMakeLists.txt vendor/sheenbidi/Source/SheenBidi.c vendor/sheenbidi/LICENSE NOTICE.sheenbidi; do
+for required in CMakeLists.txt VERSION LICENSE NOTICE.marker NOTICE.teleocr \
+    models/licenses/apache-2.0/LICENSE licenses/oxr-LICENSE licenses/oxr-NOTICE \
+    cmake/MarkerIdentity.cmake src/marker_artifact.h src/marker_artifact.cpp \
+    tests/test-marker-artifact.cpp tests/test-marker-lifecycle.cpp tests/marker_pdfium_fixture.cpp \
+    ggml/CMakeLists.txt vendor/sheenbidi/Source/SheenBidi.c vendor/sheenbidi/LICENSE NOTICE.sheenbidi; do
     if [ ! -f "$vendor/$required" ]; then
         echo "error: vendored tree is incomplete — missing $required" >&2
         exit 1

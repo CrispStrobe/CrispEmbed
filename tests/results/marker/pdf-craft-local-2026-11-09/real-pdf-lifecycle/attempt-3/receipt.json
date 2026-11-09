@@ -1,0 +1,470 @@
+{
+  "kind": "marker-owned-real-pdf-lifecycle",
+  "source_commit": "16b544e455309a367739bbd430aafdd817f77d87",
+  "probe_sha256": "b42eafe0d8ed100fea88b363c1be27c9d86919ec058313988e3cc238afba598b",
+  "wrapper_sha256": "dbba4c60926c931ffec8f9092ddb4a61a860e9cbfe1c4075d93ddb6a88756c9d",
+  "library_sha256": "0f1034b037ac2d3b09d8d80b5b956b53dc9c17f9ef77e871192acb1e56d9833a",
+  "pdfium_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+  "fixture_sha256": "6727732d064d04dd54bd554e02422058da6d8d6c0df3efc1cb998099fcdaf641",
+  "dependencies": {
+    "numpy": "2.3.5",
+    "pypdfium2": "5.10.1"
+  },
+  "pdfium_version": "151.0.7891.0",
+  "python_version": "3.13.5",
+  "model_weights_used": false,
+  "general_pdf_or_ocr_quality_qualified": false,
+  "fixture_page_count": 3,
+  "expected_printed_labels": [
+    "iv",
+    "章-2",
+    "📖-3"
+  ],
+  "checks": [
+    {
+      "name": "real PDFium accepts three owned pages",
+      "passed": true
+    },
+    {
+      "name": "real PDFium decodes printed labels",
+      "passed": true
+    },
+    {
+      "name": "authored page 0 text is exact",
+      "passed": true
+    },
+    {
+      "name": "authored page 1 text is exact",
+      "passed": true
+    },
+    {
+      "name": "authored page 2 text is exact",
+      "passed": true
+    },
+    {
+      "name": "all four renderers preserve current gate-off output (0)",
+      "passed": true
+    },
+    {
+      "name": "all four renderers preserve current gate-off output (FaLsE)",
+      "passed": true
+    },
+    {
+      "name": "all four renderers preserve current gate-off output (OfF)",
+      "passed": true
+    },
+    {
+      "name": "all four renderers preserve current gate-off output (nO)",
+      "passed": true
+    },
+    {
+      "name": "artifact/lifecycle gates alone preserve legacy four-renderer output",
+      "passed": true
+    },
+    {
+      "name": "legacy: physical page indices and labels",
+      "passed": true
+    },
+    {
+      "name": "legacy: physical source records",
+      "passed": true
+    },
+    {
+      "name": "legacy: exact UTF-8 source-range reconstruction",
+      "passed": true
+    },
+    {
+      "name": "legacy: retrieval chunks retain physical provenance",
+      "passed": true
+    },
+    {
+      "name": "real PDF start creates durable empty checkpoint",
+      "passed": true
+    },
+    {
+      "name": "one-page budget commits only page zero",
+      "passed": true
+    },
+    {
+      "name": "cancellation preserves committed real PDF checkpoint",
+      "passed": true
+    },
+    {
+      "name": "fresh context resumes one committed page",
+      "passed": true
+    },
+    {
+      "name": "resumed one-page budget commits page one",
+      "passed": true
+    },
+    {
+      "name": "resumed job completes three real PDF pages",
+      "passed": true
+    },
+    {
+      "name": "incremental markdown equals legacy except declared run/lifecycle metadata",
+      "passed": true
+    },
+    {
+      "name": "incremental html equals legacy except declared run/lifecycle metadata",
+      "passed": true
+    },
+    {
+      "name": "incremental json equals legacy except declared run/lifecycle metadata",
+      "passed": true
+    },
+    {
+      "name": "incremental chunks equals legacy except declared run/lifecycle metadata",
+      "passed": true
+    },
+    {
+      "name": "incremental: physical page indices and labels",
+      "passed": true
+    },
+    {
+      "name": "incremental: physical source records",
+      "passed": true
+    },
+    {
+      "name": "incremental: exact UTF-8 source-range reconstruction",
+      "passed": true
+    },
+    {
+      "name": "incremental: retrieval chunks retain physical provenance",
+      "passed": true
+    },
+    {
+      "name": "selected real pages preserve physical cursor",
+      "passed": true
+    },
+    {
+      "name": "selected: physical page indices and labels",
+      "passed": true
+    },
+    {
+      "name": "selected: physical source records",
+      "passed": true
+    },
+    {
+      "name": "selected: exact UTF-8 source-range reconstruction",
+      "passed": true
+    },
+    {
+      "name": "selected: retrieval chunks retain physical provenance",
+      "passed": true
+    },
+    {
+      "name": "changed real PDF source fails next step",
+      "passed": true
+    },
+    {
+      "name": "identity failure keeps committed page and checkpoint",
+      "passed": true
+    },
+    {
+      "name": "changed source cannot resume original checkpoint",
+      "passed": true
+    },
+    {
+      "name": "failed resume leaves durable checkpoint unchanged",
+      "passed": true
+    },
+    {
+      "name": "restored source resumes original completed unit",
+      "passed": true
+    },
+    {
+      "name": "restored source finishes with exact four-renderer output",
+      "passed": true
+    },
+    {
+      "name": "processed markdown reopens without usable PDFium or matching processing config",
+      "passed": true
+    },
+    {
+      "name": "processed html reopens without usable PDFium or matching processing config",
+      "passed": true
+    },
+    {
+      "name": "processed json reopens without usable PDFium or matching processing config",
+      "passed": true
+    },
+    {
+      "name": "processed chunks reopens without usable PDFium or matching processing config",
+      "passed": true
+    },
+    {
+      "name": "reopened: physical page indices and labels",
+      "passed": true
+    },
+    {
+      "name": "reopened: physical source records",
+      "passed": true
+    },
+    {
+      "name": "reopened: exact UTF-8 source-range reconstruction",
+      "passed": true
+    },
+    {
+      "name": "reopened: retrieval chunks retain physical provenance",
+      "passed": true
+    }
+  ],
+  "comparison_exclusions": {
+    "separate_conversion_runs": [
+      "elapsed_seconds"
+    ],
+    "legacy_vs_incremental": [
+      "elapsed_seconds",
+      "completed_pages",
+      "next_page",
+      "extraction_phase",
+      "extraction_state",
+      "layout_backend",
+      "marker_source_revision",
+      "surya_model_parity",
+      "text_quality_check"
+    ],
+    "processed_artifact_reopen": []
+  },
+  "comparison_metadata_differences": [
+    {
+      "name": "gate-0",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.005878",
+          "expected": "0.006486"
+        }
+      }
+    },
+    {
+      "name": "gate-0",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.005878",
+          "expected": "0.006486"
+        }
+      }
+    },
+    {
+      "name": "gate-FaLsE",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.005297",
+          "expected": "0.006486"
+        }
+      }
+    },
+    {
+      "name": "gate-FaLsE",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.005297",
+          "expected": "0.006486"
+        }
+      }
+    },
+    {
+      "name": "gate-OfF",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.005375",
+          "expected": "0.006486"
+        }
+      }
+    },
+    {
+      "name": "gate-OfF",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.005375",
+          "expected": "0.006486"
+        }
+      }
+    },
+    {
+      "name": "gate-nO",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.005346",
+          "expected": "0.006486"
+        }
+      }
+    },
+    {
+      "name": "gate-nO",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.005346",
+          "expected": "0.006486"
+        }
+      }
+    },
+    {
+      "name": "artifact-gates-only",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.087056",
+          "expected": "0.006486"
+        }
+      }
+    },
+    {
+      "name": "artifact-gates-only",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.087056",
+          "expected": "0.006486"
+        }
+      }
+    },
+    {
+      "name": "incremental-vs-legacy",
+      "format": "json",
+      "configuration_differences": {
+        "completed_pages": {
+          "actual": "3",
+          "expected": null
+        },
+        "elapsed_seconds": {
+          "actual": null,
+          "expected": "0.086061"
+        },
+        "extraction_phase": {
+          "actual": "processed",
+          "expected": null
+        },
+        "extraction_state": {
+          "actual": "complete",
+          "expected": null
+        },
+        "layout_backend": {
+          "actual": null,
+          "expected": "pdftext_heuristics"
+        },
+        "marker_source_revision": {
+          "actual": null,
+          "expected": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        },
+        "next_page": {
+          "actual": "3",
+          "expected": null
+        },
+        "surya_model_parity": {
+          "actual": null,
+          "expected": "not_claimed"
+        },
+        "text_quality_check": {
+          "actual": null,
+          "expected": "deterministic_unicode_heuristic"
+        }
+      }
+    },
+    {
+      "name": "incremental-vs-legacy",
+      "format": "chunks",
+      "configuration_differences": {
+        "completed_pages": {
+          "actual": "3",
+          "expected": null
+        },
+        "elapsed_seconds": {
+          "actual": null,
+          "expected": "0.086061"
+        },
+        "extraction_phase": {
+          "actual": "processed",
+          "expected": null
+        },
+        "extraction_state": {
+          "actual": "complete",
+          "expected": null
+        },
+        "layout_backend": {
+          "actual": null,
+          "expected": "pdftext_heuristics"
+        },
+        "marker_source_revision": {
+          "actual": null,
+          "expected": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        },
+        "next_page": {
+          "actual": "3",
+          "expected": null
+        },
+        "surya_model_parity": {
+          "actual": null,
+          "expected": "not_claimed"
+        },
+        "text_quality_check": {
+          "actual": null,
+          "expected": "deterministic_unicode_heuristic"
+        }
+      }
+    }
+  ],
+  "output_sha256": {
+    "gate-unset.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-unset.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-unset.json": "9fd5c4c302d96a1b708acafb53bc9454e1f6c5bffa592bc8c8e73ec9be939a71",
+    "gate-unset.chunks": "ecb03f9fcd6d061cfb1c12c18990473f0d1516daf564d421fd40f94e348112c6",
+    "gate-0.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-0.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-0.json": "d1e44f1a710285aa6345a6d35f4c068b9e855cf15631cc98255de01c33024e1d",
+    "gate-0.chunks": "7d985eba15a87809f85349a85f96123347fe88fffb674a35ddf4d3f7e4f61aa7",
+    "gate-FaLsE.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-FaLsE.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-FaLsE.json": "3fa86dad282740a5208789f7eae42122a2f94fdbeb9994660fcd18b9c9aa6f96",
+    "gate-FaLsE.chunks": "b03b621705e199a2188313a69fca1b750e64655e0bab50255240b71bbd0b67e4",
+    "gate-OfF.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-OfF.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-OfF.json": "8f54f26b1d5a29fcd94d2acb61126bf21e244d9895b2afac6b361c86ac1c4250",
+    "gate-OfF.chunks": "7b5f1a3fb17bd3552de797998488d4ca184152224c4c02db598137836f0f2bcc",
+    "gate-nO.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-nO.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-nO.json": "65db1b6f5c1a37f00c8f47d4296134e03566299b34c56489768a370824bad294",
+    "gate-nO.chunks": "709a54e5b03535afde14fb3f3284a44b2f285f667c8f6249392b9f79b890ad42",
+    "artifact-gates-only.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "artifact-gates-only.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "artifact-gates-only.json": "294ce37e7207fa6809d893f5cb59744196ce48b410f3f66cf1e09a87e6a113a9",
+    "artifact-gates-only.chunks": "351a3285ef8d14ae908cea7663d5332673e6f72213d3ca72a647371d908d4955",
+    "enabled-legacy.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "enabled-legacy.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "enabled-legacy.json": "8a1e0806e21f08065eb9a6ecfae43196434402e43ded7b256233ec750c7df9ec",
+    "enabled-legacy.chunks": "4e85420ce70ea297e8defb38c31a9d8fd36f40d88b101d02e5143e6016224298",
+    "incremental.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "incremental.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "incremental.json": "fe0c55668de1712762318d4af6a5e33583bdc929c2af0c955494549baebfdf74",
+    "incremental.chunks": "bda4edbaab3795a71d6bd4a426472558da534927e4658e9ea77fd22250a38540",
+    "selected.markdown": "34fde66b3fc1165ad3b8ce4648ab98f2a3729dbcd795351b760bbc4b3f99feac",
+    "selected.html": "4b735aa1ed5655d53dd3578669a9113cddc5560b9aadf307da7ce7a06a8801bd",
+    "selected.json": "0eac445c739db4fcc589578fba6e471d6d6839ea4479f4e9e383c5415b8a7c20",
+    "selected.chunks": "f840a38ecb45a19cfb24540373e505feaae0a3f7abef1a20384f3a82df475a91",
+    "reopened.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "reopened.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "reopened.json": "fe0c55668de1712762318d4af6a5e33583bdc929c2af0c955494549baebfdf74",
+    "reopened.chunks": "bda4edbaab3795a71d6bd4a426472558da534927e4658e9ea77fd22250a38540"
+  },
+  "passed_count": 47,
+  "total_count": 47,
+  "passed": true,
+  "acceptance_status": "SUPERSEDED: broad stable-metadata waiver; not final acceptance",
+  "found_runtime_omission": [
+    "layout_backend",
+    "marker_source_revision",
+    "surya_model_parity",
+    "text_quality_check"
+  ],
+  "followup": "Attempt4 removes the stable-field waiver and reproduces the native omission.",
+  "native_build_source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607"
+}

@@ -30,6 +30,11 @@ dev_dependencies:
   lints: ^5.0.0
 
 flutter:
+  # Keep native integration terms in the application as well as the pub archive.
+  assets:
+    - NOTICE.marker
+    - NOTICE.teleocr
+    - Apache-2.0.txt
   plugin:
     platforms:
       linux:

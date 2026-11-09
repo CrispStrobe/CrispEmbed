@@ -1,0 +1,40 @@
+[PASS] crop quarter rotation swaps dimensions
+[PASS] crop 90 degrees follows TeleOCR counterclockwise convention
+[PASS] polygon masks at pixel centers with black exterior
+[PASS] extreme crop is padded then upscaled with trained limits
+[PASS] crop aspect padding is white
+[PASS] empty crop rejects
+[PASS] unsupported crop angle rejects
+[PASS] invalid crop page size rejects
+[PASS] nonfinite crop scaling rejects before coordinate conversion
+[PASS] inconsistent RGB length rejects
+[PASS] asset path traversal rejects
+[PASS] PNG asset carries truthful extraction provenance
+[PASS] PNG encode and native decode preserve exact RGB bytes
+[PASS] image dimension preflight enforces pixel limit
+[PASS] invalid encoded image rejects
+[PASS] native image loading honors PNG EXIF orientation
+[PASS] file RGBA is composited onto white identically to raw-image input
+[PASS] PDFium requires explicit library path
+[PASS] native PDFium discovers two pages
+[PASS] PDF coordinates use visible CropBox
+[PASS] PDF intrinsic rotation changes page dimensions once
+[PASS] PDF text extraction preserves ASCII and mapped Unicode
+[PASS] PDF text extraction preserves supplementary Unicode
+[PASS] PDF text outside CropBox is excluded
+[PASS] PDF leading code indentation survives extraction
+[PASS] PDF repeated internal code spaces survive extraction
+[PASS] PDF spans retain bold monospace and italic styles
+[PASS] PDF spans retain word geometry inside page bounds
+[PASS] PDF URI link annotation maps to text spans
+[PASS] PDF rotated character boxes align with rotated page
+[PASS] force-OCR page metadata does not read or depend on embedded text
+[PASS] PDF rendering uses requested DPI and intrinsic rotation
+[PASS] PDF rendering contains document glyphs
+[PASS] PDF out-of-range page rejects
+[PASS] PDF rendering pixel limit rejects before bitmap allocation
+[PASS] PDF invalid DPI rejects
+[PASS] PDF missing file reports error
+[PASS] different active PDFium library rejects without deadlock
+[PASS] concurrent providers share a serialized native PDFium lifetime
+marker backend: 39 passed, 0 failed

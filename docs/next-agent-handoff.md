@@ -1,5 +1,29 @@
 # Executable next-agent handoff
 
+## PDF Craft adoption — 9 November 2026, feature branch
+
+The user authorized the full [implementation checklist](pdf-craft-tasks.md).
+[Draft PR 192](https://github.com/CrispStrobe/CrispEmbed/pull/192) preserves all
+checkpoints on `feature/pdf-craft-document-quality-20261109`: repetition diagnostics,
+native noncommercial model admission, extraction artifacts, source-linked chunks,
+multilingual spacing, references/page labels and bounded lifecycle with bindings.
+The owner explicitly authorized local validation while the hosted queue was
+blocked. [Final Linux evidence](../tests/results/marker/pdf-craft-local-2026-11-09/README.md)
+at native source `891ea3d3632c6a3c3155e25b34705da6a02ec807` includes 480 native
+lifecycle checks, 48 strict real-PDF and 14 cross-build checks, six actual
+Rust/Dart scenarios, native admission and Python/CLI/HTTP replay. Current
+Python/Dart wrappers also pass 68 compatibility checks against immutable,
+hash-verified v0.17.15. Initial environment/probe failures and the corrected
+incremental provenance omission are retained separately.
+
+Continue from the task checklist's remaining Windows/macOS, Flutter archive/app
+and representative OCR/retrieval gates. Do not wait on GitHub to repeat already
+completed local work; rerun affected controls only when their sources change.
+Keep future checkpoints on the upstream feature branch. No merge, publication
+or default promotion is authorized by these execution results. Preserve unrelated
+owner lanes and the exact source/artifact identities in the evidence.
+
+
 ## Release checkpoint — 5 November 2026
 
 Native/WASM [v0.17.15](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.15)
