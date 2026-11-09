@@ -4139,3 +4139,17 @@ The cap256 table comparison is preserved as incomplete and one character worse t
 ### Same-input CPU_REPACK operator isolation
 
 The completed extended-table metadata identifies CPU_REPACK/extra for selected Q4 projections and mapped Q6 for QKV/head. `docs/lighton4b-source-repack-operator-v1.json` freezes five whole authenticated source matrices (36,464,640 bytes) and actual corrected native first-block inputs. The bounded operator-only probe compares borrowed, mapped and the public CPU extra-buffer allocation across pinned native/upstream GGML profiles at N1/N4/N16, preserving Q6 as a mapped negative control and both source/native whole-row orders. Native borrowed N16 must reproduce actual captured projections before interpretation. It loads no full model, changes no global vendor trait, and cannot establish decoded quality or an actual upstream hidden-state trace. Out-projection input reconstruction remains separate rather than substituting a different semantic input.
+
+### Corrected composed table/Arabic continuation
+
+Tools-only `lighton4b_composed_vision_calibration.py` freezes the actual aec0 form
+binary/backend bundle and corrected gate tuple (Pillow/F16vision/F16attention1,
+Q4repack/HEADBF160). One sequential worker authenticates both observed inputs,
+complete table282EOS andArabic6EOS references/rows before any model payload.
+Each source-feature baseline must close all frozen greedy rows and38 text
+stages before the pixels-only composed arm. Old BF16 processor-patch hashes are
+not reused for the corrected preprocessor; both arms must instead share new
+patch/grid bytes. Actual merged-source byte identity is required before text
+parity interpretation; complete decode/firstscore/CER/WER/EOS/cap/resources and
+per-case upstream floor failures are retained even when negative. No runtime
+rebuild, new reference forward, held-out or shipping/default promotion.
