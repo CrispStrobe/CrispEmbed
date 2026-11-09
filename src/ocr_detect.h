@@ -65,6 +65,11 @@ struct detect_options {
     float width_height_ratio = 8.0f;
     int max_candidates = 1000;
     int dilation = 1;
+    // Score each component only over pixels that passed prob_threshold, not
+    // over pixels added by `dilation` (upstream DBPostProcess never scores the
+    // dilated ring). Off by default for OCR; the inpainting text-mask route
+    // enables it (CRISPEMBED_INPAINT_TEXT_MASK_SCORE_UNDILATED=0 opts out).
+    bool score_undilated = false;
     score_mode scoring = score_mode::fast;
 };
 
@@ -111,7 +116,7 @@ std::vector<text_box> postprocess_probability_map(const float * prob_map, int ma
                                                   float prob_threshold = 0.3f, float box_threshold = 0.5f,
                                                   float unclip_ratio = 1.5f, int min_area = 1, float scale_x = 1.0f,
                                                   float scale_y = 1.0f, int dilation = 0, int max_candidates = 1000,
-                                                  score_mode scoring = score_mode::fast);
+                                                  score_mode scoring = score_mode::fast, bool score_undilated = false);
 
 // Get probability map from last detection (for debugging/visualization).
 // Returns nullptr if no detection has been run yet.

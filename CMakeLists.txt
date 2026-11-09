@@ -727,6 +727,10 @@ target_link_libraries(test-surya-det-diff PRIVATE crispembed)
 add_executable(test-ocr-detect tests/test_ocr_detect.cpp)
 target_link_libraries(test-ocr-detect PRIVATE crispembed)
 
+# Hermetic: DB postprocess scores thin lines over thresholded, not dilated, pixels.
+add_executable(test-ocr-detect-score tests/test_ocr_detect_score.cpp)
+target_link_libraries(test-ocr-detect-score PRIVATE crispembed)
+
 add_executable(test-ocr-geometry tests/test_ocr_geometry.cpp)
 target_link_libraries(test-ocr-geometry PRIVATE crispembed)
 

@@ -1,0 +1,1003 @@
+{
+ "schema": "crispembed-inpaint-owner-review-panel-v1",
+ "commit": "3a0c51351ce172584d41a6ee02ad6cec07e645a3",
+ "backend": "CPU (Kaggle)",
+ "threads": "4",
+ "inputs": {
+  "landscape": {
+   "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Tour_Eiffel_Wikimedia_Commons.jpg/960px-Tour_Eiffel_Wikimedia_Commons.jpg",
+   "sha256": "848139c75c8eb5d021837af2f856a51e8e0055e3f0c388d6fae26b49cfac339f",
+   "source_page": "https://commons.wikimedia.org/wiki/File:Tour_Eiffel_Wikimedia_Commons.jpg",
+   "licence": "Public domain",
+   "licence_url": "",
+   "artist": "Benh LIEU SONG",
+   "credit": "Own work"
+  },
+  "street": {
+   "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/New_york_times_square-terabass.jpg/1280px-New_york_times_square-terabass.jpg",
+   "sha256": "39c67d5161a6daa3641a0ae768372e3bdb133fdf4591874b8ccc7d88d3c3cc5f",
+   "source_page": "https://commons.wikimedia.org/wiki/File:New_york_times_square-terabass.jpg",
+   "licence": "CC BY-SA 3.0",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+   "artist": "Terabass",
+   "credit": "Own work"
+  }
+ },
+ "bars_cosine_vs_f32": {
+  "F16": 0.98,
+  "Q8_0": 0.97,
+  "Q4_K": 0.94
+ },
+ "models": {
+  "512-F32": {
+   "file": "migan-512-places2-f32.gguf",
+   "sha256": "4bec681ef10f8ca914c5331f007a0605773cd09106d4fd6d9fcc0992f0a61739"
+  },
+  "512-F16": {
+   "file": "migan-512-places2-f16.gguf",
+   "sha256": "932cfbd35db478dba4372f7ad9889ee68c84eac1c0b46025cf7336c8d55c0033"
+  },
+  "512-Q8_0": {
+   "file": "migan-512-places2-q8_0.gguf",
+   "sha256": "efdf1b08207f2c47c4710ca66831e6aff86ea31fca68593337f2ce605db70280"
+  },
+  "512-Q4_K": {
+   "file": "migan-512-places2-q4_k.gguf",
+   "sha256": "bd90218cd6f86a9b215fa3528ad5400536b7cf883a76e2450f22c835e376af46"
+  }
+ },
+ "migan256": {
+  "file": "migan-256-places2-f32-experimental.gguf",
+  "sha256": "b8fcefc3de7e04f96867b9d15bd84a2cf7e0c444d2925644a7e8b15081809c8b",
+  "available": true,
+  "note": "MI-GAN256 has no published F16/Q8_0/Q4_K variant; F32 only"
+ },
+ "cases": [
+  {
+   "id": "still-landscape",
+   "photo": "landscape",
+   "pan_dx": 0,
+   "clip": null,
+   "mask": "exact",
+   "subtitle": [
+    "Das ist ein Untertitel, der entfernt",
+    "werden soll \u2013 Testzeile 42"
+   ],
+   "masked_pixels": 4333,
+   "outputs": {
+    "256-F32": {
+     "returncode": 0,
+     "seconds": 7.76,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 17.339,
+      "mae": 17.861
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4189,
+      "line_coverage": [
+       0.9673,
+       0.9661
+      ]
+     }
+    },
+    "512-F32": {
+     "returncode": 0,
+     "seconds": 2.78,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 17.342,
+      "mae": 17.908
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4193,
+      "line_coverage": [
+       0.9673,
+       0.9682
+      ]
+     }
+    },
+    "512-F16": {
+     "returncode": 0,
+     "seconds": 2.67,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 17.341,
+      "mae": 17.912
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4193,
+      "line_coverage": [
+       0.9673,
+       0.9682
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 63.293,
+      "mae": 0.03,
+      "max_abs": 1,
+      "rgb_cosine": 0.999999,
+      "bar": 0.98,
+      "below_bar": false
+     }
+    },
+    "512-Q8_0": {
+     "returncode": 0,
+     "seconds": 2.67,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 17.344,
+      "mae": 17.959
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4197,
+      "line_coverage": [
+       0.9669,
+       0.9709
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 41.369,
+      "mae": 1.097,
+      "max_abs": 22,
+      "rgb_cosine": 0.999843,
+      "bar": 0.97,
+      "below_bar": false
+     }
+    },
+    "512-Q4_K": {
+     "returncode": 0,
+     "seconds": 2.66,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 17.134,
+      "mae": 19.079
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4199,
+      "line_coverage": [
+       0.9661,
+       0.973
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 25.135,
+      "mae": 7.593,
+      "max_abs": 117,
+      "rgb_cosine": 0.99346,
+      "bar": 0.94,
+      "below_bar": false
+     }
+    }
+   }
+  },
+  {
+   "id": "still-street",
+   "photo": "street",
+   "pan_dx": 0,
+   "clip": null,
+   "mask": "exact",
+   "subtitle": [
+    "Das ist ein Untertitel, der entfernt",
+    "werden soll \u2013 Testzeile 42"
+   ],
+   "masked_pixels": 4333,
+   "outputs": {
+    "256-F32": {
+     "returncode": 0,
+     "seconds": 7.86,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.697,
+      "mae": 43.607
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4210,
+      "line_coverage": [
+       0.9693,
+       0.9746
+      ]
+     }
+    },
+    "512-F32": {
+     "returncode": 0,
+     "seconds": 2.7,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.654,
+      "mae": 43.72
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4207,
+      "line_coverage": [
+       0.9693,
+       0.973
+      ]
+     }
+    },
+    "512-F16": {
+     "returncode": 0,
+     "seconds": 2.68,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.653,
+      "mae": 43.726
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4207,
+      "line_coverage": [
+       0.9693,
+       0.973
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 58.471,
+      "mae": 0.092,
+      "max_abs": 2,
+      "rgb_cosine": 0.999995,
+      "bar": 0.98,
+      "below_bar": false
+     }
+    },
+    "512-Q8_0": {
+     "returncode": 0,
+     "seconds": 2.66,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.653,
+      "mae": 43.756
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4206,
+      "line_coverage": [
+       0.9693,
+       0.9725
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 33.613,
+      "mae": 3.367,
+      "max_abs": 41,
+      "rgb_cosine": 0.998494,
+      "bar": 0.97,
+      "below_bar": false
+     }
+    },
+    "512-Q4_K": {
+     "returncode": 0,
+     "seconds": 2.69,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.763,
+      "mae": 43.581
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4208,
+      "line_coverage": [
+       0.9689,
+       0.974
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 19.828,
+      "mae": 17.345,
+      "max_abs": 149,
+      "rgb_cosine": 0.963549,
+      "bar": 0.94,
+      "below_bar": false
+     }
+    }
+   }
+  },
+  {
+   "id": "still-street-dbnet",
+   "photo": "street",
+   "pan_dx": 0,
+   "clip": null,
+   "mask": "dbnet",
+   "subtitle": [
+    "Das ist ein Untertitel, der entfernt",
+    "werden soll \u2013 Testzeile 42"
+   ],
+   "masked_pixels": 4333,
+   "outputs": {
+    "256-F32": {
+     "returncode": 0,
+     "seconds": 12.41,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.197,
+      "mae": 47.712
+     },
+     "outside_exact": null,
+     "applied_mask": {
+      "changed_px": 21430,
+      "line_coverage": [
+       1.0,
+       1.0
+      ]
+     }
+    },
+    "512-F32": {
+     "returncode": 0,
+     "seconds": 3.52,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 11.946,
+      "mae": 49.422
+     },
+     "outside_exact": null,
+     "applied_mask": {
+      "changed_px": 21430,
+      "line_coverage": [
+       1.0,
+       1.0
+      ]
+     }
+    },
+    "512-F16": {
+     "returncode": 0,
+     "seconds": 3.46,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 11.945,
+      "mae": 49.428
+     },
+     "outside_exact": null,
+     "applied_mask": {
+      "changed_px": 21430,
+      "line_coverage": [
+       1.0,
+       1.0
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 58.381,
+      "mae": 0.094,
+      "max_abs": 2,
+      "rgb_cosine": 0.999995,
+      "bar": 0.98,
+      "below_bar": false
+     }
+    },
+    "512-Q8_0": {
+     "returncode": 0,
+     "seconds": 3.48,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 11.902,
+      "mae": 49.826
+     },
+     "outside_exact": null,
+     "applied_mask": {
+      "changed_px": 21431,
+      "line_coverage": [
+       1.0,
+       1.0
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 26.252,
+      "mae": 7.011,
+      "max_abs": 106,
+      "rgb_cosine": 0.992549,
+      "bar": 0.97,
+      "below_bar": false
+     }
+    },
+    "512-Q4_K": {
+     "returncode": 0,
+     "seconds": 3.45,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.055,
+      "mae": 48.926
+     },
+     "outside_exact": null,
+     "applied_mask": {
+      "changed_px": 21432,
+      "line_coverage": [
+       1.0,
+       1.0
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 18.547,
+      "mae": 20.175,
+      "max_abs": 211,
+      "rgb_cosine": 0.955713,
+      "bar": 0.94,
+      "below_bar": false
+     }
+    },
+    "512-F32-legacy-mask": {
+     "returncode": 0,
+     "seconds": 3.53,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 9.843,
+      "mae": 59.264
+     },
+     "outside_exact": null,
+     "applied_mask": {
+      "changed_px": 11949,
+      "line_coverage": [
+       0.0,
+       0.9984
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "pan-street-f1",
+   "photo": "street",
+   "pan_dx": -24,
+   "clip": "pan-street",
+   "mask": "exact",
+   "subtitle": [
+    "Das ist ein Untertitel, der entfernt",
+    "werden soll \u2013 Testzeile 42"
+   ],
+   "masked_pixels": 4333,
+   "outputs": {
+    "256-F32": {
+     "returncode": 0,
+     "seconds": 7.87,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.786,
+      "mae": 41.95
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4210,
+      "line_coverage": [
+       0.9693,
+       0.9746
+      ]
+     }
+    },
+    "512-F32": {
+     "returncode": 0,
+     "seconds": 2.68,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.214,
+      "mae": 44.812
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4210,
+      "line_coverage": [
+       0.9693,
+       0.9746
+      ]
+     }
+    },
+    "512-F16": {
+     "returncode": 0,
+     "seconds": 2.71,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.213,
+      "mae": 44.82
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4210,
+      "line_coverage": [
+       0.9693,
+       0.9746
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 59.452,
+      "mae": 0.073,
+      "max_abs": 2,
+      "rgb_cosine": 0.999997,
+      "bar": 0.98,
+      "below_bar": false
+     }
+    },
+    "512-Q8_0": {
+     "returncode": 0,
+     "seconds": 2.63,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.208,
+      "mae": 44.877
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4210,
+      "line_coverage": [
+       0.9693,
+       0.9746
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 32.538,
+      "mae": 3.516,
+      "max_abs": 73,
+      "rgb_cosine": 0.998491,
+      "bar": 0.97,
+      "below_bar": false
+     }
+    },
+    "512-Q4_K": {
+     "returncode": 0,
+     "seconds": 2.72,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.383,
+      "mae": 44.049
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4210,
+      "line_coverage": [
+       0.9693,
+       0.9746
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 20.303,
+      "mae": 16.406,
+      "max_abs": 157,
+      "rgb_cosine": 0.974262,
+      "bar": 0.94,
+      "below_bar": false
+     }
+    }
+   }
+  },
+  {
+   "id": "pan-street-f2",
+   "photo": "street",
+   "pan_dx": -8,
+   "clip": "pan-street",
+   "mask": "exact",
+   "subtitle": [
+    "Das ist ein Untertitel, der entfernt",
+    "werden soll \u2013 Testzeile 42"
+   ],
+   "masked_pixels": 4333,
+   "outputs": {
+    "256-F32": {
+     "returncode": 0,
+     "seconds": 7.83,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.551,
+      "mae": 43.984
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4210,
+      "line_coverage": [
+       0.9693,
+       0.9746
+      ]
+     }
+    },
+    "512-F32": {
+     "returncode": 0,
+     "seconds": 2.69,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.816,
+      "mae": 42.407
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4210,
+      "line_coverage": [
+       0.9693,
+       0.9746
+      ]
+     }
+    },
+    "512-F16": {
+     "returncode": 0,
+     "seconds": 2.65,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.814,
+      "mae": 42.417
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4210,
+      "line_coverage": [
+       0.9693,
+       0.9746
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 59.318,
+      "mae": 0.076,
+      "max_abs": 1,
+      "rgb_cosine": 0.999996,
+      "bar": 0.98,
+      "below_bar": false
+     }
+    },
+    "512-Q8_0": {
+     "returncode": 0,
+     "seconds": 2.71,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 12.837,
+      "mae": 42.313
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4210,
+      "line_coverage": [
+       0.9693,
+       0.9746
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 32.539,
+      "mae": 3.565,
+      "max_abs": 56,
+      "rgb_cosine": 0.998179,
+      "bar": 0.97,
+      "below_bar": false
+     }
+    },
+    "512-Q4_K": {
+     "returncode": 0,
+     "seconds": 2.67,
+     "vs_clean": {
+      "masked_pixels": 4333,
+      "psnr_db": 13.143,
+      "mae": 40.908
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4208,
+      "line_coverage": [
+       0.9693,
+       0.9735
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 20.587,
+      "mae": 15.742,
+      "max_abs": 187,
+      "rgb_cosine": 0.971205,
+      "bar": 0.94,
+      "below_bar": false
+     }
+    }
+   }
+  },
+  {
+   "id": "pan-street-f3",
+   "photo": "street",
+   "pan_dx": 8,
+   "clip": "pan-street",
+   "mask": "exact",
+   "subtitle": [
+    "Zweite Zeile: die Kamera schwenkt",
+    "langsam nach rechts \u2013 Bild 3"
+   ],
+   "masked_pixels": 4614,
+   "outputs": {
+    "256-F32": {
+     "returncode": 0,
+     "seconds": 7.85,
+     "vs_clean": {
+      "masked_pixels": 4614,
+      "psnr_db": 12.499,
+      "mae": 45.265
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4502,
+      "line_coverage": [
+       0.975,
+       0.9766
+      ]
+     }
+    },
+    "512-F32": {
+     "returncode": 0,
+     "seconds": 2.69,
+     "vs_clean": {
+      "masked_pixels": 4614,
+      "psnr_db": 12.634,
+      "mae": 44.545
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4492,
+      "line_coverage": [
+       0.9734,
+       0.9737
+      ]
+     }
+    },
+    "512-F16": {
+     "returncode": 0,
+     "seconds": 2.62,
+     "vs_clean": {
+      "masked_pixels": 4614,
+      "psnr_db": 12.633,
+      "mae": 44.549
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4492,
+      "line_coverage": [
+       0.9734,
+       0.9737
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 59.986,
+      "mae": 0.065,
+      "max_abs": 1,
+      "rgb_cosine": 0.999997,
+      "bar": 0.98,
+      "below_bar": false
+     }
+    },
+    "512-Q8_0": {
+     "returncode": 0,
+     "seconds": 2.67,
+     "vs_clean": {
+      "masked_pixels": 4614,
+      "psnr_db": 12.622,
+      "mae": 44.598
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4493,
+      "line_coverage": [
+       0.9731,
+       0.9747
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 33.841,
+      "mae": 3.295,
+      "max_abs": 47,
+      "rgb_cosine": 0.998649,
+      "bar": 0.97,
+      "below_bar": false
+     }
+    },
+    "512-Q4_K": {
+     "returncode": 0,
+     "seconds": 2.68,
+     "vs_clean": {
+      "masked_pixels": 4614,
+      "psnr_db": 12.657,
+      "mae": 44.246
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4496,
+      "line_coverage": [
+       0.9742,
+       0.9747
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 20.517,
+      "mae": 16.544,
+      "max_abs": 170,
+      "rgb_cosine": 0.970352,
+      "bar": 0.94,
+      "below_bar": false
+     }
+    }
+   }
+  },
+  {
+   "id": "pan-street-f4",
+   "photo": "street",
+   "pan_dx": 24,
+   "clip": "pan-street",
+   "mask": "exact",
+   "subtitle": [
+    "Zweite Zeile: die Kamera schwenkt",
+    "langsam nach rechts \u2013 Bild 3"
+   ],
+   "masked_pixels": 4614,
+   "outputs": {
+    "256-F32": {
+     "returncode": 0,
+     "seconds": 7.86,
+     "vs_clean": {
+      "masked_pixels": 4614,
+      "psnr_db": 12.85,
+      "mae": 43.317
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4502,
+      "line_coverage": [
+       0.975,
+       0.9766
+      ]
+     }
+    },
+    "512-F32": {
+     "returncode": 0,
+     "seconds": 2.7,
+     "vs_clean": {
+      "masked_pixels": 4614,
+      "psnr_db": 12.383,
+      "mae": 46.077
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4497,
+      "line_coverage": [
+       0.9742,
+       0.9752
+      ]
+     }
+    },
+    "512-F16": {
+     "returncode": 0,
+     "seconds": 2.67,
+     "vs_clean": {
+      "masked_pixels": 4614,
+      "psnr_db": 12.383,
+      "mae": 46.073
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4497,
+      "line_coverage": [
+       0.9742,
+       0.9752
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 59.802,
+      "mae": 0.067,
+      "max_abs": 2,
+      "rgb_cosine": 0.999996,
+      "bar": 0.98,
+      "below_bar": false
+     }
+    },
+    "512-Q8_0": {
+     "returncode": 0,
+     "seconds": 2.7,
+     "vs_clean": {
+      "masked_pixels": 4614,
+      "psnr_db": 12.365,
+      "mae": 46.134
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4499,
+      "line_coverage": [
+       0.9746,
+       0.9756
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 31.987,
+      "mae": 3.488,
+      "max_abs": 82,
+      "rgb_cosine": 0.997875,
+      "bar": 0.97,
+      "below_bar": false
+     }
+    },
+    "512-Q4_K": {
+     "returncode": 0,
+     "seconds": 2.61,
+     "vs_clean": {
+      "masked_pixels": 4614,
+      "psnr_db": 12.42,
+      "mae": 45.429
+     },
+     "outside_exact": true,
+     "applied_mask": {
+      "changed_px": 4499,
+      "line_coverage": [
+       0.9746,
+       0.9756
+      ]
+     },
+     "vs_f32": {
+      "psnr_db": 19.679,
+      "mae": 17.46,
+      "max_abs": 152,
+      "rgb_cosine": 0.962751,
+      "bar": 0.94,
+      "below_bar": false
+     }
+    }
+   }
+  }
+ ],
+ "temporal_error_mae": {
+  "clip": "pan-street",
+  "pairs": [
+   "pan-street-f1->pan-street-f2",
+   "pan-street-f2->pan-street-f3",
+   "pan-street-f3->pan-street-f4"
+  ],
+  "by_variant": {
+   "256-F32": [
+    58.987,
+    60.438,
+    59.895
+   ],
+   "512-F32": [
+    59.272,
+    60.844,
+    62.248
+   ],
+   "512-F16": [
+    59.278,
+    60.854,
+    62.251
+   ],
+   "512-Q8_0": [
+    59.469,
+    60.783,
+    62.207
+   ],
+   "512-Q4_K": [
+    56.281,
+    58.848,
+    60.793
+   ]
+  },
+  "note": "pan is 16 px/frame; camera motion is discounted by subtracting clean frames"
+ },
+ "elapsed_s": 464,
+ "run": {
+  "host": "Kaggle CPU kernel crispembed-inpaint-review-panel (tools/kaggle/inpaint-review-panel)",
+  "images": "JPEG thumbnails not committed"
+ },
+ "purpose": "Issue 71 follow-up: DBNet text-mask first line. Default columns use the fixed text-mask scoring (CRISPEMBED_INPAINT_TEXT_MASK_SCORE_UNDILATED unset); 512-F32-legacy-mask runs the same binary with the gate =0 and reproduces the 2026-11-09 owner-review receipt exactly. applied_mask = pixels the engine changed; line_coverage = fraction of each exact subtitle line inside it.",
+ "comparison_vs_owner_review": {
+  "receipt": "owner-review-panel-cpu-2026-11-09.json",
+  "vs_clean_compared": 35,
+  "identical": 30,
+  "changed": "still-street-dbnet only (5 variants); temporal_error_mae identical",
+  "still_street_dbnet_512_F32": {
+   "before": {
+    "psnr_db": 9.843,
+    "mae": 59.264,
+    "line_coverage": [
+     0.0,
+     0.9984
+    ],
+    "changed_px": 11949
+   },
+   "after": {
+    "psnr_db": 11.946,
+    "mae": 49.422,
+    "line_coverage": [
+     1.0,
+     1.0
+    ],
+    "changed_px": 21430
+   }
+  }
+ }
+}
