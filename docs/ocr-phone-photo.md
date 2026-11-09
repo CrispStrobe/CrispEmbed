@@ -23,6 +23,12 @@ declarations alone is insufficient.
 Angle zero means either aligned text or an inconclusive estimate. No calibrated
 confidence probability is available. Keep a manual adjustment and original/processed
 preview. The application can assess lighting and sharpness separately.
+The explicit photo analysis rejects uniform grayscale images before invoking
+the legacy detector. Without this guard, a zero-vote Hough accumulator at widths
+below 100 can pass its integer-truncated minimum-peak check and return a search
+boundary. White, gray and dark controls cover widths 3, 90, 99, 100, 101 and 160.
+This no-evidence guard changes only the explicitly requested photo operation;
+legacy recognition callers and defaults retain their prior behavior.
 
 Gray/RGB/RGBA byte length must exactly match the dimensions. Source and transformed
 images are limited to 32768 pixels per axis and 64 Mi pixels; inputs require at

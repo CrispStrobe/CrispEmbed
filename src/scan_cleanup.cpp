@@ -167,6 +167,11 @@ float scan_cleanup_detect_angle_rgb_bounded(const uint8_t * pixels, int w, int h
     // Consensus receives at most 1200px and therefore cannot downsample again.
     auto gray = std::max(w, h) > 1200 ? skew_analysis_rgb(pixels, w, h, channels, &aw, &ah)
                                       : to_gray_f32(pixels, w, h, channels);
+    // A uniform image supplies no angle evidence. In the legacy Hough path,
+    // widths below 100 truncate the minimum peak to zero; an empty accumulator
+    // can then select the search boundary. Keep this guard in the explicit
+    // photo operation so existing callers and inference gates stay unchanged.
+    if (std::all_of(gray.begin() + 1, gray.end(), [&](float value) { return value == gray.front(); })) return 0.0f;
     return scan_cleanup_detect_angle_consensus(gray.data(), aw, ah, max_angle_deg);
 }
 

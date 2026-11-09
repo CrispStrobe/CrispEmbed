@@ -79,9 +79,18 @@ static void public_controls() {
     gate("CRISPEMBED_OCR_CROP_PROJECTIVE", nullptr);
     std::vector<uint8_t> blank(90 * 120 * 3, 255);
     float correction = 12;
-    require(crispembed_scan_photo_angle(blank.data(), blank.size(), 90, 120, 3, 15, &correction) == 0 &&
-                correction == 0,
-            "blank page produces an inconclusive zero angle");
+    // The legacy minimum-peak threshold truncates to zero below width 100.
+    // Exercise both sides and the smallest accepted width, for white, gray
+    // and dark uniform captures. These contain no evidence of an angle.
+    for (int width : { 3, 90, 99, 100, 101, 160 }) {
+        for (uint8_t value : { 0, 127, 255 }) {
+            std::vector<uint8_t> uniform(size_t(width) * 120 * 3, value);
+            correction = 12;
+            require(crispembed_scan_photo_angle(uniform.data(), uniform.size(), width, 120, 3, 15, &correction) == 0 &&
+                        correction == 0,
+                    "uniform photo must not select a search-boundary angle");
+        }
+    }
     require(crispembed_scan_photo_angle(blank.data(), 7, 90, 120, 3, 15, &correction) == -1 && correction == 0,
             "angle API rejects short buffer");
     require(crispembed_scan_photo_angle(blank.data(), blank.size(), 90, 120, 3, 0, &correction) == -1,
