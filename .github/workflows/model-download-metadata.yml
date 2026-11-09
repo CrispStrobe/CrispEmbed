@@ -42,7 +42,7 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.90.0
       - name: Check that log capture propagates a failing process
         run: |
           if (exit 23) | tee "$RUNNER_TEMP/metadata-pipefail-control.txt"; then

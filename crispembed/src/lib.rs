@@ -53,6 +53,22 @@ pub struct ModelInfo {
     pub model_card_url: String,
 }
 
+/// Licence facts for one registry entry, from `crispembed_model_license_info`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ModelLicenseInfo {
+    /// Canonical registry name the queried name resolved to.
+    pub name: String,
+    /// SPDX-style licence tag, e.g. `cc-by-nc-4.0`. Pass this to
+    /// [`CrispEmbed::resolve_model_accepting`] after the user consented.
+    pub spdx: String,
+    /// Upstream model card URL, where the licence terms are published.
+    pub model_card_url: String,
+    /// Human-readable registry description.
+    pub display_name: String,
+    /// True when a download needs explicit acceptance of `spdx`.
+    pub requires_acceptance: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct MaskPrediction {
     pub token_id: i32,
@@ -143,6 +159,72 @@ impl CrispEmbed {
     }
 
     pub fn resolve_model(model_path: &str, auto_download: Option<bool>) -> Result<String, String> {
+        Self::resolve_model_inner(model_path, auto_download, None)
+    }
+
+    /// Resolve like [`CrispEmbed::resolve_model`], accepting exactly the one
+    /// licence `accepted_spdx` for this call only (typically
+    /// [`ModelLicenseInfo::spdx`] after the user consented to this model).
+    /// `"all"`, `"*"` and an empty tag are refused; a model under a different
+    /// licence is refused; nothing is stored and no environment variable is
+    /// set.
+    pub fn resolve_model_accepting(
+        model_path: &str,
+        auto_download: Option<bool>,
+        accepted_spdx: &str,
+    ) -> Result<String, String> {
+        if accepted_spdx.is_empty() || accepted_spdx == "all" || accepted_spdx == "*" {
+            return Err(format!(
+                "resolve_model_accepting needs one exact licence tag, got '{accepted_spdx}'"
+            ));
+        }
+        Self::resolve_model_inner(model_path, auto_download, Some(accepted_spdx))
+    }
+
+    /// Licence facts of the registry entry `model_name` resolves to (the same
+    /// entry [`CrispEmbed::resolve_model`] would fetch). `None` when the name
+    /// is not in the registry.
+    pub fn model_license_info(model_name: &str) -> Option<ModelLicenseInfo> {
+        let arg = CString::new(model_name).ok()?;
+        let mut name: *const c_char = std::ptr::null();
+        let mut spdx: *const c_char = std::ptr::null();
+        let mut card: *const c_char = std::ptr::null();
+        let mut display: *const c_char = std::ptr::null();
+        let rc = unsafe {
+            crispembed_sys::crispembed_model_license_info(
+                arg.as_ptr(),
+                &mut name,
+                &mut spdx,
+                &mut card,
+                &mut display,
+            )
+        };
+        if rc < 0 {
+            return None;
+        }
+        let read = |ptr: *const c_char| {
+            if ptr.is_null() {
+                String::new()
+            } else {
+                unsafe { CStr::from_ptr(ptr) }
+                    .to_string_lossy()
+                    .into_owned()
+            }
+        };
+        Some(ModelLicenseInfo {
+            name: read(name),
+            spdx: read(spdx),
+            model_card_url: read(card),
+            display_name: read(display),
+            requires_acceptance: rc == 1,
+        })
+    }
+
+    fn resolve_model_inner(
+        model_path: &str,
+        auto_download: Option<bool>,
+        accepted_spdx: Option<&str>,
+    ) -> Result<String, String> {
         let should_download = auto_download.unwrap_or_else(|| {
             !model_path.contains(".gguf") && !model_path.contains('/') && !model_path.contains('\\')
         });
@@ -180,11 +262,19 @@ impl CrispEmbed {
         }
 
         let arg = CString::new(model_path).map_err(|e| format!("invalid model path: {e}"))?;
-        let ptr = unsafe {
-            crispembed_sys::crispembed_resolve_model(
-                arg.as_ptr(),
-                if should_download { 1 } else { 0 },
-            )
+        let download = if should_download { 1 } else { 0 };
+        let ptr = match accepted_spdx {
+            None => unsafe { crispembed_sys::crispembed_resolve_model(arg.as_ptr(), download) },
+            Some(spdx) => {
+                let spdx = CString::new(spdx).map_err(|e| format!("invalid licence tag: {e}"))?;
+                unsafe {
+                    crispembed_sys::crispembed_resolve_model_accepting(
+                        arg.as_ptr(),
+                        download,
+                        spdx.as_ptr(),
+                    )
+                }
+            }
         };
         if ptr.is_null() {
             return Err(format!("could not resolve model '{model_path}'"));

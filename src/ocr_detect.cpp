@@ -893,7 +893,8 @@ static float score_polygon(const float * prob_map, int map_w, int map_h,
 // Connected-component labeling + contour-based bounding box extraction.
 static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, int map_h, float prob_threshold,
                                            float box_threshold, float unclip_ratio, int min_area, float scale_x,
-                                           float scale_y, int dilation, int max_candidates, score_mode scoring) {
+                                           float scale_y, int dilation, int max_candidates, score_mode scoring,
+                                           bool score_undilated = false) {
     std::vector<text_box> results;
     const bool debug = core_env::on("OCR_DETECT_DEBUG");
     int component_count = 0;
@@ -907,6 +908,16 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
         // prob_map is [W, H] in ggml layout (column-major: prob_map[x + y*W])
         if (prob_map[i] > prob_threshold) binary[i] = 1;
     }
+
+    // Pixels that passed prob_threshold before the morphology below. Upstream
+    // PaddleOCR DBPostProcess (v2.7.0 ppocr/postprocess/db_postprocess.py,
+    // __call__ L220-235, boxes_from_bitmap L130-135) dilates only the bitmap
+    // it finds contours on and scores each box against `pred`; its default is
+    // use_dilation=False (L39). Averaging the probability over dilation-only
+    // pixels instead pulls a thin line's mean below box_threshold: a 5-row
+    // subtitle line at 0.62 drops to 0.43 after a one-pixel ring is added.
+    std::vector<uint8_t> seed;
+    if (score_undilated && dilation > 0) seed = binary;
 
     // A one-pixel dilation closes the small gaps produced by text strokes and
     // is the inexpensive equivalent of the detector-side morphology used by
@@ -949,6 +960,8 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
 
                 float sum_prob = 0;
                 int count = 0;
+                float seed_sum = 0;
+                int seed_count = 0;
                 int min_x = x, max_x = x, min_y = y, max_y = y;
 
                 while (!stack.empty()) {
@@ -959,6 +972,10 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
 
                     sum_prob += prob_map[cur];
                     count++;
+                    if (!seed.empty() && seed[cur]) {
+                        seed_sum += prob_map[cur];
+                        seed_count++;
+                    }
                     if (cx < min_x) min_x = cx;
                     if (cx > max_x) max_x = cx;
                     if (cy < min_y) min_y = cy;
@@ -987,7 +1004,7 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
 
                 // Filter by mean score before the more expensive contour
                 // score. This also avoids spending geometry time on noise.
-                float mean_score = sum_prob / count;
+                float mean_score = seed_count > 0 ? seed_sum / seed_count : sum_prob / count;
                 if (mean_score < box_threshold) continue;
                 mean_pass_count++;
 
@@ -1104,16 +1121,17 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
 
 std::vector<text_box> postprocess_probability_map(const float * prob_map, int map_h, int map_w, float prob_threshold,
                                                   float box_threshold, float unclip_ratio, int min_area, float scale_x,
-                                                  float scale_y, int dilation, int max_candidates, score_mode scoring) {
+                                                  float scale_y, int dilation, int max_candidates, score_mode scoring,
+                                                  bool score_undilated) {
     if (!prob_map || map_h <= 0 || map_w <= 0) return {};
     return extract_boxes(prob_map, map_w, map_h, prob_threshold, box_threshold, unclip_ratio, min_area, scale_x,
-                         scale_y, dilation, max_candidates, scoring);
+                         scale_y, dilation, max_candidates, scoring, score_undilated);
 }
 
 static std::vector<text_box> detect_with_options(context * ctx, const float * pixels, int H, int W,
                                                  float prob_threshold, float box_threshold, float unclip_ratio,
                                                  int dilation, int max_candidates, score_mode scoring,
-                                                 bool checked = false) {
+                                                 bool checked = false, bool score_undilated = false) {
     if (!ctx || !pixels) return {};
 
     const bool bench = ctx->bench;
@@ -1133,8 +1151,9 @@ static std::vector<text_box> detect_with_options(context * ctx, const float * pi
     float scale_y = (float)H / ctx->last_prob_h;
 
     t0 = std::chrono::steady_clock::now();
-    auto result = extract_boxes(prob_map.data(), ctx->last_prob_w, ctx->last_prob_h, prob_threshold, box_threshold,
-                                unclip_ratio, ctx->min_area, scale_x, scale_y, dilation, max_candidates, scoring);
+    auto result =
+        extract_boxes(prob_map.data(), ctx->last_prob_w, ctx->last_prob_h, prob_threshold, box_threshold, unclip_ratio,
+                      ctx->min_area, scale_x, scale_y, dilation, max_candidates, scoring, score_undilated);
     if (bench)
         fprintf(stderr, "[ocr-detect-bench] postprocess: %.1f ms\n",
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
@@ -1155,7 +1174,8 @@ std::vector<text_box> detect(context * ctx, const float * pixels, int H, int W, 
 std::vector<text_box> detect_preprocessed_ex(context * ctx, const float * pixels, int H, int W,
                                              const detect_options & options) {
     return detect_with_options(ctx, pixels, H, W, options.prob_threshold, options.box_threshold, options.unclip_ratio,
-                               options.dilation, options.max_candidates, options.scoring);
+                               options.dilation, options.max_candidates, options.scoring, false,
+                               options.score_undilated);
 }
 
 detect_options rapid_defaults() {
@@ -1244,9 +1264,9 @@ static std::vector<text_box> detect_rgb_impl(context * ctx, const uint8_t * raw,
                 img_w, img_h, new_w, new_h, new_w, content_h, top_pad, padded_w, padded_h, options.max_side);
 
     // Run detection
-    auto boxes =
-        detect_with_options(ctx, pixels.data(), padded_h, padded_w, options.prob_threshold, options.box_threshold,
-                            options.unclip_ratio, options.dilation, options.max_candidates, options.scoring, checked);
+    auto boxes = detect_with_options(ctx, pixels.data(), padded_h, padded_w, options.prob_threshold,
+                                     options.box_threshold, options.unclip_ratio, options.dilation,
+                                     options.max_candidates, options.scoring, checked, options.score_undilated);
 
     // Scale coordinates back to original image space
     float inv_scale = 1.0f / scale;

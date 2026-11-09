@@ -233,6 +233,29 @@ CRISPEMBED_API const crispembed_hparams * crispembed_get_hparams(const crispembe
 // Model registry / auto-download helpers shared by the CLI and wrappers.
 CRISPEMBED_API const char * crispembed_cache_dir(void);
 CRISPEMBED_API const char * crispembed_resolve_model(const char * arg, int auto_download);
+// Per-call licence acceptance for apps that ask their user for consent per
+// model. Behaves like crispembed_resolve_model, but accepts exactly one
+// restricted licence, `accepted_spdx`, for this call only — nothing is stored
+// and no environment variable is touched. `accepted_spdx` must be an exact
+// SPDX-style tag as reported by crispembed_model_license_info (for example
+// "cc-by-nc-4.0"); NULL, "", "all" and "*" are refused and return "". A model
+// whose licence differs from `accepted_spdx` is refused. Never prompts on a
+// TTY. CRISPEMBED_ACCEPT_LICENSE, if the operator set it, still applies.
+// Returns the resolved path, or "" on failure. Valid until the next call.
+CRISPEMBED_API const char * crispembed_resolve_model_accepting(const char * arg, int auto_download,
+                                                               const char * accepted_spdx);
+// Licence facts for the registry entry `name` resolves to (the same entry
+// crispembed_resolve_model would fetch). Each out pointer may be NULL; on
+// return it points at a static string that lives for the process, or is NULL
+// when the model is unknown or the field is unset:
+//   out_name          canonical registry name
+//   out_spdx          SPDX-style licence tag, e.g. "cc-by-nc-4.0"
+//   out_card_url      upstream model card URL (the licence terms live there)
+//   out_display_name  human-readable registry description
+// Returns -1 for an unknown model, 0 for a permissive licence, 1 when a
+// download needs explicit acceptance (crispembed_resolve_model_accepting).
+CRISPEMBED_API int crispembed_model_license_info(const char * name, const char ** out_name, const char ** out_spdx,
+                                                 const char ** out_card_url, const char ** out_display_name);
 // Offline mode: when on, crispembed_resolve_model never touches the network —
 // it returns cached/local files only and fails with a message otherwise. Also
 // enabled by CRISPEMBED_OFFLINE=1 or a truthy HF_HUB_OFFLINE, even when

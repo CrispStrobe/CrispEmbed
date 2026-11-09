@@ -155,6 +155,22 @@ treated as DBNet. No text is a successful empty mask; failed detection and
 nonfinite detector outputs are errors. Extreme aspect ratios that collapse a
 resized detector dimension are rejected before graph creation.
 
+Text-mask scoring. The DBNet post-processor dilates its binary map by one pixel
+before grouping components. For text masks each component is scored only over
+the pixels that passed the probability threshold, not over that dilation ring,
+as upstream PaddleOCR `DBPostProcess` scores boxes against the probability map
+and never the dilation (v2.7.0 `ppocr/postprocess/db_postprocess.py`). Averaging
+the ring in pulled a 5-row subtitle line from 0.62 to 0.43, below the 0.5 box
+threshold, so the first line of the owner-review street crop was missing from
+the mask in every MI-GAN variant
+([receipt](../tests/results/inpainting/dbnet-mask-first-line-cpu-2026-11-09.json):
+line coverage 0.0 / 0.998 before, 1.0 / 1.0 after; exact-mask cases identical).
+More low-contrast scene text now passes as well (that crop's mask grew from
+11,949 to 21,430 pixels, mostly signage above the subtitle band), so combine text
+masks with `--mask-region` when only subtitles should change.
+`CRISPEMBED_INPAINT_TEXT_MASK_SCORE_UNDILATED=0` restores the previous scoring;
+OCR detection is unaffected.
+
 ## A frame sequence without repeated model loading
 
 Directory mode matches image and mask filenames, processes PNG files in lexical

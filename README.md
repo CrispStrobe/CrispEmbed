@@ -530,8 +530,10 @@ Three permissively-licensed engines, all auto-detected via `--ocr`:
   and published as `migan512-*`, `moebius-*`, `pixelhacker-*`, `sdxl-vae-inpaint-*`
   (non-F32 files also need `CRISPEMBED_INPAINT_QUANT=1`; MI-GAN512 Q4_K is below the
   0.94 bar on one street crop). Video: `--inpaint-stream` with temporal consistency
-  (`CRISPEMBED_INPAINT_STREAM=1`). Representative subtitle/video quality is not yet
-  qualified; LaMa is not implemented.
+  (`CRISPEMBED_INPAINT_STREAM=1`). DBNet text masks score thin subtitle lines over
+  thresholded pixels (`CRISPEMBED_INPAINT_TEXT_MASK_SCORE_UNDILATED=0` restores the old
+  scoring). Representative subtitle/video quality is not yet qualified; LaMa is not
+  implemented.
 - **PDF DPI profiling** — zero-dependency PDF parser computes effective page DPI
   to auto-select OCR resolution (downsample high-DPI, super-resolve low-DPI).
 - **Output formats** — plain text, hOCR, ALTO 3.1 XML, searchable PDF, with
@@ -869,6 +871,18 @@ consent to auto-download (interactive prompt, `--accept-license <spdx>`, or
 `CRISPEMBED_ACCEPT_LICENSE`). `--accept-license` acknowledges the caller accepts
 upstream terms — it does not grant rights you don't otherwise have. Audit the
 whole registry with `python tests/check_registry_licenses.py`.
+
+Apps that ask their own user for consent per model use the per-call C API
+instead of the process-wide variable:
+
+| Function | Purpose |
+|---|---|
+| `crispembed_model_license_info(name, &name, &spdx, &card_url, &display)` | Licence tag, model card URL and description of the entry `name` resolves to; returns `1` when a download needs acceptance, `0` when permissive, `-1` when unknown |
+| `crispembed_resolve_model_accepting(name, auto_download, spdx)` | Resolve/download, accepting exactly `spdx` for this call only; `all`, `*` and empty are refused, a model under a different licence is refused, nothing is stored, never prompts |
+
+Rust: `CrispEmbed::model_license_info(name)` / `CrispEmbed::resolve_model_accepting(name, auto_download, spdx)`;
+Python: `CrispEmbed.model_license_info(name)` / `CrispEmbed.resolve_model_accepting(...)`;
+Dart: `CrispEmbed.modelLicenseInfo(name)` / `CrispEmbed.resolveModelAccepting(...)`.
 
 **Check the base model, not just the fine-tune's tag.** A fine-tune cannot
 relicense what it was built on, and the declared tag is sometimes the author's

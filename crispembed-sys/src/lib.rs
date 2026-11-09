@@ -422,6 +422,26 @@ extern "C" {
     /// Resolve a model argument to a local GGUF path.
     pub fn crispembed_resolve_model(arg: *const c_char, auto_download: c_int) -> *const c_char;
 
+    /// Resolve like `crispembed_resolve_model`, accepting exactly the one
+    /// licence tag `accepted_spdx` for this call only. NULL, "", "all" and
+    /// "*" are refused (returns ""). Never prompts.
+    pub fn crispembed_resolve_model_accepting(
+        arg: *const c_char,
+        auto_download: c_int,
+        accepted_spdx: *const c_char,
+    ) -> *const c_char;
+
+    /// Licence facts of the registry entry `name` resolves to. Out pointers
+    /// may be NULL and receive static strings (or NULL). Returns -1 unknown
+    /// model, 0 permissive, 1 download needs explicit acceptance.
+    pub fn crispembed_model_license_info(
+        name: *const c_char,
+        out_name: *mut *const c_char,
+        out_spdx: *mut *const c_char,
+        out_card_url: *mut *const c_char,
+        out_display_name: *mut *const c_char,
+    ) -> c_int;
+
     /// Offline mode: model resolution never downloads (also CRISPEMBED_OFFLINE
     /// or a truthy HF_HUB_OFFLINE). `crispembed_is_offline` reports the
     /// effective state.

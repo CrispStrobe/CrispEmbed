@@ -206,6 +206,25 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 9 November 2026 — DBNet text-mask fix approved by owner (issue 71)
+
+Owner re-reviewed the street/DBNet case after PR #197 (both subtitle lines covered in all five variants,
+Q4_K 0.956 vs F32) and accepted it, including the wider mask that also erases faint signage. The
+undilated-score default for `--mask-from-text` stands; no subtitle-band default is added
+(`--mask-region` remains the opt-in for subtitle-only runs).
+
+## 9 November 2026 — DBNet text-mask first line fixed (issue 71)
+
+Root cause of the owner-review miss: the DB post-processor averaged each component's probability over its
+one-pixel dilation ring, so the thin first subtitle line of the street crop (two components, 0.62 / 0.64 on
+thresholded pixels) scored 0.43 and fell below the 0.5 box threshold. Upstream PaddleOCR `DBPostProcess`
+scores against the probability map and never the dilation (default `use_dilation=False`). `--mask-from-text`
+now scores over thresholded pixels (`CRISPEMBED_INPAINT_TEXT_MASK_SCORE_UNDILATED=0` restores the old scoring;
+OCR detection unchanged). Kaggle CPU re-run of the 7-case panel
+([receipt](tests/results/inpainting/dbnet-mask-first-line-cpu-2026-11-09.json)): line coverage 0.0 / 0.998
+before, 1.0 / 1.0 after in every variant; 512-F32 masked PSNR 9.84 → 11.95 dB; the 30 exact-mask results and
+the temporal metric are identical to the owner-review receipt, and the gate-off column reproduces it exactly.
+The mask also picks up more signage (11,949 → 21,430 px), so subtitle runs should add `--mask-region`.
 ## 9 November 2026 — PDF Craft feature local execution
 
 The owner authorized bounded local CPU builds/tests while GitHub Actions was
@@ -243,6 +262,7 @@ against immutable hash-verified v0.17.15, preserving legacy conversion despite
 the absence of all six new symbols. Initial helper failures and the genuine
 provenance defect remain separate from these final successes.
 
+
 ## 9 November 2026 — Inpainting owner review verdict (issue 71)
 
 Owner reviewed the 7-case panel (MI-GAN256 F32, MI-GAN512 F32/F16/Q8_0/Q4_K;
@@ -261,7 +281,6 @@ comparison. The pinned Unicode engine compiles into the same native archive.
 Hosted independent extraction, image-preservation and veraPDF validation are
 pending at this checkpoint; no conformance pass or release is claimed. The
 [contract](docs/ocr-reviewed-pdf.md) documents resources, options and gates.
-
 ## 9 November 2026 — explicit photo and mobile contract review
 
 At `fde19180`, [photo run 42590335637](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335637)

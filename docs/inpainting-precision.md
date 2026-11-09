@@ -34,6 +34,14 @@ as qualified on the synthetic panel but below the bar for that DBNet crop.
 bar on that crop.** It is not hidden by the per-engine minimum: any listing of
 this variant must carry the caveat.
 
+The owner review (9 November 2026) found that crop's first subtitle line
+uncovered by the DBNet mask in every variant, F32 included: a detector scoring
+defect, not precision. With the text-mask scoring fix
+([inpainting-cli.md](inpainting-cli.md), [receipt](../tests/results/inpainting/dbnet-mask-first-line-cpu-2026-11-09.json))
+both lines are fully covered and Q4_K scores 0.9557 against F32 on that case
+(Q8_0 0.9925, F16 0.999995). The 0.9019 figure above is kept as the published
+caveat; it was measured with the old mask.
+
 Publication: approved by the owner on 2026-11-02 per
 `docs/inpaint-publication-v1.json`; `.github/workflows/inpaint-gguf-publish.yml`
 copies exactly those files from the private repositories (SHA-256 checked) to

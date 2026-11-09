@@ -105,6 +105,14 @@ qwen35 decoder kernels. All default off.
 
 ## OCR engines
 
+### Document repetition diagnostics
+
+`CRISPEMBED_MARKER_REPETITION_CHECK=1` enables the default-off Unicode tandem
+repeat diagnostic in native Marker document processing. It reports possible
+repeated prose through block warnings and document metadata, retaining all
+text and provenance. Structured assets and malformed UTF-8 are excluded. The
+bounded thresholds and output fields are in [the Marker guide](marker.md#optional-repetition-diagnostics).
+
 ### Unlimited-OCR-2 (`unlimited-ocr2`, `unlimited-ocr2-q8`; orchestrator engine 13)
 
 | Variable | Default | Meaning |
@@ -157,7 +165,6 @@ token-ID exact on all five Kaggle cases and IDs identical to the old default on 
 | Variable | Default | Meaning |
 |---|---|---|
 | `CRISPEMBED_QWEN35_OCR` | off | Master gate for every qwen35 kernel. |
-| `CRISPEMBED_QWEN35_GDN_GROUPED_HEADS` | off | Separate experimental linear-attention APIs for compact unequal key/value head counts; also requires `CRISPEMBED_QWEN35_OCR=1`. Unset, empty or `0` disables them. Existing equal-head callers are unchanged; this component gate does not admit a 4B model. |
 | `CRISPEMBED_QWEN35_QUANT` | off | Quantized linear weights. |
 | `CRISPEMBED_QWEN35_PARALLEL_F16` | off | Thread-parallel F16 conversion of large matrices. |
 | `CRISPEMBED_QWEN35_WEIGHT_CACHE` | off | Per-context converted-weight cache (measured 2.7% cold / 0.8% warm gain with more RSS; kept off). |
@@ -234,11 +241,30 @@ kernels. See [inpainting-engines.md](inpainting-engines.md).
 
 ## Full inventory
 
+### Document extraction and model admission
+
+The PDF Craft adoption adds independent default-off document features:
+
+| Variable | Contract |
+| --- | --- |
+| `CRISPEMBED_MARKER_ARTIFACTS` | Save/reopen bounded, versioned extraction artifacts with embedded assets and provenance. |
+| `CRISPEMBED_MARKER_INCREMENTAL` | Start/step/cancel/resume extraction; also requires the artifact gate. Completed pages are checkpointed individually. |
+| `CRISPEMBED_MARKER_SOURCE_LINKS` | Capture immutable source text/ranges and expose explicit continuation targets and linked chunks. |
+| `CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE` | Conservative prose whitespace handling with source ranges; enables source capture. |
+| `CRISPEMBED_MARKER_REFERENCES` | Footnote/reference identities and physical versus printed page labels; enables source capture. |
+| `CRISPEMBED_ACCEPT_CC_BY_NC_LICENSE` | Required native acknowledgement for known Jina OCR or declared CC-BY-NC Unlimited profiles, including cached/direct files. It does not grant commercial rights. |
+
+Use `=1` to enable/acknowledge; unset, empty, `0`, `false`, `off` and `no`
+(case-insensitive) remain off. Configure artifact/runtime gates before creating
+the context. See [task acceptance](pdf-craft-tasks.md),
+[the lifecycle](marker-lifecycle.md), [source links](marker-source-links.md),
+and [Jina admission](jina-ocr-license-gate.md).
+
 Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-485 `CRISPEMBED_*` variables and 225 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+486 `CRISPEMBED_*` variables and 225 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -249,6 +275,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_ALLOW_UNPINNED_MODEL` | value | unset | path | tuning / config | `examples/cli/model_mgr.cpp` |  |
 | `CRISPEMBED_CACHE_DIR` | set/value | unset | path | tuning / config | `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp` | else |
 | `CRISPEMBED_INPAINT_STREAM` | on | off | bool | default-off experimental / opt-in | `examples/cli/inpaint_cli.cpp` |  |
+| `CRISPEMBED_INPAINT_TEXT_MASK_SCORE_UNDILATED` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `examples/cli/inpaint_cli.cpp` | one-pixel dilation ring and drop out of the mask (issue 71 owner review, still-street-dbnet). =0 restores the shared OCR scoring. |
 | `CRISPEMBED_LAYOUT_REPEAT` | value | unset | int | tuning / config | `examples/cli/main.cpp` |  |
 | `CRISPEMBED_LIB` | value | unset | path | tuning / config | `examples/demo/demo.py`, `examples/face_verify.py` |  |
 | `CRISPEMBED_MODEL` | value | unset | path | tuning / config | `examples/demo/demo.py`, `examples/demo/demo.rs` |  |
@@ -1586,54 +1613,3 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `VIT_EMBED_FORCE_CPU` | value | unset | int | tuning / config | `src/vit_embed.cpp` | Load weights — prefer GPU backend when available |
 
 <!-- END GENERATED: tools/list_env_vars.py -->
-
-`CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT=1` enables experimental block-aligned
-Q8_0/Q4_K conversion scheduling (maximum8 workers, minimum262144 elements).
-The existing `CRISPEMBED_QWEN35_QUANT` gate remains required. Converted F32 values
-and downstream matmul stay unchanged; no full-model converted-weight cache is
-allocated. Unset/empty/0, one thread, small tensors and other types use legacy
-conversion. Thread-launch failure joins writers before serial overwrite.
-
-`CRISPEMBED_LIGHTON4B_HEAD_BF16=1` is an experimental native diagnostic final-logit
-output cast to BF16 (RNE), leaving weights/hidden/caches/F32 matmul unchanged.
-Default off preserves F32 logits. Greedy ties choose the lowest token ID; NaN
-scores reject generation, infinities retain normal ordering.
-`CRISPEMBED_LIGHTON4B_GREEDY_TRACE=1` plus integer
-`CRISPEMBED_LIGHTON4B_GREEDY_TRACE_POSITION` selects one cached decode position
-for test-runner-only hidden/operator capture; the recomputed layer0 probe must
-match actual forward hidden bytes and never mutates its cache. These probes are
-not linked into public recognition artifacts.
-
-`CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS=1` experimentally casts dequantized
-Q8_0/Q4_K **named text matrices** to BF16 then back to F32 before existing
-matmul/gather, including embedding and tied streamed vocabulary projection.
-NATIVE_CONTEXT, LIGHTON4B_QUANT and QWEN35_QUANT gates are also required.
-Quant storage stays immutable; float vision/norm/conv tensors, unrelated names
-and other types are excluded. Conversion is in-place in existing transient
-matrix/row/tile buffers, with no full-model F32 cache. Default off preserves
-old F32 dequantization. This isolates reference-weight dtype, not activation
-dtype, reduction arithmetic, speed or quality qualification.
-Full4B decoder caches capture this weight-dtype mode and reject reusing an
-old cache after a mode toggle; a fresh prefill is required.
-This experimental weight mode is disabled under `__EMSCRIPTEN__`; the
-standalone fallback control simulates that preprocessor branch only and
-does not qualify a WebAssembly runtime or 4B model.
-
-`CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION=1` is a default-off experiment
-for the explicit format6 physical profile only. It uses F16 K/V cache values,
-F16 Q and softmax-P operands and the pinned original paired-F16/SGEMM CPU
-operators without changing global vendor traits. The first supported build
-profile is Linux x86_64, fixed AVX2/FMA/F16C, LLAMAFILE ON, native/AVX512/BLAS/
-OpenMP/backend-DL OFF; other builds, including WASM, reject an explicitly enabled
-physical experiment. Hardware capability is checked as well. Four compute
-threads and at most2048 cached tokens are required. N1 uses the source's
-explicit paired-F16 dot path; larger query batches require the supported SGEMM
-operator, with no kernel substitution. Cache mode is immutable, prior F16 cache
-values must be canonical, and output commits on success. This gate is inert for
-nonphysical owners. It does not qualify decoded quality or create a release alias.
-
-`CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS=1` is a default-off physical-owner experiment using source-shaped GDN operators while retaining the scalar log1p softplus. It preserves existing quantized projections and output routes, records a distinct cache mode, and rejects reuse across modes. Actual-input component controls pass, but full decoded table A/B regresses349→364/607 character edits and97→104/106 word edits; form text is unchanged. Keep this gate default-off and unqualified; it does not enable a release format. See [decoded result](lighton4b-physical-gdn-source-ops.md).
-
-The combined physical GDN+Q4-repack diagnostic matches observed table IDs/text but fails form character quality194/656 versus upstream189/656, despite better word edits. Both experimental flags remain default-off and unqualified. [Mixed outcome and no-ship limits](lighton4b-physical-gdn-source-ops.md).
-
-`CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED=1` is a default-off physical-owner experiment reproducing pinned upstream Q6 tiled block reduction for batches of at least eight tokens. It retains original quantized bytes, uses the existing public Q8_K activation converter and records a separate cache mode. Smaller batches retain legacy GGML arithmetic. Actual source and native graph boundaries differ; same-input operator proof and complete decoded A/B are required before any quality conclusion. The gate does not enable a public release format or a model alias.

@@ -1,6 +1,7 @@
 // Read-only public registry metadata against the production model manager.
 // No model files, native inference, cache directory or network are needed.
 #include "crispembed.h"
+#include "core/clean_exit.h"
 #include "model_mgr.h"
 #include "model_hashes.h"
 
@@ -39,7 +40,7 @@ static void check_pin(const crispembed_model_download_file_v1 & file) {
     assert(std::strspn(file.sha256, "0123456789abcdef") == 64);
 }
 
-int main() {
+static int crispembed_test_main() {
     crispembed_model_download_info_v1 info = {};
     assert(crispembed_get_model_download_info_v1(nullptr, &info) == -1);
     assert_empty(info);
@@ -96,4 +97,9 @@ int main() {
     assert(std::strcmp(info.companion.sha256, "6f912eb9fcef619b31c9afff7662a222da9ce6db89327eb465dbafd2fb6a2d7c") == 0);
     std::printf("{\"registry_entries\":%d,\"companions\":%d,\"local_only\":%d}\n", count, companion_count,
                 local_only_count);
+    return 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

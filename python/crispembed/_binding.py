@@ -1213,6 +1213,62 @@ class CrispEmbed:
         return resolved
 
     @staticmethod
+    def resolve_model_accepting(
+        model_path: str,
+        accepted_spdx: str,
+        auto_download: Optional[bool] = None,
+        lib_path: Optional[str] = None,
+    ) -> str:
+        """Resolve like :meth:`resolve_model`, accepting exactly one licence.
+
+        ``accepted_spdx`` is the tag the user consented to for this model
+        (see :meth:`model_license_info`). ``"all"``, ``"*"`` and ``""`` are
+        refused, as is a model under a different licence. Nothing is stored
+        and no environment variable is set.
+        """
+        if not accepted_spdx or accepted_spdx in ("all", "*"):
+            raise ValueError("accepted_spdx must be one exact licence tag")
+        lib = _load_library(lib_path)
+        fn = lib.crispembed_resolve_model_accepting
+        fn.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p]
+        fn.restype = ctypes.c_char_p
+        if auto_download is None:
+            auto_download = (
+                ".gguf" not in model_path and "/" not in model_path and "\\" not in model_path
+            )
+        raw = fn(model_path.encode("utf-8"), int(auto_download), accepted_spdx.encode("utf-8"))
+        resolved = raw.decode("utf-8") if raw else ""
+        if not resolved:
+            raise RuntimeError(f"Could not resolve model: {model_path}")
+        return resolved
+
+    @staticmethod
+    def model_license_info(model_name: str, lib_path: Optional[str] = None) -> Optional[dict]:
+        """Licence facts of the registry entry ``model_name`` resolves to.
+
+        Returns ``None`` for an unknown model, else a dict with ``name``,
+        ``spdx``, ``model_card_url``, ``display_name`` and
+        ``requires_acceptance``.
+        """
+        lib = _load_library(lib_path)
+        fn = lib.crispembed_model_license_info
+        out_t = ctypes.POINTER(ctypes.c_char_p)
+        fn.argtypes = [ctypes.c_char_p, out_t, out_t, out_t, out_t]
+        fn.restype = ctypes.c_int
+        outs = [ctypes.c_char_p() for _ in range(4)]
+        rc = fn(model_name.encode("utf-8"), *(ctypes.byref(o) for o in outs))
+        if rc < 0:
+            return None
+        name, spdx, card, display = ((o.value or b"").decode("utf-8") for o in outs)
+        return {
+            "name": name,
+            "spdx": spdx,
+            "model_card_url": card,
+            "display_name": display,
+            "requires_acceptance": rc == 1,
+        }
+
+    @staticmethod
     def query_prefix(model_name: str, lib_path: Optional[str] = None) -> str:
         lib = _load_library(lib_path)
         lib.crispembed_query_prefix.argtypes = [ctypes.c_char_p]

@@ -1,6 +1,7 @@
 // Model-free geometry controls and PPM driver for the phone-photo OCR panel.
 // Compile the production crop/cleanup sources; no model or inference stub.
 #include "ocr_crop.h"
+#include "core/clean_exit.h"
 #include "scan_cleanup.h"
 #include "crispembed.h"
 
@@ -245,7 +246,7 @@ static void write_ppm(const char * path, const uint8_t * pixels, int width, int 
     require(file.good(), "cannot write P6 result");
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     try {
         if (argc == 1 || std::string(argv[1]) == "self") {
             controls();
@@ -326,4 +327,8 @@ int main(int argc, char ** argv) {
         std::cerr << e.what() << "\n";
         return 1;
     }
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

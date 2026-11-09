@@ -1359,6 +1359,11 @@ checkpoint/code/base terms independently; benchmark rank is not permission.
 
 ## Issue71, packaging and downstream delivery
 
+- DBNet text-mask first line (owner review, 9 November 2026): fixed by scoring
+  text-mask components over thresholded pixels (see HISTORY). Open: owner
+  re-review of the street/DBNet thumbnails; decide whether `--mask-from-text`
+  should default a subtitle-band region, since the fix also masks more signage.
+
 - Bounded source delivery, 1 November 2026: issue71 CLI implementation on
   `feat/issue71-inpainting`, based on `b8cd2497765f2fd8db0b9c713d952898bdd9b996`.
   Adds a default-off, exact-model-pinned MI-GAN CLI, native256 tiling, explicit or
