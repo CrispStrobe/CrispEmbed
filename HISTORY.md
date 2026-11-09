@@ -4,6 +4,25 @@ for final verdicts, live jobs and remaining tasks.
 
 ## 9 November 2026 — reviewed PDF export implementation checkpoint
 
+The [f06ea90 repaired-harness run](tests/results/ocr-render/readers-f06ea90.json)
+passes 59 native checks, all 16 veraPDF PDF/A-2b positives and two damaged
+controls. Its actual logical text matches are MuPDF 9/11, pypdf 11/11,
+Poppler CLI 2/11 and PDFium 1/11. At
+[ef8ab9a](tests/results/ocr-render/readers-ef8ab9a.json), both long MuPDF
+boundary cases recover, but inherited RTL context damages a following Latin
+fragment; MuPDF is 10/11 and the other counts remain unchanged. Exact
+ActualText and valid archival resources do not establish reader compatibility.
+The source, all extracted strings, raw word geometry and artifact hashes are
+retained. The older [scalar experiment](tests/results/ocr-render/character-593f827.json)
+also retains its failures and PDFium harness limitation.
+
+Writer checkpoint `2111db64` saves synchronous bounded object emission,
+original Rust I/O-error propagation and explicit cancellation/partial-write
+controls. It withholds bidi capability 16 and removes redundant ActualText
+from the ordinary scalar Unicode path. Its independent hosted writer/archive
+and unchanged strict bidi jobs remain pending; no pass follows from the
+implementation checkpoint alone.
+
 The initial [87357610 baseline](tests/results/ocr-render/baseline-87357610.json)
 passed 51 native checks and all five two-page archival pixel/text-preservation
 cases. Arabic and Hebrew extraction reversed in all three readers; a mixed-text

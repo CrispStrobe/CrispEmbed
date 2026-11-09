@@ -88,6 +88,29 @@ is preserved. `feat/ocr-reviewed-pdf-readers` isolates the corrected reader
 checks; `feat/ocr-reviewed-pdf-limits` adds whole-document memory/page ceilings
 without moving the queued reader source. Final combined-source qualification
 is pending; limits are not a native scale-performance claim.
+
+Current writer lane: `feat/ocr-pdf-stream-writer` at `2111db64`. The source
+adds a checked synchronous C/Rust sink, 64 KiB slices, a caller-selected
+4 KiB..2 GiB ceiling and progressive object emission. Its public capability
+mask is `47`; bidi bit `16` stays withheld while exact extraction/search
+failures remain. LTR uses scalar ToUnicode without redundant replacement text.
+Source-bound writer qualification includes partial-output limits, original
+I/O errors, cancellation, short/zero writes, panic containment, real files,
+independent image/text/page checks and a >128 MiB export under a 256 MiB cap.
+This gate and the separate unchanged strict bidi gate are pending. The app
+owns atomic publication and final paired native/mobile execution.
+
+Preserved reader evidence: `f06ea90` exercises PDFium after repairing the
+harness; `ef8ab9a` fixes MuPDF's 32-scalar boundary but exposes inherited
+direction in a following LTR run. Both pass native 59/59, veraPDF 16/16 and
+two damaged controls while failing reader assertions. The separate
+`feat/ocr-pdf-reader-strategies` / `feat/ocr-pdf-reader-contiguous` diagnostics
+compare exact run/scalar Unicode, replacement text and visual paint order
+without reversing logical mappings or altering qualifying native sources.
+Their reports retain PDFium wrapper/core versions, flags, binary hashes,
+character lists and search results. See the precise
+[reader receipts](tests/results/ocr-render/readers-ef8ab9a.json).
+
 Acceptance requires unchanged page pixels/sizes, logical mixed-direction copy
 and search, combining marks, independent veraPDF 2b compliance and deliberately
 invalid controls rejected. Exact extracted strings and validator failures are

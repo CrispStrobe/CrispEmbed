@@ -7,9 +7,14 @@ legacy entry points keep their layouts and compatibility defaults.
 
 ## Explicit options and capabilities
 
-`crispembed_ocr_render_capabilities()` returns PDF `1`, Unicode mappings `2`,
-decoded raster images `4`, PDF/A-2b `8`, and opt-in bidirectional layout `16`.
-Call `ocr_render_set_pdf_bidi(renderer, 1)` before `ocr_render_begin()` to enable
+`crispembed_ocr_render_capabilities()` advertises PDF `1`, Unicode mappings `2`,
+decoded raster images `4`, PDF/A-2b `8`, and a bounded synchronous writer `32`
+(mask `47`). Bit `16` is reserved for bidirectional export and is withheld
+while strict reader failures remain. Applications must keep that option
+unavailable until a qualified source advertises it. The experimental native
+option remains available to the independent qualification lane.
+
+Call `ocr_render_set_pdf_bidi(renderer, 1)` before `ocr_render_begin()` to exercise
 Unicode 17 paragraph analysis and visual run positioning. With that option
 disabled, the earlier explicit rejection of RTL text remains available as the
 compatibility control. This is a per-renderer setting, without process-wide
@@ -20,6 +25,16 @@ sizes, bidi)`. Older checked functions keep `bidi=false`. A matching native
 library is required; mixing new Rust declarations with a released old binary
 is unsupported. The application should query capabilities before exposing
 these options and use the binary-safe length/byte APIs.
+
+Ordinary LTR text retains its original scalar encoding even when the
+experimental bidi option is enabled. Exact `ToUnicode` maps are sufficient
+for these scalars; redundant `ActualText` was removed because PDFium's
+replacement-text path can discard supplementary characters before extraction.
+The upstream [PDFium text-page implementation](https://pdfium.googlesource.com/pdfium/+/refs/heads/main/core/fpdftext/cpdf_textpage.cpp)
+contains that filter in `ProcessMarkedContent`; the 9 November source audit
+records blob `c048ba3a8bdce5aa5e018eb423913abe2b65cf37`.
+This distinction is checked with four independent readers, including actual
+character lists and search results rather than PDF metadata alone.
 
 The pinned [SheenBidi source](../vendor/sheenbidi/UPSTREAM.md) resolves Unicode
 paragraph levels before estimated wrapping, including embeddings, overrides,
@@ -38,9 +53,10 @@ the 512-byte UTF-16BE limit in
 [ISO 32000-1 section 9.10.3](https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf),
 including supplementary pairs and combining clusters at that boundary. An
 extreme combining cluster split across mappings partitions its original cell
-without overprinting or discarding marks. A text object spans consecutive
-fragments so a leading combining mark inherits its base's direction rather
-than restarting in the reader's default direction. Paragraph separators remain in the
+without overprinting or discarding marks. A text object spans only a split
+base/mark cluster so its continuation inherits the base direction; unrelated
+fragments reset direction context, including space-prefixed Latin text.
+Paragraph separators remain in the
 logical text with zero selection width. The visible
 page is always the original supplied raster. Selection geometry remains an
 estimate within the supplied OCR region: the renderer does not recover fonts,
@@ -80,11 +96,47 @@ copied, and releases decoded RGB/compression buffers before storing each image
 stream. These limits prevent unbounded page accumulation; they are not a
 128 MiB peak-memory claim. One photo's decode/compression buffers, Unicode
 layout structures, the final PDF and the caller's copy still need working
-memory. This is a bounded exporter, not a streaming implementation or a
+memory. These byte-API bounds do not establish a
 5,000-page native throughput qualification. The workspace history benchmark
 does not measure PDF export capacity. Hosted tests cover the configured page
 boundary, accumulated output/input rejection, region limits and successful
 recovery after a failed job.
+
+## Synchronous streaming writer
+
+`ocr_render_set_pdf_writer(renderer, callback, context, max_output_bytes)` is
+called after `begin()` and before the first page. The callback receives at
+most 64 KiB per call, synchronously during `end()`. Return zero only after
+consuming the complete slice; any nonzero value stops output. The renderer
+does not call the sink after a failure, retain its context after the call, or
+populate the byte-returning output buffer. `begin()` clears the previous sink.
+The caller must not re-enter the renderer or throw through the C callback.
+
+The output ceiling is explicit and must be 4 KiB through 2 GiB. A caller with
+a 256 MiB mobile-provider limit selects 256 MiB. The renderer reserves object
+IDs, emits finalized bodies sequentially and records checked 64-bit xref
+offsets. It retains page/text/layout metadata plus the current page's
+decode/compression buffers; it does not accumulate the complete PDF. Existing
+page, input, per-region and image limits still apply. The final output cap is
+not a peak-memory guarantee.
+
+Rust uses `ocr_render_pdf_to_writer_checked(pages, pdfa, sizes, bidi,
+max_output_bytes, writer) -> std::io::Result<u64>`. It completes partial
+writes, returns the original I/O error unchanged (including `Interrupted` for
+cooperative cancellation), rejects zero progress with `WriteZero`, and catches
+callback panics before the C boundary. It flushes the writer before success.
+Any error can leave a partial destination: write to an atomic temporary file
+and publish only after successful rendering, flush and application durability
+checks. The application owns file close, synchronization and publication.
+
+The [writer qualification workflow](../.github/workflows/ocr-stream-writer.yml)
+tests the actual native renderer and the exact production Rust wrapper/FFI.
+It retains source-slice hashes and a real PDF larger than the legacy 128 MiB
+buffer ceiling under a 256 MiB limit. That larger PDF is a separate remote
+artifact; compact reports include its hash and measured resource use.
+Partial-output byte-limit rejection, callback errors, cancellation, short
+writes, zero progress, panic containment, flush errors and restart are explicit
+controls. The full crate is also covered by the paired application build lane.
 
 ## Independent acceptance gates
 
@@ -136,7 +188,19 @@ Its source strings, outputs, parser warnings, validator rules and artifact
 digest remain available. The corrected combined font/geometry/resource-limit
 source requires a fresh hosted run, including the added multiline case.
 
-Corrected reader and combined-source archival conformance gates remain pending.
-Capabilities describe the implemented opt-in path; deployment and a broad
-conformance claim require a passing report for the exact integrated source.
+The [repaired PDFium harness receipt](../tests/results/ocr-render/readers-f06ea90.json)
+records native 59/59 and veraPDF 16/16 plus both negative controls, but actual
+logical extraction matches are MuPDF 9/11, pypdf 11/11, Poppler CLI 2/11 and
+PDFium 1/11. The [mapping-boundary receipt](../tests/results/ocr-render/readers-ef8ab9a.json)
+fixes both long MuPDF cases and exposes inherited direction in mixed-LTR text;
+MuPDF becomes 10/11, with the other counts unchanged. ActualText remains exact
+in all eleven cases; this alone does not qualify search/copy. The
+[older per-character experiment](../tests/results/ocr-render/character-593f827.json)
+preserves its negative results and the then-unexercised PDFium harness.
+
+The streaming/scalar-Unicode source `2111db64` has independent writer and
+strict bidi jobs. Its new results remain pending at this checkpoint. The
+bidirectional capability stays withheld; no failed assertion is converted
+into a pass or substituted with a more favorable extraction API. A broad
+conformance or reader-compatibility claim requires a passing report for the exact source.
 No release asset or application production pin changes as part of this lane.

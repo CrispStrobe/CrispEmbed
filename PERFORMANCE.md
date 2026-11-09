@@ -1,5 +1,20 @@
 ## Reviewed PDF export qualification (9 November 2026)
 
+Source-specific [f06ea90](tests/results/ocr-render/readers-f06ea90.json) and
+[ef8ab9a](tests/results/ocr-render/readers-ef8ab9a.json) each pass 59 native
+checks, 16 independent PDF/A-2b positives and two negative controls. Both keep
+eleven exact logical ActualText sequences. Their reader matches remain
+unequal: MuPDF 9/11 then 10/11, pypdf 11/11, Poppler CLI 2/11, PDFium 1/11.
+Poppler raw word coordinates are retained separately and do not replace the
+failed CLI output. Neither source qualifies general bidi export.
+
+The writer source `2111db64` bounds output slices at 64 KiB and allows an
+explicit 4 KiB..2 GiB file limit while retaining page/input/image ceilings.
+Object bodies leave memory as they are emitted; the whole PDF is not retained.
+A hosted 11-page >128 MiB file under a 256 MiB ceiling is pending, with actual
+time/RSS and independent PDF readers/veraPDF required before recording a
+measured result. These design bounds are not a peak-memory guarantee.
+
 At the [initial baseline](tests/results/ocr-render/baseline-87357610.json), five
 two-page archival cases (RGB, grayscale, alpha, JPEG, text-only) retain zero pixel
 difference against standard export, and all 51 native checks pass. The first two
