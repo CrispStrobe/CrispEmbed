@@ -24,6 +24,10 @@ on:
       # Versioned document diagnostics (stdlib; no model execution)
       - 'tools/ocr_document_eval.py'
       - 'tests/test_ocr_document_eval.py'
+      - 'tests/marker_corpus_ab.py'
+      - 'tests/test_marker_corpus_ab.py'
+      - 'tools/ocr-gold-corpus/fetch_marker_ab.py'
+      - 'tests/regression/marker/pdf-craft-corpus-v1.json'
       - 'models/convert-lightonocr-to-gguf.py'
       - 'models/lightonocr3*'
       - 'tools/*lightonocr3*.py'
@@ -130,6 +134,10 @@ on:
       # Versioned document diagnostics (stdlib; no model execution)
       - 'tools/ocr_document_eval.py'
       - 'tests/test_ocr_document_eval.py'
+      - 'tests/marker_corpus_ab.py'
+      - 'tests/test_marker_corpus_ab.py'
+      - 'tools/ocr-gold-corpus/fetch_marker_ab.py'
+      - 'tests/regression/marker/pdf-craft-corpus-v1.json'
       - 'models/convert-lightonocr-to-gguf.py'
       - 'models/lightonocr3*'
       - 'tools/*lightonocr3*.py'
@@ -264,6 +272,10 @@ jobs:
       - name: OCR document structure and provenance controls
         if: ${{ !cancelled() }}
         run: python tests/test_ocr_document_eval.py -v
+
+      - name: Marker corpus geometry and source accounting controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_marker_corpus_ab.py -v
 
       - name: Retained OCR report extraction controls
         if: ${{ !cancelled() }}

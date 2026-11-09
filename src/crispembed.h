@@ -23,6 +23,10 @@
 #else
 #define CRISPEMBED_API
 #endif
+#elif defined(__APPLE__)
+// Dart FFI finds these symbols dynamically. On Mach-O, `used` also prevents
+// Release dead stripping after a static archive member has been loaded.
+#define CRISPEMBED_API __attribute__((visibility("default"), used))
 #else
 #if defined(CRISPEMBED_BUILD)
 #define CRISPEMBED_API __attribute__((visibility("default")))

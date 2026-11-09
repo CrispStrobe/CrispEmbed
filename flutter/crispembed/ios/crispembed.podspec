@@ -60,8 +60,18 @@ Pod::Spec.new do |s|
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
-    # Force-load the static archive so all C symbols are visible to Dart FFI.
-    'OTHER_LDFLAGS' => '-force_load $(PODS_TARGET_SRCROOT)/Libs/libcrispembed-static.a',
+  }
+
+  # FFI-only calls do not create link-time references. Force-load the archive in
+  # the final application, not the vendored-only pod target. PODS_TARGET_SRCROOT
+  # is unavailable there; resolve this pod's actual location relative to the
+  # Podfile so direct :path installs and Flutter's plugin symlinks both work.
+  # The public Apple C ABI uses `used` to survive Release dead stripping without
+  # disabling dead stripping or changing export rules for the rest of the app.
+  archive = Pathname.new(File.expand_path('Libs/libcrispembed-static.a', __dir__))
+  archive_relative = archive.relative_path_from(Pod::Config.instance.installation_root)
+  s.user_target_xcconfig = {
+    'OTHER_LDFLAGS' => "$(inherited) -force_load \"$(PODS_PODFILE_DIR_PATH)/#{archive_relative}\"",
   }
 
   # This is a vendored-library pod; no dummy source file is required.

@@ -137,8 +137,9 @@ class CrispMarker {
       maxBlocks,
       maxPages,
     ]) {
-      if (n < -2147483648 || n > 2147483647)
+      if (n < -2147483648 || n > 2147483647) {
         throw ArgumentError('Integer exceeds C ABI range');
+      }
     }
     if (maxPixels < 1 ||
         maxPixels > 64000000 ||
@@ -249,8 +250,9 @@ class CrispMarker {
     final p = calloc<Uint8>(pixels.length);
     try {
       p.asTypedList(pixels.length).setAll(0, pixels);
-      if (_raw(_ctx, p, width, height, channels) == 0)
+      if (_raw(_ctx, p, width, height, channels) == 0) {
         throw StateError(_errorText());
+      }
     } finally {
       calloc.free(p);
     }
@@ -342,8 +344,9 @@ class CrispMarker {
     try {
       for (var i = 0; i < _count(_ctx); i++) {
         final name = _name(_ctx, i), p = _data(_ctx, i, size);
-        if (name == nullptr || (p == nullptr && size.value != 0))
+        if (name == nullptr || (p == nullptr && size.value != 0)) {
           throw StateError('Invalid native asset');
+        }
         out[name.toDartString()] = size.value == 0
             ? Uint8List(0)
             : Uint8List.fromList(p.asTypedList(size.value));

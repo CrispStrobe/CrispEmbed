@@ -135,9 +135,16 @@ def main():
     font = Path("/usr/share/tesseract-ocr/5/tessdata/pdf.ttf")
     if not font.is_file():
         raise FileNotFoundError("Installed Tesseract PDF support font is unavailable")
+    font_revision = "3decf1c8252ba6dbeef0bf908f4b0aab7f18d113"
+    font_source = f"https://raw.githubusercontent.com/tesseract-ocr/tessconfigs/{font_revision}/"
+    font_digest = "c7845420925a23d88ed830a63957b8af85a66a8daf8d9fc90e843673b2ef1a59"
+    if sha(font) != font_digest:
+        raise ValueError("Installed PDF support font differs from its verified upstream source")
     shutil.copyfile(font, cache / "tessdata/pdf.ttf")
     report["assets"]["pdf.ttf"] = {"passed": True, "sha256": sha(font), "bytes": font.stat().st_size,
-                                    "source": "installed Tesseract 5.5.0 support font"}
+                                    "source": "installed Tesseract 5.5.0 support font",
+                                    "source_url": font_source + "pdf.ttf", "repository_revision": font_revision,
+                                    "license": "Apache-2.0", "license_url": font_source + "LICENSE"}
     model = protocol["retrieval"]
     report["assets"]["embedding_model"] = download(
         f"https://huggingface.co/{model['model_repository']}/resolve/{model['revision']}/{model['filename']}",

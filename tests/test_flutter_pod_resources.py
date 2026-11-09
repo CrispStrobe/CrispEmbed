@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: MIT
 """Build an actual CocoaPods :path consumer of an unmodified CrispEmbed podspec.
 
-macOS builds and launches an owned native app; iOS builds/links an unsigned
-device-SDK app without claiming device execution. Both read the built notice
-bundle. This is native pod integration, not Flutter SDK/app qualification.
+macOS builds and launches an owned native app using only dynamic C ABI lookup;
+iOS checks an unsigned Release device-SDK app's exports without claiming device
+execution. Both read the built notice bundle. Direct paths containing spaces and
+Flutter-style plugin symlinks use the real podspec. This is native pod integration,
+not Flutter SDK/app qualification.
 Requires an Apple runner with Xcode and CocoaPods, plus this build's native libs.
 No release download, model inference, signing identity or publication is used.
 """
@@ -70,6 +72,7 @@ def project_text(apple_platform):
  ARCHS = arm64;
  CODE_SIGNING_ALLOWED = NO;
  CODE_SIGNING_REQUIRED = NO;
+ DEAD_CODE_STRIPPING = YES;
  ENABLE_USER_SCRIPT_SANDBOXING = NO;
  GENERATE_INFOPLIST_FILE = NO;
  HEADER_SEARCH_PATHS = ("$(inherited)", "$(PROJECT_DIR)/native");
@@ -81,6 +84,59 @@ def project_text(apple_platform):
  SDKROOT = {sdk};
  {deployment}
 ''')
+
+
+def ffi_main(marker_symbols):
+    names = ",\n        ".join(json.dumps(name) for name in marker_symbols)
+    return '''#import <Foundation/Foundation.h>
+#include <TargetConditionals.h>
+#include "crispembed.h"
+#include <dlfcn.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+typedef crispembed_marker_config (*MarkerDefaultConfig)(void);
+typedef crispembed_marker_context * (*MarkerInit)(const crispembed_marker_config *);
+typedef const char * (*MarkerProgress)(crispembed_marker_context *);
+typedef void (*MarkerFree)(crispembed_marker_context *);
+int main(void) {
+    @autoreleasepool {
+        void * library = RTLD_DEFAULT;
+#if TARGET_OS_OSX
+        NSString * path = [[[NSBundle mainBundle] privateFrameworksPath]
+            stringByAppendingPathComponent:@"libcrispembed.dylib"];
+        library = dlopen([path fileSystemRepresentation], RTLD_NOW | RTLD_LOCAL);
+        if (!library) { fprintf(stderr, "%s\\n", dlerror()); return 10; }
+#endif
+        const char * required[] = {
+        __MARKER_SYMBOLS__
+        };
+        for (size_t i = 0; i < sizeof(required) / sizeof(required[0]); ++i) {
+            if (!dlsym(library, required[i])) {
+                fprintf(stderr, "Missing dynamic ABI: %s\\n", required[i]); return 14;
+            }
+        }
+        MarkerDefaultConfig defaults = (MarkerDefaultConfig)dlsym(library, "crispembed_marker_default_config");
+        MarkerInit initialize = (MarkerInit)dlsym(library, "crispembed_marker_init");
+        MarkerProgress progress_fn = (MarkerProgress)dlsym(library, "crispembed_marker_progress");
+        MarkerFree release = (MarkerFree)dlsym(library, "crispembed_marker_free");
+        crispembed_marker_config config = defaults();
+        if (config.struct_size != sizeof(config)) return 11;
+        setenv("CRISPEMBED_MARKER", "1", 1);
+        setenv("CRISPEMBED_TELEOCR", "0", 1);
+        config.mode = 1;
+        crispembed_marker_context * context = initialize(&config);
+        if (!context) return 12;
+        const char * progress = progress_fn(context);
+        int success = progress && strstr(progress, "\\\"state\\\":\\\"idle\\\"");
+        release(context);
+        if (!success) return 13;
+        printf("Owned CocoaPods consumer: %zu Marker symbols resolved dynamically; actual Marker ABI initialized successfully\\n",
+               sizeof(required) / sizeof(required[0]));
+    }
+    return 0;
+}
+'''.replace("__MARKER_SYMBOLS__", names)
 
 
 def main():
@@ -100,7 +156,9 @@ def main():
     env.update(COCOAPODS_DISABLE_STATS="true", CRISPEMBED_OFFLINE="1")
     error = None
     selected = []
-    bundle_hashes = {}
+    bundle_hashes, consumers = {}, []
+    marker_symbols = sorted(set(re.findall(r"^CRISPEMBED_API\s+[^;{]*?\b(crispembed_marker_\w+)\s*\(",
+                                          (ROOT / "src/crispembed.h").read_text(), re.MULTILINE)))
 
     def sanitized(value):
         for path, label in ((out, "<OUTPUT>"), (native_dir, "<NATIVE_LIBRARIES>"), (ROOT, "<REPOSITORY>")):
@@ -117,8 +175,18 @@ def main():
         if launch:
             for key in ("DYLD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH", "LD_LIBRARY_PATH"):
                 command_env.pop(key, None)
-        result = subprocess.run(command, cwd=cwd, env=command_env, text=True, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, timeout=timeout)
+        try:
+            result = subprocess.run(command, cwd=cwd, env=command_env, text=True, stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT, timeout=timeout)
+        except subprocess.TimeoutExpired as exc:
+            output = exc.stdout or ""
+            if isinstance(output, bytes):
+                output = output.decode("utf-8", errors="replace")
+            (out / (label + ".log")).write_text(sanitized(output), encoding="utf-8")
+            commands.append({"label": label, "command": [sanitized(str(part)) for part in command],
+                             "exit_code": None, "timed_out": True, "timeout_seconds": timeout})
+            check(label + ": command finishes within its budget", False)
+            raise
         (out / (label + ".log")).write_text(sanitized(result.stdout), encoding="utf-8")
         commands.append({"label": label, "command": [sanitized(str(part)) for part in command],
                          "exit_code": result.returncode})
@@ -135,7 +203,8 @@ def main():
         toolchain["cocoapods"] = run("cocoapods-version", ["pod", "--version"]).strip()
         sdk = "macosx" if args.platform == "macos" else "iphoneos"
         toolchain["sdk"] = run("sdk-version", ["xcrun", "--sdk", sdk, "--show-sdk-version"]).strip()
-        plugin = out / "plugin"
+        check("public Marker ABI inventory is available", len(marker_symbols) >= 17)
+        plugin = out / "plugin with spaces"
         staged = plugin / args.platform
         shutil.copytree(ROOT / "flutter/crispembed" / args.platform, staged,
                         ignore=shutil.ignore_patterns("Libs", "Pods", "build"))
@@ -154,90 +223,118 @@ def main():
         for name, data in expected.items():
             check(name + ": shipped path-install resource is exact", (staged / "Notices" / name).read_bytes() == data)
         check("podspec is unmodified", sha(staged / "crispembed.podspec") == source_hashes[f"flutter/crispembed/{args.platform}/crispembed.podspec"])
-        project = out / "consumer"
-        project.mkdir()
-        (project / "native").mkdir()
-        shutil.copyfile(ROOT / "src/crispembed.h", project / "native/crispembed.h")
-        (project / "main.m").write_text('''#import <Foundation/Foundation.h>
-#include "crispembed.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-int main(void) {
-    @autoreleasepool {
-        crispembed_marker_config config = crispembed_marker_default_config();
-        if (config.struct_size != sizeof(config)) return 11;
-        setenv("CRISPEMBED_MARKER", "1", 1);
-        setenv("CRISPEMBED_TELEOCR", "0", 1);
-        config.mode = 1;
-        crispembed_marker_context * context = crispembed_marker_init(&config);
-        if (!context) return 12;
-        const char * progress = crispembed_marker_progress(context);
-        int success = progress && strstr(progress, "\\\"state\\\":\\\"idle\\\"");
-        crispembed_marker_free(context);
-        if (!success) return 13;
-        puts("Owned CocoaPods consumer: actual Marker ABI initialized successfully");
-    }
-    return 0;
-}
-''', encoding="utf-8")
-        (project / "Info.plist").write_text('''<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-<key>CFBundleIdentifier</key><string>org.crispembed.ownedpodprobe</string>
-<key>CFBundleExecutable</key><string>$(EXECUTABLE_NAME)</string>
-<key>CFBundleName</key><string>CrispPodProbe</string>
-<key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>1.0</string>
-<key>CFBundleVersion</key><string>1</string>
-</dict></plist>
-''', encoding="utf-8")
-        xcodeproj = project / (APP + ".xcodeproj")
-        schemes = xcodeproj / "xcshareddata/xcschemes"
-        schemes.mkdir(parents=True)
-        (xcodeproj / "project.pbxproj").write_text(project_text(args.platform), encoding="utf-8")
-        (schemes / (APP + ".xcscheme")).write_text('''<?xml version="1.0" encoding="UTF-8"?>
-<Scheme LastUpgradeVersion="1600" version="1.3">
-<BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES"><BuildActionEntries>
-<BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">
-<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="A00000000000000000000009" BuildableName="CrispPodProbe.app" BlueprintName="CrispPodProbe" ReferencedContainer="container:CrispPodProbe.xcodeproj"/>
-</BuildActionEntry></BuildActionEntries></BuildAction>
-</Scheme>
-''', encoding="utf-8")
-        apple_platform, floor = ("osx", "12.0") if args.platform == "macos" else ("ios", "15.0")
-        (project / "Podfile").write_text(f'''platform :{apple_platform}, '{floor}'
-install! 'cocoapods', :deterministic_uuids => true
-project '{APP}.xcodeproj'
-target '{APP}' do
-  pod 'crispembed', :path => '../plugin/{args.platform}'
-end
-''', encoding="utf-8")
-        run("pod-install", ["pod", "install", "--verbose"], cwd=project)
-        lock = (project / "Podfile.lock").read_text()
-        check("CocoaPods resolves the real local path pod", "EXTERNAL SOURCES:" in lock and
-              f":path: \"../plugin/{args.platform}\"" in lock or
-              "EXTERNAL SOURCES:" in lock and f":path: ../plugin/{args.platform}" in lock)
-        for name, data in expected.items():
-            check(name + ": path install preserves shipped source bytes", (staged / "Notices" / name).read_bytes() == data)
-        destination = "platform=macOS,arch=arm64" if args.platform == "macos" else "generic/platform=iOS"
-        derived = out / "derived"
-        run("xcodebuild", ["xcodebuild", "-workspace", str(project / (APP + ".xcworkspace")), "-scheme", APP,
-                           "-configuration", "Debug", "-sdk", sdk, "-destination", destination,
-                           "-derivedDataPath", str(derived), "CODE_SIGNING_ALLOWED=NO", "CODE_SIGNING_REQUIRED=NO",
-                           "ENABLE_USER_SCRIPT_SANDBOXING=NO", "build"], cwd=project, timeout=240)
-        product_dir = "Debug" if args.platform == "macos" else "Debug-iphoneos"
-        app = derived / "Build/Products" / product_dir / (APP + ".app")
-        check("unsigned native application was produced", app.is_dir())
-        bundles = list(app.rglob("crispembed_native_notices.bundle"))
-        check("the built application contains exactly one native notice bundle", len(bundles) == 1)
-        for name, data in expected.items():
-            files = list(bundles[0].rglob(name))
-            check(name + ": actual built bundle preserves canonical bytes", len(files) == 1 and files[0].read_bytes() == data)
-            bundle_hashes[name] = sha(files[0])
-        if args.platform == "macos":
-            check("CocoaPods embeds the real dylib inside the app", (app / "Contents/Frameworks/libcrispembed.dylib").is_file())
-            output = run("native-app-launch", [str(app / "Contents/MacOS" / APP)], cwd=out, timeout=30, launch=True)
-            check("bundled macOS application executes the actual Marker C ABI", "actual Marker ABI initialized successfully" in output)
+        for case in ("direct", "symlink"):
+            def case_check(name, condition):
+                check(case + ": " + name, condition)
+            project = out / ("consumer " + case)
+            project.mkdir()
+            (project / "native").mkdir()
+            shutil.copyfile(ROOT / "src/crispembed.h", project / "native/crispembed.h")
+            (project / "main.m").write_text(ffi_main(marker_symbols), encoding="utf-8")
+            (project / "Info.plist").write_text('''<?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0"><dict>
+    <key>CFBundleIdentifier</key><string>org.crispembed.ownedpodprobe</string>
+    <key>CFBundleExecutable</key><string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleName</key><string>CrispPodProbe</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleShortVersionString</key><string>1.0</string>
+    <key>CFBundleVersion</key><string>1</string>
+    </dict></plist>
+    ''', encoding="utf-8")
+            xcodeproj = project / (APP + ".xcodeproj")
+            schemes = xcodeproj / "xcshareddata/xcschemes"
+            schemes.mkdir(parents=True)
+            (xcodeproj / "project.pbxproj").write_text(project_text(args.platform), encoding="utf-8")
+            (schemes / (APP + ".xcscheme")).write_text('''<?xml version="1.0" encoding="UTF-8"?>
+    <Scheme LastUpgradeVersion="1600" version="1.3">
+    <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES"><BuildActionEntries>
+    <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">
+    <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="A00000000000000000000009" BuildableName="CrispPodProbe.app" BlueprintName="CrispPodProbe" ReferencedContainer="container:CrispPodProbe.xcodeproj"/>
+    </BuildActionEntry></BuildActionEntries></BuildAction>
+    </Scheme>
+    ''', encoding="utf-8")
+            apple_platform, floor = ("osx", "12.0") if args.platform == "macos" else ("ios", "15.0")
+            if case == "symlink":
+                links = project / ".symlinks/plugins"
+                links.mkdir(parents=True)
+                (links / "crispembed").symlink_to(plugin, target_is_directory=True)
+                pod_path = f".symlinks/plugins/crispembed/{args.platform}"
+            else:
+                pod_path = os.path.relpath(staged, project)
+            (project / "Podfile").write_text(f'''platform :{apple_platform}, '{floor}'
+    install! 'cocoapods', :deterministic_uuids => true
+    project '{APP}.xcodeproj'
+    target '{APP}' do
+      pod 'crispembed', :path => '{pod_path}'
+    end
+    ''', encoding="utf-8")
+            run(case + "-pod-install", ["pod", "install", "--verbose"], cwd=project)
+            lock = (project / "Podfile.lock").read_text()
+            case_check("CocoaPods resolves the real local path pod", "EXTERNAL SOURCES:" in lock and
+                  re.search(r"(?m)^\s+:path: ['\"]?" + re.escape(pod_path) + r"['\"]?\s*$", lock) is not None)
+            for name, data in expected.items():
+                case_check(name + ": path install preserves shipped source bytes", (staged / "Notices" / name).read_bytes() == data)
+            destination = "platform=macOS,arch=arm64" if args.platform == "macos" else "generic/platform=iOS"
+            derived = out / ("derived-" + case)
+            build_command = ["xcodebuild", "-workspace", str(project / (APP + ".xcworkspace")), "-scheme", APP,
+                             "-configuration", "Release", "-sdk", sdk, "-destination", destination,
+                             "-derivedDataPath", str(derived), "CODE_SIGNING_ALLOWED=NO", "CODE_SIGNING_REQUIRED=NO",
+                             "ENABLE_USER_SCRIPT_SANDBOXING=NO", "build"]
+            build_output = run(case + "-xcodebuild", build_command, cwd=project, timeout=240)
+            case_check("Release app is linked with dead stripping enabled", "-dead_strip" in build_output)
+            product_dir = "Release" if args.platform == "macos" else "Release-iphoneos"
+            app = derived / "Build/Products" / product_dir / (APP + ".app")
+            case_check("unsigned native application was produced", app.is_dir())
+            binary = app / ("Contents/MacOS/" + APP if args.platform == "macos" else APP)
+            objects = list(derived.rglob("main.o"))
+            case_check("one owned consumer object was compiled", len(objects) == 1)
+            undefined = run(case + "-consumer-undefined", ["xcrun", "nm", "-u", str(objects[0])])
+            case_check("the app source has no static references to CrispEmbed symbols", "_crispembed_" not in undefined)
+            case_result = {"case": case, "app_sha256": sha(binary), "marker_symbols": marker_symbols,
+                           "direct_c_abi_references": False, "release_dead_strip": True}
+            bundles = list(app.rglob("crispembed_native_notices.bundle"))
+            case_check("the built application contains exactly one native notice bundle", len(bundles) == 1)
+            for name, data in expected.items():
+                files = list(bundles[0].rglob(name))
+                case_check(name + ": actual built bundle preserves canonical bytes", len(files) == 1 and files[0].read_bytes() == data)
+                bundle_hashes.setdefault(case, {})[name] = sha(files[0])
+            if args.platform == "macos":
+                case_check("CocoaPods embeds the real dylib inside the app", (app / "Contents/Frameworks/libcrispembed.dylib").is_file())
+                output = run(case + "-native-app-launch", [str(binary)], cwd=out, timeout=30, launch=True)
+                case_check("bundled macOS application dynamically resolves every Marker export and executes the ABI",
+                      f"{len(marker_symbols)} Marker symbols resolved dynamically; actual Marker ABI initialized successfully" in output)
+                case_result["dlsym_executed"] = True
+            else:
+                names = run(case + "-defined-symbols", ["xcrun", "nm", "-gU", str(binary)])
+                exports = run(case + "-dyld-exports", ["xcrun", "dyld_info", "-exports", str(binary)])
+                for symbol in marker_symbols:
+                    case_check(symbol + ": retained as a defined external symbol", re.search(r"\b_" + symbol + r"\b", names) is not None)
+                    case_check(symbol + ": present in the app dynamic export trie", re.search(r"\b_" + symbol + r"\b", exports) is not None)
+                case_result["dynamic_exports_checked"] = True
+                case_result["dlsym_executed"] = False
+                if case == "direct":
+                    # A source with only string lookup must fail the retention
+                    # condition without final-app force-load. Keep this separate
+                    # build's evidence; never change the shipped podspec or libs.
+                    xcconfig = project / "Pods/Target Support Files" / ("Pods-" + APP) / ("Pods-" + APP + ".release.xcconfig")
+                    settings = xcconfig.read_text()
+                    flags = re.search(r"(?m)^OTHER_LDFLAGS = (.*)$", settings)
+                    case_check("CocoaPods emits final-app linker flags", flags is not None)
+                    negative_flags, removed = re.subn(r'(?:^|\s)-force_load\s+(?:"[^"]+"|\S+)', " ", flags.group(1))
+                    case_check("negative control removes exactly one final-app force-load", removed == 1)
+                    negative_flags = negative_flags.replace("$(inherited)", "") + " -framework Foundation"
+                    negative_dir = out / "derived-no-force-load"
+                    negative_command = list(build_command)
+                    negative_command[negative_command.index("-derivedDataPath") + 1] = str(negative_dir)
+                    negative_command.insert(-1, "OTHER_LDFLAGS=" + negative_flags)
+                    run("no-force-load-xcodebuild", negative_command, cwd=project, timeout=240)
+                    negative_binary = negative_dir / "Build/Products" / product_dir / (APP + ".app") / APP
+                    negative_exports = run("no-force-load-exports", ["xcrun", "dyld_info", "-exports", str(negative_binary)])
+                    case_check("negative control does not retain any dynamically named Marker API", not any(
+                        re.search(r"\b_" + symbol + r"\b", negative_exports) for symbol in marker_symbols))
+                    case_result["no_force_load_negative_passed"] = True
+            consumers.append(case_result)
         check("repository package inputs are unchanged", all(sha(ROOT / name) == digest for name, digest in source_hashes.items()))
         check("native input libraries are unchanged", all(sha(native_dir / item["name"]) == item["sha256"] for item in selected))
     except Exception as exc:
@@ -246,12 +343,14 @@ end
         "schema_version": 1, "kind": "actual-cocoapods-path-consumer", "platform": args.platform,
         "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         "host_architecture": platform.machine(), "toolchain": toolchain, "source_sha256": source_hashes,
-        "native_libraries": selected, "bundle_notice_sha256": bundle_hashes, "commands": commands, "checks": checks,
+        "native_libraries": selected, "bundle_notice_sha256": bundle_hashes, "consumers": consumers,
+        "commands": commands, "checks": checks,
         "passed": error is None and bool(checks) and all(row["passed"] for row in checks),
         "passed_count": sum(row["passed"] for row in checks), "total_count": len(checks),
-        "macos_native_app_executed": args.platform == "macos" and any(row["name"].startswith("bundled macOS application") and row["passed"] for row in checks),
+        "macos_native_app_executed": args.platform == "macos" and len(consumers) == 2 and all(row.get("dlsym_executed") for row in consumers),
+        "ios_ffi_dynamic_exports_verified": args.platform == "ios" and len(consumers) == 2 and all(row.get("dynamic_exports_checked") for row in consumers),
         "ios_device_runtime_qualified": False, "flutter_sdk_app_qualified": False,
-        "limits": "Native CocoaPods path install, actual unsigned app link and resource-bundle bytes only. macOS additionally launches the app. No iOS device execution, Flutter SDK app, model inference, signing identity or publication.",
+        "limits": "Native CocoaPods direct and Flutter-style symlink path install, unsigned Release dead-strip app link and resource bytes. macOS executes dlsym-only calls. iOS verifies dynamic exports and an omitted-force-load negative; no device execution. No Flutter SDK app, model inference, signing identity or publication.",
         "logs_sha256": {path.name: sha(path) for path in sorted(out.glob("*.log"))},
     }
     if error:

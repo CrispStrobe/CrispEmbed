@@ -55,7 +55,18 @@ evidence in separate, incrementally pushed checkpoints.
   readback and incomplete iOS archive separate from native execution success.
 - [ ] Exercise an actual retained Flutter archive with all nine notice copies,
   full SDK validation and an installed Linux Flutter consumer.
+- [x] Reproduce and correct the Linux Flutter bundle's missing GGML dependency
+  closure. Full SDK analysis, three package asset tests and 32 real native
+  consumer assertions pass with the corrected installed bundle; retain the
+  original `libggml.so.0` loader failure separately from display setup attempts.
+- [x] Correct the 16 existing missing-brace lint findings with brace-only Dart
+  changes, so full-package analysis can run successfully.
 - [ ] Verify CocoaPods path-install resources with actual macOS/iOS consumers.
+- [x] Correct iOS final-app FFI retention and native C++ linkage, and add actual
+  Release/dead-strip consumers for direct paths with spaces and Flutter-style
+  symlinks. [Local compiler evidence](../tests/results/marker/pdf-craft-platform-2026-11-09/ffi-retention/README.md)
+  establishes Mach-O retention and unchanged Linux/Windows header tokens;
+  actual Apple consumer execution remains its own open gate.
 - [ ] Close native dependency and license-notice omissions found by package
   consumers; verify development artifacts as well as release archive recipes.
 - [x] Install a locally built Python wheel with the complete native dependency

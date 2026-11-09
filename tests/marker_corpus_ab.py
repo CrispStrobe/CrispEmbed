@@ -86,6 +86,21 @@ def prediction_blocks(document, width, height):
     return result
 
 
+def image_dimensions(page, decoded_size):
+    """Use pinned image bytes; never rescale a frozen spatial annotation."""
+    stored = [page["image"]["width"], page["image"]["height"]]
+    decoded = list(decoded_size)
+    boxes = sum(block.get("bbox") is not None for block in page["blocks"])
+    if decoded != stored and boxes:
+        raise ValueError("Frozen image dimensions differ on a page with gold boxes")
+    return {"stored": stored, "decoded": decoded, "match": stored == decoded,
+            "gold_box_count": boxes, "gold_rescaled": False,
+            "prediction_coordinate_space": "decoded image pixels",
+            "spatial_qualification_available": boxes > 0,
+            "layout_scoring_scope": "frozen boxes and text fallback" if boxes else
+                "text fallback only; no gold boxes, so no spatial qualification"}
+
+
 def ranges_valid(text, ranges, sources, assembled=False):
     encoded, cursor = text.encode("utf-8"), 0
     if encoded and not ranges:
@@ -109,7 +124,7 @@ def ranges_valid(text, ranges, sources, assembled=False):
                 if raw[a:b] != encoded[begin:end]:
                     return False
             elif transform == "whitespace":
-                if any(byte not in b" \t\n\r\f\v" for byte in raw[a:b]) or encoded[begin:end] not in (b"", b" "):
+                if any(byte not in b" \t\n\r" for byte in raw[a:b]) or encoded[begin:end] not in (b"", b" "):
                     return False
             elif transform == "dehyphenation" and assembled:
                 if raw[a:b] != b"-" or begin != end:
@@ -213,8 +228,7 @@ def run_page(args, protocol, page):
             raise ValueError("Frozen image SHA differs")
         with Image.open(image) as decoded:
             width, height = decoded.size
-        if [width, height] != [page["image"]["width"], page["image"]["height"]]:
-            raise ValueError("Frozen image dimensions differ")
+        row["image_dimensions"] = image_dimensions(page, (width, height))
         if page["source"] == "cord-v2":
             lang = "eng"
         elif page["lang"] == "de":
@@ -316,6 +330,7 @@ def compare_page(row, protocol):
         absolute[arm] = quality
     return {"nonregression": checks, "nonregression_passed": all(checks.values()),
             "absolute_quality": absolute, "absolute_quality_passed": {arm: all(v.values()) for arm, v in absolute.items()},
+            "spatial_qualification_available": row["image_dimensions"]["spatial_qualification_available"],
             "structural_passed": all(row["provenance"].values()) and all(a["finite_in_bounds_geometry"] for a in row["arms"].values())}
 
 
@@ -350,7 +365,8 @@ def retrieval_worker(args, protocol):
                     if window["text"].strip():
                         candidates[arm].append(dict(window, id=f"{page}:{chunk['id']}:{index}", page=page, chunk_id=chunk["id"]))
     started = time.monotonic()
-    with CrispEmbed(str(model), n_threads=1, offline=True, auto_download=False, lib_path=str(args.lib)) as encoder:
+    encoder = CrispEmbed(str(model), n_threads=1, offline=True, auto_download=False, lib_path=str(args.lib))
+    try:
         query_vectors = []
         vectors = {arm: [] for arm in candidates}
         for query in cfg["queries"]:
@@ -358,6 +374,9 @@ def retrieval_worker(args, protocol):
         for arm in candidates:
             for candidate in candidates[arm]:
                 vectors[arm].append(encoder.encode(candidate["text"]))
+    finally:
+        # CrispEmbed owns its native context through __del__, not __enter__/exit.
+        del encoder
     queries = np.asarray(query_vectors, dtype=np.float32)
     vectors = {arm: np.asarray(value, dtype=np.float32).reshape((-1, 384)) for arm, value in vectors.items()}
     for array in [queries, *vectors.values()]:
@@ -480,6 +499,9 @@ def main():
     summary = {"expected_pages": len(corpus["pages"]), "executed_pages": len(passed_rows),
                "structural_passes": sum(row["comparison"]["structural_passed"] for row in passed_rows),
                "nonregression_passes": sum(row["comparison"]["nonregression_passed"] for row in passed_rows),
+               "spatially_annotated_pages": sum(row["comparison"]["spatial_qualification_available"] for row in passed_rows),
+               "pages_without_spatial_gold": [row["id"] for row in passed_rows
+                   if not row["comparison"]["spatial_qualification_available"]],
                "absolute_quality_passes": {arm: sum(row["comparison"]["absolute_quality_passed"][arm] for row in passed_rows) for arm in ("off", "on")},
                "elapsed_seconds": time.monotonic() - started}
     for arm in ("off", "on"):
@@ -499,7 +521,10 @@ def main():
     report["full_coverage"] = len(passed_rows) == len(corpus["pages"]) and not report["failed_or_missing_pages"]
     report["full_panel_nonregression"] = report["full_coverage"] and summary["nonregression_passes"] == len(passed_rows)
     report["full_panel_absolute_quality"] = report["full_coverage"] and summary["absolute_quality_passes"]["on"] == len(passed_rows)
+    report["full_panel_spatial_qualification"] = (report["full_coverage"] and
+        summary["spatially_annotated_pages"] == len(passed_rows))
     report["passed"] = (report["full_panel_nonregression"] and report["full_panel_absolute_quality"] and
+        report["full_panel_spatial_qualification"] and
         summary["structural_passes"] == len(passed_rows) and retrieval_code == 0 and
         report["retrieval"].get("complete") is True and report["retrieval"].get("nonregression_passed") is True and
         report["retrieval"].get("absolute_quality_passed", {}).get("on") is True)

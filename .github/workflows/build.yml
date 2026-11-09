@@ -459,8 +459,8 @@ jobs:
           path: |
             build/cocoapods-macos/receipt.json
             build/cocoapods-macos/*.log
-            build/cocoapods-macos/consumer/Podfile
-            build/cocoapods-macos/consumer/Podfile.lock
+            build/cocoapods-macos/**/Podfile
+            build/cocoapods-macos/**/Podfile.lock
           if-no-files-found: warn
 
       - name: Upload shared library bundle
@@ -662,8 +662,8 @@ jobs:
           path: |
             build/cocoapods-ios/receipt.json
             build/cocoapods-ios/*.log
-            build/cocoapods-ios/consumer/Podfile
-            build/cocoapods-ios/consumer/Podfile.lock
+            build/cocoapods-ios/**/Podfile
+            build/cocoapods-ios/**/Podfile.lock
           if-no-files-found: warn
 
       - name: Upload

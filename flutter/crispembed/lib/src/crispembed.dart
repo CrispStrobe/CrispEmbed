@@ -158,8 +158,9 @@ class CrispEmbed {
     }
     if (state.any((v) => !v.isFinite) ||
         question.any((v) => !v.isFinite) ||
-        options.any((row) => row.any((v) => !v.isFinite)))
+        options.any((row) => row.any((v) => !v.isFinite))) {
       throw ArgumentError('Embeddings must be finite');
+    }
     final s = calloc<Float>(768),
         q = calloc<Float>(768),
         o = calloc<Float>(options.length * 768);
@@ -169,10 +170,14 @@ class CrispEmbed {
       s.asTypedList(768).setAll(0, state);
       q.asTypedList(768).setAll(0, question);
       final flat = o.asTypedList(options.length * 768);
-      for (var i = 0; i < options.length; ++i) flat.setAll(i * 768, options[i]);
+      for (var i = 0; i < options.length; ++i) {
+        flat.setAll(i * 768, options[i]);
+      }
       if (_decisionScoresFn!(
               _ctx, s, q, o, options.length, typeId, logits, probabilities) ==
-          0) throw StateError('Decision scoring failed');
+          0) {
+        throw StateError('Decision scoring failed');
+      }
       return {
         'logits': List<double>.from(logits.asTypedList(options.length)),
         'probabilities':
