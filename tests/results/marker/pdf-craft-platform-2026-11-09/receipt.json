@@ -1,0 +1,607 @@
+{
+  "schema_version": 1,
+  "observed_utc": "2026-11-09T12:43:14.397412+00:00",
+  "repository": "CrispStrobe/CrispEmbed",
+  "pull_request": 192,
+  "run_id": 42607873214,
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42607873214",
+  "feature_head": "b34fe99611a6168f572630904531c79b02477b9f",
+  "pr_base": "dc4f51c755bf78139f1f6ea87941748b05e75971",
+  "actual_checkout": "e827fb55e421043be6880f51b4d55c387076ece6",
+  "actual_checkout_tree": "03c70c5e0e6d2a9617852ab82d7c02074f274e46",
+  "feature_head_tree": "03c70c5e0e6d2a9617852ab82d7c02074f274e46",
+  "whole_tree_equal": true,
+  "runtime_source": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+  "runtime_equivalence_scopes": [
+    "src",
+    "CMakeLists.txt",
+    "cmake",
+    "ggml",
+    "tests/test-marker-document.cpp",
+    "tests/test-marker-artifact.cpp",
+    "tests/test-marker-lifecycle.cpp",
+    "tests/marker_pdfium_fixture.cpp",
+    "flutter/crispembed/ios",
+    "flutter/crispembed/macos"
+  ],
+  "runtime_equivalence_passed": true,
+  "source_sha256": {
+    "src/marker.cpp": "bab93411a253834aaa27452cca2d587a8e041dd10d5d8497865d6a30015de3f2",
+    "src/marker_document.cpp": "5447a0dd7b57ecb178f70a9c1b35ad9f1006ad823ee33972e97bdc00ddff4a4c",
+    "src/marker_document.h": "c1f1455d38c642403f0df7b3f50f7215cbb8d308cfc0210de79adb064f1a2282",
+    "src/marker_artifact.cpp": "dd849c219ee51e67227eade9c1037b58a27a4cd99a5794a7b774989cf893d388",
+    "src/marker_artifact.h": "27e87705e9a2040272393f301728ac85ee32d82a9a73d89c0aa981a5af7a2b89",
+    "src/marker_backend.cpp": "548e245d89b94f78a29648e9bef15ec3afd1e51d6c8a2c2cbc04ee730c19ec86",
+    "src/marker_backend.h": "40f335ca623b6319cb4a433d53b3eacadff417e3d8761b3c65fcbad4559cfe7e",
+    "src/crispembed.h": "caa6a791bbde03bf9c2a7b7fad4a3dc3a0b9fcd50c4fd0a1700b9c8bf8db1eec",
+    "CMakeLists.txt": "f4d379b79130cd0b843948d2be0f222519327d58d6bfde004fe207d559afb249",
+    "cmake/MarkerIdentity.cmake": "4b2a14faa41da546b5702daf6427593ab7a403fb807d1bb8973a2b4f8d7b3aef",
+    "tests/test-marker-document.cpp": "2b686a52026ee0a84d0472522c81f829139af2bc7352c6fa2b3c133850c1a7e5",
+    "tests/test-marker-artifact.cpp": "a5bfb956f7ada93e86fa1c7159cf58daf2e97a0b776936b8b0bab43d2958bca1",
+    "tests/test-marker-lifecycle.cpp": "d9009c4a95bd1735eb5f3cc319676213396a2f0164a1e6bf80af205c7a12ada6",
+    "tests/marker_pdfium_fixture.cpp": "115d0f3db290621afe9a56c83bbdf7b7c733a8f49a4daedf2c336dcd1d536ac8",
+    ".github/workflows/build.yml": "475b2457aa898ac010567cdfce5c1414fa88f2eb9d866425a8426df0107b0996",
+    "flutter/crispembed/ios/crispembed.podspec": "ec9791025dd11131e2b98eb7a697230dc4b2c27b3b86109751071230b28008dc",
+    "flutter/crispembed/macos/crispembed.podspec": "c4d677df56e4056a50a8324a5c4dd90eabfd94f92e50b42922819674e958dc4c"
+  },
+  "platforms": [
+    {
+      "name": "windows-x86_64",
+      "job": 129147551901,
+      "artifact": 13672268359,
+      "archive_sha256": "94454cf850c8ba3dc09f86a283271a81734fb6df5816f0d20914227f6cc34be3",
+      "os": "Windows Server 2025 10.0.26100",
+      "compiler": "MSVC 19.51.36260.0",
+      "counts": {
+        "document": 185,
+        "artifact": 82,
+        "lifecycle": 471
+      },
+      "job_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42607873214/job/129147551901",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run ./.github/actions/compiler-cache",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Configure",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Verify portable CPU baseline",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Validate Xcode configuration and CocoaPods syntax",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 6
+        },
+        {
+          "name": "Build all native targets",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Build delivered native targets for isolated CLI changes",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 8
+        },
+        {
+          "name": "Smoke test (Unix)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 9
+        },
+        {
+          "name": "Model-free tests (Unix)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 10
+        },
+        {
+          "name": "Native OCR admission and Python Marker lifecycle (model-free, Linux)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 11
+        },
+        {
+          "name": "Rust toolchain for actual Marker consumer",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 12
+        },
+        {
+          "name": "Dart toolchain for actual Marker consumer",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 13
+        },
+        {
+          "name": "Actual Rust and Dart Marker lifecycle (model-free, Linux)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 14
+        },
+        {
+          "name": "Retain native admission and Marker client diagnostics",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 15
+        },
+        {
+          "name": "Smoke test (Windows)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Smoke test (explicit Metal)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 17
+        },
+        {
+          "name": "Marker document, artifact and lifecycle controls (Windows)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18
+        },
+        {
+          "name": "Install (bundle native libs)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19
+        },
+        {
+          "name": "Flatten and verify macOS dylib set",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 20
+        },
+        {
+          "name": "Upload shared library bundle",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21
+        },
+        {
+          "name": "Post Run ./.github/actions/compiler-cache",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 41
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 42
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 43
+        }
+      ],
+      "decoded_log_sha256": "b2f1c648811b59568477ce9b9c61c72c65b2850824b7f31e4353d911431ea142",
+      "excerpt_sha256": "e563912fd3bf3b71c60561995c4aa701b76d32f66a98139381ca7288ddc27f21",
+      "archive_bytes": 13507907,
+      "members": {
+        "lib/cmake/crispembed/crispembed-config-version.cmake": {
+          "bytes": 2833,
+          "sha256": "008357fbafbf25b44eb2398657b068b5a3a4061e9ba255bb46eb708e5ebbda92"
+        },
+        "lib/cmake/crispembed/crispembed-config.cmake": {
+          "bytes": 2557,
+          "sha256": "5c773f878fc756e4a2373ceb6436ba76e9e197da3a3fde5121545155517533c7"
+        },
+        "lib/cmake/ggml/ggml-config.cmake": {
+          "bytes": 12869,
+          "sha256": "7e30ada9421034cd200bb2c9cc624954ae0add7dc93cf0f3a37430c1b102b61d"
+        },
+        "lib/cmake/ggml/ggml-version.cmake": {
+          "bytes": 2830,
+          "sha256": "2ddedc6223ccc4e9baa0421bca4c12b253cda24c0c4ecea2208ceaa8c8b622a8"
+        },
+        "lib/crispembed.lib": {
+          "bytes": 82180,
+          "sha256": "7a9501876c3000b9c85f4b9aa8fe405fd61078ed60c52e9f5dc6f70d24eb8dd6"
+        },
+        "lib/ggml-base.lib": {
+          "bytes": 152598,
+          "sha256": "890a37046181b53ec051aae1ac8b560bfda4e340eca7dc684e1fdbcb3950d643"
+        },
+        "lib/ggml-cpu.lib": {
+          "bytes": 16066,
+          "sha256": "7d9b6f6ce3254b996ae85cdd2516ed819d304d97fc6453899f773cb372d949f6"
+        },
+        "lib/ggml.lib": {
+          "bytes": 5288,
+          "sha256": "18f6595b0a09a2a60e282b88738d6318583812e7f8d68f3337251582eb1caa2a"
+        },
+        "lib/pkgconfig/crispembed.pc": {
+          "bytes": 571,
+          "sha256": "33fab866c9e0c67776973bf33af90c7d4e023a06d6294f33b0754cf62516c1f3"
+        },
+        "bin/crispembed-marker.exe": {
+          "bytes": 1101824,
+          "sha256": "006645c9de5bdd5c92e5100eac957ccb0118d3ee918f7076279b1c46d8d83ffd"
+        },
+        "bin/crispembed-quantize.exe": {
+          "bytes": 122368,
+          "sha256": "155a852dda3d0246bd43fcd1205f5530604a7aafd6f2cf21563614512b713dcd"
+        },
+        "bin/crispembed-server.exe": {
+          "bytes": 8663552,
+          "sha256": "4e12e924fb23c889adb9f12dd2d4c5d33eb3372601d5908261c6c264b84bd08b"
+        },
+        "bin/crispembed.dll": {
+          "bytes": 8299008,
+          "sha256": "aab2cea9134d98ccea5ea3c747113852983ac0d3075338c690714282566a402a"
+        },
+        "bin/crispembed.exe": {
+          "bytes": 9667072,
+          "sha256": "b27ac9e181490f515e9c63372e3fd8d1618421639ab5ddf79516fb141620cbfe"
+        },
+        "bin/ggml-base.dll": {
+          "bytes": 668672,
+          "sha256": "7a968d659f8957e2b9e7382b3740ec8e1bb67ea54a99e5c27b1eab00f50b6dd1"
+        },
+        "bin/ggml-cpu.dll": {
+          "bytes": 934912,
+          "sha256": "53a81dabc715f42fde388f0013588aeb76f004adc50c555b43e0e12849baa712"
+        },
+        "bin/ggml.dll": {
+          "bytes": 68608,
+          "sha256": "58a90d08287e2fd4ebf0e3aeefe93adf73a6b662ab70289a150f0ac83c4f67f1"
+        }
+      },
+      "required_notice_members": [],
+      "development_archive_notice_check_passed": false
+    },
+    {
+      "name": "macos-arm64",
+      "job": 129147551845,
+      "artifact": 13672198315,
+      "archive_sha256": "37f525aae0cadabbe187d3fc1642faac6b06eec1a9e9e054591bedad446ab0e2",
+      "os": "macOS 26.7.2 (25G332), arm64",
+      "compiler": "AppleClang 21.0.0.21000101",
+      "counts": {
+        "document": 185,
+        "artifact": 87,
+        "lifecycle": 480,
+        "c_api": 74,
+        "save": 38,
+        "backend": 18
+      },
+      "job_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42607873214/job/129147551845",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run ./.github/actions/compiler-cache",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Configure",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Verify portable CPU baseline",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Validate Xcode configuration and CocoaPods syntax",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Build all native targets",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Build delivered native targets for isolated CLI changes",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 8
+        },
+        {
+          "name": "Smoke test (Unix)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Model-free tests (Unix)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Native OCR admission and Python Marker lifecycle (model-free, Linux)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 11
+        },
+        {
+          "name": "Rust toolchain for actual Marker consumer",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 12
+        },
+        {
+          "name": "Dart toolchain for actual Marker consumer",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 13
+        },
+        {
+          "name": "Actual Rust and Dart Marker lifecycle (model-free, Linux)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 14
+        },
+        {
+          "name": "Retain native admission and Marker client diagnostics",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 15
+        },
+        {
+          "name": "Smoke test (Windows)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 16
+        },
+        {
+          "name": "Smoke test (explicit Metal)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17
+        },
+        {
+          "name": "Marker document, artifact and lifecycle controls (Windows)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 18
+        },
+        {
+          "name": "Install (bundle native libs)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19
+        },
+        {
+          "name": "Flatten and verify macOS dylib set",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20
+        },
+        {
+          "name": "Upload shared library bundle",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21
+        },
+        {
+          "name": "Post Run ./.github/actions/compiler-cache",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 41
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 42
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 43
+        }
+      ],
+      "decoded_log_sha256": "4c0ce11aa58442a0d9caeeabef8569a78ba8bb17276ed14de008c0a3fcafbf5b",
+      "excerpt_sha256": "7c491f55d9ccd91a06d58571c0370172b475212d963a24453bbbdfd49146f027",
+      "archive_bytes": 15440648,
+      "members": {
+        "lib/cmake/crispembed/crispembed-config-version.cmake": {
+          "bytes": 2768,
+          "sha256": "a8008782d704b80bea466252dfd1019d681ee5d1b78d9ca5f05fc798c333b9fa"
+        },
+        "lib/cmake/crispembed/crispembed-config.cmake": {
+          "bytes": 2495,
+          "sha256": "ff52244108013a563bf35e103ffcdc4fc529e349eaf9ed09689fe1c836f5868f"
+        },
+        "lib/cmake/ggml/ggml-config.cmake": {
+          "bytes": 12684,
+          "sha256": "a995703f4203585a39c7c464d5c65aeab29899df81bc51d4ba14f9facb0f4722"
+        },
+        "lib/cmake/ggml/ggml-version.cmake": {
+          "bytes": 2765,
+          "sha256": "e4f5de820b657605f4018d0bcbde8ed8512ed7a083b4715ab58c1ac72a1cd7df"
+        },
+        "lib/libcrispembed.dylib": {
+          "bytes": 8879536,
+          "sha256": "fa91cfcd82a6cd8c30b5cb09021249900d4e4ba218063e664e8a4660af9eea31"
+        },
+        "lib/libggml-base.dylib": {
+          "bytes": 744576,
+          "sha256": "dc4e767a27dbc1d58b6e394b80959959af8c06cf3af0c8785d69e81182967e30"
+        },
+        "lib/libggml-blas.dylib": {
+          "bytes": 76560,
+          "sha256": "046b2ff4b10594db097bd267657c365cb78f94e93c3b2842da57c2283d7a0c6f"
+        },
+        "lib/libggml-cpu.dylib": {
+          "bytes": 966176,
+          "sha256": "c4bbef0957c8966687b74dc85c0b73a66f624d4e490ae37cefe952d50bb64baa"
+        },
+        "lib/libggml-metal.dylib": {
+          "bytes": 932720,
+          "sha256": "c8ea2a5cbab3851bd7ad91b9340c47d1814d13b061272571afa3d140e44209b1"
+        },
+        "lib/libggml.dylib": {
+          "bytes": 77600,
+          "sha256": "be0b0cdddd135d7c4ee11e4fed378f832ff9103ad541c802194f074bef01a31b"
+        },
+        "lib/pkgconfig/crispembed.pc": {
+          "bytes": 556,
+          "sha256": "32c6ae06f7af8214ce977a4beef5a6a4f056137e00a5681dd2730131337542a1"
+        },
+        "bin/crispembed": {
+          "bytes": 10340048,
+          "sha256": "ab9271e7eb7318f631c1d8794115d4cef3bafc5d073392a9d8ad1cdcef981b23"
+        },
+        "bin/crispembed-marker": {
+          "bytes": 1388800,
+          "sha256": "0469a176f37d40bfa1d5f6599f1d8450511dafda70a6647d8ce2cdfef660541e"
+        },
+        "bin/crispembed-quantize": {
+          "bytes": 174912,
+          "sha256": "7096455ca712d2994e3e110843ba23f0149e689b52cae89d2ab32856fe10201a"
+        },
+        "bin/crispembed-server": {
+          "bytes": 9685808,
+          "sha256": "ff716d1bb91069b374953832dc010fb76271671e3bd5cbb15700db97d0c39fd8"
+        }
+      },
+      "required_notice_members": [],
+      "development_archive_notice_check_passed": false,
+      "xcode_generator_configure_passed": true,
+      "podspec_ruby_syntax_checks": 2,
+      "actual_cocoapods_path_install_executed": false
+    },
+    {
+      "name": "ios-arm64",
+      "job": 129147551803,
+      "artifact": 13672950690,
+      "archive_sha256": "70aa38ec1a6ffb6747439e1f0fc6f067292a95054802cf72e69a58bfba34fa91",
+      "os": "iOS arm64 device-SDK cross-build on macOS 26.7.2 (25G332)",
+      "compiler": "AppleClang 21.0.0.21000101",
+      "counts": {},
+      "job_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42607873214/job/129147551803",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run ./.github/actions/compiler-cache",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Upload",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Post Run ./.github/actions/compiler-cache",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        }
+      ],
+      "decoded_log_sha256": "cd134d321702bcc3af86c7ab521591a12e01fa134dc41c319a6b6a30e0ae8dd6",
+      "excerpt_sha256": "00d58207746c275304e5879aa612522660b3e7aefe49f995bc17855375b6c61a",
+      "archive_bytes": 6254130,
+      "members": {
+        "libcrispembed-static.a": {
+          "bytes": 15051584,
+          "sha256": "bed5ff026605b3fc00bae0de2349c387302c1e776380e774886e080705bafe4a"
+        }
+      },
+      "required_notice_members": [],
+      "development_archive_notice_check_passed": false,
+      "compilation_only": true,
+      "device_runtime_qualified": false,
+      "top_level_archive_only": true
+    }
+  ],
+  "native_platform_checks_passed": true,
+  "distribution_followup_required": true,
+  "limits": [
+    "Overall workflow was still queued on unrelated Linux/Android jobs when these completed Apple/Windows jobs were inspected.",
+    "Windows and macOS counts are recorded separately; POSIX-only filesystem cases are omitted on Windows.",
+    "macOS proves Xcode generation, native execution and podspec Ruby syntax, not an actual CocoaPods path install or Flutter app.",
+    "iOS proves device-SDK compilation only; the original development artifact contains only the top-level static archive.",
+    "Exact artifact readback found missing native notices in all three development archives. This negative is retained before the distribution fix.",
+    "No model weights, real OCR quality, iOS device execution or publication qualification follows from these checks."
+  ]
+}

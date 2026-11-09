@@ -64,6 +64,8 @@ NATIVE_PYTHON = (
     "tests/test_unlimited_ocr_license.py",
     "tests/test_marker_lifecycle.py",
     "tests/test_marker_real_pdf.py",
+    "tests/test_marker_glyphless.py",
+    "tests/test_marker_installed_wheel.py",
     "tests/run_marker_binding_lifecycle.py",
     "kaggle_harness.py", "tools/kaggle/*/kaggle_harness.py",
     "tests/test_ultrabert_*.py", "tools/ultrabert*.py", "tools/dump_ultrabert*.py", "tools/ci-heavy/*ultrabert*.py",
@@ -136,7 +138,7 @@ def selection(paths: list[str], *, force_full: str | None = None, event_name: st
             # The selected native/WASM builds do not consume Markdown. Known
             # machine-readable contracts/fixtures are treated separately.
             continue
-        if path in ("CMakeLists.txt", "VERSION", "LICENSE", ".gitmodules", "ggml") or path.startswith(("cmake/", "ggml/", "src/core/")):
+        if path in ("CMakeLists.txt", "VERSION", "LICENSE", "models/licenses/apache-2.0/LICENSE", ".gitmodules", "ggml") or path.startswith(("cmake/", "ggml/", "src/core/")):
             reason = "shared build/runtime dependency changed"
             break
         if path in ("tools/ci_selection.py", "tools/ci_cpu_signature.py", "tests/test_ci_selection.py") or path.startswith((".github/actions/ci-select/", ".github/actions/compiler-cache/")):
@@ -171,6 +173,9 @@ def selection(paths: list[str], *, force_full: str | None = None, event_name: st
             lanes["wasm_ocr"] = True
         elif path == "scripts/check-cpu-baseline.py":
             lanes["native"] = lanes["native_windows"] = lanes["native_macos"] = True
+        elif path == "tests/test_flutter_pod_resources.py":
+            # This invokes real CocoaPods/Xcode consumers on both Apple lanes.
+            lanes["native_macos"] = lanes["native_tests"] = lanes["mobile"] = True
         elif matches(path, NATIVE_PYTHON):
             lanes["native"] = lanes["native_tests"] = True
         elif matches(path, NOT_BUILT):

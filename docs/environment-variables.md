@@ -105,6 +105,19 @@ qwen35 decoder kernels. All default off.
 
 ## OCR engines
 
+### Glyphless searchable PDF text
+
+`CRISPEMBED_MARKER_GLYPHLESS_TEXT=1` enables the default-off correction for
+artificial fixed-pitch styling in searchable PDFs produced with `GlyphLessFont`.
+Only that exact case-sensitive name and its six-uppercase-letter PDF subset
+form match. Marker clears the derived monospace flag, allowing ordinary prose
+classification, and reports that the original font style is unknown. It retains
+extracted text, spacing, coordinates and other style fields. Genuine Courier/Mono
+fonts and near matches keep their existing behavior. The gate participates in
+raw-checkpoint identity; processed artifacts preserve their recorded output.
+See [the Marker guide](marker.md#optional-glyphless-ocr-font-correction) and the
+[frozen replay protocol](../tests/regression/marker/pdf-craft-glyphless-followup-v1.json).
+
 ### Document repetition diagnostics
 
 `CRISPEMBED_MARKER_REPETITION_CHECK=1` enables the default-off Unicode tandem
@@ -264,7 +277,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-441 `CRISPEMBED_*` variables and 225 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+442 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -705,6 +718,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/marker.cpp` +2 | TeleOCR's vision tower is under the Qwen RESEARCH LICENSE (docs/teleocr-license.md); the PDFium text mode loads no model and needs no acknowledgement. |
 | `CRISPEMBED_MARKER` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp` |  |
 | `CRISPEMBED_MARKER_ARTIFACTS` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp`, `src/marker_backend.cpp` |  |
+| `CRISPEMBED_MARKER_GLYPHLESS_TEXT` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp`, `src/marker_backend.cpp` |  |
 | `CRISPEMBED_MARKER_INCREMENTAL` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp` |  |
 | `CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp`, `src/marker_document.cpp` |  |
 | `CRISPEMBED_MARKER_REFERENCES` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp`, `src/marker_backend.cpp`, `src/marker_document.cpp` |  |
@@ -1375,6 +1389,8 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `OCR_DETECT_FORCE_CPU` | value | unset | int | tuning / config | `src/ocr_detect.cpp` | OCR_DETECT_USE_GPU=0 forces CPU, =1 forces the GPU path (either kind); unset = the per-kind default. |
 | `OCR_DETECT_SCALAR_SCORE` | on | off | bool | default-off experimental / opt-in | `src/ocr_detect.cpp` | box output is byte-identical. OCR_DETECT_SCALAR_SCORE=1 restores the old per-pixel path for bisection. |
 | `OCR_DETECT_USE_GPU` | value | unset | int | tuning / config | `src/ocr_detect.cpp` |  |
+| `OCR_WRITER_ARTIFACTS` | value | unset | value | tuning / config | `crispembed/tests/ocr_writer_contract.rs` |  |
+| `OCR_WRITER_LARGE` | value | unset | value | tuning / config | `crispembed/tests/ocr_writer_contract.rs` |  |
 | `OUT_DIR` | value | unset | path | tuning / config | `crispembed-sys/build.rs` |  |
 | `PAN_SR_FORCE_CPU` | value | unset | int | tuning / config | `src/pan_sr.cpp` |  |
 | `PAN_SR_SCALAR` | value | unset | int | tuning / config | `src/pan_sr.cpp` |  |

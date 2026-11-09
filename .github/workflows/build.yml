@@ -35,6 +35,7 @@ on:
       - 'models/convert-migan-to-gguf.py'
       - 'models/convert-latent-inpaint-to-gguf.py'
       - 'models/convert-ultrabert-to-gguf.py'
+      - 'models/licenses/apache-2.0/LICENSE'
       - 'tests/results/**.c'
       - 'tests/results/**.cc'
       - 'tests/results/**.cpp'
@@ -80,6 +81,7 @@ on:
       - 'models/convert-migan-to-gguf.py'
       - 'models/convert-latent-inpaint-to-gguf.py'
       - 'models/convert-ultrabert-to-gguf.py'
+      - 'models/licenses/apache-2.0/LICENSE'
       - 'tests/results/**.c'
       - 'tests/results/**.cc'
       - 'tests/results/**.cpp'
@@ -306,10 +308,11 @@ jobs:
         if: runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
         timeout-minutes: 5
         run: |
-          python3 -m pip install numpy==2.3.5 gguf==0.19.0 pypdfium2==5.10.1
+          python3 -m pip install numpy==2.3.5 gguf==0.19.0 pypdfium2==5.10.1 setuptools wheel
           python3 tests/test_teleocr_loader.py --lib build/libcrispembed.so --report build/teleocr-loader.json
           python3 tests/test_unlimited_ocr_license.py --lib build/libcrispembed.so --report build/unlimited-ocr-license.json
           python3 tests/test_marker_lifecycle.py --lib build/libcrispembed.so --pdfium build/libmarker-pdfium-fixture.so --report build/marker-python-lifecycle.json
+          python3 tests/test_marker_glyphless.py --lib build/libcrispembed.so --fixture build/libmarker-pdfium-fixture.so --out build/marker-glyphless --native-source-commit "$(git rev-parse HEAD)"
           pdfium_library=$(python3 -c 'from pathlib import Path; import pypdfium2_raw; print(Path(pypdfium2_raw.__file__).with_name("libpdfium.so"))')
           python3 tests/test_marker_real_pdf.py --lib build/libcrispembed.so --pdfium "$pdfium_library" --out build/marker-real-pdf
 
@@ -344,6 +347,7 @@ jobs:
             build/unlimited-ocr-license.json
             build/marker-python-lifecycle.json
             build/marker-real-pdf/
+            build/marker-glyphless/
             build/marker-binding-lifecycle.json
             build/marker-binding-lifecycle/
           if-no-files-found: warn
@@ -393,6 +397,40 @@ jobs:
       - name: Install (bundle native libs)
         run: cmake --install build --config Release --prefix dist
 
+      - name: Actual installed Python wheel and Marker lifecycle (Linux)
+        if: runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
+        timeout-minutes: 5
+        run: |
+          pdfium_library=$(python3 -c 'from pathlib import Path; import pypdfium2_raw; print(Path(pypdfium2_raw.__file__).with_name("libpdfium.so"))')
+          python3 tests/test_marker_installed_wheel.py --native-prefix dist --pdfium "$pdfium_library" \
+            --work-dir build/marker-wheel-work --output build/marker-wheel
+
+      - name: Retain installed Python wheel diagnostics
+        if: always() && runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: marker-installed-wheel-${{ github.sha }}
+          path: |
+            build/marker-wheel/receipt.json
+            build/marker-wheel/*.log
+            build/marker-wheel/real-pdf/receipt.json
+            build/marker-wheel/real-pdf/*.stdout
+            build/marker-wheel/real-pdf/*.stderr
+          if-no-files-found: warn
+
+      - name: Verify installed native license bytes
+        shell: python
+        run: |
+          from pathlib import Path
+          sources = {
+              'LICENSE': 'LICENSE', 'NOTICE.marker': 'NOTICE.marker',
+              'NOTICE.teleocr': 'NOTICE.teleocr', 'oxr-LICENSE': 'licenses/oxr-LICENSE',
+              'oxr-NOTICE': 'licenses/oxr-NOTICE',
+              'Apache-2.0.txt': 'models/licenses/apache-2.0/LICENSE',
+          }
+          for name, source in sources.items():
+              assert Path(source).read_bytes() == (Path('dist/share/licenses/crispembed') / name).read_bytes(), name
+
       # The macOS bundle feeds the Flutter plugin's macos/Libs (bundle-flutter
       # below). upload-artifact turns the install tree's SOVERSION symlinks
       # into separate copies and CocoaPods drops or dereferences them, so the
@@ -411,6 +449,25 @@ jobs:
           python3 -c "import ctypes,sys; ctypes.CDLL(sys.argv[1]).crispembed_init; print('dlopen OK')" \
               "$PWD/dist/lib/libcrispembed.dylib"
 
+      - name: Actual macOS CocoaPods path consumer and notice bundle
+        if: runner.os == 'macOS' && needs.guards.outputs.native_tests == 'true'
+        timeout-minutes: 8
+        run: >-
+          python3 tests/test_flutter_pod_resources.py --platform macos
+          --native-dir dist/lib --out build/cocoapods-macos
+
+      - name: Retain macOS CocoaPods consumer diagnostics
+        if: always() && runner.os == 'macOS' && needs.guards.outputs.native_tests == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cocoapods-macos-${{ github.sha }}
+          path: |
+            build/cocoapods-macos/receipt.json
+            build/cocoapods-macos/*.log
+            build/cocoapods-macos/**/Podfile
+            build/cocoapods-macos/**/Podfile.lock
+          if-no-files-found: warn
+
       - name: Upload shared library bundle
         uses: actions/upload-artifact@v4
         with:
@@ -418,6 +475,7 @@ jobs:
           path: |
             dist/lib/
             dist/bin/
+            dist/share/licenses/crispembed/
           if-no-files-found: warn
 
   sibling-crispasr:
@@ -512,11 +570,30 @@ jobs:
             -DGGML_LLAMAFILE=OFF
           cmake --build build -j4 --target crispembed-shared
 
+      - name: Package Android library with exact native notices
+        run: |
+          mkdir -p android-package
+          cp -L build/libcrispembed.so android-package/libcrispembed.so
+          python3 - <<'PY'
+          from pathlib import Path
+          sources = {
+              'LICENSE': 'LICENSE', 'NOTICE.marker': 'NOTICE.marker',
+              'NOTICE.teleocr': 'NOTICE.teleocr', 'oxr-LICENSE': 'licenses/oxr-LICENSE',
+              'oxr-NOTICE': 'licenses/oxr-NOTICE',
+              'Apache-2.0.txt': 'models/licenses/apache-2.0/LICENSE',
+          }
+          for name, source in sources.items():
+              data = Path(source).read_bytes()
+              target = Path('android-package') / name
+              target.write_bytes(data)
+              assert target.read_bytes() == data, name
+          PY
+
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: android-${{ matrix.abi }}
-          path: build/libcrispembed.so
+          path: android-package/
           if-no-files-found: warn
 
   build-ios:
@@ -545,15 +622,60 @@ jobs:
             -DCMAKE_CXX_COMPILER=$(xcrun --sdk iphoneos -f clang++) \
             -DCMAKE_BUILD_TYPE=Release \
             -DCRISPEMBED_BUILD_SHARED=OFF \
+            -DBUILD_SHARED_LIBS=OFF \
             -DGGML_METAL=ON \
             -DGGML_METAL_EMBED_LIBRARY=ON
           cmake --build build -j4
+
+      - name: Package complete static iOS dependency closure and notices
+        run: |
+          mkdir -p ios-package
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          # Match the release package: the Flutter pod consumes one archive.
+          archives = [Path('build/libcrispembed-static.a'), Path('build/libcrispembed-core.a')]
+          archives += sorted(Path('build/ggml').rglob('libggml*.a'))
+          assert all(path.is_file() for path in archives) and len(archives) >= 5
+          assert len(archives) == len(set(archives))
+          subprocess.run(['xcrun', 'libtool', '-static', '-o', 'ios-package/libcrispembed-static.a',
+                          *map(str, archives)], check=True)
+          sources = {
+              'LICENSE': 'LICENSE', 'NOTICE.marker': 'NOTICE.marker',
+              'NOTICE.teleocr': 'NOTICE.teleocr', 'oxr-LICENSE': 'licenses/oxr-LICENSE',
+              'oxr-NOTICE': 'licenses/oxr-NOTICE',
+              'Apache-2.0.txt': 'models/licenses/apache-2.0/LICENSE',
+          }
+          for name, source in sources.items():
+              data = Path(source).read_bytes()
+              target = Path('ios-package') / name
+              target.write_bytes(data)
+              assert target.read_bytes() == data, name
+          PY
+
+      - name: Actual iOS CocoaPods path consumer link and notice bundle
+        timeout-minutes: 8
+        run: >-
+          python3 tests/test_flutter_pod_resources.py --platform ios
+          --native-dir ios-package --out build/cocoapods-ios
+
+      - name: Retain iOS CocoaPods consumer diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cocoapods-ios-${{ github.sha }}
+          path: |
+            build/cocoapods-ios/receipt.json
+            build/cocoapods-ios/*.log
+            build/cocoapods-ios/**/Podfile
+            build/cocoapods-ios/**/Podfile.lock
+          if-no-files-found: warn
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: ios-arm64
-          path: build/libcrispembed-static.a
+          path: ios-package/
           if-no-files-found: warn
 
   # -------------------------------------------------------------------------

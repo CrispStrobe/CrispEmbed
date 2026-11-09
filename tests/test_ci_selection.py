@@ -105,6 +105,10 @@ class RoutingTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(self.lanes(path), {"rust", "native", "native_tests"})
 
+    def test_cocoapods_consumer_changes_execute_both_apple_lanes(self):
+        self.assertEqual(self.lanes("tests/test_flutter_pod_resources.py"),
+                         {"native", "native_macos", "native_tests", "mobile"})
+
     def test_desktop_legs_follow_lanes_and_imply_linux(self):
         report = ci.selection(["src/glm_ocr.cpp"])
         self.assertEqual(ci.desktop_platforms(report["lanes"]), ["linux-x86_64", "windows-x86_64"])
@@ -132,7 +136,7 @@ class RoutingTests(unittest.TestCase):
     def test_shared_dependencies_and_unknown_code_run_full(self):
         for path in (
             "CMakeLists.txt", "cmake/FindThreads.cmake", "ggml", "ggml/src/ggml.c",
-            ".gitmodules", "VERSION", "src/core/image_out.cpp", "src/crispembed.cpp",
+            ".gitmodules", "VERSION", "models/licenses/apache-2.0/LICENSE", "src/core/image_out.cpp", "src/crispembed.cpp",
             "unrecognized-file", "scripts/new.sh",
         ):
             with self.subTest(path=path):
@@ -351,6 +355,9 @@ CONSUMERS = {
     "tests/test_unlimited_ocr_license.py": ("native", "native_tests"),
     "tests/test_marker_lifecycle.py": ("native", "native_tests"),
     "tests/test_marker_real_pdf.py": ("native", "native_tests"),
+    "tests/test_marker_glyphless.py": ("native", "native_tests"),
+    "tests/test_marker_installed_wheel.py": ("native", "native_tests"),
+    "tests/test_flutter_pod_resources.py": ("native", "native_macos", "native_tests", "mobile"),
     "tests/run_marker_binding_lifecycle.py": ("native", "native_tests"),
     "tools/wasm_size_report.py": ("wasm_ocr",),
     "scripts/check-cpu-baseline.py": ("native", "native_windows", "native_macos"),

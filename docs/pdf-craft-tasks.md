@@ -27,6 +27,82 @@ to this feature work and does not change the repository-wide guidance.
 - [ ] Record executed hosted results for the final integrated source, preserving
   initial failures and superseded/cancelled runs separately.
 
+## Gap closure continuation
+
+The owner asked to close the remaining gaps on 9 November. Continue bounded
+local work while reading already-completed platform jobs; an aggregate queued
+workflow does not mean every matrix job is queued. Keep fixes and executed
+evidence in separate, incrementally pushed checkpoints.
+
+- [x] Freeze the [57-page OCR and 17-query retrieval protocol](../tests/regression/marker/pdf-craft-corpus-v1.json)
+  before downloading model/image inputs or producing candidate outputs. It pins
+  the existing licensed corpus, scorers, actual native engine, PDFium, Tesseract
+  language data and permissive MiniLM model. Report structural validity,
+  non-regression and absolute quality separately; retain every failed threshold.
+- [x] Fetch and verify all 57 exact image byte pins and the eight required
+  model/support assets without exclusions or input repinning; retain the
+  [complete input receipt](../tests/results/marker/pdf-craft-corpus-2026-11-09/input-assets.json).
+  Four accounting controls cover coordinate scaling, complete UTF-8 windows,
+  truthful source ranges and dehyphenation before the full run.
+- [x] Execute the frozen protocol with fresh Tesseract OCR, real native Marker
+  processing and real native MiniLM embeddings; do not imply fresh TeleOCR
+  execution or use retained OCR output as fresh inference. All 57 pages execute;
+  off/on output quality does not regress, but all 57 fail the combined absolute
+  OCR/layout floor. The 17-query retrieval panel passes Recall@3=1.0 and
+  MRR=0.960784 with byte-identical off/on vectors. Keep this failed qualification
+  distinct from successful execution and scoped retrieval.
+- [x] Preserve exact Windows/macOS/iOS job results and source identities in
+  the [platform receipt](../tests/results/marker/pdf-craft-platform-2026-11-09/README.md):
+  Windows document/artifact/lifecycle 185/82/471; macOS 185/87/480 plus C API,
+  save/backend; iOS device-SDK compilation. These pass on the source-equivalent
+  PR checkout. Keep the independently failed development-artifact notice
+  readback and incomplete iOS archive separate from native execution success.
+- [ ] Exercise an actual retained Flutter archive with all nine notice copies,
+  full SDK validation and an installed Linux Flutter consumer.
+- [x] Reproduce and correct the Linux Flutter bundle's missing GGML dependency
+  closure. Full SDK analysis, three package asset tests and 32 real native
+  consumer assertions pass with the corrected installed bundle; retain the
+  original `libggml.so.0` loader failure separately from display setup attempts.
+- [x] Correct the 16 existing missing-brace lint findings with brace-only Dart
+  changes, so full-package analysis can run successfully.
+- [ ] Verify CocoaPods path-install resources with actual macOS/iOS consumers.
+- [x] Correct iOS final-app FFI retention and native C++ linkage, and add actual
+  Release/dead-strip consumers for direct paths with spaces and Flutter-style
+  symlinks. [Local compiler evidence](../tests/results/marker/pdf-craft-platform-2026-11-09/ffi-retention/README.md)
+  establishes Mach-O retention and unchanged Linux/Windows header tokens;
+  actual Apple consumer execution remains its own open gate.
+- [ ] Close native dependency and license-notice omissions found by package
+  consumers; verify development artifacts as well as release archive recipes.
+- [x] Install a locally built Python wheel with the complete native dependency
+  closure and load it outside the checkout without a build-tree library path:
+  [40 package and 51 actual real-PDF checks pass](../tests/results/marker/pdf-craft-local-2026-11-09/installed-wheel/README.md).
+
+The frozen OCR route deliberately uses an Apache-2.0 engine and model. Its
+quality result is scoped to that provider and the named corpus, including the
+existing partial CORD gold and derived layout limitations. Model-free contract
+coverage and unchanged output alone cannot qualify OCR or retrieval quality.
+
+### Glyphless OCR font follow-up
+
+The completed 57-page run exposed a provider-format limitation: the invisible
+Tesseract `GlyphLessFont` carries a fixed-pitch flag, causing the existing PDF
+font heuristics to classify OCR prose as Code. The original failed absolute
+OCR/layout result remains intact; its 17-query MiniLM retrieval result passes.
+
+- [x] Freeze a [separate three-arm replay protocol](../tests/regression/marker/pdf-craft-glyphless-followup-v1.json)
+  before candidate output, binding all 57 already-recognized PDFs by SHA-256
+  and retaining the original gold, scorers, queries and absolute thresholds.
+- [x] Add default-off `CRISPEMBED_MARKER_GLYPHLESS_TEXT` to suppress only the
+  artificial monospace style of exact GlyphLessFont/subset names; retain text,
+  coordinates, genuine Courier/Mono styles and current space reconstruction.
+  The public native controls reproduce the original classification and resume
+  identity failures before the fix; final rebuilt-source execution follows.
+- [ ] Verify false/unset behavior, exact font-name boundaries, truthful
+  diagnostics and changed-gate resume rejection with owned controls.
+- [ ] Replay the frozen PDFs through legacy, font-only and font-plus-document
+  processing arms; retain every per-page/per-query regression and unavailable
+  spatial result. This replay does not repeat OCR or qualify TeleOCR.
+
 ## 1. Native noncommercial model admission
 
 Owner: model admission lane. Independent of document artifact work.
@@ -135,8 +211,9 @@ Owner: document structure lane; PDF provider support owned by lifecycle lane.
   actual PDFium identity, source ranges, page labels and exact processed reopen.
 - [x] Verify cross-build processed-artifact retention and raw identity refusal:
   14 checks preserve earlier outputs, metadata and artifact bytes.
-- [ ] Read the added Windows/macOS results; local Linux execution does not
-  qualify those platforms.
+- [x] Read the added Windows/macOS results and preserve exact source/toolchain
+  identities in the [platform evidence](../tests/results/marker/pdf-craft-platform-2026-11-09/README.md).
+  Both native suites pass; local Linux execution was not used as a substitute.
 - [x] Verify actual Python wheel/sdist/rebuilt-wheel bytes and missing-notice
   rejection: 26 checks pass with the new native library.
 - [x] Verify Dart's actual publish dry-run selects all nine exact notice files:

@@ -1,0 +1,318 @@
+{
+  "schema_version": 1,
+  "kind": "bounded-local-apple-retention-compiler-control",
+  "source_commit_before": "9da573324e7fc15077bfa78daeecbed85f9fbebc",
+  "source_commit_at_probe": "9da573324e7fc15077bfa78daeecbed85f9fbebc",
+  "header_before_sha256": "caa6a791bbde03bf9c2a7b7fad4a3dc3a0b9fcd50c4fd0a1700b9c8bf8db1eec",
+  "header_after_sha256": "b179501794cc9092a8962ecae0c763ce016757f8ce66be5d0df727da6c9c4f93",
+  "consumer_source_sha256": "9ac500447fccf45dc8f4a41f5c29cb317e3a01c2700a9dfad9b0b5bd2eeb2495",
+  "compiler": [
+    "Debian clang version 19.1.7 (3+b1)",
+    "Target: x86_64-pc-linux-gnu",
+    "Thread model: posix"
+  ],
+  "checks": [
+    {
+      "name": "prior Apple declaration lacks no_dead_strip for unreferenced C ABI",
+      "passed": true
+    },
+    {
+      "name": "Apple used declaration emits no_dead_strip from the real header",
+      "passed": true
+    },
+    {
+      "name": "full header preprocessor bytes identical: []",
+      "passed": true
+    },
+    {
+      "name": "full header preprocessor bytes identical: ['-DCRISPEMBED_BUILD']",
+      "passed": true
+    },
+    {
+      "name": "full header preprocessor bytes identical: ['-DCRISPEMBED_SHARED']",
+      "passed": true
+    },
+    {
+      "name": "full header preprocessor bytes identical: ['-D_WIN32']",
+      "passed": true
+    },
+    {
+      "name": "full header preprocessor bytes identical: ['-D_WIN32', '-DCRISPEMBED_BUILD']",
+      "passed": true
+    },
+    {
+      "name": "full header preprocessor bytes identical: ['-D_WIN32', '-DCRISPEMBED_SHARED']",
+      "passed": true
+    },
+    {
+      "name": "generated FFI-only source inventories all 17 Marker APIs",
+      "passed": true
+    },
+    {
+      "name": "generated FFI-only source has no direct Marker function-call token",
+      "passed": true
+    },
+    {
+      "name": "generated idle JSON C literal retains correct escaping",
+      "passed": true
+    }
+  ],
+  "preprocessor_controls": [
+    {
+      "defines": [],
+      "before_sha256": "76818639245a4f500d0cf2512ccde9ba8da5ce398e41698680581955611c268b",
+      "after_sha256": "76818639245a4f500d0cf2512ccde9ba8da5ce398e41698680581955611c268b"
+    },
+    {
+      "defines": [
+        "-DCRISPEMBED_BUILD"
+      ],
+      "before_sha256": "6195fd82ea7d725953df97f0cfe2ef517aded63202f56ce567e926cf568cada0",
+      "after_sha256": "6195fd82ea7d725953df97f0cfe2ef517aded63202f56ce567e926cf568cada0"
+    },
+    {
+      "defines": [
+        "-DCRISPEMBED_SHARED"
+      ],
+      "before_sha256": "76818639245a4f500d0cf2512ccde9ba8da5ce398e41698680581955611c268b",
+      "after_sha256": "76818639245a4f500d0cf2512ccde9ba8da5ce398e41698680581955611c268b"
+    },
+    {
+      "defines": [
+        "-D_WIN32"
+      ],
+      "before_sha256": "76818639245a4f500d0cf2512ccde9ba8da5ce398e41698680581955611c268b",
+      "after_sha256": "76818639245a4f500d0cf2512ccde9ba8da5ce398e41698680581955611c268b"
+    },
+    {
+      "defines": [
+        "-D_WIN32",
+        "-DCRISPEMBED_BUILD"
+      ],
+      "before_sha256": "f72581af3745e550d79fe8456f744925cc4f26413b87f8f8f22b524cbb0ba391",
+      "after_sha256": "f72581af3745e550d79fe8456f744925cc4f26413b87f8f8f22b524cbb0ba391"
+    },
+    {
+      "defines": [
+        "-D_WIN32",
+        "-DCRISPEMBED_SHARED"
+      ],
+      "before_sha256": "4dc2955c3593261f841b6f6b7ff5e0700b4b9ab9a56d739afe3397ce634fe4ce",
+      "after_sha256": "4dc2955c3593261f841b6f6b7ff5e0700b4b9ab9a56d739afe3397ce634fe4ce"
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "<CLANG>",
+        "--target=arm64-apple-ios15.0",
+        "-ffreestanding",
+        "-S",
+        "-O2",
+        "-x",
+        "c",
+        "<OUTPUT>/before/probe.c",
+        "-o",
+        "-"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "--target=arm64-apple-ios15.0",
+        "-ffreestanding",
+        "-S",
+        "-O2",
+        "-x",
+        "c",
+        "<OUTPUT>/after/probe.c",
+        "-o",
+        "-"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "<OUTPUT>/before/probe.c"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "<OUTPUT>/after/probe.c"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-DCRISPEMBED_BUILD",
+        "<OUTPUT>/before/probe.c"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-DCRISPEMBED_BUILD",
+        "<OUTPUT>/after/probe.c"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-DCRISPEMBED_SHARED",
+        "<OUTPUT>/before/probe.c"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-DCRISPEMBED_SHARED",
+        "<OUTPUT>/after/probe.c"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-D_WIN32",
+        "<OUTPUT>/before/probe.c"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-D_WIN32",
+        "<OUTPUT>/after/probe.c"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-D_WIN32",
+        "-DCRISPEMBED_BUILD",
+        "<OUTPUT>/before/probe.c"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-D_WIN32",
+        "-DCRISPEMBED_BUILD",
+        "<OUTPUT>/after/probe.c"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-D_WIN32",
+        "-DCRISPEMBED_SHARED",
+        "<OUTPUT>/before/probe.c"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-D_WIN32",
+        "-DCRISPEMBED_SHARED",
+        "<OUTPUT>/after/probe.c"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stderr": ""
+    }
+  ],
+  "passed": true,
+  "earlier_attempt": "First attempt falsely compared merged compiler warnings with before/after paths and treated a config typedef as a function name; original 4/11 receipt retained. Corrected probe separates stderr and matches actual public function names. No native correction resulted from these harness issues.",
+  "limits": "Clang Linux-hosted no-SDK Mach-O code generation and byte-identical Linux/Windows preprocessing only. This is not actual Apple or Windows runtime execution. Actual Apple consumers must execute on hosted Apple jobs.",
+  "passed_count": 11,
+  "total_count": 11
+}

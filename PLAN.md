@@ -19,9 +19,9 @@ native contracts; public API/bindings and final integration belong to this lane.
 | Native OCR repetition diagnostics | Implemented, default-off `CRISPEMBED_MARKER_REPETITION_CHECK`; included in 185 passing native document checks | Unicode consecutive n-grams, bounded work, asset exclusions, unchanged text/raw/geometry and default behavior |
 | TeleOCR weight-license metadata | Qwen Research metadata corrected; 19 converter and 57 native loader controls pass locally | Actual synthetic GGUF license readback and disabled-value/direct-loader tests; existing published files and hashes unchanged |
 | Jina/noncommercial native admission | 106 actual native direct, local and cached controls pass locally | Acknowledgement before backend/weight allocation; false values rejected; permissive models preserved |
-| Versioned native extraction artifacts | 87 native artifact checks and actual public-client reopen controls pass locally | Exact roundtrips, malformed-source-map/corruption/limit controls and standalone reopen; Windows filesystem execution remains open |
+| Versioned native extraction artifacts | 87 native artifact checks on Linux/macOS, 82 applicable Windows checks and actual public-client reopen controls pass | Exact roundtrips, malformed-source-map/corruption/limit controls and standalone reopen; platform-specific counts are retained separately |
 | Source-linked chunks, whitespace and references | Three opt-in gates; covered by 185 passing document checks and actual client source-map checks | Exact immutable byte ranges, conservative joins, ambiguous links and page labels; disabled-output controls |
-| Bounded lifecycle and clients | 480 native, 33 actual Python and 111 Rust/Dart assertions pass locally on the corrected build | Durable page rollback, identity rejection, partial results and extraction provenance; six Rust/Dart gate scenarios all pass; cross-platform execution remains open |
+| Bounded lifecycle and clients | 480 native Linux/macOS, 471 Windows, 33 actual Python and 111 Rust/Dart assertions pass on source-equivalent corrected builds | Durable page rollback, identity rejection, partial results and extraction provenance; six Rust/Dart gate scenarios all pass |
 
 The bounded runtime change reports suspicious OCR repetition; it does not delete
 content, retry inference, introduce models or qualify document accuracy. The
@@ -71,9 +71,21 @@ hash-verified immutable v0.17.15: legacy conversion works, all six new symbols
 are absent, and each unavailable new method preserves the existing view and
 subsequent conversion. Initial probe-only renderer expectations are retained.
 
-Next: read Windows/macOS results when available, complete
-Flutter archive/app qualification in an equipped environment, and qualify
-representative OCR/retrieval quality separately before any default promotion.
+The continuation reads [completed Windows/macOS/iOS jobs](tests/results/marker/pdf-craft-platform-2026-11-09/README.md)
+whose entire checkout tree matches the tested feature head. Native platform
+checks pass. Actual development-artifact readback exposes missing notices and
+the iOS static dependency omission; those package findings require their own
+correction and consumer proof. A newly built, actually installed Linux wheel
+passes [40 package and 51 real-PDF checks](tests/results/marker/pdf-craft-local-2026-11-09/installed-wheel/README.md),
+including the origin of every loaded CrispEmbed/GGML library.
+
+The [57-page OCR and 17-query retrieval protocol](tests/regression/marker/pdf-craft-corpus-v1.json)
+was frozen upstream at `9c2ac509fbefa20a2069307daecf1ce678f9e69b` before candidate
+output or model/image downloads. Fresh Tesseract OCR and actual native MiniLM
+retrieval, full Flutter validation/archive/app checks and actual CocoaPods
+consumers now have separate owners and explicit acceptance criteria in the
+task checklist. Preserve absolute quality failures and provider limits; an
+unchanged result is not evidence of improved quality or a default-promotion gate.
 
 ## Retained camera input — 9 November 2026
 

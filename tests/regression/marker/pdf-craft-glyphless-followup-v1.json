@@ -1,0 +1,1273 @@
+{
+  "schema": "crispembed-marker-glyphless-followup-v1",
+  "status": "predeclared-before-font-gate-candidate-output",
+  "frozen_date": "2026-11-09",
+  "purpose": "Isolate the exact GlyphLessFont fixed-pitch style correction and then adopted document postprocessing using the already frozen fresh-Tesseract searchable PDFs; do not rerun OCR or change gold.",
+  "parent_protocol": {
+    "path": "tests/regression/marker/pdf-craft-corpus-v1.json",
+    "sha256": "918aeaefc418cf10480d73739a22b1b85676b9ff4bb5c62ba0c073943bfca1c7",
+    "upstream_freeze_commit": "9c2ac509fbefa20a2069307daecf1ce678f9e69b"
+  },
+  "inputs": {
+    "producer": "full-attempt-2 of the original Tesseract 5.5.0 protocol",
+    "producer_receipt_sha256": "78640e6270bfd1d5d5e232879df3769f1f1fcf856e7200f6ee008183131aba73",
+    "producer_driver_sha256": "03753bc71bc49c52afa562bf84a33ecff74453f8476e2e8e3ff1bb76f992ec87",
+    "native_library_used_by_producer": "decb81ce3f68f30db24cc6eb686f712750e86f68dbd5f9cc6930d65f87210328",
+    "fresh_ocr_in_this_followup": false,
+    "pdf_mutation_allowed": false,
+    "gold_mutation_allowed": false,
+    "pages": [
+      {
+        "id": "en-prose-constitution-13",
+        "pdf": "en-prose-constitution-13/recognized.pdf",
+        "sha256": "24017d62bb5d4548a1fd9a4cf3e1952a815f93fa43caeb71dab546c608a2ed36",
+        "bytes": 335496,
+        "ocr_text_sha256": "9cc51d9406b18862262f5ec3aed793f3eba342aeaffd82cb441599bac02bf131",
+        "decoded_image_size": [
+          1280,
+          2077
+        ],
+        "stored_image_size": [
+          1280,
+          2077
+        ],
+        "gold_box_count": 4
+      },
+      {
+        "id": "de-fraktur-grimm-319",
+        "pdf": "de-fraktur-grimm-319/recognized.pdf",
+        "sha256": "97691a59b6b2b983cf1ce9c36b2f1eb50a42b56e52b93fda9c81f0295102ce73",
+        "bytes": 286687,
+        "ocr_text_sha256": "e82e7428bc8ec1ad9ecd0aba21b798faf751db96758b0c27a45d9fd633f5e478",
+        "decoded_image_size": [
+          1280,
+          1797
+        ],
+        "stored_image_size": [
+          1280,
+          1797
+        ],
+        "gold_box_count": 2
+      },
+      {
+        "id": "en-table-climatic-26",
+        "pdf": "en-table-climatic-26/recognized.pdf",
+        "sha256": "ab48c8e9ef0ea6e25c5a2151fd60a2782468269efd40ccd046a68d1c2001babf",
+        "bytes": 707960,
+        "ocr_text_sha256": "0ebdbda90d884b64b601fa0ce9bc44dd1047a032fe045c6864e729e2cefac272",
+        "decoded_image_size": [
+          1280,
+          2047
+        ],
+        "stored_image_size": [
+          1280,
+          2047
+        ],
+        "gold_box_count": 6
+      },
+      {
+        "id": "de-antiqua-kafka-schloss-211",
+        "pdf": "de-antiqua-kafka-schloss-211/recognized.pdf",
+        "sha256": "f7202b7e21137860cd4ce0a9b70f1452f8efab2a5b68c86e11eee6cf8261ee17",
+        "bytes": 123612,
+        "ocr_text_sha256": "40c29661834753e6140aece75b9f7ba31d960d17309022ee791291853d6b368d",
+        "decoded_image_size": [
+          1277,
+          1995
+        ],
+        "stored_image_size": [
+          1277,
+          1995
+        ],
+        "gold_box_count": 1
+      },
+      {
+        "id": "en-form-economic-journal-67",
+        "pdf": "en-form-economic-journal-67/recognized.pdf",
+        "sha256": "6811f2fef3e60522ce492596a7194d39aa9a75cfc2068ea40cf50714d24f0e2c",
+        "bytes": 716708,
+        "ocr_text_sha256": "eb8bfe6b64fb8246d170c4625ebe85651f5dedc8513de11e369565614652dff7",
+        "decoded_image_size": [
+          1920,
+          2985
+        ],
+        "stored_image_size": [
+          1600,
+          2487
+        ],
+        "gold_box_count": 0
+      },
+      {
+        "id": "de-degraded-freiligrath-46",
+        "pdf": "de-degraded-freiligrath-46/recognized.pdf",
+        "sha256": "fec3eb87cde52bd7076e1b45f4f1b74dc378422b0fe0c359e953bafb546b6775",
+        "bytes": 158481,
+        "ocr_text_sha256": "a5fa3c50b242d3039c9051207f98aa39d16cc627d390cabe601ac1c15513e7b8",
+        "decoded_image_size": [
+          960,
+          1358
+        ],
+        "stored_image_size": [
+          960,
+          1358
+        ],
+        "gold_box_count": 2
+      },
+      {
+        "id": "de-2col-meyers-b13-103",
+        "pdf": "de-2col-meyers-b13-103/recognized.pdf",
+        "sha256": "96436899d4abfe5ea64e6d23304f5f1ff1b2686bbe2eed063e02bf20611d44de",
+        "bytes": 402277,
+        "ocr_text_sha256": "550d09042bf26040095348082618785f094e04be0af2f97be691fb26b18ce96d",
+        "decoded_image_size": [
+          800,
+          1275
+        ],
+        "stored_image_size": [
+          800,
+          1275
+        ],
+        "gold_box_count": 15
+      },
+      {
+        "id": "en-2col-eb1911-v04-246",
+        "pdf": "en-2col-eb1911-v04-246/recognized.pdf",
+        "sha256": "c6e2420c423b312d5458444a8012b42f310fda73fe4953f55cfc378d30210b94",
+        "bytes": 1509236,
+        "ocr_text_sha256": "8855f42b1be17ca6524812a0284d3f5705327b59f2dc35f34ff83004f4fe20a0",
+        "decoded_image_size": [
+          1920,
+          2662
+        ],
+        "stored_image_size": [
+          1920,
+          2662
+        ],
+        "gold_box_count": 5
+      },
+      {
+        "id": "en-report-amtrak-23",
+        "pdf": "en-report-amtrak-23/recognized.pdf",
+        "sha256": "5a714a5a96dbcdb8e1bdaa2a1ffa4e955cf109155a31babd991b98562f4e3655",
+        "bytes": 691229,
+        "ocr_text_sha256": "ed0a3f256d76e9ec7b1e1447226fe5119234c7fdb81ebe906a8199965b14ae0a",
+        "decoded_image_size": [
+          1920,
+          2484
+        ],
+        "stored_image_size": [
+          1920,
+          2484
+        ],
+        "gold_box_count": 9
+      },
+      {
+        "id": "de-table-rgbl-1867-403",
+        "pdf": "de-table-rgbl-1867-403/recognized.pdf",
+        "sha256": "dee32876007a8590dffc59dd24767e6a645270e1dffd17196a1e3290606aa3c1",
+        "bytes": 878537,
+        "ocr_text_sha256": "4cb84388670b3cf4e0fb0330bb549d20d833f521560ff061503c92ffc1daee90",
+        "decoded_image_size": [
+          1920,
+          2654
+        ],
+        "stored_image_size": [
+          1920,
+          2654
+        ],
+        "gold_box_count": 13
+      },
+      {
+        "id": "de-antiqua-kafka-betrachtung-94",
+        "pdf": "de-antiqua-kafka-betrachtung-94/recognized.pdf",
+        "sha256": "ae2a922b282daca7cc3f86ac8be2b526e024a22be540f78db044ea7ad779a929",
+        "bytes": 109281,
+        "ocr_text_sha256": "e0bf11d32fe6c20601858c62cfd6d3f81e156b43761ff6075fea9ff7c6ccb3d9",
+        "decoded_image_size": [
+          580,
+          786
+        ],
+        "stored_image_size": [
+          580,
+          786
+        ],
+        "gold_box_count": 10
+      },
+      {
+        "id": "de-mixed-welzheim-188",
+        "pdf": "de-mixed-welzheim-188/recognized.pdf",
+        "sha256": "6cd9555c6be178905fcb95b2627296f2f63993315aeaebc6b92e523f0510d49c",
+        "bytes": 375979,
+        "ocr_text_sha256": "1bbc97e05700201578921ff78f7b365e63c7df8270e1d380f03c28bc3bb712cc",
+        "decoded_image_size": [
+          1805,
+          2496
+        ],
+        "stored_image_size": [
+          1805,
+          2496
+        ],
+        "gold_box_count": 2
+      },
+      {
+        "id": "en-old-statutes-v1-772",
+        "pdf": "en-old-statutes-v1-772/recognized.pdf",
+        "sha256": "25239a73c1707ba1374e5786e3308d675b688698c663e4ce5df0b6f63e08cec3",
+        "bytes": 561544,
+        "ocr_text_sha256": "251e5c145ee630036ff231bc4fc9cc438424d1372d7162565d0c22be0f1fac8b",
+        "decoded_image_size": [
+          1280,
+          2110
+        ],
+        "stored_image_size": [
+          1280,
+          2110
+        ],
+        "gold_box_count": 8
+      },
+      {
+        "id": "en-prose-constitution-81",
+        "pdf": "en-prose-constitution-81/recognized.pdf",
+        "sha256": "42ad0a3fed4296ebcde10d1996159ed474b6f14822ed82d5706f355895c5c6c2",
+        "bytes": 356885,
+        "ocr_text_sha256": "aa163606284a04d2744946e9ad29481caf1dec6e76b9b2e7e1ed437cb4d9ab2e",
+        "decoded_image_size": [
+          1280,
+          2077
+        ],
+        "stored_image_size": [
+          1280,
+          2077
+        ],
+        "gold_box_count": 5
+      },
+      {
+        "id": "en-2col-eb1911-v25-5",
+        "pdf": "en-2col-eb1911-v25-5/recognized.pdf",
+        "sha256": "78a9cfab8138be71a7a2ed463f419da42d7b8f5c1136dc100604818eef0e52b3",
+        "bytes": 663208,
+        "ocr_text_sha256": "064c6915235111c7a4b52eac2fa57fd23f093d7150b97d3b291dd5e8502860ec",
+        "decoded_image_size": [
+          1920,
+          2079
+        ],
+        "stored_image_size": [
+          1920,
+          2079
+        ],
+        "gold_box_count": 4
+      },
+      {
+        "id": "en-register-1775-606",
+        "pdf": "en-register-1775-606/recognized.pdf",
+        "sha256": "081cbaa98dddb4ff76a0a7ef794c2fd1f988d3b4bc3cbe945fae9e818ef2b84c",
+        "bytes": 384185,
+        "ocr_text_sha256": "f2af059bd4f6a4b9ff9996e7b1a34f19f1c802844eeab7753ac8480e20d20ae9",
+        "decoded_image_size": [
+          960,
+          1722
+        ],
+        "stored_image_size": [
+          960,
+          1722
+        ],
+        "gold_box_count": 7
+      },
+      {
+        "id": "en-register-1758-16",
+        "pdf": "en-register-1758-16/recognized.pdf",
+        "sha256": "2d3558e0f69018f96f02e6223e07c4cdabb2c720c41165257e73440658889635",
+        "bytes": 998373,
+        "ocr_text_sha256": "d3276010ec08485b927a8fa6d3129c39156e0c1f3dab27b8f37a3d10c20d4ff5",
+        "decoded_image_size": [
+          1920,
+          3208
+        ],
+        "stored_image_size": [
+          1600,
+          2673
+        ],
+        "gold_box_count": 0
+      },
+      {
+        "id": "en-catalogue-library-11",
+        "pdf": "en-catalogue-library-11/recognized.pdf",
+        "sha256": "d5ff47b449e5705442c2636f373c8eff9be32c2194c545b4dc3715c0e459cd8d",
+        "bytes": 242083,
+        "ocr_text_sha256": "b7abf2419f4e53de959732c287c76686ae1cb30124d340cf568deb01cf75c323",
+        "decoded_image_size": [
+          1920,
+          3256
+        ],
+        "stored_image_size": [
+          1920,
+          3256
+        ],
+        "gold_box_count": 22
+      },
+      {
+        "id": "en-psm-v2-13",
+        "pdf": "en-psm-v2-13/recognized.pdf",
+        "sha256": "3b5d6738d5065569cf7e942f5647a0605f0143e9380ef019d14d187bb1cc8eab",
+        "bytes": 717703,
+        "ocr_text_sha256": "db6878d4784ca5f674a340fffd430bd6013d052d6ed7752e40ae7ef45e96eb68",
+        "decoded_image_size": [
+          1920,
+          3260
+        ],
+        "stored_image_size": [
+          1920,
+          3260
+        ],
+        "gold_box_count": 10
+      },
+      {
+        "id": "en-report-delhi-agra-26",
+        "pdf": "en-report-delhi-agra-26/recognized.pdf",
+        "sha256": "c166900b116574af7bf7e844870f2094f505b12e5796fe88a5b8df7d374c0f58",
+        "bytes": 128697,
+        "ocr_text_sha256": "a548fd603330907862d5444d05039b17617385d09531883960bdc0a16f760519",
+        "decoded_image_size": [
+          500,
+          813
+        ],
+        "stored_image_size": [
+          500,
+          813
+        ],
+        "gold_box_count": 9
+      },
+      {
+        "id": "en-nature-1836-12",
+        "pdf": "en-nature-1836-12/recognized.pdf",
+        "sha256": "22b1aec735b1e6321641100119b2e87a2dbe58e9d6b50e42e46cafe1bdaa1a6b",
+        "bytes": 526927,
+        "ocr_text_sha256": "b60eb191c63b718584883081461f1eb65e2b0b0ae315f683b4b2928dd543f208",
+        "decoded_image_size": [
+          1920,
+          3176
+        ],
+        "stored_image_size": [
+          1920,
+          3176
+        ],
+        "gold_box_count": 5
+      },
+      {
+        "id": "en-list-geolsoc-v2-176",
+        "pdf": "en-list-geolsoc-v2-176/recognized.pdf",
+        "sha256": "f0d4c88ab44b4674c859873824eb34d34b0b24b9bcf29007dcb0954ee29a7c56",
+        "bytes": 407868,
+        "ocr_text_sha256": "306668159ed73ce0d2b7a9723f834adb1a27949ee1e9a149fe65fdcceabfa974",
+        "decoded_image_size": [
+          1280,
+          1755
+        ],
+        "stored_image_size": [
+          1280,
+          1755
+        ],
+        "gold_box_count": 5
+      },
+      {
+        "id": "en-list-geolsoc-v2-183",
+        "pdf": "en-list-geolsoc-v2-183/recognized.pdf",
+        "sha256": "5086151cfc60859c65335415b82625b7fc01dcfea66fbf0aad45139ec31aeff3",
+        "bytes": 451781,
+        "ocr_text_sha256": "8cd0d47447590699a880a4c012a880722f75767d26711085ef640695365c47eb",
+        "decoded_image_size": [
+          1280,
+          1848
+        ],
+        "stored_image_size": [
+          1280,
+          1848
+        ],
+        "gold_box_count": 7
+      },
+      {
+        "id": "en-table-cakchiquels-13",
+        "pdf": "en-table-cakchiquels-13/recognized.pdf",
+        "sha256": "e0884255171235d456234d87e6cfa7268c9a257cea22523be1bd44a492384efe",
+        "bytes": 302018,
+        "ocr_text_sha256": "53901e10caeaec90a0185193c16e5c5c9b86dc34967f90b859536bb56e9b3edf",
+        "decoded_image_size": [
+          1920,
+          3154
+        ],
+        "stored_image_size": [
+          1920,
+          3154
+        ],
+        "gold_box_count": 1
+      },
+      {
+        "id": "de-2col-gartenlaube-1866-023",
+        "pdf": "de-2col-gartenlaube-1866-023/recognized.pdf",
+        "sha256": "33c0ba4d1593c2738e19546d82ef1a61b4e53eafd6750c2e3ab131992bbbfa74",
+        "bytes": 1657589,
+        "ocr_text_sha256": "27fb6317068c4e34e8179a219f1fe478bf7f1a2c00f4faed03bbff7370c15d60",
+        "decoded_image_size": [
+          3104,
+          4672
+        ],
+        "stored_image_size": [
+          3104,
+          4672
+        ],
+        "gold_box_count": 9
+      },
+      {
+        "id": "de-2col-gartenlaube-1866-007",
+        "pdf": "de-2col-gartenlaube-1866-007/recognized.pdf",
+        "sha256": "13de8691b878dde37d46971026e3f3873ca4ec7e95d80ac534e7b94c60f4fb0b",
+        "bytes": 1616405,
+        "ocr_text_sha256": "2c3f3504ad548c20e4c904c22f5843649f46dbc5ed8efef7364b28dbb9534ef2",
+        "decoded_image_size": [
+          3104,
+          4672
+        ],
+        "stored_image_size": [
+          3104,
+          4672
+        ],
+        "gold_box_count": 16
+      },
+      {
+        "id": "de-2col-gartenlaube-1866-044",
+        "pdf": "de-2col-gartenlaube-1866-044/recognized.pdf",
+        "sha256": "ce2a9fdc710bfc2a76598414af5c478d3322b5cc7999c034134e0d4b4d15551e",
+        "bytes": 1657779,
+        "ocr_text_sha256": "ec1dd356627eb91ab101ff091bfed078b57686aa80ac4cd6cfcac4a9b55d8ea3",
+        "decoded_image_size": [
+          3104,
+          4672
+        ],
+        "stored_image_size": [
+          3104,
+          4672
+        ],
+        "gold_box_count": 6
+      },
+      {
+        "id": "de-table-meyers-b1-168",
+        "pdf": "de-table-meyers-b1-168/recognized.pdf",
+        "sha256": "647f4d36abbc3973abcd9f5f423dbe1cd49caaebc016443c40648763d1fd6b20",
+        "bytes": 402897,
+        "ocr_text_sha256": "0258beb0bbff3b01acd098e7aa5ee3d3f3062ffd52c0086757041da81e0f3491",
+        "decoded_image_size": [
+          800,
+          1275
+        ],
+        "stored_image_size": [
+          800,
+          1275
+        ],
+        "gold_box_count": 2
+      },
+      {
+        "id": "de-fraktur-kant-himmel-12",
+        "pdf": "de-fraktur-kant-himmel-12/recognized.pdf",
+        "sha256": "218c1d2d59ec7b575f7e5a7e6f14f138e0e7365658590b415b529592e181c705",
+        "bytes": 382713,
+        "ocr_text_sha256": "6d8821f1677bdc4f43a3f77b0b3490098e08a142f0269e470f602b443abbaa46",
+        "decoded_image_size": [
+          1280,
+          1811
+        ],
+        "stored_image_size": [
+          1280,
+          1811
+        ],
+        "gold_box_count": 2
+      },
+      {
+        "id": "de-2col-amz-1823-2",
+        "pdf": "de-2col-amz-1823-2/recognized.pdf",
+        "sha256": "4afcce34851504cb5a8264631210d4b507953b66359be1bf8a5bc6f47af8c355",
+        "bytes": 392710,
+        "ocr_text_sha256": "648f90997df2e860345c18ce10ed9ce473f9e3d240cf93cb3595c0a5aa3d7f28",
+        "decoded_image_size": [
+          960,
+          1204
+        ],
+        "stored_image_size": [
+          960,
+          1204
+        ],
+        "gold_box_count": 9
+      },
+      {
+        "id": "fr-footnote-tableau-france-20",
+        "pdf": "fr-footnote-tableau-france-20/recognized.pdf",
+        "sha256": "3ea7c561d5bb42a108a3c36e96d640ddcf1c4593a42a14be02426801557c855e",
+        "bytes": 1369461,
+        "ocr_text_sha256": "0e8470c22b7e200a410c02c2056866a1e1979e30c4c4f26aae679266d3456f60",
+        "decoded_image_size": [
+          1920,
+          4586
+        ],
+        "stored_image_size": [
+          1920,
+          4586
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "fr-table-tableau-france-2",
+        "pdf": "fr-table-tableau-france-2/recognized.pdf",
+        "sha256": "bfc5090db0ad24aba78cec8bcc26c5cb7c4ff3f92a3ac691ad18e90ccf15efe8",
+        "bytes": 540945,
+        "ocr_text_sha256": "606e6375e9288b4a445b7751f71185ea7b09e27ef959938a3c3b29559f2754a5",
+        "decoded_image_size": [
+          1920,
+          3311
+        ],
+        "stored_image_size": [
+          1920,
+          3311
+        ],
+        "gold_box_count": 13
+      },
+      {
+        "id": "fr-table-hauy-physique-13",
+        "pdf": "fr-table-hauy-physique-13/recognized.pdf",
+        "sha256": "598b85d088025bd8f76cc6ba81d2313648c74cf869cc63d4830ae1efe7a36151",
+        "bytes": 88929,
+        "ocr_text_sha256": "aa7ceb14626c915c3c2b7c4ee3602616fd05e0456513f292fff0aa6bf6cbb074",
+        "decoded_image_size": [
+          1280,
+          2234
+        ],
+        "stored_image_size": [
+          1280,
+          2234
+        ],
+        "gold_box_count": 2
+      },
+      {
+        "id": "fr-table-sabatier-chimie-7",
+        "pdf": "fr-table-sabatier-chimie-7/recognized.pdf",
+        "sha256": "c9988b3c705f7c0b38087ed8be19257ceefa097085e1b022a009b98bea05d960",
+        "bytes": 199211,
+        "ocr_text_sha256": "a27156295473e69cbce8cae6dd0c215a3d1df22a51623e12e1e33fb01240bf72",
+        "decoded_image_size": [
+          1920,
+          3260
+        ],
+        "stored_image_size": [
+          1920,
+          3260
+        ],
+        "gold_box_count": 8
+      },
+      {
+        "id": "fr-footnote-caboul-19",
+        "pdf": "fr-footnote-caboul-19/recognized.pdf",
+        "sha256": "e6d8e14f875c7280dc64f50755cb3dd2348535692c89d9f7034f0f451f0da7cd",
+        "bytes": 514275,
+        "ocr_text_sha256": "94bb79d68f57b52c87783592a62ea5ac243799d7b8f0a3370fa40c62ac09d007",
+        "decoded_image_size": [
+          1920,
+          3256
+        ],
+        "stored_image_size": [
+          1920,
+          3256
+        ],
+        "gold_box_count": 4
+      },
+      {
+        "id": "fr-old-tachard-siam-102",
+        "pdf": "fr-old-tachard-siam-102/recognized.pdf",
+        "sha256": "7e95fec172dc8797a405184c94a41d9b79f17d61e0b6b50a068ef8189801da77",
+        "bytes": 470261,
+        "ocr_text_sha256": "8555db7f76c64044385fe00a78bf8c175ceb84a88e2f4afe1814f1132743e44c",
+        "decoded_image_size": [
+          1920,
+          2438
+        ],
+        "stored_image_size": [
+          1920,
+          2438
+        ],
+        "gold_box_count": 5
+      },
+      {
+        "id": "fr-footnote-vallat-rabelais-13",
+        "pdf": "fr-footnote-vallat-rabelais-13/recognized.pdf",
+        "sha256": "0880a88a17d2166f8d810c68970eb3b52b0f34712fdc14f4e8171e64fee9ee4d",
+        "bytes": 500088,
+        "ocr_text_sha256": "3b40b2555ab9b5cd0f1c88f43cfc56a247bde765c58494ce3b8a7d088a8574e1",
+        "decoded_image_size": [
+          1920,
+          3130
+        ],
+        "stored_image_size": [
+          1920,
+          3130
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "fr-footnote-maccarthy-coree-17",
+        "pdf": "fr-footnote-maccarthy-coree-17/recognized.pdf",
+        "sha256": "10ed27a1a228d0721807c99ca411207128c385fc0ab9e38c34fd37383bcca589",
+        "bytes": 122594,
+        "ocr_text_sha256": "5c00241d9472094ca683796cf110fec6fbe448110fbca070456aa510ae04c531",
+        "decoded_image_size": [
+          500,
+          854
+        ],
+        "stored_image_size": [
+          500,
+          854
+        ],
+        "gold_box_count": 4
+      },
+      {
+        "id": "fr-figure-tour-france-117",
+        "pdf": "fr-figure-tour-france-117/recognized.pdf",
+        "sha256": "2af6f75f0613fe473123a62949976ce432bc279f124e76aea3b1af518ba21eac",
+        "bytes": 612654,
+        "ocr_text_sha256": "d03b7cd35ad30e7cab4ddde00950b0fba22851b01d890a2fbb69a3cf65290ec2",
+        "decoded_image_size": [
+          1280,
+          2216
+        ],
+        "stored_image_size": [
+          1280,
+          2216
+        ],
+        "gold_box_count": 8
+      },
+      {
+        "id": "fr-footnote-sable-maximes-20",
+        "pdf": "fr-footnote-sable-maximes-20/recognized.pdf",
+        "sha256": "e866dca777772eed711ab81acc543385c0852af50733f3e99c2b6c487ac58f21",
+        "bytes": 627602,
+        "ocr_text_sha256": "ec6e14b7b031646eec38c330a88799fc61e65e352d182032e38e24ee954ce733",
+        "decoded_image_size": [
+          1920,
+          3091
+        ],
+        "stored_image_size": [
+          1920,
+          3091
+        ],
+        "gold_box_count": 2
+      },
+      {
+        "id": "fr-prose-rabaut-cevenol-20",
+        "pdf": "fr-prose-rabaut-cevenol-20/recognized.pdf",
+        "sha256": "f45722447b176752dafcd068536b48f7dc0e9d2d5b20f7d0451c5e50334d36cb",
+        "bytes": 377155,
+        "ocr_text_sha256": "7e79723dedea3809dd5987c91a736e5b407905e6dc933bb39d91e24ae37db765",
+        "decoded_image_size": [
+          1280,
+          2073
+        ],
+        "stored_image_size": [
+          1280,
+          2073
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "fr-prose-dupin-droit-108",
+        "pdf": "fr-prose-dupin-droit-108/recognized.pdf",
+        "sha256": "89b10cf3d08f5e246fc96c2860100cd5c3c0a89a9747b2a44595889f6223df50",
+        "bytes": 390031,
+        "ocr_text_sha256": "43a1fc3c794286a3dc0288c17f24a3f56eb5893c8ab7aa666125a3be0cbccc24",
+        "decoded_image_size": [
+          1920,
+          3097
+        ],
+        "stored_image_size": [
+          1920,
+          3097
+        ],
+        "gold_box_count": 11
+      },
+      {
+        "id": "receipt-cord-test-29",
+        "pdf": "receipt-cord-test-29/recognized.pdf",
+        "sha256": "33e02829ed6aa28c8c0519c4ca2ea7ba157e6d1204a95bbef8418d90d64e2d5b",
+        "bytes": 1391837,
+        "ocr_text_sha256": "4e06e446347dbc0527369dd1218d04bbba411bb84460dd03b332a3ab3d7117f8",
+        "decoded_image_size": [
+          864,
+          1296
+        ],
+        "stored_image_size": [
+          864,
+          1296
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "receipt-cord-test-4",
+        "pdf": "receipt-cord-test-4/recognized.pdf",
+        "sha256": "5ce5bcb6f82165dad92aa23b0d237a305bcca0ccbbe49b110cfc984fdaec4f5a",
+        "bytes": 1644376,
+        "ocr_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "decoded_image_size": [
+          864,
+          1296
+        ],
+        "stored_image_size": [
+          864,
+          1296
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "receipt-cord-test-16",
+        "pdf": "receipt-cord-test-16/recognized.pdf",
+        "sha256": "563e9b034f7a109bdd5cbb43ca7f4621a861feffeeba1eef2cba3b2a9fb82102",
+        "bytes": 1733350,
+        "ocr_text_sha256": "2bc6b1c8a4de24b4cd6c0a5564de82c4deb3da3559c173c82b2c6b2f614926f5",
+        "decoded_image_size": [
+          864,
+          1296
+        ],
+        "stored_image_size": [
+          864,
+          1296
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "receipt-cord-test-20",
+        "pdf": "receipt-cord-test-20/recognized.pdf",
+        "sha256": "62a77fd6ec4aed88ec5630c4ffc82d07ba537016f205157148d3a5cfff098426",
+        "bytes": 1638863,
+        "ocr_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "decoded_image_size": [
+          864,
+          1296
+        ],
+        "stored_image_size": [
+          864,
+          1296
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "receipt-cord-test-14",
+        "pdf": "receipt-cord-test-14/recognized.pdf",
+        "sha256": "1fa3b63e27e16c8b98daab008bfbbf10394add9bedfc53619dcf26b0e1833f67",
+        "bytes": 3668817,
+        "ocr_text_sha256": "14d61fc14748cf0b9543c1c21e56379abda58da219cca1f4b4bb8ca48f7d8490",
+        "decoded_image_size": [
+          1836,
+          3264
+        ],
+        "stored_image_size": [
+          1836,
+          3264
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "receipt-cord-test-17",
+        "pdf": "receipt-cord-test-17/recognized.pdf",
+        "sha256": "fcdb7b689ea33a4d6ce418a0298b6536cefd2f9a37861cb3d31b1e083a8f8495",
+        "bytes": 1237680,
+        "ocr_text_sha256": "a6ad23b334b0ccbba2072380c714692bbd8b25a9d9f5f3ad50e5a0a37606c8ad",
+        "decoded_image_size": [
+          960,
+          1280
+        ],
+        "stored_image_size": [
+          960,
+          1280
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "receipt-cord-test-26",
+        "pdf": "receipt-cord-test-26/recognized.pdf",
+        "sha256": "06c9788454cc6a504fffb8ca55b4cc94671eaca14d3c67184c88d326030d5109",
+        "bytes": 589753,
+        "ocr_text_sha256": "67041693283e0794fa4f6438661f84d8082385358344b1873aa3b35230f825ad",
+        "decoded_image_size": [
+          720,
+          1280
+        ],
+        "stored_image_size": [
+          720,
+          1280
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "receipt-cord-test-28",
+        "pdf": "receipt-cord-test-28/recognized.pdf",
+        "sha256": "c99e3e9265753a5fcb053365d4c20ebdf79a30610ee1c71d20ba1bbd92f4ca64",
+        "bytes": 2671426,
+        "ocr_text_sha256": "45c05cbe2495b92e9bb33424fc9f0fc5be7c29af8c924e4f22469086f5e3b388",
+        "decoded_image_size": [
+          1152,
+          1728
+        ],
+        "stored_image_size": [
+          1152,
+          1728
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "receipt-cord-test-33",
+        "pdf": "receipt-cord-test-33/recognized.pdf",
+        "sha256": "6044818c7e608ca2bfca7bbd572ce45917d373684f936ee0aa9b71d7d0c44877",
+        "bytes": 841588,
+        "ocr_text_sha256": "6cf8624d66d2a617249e79f366de2ebea6840ff81195fcd92fc0a8747f47a96d",
+        "decoded_image_size": [
+          576,
+          864
+        ],
+        "stored_image_size": [
+          576,
+          864
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "receipt-cord-test-38",
+        "pdf": "receipt-cord-test-38/recognized.pdf",
+        "sha256": "b6aca49bbc7bbc82d7346835393ccd3d09ff500ba620dbe96e3523908b805908",
+        "bytes": 12253122,
+        "ocr_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "decoded_image_size": [
+          2304,
+          4096
+        ],
+        "stored_image_size": [
+          2304,
+          4096
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "receipt-cord-test-41",
+        "pdf": "receipt-cord-test-41/recognized.pdf",
+        "sha256": "a6dc4905159a70f78307cd444ddb0ddacec986b19aabccc5dcf9653b149c1951",
+        "bytes": 609818,
+        "ocr_text_sha256": "69d04513816d068b6865810d87ed5c3728758094d3682537a597948ff8ac18cc",
+        "decoded_image_size": [
+          648,
+          1152
+        ],
+        "stored_image_size": [
+          648,
+          1152
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "receipt-cord-test-51",
+        "pdf": "receipt-cord-test-51/recognized.pdf",
+        "sha256": "e7dea2dac29a7e5d63de863c287befb63f26efb1875902a001852ea18e145deb",
+        "bytes": 1419297,
+        "ocr_text_sha256": "fcdb5fda5082ecd3814952be6db49bcae450672395ab3b7e1f0bd0367cf065e2",
+        "decoded_image_size": [
+          720,
+          1280
+        ],
+        "stored_image_size": [
+          720,
+          1280
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "receipt-cord-test-59",
+        "pdf": "receipt-cord-test-59/recognized.pdf",
+        "sha256": "6978132f04c6fe1b598682b8f8dd281e2a8553133c6cfeb6d0dfcdee20f74f68",
+        "bytes": 17222297,
+        "ocr_text_sha256": "39db3352970fe96ac9a9b149204c6e06c5e23c37b6881746465da855426d66ae",
+        "decoded_image_size": [
+          3024,
+          4032
+        ],
+        "stored_image_size": [
+          3024,
+          4032
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "receipt-cord-test-61",
+        "pdf": "receipt-cord-test-61/recognized.pdf",
+        "sha256": "6cfa5bb89f2fc37190859f51fe43dbe518cf0c101d3e4d6ca3600625061c7435",
+        "bytes": 936212,
+        "ocr_text_sha256": "a67371573d2ec86162fe982ecec8b6f2711a12a7cd70b6147f37c5ff8e2c25dd",
+        "decoded_image_size": [
+          576,
+          864
+        ],
+        "stored_image_size": [
+          576,
+          864
+        ],
+        "gold_box_count": 3
+      },
+      {
+        "id": "receipt-cord-test-70",
+        "pdf": "receipt-cord-test-70/recognized.pdf",
+        "sha256": "7551555f7c61aef8a64d40c2f42e697cca5fb4cbda0b2e782b078db24ea86fb5",
+        "bytes": 2222932,
+        "ocr_text_sha256": "02b9d52e73ce52bc8613b75bbb957917295b23e8b8e411b0b32c2916653eec9a",
+        "decoded_image_size": [
+          1108,
+          1478
+        ],
+        "stored_image_size": [
+          1108,
+          1478
+        ],
+        "gold_box_count": 3
+      }
+    ]
+  },
+  "corpus": {
+    "path": "docs/ocr-gold-corpus-v1.json",
+    "sha256": "1da42d96eed25aac6215fce60c5bcd05c8a25bbaae710081f4963f4e37fd1ed5",
+    "page_ids": [
+      "en-prose-constitution-13",
+      "de-fraktur-grimm-319",
+      "en-table-climatic-26",
+      "de-antiqua-kafka-schloss-211",
+      "en-form-economic-journal-67",
+      "de-degraded-freiligrath-46",
+      "de-2col-meyers-b13-103",
+      "en-2col-eb1911-v04-246",
+      "en-report-amtrak-23",
+      "de-table-rgbl-1867-403",
+      "de-antiqua-kafka-betrachtung-94",
+      "de-mixed-welzheim-188",
+      "en-old-statutes-v1-772",
+      "en-prose-constitution-81",
+      "en-2col-eb1911-v25-5",
+      "en-register-1775-606",
+      "en-register-1758-16",
+      "en-catalogue-library-11",
+      "en-psm-v2-13",
+      "en-report-delhi-agra-26",
+      "en-nature-1836-12",
+      "en-list-geolsoc-v2-176",
+      "en-list-geolsoc-v2-183",
+      "en-table-cakchiquels-13",
+      "de-2col-gartenlaube-1866-023",
+      "de-2col-gartenlaube-1866-007",
+      "de-2col-gartenlaube-1866-044",
+      "de-table-meyers-b1-168",
+      "de-fraktur-kant-himmel-12",
+      "de-2col-amz-1823-2",
+      "fr-footnote-tableau-france-20",
+      "fr-table-tableau-france-2",
+      "fr-table-hauy-physique-13",
+      "fr-table-sabatier-chimie-7",
+      "fr-footnote-caboul-19",
+      "fr-old-tachard-siam-102",
+      "fr-footnote-vallat-rabelais-13",
+      "fr-footnote-maccarthy-coree-17",
+      "fr-figure-tour-france-117",
+      "fr-footnote-sable-maximes-20",
+      "fr-prose-rabaut-cevenol-20",
+      "fr-prose-dupin-droit-108",
+      "receipt-cord-test-29",
+      "receipt-cord-test-4",
+      "receipt-cord-test-16",
+      "receipt-cord-test-20",
+      "receipt-cord-test-14",
+      "receipt-cord-test-17",
+      "receipt-cord-test-26",
+      "receipt-cord-test-28",
+      "receipt-cord-test-33",
+      "receipt-cord-test-38",
+      "receipt-cord-test-41",
+      "receipt-cord-test-51",
+      "receipt-cord-test-59",
+      "receipt-cord-test-61",
+      "receipt-cord-test-70"
+    ],
+    "page_count": 57,
+    "gold_mutation_allowed": false,
+    "license_source": "docs/ocr-gold-corpus.md",
+    "derived_annotation_limits_retained": true,
+    "image_pin_policy": "Require exact frozen SHA256; up to4 URL/fallback rounds; retain every mismatch; never repin or substitute pages.",
+    "partial_gold_source": "cord-v2"
+  },
+  "scoring": {
+    "text_scorer": "tools/kaggle/ocr-real-scans/score.py",
+    "text_scorer_sha256": "9cc12f95544131cfe50e1ad7d91498e6c8560cd4ce2fce1fa63a25dd92edf7bc",
+    "layout_scorer": "tools/ocr-gold-corpus/layout_score.py",
+    "layout_scorer_sha256": "a7fe2233071012a81e32fcc9a15dcb2fd5cd3e6d22a90069942c48662ee887d1",
+    "text": "Report raw whitespace-normalized CER/WER and existing canonical scorer CER/CER-nospace/WER/word-recall/length ratio; never use gold to construct OCR input.",
+    "layout": "Export native leaf blocks in pixel coordinates of the original image; retain table HTML, order and types; existing unchanged scorer.",
+    "partial_gold": "Report CORD full-page CER/WER as descriptive only; annotated-field word recall and table-cell F1 govern its absolute quality.",
+    "off_on_nonregression": {
+      "per_page_canonical_cer_increase_max": 0,
+      "per_page_canonical_wer_increase_max": 0,
+      "per_page_word_recall_decrease_max": 0,
+      "layout_f1_decrease_max": 0,
+      "type_accuracy_decrease_max": 0,
+      "table_content_f1_decrease_max": 0,
+      "matched_reading_order_tau_decrease_max": 0
+    },
+    "absolute_quality_per_page": {
+      "complete_gold_cer_max": 0.1,
+      "complete_gold_wer_max": 0.2,
+      "partial_gold_word_recall_min": 0.9,
+      "block_f1_min": 0.8,
+      "type_accuracy_min": 0.8,
+      "matched_order_tau_min": 0.9,
+      "table_content_f1_min_when_table_gold_exists": 0.8
+    },
+    "structural_requirements": {
+      "source_range_reconstruction": 1.0,
+      "finite_in_bounds_geometry": 1.0,
+      "physical_source_identity": 1.0,
+      "full_text_window_coverage": 1.0
+    },
+    "qualification": "Report coverage, structural validity, nonregression and absolute quality separately. Complete panel qualification requires all57 input pins and every applicable threshold; any miss stays visible. Neutral/no-change arms do not demonstrate quality improvement."
+  },
+  "retrieval": {
+    "model_repository": "cstr/all-MiniLM-L6-v2-GGUF",
+    "revision": "f0673ed53d37dfda08c0407b257440450d816980",
+    "filename": "all-MiniLM-L6-v2-f32.gguf",
+    "sha256": "fc24c0855e67ae851fe043a1b1c09a493fb71d95157a710fa0cbe508bc9f2542",
+    "bytes": 91304064,
+    "license": "Apache-2.0",
+    "base_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "license_source": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2",
+    "backend": "actual CrispEmbed CPU F32, sequential n_threads=1; normalized mean-pooled384d vectors",
+    "query_prompt": "",
+    "document_prompt": "",
+    "documents": "All17 English gold pages; off=existing native leaf text blocks; on=assembled_chunks, with identical deterministic windowing. Do not silently remove failed pages.",
+    "window_max_utf8_bytes": 240,
+    "window_overlap_characters": 32,
+    "truncation": "No truncation: cover all chunk text with bounded windows; at most242 WordPiece tokens including specials.",
+    "ranking": "Cosine dot product; page score=max over its windows; descending score then page ID for ties.",
+    "query_origin": "Independently authored paraphrases of frozen gold before candidate output; one predeclared query for every English page.",
+    "queries": [
+      {
+        "id": "q01",
+        "text": "Why is it difficult to describe a constitution while it is still changing?",
+        "relevant_pages": [
+          "en-prose-constitution-13"
+        ]
+      },
+      {
+        "id": "q02",
+        "text": "How does spring drought affect the red rings of tree growth?",
+        "relevant_pages": [
+          "en-table-climatic-26"
+        ]
+      },
+      {
+        "id": "q03",
+        "text": "Which census schedule asks about households, parents' birthplaces, literacy, and employment?",
+        "relevant_pages": [
+          "en-form-economic-journal-67"
+        ]
+      },
+      {
+        "id": "q04",
+        "text": "What ornamental designs and library interiors appear on historical bookplates?",
+        "relevant_pages": [
+          "en-2col-eb1911-v04-246"
+        ]
+      },
+      {
+        "id": "q05",
+        "text": "What devices help train crews know their location where positive train control is not installed?",
+        "relevant_pages": [
+          "en-report-amtrak-23"
+        ]
+      },
+      {
+        "id": "q06",
+        "text": "When must a ship's master submit an additional cargo report about spirits, wines and teas?",
+        "relevant_pages": [
+          "en-old-statutes-v1-772"
+        ]
+      },
+      {
+        "id": "q07",
+        "text": "How does the cabinet chapter describe the difference between British constitutional theory and actual practice?",
+        "relevant_pages": [
+          "en-prose-constitution-81"
+        ]
+      },
+      {
+        "id": "q08",
+        "text": "Which encyclopaedia contributor writes on sponges and teaches zoology at King's College?",
+        "relevant_pages": [
+          "en-2col-eb1911-v25-5"
+        ]
+      },
+      {
+        "id": "q09",
+        "text": "Which contents list describes the Philadelphia Congress, rights, and Chatham's proposals about America?",
+        "relevant_pages": [
+          "en-register-1775-606"
+        ]
+      },
+      {
+        "id": "q10",
+        "text": "How did uncertain American territorial boundaries and rival claims to Silesia contribute to war?",
+        "relevant_pages": [
+          "en-register-1758-16"
+        ]
+      },
+      {
+        "id": "q11",
+        "text": "Where does the library catalogue list reference books, ethics, and religion?",
+        "relevant_pages": [
+          "en-catalogue-library-11"
+        ]
+      },
+      {
+        "id": "q12",
+        "text": "How can confusing observation with inference distort sociological arguments about marriage and mortality?",
+        "relevant_pages": [
+          "en-psm-v2-13"
+        ]
+      },
+      {
+        "id": "q13",
+        "text": "Where are the two pillars of Asoka near Delhi described?",
+        "relevant_pages": [
+          "en-report-delhi-agra-26"
+        ]
+      },
+      {
+        "id": "q14",
+        "text": "What aim does Emerson assign to science when asking about the purpose of nature?",
+        "relevant_pages": [
+          "en-nature-1836-12"
+        ]
+      },
+      {
+        "id": "q15",
+        "text": "What sequence of English strata includes Bagshot sand, London clay, chalk and Portland oolite?",
+        "relevant_pages": [
+          "en-list-geolsoc-v2-176"
+        ]
+      },
+      {
+        "id": "q16",
+        "text": "Where can alternating freshwater and marine formations be seen in the Isle of Wight?",
+        "relevant_pages": [
+          "en-list-geolsoc-v2-183"
+        ]
+      },
+      {
+        "id": "q17",
+        "text": "Which contents page lists Cakchiquel timekeeping, family names, language and the Annals of Xahila?",
+        "relevant_pages": [
+          "en-table-cakchiquels-13"
+        ]
+      }
+    ],
+    "absolute_recall_at_3_min": 0.9,
+    "absolute_mrr_min": 0.75,
+    "nonregression": "Each query reciprocal rank, aggregate MRR and Recall@3 may not decrease; retain all full score matrices and misses.",
+    "quality_scope": "English17page corpus only; no multilingual embedding or general retrieval claim."
+  },
+  "runtime": {
+    "mode": "text",
+    "dpi": 144,
+    "n_threads": 1,
+    "extract_images": false,
+    "include_page_headers": true,
+    "pdfium_library_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+    "baseline_library_sha256": "decb81ce3f68f30db24cc6eb686f712750e86f68dbd5f9cc6930d65f87210328",
+    "baseline_native_source_commit": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+    "candidate_identity": "The exact native source commit and compiled SHA256 must be supplied and saved before any candidate output; reject changed libraries between workers. The candidate is the root-owned default-off exact-GlyphLessFont correction, with no OCR model changes."
+  },
+  "gate": {
+    "name": "CRISPEMBED_MARKER_GLYPHLESS_TEXT",
+    "default": "off",
+    "scope": "Only suppress the inferred monospace flag for exact GlyphLessFont and valid six-uppercase-letter PDF subset prefixes. Genuine Courier/Mono and near-match font names remain unchanged.",
+    "no_change_to": [
+      "raw PDF bytes",
+      "glyph and line text",
+      "glyph and line coordinates",
+      "font size",
+      "bold",
+      "italic",
+      "space reconstruction"
+    ]
+  },
+  "arms": {
+    "legacy": {
+      "CRISPEMBED_MARKER_SOURCE_LINKS": "0",
+      "CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE": "0",
+      "CRISPEMBED_MARKER_REFERENCES": "0",
+      "CRISPEMBED_MARKER_REPETITION_CHECK": "0",
+      "CRISPEMBED_MARKER_GLYPHLESS_TEXT": "0"
+    },
+    "font_only": {
+      "CRISPEMBED_MARKER_SOURCE_LINKS": "0",
+      "CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE": "0",
+      "CRISPEMBED_MARKER_REFERENCES": "0",
+      "CRISPEMBED_MARKER_REPETITION_CHECK": "0",
+      "CRISPEMBED_MARKER_GLYPHLESS_TEXT": "1"
+    },
+    "font_and_postprocess": {
+      "CRISPEMBED_MARKER_SOURCE_LINKS": "1",
+      "CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE": "1",
+      "CRISPEMBED_MARKER_REFERENCES": "1",
+      "CRISPEMBED_MARKER_REPETITION_CHECK": "1",
+      "CRISPEMBED_MARKER_GLYPHLESS_TEXT": "1"
+    }
+  },
+  "comparisons": {
+    "font_effect": [
+      "legacy",
+      "font_only"
+    ],
+    "postprocessing_effect": [
+      "font_only",
+      "font_and_postprocess"
+    ],
+    "total_effect": [
+      "legacy",
+      "font_and_postprocess"
+    ],
+    "quality_nonregression": "Apply the unchanged parent per-page metric thresholds separately to each pair; retain all improved, regressed, equal and unavailable values. Do not promote on aggregate averages that hide per-page regressions.",
+    "retrieval_nonregression": "Apply original per-query reciprocal-rank and aggregate MRR/Recall@3 checks to each pair, with all17 original English queries/targets, unchanged model/windowing/ranking. All3 arms use leaf chunks except font_and_postprocess uses assembled_chunks.",
+    "absolute_quality": "The unchanged parent absolute per-page and retrieval floors remain independent of nonregression. The three previously empty CORD pages remain included failures; no spatial qualification is available for the two pages without gold boxes."
+  },
+  "controls": {
+    "legacy_vs_preserved891": "All4 renderers on all57 PDFs must equal the original attempt2 off outputs. Only metadata.configuration.elapsed_seconds may differ; do not drop the metadata object. JSON is compared structurally after removing only that field, Markdown/HTML are byte-exact.",
+    "unset_vs_false": "For every PDF on the candidate binary, unset font gate must equal font gate=0 with the same single timing-field exception.",
+    "source_geometry": "For every physical page compare the multiset of every leaf line bbox and its ordered spans (text,bbox,font_size,bold,italic,url) exactly across all3 arms. Only the derived monospace flag is excluded; retain it separately to show what changed. Page physical index and bbox are exact. Regrouping of document blocks is allowed, but lost/duplicated lines or changed span bytes/geometry fail.",
+    "style_diagnostics": "Gate-on page warnings may add the explicit glyphless OCR font style-unknown diagnostic; no unrecorded warning removal or other warning change is accepted.",
+    "source_maps": "font_and_postprocess original source text/boxes must be found in font_only unnormalized blocks, every output UTF8 byte must reconstruct through permitted transforms, source IDs/page indices and source catalog must match rendered chunks.",
+    "native_font_fixture": "Root-owned actual PDFium ABI fixture separately proves exact/subset GlyphLessFont handling, authentic Courier preservation, near-match negatives, value-parsed false controls and extraction identity mismatch. These are independent of corpus quality results."
+  },
+  "resources": {
+    "max_concurrent_inference": 1,
+    "omp_threads": 1,
+    "working_rss_budget_bytes": 4294967296,
+    "local_disk_budget_bytes": 2147483648,
+    "max_download_bytes_per_file": 268435456,
+    "no_teleocr_weights_download": true,
+    "restricted_model_acknowledgements": "No restricted model needed; do not set a restricted-model acknowledgement for this lane.",
+    "runtime_metrics": "Record per-page wall times, child peak RSS, feature processing wall times, generated artifact sizes and retrieval encoding wall/RSS."
+  },
+  "limits": [
+    "The gold has derived and partly unreviewed layout annotations; report provenance strata and avoid claiming independent manual box qualification.",
+    "Corpus pages are independent; do not manufacture adjacency across unrelated/missing pages or claim real cross-page continuation coverage.",
+    "Tesseract quality is a new explicit provider lane, not native TeleOCR execution or original-model parity.",
+    "Retained TeleOCR OCR output replay, if added, is separately identified and never counted as fresh inference.",
+    "This is replay of stored fresh Tesseract recognition through changed native PDF processing, not another fresh OCR/model inference run. MiniLM embeddings are recomputed by the real native CPU engine.",
+    "Any improvement is restricted to this retained57-page provider lane; inherited derived layout/partial-gold limits remain.",
+    "The original failed absolute-quality result and successful retrieval result remain intact; this followup does not replace them."
+  ]
+}

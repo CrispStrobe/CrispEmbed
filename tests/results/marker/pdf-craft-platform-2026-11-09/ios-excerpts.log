@@ -1,0 +1,6 @@
+Full job steps and scope are recorded in receipt.json.
+2026-11-09T12:12:49.6009600Z HEAD is now at e827fb5 Merge b34fe99611a6168f572630904531c79b02477b9f into dc4f51c755bf78139f1f6ea87941748b05e75971
+2026-11-09T12:13:01.4530830Z -- The C compiler identification is AppleClang 21.0.0.21000101
+2026-11-09T12:13:01.6011460Z -- The CXX compiler identification is AppleClang 21.0.0.21000101
+2026-11-09T12:13:09.1497150Z -- Configuring done (9.0s)
+2026-11-09T12:13:09.2698430Z -- Generating done (0.1s)
