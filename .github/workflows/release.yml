@@ -444,6 +444,8 @@ jobs:
           non-cuda-sub-packages: '["libcublas-dev"]'
 
       - name: ccache
+        # A cache-restore/download hiccup must not sink a release build.
+        continue-on-error: true
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: linux-x86_64-cuda
@@ -717,6 +719,8 @@ jobs:
       # the C++ and CUDA compilers. Release build = no PDBs, so ccache caches cl
       # cleanly.
       - name: ccache
+        # A cache-restore/download hiccup must not sink a release build.
+        continue-on-error: true
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: windows-x86_64-cuda
@@ -734,14 +738,19 @@ jobs:
       - name: Configure + build (Ninja)
         shell: pwsh
         run: |
+          # Without ccache (setup step failed), build uncached.
+          $launch = @()
+          if (Get-Command ccache -ErrorAction SilentlyContinue) {
+            $launch = @('-DCMAKE_C_COMPILER_LAUNCHER=ccache',
+                        '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache',
+                        '-DCMAKE_CUDA_COMPILER_LAUNCHER=ccache')
+          }
           cmake -S . -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
             -DCRISPEMBED_BUILD_SHARED=ON `
             -DGGML_CUDA=ON `
             -DGGML_BLAS=OFF `
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache `
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache `
-            -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache `
+            @launch `
             -DCMAKE_CUDA_ARCHITECTURES="75-real;86-real;89-real;120-real;120-virtual" `
             -DGGML_NATIVE=OFF `
             -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON

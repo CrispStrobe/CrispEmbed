@@ -56,8 +56,10 @@ These are registered as **experimental**; defaults are unchanged.
 - Unlimited-OCR-2: `unlimited-ocr2-q8_0-experimental` (q8sh16), qualified at
   ≥ 0.97 on CPU and CUDA ([#180](https://github.com/CrispStrobe/CrispEmbed/pull/180),
   [#181](https://github.com/CrispStrobe/CrispEmbed/pull/181)). A Q4_K_MIX re-score on the
-  current runtime is about 0.03 lower and is recorded as a regression lane, not
-  promoted ([#184](https://github.com/CrispStrobe/CrispEmbed/pull/184)).
+  current runtime came out about 0.03 lower ([#184](https://github.com/CrispStrobe/CrispEmbed/pull/184));
+  the bisect in [#190](https://github.com/CrispStrobe/CrispEmbed/pull/190) attributes this to
+  the F32-vision default changing the F16 reference, not to the quantization:
+  the published Q4_K_MIX bytes and decoded text are unchanged.
 - OXR: default-off `CRISPEMBED_OXR_DECODE_F32_ACT` A/B gate; the German
   divergence is attributed to activation quantization and shared Q8_0 weights
   ([#183](https://github.com/CrispStrobe/CrispEmbed/pull/183)).
