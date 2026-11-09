@@ -65,7 +65,7 @@ step integration python tests/marker_integration.py --library "$LIB" --pdfium "$
     --cli "$(bin crispembed-marker)" --server "$(bin crispembed-server)" --out "$OUT/integration"
 
 mkdir -p "$S/rust/src" && cp tests/marker_public_bindings.rs "$S/rust/src/main.rs"
-printf '[package]\nname = "marker-probe"\nversion = "0.1.0"\nedition = "2021"\n[dependencies]\ncrispembed = { path = "%s/crispembed" }\n' \
+printf '[package]\nname = "marker-probe"\nversion = "0.1.0"\nedition = "2021"\n[dependencies]\ncrispembed = { path = "%s/crispembed" }\nserde_json = "=1.0.145"\n' \
     "$ROOT" > "$S/rust/Cargo.toml"
 step rust-build cargo build -q --release --manifest-path "$S/rust/Cargo.toml"
 step rust "$S/rust/target/release/marker-probe" "$PDFIUM" "$PDF"

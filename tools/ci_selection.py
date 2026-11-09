@@ -60,6 +60,11 @@ INPAINT_NATIVE = (
 # what they import or read. Linux only: they are not run on Windows/macOS.
 NATIVE_PYTHON = (
     "tests/test_ultrabert_api_log.py", "tests/test_vendored_kaggle_harness.py",
+    "tests/test_teleocr_loader.py",
+    "tests/test_unlimited_ocr_license.py",
+    "tests/test_marker_lifecycle.py",
+    "tests/test_marker_real_pdf.py",
+    "tests/run_marker_binding_lifecycle.py",
     "kaggle_harness.py", "tools/kaggle/*/kaggle_harness.py",
     "tests/test_ultrabert_*.py", "tools/ultrabert*.py", "tools/dump_ultrabert*.py", "tools/ci-heavy/*ultrabert*.py",
     "models/convert-ultrabert-to-gguf.py", "tests/results/ultrabert/*.json",
@@ -154,6 +159,10 @@ def selection(paths: list[str], *, force_full: str | None = None, event_name: st
         elif path == "examples/cli/main.cpp":
             lanes["native"] = lanes["inpaint_python"] = lanes["inpaint_native"] = True
             lanes["native_tests"] = True
+        elif path in ("crispembed/src/marker.rs", "crispembed/src/lib.rs", "crispembed-sys/src/lib.rs", "crispembed-sys/build.rs"):
+            # These also compile/link the actual Marker consumer against the
+            # Linux shared library; a crate-only check cannot execute its ABI.
+            lanes["rust"] = lanes["native"] = lanes["native_tests"] = True
         elif path.startswith(("crispembed/", "crispembed-sys/")) or path in ("Cargo.toml", "Cargo.lock", "scripts/vendor_rust_sources.sh"):
             lanes["rust"] = True
         elif path == "build-embed-wasm.sh" or path == "wasm/embed_wrapper.c":

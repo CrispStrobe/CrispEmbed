@@ -1,0 +1,15 @@
+{
+  "kind": "python-native-driver-attempt",
+  "name": "test_unlimited_ocr_license",
+  "attempt": 2,
+  "source_commit": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+  "native_library_sha256": "decb81ce3f68f30db24cc6eb686f712750e86f68dbd5f9cc6930d65f87210328",
+  "probe_sha256": "76194a2217f253aba872a46097ab50c397a8e05dcddb41c3125deafb1ff88dd5",
+  "started_utc": "2026-11-09T11:09:36.781642+00:00",
+  "elapsed_seconds": 5.39,
+  "exit_code": 0,
+  "model_weights_used": false,
+  "passed": true,
+  "passed_count": 106,
+  "total_count": 106
+}

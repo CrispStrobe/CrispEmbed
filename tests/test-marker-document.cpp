@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <functional>
 #include <limits>
 #include <stdexcept>
@@ -518,6 +519,478 @@ void test_margins_and_continuation() {
           "metadata exposes incomplete generation counts");
 }
 
+void set_repetition_gate(const char * value) {
+#ifdef _WIN32
+    _putenv_s("CRISPEMBED_MARKER_REPETITION_CHECK", value ? value : "");
+#else
+    if (value)
+        setenv("CRISPEMBED_MARKER_REPETITION_CHECK", value, 1);
+    else
+        unsetenv("CRISPEMBED_MARKER_REPETITION_CHECK");
+#endif
+}
+
+struct repetition_gate_guard {
+    bool had_value = false;
+    std::string previous;
+    repetition_gate_guard() {
+        if (const char * value = std::getenv("CRISPEMBED_MARKER_REPETITION_CHECK")) {
+            had_value = true;
+            previous = value;
+        }
+    }
+    ~repetition_gate_guard() { set_repetition_gate(had_value ? previous.c_str() : nullptr); }
+};
+
+size_t repetition_warnings(const block & value) {
+    size_t count = 0;
+    for (const auto & warning : value.warnings)
+        if (contains(warning, "Possible repetitive n-gram output")) ++count;
+    for (const auto & child : value.children) count += repetition_warnings(child);
+    return count;
+}
+
+void test_repetition_diagnostics() {
+    repetition_gate_guard restore_gate;
+    const auto repeat = [](const std::string & unit, size_t count) {
+        std::string text;
+        for (size_t i = 0; i < count; ++i) text += unit;
+        return text;
+    };
+    const auto fixture = [](const std::string & text, const std::string & type = "Text") {
+        document d;
+        d.backend = "owned-repetition-fixture";
+        page p;
+        p.index = 0;
+        p.width = 600;
+        p.height = 800;
+        auto b = text_block(text, type, { 40, 100, 540, 200 });
+        b.raw = "Unmodified raw output: " + text;
+        p.blocks.push_back(std::move(b));
+        d.pages.push_back(std::move(p));
+        return d;
+    };
+    options opts;
+    opts.mode = 1;
+    const std::string repeated = repeat("ab", 16);
+    set_repetition_gate(nullptr);
+    auto baseline = fixture(repeated);
+    process_document(baseline, opts);
+    const std::string baseline_json = render_document(baseline, "json");
+    for (const char * off : { "", "0", "false", "off", "no", "FALSE", "Off", "NO" }) {
+        set_repetition_gate(off);
+        auto d = fixture(repeated);
+        process_document(d, opts);
+        check(render_document(d, "json") == baseline_json, "disabled repetition gate preserves complete JSON");
+        check(d.metadata.count("repetition_check") == 0 && d.metadata.count("repetitive_blocks") == 0,
+              "disabled repetition gate adds no metadata");
+    }
+    set_repetition_gate("1");
+    const auto flagged = [&](const std::string & text) {
+        auto d = fixture(text);
+        process_document(d, opts);
+        return repetition_warnings(d.pages[0].blocks[0]) == 1;
+    };
+    check(!flagged(repeat("ab", 15)) && flagged(repeated), "short-period repeat threshold is sixteen");
+    check(!flagged(repeat("abcde", 15)) && flagged(repeat("abcde", 16)), "five-codepoint short-period boundary");
+    check(!flagged(repeat("abcdef", 7)) && flagged(repeat("abcdef", 8)), "long-period repeat threshold is eight");
+    check(!flagged(repeat("abcdefghijklmnopqrst", 7)) && flagged(repeat("abcdefghijklmnopqrst", 8)),
+          "twenty-codepoint maximum-period boundary");
+    check(!flagged(repeat("abcdefghijklmnopqrstu", 8)), "period twenty-one is outside the bounded check");
+    check(!flagged(repeat("日本語", 15)) && flagged(repeat("日本語", 16)),
+          "UTF-8 repetitions count codepoints rather than bytes");
+    check(!flagged(repeat("🛰🌍", 15)) && flagged(repeat("🛰🌍", 16)),
+          "four-byte codepoints keep short-period threshold");
+    check(flagged("An ordinary prefix. " + repeated + " An ordinary suffix."), "repetition can begin inside a block");
+    check(!flagged(repeat("ab", 8) + "X" + repeat("ab", 8)), "interrupted repetitions do not accumulate");
+    check(!flagged("Ordinary text. Several words appear again, but ordinary words alone are not a repeated run."),
+          "ordinary repeated vocabulary does not trigger");
+    check(flagged(repeat(" \n", 16)), "whitespace is examined exactly without normalization");
+    check(!flagged(std::string("\xff") + repeated) && !flagged(repeated + std::string("\xe2\x82")),
+          "malformed UTF-8 is diagnosed separately without creating repetition evidence");
+    check(!flagged(""), "empty text has no repetitive run");
+
+    auto diagnosed = fixture(repeated);
+    const auto before = diagnosed.pages[0].blocks[0];
+    process_document(diagnosed, opts);
+    const auto & after = diagnosed.pages[0].blocks[0];
+    check(repetition_warnings(after) == 1 && !after.ignored, "diagnosis flags once without suppressing content");
+    check(after.text == before.text && after.raw == before.raw && after.source == before.source &&
+              after.bbox.x0 == before.bbox.x0 && after.bbox.y1 == before.bbox.y1,
+          "diagnosis retains exact text raw output source and geometry");
+    check(diagnosed.metadata.at("repetition_check") == "unicode-tandem-v1" &&
+              diagnosed.metadata.at("repetitive_blocks") == "1",
+          "metadata identifies the algorithm and flagged block count");
+    check(contains(render_document(diagnosed, "markdown"), repeated) &&
+              contains(render_document(diagnosed, "html"), repeated),
+          "diagnosed text remains visible in prose formats");
+    check(contains(render_document(diagnosed, "json"), "Possible repetitive n-gram output") &&
+              contains(render_document(diagnosed, "chunks"), "Possible repetitive n-gram output"),
+          "diagnostics reach JSON and retrieval chunks");
+
+    for (const char * type :
+         { "Text", "SectionHeader", "Caption", "Footnote", "ListItem", "PageHeader", "PageFooter" }) {
+        auto d = fixture(repeated, type);
+        process_document(d, opts);
+        check(repetition_warnings(d.pages[0].blocks[0]) == 1, "eligible text-bearing block type is diagnosed");
+    }
+    for (const char * type : { "Table", "Equation", "Code", "ChemicalBlock", "Picture", "Figure", "Diagram" }) {
+        auto d = fixture(repeated, type);
+        d.pages[0].blocks[0].children.push_back(text_block(repeated, "Text", { 50, 110, 300, 150 }));
+        process_document(d, opts);
+        check(repetition_warnings(d.pages[0].blocks[0]) == 0 && d.metadata.at("repetitive_blocks") == "0",
+              "structured non-prose block and its subtree are excluded");
+    }
+    auto nested = fixture(repeated, "ListGroup");
+    nested.pages[0].blocks[0].children.push_back(text_block(repeated, "Text", { 50, 110, 300, 150 }));
+    nested.pages[0].blocks[0].children.push_back(text_block(repeated, "Text", { 50, 155, 300, 190 }));
+    process_document(nested, opts);
+    check(nested.pages[0].blocks[0].warnings.empty() && repetition_warnings(nested.pages[0].blocks[0]) == 2 &&
+              nested.metadata.at("repetitive_blocks") == "2",
+          "containers are traversed without scanning aggregate text or collapsing equal leaf content");
+
+    auto unsplit_list = fixture("- " + repeated, "ListGroup");
+    process_document(unsplit_list, opts);
+    check(unsplit_list.pages[0].blocks[0].children.size() == 1 &&
+              repetition_warnings(unsplit_list.pages[0].blocks[0]) == 1 &&
+              unsplit_list.metadata.at("repetitive_blocks") == "1",
+          "OCR list text is diagnosed after its items are split");
+    const std::string list_json = render_document(unsplit_list, "json");
+    process_document(unsplit_list, opts);
+    check(render_document(unsplit_list, "json") == list_json &&
+              repetition_warnings(unsplit_list.pages[0].blocks[0]) == 1 &&
+              unsplit_list.metadata.at("repetitive_blocks") == "1",
+          "reprocessing an unchanged OCR list keeps diagnostics and counts stable");
+
+    auto nested_items = fixture(repeated, "ListItem");
+    block sublist;
+    sublist.type = "ListGroup";
+    sublist.bbox = { 60, 210, 540, 260 };
+    sublist.children.push_back(text_block(repeated, "ListItem", { 60, 210, 540, 260 }));
+    nested_items.pages[0].blocks[0].children.push_back(std::move(sublist));
+    process_document(nested_items, opts);
+    check(repetition_warnings(nested_items.pages[0].blocks[0]) == 2 &&
+              nested_items.metadata.at("repetitive_blocks") == "2",
+          "nested list items each retain their own text diagnosis");
+    process_document(nested_items, opts);
+    check(repetition_warnings(nested_items.pages[0].blocks[0]) == 2 &&
+              nested_items.metadata.at("repetitive_blocks") == "2",
+          "nested list reprocessing does not duplicate or lose warnings");
+
+    diagnosed.pages[0].blocks[0].warnings.push_back("Unrelated diagnostic retained.");
+    process_document(diagnosed, opts);
+    check(repetition_warnings(diagnosed.pages[0].blocks[0]) == 1 && diagnosed.metadata.at("repetitive_blocks") == "1",
+          "unchanged text reprocessing does not duplicate repetition warnings");
+    set_repetition_gate("0");
+    process_document(diagnosed, opts);
+    check(repetition_warnings(diagnosed.pages[0].blocks[0]) == 0 && diagnosed.metadata.count("repetition_check") == 0 &&
+              diagnosed.metadata.count("repetitive_blocks") == 0,
+          "disabling the gate removes prior owned diagnostics and metadata");
+    check(diagnosed.pages[0].blocks[0].warnings.size() == 1 &&
+              diagnosed.pages[0].blocks[0].warnings[0] == "Unrelated diagnostic retained.",
+          "diagnostic cleanup preserves unrelated block warnings");
+    set_repetition_gate("1");
+    process_document(diagnosed, opts);
+    check(repetition_warnings(diagnosed.pages[0].blocks[0]) == 1 && diagnosed.metadata.at("repetitive_blocks") == "1",
+          "reenabling the gate recomputes diagnostics for preserved text");
+    diagnosed.pages[0].blocks[0].text = "Corrected ordinary text.";
+    process_document(diagnosed, opts);
+    check(repetition_warnings(diagnosed.pages[0].blocks[0]) == 0 && diagnosed.metadata.at("repetitive_blocks") == "0" &&
+              diagnosed.pages[0].blocks[0].raw == before.raw && diagnosed.pages[0].blocks[0].warnings.size() == 1,
+          "editing text clears stale repetition evidence while retaining raw output and other warnings");
+
+    auto normal = fixture("A normal paragraph.");
+    process_document(normal, opts);
+    check(normal.metadata.at("repetitive_blocks") == "0", "enabled metadata distinguishes zero flagged blocks");
+    auto too_large = fixture(std::string(4 * 1024 * 1024 + 1, 'a'));
+    throws([&] { process_document(too_large, opts); }, "repetition diagnostics preserve the existing text limit");
+}
+
+void set_document_gate(const char * name, const char * value) {
+#ifdef _WIN32
+    _putenv_s(name, value ? value : "");
+#else
+    if (value)
+        setenv(name, value, 1);
+    else
+        unsetenv(name);
+#endif
+}
+struct document_gate_guard {
+    std::map<std::string, std::pair<bool, std::string>> saved;
+    document_gate_guard() {
+        for (const char * name : { "CRISPEMBED_MARKER_SOURCE_LINKS", "CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE",
+                                   "CRISPEMBED_MARKER_REFERENCES" }) {
+            const char * value = std::getenv(name);
+            saved[name] = { value != nullptr, value ? value : "" };
+            set_document_gate(name, nullptr);
+        }
+    }
+    ~document_gate_guard() {
+        for (const auto & item : saved)
+            set_document_gate(item.first.c_str(), item.second.first ? item.second.second.c_str() : nullptr);
+    }
+};
+
+document source_fixture(const std::string & text, const std::string & type = "Text") {
+    document d;
+    d.backend = "owned-source-link-fixture";
+    page p;
+    p.index = 0;
+    p.width = 600;
+    p.height = 800;
+    auto b = text_block(text, type, { 40, 100, 540, 150 });
+    b.raw = "Raw evidence: " + text;
+    p.blocks.push_back(std::move(b));
+    d.pages.push_back(std::move(p));
+    return d;
+}
+bool source_maps_valid(const document & d) {
+    std::map<std::string, const source_record *> sources;
+    for (const auto & source : d.sources)
+        if (!sources.emplace(source.id, &source).second) return false;
+    std::function<bool(const block &)> valid = [&](const block & b) {
+        size_t covered = 0;
+        for (const auto & r : b.source_ranges) {
+            const auto found = sources.find(r.source_id);
+            if (found == sources.end() || r.source_start > r.source_end || r.source_end > found->second->text.size() ||
+                r.text_start != covered || r.text_start > r.text_end || r.text_end > b.text.size())
+                return false;
+            const auto & original = found->second->text;
+            if (r.transform == "copy") {
+                if (b.text.substr(r.text_start, r.text_end - r.text_start) !=
+                    original.substr(r.source_start, r.source_end - r.source_start))
+                    return false;
+            } else if (r.transform == "whitespace") {
+                const std::string output = b.text.substr(r.text_start, r.text_end - r.text_start);
+                if (!output.empty() && output != " ") return false;
+                for (size_t i = r.source_start; i < r.source_end; ++i)
+                    if (original[i] != ' ' && original[i] != '\t' && original[i] != '\r' && original[i] != '\n')
+                        return false;
+            } else
+                return false;
+            covered = r.text_end;
+        }
+        if (!b.source_ranges.empty() && covered != b.text.size()) return false;
+        for (const auto & child : b.children)
+            if (!valid(child)) return false;
+        return true;
+    };
+    for (const auto & p : d.pages)
+        for (const auto & b : p.blocks)
+            if (!valid(b)) return false;
+    return true;
+}
+
+void test_source_linked_chunks() {
+    document_gate_guard gates;
+    options opts;
+    opts.mode = 1;
+    auto baseline = source_fixture("日本\n語 [1]");
+    process_document(baseline, opts);
+    const auto old_json = render_document(baseline, "json");
+    const auto old_chunks = render_document(baseline, "chunks");
+    for (const char * off : { "0", "false", "OFF", "no", "" }) {
+        for (const char * name : { "CRISPEMBED_MARKER_SOURCE_LINKS", "CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE",
+                                   "CRISPEMBED_MARKER_REFERENCES" })
+            set_document_gate(name, off);
+        auto d = source_fixture("日本\n語 [1]");
+        process_document(d, opts);
+        check(render_document(d, "json") == old_json && render_document(d, "chunks") == old_chunks && d.sources.empty(),
+              "source features preserve default JSON and chunks for every off spelling");
+    }
+    set_document_gate("CRISPEMBED_MARKER_SOURCE_LINKS", "1");
+    document d;
+    for (int i = 0; i < 2; ++i) {
+        page p;
+        p.index = i + 4;
+        p.width = 600;
+        p.height = 800;
+        auto body = text_block(i ? "plete across pages." : "A cited [1] incom-", "Text",
+                               i ? box{ 40, 100, 500, 130 } : box{ 40, 650, 500, 680 });
+        body.lines = { text_line(i ? "plete across" : "A cited [1]", 40, i ? 100 : 650, 460),
+                       text_line(i ? "pages." : "incom-", 40, i ? 118 : 668, 460) };
+        body.raw = "Original recognition: " + body.text;
+        p.blocks.push_back(std::move(body));
+        p.blocks.push_back(
+            text_block(i ? "1 Second page note." : "1 Definition retained.", "Footnote", { 40, 720, 500, 740 }));
+        p.blocks.push_back(text_block(i ? "1" : "iv", "PageFooter", { 280, 770, 310, 782 }));
+        d.pages.push_back(std::move(p));
+    }
+    const document initial = d;
+    process_document(d, opts);
+    check(d.pages[0].blocks[0].continuation_target == d.pages[1].blocks[0].id,
+          "explicit continuation targets cross footnotes and adjacent physical pages");
+    check(source_maps_valid(d) && d.sources.size() == 6 && d.sources[0].text == "A cited [1] incom-" &&
+              d.sources[0].page_index == 4 && d.sources[0].bbox.y0 == 650,
+          "immutable source records retain exact baseline text physical page and whole-block geometry");
+    const std::string chunks = render_document(d, "chunks");
+    check(contains(chunks, "A cited [1] incomplete across pages.") && contains(chunks, "Definition retained.") &&
+              contains(chunks, "\"pages\":[4,5]") && contains(chunks, "\"transform\":\"dehyphenation\""),
+          "assembled chunks join across footnotes with explicit removed-hyphen provenance");
+    check(d.pages[0].blocks[0].text == "A cited [1] incom-" &&
+              d.pages[0].blocks[0].raw == "Original recognition: A cited [1] incom-",
+          "source-linked assembly leaves page-local text and raw recognition unchanged");
+    const size_t sources = d.sources.size();
+    process_document(d, opts);
+    check(d.sources.size() == sources && source_maps_valid(d) && render_document(d, "chunks") == chunks,
+          "reprocessing preserves immutable source identities and assembled chunks");
+    auto trailing_whitespace = d;
+    auto & trailing_body = trailing_whitespace.pages[0].blocks[0];
+    const size_t original_size = trailing_body.text.size();
+    trailing_whitespace.sources[0].text += "\n\t";
+    for (size_t i = 0; i < 2; ++i)
+        trailing_body.source_ranges.push_back({ trailing_whitespace.sources[0].id, original_size + i,
+                                                original_size + i + 1, original_size, original_size, "whitespace" });
+    check(source_maps_valid(trailing_whitespace), "valid reopened maps can retain zero-output trailing whitespace");
+    const auto trailing_chunks = render_document(trailing_whitespace, "chunks");
+    const auto assembled_at = trailing_chunks.find("\"assembled_chunks\":");
+    const auto assembled = assembled_at == std::string::npos ? "" : trailing_chunks.substr(assembled_at);
+    for (size_t i = 0; i < 2; ++i) {
+        const std::string expected = "\"source_start\":" + std::to_string(original_size + i) +
+                                     ",\"source_end\":" + std::to_string(original_size + i + 1) +
+                                     ",\"text_start\":" + std::to_string(original_size - 1) +
+                                     ",\"text_end\":" + std::to_string(original_size - 1) +
+                                     ",\"transform\":\"whitespace\"";
+        check(contains(assembled, expected), "dehyphenation shifts every trailing zero-output range with its anchor");
+    }
+    check(contains(assembled, "A cited [1] incomplete across pages.") && source_maps_valid(trailing_whitespace) &&
+              trailing_body.source_ranges.back().text_end == original_size &&
+              trailing_whitespace.sources[0].text == d.sources[0].text + "\n\t",
+          "assembled range composition preserves the original block maps and source bytes");
+    auto gap = initial;
+    gap.pages[1].index = 6;
+    process_document(gap, opts);
+    check(gap.pages[0].blocks[0].continuation_target.empty(), "continuation does not cross missing physical pages");
+    auto capped = initial;
+    capped.pages[0].blocks[0].token_cap_reached = true;
+    process_document(capped, opts);
+    check(capped.pages[0].blocks[0].continuation_target.empty() &&
+              capped.pages[0].blocks[0].attributes.at("continuation.status") == "unresolved",
+          "capped recognition remains unresolved instead of inventing a continuation");
+    auto changed = source_fixture("Original bytes.");
+    process_document(changed, opts);
+    const std::string original_id = changed.sources[0].id;
+    changed.pages[0].blocks[0].text = "Edited bytes.";
+    process_document(changed, opts);
+    check(changed.sources.size() == 2 && changed.sources[0].text == "Original bytes." &&
+              changed.pages[0].blocks[0].source_ranges[0].source_id != original_id && source_maps_valid(changed),
+          "an edited block receives a new source snapshot without overwriting prior evidence");
+}
+
+void test_multilingual_source_ranges() {
+    document_gate_guard gates;
+    set_document_gate("CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE", "1");
+    options opts;
+    opts.mode = 1;
+    auto d = source_fixture("日\n本");
+    process_document(d, opts);
+    const auto & b = d.pages[0].blocks[0];
+    check(b.text == "日本" && d.sources[0].text == "日\n本" && source_maps_valid(d),
+          "Han line-break normalization preserves immutable original text");
+    check(b.source_ranges.size() == 3 && b.source_ranges[1].source_start == 3 && b.source_ranges[1].source_end == 4 &&
+              b.source_ranges[1].text_start == 3 && b.source_ranges[1].text_end == 3 &&
+              b.source_ranges[2].source_start == 4 && b.source_ranges[2].text_start == 3,
+          "removed whitespace maps exact UTF-8 byte intervals with a zero-length output range");
+    const std::string stable = render_document(d, "json");
+    process_document(d, opts);
+    check(render_document(d, "json") == stable, "multilingual normalization and source maps are idempotent");
+    const std::string original =
+        "日本\n語  text\twords 👩‍💻 ✈️ क्‍ष ไทย ไทย 한\n국 non breaking "
+        "narrow space";
+    auto multilingual = source_fixture(original);
+    process_document(multilingual, opts);
+    check(multilingual.pages[0].blocks[0].text ==
+                  "日本語 text words 👩‍💻 ✈️ क्‍ष ไทย ไทย 한 국 non breaking "
+                  "narrow space" &&
+              multilingual.sources[0].text == original && source_maps_valid(multilingual),
+          "join controls variation selectors NBSP Thai and Korean spacing remain meaningful");
+    for (const char * type : { "Code", "Equation", "ChemicalBlock", "Table" }) {
+        auto protected_block = source_fixture("日\n本  +  x", type);
+        process_document(protected_block, opts);
+        check(protected_block.pages[0].blocks[0].text == "日\n本  +  x",
+              "structured code and mathematics are untouched");
+    }
+    for (const std::string text : { "literal `$x  +  y$`", "Formula \\(x  +  y\\)", "Currency $  20" }) {
+        auto inline_markup = source_fixture(text);
+        process_document(inline_markup, opts);
+        check(inline_markup.pages[0].blocks[0].text == text,
+              "possible inline code or TeX conservatively bypasses normalization");
+    }
+    auto malformed = source_fixture(std::string("日\n本") + char(0xFF));
+    process_document(malformed, opts);
+    check(malformed.pages[0].blocks[0].text == std::string("日\n本") + char(0xFF) && source_maps_valid(malformed),
+          "malformed UTF-8 is preserved as raw source evidence rather than normalized");
+}
+
+void test_footnote_and_page_links() {
+    document_gate_guard gates;
+    set_document_gate("CRISPEMBED_MARKER_REFERENCES", "1");
+    options opts;
+    opts.mode = 1;
+    auto d =
+        source_fixture("文 [1], unknown [2], duplicate [3], bare 4, x² and [5](https://example.com), escaped \\[1].");
+    d.pages[0].index = 3;
+    d.pages[0].blocks.push_back(text_block("1 Unique footnote.", "Footnote", { 40, 600, 500, 620 }));
+    d.pages[0].blocks.push_back(text_block("3 First duplicate.", "Footnote", { 40, 630, 500, 650 }));
+    d.pages[0].blocks.push_back(text_block("3 Second duplicate.", "Footnote", { 40, 660, 500, 680 }));
+    d.pages[0].blocks.push_back(text_block("A footnote without a marker.", "Footnote", { 40, 690, 500, 710 }));
+    d.pages[0].blocks.push_back(text_block("ii", "PageFooter", { 200, 770, 220, 782 }));
+    d.pages[0].blocks.push_back(text_block("iv", "PageFooter", { 300, 770, 320, 782 }));
+    auto later = source_fixture("A later page.").pages[0];
+    later.index = 4;
+    later.blocks.push_back(text_block("2 Only on the later page.", "Footnote", { 40, 700, 500, 720 }));
+    later.blocks.push_back(text_block("7", "PageFooter", { 280, 770, 310, 782 }));
+    later.printed_label = "VII";
+    later.label_source = "pdfium-page-label";
+    later.label_status = "resolved";
+    d.pages.push_back(std::move(later));
+    process_document(d, opts);
+    const auto & references = d.pages[0].blocks[0].references;
+    check(references.size() == 3 && references[0].start == 4 && references[0].end == 7 &&
+              references[0].status == "resolved" && !references[0].target_id.empty(),
+          "explicit bracket reference resolves locally with byte offsets after multibyte text");
+    check(references[1].status == "unresolved" && references[1].target_id.empty() &&
+              references[1].candidates.size() == 1,
+          "a definition on another page is a candidate rather than an invented link");
+    check(references[2].status == "ambiguous" && references[2].target_id.empty() &&
+              references[2].candidates.size() == 2,
+          "duplicate local labels report ambiguity and retain all bounded candidates");
+    check(d.pages[0].blocks[4].attributes.at("footnote.status") == "unlabeled" &&
+              !d.pages[0].blocks[4].footnote_id.empty(),
+          "unlabeled footnotes have stable identities without fabricated labels");
+    check(d.pages[0].label_status == "ambiguous" && d.pages[0].printed_label.empty() &&
+              d.pages[0].label_candidates.size() == 2,
+          "conflicting observed footer labels do not choose an arbitrary printed page number");
+    check(d.pages[1].index == 4 && d.pages[1].printed_label == "VII" &&
+              d.pages[1].label_source == "pdfium-page-label" &&
+              d.pages[1].label_candidates == std::vector<std::string>{ "7" },
+          "physical page index provider page label and observed footer evidence remain distinct");
+    auto empty_label = source_fixture("Unnumbered front matter.");
+    empty_label.pages[0].printed_label.clear();
+    empty_label.pages[0].label_source = "pdfium-page-label";
+    empty_label.pages[0].label_status = "resolved";
+    empty_label.pages[0].blocks.push_back(text_block("1", "PageFooter", { 280, 770, 310, 782 }));
+    process_document(empty_label, opts);
+    check(empty_label.pages[0].label_status == "resolved" && empty_label.pages[0].printed_label.empty() &&
+              contains(render_document(empty_label, "json"), "\"printed_page_label\":\"\""),
+          "an explicitly empty provider page label remains distinct from unavailable metadata");
+    const std::string output = render_document(d, "chunks");
+    check(contains(output, "\"physical_page_index\":4") && contains(output, "\"printed_page_label\":\"VII\"") &&
+              contains(output, "\"status\":\"ambiguous\"") && contains(output, "\"target_id\":null") &&
+              source_maps_valid(d),
+          "page labels and unresolved reference evidence reach retrieval output");
+    auto code = source_fixture("[1]  +  [2]", "Code");
+    code.pages[0].blocks.push_back(text_block("1 A note.", "Footnote", { 40, 700, 500, 720 }));
+    process_document(code, opts);
+    check(code.pages[0].blocks[0].references.empty(), "code brackets are not interpreted as footnote references");
+    auto invalid_label = source_fixture("Body text.");
+    invalid_label.pages[0].blocks.push_back(text_block("IIV", "PageFooter", { 280, 770, 310, 782 }));
+    process_document(invalid_label, opts);
+    check(invalid_label.pages[0].label_status == "unavailable",
+          "noncanonical Roman footer does not fabricate a page label");
+}
+
 } // namespace
 
 static int crispembed_test_main() {
@@ -528,6 +1001,10 @@ static int crispembed_test_main() {
         test_layout_heuristics();
         test_processors_and_renderers();
         test_margins_and_continuation();
+        test_repetition_diagnostics();
+        test_source_linked_chunks();
+        test_multilingual_source_ranges();
+        test_footnote_and_page_links();
     } catch (const std::exception & error) {
         ++failures;
         std::fprintf(stderr, "UNEXPECTED: %s\n", error.what());

@@ -438,11 +438,12 @@ list(APPEND CRISPEMBED_SOURCES src/esrgan_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/swinir_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/scunet_denoise.cpp)
 list(APPEND CRISPEMBED_SOURCES src/pdf_info.cpp)
-list(APPEND CRISPEMBED_SOURCES src/marker.cpp src/marker_document.cpp src/marker_backend.cpp)
+list(APPEND CRISPEMBED_SOURCES src/marker.cpp src/marker_document.cpp src/marker_backend.cpp src/marker_artifact.cpp)
 # The shared target compiles these sources separately from the static library.
 # Keep Marker provenance identical in both, without changing other backends.
+include(cmake/MarkerIdentity.cmake)
 set_source_files_properties(src/marker.cpp PROPERTIES
-    COMPILE_DEFINITIONS CRISPEMBED_VERSION_STR="${CRISPEMBED_VERSION_RAW}")
+    COMPILE_DEFINITIONS "CRISPEMBED_VERSION_STR=\"${CRISPEMBED_VERSION_RAW}\";CRISPEMBED_MARKER_BUILD_ID=\"${CRISPEMBED_MARKER_BUILD_ID}\"")
 list(APPEND CRISPEMBED_SOURCES src/table_parse.cpp)
 # MoEdern1.5M raw-text/role public API: default-off gates, exact arithmetic.
 set(CRISPEMBED_MOEDERN_SOURCES src/moedern_text_engine.cpp src/moedern_text_frontend.cpp src/moedern_family_engine.cpp
@@ -467,7 +468,7 @@ if(EMSCRIPTEN)
         src/mineru_ocr.cpp src/mineru_document.cpp src/mineru_postprocess.cpp src/mineru_table_image.cpp
         src/oxr_ocr.cpp src/oxr_api.cpp src/oxr_layout_api.cpp
         src/oxr_document.cpp src/oxr_document_text.cpp src/oxr_document_api.cpp
-        src/marker.cpp src/marker_document.cpp src/marker_backend.cpp
+        src/marker.cpp src/marker_document.cpp src/marker_backend.cpp src/marker_artifact.cpp
         src/qwen35_ocr.cpp src/qwen35_vision.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp  # Ovis/Qwen3.5-OCR
         src/minicpm_ocr_vision.cpp src/minicpm_ocr.cpp src/qwen35_graph_decoder.cpp src/qwen35_graph_kv_decoder.cpp
         src/unlimited_ocr.cpp src/unlimited_ocr2_dash.cpp
@@ -484,6 +485,9 @@ add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 # softwareVersion, PDF XMP). An archived document should be traceable to a
 # build, and naming the software without a version is not that.
 target_compile_definitions(crispembed PRIVATE CRISPEMBED_VERSION_STR="${CRISPEMBED_VERSION_RAW}")
+# Xcode supports configuration-dependent definitions on targets, not sources.
+# This also identifies multi-config builds without requiring a Git checkout.
+target_compile_definitions(crispembed PRIVATE CRISPEMBED_MARKER_BUILD_CONFIG="$<CONFIG>")
 if(CRISPEMBED_HAS_CRISP_AUDIO)
     target_compile_definitions(crispembed PRIVATE CRISPEMBED_HAS_CRISP_AUDIO)
 endif()
@@ -1057,6 +1061,15 @@ target_link_libraries(test-teleocr-preprocess PRIVATE crispembed)
 add_executable(test-marker-document tests/test-marker-document.cpp)
 target_link_libraries(test-marker-document PRIVATE crispembed)
 
+add_executable(test-marker-artifact tests/test-marker-artifact.cpp)
+target_link_libraries(test-marker-artifact PRIVATE crispembed)
+
+add_library(marker-pdfium-fixture SHARED tests/marker_pdfium_fixture.cpp)
+add_executable(test-marker-lifecycle tests/test-marker-lifecycle.cpp)
+target_link_libraries(test-marker-lifecycle PRIVATE crispembed)
+target_compile_definitions(test-marker-lifecycle PRIVATE MARKER_FIXTURE_LIBRARY="$<TARGET_FILE:marker-pdfium-fixture>")
+add_dependencies(test-marker-lifecycle marker-pdfium-fixture)
+
 add_executable(test-marker-api tests/test-marker-api.cpp)
 target_link_libraries(test-marker-api PRIVATE crispembed)
 
@@ -1429,7 +1442,10 @@ if(CRISPEMBED_BUILD_SHARED)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/examples/cli>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     )
-    target_compile_definitions(crispembed-shared PRIVATE CRISPEMBED_BUILD)
+    target_compile_definitions(crispembed-shared PRIVATE
+        CRISPEMBED_BUILD
+        CRISPEMBED_MARKER_BUILD_CONFIG="$<CONFIG>"
+    )
     if(CRISPEMBED_HAS_CRISP_AUDIO)
         target_compile_definitions(crispembed-shared PRIVATE CRISPEMBED_HAS_CRISP_AUDIO)
     endif()

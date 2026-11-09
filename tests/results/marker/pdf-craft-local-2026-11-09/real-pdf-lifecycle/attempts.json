@@ -1,0 +1,50 @@
+{
+  "kind": "marker-real-pdf-lifecycle-initial-evidence",
+  "final_acceptance": false,
+  "native_build_source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+  "native_library_sha256": "0f1034b037ac2d3b09d8d80b5b956b53dc9c17f9ef77e871192acb1e56d9833a",
+  "pdfium_package": "pypdfium2==5.10.1",
+  "pdfium_version": "151.0.7891.0",
+  "pdfium_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+  "model_weights_used": false,
+  "binary_extraction_artifacts_committed": false,
+  "attempts": [
+    {
+      "attempt": 1,
+      "passed": false,
+      "passed_count": 0,
+      "total_count": 0,
+      "probe_sha256": "129568f01e87516069c8d4f218e523cbbe99eabf7285800c3f060847ab590a62",
+      "receipt": "attempt-1/receipt.json",
+      "status": "New probe helper stopped before CrispEmbed assertions."
+    },
+    {
+      "attempt": 2,
+      "passed": false,
+      "passed_count": 5,
+      "total_count": 6,
+      "probe_sha256": "92761ac4b8c650ee56b6da10bc3c919743e466dd79666051fc6393ac878c910f",
+      "receipt": "attempt-2/receipt.json",
+      "status": "New probe incorrectly required run elapsed_seconds to remain byte-identical."
+    },
+    {
+      "attempt": 3,
+      "passed": true,
+      "passed_count": 47,
+      "total_count": 47,
+      "probe_sha256": "b42eafe0d8ed100fea88b363c1be27c9d86919ec058313988e3cc238afba598b",
+      "receipt": "attempt-3/receipt.json",
+      "status": "SUPERSEDED: broad stable-metadata waiver; not final acceptance"
+    },
+    {
+      "attempt": 4,
+      "passed": false,
+      "passed_count": 22,
+      "total_count": 23,
+      "probe_sha256": "ef869bd829e7475ec322ab0b219faec62a72c54da5d35e0eabc4ab38c58d233e",
+      "receipt": "attempt-4/receipt.json",
+      "status": "Expected initial regression: native incremental provenance omission reproduced"
+    }
+  ],
+  "next_step": "Run unchanged strict content/provenance assertions with the shared-metadata native correction; retain cross-build processed view and raw identity behavior separately."
+}

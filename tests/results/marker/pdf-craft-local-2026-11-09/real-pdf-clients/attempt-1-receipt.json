@@ -1,0 +1,31 @@
+{
+  "source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+  "command": [
+    "<validation-workspace>/python-validation/venv/bin/python",
+    "-B",
+    "tests/marker_integration.py",
+    "--library",
+    "<validation-workspace>/validation-pdf-craft/native/build/libcrispembed.so",
+    "--pdfium",
+    "<validation-workspace>/python-validation/venv/lib/python3.13/site-packages/pypdfium2_raw/libpdfium.so",
+    "--cli",
+    "<validation-workspace>/validation-pdf-craft/native/build/crispembed-marker",
+    "--server",
+    "<validation-workspace>/validation-pdf-craft/native/build/crispembed-server",
+    "--out",
+    "<validation-workspace>/validation-pdf-craft/real-pdf-clients/attempt-1"
+  ],
+  "exit_code": 0,
+  "timeout": false,
+  "passed": true,
+  "elapsed_seconds": 0.311,
+  "source_sha256": "fd4695b1287f8956d01026a5d1ba6c9e436de92ea65f3462d7d1f501de552e6e",
+  "binaries": {
+    "libcrispembed.so": "0f1034b037ac2d3b09d8d80b5b956b53dc9c17f9ef77e871192acb1e56d9833a",
+    "crispembed-marker": "2656ff39d8f7ba74ab0e24d849e4cb2dd40672988564962bd84882cd981b1eaa",
+    "crispembed-server": "cf18af58c12de896766023c84b8afe5996a7f73f214e22abfe48a637db92bac4",
+    "libpdfium.so": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27"
+  },
+  "log_sha256": "5b9877c5ba28b5aabc5d8a6b486229c56637598ca33e2c8d3c160e668722e531",
+  "model_weights_downloaded": false
+}

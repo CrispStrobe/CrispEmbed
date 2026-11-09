@@ -59,25 +59,9 @@ inventory: *production default (opt-out)*, *default-off experimental / opt-in*,
 | `CRISPEMBED_SERVER_OPENAI_CHAT` | off | `POST /v1/chat/completions` + `GET /v1/models` for the `--ocr` model (one base64 data-URL image per request). |
 | `CRISPEMBED_SERVER_MAX_IMAGE_BYTES` | 64 MiB | Decoded image size limit for `/v1/chat/completions`. |
 | `CRISPEMBED_SERVER_LEGACY_JSON` | unset | Legacy server JSON shape. |
-| `CRISPEMBED_LIB` (Python/examples), `CRISPEMBED_SYS_LIB_DIR` (Rust build) | unset | Location of the native library. Rust mobile/cross builds require an explicit target prebuilt directory; see [the mobile link contract](rust-mobile-prebuilt.md). Native desktop discovery is unchanged. |
+| `CRISPEMBED_LIB` (Python/examples), `CRISPEMBED_SYS_LIB_DIR` (Rust build) | unset | Location of the native library. |
 
 ## Embeddings and tokenizers
-
-### Phone-photo geometry experiments
-
-`CRISPEMBED_OCR_CROP_PROJECTIVE=1` enables a true inverse homography and bilinear
-pixel sampling in the shared OCR-region quadrilateral crop. It validates convex
-finite geometry, accepts grayscale/RGB/RGBA, preserves edge-replicated padding,
-and bounds output dimensions to 32768 per axis and 64 million pixels. It does
-not detect page corners. Unset, empty, `0`, `false`, `off` and `no` preserve the
-historical bilinear corner-position warp and nearest-neighbor sampling.
-
-`CRISPEMBED_SCAN_BOUNDED_DESKEW=1` estimates a page's skew on an area-averaged
-analysis image with longest side at most 1200 pixels. Both Hough and the
-independent differential detector see the same analysis image. Output rotation
-uses the full-resolution original; the gate does not downscale exported pages.
-Disabled values preserve full-resolution estimation. Both paths remain opt-in
-until representative decoded-quality evidence supports a separate promotion.
 
 | Variable | Default | Meaning |
 |---|---|---|
@@ -120,6 +104,14 @@ The backbone also requires `CRISPEMBED_QWEN35_OCR=1` because it reuses the
 qwen35 decoder kernels. All default off.
 
 ## OCR engines
+
+### Document repetition diagnostics
+
+`CRISPEMBED_MARKER_REPETITION_CHECK=1` enables the default-off Unicode tandem
+repeat diagnostic in native Marker document processing. It reports possible
+repeated prose through block warnings and document metadata, retaining all
+text and provenance. Structured assets and malformed UTF-8 are excluded. The
+bounded thresholds and output fields are in [the Marker guide](marker.md#optional-repetition-diagnostics).
 
 ### Unlimited-OCR-2 (`unlimited-ocr2`, `unlimited-ocr2-q8`; orchestrator engine 13)
 
@@ -249,11 +241,30 @@ kernels. See [inpainting-engines.md](inpainting-engines.md).
 
 ## Full inventory
 
+### Document extraction and model admission
+
+The PDF Craft adoption adds independent default-off document features:
+
+| Variable | Contract |
+| --- | --- |
+| `CRISPEMBED_MARKER_ARTIFACTS` | Save/reopen bounded, versioned extraction artifacts with embedded assets and provenance. |
+| `CRISPEMBED_MARKER_INCREMENTAL` | Start/step/cancel/resume extraction; also requires the artifact gate. Completed pages are checkpointed individually. |
+| `CRISPEMBED_MARKER_SOURCE_LINKS` | Capture immutable source text/ranges and expose explicit continuation targets and linked chunks. |
+| `CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE` | Conservative prose whitespace handling with source ranges; enables source capture. |
+| `CRISPEMBED_MARKER_REFERENCES` | Footnote/reference identities and physical versus printed page labels; enables source capture. |
+| `CRISPEMBED_ACCEPT_CC_BY_NC_LICENSE` | Required native acknowledgement for known Jina OCR or declared CC-BY-NC Unlimited profiles, including cached/direct files. It does not grant commercial rights. |
+
+Use `=1` to enable/acknowledge; unset, empty, `0`, `false`, `off` and `no`
+(case-insensitive) remain off. Configure artifact/runtime gates before creating
+the context. See [task acceptance](pdf-craft-tasks.md),
+[the lifecycle](marker-lifecycle.md), [source links](marker-source-links.md),
+and [Jina admission](jina-ocr-license-gate.md).
+
 Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-433 `CRISPEMBED_*` variables and 225 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+441 `CRISPEMBED_*` variables and 225 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -264,6 +275,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_ALLOW_UNPINNED_MODEL` | value | unset | path | tuning / config | `examples/cli/model_mgr.cpp` |  |
 | `CRISPEMBED_CACHE_DIR` | set/value | unset | path | tuning / config | `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp` | else |
 | `CRISPEMBED_INPAINT_STREAM` | on | off | bool | default-off experimental / opt-in | `examples/cli/inpaint_cli.cpp` |  |
+| `CRISPEMBED_INPAINT_TEXT_MASK_SCORE_UNDILATED` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `examples/cli/inpaint_cli.cpp` | one-pixel dilation ring and drop out of the mask (issue 71 owner review, still-street-dbnet). =0 restores the shared OCR scoring. |
 | `CRISPEMBED_LAYOUT_REPEAT` | value | unset | int | tuning / config | `examples/cli/main.cpp` |  |
 | `CRISPEMBED_LIB` | value | unset | path | tuning / config | `examples/demo/demo.py`, `examples/face_verify.py` |  |
 | `CRISPEMBED_MODEL` | value | unset | path | tuning / config | `examples/demo/demo.py`, `examples/demo/demo.rs` |  |
@@ -341,7 +353,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_ARCH_HPARAMS` | value | unset | value | tuning / config | `src/core/hparam_keys.h` |  |
-| `CRISPEMBED_BPE_LEGACY_WHITESPACE` | on | off | bool | default-off experimental / opt-in | `src/core/bpe.h`, `src/qwen2vl_ocr.cpp`, `src/tokenizer_bpe.cpp` | prompt, while newline-free text is unaffected (1.000000). CRISPEMBED_BPE_LEGACY_WHITESPACE=1 restores the old behavior. |
+| `CRISPEMBED_BPE_LEGACY_WHITESPACE` | on/value | off | value | default-off experimental / opt-in | `src/core/bpe.h`, `src/marker.cpp`, `src/qwen2vl_ocr.cpp` +1 | prompt, while newline-free text is unaffected (1.000000). CRISPEMBED_BPE_LEGACY_WHITESPACE=1 restores the old behavior. |
 | `CRISPEMBED_C2PA_CERT` | value | unset | value | tuning / config | `src/core/image_out.cpp`, `src/core/image_out.h` |  |
 | `CRISPEMBED_C2PA_KEY` | value | unset | value | tuning / config | `src/core/image_out.cpp`, `src/core/image_out.h` |  |
 | `CRISPEMBED_CONV1X1_FAST` | on | off | bool | default-off experimental / opt-in | `src/core/cpu_ops.h` |  |
@@ -571,7 +583,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_INTERNVL2_ADD_BOS` | value | unset | int | tuning / config | `src/internvl2_ocr.cpp` |  |
 | `CRISPEMBED_INTERNVL2_BENCH` | on | off | bool | debug | `src/internvl2_ocr.cpp` |  |
 | `CRISPEMBED_INTERNVL2_PROMPT` | value | unset | value | tuning / config | `src/internvl2_ocr.cpp` | description, a verbatim transcription, or an immediate <\|end\|> depending only on the instruction, and that is only findable by trying. |
-| `CRISPEMBED_MAX_PIXELS` | value | unset | int | tuning / config | `src/internvl2_ocr.cpp`, `src/lightonocr.cpp`, `src/qwen2vl_ocr.cpp` | Allow runtime override for CPU-friendly inference (fewer tiles = faster) |
+| `CRISPEMBED_MAX_PIXELS` | value | unset | int | tuning / config | `src/internvl2_ocr.cpp`, `src/lightonocr.cpp`, `src/marker.cpp` +1 | Allow runtime override for CPU-friendly inference (fewer tiles = faster) |
 
 ### josev2b_answer_serializer
 
@@ -692,7 +704,23 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/marker.cpp` +2 | TeleOCR's vision tower is under the Qwen RESEARCH LICENSE (docs/teleocr-license.md); the PDFium text mode loads no model and needs no acknowledgement. |
 | `CRISPEMBED_MARKER` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp` |  |
+| `CRISPEMBED_MARKER_ARTIFACTS` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp`, `src/marker_backend.cpp` |  |
+| `CRISPEMBED_MARKER_INCREMENTAL` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp` |  |
+| `CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp`, `src/marker_document.cpp` |  |
+| `CRISPEMBED_MARKER_REFERENCES` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp`, `src/marker_backend.cpp`, `src/marker_document.cpp` |  |
+| `CRISPEMBED_MARKER_REPETITION_CHECK` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp`, `src/marker_document.cpp` | Values are parsed identically to their production paths; passwords and absolute paths are deliberately absent from the serialized identity. |
+| `CRISPEMBED_MARKER_SOURCE_LINKS` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp`, `src/marker_document.cpp` |  |
+| `CRISPEMBED_NO_KV_CACHE` | on/value | off | value | default-off experimental / opt-in | `src/marker.cpp`, `src/qwen2vl_ocr.cpp` |  |
+| `CRISPEMBED_QWEN2VL_FORCE_FROM_CALL` | value | unset | int | tuning / config | `src/marker.cpp`, `src/qwen2vl_ocr.cpp` |  |
+| `CRISPEMBED_QWEN2VL_FORCE_IDS` | value | unset | value | tuning / config | `src/marker.cpp`, `src/qwen2vl_ocr.cpp` |  |
+| `CRISPEMBED_QWEN2VL_METAL_FA` | off/value | ON (opt-out `=0`) | value | production default (opt-out) | `src/marker.cpp`, `src/qwen2vl_ocr.cpp` |  |
+| `CRISPEMBED_QWEN2VL_METAL_SPLIT_K` | on/value | off | value | default-off experimental / opt-in | `src/marker.cpp`, `src/qwen2vl_ocr.cpp` | tiles keep it at 0.9996 (tests/results/mineru25/metal-m1). =0 restores ggml-metal's default kernels for either profile. |
+| `CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM` | value | unset | int | tuning / config | `src/marker.cpp`, `src/qwen2vl_ocr.cpp` |  |
+| `CRISPEMBED_QWEN2VL_REF` | value | unset | path | tuning / config | `src/marker.cpp`, `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_TELEOCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/marker.cpp` +3 |  |
+| `CRISPEMBED_TELEOCR_GPU` | off/on/value | mixed (see code) | value | default-off experimental / opt-in | `src/marker.cpp`, `src/qwen2vl_ocr.cpp` |  |
+| `CRISPEMBED_TELEOCR_METAL_F32_MATMUL` | off/value | ON (opt-out `=0`) | value | production default (opt-out) | `src/marker.cpp`, `src/qwen2vl_ocr.cpp` |  |
+| `CRISPEMBED_TELEOCR_REUSE_DECODE_GRAPH` | on/value | off | value | default-off experimental / opt-in | `src/marker.cpp`, `src/qwen2vl_ocr.cpp` |  |
 
 ### math_ocr
 
@@ -974,26 +1002,16 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_MINERU25_PRO_EXACT_GELU` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_MINERU25_PRO_METAL_F32_MATMUL` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_NO_KV_CACHE` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_OLMOCR_LONGEST` | value | unset | int | tuning / config | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_OLMOCR_RAW` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` | document text is what OCR callers want, so strip the block by default; CRISPEMBED_OLMOCR_RAW=1 keeps the full model output. |
 | `CRISPEMBED_PADDLEOCR_STD_PROMPT` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_QARI_NO_SYSTEM` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_QARI_STD_PROMPT` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` | preamble. Set CRISPEMBED_QARI_STD_PROMPT=1 for the generic "Describe this image." fallback instead. |
 | `CRISPEMBED_QWEN2VL_BENCH` | on | off | bool | debug | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_QWEN2VL_FORCE_FROM_CALL` | value | unset | int | tuning / config | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_QWEN2VL_FORCE_IDS` | value | unset | value | tuning / config | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_QWEN2VL_METAL_FA` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_QWEN2VL_METAL_SPLIT_K` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` | tiles keep it at 0.9996 (tests/results/mineru25/metal-m1). =0 restores ggml-metal's default kernels for either profile. |
-| `CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM` | value | unset | int | tuning / config | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_QWEN2VL_REF` | value | unset | path | tuning / config | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_QWEN2VL_STAGE_DUMP` | value | unset | value | debug | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_QWEN2VL_STAGE_DUMP_CALL` | value | unset | int | debug | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_QWEN2VL_STAGE_DUMP_STEPS` | value | unset | int | debug | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_QWEN3VL_SYSTEM` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` | Includes Uni-MuMER: its processor uses the same template (stage diff vs phxember/Uni-MuMER-Qwen3-VL-2B: 11 extra leading tokens). |
-| `CRISPEMBED_TELEOCR_GPU` | off/on | mixed (see code) | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_TELEOCR_METAL_F32_MATMUL` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_TELEOCR_REUSE_DECODE_GRAPH` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
 
 ### qwen35_graph_decoder
 
@@ -1202,6 +1220,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
+| `CRISPEMBED_ACCEPT_CC_BY_NC_LICENSE` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` | Jina OCR v1 weights are CC BY-NC 4.0 (docs/jina-ocr-license-gate.md). This loader gate also covers cached and local/direct C API loads. |
 | `CRISPEMBED_UNLIMITED_OCR2` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` | Unlimited-OCR-2 must not silently run v1 attention: its own gate is required. |
 | `CRISPEMBED_UNLIMITED_OCR2_FAST` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_FORCE_IDS` | value | unset | value | tuning / config | `src/unlimited_ocr.cpp` |  |

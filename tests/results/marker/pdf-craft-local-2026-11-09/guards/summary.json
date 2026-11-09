@@ -1,0 +1,36 @@
+{
+  "source": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+  "checks": [
+    {
+      "name": "ci-selection",
+      "exit_code": 0,
+      "passed": true,
+      "log_sha256": "f5ff30b4d3cacb2ec2c8e8285d2ca24f97cb42c628b1e4540812acb79f3ed0df"
+    },
+    {
+      "name": "env-inventory",
+      "exit_code": 0,
+      "passed": true,
+      "log_sha256": "91d1c3d57e3f6f0a14c17ed28aa3061e76e9719538f396b7f8aa52adf315ecb0"
+    },
+    {
+      "name": "clean-exit",
+      "exit_code": 0,
+      "passed": true,
+      "log_sha256": "aee45301d77bc4636b8729ae18ac7bbee58f71cbb7245b1f47a3fbee96ab2d19"
+    },
+    {
+      "name": "workflow-pins",
+      "exit_code": 0,
+      "passed": true,
+      "log_sha256": "139b4b27f1dd8d77902201559f80bd85d7ae34f7cd21e40ccd159bb4eb9c38bf"
+    },
+    {
+      "name": "workflow-pin-controls",
+      "exit_code": 0,
+      "passed": true,
+      "log_sha256": "c2d2a7a7ec8923df4b70b27f9387c91f63649aa14e572d69a48df13e33868c7c"
+    }
+  ],
+  "passed": true
+}

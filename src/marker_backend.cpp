@@ -4,6 +4,7 @@
 // Image/task conventions match CrispEmbed tools/teleocr_parse.py; no Python
 // interpreter, Surya model, external executable or network request is used.
 #include "marker_backend.h"
+#include "marker_artifact.h"
 
 #include "core/env_gate.h"
 #include "core/gguf_loader.h"
@@ -245,7 +246,7 @@ struct pdf_api {
 #else
     void * module = nullptr;
 #endif
-    std::string path;
+    std::string path, loaded_sha256;
     bool initialized = false;
 #define PDF_FUNCTION(ret, name, ...)                                                                                   \
     using name##_fn = ret(MARKER_PDF_CALL *)(__VA_ARGS__);                                                             \
@@ -256,6 +257,7 @@ struct pdf_api {
     PDF_FUNCTION(void, FPDF_CloseDocument, void *);
     PDF_FUNCTION(unsigned long, FPDF_GetLastError);
     PDF_FUNCTION(int, FPDF_GetPageCount, void *);
+    PDF_FUNCTION(unsigned long, FPDF_GetPageLabel, void *, int, void *, unsigned long);
     PDF_FUNCTION(void *, FPDF_LoadPage, void *, int);
     PDF_FUNCTION(void, FPDF_ClosePage, void *);
     PDF_FUNCTION(double, FPDF_GetPageWidth, void *);
@@ -303,7 +305,8 @@ struct pdf_api {
         module = nullptr;
     }
 
-    explicit pdf_api(const std::string & canonical_path) : path(canonical_path) {
+    explicit pdf_api(const std::string & canonical_path, const std::string & digest)
+        : path(canonical_path), loaded_sha256(digest) {
         // The caller holds pdf_mutex() during construction.
 #if defined(_WIN32)
         module = LoadLibraryExW(std::filesystem::u8path(path).c_str(), nullptr,
@@ -315,6 +318,8 @@ struct pdf_api {
 #endif
         if (!module) fail("could not load the explicitly selected PDFium library");
         try {
+            if (!loaded_sha256.empty() && extraction_file_sha256(path) != loaded_sha256)
+                fail("PDFium library changed while loading");
 #define PDF_BIND(name) bind(name, #name)
             PDF_BIND(FPDF_InitLibrary);
             PDF_BIND(FPDF_DestroyLibrary);
@@ -322,6 +327,7 @@ struct pdf_api {
             PDF_BIND(FPDF_CloseDocument);
             PDF_BIND(FPDF_GetLastError);
             PDF_BIND(FPDF_GetPageCount);
+            bind(FPDF_GetPageLabel, "FPDF_GetPageLabel", false);
             PDF_BIND(FPDF_LoadPage);
             PDF_BIND(FPDF_ClosePage);
             PDF_BIND(FPDF_GetPageWidth);
@@ -369,6 +375,8 @@ std::shared_ptr<pdf_api> acquire_pdfium(const std::string & path) {
     if (error || !std::filesystem::is_regular_file(canonical, error) || error)
         fail("PDFium path must identify an existing native library file");
     const std::string key = canonical.u8string();
+    const bool identified = core_env::on("CRISPEMBED_MARKER_ARTIFACTS");
+    const auto digest = identified ? extraction_file_sha256(key) : std::string();
     std::unique_lock<std::mutex> lock(pdf_mutex());
     static std::weak_ptr<pdf_api> active;
     if (auto api = active.lock()) {
@@ -378,9 +386,13 @@ std::shared_ptr<pdf_api> acquire_pdfium(const std::string & path) {
             lock.unlock();
             fail("one PDFium library may be active at a time");
         }
+        if (identified && (api->loaded_sha256.empty() || api->loaded_sha256 != digest)) {
+            lock.unlock();
+            fail("active PDFium library identity is missing or changed; close existing providers before reloading");
+        }
         return api;
     }
-    auto api = std::make_shared<pdf_api>(key);
+    auto api = std::make_shared<pdf_api>(key, digest);
     active = api;
     return api;
 }
@@ -527,6 +539,9 @@ pdf_provider::~pdf_provider() = default;
 int pdf_provider::page_count() const {
     return state->count;
 }
+std::string pdf_provider::library_sha256() const {
+    return state->api->loaded_sha256;
+}
 
 page pdf_provider::read_page(int index, bool extract_text) {
     if (index < 0 || index >= state->count) fail("PDF page index is out of range");
@@ -537,6 +552,54 @@ page pdf_provider::read_page(int index, bool extract_text) {
     out.index = index;
     out.extraction_method = extract_text ? "pdfium-text" : "none";
     page_dimensions(api, handle.value, out.width, out.height);
+    if (core_env::on("CRISPEMBED_MARKER_REFERENCES")) {
+        // Optional BSD PDFium ABI, public/fpdf_doc.h: length is bytes,
+        // including the UTF-16LE NUL terminator on every platform.
+        out.label_status = "unresolved";
+        if (api.FPDF_GetPageLabel) {
+            const auto size = api.FPDF_GetPageLabel(state->document, index, nullptr, 0);
+            if (size >= 2 && size <= 4096 && size % 2 == 0) {
+                std::vector<uint8_t> bytes(size, 0xff);
+                const auto actual = api.FPDF_GetPageLabel(state->document, index, bytes.data(), size);
+                bool valid = actual == size && bytes[size - 2] == 0 && bytes[size - 1] == 0;
+                std::string label;
+                for (size_t i = 0; valid && i + 2 < size; i += 2) {
+                    uint32_t cp = static_cast<uint32_t>(bytes[i]) | (static_cast<uint32_t>(bytes[i + 1]) << 8);
+                    if (cp >= 0xd800 && cp <= 0xdbff) {
+                        if (i + 4 >= size) {
+                            valid = false;
+                            break;
+                        }
+                        const uint32_t low =
+                            static_cast<uint32_t>(bytes[i + 2]) | (static_cast<uint32_t>(bytes[i + 3]) << 8);
+                        if (low < 0xdc00 || low > 0xdfff) {
+                            valid = false;
+                            break;
+                        }
+                        cp = 0x10000 + ((cp - 0xd800) << 10) + low - 0xdc00;
+                        i += 2;
+                    } else if (cp >= 0xdc00 && cp <= 0xdfff) {
+                        valid = false;
+                        break;
+                    }
+                    if (cp < 0x20 || cp == 0x7f) {
+                        valid = false;
+                        break;
+                    }
+                    append_utf8(label, cp);
+                }
+                if (valid) {
+                    out.printed_label = std::move(label);
+                    out.label_source = "pdfium-page-label";
+                    out.label_status = "resolved";
+                } else {
+                    out.warnings.push_back("Invalid PDF page-label encoding; physical page index retained.");
+                }
+            } else if (size) {
+                out.warnings.push_back("PDF page label exceeds bounds or has an invalid byte length.");
+            }
+        }
+    }
     if (!extract_text) return out;
     pdf_rectangle visible{};
     if (!api.FPDF_GetPageBoundingBox(handle.value, &visible) || !std::isfinite(visible.left) ||

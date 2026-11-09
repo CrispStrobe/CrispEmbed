@@ -1,0 +1,15 @@
+{
+  "source_commit": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+  "ci_selection": {
+    "passed": true,
+    "tests": 47,
+    "log_sha256": "1875e692d9550dae2f4b349aad7201151483be063bd3bd0e0fbe17ec1a6f7100"
+  },
+  "workflow_pins": {
+    "exit_code": 0,
+    "version_pinned_steps": 226
+  },
+  "native_format": "clang-format 18.1.8; src/marker.cpp and tests/test-marker-lifecycle.cpp formatted before build",
+  "other_guards": "Initial environment inventory, clean-exit and workflow pin controls remain in summary.json; their relevant inputs did not change.",
+  "unchanged_compiled_sources_since_final_build": true
+}

@@ -1,0 +1,29 @@
+{
+  "source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+  "environment_change": "TMPDIR points to an existing task-local writable directory; /tmp is unavailable in this environment",
+  "attempt_1_retained": "native-suite-attempt-1.json",
+  "source_changed": false,
+  "checks": [
+    {
+      "name": "test-marker-artifact",
+      "exit_code": 0,
+      "timeout": false,
+      "passed": true,
+      "duration_seconds": 0.019,
+      "binary_sha256": "d40909392b2d847ad500de6cd6e49b6a9c75ac5f0e696ef9e1fb627c991f2950",
+      "log_sha256": "22e3444ce1a861e0028d469880bed1457f07857a69bf99024d7c1ca5d81eb2b6",
+      "log_file": "test-marker-artifact-attempt-2.log"
+    },
+    {
+      "name": "test-marker-lifecycle",
+      "exit_code": 0,
+      "timeout": false,
+      "passed": true,
+      "duration_seconds": 0.049,
+      "binary_sha256": "83273a62f5bae020b38b59b07e78f133ba4742f363deb93e6aaea75df0364980",
+      "log_sha256": "87b3d339e5a7a3ee41450738ccb39912433ea82de62133b8de7a163ca9cf6f67",
+      "log_file": "test-marker-lifecycle-attempt-2.log"
+    }
+  ],
+  "passed": true
+}

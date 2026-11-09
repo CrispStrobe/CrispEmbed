@@ -1,0 +1,97 @@
+{
+  "schema": "crispembed.marker-binding-lifecycle-summary/1",
+  "passed": true,
+  "native_source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+  "execution": "user-authorized local Linux x86_64 execution",
+  "attempts": 1,
+  "failed_client_attempts": 0,
+  "scope": "Actual shipped Rust/Dart wrappers and native extraction pipeline with the owned three-page PDFium ABI fixture.",
+  "limitations": {
+    "model_inference_qualified": false,
+    "real_pdf_parsing_or_rendering_qualified": false,
+    "production_document_accuracy_qualified": false
+  },
+  "commands_passed": 13,
+  "probe_count": 6,
+  "assertions_passed": 111,
+  "scenarios": [
+    {
+      "client": "Rust",
+      "scenario": "artifacts-off",
+      "passed": true,
+      "assertions_passed": 8
+    },
+    {
+      "client": "Rust",
+      "scenario": "incremental-off",
+      "passed": true,
+      "assertions_passed": 6
+    },
+    {
+      "client": "Rust",
+      "scenario": "enabled",
+      "passed": true,
+      "assertions_passed": 41
+    },
+    {
+      "client": "Dart",
+      "scenario": "artifacts-off",
+      "passed": true,
+      "assertions_passed": 8
+    },
+    {
+      "client": "Dart",
+      "scenario": "incremental-off",
+      "passed": true,
+      "assertions_passed": 6
+    },
+    {
+      "client": "Dart",
+      "scenario": "enabled",
+      "passed": true,
+      "assertions_passed": 42
+    }
+  ],
+  "binary_sha256": {
+    "libcrispembed.so": "0f1034b037ac2d3b09d8d80b5b956b53dc9c17f9ef77e871192acb1e56d9833a",
+    "libmarker-pdfium-fixture.so": "15b3cff89cd52022ee0e0a55323c7056b3e1aca199c86431053f841c4d5cb9f1"
+  },
+  "executed_fixture_sha256": {
+    "tests/marker_public_bindings.rs": "b6272e525425f98b2e3868e900ca9bf982271d692c21876d8532762ddd994614",
+    "tests/marker_public_bindings.dart": "b38ed518482b1c66fb9eee2cf806df6ec582dba708efe08bdcd37ce3e77e6312"
+  },
+  "consumer_source_delta": {
+    "kind": "formatter-only",
+    "paths": [
+      "tests/marker_public_bindings.rs",
+      "tests/marker_public_bindings.dart"
+    ],
+    "note": "Pinned rustfmt and Dart formatter changed only fixture formatting before this run; exact executed source hashes are retained."
+  },
+  "dependencies": {
+    "serde_json": "1.0.145",
+    "ffi": "2.2.0",
+    "lock_sha256": {
+      "Cargo.lock": "c2a720a0ce1a3499e76247d61c3565f7ae6fc628b066496c4a8dcaec6640bcc4",
+      "pubspec.lock": "9c8e60d013eba45c06ab204f41557cfaa201d92910e3370c2649c99de2552994"
+    }
+  },
+  "setup_notes": [
+    "The pinned toolchains were initially absent from PATH. Official Rust 1.95.0 and Dart 3.13.7 archives were installed locally after SHA-256 verification.",
+    "Package resolution, client compilation, Dart analysis and every native client probe succeeded. No client test failure or runtime/wrapper repair was needed."
+  ],
+  "results": "results.json",
+  "toolchains": "toolchains.json",
+  "reproduction": {
+    "native_targets": [
+      "crispembed-shared",
+      "marker-pdfium-fixture"
+    ],
+    "command": "python3 tests/run_marker_binding_lifecycle.py --lib build/libcrispembed.so --pdfium build/libmarker-pdfium-fixture.so --report marker-binding-lifecycle.json",
+    "requirements": [
+      "Rust 1.95.0 and Dart 3.13.7 on PATH",
+      "An existing source-identified native build",
+      "CARGO_BUILD_JOBS=2 used for this run"
+    ]
+  }
+}

@@ -45,6 +45,10 @@ typedef _FreeN = Void Function(Pointer<Void>);
 typedef _FreeD = void Function(Pointer<Void>);
 typedef _ConvertN = Int32 Function(Pointer<Void>, Pointer<Utf8>);
 typedef _ConvertD = int Function(Pointer<Void>, Pointer<Utf8>);
+typedef _StartN = Int32 Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>, Int32);
+typedef _StartD = int Function(Pointer<Void>, Pointer<Utf8>, Pointer<Utf8>, int);
+typedef _StepN = Int32 Function(Pointer<Void>, Int32);
+typedef _StepD = int Function(Pointer<Void>, int);
 typedef _RawN = Int32 Function(
   Pointer<Void>,
   Pointer<Uint8>,
@@ -69,6 +73,7 @@ typedef _DataN = Pointer<Uint8> Function(
 typedef _DataD = Pointer<Uint8> Function(Pointer<Void>, int, Pointer<UintPtr>);
 
 enum MarkerMode { auto, text, ocr }
+enum MarkerJobStatus { running, complete, cancelled }
 
 void _scalar(String value) {
   if (value.contains('\u0000')) throw ArgumentError('String contains NUL');
@@ -250,6 +255,64 @@ class CrispMarker {
       calloc.free(p);
     }
     return render(format);
+  }
+
+  /// Persist the current complete/partial view and its embedded assets.
+  void saveExtraction(String path) {
+    _artifactCall('save_extraction', path);
+  }
+
+  /// Reopen extracted content without inference; use a text-mode context.
+  void openExtraction(String path) {
+    _artifactCall('open_extraction', path);
+  }
+
+  void _artifactCall(String name, String path) {
+    _open();
+    _scalar(path);
+    final p = path.toNativeUtf8();
+    try {
+      final fn = _lib.lookupFunction<_ConvertN, _ConvertD>('crispembed_marker_$name');
+      if (fn(_ctx, p) == 0) throw StateError(_errorText());
+    } finally {
+      calloc.free(p);
+    }
+  }
+
+  /// Start/resume a job with a durable checkpoint; step between UI events.
+  void start(String input, String checkpoint, {bool resume = false}) {
+    _open();
+    _scalar(input);
+    _scalar(checkpoint);
+    final p = input.toNativeUtf8(), c = checkpoint.toNativeUtf8();
+    try {
+      final fn = _lib.lookupFunction<_StartN, _StartD>('crispembed_marker_start');
+      if (fn(_ctx, p, c, resume ? 1 : 0) == 0) throw StateError(_errorText());
+    } finally {
+      calloc.free(p);
+      calloc.free(c);
+    }
+  }
+
+  MarkerJobStatus step([int pageBudget = 1]) {
+    _open();
+    if (pageBudget < 1 || pageBudget > 64) throw ArgumentError('Page budget must be 1..64');
+    final fn = _lib.lookupFunction<_StepN, _StepD>('crispembed_marker_step');
+    final status = fn(_ctx, pageBudget);
+    if (status < 1 || status > 3) throw StateError(_errorText());
+    return MarkerJobStatus.values[status - 1];
+  }
+
+  void cancel() {
+    _open();
+    _lib.lookupFunction<_FreeN, _FreeD>('crispembed_marker_cancel')(_ctx);
+  }
+
+  Map<String, dynamic> get progress {
+    _open();
+    final p = _lib.lookupFunction<_StringN, _StringD>('crispembed_marker_progress')(_ctx);
+    if (p == nullptr) throw StateError(_errorText());
+    return jsonDecode(p.toDartString()) as Map<String, dynamic>;
   }
 
   String render([String format = 'markdown']) {

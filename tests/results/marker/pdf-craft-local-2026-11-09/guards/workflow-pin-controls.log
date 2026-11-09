@@ -1,0 +1,11 @@
+mktemp: failed to create directory via template ‘/tmp/tmp.XXXXXXXXXX’: No such file or directory
+test_check_workflow_pins
+  [PASS] rejects unpinned setup-emsdk (the 07-14 outage shape)
+  [PASS] accepts pinned setup-emsdk
+  [PASS] accepts setup-python pinned via python-version
+  [PASS] rejects unpinned setup-python
+  [PASS] honours '# pin-exempt:' escape hatch
+  [PASS] does not let the next step's pin satisfy an unpinned one
+  [PASS] ignores non-toolchain actions
+  [PASS] the repo's .github/workflows are all pinned
+OK (0 failures)

@@ -1,0 +1,8 @@
+{
+  "native_source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+  "test_source_sha256": "dcae9bed84dd7a9a9de1991c99b47d15e945fe15fceab3206de60953f9ef1b2c",
+  "binary_sha256": "58e9b68f724b41e9d1bb726ea5da9501e224a4e2dd93235c8abd3b1676148ee5",
+  "exit_code": 1,
+  "expected_failure": true,
+  "log_sha256": "b3e55b07a0388c4ecd5c5eacbe7b0461c3ccd3e69897c198f0b5cfa50752f9da"
+}

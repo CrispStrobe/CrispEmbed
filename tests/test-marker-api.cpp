@@ -15,15 +15,18 @@ void check(bool ok, const char * label) {
         core_util::clean_exit(1);
     }
 }
-void gate(const char * value) {
+void set_env(const char * name, const char * value) {
 #ifdef _WIN32
-    _putenv_s("CRISPEMBED_MARKER", value ? value : "");
+    _putenv_s(name, value ? value : "");
 #else
     if (value)
-        setenv("CRISPEMBED_MARKER", value, 1);
+        setenv(name, value, 1);
     else
-        unsetenv("CRISPEMBED_MARKER");
+        unsetenv(name);
 #endif
+}
+void gate(const char * value) {
+    set_env("CRISPEMBED_MARKER", value);
 }
 } // namespace
 static int crispembed_test_main(int argc, char ** argv) {
@@ -31,8 +34,9 @@ static int crispembed_test_main(int argc, char ** argv) {
     check(c.struct_size == sizeof(c), "versioned config ABI");
     check(c.mode == 0 && c.last_page == -1 && c.extract_images == 1, "config defaults");
     c.mode = 1;
-    // Shared core_env::on semantics: only unset, empty and literal 0 are off.
-    for (const char * value : { static_cast<const char *>(nullptr), "0", "" }) {
+    // Shared core_env::on semantics: off spellings are case-insensitive.
+    const char * off_values[] = { nullptr, "0", "", "false", "off", "no", "FaLsE", "OfF", "nO" };
+    for (const char * value : off_values) {
         gate(value);
         check(crispembed_marker_init(&c) == nullptr, "default-off gate values");
         check(std::strstr(crispembed_marker_error(nullptr), "CRISPEMBED_MARKER") != nullptr, "gate diagnostic");
@@ -64,6 +68,26 @@ static int crispembed_test_main(int argc, char ** argv) {
     invalid = c;
     invalid.mode = 0;
     check(crispembed_marker_init(&invalid) == nullptr, "missing model guard");
+    auto ocr = c;
+    ocr.mode = 0;
+    ocr.model_path = "missing-marker-test-model.gguf";
+    // These gates precede file access: no model weights or PDFium are needed.
+    set_env("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE", "1");
+    for (const char * value : off_values) {
+        set_env("CRISPEMBED_TELEOCR", value);
+        check(crispembed_marker_init(&ocr) == nullptr, "TeleOCR feature gate rejects off values");
+        check(std::strstr(crispembed_marker_error(nullptr), "CRISPEMBED_TELEOCR") != nullptr,
+              "TeleOCR feature gate diagnostic");
+    }
+    set_env("CRISPEMBED_TELEOCR", "1");
+    for (const char * value : off_values) {
+        set_env("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE", value);
+        check(crispembed_marker_init(&ocr) == nullptr, "TeleOCR license gate rejects off values");
+        check(std::strstr(crispembed_marker_error(nullptr), "CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE") != nullptr,
+              "TeleOCR license gate diagnostic");
+    }
+    set_env("CRISPEMBED_TELEOCR", nullptr);
+    set_env("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE", nullptr);
     auto * ctx = crispembed_marker_init(&c);
     check(ctx != nullptr, "model-free context");
     check(crispembed_marker_render(ctx, "json") == nullptr, "render requires conversion");

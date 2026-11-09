@@ -1,0 +1,62 @@
+{
+  "kind": "marker-owned-real-pdf-lifecycle",
+  "source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+  "probe_sha256": "92761ac4b8c650ee56b6da10bc3c919743e466dd79666051fc6393ac878c910f",
+  "wrapper_sha256": "dbba4c60926c931ffec8f9092ddb4a61a860e9cbfe1c4075d93ddb6a88756c9d",
+  "library_sha256": "0f1034b037ac2d3b09d8d80b5b956b53dc9c17f9ef77e871192acb1e56d9833a",
+  "pdfium_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+  "fixture_sha256": "6727732d064d04dd54bd554e02422058da6d8d6c0df3efc1cb998099fcdaf641",
+  "dependencies": {
+    "numpy": "2.3.5",
+    "pypdfium2": "5.10.1"
+  },
+  "pdfium_version": "151.0.7891.0",
+  "python_version": "3.13.5",
+  "model_weights_used": false,
+  "general_pdf_or_ocr_quality_qualified": false,
+  "fixture_page_count": 3,
+  "expected_printed_labels": [
+    "iv",
+    "章-2",
+    "📖-3"
+  ],
+  "checks": [
+    {
+      "name": "real PDFium accepts three owned pages",
+      "passed": true
+    },
+    {
+      "name": "real PDFium decodes printed labels",
+      "passed": true
+    },
+    {
+      "name": "authored page 0 text is exact",
+      "passed": true
+    },
+    {
+      "name": "authored page 1 text is exact",
+      "passed": true
+    },
+    {
+      "name": "authored page 2 text is exact",
+      "passed": true
+    },
+    {
+      "name": "all four renderers preserve current gate-off output (0)",
+      "passed": false
+    }
+  ],
+  "output_sha256": {
+    "gate-unset.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-unset.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-unset.json": "850d4cdfd267347863df9d7050f726dc4512668107f9cb3a42c32641cdb6dd43",
+    "gate-unset.chunks": "a1a33e19281dcdc2809b5268e51c516615547157b315a27c63a3ca94f439607c"
+  },
+  "passed_count": 5,
+  "total_count": 6,
+  "passed": false,
+  "error": "AssertionError: all four renderers preserve current gate-off output (0)",
+  "failure_scope": "New probe incorrectly required run elapsed_seconds to remain byte-identical.",
+  "correction": "Record and exclude elapsed_seconds; keep all other gate-off document fields unchanged.",
+  "native_build_source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607"
+}
