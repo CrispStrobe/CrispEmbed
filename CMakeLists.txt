@@ -1905,3 +1905,8 @@ if(LIGHTON4B_VISION_GENERALIZATION_DIR)
     target_include_directories(lighton4b-vision-generalization PRIVATE ${LIGHTON4B_VISION_GENERALIZATION_DIR})
     target_link_libraries(lighton4b-vision-generalization PRIVATE crispembed-qwen35-delta crispembed-core)
 endif()
+# Test-only fixed-policy donor sensitivity; never linked into production.
+add_executable(test-lighton4b-sensitivity-policy EXCLUDE_FROM_ALL tests/test_lighton4b_sensitivity_policy.cpp)
+target_link_libraries(test-lighton4b-sensitivity-policy PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(lighton4b-restoration-sensitivity EXCLUDE_FROM_ALL tests/lighton4b_restoration_sensitivity.cpp src/lighton4b_tokenizer.cpp)
+target_link_libraries(lighton4b-restoration-sensitivity PRIVATE crispembed-qwen35-delta crispembed-core)
