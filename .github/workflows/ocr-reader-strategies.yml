@@ -2,7 +2,7 @@ name: OCR reader representation diagnostic
 
 on:
   push:
-    branches: [feat/ocr-pdf-reader-strategies, feat/ocr-pdf-reader-contiguous]
+    branches: [feat/ocr-pdf-reader-strategies, feat/ocr-pdf-reader-contiguous, feat/ocr-pdf-reader-reflection]
     paths:
       - 'tests/ocr_render_strategy_diagnostic.py'
       - 'tests/ocr_render_reader_probe.py'

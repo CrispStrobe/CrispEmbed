@@ -1,0 +1,6767 @@
+{
+  "source_sha": "2a0da548ac28380d6d0d1905471b2b12c7938939",
+  "run_id": 42624231301,
+  "job_id": 129183745305,
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42624231301",
+  "conclusion": "failure",
+  "artifact": {
+    "id": 13678663897,
+    "name": "ocr-reader-strategies",
+    "bytes": 1212917,
+    "sha256": "446e70f44d5e3507b325ec3adb2e67540827ad6dfc5fcd10d2b4af1a2de8dee8",
+    "retention_days": 90,
+    "download_digest_verified": true
+  },
+  "constructed_cases": 84,
+  "archival_passes": 84,
+  "pixel_preservation_passes": 84,
+  "complete_matches_out_of_12": {
+    "native-run": 1,
+    "run-fallback": 1,
+    "scalar-logical": 0,
+    "scalar-visual": 2,
+    "cluster-visual": 2,
+    "scalar-visual-actual": 0,
+    "scalar-logical-actual": 0
+  },
+  "cases": [
+    {
+      "case": "arabic",
+      "variant": "native-run",
+      "source": "العربية",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "native-run-arabic.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية\n",
+          "search": {
+            "العربية": [
+              [
+                10.0,
+                30.0,
+                310.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ةيبرعلا‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ةيبرعلا",
+          "search": {
+            "العربية": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "arabic",
+      "variant": "run-fallback",
+      "source": "العربية",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "run-fallback-arabic.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية\n",
+          "search": {
+            "العربية": [
+              [
+                10.0,
+                30.0,
+                310.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ةيبرعلا‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ةيبرعلا",
+          "search": {
+            "العربية": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "arabic",
+      "variant": "scalar-logical",
+      "source": "العربية",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-arabic.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية\n",
+          "search": {
+            "العربية": [
+              [
+                267.1428527832031,
+                30.0,
+                309.8028564453125,
+                60.0
+              ],
+              [
+                224.2857208251953,
+                30.0,
+                266.9457092285156,
+                60.0
+              ],
+              [
+                181.42857360839844,
+                30.0,
+                224.0885772705078,
+                60.0
+              ],
+              [
+                138.57142639160156,
+                30.0,
+                181.23143005371094,
+                60.0
+              ],
+              [
+                95.71428680419922,
+                30.0,
+                138.37428283691406,
+                60.0
+              ],
+              [
+                52.85714340209961,
+                30.0,
+                95.51714324951172,
+                60.0
+              ],
+              [
+                10.0,
+                30.0,
+                52.65999984741211,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "العربية",
+          "search": {
+            "العربية": [
+              0,
+              7
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "arabic",
+      "variant": "scalar-visual",
+      "source": "العربية",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-arabic.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": true,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية\n",
+          "search": {
+            "العربية": [
+              [
+                267.1428527832031,
+                30.0,
+                309.8028564453125,
+                60.0
+              ],
+              [
+                224.2857208251953,
+                30.0,
+                266.9457092285156,
+                60.0
+              ],
+              [
+                181.42857360839844,
+                30.0,
+                224.0885772705078,
+                60.0
+              ],
+              [
+                138.57142639160156,
+                30.0,
+                181.23143005371094,
+                60.0
+              ],
+              [
+                95.71428680419922,
+                30.0,
+                138.37428283691406,
+                60.0
+              ],
+              [
+                52.85714340209961,
+                30.0,
+                95.51714324951172,
+                60.0
+              ],
+              [
+                10.0,
+                30.0,
+                52.65999984741211,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫العربية‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "العربية",
+          "search": {
+            "العربية": [
+              0,
+              7
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "arabic",
+      "variant": "cluster-visual",
+      "source": "العربية",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "cluster-visual-arabic.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": true,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية\n",
+          "search": {
+            "العربية": [
+              [
+                267.1428527832031,
+                30.0,
+                309.8028564453125,
+                60.0
+              ],
+              [
+                224.2857208251953,
+                30.0,
+                266.9457092285156,
+                60.0
+              ],
+              [
+                181.42857360839844,
+                30.0,
+                224.0885772705078,
+                60.0
+              ],
+              [
+                138.57142639160156,
+                30.0,
+                181.23143005371094,
+                60.0
+              ],
+              [
+                95.71428680419922,
+                30.0,
+                138.37428283691406,
+                60.0
+              ],
+              [
+                52.85714340209961,
+                30.0,
+                95.51714324951172,
+                60.0
+              ],
+              [
+                10.0,
+                30.0,
+                52.65999984741211,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫العربية‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "العربية",
+          "search": {
+            "العربية": [
+              0,
+              7
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "arabic",
+      "variant": "scalar-visual-actual",
+      "source": "العربية",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-visual-actual-arabic.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "ةيبرعلا\n",
+          "search": {
+            "العربية": []
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ةيبرعلا‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ةيبرعلا",
+          "search": {
+            "العربية": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "arabic",
+      "variant": "scalar-logical-actual",
+      "source": "العربية",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-logical-actual-arabic.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية\n",
+          "search": {
+            "العربية": [
+              [
+                267.1428527832031,
+                30.0,
+                309.8028564453125,
+                60.0
+              ],
+              [
+                224.2857208251953,
+                30.0,
+                266.9457092285156,
+                60.0
+              ],
+              [
+                181.42857360839844,
+                30.0,
+                224.0885772705078,
+                60.0
+              ],
+              [
+                138.57142639160156,
+                30.0,
+                181.23143005371094,
+                60.0
+              ],
+              [
+                95.71428680419922,
+                30.0,
+                138.37428283691406,
+                60.0
+              ],
+              [
+                52.85714340209961,
+                30.0,
+                95.51714324951172,
+                60.0
+              ],
+              [
+                10.0,
+                30.0,
+                52.65999984741211,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ةيبرعلا‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ةيبرعلا",
+          "search": {
+            "العربية": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "hebrew",
+      "variant": "native-run",
+      "source": "שלום",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "native-run-hebrew.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "שלום\n",
+          "search": {
+            "שלום": [
+              [
+                10.0,
+                30.0,
+                310.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫םולש‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "שלום",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "םולש",
+          "search": {
+            "שלום": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "hebrew",
+      "variant": "run-fallback",
+      "source": "שלום",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "run-fallback-hebrew.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "שלום\n",
+          "search": {
+            "שלום": [
+              [
+                10.0,
+                30.0,
+                310.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫םולש‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "שלום",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "םולש",
+          "search": {
+            "שלום": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "hebrew",
+      "variant": "scalar-logical",
+      "source": "שלום",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-hebrew.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "שלום\n",
+          "search": {
+            "שלום": [
+              [
+                235.0,
+                30.0,
+                310.0,
+                60.0
+              ],
+              [
+                160.0,
+                30.0,
+                235.0,
+                60.0
+              ],
+              [
+                85.0,
+                30.0,
+                160.0,
+                60.0
+              ],
+              [
+                10.0,
+                30.0,
+                85.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ש‬\n‫ל‬\n‫ו‬\n‫ם‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "שלום",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "שלום",
+          "search": {
+            "שלום": [
+              0,
+              4
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "hebrew",
+      "variant": "scalar-visual",
+      "source": "שלום",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-hebrew.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": true,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "שלום\n",
+          "search": {
+            "שלום": [
+              [
+                235.0,
+                30.0,
+                310.0,
+                60.0
+              ],
+              [
+                160.0,
+                30.0,
+                235.0,
+                60.0
+              ],
+              [
+                85.0,
+                30.0,
+                160.0,
+                60.0
+              ],
+              [
+                10.0,
+                30.0,
+                85.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫שלום‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "שלום",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "שלום",
+          "search": {
+            "שלום": [
+              0,
+              4
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "hebrew",
+      "variant": "cluster-visual",
+      "source": "שלום",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "cluster-visual-hebrew.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": true,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "שלום\n",
+          "search": {
+            "שלום": [
+              [
+                235.0,
+                30.0,
+                310.0,
+                60.0
+              ],
+              [
+                160.0,
+                30.0,
+                235.0,
+                60.0
+              ],
+              [
+                85.0,
+                30.0,
+                160.0,
+                60.0
+              ],
+              [
+                10.0,
+                30.0,
+                85.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫שלום‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "שלום",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "שלום",
+          "search": {
+            "שלום": [
+              0,
+              4
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "hebrew",
+      "variant": "scalar-visual-actual",
+      "source": "שלום",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-visual-actual-hebrew.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "םולש\n",
+          "search": {
+            "שלום": []
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫םולש‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "שלום",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "םולש",
+          "search": {
+            "שלום": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "hebrew",
+      "variant": "scalar-logical-actual",
+      "source": "שלום",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-logical-actual-hebrew.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "שלום\n",
+          "search": {
+            "שלום": [
+              [
+                235.0,
+                30.0,
+                310.0,
+                60.0
+              ],
+              [
+                160.0,
+                30.0,
+                235.0,
+                60.0
+              ],
+              [
+                85.0,
+                30.0,
+                160.0,
+                60.0
+              ],
+              [
+                10.0,
+                30.0,
+                85.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫םולש‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "שלום",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "םולש",
+          "search": {
+            "שלום": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mixed-rtl",
+      "variant": "native-run",
+      "source": "العربية 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "native-run-mixed-rtl.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية 123\n \nABC\n",
+          "search": {
+            "العربية": [
+              [
+                150.0,
+                30.0,
+                309.8399963378906,
+                60.0
+              ]
+            ],
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                70.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ ةيبرعلا‬\n123\nABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية 123 ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123 ةيبرعلا",
+          "search": {
+            "العربية": [],
+            "ABC": [
+              0,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mixed-rtl",
+      "variant": "run-fallback",
+      "source": "العربية 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "run-fallback-mixed-rtl.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية 123\n \nABC\n",
+          "search": {
+            "العربية": [
+              [
+                150.0,
+                30.0,
+                309.8399963378906,
+                60.0
+              ]
+            ],
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                70.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ ةيبرعلا‬\n123\nABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية 123 ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123ةيبرعلا ",
+          "search": {
+            "العربية": [],
+            "ABC": [
+              0,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mixed-rtl",
+      "variant": "scalar-logical",
+      "source": "العربية 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-mixed-rtl.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية 123\n \nABC\n",
+          "search": {
+            "العربية": [
+              [
+                170.0,
+                30.0,
+                310.1600036621094,
+                60.0
+              ]
+            ],
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                70.16000366210938,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n123\nABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية 123 ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123 العربية",
+          "search": {
+            "العربية": [
+              8,
+              7
+            ],
+            "ABC": [
+              0,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mixed-rtl",
+      "variant": "scalar-visual",
+      "source": "العربية 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-mixed-rtl.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "ABC 123 العربية\n",
+          "search": {
+            "العربية": [
+              [
+                170.0,
+                30.0,
+                310.1600036621094,
+                60.0
+              ]
+            ],
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                70.16000366210938,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "ABC 123 ‫العربية‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "ABC 123 العربية",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123 العربية",
+          "search": {
+            "العربية": [
+              8,
+              7
+            ],
+            "ABC": [
+              0,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mixed-rtl",
+      "variant": "cluster-visual",
+      "source": "العربية 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "cluster-visual-mixed-rtl.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "ABC 123 العربية\n",
+          "search": {
+            "العربية": [
+              [
+                170.0,
+                30.0,
+                310.1600036621094,
+                60.0
+              ]
+            ],
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                70.16000366210938,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "ABC 123 ‫العربية‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "ABC 123 العربية",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123 العربية",
+          "search": {
+            "العربية": [
+              8,
+              7
+            ],
+            "ABC": [
+              0,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mixed-rtl",
+      "variant": "scalar-visual-actual",
+      "source": "العربية 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-actual-mixed-rtl.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية CBA 321\n",
+          "search": {
+            "العربية": [
+              [
+                10.0,
+                30.0,
+                150.16000366210938,
+                60.0
+              ]
+            ],
+            "ABC": []
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ ةيبرعلا‬123 ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "ABC 123 العربية",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "العربية 123 ABC",
+          "search": {
+            "العربية": [
+              0,
+              7
+            ],
+            "ABC": [
+              12,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mixed-rtl",
+      "variant": "scalar-logical-actual",
+      "source": "العربية 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-actual-mixed-rtl.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية 123\n \nABC\n",
+          "search": {
+            "العربية": [
+              [
+                170.0,
+                30.0,
+                310.1600036621094,
+                60.0
+              ]
+            ],
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                70.16000366210938,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ ةيبرعلا‬123 ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية 123 ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "العربية 123 ABC",
+          "search": {
+            "العربية": [
+              0,
+              7
+            ],
+            "ABC": [
+              12,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mixed-ltr",
+      "variant": "native-run",
+      "source": "Invoice 123: العربية / שלום (45) café é",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "native-run-mixed-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Invoice 123: ́e éfac )54( םולש / ةيبرعلا\n",
+          "search": {
+            "العربية": [],
+            "שלום": []
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Invoice 123: ‫ ةيبرعلا‬/ ‫( םולש‬45) café é\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Invoice 123: العربية / שלום (45) café é",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Invoice 123: )54( םולש / ةيبرعلا café é",
+          "search": {
+            "العربية": [],
+            "שלום": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mixed-ltr",
+      "variant": "run-fallback",
+      "source": "Invoice 123: العربية / שלום (45) café é",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "run-fallback-mixed-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Invoice 123: ́e éfac )54( םולש / ةيبرعلا\n",
+          "search": {
+            "العربية": [],
+            "שלום": []
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Invoice 123: ‫ ةيبرعلا‬/ ‫( םולש‬45) café é\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Invoice 123: العربية / שלום (45) café é",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Invoice 123: ةيبرعلا / םולש) 45 (café é",
+          "search": {
+            "العربية": [],
+            "שלום": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mixed-ltr",
+      "variant": "scalar-logical",
+      "source": "Invoice 123: العربية / שלום (45) café é",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-mixed-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Invoice 123: العربية / שלום (45)\n café é\n",
+          "search": {
+            "العربية": [
+              [
+                248.46153259277344,
+                30.0,
+                255.96153259277344,
+                60.0
+              ],
+              [
+                240.76922607421875,
+                30.0,
+                248.26922607421875,
+                60.0
+              ],
+              [
+                233.07691955566406,
+                30.0,
+                240.57691955566406,
+                60.0
+              ],
+              [
+                225.38461303710938,
+                30.0,
+                232.88461303710938,
+                60.0
+              ],
+              [
+                217.6923065185547,
+                30.0,
+                225.1923065185547,
+                60.0
+              ],
+              [
+                210.0,
+                30.0,
+                217.5,
+                60.0
+              ],
+              [
+                202.3076934814453,
+                30.0,
+                209.8076934814453,
+                60.0
+              ]
+            ],
+            "שלום": [
+              [
+                171.53846740722656,
+                30.0,
+                179.03846740722656,
+                60.0
+              ],
+              [
+                163.8461456298828,
+                30.0,
+                171.3461456298828,
+                60.0
+              ],
+              [
+                156.15383911132812,
+                30.0,
+                163.65383911132812,
+                60.0
+              ],
+              [
+                148.46153259277344,
+                30.0,
+                155.96153259277344,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Invoice 123: ‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n/\n‫ש‬\n‫ל‬\n‫ו‬\n‫ם‬\n(\n45\n) café é\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Invoice 123: العربية / שלום (45)  café é",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Invoice 123: )45( שלום / العربية café é",
+          "search": {
+            "العربية": [
+              25,
+              7
+            ],
+            "שלום": [
+              18,
+              4
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mixed-ltr",
+      "variant": "scalar-visual",
+      "source": "Invoice 123: العربية / שלום (45) café é",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-mixed-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Invoice 123: )45(  العربية / שלוםcafé é\n",
+          "search": {
+            "العربية": [
+              [
+                248.46153259277344,
+                30.0,
+                255.96153259277344,
+                60.0
+              ],
+              [
+                240.76922607421875,
+                30.0,
+                248.26922607421875,
+                60.0
+              ],
+              [
+                233.07691955566406,
+                30.0,
+                240.57691955566406,
+                60.0
+              ],
+              [
+                225.38461303710938,
+                30.0,
+                232.88461303710938,
+                60.0
+              ],
+              [
+                217.6923065185547,
+                30.0,
+                225.1923065185547,
+                60.0
+              ],
+              [
+                210.0,
+                30.0,
+                217.5,
+                60.0
+              ],
+              [
+                202.3076934814453,
+                30.0,
+                209.8076934814453,
+                60.0
+              ]
+            ],
+            "שלום": [
+              [
+                171.53846740722656,
+                30.0,
+                179.03846740722656,
+                60.0
+              ],
+              [
+                163.8461456298828,
+                30.0,
+                171.3461456298828,
+                60.0
+              ],
+              [
+                156.15383911132812,
+                30.0,
+                163.65383911132812,
+                60.0
+              ],
+              [
+                148.46153259277344,
+                30.0,
+                155.96153259277344,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Invoice 123: )45( ‫שלום‬ / ‫العربية‬ café é\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Invoice 123: )45(  العربية / שלוםcafé é",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Invoice 123: )45( שלום / العربية café é",
+          "search": {
+            "العربية": [
+              25,
+              7
+            ],
+            "שלום": [
+              18,
+              4
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mixed-ltr",
+      "variant": "cluster-visual",
+      "source": "Invoice 123: العربية / שלום (45) café é",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "cluster-visual-mixed-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Invoice 123: )45(  العربية / שלוםcafé é\n",
+          "search": {
+            "العربية": [
+              [
+                248.46153259277344,
+                30.0,
+                255.96153259277344,
+                60.0
+              ],
+              [
+                240.76922607421875,
+                30.0,
+                248.26922607421875,
+                60.0
+              ],
+              [
+                233.07691955566406,
+                30.0,
+                240.57691955566406,
+                60.0
+              ],
+              [
+                225.38461303710938,
+                30.0,
+                232.88461303710938,
+                60.0
+              ],
+              [
+                217.6923065185547,
+                30.0,
+                225.1923065185547,
+                60.0
+              ],
+              [
+                210.0,
+                30.0,
+                217.5,
+                60.0
+              ],
+              [
+                202.3076934814453,
+                30.0,
+                209.8076934814453,
+                60.0
+              ]
+            ],
+            "שלום": [
+              [
+                171.53846740722656,
+                30.0,
+                179.03846740722656,
+                60.0
+              ],
+              [
+                163.8461456298828,
+                30.0,
+                171.3461456298828,
+                60.0
+              ],
+              [
+                156.15383911132812,
+                30.0,
+                163.65383911132812,
+                60.0
+              ],
+              [
+                148.46153259277344,
+                30.0,
+                155.96153259277344,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Invoice 123: )45( ‫שלום‬ / ‫العربية‬ café é\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Invoice 123: )45(  العربية / שלוםcafé é",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Invoice 123: )45( שלום / العربية café é",
+          "search": {
+            "العربية": [
+              25,
+              7
+            ],
+            "שלום": [
+              18,
+              4
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mixed-ltr",
+      "variant": "scalar-visual-actual",
+      "source": "Invoice 123: العربية / שלום (45) café é",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-actual-mixed-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Invoice 123: العرب )54( םולש / ةيcafé é\n",
+          "search": {
+            "العربية": [],
+            "שלום": []
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Invoice 123: ‫ ةيبرعلا‬/ ‫( םולש‬45) café é\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Invoice 123: )45(  العربية / שלוםcafé é",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Invoice 123: العربية / שלום )45( café é",
+          "search": {
+            "العربية": [
+              13,
+              7
+            ],
+            "שלום": [
+              23,
+              4
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mixed-ltr",
+      "variant": "scalar-logical-actual",
+      "source": "Invoice 123: العربية / שלום (45) café é",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-actual-mixed-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Invoice 123: العربية / שלום (45)\n café é\n",
+          "search": {
+            "العربية": [
+              [
+                248.46153259277344,
+                30.0,
+                255.96153259277344,
+                60.0
+              ],
+              [
+                240.76922607421875,
+                30.0,
+                248.26922607421875,
+                60.0
+              ],
+              [
+                233.07691955566406,
+                30.0,
+                240.57691955566406,
+                60.0
+              ],
+              [
+                225.38461303710938,
+                30.0,
+                232.88461303710938,
+                60.0
+              ],
+              [
+                217.6923065185547,
+                30.0,
+                225.1923065185547,
+                60.0
+              ],
+              [
+                210.0,
+                30.0,
+                217.5,
+                60.0
+              ],
+              [
+                202.3076934814453,
+                30.0,
+                209.8076934814453,
+                60.0
+              ]
+            ],
+            "שלום": [
+              [
+                171.53846740722656,
+                30.0,
+                179.03846740722656,
+                60.0
+              ],
+              [
+                163.8461456298828,
+                30.0,
+                171.3461456298828,
+                60.0
+              ],
+              [
+                156.15383911132812,
+                30.0,
+                163.65383911132812,
+                60.0
+              ],
+              [
+                148.46153259277344,
+                30.0,
+                155.96153259277344,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Invoice 123: ‫ ةيبرعلا‬/ ‫( םולש‬45) café é\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Invoice 123: العربية / שלום (45)  café é",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Invoice 123: العربية / שלום )45( café é",
+          "search": {
+            "العربية": [
+              13,
+              7
+            ],
+            "שלום": [
+              23,
+              4
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "marks",
+      "variant": "native-run",
+      "source": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "native-run-marks.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42\n",
+          "search": {},
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ םֹולָׁש اًبَحْرَم‬\n١٢٣\n / \n42\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "مَرْحَبًا שָׁולֹם ١٢٣ / 42",
+          "search": {},
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "marks",
+      "variant": "run-fallback",
+      "source": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "run-fallback-marks.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42\n",
+          "search": {},
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ םֹולָׁש اًبَحْرَم‬\n١٢٣\n / \n42\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": " םֹולָׁש اًبَحْرَم١٢٣ / 42",
+          "search": {},
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "marks",
+      "variant": "scalar-logical",
+      "source": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-marks.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "مَرْحَبًا שָׁלוֹם \n٣٢١\n / 42\n",
+          "search": {},
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫م‬\nَ\n‫ر‬\nْ\n‫ح‬\nَ\n‫ب‬\nً\n‫ا‬\n‫ש‬\nָ\nׁ\n‫ל‬\n‫ו‬\nֹ\n‫ם‬\n١٢٣\n/\n42\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+          "search": {},
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "marks",
+      "variant": "scalar-visual",
+      "source": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-marks.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "42 / مَرْحَبًا שָׁלוֹם ٣٢١\n",
+          "search": {},
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "42 / ١٢٣ ‫שָׁלוֹם‬ ‫مَرْحَبًا‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "42 / ١٢٣ مَرْحَبًا שָׁלוֹם",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+          "search": {},
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "marks",
+      "variant": "cluster-visual",
+      "source": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "cluster-visual-marks.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "42 / َمْرَحًبا ָׁשלֹום ٣٢١\n",
+          "search": {},
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "42 / ١٢٣ ‫ָׁשלֹום‬ ‫َمْرَحًبا‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "42 / ١٢٣ مَرْحَبًا שָׁלוֹם",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "َمْرَحًبا ָׁשלֹום ١٢٣ / 42",
+          "search": {},
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "marks",
+      "variant": "scalar-visual-actual",
+      "source": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-actual-marks.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "مَرْح24 / ٣٢١ םֹולָׁש اًبَ\n",
+          "search": {},
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ םֹולָׁש اًبَحْرَم‬١٢٣ / 42\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "42 / ١٢٣ مَرْحَبًا שָׁלוֹם",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "42 / ١٢٣ םֹלוָׁש اًبَحْرَم",
+          "search": {},
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "marks",
+      "variant": "scalar-logical-actual",
+      "source": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-actual-marks.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "مَرْحَبًا שָׁלוֹם \n٣٢١\n / 42\n",
+          "search": {},
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ םֹולָׁש اًبَحْرَم‬١٢٣ / 42\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "42 / ١٢٣ םֹלוָׁש اًبَحْرَم",
+          "search": {},
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "isolate",
+      "variant": "native-run",
+      "source": "Report ⁧العربية 123⁩: ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "native-run-isolate.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Report ⁧العربية 123⁩: ABC\n",
+          "search": {
+            "العربية": [
+              [
+                101.3043441772461,
+                30.0,
+                244.73434448242188,
+                60.0
+              ]
+            ],
+            "ABC": [
+              [
+                309.942626953125,
+                30.0,
+                309.942626953125,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Report ⁧‫ ةيبرعلا‬123⁩: ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Report ⁧العربية 123⁩: ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Report ⁧321 ةيبرعلا⁩: ABC",
+          "search": {
+            "العربية": [],
+            "ABC": [
+              22,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "isolate",
+      "variant": "run-fallback",
+      "source": "Report ⁧العربية 123⁩: ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "run-fallback-isolate.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Report ⁧العربية 123⁩: ABC\n",
+          "search": {
+            "العربية": [
+              [
+                101.3043441772461,
+                30.0,
+                244.73434448242188,
+                60.0
+              ]
+            ],
+            "ABC": [
+              [
+                309.942626953125,
+                30.0,
+                309.942626953125,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Report ⁧‫ ةيبرعلا‬123⁩: ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Report ⁧العربية 123⁩: ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Report ⁧ةيبرعلا 123⁩: ABC",
+          "search": {
+            "العربية": [],
+            "ABC": [
+              22,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "isolate",
+      "variant": "scalar-logical",
+      "source": "Report ⁧العربية 123⁩: ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-isolate.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Report \n⁧العربية 123\n⁩\n: ABC\n",
+          "search": {
+            "العربية": [
+              [
+                153.47825622558594,
+                30.0,
+                244.87913513183594,
+                60.0
+              ]
+            ],
+            "ABC": [
+              [
+                270.86956787109375,
+                30.0,
+                310.0965270996094,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Report\n⁧ ‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n123\n⁩ : ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Report ⁧ العربية 123⁩ : ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Report 123 العربية: ABC",
+          "search": {
+            "العربية": [
+              11,
+              7
+            ],
+            "ABC": [
+              20,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "isolate",
+      "variant": "scalar-visual",
+      "source": "Report ⁧العربية 123⁩: ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-isolate.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "R⁧⁩ eport 123  :العربيةABC\n",
+          "search": {
+            "العربية": [
+              [
+                153.47825622558594,
+                30.0,
+                244.87913513183594,
+                60.0
+              ]
+            ],
+            "ABC": [
+              [
+                270.86956787109375,
+                30.0,
+                310.0965270996094,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "R\n⁧⁩ eport 123 ‫العربية‬: ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "R⁧⁩ eport 123  :العربيةABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Report 123 العربية: ABC",
+          "search": {
+            "العربية": [
+              11,
+              7
+            ],
+            "ABC": [
+              20,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "isolate",
+      "variant": "cluster-visual",
+      "source": "Report ⁧العربية 123⁩: ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "cluster-visual-isolate.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "R⁧⁩ eport 123  :العربيةABC\n",
+          "search": {
+            "العربية": [
+              [
+                153.47825622558594,
+                30.0,
+                244.87913513183594,
+                60.0
+              ]
+            ],
+            "ABC": [
+              [
+                270.86956787109375,
+                30.0,
+                310.0965270996094,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "R\n⁧⁩ eport 123 ‫العربية‬: ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "R⁧⁩ eport 123  :العربيةABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Report 123 العربية: ABC",
+          "search": {
+            "العربية": [
+              11,
+              7
+            ],
+            "ABC": [
+              20,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "isolate",
+      "variant": "scalar-visual-actual",
+      "source": "Report ⁧العربية 123⁩: ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-actual-isolate.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Rep ort ⁧العرب :⁩321 ةيABC\n",
+          "search": {
+            "العربية": [],
+            "ABC": [
+              [
+                270.86956787109375,
+                30.0,
+                310.0965270996094,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Report ⁧‫ ةيبرعلا‬123⁩: ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "R⁧⁩ eport 123  :العربيةABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Report ⁧العربية 123⁩: ABC",
+          "search": {
+            "العربية": [
+              8,
+              7
+            ],
+            "ABC": [
+              22,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "isolate",
+      "variant": "scalar-logical-actual",
+      "source": "Report ⁧العربية 123⁩: ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-actual-isolate.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Report \n⁧العربية 123\n⁩\n: ABC\n",
+          "search": {
+            "العربية": [
+              [
+                153.47825622558594,
+                30.0,
+                244.87913513183594,
+                60.0
+              ]
+            ],
+            "ABC": [
+              [
+                270.86956787109375,
+                30.0,
+                310.0965270996094,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Report ⁧‫ ةيبرعلا‬123⁩: ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Report ⁧ العربية 123⁩ : ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Report ⁧العربية 123⁩: ABC",
+          "search": {
+            "العربية": [
+              8,
+              7
+            ],
+            "ABC": [
+              22,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "override",
+      "variant": "native-run",
+      "source": "‮ABCD‬ 123",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "native-run-override.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": true,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "‮ABCD‬ 123\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                310.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫‮‬ABCD‬ 123\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "‮ABCD‬ 123",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABCD‬ 123",
+          "search": {
+            "ABC": [
+              0,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "override",
+      "variant": "run-fallback",
+      "source": "‮ABCD‬ 123",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "run-fallback-override.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": true,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "‮ABCD‬ 123\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                310.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫‮‬ABCD‬ 123\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "‮ABCD‬ 123",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABCD‬ 123",
+          "search": {
+            "ABC": [
+              0,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "override",
+      "variant": "scalar-logical",
+      "source": "‮ABCD‬ 123",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-logical-override.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "‮\nA\nB\nC\nD\n‬\n \n123\n",
+          "search": {
+            "ABC": []
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫‮‬ A\nB\nC\nD\n‬123\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "‮ ABCD‬  123",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "123 DCBA",
+          "search": {
+            "ABC": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "override",
+      "variant": "scalar-visual",
+      "source": "‮ABCD‬ 123",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-visual-override.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "‮‬123 DCBA\n",
+          "search": {
+            "ABC": []
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫‮‬‬123 DCBA\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "‮‬123 DCBA",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "123 DCBA",
+          "search": {
+            "ABC": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "override",
+      "variant": "cluster-visual",
+      "source": "‮ABCD‬ 123",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "cluster-visual-override.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "‮‬123 DCBA\n",
+          "search": {
+            "ABC": []
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫‮‬‬123 DCBA\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "‮‬123 DCBA",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "123 DCBA",
+          "search": {
+            "ABC": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "override",
+      "variant": "scalar-visual-actual",
+      "source": "‮ABCD‬ 123",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": false,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-actual-override.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "‮ABCD‬ 123\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                85.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫‮‬ABCD‬ 123\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "‮‬123 DCBA",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "‮ABCD‬ 123",
+          "search": {
+            "ABC": [
+              1,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "override",
+      "variant": "scalar-logical-actual",
+      "source": "‮ABCD‬ 123",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-actual-override.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "‮\nA\nB\nC\nD\n‬\n \n123\n",
+          "search": {
+            "ABC": []
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫‮‬ABCD‬ 123\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "‮ ABCD‬  123",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "‮ABCD‬ 123",
+          "search": {
+            "ABC": [
+              1,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "supplementary",
+      "variant": "native-run",
+      "source": "𞤀𞤢 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "native-run-supplementary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "𞤀𞤢 123\n \nABC\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                100.00000762939453,
+                60.0
+              ]
+            ],
+            "𞤀𞤢": [
+              [
+                220.0,
+                30.0,
+                310.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "𞤀𞤢 \n123\nABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "𞤀𞤢 123 ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123 ",
+          "search": {
+            "ABC": [
+              0,
+              3
+            ],
+            "𞤀𞤢": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "supplementary",
+      "variant": "run-fallback",
+      "source": "𞤀𞤢 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "run-fallback-supplementary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "𞤀𞤢 123\n \nABC\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                100.00000762939453,
+                60.0
+              ]
+            ],
+            "𞤀𞤢": [
+              [
+                220.0,
+                30.0,
+                310.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "𞤀𞤢 \n123\nABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "𞤀𞤢 123 ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123𞤀𞤢 ",
+          "search": {
+            "ABC": [
+              0,
+              3
+            ],
+            "𞤀𞤢": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "supplementary",
+      "variant": "scalar-logical",
+      "source": "𞤀𞤢 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-logical-supplementary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "𞤀𞤢 123\n \nABC\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                100.0,
+                60.0
+              ]
+            ],
+            "𞤀𞤢": [
+              [
+                280.0,
+                30.0,
+                310.0,
+                60.0
+              ],
+              [
+                250.0,
+                30.0,
+                280.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "𞤀\n𞤢\n123\nABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "𞤀𞤢 123 ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123 𞤢𞤀",
+          "search": {
+            "ABC": [
+              0,
+              3
+            ],
+            "𞤀𞤢": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "supplementary",
+      "variant": "scalar-visual",
+      "source": "𞤀𞤢 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-visual-supplementary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "ABC 123 𞤀𞤢\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                100.0,
+                60.0
+              ]
+            ],
+            "𞤀𞤢": [
+              [
+                280.0,
+                30.0,
+                310.0,
+                60.0
+              ],
+              [
+                250.0,
+                30.0,
+                280.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "ABC 123 𞤢𞤀\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "ABC 123 𞤢𞤀",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123 𞤢𞤀",
+          "search": {
+            "ABC": [
+              0,
+              3
+            ],
+            "𞤀𞤢": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "supplementary",
+      "variant": "cluster-visual",
+      "source": "𞤀𞤢 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "cluster-visual-supplementary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "ABC 123 𞤀𞤢\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                100.0,
+                60.0
+              ]
+            ],
+            "𞤀𞤢": [
+              [
+                280.0,
+                30.0,
+                310.0,
+                60.0
+              ],
+              [
+                250.0,
+                30.0,
+                280.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "ABC 123 𞤢𞤀\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "ABC 123 𞤢𞤀",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123 𞤢𞤀",
+          "search": {
+            "ABC": [
+              0,
+              3
+            ],
+            "𞤀𞤢": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "supplementary",
+      "variant": "scalar-visual-actual",
+      "source": "𞤀𞤢 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": true,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-visual-actual-supplementary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "𞤀𞤢 123 ACB\n",
+          "search": {
+            "ABC": [],
+            "𞤀𞤢": [
+              [
+                10.0,
+                30.0,
+                70.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "𞤀𞤢 123 ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "ABC 123 𞤢𞤀",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": " 123 ABC",
+          "search": {
+            "ABC": [
+              5,
+              3
+            ],
+            "𞤀𞤢": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "supplementary",
+      "variant": "scalar-logical-actual",
+      "source": "𞤀𞤢 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-logical-actual-supplementary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "𞤀𞤢 123\n \nABC\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                100.0,
+                60.0
+              ]
+            ],
+            "𞤀𞤢": [
+              [
+                280.0,
+                30.0,
+                310.0,
+                60.0
+              ],
+              [
+                250.0,
+                30.0,
+                280.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "𞤀𞤢 123 ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "𞤀𞤢 123 ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": " 123 ABC",
+          "search": {
+            "ABC": [
+              5,
+              3
+            ],
+            "𞤀𞤢": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "multiline",
+      "variant": "native-run",
+      "source": "العربية 123\nשלום ABC\r\nMixed العربية סיום Final ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "native-run-multiline.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية 123\n\nשלום ABC\n\r\nMixed العربية\n \nסיום\n \nFinal ABC\n",
+          "search": {
+            "العربية": [
+              [
+                91.81818389892578,
+                30.0,
+                310.0741882324219,
+                46.0
+              ],
+              [
+                148.46153259277344,
+                62.0,
+                309.9655456542969,
+                78.0
+              ]
+            ],
+            "שלום": [
+              [
+                122.5,
+                46.0,
+                310.0040283203125,
+                62.0
+              ]
+            ],
+            "ABC": [
+              [
+                10.0,
+                46.0,
+                122.49600219726562,
+                62.0
+              ],
+              [
+                310.0,
+                94.0,
+                310.0,
+                110.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ ةيبرعلا‬\n123\n‫ םולש‬\nABC\n\r\n\nMixed ‫ةيبرعلا‬\n‫םויס‬\nFinal ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية 123\nשלום ABC\r\nMixed العربية \nסיום \nFinal ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "123ABCMixed םויסFinal ABC\r\nםולשةيبرعلا ةيبرعلا ",
+          "search": {
+            "العربية": [],
+            "שלום": [],
+            "ABC": [
+              3,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "multiline",
+      "variant": "run-fallback",
+      "source": "العربية 123\nשלום ABC\r\nMixed العربية סיום Final ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "run-fallback-multiline.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية 123\n \nשלום ABC\n\r\nMixed العربية\n \nסיום\n \nFinal ABC\n",
+          "search": {
+            "العربية": [
+              [
+                91.81818389892578,
+                30.0,
+                310.0741882324219,
+                46.0
+              ],
+              [
+                148.46153259277344,
+                62.0,
+                309.9655456542969,
+                78.0
+              ]
+            ],
+            "שלום": [
+              [
+                122.5,
+                46.0,
+                310.0040283203125,
+                62.0
+              ]
+            ],
+            "ABC": [
+              [
+                10.0,
+                46.0,
+                122.49600219726562,
+                62.0
+              ],
+              [
+                310.0,
+                94.0,
+                310.0,
+                110.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ ةيبرعلا‬\n123\n‫ םולש‬\nABC\n\r\n\nMixed ‫ةيبرعلا‬\n‫םויס‬\nFinal ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية 123\nשלום ABC\r\nMixed العربية \nסיום \nFinal ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "123ABCMixed םויסFinal ABC\r\nةيبرعلا םולש ةيبرعلا",
+          "search": {
+            "العربية": [],
+            "שלום": [],
+            "ABC": [
+              3,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "multiline",
+      "variant": "scalar-logical",
+      "source": "العربية 123\nשלום ABC\r\nMixed العربية סיום Final ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-logical-multiline.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية 123\n \nשלום ABC\n \nMixed العربية\n \nסיום \nFinal ABC\n",
+          "search": {
+            "العربية": [
+              [
+                282.7272644042969,
+                30.0,
+                309.97528076171875,
+                46.0
+              ],
+              [
+                255.4545440673828,
+                30.0,
+                282.7025451660156,
+                46.0
+              ],
+              [
+                228.18182373046875,
+                30.0,
+                255.42982482910156,
+                46.0
+              ],
+              [
+                200.90908813476562,
+                30.0,
+                228.15708923339844,
+                46.0
+              ],
+              [
+                173.63636779785156,
+                30.0,
+                200.88436889648438,
+                46.0
+              ],
+              [
+                146.36363220214844,
+                30.0,
+                173.61163330078125,
+                46.0
+              ],
+              [
+                119.09091186523438,
+                30.0,
+                146.3389129638672,
+                46.0
+              ],
+              [
+                286.9230651855469,
+                62.0,
+                309.9310607910156,
+                78.0
+              ],
+              [
+                263.8461608886719,
+                62.0,
+                286.8541564941406,
+                78.0
+              ],
+              [
+                240.76922607421875,
+                62.0,
+                263.7772216796875,
+                78.0
+              ],
+              [
+                217.6923065185547,
+                62.0,
+                240.70030212402344,
+                78.0
+              ],
+              [
+                194.61538696289062,
+                62.0,
+                217.62338256835938,
+                78.0
+              ],
+              [
+                171.53846740722656,
+                62.0,
+                194.5464630126953,
+                78.0
+              ],
+              [
+                148.46153259277344,
+                62.0,
+                171.4695281982422,
+                78.0
+              ]
+            ],
+            "שלום": [
+              [
+                160.0,
+                46.0,
+                310.0039978027344,
+                62.0
+              ]
+            ],
+            "ABC": [
+              [
+                10.0,
+                46.0,
+                122.50399780273438,
+                62.0
+              ],
+              [
+                210.0,
+                94.0,
+                309.9146728515625,
+                110.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n123\n‫ש‬\n‫ל‬\n‫ו‬\n‫ם‬\nABC\nMixed ‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n‫ס‬\n‫י‬\n‫ו‬\n‫ם‬\nFinal ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية 123\nשלום ABC\r\nMixed العربية \nסיום \nFinal ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "1A2B3C ة اשلלعرוبםي\r\nMםixeוd العסربيיة\r\nFinal ABC",
+          "search": {
+            "العربية": [],
+            "שלום": [],
+            "ABC": [
+              46,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "multiline",
+      "variant": "scalar-visual",
+      "source": "العربية 123\nשלום ABC\r\nMixed العربية סיום Final ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-visual-multiline.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "1\n \n23 العربية\nA\n \nBC שלום\nM\n \nixed العربية\nם \nסיו\nFinal ABC\n",
+          "search": {
+            "العربية": [
+              [
+                282.7272644042969,
+                30.0,
+                309.97528076171875,
+                46.0
+              ],
+              [
+                255.4545440673828,
+                30.0,
+                282.7025451660156,
+                46.0
+              ],
+              [
+                228.18182373046875,
+                30.0,
+                255.42982482910156,
+                46.0
+              ],
+              [
+                200.90908813476562,
+                30.0,
+                228.15708923339844,
+                46.0
+              ],
+              [
+                173.63636779785156,
+                30.0,
+                200.88436889648438,
+                46.0
+              ],
+              [
+                146.36363220214844,
+                30.0,
+                173.61163330078125,
+                46.0
+              ],
+              [
+                119.09091186523438,
+                30.0,
+                146.3389129638672,
+                46.0
+              ],
+              [
+                286.9230651855469,
+                62.0,
+                309.9310607910156,
+                78.0
+              ],
+              [
+                263.8461608886719,
+                62.0,
+                286.8541564941406,
+                78.0
+              ],
+              [
+                240.76922607421875,
+                62.0,
+                263.7772216796875,
+                78.0
+              ],
+              [
+                217.6923065185547,
+                62.0,
+                240.70030212402344,
+                78.0
+              ],
+              [
+                194.61538696289062,
+                62.0,
+                217.62338256835938,
+                78.0
+              ],
+              [
+                171.53846740722656,
+                62.0,
+                194.5464630126953,
+                78.0
+              ],
+              [
+                148.46153259277344,
+                62.0,
+                171.4695281982422,
+                78.0
+              ]
+            ],
+            "שלום": [
+              [
+                160.0,
+                46.0,
+                310.0039978027344,
+                62.0
+              ]
+            ],
+            "ABC": [
+              [
+                210.0,
+                94.0,
+                309.9146728515625,
+                110.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "123 ‫العربية‬\nABC ‫שלום‬\nMixed ‫العربية‬\n‫ם‬‫סיו‬\nFinal ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "1\n 23 العربية\nA\r\n BC שלום\nM  ixed العربية\nסיו ם \nFinal ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "1A2B3C ة اשلלعرוبםي\r\nMםixeוd العסربيיة\r\nFinal ABC",
+          "search": {
+            "العربية": [],
+            "שלום": [],
+            "ABC": [
+              46,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "multiline",
+      "variant": "cluster-visual",
+      "source": "العربية 123\nשלום ABC\r\nMixed العربية סיום Final ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "cluster-visual-multiline.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "1\n \n23 العربية\nA\n \nBC שלום\nM\n \nixed العربية\nם \nסיו\nFinal ABC\n",
+          "search": {
+            "العربية": [
+              [
+                282.7272644042969,
+                30.0,
+                309.97528076171875,
+                46.0
+              ],
+              [
+                255.4545440673828,
+                30.0,
+                282.7025451660156,
+                46.0
+              ],
+              [
+                228.18182373046875,
+                30.0,
+                255.42982482910156,
+                46.0
+              ],
+              [
+                200.90908813476562,
+                30.0,
+                228.15708923339844,
+                46.0
+              ],
+              [
+                173.63636779785156,
+                30.0,
+                200.88436889648438,
+                46.0
+              ],
+              [
+                146.36363220214844,
+                30.0,
+                173.61163330078125,
+                46.0
+              ],
+              [
+                119.09091186523438,
+                30.0,
+                146.3389129638672,
+                46.0
+              ],
+              [
+                286.9230651855469,
+                62.0,
+                309.9310607910156,
+                78.0
+              ],
+              [
+                263.8461608886719,
+                62.0,
+                286.8541564941406,
+                78.0
+              ],
+              [
+                240.76922607421875,
+                62.0,
+                263.7772216796875,
+                78.0
+              ],
+              [
+                217.6923065185547,
+                62.0,
+                240.70030212402344,
+                78.0
+              ],
+              [
+                194.61538696289062,
+                62.0,
+                217.62338256835938,
+                78.0
+              ],
+              [
+                171.53846740722656,
+                62.0,
+                194.5464630126953,
+                78.0
+              ],
+              [
+                148.46153259277344,
+                62.0,
+                171.4695281982422,
+                78.0
+              ]
+            ],
+            "שלום": [
+              [
+                160.0,
+                46.0,
+                310.0039978027344,
+                62.0
+              ]
+            ],
+            "ABC": [
+              [
+                210.0,
+                94.0,
+                309.9146728515625,
+                110.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "123 ‫العربية‬\nABC ‫שלום‬\nMixed ‫العربية‬\n‫ם‬‫סיו‬\nFinal ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "1\n 23 العربية\nA\r\n BC שלום\nM  ixed العربية\nסיו ם \nFinal ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "1A2B3C ة اשلלعرוبםي\r\nMםixeוd العסربيיة\r\nFinal ABC",
+          "search": {
+            "العربية": [],
+            "שלום": [],
+            "ABC": [
+              46,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "multiline",
+      "variant": "scalar-visual-actual",
+      "source": "العربية 123\nשלום ABC\r\nMixed العربية סיום Final ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-actual-multiline.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "ا\nل\nعرب\n321 ةي\nש\nלו\nם A\n\rCB\nM\ni\nxed ا ةيبرعل\nסי\n םו\nFinal ABC\n",
+          "search": {
+            "العربية": [],
+            "שלום": [],
+            "ABC": [
+              [
+                210.0,
+                94.0,
+                309.9146728515625,
+                110.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ ةيبرعلا‬123\n‫ םולש‬ABC\r\nMixed ‫ םויס ةيبرعلا‬Final ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "1\n 23 العربية\nA\r\n BC שלום\nM  ixed العربية\nסיו ם \nFinal ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "العربية 123 שלום ABC Mixed العربية סיום Final ABC",
+          "search": {
+            "العربية": [
+              0,
+              7
+            ],
+            "שלום": [
+              12,
+              4
+            ],
+            "ABC": [
+              17,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "multiline",
+      "variant": "scalar-logical-actual",
+      "source": "العربية 123\nשלום ABC\r\nMixed العربية סיום Final ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-actual-multiline.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "العربية 123\n\nשלום ABC\n\r\nMixed العربية\n \nסיום \nFinal ABC\n",
+          "search": {
+            "العربية": [
+              [
+                282.7272644042969,
+                30.0,
+                309.97528076171875,
+                46.0
+              ],
+              [
+                255.4545440673828,
+                30.0,
+                282.7025451660156,
+                46.0
+              ],
+              [
+                228.18182373046875,
+                30.0,
+                255.42982482910156,
+                46.0
+              ],
+              [
+                200.90908813476562,
+                30.0,
+                228.15708923339844,
+                46.0
+              ],
+              [
+                173.63636779785156,
+                30.0,
+                200.88436889648438,
+                46.0
+              ],
+              [
+                146.36363220214844,
+                30.0,
+                173.61163330078125,
+                46.0
+              ],
+              [
+                119.09091186523438,
+                30.0,
+                146.3389129638672,
+                46.0
+              ],
+              [
+                286.9230651855469,
+                62.0,
+                309.9310607910156,
+                78.0
+              ],
+              [
+                263.8461608886719,
+                62.0,
+                286.8541564941406,
+                78.0
+              ],
+              [
+                240.76922607421875,
+                62.0,
+                263.7772216796875,
+                78.0
+              ],
+              [
+                217.6923065185547,
+                62.0,
+                240.70030212402344,
+                78.0
+              ],
+              [
+                194.61538696289062,
+                62.0,
+                217.62338256835938,
+                78.0
+              ],
+              [
+                171.53846740722656,
+                62.0,
+                194.5464630126953,
+                78.0
+              ],
+              [
+                148.46153259277344,
+                62.0,
+                171.4695281982422,
+                78.0
+              ]
+            ],
+            "שלום": [
+              [
+                160.0,
+                46.0,
+                310.0039978027344,
+                62.0
+              ]
+            ],
+            "ABC": [
+              [
+                10.0,
+                46.0,
+                122.50399780273438,
+                62.0
+              ],
+              [
+                210.0,
+                94.0,
+                309.9146728515625,
+                110.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ ةيبرعلا‬123\n‫ םולש‬ABC\r\nMixed ‫ םויס ةيبرعلا‬Final ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "العربية 123\nשלום ABC\r\nMixed العربية \nסיום \nFinal ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "العربية 123 שלום ABC Mixed العربية סיום Final ABC",
+          "search": {
+            "العربية": [
+              0,
+              7
+            ],
+            "שלום": [
+              12,
+              4
+            ],
+            "ABC": [
+              17,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mapping-boundary",
+      "variant": "native-run",
+      "source": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "native-run-mapping-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n",
+          "search": {},
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n‫אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n‫אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n‫אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n‫אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n‫𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀 אאאאאאאאאאאאאאאאאאאא‬\n𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא ",
+          "search": {},
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mapping-boundary",
+      "variant": "run-fallback",
+      "source": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "run-fallback-mapping-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n",
+          "search": {},
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n‫אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n‫אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n‫אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n‫אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n‫𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀 אאאאאאאאאאאאאאאאאאאא‬\n𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "exit_code": 1
+        }
+      }
+    },
+    {
+      "case": "mapping-boundary",
+      "variant": "scalar-logical",
+      "source": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-mapping-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n",
+          "search": {},
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n‫א‬\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n𞤀\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "exit_code": 1
+        }
+      }
+    },
+    {
+      "case": "mapping-boundary",
+      "variant": "scalar-visual",
+      "source": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-mapping-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n",
+          "search": {},
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀 ‫אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀 אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "exit_code": 1
+        }
+      }
+    },
+    {
+      "case": "mapping-boundary",
+      "variant": "cluster-visual",
+      "source": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "cluster-visual-mapping-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n",
+          "search": {},
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀 ‫אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀 אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "exit_code": 1
+        }
+      }
+    },
+    {
+      "case": "mapping-boundary",
+      "variant": "scalar-visual-actual",
+      "source": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-actual-mapping-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀 אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא\n",
+          "search": {},
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀 אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀 אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": " אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא",
+          "search": {},
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "mapping-boundary",
+      "variant": "scalar-logical-actual",
+      "source": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-actual-mapping-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n",
+          "search": {},
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀 אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": " אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא",
+          "search": {},
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "combining-boundary",
+      "variant": "native-run",
+      "source": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "native-run-combining-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123\n \nABC\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                110.00000762939453,
+                31.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמ‬\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַ \n123\nABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123ַַַַַַַַַַַַַַַ ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמ",
+          "search": {
+            "ABC": [
+              0,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "combining-boundary",
+      "variant": "run-fallback",
+      "source": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "run-fallback-combining-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123\n \nABC\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                110.00000762939453,
+                31.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמ‬\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַ \n123\nABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123ַַַַַַַַַַַַַַַ ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ",
+          "search": {
+            "ABC": [
+              0,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "combining-boundary",
+      "variant": "scalar-logical",
+      "source": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-combining-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123\n \nABC\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                109.99466705322266,
+                31.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫מ‬\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\nַ\n123\nABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123 ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמ",
+          "search": {
+            "ABC": [
+              0,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "combining-boundary",
+      "variant": "scalar-visual",
+      "source": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-combining-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "ABC 123 ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמ\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                109.99466705322266,
+                31.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "ABC 123 ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ‫מ‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "ABC 123 מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123 ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמ",
+          "search": {
+            "ABC": [
+              0,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "combining-boundary",
+      "variant": "cluster-visual",
+      "source": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "cluster-visual-combining-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "ABC 123 ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                109.99466705322266,
+                31.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "ABC 123 ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ‫ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמ‬\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "ABC 123 ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "ABC 123 ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ",
+          "search": {
+            "ABC": [
+              0,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "combining-boundary",
+      "variant": "scalar-visual-actual",
+      "source": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-visual-actual-combining-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC\n",
+          "search": {
+            "ABC": [
+              [
+                309.6309814453125,
+                30.0,
+                310.0019836425781,
+                31.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמ‬123 ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "ABC 123 מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+          "search": {
+            "ABC": [
+              276,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "combining-boundary",
+      "variant": "scalar-logical-actual",
+      "source": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "scalar-logical-actual-combining-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123\n \nABC\n",
+          "search": {
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                109.99466705322266,
+                31.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "‫ ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמ‬123 ABC\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+          "search": {
+            "ABC": [
+              276,
+              3
+            ]
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "ltr",
+      "variant": "native-run",
+      "source": "Reviewed café 中文 😀 é",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "native-run-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Reviewed café 中文 😀 é\n",
+          "search": {
+            "😀": [
+              [
+                252.85719299316406,
+                30.0,
+                267.1429138183594,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Reviewed café 中文 😀 é\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Reviewed café 中文 😀 é",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Reviewed café 中文 é",
+          "search": {
+            "😀": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "ltr",
+      "variant": "run-fallback",
+      "source": "Reviewed café 中文 😀 é",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "run-fallback-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Reviewed café 中文 😀 é\n",
+          "search": {
+            "😀": [
+              [
+                252.85719299316406,
+                30.0,
+                267.1429138183594,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Reviewed café 中文 😀 é\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Reviewed café 中文 😀 é",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Reviewed café 中文 😀 é",
+          "search": {
+            "😀": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "ltr",
+      "variant": "scalar-logical",
+      "source": "Reviewed café 中文 😀 é",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-logical-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Reviewed café 中文 😀 é\n",
+          "search": {
+            "😀": [
+              [
+                265.0,
+                30.0,
+                280.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Reviewed café 中文 😀 é\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Reviewed café 中文 😀 é",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Reviewed café 中文 😀 é",
+          "search": {
+            "😀": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "ltr",
+      "variant": "scalar-visual",
+      "source": "Reviewed café 中文 😀 é",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-visual-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Reviewed café 中文 😀 é\n",
+          "search": {
+            "😀": [
+              [
+                265.0,
+                30.0,
+                280.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Reviewed café 中文 😀 é\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Reviewed café 中文 😀 é",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Reviewed café 中文 😀 é",
+          "search": {
+            "😀": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "ltr",
+      "variant": "cluster-visual",
+      "source": "Reviewed café 中文 😀 é",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": true
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "cluster-visual-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Reviewed café 中文 😀 é\n",
+          "search": {
+            "😀": [
+              [
+                265.0,
+                30.0,
+                280.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Reviewed café 中文 😀 é\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Reviewed café 中文 😀 é",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Reviewed café 中文 😀 é",
+          "search": {
+            "😀": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "ltr",
+      "variant": "scalar-visual-actual",
+      "source": "Reviewed café 中文 😀 é",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-visual-actual-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Reviewed café 中文 😀 é\n",
+          "search": {
+            "😀": [
+              [
+                265.0,
+                30.0,
+                280.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Reviewed café 中文 😀 é\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Reviewed café 中文 😀 é",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Reviewed café 中文 é",
+          "search": {
+            "😀": []
+          },
+          "exit_code": 0
+        }
+      }
+    },
+    {
+      "case": "ltr",
+      "variant": "scalar-logical-actual",
+      "source": "Reviewed café 中文 😀 é",
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": true,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "pixels_exact": true,
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "scalar-logical-actual-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "all_checks_passed": false,
+      "readers": {
+        "PyMuPDF": {
+          "versions": {
+            "pymupdf": "1.26.6",
+            "mupdf": "1.26.11"
+          },
+          "extracted": "Reviewed café 中文 😀 é\n",
+          "search": {
+            "😀": [
+              [
+                265.0,
+                30.0,
+                280.0,
+                60.0
+              ]
+            ]
+          },
+          "pixel_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0",
+          "exit_code": 0
+        },
+        "Poppler": {
+          "extracted": "Reviewed café 中文 😀 é\n\f",
+          "exit_code": 0
+        },
+        "pypdf": {
+          "extracted": "Reviewed café 中文 😀 é",
+          "exit_code": 0
+        },
+        "PDFium": {
+          "versions": {
+            "wrapper": "5.15.1",
+            "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+            "flags": []
+          },
+          "binary_sha256": {
+            "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+          },
+          "extracted": "Reviewed café 中文 é",
+          "search": {
+            "😀": []
+          },
+          "exit_code": 0
+        }
+      }
+    }
+  ],
+  "decision": "No variant passes the full matrix. Retain gated production source; investigate reflected axes and explicit document-direction controls separately.",
+  "complete_raw_character_lists_and_word_coordinates": "Retained in the checksummed hosted artifact for every PDF"
+}

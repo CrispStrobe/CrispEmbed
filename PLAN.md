@@ -74,6 +74,16 @@ registry model, release or inference default is changed.
 
 ## Reviewed PDF conformance — 9 November 2026
 
+Reader diagnostic continuation: `feat/ocr-pdf-reader-reflection` preserves
+[the completed 84-file visual-emission matrix](tests/results/ocr-render/strategies-2a0da54.json).
+All files pass veraPDF and retain pixels, but no representation passes all
+logical copy/search cases. Pure Arabic/Hebrew visual scalars recover in four
+readers; mixed run order, combining order and supplementary RTL remain open.
+Next isolated controls test reflected RTL text axes, exact per-run spacing,
+logical run emission and document viewer direction. The mixed-paragraph case
+prevents a global direction preference from being treated as a universal fix.
+[Protocol](docs/ocr-pdf-reader-experiments.md); no native source or app pin changes.
+
 Owner lane: `feat/ocr-reviewed-pdf-conformance`, based on `f2a0fec94` including
 the external metadata-test formatting correction. Add opt-in Unicode 17 bidi
 layout and genuine PDF/A-2b resources without changing legacy C structures or

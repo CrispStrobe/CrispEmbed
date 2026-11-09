@@ -43,6 +43,7 @@ def visual_cells(lib, text, height):
         "SBAlgorithmCreate": ([C.POINTER(Sequence)], C.c_void_p),
         "SBAlgorithmCreateParagraph": ([C.c_void_p, C.c_size_t, C.c_size_t, C.c_uint8], C.c_void_p),
         "SBParagraphCreateLine": ([C.c_void_p, C.c_size_t, C.c_size_t], C.c_void_p),
+        "SBParagraphGetBaseLevel": ([C.c_void_p], C.c_uint8),
         "SBLineGetRunCount": ([C.c_void_p], C.c_size_t),
         "SBLineGetRunsPtr": ([C.c_void_p], C.POINTER(Run)),
         "SBCodepointGetGeneralCategory": ([C.c_uint32], C.c_uint8),
@@ -66,7 +67,8 @@ def visual_cells(lib, text, height):
             raise RuntimeError("Could not resolve diagnostic visual positions")
         try:
             runs = lib.SBLineGetRunsPtr(line)
-            positions = [(0.0, 0.0)] * len(row)
+            positions = [(0.0, 0.0, 0, 0)] * len(row)
+            paragraph_level = int(lib.SBParagraphGetBaseLevel(paragraph))
             cells = 0
             for index in range(lib.SBLineGetRunCount(line)):
                 run = runs[index]
@@ -85,10 +87,12 @@ def visual_cells(lib, text, height):
                     for index, source in enumerate(cluster):
                         part = len(cluster) - index - 1 if run.level & 1 else index
                         positions[source] = (cells + cell + part / len(cluster),
-                                             cells + cell + (part + 1) / len(cluster))
+                                             cells + cell + (part + 1) / len(cluster),
+                                             int(run.level), int(run.offset))
                 cells += len(clusters)
-            for index, (left, right) in enumerate(positions):
+            for index, (left, right, level, run_offset) in enumerate(positions):
                 result.append({"source": source_offset + index, "row": row_number,
+                               "level": level, "run": run_offset, "paragraph_level": paragraph_level,
                                "x": 10 + left * 300 / max(1, cells),
                                "width": (right - left) * 300 / max(1, cells),
                                "y": 210 - (row_number + 1) * height / len(rows),
@@ -110,7 +114,8 @@ def stream_object(writer, data, extra=None):
     return writer._add_object(stream)
 
 
-def scalar_pdf(source, destination, text, positions, visual, actual, clusters, lib):
+def scalar_pdf(source, destination, text, positions, visual, actual, clusters, lib,
+               reflected=False, run_strings=False, logical_runs=False, viewer=False):
     writer = PdfWriter(clone_from=source)
     page = writer.pages[0]
     resources = page["/Resources"]
@@ -120,7 +125,9 @@ def scalar_pdf(source, destination, text, positions, visual, actual, clusters, l
     groups = []
     for index, position in enumerate(positions):
         category = lib.SBCodepointGetGeneralCategory(ord(text[index]))
-        if clusters and groups and 6 <= category <= 8 and len(groups[-1]) < 32:
+        if (clusters and groups and 6 <= category <= 8 and len(groups[-1]) < 32
+                and positions[groups[-1][0]]["row"] == position["row"]
+                and positions[groups[-1][0]]["run"] == position["run"]):
             groups[-1].append(index)
         else:
             groups.append([index])
@@ -134,9 +141,12 @@ def scalar_pdf(source, destination, text, positions, visual, actual, clusters, l
         unit["metric"] = max(1 if unit["width"] else 0, round(unit["width"] / unit["height"] * 64))
         assert unit["metric"] <= 32767
         glyphs.append(unit)
-    if visual:
+    if logical_runs:
+        glyphs.sort(key=lambda item: (item["row"], item["run"], item["x"], item["source"]))
+    elif visual:
         glyphs.sort(key=lambda item: (item["row"], item["x"], item["source"]))
     assert Counter("".join(g["text"] for g in glyphs)) == Counter(text)
+    assert "".join(g["text"] for g in sorted(glyphs, key=lambda item: item["source"])) == text
     widths = sorted({g["metric"] for g in glyphs})
     names = [".notdef"] + [f"width{width}" for width in widths]
     program = TTFont(BytesIO(original_descriptor["/FontFile2"].get_data()))
@@ -195,17 +205,52 @@ def scalar_pdf(source, destination, text, positions, visual, actual, clusters, l
     if actual:
         value = "FEFF" + text.encode("utf-16-be").hex().upper()
         content += f"/Span << /ActualText <{value}> >> BDC\n".encode()
-    content += b"BT\n3 Tr\n"
-    previous_height = None
-    for index, glyph in enumerate(glyphs, 1):
-        # Stable visual runs must not flush a reader's RTL buffer with
-        # redundant Tf operators. Keep logical-emission controls unchanged.
-        if not visual or previous_height != glyph['height']:
-            content += f"/F1 {glyph['height']:.12f} Tf\n".encode()
-            previous_height = glyph['height']
-        content += (f"1 0 0 1 {glyph['x']:.12f} {glyph['y']:.12f} Tm\n"
-                    f"<{index:04X}> Tj\n").encode()
-    content += b"ET\n" + (b"EMC\n" if actual else b"") + b"Q\n"
+    if run_strings:
+        # One text object/show array per resolved run. Logical source order
+        # is unchanged; reflected RTL axes advance toward the left. Exact TJ
+        # displacements preserve every independently resolved cell position.
+        groups = []
+        for index, glyph in enumerate(glyphs, 1):
+            key = (glyph["row"], glyph["run"])
+            if not groups or groups[-1][0] != key:
+                groups.append((key, []))
+            groups[-1][1].append((index, glyph))
+        for _, group in groups:
+            first = group[0][1]
+            sign = -1 if reflected and first["level"] & 1 else 1
+            origin = first["x"] + (first["width"] if sign == -1 else 0)
+            content += (f"BT\n3 Tr\n/F1 {first['height']:.12f} Tf\n"
+                        f"{sign} 0 0 1 {origin:.12f} {first['y']:.12f} Tm\n[").encode()
+            for offset, (index, glyph) in enumerate(group):
+                content += f"<{index:04X}>".encode()
+                if offset + 1 < len(group):
+                    following = group[offset + 1][1]
+                    here = glyph["x"] + (glyph["width"] if sign == -1 else 0)
+                    there = following["x"] + (following["width"] if sign == -1 else 0)
+                    advance = glyph["metric"] * glyph["height"] / 64
+                    adjustment = (advance - (there - here) * sign) * 1000 / glyph["height"]
+                    content += f" {adjustment:.12f} ".encode()
+            content += b"] TJ\nET\n"
+    else:
+        content += b"BT\n3 Tr\n"
+        previous_height = None
+        for index, glyph in enumerate(glyphs, 1):
+            # The reflection control also keeps a stable font selection.
+            if (not visual and not reflected) or previous_height != glyph['height']:
+                content += f"/F1 {glyph['height']:.12f} Tf\n".encode()
+                previous_height = glyph['height']
+            sign = -1 if reflected and glyph["level"] & 1 else 1
+            origin = glyph["x"] + (glyph["width"] if sign == -1 else 0)
+            content += (f"{sign} 0 0 1 {origin:.12f} {glyph['y']:.12f} Tm\n"
+                        f"<{index:04X}> Tj\n").encode()
+        content += b"ET\n"
+    content += (b"EMC\n" if actual else b"") + b"Q\n"
+    if viewer:
+        # This is a document preference, not a per-paragraph guarantee. The
+        # multiline fixture deliberately contains mixed paragraph directions.
+        direction = "/R2L" if positions[0]["paragraph_level"] & 1 else "/L2R"
+        writer.root_object[NameObject("/ViewerPreferences")] = DictionaryObject({
+            NameObject("/Direction"): NameObject(direction)})
     page[NameObject("/Contents")] = stream_object(writer, content)
     with destination.open("wb") as output:
         writer.write(output)
@@ -237,8 +282,15 @@ def main():
                ("mapping-boundary", "א" * 180 + " " + "\U0001e900" * 100),
                ("combining-boundary", "מ" + "\u05b7" * 270 + " 123 ABC"),
                ("ltr", "Reviewed café 中文 😀 e\u0301")]
-    variants = ("native-run", "run-fallback", "scalar-logical", "scalar-visual", "cluster-visual",
-                "scalar-visual-actual", "scalar-logical-actual")
+    variants = {
+        "scalar-visual": {"visual": True},
+        "scalar-visual-viewer": {"visual": True, "viewer": True},
+        "scalar-logical-reflected": {"reflected": True},
+        "scalar-logical-reflected-runs": {"reflected": True, "run_strings": True},
+        "scalar-logical-reflected-runs-viewer": {"reflected": True, "run_strings": True, "viewer": True},
+        "cluster-logical-reflected-runs": {"reflected": True, "run_strings": True, "clusters": True},
+        "scalar-logical-runs-visual": {"logical_runs": True, "run_strings": True},
+    }
     for name, text in sources:
         height = 1 if name.endswith("boundary") else 80 if name == "multiline" else 30
         base = case.render("base-" + name + ".pdf", [{"image": root / "rgb.png",
@@ -249,22 +301,25 @@ def main():
             record = {"case": name, "variant": variant, "source": text}
             receipt["cases"].append(record)
             try:
-                if variant in ("native-run", "run-fallback"):
-                    content = base.read_bytes()
-                    path.write_bytes(content if variant == "native-run" else content.replace(b"/ActualText", b"/StoredText"))
-                else:
-                    record["painted_glyphs"] = scalar_pdf(base, path, text, positions,
-                        "visual" in variant, variant.endswith("actual"), variant == "cluster-visual", case.lib)
+                parameters = {"visual": False, "actual": False, "clusters": False, **variants[variant]}
+                record["parameters"] = parameters
+                record["painted_glyphs"] = scalar_pdf(base, path, text, positions, lib=case.lib, **parameters)
                 searches = [query for query in ("العربية", "שלום", "ABC", "\U0001e900\U0001e922", "😀") if query in text]
                 record["readers"] = {engine: case.probe_pdf(path, engine, searches
                     if engine in ("PyMuPDF", "PDFium") else ()) for engine in ("PyMuPDF", "Poppler", "pypdf", "PDFium")}
                 record["logical_matches"] = {engine: probe.get("exit_code") == 0 and
                     normal(probe.get("extracted", "")) == normal(text) for engine, probe in record["readers"].items()}
                 record["pixels_exact"] = record["readers"]["PyMuPDF"].get("pixel_sha256") == pixels
+                bounds = [character[3] for span in record["readers"]["PyMuPDF"].get("glyph_trace", [])
+                          for character in span["chars"]]
+                record["text_geometry_inside_region"] = bool(bounds) and all(
+                    9 <= min(box[0], box[2]) <= max(box[0], box[2]) <= 311 and
+                    29 <= min(box[1], box[3]) <= max(box[1], box[3]) <= 31 + height for box in bounds)
                 record["search_matches"] = {engine: all(record["readers"][engine].get("search", {}).get(query)
                     for query in searches) for engine in ("PyMuPDF", "PDFium")}
                 record["verapdf"] = check_ocr_pdfa.validate(options.verapdf, path, reports / path.stem)
-                record["all_checks_passed"] = (record["pixels_exact"] and record["verapdf"]["compliant"] and
+                record["all_checks_passed"] = (record["pixels_exact"] and record["text_geometry_inside_region"] and
+                    record["verapdf"]["compliant"] and
                     all(record["logical_matches"].values()) and all(record["search_matches"].values()))
             except Exception as error:
                 import traceback

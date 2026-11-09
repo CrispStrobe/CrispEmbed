@@ -2,6 +2,19 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+
+## 9 November 2026 — complete scalar PDF reader diagnostic
+
+[Source `2a0da548`](tests/results/ocr-render/strategies-2a0da54.json) exercises
+all 84 PDFs after fixing the earlier fontTools fixture errors. Every file
+passes veraPDF PDF/A-2b and retains the original raster. Visual scalar emission
+recovers pure Arabic/Hebrew in four readers, but no representation passes all
+twelve logical copy/search cases. Mixed paragraph order, combining order and
+supplementary RTL remain unresolved. This is a preserved diagnostic renderer,
+not the application's later writer candidate. The next isolated controls
+measure reflected text axes, per-run spacing and document viewer direction;
+[protocol](docs/ocr-pdf-reader-experiments.md). No capability is promoted.
+
 ## 9 November 2026 — reviewed PDF export implementation checkpoint
 
 The initial [87357610 baseline](tests/results/ocr-render/baseline-87357610.json)

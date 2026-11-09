@@ -1,3 +1,13 @@
+## Scalar PDF representation diagnostic (9 November 2026)
+
+At [source `2a0da548`](tests/results/ocr-render/strategies-2a0da54.json), all 84
+actual files preserve raster pixels and pass veraPDF PDF/A-2b. Visual scalar
+emission gives exact logical copy in MuPDF 4/12, pypdf 3/12, Poppler CLI 3/12
+and PDFium 3/12. Pure Arabic/Hebrew are shared successes; mixed run ordering
+and combining/supplementary text remain failures. No representation passes
+the complete copy/search matrix. These are compatibility measurements for
+the preserved diagnostic, not throughput or a production capability pass.
+
 ## Reviewed PDF export qualification (9 November 2026)
 
 At the [initial baseline](tests/results/ocr-render/baseline-87357610.json), five
