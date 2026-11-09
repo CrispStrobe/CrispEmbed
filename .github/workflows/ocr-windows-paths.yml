@@ -2,7 +2,7 @@ name: OCR Windows Unicode file paths
 
 on:
   push:
-    branches: [feat/ocr-windows-unicode-paths, feat/ocr-photo-preprocessing, feat/ocr-pdf-writer-qualified]
+    branches: [feat/ocr-windows-unicode-paths, feat/ocr-photo-preprocessing, feat/ocr-pdf-writer-qualified, feat/ocr-pdf-writer-final]
     paths:
       - 'src/image_preprocess.cpp'
       - 'src/core/image_out.cpp'

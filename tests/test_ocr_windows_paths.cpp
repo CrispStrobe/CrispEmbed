@@ -1,5 +1,6 @@
 // Execute the real Windows image loader/writer and PDF image path. No models.
 #include "ocr_render.h"
+#include "core/clean_exit.h"
 #ifndef OCR_PATHS_STANDALONE
 #include "image_preprocess.h"
 #include "scan_cleanup.h"
@@ -71,7 +72,7 @@ static void export_pdf(const std::string & image, const fs::path & output) {
     require(bool(file), "PDF output did not finish writing");
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     try {
         require(argc == 2, "supply one ASCII artifact directory");
         const fs::path root = fs::u8path(argv[1]);
@@ -138,4 +139,8 @@ int main(int argc, char ** argv) {
         std::fprintf(stderr, "Windows UTF-8 path check failed: %s\n", error.what());
         return 1;
     }
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }
