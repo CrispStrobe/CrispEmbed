@@ -1,0 +1,21 @@
+....FF...........................................
+======================================================================
+FAIL: test_consumer_dependencies_select_their_lanes (__main__.DependencyClosureTests.test_consumer_dependencies_select_their_lanes) (entry='tests/test_flutter_pod_resources.py', dependency='models/licenses/apache-2.0/LICENSE', event='pull_request')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<REPOSITORY>/tests/test_ci_selection.py", line 417, in test_consumer_dependencies_select_their_lanes
+    self.assertTrue(all(lanes[lane] for lane in required), f"{dependency} must select {required}")
+AssertionError: False is not true : models/licenses/apache-2.0/LICENSE must select ('native', 'native_macos', 'native_tests', 'mobile')
+
+======================================================================
+FAIL: test_consumer_dependencies_select_their_lanes (__main__.DependencyClosureTests.test_consumer_dependencies_select_their_lanes) (entry='tests/test_flutter_pod_resources.py', dependency='models/licenses/apache-2.0/LICENSE', event='push')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<REPOSITORY>/tests/test_ci_selection.py", line 417, in test_consumer_dependencies_select_their_lanes
+    self.assertTrue(all(lanes[lane] for lane in required), f"{dependency} must select {required}")
+AssertionError: False is not true : models/licenses/apache-2.0/LICENSE must select ('native', 'native_macos', 'native_tests', 'mobile')
+
+----------------------------------------------------------------------
+Ran 48 tests in 3.677s
+
+FAILED (failures=2)

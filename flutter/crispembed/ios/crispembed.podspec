@@ -54,6 +54,9 @@ Pod::Spec.new do |s|
 
   # Metal framework for GPU-accelerated ggml ops.
   s.frameworks = 'Accelerate', 'Metal', 'MetalKit'
+  # The complete native archive contains C++; Objective-C/Swift consumers must
+  # link its standard library even when they only call the public C ABI.
+  s.libraries = 'c++'
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
@@ -61,6 +64,5 @@ Pod::Spec.new do |s|
     'OTHER_LDFLAGS' => '-force_load $(PODS_TARGET_SRCROOT)/Libs/libcrispembed-static.a',
   }
 
-  # Dummy source so CocoaPods doesn't complain about missing source_files.
-  s.source_files = 'Classes/**/*'
+  # This is a vendored-library pod; no dummy source file is required.
 end

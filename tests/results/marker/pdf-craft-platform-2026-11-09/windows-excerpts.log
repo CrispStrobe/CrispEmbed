@@ -1,0 +1,9 @@
+Full job steps and scope are recorded in receipt.json.
+2026-11-09T12:13:49.1881266Z HEAD is now at e827fb5 Merge b34fe99611a6168f572630904531c79b02477b9f into dc4f51c755bf78139f1f6ea87941748b05e75971
+2026-11-09T12:14:10.5695923Z -- The C compiler identification is MSVC 19.51.36260.0
+2026-11-09T12:14:11.4947781Z -- The CXX compiler identification is MSVC 19.51.36260.0
+2026-11-09T12:14:20.2463055Z -- Configuring done (14.7s)
+2026-11-09T12:14:21.5671816Z -- Generating done (1.3s)
+2026-11-09T12:18:17.1351497Z marker document: 185 checks, 0 failures
+2026-11-09T12:18:17.2619078Z marker artifact: 82 checks, 0 failures
+2026-11-09T12:18:17.7562443Z Marker lifecycle ABI: 471 checks passed (owned fixture; no rendering/OCR qualification)

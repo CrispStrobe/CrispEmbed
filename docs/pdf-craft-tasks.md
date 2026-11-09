@@ -42,14 +42,20 @@ evidence in separate, incrementally pushed checkpoints.
 - [ ] Execute the frozen protocol with fresh Tesseract OCR, real native Marker
   processing and real native MiniLM embeddings; do not imply fresh TeleOCR
   execution or use retained OCR output as fresh inference.
-- [ ] Preserve exact Windows/macOS/iOS job results and source identities.
+- [x] Preserve exact Windows/macOS/iOS job results and source identities in
+  the [platform receipt](../tests/results/marker/pdf-craft-platform-2026-11-09/README.md):
+  Windows document/artifact/lifecycle 185/82/471; macOS 185/87/480 plus C API,
+  save/backend; iOS device-SDK compilation. These pass on the source-equivalent
+  PR checkout. Keep the independently failed development-artifact notice
+  readback and incomplete iOS archive separate from native execution success.
 - [ ] Exercise an actual retained Flutter archive with all nine notice copies,
   full SDK validation and an installed Linux Flutter consumer.
 - [ ] Verify CocoaPods path-install resources with actual macOS/iOS consumers.
 - [ ] Close native dependency and license-notice omissions found by package
   consumers; verify development artifacts as well as release archive recipes.
-- [ ] Install a locally built Python wheel with the complete native dependency
-  closure and load it outside the checkout without a build-tree library path.
+- [x] Install a locally built Python wheel with the complete native dependency
+  closure and load it outside the checkout without a build-tree library path:
+  [40 package and 51 actual real-PDF checks pass](../tests/results/marker/pdf-craft-local-2026-11-09/installed-wheel/README.md).
 
 The frozen OCR route deliberately uses an Apache-2.0 engine and model. Its
 quality result is scoped to that provider and the named corpus, including the
@@ -164,8 +170,9 @@ Owner: document structure lane; PDF provider support owned by lifecycle lane.
   actual PDFium identity, source ranges, page labels and exact processed reopen.
 - [x] Verify cross-build processed-artifact retention and raw identity refusal:
   14 checks preserve earlier outputs, metadata and artifact bytes.
-- [ ] Read the added Windows/macOS results; local Linux execution does not
-  qualify those platforms.
+- [x] Read the added Windows/macOS results and preserve exact source/toolchain
+  identities in the [platform evidence](../tests/results/marker/pdf-craft-platform-2026-11-09/README.md).
+  Both native suites pass; local Linux execution was not used as a substitute.
 - [x] Verify actual Python wheel/sdist/rebuilt-wheel bytes and missing-notice
   rejection: 26 checks pass with the new native library.
 - [x] Verify Dart's actual publish dry-run selects all nine exact notice files:

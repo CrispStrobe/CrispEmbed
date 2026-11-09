@@ -1,0 +1,449 @@
+{
+  "kind": "marker-owned-real-pdf-lifecycle",
+  "source_commit": "9c2ac509fbefa20a2069307daecf1ce678f9e69b",
+  "probe_sha256": "863072769c79191756e1979877e7a9a7dbfbd7b9ef90a5c5a9845c16100cbcb8",
+  "wrapper_sha256": "dbba4c60926c931ffec8f9092ddb4a61a860e9cbfe1c4075d93ddb6a88756c9d",
+  "library_sha256": "6d3a813e08862ce280265310e2d1d1b8c039dee02d42415c271d3b287838b32a",
+  "pdfium_sha256": "fd4de9f91f183476d04b1bc3fd17dacd95aba349c55d2c376512d95e082b441e",
+  "fixture_sha256": "6727732d064d04dd54bd554e02422058da6d8d6c0df3efc1cb998099fcdaf641",
+  "dependencies": {
+    "numpy": "2.3.5",
+    "pypdfium2": "5.14.0"
+  },
+  "pdfium_version": "156.0.8076.0",
+  "reference_pdfium_sha256": "fd4de9f91f183476d04b1bc3fd17dacd95aba349c55d2c376512d95e082b441e",
+  "python_version": "3.12.14",
+  "model_weights_used": false,
+  "general_pdf_or_ocr_quality_qualified": false,
+  "installed_package": true,
+  "fixture_page_count": 3,
+  "expected_printed_labels": [
+    "iv",
+    "章-2",
+    "📖-3"
+  ],
+  "checks": [
+    {
+      "name": "installed binding is outside the source checkout",
+      "passed": true
+    },
+    {
+      "name": "automatic library discovery selects the installed package",
+      "passed": true
+    },
+    {
+      "name": "Python reference and native provider use the same PDFium binary",
+      "passed": true
+    },
+    {
+      "name": "real PDFium accepts three owned pages",
+      "passed": true
+    },
+    {
+      "name": "real PDFium decodes printed labels",
+      "passed": true
+    },
+    {
+      "name": "authored page 0 text is exact",
+      "passed": true
+    },
+    {
+      "name": "authored page 1 text is exact",
+      "passed": true
+    },
+    {
+      "name": "authored page 2 text is exact",
+      "passed": true
+    },
+    {
+      "name": "all four renderers preserve current gate-off output (0)",
+      "passed": true
+    },
+    {
+      "name": "all four renderers preserve current gate-off output (FaLsE)",
+      "passed": true
+    },
+    {
+      "name": "all four renderers preserve current gate-off output (OfF)",
+      "passed": true
+    },
+    {
+      "name": "all four renderers preserve current gate-off output (nO)",
+      "passed": true
+    },
+    {
+      "name": "artifact/lifecycle gates alone preserve legacy four-renderer output",
+      "passed": true
+    },
+    {
+      "name": "legacy: physical page indices and labels",
+      "passed": true
+    },
+    {
+      "name": "legacy: physical source records",
+      "passed": true
+    },
+    {
+      "name": "legacy: exact UTF-8 source-range reconstruction",
+      "passed": true
+    },
+    {
+      "name": "legacy: retrieval chunks retain physical provenance",
+      "passed": true
+    },
+    {
+      "name": "real PDF start creates durable empty checkpoint",
+      "passed": true
+    },
+    {
+      "name": "one-page budget commits only page zero",
+      "passed": true
+    },
+    {
+      "name": "cancellation preserves committed real PDF checkpoint",
+      "passed": true
+    },
+    {
+      "name": "fresh context resumes one committed page",
+      "passed": true
+    },
+    {
+      "name": "resumed one-page budget commits page one",
+      "passed": true
+    },
+    {
+      "name": "resumed job completes three real PDF pages",
+      "passed": true
+    },
+    {
+      "name": "incremental markdown equals legacy except declared run/lifecycle metadata",
+      "passed": true
+    },
+    {
+      "name": "incremental html equals legacy except declared run/lifecycle metadata",
+      "passed": true
+    },
+    {
+      "name": "incremental json equals legacy except declared run/lifecycle metadata",
+      "passed": true
+    },
+    {
+      "name": "incremental chunks equals legacy except declared run/lifecycle metadata",
+      "passed": true
+    },
+    {
+      "name": "incremental: physical page indices and labels",
+      "passed": true
+    },
+    {
+      "name": "incremental: physical source records",
+      "passed": true
+    },
+    {
+      "name": "incremental: exact UTF-8 source-range reconstruction",
+      "passed": true
+    },
+    {
+      "name": "incremental: retrieval chunks retain physical provenance",
+      "passed": true
+    },
+    {
+      "name": "selected real pages preserve physical cursor",
+      "passed": true
+    },
+    {
+      "name": "selected: physical page indices and labels",
+      "passed": true
+    },
+    {
+      "name": "selected: physical source records",
+      "passed": true
+    },
+    {
+      "name": "selected: exact UTF-8 source-range reconstruction",
+      "passed": true
+    },
+    {
+      "name": "selected: retrieval chunks retain physical provenance",
+      "passed": true
+    },
+    {
+      "name": "changed real PDF source fails next step",
+      "passed": true
+    },
+    {
+      "name": "identity failure keeps committed page and checkpoint",
+      "passed": true
+    },
+    {
+      "name": "changed source cannot resume original checkpoint",
+      "passed": true
+    },
+    {
+      "name": "failed resume leaves durable checkpoint unchanged",
+      "passed": true
+    },
+    {
+      "name": "restored source resumes original completed unit",
+      "passed": true
+    },
+    {
+      "name": "restored source finishes with exact four-renderer output",
+      "passed": true
+    },
+    {
+      "name": "processed markdown reopens without usable PDFium or matching processing config",
+      "passed": true
+    },
+    {
+      "name": "processed html reopens without usable PDFium or matching processing config",
+      "passed": true
+    },
+    {
+      "name": "processed json reopens without usable PDFium or matching processing config",
+      "passed": true
+    },
+    {
+      "name": "processed chunks reopens without usable PDFium or matching processing config",
+      "passed": true
+    },
+    {
+      "name": "reopened: physical page indices and labels",
+      "passed": true
+    },
+    {
+      "name": "reopened: physical source records",
+      "passed": true
+    },
+    {
+      "name": "reopened: exact UTF-8 source-range reconstruction",
+      "passed": true
+    },
+    {
+      "name": "reopened: retrieval chunks retain physical provenance",
+      "passed": true
+    },
+    {
+      "name": "all loaded CrispEmbed and GGML libraries come from the installed package",
+      "passed": true
+    }
+  ],
+  "comparison_exclusions": {
+    "separate_conversion_runs": [
+      "elapsed_seconds"
+    ],
+    "legacy_vs_incremental": [
+      "elapsed_seconds",
+      "completed_pages",
+      "next_page",
+      "extraction_phase",
+      "extraction_state"
+    ],
+    "processed_artifact_reopen": []
+  },
+  "comparison_metadata_differences": [
+    {
+      "name": "gate-0",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.006213",
+          "expected": "0.006662"
+        }
+      }
+    },
+    {
+      "name": "gate-0",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.006213",
+          "expected": "0.006662"
+        }
+      }
+    },
+    {
+      "name": "gate-FaLsE",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.006134",
+          "expected": "0.006662"
+        }
+      }
+    },
+    {
+      "name": "gate-FaLsE",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.006134",
+          "expected": "0.006662"
+        }
+      }
+    },
+    {
+      "name": "gate-OfF",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.006163",
+          "expected": "0.006662"
+        }
+      }
+    },
+    {
+      "name": "gate-OfF",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.006163",
+          "expected": "0.006662"
+        }
+      }
+    },
+    {
+      "name": "gate-nO",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.006232",
+          "expected": "0.006662"
+        }
+      }
+    },
+    {
+      "name": "gate-nO",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.006232",
+          "expected": "0.006662"
+        }
+      }
+    },
+    {
+      "name": "artifact-gates-only",
+      "format": "json",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.088069",
+          "expected": "0.006662"
+        }
+      }
+    },
+    {
+      "name": "artifact-gates-only",
+      "format": "chunks",
+      "configuration_differences": {
+        "elapsed_seconds": {
+          "actual": "0.088069",
+          "expected": "0.006662"
+        }
+      }
+    },
+    {
+      "name": "incremental-vs-legacy",
+      "format": "json",
+      "configuration_differences": {
+        "completed_pages": {
+          "actual": "3",
+          "expected": null
+        },
+        "elapsed_seconds": {
+          "actual": null,
+          "expected": "0.087287"
+        },
+        "extraction_phase": {
+          "actual": "processed",
+          "expected": null
+        },
+        "extraction_state": {
+          "actual": "complete",
+          "expected": null
+        },
+        "next_page": {
+          "actual": "3",
+          "expected": null
+        }
+      }
+    },
+    {
+      "name": "incremental-vs-legacy",
+      "format": "chunks",
+      "configuration_differences": {
+        "completed_pages": {
+          "actual": "3",
+          "expected": null
+        },
+        "elapsed_seconds": {
+          "actual": null,
+          "expected": "0.087287"
+        },
+        "extraction_phase": {
+          "actual": "processed",
+          "expected": null
+        },
+        "extraction_state": {
+          "actual": "complete",
+          "expected": null
+        },
+        "next_page": {
+          "actual": "3",
+          "expected": null
+        }
+      }
+    }
+  ],
+  "output_sha256": {
+    "gate-unset.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-unset.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-unset.json": "413dc50a17a254009b6e3ec2810d23c0d07df18c4684080b612055ad6ad6b5ae",
+    "gate-unset.chunks": "ecd2b29dd9dc625c68efc8c3392924ec265c50bc60e45ffdb579ee62154cdc03",
+    "gate-0.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-0.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-0.json": "8a52055f42b470ab579af6d31feec16c9301393c2e265f4ff38d79a3cd2f1569",
+    "gate-0.chunks": "5f431476e3ec3318d2c835275a8f0bfede019420901f5967066d40393f0aa00b",
+    "gate-FaLsE.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-FaLsE.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-FaLsE.json": "7fef3438a8dbd71bf59020eca809e4d43231a4ff0d497d5be24b4685ee437e95",
+    "gate-FaLsE.chunks": "92fa1b0ee4ab2650638be9cb8e3c0c26934e8fed3ec399938580a59d75ffcfad",
+    "gate-OfF.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-OfF.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-OfF.json": "246d9f2f27b34a81f3314b67a08434f840f65245b49e5c0002e2909a4cecde8d",
+    "gate-OfF.chunks": "6bfa90895fe3dc445d18f419e0998035698ac63807b36313b3c3e302f499d6b3",
+    "gate-nO.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "gate-nO.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "gate-nO.json": "455f415b9cf3176d76d780f324afcb015abfd11cc6327cef9fd5ff2c16a37a4d",
+    "gate-nO.chunks": "6bdb7dc2c2bfc68d85a143616f8d292a87ddf8798a28b51ffc4c8bc36d312215",
+    "artifact-gates-only.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "artifact-gates-only.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "artifact-gates-only.json": "f5e6cb925b754881544300ead255e96356e2ad8eb1bb9974a840e55d8ebda9b7",
+    "artifact-gates-only.chunks": "b15474cbdfb5a4bef8ac728bf9a3651b3bfe6a438e064f33548deb7b73d90ecf",
+    "enabled-legacy.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "enabled-legacy.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "enabled-legacy.json": "b12ccb376dcb510f9514992f88d23c194a12509a79b29412e8ff236b98210695",
+    "enabled-legacy.chunks": "9513da12326b3f362e7f7e3f6afcfda9cb36ac55a2c7f67e2a907dd0e78c2d91",
+    "incremental.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "incremental.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "incremental.json": "7de637268f2786c156dd907390b34ac84c9ed7c48b980c036ccfd931cdb46ac4",
+    "incremental.chunks": "4eeeb16ca1b79849d665c53b2b616e58c5140aeb663d36f929c29900352f9887",
+    "selected.markdown": "34fde66b3fc1165ad3b8ce4648ab98f2a3729dbcd795351b760bbc4b3f99feac",
+    "selected.html": "4b735aa1ed5655d53dd3578669a9113cddc5560b9aadf307da7ce7a06a8801bd",
+    "selected.json": "8c4ad91ddab3be3060bd591873719d29c4b38bd1b59987772abb7196b9d8962f",
+    "selected.chunks": "d51c548516a5118ce0963d8a2e4a08feb51bf4d9df9bee4202bb31dc30cf2b47",
+    "reopened.markdown": "658157bdb54de528c677170bca24f0d19b24bd5b2d4eb6f0f4079359592aea0f",
+    "reopened.html": "c3f4a9d8fbaf4838ea34a00a6f6c8f7f85fa2fe9e53f537744f6a1c0f7ceab08",
+    "reopened.json": "7de637268f2786c156dd907390b34ac84c9ed7c48b980c036ccfd931cdb46ac4",
+    "reopened.chunks": "4eeeb16ca1b79849d665c53b2b616e58c5140aeb663d36f929c29900352f9887"
+  },
+  "passed_count": 51,
+  "total_count": 51,
+  "passed": true,
+  "supervisor": {
+    "returncode": 0,
+    "timed_out": false,
+    "stdout_sha256": "e60156698706766876618b5f91dcefd380097884781c31fedab934b044cdaab9",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

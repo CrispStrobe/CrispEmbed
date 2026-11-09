@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 """Owned real-PDF text-mode lifecycle probe; no models or network requests.
 
-Requires numpy and pypdfium2==5.10.1. Run with --lib LIBRARY
+Requires numpy and pypdfium2 (CI pins 5.10.1). Run with --lib LIBRARY
 --pdfium REAL_PDFIUM_LIBRARY --out NEW_OUTPUT_DIRECTORY. Keep each attempt.
 This qualifies this authored text fixture, not general PDF rendering/OCR quality.
 The supervisor fails on native crashes/timeouts, even if a probe wrote a report.
@@ -63,7 +63,8 @@ def owned_pdf():
 
 def probe(args):
     args.out.mkdir(parents=True, exist_ok=False)
-    sys.path.insert(0, str(args.repo / "python"))
+    if not args.installed_package:
+        sys.path.insert(0, str(args.repo / "python"))
     from crispembed import CrispMarker
 
     rows, outputs, comparisons = [], {}, []
@@ -172,6 +173,13 @@ def probe(args):
     os.environ.update(CRISPEMBED_MARKER="1", CRISPEMBED_OFFLINE="1", CRISPEMBED_TELEOCR="0",
                       CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE="0", CRISPEMBED_ACCEPT_CC_BY_NC_LICENSE="0")
     try:
+        if args.installed_package:
+            import crispembed._binding as binding
+            package = Path(binding.__file__).resolve().parent
+            check("installed binding is outside the source checkout",
+                  not package.is_relative_to(args.repo))
+            check("automatic library discovery selects the installed package",
+                  Path(binding._find_lib()).resolve() == args.lib and args.lib.parent == package)
         # Separate ownership of PDFium's process-global initialization between
         # its Python helper and CrispEmbed's native provider.
         reference_code = """import hashlib, json, sys, pypdfium2
@@ -284,6 +292,11 @@ print(json.dumps(result))
                 check(f"processed {fmt} reopens without usable PDFium or matching processing config",
                       reopened[fmt] == complete[fmt])
             provenance(reopened, [0, 1, 2], "reopened")
+        if args.installed_package and sys.platform == "linux":
+            mapped = {Path(line.split()[-1]).resolve() for line in Path("/proc/self/maps").read_text().splitlines()
+                      if "/libcrispembed.so" in line or "/libggml" in line}
+            check("all loaded CrispEmbed and GGML libraries come from the installed package",
+                  len(mapped) >= 4 and all(path.parent == package for path in mapped))
     except Exception as exc:
         error = f"{type(exc).__name__}: {exc}"
         for path, replacement in ((sys.executable, "<PYTHON>"), (args.out, "<OUTPUT>"), (args.repo, "<REPOSITORY>"),
@@ -300,6 +313,7 @@ print(json.dumps(result))
         "pdfium_version": reference_info.get("version"),
         "reference_pdfium_sha256": reference_info.get("library_sha256"), "python_version": sys.version.split()[0],
         "model_weights_used": False, "general_pdf_or_ocr_quality_qualified": False,
+        "installed_package": args.installed_package,
         "fixture_page_count": 3, "expected_printed_labels": list(LABELS), "checks": rows,
         "comparison_exclusions": {"separate_conversion_runs": list(TIMING_FIELDS),
                                   "legacy_vs_incremental": list(TIMING_FIELDS + LIFECYCLE_FIELDS),
@@ -323,6 +337,8 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--repo", type=Path, default=ROOT, help=argparse.SUPPRESS)
     parser.add_argument("--probe", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--installed-package", action="store_true",
+                        help="Use the installed binding and require its bundled native dependency closure")
     args = parser.parse_args()
     args.repo, args.lib, args.pdfium = (p.resolve(strict=True) for p in (args.repo, args.lib, args.pdfium))
     args.out = args.out.resolve()
@@ -332,6 +348,9 @@ def main():
         return probe(args)
     command = [sys.executable, "-B", str(Path(__file__).resolve()), "--probe", "--repo", str(args.repo),
                "--lib", str(args.lib), "--pdfium", str(args.pdfium), "--out", str(args.out)]
+    if args.installed_package:
+        command.insert(1, "-I")
+        command.append("--installed-package")
     stdout = stderr = ""
     timed_out = False
     try:
