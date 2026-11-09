@@ -61,6 +61,9 @@ def rne_bf16(values,np):
     return rounded.view(np.float32)
 
 def main():
+    if sys.argv[1:]==['--plain-q4-full']:
+        from lighton4b_plain_q4_compare import main as plain_q4_main
+        return plain_q4_main()
     p=argparse.ArgumentParser()
     for name in ('artifact-id','artifact-sha256','receipt-sha256','source-receipt-sha256'):p.add_argument('--'+name,required=True)
     p.add_argument('--preserve-full-source',action='store_true');args=p.parse_args()

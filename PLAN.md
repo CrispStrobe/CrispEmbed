@@ -3991,3 +3991,58 @@ two decoded tokens; no heldout or full-generation/EOS qualification. Fixed
 precision/vision/head gates,fresh caches,12GiB/20GiB/2GiB guards,45-minute native
 and60-minute single hosted caps. Prior protocols/panels remain intact. No new
 production profile,recipe,default,release or PR; noQ6_K admission.
+
+### Bounded unchanged-file Q4 BF16 source mechanism baseline
+
+The one-position genuine BF16 Q4 oracle already reverses the first token to20353;
+corrected native full generation is independently running in42183620520. The
+next source-only worker uses the unchanged immutable Q4 file, all249 effective
+BF16 parameter hashes from the retained first-score receipt,474 protected
+original tensors, tied head and exact official/Q4 first-score anchors. It records
+independent greedy generation through actual EOS or256 tokens and every score
+hash. There are no Q8 overrides, F32 model, new gold or held-out qualification.
+The [fixed protocol](docs/lighton4b-bf16-plain-q4-freegen-v1.json) and model-free
+admission/corruption checks precede one bounded CPU worker; decoded agreement
+against corrected native requires both completed receipts. Precision sensitivity
+selection belongs to a separate predeclared calibration-only experiment.
+
+The first unchanged-Q4 source worker at83d91bf83 stopped before quantized weight
+streaming: the genuine original anchor was02ca259b… instead ofa4bece23….
+All723 original BF16 parameter hashes, five prepared inputs and four framework
+wheel hashes match the admitted source. ID27 remains first, but234,579 logits
+change (max0.29296875, RMS0.05778517); this is a rejected source profile, not Q4
+numerical evidence. The [complete initial failure](tests/results/qwen35-ocr/lightonocr3-4b-bf16-plain-q4-source-initial/oracle.json)
+and audit are retained. One retry explicitly caps ATen, MKL and oneDNN dispatch
+to the previously observed AVX2 profile, captures actual CPU/backend metadata
+before forward and retains both exact official/Q4 anchors. The original worker
+omitted CPU ISA metadata, so hardware drift remains an inference pending replay.
+
+The explicitly AVX2-capped retry also rejects the same02ca259b… original row
+before any quantized streaming. It records AMD EPYC7B12, AVX2, identical Torch
+gitcf30153…, MKL2024.2/oneDNN3.12, two threads and one interop thread; ISA caps
+alone do not restore the frozena4 row. Both raw failed receipts remain retained.
+One [distinct AMD-profile diagnostic](docs/lighton4b-bf16-plain-q4-amd-diagnostic-v1.json)
+uses the twice-repeated02ca row as its explicit original anchor, retains the
+unchanged249 Q4 effective weights and474 protected tensors, and records whether
+the actual Q4 first row matches olde59 without treating a backend mismatch as
+frozen parity. This is a separate reference profile, never a substitution for
+frozen official/mixed evidence. It captures the full independent output through
+EOS/cap for the same-weight native comparison; all original strict gates remain.
+
+The AMD-only diagnostic landed on Intel family6/model79 and produced the exact
+frozena4 original row, correctly rejecting its AMD anchor before Q4 streaming.
+This directly measures a CPU-platform-dependent source result: identical weights,
+inputs, wheels, threads and AVX2 caps give02ca on AMD23/49 and a4 on Intel6/79.
+A final [closed two-profile protocol](docs/lighton4b-bf16-plain-q4-dual-profile-v1.json)
+selects solely measured CPU vendor/family/model before any forward. Intel must
+match a4 and Q4e59; AMD must match repeated02ca and separately reports its Q4
+comparison to e59. Unknown hardware is rejected. All three prior negatives remain
+retained; neither profile substitutes for the other, and no quality default moves.
+
+A single bounded read-only Q4 consumer uses the existing dedicated paired-capture
+job with closed`--plain-q4-full` mode: authenticate sourceversion4/bootstrap and
+full receipt1096…, native42183620520/archive13488399938, retain all256 source
+score rows, and compare only172 shared-causal rows0..171 with the actual portable
+Ref binary plus equal/changed controls. Different contexts after171 are excluded.
+The job uploads payloads for90 days and runs no model inference; all numerical
+failures remain retained. No hidden/operator stage exists at171 in these captures.
