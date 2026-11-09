@@ -243,7 +243,7 @@ jobs:
                      test-qwen-pretokenize test-o200k-pretokenize test-bpe-pretokenize test-bert-pretokenize \
                      test-bert-norm test-spm-norm test-pair-truncation test-imatrix-alias test-no-repeat-ngram test-env-gate test-env-gate-words test-ppocrv6-det-policy test-low-memory \
                      test-lfm2-tiling test-pil-resize test-server-json-input test-server-load-control test-punct-marks test-qwen35-profile test-qwen35-materialize test-ultrabert-profile \
-                     test-marker-document test-marker-api test-marker-backend test-marker-save test-ocr-review test-ocr-orchestrator test-ocr-render \
+                     test-marker-document test-marker-artifact test-marker-lifecycle test-marker-api test-marker-backend test-marker-save test-ocr-review test-ocr-orchestrator test-ocr-render \
                      test-mineru25-profile test-lightonocr3-contract lightonocr3-trace test-xiaomi0-frontend test-xiaomi0-run test-xiaomi0-public test-nemotron-parse-geometry
           ./build/test-image-provenance
           ./build/test-provenance-marking
@@ -277,6 +277,8 @@ jobs:
           # here, executed by the separately dispatched metadata/reference lane.
           ./build/test-nemotron-parse-geometry self
           ./build/test-marker-document
+          ./build/test-marker-artifact
+          ./build/test-marker-lifecycle
           ./build/test-ocr-review
           ./build/test-ocr-render
           ./build/test-ocr-orchestrator
@@ -293,13 +295,18 @@ jobs:
         run: |
           python3 -m pip install numpy==2.3.5 gguf==0.19.0
           python3 tests/test_teleocr_loader.py --lib build/libcrispembed.so --report build/teleocr-loader.json
+          python3 tests/test_unlimited_ocr_license.py --lib build/libcrispembed.so --report build/unlimited-ocr-license.json
+          python3 tests/test_marker_lifecycle.py --lib build/libcrispembed.so --pdfium build/libmarker-pdfium-fixture.so --report build/marker-python-lifecycle.json
 
       - name: Retain TeleOCR loader diagnostics
         if: always() && runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: teleocr-loader-${{ github.sha }}
-          path: build/teleocr-loader.json
+          path: |
+            build/teleocr-loader.json
+            build/unlimited-ocr-license.json
+            build/marker-python-lifecycle.json
           if-no-files-found: warn
           retention-days: 30
 

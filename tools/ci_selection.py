@@ -61,6 +61,8 @@ INPAINT_NATIVE = (
 NATIVE_PYTHON = (
     "tests/test_ultrabert_api_log.py", "tests/test_vendored_kaggle_harness.py",
     "tests/test_teleocr_loader.py",
+    "tests/test_unlimited_ocr_license.py",
+    "tests/test_marker_lifecycle.py",
     "kaggle_harness.py", "tools/kaggle/*/kaggle_harness.py",
     "tests/test_ultrabert_*.py", "tools/ultrabert*.py", "tools/dump_ultrabert*.py", "tools/ci-heavy/*ultrabert*.py",
     "models/convert-ultrabert-to-gguf.py", "tests/results/ultrabert/*.json",

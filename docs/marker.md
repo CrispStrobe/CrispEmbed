@@ -1,5 +1,11 @@
 # Native Marker-style document conversion
 
+The 9 November feature branch adds opt-in [extraction artifacts](marker-artifact.md),
+[bounded processing and resume](marker-lifecycle.md), and
+[source-linked chunks, multilingual spacing and references](marker-source-links.md).
+Implementation and executed acceptance are tracked separately in
+[the PDF Craft task list](pdf-craft-tasks.md).
+
 CrispEmbed converts PDFs and page images into Markdown, HTML, nested JSON and
 document chunks through a native C++ pipeline. It combines PDFium text and
 geometry, optional TeleOCR GGUF/GGML layout and recognition, document structure

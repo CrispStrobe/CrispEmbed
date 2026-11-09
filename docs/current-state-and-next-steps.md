@@ -1,5 +1,18 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
+## PDF Craft adoption — 9 November 2026, feature branch
+
+The user authorized the full [implementation checklist](pdf-craft-tasks.md).
+[Draft PR 192](https://github.com/CrispStrobe/CrispEmbed/pull/192) preserves all
+checkpoints on `feature/pdf-craft-document-quality-20261109`: repetition diagnostics,
+native noncommercial model admission, extraction artifacts, source-linked chunks,
+multilingual spacing, references/page labels and bounded lifecycle with bindings.
+Implementation and authored controls are distinct from executed hosted validation.
+Re-query final-source checks; do not merge, publish, promote defaults or infer
+model/document quality from source preparation. Continue from the task checklist
+and its artifact/lifecycle/source-link contracts, preserving unrelated owner lanes.
+
+
 ## Integrated checkpoint — 6 November 2026
 
 [CrispEmbed PR165](https://github.com/CrispStrobe/CrispEmbed/pull/165) merged as `cb56aeec6559f7676ddfd639a29d471121008088` and closed issue 164. Its empty-frame acceptance and changing-shape rebuild remain independently opt-in. Hosted CPU and real CUDA T4 detector/server controls passed; the [CPU](../tests/results/ppocrv6/issue164-cpu-initial.json), [CPU server](../tests/results/ppocrv6/issue164-cpu-server.json) and [CUDA](../tests/results/ppocrv6/issue164-cuda.json) receipts retain their scope and numerical limits. Development 0.17.16 is not a published release.

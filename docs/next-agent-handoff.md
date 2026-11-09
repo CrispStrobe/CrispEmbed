@@ -1,5 +1,18 @@
 # Executable next-agent handoff
 
+## PDF Craft adoption — 9 November 2026, feature branch
+
+The user authorized the full [implementation checklist](pdf-craft-tasks.md).
+[Draft PR 192](https://github.com/CrispStrobe/CrispEmbed/pull/192) preserves all
+checkpoints on `feature/pdf-craft-document-quality-20261109`: repetition diagnostics,
+native noncommercial model admission, extraction artifacts, source-linked chunks,
+multilingual spacing, references/page labels and bounded lifecycle with bindings.
+Implementation and authored controls are distinct from executed hosted validation.
+Re-query final-source checks; do not merge, publish, promote defaults or infer
+model/document quality from source preparation. Continue from the task checklist
+and its artifact/lifecycle/source-link contracts, preserving unrelated owner lanes.
+
+
 ## Release checkpoint — 5 November 2026
 
 Native/WASM [v0.17.15](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.15)

@@ -37,6 +37,13 @@ extern "C" {
     pub fn crispembed_marker_convert(ctx: *mut CrispembedMarkerContext, file: *const c_char) -> c_int;
     pub fn crispembed_marker_convert_raw(ctx: *mut CrispembedMarkerContext, pixels: *const u8,
         width: c_int, height: c_int, channels: c_int) -> c_int;
+    pub fn crispembed_marker_save_extraction(ctx: *mut CrispembedMarkerContext, path: *const c_char) -> c_int;
+    pub fn crispembed_marker_open_extraction(ctx: *mut CrispembedMarkerContext, path: *const c_char) -> c_int;
+    pub fn crispembed_marker_start(ctx: *mut CrispembedMarkerContext, input: *const c_char,
+        checkpoint: *const c_char, resume: c_int) -> c_int;
+    pub fn crispembed_marker_step(ctx: *mut CrispembedMarkerContext, page_budget: c_int) -> c_int;
+    pub fn crispembed_marker_cancel(ctx: *mut CrispembedMarkerContext);
+    pub fn crispembed_marker_progress(ctx: *mut CrispembedMarkerContext) -> *const c_char;
     pub fn crispembed_marker_render(ctx: *mut CrispembedMarkerContext, format: *const c_char) -> *const c_char;
     pub fn crispembed_marker_metadata(ctx: *mut CrispembedMarkerContext) -> *const c_char;
     pub fn crispembed_marker_error(ctx: *const CrispembedMarkerContext) -> *const c_char;

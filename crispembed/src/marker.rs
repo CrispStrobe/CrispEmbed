@@ -10,6 +10,13 @@ pub enum MarkerMode {
     Ocr = 2,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MarkerJobStatus {
+    Running,
+    Complete,
+    Cancelled,
+}
+
 #[derive(Clone, Debug)]
 pub struct MarkerOptions {
     pub model_path: String,
@@ -113,6 +120,50 @@ impl Marker {
             return Err(Self::error(self.ctx));
         }
         self.render(format)
+    }
+    /// Persist the complete or partial extracted view, with embedded assets.
+    pub fn save_extraction(&mut self, path: &str) -> Result<(), String> {
+        let path = CString::new(path).map_err(|_| "extraction path contains NUL")?;
+        if unsafe { ffi::crispembed_marker_save_extraction(self.ctx, path.as_ptr()) } == 0 {
+            return Err(Self::error(self.ctx));
+        }
+        Ok(())
+    }
+    /// Open extracted content without inference. Use a text-mode context.
+    pub fn open_extraction(&mut self, path: &str) -> Result<(), String> {
+        let path = CString::new(path).map_err(|_| "extraction path contains NUL")?;
+        if unsafe { ffi::crispembed_marker_open_extraction(self.ctx, path.as_ptr()) } == 0 {
+            return Err(Self::error(self.ctx));
+        }
+        Ok(())
+    }
+    /// Start a bounded job, or resume a matching durable raw checkpoint.
+    pub fn start(&mut self, input: &str, checkpoint: &str, resume: bool) -> Result<(), String> {
+        let input = CString::new(input).map_err(|_| "input path contains NUL")?;
+        let checkpoint = CString::new(checkpoint).map_err(|_| "checkpoint path contains NUL")?;
+        if unsafe { ffi::crispembed_marker_start(self.ctx, input.as_ptr(), checkpoint.as_ptr(), resume as i32) } == 0 {
+            return Err(Self::error(self.ctx));
+        }
+        Ok(())
+    }
+    /// Execute at most 1..64 pages; completed units are persisted individually.
+    pub fn step(&mut self, page_budget: i32) -> Result<MarkerJobStatus, String> {
+        if !(1..=64).contains(&page_budget) {
+            return Err("page budget must be 1..64".into());
+        }
+        match unsafe { ffi::crispembed_marker_step(self.ctx, page_budget) } {
+            1 => Ok(MarkerJobStatus::Running),
+            2 => Ok(MarkerJobStatus::Complete),
+            3 => Ok(MarkerJobStatus::Cancelled),
+            _ => Err(Self::error(self.ctx)),
+        }
+    }
+    /// Request cancellation at a page boundary. Resume starts a new job.
+    pub fn cancel(&mut self) {
+        unsafe { ffi::crispembed_marker_cancel(self.ctx) };
+    }
+    pub fn progress_json(&mut self) -> Result<String, String> {
+        self.string(unsafe { ffi::crispembed_marker_progress(self.ctx) })
     }
     pub fn convert_image(
         &mut self,

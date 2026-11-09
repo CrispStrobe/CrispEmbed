@@ -18,6 +18,10 @@ native contracts; public API/bindings and final integration belong to this lane.
 | Audit PDF Craft `cf003c711b6a63cd0a0a64bfc490bd319ab20d92` | [Source and dependency review](docs/pdf-craft-adoption.md) complete for the selected adaptation; MIT notice retained in the existing distributed `NOTICE.marker` | Excludes the Poppler/Qt/EasyDict dependency paths and the MinerU-referenced paragraph-merging material |
 | Native OCR repetition diagnostics | Implemented, default-off `CRISPEMBED_MARKER_REPETITION_CHECK`; hosted validation pending | Unicode consecutive n-grams, bounded work, asset exclusions, unchanged text/raw/geometry and default behavior; hosted model-free positive/negative controls |
 | TeleOCR weight-license metadata | Converter and docs corrected to Qwen Research weight terms; native acknowledgement controls expanded; hosted validation pending | Actual synthetic GGUF license readback and disabled-value/direct-loader tests; existing published files and hashes unchanged |
+| Jina/noncommercial native admission | Implemented; direct, local and cached model-free fixtures authored | Acknowledgement before backend/weight allocation; false values rejected; permissive models preserved |
+| Versioned native extraction artifacts | Implemented with full IR/assets, bounds, hashes and atomic replacement | Hosted exact roundtrips, malformed-source-map/corruption/limit controls and standalone reopen |
+| Source-linked chunks, whitespace and references | Implemented behind three opt-in gates | Exact immutable byte ranges, conservative joins, ambiguous links and page labels; disabled-output controls |
+| Bounded lifecycle and clients | C/Python/Rust/Dart start/step/cancel/resume and save/open implemented | Durable page rollback, identity rejection, partial results and owned ABI/client fixtures; hosted final-source validation pending |
 
 The bounded runtime change reports suspicious OCR repetition; it does not delete
 content, retry inference, introduce models or qualify document accuracy. The

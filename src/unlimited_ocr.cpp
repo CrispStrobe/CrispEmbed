@@ -608,8 +608,7 @@ static std::string license_words(const char * value) {
 static bool has_license_words(const std::string & value, const char * words) {
     const size_t n = std::strlen(words);
     for (size_t pos = value.find(words); pos != std::string::npos; pos = value.find(words, pos + 1)) {
-        if ((pos == 0 || value[pos - 1] == '-') && (pos + n == value.size() || value[pos + n] == '-'))
-            return true;
+        if ((pos == 0 || value[pos - 1] == '-') && (pos + n == value.size() || value[pos + n] == '-')) return true;
     }
     return false;
 }
@@ -618,8 +617,8 @@ static bool model_license_accepted(gguf_context * g) {
     bool jina = false;
     bool noncommercial = false;
     for (const char * key : { "general.name", "general.source", "general.url", "general.source.url",
-                             "general.source.huggingface.repository", "general.license", "general.license.name",
-                             "general.license.link" }) {
+                              "general.source.huggingface.repository", "general.license", "general.license.name",
+                              "general.license.link" }) {
         const int k = gguf_find_key(g, key);
         if (k < 0) continue;
         // Silently defaulting a non-string identity/licence would let malformed

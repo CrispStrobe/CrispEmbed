@@ -24,28 +24,29 @@ validation passed. Implementation and validation have separate checkboxes.
 
 Owner: model admission lane. Independent of document artifact work.
 
-- [ ] Identify Jina and other declared noncommercial Unlimited profiles from
+- [x] Identify Jina and other declared noncommercial Unlimited profiles from
   GGUF model identity/source/license metadata, not filenames.
-- [ ] Require explicit value-parsed acknowledgement before backend or weight
+- [x] Require explicit value-parsed acknowledgement before backend or weight
   allocation, including direct local paths and cached files.
-- [ ] Keep ordinary permissive Unlimited profiles unaffected; do not treat
+- [x] Keep ordinary permissive Unlimited profiles unaffected; do not treat
   experimental feature enablement as license acknowledgement.
-- [ ] Add metadata-only public-loader controls for missing/false acknowledgement,
+- [x] Add metadata-only public-loader controls for missing/false acknowledgement,
   identity variants, accepted admission and permissive controls.
-- [ ] Document exact terms, gate, limits and executed hosted evidence.
+- [x] Document exact terms, gate and limits in [Jina admission](jina-ocr-license-gate.md).
+- [ ] Record executed native model-admission evidence.
 
 ## 2. Persist and reopen native extraction
 
 Owner: artifact lane. Foundation for resume and reusable indexing.
 
-- [ ] Define a versioned, bounded artifact that round-trips the full native IR,
+- [x] Define a versioned, bounded artifact that round-trips the full native IR,
   raw bytes, source links, geometry, warnings and embedded assets.
-- [ ] Hash payloads and retain source/model/preprocessing identities; reject
+- [x] Hash payloads and retain source/model/preprocessing identities; reject
   unsupported versions, corruption, excessive nesting/counts and unsafe names.
-- [ ] Save atomically, keeping an existing artifact intact after failure.
-- [ ] Add opt-in public save/open operations that reopen extracted content
+- [x] Save atomically, keeping an existing artifact intact after failure.
+- [x] Add opt-in public save/open operations that reopen extracted content
   without loading an OCR model or re-running extraction.
-- [ ] Add Python, Rust and Dart accessors with existing ABI compatibility.
+- [x] Add Python, Rust and Dart accessors with existing ABI compatibility.
 - [ ] Verify exact round trips, malformed artifacts, resource limits and
   render equivalence through hosted native and public-client tests.
 
@@ -53,12 +54,12 @@ Owner: artifact lane. Foundation for resume and reusable indexing.
 
 Owner: document structure lane. Artifact schema must preserve these records.
 
-- [ ] Retain immutable source text and explicit UTF-8 byte ranges for transformed
+- [x] Retain immutable source text and explicit UTF-8 byte ranges for transformed
   or assembled text; never fabricate smaller source rectangles.
-- [ ] Represent continuation targets explicitly, including adjacent page body
+- [x] Represent continuation targets explicitly, including adjacent page body
   text separated by retained footnotes or marginalia.
-- [ ] Expose assembled retrieval chunks with each contributing page/block/range.
-- [ ] Preserve legacy rendering and chunk output with the feature disabled.
+- [x] Expose assembled retrieval chunks with each contributing page/block/range.
+- [x] Preserve legacy rendering and chunk output with the feature disabled.
 - [ ] Verify cross-page joins, interruption/ambiguity, Unicode boundaries,
   immutable source evidence and gate-off equivalence in hosted tests.
 
@@ -66,23 +67,24 @@ Owner: document structure lane. Artifact schema must preserve these records.
 
 Owner: public lifecycle lane. Depends on artifact contract.
 
-- [ ] Add an explicit incremental API with a caller-supplied page budget,
+- [x] Add an explicit incremental API with a caller-supplied page budget,
   progress/status and cancellation checked at safe page boundaries.
-- [ ] Persist completed raw extraction units before final document processing;
+- [x] Persist completed raw extraction units before final document processing;
   avoid retaining page raster buffers across iterations.
-- [ ] Resume only when input/model/preprocessing identities and selection agree.
-- [ ] Expose partial results honestly and retain the last durable checkpoint
+- [x] Resume only when input/model/preprocessing identities and selection agree.
+- [x] Expose partial results honestly and retain the last durable checkpoint
   after cancellation or a later page failure.
-- [ ] Keep the existing all-or-nothing conversion API and ABI intact.
-- [ ] Bind the lifecycle in C/Python/Rust/Dart and test interruption, mismatched
-  identities, completed resume and failure recovery on hosted owned fixtures.
+- [x] Keep the existing all-or-nothing conversion API and ABI intact.
+- [x] Bind the lifecycle in C/Python/Rust/Dart and author interruption, identity,
+  completed-resume and failure-recovery controls.
+- [ ] Execute those controls on hosted owned fixtures at final source.
 
 ## 5. Multilingual whitespace and source offsets
 
 Owner: document structure lane; independently default-off.
 
-- [ ] Normalize only explicitly supported prose padding and CJK boundaries.
-- [ ] Preserve join controls, variation selectors, intentional whitespace,
+- [x] Normalize only explicitly supported prose padding and CJK boundaries.
+- [x] Preserve join controls, variation selectors, intentional whitespace,
   source bytes and offsets; exclude code, formulas and structured assets.
 - [ ] Verify non-Latin, emoji, combining characters, invalid UTF-8 and mixed
   inline boundaries without changing disabled-path output.
@@ -91,19 +93,19 @@ Owner: document structure lane; independently default-off.
 
 Owner: document structure lane; PDF provider support owned by lifecycle lane.
 
-- [ ] Keep physical page index separate from the printed PDF page label.
-- [ ] Read page labels through optional PDFium APIs with explicit fallback.
-- [ ] Assign stable note/reference identities and expose unresolved/ambiguous
+- [x] Keep physical page index separate from the printed PDF page label.
+- [x] Read page labels through optional PDFium APIs with explicit fallback.
+- [x] Assign stable note/reference identities and expose unresolved/ambiguous
   links without guessing a cross-page target.
-- [ ] Preserve references and labels through artifacts and source-linked chunks.
+- [x] Preserve references and labels through artifacts and source-linked chunks.
 - [ ] Verify repeated labels, duplicate notes, missing targets and physical-page
   provenance with owned model-free fixtures.
 
 ## 7. Integration and evidence
 
-- [ ] Update `PLAN.md`, Marker guides, environment-variable inventory and this
+- [x] Update `PLAN.md`, Marker guides, environment-variable inventory and this
   checklist at each coherent checkpoint.
-- [ ] Wire new sources/tests into native builds, Rust source packaging and CI
+- [x] Wire new sources/tests into native builds, Rust source packaging and CI
   dependency selection; retain bounded diagnostics as workflow artifacts.
 - [ ] Complete formatting, syntax and whitespace checks locally; builds and
   suites run on hosted CI under repository policy.
@@ -112,6 +114,15 @@ Owner: document structure lane; PDF provider support owned by lifecycle lane.
 - [ ] Record exact final-source runs and remaining limits. No OCR accuracy,
   representative retrieval quality or release claim follows from model-free
   contract tests.
+
+## Implementation checkpoints
+
+The artifact, source-link, lifecycle and public-binding implementations and owned
+controls are now present. See [artifacts](marker-artifact.md),
+[lifecycle/API examples](marker-lifecycle.md) and [source links](marker-source-links.md).
+Review is also closing attribution gaps in Rust, native archive and Flutter
+packaging; shipping remains a separate operation. All executed-test checkboxes
+stay open until hosted results are read at the final source.
 
 ## Current evidence
 

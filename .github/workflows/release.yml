@@ -255,7 +255,8 @@ jobs:
           mkdir -p pkg/include
           cp src/crispembed.h pkg/include/ 2>/dev/null || true
           cp ggml/include/*.h pkg/include/ 2>/dev/null || true
-          cp README.md LICENSE pkg/ 2>/dev/null || true
+          cp README.md LICENSE NOTICE.marker NOTICE.teleocr pkg/
+          cp models/licenses/apache-2.0/LICENSE pkg/Apache-2.0.txt
 
           # Patch RPATH so the tarball is self-contained. The build-tree
           # RPATH points at absolute paths on the GitHub runner (e.g.,
@@ -391,7 +392,8 @@ jobs:
           Get-ChildItem "ggml/include/*.h" -ErrorAction SilentlyContinue | ForEach-Object {
             Copy-Item $_.FullName pkg/include/
           }
-          Copy-Item README.md, LICENSE pkg/ -ErrorAction SilentlyContinue
+          Copy-Item README.md, LICENSE, NOTICE.marker, NOTICE.teleocr pkg/ -ErrorAction Stop
+          Copy-Item models/licenses/apache-2.0/LICENSE pkg/Apache-2.0.txt -ErrorAction Stop
           Compress-Archive -Path pkg/* -DestinationPath ${{ matrix.archive }}
 
       - name: Upload artifact
@@ -515,7 +517,8 @@ jobs:
           mkdir -p pkg/include
           cp src/crispembed.h pkg/include/ 2>/dev/null || true
           cp ggml/include/*.h pkg/include/ 2>/dev/null || true
-          cp README.md LICENSE pkg/ 2>/dev/null || true
+          cp README.md LICENSE NOTICE.marker NOTICE.teleocr pkg/
+          cp models/licenses/apache-2.0/LICENSE pkg/Apache-2.0.txt
           # Patch RPATH so libggml-cuda.so finds its siblings without
           # LD_LIBRARY_PATH — in this (slim) archive the CUDA runtime itself
           # still comes from the host and resolves via the standard linker
@@ -773,7 +776,8 @@ jobs:
           Get-ChildItem "ggml/include/*.h" | ForEach-Object {
               Copy-Item $_.FullName pkg/include/
           }
-          Copy-Item README.md, LICENSE pkg/ -ErrorAction SilentlyContinue
+          Copy-Item README.md, LICENSE, NOTICE.marker, NOTICE.teleocr pkg/ -ErrorAction Stop
+          Copy-Item models/licenses/apache-2.0/LICENSE pkg/Apache-2.0.txt -ErrorAction Stop
           Compress-Archive -Path pkg/* -DestinationPath crispembed-windows-x86_64-cuda.zip
 
       - name: Upload
@@ -854,7 +858,8 @@ jobs:
           Get-ChildItem "ggml/include/*.h" | ForEach-Object {
               Copy-Item $_.FullName pkg/include/
           }
-          Copy-Item README.md, LICENSE pkg/ -ErrorAction SilentlyContinue
+          Copy-Item README.md, LICENSE, NOTICE.marker, NOTICE.teleocr pkg/ -ErrorAction Stop
+          Copy-Item models/licenses/apache-2.0/LICENSE pkg/Apache-2.0.txt -ErrorAction Stop
           Compress-Archive -Path pkg/* -DestinationPath crispembed-windows-x86_64-vulkan.zip
 
       - name: Upload
@@ -896,7 +901,12 @@ jobs:
           # Only the shared lib the plugin needs — not the (host-only) test exes.
           cmake --build build --target crispembed-shared -j4
       - name: Package
-        run: tar -czf crispembed-android-${{ matrix.abi }}.tar.gz -C build libcrispembed.so
+        run: |
+          mkdir -p android-package
+          cp -L build/libcrispembed.so android-package/libcrispembed.so
+          cp LICENSE NOTICE.marker NOTICE.teleocr android-package/
+          cp models/licenses/apache-2.0/LICENSE android-package/Apache-2.0.txt
+          tar -czf crispembed-android-${{ matrix.abi }}.tar.gz -C android-package .
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
@@ -949,7 +959,9 @@ jobs:
           assert len(archives)==len(set(archives))
           subprocess.run(['xcrun','libtool','-static','-o','ios-package/libcrispembed-static.a',*map(str,archives)],check=True)
           PYCODE
-          tar -czf crispembed-ios-arm64.tar.gz -C ios-package libcrispembed-static.a
+          cp LICENSE NOTICE.marker NOTICE.teleocr ios-package/
+          cp models/licenses/apache-2.0/LICENSE ios-package/Apache-2.0.txt
+          tar -czf crispembed-ios-arm64.tar.gz -C ios-package .
       - name: Upload
         uses: actions/upload-artifact@v4
         with:

@@ -33,6 +33,24 @@ struct line {
     box bbox;
     std::vector<span> spans;
 };
+// Offsets are half-open UTF-8 byte ranges, never character indices. Source
+// geometry belongs to the complete source block; a text slice invents no box.
+struct source_range {
+    std::string source_id;
+    size_t source_start = 0, source_end = 0, text_start = 0, text_end = 0;
+    std::string transform = "copy";
+};
+struct source_record {
+    std::string id, text, source;
+    int page_index = 0;
+    box bbox;
+    std::vector<point> polygon;
+};
+struct footnote_reference {
+    size_t start = 0, end = 0;
+    std::string label, status, target_id;
+    std::vector<std::string> candidates;
+};
 struct block {
     std::string id, type = "Text", text, html, raw, raw_label, source;
     box bbox;
@@ -48,6 +66,9 @@ struct block {
     // Additive (2026-10-31): provider-specific exact metadata, e.g. the MinerU
     // upstream-profile fields ("mineru.*"). Ignored by the Marker renderers.
     std::map<std::string, std::string> attributes;
+    std::vector<source_range> source_ranges;
+    std::string continuation_target, footnote_id;
+    std::vector<footnote_reference> references;
 };
 struct page {
     int index = 0;
@@ -59,6 +80,8 @@ struct page {
     std::string raw_layout;
     int layout_generated_tokens = 0;
     bool layout_token_cap_reached = false;
+    std::string printed_label, label_source, label_status;
+    std::vector<std::string> label_candidates;
 };
 struct asset {
     std::string name, mime_type = "image/png";
@@ -70,6 +93,7 @@ struct document {
     std::vector<asset> assets;
     std::vector<std::string> warnings;
     std::map<std::string, std::string> metadata;
+    std::vector<source_record> sources;
 };
 struct options {
     // 0: use PDF text where sound, TeleOCR layout and selective OCR.

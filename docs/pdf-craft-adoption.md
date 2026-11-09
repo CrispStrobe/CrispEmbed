@@ -43,10 +43,12 @@ This review verifies TeleOCR's direct-runtime and Marker acknowledgement
 checks; it does not establish universal runtime enforcement. The registry's
 download consent does not cover every local-file or cached-model load: those
 paths return before the download check. The existing `jina-ocr-v1` profile's
-reuse of the Unlimited runtime has a model-specific noncommercial access-gate
-gap, deferred to a separate native-loader change. A generic document-backend
-expansion must close that gap or exclude that profile before claiming gated
-access. No backend selection is expanded here. See the current
+reuse of the Unlimited runtime had a model-specific noncommercial access-gate
+gap. The authorized follow-up now adds [native admission](jina-ocr-license-gate.md)
+for known Jina identity or declared CC-BY-NC terms, with metadata-only controls
+awaiting hosted execution. This is not a claim of universal model enforcement;
+editable metadata cannot authenticate wholly relabeled artifacts. Backend
+selection remains unchanged. See the current
 [registry resolver](../examples/cli/model_mgr.cpp) and
 [Unlimited loader](../src/unlimited_ocr.cpp).
 
@@ -128,7 +130,7 @@ evidence. Promotion to a default, automatic rerun policy or text suppression
 requires a separately reviewed corpus study including intentional repetition
 and non-Latin documents.
 
-## Worthwhile subsequent work
+## Authorized implementation roadmap
 
 The user authorized these follow-ups on 9 November 2026. Their implementation
 and acceptance are tracked in [the task checklist](pdf-craft-tasks.md). The
