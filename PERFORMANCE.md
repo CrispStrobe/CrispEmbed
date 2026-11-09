@@ -1,3 +1,70 @@
+## Reviewed PDF export qualification (9 November 2026)
+
+The final immutable [writer source `9c44a69`](tests/results/ocr-render/writer-9c44a69.json)
+passes its bounded-writer, scalar-copy/BMP-search and archival component job.
+The same 11-page, 2048 by 2048 random-RGB fixture produces 138,448,604 bytes
+under the 256 MiB ceiling in 10.48 seconds (10.08 user, 0.35 system), using
+59,128 KiB maximum RSS and no swaps. All pages retain physical sizes and text;
+first/last pixels and four-reader text are independently checked. Thirteen
+PDF/A-2b positives pass veraPDF; both damaged controls fail. Ten production
+Rust writer contracts and the separate large case pass. The complete
+65,542-scalar two-page font-subset case also passes. This is hosted component
+evidence, without a mobile peak-memory, 5,000-page or full-application claim.
+
+The separate strict reader-limit diagnostic keeps the original supplementary
+search and dense single-page assertions. General bidi remains disabled.
+At [reflection source `9cc9e10`](tests/results/ocr-render/strategies-9cc9e10.json),
+all 84 variants preserve pixels/text bounds and pass PDF/A-2b, but no strategy
+passes all twelve logical extraction/search fixtures. Document reading
+direction improves selected PDFium runs while reflected advances worsen
+other readers. These differences are not production performance gains.
+
+Source-specific [f06ea90](tests/results/ocr-render/readers-f06ea90.json) and
+[ef8ab9a](tests/results/ocr-render/readers-ef8ab9a.json) each pass 59 native
+checks, 16 independent PDF/A-2b positives and two negative controls. Both keep
+eleven exact logical ActualText sequences. Their reader matches remain
+unequal: MuPDF 9/11 then 10/11, pypdf 11/11, Poppler CLI 2/11, PDFium 1/11.
+Poppler raw word coordinates are retained separately and do not replace the
+failed CLI output. Neither source qualifies general bidi export.
+
+The writer source `2111db64` bounds output slices at 64 KiB and allows an
+explicit 4 KiB..2 GiB file limit while retaining page/input/image ceilings.
+Object bodies leave memory as they are emitted; the whole PDF is not retained.
+The [hosted writer receipt](tests/results/ocr-render/writer-2111db6.json) records
+an 11-page, 138,448,604-byte PDF under a 256 MiB ceiling, using 2048 by 2048
+seeded random RGB source pages. Export takes 7.84 seconds (6.81 user, 0.25
+system), with 59,312 KiB maximum resident memory and no swaps. All page sizes
+and text survive independent parsing; first/last decoded and rendered pixels
+match exactly. All thirteen positive PDFs pass veraPDF PDF/A-2b and both
+damaged controls fail. This is one hosted fixture, not a mobile timing,
+5,000-page throughput or universal peak-memory guarantee. Overall qualification
+still fails the separately retained reader-limit assertions.
+
+At the same source, bidi exact logical extraction improves to MuPDF 11/11 and
+pypdf 11/11; Poppler CLI 2/11 and PDFium 1/11 remain inadequate for enabling
+the option. Ordinary supplementary text copies correctly in four readers,
+but PDFium's complete emoji search fails in five streamed fixtures. The dense
+single-page CID test places all 65,542 scalars in the PDF; Poppler returns the
+exact first 50,000 before its font transition. The original failure and
+source-based tiny-character guard diagnosis remain preserved. A separate
+two-page CID test keeps the entire ground truth and crosses the font boundary
+within page 2; it isolates subset correctness without changing PDF text.
+
+At the [initial baseline](tests/results/ocr-render/baseline-87357610.json), five
+two-page archival cases (RGB, grayscale, alpha, JPEG, text-only) retain zero pixel
+difference against standard export, and all 51 native checks pass. The first two
+RTL cases fail all three independent extractors; the third crashes an in-process
+reader. No conformance result exists for that source because its missing-case
+precondition stopped before veraPDF. Corrected logical mapping, isolated-reader
+and independent conformance gates remain pending.
+
+Whole-document ceilings of 5,000 pages, 128 MiB output and 16 MiB input
+text/geometry bound accumulation. They are not measured native throughput or
+peak-memory results; a source image's separate decode/compression buffers still
+contribute to peak memory. Workspace history scaling does not qualify PDF
+export scaling. Selection geometry remains estimated within OCR regions rather
+than recovered typography. See [the protocol](docs/ocr-reviewed-pdf.md).
+
 ## Explicit phone-photo API (9 November 2026, hosted synthetic CPU panel)
 
 [Run 42590335637](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335637)

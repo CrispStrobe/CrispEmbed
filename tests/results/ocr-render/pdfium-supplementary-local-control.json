@@ -1,0 +1,255 @@
+{
+  "scope": "Independent-producer control with explicitly corrected malformed ToUnicode destinations; not a hosted qualification",
+  "pypdfium": "5.14.0",
+  "pdfium": "156.0.8076.0",
+  "producer": "PyMuPDF 1.26.6",
+  "correction": "Original PyMuPDF produced five-digit hexadecimal scalar values, which are not valid UTF-16BE destinations. Only those destinations were converted to UTF-16BE surrogate pairs; glyphs, positioning and other file structures came from PyMuPDF, with pypdf writing the corrected object graph. The uncorrected control is retained separately and is not counted as a valid independent Unicode control.",
+  "corrected_destinations": [
+    {
+      "from": "<10300>",
+      "to": "<d800df00>"
+    },
+    {
+      "from": "<10303>",
+      "to": "<d800df03>"
+    },
+    {
+      "from": "<10320>",
+      "to": "<d800df20>"
+    },
+    {
+      "from": "<1d300>",
+      "to": "<d834df00>"
+    },
+    {
+      "from": "<1d538>",
+      "to": "<d835dd38>"
+    },
+    {
+      "from": "<1d53b>",
+      "to": "<d835dd3b>"
+    },
+    {
+      "from": "<1d540>",
+      "to": "<d835dd40>"
+    },
+    {
+      "from": "<1d54a>",
+      "to": "<d835dd4a>"
+    },
+    {
+      "from": "<1d552>",
+      "to": "<d835dd52>"
+    },
+    {
+      "from": "<1d5a0>",
+      "to": "<d835dda0>"
+    },
+    {
+      "from": "<1d7d8>",
+      "to": "<d835dfd8>"
+    },
+    {
+      "from": "<1ee00>",
+      "to": "<d83bde00>"
+    },
+    {
+      "from": "<1ee05>",
+      "to": "<d83bde05>"
+    },
+    {
+      "from": "<1ee15>",
+      "to": "<d83bde15>"
+    },
+    {
+      "from": "<1ee21>",
+      "to": "<d83bde21>"
+    },
+    {
+      "from": "<1ee29>",
+      "to": "<d83bde29>"
+    },
+    {
+      "from": "<1ee34>",
+      "to": "<d83bde34>"
+    },
+    {
+      "from": "<1ee61>",
+      "to": "<d83bde61>"
+    },
+    {
+      "from": "<1ee67>",
+      "to": "<d83bde67>"
+    },
+    {
+      "from": "<1ee6c>",
+      "to": "<d83bde6c>"
+    },
+    {
+      "from": "<1ee74>",
+      "to": "<d83bde74>"
+    },
+    {
+      "from": "<1ee79>",
+      "to": "<d83bde79>"
+    },
+    {
+      "from": "<1f030>",
+      "to": "<d83cdc30>"
+    },
+    {
+      "from": "<1f0a0>",
+      "to": "<d83cdca0>"
+    },
+    {
+      "from": "<1f0b1>",
+      "to": "<d83cdcb1>"
+    },
+    {
+      "from": "<1f0c1>",
+      "to": "<d83cdcc1>"
+    },
+    {
+      "from": "<1f0d1>",
+      "to": "<d83cdcd1>"
+    },
+    {
+      "from": "<1f311>",
+      "to": "<d83cdf11>"
+    },
+    {
+      "from": "<1f42d>",
+      "to": "<d83ddc2d>"
+    },
+    {
+      "from": "<1f600>",
+      "to": "<d83dde00>"
+    },
+    {
+      "from": "<1f61f>",
+      "to": "<d83dde1f>"
+    },
+    {
+      "from": "<1f625>",
+      "to": "<d83dde25>"
+    },
+    {
+      "from": "<1f62d>",
+      "to": "<d83dde2d>"
+    },
+    {
+      "from": "<1d546>",
+      "to": "<d835dd46>"
+    },
+    {
+      "from": "<1ee24>",
+      "to": "<d83bde24>"
+    },
+    {
+      "from": "<1ee27>",
+      "to": "<d83bde27>"
+    },
+    {
+      "from": "<1ee39>",
+      "to": "<d83bde39>"
+    },
+    {
+      "from": "<1ee3b>",
+      "to": "<d83bde3b>"
+    },
+    {
+      "from": "<1ee64>",
+      "to": "<d83bde64>"
+    },
+    {
+      "from": "<1ee7e>",
+      "to": "<d83bde7e>"
+    },
+    {
+      "from": "<1f431>",
+      "to": "<d83ddc31>"
+    },
+    {
+      "from": "<1f435>",
+      "to": "<d83ddc35>"
+    },
+    {
+      "from": "<1f643>",
+      "to": "<d83dde43>"
+    }
+  ],
+  "original_pdf_sha256": "4f3094945f77eb9b4078dd828341f51e964b19ca917d6b817c86835712826649",
+  "pdf_sha256": "cdb26682afb0f870c9edd7f15cca6574e86fdc0d2e32a2d55959c07744e9488c",
+  "copy": "Independent caf\u00e9 \ud83d\ude00 e\u0301",
+  "character_unicode": [
+    73,
+    110,
+    100,
+    101,
+    112,
+    101,
+    110,
+    100,
+    101,
+    110,
+    116,
+    32,
+    99,
+    97,
+    102,
+    233,
+    32,
+    55357,
+    56832,
+    32,
+    101,
+    769
+  ],
+  "search": [
+    {
+      "needle": "'Independent'",
+      "found": true,
+      "index": 0,
+      "count": 11
+    },
+    {
+      "needle": "'caf\\xe9'",
+      "found": true,
+      "index": 12,
+      "count": 4
+    },
+    {
+      "needle": "'\\U0001f600'",
+      "found": false,
+      "index": null,
+      "count": null
+    },
+    {
+      "needle": "'e\\u0301'",
+      "found": true,
+      "index": 20,
+      "count": 2
+    },
+    {
+      "needle": "'\\ud83d'",
+      "found": true,
+      "index": 17,
+      "count": 1
+    },
+    {
+      "needle": "'\\ude00'",
+      "found": true,
+      "index": 18,
+      "count": 1
+    }
+  ],
+  "mupdf_copy": "Independent caf\u00e9 \ud83d\ude00 e\u0301",
+  "mupdf_emoji_search": [
+    [
+      188.69198608398438,
+      58.29600143432617,
+      207.44798278808594,
+      79.2300033569336
+    ]
+  ]
+}

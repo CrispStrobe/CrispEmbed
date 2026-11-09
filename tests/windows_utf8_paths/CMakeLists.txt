@@ -1,0 +1,48 @@
+cmake_minimum_required(VERSION 3.20)
+project(ocr_windows_utf8_paths LANGUAGES C CXX)
+if(NOT WIN32)
+    message(FATAL_ERROR "This contract must execute on Windows, including its ANSI-path negative control")
+endif()
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(ROOT "${CMAKE_CURRENT_LIST_DIR}/../..")
+
+add_library(path_sheenbidi STATIC "${ROOT}/vendor/sheenbidi/Source/SheenBidi.c")
+target_compile_definitions(path_sheenbidi PRIVATE SB_CONFIG_UNITY)
+target_include_directories(path_sheenbidi PRIVATE "${ROOT}/vendor/sheenbidi/Headers" "${ROOT}/vendor/sheenbidi/Source")
+set_property(TARGET path_sheenbidi PROPERTY C_STANDARD 11)
+
+function(path_contract name)
+    add_executable(${name} "${ROOT}/tests/test_ocr_windows_paths.cpp" "${ROOT}/src/ocr_render.cpp" ${ARGN})
+    target_include_directories(${name} PRIVATE "${ROOT}/src" "${ROOT}/src/core" "${ROOT}/ggml/include" "${ROOT}/vendor/sheenbidi/Headers")
+    target_compile_definitions(${name} PRIVATE _CRT_SECURE_NO_WARNINGS _USE_MATH_DEFINES NOMINMAX CRISPEMBED_VERSION_STR="0.17.16")
+    target_link_libraries(${name} PRIVATE path_sheenbidi)
+    if(MSVC)
+        target_compile_options(${name} PRIVATE /utf-8 /EHsc)
+    endif()
+endfunction()
+
+# Compile the actual production implementation translation units. The test's
+# optional deskew stubs abort if entered; no model or image loader is mocked.
+path_contract(ocr-paths-production "${ROOT}/src/image_preprocess.cpp" "${ROOT}/src/core/image_out.cpp")
+path_contract(ocr-paths-harness "${ROOT}/tests/ocr_render_stb.cpp")
+target_compile_definitions(ocr-paths-harness PRIVATE OCR_PATHS_STANDALONE)
+
+# Preserve an executable A/B control with only the two UTF-8 defines removed.
+# The original source and dependency hashes are retained in the workflow.
+set(LEGACY "${CMAKE_CURRENT_BINARY_DIR}/legacy")
+file(MAKE_DIRECTORY "${LEGACY}/src/core" "${LEGACY}/ggml/examples")
+foreach(source IN ITEMS src/image_preprocess.cpp src/core/image_out.cpp)
+    file(READ "${ROOT}/${source}" original)
+    string(REPLACE "#define STBI_WINDOWS_UTF8" "// historical ANSI image loading" legacy "${original}")
+    string(REPLACE "#define STBIW_WINDOWS_UTF8" "// historical ANSI image writing" legacy "${legacy}")
+    if(legacy STREQUAL original)
+        message(FATAL_ERROR "UTF-8 control did not alter ${source}")
+    endif()
+    file(WRITE "${LEGACY}/${source}" "${legacy}")
+endforeach()
+foreach(header IN ITEMS stb_image.h stb_image_write.h)
+    configure_file("${ROOT}/ggml/examples/${header}" "${LEGACY}/ggml/examples/${header}" COPYONLY)
+endforeach()
+path_contract(ocr-paths-legacy "${LEGACY}/src/image_preprocess.cpp" "${LEGACY}/src/core/image_out.cpp")
+target_compile_definitions(ocr-paths-legacy PRIVATE OCR_PATHS_LEGACY)

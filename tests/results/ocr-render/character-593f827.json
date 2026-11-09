@@ -1,0 +1,560 @@
+{
+  "source_sha": "593f827b5e253f991efca5f86dd3696b8ea5380a",
+  "run_id": 42614280847,
+  "job_id": 129150162715,
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42614280847",
+  "conclusion": "failure",
+  "artifact": {
+    "id": 13671199728,
+    "sha256": "1d0ea674a392cd391733473e7631dab9c911a65b231e2652154204dd46dfeb72",
+    "bytes": 224939
+  },
+  "scope": "Per-scalar logical emission at Unicode17 visual cells; an experiment, not production acceptance",
+  "cases": [
+    {
+      "case": "arabic",
+      "variant": "one-font",
+      "source": "العربية",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "one-font-arabic.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "ا ل ع ر ب ي ة\n",
+        "Poppler": "‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n\f",
+        "pypdf": "العربية",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "arabic",
+      "variant": "alternating-fonts",
+      "source": "العربية",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "alternating-fonts-arabic.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "ا ل ع ر ب ي ة\n",
+        "Poppler": "‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n\f",
+        "pypdf": "العربية",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "arabic",
+      "variant": "alternating-wide-em",
+      "source": "العربية",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "alternating-wide-em-arabic.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "العربية\n",
+        "Poppler": "‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n\f",
+        "pypdf": "العربية",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "mixed",
+      "variant": "one-font",
+      "source": "العربية 123 ABC",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "one-font-mixed.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "ا\nل\nع\nر\nب\nي\nة \n123\n \nABC\n",
+        "Poppler": "‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n123\nABC\n\f",
+        "pypdf": "العربية 123 ABC",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "mixed",
+      "variant": "alternating-fonts",
+      "source": "العربية 123 ABC",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "alternating-fonts-mixed.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "ا\nل\nع\nر\nب\nي\nة \n123\n \nABC\n",
+        "Poppler": "‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n123\nABC\n\f",
+        "pypdf": "العربية 123 ABC",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "mixed",
+      "variant": "alternating-wide-em",
+      "source": "العربية 123 ABC",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "alternating-wide-em-mixed.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "العربية 123 ABC\n",
+        "Poppler": "‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n1\n2\n3\nA\nB\nC\n\f",
+        "pypdf": "العربية 123 ABC",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "marks",
+      "variant": "one-font",
+      "source": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "one-font-marks.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "مَرْحَبًا שָ\nׁל\nוֹם ٣٢١ \n/\n \n42\n",
+        "Poppler": "‫م‬\nَ\n‫ر‬\nْ\n‫ح‬\nَ\n‫ب‬\nً\n‫ا‬\n‫ש‬\nָ\nׁ\n‫ל‬\n‫ו‬\nֹ\n‫ם‬\n١٢٣\n/\n42\n\f",
+        "pypdf": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "marks",
+      "variant": "alternating-fonts",
+      "source": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "alternating-fonts-marks.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "مَرْحَبًا שָ\nׁל\nוֹם ٣٢١ \n/\n \n42\n",
+        "Poppler": "‫م‬\nَ\n‫ر‬\nْ\n‫ح‬\nَ\n‫ب‬\nً\n‫ا‬\n‫ש‬\nָ\nׁ\n‫ל‬\n‫ו‬\nֹ\n‫ם‬\n١٢٣\n/\n42\n\f",
+        "pypdf": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "marks",
+      "variant": "alternating-wide-em",
+      "source": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": true
+      },
+      "verapdf": {
+        "file": "alternating-wide-em-marks.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42\n",
+        "Poppler": "‫م‬\nَ\n‫ر‬\nْ\n‫ح‬\nَ\n‫ب‬\nً\n‫ا‬\n‫ש‬ָׁ‫ל‬\n‫ו‬\nֹ\n‫ם‬\n١\n٢\n٣\n/\n4\n2\n\f",
+        "pypdf": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "isolate",
+      "variant": "one-font",
+      "source": "Report ⁧العربية 123⁩: ABC",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "one-font-isolate.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "Report \n⁧\nا\nل\nع\nر\nب\nي\nة \n123\n⁩\n: ABC\n",
+        "Poppler": "Report\n⁧\n‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n123\n⁩\n: ABC\n\f",
+        "pypdf": "Report ⁧ العربية 123⁩ : ABC",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "isolate",
+      "variant": "alternating-fonts",
+      "source": "Report ⁧العربية 123⁩: ABC",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": false,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "alternating-fonts-isolate.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "Report \n⁧\nا\nل\nع\nر\nب\nي\nة \n123\n⁩\n: ABC\n",
+        "Poppler": "Report\n⁧\n‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n123\n⁩\n: ABC\n\f",
+        "pypdf": "Report ⁧ العربية 123⁩ : ABC",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "isolate",
+      "variant": "alternating-wide-em",
+      "source": "Report ⁧العربية 123⁩: ABC",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": false,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "alternating-wide-em-isolate.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "Report \n⁧\nالعربية 123\n⁩\n: ABC\n",
+        "Poppler": "R\ne\np\no\nr\nt\n⁧\n‫ا‬\n‫ل‬\n‫ع‬\n‫ر‬\n‫ب‬\n‫ي‬\n‫ة‬\n1\n2\n3\n⁩\n:\nA\nB\nC\n\f",
+        "pypdf": "Report ⁧ العربية 123⁩ : ABC",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "supplementary",
+      "variant": "one-font",
+      "source": "𞤀𞤢 123 ABC",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "one-font-supplementary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "𞤀𞤢 \n123\n \nABC\n",
+        "Poppler": "𞤀\n𞤢\n123\nABC\n\f",
+        "pypdf": "𞤀𞤢 123 ABC",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "supplementary",
+      "variant": "alternating-fonts",
+      "source": "𞤀𞤢 123 ABC",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "alternating-fonts-supplementary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "𞤀𞤢 \n123\n \nABC\n",
+        "Poppler": "𞤀\n𞤢\n123\nABC\n\f",
+        "pypdf": "𞤀𞤢 123 ABC",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "supplementary",
+      "variant": "alternating-wide-em",
+      "source": "𞤀𞤢 123 ABC",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "alternating-wide-em-supplementary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "𞤀𞤢 123 ABC\n",
+        "Poppler": "𞤀\n𞤢\n1\n2\n3\nA\nB\nC\n\f",
+        "pypdf": "𞤀𞤢 123 ABC",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "repeated",
+      "variant": "one-font",
+      "source": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ אאא 123 ABC",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "one-font-repeated.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\n אאא \n123\n \nABC\n",
+        "Poppler": "‫מ‬ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\n‫א‬\n‫א‬\n‫א‬\n123\nABC\n\f",
+        "pypdf": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ אאא 123 ABC",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "repeated",
+      "variant": "alternating-fonts",
+      "source": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ אאא 123 ABC",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": true,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "alternating-fonts-repeated.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\n אאא \n123\n \nABC\n",
+        "Poppler": "‫מ‬ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\n‫א‬\n‫א‬\n‫א‬\n123\nABC\n\f",
+        "pypdf": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ אאא 123 ABC",
+        "PDFium": null
+      }
+    },
+    {
+      "case": "repeated",
+      "variant": "alternating-wide-em",
+      "source": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ אאא 123 ABC",
+      "actual_text_exact": true,
+      "pixels_exact": true,
+      "logical_matches": {
+        "PyMuPDF": false,
+        "Poppler": false,
+        "pypdf": true,
+        "PDFium": false
+      },
+      "search_matches": {
+        "PyMuPDF": true,
+        "PDFium": false
+      },
+      "verapdf": {
+        "file": "alternating-wide-em-repeated.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      "error": null,
+      "extracted": {
+        "PyMuPDF": "מַ א 123 ABC\n",
+        "Poppler": "‫מ‬ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ‫א‬\n‫א‬\n‫א‬\n1\n2\n3\nA\nB\nC\n\f",
+        "pypdf": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ אאא 123 ABC",
+        "PDFium": null
+      }
+    }
+  ],
+  "limitations": [
+    "PDFium was not exercised because the old PdfPage context-manager assumption failed before extraction.",
+    "All18 files passed veraPDF; none passed strict Poppler CLI extraction.",
+    "Visual paint order and corrected PDFium remain distinct follow-up controls."
+  ]
+}
