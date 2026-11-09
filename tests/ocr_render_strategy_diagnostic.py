@@ -191,8 +191,14 @@ def scalar_pdf(source, destination, text, positions, visual, actual, clusters, l
         value = "FEFF" + text.encode("utf-16-be").hex().upper()
         content += f"/Span << /ActualText <{value}> >> BDC\n".encode()
     content += b"BT\n3 Tr\n"
+    previous_height = None
     for index, glyph in enumerate(glyphs, 1):
-        content += (f"/F1 {glyph['height']:.12f} Tf\n1 0 0 1 {glyph['x']:.12f} {glyph['y']:.12f} Tm\n"
+        # Stable visual runs must not flush a reader's RTL buffer with
+        # redundant Tf operators. Keep logical-emission controls unchanged.
+        if not visual or previous_height != glyph['height']:
+            content += f"/F1 {glyph['height']:.12f} Tf\n".encode()
+            previous_height = glyph['height']
+        content += (f"1 0 0 1 {glyph['x']:.12f} {glyph['y']:.12f} Tm\n"
                     f"<{index:04X}> Tj\n").encode()
     content += b"ET\n" + (b"EMC\n" if actual else b"") + b"Q\n"
     page[NameObject("/Contents")] = stream_object(writer, content)
