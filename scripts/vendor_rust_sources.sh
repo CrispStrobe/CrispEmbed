@@ -61,7 +61,7 @@ copy_tracked() {   # $1 = git dir, $2 = destination prefix, rest = pathspecs
         | tar -C "$vendor/$prefix" -xf -
 }
 
-copy_tracked "$repo_root" ""      CMakeLists.txt VERSION LICENSE cmake src examples
+copy_tracked "$repo_root" ""      CMakeLists.txt VERSION LICENSE NOTICE.sheenbidi cmake src examples
 # The OCR PDF Unicode engine is compiled directly into the native target.
 copy_tracked "$repo_root" ""      vendor/sheenbidi
 # Sources only from tests/ and tools/ — their fixtures/models are the 33 MB we
@@ -75,7 +75,7 @@ n=$(find "$vendor" -type f | wc -l | tr -d ' ')
 echo "vendored $n tracked files -> ${vendor#"$repo_root"/}"
 
 # Guard against a partial copy shipping a crate that cannot build.
-for required in CMakeLists.txt VERSION LICENSE ggml/CMakeLists.txt vendor/sheenbidi/Source/SheenBidi.c vendor/sheenbidi/LICENSE; do
+for required in CMakeLists.txt VERSION LICENSE ggml/CMakeLists.txt vendor/sheenbidi/Source/SheenBidi.c vendor/sheenbidi/LICENSE NOTICE.sheenbidi; do
     if [ ! -f "$vendor/$required" ]; then
         echo "error: vendored tree is incomplete — missing $required" >&2
         exit 1

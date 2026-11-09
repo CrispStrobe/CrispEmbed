@@ -256,6 +256,9 @@ jobs:
           cp src/crispembed.h pkg/include/ 2>/dev/null || true
           cp ggml/include/*.h pkg/include/ 2>/dev/null || true
           cp README.md LICENSE pkg/ 2>/dev/null || true
+          cp NOTICE.sheenbidi pkg/
+          cp vendor/sheenbidi/LICENSE pkg/SheenBidi-LICENSE.txt
+          cp src/ocr_render.h pkg/include/
 
           # Patch RPATH so the tarball is self-contained. The build-tree
           # RPATH points at absolute paths on the GitHub runner (e.g.,
@@ -392,6 +395,10 @@ jobs:
             Copy-Item $_.FullName pkg/include/
           }
           Copy-Item README.md, LICENSE pkg/ -ErrorAction SilentlyContinue
+          Copy-Item NOTICE.sheenbidi pkg/
+          Copy-Item vendor/sheenbidi/LICENSE pkg/SheenBidi-LICENSE.txt
+          New-Item -ItemType Directory -Force -Path pkg/include
+          Copy-Item src/ocr_render.h pkg/include/
           Compress-Archive -Path pkg/* -DestinationPath ${{ matrix.archive }}
 
       - name: Upload artifact
@@ -516,6 +523,9 @@ jobs:
           cp src/crispembed.h pkg/include/ 2>/dev/null || true
           cp ggml/include/*.h pkg/include/ 2>/dev/null || true
           cp README.md LICENSE pkg/ 2>/dev/null || true
+          cp NOTICE.sheenbidi pkg/
+          cp vendor/sheenbidi/LICENSE pkg/SheenBidi-LICENSE.txt
+          cp src/ocr_render.h pkg/include/
           # Patch RPATH so libggml-cuda.so finds its siblings without
           # LD_LIBRARY_PATH — in this (slim) archive the CUDA runtime itself
           # still comes from the host and resolves via the standard linker
@@ -774,6 +784,10 @@ jobs:
               Copy-Item $_.FullName pkg/include/
           }
           Copy-Item README.md, LICENSE pkg/ -ErrorAction SilentlyContinue
+          Copy-Item NOTICE.sheenbidi pkg/
+          Copy-Item vendor/sheenbidi/LICENSE pkg/SheenBidi-LICENSE.txt
+          New-Item -ItemType Directory -Force -Path pkg/include
+          Copy-Item src/ocr_render.h pkg/include/
           Compress-Archive -Path pkg/* -DestinationPath crispembed-windows-x86_64-cuda.zip
 
       - name: Upload
@@ -855,6 +869,10 @@ jobs:
               Copy-Item $_.FullName pkg/include/
           }
           Copy-Item README.md, LICENSE pkg/ -ErrorAction SilentlyContinue
+          Copy-Item NOTICE.sheenbidi pkg/
+          Copy-Item vendor/sheenbidi/LICENSE pkg/SheenBidi-LICENSE.txt
+          New-Item -ItemType Directory -Force -Path pkg/include
+          Copy-Item src/ocr_render.h pkg/include/
           Compress-Archive -Path pkg/* -DestinationPath crispembed-windows-x86_64-vulkan.zip
 
       - name: Upload
@@ -896,7 +914,10 @@ jobs:
           # Only the shared lib the plugin needs — not the (host-only) test exes.
           cmake --build build --target crispembed-shared -j4
       - name: Package
-        run: tar -czf crispembed-android-${{ matrix.abi }}.tar.gz -C build libcrispembed.so
+        run: |
+          cp NOTICE.sheenbidi build/
+          cp vendor/sheenbidi/LICENSE build/SheenBidi-LICENSE.txt
+          tar -czf crispembed-android-${{ matrix.abi }}.tar.gz -C build libcrispembed.so NOTICE.sheenbidi SheenBidi-LICENSE.txt
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
@@ -949,7 +970,9 @@ jobs:
           assert len(archives)==len(set(archives))
           subprocess.run(['xcrun','libtool','-static','-o','ios-package/libcrispembed-static.a',*map(str,archives)],check=True)
           PYCODE
-          tar -czf crispembed-ios-arm64.tar.gz -C ios-package libcrispembed-static.a
+          cp NOTICE.sheenbidi ios-package/
+          cp vendor/sheenbidi/LICENSE ios-package/SheenBidi-LICENSE.txt
+          tar -czf crispembed-ios-arm64.tar.gz -C ios-package libcrispembed-static.a NOTICE.sheenbidi SheenBidi-LICENSE.txt
       - name: Upload
         uses: actions/upload-artifact@v4
         with:

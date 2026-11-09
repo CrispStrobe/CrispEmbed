@@ -1459,7 +1459,7 @@ if(CRISPEMBED_BUILD_SHARED)
         OUTPUT_NAME   crispembed
         VERSION       ${PROJECT_VERSION}
         SOVERSION     ${CRISPEMBED_SOVERSION}
-        PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/src/crispembed.h;${CMAKE_CURRENT_SOURCE_DIR}/src/moedern_text_api.h"
+        PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/src/crispembed.h;${CMAKE_CURRENT_SOURCE_DIR}/src/moedern_text_api.h;${CMAKE_CURRENT_SOURCE_DIR}/src/ocr_render.h"
         # Sibling-resolved RPATH so a release tarball is self-contained.
         # Build-tree RPATH preserved so dev iteration works without install.
         BUILD_WITH_INSTALL_RPATH FALSE
@@ -1529,9 +1529,15 @@ install(FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
     ${CMAKE_CURRENT_SOURCE_DIR}/NOTICE.teleocr
     ${CMAKE_CURRENT_SOURCE_DIR}/NOTICE.marker
+    ${CMAKE_CURRENT_SOURCE_DIR}/NOTICE.sheenbidi
     ${CMAKE_CURRENT_SOURCE_DIR}/licenses/oxr-LICENSE
     ${CMAKE_CURRENT_SOURCE_DIR}/licenses/oxr-NOTICE
     DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
+    COMPONENT licenses
+)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/sheenbidi/LICENSE
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
+    RENAME SheenBidi-LICENSE.txt
     COMPONENT licenses
 )
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/models/licenses/apache-2.0/LICENSE
