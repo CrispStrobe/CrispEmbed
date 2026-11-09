@@ -4092,3 +4092,14 @@ permuted/two-file weights and imatrix differ from CrispEmbed recipes; reported
 publisher text-only KLD/invoice results lack a full reproducible source receipt.
 9GiB available RAM/25GiB scratch guards and180-minute total bound; no dispatch
 before exact source/preflight review. No runtime/default/release/alias/new PR.
+
+### Physical upstream Q4_K_M native import audit predeclared
+
+[The bounded audit](docs/lighton4b-upstream-physical-import.md) freezes all426
+physical→native name/shape/type mappings, pinned publisher/native quantized files,
+full249 native/independent dequant hashes and177 scalar-transform comparisons.
+128-wide GDN V-head inverse columns cross256-value quant blocks, so a lossless
+candidate must retain out blocks and reorder activations; whole-row QKV/Z/a/b
+copies remain possible. No image-specific fit, requantization or full F32 model.
+One authorized Kaggle CPU metadata/operator job only, RAM/disk guards before
+transfers, no inference; preserve all negatives before runtime import design.

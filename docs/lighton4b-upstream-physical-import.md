@@ -1,10 +1,11 @@
 # Physical upstream Q4_K_M import: completed layout/operator audit
 
+# Physical upstream Q4_K_M import: measured-layout audit plan
+
 The goal is a native comparison using the same represented upstream text weights,
 without requantization or a full F32 model. This is separate from the new weighted
 HF-layout recipe: equal type schedules do not imply equal quantized values.
 No inference result or runtime import is claimed yet.
-
 
 Authorized Kaggle CPU version1 completes at source
 `5199609f4425b006bb78f488703b42ec4410f3ac`. All249 actual Q4/Q6 matrices decode
@@ -44,7 +45,6 @@ Effective preflight RAM31,510,732,800 bytes, zero swap,1.037TB scratch and20.94G
 output satisfy the predeclared guards. Only65,536 values are decoded per chunk;
 no full F32 model or requantization occurs. Runtime import and same-weight decoded
 comparison remain the next separately verified step.
-
 The predeclared [audit protocol](lighton4b-upstream-physical-audit-v1.json) binds
 publisher `8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01`, whole Q4_K_M file
 SHA256 `b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26`,
@@ -96,7 +96,6 @@ After the physical operator result, any production activation/A/norm bridge and
 same-input first-score/full-decoded comparison need separate gated integration.
 Our source-exact protected vision and upstream F16 vision remain different
 controls until actual upstream feature rows are captured and admitted.
-
 ## Format6 runtime and no-checkpoint controls
 
 Kaggle CPU controls version2 passes at source
