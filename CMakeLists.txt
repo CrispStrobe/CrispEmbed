@@ -1929,3 +1929,7 @@ target_link_libraries(test-lighton4b-gdn-source-primitive PRIVATE crispembed-qwe
 # Reference-only captured-input attention probe; excluded from production/default builds.
 add_executable(lighton4b-attention-native-probe EXCLUDE_FROM_ALL tools/attention-primitive-probe/native.cpp)
 target_link_libraries(lighton4b-attention-native-probe PRIVATE crispembed-qwen35-delta crispembed-core)
+# Model-free physical Q6 gate/cache controls; never a production artifact.
+add_executable(test-lighton4b-physical-q6-tiled EXCLUDE_FROM_ALL tests/test_lighton4b_physical_q6_tiled.cpp)
+target_include_directories(test-lighton4b-physical-q6-tiled PRIVATE src ggml/include)
+target_link_libraries(test-lighton4b-physical-q6-tiled PRIVATE crispembed-qwen35-delta crispembed-core)

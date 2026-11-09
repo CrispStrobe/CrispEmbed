@@ -226,6 +226,7 @@ static int run(int argc, char ** argv) {
     if (heldout_cap) summary << ",\"provisional_heldout_cap\":1536";
     if (model.text.decoder.upstream_physical) {
         const auto * cache = model.text.decoder.physical_weights_cache.get();
+        summary << ",\"physical_q6_tiled\":" << (greedy_cache.physical_q6_tiled ? "true" : "false");
         summary << ",\"physical_q4_repack\":" << (model.text.decoder.physical_q4_repack ? "true" : "false")
                 << ",\"physical_repack_entries\":" << (cache ? cache->physical_repack_entries() : 0)
                 << ",\"physical_repack_bytes\":" << (cache ? cache->physical_repack_bytes() : 0)
