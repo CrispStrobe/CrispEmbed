@@ -1,0 +1,150 @@
+{
+  "schema": "lighton4b-direct-quant-build/v1",
+  "status": "passed",
+  "model_payload_bytes": 0,
+  "quality_qualified": false,
+  "source_sha": "afe4682da9bfd49d3efdfba56a1f1b6bdd615f26",
+  "executable_sha256": "eb60c55220dda6ac8c9090f892eb991618a9d5e240fa06ab460878337c81315f",
+  "direct_quant_stdout": "{\"case\":\"q8_0-2560-8192-1\",\"max_abs\":0.014358162879943848,\"rms_error\":0.0037648547123075647,\"cosine\":0.99999234794380010,\"baseline_max_abs\":5.06355094909667969,\"direct_max_abs\":5.06138229370117188,\"stream_max_abs\":0.00000000000000000,\"baseline_ms\":68.01864399999999478,\"direct_ms\":0.86317600000000005}\n{\"case\":\"q8_0-2560-8192-16\",\"max_abs\":0.01674079895019531,\"rms_error\":0.00374007823942202,\"cosine\":0.99999251910716414,\"baseline_max_abs\":8.03973388671875000,\"direct_max_abs\":8.03742980957031250,\"stream_max_abs\":0.00000000000000000,\"baseline_ms\":64.39791300000000263,\"direct_ms\":4.87077299999999980}\n{\"case\":\"q8_0-9216-2560-1\",\"max_abs\":0.01223814487457275,\"rms_error\":0.00376634954210756,\"cosine\":0.99999095245997949,\"baseline_max_abs\":4.13936805725097656,\"direct_max_abs\":4.13893890380859375,\"stream_max_abs\":0.00000000000000000,\"baseline_ms\":76.63259700000000407,\"direct_ms\":0.96487699999999998}\n{\"case\":\"q8_0-9216-2560-16\",\"max_abs\":0.01597833633422852,\"rms_error\":0.00373608324832524,\"cosine\":0.99999150659871694,\"baseline_max_abs\":5.00703239440917969,\"direct_max_abs\":5.00832080841064453,\"stream_max_abs\":0.00000000000000000,\"baseline_ms\":71.52912800000000004,\"direct_ms\":5.25552400000000031}\n{\"case\":\"q8_0-2560-257-1\",\"max_abs\":0.01082944869995117,\"rms_error\":0.00361087118263593,\"cosine\":0.99999339846477397,\"baseline_max_abs\":3.56160330772399902,\"direct_max_abs\":3.56352090835571289,\"stream_max_abs\":0.00000000000000000,\"baseline_ms\":0.99338099999999996,\"direct_ms\":0.21753800000000001}\n{\"case\":\"q8_0-2560-257-16\",\"max_abs\":0.01341393589973450,\"rms_error\":0.00368379726756377,\"cosine\":0.99999294539827899,\"baseline_max_abs\":3.32481956481933594,\"direct_max_abs\":3.31529760360717773,\"stream_max_abs\":0.00000000000000000,\"baseline_ms\":1.07644600000000001,\"direct_ms\":0.30596299999999998}\n{\"case\":\"q4_K-2560-8192-1\",\"max_abs\":0.01588290929794312,\"rms_error\":0.00390004189162127,\"cosine\":0.99999179100567481,\"baseline_max_abs\":5.02169990539550781,\"direct_max_abs\":5.02536010742187500,\"stream_max_abs\":0.00000000000000000,\"baseline_ms\":63.58821300000000321,\"direct_ms\":1.08363900000000002}\n{\"case\":\"q4_K-2560-8192-16\",\"max_abs\":0.01780189573764801,\"rms_error\":0.00387730856848504,\"cosine\":0.99999195151930431,\"baseline_max_abs\":7.95214176177978516,\"direct_max_abs\":7.95065689086914062,\"stream_max_abs\":0.00000000000000000,\"baseline_ms\":61.51348699999999781,\"direct_ms\":5.74436000000000035}\n{\"case\":\"q4_K-9216-2560-1\",\"max_abs\":0.01313510537147522,\"rms_error\":0.00379342110108948,\"cosine\":0.99999083770737662,\"baseline_max_abs\":4.11048698425292969,\"direct_max_abs\":4.11429882049560547,\"stream_max_abs\":0.00000000000000000,\"baseline_ms\":64.88860900000000242,\"direct_ms\":0.66343300000000005}\n{\"case\":\"q4_K-9216-2560-16\",\"max_abs\":0.01778748631477356,\"rms_error\":0.00386619604260476,\"cosine\":0.99999088953661208,\"baseline_max_abs\":5.03333854675292969,\"direct_max_abs\":5.03500032424926758,\"stream_max_abs\":0.00000000000000000,\"baseline_ms\":71.14356600000000697,\"direct_ms\":6.35347099999999987}\n{\"case\":\"q4_K-2560-257-1\",\"max_abs\":0.01560059189796448,\"rms_error\":0.00367770858855235,\"cosine\":0.99999305391931348,\"baseline_max_abs\":3.55037593841552734,\"direct_max_abs\":3.55270838737487793,\"stream_max_abs\":0.00000000000000000,\"baseline_ms\":0.76233799999999996,\"direct_ms\":0.19110800000000000}\n{\"case\":\"q4_K-2560-257-16\",\"max_abs\":0.01382493972778320,\"rms_error\":0.00385484352998259,\"cosine\":0.99999224687029376,\"baseline_max_abs\":3.27274084091186523,\"direct_max_abs\":3.27467727661132812,\"stream_max_abs\":0.00000000000000000,\"baseline_ms\":1.03969800000000001,\"direct_ms\":0.47757400000000000}\nDIRECT_QUANT_CONTROLS passed=1 quality_qualified=0\n",
+  "stdout": "gguf_init_from_file: failed to open GGUF file 'missing.gguf' (No such file or directory)\nnative-context controls=9 passed=1 model_payload=0\n",
+  "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42002939375",
+  "artifact_id": 13404185019,
+  "github_declared_archive_sha256": "865f39a94d9d6cfaedafe2d234f44d6581499dec1912edd7855b4dc7f18125ef",
+  "receipt_sha256": "ba2e0c715bb8137f85f0d66b7edabb8fa1c3c5ffccbef44a5314a018022d99e1",
+  "range_read_bytes": 5796,
+  "cases": [
+    {
+      "case": "q8_0-2560-8192-1",
+      "max_abs": 0.014358162879943848,
+      "rms_error": 0.0037648547123075647,
+      "cosine": 0.9999923479438001,
+      "baseline_max_abs": 5.06355094909668,
+      "direct_max_abs": 5.061382293701172,
+      "stream_max_abs": 0.0,
+      "baseline_ms": 68.018644,
+      "direct_ms": 0.863176
+    },
+    {
+      "case": "q8_0-2560-8192-16",
+      "max_abs": 0.01674079895019531,
+      "rms_error": 0.00374007823942202,
+      "cosine": 0.9999925191071641,
+      "baseline_max_abs": 8.03973388671875,
+      "direct_max_abs": 8.037429809570312,
+      "stream_max_abs": 0.0,
+      "baseline_ms": 64.397913,
+      "direct_ms": 4.870773
+    },
+    {
+      "case": "q8_0-9216-2560-1",
+      "max_abs": 0.01223814487457275,
+      "rms_error": 0.00376634954210756,
+      "cosine": 0.9999909524599795,
+      "baseline_max_abs": 4.139368057250977,
+      "direct_max_abs": 4.138938903808594,
+      "stream_max_abs": 0.0,
+      "baseline_ms": 76.632597,
+      "direct_ms": 0.964877
+    },
+    {
+      "case": "q8_0-9216-2560-16",
+      "max_abs": 0.01597833633422852,
+      "rms_error": 0.00373608324832524,
+      "cosine": 0.9999915065987169,
+      "baseline_max_abs": 5.00703239440918,
+      "direct_max_abs": 5.0083208084106445,
+      "stream_max_abs": 0.0,
+      "baseline_ms": 71.529128,
+      "direct_ms": 5.255524
+    },
+    {
+      "case": "q8_0-2560-257-1",
+      "max_abs": 0.01082944869995117,
+      "rms_error": 0.00361087118263593,
+      "cosine": 0.999993398464774,
+      "baseline_max_abs": 3.561603307723999,
+      "direct_max_abs": 3.563520908355713,
+      "stream_max_abs": 0.0,
+      "baseline_ms": 0.993381,
+      "direct_ms": 0.217538
+    },
+    {
+      "case": "q8_0-2560-257-16",
+      "max_abs": 0.0134139358997345,
+      "rms_error": 0.00368379726756377,
+      "cosine": 0.999992945398279,
+      "baseline_max_abs": 3.324819564819336,
+      "direct_max_abs": 3.3152976036071777,
+      "stream_max_abs": 0.0,
+      "baseline_ms": 1.076446,
+      "direct_ms": 0.305963
+    },
+    {
+      "case": "q4_K-2560-8192-1",
+      "max_abs": 0.01588290929794312,
+      "rms_error": 0.00390004189162127,
+      "cosine": 0.9999917910056748,
+      "baseline_max_abs": 5.021699905395508,
+      "direct_max_abs": 5.025360107421875,
+      "stream_max_abs": 0.0,
+      "baseline_ms": 63.588213,
+      "direct_ms": 1.083639
+    },
+    {
+      "case": "q4_K-2560-8192-16",
+      "max_abs": 0.01780189573764801,
+      "rms_error": 0.00387730856848504,
+      "cosine": 0.9999919515193043,
+      "baseline_max_abs": 7.952141761779785,
+      "direct_max_abs": 7.950656890869141,
+      "stream_max_abs": 0.0,
+      "baseline_ms": 61.513487,
+      "direct_ms": 5.74436
+    },
+    {
+      "case": "q4_K-9216-2560-1",
+      "max_abs": 0.01313510537147522,
+      "rms_error": 0.00379342110108948,
+      "cosine": 0.9999908377073766,
+      "baseline_max_abs": 4.11048698425293,
+      "direct_max_abs": 4.1142988204956055,
+      "stream_max_abs": 0.0,
+      "baseline_ms": 64.888609,
+      "direct_ms": 0.663433
+    },
+    {
+      "case": "q4_K-9216-2560-16",
+      "max_abs": 0.01778748631477356,
+      "rms_error": 0.00386619604260476,
+      "cosine": 0.9999908895366121,
+      "baseline_max_abs": 5.03333854675293,
+      "direct_max_abs": 5.035000324249268,
+      "stream_max_abs": 0.0,
+      "baseline_ms": 71.143566,
+      "direct_ms": 6.353471
+    },
+    {
+      "case": "q4_K-2560-257-1",
+      "max_abs": 0.01560059189796448,
+      "rms_error": 0.00367770858855235,
+      "cosine": 0.9999930539193135,
+      "baseline_max_abs": 3.5503759384155273,
+      "direct_max_abs": 3.552708387374878,
+      "stream_max_abs": 0.0,
+      "baseline_ms": 0.762338,
+      "direct_ms": 0.191108
+    },
+    {
+      "case": "q4_K-2560-257-16",
+      "max_abs": 0.0138249397277832,
+      "rms_error": 0.00385484352998259,
+      "cosine": 0.9999922468702938,
+      "baseline_max_abs": 3.2727408409118652,
+      "direct_max_abs": 3.274677276611328,
+      "stream_max_abs": 0.0,
+      "baseline_ms": 1.039698,
+      "direct_ms": 0.477574
+    }
+  ],
+  "limits": "Model-free same-input controls only; activation quantization errors exceed strict0.002. Ordered cold/warm timings do not establish model speed, and no decoded quality is observed."
+}
