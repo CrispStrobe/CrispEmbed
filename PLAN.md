@@ -131,12 +131,20 @@ original assertion and the independent producer control; this is not a
 whole-workflow or universal-reader pass. The app owns atomic publication and
 final paired native/mobile execution.
 
+The final [reader-limit diagnostic](tests/results/ocr-render/reader-limits-9c44a69.json)
+completes with six unchanged strict failures and the same full-scalar search
+failure in a valid independent-producer PDF. Exact copied Unicode survives
+both producers. Poppler's unchanged single-page control yields the exact first
+50,000 of 65,542 scalars. Preserve these failed controls alongside the passing
+writer/archive and two-page subset checks.
+
 The [84-output reflected-axis matrix](tests/results/ocr-render/strategies-9cc9e10.json)
 passes all pixel, text-bound and archival checks, but no representation passes
 every logical extraction/search case. Negative text advances and document-wide
 reading direction do not close mixed-script reader differences. Bidi bit16
 remains withheld. Preserve valid logical text and the exact failed reader
-outputs while assessing any further standards-valid representation.
+outputs. The consumer uses capability preflight and reviewed text alternatives;
+further speculative native representations are paused.
 
 Preserved reader evidence: `f06ea90` exercises PDFium after repairing the
 harness; `ef8ab9a` fixes MuPDF's 32-scalar boundary but exposes inherited

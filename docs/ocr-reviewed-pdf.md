@@ -10,8 +10,10 @@ the [bounded writer, scalar Unicode and archival job](../tests/results/ocr-rende
 and the [actual Windows Unicode path job](../tests/results/ocr-render/windows-9c44a69.json).
 This qualifies those native components for a matching application build.
 It does not qualify general bidirectional extraction, every reader's search,
-mobile performance, or the complete application. The strict reader-limit job
-remains separate and retains its failures.
+mobile performance, or the complete application. The
+[strict reader-limit job](../tests/results/ocr-render/reader-limits-9c44a69.json)
+finishes with its six unchanged strict failures and the independently reproduced
+full-scalar search failure; those results remain separate and visible.
 
 ## Explicit options and capabilities
 
@@ -116,7 +118,7 @@ recovery after a failed job.
 called after `begin()` and before the first page. The callback receives at
 most 64 KiB per call, synchronously during `end()`. Return zero only after
 consuming the complete slice; any nonzero value stops output. The renderer
-does not call the sink after a failure, retain its context after the call, or
+does not call the sink after a failure, access its context after `end()` returns, or
 populate the byte-returning output buffer. `begin()` clears the previous sink.
 The caller must not re-enter the renderer or throw through the C callback.
 
@@ -229,8 +231,12 @@ five ordinary streamed fixtures. A
 reproduces the copy/search difference. That producer initially emitted invalid
 five-digit CMap destinations; the invalid original is retained, and the valid
 control changes only those destinations to UTF-16BE surrogate pairs. The
-hosted diagnostic repeats both producer paths with the exact reader binary
-hash, full-scalar searches and diagnostic raw UTF-16-unit queries. Invalid
+hosted diagnostic at `9c44a69` repeats both producer paths with the exact reader
+binary hash, full-scalar searches and diagnostic raw UTF-16-unit queries.
+Both files copy the expected text in MuPDF and PDFium. MuPDF finds the emoji;
+PDFium core `159.0.8149.0` cannot find its full scalar with any tested flag, yet
+finds each diagnostic surrogate query. The valid independent control retains
+the original producer's font program, content stream and media box. Invalid
 query units never become PDF text or a production workaround.
 
 The [retained single-page density diagnosis](../tests/results/ocr-render/poppler-dense-local-2111db6.json)
@@ -242,6 +248,13 @@ occurs later, at character 63,486. The positive font-subset test therefore keeps
 the complete ground truth across two pages below that per-page count and
 requires both fonts within page 2. The original one-page test remains a strict,
 failing diagnostic; no text is deleted or relabeled as a pass.
+
+The final hosted job directly observes that same 50,000-character exact prefix
+with Poppler package `24.02.0-1ubuntu9.11`. MuPDF and pypdf retain all 65,542
+characters in the unchanged one-page file. All five streamed image/text
+variants also retain exact copied Unicode while failing PDFium emoji search.
+The [source-bound receipt](../tests/results/ocr-render/reader-limits-9c44a69.json)
+links the complete retained outputs and valid independent-producer control.
 
 The writer workflow reports separate jobs for writer/archive/exact-copy and
 BMP search, and for strict supplementary search and dense-page limits. A failed

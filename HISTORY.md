@@ -4,6 +4,14 @@ for final verdicts, live jobs and remaining tasks.
 
 ## 9 November 2026 — qualified bounded writer and Windows path components
 
+The final [strict reader-limit job](tests/results/ocr-render/reader-limits-9c44a69.json)
+has now finished: five PDFium supplementary-search assertions and the unchanged
+Poppler dense-page assertion fail. A valid independent producer control also
+copies exact text but cannot find the complete emoji in the same pinned
+PDFium binary; raw surrogate queries find each unit. The Poppler output is the
+exact first 50,000 of 65,542 characters. These are retained failures, separate
+from the passing native components below, without weakening any assertion.
+
 The immutable `9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a` source passes its
 [writer/archive/scalar-Unicode job](tests/results/ocr-render/writer-9c44a69.json)
 and [actual Windows file-I/O job](tests/results/ocr-render/windows-9c44a69.json).
