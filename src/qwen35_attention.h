@@ -27,6 +27,7 @@ struct attention_cache {
     uint8_t physical_native_ops = 0;
     bool physical_f16_attention = false;
     bool physical_q4_repack = false;
+    bool physical_q6_tiled = false;
 };
 struct attention_outputs {
     std::vector<float> q, k, v, q_norm, k_norm, pooled, attention;

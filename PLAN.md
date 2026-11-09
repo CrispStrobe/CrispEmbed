@@ -4195,3 +4195,5 @@ The [SwiGLU proof](https://github.com/CrispStrobe/CrispEmbed/blob/998a08bec/docs
 ## Combined GDN/repack diagnostic preparation
 
 The individually negative global repack and physical GDN alternatives remain off/unqualified. A [frozen combined observed-case A/B](docs/lighton4b-combined-gdn-repack-ab-v1.md) tests their interaction only: table/form cap512, exact OFF all282/167 rows+38 text/vision stages before both flags ON, all other settings/weights fixed. Current source-fed controls, bounded216-entry quantized cache and no F32 weight cache are mandatory. Preparation is not a quality or release claim; no held-out rerun or recipe tuning.
+
+- Active bounded LightOn4B lane: implement default-off physical Q6 tiled block reduction from pinned6c01 primary source; preserve native legacy for batches<8, all original quantized storage, no global vendor edits. Same-input full source140/native16 operator controls precede decoded table/form A/B; differing source/native graph boundaries remain explicit. No promotion.

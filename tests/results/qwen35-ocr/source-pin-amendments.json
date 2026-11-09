@@ -176,6 +176,17 @@
             "460ee198208b5b60c34d25626db87897d275cbc7 Experimentally cache physical Q4 preferred buffers [skip ci]"
           ],
           "reason": "Default-off physical Q4 CPU_REPACK buffer cache; preserve legacy converted F32 storage and all off paths. Hosted verification pending."
+        },
+        {
+          "from_sha256": "fecc278344d1343d67cba01b59ed6565787cf89b28f46b397bc865bd20f1b6b7",
+          "to_sha256": "fde01493f3869eb2855221a823adad5cdd192060c47088105c87fad98b9d08ef",
+          "to_blob": "b77b529563f5193a4dcee45c72e726659738a247",
+          "recorded_at_commit": "e480df3e2cad54498ec8f543d35ba681add89332",
+          "recorded": "2026-11-07",
+          "changed_by": [
+            "e480df3e2cad54498ec8f543d35ba681add89332 feat: gate source-compatible physical Q6 block reduction [skip ci]"
+          ],
+          "reason": "Default-off physical Q6 tiled admission, preserving existing projections and historical receipts; source-compatible helper remains gated pending exact operator and decoded proof."
         }
       ]
     },
