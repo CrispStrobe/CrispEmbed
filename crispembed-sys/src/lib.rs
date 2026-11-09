@@ -1807,6 +1807,7 @@ extern "C" {
     /// Request archival mode before begin. Currently unsupported: rendering
     /// fails explicitly rather than emitting unvalidated compliance metadata.
     pub fn ocr_render_set_pdfa(r: *mut c_void, enabled: c_int);
+    pub fn ocr_render_set_pdf_bidi(r: *mut c_void, enabled: c_int);
     pub fn ocr_render_begin(r: *mut c_void);
     pub fn ocr_render_set_page_size_points(r: *mut c_void, width: f64, height: f64);
     pub fn ocr_render_add_page(r: *mut c_void, page: *const OcrRenderPage);

@@ -2,6 +2,16 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 9 November 2026 — reviewed PDF export implementation checkpoint
+
+The isolated `feat/ocr-reviewed-pdf-conformance` lane adds an explicit native
+and Rust Unicode bidi option and PDF/A-2b resources to reviewed exports. The
+existing image/text renderer and compatibility default remain available for
+comparison. The pinned Unicode engine compiles into the same native archive.
+Hosted independent extraction, image-preservation and veraPDF validation are
+pending at this checkpoint; no conformance pass or release is claimed. The
+[contract](docs/ocr-reviewed-pdf.md) documents resources, options and gates.
+
 ## 9 November 2026 — explicit photo and mobile contract review
 
 At `fde19180`, [photo run 42590335637](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335637)

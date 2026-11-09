@@ -19,6 +19,7 @@ import xml.etree.ElementTree as ET
 import fitz
 from PIL import Image, ImageChops, ImageDraw, ImageStat
 from pypdf import PdfReader
+from pypdf.generic import ContentStream
 
 
 class Word(C.Structure):
@@ -42,6 +43,7 @@ def native_library(path):
         "ocr_render_create": ([C.c_int], C.c_void_p),
         "crispembed_ocr_render_capabilities": ([], C.c_uint32),
         "ocr_render_set_pdfa": ([C.c_void_p, C.c_int], None),
+        "ocr_render_set_pdf_bidi": ([C.c_void_p, C.c_int], None),
         "ocr_render_begin": ([C.c_void_p], None),
         "ocr_render_set_page_size_points": ([C.c_void_p, C.c_double, C.c_double], None),
         "ocr_render_add_page": ([C.c_void_p, C.POINTER(Page)], None),
@@ -85,12 +87,13 @@ class ArtifactTests(unittest.TestCase):
         (cls.root / "validation.json").write_text(json.dumps(cls.receipt, indent=2, ensure_ascii=False))
         cls.temporary.cleanup()
 
-    def render(self, name, pages, fmt=3, pdfa=False, expected_error=None):
+    def render(self, name, pages, fmt=3, pdfa=False, bidi=False, expected_error=None):
         lib = self.lib
         renderer = lib.ocr_render_create(fmt)
         self.assertTrue(renderer)
         try:
             lib.ocr_render_set_pdfa(renderer, int(pdfa))
+            lib.ocr_render_set_pdf_bidi(renderer, int(bidi))
             lib.ocr_render_begin(renderer)
             for page in pages:
                 records = page.get("regions", [("Image text", 40, 40, 240, 24)])
@@ -256,8 +259,7 @@ class ArtifactTests(unittest.TestCase):
         self.receipt["tests"].append({"xml_bytes": len(text.encode()), "controls": "replacement-decoded"})
 
     def test_error_contract(self):
-        self.assertEqual(self.lib.crispembed_ocr_render_capabilities() & 15, 7)
-        self.render("unsupported.pdf", [{}], pdfa=True, expected_error="PDF/A")
+        self.assertEqual(self.lib.crispembed_ocr_render_capabilities() & 31, 31)
         self.render("missing.pdf", [{"image": self.root / "missing.png"}], expected_error="Could not read")
         self.render("mismatch.pdf", [{"image": self.root / "rgb.png", "width": 640}], expected_error="dimensions")
         self.render("outside.pdf", [{"regions": [("outside", 310, 0, 50, 20)]}], expected_error="bounds")
@@ -277,6 +279,84 @@ class ArtifactTests(unittest.TestCase):
                 plain = self.render("rtl.txt", [page], fmt=0)
                 self.assertEqual(plain.read_text(), text + "\n")
         self.receipt["tests"].append({"bidi_pdf": "explicit_unsupported_error", "bidi_alto_text": "exact"})
+
+    def test_archival_resources_and_page_preservation(self):
+        text = "Reviewed archive café 中文 😀 e\u0301"
+        for name, image in (("rgb", "rgb.png"), ("gray", "gray.png"), ("alpha", "alpha.png"),
+                            ("jpeg", "rgb.jpg"), ("text", None)):
+            with self.subTest(image=name):
+                pages = [{"image": self.root / image if image else None, "points": (160, 120),
+                          "regions": [(text, 20, 30, 280, 30)]},
+                         {"image": self.root / image if image else None, "points": (180, 135),
+                          "regions": [("Page 2 complete", 20, 100, 280, 30)]}]
+                path = self.render("archival-" + name + ".pdf", pages, pdfa=True, bidi=True)
+                standard = self.render("archival-control-" + name + ".pdf", pages, bidi=True)
+                reader, document = self.read_pdf(path)
+                control = fitz.open(standard)
+                root = reader.trailer["/Root"]
+                self.assertEqual(reader.xmp_metadata.pdfaid_part, "2")
+                self.assertEqual(reader.xmp_metadata.pdfaid_conformance, "B")
+                self.assertEqual(reader.xmp_metadata.pdf_producer, reader.metadata.producer)
+                self.assertEqual(reader.xmp_metadata.xmp_creator_tool, reader.metadata.creator)
+                self.assertEqual(len(reader.trailer["/ID"]), 2)
+                profile = root["/OutputIntents"][0].get_object()["/DestOutputProfile"].get_object()
+                self.assertEqual(profile["/N"], 3)
+                self.assertEqual(profile.get_data()[16:20], b"RGB ")
+                self.assertEqual(profile.get_data()[36:40], b"acsp")
+                for i in range(2):
+                    self.assertEqual(document[i].rect, control[i].rect)
+                    archived_pixels = document[i].get_pixmap(alpha=False).samples
+                    control_pixels = control[i].get_pixmap(alpha=False).samples
+                    self.assertEqual(archived_pixels, control_pixels, "Archival mode changed visible page pixels")
+                for extracted in (document[0].get_text(), reader.pages[0].extract_text(), self.poppler_text(path)):
+                    self.assertIn(text, extracted)
+                self.receipt["tests"].append({"archival_file": path.name, "pages": 2,
+                                              "pixel_control": "exact", "declared_profile": "PDF/A-2b"})
+                document.close()
+                control.close()
+
+    def test_bidirectional_logical_text_search_and_geometry(self):
+        cases = [
+            ("arabic", "العربية"),
+            ("hebrew", "שלום"),
+            ("mixed-rtl", "العربية 123 ABC"),
+            ("mixed-ltr", "Invoice 123: العربية / שלום (45) café e\u0301"),
+            ("marks", "مَرْحَبًا שָׁלוֹם ١٢٣ / 42"),
+            ("isolate", "Report \u2067العربية 123\u2069: ABC"),
+            ("override", "\u202eABCD\u202c 123"),
+            ("supplementary", "\U0001e900\U0001e922 123 ABC"),
+        ]
+        controls = dict.fromkeys([0x061c, 0x200e, 0x200f, *range(0x202a, 0x202f), *range(0x2066, 0x206a)])
+        def normal(text):
+            return " ".join(text.translate(controls).split())
+        for name, text in cases:
+            with self.subTest(text=name):
+                path = self.render("bidi-" + name + ".pdf", [{"image": self.root / "rgb.png",
+                    "regions": [(text, 10, 30, 300, 30)]}], pdfa=True, bidi=True)
+                reader, document = self.read_pdf(path)
+                extracted = {"PyMuPDF": document[0].get_text(), "Poppler": self.poppler_text(path),
+                             "pypdf": reader.pages[0].extract_text()}
+                logical = "".join(str(operands[1]["/ActualText"])
+                                  for operands, op in ContentStream(reader.pages[0]["/Contents"], reader).operations
+                                  if op == b"BDC" and "/ActualText" in operands[1])
+                record = {"bidi_case": name, "source": text, "actual_text": logical, "extracted": extracted}
+                (self.root / ("bidi-" + name + "-extraction.json")).write_text(
+                    json.dumps(record, ensure_ascii=False, indent=2))
+                self.receipt["tests"].append(record)
+                self.assertEqual(logical, text, "Logical source text changed in the PDF content")
+                for engine, actual in extracted.items():
+                    self.assertEqual(normal(actual), normal(text), engine + " changed logical reading order")
+                # The selectable Arabic run belongs to the right side of an
+                # RTL paragraph, while its trailing Latin run belongs left.
+                if name == "mixed-rtl":
+                    arabic, latin = document[0].search_for("العربية"), document[0].search_for("ABC")
+                    self.assertTrue(arabic and latin, "Reviewed mixed text is not searchable")
+                    self.assertGreater(min(r.x0 for r in arabic), max(r.x1 for r in latin))
+                if name in ("arabic", "hebrew"):
+                    self.assertTrue(document[0].search_for(text))
+                actual_pixels = document[0].get_pixmap(alpha=False).samples
+                self.assertEqual(actual_pixels, Image.open(self.root / "rgb.png").convert("RGB").tobytes())
+                document.close()
 
 
 if __name__ == "__main__":

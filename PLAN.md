@@ -72,6 +72,23 @@ focused workflows. Pending: corrected hosted C/sanitizer/wrapper results and the
 cancellation/recovery, mobile linking and device execution gates. No URL, pin,
 registry model, release or inference default is changed.
 
+## Reviewed PDF conformance — 9 November 2026
+
+Owner lane: `feat/ocr-reviewed-pdf-conformance`, based on `f2a0fec94` including
+the external metadata-test formatting correction. Add opt-in Unicode 17 bidi
+layout and genuine PDF/A-2b resources without changing legacy C structures or
+inference defaults. The explicit per-renderer bidi switch keeps the original
+rejecting path available; PDF/A remains an explicit export request.
+
+Implemented source: pinned Apache-2.0 SheenBidi, embedded generated sRGB output
+intent, synchronized XMP, PDF file IDs, native/Rust options, and independent
+artifact/negative-control gates. Initial hosted verification is pending.
+Acceptance requires unchanged page pixels/sizes, logical mixed-direction copy
+and search, combining marks, independent veraPDF 2b compliance and deliberately
+invalid controls rejected. Exact extracted strings and validator failures are
+retained, including failed attempts. See [the API and validation contract](docs/ocr-reviewed-pdf.md).
+No release asset or consumer production pin is changed by this lane.
+
 ## OCR review workspace integration — 8 November 2026
 
 Owner lane: `feature/ocr-production-workspace`, based on

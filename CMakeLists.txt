@@ -426,6 +426,14 @@ list(APPEND CRISPEMBED_SOURCES src/morph_fast.cpp)
 list(APPEND CRISPEMBED_SOURCES src/cc_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/classical_preproc.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_render.cpp)
+# Compile the pinned Unicode bidi implementation into our existing archives.
+# Keeping it in CRISPEMBED_SOURCES also closes mobile static/shared link graphs.
+list(APPEND CRISPEMBED_SOURCES vendor/sheenbidi/Source/SheenBidi.c)
+set_source_files_properties(vendor/sheenbidi/Source/SheenBidi.c PROPERTIES
+    COMPILE_DEFINITIONS SB_CONFIG_UNITY
+    INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/vendor/sheenbidi/Headers;${CMAKE_CURRENT_SOURCE_DIR}/vendor/sheenbidi/Source")
+set_source_files_properties(src/ocr_render.cpp PROPERTIES
+    INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/vendor/sheenbidi/Headers")
 list(APPEND CRISPEMBED_SOURCES src/dewarp.cpp)
 list(APPEND CRISPEMBED_SOURCES src/kie_pipeline.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lilt_kie.cpp)

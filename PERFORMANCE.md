@@ -1,3 +1,12 @@
+## Reviewed PDF export qualification (9 November 2026)
+
+The explicit bidi and PDF/A-2b paths have source-level guards and an independent
+hosted artifact lane. Initial runtime, extraction and conformance measurements
+are pending; no performance or archival-validation result is inferred from
+metadata presence. Source image preservation and logical Unicode extraction
+are distinct gates. Selection geometry is estimated within OCR regions rather
+than recovered typography. See [the protocol](docs/ocr-reviewed-pdf.md).
+
 ## Explicit phone-photo API (9 November 2026, hosted synthetic CPU panel)
 
 [Run 42590335637](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335637)
