@@ -1056,6 +1056,9 @@ target_link_libraries(test-marker-document PRIVATE crispembed)
 add_executable(test-marker-api tests/test-marker-api.cpp)
 target_link_libraries(test-marker-api PRIVATE crispembed)
 
+add_executable(test-license-consent tests/test_license_consent.cpp)
+target_link_libraries(test-license-consent PRIVATE crispembed)
+
 add_executable(test-marker-backend tests/test-marker-backend.cpp)
 target_link_libraries(test-marker-backend PRIVATE crispembed)
 
