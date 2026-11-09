@@ -31,13 +31,16 @@ at the run's independently resolved visual rectangle. Nested directional
 subtrees retain their logical order. The embedded font contains an original
 geometric glyph with the required advance for each fragment, so its text
 matrix stays uniform; stretching a unit glyph can confuse readers' spacing
-heuristics. Mapping fragments contain at most 63 UTF-16 units, including
-supplementary pairs, to fit legacy 256-character CMap token buffers as well as
+heuristics. Mapping fragments contain at most 32 Unicode scalars and 63 UTF-16
+units, including supplementary pairs, to fit older readers' scalar arrays and
+256-character CMap token buffers as well as
 the 512-byte UTF-16BE limit in
 [ISO 32000-1 section 9.10.3](https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf),
 including supplementary pairs and combining clusters at that boundary. An
 extreme combining cluster split across mappings partitions its original cell
-without overprinting or discarding marks. Paragraph separators remain in the
+without overprinting or discarding marks. A text object spans consecutive
+fragments so a leading combining mark inherits its base's direction rather
+than restarting in the reader's default direction. Paragraph separators remain in the
 logical text with zero selection width. The visible
 page is always the original supplied raster. Selection geometry remains an
 estimate within the supplied OCR region: the renderer does not recover fonts,

@@ -865,9 +865,11 @@ static void prepare_pdf_bidi_word(stored_word & word, int page_height, bool trai
         for (const auto & run : groups) {
             for (size_t start = run.start; start < run.end;) {
                 size_t end = start, units = 0;
-                // 63 UTF-16 units also fit readers with a 256-character
-                // CMap token buffer, below the ISO 512-byte string ceiling.
-                while (end < run.end && units + (text[end] <= 0xffff ? 1 : 2) <= 63) {
+                // Keep both limits: legacy CMap lexers have 256-character
+                // token buffers, and MuPDF 1.26.11 admits at most 32 scalars
+                // in a one-to-many mapping (PDF_MRANGE_CAP). Longer mappings
+                // can lose direction before ActualText restores their text.
+                while (end < run.end && end - start < 32 && units + (text[end] <= 0xffff ? 1 : 2) <= 63) {
                     units += text[end] <= 0xffff ? 1 : 2;
                     end++;
                 }
@@ -923,17 +925,22 @@ static void prepare_pdf_bidi_word(stored_word & word, int page_height, bool trai
 
 static void pdf_bidi_word(std::string & content, const stored_word & word,
                           const std::map<uint32_t, size_t> & characters, const pdf_document & doc) {
+    // BT resets direction state in readers. Keep fragments in one text
+    // object so a mapping beginning with a combining mark inherits the
+    // direction of its base, including very long base/mark clusters.
+    content += "BT\n3 Tr\n";
     for (const auto & span : word.pdf_spans) {
         const size_t character = characters.at(span.character) - 1;
-        content += "/Span << /ActualText " + pdf_unicode_string(span.text) + " >> BDC\nBT\n3 Tr\n";
+        content += "/Span << /ActualText " + pdf_unicode_string(span.text) + " >> BDC\n";
         // Real embedded advance widths keep the text matrix uniform. An
         // anisotropically stretched unit glyph confuses line/space inference.
         content += "/F" + std::to_string(character / pdf_cids_per_font + 1) + " " + decimal(span.height) +
                    " Tf\n1 0 0 1 " + decimal(span.x) + " " + decimal(span.y) + " Tm\n<";
         hex16(content, pdf_cid(character % pdf_cids_per_font));
-        content += "> Tj\nET\nEMC\n";
+        content += "> Tj\nEMC\n";
         doc.check_bytes(content.size());
     }
+    content += "ET\n";
 }
 
 static std::string pdf_archival_catalog(pdf_document & doc) {

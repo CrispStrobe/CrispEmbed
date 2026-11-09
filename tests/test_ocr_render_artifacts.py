@@ -427,6 +427,8 @@ class ArtifactTests(unittest.TestCase):
                     mappings += re.findall(rb"<[0-9A-F]+>\s*<([0-9A-F]+)>", cmap)
                 self.assertTrue(all(len(value) // 2 <= 512 for value in mappings), "ToUnicode exceeds ISO string limit")
                 self.assertTrue(all(len(value) <= 252 for value in mappings), "ToUnicode exceeds reader token limit")
+                self.assertTrue(all(len(bytes.fromhex(value.decode()).decode("utf-16-be")) <= 32
+                                    for value in mappings), "ToUnicode exceeds reader scalar mapping limit")
                 for engine, probe in probes.items():
                     with self.subTest(reader=engine):
                         self.assertEqual(probe["exit_code"], 0, engine + " failed: " + str(probe))
