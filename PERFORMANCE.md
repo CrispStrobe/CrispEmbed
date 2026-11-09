@@ -1,5 +1,24 @@
 ## Reviewed PDF export qualification (9 November 2026)
 
+The final immutable [writer source `9c44a69`](tests/results/ocr-render/writer-9c44a69.json)
+passes its bounded-writer, scalar-copy/BMP-search and archival component job.
+The same 11-page, 2048 by 2048 random-RGB fixture produces 138,448,604 bytes
+under the 256 MiB ceiling in 10.48 seconds (10.08 user, 0.35 system), using
+59,128 KiB maximum RSS and no swaps. All pages retain physical sizes and text;
+first/last pixels and four-reader text are independently checked. Thirteen
+PDF/A-2b positives pass veraPDF; both damaged controls fail. Ten production
+Rust writer contracts and the separate large case pass. The complete
+65,542-scalar two-page font-subset case also passes. This is hosted component
+evidence, without a mobile peak-memory, 5,000-page or full-application claim.
+
+The separate strict reader-limit diagnostic keeps the original supplementary
+search and dense single-page assertions. General bidi remains disabled.
+At [reflection source `9cc9e10`](tests/results/ocr-render/strategies-9cc9e10.json),
+all 84 variants preserve pixels/text bounds and pass PDF/A-2b, but no strategy
+passes all twelve logical extraction/search fixtures. Document reading
+direction improves selected PDFium runs while reflected advances worsen
+other readers. These differences are not production performance gains.
+
 Source-specific [f06ea90](tests/results/ocr-render/readers-f06ea90.json) and
 [ef8ab9a](tests/results/ocr-render/readers-ef8ab9a.json) each pass 59 native
 checks, 16 independent PDF/A-2b positives and two negative controls. Both keep

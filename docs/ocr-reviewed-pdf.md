@@ -5,6 +5,14 @@ Unicode text, and scales both into the caller's physical page dimensions.
 Reviewed text is supplied in logical reading order. Existing C structures and
 legacy entry points keep their layouts and compatibility defaults.
 
+The immutable source `9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a` passes
+the [bounded writer, scalar Unicode and archival job](../tests/results/ocr-render/writer-9c44a69.json)
+and the [actual Windows Unicode path job](../tests/results/ocr-render/windows-9c44a69.json).
+This qualifies those native components for a matching application build.
+It does not qualify general bidirectional extraction, every reader's search,
+mobile performance, or the complete application. The strict reader-limit job
+remains separate and retains its failures.
+
 ## Explicit options and capabilities
 
 `crispembed_ocr_render_capabilities()` advertises PDF `1`, Unicode mappings `2`,
@@ -238,8 +246,27 @@ failing diagnostic; no text is deleted or relabeled as a pass.
 The writer workflow reports separate jobs for writer/archive/exact-copy and
 BMP search, and for strict supplementary search and dense-page limits. A failed
 diagnostic stays red and keeps its complete PDFs and reader output. The full
-artifact workflow also retains all original strict assertions. The next exact
-candidate includes panic-payload containment and the separate Windows Unicode
-image-path fix; their source-specific hosted gates must finish before an app
-pin changes. General bidi and universal search compatibility remain unqualified.
-No release asset changes as part of this lane.
+artifact workflow also retains all original strict assertions. The combined
+`9c44a69` source includes panic-payload containment, Windows Unicode image-path
+handling and the external clean-exit test updates. Its writer job passes 70 C
+controls, 11 scalar artifact methods, ten production Rust contracts and the
+separately executed large-file case. All thirteen actual PDF/A-2b positives
+pass veraPDF and both deliberately damaged files fail. The full 65,542-scalar
+subset fixture passes across two pages, with the font transition inside page 2.
+
+The retained 138,448,604-byte, eleven-page export takes 10.48 seconds and
+59,128 KiB maximum resident memory on this hosted run. Every page's text,
+count and physical size is checked; the first and last pages also have exact
+decoded/rendered image pixels and four-reader copied text. These measurements
+describe one fixture, without promising device memory or throughput. The
+Windows job passes 21 production, 18 standalone and nine historical-control
+checks, followed by independent pixels/text/geometry checks on four PDFs.
+
+The [reflected-axis reader experiment](../tests/results/ocr-render/strategies-9cc9e10.json)
+retains all 84 valid archival files and their complete reader outputs. Negative
+text advances and a document-wide reading-direction preference do not solve
+the mixed-script matrix. Selected PDFium cases improve while other readers
+reverse text or split characters; supplementary extraction can also fail its
+strict UTF-16 decoding. No strategy qualifies all twelve cases. General bidi
+and universal search compatibility remain unqualified, and no release asset
+changes as part of this lane.

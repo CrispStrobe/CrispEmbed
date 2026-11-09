@@ -9,8 +9,11 @@ image loader/writer and their standalone OCR harness. This is a file-I/O boundar
 repair, preserving image math, inference defaults, releases and model aliases.
 The [Windows protocol](docs/ocr-windows-paths.md) executes production translation
 units, exact ASCII/Unicode pixel and patch comparisons, four independently read
-PDFs and a historical ANSI negative control. Hosted execution is pending; no
-native/model build is performed in the editing environment.
+PDFs and a historical ANSI negative control. The combined immutable
+`9c44a69` source passes the [actual hosted Windows job](tests/results/ocr-render/windows-9c44a69.json):
+21 production, 18 standalone and nine historical checks, plus independent
+four-PDF text, geometry and exact-pixel checks. No full desktop/model claim
+follows from this file-I/O qualification.
 
 ## Phone-photo geometry — 9 November 2026
 
@@ -117,14 +120,23 @@ PDFium supplementary searches and the retained Poppler single-page density
 stress case. Strict bidi at the same source is MuPDF 11/11, pypdf 11/11,
 Poppler CLI 2/11 and PDFium 1/11, so bit16 remains withheld.
 
-Next exact candidate: combine `f39bcdf` panic-payload containment and the
-isolated Windows UTF-8 image-path fix. Qualify writer/archive/exact-copy/BMP
-search separately from still-failing supplementary-search and extreme-density
-diagnostic jobs, retaining every original assertion and the independent
-producer control. The positive CID-subset test keeps all 65,542 scalars across
-two pages, with both font subsets used inside page 2. Continue the separate
-scalar/cluster bidi matrix after its fontTools fixture fix. The app owns atomic
-publication and final paired native/mobile execution; no pending job is a pass.
+Qualified native component source: `9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a`
+combines panic-payload containment, the Windows UTF-8 image-path fix and the
+external clean-exit test updates. Its [writer component job](tests/results/ocr-render/writer-9c44a69.json)
+passes 70 C checks, 11 artifact methods, ten production Rust contracts, the
+explicit large-file case, thirteen archival positives and both rejecting
+controls. All 65,542 scalars survive the two-page subset transition. Its
+separate strict supplementary-search/extreme-density job retains every
+original assertion and the independent producer control; this is not a
+whole-workflow or universal-reader pass. The app owns atomic publication and
+final paired native/mobile execution.
+
+The [84-output reflected-axis matrix](tests/results/ocr-render/strategies-9cc9e10.json)
+passes all pixel, text-bound and archival checks, but no representation passes
+every logical extraction/search case. Negative text advances and document-wide
+reading direction do not close mixed-script reader differences. Bidi bit16
+remains withheld. Preserve valid logical text and the exact failed reader
+outputs while assessing any further standards-valid representation.
 
 Preserved reader evidence: `f06ea90` exercises PDFium after repairing the
 harness; `ef8ab9a` fixes MuPDF's 32-scalar boundary but exposes inherited

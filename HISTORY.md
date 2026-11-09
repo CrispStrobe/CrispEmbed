@@ -2,6 +2,29 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 9 November 2026 — qualified bounded writer and Windows path components
+
+The immutable `9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a` source passes its
+[writer/archive/scalar-Unicode job](tests/results/ocr-render/writer-9c44a69.json)
+and [actual Windows file-I/O job](tests/results/ocr-render/windows-9c44a69.json).
+The writer job passes 70 native checks, 11 artifact methods, ten production
+Rust contracts and the explicitly executed >128 MiB file control. Thirteen
+actual PDFs pass veraPDF PDF/A-2b and both damaged controls are rejected.
+All 65,542 source scalars survive two pages and the font-subset transition.
+The 138,448,604-byte file retains eleven pages; the observed 10.48 seconds and
+59,128 KiB maximum RSS describe this hosted fixture only. The Windows source
+passes 21 production, 18 standalone and nine historical-negative checks, then
+independent exact pixels, physical sizes and copied text for four PDFs.
+
+Capability mask 47 advertises these components while withholding bidi bit16.
+The separate strict supplementary-search/dense-page diagnostic remains a
+distinct job, without weakening its assertions or claiming universal reader
+compatibility. The [reflected-axis experiment](tests/results/ocr-render/strategies-9cc9e10.json)
+produces 84 archival-valid, pixel-identical files with text bounds preserved;
+none of seven representations passes all twelve extraction/search cases.
+These reader failures remain outside production enablement. No runtime
+release, recognition-model default or release asset changes here.
+
 ## 9 November 2026 — reviewed PDF export implementation checkpoint
 
 At [writer source `2111db64`](tests/results/ocr-render/writer-2111db6.json),

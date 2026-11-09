@@ -1,0 +1,781 @@
+{
+  "source_sha": "9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a",
+  "run_id": 42629559186,
+  "job_id": 129202017949,
+  "job_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42629559186/job/129202017949",
+  "job_conclusion": "success",
+  "workflow_scope": "The independent strict supplementary-search/dense-page diagnostic is a separate job; this receipt is not a whole-workflow or universal-reader pass.",
+  "reader_limit_diagnostic": {
+    "job_id": 129216047954,
+    "status_at_recording": "queued",
+    "prior_failures_retained": true
+  },
+  "native_checks": {
+    "passed": 70,
+    "failed": 0
+  },
+  "artifact_test_methods": {
+    "passed": 11,
+    "failed": 0
+  },
+  "production_rust_contracts": {
+    "passed": 10,
+    "failed": 0,
+    "large_case_separately_executed": true,
+    "scope": "Exact production Rust wrapper/FFI source slices against the actual model-free native renderer; complete inference crate and application are separately paired."
+  },
+  "capabilities": 47,
+  "native_test_library_sha256": "fe7ef3095b54da3b394bbf9c8e217e080675df07c45b14fa915eeec006bd8a52",
+  "artifacts": [
+    {
+      "id": 13681417682,
+      "name": "ocr-writer-qualification",
+      "bytes": 746848,
+      "sha256": "d8886b455f860b660fba42af7b01623b7830fe82dc11c9a99e6b873d328bd55c",
+      "retention_days": 90,
+      "download_digest_verified": true
+    },
+    {
+      "id": 13682136917,
+      "name": "ocr-writer-large-file",
+      "bytes": 151047286,
+      "sha256": "3046a1cbbdd353d791870001f787d49c0dd011438a54eb13b45bbe05dd9ee74b",
+      "retention_days": 90,
+      "large_archive_downloaded": false
+    },
+    {
+      "id": 13681597650,
+      "name": "ocr-writer-diagnostic-native",
+      "bytes": 166987,
+      "sha256": "c9809139fc1feb794e0af5fc9a21e274473091863bb1a621081940f48e887a55",
+      "retention_days": 90
+    }
+  ],
+  "large_export": {
+    "pages": 11,
+    "source_pixels_per_page": [
+      2048,
+      2048
+    ],
+    "output_bytes": 138448604,
+    "output_sha256": "9b6373de24123203c87c39c588d8c79eff0abe1db9c5c5167bcf69c680a53e79",
+    "output_cap_bytes": 268435456,
+    "elapsed_seconds": 10.48,
+    "user_seconds": 10.08,
+    "system_seconds": 0.35,
+    "max_rss_kib": 59128,
+    "swaps": 0,
+    "all_page_count_sizes_and_text_checked": true,
+    "independent_four_reader_copy_and_image_pixels_checked_pages": [
+      1,
+      11
+    ],
+    "scope": "One hosted seeded random RGB fixture; not a mobile or universal peak-memory or 5000-page throughput guarantee"
+  },
+  "scalar_artifacts": {
+    "tests": [
+      {
+        "image": "rgb.png",
+        "max_pixel_error": 0,
+        "mean_pixel_error": 0.0,
+        "points": [
+          160,
+          120
+        ]
+      },
+      {
+        "image": "gray.png",
+        "max_pixel_error": 0,
+        "mean_pixel_error": 0.0,
+        "points": [
+          160,
+          120
+        ]
+      },
+      {
+        "image": "alpha.png",
+        "max_pixel_error": 0,
+        "mean_pixel_error": 0.0,
+        "points": [
+          160,
+          120
+        ]
+      },
+      {
+        "image": "palette.png",
+        "max_pixel_error": 0,
+        "mean_pixel_error": 0.0,
+        "points": [
+          160,
+          120
+        ]
+      },
+      {
+        "image": "rgb.jpg",
+        "max_pixel_error": 1,
+        "mean_pixel_error": 0.000234375,
+        "points": [
+          160,
+          120
+        ]
+      },
+      {
+        "unicode": "café € Ελληνικά 中文 😀 é",
+        "long_text_bytes": 11219,
+        "independent_extractors": [
+          "PyMuPDF",
+          "Poppler",
+          "pypdf"
+        ]
+      },
+      {
+        "page_count": 125,
+        "page_tree": "parsed_without_repair"
+      },
+      {
+        "unique_scalars": 65542,
+        "font_subsets": 2,
+        "pages": 2,
+        "scalars_per_page": [
+          32000,
+          33542
+        ],
+        "fonts_used_per_page": [
+          [
+            "/F1"
+          ],
+          [
+            "/F1",
+            "/F2"
+          ]
+        ]
+      },
+      {
+        "xml_bytes": 11209,
+        "controls": "replacement-decoded"
+      },
+      {
+        "bidi_pdf": "explicit_unsupported_error",
+        "bidi_alto_text": "exact"
+      },
+      {
+        "archival_file": "archival-rgb.pdf",
+        "pages": 2,
+        "pixel_control": "exact",
+        "declared_profile": "PDF/A-2b"
+      },
+      {
+        "archival_file": "archival-gray.pdf",
+        "pages": 2,
+        "pixel_control": "exact",
+        "declared_profile": "PDF/A-2b"
+      },
+      {
+        "archival_file": "archival-alpha.pdf",
+        "pages": 2,
+        "pixel_control": "exact",
+        "declared_profile": "PDF/A-2b"
+      },
+      {
+        "archival_file": "archival-jpeg.pdf",
+        "pages": 2,
+        "pixel_control": "exact",
+        "declared_profile": "PDF/A-2b"
+      },
+      {
+        "archival_file": "archival-text.pdf",
+        "pages": 2,
+        "pixel_control": "exact",
+        "declared_profile": "PDF/A-2b"
+      },
+      {
+        "streamed_file": "archival-streamed-rgb.pdf",
+        "calls": 75,
+        "written": 14445,
+        "maximum_slice": 3646,
+        "errors": []
+      },
+      {
+        "stream_preserved": "archival-streamed-rgb.pdf",
+        "pages": 2,
+        "image_pixels": "equal_to_byte_api",
+        "readers": 4,
+        "search_readers": 2,
+        "search_scope": "BMP Latin and CJK; supplementary search remains a separate strict diagnostic"
+      },
+      {
+        "streamed_file": "archival-streamed-gray.pdf",
+        "calls": 75,
+        "written": 14429,
+        "maximum_slice": 3638,
+        "errors": []
+      },
+      {
+        "stream_preserved": "archival-streamed-gray.pdf",
+        "pages": 2,
+        "image_pixels": "equal_to_byte_api",
+        "readers": 4,
+        "search_readers": 2,
+        "search_scope": "BMP Latin and CJK; supplementary search remains a separate strict diagnostic"
+      },
+      {
+        "streamed_file": "archival-streamed-alpha.pdf",
+        "calls": 75,
+        "written": 14275,
+        "maximum_slice": 3561,
+        "errors": []
+      },
+      {
+        "stream_preserved": "archival-streamed-alpha.pdf",
+        "pages": 2,
+        "image_pixels": "equal_to_byte_api",
+        "readers": 4,
+        "search_readers": 2,
+        "search_scope": "BMP Latin and CJK; supplementary search remains a separate strict diagnostic"
+      },
+      {
+        "streamed_file": "archival-streamed-jpeg.pdf",
+        "calls": 75,
+        "written": 16583,
+        "maximum_slice": 4715,
+        "errors": []
+      },
+      {
+        "stream_preserved": "archival-streamed-jpeg.pdf",
+        "pages": 2,
+        "image_pixels": "equal_to_byte_api",
+        "readers": 4,
+        "search_readers": 2,
+        "search_scope": "BMP Latin and CJK; supplementary search remains a separate strict diagnostic"
+      },
+      {
+        "streamed_file": "archival-streamed-text.pdf",
+        "calls": 67,
+        "written": 6962,
+        "maximum_slice": 1642,
+        "errors": []
+      },
+      {
+        "stream_preserved": "archival-streamed-text.pdf",
+        "pages": 2,
+        "image_pixels": "equal_to_byte_api",
+        "readers": 4,
+        "search_readers": 2,
+        "search_scope": "BMP Latin and CJK; supplementary search remains a separate strict diagnostic"
+      },
+      {
+        "ltr_opt_in": "identical_scalar_content",
+        "readers": 4
+      }
+    ],
+    "capabilities": 47
+  },
+  "rust_source": {
+    "source_sha": "9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a",
+    "rustc": "rustc 1.90.0 (1159e78c4 2025-09-14)\nbinary: rustc\ncommit-hash: 1159e78c4747b02ef996e55082b704c09b970588\ncommit-date: 2025-09-14\nhost: x86_64-unknown-linux-gnu\nrelease: 1.90.0\nLLVM version: 20.1.8",
+    "source_slices_sha256": {
+      "OcrResult": "9754c9cc50ef2ca00793aa7e752ee2d0240075f690033b2ed0d1ff9ff67c91e9",
+      "renderer": "f3d7ac4b90ff5dc1bf519da93d3357d59a29c0b5a2f406dcfa1a2cf052dd58ce",
+      "ffi": "e02fef664f2cacc5784214b4a886115f443b612b44d8407082f66802264c75ac"
+    },
+    "translation_unit_sha256": "20ba314aa6c2fcd77acdc15249fd59fc0b63da3387fb53c5817d2cde13a92969",
+    "scope": "Exact production wrapper/FFI against model-free native library; not the complete inference crate"
+  },
+  "stream_validation": {
+    "source_sha": "9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a",
+    "scope": "Qualified scalar Unicode, archival resources and synchronous bounded writer; bidi remains separate",
+    "validator": "veraPDF 1.30.2\nBuilt: Wed Jun 03 10:55:00 UTC 2026\nDeveloped and released by the veraPDF Consortium.\nFunded by the PREFORMA project.\nReleased under the GNU General Public License v3\nand the Mozilla Public License v2 or later.",
+    "positive": [
+      {
+        "file": "archival-rgb.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 14476,
+        "sha256": "9df480bb56c3ad36cc7475664916d256a61dd54f8461f6cfcda748f933c34adc"
+      },
+      {
+        "file": "archival-gray.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 14460,
+        "sha256": "d9f11efe703d74a07b5f990c05efe215a78305de0c4197476058e764320e6704"
+      },
+      {
+        "file": "archival-alpha.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 14306,
+        "sha256": "4cb8015c1e79f38b6533a5a71b02f4344453060592667cfab3ff96ae899c3e33"
+      },
+      {
+        "file": "archival-jpeg.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 16614,
+        "sha256": "c8632b692c591a58f12be206ab4fbfa3df7fc7f3aef09e031579b1971b4523a1"
+      },
+      {
+        "file": "archival-text.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 6993,
+        "sha256": "220212d6e17ebd31897e9a7de9c9d34806d21d8a4641e562f0c2eeda130b6e39"
+      },
+      {
+        "file": "archival-streamed-rgb.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 14445,
+        "sha256": "123b9d84e7742b88fecbf47dc280c7ddadde62e5aa2922fdc9fa36b75549ba2a"
+      },
+      {
+        "file": "archival-streamed-gray.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 14429,
+        "sha256": "ccd4927ecce0ee2dda8efb9fd1dd66330ee516cedcc9338e50a28be4939dcaa0"
+      },
+      {
+        "file": "archival-streamed-alpha.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 14275,
+        "sha256": "ed6a50ba44c6df6eb0a9d2dbd5fabfa9c07ac11520eb329182de32bc72881b9c"
+      },
+      {
+        "file": "archival-streamed-jpeg.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 16583,
+        "sha256": "106dbedc974adec227e1eaa20340d1ba3b160b8b6774c0252101da50dfa29cb6"
+      },
+      {
+        "file": "archival-streamed-text.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 6962,
+        "sha256": "25ea145f78edd584133d806952fa67ba47dbc5687c496b3eff4d18d9a0b978a7"
+      },
+      {
+        "file": "archival-rust-short.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 10111,
+        "sha256": "601b2ab0fe0d33247ab696020c92d035fecadf6e29cccc8c2753edd4afb0f642"
+      },
+      {
+        "file": "archival-rust-file.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 14448,
+        "sha256": "5d072d317bf5337683c2e7d53014a5813dafd1cebad935df1b5e504d7eea95ec"
+      },
+      {
+        "file": "archival-large-stream.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": [],
+        "bytes": 138448604,
+        "sha256": "9b6373de24123203c87c39c588d8c79eff0abe1db9c5c5167bcf69c680a53e79"
+      }
+    ],
+    "negative": [
+      {
+        "file": "stream-no-intent.pdf",
+        "exit_code": 1,
+        "compliant": false,
+        "failed_rules": [
+          "<rule specification=\"ISO 19005-2:2011\" clause=\"6.2.4.3\" testNumber=\"2\" status=\"failed\" failedChecks=\"2\">\n            <description>DeviceRGB shall only be used if a device independent DefaultRGB colour space has been set when the DeviceRGB colour space is used, or if the file has a PDF/A OutputIntent that contains an RGB destination profile</description>\n            <object>PDDeviceRGB</object>\n            <test>gOutputCS != null &amp;&amp; gOutputCS == \"RGB \"</test>\n            <check status=\"failed\">\n              <context>root/document[0]/pages[0](11 0 obj PDPage)/contentStream[0](10 0 obj PDContentStream)/operators[4]/xObject[0](9 0 obj PDXImage)/imageCS[0]</context>\n              <errorMessage>DeviceRGB colour space is used without RGB output intent profile</errorMessage>\n            </check>\n            <check status=\"failed\">\n              <context>root/document[0]/pages[1](14 0 obj PDPage)/contentStream[0](13 0 obj PDContentStream)/operators[4]/xObject[0](12 0 obj PDXImage)/imageCS[0]</context>\n              <errorMessage>DeviceRGB colour space is used without RGB output intent profile</errorMessage>\n            </check>\n          </rule>\n        "
+        ]
+      },
+      {
+        "file": "stream-no-xmp.pdf",
+        "exit_code": 1,
+        "compliant": false,
+        "failed_rules": [
+          "<rule specification=\"ISO 19005-2:2011\" clause=\"6.6.2.1\" testNumber=\"1\" status=\"failed\" failedChecks=\"1\">\n            <description>The Catalog dictionary of a conforming file shall contain the Metadata key whose value is a metadata stream as defined in ISO 32000-1:2008, 14.3.2. The metadata stream dictionary shall contain entry Type with value /Metadata and entry Subtype with value /XML</description>\n            <object>PDDocument</object>\n            <test>containsMetadata == true</test>\n            <check status=\"failed\">\n              <context>root/document[0]</context>\n              <errorMessage>The document catalog dictionary doesn't contain metadata key or metadata stream dictionary does not contain either entry Type with value /Metadata or entry Subtype with value /XML</errorMessage>\n            </check>\n          </rule>\n        "
+        ]
+      }
+    ],
+    "missing": [],
+    "errors": [],
+    "reader_checks": [
+      {
+        "file": "archival-rust-short.pdf",
+        "expected_pages": 1,
+        "probes": [
+          {
+            "engine": "PyMuPDF",
+            "file": "archival-rust-short.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "versions": {
+              "pymupdf": "1.26.6",
+              "mupdf": "1.26.11"
+            },
+            "repaired": false,
+            "pages": 1,
+            "extracted": "Rust short writes café 中文 😀\n",
+            "search": {},
+            "pixel_sha256": "7e74b9074b17b4091bdd2186c9994dbb71e0d59cbd05589fbcbf9bc75868727f",
+            "pixel_size": [
+              160,
+              120
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "Poppler",
+            "file": "archival-rust-short.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "reader_exit_code": 0,
+            "reader_stderr": "",
+            "extracted": "Rust short writes café 中文 😀\n\f",
+            "word_api_exit_code": 0,
+            "word_api_stderr": "",
+            "exit_code": 0
+          },
+          {
+            "engine": "pypdf",
+            "file": "archival-rust-short.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "pages": 1,
+            "extracted": "Rust short writes café 中文 😀",
+            "exit_code": 0
+          },
+          {
+            "engine": "PDFium",
+            "file": "archival-rust-short.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "versions": {
+              "wrapper": "5.15.1",
+              "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+              "flags": []
+            },
+            "binary_sha256": {
+              "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+            },
+            "pages": 1,
+            "extracted": "Rust short writes café 中文 😀",
+            "search": {},
+            "exit_code": 0
+          }
+        ],
+        "images": [
+          {
+            "page_index": 0,
+            "decoded_and_rendered_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0"
+          }
+        ],
+        "passed": true
+      },
+      {
+        "file": "archival-rust-file.pdf",
+        "expected_pages": 2,
+        "probes": [
+          {
+            "engine": "PyMuPDF",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "versions": {
+              "pymupdf": "1.26.6",
+              "mupdf": "1.26.11"
+            },
+            "repaired": false,
+            "pages": 2,
+            "extracted": "Rust file page one café 中文 😀\n",
+            "search": {},
+            "pixel_sha256": "7e74b9074b17b4091bdd2186c9994dbb71e0d59cbd05589fbcbf9bc75868727f",
+            "pixel_size": [
+              160,
+              120
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "Poppler",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "reader_exit_code": 0,
+            "reader_stderr": "",
+            "extracted": "Rust file page one café 中文 😀\n\f",
+            "word_api_exit_code": 0,
+            "word_api_stderr": "",
+            "exit_code": 0
+          },
+          {
+            "engine": "pypdf",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "pages": 2,
+            "extracted": "Rust file page one café 中文 😀",
+            "exit_code": 0
+          },
+          {
+            "engine": "PDFium",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "versions": {
+              "wrapper": "5.15.1",
+              "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+              "flags": []
+            },
+            "binary_sha256": {
+              "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+            },
+            "pages": 2,
+            "extracted": "Rust file page one café 中文 😀",
+            "search": {},
+            "exit_code": 0
+          },
+          {
+            "engine": "PyMuPDF",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 1,
+            "stage": "complete",
+            "versions": {
+              "pymupdf": "1.26.6",
+              "mupdf": "1.26.11"
+            },
+            "repaired": false,
+            "pages": 2,
+            "extracted": "Rust file page two complete\n",
+            "search": {},
+            "pixel_sha256": "e7ca6a34a84981c5c750f043419713c7f3aa7df81da79dd3ca9036c03430449e",
+            "pixel_size": [
+              180,
+              135
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "Poppler",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 1,
+            "stage": "complete",
+            "reader_exit_code": 0,
+            "reader_stderr": "",
+            "extracted": "Rust file page two complete\n\f",
+            "word_api_exit_code": 0,
+            "word_api_stderr": "",
+            "exit_code": 0
+          },
+          {
+            "engine": "pypdf",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 1,
+            "stage": "complete",
+            "pages": 2,
+            "extracted": "Rust file page two complete",
+            "exit_code": 0
+          },
+          {
+            "engine": "PDFium",
+            "file": "archival-rust-file.pdf",
+            "status": "passed",
+            "page_index": 1,
+            "stage": "complete",
+            "versions": {
+              "wrapper": "5.15.1",
+              "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+              "flags": []
+            },
+            "binary_sha256": {
+              "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+            },
+            "pages": 2,
+            "extracted": "Rust file page two complete",
+            "search": {},
+            "exit_code": 0
+          }
+        ],
+        "images": [
+          {
+            "page_index": 0,
+            "decoded_and_rendered_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0"
+          },
+          {
+            "page_index": 1,
+            "decoded_and_rendered_sha256": "05f0f2497075abd8b146954534422169dca302126e675c69a493e4d3f218ccc0"
+          }
+        ],
+        "passed": true
+      },
+      {
+        "file": "archival-large-stream.pdf",
+        "expected_pages": 11,
+        "probes": [
+          {
+            "engine": "PyMuPDF",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "versions": {
+              "pymupdf": "1.26.6",
+              "mupdf": "1.26.11"
+            },
+            "repaired": false,
+            "pages": 11,
+            "extracted": "Large streamed page 1 of 11 complete\n",
+            "search": {},
+            "pixel_sha256": "6e0bd6f991f99f47ed283a47cec83366963c77c184ef251d8e7bc616128f6927",
+            "pixel_size": [
+              512,
+              512
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "Poppler",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "reader_exit_code": 0,
+            "reader_stderr": "",
+            "extracted": "Large streamed page 1 of 11 complete\n\f",
+            "word_api_exit_code": 0,
+            "word_api_stderr": "",
+            "exit_code": 0
+          },
+          {
+            "engine": "pypdf",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "pages": 11,
+            "extracted": "Large streamed page 1 of 11 complete",
+            "exit_code": 0
+          },
+          {
+            "engine": "PDFium",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 0,
+            "stage": "complete",
+            "versions": {
+              "wrapper": "5.15.1",
+              "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+              "flags": []
+            },
+            "binary_sha256": {
+              "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+            },
+            "pages": 11,
+            "extracted": "Large streamed page 1 of 11 complete",
+            "search": {},
+            "exit_code": 0
+          },
+          {
+            "engine": "PyMuPDF",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 10,
+            "stage": "complete",
+            "versions": {
+              "pymupdf": "1.26.6",
+              "mupdf": "1.26.11"
+            },
+            "repaired": false,
+            "pages": 11,
+            "extracted": "Large streamed page 11 of 11 complete\n",
+            "search": {},
+            "pixel_sha256": "6e0bd6f991f99f47ed283a47cec83366963c77c184ef251d8e7bc616128f6927",
+            "pixel_size": [
+              512,
+              512
+            ],
+            "exit_code": 0
+          },
+          {
+            "engine": "Poppler",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 10,
+            "stage": "complete",
+            "reader_exit_code": 0,
+            "reader_stderr": "",
+            "extracted": "Large streamed page 11 of 11 complete\n\f",
+            "word_api_exit_code": 0,
+            "word_api_stderr": "",
+            "exit_code": 0
+          },
+          {
+            "engine": "pypdf",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 10,
+            "stage": "complete",
+            "pages": 11,
+            "extracted": "Large streamed page 11 of 11 complete",
+            "exit_code": 0
+          },
+          {
+            "engine": "PDFium",
+            "file": "archival-large-stream.pdf",
+            "status": "passed",
+            "page_index": 10,
+            "stage": "complete",
+            "versions": {
+              "wrapper": "5.15.1",
+              "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+              "flags": []
+            },
+            "binary_sha256": {
+              "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+            },
+            "pages": 11,
+            "extracted": "Large streamed page 11 of 11 complete",
+            "search": {},
+            "exit_code": 0
+          }
+        ],
+        "images": [
+          {
+            "page_index": 0,
+            "decoded_and_rendered_sha256": "25a23d87635059f5a7e84ca2c17e14545c05f67db5742a41ca33e4d3faf8ad16"
+          },
+          {
+            "page_index": 10,
+            "decoded_and_rendered_sha256": "25a23d87635059f5a7e84ca2c17e14545c05f67db5742a41ca33e4d3faf8ad16"
+          }
+        ],
+        "output_limit": 268435456,
+        "exceeds_legacy_buffer_ceiling": true,
+        "passed": true
+      }
+    ]
+  }
+}
