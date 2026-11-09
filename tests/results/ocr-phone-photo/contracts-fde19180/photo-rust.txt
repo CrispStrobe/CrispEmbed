@@ -1,0 +1,8 @@
+
+running 3 tests
+test full_frame_and_zero_rotation_retain_rgb ... ok
+test invalid_buffers_angles_and_corners_are_errors ... ok
+test blank_angle_is_inconclusive_and_rotation_expands ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

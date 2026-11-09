@@ -1,0 +1,46 @@
+{
+  "schema": "crispembed-phone-photo-hosted-review-v1",
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42577017175",
+  "run_id": 42577017175,
+  "job_id": 129026910369,
+  "feature_head": "03a862a4ad9bb025b990db5071eeb7f0b9223cc1",
+  "checkout_commit": "a3de9ef52a9faf043adb0a7d661ca2370117c4db",
+  "conclusion": "success",
+  "review_scope": "Exact job steps, decoded job log, artifact metadata and all eight historical quality-v1 source hashes at the feature head; large artifact retained remotely",
+  "checks": {
+    "native_geometry": "passed",
+    "address_and_undefined_behavior_sanitizers": "passed",
+    "actual_downstream_text": "passed",
+    "environment_inventory": "433 documented variables",
+    "legacy_gate_byte_identity": "passed",
+    "corner_permutations": 24,
+    "projective_coordinate_ramp_mae_8bit": 0.283081,
+    "legacy_coordinate_ramp_mae_8bit": 11.1119,
+    "historical_quality_receipt_source_hashes_match": 8
+  },
+  "cases_from_job_log": [
+    {"case": "aligned", "raw_cer": 0, "bounded_cer": 0, "detected_angle": 0},
+    {"case": "clockwise", "raw_cer": 0.026970954356846474, "bounded_cer": 0, "detected_angle": 4.2},
+    {"case": "counterclockwise_shadow", "raw_cer": 0.02074688796680498, "bounded_cer": 0, "detected_angle": -6.7},
+    {"case": "steep_shadow", "raw_cer": 0.12448132780082988, "bounded_cer": 0, "detected_angle": 10},
+    {"case": "perspective_shadow", "raw_cer": 0.14522821576763487, "projective_cer": 0.004149377593360996, "legacy_cer": 0.008298755186721992}
+  ],
+  "artifact": {
+    "id": 13655719837,
+    "name": "ocr-phone-photo-quality",
+    "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42577017175/artifacts/13655719837",
+    "size_in_bytes": 15055607,
+    "sha256": "2e36ed6c96cf873d9e63edec867c15b9413a05f47532347f15f7345a72bc013b",
+    "created_at": "2026-11-09T07:17:22Z",
+    "expires_at": "2026-12-09T07:17:19Z"
+  },
+  "synthetic_only": true,
+  "public_photo_api_qualified": false,
+  "native_recognition_models_qualified": false,
+  "physical_devices_tested": false,
+  "limits": [
+    "The public photo editor API was added later and requires its own hosted replay",
+    "Independent Tesseract reading, not native recognition engine qualification",
+    "Shadowed rotation cases require background whitening; initial deskew-only failures remain retained"
+  ]
+}

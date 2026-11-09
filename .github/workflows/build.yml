@@ -243,7 +243,7 @@ jobs:
                      test-qwen-pretokenize test-o200k-pretokenize test-bpe-pretokenize test-bert-pretokenize \
                      test-bert-norm test-spm-norm test-pair-truncation test-imatrix-alias test-no-repeat-ngram test-env-gate test-env-gate-words test-ocr-detect-score test-ppocrv6-det-policy test-low-memory \
                      test-lfm2-tiling test-pil-resize test-server-json-input test-server-load-control test-punct-marks test-qwen35-profile test-qwen35-materialize test-ultrabert-profile \
-                     test-marker-document test-marker-api test-license-consent test-marker-backend test-marker-save test-ocr-review test-ocr-orchestrator test-ocr-render \
+                     test-marker-document test-marker-api test-license-consent test-marker-backend test-marker-save test-ocr-review test-ocr-orchestrator test-ocr-render test-ocr-photo \
                      test-mineru25-profile test-lightonocr3-contract lightonocr3-trace test-xiaomi0-frontend test-xiaomi0-run test-xiaomi0-public test-nemotron-parse-geometry
           ./build/test-image-provenance
           ./build/test-provenance-marking
@@ -279,6 +279,7 @@ jobs:
           ./build/test-nemotron-parse-geometry self
           ./build/test-marker-document
           ./build/test-ocr-review
+          ./build/test-ocr-photo self
           ./build/test-ocr-render
           ./build/test-ocr-orchestrator
           ./build/test-marker-api

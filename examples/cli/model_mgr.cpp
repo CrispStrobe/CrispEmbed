@@ -2913,3 +2913,33 @@ const char * get_passage_prefix(const char * model) {
 }
 
 } // namespace crispembed_mgr
+
+extern "C" int crispembed_get_model_download_info_v1(const char * exact_name, crispembed_model_download_info_v1 * out) {
+    if (!out) return -1;
+    *out = {};
+    if (!exact_name) return -1;
+
+    // This lookup only borrows static registry/hash entries. It deliberately
+    // does not call resolve_model(), which can use fuzzy matching, cache paths,
+    // license prompts and platform-specific download subprocesses.
+    for (const auto * entry = crispembed_mgr::k_registry; entry->name; ++entry) {
+        if (std::strcmp(exact_name, entry->name) != 0) continue;
+        out->name = entry->name;
+        out->license = entry->license;
+        out->model_card_url = entry->model_card_url;
+        out->requires_license_acceptance = crispembed_mgr::license_requires_acceptance(entry->license) ? 1 : 0;
+        out->primary.filename = entry->filename;
+        out->primary.url = entry->url;
+        if (entry->url) out->primary.sha256 = crispembed_mgr::model_pinned_sha256(entry->url);
+        if (entry->companion_file || entry->companion_url) {
+            out->has_companion = 1;
+            out->companion.filename = entry->companion_file;
+            out->companion.url = entry->companion_url;
+            if (entry->companion_url) {
+                out->companion.sha256 = crispembed_mgr::model_pinned_sha256(entry->companion_url);
+            }
+        }
+        return 1;
+    }
+    return 0;
+}

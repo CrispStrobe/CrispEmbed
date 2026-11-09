@@ -389,6 +389,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set_property(SOURCE src/qwen35_graph_decoder.cpp APPEND PROPERTY COMPILE_OPTIONS -ffp-contract=off)
 endif()
 list(APPEND CRISPEMBED_SOURCES src/scan_cleanup.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ocr_photo.cpp)
 list(APPEND CRISPEMBED_SOURCES src/nafnet_denoise.cpp)
 list(APPEND CRISPEMBED_SOURCES src/text_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tbsrn_sr.cpp)
@@ -736,6 +737,9 @@ target_link_libraries(test-ocr-geometry PRIVATE crispembed)
 
 add_executable(test-ocr-crop tests/test_ocr_crop.cpp)
 target_link_libraries(test-ocr-crop PRIVATE crispembed)
+
+add_executable(test-ocr-photo tests/test_ocr_photo.cpp)
+target_link_libraries(test-ocr-photo PRIVATE crispembed)
 
 add_executable(test-ocr-detect-diff tests/test_ocr_detect_diff.cpp)
 target_link_libraries(test-ocr-detect-diff PRIVATE crispembed)

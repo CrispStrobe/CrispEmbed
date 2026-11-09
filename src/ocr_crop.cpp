@@ -1,12 +1,118 @@
 #include "ocr_crop.h"
 #include "classical_preproc.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <new>
 
 namespace ocr_crop {
+
+namespace {
+
+// An inverse projective map from a unit output rectangle to the input quad.
+// Bilinear interpolation of corner *positions* cannot undo camera perspective:
+// it bends lines which do not run parallel to the interpolated edges.
+std::vector<uint8_t> extract_projective(const uint8_t * pixels, int width, int height, int channels, const float qx[4],
+                                        const float qy[4], int padding, int * out_width, int * out_height,
+                                        bool ordered = false) {
+    if (channels != 1 && channels != 3 && channels != 4) return {};
+    if (width > 32768 || height > 32768 || padding > 8192) return {};
+    std::array<int, 4> order{ 0, 1, 2, 3 };
+    double cx = 0, cy = 0;
+    for (int i = 0; i < 4; ++i) {
+        if (!std::isfinite(qx[i]) || !std::isfinite(qy[i]) || std::abs(qx[i]) > 4.0 * width ||
+            std::abs(qy[i]) > 4.0 * height)
+            return {};
+        cx += qx[i] * 0.25;
+        cy += qy[i] * 0.25;
+    }
+    // Sorting around the centroid keeps all four corners distinct, including
+    // 45-degree diamonds where sum/difference extrema can choose one twice.
+    if (!ordered) {
+        std::sort(order.begin(), order.end(), [&](int a, int b) {
+            return std::atan2(qy[a] - cy, qx[a] - cx) < std::atan2(qy[b] - cy, qx[b] - cx);
+        });
+        auto first = std::min_element(order.begin(), order.end(), [&](int a, int b) {
+            const double sa = double(qx[a]) + qy[a], sb = double(qx[b]) + qy[b];
+            return sa == sb ? qy[a] < qy[b] : sa < sb;
+        });
+        std::rotate(order.begin(), first, order.end());
+    }
+    std::array<double, 4> x{}, y{};
+    for (int i = 0; i < 4; ++i) {
+        x[i] = qx[order[i]];
+        y[i] = qy[order[i]];
+    }
+    for (int i = 0; i < 4; ++i) {
+        const int j = (i + 1) % 4, k = (i + 2) % 4;
+        const double cross = (x[j] - x[i]) * (y[k] - y[j]) - (y[j] - y[i]) * (x[k] - x[j]);
+        if (cross <= 1e-6) return {}; // repeated, concave, or collinear corners
+    }
+    const double dx1 = x[1] - x[2], dx2 = x[3] - x[2];
+    const double dy1 = y[1] - y[2], dy2 = y[3] - y[2];
+    const double sx = x[0] - x[1] + x[2] - x[3], sy = y[0] - y[1] + y[2] - y[3];
+    const double det = dx1 * dy2 - dx2 * dy1;
+    if (std::abs(det) < 1e-9) return {};
+    const double g = (sx * dy2 - dx2 * sy) / det;
+    const double h = (dx1 * sy - sx * dy1) / det;
+    if (std::min({ 1.0, 1.0 + g, 1.0 + h, 1.0 + g + h }) <= 1e-9) return {};
+    const double a = x[1] - x[0] + g * x[1], b = x[3] - x[0] + h * x[3];
+    const double d = y[1] - y[0] + g * y[1], e = y[3] - y[0] + h * y[3];
+    auto dist = [&](int i, int j) { return std::hypot(x[i] - x[j], y[i] - y[j]); };
+    const int pad = std::max(0, padding);
+    // Ordered photo coordinates name pixel centres, so an identity rectangle
+    // [0,w-1] must retain w pixels. Keep historical OCR-region sizes unchanged.
+    const double wd = std::round(std::max(dist(0, 1), dist(3, 2))) + 2.0 * pad + (ordered ? 1.0 : 0.0);
+    const double hd = std::round(std::max(dist(0, 3), dist(1, 2))) + 2.0 * pad + (ordered ? 1.0 : 0.0);
+    if (wd < 1 || hd < 1 || wd > 32768 || hd > 32768 || wd * hd > 64.0 * 1024 * 1024) return {};
+    const int ow = int(wd), oh = int(hd);
+    std::vector<uint8_t> result;
+    try {
+        result.resize(size_t(ow) * oh * channels);
+    } catch (const std::bad_alloc &) {
+        return {};
+    }
+    for (int oy = 0; oy < oh; ++oy) {
+        const double v = std::clamp(double(oy - pad) / std::max(1, oh - 1 - 2 * pad), 0.0, 1.0);
+        for (int ox = 0; ox < ow; ++ox) {
+            const double u = std::clamp(double(ox - pad) / std::max(1, ow - 1 - 2 * pad), 0.0, 1.0);
+            const double den = 1.0 + g * u + h * v;
+            const double px = std::clamp((a * u + b * v + x[0]) / den, 0.0, double(width - 1));
+            const double py = std::clamp((d * u + e * v + y[0]) / den, 0.0, double(height - 1));
+            const int ix = int(px), iy = int(py), jx = std::min(ix + 1, width - 1), jy = std::min(iy + 1, height - 1);
+            const double fx = px - ix, fy = py - iy;
+            for (int c = 0; c < channels; ++c) {
+                const double top = pixels[(size_t(iy) * width + ix) * channels + c] * (1.0 - fx) +
+                                   pixels[(size_t(iy) * width + jx) * channels + c] * fx;
+                const double bottom = pixels[(size_t(jy) * width + ix) * channels + c] * (1.0 - fx) +
+                                      pixels[(size_t(jy) * width + jx) * channels + c] * fx;
+                result[(size_t(oy) * ow + ox) * channels + c] = uint8_t(std::lround(top * (1.0 - fy) + bottom * fy));
+            }
+        }
+    }
+    if (out_width) *out_width = ow;
+    if (out_height) *out_height = oh;
+    return result;
+}
+
+} // namespace
+
+std::vector<uint8_t> extract_quad_projective_ordered(const uint8_t * pixels, int width, int height, int channels,
+                                                     const float qx[4], const float qy[4], int * out_width,
+                                                     int * out_height) {
+    if (out_width) *out_width = 0;
+    if (out_height) *out_height = 0;
+    if (!pixels || !qx || !qy || width < 2 || height < 2) return {};
+    // The editor's labelled corners carry orientation; never reorder them.
+    for (int i = 0; i < 4; ++i)
+        if (!std::isfinite(qx[i]) || !std::isfinite(qy[i]) || qx[i] < 0 || qy[i] < 0 || qx[i] > width - 1 ||
+            qy[i] > height - 1)
+            return {};
+    return extract_projective(pixels, width, height, channels, qx, qy, 0, out_width, out_height, true);
+}
 
 orientation_info orient_180_rgb_info(std::vector<uint8_t> & pixels, int width, int height) {
     orientation_info info;
@@ -100,6 +206,9 @@ std::vector<uint8_t> extract_quad(const uint8_t * pixels, int width, int height,
     if (out_width) *out_width = 0;
     if (out_height) *out_height = 0;
     if (!pixels || !qx || !qy || width <= 0 || height <= 0 || channels <= 0) return {};
+
+    if (core_env::on("CRISPEMBED_OCR_CROP_PROJECTIVE"))
+        return extract_projective(pixels, width, height, channels, qx, qy, padding, out_width, out_height);
 
     // DBPostProcess already emits clockwise points, but canonicalizing here
     // makes this helper safe for adapters receiving arbitrary point order.
