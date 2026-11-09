@@ -1,8 +1,16 @@
-## 0.17.16 (unreleased)
+## 0.17.16
 
+- Add versioned OCR review snapshots (geometry and confidence provenance) and
+  checked OCR document rendering (searchable PDF with lossless raster, Unicode
+  text and per-page physical size; hOCR/ALTO checks; safe failure on
+  unsupported bidi). Existing entry points are unchanged.
 - Add default-off PP-OCRv6 detector options to accept valid empty graph results
   and rebuild the persistent graph when video frames change size. Preserve the
   scalar reference fallback and comparison mode.
+- MinerU2.5-Pro's full-document route is on by default for F16/F32 checkpoints
+  and stays opt-in for quantized GGUFs.
+- Register experimental, SHA-pinned GOT-OCR2 Q8_0 / Q8+Q4_K and
+  Unlimited-OCR-2 Q8_0 aliases; defaults are unchanged.
 
 ## 0.17.15
 
