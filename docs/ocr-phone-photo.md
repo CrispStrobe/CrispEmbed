@@ -4,6 +4,42 @@ The shared OCR crop has an opt-in true projective warp. The scan deskew detector
 has an independent opt-in bounded analysis path for large camera images. Existing
 defaults and recognition models remain unchanged.
 
+## Checked editor API
+
+The additive `crispembed_scan_photo_*` APIs expose photo preparation directly to
+the application. Each call is an explicit opt-in operation; it does not set or
+read a global crop/deskew gate, so simultaneous OCR jobs keep their own behavior.
+Use the library and bindings from the same immutable feature source. These
+symbols are not part of the previously published runtime; updating Rust
+declarations alone is insufficient.
+
+| C entry point | Safe Rust method | Behavior |
+| --- | --- | --- |
+| `crispembed_scan_photo_angle` | `CrispScanPhoto::correction_angle` | Bounded analysis; returns the clockwise correction to apply, up to the requested finite limit in `(0,20]` |
+| `crispembed_scan_photo_rotate` | `CrispScanPhoto::rotate` | Manual clockwise correction in `[-20,20]`, expanded canvas, white fill, bilinear sampling |
+| `crispembed_scan_photo_perspective` | `CrispScanPhoto::perspective` | True inverse homography for ordered TL/TR/BR/BL pixel-centre corners |
+| `crispembed_scan_photo_free_image` | Automatic ownership | Release transformed pixel buffers |
+
+Angle zero means either aligned text or an inconclusive estimate. No calibrated
+confidence probability is available. Keep a manual adjustment and original/processed
+preview. The application can assess lighting and sharpness separately.
+
+Gray/RGB/RGBA byte length must exactly match the dimensions. Source and transformed
+images are limited to 32768 pixels per axis and 64 Mi pixels; inputs require at
+least three pixels per axis. A zero rotation and a full-frame quad preserve exact
+bytes and dimensions. Ordered editor corners must be convex, finite and within
+the image; invalid, concave or crossing corners return an error. Unlike the
+legacy OCR-region crop, the editor retains the user's corner labels and includes
+both pixel-centre endpoints. Native errors clear all supplied outputs, and
+exceptions remain inside the C boundary. The Rust wrapper validates slices and
+owns every native buffer through release, including error paths.
+
+These are geometry operations, not automatic page-corner detection or a complete
+phone recipe. Use the existing background-whitening operation after rotation
+when illumination is uneven, and preserve the original for undo. The extended
+hosted panel separately exercises the public C calls and actual safe Rust module;
+its first run is required before claiming qualification for the new API.
+
 ## Geometry contract
 
 - `CRISPEMBED_OCR_CROP_PROJECTIVE=1`: `ocr_crop::extract_quad` computes an inverse
@@ -83,7 +119,7 @@ build avoids downloading weights or compiling the full inference runtime:
 git submodule update --init ggml
 mkdir -p build-ocr-photo/artifacts
 c++ -std=c++17 -O2 -ffunction-sections -fdata-sections -Isrc -Iggml/include \
-  tests/test_ocr_photo.cpp src/ocr_crop.cpp src/scan_cleanup.cpp \
+  tests/test_ocr_photo.cpp src/ocr_crop.cpp src/scan_cleanup.cpp src/ocr_photo.cpp \
   src/classical_preproc.cpp src/morph_fast.cpp -Wl,--gc-sections \
   -o build-ocr-photo/test-ocr-photo
 build-ocr-photo/test-ocr-photo self
@@ -97,3 +133,14 @@ pins Python dependencies and preserves original/processed images plus its report
 The geometry control also runs in the ordinary model-free native build. No
 physical-phone run, broad native-model replay, release or default promotion is
 implied by these checks.
+
+## Recovered hosted checkpoint
+
+[Run 42577017175](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42577017175)
+completed successfully for feature head `03a862a4ad9bb025b990db5071eeb7f0b9223cc1`,
+checking out PR merge `a3de9ef52a9faf043adb0a7d661ca2370117c4db`. Actual geometry,
+address/undefined-behavior sanitizer controls and all five downstream-text cases
+passed. [The reviewed run receipt](../tests/results/ocr-phone-photo/hosted-42577017175.json)
+binds the source, job, log metrics and archived images/report. The historical
+`quality-v1.json` source hashes match all eight source files at that feature
+head. It remains unchanged and does not qualify later public-API additions.

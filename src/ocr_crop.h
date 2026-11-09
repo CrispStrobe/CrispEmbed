@@ -42,6 +42,13 @@ std::vector<uint8_t> extract(const uint8_t * pixels, int width, int height, int 
 std::vector<uint8_t> extract_quad(const uint8_t * pixels, int width, int height, int channels, const float qx[4],
                                   const float qy[4], int padding, int * out_width, int * out_height);
 
+// Explicit photo-editor operation: ordered TL/TR/BR/BL pixel centres, convex
+// and inside the source image. Does not read or change a process-global gate.
+// A full-frame rectangle is an identity transform with unchanged dimensions.
+std::vector<uint8_t> extract_quad_projective_ordered(const uint8_t * pixels, int width, int height, int channels,
+                                                     const float qx[4], const float qy[4], int * out_width,
+                                                     int * out_height);
+
 // Convert an extracted crop to one shared recognizer geometry. The function
 // is deterministic, does not mutate the input, and supports RGB or grayscale
 // output contracts. It is deliberately separate from model-specific tensor

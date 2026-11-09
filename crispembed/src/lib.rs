@@ -35,6 +35,8 @@ mod oxr_layout;
 pub use oxr_layout::OxrLayout;
 pub mod marker;
 pub use marker::{Marker, MarkerMode, MarkerOptions};
+pub mod photo;
+pub use photo::CrispScanPhoto;
 
 pub mod moedern_text;
 pub use moedern_text::MoEdern;

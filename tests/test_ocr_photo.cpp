@@ -2,6 +2,7 @@
 // Compile the production crop/cleanup sources; no model or inference stub.
 #include "ocr_crop.h"
 #include "scan_cleanup.h"
+#include "crispembed.h"
 
 #include <algorithm>
 #include <cmath>
@@ -26,6 +27,90 @@ static void gate(const char * name, const char * value) {
     else
         unsetenv(name);
 #endif
+}
+
+static void public_controls() {
+    const float identity[8] = { 0, 0, 6, 0, 6, 4, 0, 4 };
+    for (int channels : { 1, 3, 4 }) {
+        std::vector<uint8_t> input(7 * 5 * channels);
+        for (size_t i = 0; i < input.size(); ++i) input[i] = uint8_t(i % 251);
+        uint8_t * output = nullptr;
+        int ow = 0, oh = 0;
+        require(crispembed_scan_photo_rotate(input.data(), input.size(), 7, 5, channels, 0, &output, &ow, &oh) == 0,
+                "public zero rotation succeeds");
+        require(ow == 7 && oh == 5 && std::equal(input.begin(), input.end(), output), "zero rotation is byte-exact");
+        crispembed_scan_photo_free_image(output);
+        for (const auto * state : { "0", "1" }) {
+            gate("CRISPEMBED_OCR_CROP_PROJECTIVE", state);
+            require(crispembed_scan_photo_perspective(input.data(), input.size(), 7, 5, channels, identity, &output,
+                                                      &ow, &oh) == 0,
+                    "public full-frame perspective succeeds regardless of legacy gate");
+            require(ow == 7 && oh == 5 && std::equal(input.begin(), input.end(), output),
+                    "full-frame perspective retains all pixels and channels");
+            crispembed_scan_photo_free_image(output);
+        }
+        output = reinterpret_cast<uint8_t *>(1);
+        require(crispembed_scan_photo_rotate(input.data(), input.size() - 1, 7, 5, channels, 2, &output, &ow, &oh) ==
+                        -1 &&
+                    !output && ow == 0 && oh == 0,
+                "public rotation rejects short buffer and clears outputs");
+        require(crispembed_scan_photo_perspective(input.data(), input.size() + 1, 7, 5, channels, identity, &output,
+                                                  &ow, &oh) == -1 &&
+                    !output,
+                "public perspective rejects excess byte count");
+        for (float bad_angle : { 21.0f, -21.0f, std::numeric_limits<float>::quiet_NaN() })
+            require(crispembed_scan_photo_rotate(input.data(), input.size(), 7, 5, channels, bad_angle, &output, &ow,
+                                                 &oh) == -1 &&
+                        !output && ow == 0 && oh == 0,
+                    "public rotation rejects invalid angle");
+        for (int kind = 0; kind < 4; ++kind) {
+            float bad_quad[8];
+            std::copy(identity, identity + 8, bad_quad);
+            if (kind == 0) std::swap(bad_quad[2], bad_quad[4]), std::swap(bad_quad[3], bad_quad[5]);
+            if (kind == 1) bad_quad[0] = -1;
+            if (kind == 2) bad_quad[4] = 7;
+            if (kind == 3) bad_quad[0] = std::numeric_limits<float>::infinity();
+            require(crispembed_scan_photo_perspective(input.data(), input.size(), 7, 5, channels, bad_quad, &output,
+                                                      &ow, &oh) == -1 &&
+                        !output && ow == 0 && oh == 0,
+                    "public perspective rejects invalid labelled corners");
+        }
+    }
+    gate("CRISPEMBED_OCR_CROP_PROJECTIVE", nullptr);
+    std::vector<uint8_t> blank(90 * 120 * 3, 255);
+    float correction = 12;
+    require(crispembed_scan_photo_angle(blank.data(), blank.size(), 90, 120, 3, 15, &correction) == 0 &&
+                correction == 0,
+            "blank page produces an inconclusive zero angle");
+    require(crispembed_scan_photo_angle(blank.data(), 7, 90, 120, 3, 15, &correction) == -1 && correction == 0,
+            "angle API rejects short buffer");
+    require(crispembed_scan_photo_angle(blank.data(), blank.size(), 90, 120, 3, 0, &correction) == -1,
+            "angle API rejects invalid range");
+    require(crispembed_scan_photo_angle(blank.data(), blank.size(), 90, 120, 3, 15, nullptr) == -1,
+            "angle API rejects absent output");
+    // A dark marker to the right of centre moves down for positive (clockwise)
+    // rotation and up for negative. This checks the sign independently of skew.
+    std::vector<uint8_t> marker(81 * 61, 255);
+    for (int y = 28; y <= 32; ++y)
+        for (int x = 58; x <= 62; ++x) marker[size_t(y) * 81 + x] = 0;
+    for (float angle : { -10.0f, 10.0f }) {
+        uint8_t * output = nullptr;
+        int ow = 0, oh = 0;
+        require(crispembed_scan_photo_rotate(marker.data(), marker.size(), 81, 61, 1, angle, &output, &ow, &oh) == 0,
+                "public manual rotation succeeds");
+        require(ow > 81 && oh > 61 && output[0] == 255, "rotation expands with white fill");
+        double weight = 0, centre_y = 0;
+        for (int y = 0; y < oh; ++y)
+            for (int x = 0; x < ow; ++x) {
+                const double ink = 255 - output[size_t(y) * ow + x];
+                weight += ink;
+                centre_y += y * ink;
+            }
+        crispembed_scan_photo_free_image(output);
+        require(weight > 0 && (centre_y / weight - (oh - 1) * .5) * angle > 25,
+                "manual rotation clockwise sign is correct");
+    }
+    crispembed_scan_photo_free_image(nullptr);
 }
 
 static void controls() {
@@ -155,6 +240,7 @@ int main(int argc, char ** argv) {
     try {
         if (argc == 1 || std::string(argv[1]) == "self") {
             controls();
+            public_controls();
             return 0;
         }
         require(argc >= 4, "usage: test-ocr-photo deskew|quad input.ppm output.ppm [corners]");
@@ -171,6 +257,32 @@ int main(int argc, char ** argv) {
                     image.pixels[i * 3 + c] = uint8_t(std::clamp(whitened[i] * 255.0f + .5f, 0.0f, 255.0f));
             write_ppm(argv[3], image.pixels.data(), image.width, image.height);
             std::cout << "{\"width\":" << image.width << ",\"height\":" << image.height << "}\n";
+        } else if (std::string(argv[1]) == "photo-deskew") {
+            float correction = 0;
+            require(crispembed_scan_photo_angle(image.pixels.data(), image.pixels.size(), image.width, image.height, 3,
+                                                15, &correction) == 0,
+                    "public angle failed");
+            uint8_t * out = nullptr;
+            int width = 0, height = 0;
+            require(crispembed_scan_photo_rotate(image.pixels.data(), image.pixels.size(), image.width, image.height, 3,
+                                                 correction, &out, &width, &height) == 0,
+                    "public rotation failed");
+            write_ppm(argv[3], out, width, height);
+            crispembed_scan_photo_free_image(out);
+            std::cout << "{\"angle\":" << -correction << ",\"correction_degrees\":" << correction
+                      << ",\"width\":" << width << ",\"height\":" << height << "}\n";
+        } else if (std::string(argv[1]) == "photo-quad") {
+            require(argc == 12, "photo-quad requires four x,y corners");
+            float corners[8];
+            for (int i = 0; i < 8; ++i) corners[i] = std::stof(argv[4 + i]);
+            uint8_t * out = nullptr;
+            int width = 0, height = 0;
+            require(crispembed_scan_photo_perspective(image.pixels.data(), image.pixels.size(), image.width,
+                                                      image.height, 3, corners, &out, &width, &height) == 0,
+                    "public perspective failed");
+            write_ppm(argv[3], out, width, height);
+            crispembed_scan_photo_free_image(out);
+            std::cout << "{\"width\":" << width << ",\"height\":" << height << "}\n";
         } else if (std::string(argv[1]) == "deskew") {
             std::vector<float> gray(size_t(image.width) * image.height);
             for (size_t i = 0; i < gray.size(); ++i)

@@ -16,7 +16,8 @@ namespace {
 // Bilinear interpolation of corner *positions* cannot undo camera perspective:
 // it bends lines which do not run parallel to the interpolated edges.
 std::vector<uint8_t> extract_projective(const uint8_t * pixels, int width, int height, int channels, const float qx[4],
-                                        const float qy[4], int padding, int * out_width, int * out_height) {
+                                        const float qy[4], int padding, int * out_width, int * out_height,
+                                        bool ordered = false) {
     if (channels != 1 && channels != 3 && channels != 4) return {};
     if (width > 32768 || height > 32768 || padding > 8192) return {};
     std::array<int, 4> order{ 0, 1, 2, 3 };
@@ -30,13 +31,16 @@ std::vector<uint8_t> extract_projective(const uint8_t * pixels, int width, int h
     }
     // Sorting around the centroid keeps all four corners distinct, including
     // 45-degree diamonds where sum/difference extrema can choose one twice.
-    std::sort(order.begin(), order.end(),
-              [&](int a, int b) { return std::atan2(qy[a] - cy, qx[a] - cx) < std::atan2(qy[b] - cy, qx[b] - cx); });
-    auto first = std::min_element(order.begin(), order.end(), [&](int a, int b) {
-        const double sa = double(qx[a]) + qy[a], sb = double(qx[b]) + qy[b];
-        return sa == sb ? qy[a] < qy[b] : sa < sb;
-    });
-    std::rotate(order.begin(), first, order.end());
+    if (!ordered) {
+        std::sort(order.begin(), order.end(), [&](int a, int b) {
+            return std::atan2(qy[a] - cy, qx[a] - cx) < std::atan2(qy[b] - cy, qx[b] - cx);
+        });
+        auto first = std::min_element(order.begin(), order.end(), [&](int a, int b) {
+            const double sa = double(qx[a]) + qy[a], sb = double(qx[b]) + qy[b];
+            return sa == sb ? qy[a] < qy[b] : sa < sb;
+        });
+        std::rotate(order.begin(), first, order.end());
+    }
     std::array<double, 4> x{}, y{};
     for (int i = 0; i < 4; ++i) {
         x[i] = qx[order[i]];
@@ -59,8 +63,10 @@ std::vector<uint8_t> extract_projective(const uint8_t * pixels, int width, int h
     const double d = y[1] - y[0] + g * y[1], e = y[3] - y[0] + h * y[3];
     auto dist = [&](int i, int j) { return std::hypot(x[i] - x[j], y[i] - y[j]); };
     const int pad = std::max(0, padding);
-    const double wd = std::round(std::max(dist(0, 1), dist(3, 2))) + 2.0 * pad;
-    const double hd = std::round(std::max(dist(0, 3), dist(1, 2))) + 2.0 * pad;
+    // Ordered photo coordinates name pixel centres, so an identity rectangle
+    // [0,w-1] must retain w pixels. Keep historical OCR-region sizes unchanged.
+    const double wd = std::round(std::max(dist(0, 1), dist(3, 2))) + 2.0 * pad + (ordered ? 1.0 : 0.0);
+    const double hd = std::round(std::max(dist(0, 3), dist(1, 2))) + 2.0 * pad + (ordered ? 1.0 : 0.0);
     if (wd < 1 || hd < 1 || wd > 32768 || hd > 32768 || wd * hd > 64.0 * 1024 * 1024) return {};
     const int ow = int(wd), oh = int(hd);
     std::vector<uint8_t> result;
@@ -93,6 +99,20 @@ std::vector<uint8_t> extract_projective(const uint8_t * pixels, int width, int h
 }
 
 } // namespace
+
+std::vector<uint8_t> extract_quad_projective_ordered(const uint8_t * pixels, int width, int height, int channels,
+                                                     const float qx[4], const float qy[4], int * out_width,
+                                                     int * out_height) {
+    if (out_width) *out_width = 0;
+    if (out_height) *out_height = 0;
+    if (!pixels || !qx || !qy || width < 2 || height < 2) return {};
+    // The editor's labelled corners carry orientation; never reorder them.
+    for (int i = 0; i < 4; ++i)
+        if (!std::isfinite(qx[i]) || !std::isfinite(qy[i]) || qx[i] < 0 || qy[i] < 0 || qx[i] > width - 1 ||
+            qy[i] > height - 1)
+            return {};
+    return extract_projective(pixels, width, height, channels, qx, qy, 0, out_width, out_height, true);
+}
 
 orientation_info orient_180_rgb_info(std::vector<uint8_t> & pixels, int width, int height) {
     orientation_info info;

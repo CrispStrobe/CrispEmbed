@@ -14,8 +14,19 @@ The initial deskew-only shadow failures remain retained and reported separately;
 the existing background whitening is required for those cases. See
 [the protocol and limitations](docs/ocr-phone-photo.md) and
 [the source-hashed quality receipt](tests/results/ocr-phone-photo/quality-v1.json).
-Hosted native execution, real-camera/device evidence and recognition-model
-qualification remain separate. No runtime release or default changes.
+Hosted native run
+[42577017175](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42577017175)
+passed geometry, ASan/UBSan and all five actual text cases at `03a862a4`.
+The [run receipt](tests/results/ocr-phone-photo/hosted-42577017175.json) retains
+its immutable source/job/artifact identities. Real-camera/device evidence and
+recognition-model qualification remain separate. No runtime release or default changes.
+
+## 9 November 2026 — Unlimited-OCR-2 Q4_K_MIX drop attributed
+
+Kaggle CPU bisect: the published Q4_K_MIX scores 0.9634 at the 3 November source and 0.9320 on current main,
+and current main with `CRISPEMBED_UNLIMITED_OCR2_VISION_F32=0` reproduces 0.9634 on all four cases exactly. The
+drop is the F32-vision default flip changing the F16 reference, not a Q4 regression; quantized-models.md now
+states both figures ([round 4b](docs/unlimited-ocr2-q4k-recipes.md)).
 
 ## 7 November 2026 — MinerU full native document route default (owner decision) and OCR gold corpus v1
 

@@ -131,7 +131,7 @@ def main() -> int:
     if clean["cer"] > .015:
         failures.append("clean fixture reader CER exceeds 0.015")
     root = Path(__file__).resolve().parents[1]
-    sources = ["src/ocr_crop.cpp", "src/ocr_crop.h", "src/scan_cleanup.cpp", "src/scan_cleanup.h",
+    sources = ["src/ocr_crop.cpp", "src/ocr_crop.h", "src/scan_cleanup.cpp", "src/scan_cleanup.h", "src/ocr_photo.cpp",
                "src/classical_preproc.cpp", "src/morph_fast.cpp", "tests/test_ocr_photo.cpp",
                "tests/test_ocr_photo_quality.py"]
     report = {"schema": "crispembed-phone-photo-quality-v1", "synthetic_only": True,
@@ -152,10 +152,10 @@ def main() -> int:
         image.save(source)
         raw = ocr(source)
         item = {"case": name, "kind": "deskew", "rotation_ccw_degrees": angle, "raw": raw, "arms": {}}
-        for enabled in (False, True):
-            arm = "bounded" if enabled else "legacy"
+        for arm, command, enabled in [("legacy", "deskew", False), ("bounded", "deskew", True),
+                                      ("public_api", "photo-deskew", False)]:
             output = args.artifacts / f"{name}-{arm}.ppm"
-            geometry = native(args.binary, "deskew", source, output, enabled)
+            geometry = native(args.binary, command, source, output, enabled)
             deskew_only = ocr(output)
             # Rotating an unevenly lit photo introduces white fill around its
             # original background. The production photo recipe must flatten
@@ -186,15 +186,19 @@ def main() -> int:
     photo.save(source)
     item = {"case": "perspective_shadow", "kind": "projective", "corners": corners,
             "raw": ocr(source), "arms": {}}
-    for enabled in (False, True):
-        arm = "projective" if enabled else "legacy"
+    for arm, command, enabled in [("legacy", "quad", False), ("projective", "quad", True),
+                                  ("public_api", "photo-quad", False)]:
         output = args.artifacts / f"perspective-shadow-{arm}.ppm"
-        geometry = native(args.binary, "quad", source, output, enabled, corners)
+        geometry = native(args.binary, command, source, output, enabled, corners)
         item["arms"][arm] = {"geometry": geometry, "ocr": ocr(output)}
     if item["arms"]["projective"]["ocr"]["cer"] > .025:
         failures.append("projective corrected text CER exceeds 0.025")
     if item["arms"]["projective"]["ocr"]["cer"] > item["arms"]["legacy"]["ocr"]["cer"] + .005:
         failures.append("projective corrected text is worse than the legacy camera warp")
+    if item["arms"]["public_api"]["ocr"]["cer"] > .025:
+        failures.append("public photo API perspective corrected text CER exceeds 0.025")
+    if item["arms"]["public_api"]["ocr"]["cer"] > item["arms"]["legacy"]["ocr"]["cer"] + .005:
+        failures.append("public photo API corrected text is worse than the legacy camera warp")
     report["cases"].append(item)
     print(json.dumps({"case": item["case"], "raw_cer": item["raw"]["cer"],
                       "projective_cer": item["arms"]["projective"]["ocr"]["cer"],

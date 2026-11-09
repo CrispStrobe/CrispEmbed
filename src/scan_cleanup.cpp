@@ -159,6 +159,17 @@ static std::vector<float> skew_analysis_rgb(const uint8_t * pixels, int w, int h
     return small;
 }
 
+float scan_cleanup_detect_angle_rgb_bounded(const uint8_t * pixels, int w, int h, int channels, float max_angle_deg) {
+    if (!valid_skew_input(pixels, w, h, max_angle_deg) || (channels != 1 && channels != 3 && channels != 4))
+        return 0.0f;
+    int aw = w, ah = h;
+    // This explicit operation is independent of the legacy environment gate.
+    // Consensus receives at most 1200px and therefore cannot downsample again.
+    auto gray = std::max(w, h) > 1200 ? skew_analysis_rgb(pixels, w, h, channels, &aw, &ah)
+                                      : to_gray_f32(pixels, w, h, channels);
+    return scan_cleanup_detect_angle_consensus(gray.data(), aw, ah, max_angle_deg);
+}
+
 // Sobel edge magnitude (horizontal + vertical)
 static std::vector<float> sobel_edges(const float * gray, int w, int h) {
     std::vector<float> edges(w * h, 0.0f);
@@ -178,7 +189,7 @@ static std::vector<float> sobel_edges(const float * gray, int w, int h) {
 
 float scan_cleanup_detect_angle(const float * gray, int w, int h, float max_angle_deg) {
     if (!valid_skew_input(gray, w, h, max_angle_deg)) return 0.0f;
-    if (core_env::on("CRISPEMBED_SCAN_BOUNDED_DESKEW") && std::max(w, h) > 1200) {
+    if (std::max(w, h) > 1200 && core_env::on("CRISPEMBED_SCAN_BOUNDED_DESKEW")) {
         int aw = 0, ah = 0;
         auto small = skew_analysis_image(gray, w, h, &aw, &ah);
         return scan_cleanup_detect_angle(small.data(), aw, ah, max_angle_deg);
@@ -273,7 +284,7 @@ float scan_cleanup_detect_angle(const float * gray, int w, int h, float max_angl
 
 float scan_cleanup_detect_angle_consensus(const float * gray, int w, int h, float max_angle_deg) {
     if (!valid_skew_input(gray, w, h, max_angle_deg)) return 0.0f;
-    if (core_env::on("CRISPEMBED_SCAN_BOUNDED_DESKEW") && std::max(w, h) > 1200) {
+    if (std::max(w, h) > 1200 && core_env::on("CRISPEMBED_SCAN_BOUNDED_DESKEW")) {
         int aw = 0, ah = 0;
         auto small = skew_analysis_image(gray, w, h, &aw, &ah);
         return scan_cleanup_detect_angle_consensus(small.data(), aw, ah, max_angle_deg);

@@ -1191,6 +1191,37 @@ CRISPEMBED_API int crispembed_scan_cleanup_process(void * ctx, const uint8_t * p
 
 CRISPEMBED_API void crispembed_scan_cleanup_free_image(uint8_t * pixels);
 
+/// Explicit photo-editor operations. Calling these APIs opts in; they never
+/// read or modify the legacy crop/deskew environment gates. Requires the paired
+/// library/bindings: these additive symbols are not present in older releases.
+/// Inputs are tightly packed uint8 gray/RGB/RGBA (channels 1/3/4); pixels_len
+/// must equal width*height*channels. Each axis is 3..32768, at most 64Mi pixels.
+/// All functions return 0 on success or -1 on invalid input/allocation failure,
+/// clear supplied outputs on failure and never let C++ exceptions cross C ABI.
+/// Operations do not mutate the source. Outputs retain the input channel count.
+///
+/// Returns the correction to apply, in clockwise degrees; a clockwise-tilted
+/// page receives a negative correction. max_angle_deg must be finite in (0,20].
+/// Analysis uses at most 1200 pixels on its longest side. Zero means already
+/// aligned OR no reliable estimate, not a measured confidence of 100 percent.
+CRISPEMBED_API int crispembed_scan_photo_angle(const uint8_t * pixels, size_t pixels_len, int width, int height,
+                                               int channels, float max_angle_deg, float * out_correction_degrees);
+/// Manually rotate by finite clockwise degrees in [-20,20]. Expands the canvas
+/// to preserve the page; white/opaque fill and bilinear sampling. Zero copies
+/// the exact bytes. Rejects output above 64Mi pixels or 32768 pixels per axis.
+CRISPEMBED_API int crispembed_scan_photo_rotate(const uint8_t * pixels, size_t pixels_len, int width, int height,
+                                                int channels, float clockwise_degrees, uint8_t ** out_pixels,
+                                                int * out_width, int * out_height);
+/// Four ordered TL,TR,BR,BL pixel-centre pairs, each in [0,width-1]/[0,height-1].
+/// Rejects repeated, concave, crossing, nonfinite or out-of-bounds corners.
+/// The true inverse homography preserves the supplied orientation. A full-frame
+/// quad is byte-exact; output uses the same limits as rotation. No auto-detection.
+CRISPEMBED_API int crispembed_scan_photo_perspective(const uint8_t * pixels, size_t pixels_len, int width, int height,
+                                                     int channels, const float corners_xy[8], uint8_t ** out_pixels,
+                                                     int * out_width, int * out_height);
+/// Release a buffer returned by the photo rotate/perspective calls; NULL is safe.
+CRISPEMBED_API void crispembed_scan_photo_free_image(uint8_t * pixels);
+
 /// Detect a two-up (double-page) book spread. Returns the gutter column to split
 /// at (0..width), or -1 for a single page. Input: RGB/grayscale uint8 (channels 1/3).
 CRISPEMBED_API int crispembed_scan_cleanup_detect_page_split(const uint8_t * pixels, int width, int height,

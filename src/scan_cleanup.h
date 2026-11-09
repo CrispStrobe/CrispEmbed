@@ -85,6 +85,10 @@ float scan_cleanup_detect_angle(const float * gray, int w, int h, float max_angl
 // max angle (valid range: (0,45] degrees; dimensions 3..32768, <=64M pixels).
 float scan_cleanup_detect_angle_consensus(const float * gray, int w, int h, float max_angle_deg);
 
+// Explicit bounded RGB/gray analysis, independent of process-global gates.
+// Same detected-skew sign and zero/unknown semantics as the consensus detector.
+float scan_cleanup_detect_angle_rgb_bounded(const uint8_t * pixels, int w, int h, int channels, float max_angle_deg);
+
 // Detect skew on a decoded color/gray uint8 image (channels 1, 3 or 4) via the
 // consensus detector and, when skewed, rotate to correct (bilinear, white
 // fill). On success returns 0; *out_pixels is a malloc'd buffer with the SAME
