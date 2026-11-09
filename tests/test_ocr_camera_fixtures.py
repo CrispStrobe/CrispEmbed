@@ -162,8 +162,10 @@ def main() -> int:
         if perspective["mae_255"] > 1.0 or perspective["p99_error_255"] > 4.0:
             failures.append("Real phone perspective disagrees with independent OpenCV pixels")
         identity = args.artifacts / "phone-identity.ppm"
-        native(args.binary, "photo-quad", source, identity, False,
-               [(0, 0), (959, 0), (959, 1279), (0, 1279)])
+        identity_geometry = native(args.binary, "photo-quad", source, identity, False,
+                                   [(0, 0), (959, 0), (959, 1279), (0, 1279)])
+        report["perspective"]["identity_geometry"] = identity_geometry
+        report["perspective"]["identity_png_sha256"] = digest(retain_png(identity))
         report["perspective"]["identity_byte_exact"] = Image.open(identity).tobytes() == images["phone_document"].tobytes()
         if not report["perspective"]["identity_byte_exact"]:
             failures.append("Real phone full-frame identity changed decoded source pixels")
@@ -219,7 +221,7 @@ def main() -> int:
         (args.artifacts / "report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
         # PNGs retain all actual pixels; PPMs are reproducible transport files.
         for ppm in args.artifacts.glob("*.ppm"):
-            if ppm.with_suffix(".png").exists() or ppm.name == "phone-identity.ppm":
+            if ppm.with_suffix(".png").exists():
                 ppm.unlink()
     for failure in failures:
         print(f"FAIL: {failure}")
