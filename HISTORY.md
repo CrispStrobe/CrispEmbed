@@ -2,6 +2,15 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 9 November 2026 — Inpainting owner review verdict (issue 71)
+
+Owner reviewed the 7-case panel (MI-GAN256 F32, MI-GAN512 F32/F16/Q8_0/Q4_K;
+[receipt](tests/results/inpainting/owner-review-panel-cpu-2026-11-09.json)). Six cases pass for every
+variant, including Q4_K: both exact-mask stills and all four video-pan frames. The DBNet-mask street still
+(the 0.9019 Q4_K caveat case) leaves the first text line visible in **every** variant, F32 included, so the
+defect is DBNet mask coverage, not quantization. Q4_K stays published as experimental; the follow-up is
+detector mask coverage/dilation for the first line, not precision.
+
 ## 9 November 2026 — Unlimited-OCR-2 Q4_K_MIX drop attributed
 
 Kaggle CPU bisect: the published Q4_K_MIX scores 0.9634 at the 3 November source and 0.9320 on current main,
