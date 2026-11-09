@@ -1,0 +1,162 @@
+{
+  "source": "ac34f72ca89823a177c538ad598dfa00fc69f124",
+  "report_sha256": "712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2",
+  "kernel_id": 143153961,
+  "version": 2,
+  "case": "simple_form",
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "captures": {
+    "observer-on/source.logits.0.f32": {
+      "bytes": 993280,
+      "sha256": "4cbf1fcfb2f356e7e484474240e4cecca110010116b55efd835cfdb3e891d415"
+    },
+    "observer-on/source.vision.0.f32": {
+      "bytes": 1433600,
+      "sha256": "b9a171d18d5698e5c897662ddedf6cf399448838e55350c3b206e7a24c240d1b"
+    },
+    "upstream_features/prefill.first_chunk.layer0.b.f32": {
+      "bytes": 2048,
+      "sha256": "aa6b9b2c16d53ea82b834552acee42ff7aaae6ceacdd38e6f9e56b7bd7dd657b"
+    },
+    "upstream_features/prefill.first_chunk.layer0.up.f32": {
+      "bytes": 589824,
+      "sha256": "34c8dcfeaf5a022a409a9364afac98a0468da0c2de2751645f71ebd525d660f1"
+    },
+    "upstream_features/prefill.input.f32": {
+      "bytes": 1576960,
+      "sha256": "44cdcd39c149c581910cff5938a0ffb3fe8a28a268d55479abec19ccb1f04b69"
+    },
+    "upstream_features/prefill.first_chunk.layer0.attention_residual.f32": {
+      "bytes": 163840,
+      "sha256": "67ea2d3525cb1b914d924ecc3278340352ed0c90fcf711fc935413621649472a"
+    },
+    "upstream_features/prefill.first_chunk.layer0.activation.f32": {
+      "bytes": 589824,
+      "sha256": "fed3b8db5a357813534119f082e9bdd506291a7cf37462b4a89eb6b66687e56c"
+    },
+    "upstream_features/prefill.first_chunk.layer0.attention.f32": {
+      "bytes": 163840,
+      "sha256": "a3c841524f139d760b2600323a51ce5b58f4cf6049bc352e7c2ea7640384e8af"
+    },
+    "upstream_features/prefill.first_chunk.layer0.gate.f32": {
+      "bytes": 589824,
+      "sha256": "298479b1e65f7b4ab24afaca6660a7ab7c08991bd62e7cb3fe19d3c08a7d028b"
+    },
+    "upstream_features/prefill.first_chunk.layer0.z.f32": {
+      "bytes": 262144,
+      "sha256": "b872a809eb2591451225e045586101787c96abcf390e2f2048987711c9fe7912"
+    },
+    "upstream_features/prefill.first_chunk.layer0.post_norm.f32": {
+      "bytes": 163840,
+      "sha256": "c3d0821d536ffef4347d6555a52c43fcd780860229476067cc9ed46e87395b0f"
+    },
+    "upstream_features/prefill.first_chunk.layer0.a.f32": {
+      "bytes": 2048,
+      "sha256": "38e07a69a1c2620de0e3e0453e2ad6d651d847e932c2683ee2b4dbb9cdc10e35"
+    },
+    "upstream_features/prefill.first_chunk.layer0.down.f32": {
+      "bytes": 163840,
+      "sha256": "6755f4f52f88b42054b8ee609c92fa31849d655365ead67471f24173aca5716b"
+    },
+    "upstream_features/prefill.first_chunk.layer0.input_norm.f32": {
+      "bytes": 163840,
+      "sha256": "cb0b08bbecfc9fb8f55385b3c83c82ef18b3ab418b5eec5c5c7a4839b35c9434"
+    },
+    "upstream_features/text.embedded.f32": {
+      "bytes": 1576960,
+      "sha256": "8b27dde2bf6f17d1d47136a56d778ce0794912aac53dfbded30c4c21d5ba7c54"
+    },
+    "upstream_features/prefill.positions.f32": {
+      "bytes": 1848,
+      "sha256": "007b6bc39e71ffd2c3f6813808f4455a129e5aafd6fda1f186f084ac46573729"
+    },
+    "upstream_features/prefill.first_chunk.layer0.qkv.f32": {
+      "bytes": 524288,
+      "sha256": "cd98b7cd7669ac6d73c413730a4a1936d2573e2b21b3c034c5eb04d0bd3f9ef1"
+    },
+    "upstream_features/prefill.layer.0.f32": {
+      "bytes": 1576960,
+      "sha256": "1454dba900f442c676b7bc1781cf42c423a8e66b8fb27d9337af9d42d9d93577"
+    }
+  },
+  "primitive_report_sha256": "79dff60f82e76d689811d2151d3c76469e0b80c3a6e5d64eabe6eba0c085f398",
+  "primitive_source_sha": "dffc7780c8baf791c32a26259efdbd65953d4988",
+  "primitive_files": {
+    "reconstructed-prefix.f32": {
+      "bytes": 40960,
+      "sha256": "ca940b1a6f45bc487a4685205caca1e7fb64929c03b7c8d1b52769e26cc8b842"
+    },
+    "reconstructed-native-scalar-norm.f32": {
+      "bytes": 40960,
+      "sha256": "6a483ccb8ada19e78f2707edf8fda3c4ffb9ff2afc3922038a1c7f7d8c3ba773"
+    },
+    "upstream-norm.f32": {
+      "bytes": 40960,
+      "sha256": "7a3fafed50f68cfdf0e41c2dadb3310c0512d8296155ad95de45567560064a96"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-upstream-direct.f32": {
+      "bytes": 131072,
+      "sha256": "aef9045166fc06f243ba0a98c7114ea07b3ed5c8e1da89c1cc6e303a0f811cd2"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-upstream-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "11f6b670dbc4eeb476d93d576feeaca7b8ca466aae9a42ba7191cdcb805ebf7f"
+    },
+    "attn_qkv-upstream-norm-upstream-direct.f32": {
+      "bytes": 131072,
+      "sha256": "253e66a332f5bf4d5fb59828f2c077612c23246bf2c317916ee3b8930c63f243"
+    },
+    "attn_qkv-upstream-norm-upstream-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "eea69be9629d4494fa5405d0fea6d0b2b5428dace827bff8fec95c113c7d1f64"
+    },
+    "attn_gate-reconstructed-native-scalar-norm-upstream-direct.f32": {
+      "bytes": 65536,
+      "sha256": "8f8c38543df8c9b1ae2956e17196f72581d84d7f6796c7301f2e9bd3dc2294e8"
+    },
+    "attn_gate-reconstructed-native-scalar-norm-upstream-dequant.f32": {
+      "bytes": 65536,
+      "sha256": "4534b3f56c39eb33e6602c0cfb902b857be1d2e986fcfbda4d50361b31d792ed"
+    },
+    "attn_gate-upstream-norm-upstream-direct.f32": {
+      "bytes": 65536,
+      "sha256": "72bcbc9127a7734acf0f89da537d1d6bcdbe3ee3a07fda7485d9dc8daef1f169"
+    },
+    "attn_gate-upstream-norm-upstream-dequant.f32": {
+      "bytes": 65536,
+      "sha256": "f13b8ce282d5c71f5f7d7188e21bae5d1cae1d09545c2ced2e91908e01f90011"
+    },
+    "ssm_alpha-reconstructed-native-scalar-norm-upstream-direct.f32": {
+      "bytes": 512,
+      "sha256": "b9f22f91cdf53c3e88fae459aa9777310fc2db8d6ef216a97d20f668a3d47832"
+    },
+    "ssm_alpha-reconstructed-native-scalar-norm-upstream-dequant.f32": {
+      "bytes": 512,
+      "sha256": "64d21c62adb950b9d6a41f945cd58b20662c8bae25dd8cf61b9a1564f329473f"
+    },
+    "ssm_alpha-upstream-norm-upstream-direct.f32": {
+      "bytes": 512,
+      "sha256": "93aef21727991a8f43ff341f28ff6c8497301a0679a0e303e5334263b4c3af0d"
+    },
+    "ssm_alpha-upstream-norm-upstream-dequant.f32": {
+      "bytes": 512,
+      "sha256": "85bf020210f69eeedd7bb2e6bc9870445c34660a0fed2b7340e997d3383ff062"
+    },
+    "ssm_beta-reconstructed-native-scalar-norm-upstream-direct.f32": {
+      "bytes": 512,
+      "sha256": "72295df03038f750f03744c196f33941bc0de236f83483028625125e0921355b"
+    },
+    "ssm_beta-reconstructed-native-scalar-norm-upstream-dequant.f32": {
+      "bytes": 512,
+      "sha256": "17eabb8127c04ec3ee27db9633e643df3338a8b6d29385de23c8e8ce24031cc2"
+    },
+    "ssm_beta-upstream-norm-upstream-direct.f32": {
+      "bytes": 512,
+      "sha256": "fac1107c522adcabe85c4883ddd8b674afb54057874cfdc3efd608f267dacd21"
+    },
+    "ssm_beta-upstream-norm-upstream-dequant.f32": {
+      "bytes": 512,
+      "sha256": "565f50625beff4bc0e2f6a4f639ecb8cf831a56fab6c24ea316b2a8c7e3b4541"
+    }
+  }
+}
