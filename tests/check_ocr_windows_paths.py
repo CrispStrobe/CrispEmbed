@@ -69,7 +69,7 @@ def check(artifacts, binaries):
         outcomes.append({"path": name, "native": native, "pdfs": pdf_receipts})
     sources = [
         "src/image_preprocess.cpp", "src/image_preprocess.h", "src/scan_cleanup.h",
-        "src/core/image_out.cpp", "src/core/image_out.h", "src/core/provenance.h",
+        "src/core/image_out.cpp", "src/core/image_out.h", "src/core/provenance.h", "src/core/clean_exit.h",
         "src/ocr_render.cpp", "src/ocr_render.h", "tests/ocr_render_stb.cpp",
         "tests/test_ocr_windows_paths.cpp", "tests/windows_utf8_paths/CMakeLists.txt",
         "tests/check_ocr_windows_paths.py", ".github/workflows/ocr-windows-paths.yml",
