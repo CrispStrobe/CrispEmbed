@@ -3875,3 +3875,25 @@ Direct-quant firstscore42004610956/42004615158 is worse than legacy
 (max1.092199/2.610071), with unchanged prefixes. No default promotion follows.
 Use the separately predeclared independent mixed panel; never tune its heldout
 cases from this observed form or from late-layer maxima.
+
+The separately reviewed [one-position protocol](docs/lighton4b-bf16-quant-first-score.md)
+loads the authentic BF16 original once, requires the frozen first-score anchor,
+then independently streams immutable Q8/Q4 matrices into BF16 parameter storage.
+Complete723 mapping,249 copied matrices,474 protected tensors and tied head are
+checked/readback-hashed for both sequential arms. Explicit dequant→BF16 rounding
+is distinct from the earlier F32-weight activation oracle. No F32 model, native
+inference or full generation/reference is repeated. Six model-free structural/
+negative/AST controls pass. A single bounded32GiB original CPU worker may run only
+after source/resource review; no dispatch yet, and no quality/default promotion.
+
+### Fixed mixed original BF16 mechanism check — declared, not quality selection
+
+The Q4 first-token reversal prompted an explicitly exploratory check of the
+existing attention/embeddingQ8 + FFNQ4 architecture on the same diagnostic.
+[Exact immutable names, policy digests, provenance and capacity guards](docs/lighton4b-bf16-mixed-first-score.md)
+are declared before dispatch:153 Q8 matrices,96 Q4,474 protected original tensors.
+One baseline plus one mixed original BF16 prefill, no F32 model/native inference,
+no conversion upload. The previous three-arm evidence is preserved independently
+in PR157; this is not a new held-out calibration or decoded-quality gate.
+Chunks decrease to65,536 elements, completed file cache is advised away, and
+actual cgroup margin/effective RAM guards can reject rather than overrun capacity.

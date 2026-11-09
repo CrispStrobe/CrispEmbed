@@ -21,8 +21,9 @@ Every copied BF16 chunk and complete parameter is readback-hashed. All474 protec
 tensors must match the original BF16 source exactly through their GGUF F32
 representations; original protected hashes and buffers must stay unchanged.
 Parameter identities/storage, complete BF16 dtype/shape census and tied
-embedding/output head are checked before and after every arm. Q4 overwrites the
-same complete249-matrix set after Q8, so no Q8-only matrix is left behind.
+embedding/output head are checked before and after every arm. Actual canonical
+JSON order runs Q4 then Q8; each overwrites the same complete249-matrix set, so
+no matrix from the preceding recipe is left behind.
 
 **Effective-precision limit:** dequantized matrix values are rounded to BF16 for
 genuine BF16 original inference. This differs from the prior mixed-precision

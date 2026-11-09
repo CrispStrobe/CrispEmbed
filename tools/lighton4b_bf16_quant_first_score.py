@@ -48,6 +48,37 @@ def validate_inventory(parsed,plan,recipe):
         expected=8 if row['quantized']and(recipe=='q8_0'or name=='l.embed_tokens.weight')else 12 if row['quantized']else 0
         require(actual['stored_shape']==row['stored_shape']and actual['type']==expected,'candidate shape/type policy differs: '+name)
 
+def mixed_selection(protocol,plan):
+    """A predeclared architectural partition, never inferred from measured scores."""
+    policy=protocol.get('mixed_policy')
+    if policy is None:return None
+    wanted={name:('q4_k'if '.mlp.'in name else 'q8_0')for name,row in plan.items()if row['quantized']}
+    require(all(name=='l.embed_tokens.weight'or'.mlp.'in name or'.linear_attn.'in name or'.self_attn.'in name for name in wanted),'unclassified mixed matrix')
+    actual={}
+    for recipe in ('q8_0','q4_k'):
+        names=policy[recipe]['names'];require(names==sorted(set(names)),'unique sorted mixed names required')
+        require(hashlib.sha256(('\n'.join(names)+'\n').encode()).hexdigest()==policy[recipe]['names_sha256'],'mixed name digest differs')
+        require(len(names)==(153 if recipe=='q8_0'else 96),'mixed153/96 partition differs')
+        for name in names:require(name not in actual,'overlapping mixed matrix');actual[name]=recipe
+    require(actual==wanted,'fixed attention/embeddingQ8 and FFNQ4 partition differs')
+    require(protocol['candidate_order']==['q8_0','q4_k']and protocol['expected_forward_arms']==2,'mixed explicit ordering/two-prefill contract differs')
+    require(protocol['max_chunk_elements']==65536 and protocol['exploratory_mechanism_only']and not protocol['held_out_calibration']and not protocol['architecture_quality_selection'],'mixed bounded exploratory contract differs')
+    return actual
+
+def discard_clean_file(fd,start=0,length=0):
+    require(hasattr(os,'posix_fadvise'),'bounded source cache requires posix_fadvise')
+    os.posix_fadvise(fd,start,length,os.POSIX_FADV_DONTNEED)
+
+def digest_with_bounded_cache(path):
+    h=hashlib.sha256()
+    with Path(path).open('rb')as f:
+        start=0
+        while block:=f.read(4*2**20):
+            h.update(block)
+            if f.tell()-start>=64*2**20:discard_clean_file(f.fileno(),start,f.tell()-start);start=f.tell()
+        discard_clean_file(f.fileno())
+    return h.hexdigest()
+
 def bounded_memory(original_memory):
     result=original_memory();available=result['available_bytes'];observed=finite=0
     for line in Path('/proc/self/cgroup').read_text().splitlines():
@@ -79,7 +110,7 @@ def bits_hash(tensor,torch):
 class Oracle:
     def __init__(self,original_root,output,scratch,protocol,memory):
         self.original_root=original_root;self.out=output;self.scratch=scratch;self.p=protocol;self.memory=lambda:bounded_memory(memory);self.called=0
-        self.report={'schema':'lighton4b-bf16-quant-first-score/v1','status':'initializing','source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
+        self.report={'schema':protocol.get('schema','lighton4b-bf16-quant-first-score/v1'),'status':'initializing','source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
             'protocol_sha256':digest(PROTOCOL),'original_source':protocol['original_source'],'original_driver_sha256':protocol['original_driver_sha256'],
             'model_dtype':'bfloat16','f32_model_instantiated':False,'native_forward_executed':False,'generation_capture_repeated':False,
             'max_new_tokens_per_arm':1,'quality_qualified':False,'model_qualified':False,'arms':{},'stage':'initializing'}
@@ -136,22 +167,38 @@ class Oracle:
             stream=io.BytesIO();np.save(stream,value.detach().cpu().numpy(),allow_pickle=False)
             require(hashlib.sha256(stream.getbuffer()).hexdigest()==self.p['input_sha256'][name],'frozen prepared input differs: '+name)
         raw=(self.original_root/'tests/fixtures/lightonocr3-4b-source/model.safetensors.header.json').read_bytes();require(len(raw)==89456 and hashlib.sha256(raw).hexdigest()==HEADER_SHA,'frozen723-source header differs')
-        header=json.loads(raw);plan=tensor_plan(header);params=dict(model.named_parameters(remove_duplicate=False));self.model_guard(model,params,header,torch)
+        header=json.loads(raw);plan=tensor_plan(header);selection=mixed_selection(self.p,plan);installed={};params=dict(model.named_parameters(remove_duplicate=False));self.model_guard(model,params,header,torch)
+        if selection is not None:self.report.update(exploratory_mechanism_only=True,held_out_calibration=False,mixed_policy=self.p['mixed_policy'],candidate_order=self.p['candidate_order'])
         identities={name:(id(params[name]),params[name].data_ptr())for name in header if name!='__metadata__'}
         self.stage('source-bf16-tensor-census');source_hashes={name:bits_hash(params[name],torch)for name in identities}
         self.report['original_bf16_tensor_sha256']=source_hashes
+        if selection is not None:
+            sources=list((self.scratch/'source/hf/hub').glob('**/model.safetensors'))
+            require(len(sources)==1,'one authenticated task-owned checkpoint cache required')
+            with sources[0].open('rb')as f:discard_clean_file(f.fileno())
         baseline_object,baseline=self.forward('original',model,inputs,processor,torch,np)
         require(self.report['arms']['original']['sha256']==self.p['original_first_score_sha256']and self.report['arms']['original']['ids']==[self.p['original_first_id']],'frozen original one-position anchor differs')
         self.report['original_first_score_bit_exact']=True;buffers={name:bits_hash(value,torch)for name,value in model.named_buffers()}
         sys.path.insert(0,str(ROOT/'tools'));from gguf_file_type_canonicalize import parse,span
-        for recipe,pin in self.p['candidates'].items():
+        if selection is not None:
+            # This is the task-owned original driver's HF cache. Advise clean source
+            # pages away; never unlink or alter the authenticated original checkpoint.
+            with sources[0].open('rb')as f:discard_clean_file(f.fileno())
+            self.report['clean_cache_advice_enabled']=True
+        order=self.p.get('candidate_order',list(self.p['candidates']))
+        for recipe in order:
+            pin=self.p['candidates'][recipe]
             self.stage(recipe+'-download');path=self.scratch/pin['file'];require(not path.exists(),'fresh candidate path required')
             require(__import__('shutil').disk_usage(self.scratch).free>=pin['bytes']+2*2**30,'candidate disk headroom')
             with urllib.request.urlopen(f"https://huggingface.co/{self.p['candidate_repository']}/resolve/{self.p['candidate_revision']}/{pin['file']}",timeout=120)as response,path.open('xb')as f:
-                count=0
-                while block:=response.read(4*2**20):count+=len(block);require(count<=pin['bytes'],'candidate transfer size bound');f.write(block)
+                count=0;advised=0
+                while block:=response.read(4*2**20):
+                    count+=len(block);require(count<=pin['bytes'],'candidate transfer size bound');f.write(block)
+                    if selection is not None and count-advised>=64*2**20:
+                        f.flush();os.fdatasync(f.fileno());discard_clean_file(f.fileno(),advised,count-advised);advised=count
                 f.flush();os.fsync(f.fileno())
-            require(count==pin['bytes']and digest(path)==pin['sha256'],'immutable full candidate hash differs')
+                if selection is not None:discard_clean_file(f.fileno())
+            require(count==pin['bytes']and (digest_with_bounded_cache(path)if selection is not None else digest(path))==pin['sha256'],'immutable full candidate hash differs')
             parsed=parse(path);validate_inventory(parsed,plan,recipe)
             expected_meta={'general.architecture':'qwen35_ocr','general.source.huggingface.repository':self.p['checkpoint_repository'],
                 'general.source.huggingface.revision':self.p['checkpoint_revision'],'qwen35_ocr.profile':'lightonocr3-4b','qwen35_ocr.format_version':5,
@@ -168,7 +215,10 @@ class Oracle:
                         'raw_sha256':span(raw_file,parsed['tensors'][name]['data_offset'],parsed['tensors'][name]['bytes'])}
                     require(tensor.shape.tolist()==row['stored_shape'],'independent reader shape differs')
                     if row['quantized']:
-                        quant_count+=1;rows,columns=row['source_shape'];per=max(1,self.p['max_chunk_elements']//columns);expected_hash=hashlib.sha256();round_error=0.0
+                        quant_count+=1
+                        if selection is not None and selection[name]!=recipe:
+                            record.update(selected_for_mixed=False);records.append(record);discard_clean_file(raw_file.fileno(),parsed['tensors'][name]['data_offset'],parsed['tensors'][name]['bytes']);continue
+                        rows,columns=row['source_shape'];per=max(1,self.p['max_chunk_elements']//columns);expected_hash=hashlib.sha256();round_error=0.0
                         for start in range(0,rows,per):
                             stop=min(rows,start+per);chunk=np.ascontiguousarray(gguf.quants.dequantize(tensor.data[start:stop],tensor.tensor_type)).reshape(stop-start,columns)
                             require(chunk.dtype==np.float32 and chunk.size<=self.p['max_chunk_elements']and np.isfinite(chunk).all(),'bounded independent dequantization differs')
@@ -179,6 +229,7 @@ class Oracle:
                             require(param[start:stop].view(torch.uint8).numpy().tobytes()==bf16.view(torch.uint8).numpy().tobytes(),'streamed BF16 parameter chunk readback differs')
                         actual_hash=bits_hash(param,torch);require(actual_hash==expected_hash.hexdigest(),'full BF16 parameter readback differs')
                         record.update(bf16_sha256=actual_hash,readback_exact=True,dequant_to_bf16_max_abs=round_error,changed_from_original=actual_hash!=source_hashes[row['source']])
+                        if selection is not None:record.update(selected_for_mixed=True);require(name not in installed,'mixed parameter installed twice');installed[name]=actual_hash
                     else:
                         protected_count+=1;data=tensor.data.reshape(-1);actual=param.reshape(-1)
                         require(int(tensor.tensor_type)==0 and data.dtype==np.float32,'protected F32 GGUF tensor required')
@@ -188,6 +239,9 @@ class Oracle:
                         require(bits_hash(param,torch)==source_hashes[row['source']],'protected original tensor changed')
                         record.update(bf16_sha256=source_hashes[row['source']],protected_original_exact=True)
                     records.append(record)
+                    if selection is not None:
+                        discard_clean_file(raw_file.fileno(),parsed['tensors'][name]['data_offset'],parsed['tensors'][name]['bytes'])
+                        require(self.memory()['available_bytes']>=4*2**30,'mixed streaming headroom below4GiB')
                     if index%32==0:self.report['stream_progress']={'recipe':recipe,'complete_tensors':index+1};self.save()
             require(quant_count==249 and protected_count==474,'quant/protected249/474 census differs')
             self.model_guard(model,dict(model.named_parameters(remove_duplicate=False)),header,torch,identities)
@@ -195,19 +249,30 @@ class Oracle:
             self.report[recipe+'-weights']={'candidate_sha256':pin['sha256'],'quantized_tensors':quant_count,'protected_tensors':protected_count,
                 'changed_quantized_tensors':sum(r.get('changed_from_original',False)for r in records),'parameter_dtype':'bfloat16','tied_head_preserved':True,
                 'max_dequant_chunk_elements':self.p['max_chunk_elements'],'mapping_and_readback_verified':True,'status':'verified','tensors':records}
+            if selection is not None:self.report[recipe+'-weights']['selected_mixed_tensors']=sum(r.get('selected_for_mixed',False)for r in records)
             del reader,tensors,tensor,data,actual,original,chunk,bf16;gc.collect()
             with path.open('rb')as f:
                 if hasattr(os,'posix_fadvise'):os.posix_fadvise(f.fileno(),0,0,os.POSIX_FADV_DONTNEED)
             path.unlink()
-            require(self.memory()['available_bytes']>=6*2**30,'resident BF16 model forward headroom below6GiB')
-            _,candidate=self.forward(recipe,model,inputs,processor,torch,np,baseline)
+            if selection is not None:
+                with sources[0].open('rb')as f:discard_clean_file(f.fileno())
+                self.report['cache_trim_memory_after_'+recipe]=self.memory()
+            if selection is not None and recipe!=order[-1]:continue
+            if selection is not None:
+                require(set(installed)==set(selection),'complete249 mixed parameter coverage differs')
+                require(all(bits_hash(params[plan[name]['source']],torch)==sha for name,sha in installed.items()),'final mixed whole-parameter hash differs')
+                self.report['mixed_final_bf16_parameter_sha256']=installed
+            require(self.memory()['available_bytes']>=(8 if selection is not None else 6)*2**30,'resident BF16 model forward headroom below frozen minimum')
+            if selection is not None:
+                margin=self.memory().get('cgroup_hard_margin_bytes');require(margin is not None and margin>=2*2**30,'mixed actual cgroup hard margin below2GiB')
+            _,candidate=self.forward('mixed'if selection is not None else recipe,model,inputs,processor,torch,np,baseline)
             self.model_guard(model,dict(model.named_parameters(remove_duplicate=False)),header,torch,identities)
             for name,row in plan.items():
                 if not row['quantized']:require(bits_hash(params[row['source']],torch)==source_hashes[row['source']],'protected source tensor changed during forward')
             require({name:bits_hash(value,torch)for name,value in model.named_buffers()}==buffers,'original buffers changed during candidate')
             del candidate,_;gc.collect();self.save()
-        self.report.update(status='compared',comparison_completed=True,total_one_position_forwards=3,
-            numerical_rejection=any(not self.report['arms'][r]['vs_original_bf16']['strict_pass']for r in self.p['candidates']))
+        self.report.update(status='compared',comparison_completed=True,total_one_position_forwards=self.p['expected_forward_arms'],
+            numerical_rejection=any(not self.report['arms'][r]['vs_original_bf16']['strict_pass']for r in (['mixed']if selection is not None else self.p['candidates'])))
         self.stage('complete');return baseline_object
 class ReplaceGenerate(ast.NodeTransformer):
     def __init__(self):self.count=0
@@ -241,7 +306,7 @@ def main(argv=None):
         oracle.save()
         require(code==0 and oracle.report.get('comparison_completed'),'one-position source/candidate capture did not complete')
         require(audit['checkpoint']['payload_verified']and audit['checkpoint']['sha256']==protocol['checkpoint_sha256']and audit['checkpoint']['bytes']==protocol['checkpoint_bytes'],'full original checkpoint authentication differs')
-        require(audit['model_forward_calls']==oracle.report['total_one_position_forwards']==3,'exactly3 original prefills required')
+        require(audit['model_forward_calls']==oracle.report['total_one_position_forwards']==protocol['expected_forward_arms'],'exact frozen original prefill count differs')
         require(len(audit['scores'])==1 and audit['scores'][0]['sha256']==protocol['original_first_score_sha256'],'adapter audit must persist baseline first score only')
         if oracle.report['numerical_rejection']:return 1
         return 0
