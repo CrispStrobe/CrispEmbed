@@ -78,6 +78,25 @@ quality result is scoped to that provider and the named corpus, including the
 existing partial CORD gold and derived layout limitations. Model-free contract
 coverage and unchanged output alone cannot qualify OCR or retrieval quality.
 
+### Glyphless OCR font follow-up
+
+The completed 57-page run exposed a provider-format limitation: the invisible
+Tesseract `GlyphLessFont` carries a fixed-pitch flag, causing the existing PDF
+font heuristics to classify OCR prose as Code. The original failed absolute
+OCR/layout result remains intact; its 17-query MiniLM retrieval result passes.
+
+- [x] Freeze a [separate three-arm replay protocol](../tests/regression/marker/pdf-craft-glyphless-followup-v1.json)
+  before candidate output, binding all 57 already-recognized PDFs by SHA-256
+  and retaining the original gold, scorers, queries and absolute thresholds.
+- [ ] Add default-off `CRISPEMBED_MARKER_GLYPHLESS_TEXT` to suppress only the
+  artificial monospace style of exact GlyphLessFont/subset names; retain text,
+  coordinates, genuine Courier/Mono styles and current space reconstruction.
+- [ ] Verify false/unset behavior, exact font-name boundaries, truthful
+  diagnostics and changed-gate resume rejection with owned controls.
+- [ ] Replay the frozen PDFs through legacy, font-only and font-plus-document
+  processing arms; retain every per-page/per-query regression and unavailable
+  spatial result. This replay does not repeat OCR or qualify TeleOCR.
+
 ## 1. Native noncommercial model admission
 
 Owner: model admission lane. Independent of document artifact work.
