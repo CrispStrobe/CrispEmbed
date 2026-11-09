@@ -1,0 +1,148 @@
+{
+  "kind": "marker-python-native-lifecycle",
+  "model_weights_used": false,
+  "pdf_rendering_qualified": false,
+  "library_sha256": "0f1034b037ac2d3b09d8d80b5b956b53dc9c17f9ef77e871192acb1e56d9833a",
+  "fixture_library_sha256": "15b3cff89cd52022ee0e0a55323c7056b3e1aca199c86431053f841c4d5cb9f1",
+  "wrapper_sha256": "dbba4c60926c931ffec8f9092ddb4a61a860e9cbfe1c4075d93ddb6a88756c9d",
+  "checks": [
+    {
+      "name": "actual wrapper reports idle",
+      "passed": true
+    },
+    {
+      "name": "native gate failure propagates through Python",
+      "passed": true
+    },
+    {
+      "name": "gate failure creates no checkpoint",
+      "passed": true
+    },
+    {
+      "name": "resume requires a Python bool",
+      "passed": true
+    },
+    {
+      "name": "start returns real native progress",
+      "passed": true
+    },
+    {
+      "name": "Python rejects invalid budget True",
+      "passed": true
+    },
+    {
+      "name": "Python rejects invalid budget 0",
+      "passed": true
+    },
+    {
+      "name": "Python rejects invalid budget 65",
+      "passed": true
+    },
+    {
+      "name": "Python rejects invalid budget 1.5",
+      "passed": true
+    },
+    {
+      "name": "Python validation preserves the active job",
+      "passed": true
+    },
+    {
+      "name": "bounded Python step commits one page",
+      "passed": true
+    },
+    {
+      "name": "Python exposes only durably completed text",
+      "passed": true
+    },
+    {
+      "name": "another Python thread requests native cancellation",
+      "passed": true
+    },
+    {
+      "name": "cancelled Python job keeps its checkpoint",
+      "passed": true
+    },
+    {
+      "name": "closed wrapper cannot access freed native context",
+      "passed": true
+    },
+    {
+      "name": "fresh Python context resumes committed cursor",
+      "passed": true
+    },
+    {
+      "name": "resumed step preserves page budget",
+      "passed": true
+    },
+    {
+      "name": "Python resume completes remaining pages",
+      "passed": true
+    },
+    {
+      "name": "actual Python JSON retains BMP and astral UTF-16 labels",
+      "passed": true
+    },
+    {
+      "name": "Python metadata and assets match the text-mode result",
+      "passed": true
+    },
+    {
+      "name": "wrapper preserves the resumable checkpoint when saving views",
+      "passed": true
+    },
+    {
+      "name": "rejected view save is nondestructive",
+      "passed": true
+    },
+    {
+      "name": "existing Python bundle save accepts a completed lifecycle view",
+      "passed": true
+    },
+    {
+      "name": "processed artifact reopens without PDFium or model paths",
+      "passed": true
+    },
+    {
+      "name": "raw artifact rejects mismatched standalone configuration",
+      "passed": true
+    },
+    {
+      "name": "failed raw open preserves prior Python view",
+      "passed": true
+    },
+    {
+      "name": "artifact integrity failure reaches Python",
+      "passed": true
+    },
+    {
+      "name": "corrupt open cannot replace a valid Python view",
+      "passed": true
+    },
+    {
+      "name": "later page failure reaches Python",
+      "passed": true
+    },
+    {
+      "name": "Python can inspect completed units after failure",
+      "passed": true
+    },
+    {
+      "name": "failed checkpoint remains resumable from Python",
+      "passed": true
+    },
+    {
+      "name": "retry targets the uncompleted page",
+      "passed": true
+    },
+    {
+      "name": "repeated page failure preserves completed units",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "passed_count": 33,
+  "total_count": 33,
+  "returncode": 0,
+  "stdout": "",
+  "stderr": ""
+}

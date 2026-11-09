@@ -10,6 +10,13 @@ is part of this task.
 `[x]` means the stated work was performed, not that a separate pending runtime
 validation passed. Implementation and validation have separate checkboxes.
 
+On 9 November the owner explicitly authorized builds and tests in the current
+environment instead of waiting for the GitHub queue. This task now uses bounded
+local Linux CPU execution, preserving exact source/toolchain identities and
+initial failures. Windows/macOS and hosted results remain distinct; a local
+pass does not imply those platform checks passed. This authorization is scoped
+to this feature work and does not change the repository-wide guidance.
+
 ## 0. Source and dependency boundary
 
 - [x] Pin the reviewed pdf-craft source to `cf003c711b6a63cd0a0a64bfc490bd319ab20d92`.
@@ -33,7 +40,8 @@ Owner: model admission lane. Independent of document artifact work.
 - [x] Add metadata-only public-loader controls for missing/false acknowledgement,
   identity variants, accepted admission and permissive controls.
 - [x] Document exact terms, gate and limits in [Jina admission](jina-ocr-license-gate.md).
-- [ ] Record executed native model-admission evidence.
+- [x] Record executed native model-admission evidence: 106 Jina/Unlimited and
+  57 TeleOCR loader controls pass on Linux CPU; 19 TeleOCR converter tests pass.
 
 ## 2. Persist and reopen native extraction
 
@@ -47,8 +55,8 @@ Owner: artifact lane. Foundation for resume and reusable indexing.
 - [x] Add opt-in public save/open operations that reopen extracted content
   without loading an OCR model or re-running extraction.
 - [x] Add Python, Rust and Dart accessors with existing ABI compatibility.
-- [ ] Verify exact round trips, malformed artifacts, resource limits and
-  render equivalence through hosted native and public-client tests.
+- [x] Verify exact round trips, malformed artifacts, resource limits and
+  render equivalence through native and public-client tests.
 
 ## 3. Source-linked chunks and continuation
 
@@ -60,8 +68,8 @@ Owner: document structure lane. Artifact schema must preserve these records.
   text separated by retained footnotes or marginalia.
 - [x] Expose assembled retrieval chunks with each contributing page/block/range.
 - [x] Preserve legacy rendering and chunk output with the feature disabled.
-- [ ] Verify cross-page joins, interruption/ambiguity, Unicode boundaries,
-  immutable source evidence and gate-off equivalence in hosted tests.
+- [x] Verify cross-page joins, interruption/ambiguity, Unicode boundaries,
+  immutable source evidence and gate-off equivalence in native tests.
 
 ## 4. Bounded processing, cancellation and resume
 
@@ -77,7 +85,8 @@ Owner: public lifecycle lane. Depends on artifact contract.
 - [x] Keep the existing all-or-nothing conversion API and ABI intact.
 - [x] Bind the lifecycle in C/Python/Rust/Dart and author interruption, identity,
   completed-resume and failure-recovery controls.
-- [ ] Execute those controls on hosted owned fixtures at final source.
+- [x] Execute those controls on owned fixtures at the validated source: 400
+  native and 33 actual Python lifecycle checks pass on Linux CPU.
 
 ## 5. Multilingual whitespace and source offsets
 
@@ -86,7 +95,7 @@ Owner: document structure lane; independently default-off.
 - [x] Normalize only explicitly supported prose padding and CJK boundaries.
 - [x] Preserve join controls, variation selectors, intentional whitespace,
   source bytes and offsets; exclude code, formulas and structured assets.
-- [ ] Verify non-Latin, emoji, combining characters, invalid UTF-8 and mixed
+- [x] Verify non-Latin, emoji, combining characters, invalid UTF-8 and mixed
   inline boundaries without changing disabled-path output.
 
 ## 6. Footnotes, references and page labels
@@ -98,7 +107,7 @@ Owner: document structure lane; PDF provider support owned by lifecycle lane.
 - [x] Assign stable note/reference identities and expose unresolved/ambiguous
   links without guessing a cross-page target.
 - [x] Preserve references and labels through artifacts and source-linked chunks.
-- [ ] Verify repeated labels, duplicate notes, missing targets and physical-page
+- [x] Verify repeated labels, duplicate notes, missing targets and physical-page
   provenance with owned model-free fixtures.
 
 ## 7. Integration and evidence
@@ -108,8 +117,8 @@ Owner: document structure lane; PDF provider support owned by lifecycle lane.
 - [x] Wire new sources/tests into native builds, Rust source packaging and CI
   dependency selection; retain bounded diagnostics as workflow artifacts.
 - [x] Complete available local C++ formatting, Python/YAML/shell syntax,
-  environment inventory and whitespace checks. Builds/suites and platform
-  language validation remain hosted under repository policy.
+  environment inventory and whitespace checks. The subsequent owner instruction
+  authorizes local builds/suites; platform results remain separately identified.
 - [x] Independently review artifact limits, source-range truthfulness, native
   model admission and all public bindings before marking implementation done.
 - [x] Add actual Rust/Dart lifecycle probes and a bounded hosted supervisor,
@@ -118,12 +127,20 @@ Owner: document structure lane; PDF provider support owned by lifecycle lane.
   inputs change; preserve crate-only selection for isolated package changes.
 - [x] Wire Windows document/artifact/lifecycle execution and macOS Xcode
   generation/CocoaPods syntax checks into the existing Build workflow.
-- [ ] Read successful results for all six Rust/Dart scenarios and the added
-  Windows/macOS checks; preparation and static review are not execution.
-- [ ] Verify a produced Flutter package/archive includes all nine notice files
+- [x] Read successful results for all six actual Rust/Dart scenarios: 111
+  named assertions, all process exits successful.
+- [ ] Read the added Windows/macOS results; local Linux execution does not
+  qualify those platforms.
+- [x] Verify actual Python wheel/sdist/rebuilt-wheel bytes and missing-notice
+  rejection: 26 checks pass with the new native library.
+- [x] Verify Dart's actual publish dry-run selects all nine exact notice files:
+  15 scoped checks pass with `--skip-validation`, without uploading.
+- [ ] Read back a retained Flutter package/archive containing all nine notice files
   (package root and both platform-local directories); app-install qualification
   remains separate from byte-copy and Ruby syntax checks.
-- [ ] Record exact final-source runs and remaining limits. No OCR accuracy,
+- [x] Record exact local source/toolchain results, initial failures and remaining
+  limits in the [execution evidence](../tests/results/marker/pdf-craft-local-2026-11-09/README.md).
+- [ ] Record exact final-source hosted results. No OCR accuracy,
   representative retrieval quality or release claim follows from model-free
   contract tests.
 
@@ -133,8 +150,9 @@ The artifact, source-link, lifecycle and public-binding implementations and owne
 controls are now present. See [artifacts](marker-artifact.md),
 [lifecycle/API examples](marker-lifecycle.md) and [source links](marker-source-links.md).
 Attribution gaps in Rust, native archive and Flutter packaging are corrected;
-exact notice copies were checked. Shipping remains a separate operation. All executed-test checkboxes
-stay open until hosted results are read at the final source.
+exact notice copies were checked. Shipping remains a separate operation. Checked
+execution boxes above refer to the observed Linux CPU results; platform and
+model-quality gaps retain their own open boxes.
 
 ## Review corrections
 
@@ -165,10 +183,27 @@ toolchains, crashes or absent probe results as skipped successes.
 
 The Rust probe's pinned `serde_json` 1.0.145 dependency is test-only and
 [MIT/Apache-2.0](https://docs.rs/crate/serde_json/1.0.145/source/Cargo.toml).
-No production dependency or model was added. Keep all executed-validation
-checkboxes open until final-source hosted results are available.
+No production dependency or model was added. The owner subsequently authorized
+local execution while hosted runs remain queued. Keep each validation box open
+until its actual result is read; preserve hosted and platform gaps separately.
 
-## Current evidence
+## Executed local evidence
+
+Native source `d4d508c460c6e172fd1d7d4afc6b9c78652ad607`, incorporating main
+through `dc4f51c755bf78139f1f6ea87941748b05e75971`, builds successfully with GCC
+14.2.0, CMake 3.31.10, portable CPU flags and pinned GGML. All 185 document,
+87 artifact, 400 lifecycle and 38 save checks pass. Actual Python/Rust/Dart,
+model admission and package results are linked above. Real PDFium 151.0.7891.0
+passes 39 backend and 86 C API checks, plus 112 Python/CLI/HTTP checks on eight
+owned PDFs. Five repository guards also pass.
+
+The first native artifact/lifecycle attempts failed before any checks because
+the default temporary directory was absent. Both passed unchanged after setting
+a task-local `TMPDIR`. Those attempts and exact binary/source hashes remain in
+the evidence. Rust/Dart fixture changes in this checkpoint are formatter output;
+their executed source hashes are recorded separately from the native commit.
+
+## Historical hosted snapshots
 
 Initial implementation checkpoint: `93aa882ee371c2dbdcaa8060ffe9ac7e74995e07`.
 At continuation, its [Build](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42594063974)
@@ -181,5 +216,6 @@ Full implementation checkpoint: [`0e543c81c3537eebda0ba756a94d42fb22c81490`](htt
 Its [Build](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42598879883)
 was pending and [model-free controls](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42598880031)
 queued at review. Follow-up source-map and notice corrections are saved in later
-commits on the same branch. The PR check list is the live final-source gate;
-no native or client runtime pass has yet been observed.
+commits on the same branch. At that historical review no native or client runtime
+pass had been observed. The local evidence above supersedes that execution gap;
+the PR check list remains the live hosted gate.

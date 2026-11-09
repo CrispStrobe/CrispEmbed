@@ -1,0 +1,670 @@
+{
+  "schema": "crispembed.marker-binding-lifecycle/1",
+  "scope": "owned ABI fixture; no real PDF rendering or model inference",
+  "library_sha256": "0f1034b037ac2d3b09d8d80b5b956b53dc9c17f9ef77e871192acb1e56d9833a",
+  "pdfium_fixture_sha256": "15b3cff89cd52022ee0e0a55323c7056b3e1aca199c86431053f841c4d5cb9f1",
+  "source_sha256": {
+    "tests/run_marker_binding_lifecycle.py": "4e1aed6e293f9966997ea45397e182e27254aaec4bcdb7b2f1cfbcf7afb8d189",
+    "tests/marker_public_bindings.rs": "b6272e525425f98b2e3868e900ca9bf982271d692c21876d8532762ddd994614",
+    "tests/marker_public_bindings.dart": "b38ed518482b1c66fb9eee2cf806df6ec582dba708efe08bdcd37ce3e77e6312",
+    "tests/marker_pdfium_fixture.cpp": "115d0f3db290621afe9a56c83bbdf7b7c733a8f49a4daedf2c336dcd1d536ac8",
+    "crispembed/src/marker.rs": "bceece4a5668d9433dd6e40e5f56058f62c36c3026d439862d77a1872062415d",
+    "crispembed/src/lib.rs": "574f65d8e7056a3ed236dbd2f4a8a6948a7c84718ecce4f6c55bc20df58d18a1",
+    "crispembed-sys/src/lib.rs": "f3bdb266950a515d21b0fbeba811c2eb5b3012ffe739f81882ad6314d0c45f72",
+    "crispembed-sys/build.rs": "cf82ef5726196c42f1b29d3f387429848c9ced4230062e5ba2f1de824dd13ce1",
+    "flutter/crispembed/lib/src/marker.dart": "52317d8db12a28f93fd8f2cd03ea6c8fec34952158b3b0c7721d440de053abc6"
+  },
+  "commands": [
+    {
+      "name": "cargo-version",
+      "log": "logs/cargo-version.log",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true
+    },
+    {
+      "name": "rustc-version",
+      "log": "logs/rustc-version.log",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true
+    },
+    {
+      "name": "dart-version",
+      "log": "logs/dart-version.log",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true
+    },
+    {
+      "name": "rust-build",
+      "log": "logs/rust-build.log",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true
+    },
+    {
+      "name": "rust-artifacts-off",
+      "log": "logs/rust-artifacts-off.log",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true
+    },
+    {
+      "name": "rust-incremental-off",
+      "log": "logs/rust-incremental-off.log",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true
+    },
+    {
+      "name": "rust-enabled",
+      "log": "logs/rust-enabled.log",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true
+    },
+    {
+      "name": "dart-resolve",
+      "log": "logs/dart-resolve.log",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true
+    },
+    {
+      "name": "dart-analyze",
+      "log": "logs/dart-analyze.log",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true
+    },
+    {
+      "name": "dart-build",
+      "log": "logs/dart-build.log",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true
+    },
+    {
+      "name": "dart-artifacts-off",
+      "log": "logs/dart-artifacts-off.log",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true
+    },
+    {
+      "name": "dart-incremental-off",
+      "log": "logs/dart-incremental-off.log",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true
+    },
+    {
+      "name": "dart-enabled",
+      "log": "logs/dart-enabled.log",
+      "exit_code": 0,
+      "timed_out": false,
+      "passed": true
+    }
+  ],
+  "probes": [
+    {
+      "client": "Rust",
+      "scenario": "artifacts-off",
+      "passed": true,
+      "result": {
+        "checks": [
+          {
+            "name": "new native context is idle",
+            "passed": true
+          },
+          {
+            "name": "gate-off keeps synchronous conversion usable",
+            "passed": true
+          },
+          {
+            "name": "native artifact save gate: extraction artifacts require CRISPEMBED_MARKER=1 and CRISPEMBED_MARKER_ARTIFACTS=1",
+            "passed": true
+          },
+          {
+            "name": "native artifact open gate: extraction artifacts require CRISPEMBED_MARKER=1 and CRISPEMBED_MARKER_ARTIFACTS=1",
+            "passed": true
+          },
+          {
+            "name": "closed artifact gate writes no file",
+            "passed": true
+          },
+          {
+            "name": "native start gate reaches Rust: extraction artifacts require CRISPEMBED_MARKER=1 and CRISPEMBED_MARKER_ARTIFACTS=1",
+            "passed": true
+          },
+          {
+            "name": "native step gate reaches Rust: extraction artifacts require CRISPEMBED_MARKER=1 and CRISPEMBED_MARKER_ARTIFACTS=1",
+            "passed": true
+          },
+          {
+            "name": "rejected lifecycle calls preserve view and create no checkpoint",
+            "passed": true
+          }
+        ],
+        "client": "Rust",
+        "model_weights_used": false,
+        "passed": 8,
+        "pdf_rendering_qualified": false,
+        "scenario": "artifacts-off",
+        "suite": "native-lifecycle",
+        "total": 8
+      }
+    },
+    {
+      "client": "Rust",
+      "scenario": "incremental-off",
+      "passed": true,
+      "result": {
+        "checks": [
+          {
+            "name": "new native context is idle",
+            "passed": true
+          },
+          {
+            "name": "gate-off keeps synchronous conversion usable",
+            "passed": true
+          },
+          {
+            "name": "artifacts work with incremental gate off",
+            "passed": true
+          },
+          {
+            "name": "native start gate reaches Rust: incremental extraction requires CRISPEMBED_MARKER_INCREMENTAL=1",
+            "passed": true
+          },
+          {
+            "name": "native step gate reaches Rust: incremental extraction requires CRISPEMBED_MARKER_INCREMENTAL=1",
+            "passed": true
+          },
+          {
+            "name": "rejected lifecycle calls preserve view and create no checkpoint",
+            "passed": true
+          }
+        ],
+        "client": "Rust",
+        "model_weights_used": false,
+        "passed": 6,
+        "pdf_rendering_qualified": false,
+        "scenario": "incremental-off",
+        "suite": "native-lifecycle",
+        "total": 6
+      }
+    },
+    {
+      "client": "Rust",
+      "scenario": "enabled",
+      "passed": true,
+      "result": {
+        "checks": [
+          {
+            "name": "new native context is idle",
+            "passed": true
+          },
+          {
+            "name": "start creates an empty three-page job",
+            "passed": true
+          },
+          {
+            "name": "start writes a native extraction checkpoint",
+            "passed": true
+          },
+          {
+            "name": "Rust rejects invalid page budget: page budget must be 1..64",
+            "passed": true
+          },
+          {
+            "name": "Rust rejects invalid page budget: page budget must be 1..64",
+            "passed": true
+          },
+          {
+            "name": "wrapper validation leaves checkpoint bytes unchanged",
+            "passed": true
+          },
+          {
+            "name": "one-page native step remains running",
+            "passed": true
+          },
+          {
+            "name": "one-page step advances only one cursor",
+            "passed": true
+          },
+          {
+            "name": "partial Rust view contains only the committed page",
+            "passed": true
+          },
+          {
+            "name": "partial processed artifact preserves all four renders",
+            "passed": true
+          },
+          {
+            "name": "partial reopen retains extraction state",
+            "passed": true
+          },
+          {
+            "name": "processed save cannot overwrite raw checkpoint: save the rendered view separately from the resumable raw checkpoint",
+            "passed": true
+          },
+          {
+            "name": "cancellation request preserves current cursor",
+            "passed": true
+          },
+          {
+            "name": "Rust cancellation reaches the native flag",
+            "passed": true
+          },
+          {
+            "name": "next boundary observes cancellation",
+            "passed": true
+          },
+          {
+            "name": "cancelled progress retains completed units",
+            "passed": true
+          },
+          {
+            "name": "repeated cancelled steps do not rewrite the checkpoint",
+            "passed": true
+          },
+          {
+            "name": "cancelled view stays inspectable",
+            "passed": true
+          },
+          {
+            "name": "fresh context resumes committed cursor",
+            "passed": true
+          },
+          {
+            "name": "resume clears cancellation",
+            "passed": true
+          },
+          {
+            "name": "resumed page budget remains bounded",
+            "passed": true
+          },
+          {
+            "name": "resumed step commits only the next page",
+            "passed": true
+          },
+          {
+            "name": "resumed job completes remaining page",
+            "passed": true
+          },
+          {
+            "name": "completed progress is exact",
+            "passed": true
+          },
+          {
+            "name": "resume neither loses nor duplicates pages",
+            "passed": true
+          },
+          {
+            "name": "Rust preserves distinct physical indices and Unicode printed labels",
+            "passed": true
+          },
+          {
+            "name": "Rust chunk source ranges match exact immutable UTF-8 bytes",
+            "passed": true
+          },
+          {
+            "name": "text-only lifecycle has no image assets",
+            "passed": true
+          },
+          {
+            "name": "completed step is idempotent",
+            "passed": true
+          },
+          {
+            "name": "completed reopen preserves all four renders and source maps",
+            "passed": true
+          },
+          {
+            "name": "raw checkpoint rejects changed reader configuration: raw checkpoint requires matching processing settings; use a processed artifact for standalone viewing",
+            "passed": true
+          },
+          {
+            "name": "failed raw open preserves prior processed view",
+            "passed": true
+          },
+          {
+            "name": "native corruption error reaches Rust: Marker extraction artifact: SHA-256 integrity mismatch",
+            "passed": true
+          },
+          {
+            "name": "corrupt open preserves the complete Rust view",
+            "passed": true
+          },
+          {
+            "name": "fresh-context completed resume performs no extra work",
+            "passed": true
+          },
+          {
+            "name": "completed raw resume retains exact text",
+            "passed": true
+          },
+          {
+            "name": "later page failure reaches Rust: marker: PDFium could not load page 1",
+            "passed": true
+          },
+          {
+            "name": "native failure retains committed progress",
+            "passed": true
+          },
+          {
+            "name": "failed job retains its complete first page",
+            "passed": true
+          },
+          {
+            "name": "failed checkpoint resumes at the uncompleted page: marker: PDFium could not load page 1",
+            "passed": true
+          },
+          {
+            "name": "failed retry preserves durable checkpoint bytes",
+            "passed": true
+          }
+        ],
+        "client": "Rust",
+        "model_weights_used": false,
+        "passed": 41,
+        "pdf_rendering_qualified": false,
+        "scenario": "enabled",
+        "suite": "native-lifecycle",
+        "total": 41
+      }
+    },
+    {
+      "client": "Dart",
+      "scenario": "artifacts-off",
+      "passed": true,
+      "result": {
+        "client": "Dart",
+        "suite": "native-lifecycle",
+        "scenario": "artifacts-off",
+        "model_weights_used": false,
+        "pdf_rendering_qualified": false,
+        "checks": [
+          {
+            "name": "new native context is idle",
+            "passed": true
+          },
+          {
+            "name": "gate-off keeps synchronous conversion usable",
+            "passed": true
+          },
+          {
+            "name": "native artifact save gate: Bad state: extraction artifacts require CRISPEMBED_MARKER=1 and CRISPEMBED_MARKER_ARTIFACTS=1",
+            "passed": true
+          },
+          {
+            "name": "native artifact open gate: Bad state: extraction artifacts require CRISPEMBED_MARKER=1 and CRISPEMBED_MARKER_ARTIFACTS=1",
+            "passed": true
+          },
+          {
+            "name": "closed artifact gate writes no file",
+            "passed": true
+          },
+          {
+            "name": "native start gate reaches Dart: Bad state: extraction artifacts require CRISPEMBED_MARKER=1 and CRISPEMBED_MARKER_ARTIFACTS=1",
+            "passed": true
+          },
+          {
+            "name": "native step gate reaches Dart: Bad state: extraction artifacts require CRISPEMBED_MARKER=1 and CRISPEMBED_MARKER_ARTIFACTS=1",
+            "passed": true
+          },
+          {
+            "name": "rejected lifecycle calls preserve view and create no checkpoint",
+            "passed": true
+          }
+        ],
+        "passed": 8,
+        "total": 8
+      }
+    },
+    {
+      "client": "Dart",
+      "scenario": "incremental-off",
+      "passed": true,
+      "result": {
+        "client": "Dart",
+        "suite": "native-lifecycle",
+        "scenario": "incremental-off",
+        "model_weights_used": false,
+        "pdf_rendering_qualified": false,
+        "checks": [
+          {
+            "name": "new native context is idle",
+            "passed": true
+          },
+          {
+            "name": "gate-off keeps synchronous conversion usable",
+            "passed": true
+          },
+          {
+            "name": "artifacts work with incremental gate off",
+            "passed": true
+          },
+          {
+            "name": "native start gate reaches Dart: Bad state: incremental extraction requires CRISPEMBED_MARKER_INCREMENTAL=1",
+            "passed": true
+          },
+          {
+            "name": "native step gate reaches Dart: Bad state: incremental extraction requires CRISPEMBED_MARKER_INCREMENTAL=1",
+            "passed": true
+          },
+          {
+            "name": "rejected lifecycle calls preserve view and create no checkpoint",
+            "passed": true
+          }
+        ],
+        "passed": 6,
+        "total": 6
+      }
+    },
+    {
+      "client": "Dart",
+      "scenario": "enabled",
+      "passed": true,
+      "result": {
+        "client": "Dart",
+        "suite": "native-lifecycle",
+        "scenario": "enabled",
+        "model_weights_used": false,
+        "pdf_rendering_qualified": false,
+        "checks": [
+          {
+            "name": "new native context is idle",
+            "passed": true
+          },
+          {
+            "name": "start creates an empty three-page job",
+            "passed": true
+          },
+          {
+            "name": "start writes a native extraction checkpoint",
+            "passed": true
+          },
+          {
+            "name": "Dart rejects invalid page budget: Invalid argument(s): Page budget must be 1..64",
+            "passed": true
+          },
+          {
+            "name": "Dart rejects invalid page budget: Invalid argument(s): Page budget must be 1..64",
+            "passed": true
+          },
+          {
+            "name": "wrapper validation leaves checkpoint bytes unchanged",
+            "passed": true
+          },
+          {
+            "name": "one-page native step remains running",
+            "passed": true
+          },
+          {
+            "name": "one-page step advances only one cursor",
+            "passed": true
+          },
+          {
+            "name": "partial Dart view contains only the committed page",
+            "passed": true
+          },
+          {
+            "name": "partial processed artifact preserves all four renders",
+            "passed": true
+          },
+          {
+            "name": "partial reopen retains extraction state",
+            "passed": true
+          },
+          {
+            "name": "processed save cannot overwrite raw checkpoint: Bad state: save the rendered view separately from the resumable raw checkpoint",
+            "passed": true
+          },
+          {
+            "name": "cancellation request preserves current cursor",
+            "passed": true
+          },
+          {
+            "name": "Dart cancellation reaches the native flag",
+            "passed": true
+          },
+          {
+            "name": "next boundary observes cancellation",
+            "passed": true
+          },
+          {
+            "name": "cancelled progress retains completed units",
+            "passed": true
+          },
+          {
+            "name": "repeated cancelled steps do not rewrite the checkpoint",
+            "passed": true
+          },
+          {
+            "name": "cancelled view stays inspectable",
+            "passed": true
+          },
+          {
+            "name": "disposed wrapper cannot call the native lifecycle: Bad state: Marker context is disposed",
+            "passed": true
+          },
+          {
+            "name": "fresh context resumes committed cursor",
+            "passed": true
+          },
+          {
+            "name": "resume clears cancellation",
+            "passed": true
+          },
+          {
+            "name": "resumed page budget remains bounded",
+            "passed": true
+          },
+          {
+            "name": "resumed step commits only the next page",
+            "passed": true
+          },
+          {
+            "name": "resumed job completes remaining page",
+            "passed": true
+          },
+          {
+            "name": "completed progress is exact",
+            "passed": true
+          },
+          {
+            "name": "resume neither loses nor duplicates pages",
+            "passed": true
+          },
+          {
+            "name": "Dart preserves distinct physical indices and Unicode printed labels",
+            "passed": true
+          },
+          {
+            "name": "Dart chunk source ranges match exact immutable UTF-8 bytes",
+            "passed": true
+          },
+          {
+            "name": "text-only lifecycle has no image assets",
+            "passed": true
+          },
+          {
+            "name": "completed step is idempotent",
+            "passed": true
+          },
+          {
+            "name": "completed reopen preserves all four renders and source maps",
+            "passed": true
+          },
+          {
+            "name": "raw checkpoint rejects changed reader configuration: Bad state: raw checkpoint requires matching processing settings; use a processed artifact for standalone viewing",
+            "passed": true
+          },
+          {
+            "name": "failed raw open preserves prior processed view",
+            "passed": true
+          },
+          {
+            "name": "native corruption error reaches Dart: Bad state: Marker extraction artifact: SHA-256 integrity mismatch",
+            "passed": true
+          },
+          {
+            "name": "corrupt open preserves the complete Dart view",
+            "passed": true
+          },
+          {
+            "name": "fresh-context completed resume performs no extra work",
+            "passed": true
+          },
+          {
+            "name": "completed raw resume retains exact text",
+            "passed": true
+          },
+          {
+            "name": "later page failure reaches Dart: Bad state: marker: PDFium could not load page 1",
+            "passed": true
+          },
+          {
+            "name": "native failure retains committed progress",
+            "passed": true
+          },
+          {
+            "name": "failed job retains its complete first page",
+            "passed": true
+          },
+          {
+            "name": "failed checkpoint resumes at the uncompleted page: Bad state: marker: PDFium could not load page 1",
+            "passed": true
+          },
+          {
+            "name": "failed retry preserves durable checkpoint bytes",
+            "passed": true
+          }
+        ],
+        "passed": 42,
+        "total": 42
+      }
+    }
+  ],
+  "errors": [],
+  "passed": true,
+  "execution_provenance": {
+    "execution": "user-authorized local Linux x86_64 execution",
+    "native_source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+    "consumer_source_base_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+    "consumer_changes_from_base": {
+      "kind": "formatter-only",
+      "paths": [
+        "tests/marker_public_bindings.rs",
+        "tests/marker_public_bindings.dart"
+      ],
+      "note": "Pinned rustfmt and Dart formatter changed only fixture formatting before this run; exact executed source hashes are retained."
+    },
+    "test_attempt": 1,
+    "finished_utc": "2026-11-09T10:54:58.640881+00:00",
+    "sanitization": "Only private checkout/temporary path prefixes in logs were replaced with placeholders; result values and source/binary hashes are unchanged."
+  }
+}

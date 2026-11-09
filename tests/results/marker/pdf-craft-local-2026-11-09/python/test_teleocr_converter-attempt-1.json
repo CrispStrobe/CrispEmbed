@@ -1,0 +1,25 @@
+{
+  "kind": "python-unit-control",
+  "script": "test_teleocr_converter.py",
+  "attempt": 1,
+  "command": [
+    "<validation-workspace>/python-validation/venv/bin/python",
+    "-B",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests",
+    "-p",
+    "test_teleocr_converter.py",
+    "-v"
+  ],
+  "source_sha256": "97dd363c8b609b5f99467a1f547e96b74a10981842b7d5ddef4b0d0cf6119797",
+  "started_utc": "2026-11-09T10:48:38.563236+00:00",
+  "elapsed_seconds": 0.286,
+  "exit_code": 0,
+  "test_count": 19,
+  "passed": true,
+  "model_weights_used": false,
+  "log_path": "<validation-workspace>/python-validation/logs/test_teleocr_converter-attempt-1.log"
+}

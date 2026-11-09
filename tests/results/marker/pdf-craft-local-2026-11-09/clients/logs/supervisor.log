@@ -1,0 +1,14 @@
+cargo-version: pass
+rustc-version: pass
+dart-version: pass
+rust-build: pass
+rust-artifacts-off: pass
+rust-incremental-off: pass
+rust-enabled: pass
+dart-resolve: pass
+dart-analyze: pass
+dart-build: pass
+dart-artifacts-off: pass
+dart-incremental-off: pass
+dart-enabled: pass
+{"kind": "crispembed.marker-binding-lifecycle/1", "passed": true, "probes": 6, "errors": []}

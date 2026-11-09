@@ -1,0 +1,32 @@
+{
+  "kind": "python-native-driver-attempt",
+  "script": "test_marker_lifecycle.py",
+  "attempt": 1,
+  "source_commit": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+  "command": [
+    "<validation-workspace>/python-validation/venv/bin/python",
+    "-B",
+    "<repo>/tests/test_marker_lifecycle.py",
+    "--lib",
+    "<validation-workspace>/validation-pdf-craft/native/build/libcrispembed.so",
+    "--report",
+    "<validation-workspace>/python-validation/reports/test_marker_lifecycle-attempt-1.json",
+    "--pdfium",
+    "<validation-workspace>/validation-pdf-craft/native/build/libmarker-pdfium-fixture.so"
+  ],
+  "source_sha256": "5d97d3cc732d64647a105a4b3795fdd565e731f86141f9b82e521d88ac2af25b",
+  "native_library_sha256": "0f1034b037ac2d3b09d8d80b5b956b53dc9c17f9ef77e871192acb1e56d9833a",
+  "fixture_library_sha256": "15b3cff89cd52022ee0e0a55323c7056b3e1aca199c86431053f841c4d5cb9f1",
+  "started_utc": "2026-11-09T10:54:30.143103+00:00",
+  "elapsed_seconds": 0.251,
+  "exit_code": 0,
+  "model_weights_used": false,
+  "log_path": "<validation-workspace>/python-validation/logs/test_marker_lifecycle-attempt-1.log",
+  "report_path": "<validation-workspace>/python-validation/reports/test_marker_lifecycle-attempt-1.json",
+  "driver_summary": {
+    "passed": true,
+    "passed_count": 33,
+    "total_count": 33
+  },
+  "failing_checks": []
+}

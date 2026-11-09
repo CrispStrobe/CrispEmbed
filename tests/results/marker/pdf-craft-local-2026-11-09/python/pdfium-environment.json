@@ -1,0 +1,10 @@
+{
+  "package": "pypdfium2",
+  "package_version": "5.10.1",
+  "pdfium_version": "151.0.7891.0",
+  "package_info": "5.10.1",
+  "library_path": "<validation-workspace>/python-validation/venv/lib/python3.13/site-packages/pypdfium2_raw/libpdfium.so",
+  "library_exists": true,
+  "library_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+  "model_weights_used": false
+}

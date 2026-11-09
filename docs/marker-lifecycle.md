@@ -1,7 +1,8 @@
 # Marker artifacts and incremental extraction
 
 This opt-in implementation is tracked in [the PDF Craft task list](pdf-craft-tasks.md).
-Hosted final-source validation remains required. Model-free lifecycle controls
+Validation is tracked by exact source and platform; local Linux execution is
+owner-authorized while hosted checks remain queued. Model-free lifecycle controls
 do not qualify OCR accuracy, cancellation latency or corpus-scale throughput.
 
 ## Enable before creating a context
@@ -123,13 +124,17 @@ restricted model.
 
 ## Validation tasks
 
-- [ ] Hosted artifact roundtrip, malformed-input and atomic-failure tests.
-- [ ] Hosted native lifecycle controls with an owned PDFium ABI fixture:
+- [x] Artifact roundtrip, malformed-input and atomic-failure tests: 87 checks.
+- [x] Native lifecycle controls with an owned PDFium ABI fixture: 400 checks;
   budgets, Unicode labels, cancellation, fresh-context resume, stale identity,
   corrupted checkpoint and later-page failure.
-- [ ] Hosted actual-native Python lifecycle and older-library compatibility.
-- [ ] Hosted actual Rust/Dart lifecycle execution in six separately gated
+- [x] Actual-native Python lifecycle: 33 checks; the separate 17 Python client
+  controls cover image alpha handling and bundle ownership/preflight.
+- [ ] Execute legacy conversion against an older native library lacking the
+  new lifecycle symbols; source review confirms lazy symbol lookup.
+- [x] Actual Rust/Dart lifecycle execution in six separately gated
   scenarios, including partial/full four-render reopen and exact source maps.
+  All 111 named assertions pass.
 - [ ] Hosted Windows document/artifact/lifecycle controls, Xcode generation
   and CocoaPods syntax checks.
 - [ ] Exact final-source ordinary CI and independent review recorded in the
@@ -137,6 +142,12 @@ restricted model.
 
 The owned ABI fixture tests lifecycle and marshaling; it is not a substitute for
 real PDF rendering or representative model/document quality evaluation.
+
+Checked items above were executed on Linux CPU at native source
+`d4d508c460c6e172fd1d7d4afc6b9c78652ad607`. The
+[retained evidence](../tests/results/marker/pdf-craft-local-2026-11-09/README.md)
+identifies toolchains, actual binaries and client sources, initial environment
+failures and remaining platform limits.
 
 The Linux Build job runs the real public clients through
 `tests/run_marker_binding_lifecycle.py`. It compiles isolated Rust and Dart
@@ -147,4 +158,5 @@ timeouts, crashes and missing reports fail. Its JSON, command logs, native/sourc
 hashes and resolved dependency locks are retained with the loader diagnostics.
 The test-only Rust JSON parser is pinned to MIT/Apache-2.0 `serde_json` 1.0.145;
 production crate dependencies are unchanged. Dart uses the existing `ffi` 2.2.0
-test dependency. These authored controls still require hosted execution.
+test dependency. These controls can also run in the owner-authorized local
+environment; record the actual compiler, platform, source and result.

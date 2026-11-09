@@ -45,8 +45,8 @@ download consent does not cover every local-file or cached-model load: those
 paths return before the download check. The existing `jina-ocr-v1` profile's
 reuse of the Unlimited runtime had a model-specific noncommercial access-gate
 gap. The authorized follow-up now adds [native admission](jina-ocr-license-gate.md)
-for known Jina identity or declared CC-BY-NC terms, with metadata-only controls
-awaiting hosted execution. This is not a claim of universal model enforcement;
+for known Jina identity or declared CC-BY-NC terms. All 106 metadata-only controls
+pass in the owner-authorized Linux CPU execution. This is not a claim of universal model enforcement;
 editable metadata cannot authenticate wholly relabeled artifacts. Backend
 selection remains unchanged. See the current
 [registry resolver](../examples/cli/model_mgr.cpp) and
@@ -175,11 +175,14 @@ Translation, EPUB export and layout-preserving PDF writeback are larger product
 choices. They are not prerequisites for better OCR diagnostics or better
 retrieval provenance, and their upstream dependencies require their own review.
 
-## Validation pending
+## Executed validation and remaining scope
 
-This section is intentionally pending until the implementation owner records
-executed results at the exact feature-branch commit. Required evidence for the
-selected increment:
+The owner-authorized Linux CPU execution at native source
+`d4d508c460c6e172fd1d7d4afc6b9c78652ad607` passes all 185 native document checks,
+including the repetition diagnostic and the following controls. The
+[execution evidence](../tests/results/marker/pdf-craft-local-2026-11-09/README.md)
+also records native artifacts/lifecycle, public clients, model admission and
+package notices. Windows/macOS execution remains separate.
 
 - Threshold boundaries for both bands, including a just-below-threshold control,
   a qualifying span within otherwise ordinary prose, and interrupted repeats.

@@ -117,3 +117,8 @@ python tests/test_unlimited_ocr_license.py \
 
 These controls establish metadata and acknowledgement behavior. They make no
 OCR accuracy, performance, source-parity or model-publication claim.
+
+On 9 November 2026, the owner-authorized Linux CPU execution passed all 106
+controls against native source `d4d508c460c6e172fd1d7d4afc6b9c78652ad607`.
+The [retained report](../tests/results/marker/pdf-craft-local-2026-11-09/python/test_unlimited_ocr_license-attempt-1.json)
+includes every fixture hash and observed diagnostic. No model weights were used.

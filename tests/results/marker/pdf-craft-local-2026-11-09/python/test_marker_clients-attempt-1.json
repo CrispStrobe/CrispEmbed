@@ -1,0 +1,25 @@
+{
+  "kind": "python-unit-control",
+  "script": "test_marker_clients.py",
+  "attempt": 1,
+  "command": [
+    "<validation-workspace>/python-validation/venv/bin/python",
+    "-B",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests",
+    "-p",
+    "test_marker_clients.py",
+    "-v"
+  ],
+  "source_sha256": "4382093748a5068879e5cd82700e123a5e85fbe4e2bfdb45f7183031032b21b9",
+  "started_utc": "2026-11-09T10:48:38.849153+00:00",
+  "elapsed_seconds": 0.259,
+  "exit_code": 0,
+  "test_count": 17,
+  "passed": true,
+  "model_weights_used": false,
+  "log_path": "<validation-workspace>/python-validation/logs/test_marker_clients-attempt-1.log"
+}

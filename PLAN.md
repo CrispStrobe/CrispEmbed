@@ -16,26 +16,45 @@ native contracts; public API/bindings and final integration belong to this lane.
 | Work | State | Acceptance |
 |---|---|---|
 | Audit PDF Craft `cf003c711b6a63cd0a0a64bfc490bd319ab20d92` | [Source and dependency review](docs/pdf-craft-adoption.md) complete for the selected adaptation; MIT notice retained in the existing distributed `NOTICE.marker` | Excludes the Poppler/Qt/EasyDict dependency paths and the MinerU-referenced paragraph-merging material |
-| Native OCR repetition diagnostics | Implemented, default-off `CRISPEMBED_MARKER_REPETITION_CHECK`; hosted validation pending | Unicode consecutive n-grams, bounded work, asset exclusions, unchanged text/raw/geometry and default behavior; hosted model-free positive/negative controls |
-| TeleOCR weight-license metadata | Converter and docs corrected to Qwen Research weight terms; native acknowledgement controls expanded; hosted validation pending | Actual synthetic GGUF license readback and disabled-value/direct-loader tests; existing published files and hashes unchanged |
-| Jina/noncommercial native admission | Implemented; direct, local and cached model-free fixtures authored | Acknowledgement before backend/weight allocation; false values rejected; permissive models preserved |
-| Versioned native extraction artifacts | Implemented with full IR/assets, bounds, hashes and atomic replacement | Hosted exact roundtrips, malformed-source-map/corruption/limit controls and standalone reopen |
-| Source-linked chunks, whitespace and references | Implemented behind three opt-in gates | Exact immutable byte ranges, conservative joins, ambiguous links and page labels; disabled-output controls |
-| Bounded lifecycle and clients | C/Python/Rust/Dart start/step/cancel/resume and save/open implemented | Durable page rollback, identity rejection, partial results and owned ABI/client fixtures; hosted final-source validation pending |
+| Native OCR repetition diagnostics | Implemented, default-off `CRISPEMBED_MARKER_REPETITION_CHECK`; included in 185 passing native document checks | Unicode consecutive n-grams, bounded work, asset exclusions, unchanged text/raw/geometry and default behavior |
+| TeleOCR weight-license metadata | Qwen Research metadata corrected; 19 converter and 57 native loader controls pass locally | Actual synthetic GGUF license readback and disabled-value/direct-loader tests; existing published files and hashes unchanged |
+| Jina/noncommercial native admission | 106 actual native direct, local and cached controls pass locally | Acknowledgement before backend/weight allocation; false values rejected; permissive models preserved |
+| Versioned native extraction artifacts | 87 native artifact checks and actual public-client reopen controls pass locally | Exact roundtrips, malformed-source-map/corruption/limit controls and standalone reopen; Windows filesystem execution remains open |
+| Source-linked chunks, whitespace and references | Three opt-in gates; covered by 185 passing document checks and actual client source-map checks | Exact immutable byte ranges, conservative joins, ambiguous links and page labels; disabled-output controls |
+| Bounded lifecycle and clients | 400 native, 33 actual Python and 111 Rust/Dart assertions pass locally | Durable page rollback, identity rejection, partial results; six Rust/Dart gate scenarios all pass; cross-platform execution remains open |
 
 The bounded runtime change reports suspicious OCR repetition; it does not delete
 content, retry inference, introduce models or qualify document accuracy. The
 existing PDFium renderer and native model implementations remain the integration
-points. The authorized follow-ups are implemented and independently reviewed in source;
-executed hosted acceptance remains pending. Initial diagnostic tests do not
-qualify those features.
+points. The authorized follow-ups are implemented and independently reviewed in
+source. [Local execution evidence](tests/results/marker/pdf-craft-local-2026-11-09/README.md)
+records Linux CPU validation at native source `d4d508c460c6e172fd1d7d4afc6b9c78652ad607`;
+Windows/macOS and hosted acceptance remain separate.
 
 Validation continuation: actual Rust/Dart lifecycle probes now cover six gated
 scenarios, and Windows native controls plus macOS Xcode/CocoaPods checks are wired
 into Build. Review corrected an Xcode per-source-definition incompatibility and
 shipped CocoaPods notice resources for local `:path` installs. Source review and
-available static checks are complete; executed hosted results and Flutter package
-readback remain open in [the task checklist](docs/pdf-craft-tasks.md).
+available static checks are complete. Actual Python wheel/sdist readback passes
+26 checks; Dart's publish dry-run selects all nine exact notice files. Full
+Flutter validation and retained-archive byte readback remain open, as do the
+hosted platform checks in [the task checklist](docs/pdf-craft-tasks.md).
+
+The owner explicitly authorized local builds and tests on 9 November instead of
+waiting for the GitHub queue. Bounded Linux CPU validation executed after
+main's release-workflow updates through `dc4f51c755bf78139f1f6ea87941748b05e75971`
+were merged into the feature branch. Native document/artifact/lifecycle/save,
+Python/Rust/Dart, model admission and five repository guards pass. Real PDFium
+151.0.7891.0 also passes 39 backend and 86 C API checks, followed by 112 checks
+across eight owned PDFs and Python/CLI/HTTP. The first artifact/lifecycle attempts
+failed before any checks because the default temporary directory was absent;
+setting a task-local `TMPDIR` passes without source changes. Initial attempts,
+source/toolchain identities and limits are preserved in the receipts.
+
+Next: finish the real-PDF incremental/cancellation/resume probe; retain its
+reproducer and results. Read Windows/macOS results when available, complete
+Flutter archive/app qualification in an equipped environment, and qualify
+representative OCR/retrieval quality separately before any default promotion.
 
 ## OCR review workspace integration — 8 November 2026
 

@@ -216,7 +216,11 @@ disabled-path compatibility, immutable source reuse, byte offsets after multibyt
 characters, removal and insertion provenance, cross-page/footnote continuation,
 missing-page and capped-output controls, Unicode preservation, local/ambiguous/
 unresolved footnotes, physical/provider/observed page labels, and explicit empty
-provider labels. The existing hosted Marker document target executes these tests.
+provider labels. The owner-authorized Linux CPU execution passes all 185 document
+checks at native source `d4d508c460c6e172fd1d7d4afc6b9c78652ad607`; the actual
+Rust/Dart clients also pass exact source-map and four-render reopen checks.
+See [the execution evidence](../tests/results/marker/pdf-craft-local-2026-11-09/README.md).
+The existing hosted Marker document target retains the same controls.
 
 These deterministic fixtures establish the stated contracts, not representative
 OCR quality. Default promotion, broader multilingual joins, cross-page footnote

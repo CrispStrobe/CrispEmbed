@@ -1,0 +1,244 @@
+{
+  "schema_version": 1,
+  "completed_utc": "2026-11-09T10:51:13.195080+00:00",
+  "scope": "Actual Dart pub dry-run file selection and canonical notice-byte verification only. No upload, dependency resolution, Flutter build, or CocoaPods installation.",
+  "source_revision": "d4d508c460c6e172fd1d7d4afc6b9c78652ad607",
+  "dart_version": "Dart SDK version: 3.13.7 (stable) (Thu Oct 22 14:28:57 2026 -0700) on \"linux_x64\"",
+  "commands": [
+    {
+      "command": [
+        "dart",
+        "pub",
+        "publish",
+        "--dry-run"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 0.02
+    },
+    {
+      "command": [
+        "dart",
+        "pub",
+        "publish",
+        "--dry-run",
+        "--skip-validation"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.071
+    },
+    {
+      "command": [
+        "dart",
+        "pub",
+        "--verbose",
+        "publish",
+        "--dry-run",
+        "--skip-validation"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.078
+    }
+  ],
+  "package_version": "0.17.16",
+  "checks": [
+    {
+      "name": "Ordinary dry run exposes missing Flutter SDK",
+      "passed": true
+    },
+    {
+      "name": "Selection-only dry run succeeds",
+      "passed": true
+    },
+    {
+      "name": "Every command is explicitly dry-run",
+      "passed": true
+    },
+    {
+      "name": "NOTICE.marker: selected exact canonical bytes",
+      "passed": true,
+      "sha256": "f4bb1277697be95bac2ded2126f1a89e13c9c1b12db71d9549f3f00fe9c05d50"
+    },
+    {
+      "name": "NOTICE.teleocr: selected exact canonical bytes",
+      "passed": true,
+      "sha256": "839a413b743d1aa53e415774982065c1c195db1c96d82265f76dd5395970af1b"
+    },
+    {
+      "name": "Apache-2.0.txt: selected exact canonical bytes",
+      "passed": true,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "name": "ios/Notices/NOTICE.marker: selected exact canonical bytes",
+      "passed": true,
+      "sha256": "f4bb1277697be95bac2ded2126f1a89e13c9c1b12db71d9549f3f00fe9c05d50"
+    },
+    {
+      "name": "ios/Notices/NOTICE.teleocr: selected exact canonical bytes",
+      "passed": true,
+      "sha256": "839a413b743d1aa53e415774982065c1c195db1c96d82265f76dd5395970af1b"
+    },
+    {
+      "name": "ios/Notices/Apache-2.0.txt: selected exact canonical bytes",
+      "passed": true,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "name": "macos/Notices/NOTICE.marker: selected exact canonical bytes",
+      "passed": true,
+      "sha256": "f4bb1277697be95bac2ded2126f1a89e13c9c1b12db71d9549f3f00fe9c05d50"
+    },
+    {
+      "name": "macos/Notices/NOTICE.teleocr: selected exact canonical bytes",
+      "passed": true,
+      "sha256": "839a413b743d1aa53e415774982065c1c195db1c96d82265f76dd5395970af1b"
+    },
+    {
+      "name": "macos/Notices/Apache-2.0.txt: selected exact canonical bytes",
+      "passed": true,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "name": "Staged package source unchanged",
+      "passed": true
+    },
+    {
+      "name": "Staged package equals checkout file bytes",
+      "passed": true
+    },
+    {
+      "name": "Selection contains no symbolic-link files",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "full_flutter_validation": false,
+  "archive_byte_readback": false,
+  "archive_limitation": "Dart pub creates an in-memory tar.gz stream and reports an 80 KB archive; dry-run does not retain the archive. Selection is read from its verbose stream-member list; exact notice bytes are checked in the unchanged source tree.",
+  "missing_toolkits": [
+    "Flutter SDK",
+    "Xcode/CocoaPods"
+  ],
+  "selected_files_sha256": {
+    "Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "CHANGELOG.md": "b6577a4f503d0ee710d597b6b84cdd75d4fcdc67e1a26ae45899e3b34a2f5c12",
+    "LICENSE": "a70d0ab5fb2dbab83d1a63071776891e6dfc7ba6e3063b3940c21274c1225a3e",
+    "NOTICE.marker": "f4bb1277697be95bac2ded2126f1a89e13c9c1b12db71d9549f3f00fe9c05d50",
+    "NOTICE.teleocr": "839a413b743d1aa53e415774982065c1c195db1c96d82265f76dd5395970af1b",
+    "README.md": "d57733422fe4edaa9b809c78485a9a624209d9ebdf9e870e1e02af0e1ec64ebb",
+    "analysis_options.yaml": "7c4e548f8ec577be69f78ec91685fa185a124655ab75124ec043582664e52ae9",
+    "android/build.gradle": "8090cdcc4836d58bac3e96c676e487b5edcad2af9e313c892b14c3aae90a0cf7",
+    "android/src/main/AndroidManifest.xml": "9bfca7fa0ae9ec1c743c346a199eae321395289d2e231e7576ee2dbc1e57ff11",
+    "example/README.md": "a8978345b1662f0fada4b66134beebb713699d32b7fb7903363b4c914dee0552",
+    "example/feature_parity.dart": "51ade4a39779cd9b916778af722a41209fba8c04b78edb2e2d08977a1ec301cc",
+    "example/lfm2_encoder.dart": "f88e4c60991c612c141d0c8ea1cfd122f71e9250ccc23574afa0fc7885bf7579",
+    "ios/Notices/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "ios/Notices/NOTICE.marker": "f4bb1277697be95bac2ded2126f1a89e13c9c1b12db71d9549f3f00fe9c05d50",
+    "ios/Notices/NOTICE.teleocr": "839a413b743d1aa53e415774982065c1c195db1c96d82265f76dd5395970af1b",
+    "ios/crispembed.podspec": "ec9791025dd11131e2b98eb7a697230dc4b2c27b3b86109751071230b28008dc",
+    "lib/crispembed.dart": "b344269c0dc36ab55c9be3a2e230f35e59077851b05a0e65e85aeafc420e8440",
+    "lib/src/bttr_ocr.dart": "34dd929b1fbc7c0307fe51f047dc8aa7530aa1ffb80acf4b311a6b94c7bb6754",
+    "lib/src/crispembed.dart": "0efa7f2c4ae032792237373e06f890d95c52cc7bdab92170b357febd98e00406",
+    "lib/src/crispembed_bindings.dart": "9e197da6157e391eceb62a3bef709cec26e23e968557faa96cf5dd2468a9bf5e",
+    "lib/src/hmer_ocr.dart": "ca7ae5f2b677ec083628a2f551ba6931807939c0e0107f9221b1e91def904f08",
+    "lib/src/layout.dart": "2161829772eaafccd903e8b1fa5c0f66576f90f162ddae4863e973475810b689",
+    "lib/src/marker.dart": "52317d8db12a28f93fd8f2cd03ea6c8fec34952158b3b0c7721d440de053abc6",
+    "lib/src/math_ocr.dart": "59b1ef2f6e2b91cfc5c426fe5c5028d4e820738ab5732e38c68c31636d0a97ad",
+    "lib/src/math_ocr_web.dart": "862a7c5d7f7164df1fab3244d7043cc0ae312ce6df2a0c509c3868b36dcded9e",
+    "lib/src/mineru.dart": "23d1661cd2b1e0017df2c308a7c5e381b39f2141f393004d8ecf5ad1b0fe3675",
+    "lib/src/moedern_text.dart": "4930024f077eac46d5690d3700e3e9573fcbf45cd93316cac258c4d9d4280f67",
+    "lib/src/omr.dart": "0c16c8fb3d37f8cfd37941cdf0821ac0460e119ddd6629d7ed9291e92787009f",
+    "lib/src/oxr.dart": "d87ad5cdf6b4fc959b7978e7448c7de5ae26c76d747d3ad82dd68fb052b46ce0",
+    "lib/src/oxr_layout.dart": "03f43a90c39e16682515cbff7d6c23ac2422b05da07b8b7fa55dfce1ebfdc78b",
+    "lib/src/scan_cleanup.dart": "83302a8a970679eba8984709c670b6f52d887b749f005713f2db2346527eef0e",
+    "lib/src/systemone.dart": "c193acf403066e013ca0f3ca5e24386e62b58319c3255be3a04de9384a7dc74c",
+    "lib/src/text_detect.dart": "a842edc730f356963afaf6914fb0cc944c9d74533c1bd5f7673b959afb107682",
+    "linux/CMakeLists.txt": "c93091550f64e243f62a0dee921d268ff3ceb13897cdfce5a3b408301c5e2e29",
+    "macos/Notices/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "macos/Notices/NOTICE.marker": "f4bb1277697be95bac2ded2126f1a89e13c9c1b12db71d9549f3f00fe9c05d50",
+    "macos/Notices/NOTICE.teleocr": "839a413b743d1aa53e415774982065c1c195db1c96d82265f76dd5395970af1b",
+    "macos/crispembed.podspec": "c4d677df56e4056a50a8324a5c4dd90eabfd94f92e50b42922819674e958dc4c",
+    "macos/flatten_dylibs.sh": "d781ddb41f4b30249538824e29d1e76e7ec3fb248aec5e8cf44d98cc35576003",
+    "pubspec.yaml": "8c00a715c356dbf108c6dded82a09c7ce7cdf7318c2c68909c0143f2a763a1d8",
+    "windows/CMakeLists.txt": "7088407db355b06c2487ec7f792a9525d783425a52236eff8b21b8718afffef7"
+  },
+  "source_files_sha256": {
+    ".pubignore": "7f2580ec553cac9412073cf4aac850cef66022e9b477a77ecc1fd65d2bf299cd",
+    "Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "CHANGELOG.md": "b6577a4f503d0ee710d597b6b84cdd75d4fcdc67e1a26ae45899e3b34a2f5c12",
+    "LICENSE": "a70d0ab5fb2dbab83d1a63071776891e6dfc7ba6e3063b3940c21274c1225a3e",
+    "NOTICE.marker": "f4bb1277697be95bac2ded2126f1a89e13c9c1b12db71d9549f3f00fe9c05d50",
+    "NOTICE.teleocr": "839a413b743d1aa53e415774982065c1c195db1c96d82265f76dd5395970af1b",
+    "README.md": "d57733422fe4edaa9b809c78485a9a624209d9ebdf9e870e1e02af0e1ec64ebb",
+    "analysis_options.yaml": "7c4e548f8ec577be69f78ec91685fa185a124655ab75124ec043582664e52ae9",
+    "android/build.gradle": "8090cdcc4836d58bac3e96c676e487b5edcad2af9e313c892b14c3aae90a0cf7",
+    "android/src/main/AndroidManifest.xml": "9bfca7fa0ae9ec1c743c346a199eae321395289d2e231e7576ee2dbc1e57ff11",
+    "android/src/main/jniLibs/arm64-v8a/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "android/src/main/jniLibs/armeabi-v7a/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "android/src/main/jniLibs/x86_64/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "example/README.md": "a8978345b1662f0fada4b66134beebb713699d32b7fb7903363b4c914dee0552",
+    "example/feature_parity.dart": "51ade4a39779cd9b916778af722a41209fba8c04b78edb2e2d08977a1ec301cc",
+    "example/lfm2_encoder.dart": "f88e4c60991c612c141d0c8ea1cfd122f71e9250ccc23574afa0fc7885bf7579",
+    "ios/Classes/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ios/Libs/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ios/Notices/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "ios/Notices/NOTICE.marker": "f4bb1277697be95bac2ded2126f1a89e13c9c1b12db71d9549f3f00fe9c05d50",
+    "ios/Notices/NOTICE.teleocr": "839a413b743d1aa53e415774982065c1c195db1c96d82265f76dd5395970af1b",
+    "ios/crispembed.podspec": "ec9791025dd11131e2b98eb7a697230dc4b2c27b3b86109751071230b28008dc",
+    "lib/crispembed.dart": "b344269c0dc36ab55c9be3a2e230f35e59077851b05a0e65e85aeafc420e8440",
+    "lib/src/bttr_ocr.dart": "34dd929b1fbc7c0307fe51f047dc8aa7530aa1ffb80acf4b311a6b94c7bb6754",
+    "lib/src/crispembed.dart": "0efa7f2c4ae032792237373e06f890d95c52cc7bdab92170b357febd98e00406",
+    "lib/src/crispembed_bindings.dart": "9e197da6157e391eceb62a3bef709cec26e23e968557faa96cf5dd2468a9bf5e",
+    "lib/src/hmer_ocr.dart": "ca7ae5f2b677ec083628a2f551ba6931807939c0e0107f9221b1e91def904f08",
+    "lib/src/layout.dart": "2161829772eaafccd903e8b1fa5c0f66576f90f162ddae4863e973475810b689",
+    "lib/src/marker.dart": "52317d8db12a28f93fd8f2cd03ea6c8fec34952158b3b0c7721d440de053abc6",
+    "lib/src/math_ocr.dart": "59b1ef2f6e2b91cfc5c426fe5c5028d4e820738ab5732e38c68c31636d0a97ad",
+    "lib/src/math_ocr_web.dart": "862a7c5d7f7164df1fab3244d7043cc0ae312ce6df2a0c509c3868b36dcded9e",
+    "lib/src/mineru.dart": "23d1661cd2b1e0017df2c308a7c5e381b39f2141f393004d8ecf5ad1b0fe3675",
+    "lib/src/moedern_text.dart": "4930024f077eac46d5690d3700e3e9573fcbf45cd93316cac258c4d9d4280f67",
+    "lib/src/omr.dart": "0c16c8fb3d37f8cfd37941cdf0821ac0460e119ddd6629d7ed9291e92787009f",
+    "lib/src/oxr.dart": "d87ad5cdf6b4fc959b7978e7448c7de5ae26c76d747d3ad82dd68fb052b46ce0",
+    "lib/src/oxr_layout.dart": "03f43a90c39e16682515cbff7d6c23ac2422b05da07b8b7fa55dfce1ebfdc78b",
+    "lib/src/scan_cleanup.dart": "83302a8a970679eba8984709c670b6f52d887b749f005713f2db2346527eef0e",
+    "lib/src/systemone.dart": "c193acf403066e013ca0f3ca5e24386e62b58319c3255be3a04de9384a7dc74c",
+    "lib/src/text_detect.dart": "a842edc730f356963afaf6914fb0cc944c9d74533c1bd5f7673b959afb107682",
+    "linux/CMakeLists.txt": "c93091550f64e243f62a0dee921d268ff3ceb13897cdfce5a3b408301c5e2e29",
+    "linux/lib/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "macos/Libs/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "macos/Notices/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "macos/Notices/NOTICE.marker": "f4bb1277697be95bac2ded2126f1a89e13c9c1b12db71d9549f3f00fe9c05d50",
+    "macos/Notices/NOTICE.teleocr": "839a413b743d1aa53e415774982065c1c195db1c96d82265f76dd5395970af1b",
+    "macos/crispembed.podspec": "c4d677df56e4056a50a8324a5c4dd90eabfd94f92e50b42922819674e958dc4c",
+    "macos/flatten_dylibs.sh": "d781ddb41f4b30249538824e29d1e76e7ec3fb248aec5e8cf44d98cc35576003",
+    "pubspec.yaml": "8c00a715c356dbf108c6dded82a09c7ce7cdf7318c2c68909c0143f2a763a1d8",
+    "windows/CMakeLists.txt": "7088407db355b06c2487ec7f792a9525d783425a52236eff8b21b8718afffef7",
+    "windows/lib/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "notice_source_sha256": {
+    "NOTICE.marker": "f4bb1277697be95bac2ded2126f1a89e13c9c1b12db71d9549f3f00fe9c05d50",
+    "NOTICE.teleocr": "839a413b743d1aa53e415774982065c1c195db1c96d82265f76dd5395970af1b",
+    "Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "ios/Notices/NOTICE.marker": "f4bb1277697be95bac2ded2126f1a89e13c9c1b12db71d9549f3f00fe9c05d50",
+    "ios/Notices/NOTICE.teleocr": "839a413b743d1aa53e415774982065c1c195db1c96d82265f76dd5395970af1b",
+    "ios/Notices/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "macos/Notices/NOTICE.marker": "f4bb1277697be95bac2ded2126f1a89e13c9c1b12db71d9549f3f00fe9c05d50",
+    "macos/Notices/NOTICE.teleocr": "839a413b743d1aa53e415774982065c1c195db1c96d82265f76dd5395970af1b",
+    "macos/Notices/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  "source_revision_validation": "Every source_files_sha256 entry was independently checked against the recorded Git revision before this evidence was retained.",
+  "full_attempt_logs_sha256": {
+    "sanitized-ordinary-dry-run.log": "b782d9480d481fd9cee7b54038f0c748e6ffce59a8737cbd886414a2a84c71fe",
+    "sanitized-selection-dry-run.log": "e3a14ba4ddec71e97ac85bed94ddbbe91c185a4adf0d131db31b3cfbe3dc56b9",
+    "sanitized-selection-verbose-dry-run.log": "b7f7229b0413ef56dd59d1cff605c4c5a54d17a5ba4b1420cda829d46086d847"
+  },
+  "logs_sha256": {
+    "dry-run-excerpts.log": "5e0ed830ed109342bf736ea5fa434833d5f84194d20ae2164b2ee05c9d8fbe33"
+  },
+  "retained_logs": "Relevant excerpts from sanitized actual command output, including the missing-SDK failure and verbose archive member list.",
+  "limits": [
+    "Ordinary Flutter package validation fails because the Flutter SDK is unavailable. The successful probe explicitly uses both --dry-run and --skip-validation.",
+    "No dependencies were resolved and no package was uploaded. Passing here qualifies file selection and unchanged canonical source bytes only.",
+    "The generated tar.gz stream is in memory; Dart pub does not retain it in this mode. No archive-byte readback or extracted-archive assertion is claimed.",
+    "No Flutter build, CocoaPods installation, Xcode build, mobile runtime, or publication qualification."
+  ]
+}
