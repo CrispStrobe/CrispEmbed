@@ -3103,6 +3103,7 @@ c7e6720ab tree, with compiled runtime hashes pinned to10d3/90d2. Calibration and
 logo evidence stay in PR157, including the remaining table/known-logo negatives.
 No additional model job, default/quality/release promotion or model-hub upload.
 
+
 ### External-text imatrix format/coordinates verified on Kaggle CPU
 
 [Complete verification](docs/lighton4b-imatrix-verification.md) preserves the
@@ -3117,7 +3118,6 @@ license and calibration source weights remain unauthenticated; no pretrained ima
 imatrix is assumed. Next is reviewed Kaggle-only fresh-source weighted plainQ4,
 with exact unweightedf873 control and248 actual application checks, preserving
 protected tensors/gates and all reference/model-quality limits.
-
 ### Independent upstream llama.cpp CPU baseline completed on observed cases
 
 [Full source/result evidence](docs/lighton4b-independent-llama-baseline.md) pins

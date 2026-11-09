@@ -119,7 +119,6 @@ arithmetic and model quantization loss. Default llama quantized activation dot
 arithmetic versus our F32-dequantized dot is a runtime difference to measure,
 not automatically an implementation defect. Numerical comparisons must remain
 same-prefix; complete independent decoded outputs are separate evidence.
-
 The [source-revision correction receipt](../tests/results/qwen35-ocr/lightonocr3-4b-publisher-declared-source-revision.json)
 records that the publisher Q4_K_M header `general.name` declares
 `B71010F095Dc3735De7Ee6B9969Bff8F8F50B39A`, matching the official b710 reference.
