@@ -1926,3 +1926,6 @@ target_link_libraries(lighton4b-gdn-projection-sensitivity PRIVATE crispembed-qw
 add_executable(test-lighton4b-gdn-source-primitive EXCLUDE_FROM_ALL tools/gdn-primitive-probe/main.cpp)
 target_compile_definitions(test-lighton4b-gdn-source-primitive PRIVATE CRISPEMBED_GDN_RUNTIME_PROBE=1)
 target_link_libraries(test-lighton4b-gdn-source-primitive PRIVATE crispembed-qwen35-delta crispembed-core)
+# Reference-only captured-input attention probe; excluded from production/default builds.
+add_executable(lighton4b-attention-native-probe EXCLUDE_FROM_ALL tools/attention-primitive-probe/native.cpp)
+target_link_libraries(lighton4b-attention-native-probe PRIVATE crispembed-qwen35-delta crispembed-core)

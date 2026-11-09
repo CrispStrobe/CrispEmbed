@@ -4121,3 +4121,16 @@ materialized by CPU RMS/multiply fusion, so that intermediate comparison is
 invalid. A reference-only output-flag correction preserves the original result
 and retains strict composed/observed byte neutrality before interpreting a retry.
 No production arithmetic change follows from the initial tiny component errors.
+
+## Bounded physical attention primitive preparation
+
+The six-arm same-feature cap2 experiment is preserved at evidence source
+`3709c7dca6e23d0bc28b975922e18a815167d938`: none improves first-score RMS,
+so physical native operators remain experimental/default-off. The next tools-only
+probe freezes actual form layer2/layer3/positions and eleven authenticated layer3
+source tensors in `tools/attention-primitive-probe/protocol-v1.json`. Duplicate
+native first16 layer3 hidden must match actual captured main bytes before
+interpreting exported Q/K/V; paired pinned upstream F16/F32-cache primitives use
+these identical inputs, not an invented upstream hidden-state trace. Controller,
+tokenwise cache replay, hosted compilation and independent setup review remain
+pending. No new model forward, production math change, release or quality claim.

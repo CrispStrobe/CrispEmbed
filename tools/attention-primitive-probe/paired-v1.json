@@ -1,0 +1,68 @@
+{
+  "schema": "lighton4b-attention-paired-f16/v1",
+  "frozen_source_sha": "5f82c4d0abd7785d72f24e9b381930b1fe0ec683",
+  "frozen_report_sha256": "fa9ae86949ee15e475b41b35ae1ccc54b31f93957acf055e5a250d09302bdfe7",
+  "native_ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "files": {
+    "native/q.f32": {
+      "sha256": "192b0f4eaede262eca0c9c501e672a6e735f9a561c82e7aa3a17e5c8c1dc518e",
+      "bytes": 262144
+    },
+    "native/k.f32": {
+      "sha256": "01ae20e0a9a21ed7023d5634bf0eae8ddda0e72b461b67b5e0a1e3b24807a2e1",
+      "bytes": 65536
+    },
+    "native/v.f32": {
+      "sha256": "bc7976fcd17935d0c33985b02de2a2253f8a8b39de6001944a64c332180a2cb4",
+      "bytes": 65536
+    },
+    "native/gate.f32": {
+      "sha256": "d608780a3499f3cbeb7de260b636667a29e7bf06c1dca990bbc8c6d008676dc7",
+      "bytes": 262144
+    },
+    "upstream/4/f16/observed/logits.f32": {
+      "sha256": "ff21906e73b0f3d1bf11cd2b4006fd9b3818b9ad0e82da9a6190c0056c341439",
+      "bytes": 65536
+    },
+    "upstream/4/f16/observed/probs.f32": {
+      "sha256": "0e99e14ff98a008726fe59985e9e3c320a3679614adf44864a99e519b9ff7560",
+      "bytes": 65536
+    },
+    "upstream/4/f16/observed/context.f32": {
+      "sha256": "7f4490182bf66f59a2184a3423c2c94d03991869f43e00c932758511aa5f5de0",
+      "bytes": 65536
+    },
+    "upstream/4/f16/observed/sigmoid.f32": {
+      "sha256": "838b872e882980f6b417d7fa3dc5591beaee017db734b4d8617702233cdfea88",
+      "bytes": 65536
+    },
+    "upstream/4/f16/observed/gated.f32": {
+      "sha256": "199025a4680438e83b0ef263681497eb9214827a380366a9bdf3d5cd9f85c0fb",
+      "bytes": 65536
+    },
+    "upstream/16/f16/observed/logits.f32": {
+      "sha256": "f9a08eb8b15d1d0a0167268c1bfda89eac1d2504ec12107feeccdb653801e32c",
+      "bytes": 262144
+    },
+    "upstream/16/f16/observed/probs.f32": {
+      "sha256": "3dd94d67d5639ee54f1c56b83f8c570f1a61a9c19e1a16cdb2a97e6385c941a2",
+      "bytes": 262144
+    },
+    "upstream/16/f16/observed/context.f32": {
+      "sha256": "f40e8eb7009265eb2382c73718d14dbac7c18dc6a656a38eff9605be728401c9",
+      "bytes": 262144
+    },
+    "upstream/16/f16/observed/sigmoid.f32": {
+      "sha256": "6ce5edd3e59d9f8ed14e5552cd3857454f771b415956180b63c598c925fd9db5",
+      "bytes": 262144
+    },
+    "upstream/16/f16/observed/gated.f32": {
+      "sha256": "034a9f255d1b74985df8538b6ddc1da5ff420d51677011015c12c1d05e7b1092",
+      "bytes": 262144
+    }
+  },
+  "total_timeout_seconds": 1200,
+  "scope": "paired F16 dot operator only, frozen actual native QKV; no model/production math/vendor changes",
+  "model_forward_allowed": false
+}
