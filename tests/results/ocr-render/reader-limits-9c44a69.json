@@ -1,0 +1,1036 @@
+{
+  "source_sha": "9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a",
+  "run_id": 42629559186,
+  "job_id": 129216047954,
+  "job_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42629559186/job/129216047954",
+  "conclusion": "failure",
+  "scope": "Unchanged strict supplementary-search and extreme page-density assertions; separate from the passing bounded-writer/archival component job. No native source change or universal search claim.",
+  "native_test_library_sha256": "fe7ef3095b54da3b394bbf9c8e217e080675df07c45b14fa915eeec006bd8a52",
+  "source_and_native_digest_checks_passed": true,
+  "capabilities": 47,
+  "artifact": {
+    "id": 13684400913,
+    "name": "ocr-reader-limit-diagnostics",
+    "bytes": 1713266,
+    "sha256": "55df33230fb6e1d41f12a0b13bd8f295d205fe09a76942b18b823a1ef06844db",
+    "download_digest_verified": true,
+    "retention_days": 90
+  },
+  "unchanged_test_failures": {
+    "methods": 2,
+    "subtest_failures": 6,
+    "pdfium_supplementary_search": 5,
+    "poppler_dense_page": 1
+  },
+  "poppler_package": "24.02.0-1ubuntu9.11",
+  "single_page_density": {
+    "single_page_reader_limit": [
+      {
+        "reader": "PyMuPDF",
+        "expected_scalars": 65542,
+        "actual_scalars": 65542,
+        "exact": true,
+        "exact_prefix": true,
+        "text_sha256": "4a73c6796a4d1daeeaae4aedb6c0d2d9131735a6395ab037154ede5b5bd177af"
+      },
+      {
+        "reader": "Poppler",
+        "expected_scalars": 65542,
+        "actual_scalars": 50000,
+        "exact": false,
+        "exact_prefix": true,
+        "text_sha256": "ace9f79e9507c2c3a5864a90d26de4934d5bf7319f8f4db5aef2314a694e5b3d"
+      },
+      {
+        "reader": "pypdf",
+        "expected_scalars": 65542,
+        "actual_scalars": 65542,
+        "exact": true,
+        "exact_prefix": true,
+        "text_sha256": "4a73c6796a4d1daeeaae4aedb6c0d2d9131735a6395ab037154ede5b5bd177af"
+      }
+    ],
+    "pdf_sha256": "ee9243c6fd476caec51819fae9cef9630213b320667856db22b53a63d3934ac8"
+  },
+  "streamed_search_cases": [
+    {
+      "file": "archival-supplementary-search-rgb.pdf",
+      "sha256": "63358262ef18705864ddcb297926755e7a79276f9782891b1ff2b864aa26b994",
+      "copy_exact_in_pdfium_and_mupdf": true,
+      "pdfium_search": {
+        "caf\u00e9": [
+          17,
+          4
+        ],
+        "\ud83d\ude00": []
+      },
+      "mupdf_search": {
+        "caf\u00e9": [
+          [
+            92.06895446777344,
+            15.0,
+            111.37928771972656,
+            30.0
+          ]
+        ],
+        "\ud83d\ude00": [
+          [
+            130.6896209716797,
+            15.0,
+            135.5172119140625,
+            30.0
+          ]
+        ]
+      },
+      "pdfium_character_unicode": [
+        82,
+        101,
+        118,
+        105,
+        101,
+        119,
+        101,
+        100,
+        32,
+        97,
+        114,
+        99,
+        104,
+        105,
+        118,
+        101,
+        32,
+        99,
+        97,
+        102,
+        233,
+        32,
+        20013,
+        25991,
+        32,
+        55357,
+        56832,
+        32,
+        101,
+        769
+      ]
+    },
+    {
+      "file": "archival-supplementary-search-gray.pdf",
+      "sha256": "8b442e36a6dc3d30b91a746b0e196132e125584c3d0437f8326e0a4458dcd375",
+      "copy_exact_in_pdfium_and_mupdf": true,
+      "pdfium_search": {
+        "caf\u00e9": [
+          17,
+          4
+        ],
+        "\ud83d\ude00": []
+      },
+      "mupdf_search": {
+        "caf\u00e9": [
+          [
+            92.06895446777344,
+            15.0,
+            111.37928771972656,
+            30.0
+          ]
+        ],
+        "\ud83d\ude00": [
+          [
+            130.6896209716797,
+            15.0,
+            135.5172119140625,
+            30.0
+          ]
+        ]
+      },
+      "pdfium_character_unicode": [
+        82,
+        101,
+        118,
+        105,
+        101,
+        119,
+        101,
+        100,
+        32,
+        97,
+        114,
+        99,
+        104,
+        105,
+        118,
+        101,
+        32,
+        99,
+        97,
+        102,
+        233,
+        32,
+        20013,
+        25991,
+        32,
+        55357,
+        56832,
+        32,
+        101,
+        769
+      ]
+    },
+    {
+      "file": "archival-supplementary-search-alpha.pdf",
+      "sha256": "51831070a51d0553e7640db624e3980a349f5c09597f497b999a9270fd8b75fb",
+      "copy_exact_in_pdfium_and_mupdf": true,
+      "pdfium_search": {
+        "caf\u00e9": [
+          17,
+          4
+        ],
+        "\ud83d\ude00": []
+      },
+      "mupdf_search": {
+        "caf\u00e9": [
+          [
+            92.06895446777344,
+            15.0,
+            111.37928771972656,
+            30.0
+          ]
+        ],
+        "\ud83d\ude00": [
+          [
+            130.6896209716797,
+            15.0,
+            135.5172119140625,
+            30.0
+          ]
+        ]
+      },
+      "pdfium_character_unicode": [
+        82,
+        101,
+        118,
+        105,
+        101,
+        119,
+        101,
+        100,
+        32,
+        97,
+        114,
+        99,
+        104,
+        105,
+        118,
+        101,
+        32,
+        99,
+        97,
+        102,
+        233,
+        32,
+        20013,
+        25991,
+        32,
+        55357,
+        56832,
+        32,
+        101,
+        769
+      ]
+    },
+    {
+      "file": "archival-supplementary-search-jpeg.pdf",
+      "sha256": "050d63e8d0dae1ee2a721b10bcc9b14a7dad566b057404ae0c7746b538e8bb20",
+      "copy_exact_in_pdfium_and_mupdf": true,
+      "pdfium_search": {
+        "caf\u00e9": [
+          17,
+          4
+        ],
+        "\ud83d\ude00": []
+      },
+      "mupdf_search": {
+        "caf\u00e9": [
+          [
+            92.06895446777344,
+            15.0,
+            111.37928771972656,
+            30.0
+          ]
+        ],
+        "\ud83d\ude00": [
+          [
+            130.6896209716797,
+            15.0,
+            135.5172119140625,
+            30.0
+          ]
+        ]
+      },
+      "pdfium_character_unicode": [
+        82,
+        101,
+        118,
+        105,
+        101,
+        119,
+        101,
+        100,
+        32,
+        97,
+        114,
+        99,
+        104,
+        105,
+        118,
+        101,
+        32,
+        99,
+        97,
+        102,
+        233,
+        32,
+        20013,
+        25991,
+        32,
+        55357,
+        56832,
+        32,
+        101,
+        769
+      ]
+    },
+    {
+      "file": "archival-supplementary-search-text.pdf",
+      "sha256": "14eceab418212b8864365c274ae9afd0a4f244f62d5a1872b409d994718dcacc",
+      "copy_exact_in_pdfium_and_mupdf": true,
+      "pdfium_search": {
+        "caf\u00e9": [
+          17,
+          4
+        ],
+        "\ud83d\ude00": []
+      },
+      "mupdf_search": {
+        "caf\u00e9": [
+          [
+            92.06895446777344,
+            15.0,
+            111.37928771972656,
+            30.0
+          ]
+        ],
+        "\ud83d\ude00": [
+          [
+            130.6896209716797,
+            15.0,
+            135.5172119140625,
+            30.0
+          ]
+        ]
+      },
+      "pdfium_character_unicode": [
+        82,
+        101,
+        118,
+        105,
+        101,
+        119,
+        101,
+        100,
+        32,
+        97,
+        114,
+        99,
+        104,
+        105,
+        118,
+        101,
+        32,
+        99,
+        97,
+        102,
+        233,
+        32,
+        20013,
+        25991,
+        32,
+        55357,
+        56832,
+        32,
+        101,
+        769
+      ]
+    }
+  ],
+  "independent_producer_raw_search": {
+    "source_sha": "9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a",
+    "scope": "Strict reader supplementary-search diagnostic, separate from writer/archive/exact-copy acceptance",
+    "versions": {
+      "pymupdf": "1.26.6",
+      "mupdf": "1.26.11",
+      "wrapper": "5.15.1",
+      "pdfium": "159.0.8149.0@sourcebuild-toolchained",
+      "pdfium_flags": []
+    },
+    "binary_sha256": {
+      "libpdfium.so": "c76dc0f7839644bfa7c3e3107a6068df714e339c861bb7d4519907b821d427f9"
+    },
+    "cases": [
+      {
+        "file": "archival-streamed-rgb.pdf",
+        "sha256": "123b9d84e7742b88fecbf47dc280c7ddadde62e5aa2922fdc9fa36b75549ba2a",
+        "expected": "Reviewed archive caf\u00e9 \u4e2d\u6587 \ud83d\ude00 e\u0301",
+        "raw_search": [
+          {
+            "needle": "caf\u00e9",
+            "utf16_units": [
+              99,
+              97,
+              102,
+              233
+            ],
+            "flags": 0,
+            "found": true,
+            "index": 17,
+            "count": 4,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "caf\u00e9",
+            "utf16_units": [
+              99,
+              97,
+              102,
+              233
+            ],
+            "flags": 1,
+            "found": true,
+            "index": 17,
+            "count": 4,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "caf\u00e9",
+            "utf16_units": [
+              99,
+              97,
+              102,
+              233
+            ],
+            "flags": 2,
+            "found": true,
+            "index": 17,
+            "count": 4,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "e\u0301",
+            "utf16_units": [
+              101,
+              769
+            ],
+            "flags": 0,
+            "found": true,
+            "index": 28,
+            "count": 2,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "e\u0301",
+            "utf16_units": [
+              101,
+              769
+            ],
+            "flags": 1,
+            "found": true,
+            "index": 28,
+            "count": 2,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "e\u0301",
+            "utf16_units": [
+              101,
+              769
+            ],
+            "flags": 2,
+            "found": true,
+            "index": 28,
+            "count": 2,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "\ud83d\ude00",
+            "utf16_units": [
+              55357,
+              56832
+            ],
+            "flags": 0,
+            "found": false,
+            "index": null,
+            "count": null,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "\ud83d\ude00",
+            "utf16_units": [
+              55357,
+              56832
+            ],
+            "flags": 1,
+            "found": false,
+            "index": null,
+            "count": null,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "\ud83d\ude00",
+            "utf16_units": [
+              55357,
+              56832
+            ],
+            "flags": 2,
+            "found": false,
+            "index": null,
+            "count": null,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "\ud83d",
+            "utf16_units": [
+              55357
+            ],
+            "flags": 0,
+            "found": true,
+            "index": 25,
+            "count": 1,
+            "diagnostic_lone_surrogate": true
+          },
+          {
+            "needle": "\ud83d",
+            "utf16_units": [
+              55357
+            ],
+            "flags": 1,
+            "found": true,
+            "index": 25,
+            "count": 1,
+            "diagnostic_lone_surrogate": true
+          },
+          {
+            "needle": "\ud83d",
+            "utf16_units": [
+              55357
+            ],
+            "flags": 2,
+            "found": true,
+            "index": 25,
+            "count": 1,
+            "diagnostic_lone_surrogate": true
+          },
+          {
+            "needle": "\ude00",
+            "utf16_units": [
+              56832
+            ],
+            "flags": 0,
+            "found": true,
+            "index": 26,
+            "count": 1,
+            "diagnostic_lone_surrogate": true
+          },
+          {
+            "needle": "\ude00",
+            "utf16_units": [
+              56832
+            ],
+            "flags": 1,
+            "found": true,
+            "index": 26,
+            "count": 1,
+            "diagnostic_lone_surrogate": true
+          },
+          {
+            "needle": "\ude00",
+            "utf16_units": [
+              56832
+            ],
+            "flags": 2,
+            "found": true,
+            "index": 26,
+            "count": 1,
+            "diagnostic_lone_surrogate": true
+          }
+        ],
+        "mupdf_copy": "Reviewed archive caf\u00e9 \u4e2d\u6587 \ud83d\ude00 e\u0301",
+        "mupdf_supplementary_search": [
+          [
+            130.6896209716797,
+            15.0,
+            135.5172119140625,
+            30.0
+          ]
+        ],
+        "pdfium_copy": "Reviewed archive caf\u00e9 \u4e2d\u6587 \ud83d\ude00 e\u0301",
+        "character_unicode": [
+          82,
+          101,
+          118,
+          105,
+          101,
+          119,
+          101,
+          100,
+          32,
+          97,
+          114,
+          99,
+          104,
+          105,
+          118,
+          101,
+          32,
+          99,
+          97,
+          102,
+          233,
+          32,
+          20013,
+          25991,
+          32,
+          55357,
+          56832,
+          32,
+          101,
+          769
+        ],
+        "copy_exact": true
+      },
+      {
+        "file": "independent-producer-corrected-cmap.pdf",
+        "sha256": "a8bd96a784854743490c0a7ba1359b553c18c43997825487efb6e1012a55c775",
+        "expected": "Independent caf\u00e9 \ud83d\ude00 e\u0301",
+        "raw_search": [
+          {
+            "needle": "caf\u00e9",
+            "utf16_units": [
+              99,
+              97,
+              102,
+              233
+            ],
+            "flags": 0,
+            "found": true,
+            "index": 12,
+            "count": 4,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "caf\u00e9",
+            "utf16_units": [
+              99,
+              97,
+              102,
+              233
+            ],
+            "flags": 1,
+            "found": true,
+            "index": 12,
+            "count": 4,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "caf\u00e9",
+            "utf16_units": [
+              99,
+              97,
+              102,
+              233
+            ],
+            "flags": 2,
+            "found": true,
+            "index": 12,
+            "count": 4,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "e\u0301",
+            "utf16_units": [
+              101,
+              769
+            ],
+            "flags": 0,
+            "found": true,
+            "index": 20,
+            "count": 2,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "e\u0301",
+            "utf16_units": [
+              101,
+              769
+            ],
+            "flags": 1,
+            "found": true,
+            "index": 20,
+            "count": 2,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "e\u0301",
+            "utf16_units": [
+              101,
+              769
+            ],
+            "flags": 2,
+            "found": true,
+            "index": 20,
+            "count": 2,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "\ud83d\ude00",
+            "utf16_units": [
+              55357,
+              56832
+            ],
+            "flags": 0,
+            "found": false,
+            "index": null,
+            "count": null,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "\ud83d\ude00",
+            "utf16_units": [
+              55357,
+              56832
+            ],
+            "flags": 1,
+            "found": false,
+            "index": null,
+            "count": null,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "\ud83d\ude00",
+            "utf16_units": [
+              55357,
+              56832
+            ],
+            "flags": 2,
+            "found": false,
+            "index": null,
+            "count": null,
+            "diagnostic_lone_surrogate": false
+          },
+          {
+            "needle": "\ud83d",
+            "utf16_units": [
+              55357
+            ],
+            "flags": 0,
+            "found": true,
+            "index": 17,
+            "count": 1,
+            "diagnostic_lone_surrogate": true
+          },
+          {
+            "needle": "\ud83d",
+            "utf16_units": [
+              55357
+            ],
+            "flags": 1,
+            "found": true,
+            "index": 17,
+            "count": 1,
+            "diagnostic_lone_surrogate": true
+          },
+          {
+            "needle": "\ud83d",
+            "utf16_units": [
+              55357
+            ],
+            "flags": 2,
+            "found": true,
+            "index": 17,
+            "count": 1,
+            "diagnostic_lone_surrogate": true
+          },
+          {
+            "needle": "\ude00",
+            "utf16_units": [
+              56832
+            ],
+            "flags": 0,
+            "found": true,
+            "index": 18,
+            "count": 1,
+            "diagnostic_lone_surrogate": true
+          },
+          {
+            "needle": "\ude00",
+            "utf16_units": [
+              56832
+            ],
+            "flags": 1,
+            "found": true,
+            "index": 18,
+            "count": 1,
+            "diagnostic_lone_surrogate": true
+          },
+          {
+            "needle": "\ude00",
+            "utf16_units": [
+              56832
+            ],
+            "flags": 2,
+            "found": true,
+            "index": 18,
+            "count": 1,
+            "diagnostic_lone_surrogate": true
+          }
+        ],
+        "mupdf_copy": "Independent caf\u00e9 \ud83d\ude00 e\u0301",
+        "mupdf_supplementary_search": [
+          [
+            203.69198608398438,
+            63.29600143432617,
+            222.44798278808594,
+            84.2300033569336
+          ]
+        ],
+        "pdfium_copy": "Independent caf\u00e9 \ud83d\ude00 e\u0301",
+        "character_unicode": [
+          73,
+          110,
+          100,
+          101,
+          112,
+          101,
+          110,
+          100,
+          101,
+          110,
+          116,
+          32,
+          99,
+          97,
+          102,
+          233,
+          32,
+          55357,
+          56832,
+          32,
+          101,
+          769
+        ],
+        "copy_exact": true
+      }
+    ],
+    "failures": [
+      {
+        "file": "archival-streamed-rgb.pdf",
+        "check": "PDFium raw search",
+        "needle": "\ud83d\ude00"
+      },
+      {
+        "file": "independent-producer-corrected-cmap.pdf",
+        "check": "PDFium raw search",
+        "needle": "\ud83d\ude00"
+      }
+    ],
+    "independent_producer": {
+      "producer": "PyMuPDF 1.26.6",
+      "font_file": "DejaVuSans.ttf",
+      "font_sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280",
+      "font_program_sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280",
+      "content_and_media_box_unchanged": true,
+      "all_corrected_cmap_destinations_valid_utf16be": true,
+      "original_pdf": "independent-producer.pdf",
+      "original_sha256": "b66142649ed18b8b79133b8ded4edd45537a41926348ba21998d33a68aad7c14",
+      "corrected_pdf": "independent-producer-corrected-cmap.pdf",
+      "corrected_sha256": "a8bd96a784854743490c0a7ba1359b553c18c43997825487efb6e1012a55c775",
+      "corrected_destinations": [
+        {
+          "from": "<10300>",
+          "to": "<d800df00>"
+        },
+        {
+          "from": "<10303>",
+          "to": "<d800df03>"
+        },
+        {
+          "from": "<10320>",
+          "to": "<d800df20>"
+        },
+        {
+          "from": "<1d300>",
+          "to": "<d834df00>"
+        },
+        {
+          "from": "<1d538>",
+          "to": "<d835dd38>"
+        },
+        {
+          "from": "<1d53b>",
+          "to": "<d835dd3b>"
+        },
+        {
+          "from": "<1d540>",
+          "to": "<d835dd40>"
+        },
+        {
+          "from": "<1d54a>",
+          "to": "<d835dd4a>"
+        },
+        {
+          "from": "<1d552>",
+          "to": "<d835dd52>"
+        },
+        {
+          "from": "<1d5a0>",
+          "to": "<d835dda0>"
+        },
+        {
+          "from": "<1d7d8>",
+          "to": "<d835dfd8>"
+        },
+        {
+          "from": "<1ee00>",
+          "to": "<d83bde00>"
+        },
+        {
+          "from": "<1ee05>",
+          "to": "<d83bde05>"
+        },
+        {
+          "from": "<1ee15>",
+          "to": "<d83bde15>"
+        },
+        {
+          "from": "<1ee21>",
+          "to": "<d83bde21>"
+        },
+        {
+          "from": "<1ee29>",
+          "to": "<d83bde29>"
+        },
+        {
+          "from": "<1ee34>",
+          "to": "<d83bde34>"
+        },
+        {
+          "from": "<1ee61>",
+          "to": "<d83bde61>"
+        },
+        {
+          "from": "<1ee67>",
+          "to": "<d83bde67>"
+        },
+        {
+          "from": "<1ee6c>",
+          "to": "<d83bde6c>"
+        },
+        {
+          "from": "<1ee74>",
+          "to": "<d83bde74>"
+        },
+        {
+          "from": "<1ee79>",
+          "to": "<d83bde79>"
+        },
+        {
+          "from": "<1f030>",
+          "to": "<d83cdc30>"
+        },
+        {
+          "from": "<1f0a0>",
+          "to": "<d83cdca0>"
+        },
+        {
+          "from": "<1f0b1>",
+          "to": "<d83cdcb1>"
+        },
+        {
+          "from": "<1f0c1>",
+          "to": "<d83cdcc1>"
+        },
+        {
+          "from": "<1f0d1>",
+          "to": "<d83cdcd1>"
+        },
+        {
+          "from": "<1f311>",
+          "to": "<d83cdf11>"
+        },
+        {
+          "from": "<1f42d>",
+          "to": "<d83ddc2d>"
+        },
+        {
+          "from": "<1f600>",
+          "to": "<d83dde00>"
+        },
+        {
+          "from": "<1f61f>",
+          "to": "<d83dde1f>"
+        },
+        {
+          "from": "<1f625>",
+          "to": "<d83dde25>"
+        },
+        {
+          "from": "<1f62d>",
+          "to": "<d83dde2d>"
+        },
+        {
+          "from": "<1d546>",
+          "to": "<d835dd46>"
+        },
+        {
+          "from": "<1ee24>",
+          "to": "<d83bde24>"
+        },
+        {
+          "from": "<1ee27>",
+          "to": "<d83bde27>"
+        },
+        {
+          "from": "<1ee39>",
+          "to": "<d83bde39>"
+        },
+        {
+          "from": "<1ee3b>",
+          "to": "<d83bde3b>"
+        },
+        {
+          "from": "<1ee64>",
+          "to": "<d83bde64>"
+        },
+        {
+          "from": "<1ee7e>",
+          "to": "<d83bde7e>"
+        },
+        {
+          "from": "<1f431>",
+          "to": "<d83ddc31>"
+        },
+        {
+          "from": "<1f435>",
+          "to": "<d83ddc35>"
+        },
+        {
+          "from": "<1f643>",
+          "to": "<d83dde43>"
+        }
+      ],
+      "original_is_valid_unicode_control": false,
+      "correction_scope": "Only malformed scalar destinations become UTF-16BE; pypdf serializes the object graph"
+    }
+  },
+  "diagnosis_scope": "The valid independent producer control reproduces full-scalar search failure with exact copy and matching lone UTF-16 units in the same PDFium binary. This supports the scoped external-reader diagnosis without invalid production Unicode or altered mappings. The Poppler source guard explanation remains source-based inference; the hosted truncation is directly measured."
+}

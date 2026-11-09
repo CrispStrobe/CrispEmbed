@@ -2,7 +2,35 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 9 November 2026 — retained phone-photo geometry and text evidence
+
+The [camera fixture job](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42635475023/job/129222355005)
+passes at `8021ca2` using production geometry byte-identical to the qualified
+`9c44a69` runtime. The retained iPhone 7 photograph rectifies to 755×1259 pixels,
+with mean difference 0.104874/255 and 99th-percentile difference 1/255 against
+independent OpenCV mapping. Both photographic inputs recover the separately
+added −4.2° and +6.7° rotations. The English/French printed page's raw CER is
+0.1677%, 12.2442% and 61.4894%; the predeclared deskew-plus-whitening arm yields
+0.3690%, 0.4025% and 0.5032%. These are normalized text scores for this page,
+not a broad model benchmark. The small original-page regression and all
+three processing arms are preserved. Whitening stays optional and reviewable.
+
+The [verified artifact receipt](tests/results/ocr-phone-photo/camera-8021/artifact-identity.json)
+retains archive/member hashes, all text/TSV/report evidence, ground-truth and
+source identities. Full image arms remain in the hashed hosted artifact. No
+physical capture, mobile memory behavior or historical-document transcription
+is inferred. The original identity assertion passed, but its PNG was omitted;
+`fe0e279` retains that output in a separate unchanged-geometry run.
+
 ## 9 November 2026 — qualified bounded writer and Windows path components
+
+The final [strict reader-limit job](tests/results/ocr-render/reader-limits-9c44a69.json)
+has now finished: five PDFium supplementary-search assertions and the unchanged
+Poppler dense-page assertion fail. A valid independent producer control also
+copies exact text but cannot find the complete emoji in the same pinned
+PDFium binary; raw surrogate queries find each unit. The Poppler output is the
+exact first 50,000 of 65,542 characters. These are retained failures, separate
+from the passing native components below, without weakening any assertion.
 
 The immutable `9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a` source passes its
 [writer/archive/scalar-Unicode job](tests/results/ocr-render/writer-9c44a69.json)

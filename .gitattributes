@@ -23,3 +23,6 @@ licenses/latent-inpaint/NOTICE.md -text
 # OvisOCR3 source audit retains the original CRLF license and Markdown bytes.
 tests/fixtures/ovisocr3-document-source/** -text -whitespace
 docs/ovisocr3-document-protocol.json -text
+
+# Source-bound camera reports and reader output are retained byte for byte.
+tests/results/ocr-phone-photo/camera-8021/** -text -whitespace

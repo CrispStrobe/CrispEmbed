@@ -7,8 +7,11 @@
   "workflow_scope": "The independent strict supplementary-search/dense-page diagnostic is a separate job; this receipt is not a whole-workflow or universal-reader pass.",
   "reader_limit_diagnostic": {
     "job_id": 129216047954,
-    "status_at_recording": "queued",
-    "prior_failures_retained": true
+    "status_at_recording": "completed",
+    "prior_failures_retained": true,
+    "initial_status_at_component_recording": "queued",
+    "conclusion": "failure",
+    "receipt": "reader-limits-9c44a69.json"
   },
   "native_checks": {
     "passed": 70,

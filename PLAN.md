@@ -7,9 +7,15 @@ Owner lane: `feat/ocr-camera-fixture-validation`, based on qualified native
 already merged. The [bounded protocol](docs/ocr-retained-camera-fixtures.md)
 adds existing iPhone 7 photographic pixels, independent projective mapping,
 known added-tilt controls and English/French printed-page CER/WER. Production
-source and inference defaults remain unchanged. Hosted source-bound execution
-is pending; preserve all arms and initial failures. This does not qualify a
-new physical capture workflow or historical-document recognition.
+source and inference defaults remain unchanged. Hosted execution at `8021ca2`
+passes with [source-bound evidence](tests/results/ocr-phone-photo/camera-8021/artifact-identity.json):
+755×1259 perspective output agrees with independent pixels at 0.104874/255 mean
+error; both photographs recover the added rotations. Printed-page prepared CER
+is 0.3690%, 0.4025% and 0.5032% for original, −4.2° and +6.7° inputs. All raw,
+deskew-only and whitening text remains retained. Whitening slightly worsens the
+already readable original, so it remains an explicit reviewed operation. The
+later `fe0e279` run separately checks enhanced identity-image retention. This
+does not qualify a new physical capture workflow or historical recognition.
 
 ## Windows document path boundary — 9 November 2026
 
@@ -142,12 +148,20 @@ original assertion and the independent producer control; this is not a
 whole-workflow or universal-reader pass. The app owns atomic publication and
 final paired native/mobile execution.
 
+The final [reader-limit diagnostic](tests/results/ocr-render/reader-limits-9c44a69.json)
+completes with six unchanged strict failures and the same full-scalar search
+failure in a valid independent-producer PDF. Exact copied Unicode survives
+both producers. Poppler's unchanged single-page control yields the exact first
+50,000 of 65,542 scalars. Preserve these failed controls alongside the passing
+writer/archive and two-page subset checks.
+
 The [84-output reflected-axis matrix](tests/results/ocr-render/strategies-9cc9e10.json)
 passes all pixel, text-bound and archival checks, but no representation passes
 every logical extraction/search case. Negative text advances and document-wide
 reading direction do not close mixed-script reader differences. Bidi bit16
 remains withheld. Preserve valid logical text and the exact failed reader
-outputs while assessing any further standards-valid representation.
+outputs. The consumer uses capability preflight and reviewed text alternatives;
+further speculative native representations are paused.
 
 Preserved reader evidence: `f06ea90` exercises PDFium after repairing the
 harness; `ef8ab9a` fixes MuPDF's 32-scalar boundary but exposes inherited
