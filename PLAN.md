@@ -1,5 +1,16 @@
 # CrispEmbed plan — open work (updated 7 November 2026)
 
+## Retained camera input — 9 November 2026
+
+Owner lane: `feat/ocr-camera-fixture-validation`, based on qualified native
+`9c44a69` plus its evidence checkpoint `b16df2c`; current main was fetched and
+already merged. The [bounded protocol](docs/ocr-retained-camera-fixtures.md)
+adds existing iPhone 7 photographic pixels, independent projective mapping,
+known added-tilt controls and English/French printed-page CER/WER. Production
+source and inference defaults remain unchanged. Hosted source-bound execution
+is pending; preserve all arms and initial failures. This does not qualify a
+new physical capture workflow or historical-document recognition.
+
 ## Windows document path boundary — 9 November 2026
 
 Owner lane: `feat/ocr-windows-unicode-paths`, based on frozen renderer candidate
