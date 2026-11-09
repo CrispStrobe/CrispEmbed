@@ -2,7 +2,7 @@ name: OCR export artifacts
 
 on:
   push:
-    branches: [main, feat/ocr-reviewed-pdf-conformance]
+    branches: [main, feat/ocr-reviewed-pdf-conformance, feat/ocr-reviewed-pdf-readers]
     paths:
       - 'src/ocr_render.*'
       - 'src/ocr_pdf_font.h'
