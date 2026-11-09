@@ -3897,3 +3897,25 @@ no conversion upload. The previous three-arm evidence is preserved independently
 in PR157; this is not a new held-out calibration or decoded-quality gate.
 Chunks decrease to65,536 elements, completed file cache is advised away, and
 actual cgroup margin/effective RAM guards can reject rather than overrun capacity.
+
+- **Bounded vision generalization diagnostic (6 November, pending):** task-owned
+  source merges main `6c2d41d78` before code. The hosted-only
+  `tools/ci-heavy/lighton4b_vision_generalization.py` loads the immutable original
+  checkpoint's297 BF16 vision tensors (667,028,480 bytes), never its decoder.
+  Actual pinned Transformers eager vision must first reproduce all34 retained
+  form processor/vision stage hashes. Four frozen calibration/heldout RGB inputs
+  then run through actual native frontend/vision and compare against independent
+  original prepared inputs and new diagnostic source stages. First differing
+  block operators are retained only after the observer reproduces every ordinary
+  native coarse stage byte for byte. Geometry rotary controls cover each actual
+  case; negative results remain report data. Memory/disk guards precede staging;
+  artifacts stay remote90 days. This does not replace frozen decoded gold or
+  qualify quality. Historical four-case CPU dispatch was not recorded; this
+  diagnostic pins the already qualified AVX2 source profile. No full checkpoint
+  or GGUF payload hash is independently rechecked by this vision-only lane.
+  Initial source-only run[42166067458](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42166067458)
+  failed importing the transport SDK's undeclared`six` dependency, before any
+  source download, build or inference. Preserved artifact13478943999 is1,239 bytes,
+  SHA256`089649d1a4482935074e80ac8b86b81b03d642fa7ebf696f823da9266e9f5ed0`.
+  The bounded retry fixes transport to the previously verifiedKaggle2.2.2 and
+  explicitly pins`six==1.17.0`; mathematical/source controls are unchanged.

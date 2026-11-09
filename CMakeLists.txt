@@ -1899,3 +1899,9 @@ target_link_libraries(lighton4b-vision-profile-probe PRIVATE crispembed-qwen35-d
 # Default-off physical GDN source-operator lifecycle controls; never installed.
 add_executable(test-lighton4b-physical-gdn-source-ops EXCLUDE_FROM_ALL tests/test_lighton4b_physical_gdn_source_ops.cpp)
 target_link_libraries(test-lighton4b-physical-gdn-source-ops PRIVATE crispembed-qwen35-delta crispembed-core)
+# Source-stage observer is never compiled into ordinary production artifacts.
+if(LIGHTON4B_VISION_GENERALIZATION_DIR)
+    add_executable(lighton4b-vision-generalization tests/lighton4b_vision_generalization.cpp)
+    target_include_directories(lighton4b-vision-generalization PRIVATE ${LIGHTON4B_VISION_GENERALIZATION_DIR})
+    target_link_libraries(lighton4b-vision-generalization PRIVATE crispembed-qwen35-delta crispembed-core)
+endif()
