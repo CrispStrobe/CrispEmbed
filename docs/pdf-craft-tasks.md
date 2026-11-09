@@ -39,6 +39,11 @@ evidence in separate, incrementally pushed checkpoints.
   the existing licensed corpus, scorers, actual native engine, PDFium, Tesseract
   language data and permissive MiniLM model. Report structural validity,
   non-regression and absolute quality separately; retain every failed threshold.
+- [x] Fetch and verify all 57 exact image byte pins and the eight required
+  model/support assets without exclusions or input repinning; retain the
+  [complete input receipt](../tests/results/marker/pdf-craft-corpus-2026-11-09/input-assets.json).
+  Four accounting controls cover coordinate scaling, complete UTF-8 windows,
+  truthful source ranges and dehyphenation before the full run.
 - [ ] Execute the frozen protocol with fresh Tesseract OCR, real native Marker
   processing and real native MiniLM embeddings; do not imply fresh TeleOCR
   execution or use retained OCR output as fresh inference.
