@@ -1,0 +1,27 @@
+{
+  "runs": [
+    {
+      "bf16_round_control": "passed",
+      "decoded_qualified": false,
+      "error": "isolated candidate incorrectly called shared768-only norm helper with1024; failed closed before decoder",
+      "native_elapsed_seconds": 0.34,
+      "native_returncode": 8,
+      "recipe": "q8_0",
+      "run_id": 42004668032,
+      "source_sha": "6e3c256fc0443e752ad1868726d608b591ee1613",
+      "status": "failed"
+    },
+    {
+      "bf16_round_control": "passed",
+      "decoded_qualified": false,
+      "error": "isolated candidate incorrectly called shared768-only norm helper with1024; failed closed before decoder",
+      "native_elapsed_seconds": 0.32,
+      "native_returncode": 8,
+      "recipe": "q4_k",
+      "run_id": 42004671711,
+      "source_sha": "6e3c256fc0443e752ad1868726d608b591ee1613",
+      "status": "failed"
+    }
+  ],
+  "schema": "lighton4b-vision-bf16-initial/v1"
+}
