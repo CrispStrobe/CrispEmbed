@@ -1,6 +1,6 @@
 # Corrected composed vision: table and Arabic
 
-The bounded [Kaggle run](https://www.kaggle.com/code/chr1s4/lighton4b-composed-vision-calibration-v1) at source `a03412aeb3b4df9c8a5a9f093d9ab699b9d41258` completed in 643.45 seconds. The [raw receipt](../tests/results/qwen35-ocr/lightonocr3-4b-composed-vision-calibration/v1/composed-vision-calibration.json) has SHA256 `f69d23ffe6d65d9abf6c7c5c660723613ce84cc901383c5151e17d8f8dc5fe64`.
+The bounded Kaggle run (kernel `lighton4b-composed-vision-calibration-v1`) at source `a03412aeb3b4df9c8a5a9f093d9ab699b9d41258` completed in 643.45 seconds. The [raw receipt](../tests/results/qwen35-ocr/lightonocr3-4b-composed-vision-calibration/v1/composed-vision-calibration.json) has SHA256 `f69d23ffe6d65d9abf6c7c5c660723613ce84cc901383c5151e17d8f8dc5fe64`.
 
 Both pixels-composed outputs match their source-feature baseline IDs, raw text, all greedy score rows and 38 text stages. Both merged vision arrays match the actual upstream arrays byte for byte. Arabic completes with 6 tokens/EOS and zero character or word edits against both references. Table completes with 282 tokens/EOS, but remains **349/607 character edits versus upstream 348/607** against the original BF16 transcription; both have 97/106 word edits. The table floor fails; the model remains unqualified and must not ship.
 

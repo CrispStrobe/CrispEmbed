@@ -2,7 +2,7 @@
 
 **The combined policy remains unqualified. Keep both experimental gates default-off; do not ship or promote.** Matching one observed table does not override the form character regression or the unresolved held-out receipt failure. Neither individually negative alternative is promoted.
 
-The bounded [Kaggle run](https://www.kaggle.com/code/chr1s4/lighton4b-combined-gdn-repack-ab-v1), version1 at source `374d0438765c9e111b11499785eac86a46773452`, completes in879.92 seconds. [Raw receipt](../tests/results/qwen35-ocr/lightonocr3-4b-combined-gdn-repack-ab/v1/combined-gdn-repack-ab.json) SHA256 is `4428c4a2d8a877f64488847dfd7145fb0ccd1ba26810e6c0edf2229e6e40eac9`. Exact tested runtime is `cd50e9e691530525fb998edda8a449cc0725be91`; physical model SHA remains `843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43`.
+The bounded Kaggle run (kernel `lighton4b-combined-gdn-repack-ab-v1`), version1 at source `374d0438765c9e111b11499785eac86a46773452`, completes in879.92 seconds. [Raw receipt](../tests/results/qwen35-ocr/lightonocr3-4b-combined-gdn-repack-ab/v1/combined-gdn-repack-ab.json) SHA256 is `4428c4a2d8a877f64488847dfd7145fb0ccd1ba26810e6c0edf2229e6e40eac9`. Exact tested runtime is `cd50e9e691530525fb998edda8a449cc0725be91`; physical model SHA remains `843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43`.
 
 | Observed case | OFF → combined ON tokens, all EOS | Character edits against original BF16 | Word edits | Actual upstream edits against same reference |
 | --- | --- | --- | --- | --- |

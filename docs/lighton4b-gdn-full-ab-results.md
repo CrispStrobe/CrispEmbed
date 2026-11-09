@@ -2,7 +2,7 @@
 
 **Keep `CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS` default-off and unqualified. Do not ship this path.** Exact source-fed components did not establish decoded quality. Global Q4 repack remains off; no default, alias or release change follows.
 
-The bounded [Kaggle run](https://www.kaggle.com/code/chr1s4/lighton4b-gdn-full-ab-v1) completed at source `f6a1e60d3cea5a1f6841079697734906f70d8b40` in 1,118.98 seconds. [Raw receipt](../tests/results/qwen35-ocr/lightonocr3-4b-gdn-full-ab/v1/gdn-full-ab.json) SHA256 is `40b20127fe0a0ffbbbc227f40a847a31a5ac6c0c8c231edff24aa17ce1c6cdc5`. Runtime, CMake and reference CLI match tested source `cd50e9e691530525fb998edda8a449cc0725be91`. Physical model SHA `843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43` is unchanged.
+The bounded Kaggle run (kernel `lighton4b-gdn-full-ab-v1`) completed at source `f6a1e60d3cea5a1f6841079697734906f70d8b40` in 1,118.98 seconds. [Raw receipt](../tests/results/qwen35-ocr/lightonocr3-4b-gdn-full-ab/v1/gdn-full-ab.json) SHA256 is `40b20127fe0a0ffbbbc227f40a847a31a5ac6c0c8c231edff24aa17ce1c6cdc5`. Runtime, CMake and reference CLI match tested source `cd50e9e691530525fb998edda8a449cc0725be91`. Physical model SHA `843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43` is unchanged.
 
 | Observed case | OFF → ON tokens, all EOS | Character edits against original BF16 | Word edits | First-score RMS error against upstream | Child wall seconds |
 | --- | --- | --- | --- | --- | --- |
