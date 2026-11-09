@@ -172,6 +172,12 @@ Configuration rejects a file cap above 4 GiB or nesting above 64. Public callers
 can impose narrower page, block and asset caps before decoding. These storage
 limits supplement the separate processing/source-link limits.
 
+The file cap measures encoded bytes, not peak RAM. Incremental extraction retains
+a raw document and a processed view; reopening and rendering also allocate IR,
+metadata and output strings. Each committed page rewrites the complete snapshot.
+The page budget bounds extraction units per call, while total memory and save
+time still depend on the retained document within these limits.
+
 Saving first validates and measures the complete encoding. It then exclusively
 creates a sibling temporary file in the destination directory, writes and hashes
 the payload, flushes and syncs the file, closes it, and replaces the destination.

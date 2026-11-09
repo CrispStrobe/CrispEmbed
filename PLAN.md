@@ -1,4 +1,4 @@
-# CrispEmbed plan — open work (updated 7 November 2026)
+# CrispEmbed plan — open work (updated 9 November 2026)
 
 ## PDF Craft adoption — 9 November 2026
 
@@ -26,8 +26,9 @@ native contracts; public API/bindings and final integration belong to this lane.
 The bounded runtime change reports suspicious OCR repetition; it does not delete
 content, retry inference, introduce models or qualify document accuracy. The
 existing PDFium renderer and native model implementations remain the integration
-points. The authorized follow-ups are now in progress and require their own
-acceptance evidence; initial diagnostic tests do not qualify those features.
+points. The authorized follow-ups are implemented and independently reviewed in source;
+executed hosted acceptance remains pending. Initial diagnostic tests do not
+qualify those features.
 
 ## OCR review workspace integration — 8 November 2026
 

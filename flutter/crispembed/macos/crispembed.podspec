@@ -28,7 +28,7 @@ Pod::Spec.new do |s|
   # self-contained), so all of them are vendored and embedded.
   s.prepare_command = <<-CMD
     set -e
-    mkdir -p Libs
+    mkdir -p Libs/Notices
     if ! ls Libs/*.dylib >/dev/null 2>&1; then
       # CRISPEMBED_PREBUILT_VERSION (opt-in) fetches the libs of another published release
       # tag, e.g. when this checkout's pubspec version has no release yet; unset = pod version.
@@ -39,8 +39,20 @@ Pod::Spec.new do |s|
       curl -fsSL "$url" -o "$tmp/lib.tgz"
       tar -xzf "$tmp/lib.tgz" -C "$tmp"
       find "$tmp" -name '*.dylib' -exec cp -P {} Libs/ \\;
+      for notice in NOTICE.marker NOTICE.teleocr Apache-2.0.txt; do
+        if [ -f "$tmp/$notice" ]; then
+          cp "$tmp/$notice" "Libs/Notices/$notice"
+        fi
+      done
       rm -rf "$tmp"
     fi
+    # Local binary drops and older archives use the notices shipped with this
+    # plugin. A fetched archive's exact notices take precedence when present.
+    for notice in NOTICE.marker NOTICE.teleocr Apache-2.0.txt; do
+      if [ ! -f "Libs/Notices/$notice" ]; then
+        cp "../$notice" "Libs/Notices/$notice"
+      fi
+    done
     # One real file per library, named AND identified by its unversioned name
     # (@rpath/libX.dylib), with every cross-reference rewritten to match — see
     # flatten_dylibs.sh. CMake's SOVERSION gives the libs install names
@@ -55,6 +67,7 @@ Pod::Spec.new do |s|
   CMD
 
   s.vendored_libraries = 'Libs/*.dylib'
+  s.resource_bundles = { 'crispembed_native_notices' => ['Libs/Notices/*'] }
 
   # Ensure the dylibs are code-signed and embedded in the app bundle.
   s.pod_target_xcconfig = {

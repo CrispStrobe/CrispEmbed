@@ -451,6 +451,41 @@ void legacy_and_selection(const fs::path & root, const fs::path & source, const 
     set_env("CRISPEMBED_MARKER_REFERENCES", "1");
 }
 
+void active_library_identity(const fs::path & root, const fs::path & source) {
+#if defined(__unix__) || defined(__APPLE__)
+    // Replace an owned copy atomically: writing into a mapped library's inode
+    // could corrupt live code. Windows locks loaded DLLs, so this filesystem
+    // replacement scenario is exercised only on platforms that permit it.
+    const auto original_library = fs::u8path(MARKER_FIXTURE_LIBRARY);
+    const auto library = root / ("fixture-copy" + original_library.extension().u8string());
+    fs::copy_file(original_library, library);
+    const auto raw = root / "live-library.cemk";
+    const auto other_raw = root / "changed-library.cemk";
+    auto cfg = config();
+    const std::string library_name = library.u8string();
+    cfg.pdfium_path = library_name.c_str();
+    auto active = create(cfg);
+    success(crispembed_marker_start(active.get(), source.u8string().c_str(), raw.u8string().c_str(), 0), active.get(),
+            "owned library identity start");
+    const auto retained = bytes(raw);
+    const auto replacement = root / "replacement-library";
+    write(replacement, bytes(library) + "\nowned trailing identity change\n");
+    fs::rename(replacement, library);
+    auto fresh = create(cfg);
+    check(crispembed_marker_start(fresh.get(), source.u8string().c_str(), other_raw.u8string().c_str(), 0) == 0,
+          "fresh job cannot attribute a still-loaded library to replacement bytes");
+    error_has(fresh.get(), "active PDFium library identity");
+    check(!fs::exists(other_raw), "live library mismatch creates no checkpoint");
+    check(crispembed_marker_step(active.get(), 1) == CRISPEMBED_MARKER_JOB_ERROR,
+          "original job rejects a replaced PDFium file");
+    error_has(active.get(), "identity changed");
+    check(bytes(raw) == retained, "library replacement preserves the last durable checkpoint");
+#else
+    (void)root;
+    (void)source;
+#endif
+}
+
 int test_main() {
     try {
         workspace owned;
@@ -472,6 +507,7 @@ int test_main() {
         failure_controls(owned.path, source, failing);
         alias_controls(owned.path, source);
         legacy_and_selection(owned.path, source, failing);
+        active_library_identity(owned.path, source);
         std::printf("Marker lifecycle ABI: %d checks passed (owned fixture; no rendering/OCR qualification)\n", checks);
         return 0;
     } catch (const std::exception & error) {

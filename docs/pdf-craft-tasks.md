@@ -107,9 +107,10 @@ Owner: document structure lane; PDF provider support owned by lifecycle lane.
   checklist at each coherent checkpoint.
 - [x] Wire new sources/tests into native builds, Rust source packaging and CI
   dependency selection; retain bounded diagnostics as workflow artifacts.
-- [ ] Complete formatting, syntax and whitespace checks locally; builds and
-  suites run on hosted CI under repository policy.
-- [ ] Independently review artifact limits, source-range truthfulness, native
+- [x] Complete available local C++ formatting, Python/YAML/shell syntax,
+  environment inventory and whitespace checks. Builds/suites and platform
+  language validation remain hosted under repository policy.
+- [x] Independently review artifact limits, source-range truthfulness, native
   model admission and all public bindings before marking implementation done.
 - [ ] Record exact final-source runs and remaining limits. No OCR accuracy,
   representative retrieval quality or release claim follows from model-free
@@ -120,9 +121,21 @@ Owner: document structure lane; PDF provider support owned by lifecycle lane.
 The artifact, source-link, lifecycle and public-binding implementations and owned
 controls are now present. See [artifacts](marker-artifact.md),
 [lifecycle/API examples](marker-lifecycle.md) and [source links](marker-source-links.md).
-Review is also closing attribution gaps in Rust, native archive and Flutter
-packaging; shipping remains a separate operation. All executed-test checkboxes
+Attribution gaps in Rust, native archive and Flutter packaging are corrected;
+exact notice copies were checked. Shipping remains a separate operation. All executed-test checkboxes
 stay open until hosted results are read at the final source.
+
+## Review corrections
+
+- [x] Pin the actually loaded PDFium library digest; reject stale live handles
+  after the selected library file changes. Add an owned replacement regression.
+- [x] Include image-resize runtime settings, C/C++ compiler settings and selected
+  build configuration in resume identity.
+- [x] Keep raw extraction block limits separate from processed tree-node limits.
+- [x] Preserve contiguous chunk mappings when dehyphenation follows removed
+  trailing whitespace in a reopened artifact. Add an owned source-map regression.
+- [x] Carry exact MIT/Apache notices through native archives, Cargo vendoring
+  and Flutter application/package resources.
 
 ## Current evidence
 
@@ -132,3 +145,10 @@ was pending and [controls](https://github.com/CrispStrobe/CrispEmbed/actions/run
 queued. Re-query exact runs before reporting their outcome. Formatting,
 environment inventory, Python syntax and whitespace checks had passed locally;
 no runtime pass is inferred from that evidence.
+
+Full implementation checkpoint: [`0e543c81c3537eebda0ba756a94d42fb22c81490`](https://github.com/CrispStrobe/CrispEmbed/commit/0e543c81c3537eebda0ba756a94d42fb22c81490).
+Its [Build](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42598879883)
+was pending and [model-free controls](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42598880031)
+queued at review. Follow-up source-map and notice corrections are saved in later
+commits on the same branch. The PR check list is the live final-source gate;
+no native or client runtime pass has yet been observed.

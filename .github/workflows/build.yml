@@ -553,6 +553,11 @@ jobs:
           echo "=== Flutter plugin native libraries ==="
           find $PLUGIN -name '*.so' -o -name '*.dylib' -o -name '*.dll' -o -name '*.a' | sort
 
+      - name: Preserve native integration notices in the Flutter package
+        run: |
+          cp NOTICE.marker NOTICE.teleocr flutter/crispembed/
+          cp models/licenses/apache-2.0/LICENSE flutter/crispembed/Apache-2.0.txt
+
       - name: Upload bundled plugin
         uses: actions/upload-artifact@v4
         with:

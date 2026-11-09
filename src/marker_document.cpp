@@ -2345,6 +2345,13 @@ bool remove_join_hyphen(linked_chunk & chunk) {
         source_range removed{ r.source_id, r.source_end - 1, r.source_end, size - 1, size - 1, "dehyphenation" };
         --r.source_end;
         --r.text_end;
+        // A reopened artifact may already have removed trailing whitespace.
+        // Keep its zero-output evidence anchored after the deleted hyphen.
+        for (size_t j = i + 1; j < chunk.ranges.size(); ++j) {
+            auto & trailing = chunk.ranges[j];
+            if (trailing.text_start == size && trailing.text_end == size)
+                trailing.text_start = trailing.text_end = size - 1;
+        }
         chunk.ranges.insert(chunk.ranges.begin() + static_cast<std::ptrdiff_t>(i + 1), std::move(removed));
         chunk.text.pop_back();
         return true;

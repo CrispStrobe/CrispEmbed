@@ -835,6 +835,29 @@ void test_source_linked_chunks() {
     process_document(d, opts);
     check(d.sources.size() == sources && source_maps_valid(d) && render_document(d, "chunks") == chunks,
           "reprocessing preserves immutable source identities and assembled chunks");
+    auto trailing_whitespace = d;
+    auto & trailing_body = trailing_whitespace.pages[0].blocks[0];
+    const size_t original_size = trailing_body.text.size();
+    trailing_whitespace.sources[0].text += "\n\t";
+    for (size_t i = 0; i < 2; ++i)
+        trailing_body.source_ranges.push_back({ trailing_whitespace.sources[0].id, original_size + i,
+                                                original_size + i + 1, original_size, original_size, "whitespace" });
+    check(source_maps_valid(trailing_whitespace), "valid reopened maps can retain zero-output trailing whitespace");
+    const auto trailing_chunks = render_document(trailing_whitespace, "chunks");
+    const auto assembled_at = trailing_chunks.find("\"assembled_chunks\":");
+    const auto assembled = assembled_at == std::string::npos ? "" : trailing_chunks.substr(assembled_at);
+    for (size_t i = 0; i < 2; ++i) {
+        const std::string expected = "\"source_start\":" + std::to_string(original_size + i) +
+                                     ",\"source_end\":" + std::to_string(original_size + i + 1) +
+                                     ",\"text_start\":" + std::to_string(original_size - 1) +
+                                     ",\"text_end\":" + std::to_string(original_size - 1) +
+                                     ",\"transform\":\"whitespace\"";
+        check(contains(assembled, expected), "dehyphenation shifts every trailing zero-output range with its anchor");
+    }
+    check(contains(assembled, "A cited [1] incomplete across pages.") && source_maps_valid(trailing_whitespace) &&
+              trailing_body.source_ranges.back().text_end == original_size &&
+              trailing_whitespace.sources[0].text == d.sources[0].text + "\n\t",
+          "assembled range composition preserves the original block maps and source bytes");
     auto gap = initial;
     gap.pages[1].index = 6;
     process_document(gap, opts);

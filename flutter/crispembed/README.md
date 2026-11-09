@@ -63,5 +63,14 @@ about a person without human review of the source document.
 
 ## License
 
-MIT. See `LICENSE`. This covers the code only — auto-downloaded models keep
-their upstream licences, some non-commercial.
+The bindings use MIT; see `LICENSE`. Native Marker and TeleOCR integrations also
+retain their upstream MIT and Apache-2.0 terms in [NOTICE.marker](NOTICE.marker),
+[NOTICE.teleocr](NOTICE.teleocr) and [Apache-2.0.txt](Apache-2.0.txt). These exact
+files are included in the package and declared as Flutter assets, available at
+`packages/crispembed/NOTICE.marker`, `packages/crispembed/NOTICE.teleocr` and
+`packages/crispembed/Apache-2.0.txt` for an application's license view. Apple pod
+bundles additionally preserve notices supplied with the selected native archive.
+
+Model weights keep their own upstream licenses, including noncommercial terms
+where applicable. Distributing these code notices does not acknowledge or change
+the separate model access requirements.

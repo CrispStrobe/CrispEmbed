@@ -20,6 +20,7 @@ Pod::Spec.new do |s|
   # self-contained (no sibling libs needed).
   s.prepare_command = <<-CMD
     set -e
+    mkdir -p Libs/Notices
     if [ ! -f Libs/libcrispembed-static.a ]; then
       mkdir -p Libs
       # CRISPEMBED_PREBUILT_VERSION (opt-in) fetches the libs of another published release
@@ -31,11 +32,24 @@ Pod::Spec.new do |s|
       curl -fsSL "$url" -o "$tmp/lib.tgz"
       tar -xzf "$tmp/lib.tgz" -C "$tmp"
       find "$tmp" -name 'libcrispembed-static.a' -exec cp {} Libs/ \\;
+      for notice in NOTICE.marker NOTICE.teleocr Apache-2.0.txt; do
+        if [ -f "$tmp/$notice" ]; then
+          cp "$tmp/$notice" "Libs/Notices/$notice"
+        fi
+      done
       rm -rf "$tmp"
     fi
+    # Local binary drops and older archives use the notices shipped with this
+    # plugin. A fetched archive's exact notices take precedence when present.
+    for notice in NOTICE.marker NOTICE.teleocr Apache-2.0.txt; do
+      if [ ! -f "Libs/Notices/$notice" ]; then
+        cp "../$notice" "Libs/Notices/$notice"
+      fi
+    done
   CMD
 
   s.vendored_libraries = 'Libs/libcrispembed-static.a'
+  s.resource_bundles = { 'crispembed_native_notices' => ['Libs/Notices/*'] }
 
   # Metal framework for GPU-accelerated ggml ops.
   s.frameworks = 'Accelerate', 'Metal', 'MetalKit'
