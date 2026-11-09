@@ -1,0 +1,16 @@
+{
+  "schema": "lighton4b-stream-graph-controls-initial/v1",
+  "source_sha": "11131b7fc9eac80d5d82db70070d74725f62dcac",
+  "service": "Kaggle CPU",
+  "kernel_id": 143144719,
+  "version": 1,
+  "status": "failed",
+  "stage": "model-free streamed operator controls",
+  "model_downloaded": false,
+  "quantization_executed": false,
+  "native_decode_executed": false,
+  "observed": "OFF controls passed; ON returned 1 without a diagnostic.",
+  "identified_harness_defect": "The process invokes run twice but the file-static observer counter was not reset. The second run necessarily fails the expected observer count even if outputs match.",
+  "repair": "Reset the counter per run; preserve bitwise comparisons and add mode/line/type/tile diagnostics.",
+  "limitation": "The initial log alone does not establish which assertion failed. A hosted rerun is required; no optimization speed or correctness qualification."
+}
