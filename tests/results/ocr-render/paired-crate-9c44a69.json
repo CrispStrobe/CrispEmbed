@@ -1,0 +1,107 @@
+{
+  "source_sha": "9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a",
+  "application_source": "b876fb43eb19cc7de44760400e50735aa27c2c78",
+  "application_evidence_commit": "1b6e5f705b6b1b1473838997c6ed17d70235b0a7",
+  "application_evidence_url": "https://github.com/CrispStrobe/CrispSorter/tree/1b6e5f705b6b1b1473838997c6ed17d70235b0a7/tests/results/ocr-studio/paired-b876",
+  "github": {
+    "run_id": 42634608358,
+    "job_id": 129219334906,
+    "url": "https://github.com/CrispStrobe/CrispSorter/actions/runs/42634608358/job/129219334906",
+    "started_at": "2026-11-09T14:53:27Z",
+    "completed_at": "2026-11-09T15:30:11Z"
+  },
+  "overall_application_job": "failed",
+  "native_renderer": {
+    "passed": 70,
+    "failed": 0
+  },
+  "full_crispembed_crate_writer": {
+    "passed": 10,
+    "failed": 0,
+    "ignored": 1,
+    "ignored_scope": "Explicit large-file contract is run separately by the dedicated native writer gate."
+  },
+  "application_workspace_tests": {
+    "compiled": true,
+    "executed": 55,
+    "passed": 54,
+    "failed": 1
+  },
+  "application_failure": {
+    "test": "ocr_workspace::tests::image_import_preserves_original_and_creates_durable_snapshot",
+    "source_location": "src-tauri/src/ocr_workspace.rs:1944",
+    "error": "Open private page cache: No such file or directory (os error 2)",
+    "cause": "The fixture passes a nonexistent workspace root. Production import commands first create and canonicalize workspace_root; asset_store::directory deliberately requires that existing root before creating/verifying the assets directory.",
+    "correction": "Create only the fixture workspace root before import. Keep assets absent, source/durability assertions unchanged, and the production canonicalization/integrity checks intact.",
+    "corrected_source_execution": "pending"
+  },
+  "not_executed": [
+    "Later photo/model-storage/extractor/reading-order/native-render test filters in the same application step",
+    "ocr-mobile cargo check after the failed test command",
+    "Complete desktop executable link",
+    "Desktop CLI/startup smoke"
+  ],
+  "artifact": {
+    "id": 13686429078,
+    "name": "ocr-paired-native-linux",
+    "bytes": 19667170,
+    "sha256": "d82d057451aa1ee69b2d4107a900033a42dec872154852121706006a6e113427",
+    "url": "https://github.com/CrispStrobe/CrispSorter/actions/runs/42634608358/artifacts/13686429078",
+    "download_sha256_and_zip_crc_verified": true
+  },
+  "actual_linked_library": {
+    "name": "CrispSorter/CrispSorter/repos/CrispEmbed/build/libcrispembed.so",
+    "bytes": 12301760,
+    "sha256": "5991da43eeddbcfcea7da35161de6651e631679ea8e583b01cee0c54942ebe7f"
+  },
+  "writer_pdf_files": [
+    {
+      "name": "_temp/ocr-paired-writer/archival-rust-file.pdf",
+      "bytes": 11988,
+      "sha256": "e45466de15dd50aa1795febb3bfc738c0a234ced8bb944f9cf4ae0156523a487"
+    },
+    {
+      "name": "_temp/ocr-paired-writer/archival-rust-short.pdf",
+      "bytes": 8881,
+      "sha256": "aaef8417e9d8c724031ee01fc3124611ac9f6f8832c7f6ba83b19b84aeb9935c"
+    }
+  ],
+  "independent_pdf_readback": {
+    "reader": "PyMuPDF",
+    "version": "1.26.6",
+    "observations": [
+      {
+        "file": "archival-rust-file.pdf",
+        "pages": 2,
+        "dimensions": [
+          [
+            160.0,
+            120.0
+          ],
+          [
+            180.0,
+            135.0
+          ]
+        ],
+        "text": [
+          "Rust file page one café 中文 😀\n",
+          "Rust file page two complete\n"
+        ]
+      },
+      {
+        "file": "archival-rust-short.pdf",
+        "pages": 1,
+        "dimensions": [
+          [
+            160.0,
+            120.0
+          ]
+        ],
+        "text": [
+          "Rust short writes café 中文 😀\n"
+        ]
+      }
+    ]
+  },
+  "scope": "These observed ordinary complete-crate Rust contracts and native checks pass at exact 9c44; the overall paired application job fails later and does not qualify desktop executable startup. Existing strict reader-limit failures and withheld general bidi capability remain unchanged."
+}

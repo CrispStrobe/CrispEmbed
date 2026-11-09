@@ -146,7 +146,14 @@ buffer ceiling under a 256 MiB limit. That larger PDF is a separate remote
 artifact; compact reports include its hash and measured resource use.
 Partial-output byte-limit rejection, callback errors, cancellation, short
 writes, zero progress, panic containment, flush errors and restart are explicit
-controls. The full crate is also covered by the paired application build lane.
+controls. The [complete-crate paired receipt](../tests/results/ocr-render/paired-crate-9c44a69.json)
+adds an actual application-linked observation at the same native source: all
+ten ordinary Rust writer contracts and all 70 native renderer checks pass.
+The separately retained short-write and two-page PDFs have exact logical text
+and physical dimensions in an independent MuPDF readback. That paired job
+later fails one application import fixture (54 of 55 workspace tests pass), so
+the complete desktop executable link and startup steps are skipped. This is
+complete-crate writer evidence, not a passing complete-application gate.
 
 ## Independent acceptance gates
 
