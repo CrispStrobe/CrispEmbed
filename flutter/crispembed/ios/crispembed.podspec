@@ -70,8 +70,11 @@ Pod::Spec.new do |s|
   # disabling dead stripping or changing export rules for the rest of the app.
   archive = Pathname.new(File.expand_path('Libs/libcrispembed-static.a', __dir__))
   archive_relative = archive.relative_path_from(Pod::Config.instance.installation_root)
+  # Xcodeproj shell-splits OTHER_LDFLAGS and re-emits -force_load paths
+  # unquoted, so a plain "..." pair is lost and a path with spaces breaks the
+  # link. Single quotes keep the double quotes inside the token it re-emits.
   s.user_target_xcconfig = {
-    'OTHER_LDFLAGS' => "$(inherited) -force_load \"$(PODS_PODFILE_DIR_PATH)/#{archive_relative}\"",
+    'OTHER_LDFLAGS' => %($(inherited) -force_load '"$(PODS_PODFILE_DIR_PATH)/#{archive_relative}"'),
   }
 
   # This is a vendored-library pod; no dummy source file is required.
