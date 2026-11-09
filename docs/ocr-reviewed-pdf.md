@@ -61,7 +61,9 @@ images, and checks them with Poppler, MuPDF and pypdf. Controls cover decoded
 image equality, page count and physical sizes, font subset boundaries, long
 corrections, supplementary Unicode, search geometry and mixed-direction text.
 Every bidi fixture retains its source, `ActualText`, all extracted strings and
-the complete PDF even when an assertion fails.
+the complete PDF even when an assertion fails. Reader subprocesses also retain
+their last completed stage, exit code and stderr, so a native reader crash does
+not truncate later cases or the independent archival reports.
 
 The reader follow-up branch also retains an intermediate fix for redundant
 font selection: some extractors flush a directional text buffer on every `Tf`
@@ -80,7 +82,15 @@ every failed rule. The installer and report handling follow the official
 [installation](https://docs.verapdf.org/install/) and
 [validation](https://docs.verapdf.org/cli/validation/) documentation.
 
-At the initial implementation checkpoint these hosted gates are pending.
+The [initial baseline receipt](../tests/results/ocr-render/baseline-87357610.json)
+retains the failed source and artifact digest. Its 51 native checks and five
+archival image/text preservation cases passed, but all three readers reversed
+the first Arabic/Hebrew cases and an in-process reader crashed on mixed text.
+The original validator stopped at a missing-input gate before validating any
+PDF. The follow-up runs every available PDF through veraPDF and still fails on
+missing cases; missing evidence can no longer hide the reports that did run.
+
+Corrected reader and archival conformance gates remain pending.
 Capabilities describe the implemented opt-in path; deployment and a broad
 conformance claim require a passing report for the exact integrated source.
 No release asset or application production pin changes as part of this lane.

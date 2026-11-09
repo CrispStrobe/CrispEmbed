@@ -1,0 +1,59 @@
+{
+  "source_sha": "873576103716dd86751f0643327d0437be7dd1ff",
+  "branch": "feat/ocr-reviewed-pdf-conformance",
+  "run_id": 42605041441,
+  "job_id": 129118741166,
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42605041441",
+  "conclusion": "failure",
+  "artifact": {
+    "id": 13667633415,
+    "name": "ocr-export-artifacts",
+    "sha256": "1d4923bf2e05c38f2413c5c086d4bbda8b33241571eb4d58928ece3a5398ea87",
+    "retention_days": 7,
+    "download_digest_verified": true
+  },
+  "native_checks": {"passed": 51, "failed": 0},
+  "archival_preservation": {
+    "cases_passed": ["rgb", "gray", "alpha", "jpeg", "text"],
+    "pages_per_case": 2,
+    "pixel_difference_against_standard_export": 0,
+    "independent_conformance": "not_run"
+  },
+  "extraction": [
+    {
+      "case": "arabic",
+      "source": "العربية",
+      "actual_text": "العربية",
+      "PyMuPDF": "ةيبرعلا\n",
+      "Poppler": "‫ةيبرعلا‬\n\f",
+      "pypdf": "ةيبرعلا"
+    },
+    {
+      "case": "hebrew",
+      "source": "שלום",
+      "actual_text": "שלום",
+      "PyMuPDF": "םולש\n",
+      "Poppler": "‫םולש‬\n\f",
+      "pypdf": "םולש"
+    }
+  ],
+  "reader_failure": {
+    "case": "mixed-rtl",
+    "pdf_written_before_failure": true,
+    "exit_code": 139,
+    "signal": "SIGSEGV",
+    "engine": "unresolved_in_original_in_process_harness"
+  },
+  "verapdf": {
+    "version": "1.30.2",
+    "installation": "passed",
+    "validation": "not_run",
+    "reason": "Initial missing-case assertion stopped before invoking the validator: expected 13, got 8."
+  },
+  "followup": [
+    "Use logical run-fragment ToUnicode mappings alongside ActualText.",
+    "Isolate independent readers and retain last-stage, exit-code and stderr receipts.",
+    "Generate every case before reading; validate available PDFs before enforcing missing-case gate.",
+    "Require exact corrected-source readers, pixel preservation, veraPDF 2b and invalid-control rejection before qualification."
+  ]
+}

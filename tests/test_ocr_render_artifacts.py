@@ -8,11 +8,13 @@ Requires Pillow, pypdf, PyMuPDF and the Poppler pdftotext/pdftoppm executables.
 
 import argparse
 import ctypes as C
+import hashlib
 from io import BytesIO
 import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
@@ -138,6 +140,24 @@ class ArtifactTests(unittest.TestCase):
                                 check=True, capture_output=True)
         self.assertEqual(result.stderr, b"", result.stderr.decode(errors="replace"))
         return result.stdout.decode("utf-8")
+
+    def probe_pdf(self, path, engine, searches=()):
+        receipt = self.root / (path.stem + "-" + engine.lower() + "-probe.json")
+        command = [sys.executable, str(Path(__file__).with_name("ocr_render_reader_probe.py")),
+                   "--engine", engine, "--pdf", str(path), "--output", str(receipt)]
+        for query in searches:
+            command.extend(["--search", query])
+        try:
+            result = subprocess.run(command, capture_output=True, timeout=90)
+            code, stdout, stderr = result.returncode, result.stdout, result.stderr
+        except subprocess.TimeoutExpired as error:
+            code, stdout, stderr = "timeout", error.stdout or b"", error.stderr or b""
+        receipt.with_suffix(".stdout.txt").write_bytes(stdout)
+        receipt.with_suffix(".stderr.txt").write_bytes(stderr)
+        record = json.loads(receipt.read_text()) if receipt.exists() else {"status": "no_receipt"}
+        record["exit_code"] = code
+        receipt.write_text(json.dumps(record, ensure_ascii=False, indent=2))
+        return record
 
     def test_raster_images_and_physical_size(self):
         for filename in ("rgb.png", "gray.png", "alpha.png", "palette.png", "rgb.jpg"):
@@ -332,28 +352,40 @@ class ArtifactTests(unittest.TestCase):
         controls = dict.fromkeys([0x061c, 0x200e, 0x200f, *range(0x202a, 0x202f), *range(0x2066, 0x206a)])
         def normal(text):
             return " ".join(text.translate(controls).split())
+        # Generate every case before opening one with an independent reader.
+        # A native reader crash must leave all inputs for veraPDF and the
+        # remaining isolated extraction checks, rather than truncate evidence.
+        for name, text in cases:
+            self.render("bidi-" + name + ".pdf", [{"image": self.root / "rgb.png",
+                "regions": [(text, 10, 30, 300, 1 if name.endswith("boundary") else 30)]}], pdfa=True, bidi=True)
         for name, text in cases:
             with self.subTest(text=name):
-                path = self.render("bidi-" + name + ".pdf", [{"image": self.root / "rgb.png",
-                    "regions": [(text, 10, 30, 300, 1 if name.endswith("boundary") else 30)]}], pdfa=True, bidi=True)
-                reader, document = self.read_pdf(path)
-                extracted = {"PyMuPDF": document[0].get_text(), "Poppler": self.poppler_text(path),
-                             "pypdf": reader.pages[0].extract_text()}
+                path = self.root / ("bidi-" + name + ".pdf")
+                reader = PdfReader(path, strict=True)
+                searches = ["العربية", "ABC"] if name == "mixed-rtl" else [text] if name in ("arabic", "hebrew") else []
+                probes = {engine: self.probe_pdf(path, engine, searches if engine == "PyMuPDF" else ())
+                          for engine in ("PyMuPDF", "Poppler", "pypdf")}
+                extracted = {engine: probe.get("extracted") for engine, probe in probes.items()}
                 logical = "".join(str(operands[1]["/ActualText"])
                                   for operands, op in ContentStream(reader.pages[0]["/Contents"], reader).operations
                                   if op == b"BDC" and "/ActualText" in operands[1])
-                record = {"bidi_case": name, "source": text, "actual_text": logical, "extracted": extracted}
+                record = {"bidi_case": name, "source": text, "actual_text": logical,
+                          "extracted": extracted, "probes": probes}
                 (self.root / ("bidi-" + name + "-extraction.json")).write_text(
                     json.dumps(record, ensure_ascii=False, indent=2))
                 self.receipt["tests"].append(record)
+                (self.root / "validation.json").write_text(json.dumps(self.receipt, ensure_ascii=False, indent=2))
                 self.assertEqual(logical, text, "Logical source text changed in the PDF content")
                 mappings = []
                 for font in reader.pages[0]["/Resources"]["/Font"].values():
                     cmap = font.get_object()["/ToUnicode"].get_data()
                     mappings += re.findall(rb"<[0-9A-F]+>\s*<([0-9A-F]+)>", cmap)
                 self.assertTrue(all(len(value) // 2 <= 512 for value in mappings), "ToUnicode exceeds ISO string limit")
-                for engine, actual in extracted.items():
-                    self.assertEqual(normal(actual), normal(text), engine + " changed logical reading order")
+                for engine, probe in probes.items():
+                    with self.subTest(reader=engine):
+                        self.assertEqual(probe["exit_code"], 0, engine + " failed: " + str(probe))
+                        self.assertEqual(probe["status"], "passed", engine + " did not finish")
+                        self.assertEqual(normal(probe["extracted"]), normal(text), engine + " changed logical reading order")
                 # pypdf currently ignores ActualText and recognizes only a
                 # subset of RTL scripts. Verify the complete Unicode fallback
                 # separately, with the replacement-text property removed.
@@ -366,14 +398,15 @@ class ArtifactTests(unittest.TestCase):
                 # The selectable Arabic run belongs to the right side of an
                 # RTL paragraph, while its trailing Latin run belongs left.
                 if name == "mixed-rtl":
-                    arabic, latin = document[0].search_for("العربية"), document[0].search_for("ABC")
+                    search = probes["PyMuPDF"].get("search", {})
+                    arabic, latin = search.get("العربية", []), search.get("ABC", [])
                     self.assertTrue(arabic and latin, "Reviewed mixed text is not searchable")
-                    self.assertGreater(min(r.x0 for r in arabic), max(r.x1 for r in latin))
+                    self.assertGreater(min(r[0] for r in arabic), max(r[2] for r in latin))
                 if name in ("arabic", "hebrew"):
-                    self.assertTrue(document[0].search_for(text))
-                actual_pixels = document[0].get_pixmap(alpha=False).samples
-                self.assertEqual(actual_pixels, Image.open(self.root / "rgb.png").convert("RGB").tobytes())
-                document.close()
+                    self.assertTrue(probes["PyMuPDF"].get("search", {}).get(text))
+                self.assertFalse(probes["PyMuPDF"].get("repaired", True))
+                expected = Image.open(self.root / "rgb.png").convert("RGB").tobytes()
+                self.assertEqual(probes["PyMuPDF"].get("pixel_sha256"), hashlib.sha256(expected).hexdigest())
 
 
 if __name__ == "__main__":

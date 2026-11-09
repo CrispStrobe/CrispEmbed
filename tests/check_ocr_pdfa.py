@@ -41,29 +41,43 @@ def main():
     reports.mkdir(exist_ok=True)
     candidates = sorted(root.glob("archival-*.pdf")) + sorted(root.glob("bidi-*.pdf"))
     candidates = [path for path in candidates if not path.name.startswith("archival-control-")]
-    if len(candidates) < 15:
-        raise AssertionError(f"Expected all 15 archival image/text/bidi cases, got {len(candidates)}")
+    expected = {"archival-" + name + ".pdf" for name in ("rgb", "gray", "alpha", "jpeg", "text")}
+    expected.update("bidi-" + name + ".pdf" for name in (
+        "arabic", "hebrew", "mixed-rtl", "mixed-ltr", "marks", "isolate", "override", "supplementary",
+        "mapping-boundary", "combining-boundary"))
+    missing = sorted(expected - {path.name for path in candidates})
     receipt = {"validator": subprocess.check_output([options.verapdf, "--version"], text=True).strip(),
-               "profile": "2b", "positive": [], "negative": []}
+               "profile": "2b", "positive": [], "negative": [], "missing_cases": missing, "errors": []}
+
+    def check(path, destination, target):
+        try:
+            receipt[target].append(validate(options.verapdf, path, destination))
+        except Exception as error:
+            receipt["errors"].append({"file": path.name, "error": str(error)})
+        # Keep completed reports even if a later validator process crashes.
+        (reports / "receipt.json").write_text(json.dumps(receipt, indent=2))
+
     try:
         for path in candidates:
-            record = validate(options.verapdf, path, reports / path.stem)
-            receipt["positive"].append(record)
+            check(path, reports / path.stem, "positive")
         # Equal-length key replacement preserves all xref offsets and page
         # content: only the required resource being tested is removed.
-        source = (root / "archival-rgb.pdf").read_bytes()
-        for name, old, new in (("missing-output-intent", b"/OutputIntents", b"/InvalidIntent"),
-                               ("missing-xmp", b"/Metadata", b"/NoXmpTag")):
-            assert len(old) == len(new) and old in source
-            path = reports / (name + ".pdf")
-            path.write_bytes(source.replace(old, new, 1))
-            receipt["negative"].append(validate(options.verapdf, path, reports / name))
+        if (root / "archival-rgb.pdf").exists():
+            source = (root / "archival-rgb.pdf").read_bytes()
+            for name, old, new in (("missing-output-intent", b"/OutputIntents", b"/InvalidIntent"),
+                                   ("missing-xmp", b"/Metadata", b"/NoXmpTag")):
+                assert len(old) == len(new) and old in source
+                path = reports / (name + ".pdf")
+                path.write_bytes(source.replace(old, new, 1))
+                check(path, reports / name, "negative")
     finally:
         (reports / "receipt.json").write_text(json.dumps(receipt, indent=2))
     failures = [r for r in receipt["positive"] if not r["compliant"] or r["exit_code"] != 0]
     false_passes = [r for r in receipt["negative"] if r["compliant"] or not r["failed_rules"]]
-    if failures or false_passes:
-        raise AssertionError(json.dumps({"positive_failures": failures, "false_passes": false_passes}, indent=2))
+    if failures or false_passes or missing or receipt["errors"] or len(receipt["negative"]) != 2:
+        raise AssertionError(json.dumps({"positive_failures": failures, "false_passes": false_passes,
+                                         "missing_cases": missing, "errors": receipt["errors"],
+                                         "negative_control_count": len(receipt["negative"])}, indent=2))
     print(f"veraPDF: {len(receipt['positive'])} PDF/A-2b exports passed; 2 invalid controls rejected")
 
 
