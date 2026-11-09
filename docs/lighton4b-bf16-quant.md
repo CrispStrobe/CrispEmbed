@@ -178,8 +178,6 @@ its maximum error worsens. Local operator/component improvements are not a
 composed decoded-quality claim. Both new paths stay default-off; old full
 captures and every rejected result remain unchanged. These observed-form
 findings may not select tensors or tune a new heldout panel.
-
-
 ## Final complete plain-Q8/Q4 comparison
 
 Actual [Q842012564139](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42012564139)

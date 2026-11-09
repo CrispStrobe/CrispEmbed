@@ -3634,3 +3634,27 @@ Final isolated ownership source `2b248c9cb` passes full hosted Build [4192822775
 Active isolated `audit/lighton4b-upstream-20261105`, stacked on PR150 `9ce83605e`. Frozen prefill layer outputs show smooth cumulative drift; the earliest and largest adjacent multiplicative normalized-L2 increase is layer0→1:1.37052144e-6→1.77949970e-6 (+29.84%), with max error3.21865082e-6→5.96046448e-6 against gold magnitudes1.78922069→2.71021986. This is an attribution target, not a new pass threshold. Prepare hosted exact retained layer1 replay on original/native layer0 outputs, retaining all26 source weight hashes/six frozen anchors and adding test-only source-postnorm/gate/up/activation-fed FFN boundaries. No full32-layer/original rerun, runtime edit, budget change or model qualification; all large initial arrays stay remote.
 
 Retained upstream [41981848201](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41981848201) at `132c800b6` passes22 same-input+4 source-normalized GDN+8 source-fed FFN pairs, with26 regenerated weight hashes and six byte-exact frozen anchors. Layer0→1 remains the largest adjacent normalized-L2 growth (+29.84%). Earliest local layer1 RMS output error2.38418579e-6 versus3.45225024; exact-input FFN projections retain2.15e-6–2.53e-6 discrepancies, while source gate/up-fed activation is2.38418579e-7 versus ordinary activation4.77e-6–6.44e-6. [Exact magnitudes/limits](docs/lighton4b-upstream-drift.md), [source-verified review](tests/results/qwen35-ocr/lightonocr3-4b-upstream-drift.json). No particular instruction/reduction cause or correction is established. Shared-synthetic fixture only; no full32-layer/original rerun, runtime/budget change or promotion of the retained290/291 negative gate.
+
+[Q842001979476](tests/results/qwen35-ocr/lightonocr3-4b-q8-firstscore.json) and
+[plain Q4_K42001983230](tests/results/qwen35-ocr/lightonocr3-4b-q4-firstscore.json)
+compare actual first-position248,320 scores: max errors0.568259001/2.49422884,
+row cosines0.998469710/0.976987541, reference norm1103.18604 and native
+norms1078.98657/1238.58728. Both numerical gates fail at position0. Q8's two
+IDs match original `[27,17251]` (`<figure`); Q4 emits `[20353,29]` (`<table>`).
+Smokes cap2/noEOS; no full decoded qualification follows. Original internal
+stages are absent, so earliest operator is unobserved. Preserve initial
+42000741513/42000808436 missing-six and42001333434/42001338099 provider-version
+failures as harness-only zero-position evidence. Exact `v1` spelling and explicit
+six dependency repair change no score/reference/budget. Full native177-position
+Q842001328483/Q442001333207 remain executing at exactfd150b98 source; full
+comparer is prepared and registry remains empty pending their actual receipts.
+
+Retained-score patterns42003109155/42003112983 preserve Q8top8 ranks, but Q4
+flips the first two candidates: table-minus-figure gap-2.125→+0.760540;
+positive-affine residualRMS0.428556 rules out a pure global scale/offset account.
+Exact raw reports are linked in [the protocol](docs/lighton4b-bf16-quant.md).
+Direct-quant firstscore42004610956/42004615158 is worse than legacy
+(max0.647667/2.658515); BF16-vision42006393935/42006480602 also fails
+(max1.092199/2.610071), with unchanged prefixes. No default promotion follows.
+Use the separately predeclared independent mixed panel; never tune its heldout
+cases from this observed form or from late-layer maxima.

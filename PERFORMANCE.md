@@ -7956,7 +7956,6 @@ Arabic's exact text coexists with failed numerical gates. See the
 [mixed review](tests/results/qwen35-ocr/lightonocr3-4b-mixed-calibration/review.json)
 for exact source/weight/artifact hashes and qualification limits.
 
-
 ### LightOn4B BF16 vision norm — measured component improvement, decoded negative
 
 All rows below use the same immutable Q4 GGUF/image and original AVX2 BF16
@@ -7998,7 +7997,6 @@ all maximum0.03125. These are bounded arithmetic measurements, not speed/decoded
 quality claims; [all route/operand controls and limits](docs/lighton4b-layer0-attribution-results.md)
 remain independently recorded and defaults unchanged.
 
-
 The genuine BF16 quant-weight oracle at `048fd683f` completed three fresh
 one-position prefills in106.66–107.70s each; this is a diagnostic, not a
 throughput benchmark. ProcessHWM16,292,564,992 bytes and cgroup peak31,310,606,336
@@ -8008,7 +8006,6 @@ Q4's first-token flip exists in original BF16 inference.
 [Full precision, memory and decoded limits](docs/lighton4b-bf16-quant-first-score-results.md)
 preclude speed, model-quality or release promotion.
 
-
 The fixed mixed BF16 original mechanism worker `50307be7f` completes exactly
 one original and one mixed prefill in90.55/93.85s. ProcessHWM13,867,794,432 bytes,
 cgroup peak29,645,406,208 of32,212,254,720 bytes; reduced chunks and clean-cache
@@ -8016,7 +8013,6 @@ advice pass predeclared capacity guards. This differs from the three-arm workloa
 and is not a memory/throughput benchmark. FirstID27 is retained, but full score
 max1.578125/RMS0.28579991/cosine0.99251625 rejects. No native decoding or held-out
 quality qualification. [Full precision, resource and scope limits](docs/lighton4b-bf16-mixed-first-score-results.md).
-
 
 Corrected mixed full form source189fc91bb/run42109519607 measures2896.15s wall,
 1697.34s user/1760.77s systemCPU, peakRSS5,198,012,416 bytes for177 teacher rows
@@ -8027,14 +8023,12 @@ agreement rejects:156 versus177 tokens, divergence25, raw CER30.03049%/WER44.444
 against BF16 output. [Exact metrics, texts, controls and limits](docs/lighton4b-corrected-mixed-full-results.md).
 No speed or decoded-quality promotion; artifacts remain remotely preserved90days.
 
-
 Genuine BF16 mixed source89eda20c6 generates178tokens/EOS in596.86s, processHWM
 13,883,699,200bytes and cgrouppeak27,614,916,608of32,212,254,720bytes. One baseline
 plus178mixed rootcalls, noOOM/retry. This is not a throughput benchmark. Native
 156-token output differs at33 and hasCER19.85185%/WER31.57895% against this
 genuineBF16mixed reference. [Exact sources, metrics and precision caveats](docs/lighton4b-bf16-mixed-freegen-results.md).
 No speed/quality/default/release promotion.
-
 
 ### LightOn4B verified vision norm/NN/Conv — final Q4 smoke remains negative
 
@@ -8064,7 +8058,6 @@ qualification. Only1 teacher row and2 IDs per arm; original numerical failure
 is unchanged. The source-pin amendment preserves all historical receipt bytes,
 and the nonpthreadWASM path explicitly excludes thread launch. Default stays off.
 [Full balanced receipt](tests/results/qwen35-ocr/lightonocr3-4b-parallel-dequant/balanced-ab.json).
-
 
 Mixed decoder head-BF16 correction42168142185/b988 restores exact178 genuine
 quantized-BF16 IDs/text/EOS from156-tokenOFF baseline, CER/WER19.85185%/31.57895%
@@ -8174,3 +8167,20 @@ The gate stays default-off, with immutable quant storage, bounded transient
 weight/row/tile conversion and cached-mode toggle rejection. All historical
 source pins/negative evidence remain unchanged.
 [Full measured receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-weight-precision/native-smoke.json).
+
+ActualRef first-position Q8_0/Q4_K comparisons42001979476/42001983230 fail
+unchanged0.002/0.99999: max absolute0.568259001/2.49422884, mean
+0.108710214/0.466762543, RMS0.130495042/0.571912766, cosine
+0.998469710/0.976987541. Reference norm1103.18604; native1078.98657/1238.58728.
+All248,320 scores are finite. Q8 matches original two-ID prefix `<figure`;
+plain Q4_K starts `<table>`. Two-token cap/noEOS is not final decoded parity.
+Full177-row independent-generation panels and original internal attribution
+remain separate; see [exact protocol and receipts](docs/lighton4b-bf16-quant.md).
+
+Gated direct-quant firstscore42004610956/42004615158 is worse versus original
+BF16: Q8/Q4 max0.647666931/2.65851498, RMS0.170557052/0.606224835,
+cosine0.997532368/0.974644244. BF16-vision42006393935/42006480602 yields
+max1.09219897/2.61007118, RMS0.200536951/0.545669734 and
+cosine0.996400595/0.978054762. All fail unchanged strict gates and retain
+Q8 `<figure`/Q4 `<table>` two-token prefixes. These source-pinned smoke paths
+are not full decoded parity or model qualification; both gates remain off.
