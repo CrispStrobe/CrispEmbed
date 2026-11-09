@@ -34,10 +34,21 @@ hazards, not a complete bill of materials for every pdf-craft extra or model.
 
 The three current pdf-craft model cards above are not labeled noncommercial.
 That observation does not remove restrictions from other models, fine-tuned
-base models or executable model code. Restricted weights require the existing
-model-specific acknowledgement before loading or access; acknowledgement is
-not a grant of commercial rights. New model variants must keep license gates
-independent of experimental feature gates.
+base models or executable model code. Restricted models must retain their
+applicable use restrictions and an appropriate acknowledgement before access;
+acknowledgement is not a grant of commercial rights. New model variants must
+keep license gates independent of experimental feature gates.
+
+This review verifies TeleOCR's direct-runtime and Marker acknowledgement
+checks; it does not establish universal runtime enforcement. The registry's
+download consent does not cover every local-file or cached-model load: those
+paths return before the download check. The existing `jina-ocr-v1` profile's
+reuse of the Unlimited runtime has a model-specific noncommercial access-gate
+gap, deferred to a separate native-loader change. A generic document-backend
+expansion must close that gap or exclude that profile before claiming gated
+access. No backend selection is expanded here. See the current
+[registry resolver](../examples/cli/model_mgr.cpp) and
+[Unlimited loader](../src/unlimited_ocr.cpp).
 
 The selected change imports no GPL/AGPL code, model weights, network service,
 Python dependency, Poppler, Qt or EasyDict. Native adaptation must retain the
@@ -90,10 +101,16 @@ non-asset layouts. CrispEmbed's selected adaptation is more conservative:
 - Inspect Unicode codepoints rather than UTF-8 bytes; a multi-byte character
   must not be counted as several characters. Keep the scan bounded by the
   existing document text limit and fixed maximum repeated-unit length.
-- Diagnose ordinary prose-like blocks after document construction. Exclude
+- Diagnose ordinary prose-like blocks after list splitting, including each
+  list item's own text when it contains a nested list. Skip aggregate container
+  text to avoid counting the same content twice. Exclude
   tables, images, figures, equations, chemical content and code, including their
   structural children. Preserve the current handling of model cap warnings and
   invalid text independently.
+- Expose the detector as `configuration.repetition_check=unicode-tandem-v1`
+  and the decimal string `configuration.repetitive_blocks`; block warnings
+  appear in JSON and chunks. Reprocessing clears only owned repetition
+  diagnostics and recomputes counts, including when the gate is turned off.
 - Retain the original text, raw text, geometry, source attribution and rendered
   content. Add inspectable warnings and diagnostic metadata only. Do not retry
   OCR, change decoding, reject a document or remove a block because of a match.
