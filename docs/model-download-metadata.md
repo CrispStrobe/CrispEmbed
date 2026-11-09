@@ -45,6 +45,11 @@ incomplete payload set instead of silently dropping a required file. The current
 registry has at most one companion per entry; Rust exposes a vector for the
 application's installation loop.
 
+Some registered models require local conversion or a custom trained file and
+intentionally have an empty source URL. Exact metadata lookup still succeeds
+and preserves that empty URL and absent SHA. It does not invent a downloadable
+artifact; an application installer must refuse that payload.
+
 ## Installer responsibilities
 
 A registry entry is metadata, not approval to download or execute a model.
@@ -70,6 +75,14 @@ entry and its available pins, verifies exact-name rejection and a real companion
 runs ASan/UBSan, and links the actual safe Rust wrapper for ownership, absent-pin
 translation and simultaneous lookup controls. It does not download weights.
 Final-source hosted results are required before declaring this API validated.
+
+The [initial hosted review](../tests/results/ocr-phone-photo/hosted-contract-review-fde19180.json)
+preserves a misleading green result: the C and sanitizer checks aborted on an
+overstrict assumption that every registry entry has an HTTPS URL, while `tee`
+hid their exit status. The four Rust wrapper controls passed. The corrected
+contract separately checks local-only metadata, preserves HTTPS/pin checks for
+downloadable entries, and makes piped failures fail the workflow. Its hosted
+rerun remains required; the initial C and sanitizer result is not a pass.
 
 App download cancellation, storage limits, hash rejection, atomic recovery,
 same-source mobile linking, device OCR execution and model quality remain

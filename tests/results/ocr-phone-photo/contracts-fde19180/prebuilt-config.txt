@@ -1,0 +1,9 @@
+test_android_uses_only_verified_shared_closure (__main__.PrebuiltConfigTests.test_android_uses_only_verified_shared_closure) ... ok
+test_ios_uses_archive_and_frameworks_without_host_rpath (__main__.PrebuiltConfigTests.test_ios_uses_archive_and_frameworks_without_host_rpath) ... ok
+test_missing_or_wrong_cross_library_fails_before_host_fallback (__main__.PrebuiltConfigTests.test_missing_or_wrong_cross_library_fails_before_host_fallback) ... ok
+test_native_desktop_retains_shared_runtime_and_rpath (__main__.PrebuiltConfigTests.test_native_desktop_retains_shared_runtime_and_rpath) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.015s
+
+OK

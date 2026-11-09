@@ -31,6 +31,11 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    # Explicit bash enables -o pipefail; tee must not hide a native failure.
+    shell: bash
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

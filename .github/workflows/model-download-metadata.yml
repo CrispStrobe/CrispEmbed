@@ -27,6 +27,11 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    # Explicit bash enables -o pipefail; tee must not hide a native failure.
+    shell: bash
+
 concurrency:
   group: model-download-metadata-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
@@ -38,6 +43,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - name: Check that log capture propagates a failing process
+        run: |
+          if (exit 23) | tee "$RUNNER_TEMP/metadata-pipefail-control.txt"; then
+            echo "::error::A failing process was hidden by log capture"
+            exit 1
+          fi
       - name: Exercise actual C registry metadata and C-compatible header
         run: |
           mkdir -p build-model-metadata/artifacts
@@ -48,7 +59,7 @@ jobs:
             tests/test_model_download_info.cpp examples/cli/model_mgr.cpp -Wl,--gc-sections \
             -o build-model-metadata/test-metadata
           CRISPEMBED_CACHE_DIR="$PWD/build-model-metadata/no-cache" \
-            build-model-metadata/test-metadata | tee build-model-metadata/artifacts/registry.json
+            build-model-metadata/test-metadata 2>&1 | tee build-model-metadata/artifacts/registry.log
           test ! -e build-model-metadata/no-cache
           git rev-parse HEAD > build-model-metadata/artifacts/source.txt
       - name: Sanitize borrowed strings and invalid arguments
@@ -56,7 +67,7 @@ jobs:
           c++ -std=c++17 -O1 -g -fsanitize=address,undefined -ffunction-sections -fdata-sections \
             -Isrc -Iexamples/cli tests/test_model_download_info.cpp examples/cli/model_mgr.cpp \
             -Wl,--gc-sections -o build-model-metadata/test-metadata-sanitized
-          build-model-metadata/test-metadata-sanitized | tee build-model-metadata/artifacts/sanitized.json
+          build-model-metadata/test-metadata-sanitized 2>&1 | tee build-model-metadata/artifacts/sanitized.log
       - name: Exercise safe Rust ownership, optional pins and concurrent reads
         run: |
           c++ -std=c++17 -O2 -ffunction-sections -fdata-sections -Isrc -Iexamples/cli \

@@ -26,9 +26,12 @@ These opt-in calls expose measured correction, manual rotation and labelled
 projective corners without changing a process-global environment variable.
 The original inference gates remain independent. New public C/Rust controls and
 actual downstream-text arms are wired into the same hosted workflow; their
-execution is pending. The app must pair matching native code and Rust bindings.
+execution passed in [42590335637](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335637)
+at the tree of `fde19180`. The [review receipt](tests/results/ocr-phone-photo/hosted-contract-review-fde19180.json)
+retains the complete text report, explicit API/blank controls and three Rust
+wrapper results. The app must pair matching native code and Rust bindings.
 
-Pending: public photo API hosted validation, representative real phone captures,
+Pending: rerun after workflow failure-propagation hardening, representative real phone captures,
 every native recognition model, and a separate decision on default promotion.
 No new model, alias, release or dependency pin.
 
@@ -42,8 +45,10 @@ frameworks and a verified Android shared-library closure. Mobile and other
 cross targets require an explicit `CRISPEMBED_SYS_LIB_DIR`; native desktop
 discovery/fallback remains unchanged. See [the contract](docs/rust-mobile-prebuilt.md).
 
-Hosted pure policy and real build-script configuration controls are prepared.
-Pending: their final-source result, same-source iOS/Android producer and actual
+Hosted run [42590335633](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335633)
+passes six pure policy and four actual build-script configuration controls at
+the tree of `fde19180`; reports are retained in the [review receipt](tests/results/ocr-phone-photo/hosted-contract-review-fde19180.json).
+Pending: rerun after workflow failure-propagation hardening, same-source iOS/Android producer and actual
 Rust/application cross links, packaging and device execution. Configuration
 placeholder files do not qualify native binaries. This lane changes no release,
 model, inference default or existing immutable consumer pin.
@@ -57,8 +62,13 @@ They perform no cache access, networking, license acceptance or global mutation.
 This supports an app-owned mobile installer while preserving the legacy resolver.
 See [the API and installer contract](docs/model-download-metadata.md).
 
-Hosted production-C, sanitizer and actual-wrapper tests are prepared. Pending:
-final-source contract results and the consumer's pinned streaming/atomic install,
+Initial hosted run [42590335645](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335645)
+passes four Rust wrapper controls but its C and sanitizer processes abort on an
+incorrect HTTPS-only assumption for existing local-only entries. Its green
+status was masked by a pipeline without pipefail. The original failed log and
+empty reports remain in the [review receipt](tests/results/ocr-phone-photo/hosted-contract-review-fde19180.json).
+Correct the local-only test contract and propagate piped failures in all three
+focused workflows. Pending: corrected hosted C/sanitizer/wrapper results and the consumer's pinned streaming/atomic install,
 cancellation/recovery, mobile linking and device execution gates. No URL, pin,
 registry model, release or inference default is changed.
 

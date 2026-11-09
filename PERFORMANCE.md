@@ -1,3 +1,22 @@
+## Explicit phone-photo API (9 November 2026, hosted synthetic CPU panel)
+
+[Run 42590335637](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335637)
+tests the `fde19180` tree with independent Tesseract 5.3.4. The full
+[source-hashed report](tests/results/ocr-phone-photo/quality-fde19180.json)
+retains every arm and decoded text. Public API CER changes from 0 to 0 on aligned
+text, 0.026971 to 0 at 4.2 degrees clockwise, 0.020747 to 0 at 6.7 degrees
+counterclockwise with shadow, and 0.124481 to 0 at 10 degrees with shadow.
+The shadow recipe includes existing background whitening: public deskew-only
+CER is 0.663900 and 0.775934 respectively, so rotation alone is not qualified.
+
+On perspective plus shadow, raw CER 0.145228 becomes 0.012448 through the public
+API. The internal projective and legacy arms measure 0.004149 and 0.008299;
+the public API is slightly worse on this fixture and passes the unchanged
+declared tolerance. Its inclusive pixel geometry produces 1315 by 1777 pixels,
+versus 1314 by 1776 internally. Do not substitute the internal result for the
+public API or tune the geometry to this synthetic document. No representative
+camera corpus, physical device or native recognition model is qualified.
+
 ## Phone-photo geometry (9 November 2026, bounded synthetic CPU panel)
 
 The source-hashed [five-case receipt](tests/results/ocr-phone-photo/quality-v1.json)

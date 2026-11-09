@@ -2,6 +2,27 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 9 November 2026 — explicit photo and mobile contract review
+
+At `fde19180`, [photo run 42590335637](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335637)
+passes actual public C geometry/blank controls, direct ASan/UBSan, three safe Rust
+wrapper tests and five synthetic downstream OCR cases. The PR merge source has
+the exact same tree as the feature head. [Prebuilt run 42590335633](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335633)
+passes six policy and four real build-script configuration tests; these use
+placeholder libraries and do not qualify a mobile binary.
+
+The [metadata run 42590335645](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335645)
+is a false green: both C and sanitizer processes abort because their test
+incorrectly requires HTTPS URLs for existing local-conversion entries. `tee`
+masks the failures; both JSON artifacts are empty. Four actual Rust wrapper
+tests pass separately. The correction preserves truthful empty URL/no-pin
+metadata, checks that case explicitly, retains downloadable HTTPS/pin checks,
+and enables pipeline failure propagation in the three focused workflows.
+Corrected hosted execution remains pending. The complete quality report, all
+negative measurements, original failed job log and checksummed artifacts are
+retained in [the review receipt](tests/results/ocr-phone-photo/hosted-contract-review-fde19180.json).
+No runtime code, registry entry, model pin, default or release changes.
+
 ## 9 November 2026 — opt-in phone-photo geometry
 
 `feat/ocr-photo-preprocessing` adds true projective OCR-region crops and bounded

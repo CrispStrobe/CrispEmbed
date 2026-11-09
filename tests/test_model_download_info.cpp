@@ -9,6 +9,10 @@
 #include <cstring>
 #include <initializer_list>
 
+#ifdef NDEBUG
+#error "Metadata contract checks require assertions"
+#endif
+
 static void assert_empty(const crispembed_model_download_info_v1 & info) {
     assert(!info.name && !info.license && !info.model_card_url);
     assert(!info.requires_license_acceptance && !info.has_companion);
@@ -18,7 +22,13 @@ static void assert_empty(const crispembed_model_download_info_v1 & info) {
 
 static void check_pin(const crispembed_model_download_file_v1 & file) {
     assert(file.filename && *file.filename);
-    assert(file.url && std::strncmp(file.url, "https://", 8) == 0);
+    // A registered local conversion/custom model has no downloadable URL.
+    // Its metadata must stay truthful and must not acquire a fabricated pin.
+    if (!file.url || !*file.url) {
+        assert(!file.sha256);
+        return;
+    }
+    assert(std::strncmp(file.url, "https://", 8) == 0);
     const char * expected = crispembed_mgr::model_pinned_sha256(file.url);
     if (!expected) {
         assert(!file.sha256);
@@ -53,10 +63,19 @@ int main() {
     assert(std::strcmp(stable_pin,
                        "3b165a16a33b05521a6b374837dad9beff5e8e89164e700b9abe187f9923de50") == 0);
 
+    // This existing registry entry requires local conversion. Lookup succeeds,
+    // but an installer must reject its empty source URL and absent digest.
+    assert(crispembed_get_model_download_info_v1("easyocr-english-g2", &info) == 1);
+    assert(std::strcmp(info.primary.filename, "easyocr-english-g2-f16.gguf") == 0);
+    assert(info.primary.url && !*info.primary.url && !info.primary.sha256);
+    assert(!info.has_companion);
+    check_pin(info.primary);
+
     // Offline state does not hide metadata or trigger a cache/network operation.
     crispembed_mgr::set_offline(true);
     int count = 0;
     int companion_count = 0;
+    int local_only_count = 0;
     for (int index = 0; index < crispembed_mgr::n_models(); ++index) {
         const char * name = crispembed_mgr::model_name(index);
         assert(crispembed_get_model_download_info_v1(name, &info) == 1);
@@ -65,17 +84,19 @@ int main() {
         assert(info.requires_license_acceptance ==
                (crispembed_mgr::license_requires_acceptance(crispembed_mgr::model_license(index)) ? 1 : 0));
         check_pin(info.primary);
+        if (!info.primary.url || !*info.primary.url) ++local_only_count;
         if (info.has_companion) {
             check_pin(info.companion);
             ++companion_count;
         }
         ++count;
     }
-    assert(count > 0 && companion_count > 0);
+    assert(count > 0 && companion_count > 0 && local_only_count > 0);
     assert(crispembed_get_model_download_info_v1("lfm2-vl", &info) == 1);
     assert(info.requires_license_acceptance == 1 && info.has_companion == 1);
     assert(std::strcmp(info.companion.filename, "mmproj-LFM2.5-VL-3B-F16.gguf") == 0);
     assert(std::strcmp(info.companion.sha256,
                        "6f912eb9fcef619b31c9afff7662a222da9ce6db89327eb465dbafd2fb6a2d7c") == 0);
-    std::printf("{\"registry_entries\":%d,\"companions\":%d}\n", count, companion_count);
+    std::printf("{\"registry_entries\":%d,\"companions\":%d,\"local_only\":%d}\n", count, companion_count,
+                local_only_count);
 }
