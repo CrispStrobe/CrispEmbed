@@ -1496,6 +1496,10 @@ Receipt source-completion and logo/handwriting-coverage limitations remain; no
 native heldout or model qualification follows. Next runtime claim requires
 same-input earliest-operator attribution, not another blind model batch.
 
+The separately authorized lean mixed calibration42013855293 covers table/Arabic
+only; its outputs and heldout qualification remain pending, with receipt source-
+completion and logo/handwriting-coverage limitations unchanged.
+
 ### Reviewed checkpoint layer0 same-input attribution — 5 November 2026
 
 [The bounded layer0 attribution](docs/lighton4b-layer0-attribution-results.md)
@@ -1537,7 +1541,6 @@ Initial42022655060 stopped before build/model access on obsolete Kaggle1.8.3
 authentication; known-working2.2.2 corrects only the producer dependency.
 
 ### Rejected linear-block BF16 activation candidate — 5 November 2026
-
 The first separately gated linear BF16-boundary candidate42026091939/f201bc8c9
 is independently rejected: earliest input norm max0.015625, then QKV0.0625 and
 hidden official/Q80.03125/Q40.015625 against the original activation oracle.
@@ -1549,7 +1552,6 @@ hidden0.01743889/0.15934277. These are actual original-code candidate losses,
 not native implementation proof. Bounded norm-only42027758298 at28e4180b8
 compares existing sequential/precise RMS and BF16 rounding before any new full
 candidate or decoded claim; source/cache-mode controls remain isolated.
-
 ### LightOn4B decoder norm operator continuation — 5 November 2026
 
 Norm-only42027758298/28e4180b8 completes: precise RMS reduces F32 maximum

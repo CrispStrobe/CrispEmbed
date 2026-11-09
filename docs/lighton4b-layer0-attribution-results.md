@@ -111,7 +111,6 @@ this supports quantization loss at this boundary, not a local native decoder bug
 The GDN normalized minimum row cosines include nearly zero/sign-changing rows;
 retain their absolute errors and tensor magnitudes rather than treating those
 cosines alone as evidence. Full decoded Q8/Q4 rejections stay unchanged.
-
 ## Earliest input-normalization reduction: precise alone remains negative
 
 [42027758298](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42027758298)
