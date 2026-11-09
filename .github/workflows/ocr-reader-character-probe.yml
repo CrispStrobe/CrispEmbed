@@ -1,0 +1,58 @@
+name: OCR per-character reader diagnostic
+
+on:
+  push:
+    branches: [feat/ocr-pdf-character-diagnostic]
+    paths:
+      - 'tests/ocr_render_character_diagnostic.py'
+      - '.github/workflows/ocr-reader-character-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  character-encodings:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install pinned readers and validator
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+          python -m pip install 'Pillow==13.0.0' 'pypdf==6.21.4' 'PyMuPDF==1.26.6' 'pypdfium2==5.15.1' 'fonttools==4.68.0'
+          python tools/install_ocr_verapdf.py --prefix build-ocr-render/verapdf
+      - name: Build frozen model-free renderer
+        run: |
+          mkdir -p build-ocr-render/artifacts
+          cc -std=c11 -O1 -fPIC -DSB_CONFIG_UNITY \
+            -Ivendor/sheenbidi/Headers -Ivendor/sheenbidi/Source \
+            -c vendor/sheenbidi/Source/SheenBidi.c -o build-ocr-render/sheenbidi.o
+          c++ -std=c++17 -O1 -fPIC -shared -DCRISPEMBED_BUILD \
+            '-DCRISPEMBED_VERSION_STR="0.17.16"' -Isrc -Ivendor/sheenbidi/Headers \
+            src/ocr_render.cpp tests/ocr_render_stb.cpp build-ocr-render/sheenbidi.o \
+            -o build-ocr-render/libocr_render_test.so
+      - name: Compare per-character encodings without changing logical Unicode
+        run: |
+          python tests/ocr_render_character_diagnostic.py \
+            --library build-ocr-render/libocr_render_test.so \
+            --artifacts build-ocr-render/artifacts \
+            --verapdf build-ocr-render/verapdf/verapdf
+      - name: Preserve every reader and conformance outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-character-diagnostic
+          path: build-ocr-render/artifacts
+          if-no-files-found: error
+          retention-days: 7
