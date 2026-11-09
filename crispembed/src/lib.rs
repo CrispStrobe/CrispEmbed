@@ -35,6 +35,10 @@ mod oxr_layout;
 pub use oxr_layout::OxrLayout;
 pub mod marker;
 pub use marker::{Marker, MarkerMode, MarkerOptions};
+pub mod photo;
+pub use photo::CrispScanPhoto;
+pub mod model_download;
+pub use model_download::{ModelDownloadFile, ModelDownloadInfo};
 
 pub mod moedern_text;
 pub use moedern_text::MoEdern;
@@ -225,6 +229,12 @@ impl CrispEmbed {
                 .to_string_lossy()
                 .into_owned()
         }
+    }
+
+    /// Read exact registered URLs, optional pins and companions without IO.
+    /// This does not download a model or accept its license.
+    pub fn model_download_info(exact_name: &str) -> Result<Option<ModelDownloadInfo>, String> {
+        model_download::model_download_info(exact_name)
     }
 
     pub fn list_models() -> Vec<ModelInfo> {
@@ -3537,7 +3547,8 @@ pub struct OcrRenderPageInput<'a> {
 }
 
 /// Renderer capability bits: PDF=1, Unicode text=2, decoded raster images=4,
-/// validated archival conformance=8. Does not load any recognition model.
+/// PDF/A-2b archival conformance=8, explicit Unicode bidi layout=16.
+/// Does not load any recognition model.
 /// Requires the matching native library that exports this accessor.
 pub fn ocr_render_capabilities() -> u32 {
     unsafe { crispembed_sys::crispembed_ocr_render_capabilities() }
@@ -3545,7 +3556,7 @@ pub fn ocr_render_capabilities() -> u32 {
 
 /// Render a document to binary-safe bytes. Returns `None` on rendering errors.
 /// For actionable errors and physical PDF dimensions use
-/// [`ocr_render_pages_checked_with_sizes`]. PDF/A is explicitly unsupported.
+/// [`ocr_render_pages_checked_with_sizes`]. PDF/A requests select PDF/A-2b.
 pub fn ocr_render_pages(pages: &[OcrRenderPageInput], format: &str, pdfa: bool) -> Option<Vec<u8>> {
     ocr_render_pages_checked(pages, format, pdfa).ok()
 }
@@ -3565,12 +3576,28 @@ pub fn ocr_render_pages_checked(
 /// Images and text scale together from page pixels to these physical PDF sizes.
 /// One inch is 72 points. Existing input structs and C struct layouts are unchanged.
 /// NUL-containing text/paths and invalid coordinates fail rather than disappearing.
-/// Requires a matching native library; archival/PDF-A output is unsupported.
+/// Requires a matching native library. PDF/A requests select PDF/A-2b. The
+/// compatibility default rejects bidirectional text; use the options variant
+/// to explicitly enable Unicode 17 visual layout from logical OCR text.
 pub fn ocr_render_pages_checked_with_sizes(
     pages: &[OcrRenderPageInput],
     format: &str,
     pdfa: bool,
     sizes: Option<&[(f32, f32)]>,
+) -> Result<Vec<u8>, String> {
+    ocr_render_pages_checked_with_options(pages, format, pdfa, sizes, false)
+}
+
+/// Checked document rendering with explicit Unicode bidirectional PDF layout.
+/// `bidi` resolves paragraph direction, mixed scripts, numbers and isolates;
+/// region-level geometry is estimated, while source page images are preserved.
+/// `pdfa` requests PDF/A-2b, not PDF/UA or recovered editable typography.
+pub fn ocr_render_pages_checked_with_options(
+    pages: &[OcrRenderPageInput],
+    format: &str,
+    pdfa: bool,
+    sizes: Option<&[(f32, f32)]>,
+    bidi: bool,
 ) -> Result<Vec<u8>, String> {
     if let Some(sizes) = sizes {
         if sizes.len() != pages.len()
@@ -3607,9 +3634,11 @@ pub fn ocr_render_pages_checked_with_sizes(
     if r.is_null() {
         return Err("Could not allocate OCR renderer".to_string());
     }
-    // Retained flag fails explicitly in a matching native renderer.
     if pdfa {
         unsafe { crispembed_sys::ocr_render_set_pdfa(r, 1) };
+    }
+    if bidi {
+        unsafe { crispembed_sys::ocr_render_set_pdf_bidi(r, 1) };
     }
     unsafe { crispembed_sys::ocr_render_begin(r) };
 

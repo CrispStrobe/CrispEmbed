@@ -1,0 +1,11 @@
+
+running 6 tests
+test tests::desktop_cross_targets_require_an_explicit_target_library ... ok
+test tests::android_links_only_the_supplied_shared_closure ... ok
+test tests::ios_device_and_simulators_link_complete_static_closure ... ok
+test tests::mobile_never_uses_host_fallback_even_when_host_equals_target ... ok
+test tests::native_desktop_keeps_existing_fallback_and_cpp_runtime ... ok
+test tests::unknown_cross_targets_and_incomplete_cargo_environment_fail_clearly ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

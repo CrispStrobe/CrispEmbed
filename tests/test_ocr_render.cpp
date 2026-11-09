@@ -175,7 +175,7 @@ static void test_pdf_renderer() {
     check("has Unicode map", pdf.find("/ToUnicode") != std::string::npos);
     check("has embedded font", pdf.find("/FontFile2") != std::string::npos);
     check("no renderer error", ocr_render_error(r) == nullptr);
-    check("PDF capabilities are explicit", crispembed_ocr_render_capabilities() == 7);
+    check("PDF capabilities are explicit", crispembed_ocr_render_capabilities() == 31);
 
     ocr_render_free(r);
 }
@@ -221,8 +221,11 @@ static void test_render_failures_and_long_text() {
     ocr_render_begin(renderer);
     ocr_render_add_page(renderer, &page);
     ocr_render_end(renderer);
-    check("unsupported archival mode fails explicitly", ocr_render_error(renderer) != nullptr);
-    check("failed renderer has no partial output", ocr_render_output_size(renderer) == 0);
+    check("archival mode produces a complete document",
+          ocr_render_error(renderer) == nullptr && ocr_render_output_size(renderer) > 0);
+    const std::string archival(ocr_render_output(renderer), size_t(ocr_render_output_size(renderer)));
+    check("archival profile is explicit", archival.find("pdfaid:conformance=\"B\"") != std::string::npos &&
+                                              archival.find("pdfaid:part=\"2\"") != std::string::npos);
     ocr_render_set_pdfa(renderer, 0);
     ocr_render_begin(renderer);
     page.image_path = "missing-ocr-render-test-image.png";

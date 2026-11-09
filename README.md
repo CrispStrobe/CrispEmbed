@@ -676,15 +676,19 @@ submodule, not the vendored copy. `build.rs` looks for a prebuilt library
 first and only resolves sources if it actually has to compile them. (Between
 `a3156a2a` and v0.17.0 it resolved sources unconditionally, so this documented
 workflow failed with *"crispembed sources not found"* even with a valid
-`CRISPEMBED_SYS_LIB_DIR`; `rust-crates.yml` now regression-tests it.) If the
-variable points somewhere without a library, build.rs emits a `cargo:warning`
-and falls back rather than failing silently.
+`CRISPEMBED_SYS_LIB_DIR`; `rust-crates.yml` now regression-tests it.) On native
+desktop targets, an unusable directory emits a `cargo:warning` and falls back.
+Mobile and other cross targets require an explicit target prebuilt directory
+and fail before host discovery or CMake. iOS uses a complete merged static
+archive; Android uses a verified shared-library closure. See the
+[mobile Rust link contract](docs/rust-mobile-prebuilt.md).
 
 The release tarballs ship `libcrispembed` alongside separate `libggml*`
 libraries, so with this path all of them have to travel with your binary — the
 from-source default produces just the one. Release assets exist for linux
 x86_64/arm64, macOS arm64, Windows x86_64 (plus CUDA/Vulkan variants), Android
-and iOS; other targets (including x86_64 macOS) use the source build.
+and iOS; other native desktop targets (including x86_64 macOS) can use the
+source build. Cross builds require a separately prepared target library.
 
 GPU backends are cargo features: `metal`, `cuda`, `vulkan`.
 

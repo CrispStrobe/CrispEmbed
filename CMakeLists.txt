@@ -393,6 +393,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set_property(SOURCE src/qwen35_graph_decoder.cpp APPEND PROPERTY COMPILE_OPTIONS -ffp-contract=off)
 endif()
 list(APPEND CRISPEMBED_SOURCES src/scan_cleanup.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ocr_photo.cpp)
 list(APPEND CRISPEMBED_SOURCES src/nafnet_denoise.cpp)
 list(APPEND CRISPEMBED_SOURCES src/text_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tbsrn_sr.cpp)
@@ -433,6 +434,14 @@ list(APPEND CRISPEMBED_SOURCES src/morph_fast.cpp)
 list(APPEND CRISPEMBED_SOURCES src/cc_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/classical_preproc.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_render.cpp)
+# Compile the pinned Unicode bidi implementation into our existing archives.
+# Keeping it in CRISPEMBED_SOURCES also closes mobile static/shared link graphs.
+list(APPEND CRISPEMBED_SOURCES vendor/sheenbidi/Source/SheenBidi.c)
+set_source_files_properties(vendor/sheenbidi/Source/SheenBidi.c PROPERTIES
+    COMPILE_DEFINITIONS SB_CONFIG_UNITY
+    INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/vendor/sheenbidi/Headers;${CMAKE_CURRENT_SOURCE_DIR}/vendor/sheenbidi/Source")
+set_source_files_properties(src/ocr_render.cpp PROPERTIES
+    INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/vendor/sheenbidi/Headers")
 list(APPEND CRISPEMBED_SOURCES src/dewarp.cpp)
 list(APPEND CRISPEMBED_SOURCES src/kie_pipeline.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lilt_kie.cpp)
@@ -740,6 +749,9 @@ target_link_libraries(test-ocr-geometry PRIVATE crispembed)
 
 add_executable(test-ocr-crop tests/test_ocr_crop.cpp)
 target_link_libraries(test-ocr-crop PRIVATE crispembed)
+
+add_executable(test-ocr-photo tests/test_ocr_photo.cpp)
+target_link_libraries(test-ocr-photo PRIVATE crispembed)
 
 add_executable(test-ocr-detect-diff tests/test_ocr_detect_diff.cpp)
 target_link_libraries(test-ocr-detect-diff PRIVATE crispembed)
@@ -1482,7 +1494,7 @@ if(CRISPEMBED_BUILD_SHARED)
         OUTPUT_NAME   crispembed
         VERSION       ${PROJECT_VERSION}
         SOVERSION     ${CRISPEMBED_SOVERSION}
-        PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/src/crispembed.h;${CMAKE_CURRENT_SOURCE_DIR}/src/moedern_text_api.h"
+        PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/src/crispembed.h;${CMAKE_CURRENT_SOURCE_DIR}/src/moedern_text_api.h;${CMAKE_CURRENT_SOURCE_DIR}/src/ocr_render.h"
         # Sibling-resolved RPATH so a release tarball is self-contained.
         # Build-tree RPATH preserved so dev iteration works without install.
         BUILD_WITH_INSTALL_RPATH FALSE
@@ -1552,9 +1564,15 @@ install(FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
     ${CMAKE_CURRENT_SOURCE_DIR}/NOTICE.teleocr
     ${CMAKE_CURRENT_SOURCE_DIR}/NOTICE.marker
+    ${CMAKE_CURRENT_SOURCE_DIR}/NOTICE.sheenbidi
     ${CMAKE_CURRENT_SOURCE_DIR}/licenses/oxr-LICENSE
     ${CMAKE_CURRENT_SOURCE_DIR}/licenses/oxr-NOTICE
     DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
+    COMPONENT licenses
+)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/vendor/sheenbidi/LICENSE
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
+    RENAME SheenBidi-LICENSE.txt
     COMPONENT licenses
 )
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/models/licenses/apache-2.0/LICENSE

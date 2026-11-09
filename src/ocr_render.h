@@ -76,9 +76,11 @@ typedef enum ocr_render_capability {
     OCR_RENDER_CAP_UNICODE = 2,
     OCR_RENDER_CAP_RASTER_IMAGES = 4,
     OCR_RENDER_CAP_ARCHIVAL = 8,
+    OCR_RENDER_CAP_BIDI = 16,
 } ocr_render_capability;
 
-/// No model load required. Archival conformance is currently unsupported.
+/// No model load required. ARCHIVAL declares PDF/A-2b; BIDI declares the
+/// explicit Unicode 17 bidirectional layout option below.
 CRISPEMBED_API uint32_t crispembed_ocr_render_capabilities(void);
 
 /// Create a renderer for the given format.
@@ -87,10 +89,17 @@ CRISPEMBED_API ocr_renderer * ocr_render_create(ocr_render_format format);
 /// Set the page separator for plain text output (default: "\f").
 CRISPEMBED_API void ocr_render_set_separator(ocr_renderer * r, const char * sep);
 
-/// Retained for ABI compatibility. Requesting PDF/A currently fails explicitly:
-/// no output is produced and ocr_render_error() explains the unsupported mode.
+/// Request PDF/A-2b: embedded sRGB output intent, fonts and XMP identification.
+/// Use the binary-safe output-size API for archival documents, including those
+/// without page images. This does not claim PDF/UA or recovered typography.
 /// Must be called before ocr_render_begin(). Only affects PDF format.
 CRISPEMBED_API void ocr_render_set_pdfa(ocr_renderer * r, int enabled);
+
+/// Opt into Unicode 17 bidirectional layout for the invisible PDF text layer.
+/// Text supplied by callers must be in logical reading order. Visual positions
+/// are estimated inside each OCR region; page images are never repainted.
+/// The legacy default rejects RTL scripts/directional controls. Set before begin.
+CRISPEMBED_API void ocr_render_set_pdf_bidi(ocr_renderer * r, int enabled);
 
 /// Begin a document.
 CRISPEMBED_API void ocr_render_begin(ocr_renderer * r);

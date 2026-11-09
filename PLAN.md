@@ -1,5 +1,94 @@
 # CrispEmbed plan — open work (updated 7 November 2026)
 
+## Phone-photo geometry — 9 November 2026
+
+Owner lane: `feat/ocr-photo-preprocessing`, based on
+`0b84869ba81e3ddd67605b54ab2a71312e9bd131`, paired with CrispSorter's
+`feat/ocr-document-studio` application lane. Preserve the immutable app
+dependency and existing inference defaults. Two independent opt-in paths cover
+true projective OCR-region rectification and bounded-resolution deskew analysis;
+the final deskew rotation keeps the source pixel resolution.
+
+Local independent analytic geometry, 24 corner orders, disabled-gate byte and
+malformed-input controls pass. The paired five-case synthetic camera/skew/shadow
+panel passes actual downstream OCR CER/WER after applying the existing background
+whitening to shadowed deskew outputs. Keep the initial deskew-only failure receipt;
+rotation alone can worsen OCR on unevenly lit photos. See [the measured protocol](docs/ocr-phone-photo.md).
+
+The dedicated hosted native run
+[42577017175](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42577017175)
+at head `03a862a4` passed actual geometry, ASan/UBSan and the five text cases;
+its original images/report and summary receipt remain preserved.
+
+Continuation merges main `e4ee71937a68f1ff9d28f4d7cdbd66bda68ba05a` and adds
+explicit length-checked photo C APIs plus `CrispScanPhoto` Rust ownership.
+These opt-in calls expose measured correction, manual rotation and labelled
+projective corners without changing a process-global environment variable.
+The original inference gates remain independent. New public C/Rust controls and
+actual downstream-text arms are wired into the same hosted workflow; their
+execution passed in [42590335637](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335637)
+at the tree of `fde19180`. The [review receipt](tests/results/ocr-phone-photo/hosted-contract-review-fde19180.json)
+retains the complete text report, explicit API/blank controls and three Rust
+wrapper results. The app must pair matching native code and Rust bindings.
+
+Pending: rerun after workflow failure-propagation hardening, representative real phone captures,
+every native recognition model, and a separate decision on default promotion.
+No new model, alias, release or dependency pin.
+
+## Mobile Rust prebuilt closure — 9 November 2026
+
+Owner lane: `feat/ocr-photo-preprocessing`, paired with CrispSorter's mobile
+OCR source work. The previous Rust build script always linked a shared library
+and could select host build output when Cargo targeted a phone. The explicit
+target policy now accepts a complete iOS merged archive with its platform
+frameworks and a verified Android shared-library closure. Mobile and other
+cross targets require an explicit `CRISPEMBED_SYS_LIB_DIR`; native desktop
+discovery/fallback remains unchanged. See [the contract](docs/rust-mobile-prebuilt.md).
+
+Hosted run [42590335633](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335633)
+passes six pure policy and four actual build-script configuration controls at
+the tree of `fde19180`; reports are retained in the [review receipt](tests/results/ocr-phone-photo/hosted-contract-review-fde19180.json).
+Pending: rerun after workflow failure-propagation hardening, same-source iOS/Android producer and actual
+Rust/application cross links, packaging and device execution. Configuration
+placeholder files do not qualify native binaries. This lane changes no release,
+model, inference default or existing immutable consumer pin.
+
+## App-owned model provisioning metadata — 9 November 2026
+
+Owner lane: `feat/ocr-photo-preprocessing`, paired with the mobile consumer.
+Additive fixed-v1 C metadata and owned Rust accessors expose exact registered
+URLs, filenames, optional SHA-256 pins, license requirements and companions.
+They perform no cache access, networking, license acceptance or global mutation.
+This supports an app-owned mobile installer while preserving the legacy resolver.
+See [the API and installer contract](docs/model-download-metadata.md).
+
+Initial hosted run [42590335645](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335645)
+passes four Rust wrapper controls but its C and sanitizer processes abort on an
+incorrect HTTPS-only assumption for existing local-only entries. Its green
+status was masked by a pipeline without pipefail. The original failed log and
+empty reports remain in the [review receipt](tests/results/ocr-phone-photo/hosted-contract-review-fde19180.json).
+Correct the local-only test contract and propagate piped failures in all three
+focused workflows. Pending: corrected hosted C/sanitizer/wrapper results and the consumer's pinned streaming/atomic install,
+cancellation/recovery, mobile linking and device execution gates. No URL, pin,
+registry model, release or inference default is changed.
+
+## Reviewed PDF conformance — 9 November 2026
+
+Owner lane: `feat/ocr-reviewed-pdf-conformance`, based on `f2a0fec94` including
+the external metadata-test formatting correction. Add opt-in Unicode 17 bidi
+layout and genuine PDF/A-2b resources without changing legacy C structures or
+inference defaults. The explicit per-renderer bidi switch keeps the original
+rejecting path available; PDF/A remains an explicit export request.
+
+Implemented source: pinned Apache-2.0 SheenBidi, embedded generated sRGB output
+intent, synchronized XMP, PDF file IDs, native/Rust options, and independent
+artifact/negative-control gates. Initial hosted verification is pending.
+Acceptance requires unchanged page pixels/sizes, logical mixed-direction copy
+and search, combining marks, independent veraPDF 2b compliance and deliberately
+invalid controls rejected. Exact extracted strings and validator failures are
+retained, including failed attempts. See [the API and validation contract](docs/ocr-reviewed-pdf.md).
+No release asset or consumer production pin is changed by this lane.
+
 ## OCR review workspace integration — 8 November 2026
 
 The separate [CPU BF16 free-generation lane](docs/lighton4b-bf16-freegen.md)

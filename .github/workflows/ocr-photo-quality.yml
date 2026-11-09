@@ -1,0 +1,100 @@
+name: OCR phone-photo geometry
+
+on:
+  push:
+    branches: [main, feat/ocr-photo-preprocessing]
+    paths:
+      - 'src/ocr_crop.*'
+      - 'src/scan_cleanup.*'
+      - 'src/classical_preproc.*'
+      - 'src/morph_fast.*'
+      - 'src/ocr_photo.cpp'
+      - 'src/crispembed.h'
+      - 'crispembed/src/photo.rs'
+      - 'crispembed-sys/src/lib.rs'
+      - 'tests/test_ocr_photo*'
+      - '.github/workflows/ocr-photo-quality.yml'
+  pull_request:
+    paths:
+      - 'src/ocr_crop.*'
+      - 'src/scan_cleanup.*'
+      - 'src/classical_preproc.*'
+      - 'src/morph_fast.*'
+      - 'src/ocr_photo.cpp'
+      - 'src/crispembed.h'
+      - 'crispembed/src/photo.rs'
+      - 'crispembed-sys/src/lib.rs'
+      - 'tests/test_ocr_photo*'
+      - '.github/workflows/ocr-photo-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # Explicit bash enables -o pipefail; tee must not hide a native failure.
+    shell: bash
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phone-photo-quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install independent OCR reader
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y tesseract-ocr fonts-dejavu-core
+          python -m pip install 'Pillow==13.0.0' 'numpy==2.3.5'
+      - name: Build production geometry without model inference
+        run: |
+          mkdir -p build-ocr-photo/artifacts
+          c++ -std=c++17 -O2 -ffunction-sections -fdata-sections -Isrc -Iggml/include \
+            tests/test_ocr_photo.cpp src/ocr_crop.cpp src/scan_cleanup.cpp src/ocr_photo.cpp \
+            src/classical_preproc.cpp src/morph_fast.cpp -Wl,--gc-sections \
+            -o build-ocr-photo/test-ocr-photo
+          git rev-parse HEAD > build-ocr-photo/artifacts/source.txt
+          ./build-ocr-photo/test-ocr-photo self | tee build-ocr-photo/artifacts/geometry.json
+          python tests/test_env_vars_documented.py
+      - name: Check native geometry with address and undefined-behavior sanitizers
+        run: |
+          c++ -std=c++17 -O1 -g -fsanitize=address,undefined -ffunction-sections -fdata-sections \
+            -Isrc -Iggml/include tests/test_ocr_photo.cpp src/ocr_crop.cpp src/scan_cleanup.cpp src/ocr_photo.cpp \
+            src/classical_preproc.cpp src/morph_fast.cpp -Wl,--gc-sections \
+            -o build-ocr-photo/test-ocr-photo-sanitized
+          ./build-ocr-photo/test-ocr-photo-sanitized self
+      - name: Exercise actual safe Rust wrapper against native photo APIs
+        run: |
+          mkdir -p build-ocr-photo/objects
+          for source in ocr_photo ocr_crop scan_cleanup classical_preproc morph_fast; do
+            c++ -std=c++17 -O2 -ffunction-sections -fdata-sections -Isrc -Iggml/include \
+              -c "src/$source.cpp" -o "build-ocr-photo/objects/$source.o"
+          done
+          ar rcs build-ocr-photo/libocr_photo.a build-ocr-photo/objects/*.o
+          rustc --edition=2021 --test tests/test_ocr_photo_rust.rs \
+            -L native=build-ocr-photo -l static=ocr_photo -l dylib=stdc++ \
+            -C link-arg=-Wl,--gc-sections -o build-ocr-photo/test-ocr-photo-rust
+          build-ocr-photo/test-ocr-photo-rust --nocapture | tee build-ocr-photo/artifacts/rust-photo.txt
+      - name: Compare actual OCR on skewed, shadowed and projective text
+        run: |
+          python tests/test_ocr_photo_quality.py \
+            --binary build-ocr-photo/test-ocr-photo \
+            --artifacts build-ocr-photo/artifacts
+      - name: Preserve original images, processed images and quality receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-phone-photo-quality
+          path: build-ocr-photo/artifacts
+          if-no-files-found: error
+          retention-days: 90

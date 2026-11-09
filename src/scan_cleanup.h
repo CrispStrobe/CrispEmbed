@@ -78,7 +78,16 @@ float scan_cleanup_detect_angle(const float * gray, int w, int h, float max_angl
 //   - both detectors agree (within 1°)  → the Hough angle;
 //   - they conflict                     → 0.0 (no spurious rotation);
 //   - only one has a usable estimate    → that estimate, confidence-gated.
+// CRISPEMBED_SCAN_BOUNDED_DESKEW=1 estimates on an area-averaged image whose
+// longest side is at most 1200px. Only analysis is reduced; rotation retains
+// full input resolution. Unset/0 preserve the full-resolution detector.
+// Both detectors return 0 for invalid dimensions or a nonfinite/out-of-range
+// max angle (valid range: (0,45] degrees; dimensions 3..32768, <=64M pixels).
 float scan_cleanup_detect_angle_consensus(const float * gray, int w, int h, float max_angle_deg);
+
+// Explicit bounded RGB/gray analysis, independent of process-global gates.
+// Same detected-skew sign and zero/unknown semantics as the consensus detector.
+float scan_cleanup_detect_angle_rgb_bounded(const uint8_t * pixels, int w, int h, int channels, float max_angle_deg);
 
 // Detect skew on a decoded color/gray uint8 image (channels 1, 3 or 4) via the
 // consensus detector and, when skewed, rotate to correct (bilinear, white

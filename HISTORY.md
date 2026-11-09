@@ -215,6 +215,56 @@ variant, including Q4_K: both exact-mask stills and all four video-pan frames. T
 defect is DBNet mask coverage, not quantization. Q4_K stays published as experimental; the follow-up is
 detector mask coverage/dilation for the first line, not precision.
 
+## 9 November 2026 — reviewed PDF export implementation checkpoint
+
+The isolated `feat/ocr-reviewed-pdf-conformance` lane adds an explicit native
+and Rust Unicode bidi option and PDF/A-2b resources to reviewed exports. The
+existing image/text renderer and compatibility default remain available for
+comparison. The pinned Unicode engine compiles into the same native archive.
+Hosted independent extraction, image-preservation and veraPDF validation are
+pending at this checkpoint; no conformance pass or release is claimed. The
+[contract](docs/ocr-reviewed-pdf.md) documents resources, options and gates.
+
+## 9 November 2026 — explicit photo and mobile contract review
+
+At `fde19180`, [photo run 42590335637](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335637)
+passes actual public C geometry/blank controls, direct ASan/UBSan, three safe Rust
+wrapper tests and five synthetic downstream OCR cases. The PR merge source has
+the exact same tree as the feature head. [Prebuilt run 42590335633](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335633)
+passes six policy and four real build-script configuration tests; these use
+placeholder libraries and do not qualify a mobile binary.
+
+The [metadata run 42590335645](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335645)
+is a false green: both C and sanitizer processes abort because their test
+incorrectly requires HTTPS URLs for existing local-conversion entries. `tee`
+masks the failures; both JSON artifacts are empty. Four actual Rust wrapper
+tests pass separately. The correction preserves truthful empty URL/no-pin
+metadata, checks that case explicitly, retains downloadable HTTPS/pin checks,
+and enables pipeline failure propagation in the three focused workflows.
+Corrected hosted execution remains pending. The complete quality report, all
+negative measurements, original failed job log and checksummed artifacts are
+retained in [the review receipt](tests/results/ocr-phone-photo/hosted-contract-review-fde19180.json).
+No runtime code, registry entry, model pin, default or release changes.
+
+## 9 November 2026 — opt-in phone-photo geometry
+
+`feat/ocr-photo-preprocessing` adds true projective OCR-region crops and bounded
+deskew analysis while keeping defaults stable. Independent coordinate-ramp error
+falls from 11.1119 to 0.283081 in 8-bit units; all 24 corner permutations,
+disabled-gate byte controls and malformed-input controls pass. A five-case
+synthetic actual-OCR panel is positive after the declared phone recipe: three
+skewed text cases have CER/WER zero, while perspective/shadow CER is 0.00415.
+The initial deskew-only shadow failures remain retained and reported separately;
+the existing background whitening is required for those cases. See
+[the protocol and limitations](docs/ocr-phone-photo.md) and
+[the source-hashed quality receipt](tests/results/ocr-phone-photo/quality-v1.json).
+Hosted native run
+[42577017175](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42577017175)
+passed geometry, ASan/UBSan and all five actual text cases at `03a862a4`.
+The [run receipt](tests/results/ocr-phone-photo/hosted-42577017175.json) retains
+its immutable source/job/artifact identities. Real-camera/device evidence and
+recognition-model qualification remain separate. No runtime release or default changes.
+
 ## 9 November 2026 — Unlimited-OCR-2 Q4_K_MIX drop attributed
 
 Kaggle CPU bisect: the published Q4_K_MIX scores 0.9634 at the 3 November source and 0.9320 on current main,
