@@ -46,22 +46,20 @@ int main() {
     assert(crispembed_get_model_download_info_v1("ppocrv6-tiny-det", nullptr) == -1);
     assert(crispembed_get_model_download_info_v1("ppocrv6-tiny-det", &info) == 1);
     assert(std::strcmp(info.primary.filename, "PP-OCRv6_tiny_det-f16.gguf") == 0);
-    assert(std::strcmp(info.primary.sha256,
-                       "3b165a16a33b05521a6b374837dad9beff5e8e89164e700b9abe187f9923de50") == 0);
+    assert(std::strcmp(info.primary.sha256, "3b165a16a33b05521a6b374837dad9beff5e8e89164e700b9abe187f9923de50") == 0);
     assert(!info.requires_license_acceptance && !info.has_companion);
     const char * stable_name = info.name;
     const char * stable_pin = info.primary.sha256;
 
     // Unknown, filename, path, substring and different case never fuzzy-match.
-    for (const char * name : { "", "not-a-registered-model", "PP-OCRv6_tiny_det-f16.gguf",
-                              "/tmp/ppocrv6-tiny-det", "ppocrv6", "PPOCRV6-TINY-DET" }) {
+    for (const char * name : { "", "not-a-registered-model", "PP-OCRv6_tiny_det-f16.gguf", "/tmp/ppocrv6-tiny-det",
+                               "ppocrv6", "PPOCRV6-TINY-DET" }) {
         assert(crispembed_get_model_download_info_v1("ppocrv6-tiny-det", &info) == 1);
         assert(crispembed_get_model_download_info_v1(name, &info) == 0);
         assert_empty(info);
     }
     assert(std::strcmp(stable_name, "ppocrv6-tiny-det") == 0);
-    assert(std::strcmp(stable_pin,
-                       "3b165a16a33b05521a6b374837dad9beff5e8e89164e700b9abe187f9923de50") == 0);
+    assert(std::strcmp(stable_pin, "3b165a16a33b05521a6b374837dad9beff5e8e89164e700b9abe187f9923de50") == 0);
 
     // This existing registry entry requires local conversion. Lookup succeeds,
     // but an installer must reject its empty source URL and absent digest.
@@ -95,8 +93,7 @@ int main() {
     assert(crispembed_get_model_download_info_v1("lfm2-vl", &info) == 1);
     assert(info.requires_license_acceptance == 1 && info.has_companion == 1);
     assert(std::strcmp(info.companion.filename, "mmproj-LFM2.5-VL-3B-F16.gguf") == 0);
-    assert(std::strcmp(info.companion.sha256,
-                       "6f912eb9fcef619b31c9afff7662a222da9ce6db89327eb465dbafd2fb6a2d7c") == 0);
+    assert(std::strcmp(info.companion.sha256, "6f912eb9fcef619b31c9afff7662a222da9ce6db89327eb465dbafd2fb6a2d7c") == 0);
     std::printf("{\"registry_entries\":%d,\"companions\":%d,\"local_only\":%d}\n", count, companion_count,
                 local_only_count);
 }
