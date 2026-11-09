@@ -1,0 +1,316 @@
+{
+  "schema": "crispembed-marker-gold-ab-v1",
+  "status": "predeclared-before-image/model-download-or-candidate-output",
+  "frozen_date": "2026-11-09",
+  "purpose": "Evaluate adopted document postprocessing and source-linked retrieval on actual OCR from licensed frozen scans; never claim fresh TeleOCR or general engine qualification.",
+  "corpus": {
+    "path": "docs/ocr-gold-corpus-v1.json",
+    "sha256": "1da42d96eed25aac6215fce60c5bcd05c8a25bbaae710081f4963f4e37fd1ed5",
+    "page_ids": [
+      "en-prose-constitution-13",
+      "de-fraktur-grimm-319",
+      "en-table-climatic-26",
+      "de-antiqua-kafka-schloss-211",
+      "en-form-economic-journal-67",
+      "de-degraded-freiligrath-46",
+      "de-2col-meyers-b13-103",
+      "en-2col-eb1911-v04-246",
+      "en-report-amtrak-23",
+      "de-table-rgbl-1867-403",
+      "de-antiqua-kafka-betrachtung-94",
+      "de-mixed-welzheim-188",
+      "en-old-statutes-v1-772",
+      "en-prose-constitution-81",
+      "en-2col-eb1911-v25-5",
+      "en-register-1775-606",
+      "en-register-1758-16",
+      "en-catalogue-library-11",
+      "en-psm-v2-13",
+      "en-report-delhi-agra-26",
+      "en-nature-1836-12",
+      "en-list-geolsoc-v2-176",
+      "en-list-geolsoc-v2-183",
+      "en-table-cakchiquels-13",
+      "de-2col-gartenlaube-1866-023",
+      "de-2col-gartenlaube-1866-007",
+      "de-2col-gartenlaube-1866-044",
+      "de-table-meyers-b1-168",
+      "de-fraktur-kant-himmel-12",
+      "de-2col-amz-1823-2",
+      "fr-footnote-tableau-france-20",
+      "fr-table-tableau-france-2",
+      "fr-table-hauy-physique-13",
+      "fr-table-sabatier-chimie-7",
+      "fr-footnote-caboul-19",
+      "fr-old-tachard-siam-102",
+      "fr-footnote-vallat-rabelais-13",
+      "fr-footnote-maccarthy-coree-17",
+      "fr-figure-tour-france-117",
+      "fr-footnote-sable-maximes-20",
+      "fr-prose-rabaut-cevenol-20",
+      "fr-prose-dupin-droit-108",
+      "receipt-cord-test-29",
+      "receipt-cord-test-4",
+      "receipt-cord-test-16",
+      "receipt-cord-test-20",
+      "receipt-cord-test-14",
+      "receipt-cord-test-17",
+      "receipt-cord-test-26",
+      "receipt-cord-test-28",
+      "receipt-cord-test-33",
+      "receipt-cord-test-38",
+      "receipt-cord-test-41",
+      "receipt-cord-test-51",
+      "receipt-cord-test-59",
+      "receipt-cord-test-61",
+      "receipt-cord-test-70"
+    ],
+    "page_count": 57,
+    "gold_mutation_allowed": false,
+    "license_source": "docs/ocr-gold-corpus.md",
+    "derived_annotation_limits_retained": true,
+    "image_pin_policy": "Require exact frozen SHA256; up to4 URL/fallback rounds; retain every mismatch; never repin or substitute pages.",
+    "partial_gold_source": "cord-v2"
+  },
+  "runtime": {
+    "native_source_commit": "891ea3d3632c6a3c3155e25b34705da6a02ec807",
+    "native_library_sha256": "decb81ce3f68f30db24cc6eb686f712750e86f68dbd5f9cc6930d65f87210328",
+    "pdfium_package": "pypdfium2==5.10.1",
+    "pdfium_library_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+    "mode": "text",
+    "n_threads": 1,
+    "dpi": 144,
+    "extract_images": false,
+    "include_page_headers": true
+  },
+  "ocr_provider": {
+    "engine": "Tesseract",
+    "version": "5.5.0",
+    "license": "Apache-2.0",
+    "route": "Frozen image -> one fresh sequential Tesseract PDF/text/TSV pass -> native Marker text provider",
+    "psm": 3,
+    "oem": 1,
+    "dpi": 300,
+    "threads": 1,
+    "tessdata_repository": "https://github.com/tesseract-ocr/tessdata_fast",
+    "tessdata_revision": "87416418657359cb625c412a48b6e1d6d41c29bd",
+    "tessdata_license": "Apache-2.0",
+    "languages": {
+      "en": "eng",
+      "fr": "fra",
+      "de_antiqua": "deu",
+      "de_fraktur": "frk+deu",
+      "cord-v2": "eng"
+    },
+    "max_seconds_per_page": 90,
+    "fresh_inference": true
+  },
+  "arms": {
+    "off": {
+      "CRISPEMBED_MARKER_SOURCE_LINKS": "0",
+      "CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE": "0",
+      "CRISPEMBED_MARKER_REFERENCES": "0",
+      "CRISPEMBED_MARKER_REPETITION_CHECK": "0"
+    },
+    "on": {
+      "CRISPEMBED_MARKER_SOURCE_LINKS": "1",
+      "CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE": "1",
+      "CRISPEMBED_MARKER_REFERENCES": "1",
+      "CRISPEMBED_MARKER_REPETITION_CHECK": "1"
+    }
+  },
+  "scoring": {
+    "text_scorer": "tools/kaggle/ocr-real-scans/score.py",
+    "text_scorer_sha256": "9cc12f95544131cfe50e1ad7d91498e6c8560cd4ce2fce1fa63a25dd92edf7bc",
+    "layout_scorer": "tools/ocr-gold-corpus/layout_score.py",
+    "layout_scorer_sha256": "a7fe2233071012a81e32fcc9a15dcb2fd5cd3e6d22a90069942c48662ee887d1",
+    "text": "Report raw whitespace-normalized CER/WER and existing canonical scorer CER/CER-nospace/WER/word-recall/length ratio; never use gold to construct OCR input.",
+    "layout": "Export native leaf blocks in pixel coordinates of the original image; retain table HTML, order and types; existing unchanged scorer.",
+    "partial_gold": "Report CORD full-page CER/WER as descriptive only; annotated-field word recall and table-cell F1 govern its absolute quality.",
+    "off_on_nonregression": {
+      "per_page_canonical_cer_increase_max": 0,
+      "per_page_canonical_wer_increase_max": 0,
+      "per_page_word_recall_decrease_max": 0,
+      "layout_f1_decrease_max": 0,
+      "type_accuracy_decrease_max": 0,
+      "table_content_f1_decrease_max": 0,
+      "matched_reading_order_tau_decrease_max": 0
+    },
+    "absolute_quality_per_page": {
+      "complete_gold_cer_max": 0.1,
+      "complete_gold_wer_max": 0.2,
+      "partial_gold_word_recall_min": 0.9,
+      "block_f1_min": 0.8,
+      "type_accuracy_min": 0.8,
+      "matched_order_tau_min": 0.9,
+      "table_content_f1_min_when_table_gold_exists": 0.8
+    },
+    "structural_requirements": {
+      "source_range_reconstruction": 1.0,
+      "finite_in_bounds_geometry": 1.0,
+      "physical_source_identity": 1.0,
+      "full_text_window_coverage": 1.0
+    },
+    "qualification": "Report coverage, structural validity, nonregression and absolute quality separately. Complete panel qualification requires all57 input pins and every applicable threshold; any miss stays visible. Neutral/no-change arms do not demonstrate quality improvement."
+  },
+  "retrieval": {
+    "model_repository": "cstr/all-MiniLM-L6-v2-GGUF",
+    "revision": "f0673ed53d37dfda08c0407b257440450d816980",
+    "filename": "all-MiniLM-L6-v2-f32.gguf",
+    "sha256": "fc24c0855e67ae851fe043a1b1c09a493fb71d95157a710fa0cbe508bc9f2542",
+    "bytes": 91304064,
+    "license": "Apache-2.0",
+    "base_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "license_source": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2",
+    "backend": "actual CrispEmbed CPU F32, sequential n_threads=1; normalized mean-pooled384d vectors",
+    "query_prompt": "",
+    "document_prompt": "",
+    "documents": "All17 English gold pages; off=existing native leaf text blocks; on=assembled_chunks, with identical deterministic windowing. Do not silently remove failed pages.",
+    "window_max_utf8_bytes": 240,
+    "window_overlap_characters": 32,
+    "truncation": "No truncation: cover all chunk text with bounded windows; at most242 WordPiece tokens including specials.",
+    "ranking": "Cosine dot product; page score=max over its windows; descending score then page ID for ties.",
+    "query_origin": "Independently authored paraphrases of frozen gold before candidate output; one predeclared query for every English page.",
+    "queries": [
+      {
+        "id": "q01",
+        "text": "Why is it difficult to describe a constitution while it is still changing?",
+        "relevant_pages": [
+          "en-prose-constitution-13"
+        ]
+      },
+      {
+        "id": "q02",
+        "text": "How does spring drought affect the red rings of tree growth?",
+        "relevant_pages": [
+          "en-table-climatic-26"
+        ]
+      },
+      {
+        "id": "q03",
+        "text": "Which census schedule asks about households, parents' birthplaces, literacy, and employment?",
+        "relevant_pages": [
+          "en-form-economic-journal-67"
+        ]
+      },
+      {
+        "id": "q04",
+        "text": "What ornamental designs and library interiors appear on historical bookplates?",
+        "relevant_pages": [
+          "en-2col-eb1911-v04-246"
+        ]
+      },
+      {
+        "id": "q05",
+        "text": "What devices help train crews know their location where positive train control is not installed?",
+        "relevant_pages": [
+          "en-report-amtrak-23"
+        ]
+      },
+      {
+        "id": "q06",
+        "text": "When must a ship's master submit an additional cargo report about spirits, wines and teas?",
+        "relevant_pages": [
+          "en-old-statutes-v1-772"
+        ]
+      },
+      {
+        "id": "q07",
+        "text": "How does the cabinet chapter describe the difference between British constitutional theory and actual practice?",
+        "relevant_pages": [
+          "en-prose-constitution-81"
+        ]
+      },
+      {
+        "id": "q08",
+        "text": "Which encyclopaedia contributor writes on sponges and teaches zoology at King's College?",
+        "relevant_pages": [
+          "en-2col-eb1911-v25-5"
+        ]
+      },
+      {
+        "id": "q09",
+        "text": "Which contents list describes the Philadelphia Congress, rights, and Chatham's proposals about America?",
+        "relevant_pages": [
+          "en-register-1775-606"
+        ]
+      },
+      {
+        "id": "q10",
+        "text": "How did uncertain American territorial boundaries and rival claims to Silesia contribute to war?",
+        "relevant_pages": [
+          "en-register-1758-16"
+        ]
+      },
+      {
+        "id": "q11",
+        "text": "Where does the library catalogue list reference books, ethics, and religion?",
+        "relevant_pages": [
+          "en-catalogue-library-11"
+        ]
+      },
+      {
+        "id": "q12",
+        "text": "How can confusing observation with inference distort sociological arguments about marriage and mortality?",
+        "relevant_pages": [
+          "en-psm-v2-13"
+        ]
+      },
+      {
+        "id": "q13",
+        "text": "Where are the two pillars of Asoka near Delhi described?",
+        "relevant_pages": [
+          "en-report-delhi-agra-26"
+        ]
+      },
+      {
+        "id": "q14",
+        "text": "What aim does Emerson assign to science when asking about the purpose of nature?",
+        "relevant_pages": [
+          "en-nature-1836-12"
+        ]
+      },
+      {
+        "id": "q15",
+        "text": "What sequence of English strata includes Bagshot sand, London clay, chalk and Portland oolite?",
+        "relevant_pages": [
+          "en-list-geolsoc-v2-176"
+        ]
+      },
+      {
+        "id": "q16",
+        "text": "Where can alternating freshwater and marine formations be seen in the Isle of Wight?",
+        "relevant_pages": [
+          "en-list-geolsoc-v2-183"
+        ]
+      },
+      {
+        "id": "q17",
+        "text": "Which contents page lists Cakchiquel timekeeping, family names, language and the Annals of Xahila?",
+        "relevant_pages": [
+          "en-table-cakchiquels-13"
+        ]
+      }
+    ],
+    "absolute_recall_at_3_min": 0.9,
+    "absolute_mrr_min": 0.75,
+    "nonregression": "Each query reciprocal rank, aggregate MRR and Recall@3 may not decrease; retain all full score matrices and misses.",
+    "quality_scope": "English17page corpus only; no multilingual embedding or general retrieval claim."
+  },
+  "resources": {
+    "max_concurrent_inference": 1,
+    "omp_threads": 1,
+    "working_rss_budget_bytes": 4294967296,
+    "local_disk_budget_bytes": 2147483648,
+    "max_download_bytes_per_file": 268435456,
+    "no_teleocr_weights_download": true,
+    "restricted_model_acknowledgements": "No restricted model needed; do not set a restricted-model acknowledgement for this lane.",
+    "runtime_metrics": "Record per-page wall times, child peak RSS, feature processing wall times, generated artifact sizes and retrieval encoding wall/RSS."
+  },
+  "limits": [
+    "The gold has derived and partly unreviewed layout annotations; report provenance strata and avoid claiming independent manual box qualification.",
+    "Corpus pages are independent; do not manufacture adjacency across unrelated/missing pages or claim real cross-page continuation coverage.",
+    "Tesseract quality is a new explicit provider lane, not native TeleOCR execution or original-model parity.",
+    "Retained TeleOCR OCR output replay, if added, is separately identified and never counted as fresh inference."
+  ]
+}

@@ -27,6 +27,35 @@ to this feature work and does not change the repository-wide guidance.
 - [ ] Record executed hosted results for the final integrated source, preserving
   initial failures and superseded/cancelled runs separately.
 
+## Gap closure continuation
+
+The owner asked to close the remaining gaps on 9 November. Continue bounded
+local work while reading already-completed platform jobs; an aggregate queued
+workflow does not mean every matrix job is queued. Keep fixes and executed
+evidence in separate, incrementally pushed checkpoints.
+
+- [x] Freeze the [57-page OCR and 17-query retrieval protocol](../tests/regression/marker/pdf-craft-corpus-v1.json)
+  before downloading model/image inputs or producing candidate outputs. It pins
+  the existing licensed corpus, scorers, actual native engine, PDFium, Tesseract
+  language data and permissive MiniLM model. Report structural validity,
+  non-regression and absolute quality separately; retain every failed threshold.
+- [ ] Execute the frozen protocol with fresh Tesseract OCR, real native Marker
+  processing and real native MiniLM embeddings; do not imply fresh TeleOCR
+  execution or use retained OCR output as fresh inference.
+- [ ] Preserve exact Windows/macOS/iOS job results and source identities.
+- [ ] Exercise an actual retained Flutter archive with all nine notice copies,
+  full SDK validation and an installed Linux Flutter consumer.
+- [ ] Verify CocoaPods path-install resources with actual macOS/iOS consumers.
+- [ ] Close native dependency and license-notice omissions found by package
+  consumers; verify development artifacts as well as release archive recipes.
+- [ ] Install a locally built Python wheel with the complete native dependency
+  closure and load it outside the checkout without a build-tree library path.
+
+The frozen OCR route deliberately uses an Apache-2.0 engine and model. Its
+quality result is scoped to that provider and the named corpus, including the
+existing partial CORD gold and derived layout limitations. Model-free contract
+coverage and unchanged output alone cannot qualify OCR or retrieval quality.
+
 ## 1. Native noncommercial model admission
 
 Owner: model admission lane. Independent of document artifact work.
