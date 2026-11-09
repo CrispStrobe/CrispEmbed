@@ -116,6 +116,16 @@ def main():
         venv = work / "consumer-venv"
         run("create-venv", [sys.executable, "-m", "venv", "--system-site-packages", "--without-pip", str(venv)])
         consumer_python = venv / "bin/python"
+        # CI installs numpy/pypdfium2 with `pip --user` when the system
+        # site-packages is read-only; neither --system-site-packages nor the
+        # consumer's `python -I` exposes the user site. Point the venv at the
+        # directories the host actually imports them from (appended after the
+        # venv's own site-packages, so the installed wheel still wins).
+        host_dirs = sorted({str(Path(__import__(name).__file__).resolve().parent.parent)
+                            for name in ("numpy", "pypdfium2")})
+        consumer_site = next((venv / "lib").glob("python*/site-packages"))
+        (consumer_site / "host-dependencies.pth").write_text("\n".join(host_dirs) + "\n", encoding="utf-8")
+        receipt["environment"]["host_dependency_dirs"] = host_dirs
         run("install-wheel", [sys.executable, "-m", "pip", "--python", str(consumer_python), "install",
                               "--no-index", "--no-deps", str(wheel)])
         consumer = work / "consumer"
