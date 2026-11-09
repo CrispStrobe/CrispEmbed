@@ -2,6 +2,13 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 9 November 2026 — DBNet text-mask fix approved by owner (issue 71)
+
+Owner re-reviewed the street/DBNet case after PR #197 (both subtitle lines covered in all five variants,
+Q4_K 0.956 vs F32) and accepted it, including the wider mask that also erases faint signage. The
+undilated-score default for `--mask-from-text` stands; no subtitle-band default is added
+(`--mask-region` remains the opt-in for subtitle-only runs).
+
 ## 9 November 2026 — DBNet text-mask first line fixed (issue 71)
 
 Root cause of the owner-review miss: the DB post-processor averaged each component's probability over its
