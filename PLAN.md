@@ -99,6 +99,28 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 
 **LightOn4B observed table/Arabic report review:** [independent report review](docs/lighton4b-composed-calibration-independent-review.md) preserves worker source `a03412aeb`, raw report SHA and filtered [receipt](tests/results/lighton4b-composed-calibration-review-2026-11-07.json). Source-feature and pixels-only arms match merged bytes, complete recorded rows/stages, IDs and EOS for both cases. Arabic meets its upstream frozen floor; the table misses it by one character edit (349 versus 348), with 97 word edits in both. Actual raw payloads were not independently rehashed. Keep both vision gates default off and preserve the negative; held-out and broader quality qualification remain.
 
+LightOn4B reference dependency repair is isolated on
+`fix/lighton4b-reference-dependencies-20261104`, based on PR143 head
+`52caee899795a724b9e7e1e59a3e0d641af65586`. Original
+[41920791609](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41920791609)
+failed during installation because `tokenizers==0.23.0` was unavailable, before
+meta construction or inference. Transformers 5.5.4 declares `tokenizers>=0.22.0,<=0.23.0`;
+the separate repair pins available 0.22.2 and retains pip resolution and check evidence.
+Initial repair [41923465295](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41923465295)
+failed its model-free control because the runtime version guard still named 0.23.0;
+no reference job ran. Both pins now agree at `52275dd1f` and the independently
+dispatched [41923599391](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41923599391)
+passed meta construction and pip check but failed all four synthetic cases: 6/208
+stages failed, first at `full_prefix.delta.output` in each case; all named native
+controls passed. Maximum absolute errors there were 0.00025432, 0.00334059,
+0.00379243 and 0.00447881, against original maxima 0.0132631, 0.0190049,
+0.00751887 and 0.00889725 respectively. Two final-state comparisons also fail
+(maximum errors 0.02074295 and 0.03019165). Small-report extraction
+[41924176587](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41924176587)
+retains the reviewed reports; the large original artifact remains remote. Diagnose
+the full-prefix recurrence and frozen inputs before changing thresholds or gates.
+Conversion, GGUF readback, native full-model inference and decoded quality remain open.
+
 | Lane | State | Next action | Done when |
 |---|---|---|---|
 | OCR model gaps / LightOnOCR-3-4B (`feat/ocr-next-models-20261104`, [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143)) | Main `17c96639`/PR141 evidence is integrated; all seven workflows pass at `91b24764`. Explicit converter has 16 passing export controls at `aa661568` (333 total); its inline workflow-contract regression is repaired. [Default-off grouped-head APIs and pinned original/meta protocols](docs/lightonocr3-4b.md#default-off-grouped-head-component-and-hosted-reference) are implemented | Review hosted meta construction, 208 original/native component stages and cache controls, plus combined regression CI. Then add bounded vocabulary projection and explicit larger-model ownership | Native support remains false until complete original/native F32/F16 and document evidence, followed by separate precision/publication gates |
