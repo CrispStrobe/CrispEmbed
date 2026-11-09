@@ -1,0 +1,76 @@
+{
+  "schema": "lighton4b-q6-frozen-provisional-panel/v1",
+  "status": "complete-negative",
+  "qualified": false,
+  "source_sha": "52e1cfcec5b515b4f4483fbeb86817250868f1f4",
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "cases": [
+    {
+      "case": "historical-receipt",
+      "source_ids": 465,
+      "corrected_ids": 468,
+      "eos": true,
+      "corrected_character_edits": 25,
+      "source_character_edits": 24,
+      "character_count": 768,
+      "corrected_word_edits": 19,
+      "source_word_edits": 18,
+      "word_count": 144,
+      "source_floor_met": false,
+      "receipt_sha256": "243bb2f8c9fbf8ed8f19d6b0df48bb8ecc42f4fa66744c02ee59609a419e96eb",
+      "raw_audit_sha256": "9895cd92a3c09953e06ea84ae617c75a1ac0c3628587ad3a0b0a34822bb02305"
+    },
+    {
+      "case": "two-column-page",
+      "source_ids": 654,
+      "corrected_ids": 660,
+      "eos": true,
+      "corrected_character_edits": 297,
+      "source_character_edits": 526,
+      "character_count": 2981,
+      "corrected_word_edits": 87,
+      "source_word_edits": 146,
+      "word_count": 556,
+      "source_floor_met": true,
+      "receipt_sha256": "e3fb9b5b8dddcbed51678c27d203fbc2bfec645966e94f846fd31f956c84f9a3",
+      "raw_audit_sha256": "783513b1689428c6e6ae7c316b121f7e1037d57edf7374a5dd9d260420cead48",
+      "rights": "Recognized text/token IDs/full model report private; metrics and hashes only."
+    },
+    {
+      "case": "inventory-table",
+      "source_ids": 248,
+      "corrected_ids": 248,
+      "eos": true,
+      "corrected_character_edits": 0,
+      "source_character_edits": 0,
+      "character_count": 165,
+      "corrected_word_edits": 0,
+      "source_word_edits": 0,
+      "word_count": 32,
+      "literal_cells_exact": 15,
+      "source_floor_met": true,
+      "receipt_sha256": "4fa06de38118bd5b007fda809ad4f8602e8653961816757de21d563592689db9",
+      "raw_audit_sha256": "64987b2e350a645cb5289bfe51f7ea54afcacc3790bb4fea49f352bfad60a9fc"
+    }
+  ],
+  "raw_integrity": {
+    "files": 1398,
+    "bytes": 7439126325,
+    "rows": 5168,
+    "repeated_observed_control_rows": 1002,
+    "actual_case_rows": 4166,
+    "all_sha_finite_argmax": true
+  },
+  "all_input_seals_and_old_baselines_closed": true,
+  "corrected_pixels_sourcefeature_all_rows_text_identical": true,
+  "actual_merged_upstream_byte_exact": true,
+  "new_upstream_forward": false,
+  "selection_tuned": false,
+  "reference_limits": [
+    "Earlier assistant labels are provisional, not expert ground truth.",
+    "Already observed fixed regression cases, not blind or representative qualification.",
+    "Source historical OFF/ON full-response neutrality and ON raw rows reused; OFF full-vocabulary rows unavailable.",
+    "Receipt failure cannot be waived by other cases or aggregate scores.",
+    "First-score differences remain; no numerical parity or speed qualification."
+  ]
+}

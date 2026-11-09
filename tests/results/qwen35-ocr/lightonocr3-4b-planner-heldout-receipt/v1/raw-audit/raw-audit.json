@@ -1,0 +1,379 @@
+{
+  "paired_native_layers": {
+    "scope": "Native previous-corrected OFF versus planner ON; actual upstream decoder hidden states are unavailable for these cases.",
+    "first_different_layer": 0,
+    "layers": [
+      {
+        "layer": 0,
+        "bit_exact": false,
+        "rms": 2.429225688620959e-05,
+        "max_abs": 0.0010544508695602417,
+        "before_rms_magnitude": 0.1909299018591492,
+        "after_rms_magnitude": 0.19092990244289695,
+        "before_max_abs": 12.607844352722168,
+        "after_max_abs": 12.607844352722168
+      },
+      {
+        "layer": 1,
+        "bit_exact": false,
+        "rms": 0.0005143409947098857,
+        "max_abs": 0.01346445083618164,
+        "before_rms_magnitude": 0.18823282088149818,
+        "after_rms_magnitude": 0.18823216462812986,
+        "before_max_abs": 14.58933162689209,
+        "after_max_abs": 14.59209156036377
+      },
+      {
+        "layer": 2,
+        "bit_exact": false,
+        "rms": 0.0012492117811182997,
+        "max_abs": 0.04100048542022705,
+        "before_rms_magnitude": 0.17538140744029057,
+        "after_rms_magnitude": 0.17538351663923443,
+        "before_max_abs": 12.960771560668945,
+        "after_max_abs": 12.964311599731445
+      },
+      {
+        "layer": 3,
+        "bit_exact": false,
+        "rms": 0.0017576580582461267,
+        "max_abs": 0.050255775451660156,
+        "before_rms_magnitude": 0.19321593047206648,
+        "after_rms_magnitude": 0.19320744279995827,
+        "before_max_abs": 14.159379005432129,
+        "after_max_abs": 14.162435531616211
+      },
+      {
+        "layer": 4,
+        "bit_exact": false,
+        "rms": 0.00224101547375166,
+        "max_abs": 0.050675392150878906,
+        "before_rms_magnitude": 0.20333894898283325,
+        "after_rms_magnitude": 0.20332779603037443,
+        "before_max_abs": 13.582056045532227,
+        "after_max_abs": 13.58910846710205
+      },
+      {
+        "layer": 5,
+        "bit_exact": false,
+        "rms": 0.0027997221100894516,
+        "max_abs": 0.08170008659362793,
+        "before_rms_magnitude": 0.20643981725994895,
+        "after_rms_magnitude": 0.20641894566736763,
+        "before_max_abs": 11.15120792388916,
+        "after_max_abs": 11.176758766174316
+      },
+      {
+        "layer": 6,
+        "bit_exact": false,
+        "rms": 0.003694996168717402,
+        "max_abs": 0.08773589134216309,
+        "before_rms_magnitude": 0.22480754147872192,
+        "after_rms_magnitude": 0.2247784833225235,
+        "before_max_abs": 29.575843811035156,
+        "after_max_abs": 29.594898223876953
+      },
+      {
+        "layer": 7,
+        "bit_exact": false,
+        "rms": 0.004159210515409606,
+        "max_abs": 0.1126248836517334,
+        "before_rms_magnitude": 0.22475856218625304,
+        "after_rms_magnitude": 0.22471979758526478,
+        "before_max_abs": 27.249019622802734,
+        "after_max_abs": 27.284122467041016
+      },
+      {
+        "layer": 8,
+        "bit_exact": false,
+        "rms": 0.004405771562924721,
+        "max_abs": 0.1308574676513672,
+        "before_rms_magnitude": 0.22762103833051042,
+        "after_rms_magnitude": 0.2275752480721835,
+        "before_max_abs": 27.076738357543945,
+        "after_max_abs": 27.112382888793945
+      },
+      {
+        "layer": 9,
+        "bit_exact": false,
+        "rms": 0.004719139416928821,
+        "max_abs": 0.11197376251220703,
+        "before_rms_magnitude": 0.23067213374006285,
+        "after_rms_magnitude": 0.23064453068597102,
+        "before_max_abs": 26.945594787597656,
+        "after_max_abs": 26.98343276977539
+      },
+      {
+        "layer": 10,
+        "bit_exact": false,
+        "rms": 0.005129503954908167,
+        "max_abs": 0.16074419021606445,
+        "before_rms_magnitude": 0.23630676923867483,
+        "after_rms_magnitude": 0.23623339013815553,
+        "before_max_abs": 32.61761474609375,
+        "after_max_abs": 32.61369323730469
+      },
+      {
+        "layer": 11,
+        "bit_exact": false,
+        "rms": 0.005746035987432684,
+        "max_abs": 0.16206836700439453,
+        "before_rms_magnitude": 0.24275002556050648,
+        "after_rms_magnitude": 0.2427206159355297,
+        "before_max_abs": 31.562484741210938,
+        "after_max_abs": 31.55906105041504
+      },
+      {
+        "layer": 12,
+        "bit_exact": false,
+        "rms": 0.005796382268883138,
+        "max_abs": 0.13470745086669922,
+        "before_rms_magnitude": 0.2407161616846398,
+        "after_rms_magnitude": 0.2406384468853049,
+        "before_max_abs": 31.093124389648438,
+        "after_max_abs": 31.090679168701172
+      },
+      {
+        "layer": 13,
+        "bit_exact": false,
+        "rms": 0.006024544825732475,
+        "max_abs": 0.21120071411132812,
+        "before_rms_magnitude": 0.24219740329536232,
+        "after_rms_magnitude": 0.242106207744323,
+        "before_max_abs": 30.812875747680664,
+        "after_max_abs": 30.808860778808594
+      },
+      {
+        "layer": 14,
+        "bit_exact": false,
+        "rms": 0.006462771103913263,
+        "max_abs": 0.2816944122314453,
+        "before_rms_magnitude": 0.26008304727448994,
+        "after_rms_magnitude": 0.2599861767010623,
+        "before_max_abs": 31.756263732910156,
+        "after_max_abs": 31.753002166748047
+      },
+      {
+        "layer": 15,
+        "bit_exact": false,
+        "rms": 0.007025337000687292,
+        "max_abs": 0.1573934555053711,
+        "before_rms_magnitude": 0.28071249153639316,
+        "after_rms_magnitude": 0.28065276535320277,
+        "before_max_abs": 27.81051254272461,
+        "after_max_abs": 27.810794830322266
+      },
+      {
+        "layer": 16,
+        "bit_exact": false,
+        "rms": 0.008036002180439492,
+        "max_abs": 0.13424232602119446,
+        "before_rms_magnitude": 0.3030362080797733,
+        "after_rms_magnitude": 0.3030625637607318,
+        "before_max_abs": 26.286460876464844,
+        "after_max_abs": 26.287866592407227
+      },
+      {
+        "layer": 17,
+        "bit_exact": false,
+        "rms": 0.008656545358764044,
+        "max_abs": 0.14693117141723633,
+        "before_rms_magnitude": 0.3202107120253197,
+        "after_rms_magnitude": 0.32022365065197594,
+        "before_max_abs": 25.27562713623047,
+        "after_max_abs": 25.279037475585938
+      },
+      {
+        "layer": 18,
+        "bit_exact": false,
+        "rms": 0.009632480843534345,
+        "max_abs": 0.2685732841491699,
+        "before_rms_magnitude": 0.3188600244588355,
+        "after_rms_magnitude": 0.3188974713076818,
+        "before_max_abs": 41.627906799316406,
+        "after_max_abs": 41.58736801147461
+      },
+      {
+        "layer": 19,
+        "bit_exact": false,
+        "rms": 0.012536809248923246,
+        "max_abs": 0.3283228874206543,
+        "before_rms_magnitude": 0.3973200365668495,
+        "after_rms_magnitude": 0.3973125556281165,
+        "before_max_abs": 13.087724685668945,
+        "after_max_abs": 13.043777465820312
+      },
+      {
+        "layer": 20,
+        "bit_exact": false,
+        "rms": 0.013326968332872413,
+        "max_abs": 0.3677339553833008,
+        "before_rms_magnitude": 0.42445887810151706,
+        "after_rms_magnitude": 0.42449335622114115,
+        "before_max_abs": 13.410938262939453,
+        "after_max_abs": 13.437999725341797
+      },
+      {
+        "layer": 21,
+        "bit_exact": false,
+        "rms": 0.014655154465761162,
+        "max_abs": 0.4685854911804199,
+        "before_rms_magnitude": 0.47263211752808,
+        "after_rms_magnitude": 0.4726743115475188,
+        "before_max_abs": 18.06123924255371,
+        "after_max_abs": 17.969587326049805
+      },
+      {
+        "layer": 22,
+        "bit_exact": false,
+        "rms": 0.01644436674856179,
+        "max_abs": 1.970956802368164,
+        "before_rms_magnitude": 0.4988205983297431,
+        "after_rms_magnitude": 0.49891654330360946,
+        "before_max_abs": 52.91806411743164,
+        "after_max_abs": 52.843929290771484
+      },
+      {
+        "layer": 23,
+        "bit_exact": false,
+        "rms": 0.018165110449733745,
+        "max_abs": 0.5845246315002441,
+        "before_rms_magnitude": 0.5340881381682598,
+        "after_rms_magnitude": 0.5339764394302363,
+        "before_max_abs": 23.410669326782227,
+        "after_max_abs": 23.199295043945312
+      },
+      {
+        "layer": 24,
+        "bit_exact": false,
+        "rms": 0.019169979280005717,
+        "max_abs": 0.5800561904907227,
+        "before_rms_magnitude": 0.5694839508818598,
+        "after_rms_magnitude": 0.5693504843856563,
+        "before_max_abs": 25.08989715576172,
+        "after_max_abs": 24.890029907226562
+      },
+      {
+        "layer": 25,
+        "bit_exact": false,
+        "rms": 0.020272397366091738,
+        "max_abs": 0.8474569320678711,
+        "before_rms_magnitude": 0.5923554162686128,
+        "after_rms_magnitude": 0.5922465726702107,
+        "before_max_abs": 30.40471839904785,
+        "after_max_abs": 30.289413452148438
+      },
+      {
+        "layer": 26,
+        "bit_exact": false,
+        "rms": 0.024022537393038168,
+        "max_abs": 5.74737548828125,
+        "before_rms_magnitude": 0.6025761472841465,
+        "after_rms_magnitude": 0.6028840271401754,
+        "before_max_abs": 106.88209533691406,
+        "after_max_abs": 107.44697570800781
+      },
+      {
+        "layer": 27,
+        "bit_exact": false,
+        "rms": 0.02656447987386519,
+        "max_abs": 0.9330711364746094,
+        "before_rms_magnitude": 0.6443463116082876,
+        "after_rms_magnitude": 0.6443739992973434,
+        "before_max_abs": 25.31669807434082,
+        "after_max_abs": 25.362281799316406
+      },
+      {
+        "layer": 28,
+        "bit_exact": false,
+        "rms": 0.030081645817856887,
+        "max_abs": 1.4159116744995117,
+        "before_rms_magnitude": 0.7148718909905842,
+        "after_rms_magnitude": 0.7148517560489074,
+        "before_max_abs": 26.183837890625,
+        "after_max_abs": 26.193796157836914
+      },
+      {
+        "layer": 29,
+        "bit_exact": false,
+        "rms": 0.03554337114890179,
+        "max_abs": 1.150376319885254,
+        "before_rms_magnitude": 0.8000835518702402,
+        "after_rms_magnitude": 0.799914676130965,
+        "before_max_abs": 26.81146240234375,
+        "after_max_abs": 26.911968231201172
+      },
+      {
+        "layer": 30,
+        "bit_exact": false,
+        "rms": 0.04412534812204277,
+        "max_abs": 1.9467201232910156,
+        "before_rms_magnitude": 0.8399334059963669,
+        "after_rms_magnitude": 0.8397998637733773,
+        "before_max_abs": 24.195064544677734,
+        "after_max_abs": 24.369775772094727
+      },
+      {
+        "layer": 31,
+        "bit_exact": false,
+        "rms": 0.06218703332586517,
+        "max_abs": 2.3318519592285156,
+        "before_rms_magnitude": 1.0084074483737626,
+        "after_rms_magnitude": 1.0090372310783147,
+        "before_max_abs": 79.36445617675781,
+        "after_max_abs": 80.21844482421875
+      }
+    ]
+  },
+  "corrected_arms_all_rows_identical": true,
+  "corrected_arms_text_identical": true,
+  "schema": "lighton4b-planner-heldout-independent-raw-audit/v1",
+  "status": "complete",
+  "case": "historical-receipt",
+  "receipt_sha256": "abb6858ccce1d393c4ddd51914d93ee19db5f530f11101cd603e2f6cc8e67f64",
+  "old_receipt_sha256": "243bb2f8c9fbf8ed8f19d6b0df48bb8ecc42f4fa66744c02ee59609a419e96eb",
+  "owned_files": 472,
+  "owned_bytes": 2513600033,
+  "raw_rows": 1739,
+  "raw_archives": {
+    "baseline-old": {
+      "rows": 468,
+      "archive_bytes": 464910066,
+      "archive_sha256": "42e4afb5e5619307ddc0397a5a3c9afcdb65224fde179565fd1d0dca1959662e",
+      "ordered_row_sha256": "24752a9236879f12aef0c369c1086a0abfb945f259295bdf0a184589591c42cb"
+    },
+    "corrected-composed": {
+      "rows": 468,
+      "archive_bytes": 464910066,
+      "archive_sha256": "cc7aed7ef555824f712533032e9496a088cb485461f74db07ec9c8da7ea07d7b",
+      "ordered_row_sha256": "c410e9ca32148f2d91c9720e91ad3fdca060f04d9c8b7aa692a2cf47a745cee0"
+    },
+    "corrected-source-features": {
+      "rows": 468,
+      "archive_bytes": 464910066,
+      "archive_sha256": "dade8ccc76b2b85d093cc2de0f71ab2ef3e64054794e04c9ae3d5af3129dccc4",
+      "ordered_row_sha256": "c410e9ca32148f2d91c9720e91ad3fdca060f04d9c8b7aa692a2cf47a745cee0"
+    },
+    "observed-old": {
+      "rows": 167,
+      "archive_bytes": 165897268,
+      "archive_sha256": "fc98482dde7778812bd7f8172db5a91b89cf3c38ed86750fb1c1778f4d21fe2f",
+      "ordered_row_sha256": "e371bd6e7d554965256db3ffd8c2ea38b105863b796e6bd48105d99dd82c9ade"
+    },
+    "observed-corrected": {
+      "rows": 168,
+      "archive_bytes": 166890666,
+      "archive_sha256": "b9953c8024dfafe291fa96e2ddc585137455f082e962ee0947f660854d0d9b27",
+      "ordered_row_sha256": "b6f2b291164134fa58e08fd721ae1714e90d1153ca748bef4caa10feaabdc9ab"
+    }
+  },
+  "old_reference_stages_compared": 81,
+  "all_raw_finite_argmax_sha": true,
+  "all_owned_artifact_hashes": true,
+  "source_merged_all_arms_exact": true,
+  "reference_forward_executed": false,
+  "model_forward_executed": false,
+  "qualified": false,
+  "scope": "Completed diagnostic bytes only. Historical reference rights/provisional-label limits remain binding. No text or IDs published by this auditor.",
+  "elapsed_seconds": 48.86077750300001
+}

@@ -3361,13 +3361,11 @@ build/check is next. No weight quantization, model forward, OCR capture or quali
 promotion is authorized before verification. The source corpus contents and
 calibration source weights remain independently unauthenticated external text.
 
-
 GitHub check42238407232 remained queued and was cancelled by user instruction;
 no tests or artifacts ran there. The unchanged payload-free adapter controls are
 now ported to one CPU-only Kaggle worker with source/submodule pins, GPU rejection,
 resource receipts and a strict20-minute controller/30-minute kernel bound. No
 GitHub dispatch, weight quantization or model forward follows from this port.
-
 
 Initial Kaggle CPU v1 compiles crispembed-quantize and passes six real/synthetic
 Python checks, then rejects the synthetic target's unflattened5D Conv3D patch.
@@ -3375,7 +3373,6 @@ The actual format5 footprint is1536×1024. Correcting only that header fixture a
 adding a physical-rank regression check leaves adapted bytes/means unchanged;
 v1 failure logs/receipts are preserved before one bounded CPU retry. No model or
 weight quantization has run, and no GitHub job is dispatched.
-
 
 The tested adapter/strict opt-in is ready for existing PR155 integration. Kaggle
 CPU v4 passes all248/897,024 consumer means and8 Python controls, strict ordinary
@@ -3428,7 +3425,6 @@ bytes but nonzero first-score differences; full quality, actual-main primitive
 closure and a fixed-runtime same-feature rerun remain acceptance gates. No
 alias/default/release or BF16-reference change follows from component evidence.
 
-
 ### LightOn4B original-F16 tiled-output isolation — 7 November 2026
 
 Decoder lane prepares a no-inference [paired coordinate reproducer](docs/lighton4b-hf-tiled-out-reproducer.md) after the preserved form CER failure. Five local Python protocol/negative tests pass; hosted synthetic helper compilation and numerical controls remain pending. No checkpoint worker or new runtime gate is dispatched by this change. Exact original-F16/HF and upstream-coordinate payload equality is required before preparing a distinct HF-tiled-output candidate; no quality promotion or release change.
@@ -3448,11 +3444,9 @@ physical modes reject before payload/profile admission and primitive calls;
 cache masks reject subset switches. No learned-model ablation or quality
 qualification follows. The composed full-mode negative remains preserved.
 
-
 ### LightOn4B HF-only tiled-output candidate — 7 November2026
 
 Actual original-F16 proof passed all24 HF/publisher payload pairs at24208e2ac; proof preserved separately in PR157. Decoder lane adds distinct HF-layout metadata/gate, owner and cache fingerprint plus output-only activation bridge; all699 other payloads and HF gamma/log-A/tokenizer metadata remain immutable. [Design and pending controls](docs/lighton4b-hf-tiled-out-reproducer.md). Eight local Python tests pass; native full-width operator/type/metadata/cache checks and actual candidate packing/decoded comparison remain hosted gates. Physical native-ops/cache-mask work is preserved independently.
-
 
 HF-layout native controls are now measured passing atc89aaa4cb (Kaggle143171211/v3), with both initial fixture failures preserved in PR157. The next [closed observed three-case worker](docs/lighton4b-hf-tiled-out-observed-threecase-v1.json) reuses those exact binaries/libraries and verifies source/runner blob identity; it does not rebuild or change arithmetic. It admits old5d on the retained full table score/70 stage hashes before packing, audits699 protected/24 replaced payloads, and records full form/table/Arabic text/IDs/EOS against genuine BF16 and pinned llama/old-HF outputs.4h controller/90min form and table/20min Arabic, partial evidence retained. No heldout or shipping claim.
 
@@ -3469,7 +3463,6 @@ source-fed N4/N16 plus16 N1 cache replays against pinned upstream, then a bounde
 same-feature full-score and independent decoded comparison. Unsupported profiles
 must fail closed; no shipping/quality claim follows from the operator proof.
 
-
 ### Executed HF-tiled artifact-only reader integrated (2026-11-07)
 
 Selective four-file integration preserves byte-exact reader/test/protocol source`0d90fd0b2a24fc7990cbd8bc052c478bd28bf0f2`, executed on Kaggle143195841/v1. Sealed producer report63a586c0 and reader reportcb7a0a3e prove actual4GB/723payload hashes, allcurrent score finite/hash/argmax controls and only common-prefix historical-native comparisons; complete evidence is PR157commit`3b8436830`. [Protocol](docs/lighton4b-hf-tiled-out-readback-protocol-v1.json), [artifact consumer](tools/ci-heavy/lighton4b_hf_tiled_out_readback.py), [Kaggle controller](tools/kaggle/lighton4b_hf_tiled_out_readback.py). No inference/build/quantization, new source stages, runtime/header/CMake/workflow/default changes, or quality promotion; fullform/table negative remains. Actual tested source remains distinct from this integration source.
@@ -3477,7 +3470,6 @@ Selective four-file integration preserves byte-exact reader/test/protocol source
 ### Frozen physical F16 table/Arabic continuation
 
 `docs/lighton4b-physical-f16-calibration-v1.json` freezes one sequential worker for `simple_table` and `arabic_printed_line`. It reuses the authenticated full-form executable and GGML bundle, identical physical weight bytes and exact gate tuple, authenticates both retained source-feature/input/reference sets before forwarding, and preserves full original teacher panels (222/6) plus independent cap-256 generation. No new reference forward or precision switch is involved. Artifact-only form teacher-row numerical review and representative held-out/composed-vision checks remain separate acceptance gates; nothing is released by this diagnostic.
-
 
 ### Executed177-row artifact-only reader integrated (2026-11-07)
 
@@ -3494,7 +3486,6 @@ Prepared tools/kaggle/lighton4b_composed_vision.py and closed protocol: one prev
 ### Pinned F16 projector attribution preparation (2026-11-07; not dispatched)
 
 Prepared reference-only tools/projector-probe with complete297-native/298-publisher canonical tensor map and explicit temporal Conv3D→twoConv2D reconstruction; source conversion/clip graph pinned6c01. Remote plan transfers only1.334GB authenticated protected native vision suffix plus672MB mmproj, no text model/fullF32 artifact. Canonical-value/F16-round/BF16-domain comparisons precede standalone source-projector OFF/ON exactactualmerged closure and materialized early/all24visual-stage comparisons on observedform. Any observer drift, unsupported stage or nonfinite value fails closed. Five model-free tests and exact source patch anchors pass; C++/worker remain uncompiled/unrun pending independent review and authorized hosted slot. Native code/default gates unchanged. Meaningful source-stage magnitudes are required before a production correction.
-
 
 ### Projector live-observer correction preparation (2026-11-07)
 
@@ -3588,7 +3579,6 @@ Protocol and controls require independent review before one bounded hosted run.
 
 Full composed aec0/sourceb985 preservesold194EOS/all194rows/38text+29vision anchors, then fixed167EOS matchesall167retainedsource-feature rows/stages andactual28sourcevision arrays, with source_fed_vision=false. FrozenBF16-reference CER259→175/656, WER47→45/90; actualupstream189/46. This observed form meetsfloor, not heldout/general qualification. Bothgates remainoff. Integration unionscurrentmain17098/PR1559ca/testedb59 plusfourtestedformharnessfiles; producttree exactb59. Added explicit immutable historicaldriver amendment ratherthanquietrepinning. Runtime preparescomposedtable/Arabic; no release/default promotion.
 
-
 ### Default-off physical GDN source-operator integration
 
 Integrate the exact reviewed/tested `cd50e9e691530525fb998edda8a449cc0725be91` helper, cache fingerprint, unit and bounded source-fed harness. The separate `CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS` gate retains scalar log1p softplus and matches pinned source postnorm/state/FIFO on allfour fixed operator inputs, including actual nonzero-state continuation; old native16 attention and20 gate/cache controls pass. [Immutable operator evidence and both initial negatives](https://github.com/CrispStrobe/CrispEmbed/blob/638aac0ed/docs/lighton4b-live-gdn-replay-results.md#hybrid-actual-input-component-pass) retain the6b1f receipt and N16 RAW output-projection residual. Quantized projections/global repack/default-off release fences remain unchanged. Same-feature table/form full decoded A/B is still required; this integration makes no quality or shipping claim.
@@ -3600,3 +3590,37 @@ Full table/form A/B at `f6a1e60d3` closes OFF all282/167 rows+38 text anchors. G
 ## Combined physical GDN/repack remains unqualified
 
 Source `374d04387` completes four cap512 arms with exact OFF282/167 rows/stages. Combined ON table282EOS matches upstream IDs/text; form167EOS fails character floor194/656 versus upstream189, even with fewer word edits40 versus46. Keep both gates default-off; no aggregate waiver, promotion or ship. [Full evidence and limits](docs/lighton4b-physical-gdn-source-ops.md). No runtime/default/release change or held-out execution.
+
+**Physical Q6 tiled observed A/B:** [full decoded evidence](docs/lighton4b-q6-tiled-full-ab-results.md) records table337/607 character edits and95/106 word edits, form175/656 and45/90; both observed upstream floors pass, all four arms reach EOS and strict OFF baselines close. First-score numerical parity still fails and the form word score regresses versus OFF. Next: unchanged-configuration Arabic and frozen held-out panel with immutable previous controls, no tuning or shipping until all gates and provisional-label limitations are resolved. Gate stays default-off.
+
+- 7 November2026: corrected-Q6 frozen provisional-panel executor model-free controls passed from001a7cc95, receiptf8d7857e672bc7b5f094a9ca00fd63dac482d190816938f43ddfe7888c019f14 (131.89s). Independently rehashed22 owned artifacts and ten actual CLI return codes; supported Q6/GDN/Q4/F16 attention/vision units pass. No models/forwards; client-only timeout-format rejection preserved separately. Fixed three-gate panel replay remains pending, with original provisional references and rights restrictions unchanged. See `docs/lighton4b-q6-heldout-controls-results.md`.
+
+**Corrected physical Arabic complete:** [actual evidence](docs/lighton4b-q6-arabic-results.md) preserves exact six-ID/text/EOS output with0 character/word edits. Score RMS and wall time worsen, so no numerical or speed claim. All three observed calibration floors now pass with GDN/repack/Q6 corrections, but gates stay default-off/unqualified. Continue the unchanged frozen held-out panel and preserve its provisional-reference/rights limits before any shipping decision.
+
+- 7 November2026: corrected-Q6 receipt attempt setup-negative before any heldout forward: source001a7cc95/receipt49da9537e79636855c3f5c6bd4f4859a7e1d14820d384fbc27bef2c45bf44000,619.29s. Both observed167 full byte controls passed; metadata-only preflight omitted the separate frozen position-file exporter. No arithmetic/quality result inferred. Diagnostic shared exporter/synthetic3-axis controls prepared, with same-source hosted controls and bounded retry still required. Raw boundary/logs and client-only slug readback correction preserved in `docs/lighton4b-q6-heldout-receipt-setup-negative.md`.
+
+- 7 November2026: repaired metadata exporter controls-v2 PASS source52e1cfcec/receipt47fbe751d1767efcf537a867d6ec74b1b9a1ae4efc7bca587ff863d4b56a4ae3,116.66s. Independently rehashed26 closed files and actual96 position bytes with distinct axes, disabled8/2 gate returns and ten legacy/decode CLI checks. No models/forwards/runtime math change. Initial49da setup negative remains preserved; source52e fixed-case retry requires new receipt binding and peer-admitted bootstrap.
+
+- 7 November2026: corrected-Q6 historical receipt COMPLETE but still fails provisional floor: source52e1cfcec/receipt243bb2f8c9fbf8ed8f19d6b0df48bb8ecc42f4fa66744c02ee59609a419e96eb,468EOS,25/768 CER edits19/144 WER edits vsup24/18; old469 has same counts. Pixel/source-feature rows/text identical, allobserved167/old469/input-seal/vision guards pass. Independent selected15-file/edit-distance/vector review and remote9895cd92 audit close466files/2.521GB/1739rows/81oldstages, no new source forward. Negative remains no-ship; two remaining fixed provisional cases follow without tuning. See `docs/lighton4b-q6-heldout-provisional-results.md`.
+
+- 8 November2026: fixed corrected-Q6 two-column regression COMPLETE/PASS for this provisional floor: source52e1cfcec/privatee3fb9b5b8dddcbed51678c27d203fbc2bfec645966e94f846fd31f956c84f9a3,660EOS,297/2981 character edits87/556 word edits vsold697373/111 andsource654526/146. Selected15-file/independent-edit/vector review and remote783513 audit close466files/3.150GB/2351rows/81oldstages; allguards and pixel/source-feature raw rows identical. Literary text/IDs/fullreport stay private, public safe hashes/metrics only. Receipt floor failure remains binding; inventory follows unchanged without tuning. See `docs/lighton4b-q6-heldout-provisional-results.md`.
+
+- 8 November2026: frozen corrected-Q6 inventory COMPLETE248EOS, exact0/165 character and0/32 word edits/all15 literal cells, unchanged source-floor success. Source52e/raw4fa06 and independent64987 audit close466files/1.768GB/1078rows/81oldstages; corrected pixel/source-feature rows/text identical, actualmerged upstream exact. Complete panel integrity1398files/7,439,126,325B/5168rows includes1002 repeated observed controls. Receipt25/19 vs24/18 still fails; no qualification, aggregate waiver, tuning or release. Final panel index and explicit provisional/rights/numerical limits in docs/lighton4b-q6-heldout-provisional-results.md.
+
+- Source-boundary attribution ([audit](docs/lighton4b-q6-source-boundary-attribution.md)): corrected native first16 QKV exactly matches sealed upstream mixed16, but original source4/image140/6/4 differs. Text QKV2.23094e-7RMS/imageQKVexact; later recurrent/FFN errors retained. Prefix ends25, so no step31 comparison. New generic scheduler is experimental pending source-fed154/position/cache controls and decoded observed A/B; no heldout outputs read or recipe change.
+
+Source-prefill operator V1 setup negative preserved: source `1e3b0071d`, supported structural controls PASS4165, synthetic input/output filename collision before original checkpoint ranges. Fix `87d39abfe` adds disjoint-prefix regression; no numerical/decoded conclusion or default change. See `docs/lighton4b-q6-source-boundary-attribution.md`.
+
+Source-prefill bounded operator V2 PASS at `87d39abfe`: raw receipt `89f7738a02bdb9f9a7a00207fb2f187a6dd1830c51a31f16ca98d4b0e83055d0`; all154 production-normalized rows and 1,261,568 QKV outputs exact to source4/140/6/4 at1/4threads; supported4165 controls. Independent full-vector audit reproduces old16 RMS6.8619e-8 vs planned0. No full-model/decoded/heldout claim; gateOFF, observed decoded A/B next. See `docs/lighton4b-q6-source-boundary-attribution.md`.
+
+**Observed source-prefill A/B complete:** [decoded evidence](docs/lighton4b-source-prefill-observed-results.md) closes all OFF282/167/6 anchors, then changes only scheduling. ON table309EOS improves337→321/607 character edits and95→92/106 word edits; form168EOS175→165/656 and45→43/90; Arabic6EOS remains exact. Three observed floors pass, without numerical/speed/general qualification. No heldout data was used; any fixed regression follow-up must retain unchanged selection/references and the prior complete corrected baselines. All gates stay default-off/no ship.
+
+- 8 November2026: planner-only provisional replay hosted controls PASSa616/14eb9001,148.19s/no checkpoints/forwards. Actual native driver1536+metadata position exporter compiled, six supportedunits/10CLI/96distinct-axisbytes+disabled8/2 passed;27ownedmembers independentlyrehashed. Same originalfixed3cases, onlyschedulerflag, observed167/168 andfullpriorcorrectedbaseline/input-seals required beforecase. No qualification or tuning; see docs/lighton4b-planner-heldout-controls.md.
+
+- 8 November2026: scheduler-only frozen receipt COMPLETEnegative a616/abb6858c,468EOS/textIDs exactpriorcorrected,25/768 character edits19/144 word edits vsup24/18. RMSimproves.149225319→.131426518 withoutdecodedgain. Selected15files/editdistance/3vectors and independent1de4e922 rawauditPASS472files/2,513,600,033B/1739rows/81priorstages;335observed167+168 controls included. Nativefirstlayer0diffRMS2.429e-5/max.00105445 withmagnitudes recorded, sourcehiddenunavailable. Keepnegative/no-ship; remainingfixedcases sequentialwithouttuning. See docs/lighton4b-planner-heldout-provisional-results.md.
+
+- 8 November2026: scheduler-only book attempt sourcea616/privatef231 TIMEDOUTfixed1200s at1054fullvocabrows/noEOS; prior660baseline+167/168controls/sealpassed, pairedarmnotrun. No completeplannerCER/WER/floorclaim. Initialforensicmountff39 failedbeforeaudit andinlineprivateHTTP400 requestrejectedbeforeworker; reviewedprivateinputrelay thenmirrored1457files/2,735,343,103B, audit4906 validates995archived+1054partial=2049rows/hash/finite/argmax/81stages, no models. Rights-sensitive recognizedtext/IDs/fullreport stayprivate. Inventoryfirst unchanged; separatelybudgetedstrict-prefixbookextension remainspendingtestedbundle. See docs/lighton4b-planner-heldout-provisional-results.md.
+
+- Preserved successful frozen planner inventory child and separate post-retention NameError; independent remote audit closes472 files/1,761,212,921 bytes/1079 rows without inference rerun. Receipt failure and incomplete book timeout remain binding; no qualification.
+
+- Preserved fixed-budget planner book replay:1536 cap/no EOS, all1054 prior rows+82 stages exact, independent98-file/1,745,200,955-byte/1536-row audit. Native1664.23s wall/6.234GB sampledRSS; capped diagnostic edits3716/955 versus complete upstream526/146. Frozen planner provisional panel1/3, unqualified/no ship; no further inference retry.

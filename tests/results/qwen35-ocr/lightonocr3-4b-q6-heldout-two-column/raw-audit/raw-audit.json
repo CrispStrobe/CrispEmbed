@@ -1,0 +1,53 @@
+{
+  "corrected_arms_all_rows_identical": true,
+  "corrected_arms_text_identical": true,
+  "schema": "lighton4b-q6-heldout-independent-raw-audit/v1",
+  "status": "complete",
+  "case": "two-column-page",
+  "receipt_sha256": "e3fb9b5b8dddcbed51678c27d203fbc2bfec645966e94f846fd31f956c84f9a3",
+  "old_receipt_sha256": "9b88195d5a8058dea4fab87472009d3826bc1fa3b5d0575aa2e33698316d5722",
+  "owned_files": 466,
+  "owned_bytes": 3150170826,
+  "raw_rows": 2351,
+  "raw_archives": {
+    "baseline-old": {
+      "rows": 697,
+      "archive_bytes": 692398208,
+      "archive_sha256": "9ab7281a5724014994203c408a866baadd8e2d0ebcc7702b6b5c1b85007b9d2e",
+      "ordered_row_sha256": "a5ace467a81d5a7ca2fd82aedc4fe1b00c4878a4e613066a2fa8396370652973"
+    },
+    "corrected-composed": {
+      "rows": 660,
+      "archive_bytes": 655642482,
+      "archive_sha256": "06fc9c33443b03c56e05f1e5e170ed9ef5677dda53f5ec61167c02d94c5017fb",
+      "ordered_row_sha256": "98cd5d3f6a191e638f83c8a7a45ceaee3f653408be6d0cf2c55c5e5afc81375d"
+    },
+    "corrected-source-features": {
+      "rows": 660,
+      "archive_bytes": 655642482,
+      "archive_sha256": "3ee058fb2230e9a4821dee96890c836f48ce8a97411a2d9eb86add0e7028ae6d",
+      "ordered_row_sha256": "98cd5d3f6a191e638f83c8a7a45ceaee3f653408be6d0cf2c55c5e5afc81375d"
+    },
+    "observed-old": {
+      "rows": 167,
+      "archive_bytes": 165897268,
+      "archive_sha256": "8245defbb8bda5766001358ff53d81570de7fe43ab2e913f48bd4db40c75a6ef",
+      "ordered_row_sha256": "90f61a086d19f4a9ed5ca9722fbd371542b3499d0babe38c2b9a5b3fcb5d4832"
+    },
+    "observed-corrected": {
+      "rows": 167,
+      "archive_bytes": 165897268,
+      "archive_sha256": "b9566752edf94434eac6d563825ae92346d6229ca60820aada7e0251a11fcf0e",
+      "ordered_row_sha256": "e371bd6e7d554965256db3ffd8c2ea38b105863b796e6bd48105d99dd82c9ade"
+    }
+  },
+  "old_reference_stages_compared": 81,
+  "all_raw_finite_argmax_sha": true,
+  "all_owned_artifact_hashes": true,
+  "source_merged_all_arms_exact": true,
+  "reference_forward_executed": false,
+  "model_forward_executed": false,
+  "qualified": false,
+  "scope": "Completed diagnostic bytes only. Historical reference rights/provisional-label limits remain binding. No text or IDs published by this auditor.",
+  "elapsed_seconds": 53.428147217
+}

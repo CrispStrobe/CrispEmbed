@@ -1,0 +1,509 @@
+{
+  "status": "independently_measured_actual_prefill_stages",
+  "source_report_sha256": "2723be06d2b1a4836d51b75d50a23f61a07972127c907e01d0505c778dcf7260",
+  "native_report_sha256": "f5d0077052b907e2d674caef9e7c4ae09b08456ff48a79f327cbdfd030b2dcc9",
+  "same_prefix_tokens": 25,
+  "source_graph_tokens": [
+    4,
+    140,
+    6,
+    4
+  ],
+  "native_first_chunk_tokens": 16,
+  "files": {
+    "native/simple_form/on/prefill.first_chunk.layer0.input_norm.f32": {
+      "bytes": 163840,
+      "sha256": "16193ef20aadd934dfecdc62f87185e07944aa2e6c80a20b844ed322898b2e7d"
+    },
+    "source/on/graph-1.attn_norm-0.bin": {
+      "bytes": 40960,
+      "sha256": "7a3fafed50f68cfdf0e41c2dadb3310c0512d8296155ad95de45567560064a96"
+    },
+    "source/on/graph-2.attn_norm-0.bin": {
+      "bytes": 1433600,
+      "sha256": "891a9f31fe573e3cc39c33c40cad87d4bbad2b7831f3b1bfaea76b5d977f0102"
+    },
+    "native/simple_form/on/prefill.first_chunk.layer0.qkv.f32": {
+      "bytes": 524288,
+      "sha256": "a4891f315d87c8f0c608a97d6f7d76e7eb0387f98dc0aec373b20cee8cb7310e"
+    },
+    "source/on/graph-1.linear_attn_qkv_mixed-0.bin": {
+      "bytes": 131072,
+      "sha256": "253e66a332f5bf4d5fb59828f2c077612c23246bf2c317916ee3b8930c63f243"
+    },
+    "source/on/graph-2.linear_attn_qkv_mixed-0.bin": {
+      "bytes": 4587520,
+      "sha256": "f8797400ae24df3794b0670cffebdebd7c22502b8d1bde225a52c0bec83f1e08"
+    },
+    "native/simple_form/on/prefill.first_chunk.layer0.z.f32": {
+      "bytes": 262144,
+      "sha256": "9b5a86cc5db5349f70ef574d75d5825abc2c2575987f80ea9984466ce0b22f61"
+    },
+    "source/on/graph-1.z-0.bin": {
+      "bytes": 65536,
+      "sha256": "603e4e2a68780f046e25c222c424a06761c7c8cac65ac7d4c249227eea9e12a6"
+    },
+    "source/on/graph-2.z-0.bin": {
+      "bytes": 2293760,
+      "sha256": "3b53151dfea3a41169fbca53aab6461e731bb51ed941b12657b1cd61e5c40a22"
+    },
+    "native/simple_form/on/prefill.first_chunk.layer0.a.f32": {
+      "bytes": 2048,
+      "sha256": "565dd52bdab169128f575acf910ad5badb4fc7642a1e83cd30aab11f9ff6be26"
+    },
+    "source/on/graph-1.alpha-0.bin": {
+      "bytes": 512,
+      "sha256": "1ba23904a0f53abe1bbc0114ff6d2f4fbab79d396e6bde8ad18b79532176be87"
+    },
+    "source/on/graph-2.alpha-0.bin": {
+      "bytes": 17920,
+      "sha256": "020f04e5fa5331252d6d38c81a56697f4022ce560eb249643c029c7c8488e090"
+    },
+    "native/simple_form/on/prefill.first_chunk.layer0.b.f32": {
+      "bytes": 2048,
+      "sha256": "090120077a5c2724e37eb1addcba500ae5a5c903cccf3c6f55f41964916ab306"
+    },
+    "source/on/graph-1.beta-0.bin": {
+      "bytes": 512,
+      "sha256": "402553981ed70551decaf99b3f6bbcaddd2142c9746ebd89aacf44e69cde3f92"
+    },
+    "source/on/graph-2.beta-0.bin": {
+      "bytes": 17920,
+      "sha256": "a0ebc21e63cedd60fe1c9de0504c97915634ff4f39ccab19907c0480c67c1d71"
+    },
+    "native/simple_form/on/prefill.first_chunk.layer0.attention.f32": {
+      "bytes": 163840,
+      "sha256": "07c8e85ab89c4e9249bf871adb68bfc5247293183db08d3a577742e5a4a768b3"
+    },
+    "source/on/graph-1.linear_attn_out-0.bin": {
+      "bytes": 40960,
+      "sha256": "1c0aeae6ab982cc26141b78b86f9e3435228260e54a4979353d4911558117266"
+    },
+    "source/on/graph-2.linear_attn_out-0.bin": {
+      "bytes": 1433600,
+      "sha256": "4b1f6bdd348c2eef43f9d536dc9a9f018bd887f095b203fb6ed88c4447fb4930"
+    },
+    "native/simple_form/on/prefill.first_chunk.layer0.attention_residual.f32": {
+      "bytes": 163840,
+      "sha256": "b7b14ab40a9728b554907e121187f2c610fd56d9f188d35e450ce60ed97a3480"
+    },
+    "source/on/graph-1.attn_residual-0.bin": {
+      "bytes": 40960,
+      "sha256": "2d71513fa884e9f8be610910a9094864f1f4d3e3ff012459ff47aec59e2896d4"
+    },
+    "source/on/graph-2.attn_residual-0.bin": {
+      "bytes": 1433600,
+      "sha256": "8863a89df21d819a616201d1819716c428c01ad2c3be0d4bb6a173ae475ff2fa"
+    },
+    "native/simple_form/on/prefill.first_chunk.layer0.post_norm.f32": {
+      "bytes": 163840,
+      "sha256": "abedbd2805851c4b1844bb2390510d3f7b3f819105c398d3bd91c32a3392d72e"
+    },
+    "source/on/graph-1.attn_post_norm-0.bin": {
+      "bytes": 40960,
+      "sha256": "54b7073707c3693830e390eae944187acc2d6e6317bea4385c40a9e2585436b3"
+    },
+    "source/on/graph-2.attn_post_norm-0.bin": {
+      "bytes": 1433600,
+      "sha256": "f1059899336cebea37d8261acfd793db1661958a8801a2b248a4b8feebf34681"
+    },
+    "native/simple_form/on/prefill.first_chunk.layer0.gate.f32": {
+      "bytes": 589824,
+      "sha256": "274bfb22f5a912452fc7671da653a82dcb93fb61319eff9175049e4243ca0b44"
+    },
+    "source/on/graph-1.ffn_gate-0.bin": {
+      "bytes": 147456,
+      "sha256": "7e42b847af6c67420a2c435a10f909f9c2f71b9355b851d469c8f08fe8bfb52f"
+    },
+    "source/on/graph-2.ffn_gate-0.bin": {
+      "bytes": 5160960,
+      "sha256": "f989041d7e4634b232c9096db44a9419f3e7d3a49aad20c0d4ab3e6a18d336ff"
+    },
+    "native/simple_form/on/prefill.first_chunk.layer0.up.f32": {
+      "bytes": 589824,
+      "sha256": "9b5609af940abbe3af7a48d4a2d2453ff4901949712f5fc7b208bcb4933555dc"
+    },
+    "source/on/graph-1.ffn_up-0.bin": {
+      "bytes": 147456,
+      "sha256": "2e998f1a8b77fa9a0f8f053576560e870e07df3b65c919d4e0ff49852e24f46d"
+    },
+    "source/on/graph-2.ffn_up-0.bin": {
+      "bytes": 5160960,
+      "sha256": "592a5bc9698a7c2e712d2f5fdbd18c1f7ec0c8a70373a1510b23e6176a21dfd2"
+    },
+    "native/simple_form/on/prefill.first_chunk.layer0.activation.f32": {
+      "bytes": 589824,
+      "sha256": "e3ac847c25eeefd3e64f8cab40b84901c5e94b6103c38a55efc1defea517ca4f"
+    },
+    "source/on/graph-1.ffn_swiglu-0.bin": {
+      "bytes": 147456,
+      "sha256": "3edff227a6fe462ffd7ec4ace787ef8bfc2eb07a4f82ee67bfe734a074b11bff"
+    },
+    "source/on/graph-2.ffn_swiglu-0.bin": {
+      "bytes": 5160960,
+      "sha256": "6cb89d8897ee47b5135aa20a2748fba1c2c894a753b1f0391fcb26934fd2551e"
+    },
+    "native/simple_form/on/prefill.first_chunk.layer0.down.f32": {
+      "bytes": 163840,
+      "sha256": "26617fe8de99ccba7b5088a8b7877e08f76317c417bb2dd8c06b533a1ca58ad5"
+    },
+    "source/on/graph-1.ffn_out-0.bin": {
+      "bytes": 40960,
+      "sha256": "2a9c6968d89d6fc445287928b12a19594c1ebd7383eb3ae80f1397d8f15fa60d"
+    },
+    "source/on/graph-2.ffn_out-0.bin": {
+      "bytes": 1433600,
+      "sha256": "eb0e7effedbb2289778ae4c2cb7a3df1be9da568963cc15aed259c7f6a18e452"
+    }
+  },
+  "pairs": [
+    {
+      "graph": 1,
+      "native_rows": [
+        0,
+        4
+      ],
+      "stage": "input_norm",
+      "bit_exact": true,
+      "different_bits": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "source_rms": 1.156683446019308,
+      "native_rms": 1.156683446019308
+    },
+    {
+      "graph": 2,
+      "native_rows": [
+        4,
+        16
+      ],
+      "stage": "input_norm",
+      "bit_exact": true,
+      "different_bits": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "source_rms": 1.3286303057746571,
+      "native_rms": 1.3286303057746571
+    },
+    {
+      "graph": 1,
+      "native_rows": [
+        0,
+        4
+      ],
+      "stage": "qkv",
+      "bit_exact": false,
+      "different_bits": 26646,
+      "rms": 2.2309369797417065e-07,
+      "max_abs": 3.814697265625e-06,
+      "source_rms": 2.0186095342307944,
+      "native_rms": 2.018609534193366
+    },
+    {
+      "graph": 2,
+      "native_rows": [
+        4,
+        16
+      ],
+      "stage": "qkv",
+      "bit_exact": true,
+      "different_bits": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "source_rms": 1.312974876634915,
+      "native_rms": 1.312974876634915
+    },
+    {
+      "graph": 1,
+      "native_rows": [
+        0,
+        4
+      ],
+      "stage": "z",
+      "bit_exact": true,
+      "different_bits": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "source_rms": 1.4223029487335754,
+      "native_rms": 1.4223029487335754
+    },
+    {
+      "graph": 2,
+      "native_rows": [
+        4,
+        16
+      ],
+      "stage": "z",
+      "bit_exact": true,
+      "different_bits": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "source_rms": 1.1038928792266716,
+      "native_rms": 1.1038928792266716
+    },
+    {
+      "graph": 1,
+      "native_rows": [
+        0,
+        4
+      ],
+      "stage": "a",
+      "bit_exact": true,
+      "different_bits": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "source_rms": 5.720084116186153,
+      "native_rms": 5.720084116186153
+    },
+    {
+      "graph": 2,
+      "native_rows": [
+        4,
+        16
+      ],
+      "stage": "a",
+      "bit_exact": true,
+      "different_bits": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "source_rms": 2.8173811634441215,
+      "native_rms": 2.8173811634441215
+    },
+    {
+      "graph": 1,
+      "native_rows": [
+        0,
+        4
+      ],
+      "stage": "b",
+      "bit_exact": true,
+      "different_bits": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "source_rms": 1.8658074754687666,
+      "native_rms": 1.8658074754687666
+    },
+    {
+      "graph": 2,
+      "native_rows": [
+        4,
+        16
+      ],
+      "stage": "b",
+      "bit_exact": true,
+      "different_bits": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "source_rms": 1.8528464224998082,
+      "native_rms": 1.8528464224998082
+    },
+    {
+      "graph": 1,
+      "native_rows": [
+        0,
+        4
+      ],
+      "stage": "attention",
+      "bit_exact": false,
+      "different_bits": 7097,
+      "rms": 3.68533904754752e-08,
+      "max_abs": 3.5762786865234375e-07,
+      "source_rms": 0.059581604483636294,
+      "native_rms": 0.059581605783252695
+    },
+    {
+      "graph": 2,
+      "native_rows": [
+        4,
+        16
+      ],
+      "stage": "attention",
+      "bit_exact": false,
+      "different_bits": 12842,
+      "rms": 2.2862499149376947e-08,
+      "max_abs": 4.76837158203125e-07,
+      "source_rms": 0.06033666493930122,
+      "native_rms": 0.060336663835860394
+    },
+    {
+      "graph": 1,
+      "native_rows": [
+        0,
+        4
+      ],
+      "stage": "attention_residual",
+      "bit_exact": false,
+      "different_bits": 7067,
+      "rms": 3.6854268713087756e-08,
+      "max_abs": 3.5762786865234375e-07,
+      "source_rms": 0.059299653814095805,
+      "native_rms": 0.059299655181085015
+    },
+    {
+      "graph": 2,
+      "native_rows": [
+        4,
+        16
+      ],
+      "stage": "attention_residual",
+      "bit_exact": false,
+      "different_bits": 12822,
+      "rms": 2.319769183111663e-08,
+      "max_abs": 4.76837158203125e-07,
+      "source_rms": 0.13178550584818657,
+      "native_rms": 0.13178550571693654
+    },
+    {
+      "graph": 1,
+      "native_rows": [
+        0,
+        4
+      ],
+      "stage": "post_norm",
+      "bit_exact": false,
+      "different_bits": 8292,
+      "rms": 6.705288800314761e-07,
+      "max_abs": 5.044043064117432e-06,
+      "source_rms": 0.4465329171525552,
+      "native_rms": 0.446532895736345
+    },
+    {
+      "graph": 2,
+      "native_rows": [
+        4,
+        16
+      ],
+      "stage": "post_norm",
+      "bit_exact": false,
+      "different_bits": 17943,
+      "rms": 1.944468689092494e-07,
+      "max_abs": 1.5497207641601562e-06,
+      "source_rms": 0.5501304914615011,
+      "native_rms": 0.5501305003533665
+    },
+    {
+      "graph": 1,
+      "native_rows": [
+        0,
+        4
+      ],
+      "stage": "gate",
+      "bit_exact": false,
+      "different_bits": 33807,
+      "rms": 1.5167753037635363e-07,
+      "max_abs": 1.5497207641601562e-06,
+      "source_rms": 0.22776664960285284,
+      "native_rms": 0.22776664106613806
+    },
+    {
+      "graph": 2,
+      "native_rows": [
+        4,
+        16
+      ],
+      "stage": "gate",
+      "bit_exact": false,
+      "different_bits": 83549,
+      "rms": 2.211594762992491e-05,
+      "max_abs": 0.000338137149810791,
+      "source_rms": 0.32414942429448235,
+      "native_rms": 0.3241495442473474
+    },
+    {
+      "graph": 1,
+      "native_rows": [
+        0,
+        4
+      ],
+      "stage": "up",
+      "bit_exact": false,
+      "different_bits": 33817,
+      "rms": 1.3942267511766336e-07,
+      "max_abs": 9.5367431640625e-07,
+      "source_rms": 0.19947203393320811,
+      "native_rms": 0.1994720235781096
+    },
+    {
+      "graph": 2,
+      "native_rows": [
+        4,
+        16
+      ],
+      "stage": "up",
+      "bit_exact": false,
+      "different_bits": 84003,
+      "rms": 2.0705324746446194e-05,
+      "max_abs": 0.00029408931732177734,
+      "source_rms": 0.2469919965037101,
+      "native_rms": 0.246991858900278
+    },
+    {
+      "graph": 1,
+      "native_rows": [
+        0,
+        4
+      ],
+      "stage": "activation",
+      "bit_exact": false,
+      "different_bits": 35780,
+      "rms": 2.38441275497778e-08,
+      "max_abs": 9.5367431640625e-07,
+      "source_rms": 0.038185283706966784,
+      "native_rms": 0.038185278553541174
+    },
+    {
+      "graph": 2,
+      "native_rows": [
+        4,
+        16
+      ],
+      "stage": "activation",
+      "bit_exact": false,
+      "different_bits": 98930,
+      "rms": 3.331473771872883e-06,
+      "max_abs": 0.00012949109077453613,
+      "source_rms": 0.03805166024471757,
+      "native_rms": 0.03805161831049811
+    },
+    {
+      "graph": 1,
+      "native_rows": [
+        0,
+        4
+      ],
+      "stage": "down",
+      "bit_exact": false,
+      "different_bits": 9917,
+      "rms": 4.238853780015892e-06,
+      "max_abs": 2.4120789021253586e-05,
+      "source_rms": 0.04657781773616732,
+      "native_rms": 0.04657781692967674
+    },
+    {
+      "graph": 2,
+      "native_rows": [
+        4,
+        16
+      ],
+      "stage": "down",
+      "bit_exact": false,
+      "different_bits": 27813,
+      "rms": 2.5818103504111656e-05,
+      "max_abs": 0.0003360183909535408,
+      "source_rms": 0.03591100160951116,
+      "native_rms": 0.03591089401261223
+    }
+  ],
+  "limits": [
+    "No heldout outputs inspected.",
+    "No step31 score comparison: new native/source prefix ends at25.",
+    "Image GDN state includes prior four text tokens; an input projection match alone does not close recurrent context."
+  ],
+  "actual_native_qkv16_equals_sealed_upstream_mixed16_operator": true,
+  "mixed_operator_artifact": {
+    "bytes": 4718592,
+    "sha256": "f1cee6cd519a831685fc74350a4a3ff33c951bcf449dd8322a4cb2f11b17655d"
+  },
+  "full_prefill_input_positions_transitively_byte_exact_to_source": true,
+  "input_transitive_native_receipt_sha256": "4428c4a2d8a877f64488847dfd7145fb0ccd1ba26810e6c0edf2229e6e40eac9"
+}

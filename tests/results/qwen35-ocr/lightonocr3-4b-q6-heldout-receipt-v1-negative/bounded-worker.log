@@ -1,0 +1,40 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+phase source
+phase fetch-production
+phase production-bytes
+phase ggml
+phase configure
+phase build
+phase test-lighton4b-physical-q6-tiled
+phase test-lighton4b-physical-gdn-source-ops
+phase test-lighton4b-physical-q4-repack
+phase test-lighton4b-physical-f16-attention
+phase test-lighton4b-physical-f16-vision
+phase cli-native-composed
+phase cli-native-source-features
+phase cli-cap-low
+phase cli-cap-high
+phase cli-threads
+phase cli-mode
+phase cli-disabled
+phase cli-unflagged
+phase cli-old256
+phase cli-old512
+phase observed-old
+phase observed-corrected
+phase native-preflight
+Traceback (most recent call last):
+  File "/tmp/lighton4b-q6-heldout-historical-receipt-v1/source/tools/q6-heldout/worker.py", line 113, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/tmp/lighton4b-q6-heldout-historical-receipt-v1/source/tools/q6-heldout/worker.py", line 88, in main
+    seal=out/'pre-forward-inputs.json';seal_sha=ex.seal_inputs(seal,case,ids,mods,grid,(pre/'prefill.positions.f32').read_bytes(),source_ids,source_mods,(olddir/'source-preflight.positions.f32').read_bytes(),original_cfg['expected_media_prompt'],original_cfg);require(seal_sha==old['pre_forward_input_seal_sha256'],'exact original pre-forward seal');r['pre_forward_input_seal_sha256']=seal_sha;save()
+                                                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.13/pathlib/_abc.py", line 625, in read_bytes
+    with self.open(mode='rb') as f:
+         ~~~~~~~~~^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/kaggle/working/native-preflight/prefill.positions.f32'

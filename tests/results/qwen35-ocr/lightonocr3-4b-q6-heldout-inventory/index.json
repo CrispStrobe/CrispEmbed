@@ -1,0 +1,95 @@
+{
+  "schema": "lighton4b-q6-heldout-inventory-index/v1",
+  "case": "inventory-table",
+  "status": "provisional-floor-met",
+  "qualified": false,
+  "receipt_sha256": "4fa06de38118bd5b007fda809ad4f8602e8653961816757de21d563592689db9",
+  "independent_raw_audit_sha256": "64987b2e350a645cb5289bfe51f7ea54afcacc3790bb4fea49f352bfad60a9fc",
+  "files": {
+    "source-admission.json": {
+      "bytes": 2708,
+      "sha256": "2704d455d303f620f9ed00038abc28505039d7446c59e8cd29a7d80b54f50c09"
+    },
+    "selected-review.py": {
+      "bytes": 6183,
+      "sha256": "e7308045890df0ddcf3c55de8c10beb021fe7ff590f79641e1d34c8fa61b33f7"
+    },
+    "protocol.json": {
+      "bytes": 1989,
+      "sha256": "4844e0e5e53a056ecf854ea577821ded0660147da1b7b6eb87d3127e39bb8148"
+    },
+    "q6-heldout.json": {
+      "bytes": 339220,
+      "sha256": "4fa06de38118bd5b007fda809ad4f8602e8653961816757de21d563592689db9"
+    },
+    "independent-selected-review.json": {
+      "bytes": 6043,
+      "sha256": "f4692e789bea2e2b602bd9ef933102fb9898d476a7749a8331228a7c66e79713"
+    },
+    "bootstrap.py": {
+      "bytes": 8488,
+      "sha256": "af7af2802ea81455fca5e727c33b2c557dbd0f282e3a93be0586802e7338e0f0"
+    },
+    "q6-heldout-case-bootstrap.json": {
+      "bytes": 451,
+      "sha256": "1ae7480d3caecdef1f36687e2cba1afecab18d740623317ed4294840b835eb04"
+    },
+    "corrected-composed/generated.ids": {
+      "bytes": 966,
+      "sha256": "14c9b9b1ca58ffccc4e5949833a78a31e1785b6dbde31be442ccc413d3526d2f"
+    },
+    "corrected-composed/native-summary.json": {
+      "bytes": 399,
+      "sha256": "f9da00c2e7f6ba8066a19f7013c81e2706320900f13065898100d32369eb9ba5"
+    },
+    "corrected-composed/generated.txt": {
+      "bytes": 460,
+      "sha256": "996768f6aeff43da152529483f2fe5cb0f05e2acfc0cf965705dad04c66ae0fa"
+    },
+    "corrected-source-features/generated.ids": {
+      "bytes": 966,
+      "sha256": "14c9b9b1ca58ffccc4e5949833a78a31e1785b6dbde31be442ccc413d3526d2f"
+    },
+    "corrected-source-features/native-summary.json": {
+      "bytes": 398,
+      "sha256": "9f317ad61fc94e6f921f1e21e98b9a3511e521c7aee8119cf7f7eeb8723a348d"
+    },
+    "corrected-source-features/generated.txt": {
+      "bytes": 460,
+      "sha256": "996768f6aeff43da152529483f2fe5cb0f05e2acfc0cf965705dad04c66ae0fa"
+    },
+    "raw-audit/raw-audit.json": {
+      "bytes": 2295,
+      "sha256": "64987b2e350a645cb5289bfe51f7ea54afcacc3790bb4fea49f352bfad60a9fc"
+    },
+    "raw-audit/audit.py": {
+      "bytes": 9375,
+      "sha256": "cbd38cca098033b7354c464403be818b8f3f53eb1074ad94533e726af03edfd8"
+    },
+    "raw-audit/bootstrap.py": {
+      "bytes": 15376,
+      "sha256": "a8f3520a0dfb8e48ff84aa15969dcc6a76c8f8f614cc78156035de69499a4bab"
+    },
+    "raw-audit/raw-audit-bootstrap.json": {
+      "bytes": 441,
+      "sha256": "7cd51982bc932530b6918f9e57964c529f6680b3b24a2a526014c0670e4906fd"
+    },
+    "baseline-old/generated.ids": {
+      "bytes": 966,
+      "sha256": "14c9b9b1ca58ffccc4e5949833a78a31e1785b6dbde31be442ccc413d3526d2f"
+    },
+    "baseline-old/native-summary.json": {
+      "bytes": 386,
+      "sha256": "bf98ca9414285551d10f89f79e5abe47cdf48500565556513449c12f8c7d1dc2"
+    },
+    "baseline-old/generated.txt": {
+      "bytes": 460,
+      "sha256": "996768f6aeff43da152529483f2fe5cb0f05e2acfc0cf965705dad04c66ae0fa"
+    }
+  },
+  "limits": [
+    "Authored literal inventory only, not representative benchmark.",
+    "Receipt floor failure remains binding; no qualification/default/release/alias change.",
+    "Large arrays and archives remain remote."
+  ]
+}

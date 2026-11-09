@@ -1,0 +1,30 @@
+{
+  "schema": "lighton4b-source-prefill-proof-bootstrap/v1",
+  "source_sha": "1e3b0071de99fad19694a40ee694e88a42acc119",
+  "bootstrap_sha256": "9ba276a57404bcb820c49cc1bbadbeadaf91bcde40c14160dbba4dee07d49650",
+  "status": "failed",
+  "gpu_requested": false,
+  "model_forward_executed": null,
+  "model_quality_qualified": false,
+  "phase": "source-prefill-proof",
+  "source_file_sha256": {
+    "tools/source-prefill-probe/worker.py": "d704a52186fb4a0b1949c5c18abd21151b6cb1d9433cce8d4d1e585b2a544a52",
+    "tools/source-prefill-probe/probe.cpp": "347cf3e707a59784dfa0cf59a2fb1e9b965b36f6dc893a8de1de9ba29c76244d",
+    "tools/source-prefill-probe/protocol.json": "b1d1636aec46deb60d702affcfa6537bb2f86dc2aab5a3c0315e086ac98e494e",
+    "tools/source-prefill-probe/test_controls.py": "9b92e3b204468e7fa9bf698ae6a162f3fc0ab7bff4aa11c4d64236e31b809b94",
+    "tools/source-prefill-probe/README.md": "729a074474c9ea2de78d36ca7086083870b0f3a0838b9be4d2ea2ba94adee448",
+    "src/lighton4b_source_prefill_chunks.h": "5f9758f19b22a32190752339efb20e3a443dd8401aeab6001900b1e30b155a8a",
+    "src/lighton4b_physical_q6_tiled.cpp": "097955fe71ef054741bd946c7c94129b71ad820d6a18902d4db8034edc29b898",
+    "src/lighton4b_physical_q6_tiled.h": "bf965a7ddbf92a94ceb74a01d5f9c63ed26566e5507fd85e456f78198e2f2951",
+    "tests/test_lighton4b_source_prefill_chunks.cpp": "16d348b3b95fc6e456bdb7657745fc6803ecee4c09de3687e6c9571b1da2517b",
+    "tests/lighton4b_native_document.cpp": "5641cf885268aae8b85b73716ba6394f93594c841dac95073b54019c8c13484b",
+    "CMakeLists.txt": "e226d2764eb16e1904cd59bbda72064f0ff4e8e0e0629dc6913fdfb3db563b89",
+    "tools/repack-probe/worker.py": "942bf150e767a761b28a7ac9883d22bfd400a86cf2ff0c22ea25d3ea591f811b",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21"
+  },
+  "error_type": "RuntimeError",
+  "error": "source-prefill-proof nonzero",
+  "elapsed_seconds": 111.13205355400001
+}

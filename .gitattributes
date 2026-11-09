@@ -77,3 +77,7 @@ tests/results/qwen35-ocr/lightonocr3-4b-ffn-postnorm-codes/v1/*-CMakeCache.txt -
 tests/results/qwen35-ocr/lightonocr3-4b-q6-qkv-batch/v1/*CMakeCache.txt -text whitespace=-blank-at-eof
 
 tests/results/qwen35-ocr/lightonocr3-4b-q6-tiled-helper/v1/*CMakeCache.txt -text whitespace=-blank-at-eof
+tests/results/qwen35-ocr/lightonocr3-4b-q6-tiled-full-ab/** -text -whitespace
+tests/results/qwen35-ocr/lightonocr3-4b-q6-arabic/** -text -whitespace
+tests/results/qwen35-ocr/lightonocr3-4b-source-prefill-observed-ab/** -text -whitespace
+tests/results/qwen35-ocr/lightonocr3-4b-planner-heldout-receipt/** -text -whitespace

@@ -1,0 +1,23 @@
+{
+  "schema": "lighton4b-source-prefill-observed-ab/v1",
+  "proof_receipt_sha256": "89f7738a02bdb9f9a7a00207fb2f187a6dd1830c51a31f16ca98d4b0e83055d0",
+  "runtime_producer_source": "87d39abfe89f925683ca4b586dcd79b025ae9e6d",
+  "cases": [
+    "simple_table",
+    "simple_form",
+    "arabic_printed_line"
+  ],
+  "cap": 512,
+  "threads": 4,
+  "context": 2048,
+  "worker_seconds": 6000,
+  "arm_seconds": 900,
+  "heldout_allowed": false,
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "changed_gate": "CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL",
+  "off_baselines": {
+    "table_form": "f5d0077052b907e2d674caef9e7c4ae09b08456ff48a79f327cbdfd030b2dcc9",
+    "arabic": "5da65561b9aec475eb24c1481e4cad2cce27a60dd72fc386bacd26476bef50b3"
+  },
+  "scope": "Observed-only diagnostic; no heldout access or tuning. All previous corrected gates remain ON; only scheduling changes. No release/default or quality qualification."
+}

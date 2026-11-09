@@ -1,0 +1,6 @@
+{
+  "phase": "post_submission_status",
+  "reason": "Kaggle returned a title-derived canonical slug different from requested metadata id",
+  "worker_accepted": true,
+  "retry_submitted": false
+}

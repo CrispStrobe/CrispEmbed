@@ -1,0 +1,17 @@
+{
+  "controller_sha": "4a32434e822ac6c8fd69ad77252a59a2cd4d5950",
+  "controller_bootstrap_sha256": "3997a6397f1d29d507dc2010341d1962395d8611fc32cf2b640abd2b95e90dcf",
+  "audit_bootstrap_sha256": "bb14ad9af5a430581c1f96b5fa7ac4cde53fa79c61b1f55fbf951e45b2fcd993",
+  "auditor_sha256": "f65d24918155536725458229473e4652cad24d1d6359ffbef8066ef39bdbf39a",
+  "model_free_bundle_bootstrap_sha256": "90e53a2c69b62972d9c1be86253fa04215fa4279eab172d22be2ff792ae92c6d",
+  "primary_only": true,
+  "old_baseline_decode_executed": false,
+  "reference_forward_executed": false,
+  "source_feature_decode_executed": false,
+  "outer_seconds": 4500,
+  "worker_seconds": 4200,
+  "arm_seconds": 2400,
+  "audit_outer_seconds": 900,
+  "audit_seconds": 600,
+  "qualified": false
+}

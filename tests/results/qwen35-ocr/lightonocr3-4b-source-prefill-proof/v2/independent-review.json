@@ -1,0 +1,75 @@
+{
+  "schema": "lighton4b-source-prefill-independent-review/v2",
+  "receipt_sha256": "89f7738a02bdb9f9a7a00207fb2f187a6dd1830c51a31f16ca98d4b0e83055d0",
+  "source": "87d39abfe89f925683ca4b586dcd79b025ae9e6d",
+  "status": "independently_recomputed_full154_exact",
+  "outputs": 1261568,
+  "metrics_source_coordinates": {
+    "source-plan": {
+      "bit_exact": true,
+      "rms": 0.0,
+      "max_abs": 0.0
+    },
+    "source-q6": {
+      "bit_exact": false,
+      "rms": 6.861903600110063e-08,
+      "max_abs": 3.814697265625e-06
+    }
+  },
+  "all154_normalization_exact": true,
+  "files": {
+    "graph-1.linear_attn_qkv_mixed-0.bin": {
+      "bytes": 131072,
+      "sha256": "253e66a332f5bf4d5fb59828f2c077612c23246bf2c317916ee3b8930c63f243"
+    },
+    "graph-1.attn_norm-0.bin": {
+      "bytes": 40960,
+      "sha256": "7a3fafed50f68cfdf0e41c2dadb3310c0512d8296155ad95de45567560064a96"
+    },
+    "graph-2.linear_attn_qkv_mixed-0.bin": {
+      "bytes": 4587520,
+      "sha256": "f8797400ae24df3794b0670cffebdebd7c22502b8d1bde225a52c0bec83f1e08"
+    },
+    "graph-2.attn_norm-0.bin": {
+      "bytes": 1433600,
+      "sha256": "891a9f31fe573e3cc39c33c40cad87d4bbad2b7831f3b1bfaea76b5d977f0102"
+    },
+    "graph-3.linear_attn_qkv_mixed-0.bin": {
+      "bytes": 196608,
+      "sha256": "dc4253a19a1610d789c8cc7707e70982665052532c852ea07ce64edcda921e59"
+    },
+    "graph-3.attn_norm-0.bin": {
+      "bytes": 61440,
+      "sha256": "5266098467299c0b10cd0e5401c37ffcb5b81e35721b71742c61926f43ea5914"
+    },
+    "graph-4.linear_attn_qkv_mixed-0.bin": {
+      "bytes": 131072,
+      "sha256": "0ef576859116ec9436a27ec94422d567e6fe6d0a13768894b37b46f40b2b2a0f"
+    },
+    "graph-4.attn_norm-0.bin": {
+      "bytes": 40960,
+      "sha256": "b6af4e92f6a9981228d938449e08403d9d82861f8e036398d48f78c52ce2a93d"
+    },
+    "source-plan-t1.f32": {
+      "bytes": 5046272,
+      "sha256": "7c467114928618b2478e05119246f20c149d4467a27757d4245d0271181d746b"
+    },
+    "source-plan-t1.normalized.f32": {
+      "bytes": 1576960,
+      "sha256": "2805e9b0897f68da4d30704b02d72a9eb7d7cfaf015f83b4f8e8f2786977461c"
+    },
+    "source-q6-t1.f32": {
+      "bytes": 5046272,
+      "sha256": "349a1b80724e0f4eb0b7026fbe3d7779b3cdfbe2897d3df8e6f53d434e43fd98"
+    },
+    "source-q6-t1.normalized.f32": {
+      "bytes": 1576960,
+      "sha256": "2805e9b0897f68da4d30704b02d72a9eb7d7cfaf015f83b4f8e8f2786977461c"
+    }
+  },
+  "model_forward_executed": false,
+  "heldout_data_accessed": false,
+  "limits": [
+    "QKV operator and normalization only; full recurrent/attention/decoded equivalence remains unproved."
+  ]
+}

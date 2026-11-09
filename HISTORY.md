@@ -21615,3 +21615,13 @@ legacy/fallback/fence/HF/Q6 gates. The
 [independent review](docs/lighton4b-attention-primitives.md) preserves seven vector readbacks and
 all four setup negatives. Existing PR155 contains the exact tested default-off
 tree; full-score/decoded gates remain pending.
+
+- 8 November2026: independently closed corrected physical-Q6 provisional regressions remain mixed: receipt still fails its source floor25/19 versus24/18, while two-column improves to297/87 versus source526/146. Source52e1cfcec preserves exact old baselines/input seals and paired pixel/source-feature identity; independent remote audits close1739 and2351 raw rows. Copyright-sensitive book outputs stay private. No qualification, default/release or alias change; fixed inventory is now complete248EOS with zero content edits/all15cells exact. The complete audited panel remains unqualified because the receipt floor fails. See `docs/lighton4b-q6-heldout-provisional-results.md`.
+
+- 8 November2026: scheduler-only corrected-Q4 frozen receipt remainsnegative:468EOS unchangedtext/IDs and25/19edits versus upstream24/18, despiteimprovedfirstscore. Sourcea616/abb685 and independent1de4rawaudit472files/1739rows preserveactualcontrols/inputseals/pairednativeerrors. Provisionalfixedregression, no tuning/qualification/release; remainingcasesstayfrozen. See docs/lighton4b-planner-heldout-provisional-results.md.
+
+- 8 November2026: scheduler-only fixedbook diagnostic retains an audited timeout, not completedquality:1054rows/noEOSat1200s; prior660baseline andallinput/observedcontrols matched. Private relay+4906forensics preserve1457files/2.735GB/all2049rows withoutmodelreruns; protectedtext/IDs remainprivate. Firstreceiptnegative/no-ship stillbinds, resource-onlycontinuation requiresstrictprefixandtestedbundle. See docs/lighton4b-planner-heldout-provisional-results.md.
+
+- Preserved successful frozen planner inventory child and separate post-retention NameError; independent remote audit closes472 files/1,761,212,921 bytes/1079 rows without inference rerun. Receipt failure and incomplete book timeout remain binding; no qualification.
+
+- Preserved fixed-budget planner book replay:1536 cap/no EOS, all1054 prior rows+82 stages exact, independent98-file/1,745,200,955-byte/1536-row audit. Native1664.23s wall/6.234GB sampledRSS; capped diagnostic edits3716/955 versus complete upstream526/146. Frozen planner provisional panel1/3, unqualified/no ship; no further inference retry.

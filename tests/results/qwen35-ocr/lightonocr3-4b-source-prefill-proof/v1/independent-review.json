@@ -1,0 +1,34 @@
+{
+  "schema": "lighton4b-source-prefill-negative-review/v1",
+  "source_sha": "1e3b0071de99fad19694a40ee694e88a42acc119",
+  "status": "setup_negative_before_original_ranges",
+  "supported_unit_checks": 4165,
+  "original_checkpoint_bytes_read": 0,
+  "model_forward_executed": false,
+  "heldout_data_accessed": false,
+  "cause": "Synthetic output prefix zero generated zero.f32 and overwrote the immutable normalized input before the second run. Second run correctly rejected input length.",
+  "fix_source": "87d39abfe89f925683ca4b586dcd79b025ae9e6d",
+  "numerical_conclusion": null,
+  "files": {
+    "source-prefill-proof.json": {
+      "bytes": 10285,
+      "sha256": "a20bd9d1d9a2936b9c2011ec7a588107c515a754bbb432cf28b031d59994ff20"
+    },
+    "source-prefill-proof-bootstrap.json": {
+      "bytes": 2227,
+      "sha256": "1d2cad5b1748b5ff4eddea41fd70213b0f5778646828144ab89bb74669a8ef64"
+    },
+    "test-lighton4b-source-prefill-chunks.log": {
+      "bytes": 74,
+      "sha256": "4fe75532b6dc8266154352e1594d163316f52d9fd993a4bf299a4bb9ca889655"
+    },
+    "synthetic-source-plan.log": {
+      "bytes": 18,
+      "sha256": "9631b65d9bff649c2924e4c7c88d7a75d5f4d2feba8a44095423c021ed6dbbd3"
+    },
+    "build.log": {
+      "bytes": 7330,
+      "sha256": "8faf821e4d07b7dfe809ce105b7f491b0e5336d4b483a1b47a6a73679a377e9a"
+    }
+  }
+}

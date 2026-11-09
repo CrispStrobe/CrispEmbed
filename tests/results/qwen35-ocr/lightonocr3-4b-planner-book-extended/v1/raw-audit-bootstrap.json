@@ -1,0 +1,15 @@
+{
+  "status": "complete",
+  "model_forward_executed": false,
+  "qualified": false,
+  "capacity": {
+    "MemAvailable": 32172904448,
+    "SwapTotal": 0,
+    "SwapFree": 0,
+    "cgroup_observed": 1,
+    "finite_cgroup_bounds": 1
+  },
+  "auditor_sha256": "f65d24918155536725458229473e4652cad24d1d6359ffbef8066ef39bdbf39a",
+  "phase": "audit",
+  "elapsed_seconds": 36.75683836600001
+}

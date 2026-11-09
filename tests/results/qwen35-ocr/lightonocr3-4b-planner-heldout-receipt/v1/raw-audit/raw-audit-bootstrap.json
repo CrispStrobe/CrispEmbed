@@ -1,0 +1,17 @@
+{
+  "status": "complete",
+  "case": "historical-receipt",
+  "model_forward_executed": false,
+  "model_acquisition": false,
+  "qualified": false,
+  "capacity": {
+    "MemAvailable": 32172699648,
+    "SwapTotal": 0,
+    "SwapFree": 0,
+    "cgroup_observed": 1,
+    "finite_cgroup_bounds": 1
+  },
+  "auditor_sha256": "8cd218182b2801c43d50620a6475c6840f9bf568ae9dc2d1acf25a40afca30cf",
+  "phase": "audit",
+  "elapsed_seconds": 61.016389755000006
+}
