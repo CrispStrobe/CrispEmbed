@@ -63,6 +63,22 @@ inventory: *production default (opt-out)*, *default-off experimental / opt-in*,
 
 ## Embeddings and tokenizers
 
+### Phone-photo geometry experiments
+
+`CRISPEMBED_OCR_CROP_PROJECTIVE=1` enables a true inverse homography and bilinear
+pixel sampling in the shared OCR-region quadrilateral crop. It validates convex
+finite geometry, accepts grayscale/RGB/RGBA, preserves edge-replicated padding,
+and bounds output dimensions to 32768 per axis and 64 million pixels. It does
+not detect page corners. Unset, empty, `0`, `false`, `off` and `no` preserve the
+historical bilinear corner-position warp and nearest-neighbor sampling.
+
+`CRISPEMBED_SCAN_BOUNDED_DESKEW=1` estimates a page's skew on an area-averaged
+analysis image with longest side at most 1200 pixels. Both Hough and the
+independent differential detector see the same analysis image. Output rotation
+uses the full-resolution original; the gate does not downscale exported pages.
+Disabled values preserve full-resolution estimation. Both paths remain opt-in
+until representative decoded-quality evidence supports a separate promotion.
+
 | Variable | Default | Meaning |
 |---|---|---|
 | `CRISPEMBED_ENCODER_PACKED`, `CRISPEMBED_ENCODER_PACK_MAXTOK`, `CRISPEMBED_ENCODER_4D`, `CRISPEMBED_ENCODER_4D_GROUP`, `CRISPEMBED_ENCODER_NO_SWA` | unset | Encoder batching layout (packed sequences, 4-D attention) and sliding-window override. |
@@ -237,7 +253,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-431 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+433 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -791,6 +807,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_NEMOTRON_PARSE_GEOMETRY` | value | unset | value | tuning / config | `src/nemotron_parse_geometry.h` |  |
 
+### ocr_crop
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_OCR_CROP_PROJECTIVE` | on | off | bool | default-off experimental / opt-in | `src/ocr_crop.cpp` |  |
+
 ### ocr_detect
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
@@ -1057,6 +1079,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
+| `CRISPEMBED_SCAN_BOUNDED_DESKEW` | on | off | bool | default-off experimental / opt-in | `src/scan_cleanup.cpp` |  |
 | `CRISPEMBED_SCAN_CLEANUP_BENCH` | on | off | bool | debug | `src/scan_cleanup.cpp` |  |
 
 ### scunet_denoise

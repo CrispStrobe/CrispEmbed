@@ -18,6 +18,7 @@
 #include <vector>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -110,6 +111,35 @@ static uint8_t * gray_to_rgb_u8(const float * gray, int w, int h) {
 
 // ── 1. Deskew ───────────────────────────────────────────────────────
 
+static bool valid_skew_input(const void * pixels, int w, int h, float max_angle_deg) {
+    // Guard arithmetic before allocating Sobel, Hough or RGB buffers. Phone
+    // callers must also validate the actual byte-buffer length at their ABI.
+    return pixels && w >= 3 && h >= 3 && w <= 32768 && h <= 32768 &&
+           size_t(w) * h <= 64u * 1024u * 1024u && std::isfinite(max_angle_deg) &&
+           max_angle_deg > 0.0f && max_angle_deg <= 45.0f;
+}
+
+// A camera page can contain tens of megapixels; angle estimation does not
+// require resampling the final page to that preview resolution. Area means
+// retain thin text better than nearest-neighbor sampling at the same bound.
+static std::vector<float> skew_analysis_image(const float * gray, int w, int h, int * aw, int * ah) {
+    const double scale = 1200.0 / std::max(w, h);
+    *aw = std::max(3, int(std::lround(w * scale)));
+    *ah = std::max(3, int(std::lround(h * scale)));
+    std::vector<float> small(size_t(*aw) * *ah);
+    for (int y = 0; y < *ah; ++y) {
+        const int y0 = int(int64_t(y) * h / *ah), y1 = std::max(y0 + 1, int(int64_t(y + 1) * h / *ah));
+        for (int x = 0; x < *aw; ++x) {
+            const int x0 = int(int64_t(x) * w / *aw), x1 = std::max(x0 + 1, int(int64_t(x + 1) * w / *aw));
+            double sum = 0;
+            for (int sy = y0; sy < y1; ++sy)
+                for (int sx = x0; sx < x1; ++sx) sum += gray[size_t(sy) * w + sx];
+            small[size_t(y) * *aw + x] = float(sum / ((y1 - y0) * (x1 - x0)));
+        }
+    }
+    return small;
+}
+
 // Sobel edge magnitude (horizontal + vertical)
 static std::vector<float> sobel_edges(const float * gray, int w, int h) {
     std::vector<float> edges(w * h, 0.0f);
@@ -128,6 +158,12 @@ static std::vector<float> sobel_edges(const float * gray, int w, int h) {
 }
 
 float scan_cleanup_detect_angle(const float * gray, int w, int h, float max_angle_deg) {
+    if (!valid_skew_input(gray, w, h, max_angle_deg)) return 0.0f;
+    if (core_env::on("CRISPEMBED_SCAN_BOUNDED_DESKEW") && std::max(w, h) > 1200) {
+        int aw = 0, ah = 0;
+        auto small = skew_analysis_image(gray, w, h, &aw, &ah);
+        return scan_cleanup_detect_angle(small.data(), aw, ah, max_angle_deg);
+    }
     // Compute Sobel edges directly on grayscale (not binarized — preserves
     // gradient information for thin text lines and anti-aliased edges)
     auto edges = sobel_edges(gray, w, h);
@@ -142,7 +178,7 @@ float scan_cleanup_detect_angle(const float * gray, int w, int h, float max_angl
     // Only scan angles in [-max_angle, +max_angle] with 0.1 degree steps
     const float angle_step = 0.1f;
     int n_angles = (int)(2.0f * max_angle_deg / angle_step) + 1;
-    int diag = (int)sqrtf((float)(w * w + h * h)) + 1;
+    int diag = int(std::hypot(double(w), double(h))) + 1;
     int n_rho = 2 * diag;
 
     std::vector<int> accum(n_angles * n_rho, 0);
@@ -217,6 +253,12 @@ float scan_cleanup_detect_angle(const float * gray, int w, int h, float max_angl
 }
 
 float scan_cleanup_detect_angle_consensus(const float * gray, int w, int h, float max_angle_deg) {
+    if (!valid_skew_input(gray, w, h, max_angle_deg)) return 0.0f;
+    if (core_env::on("CRISPEMBED_SCAN_BOUNDED_DESKEW") && std::max(w, h) > 1200) {
+        int aw = 0, ah = 0;
+        auto small = skew_analysis_image(gray, w, h, &aw, &ah);
+        return scan_cleanup_detect_angle_consensus(small.data(), aw, ah, max_angle_deg);
+    }
     float a_hough = scan_cleanup_detect_angle(gray, w, h, max_angle_deg);
 
     // Second opinion: differential-square-sum detector (classical_preproc.h).
@@ -331,7 +373,10 @@ void scan_cleanup_rotate(const float * gray, int w, int h, float angle_deg, floa
 
 int scan_cleanup_deskew_rgb(const uint8_t * pixels, int w, int h, int channels, float max_angle_deg,
                             uint8_t ** out_pixels, int * out_w, int * out_h) {
-    if (!pixels || w <= 0 || h <= 0 || (channels != 1 && channels != 3 && channels != 4) || !out_pixels || !out_w ||
+    if (out_pixels) *out_pixels = nullptr;
+    if (out_w) *out_w = 0;
+    if (out_h) *out_h = 0;
+    if (!valid_skew_input(pixels, w, h, max_angle_deg) || (channels != 1 && channels != 3 && channels != 4) || !out_pixels || !out_w ||
         !out_h) {
         return -1;
     }

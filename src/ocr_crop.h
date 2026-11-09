@@ -31,9 +31,14 @@ struct prepare_options {
 std::vector<uint8_t> extract(const uint8_t * pixels, int width, int height, int channels, int x, int y, int crop_w,
                              int crop_h, int padding, int * out_width, int * out_height);
 
-// Perspective-rectify an ordered quadrilateral (TL, TR, BR, BL).  This is
-// the upstream PP-OCR crop contract after DBPostProcess; retaining
-// the polygon is essential for skewed and rotated text lines.
+// Rectify a quadrilateral (TL, TR, BR, BL; arbitrary point order is accepted).
+// Retaining the polygon is essential for skewed and rotated text lines.
+// The default preserves the historical bilinear corner-position warp and
+// nearest-neighbor sampling. CRISPEMBED_OCR_CROP_PROJECTIVE=1 selects a true
+// homography with bilinear pixel sampling, validates a convex nondegenerate
+// quad, and bounds the output to 32768 per axis / 64M pixels. That path accepts
+// 1/3/4 channels and returns an empty buffer for invalid geometry/allocation.
+// Padding replicates the quad's edges; this is a crop, not automatic detection.
 std::vector<uint8_t> extract_quad(const uint8_t * pixels, int width, int height, int channels, const float qx[4],
                                   const float qy[4], int padding, int * out_width, int * out_height);
 

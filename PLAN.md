@@ -1,5 +1,21 @@
 # CrispEmbed plan — open work (updated 7 November 2026)
 
+## Phone-photo geometry — 9 November 2026
+
+Owner lane: `feat/ocr-photo-preprocessing`, based on
+`0b84869ba81e3ddd67605b54ab2a71312e9bd131`, paired with CrispSorter's
+`feat/industrial-ocr-workspace` application lane. Preserve the immutable app
+dependency and existing inference defaults. Two independent opt-in paths cover
+true projective OCR-region rectification and bounded-resolution deskew analysis;
+the final deskew rotation keeps the source pixel resolution.
+
+Acceptance: independent analytic geometry and malformed-input controls; all
+corner orders and disabled-gate byte controls; paired synthetic camera/skew/shadow
+text fixtures with actual downstream OCR CER/WER, plus a dedicated hosted native
+workflow. Record synthetic evidence separately from physical-device quality;
+representative real phone captures, every native model, and a future default
+promotion remain separate gates. No new model, alias, release or dependency pin.
+
 ## OCR review workspace integration — 8 November 2026
 
 Owner lane: `feature/ocr-production-workspace`, based on

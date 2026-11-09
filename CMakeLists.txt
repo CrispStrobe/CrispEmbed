@@ -733,6 +733,9 @@ target_link_libraries(test-ocr-geometry PRIVATE crispembed)
 add_executable(test-ocr-crop tests/test_ocr_crop.cpp)
 target_link_libraries(test-ocr-crop PRIVATE crispembed)
 
+add_executable(test-ocr-photo tests/test_ocr_photo.cpp)
+target_link_libraries(test-ocr-photo PRIVATE crispembed)
+
 add_executable(test-ocr-detect-diff tests/test_ocr_detect_diff.cpp)
 target_link_libraries(test-ocr-detect-diff PRIVATE crispembed)
 
