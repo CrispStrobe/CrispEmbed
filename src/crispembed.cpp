@@ -2712,6 +2712,20 @@ extern "C" const char * crispembed_resolve_model(const char * arg, int auto_down
     return value.c_str();
 }
 
+extern "C" const char * crispembed_resolve_model_accepting(const char * arg, int auto_download,
+                                                           const char * accepted_spdx) {
+    static std::string value;
+    value.clear();
+    if (!arg) return value.c_str();
+    value = crispembed_mgr::resolve_model_accepting(arg, auto_download != 0, accepted_spdx ? accepted_spdx : "");
+    return value.c_str();
+}
+
+extern "C" int crispembed_model_license_info(const char * name, const char ** out_name, const char ** out_spdx,
+                                             const char ** out_card_url, const char ** out_display_name) {
+    return crispembed_mgr::model_license_info(name ? name : "", out_name, out_spdx, out_card_url, out_display_name);
+}
+
 extern "C" void crispembed_set_offline(int offline) {
     crispembed_mgr::set_offline(offline != 0);
 }

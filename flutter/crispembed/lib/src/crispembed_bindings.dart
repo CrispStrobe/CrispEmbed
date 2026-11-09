@@ -80,6 +80,24 @@ typedef CrispembedResolveModelNative = Pointer<Utf8> Function(
 typedef CrispembedResolveModel = Pointer<Utf8> Function(
     Pointer<Utf8> arg, int autoDownload);
 
+typedef CrispembedResolveModelAcceptingNative = Pointer<Utf8> Function(
+    Pointer<Utf8> arg, Int32 autoDownload, Pointer<Utf8> acceptedSpdx);
+typedef CrispembedResolveModelAccepting = Pointer<Utf8> Function(
+    Pointer<Utf8> arg, int autoDownload, Pointer<Utf8> acceptedSpdx);
+
+typedef CrispembedModelLicenseInfoNative = Int32 Function(
+    Pointer<Utf8> name,
+    Pointer<Pointer<Utf8>> outName,
+    Pointer<Pointer<Utf8>> outSpdx,
+    Pointer<Pointer<Utf8>> outCardUrl,
+    Pointer<Pointer<Utf8>> outDisplayName);
+typedef CrispembedModelLicenseInfo = int Function(
+    Pointer<Utf8> name,
+    Pointer<Pointer<Utf8>> outName,
+    Pointer<Pointer<Utf8>> outSpdx,
+    Pointer<Pointer<Utf8>> outCardUrl,
+    Pointer<Pointer<Utf8>> outDisplayName);
+
 typedef CrispembedPrefixNative = Pointer<Utf8> Function(
     Pointer<Utf8> modelName);
 typedef CrispembedPrefix = Pointer<Utf8> Function(Pointer<Utf8> modelName);

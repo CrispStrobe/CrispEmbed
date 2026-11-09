@@ -46,6 +46,7 @@ on:
       - 'tests/test_registry_pin_contract.py'
       - 'tools/fetch_model_hashes.py'
       - 'tests/test_offline_surfaces.py'
+      - 'tests/test_license_consent_surfaces.py'
       - 'tests/test_easyocr_interop_contract.py'
       - 'tests/test_biometric_gate.py'
       - 'tests/test_image_root.py'
@@ -79,6 +80,7 @@ on:
       - 'tests/test_registry_pin_contract.py'
       - 'tools/fetch_model_hashes.py'
       - 'tests/test_offline_surfaces.py'
+      - 'tests/test_license_consent_surfaces.py'
       - 'tests/test_easyocr_interop_contract.py'
       - 'tests/test_biometric_gate.py'
       - 'tests/test_image_root.py'
@@ -170,6 +172,8 @@ jobs:
         run: python tests/test_registry_pin_contract.py -v
       - name: Offline mode reaches every surface
         run: python tests/test_offline_surfaces.py
+      - name: Per-call licence acceptance reaches every surface
+        run: python tests/test_license_consent_surfaces.py
       - name: EasyOCR/LayoutLM interoperability contract
         run: python tests/test_easyocr_interop_contract.py
       - name: PP-OCRv6 graph gold lane (artifact-equipped runners only)

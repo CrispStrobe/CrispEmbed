@@ -4,7 +4,8 @@
 
 #include "crispembed.h"    // crispembed_accept_biometric_use
 #include "core/env_gate.h" // core_env::on
-#include "model_hashes.h"  // model_pinned_sha256 (generated)
+#include "core/license_gate.h"
+#include "model_hashes.h" // model_pinned_sha256 (generated)
 
 #include <algorithm>
 #include <cstdint>
@@ -2634,16 +2635,8 @@ bool accept_biometric_use(const char * model_label, bool accepted_flag) {
     return false;
 }
 
-static bool license_accepted(const char * spdx, const std::string & accepted_arg) {
-    auto matches = [&](const std::string & accepted) {
-        if (accepted.empty()) return false;
-        if (accepted == "all" || accepted == "*") return true;
-        return accepted == spdx;
-    };
-    if (matches(accepted_arg)) return true;
-    const char * env = std::getenv("CRISPEMBED_ACCEPT_LICENSE");
-    if (env && matches(env)) return true;
-    return false;
+static bool license_accepted(const char * spdx, const std::string & accepted_arg, bool allow_blanket_arg) {
+    return core_license::accepted(spdx, accepted_arg, allow_blanket_arg, std::getenv("CRISPEMBED_ACCEPT_LICENSE"));
 }
 
 // Install an entry's companion file (an mmproj vision tower, say) next to the
@@ -2675,28 +2668,55 @@ static bool ensure_companion(const ModelEntry * entry, const std::string & dir) 
     return true;
 }
 
+// Registry lookup shared by resolve_model and model_license_info, so the
+// licence an app shows is the licence of the entry resolve_model will fetch:
+// exact name or filename first, then the first substring match.
+static const ModelEntry * find_entry(const std::string & arg) {
+    for (const ModelEntry * e = k_registry; e->name; e++) {
+        if (arg == e->name || arg == e->filename) return e;
+    }
+    for (const ModelEntry * e = k_registry; e->name; e++) {
+        if (strstr(e->name, arg.c_str()) || strstr(e->filename, arg.c_str())) return e;
+    }
+    return nullptr;
+}
+
+static std::string resolve_model_impl(const std::string & arg, bool auto_download, const std::string & accepted_license,
+                                      bool allow_blanket);
+
 std::string resolve_model(const std::string & arg, bool auto_download, const std::string & accepted_license) {
+    return resolve_model_impl(arg, auto_download, accepted_license, true);
+}
+
+std::string resolve_model_accepting(const std::string & arg, bool auto_download, const std::string & accepted_spdx) {
+    if (accepted_spdx.empty() || core_license::is_blanket(accepted_spdx)) {
+        fprintf(stderr,
+                "error: crispembed_resolve_model_accepting needs one exact license tag, got '%s'.\n"
+                "       Blanket acceptance (\"all\", \"*\") is only available via --accept-license or\n"
+                "       CRISPEMBED_ACCEPT_LICENSE.\n",
+                accepted_spdx.c_str());
+        return "";
+    }
+    return resolve_model_impl(arg, auto_download, accepted_spdx, false);
+}
+
+int model_license_info(const std::string & arg, const char ** out_name, const char ** out_spdx,
+                       const char ** out_card_url, const char ** out_display_name) {
+    const ModelEntry * entry = arg.empty() ? nullptr : find_entry(arg);
+    if (out_name) *out_name = entry ? entry->name : nullptr;
+    if (out_spdx) *out_spdx = entry ? entry->license : nullptr;
+    if (out_card_url) *out_card_url = entry ? entry->model_card_url : nullptr;
+    if (out_display_name) *out_display_name = entry ? entry->desc : nullptr;
+    if (!entry) return -1;
+    return license_requires_acceptance(entry->license) ? 1 : 0;
+}
+
+static std::string resolve_model_impl(const std::string & arg, bool auto_download, const std::string & accepted_license,
+                                      bool allow_blanket) {
     // If it's already a file path, use it directly
     if (file_exists(arg)) return arg;
 
-    // Look up in registry
-    const ModelEntry * entry = nullptr;
-    for (const ModelEntry * e = k_registry; e->name; e++) {
-        if (arg == e->name || arg == e->filename) {
-            entry = e;
-            break;
-        }
-    }
-
-    // Fuzzy match: check if arg is a substring of any model name
-    if (!entry) {
-        for (const ModelEntry * e = k_registry; e->name; e++) {
-            if (strstr(e->name, arg.c_str()) || strstr(e->filename, arg.c_str())) {
-                entry = e;
-                break;
-            }
-        }
-    }
+    const ModelEntry * entry = find_entry(arg);
 
     if (!entry) {
         fprintf(stderr, "Unknown model: '%s'\n", arg.c_str());
@@ -2726,8 +2746,11 @@ std::string resolve_model(const std::string & arg, bool auto_download, const std
     }
 
     const bool restricted = license_requires_acceptance(entry->license);
-    const bool accepted = license_accepted(entry->license, accepted_license);
-    const bool is_tty = isatty(fileno(stdin));
+    const bool accepted = license_accepted(entry->license, accepted_license, allow_blanket);
+    // The per-call acceptance API (allow_blanket == false) never prompts: an
+    // app has already asked its user, and a mismatched tag must be refused
+    // the same way whether or not the host process happens to own a TTY.
+    const bool is_tty = allow_blanket && isatty(fileno(stdin));
 
     // Download flow:
     //   - For permissive licenses: existing behaviour (auto_download or

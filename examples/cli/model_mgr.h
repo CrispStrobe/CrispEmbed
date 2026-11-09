@@ -24,6 +24,19 @@ std::string cache_dir();
 std::string resolve_model(const std::string & arg, bool auto_download = false,
                           const std::string & accepted_license = "");
 
+// Same as resolve_model, but accepts exactly one licence tag for this call
+// only. `accepted_spdx` must be an exact SPDX-style tag; empty, "all" and "*"
+// are refused (returns ""). Never prompts on a TTY. CRISPEMBED_ACCEPT_LICENSE
+// is still honoured as in resolve_model.
+std::string resolve_model_accepting(const std::string & arg, bool auto_download, const std::string & accepted_spdx);
+
+// Licence facts for the registry entry `arg` resolves to (same lookup as
+// resolve_model: exact name/filename, then first substring match). Out
+// pointers are static registry strings, or nullptr when absent / unknown.
+// Returns -1 unknown model, 0 permissive, 1 needs explicit acceptance.
+int model_license_info(const std::string & arg, const char ** out_name, const char ** out_spdx,
+                       const char ** out_card_url, const char ** out_display_name);
+
 // Offline mode (issue #52): when on, nothing in this process reaches the
 // network — resolve_model() only returns files that already exist (explicit
 // paths or cached registry entries, companions included) and fails with a
