@@ -83,6 +83,7 @@ jobs:
       actions: read
     if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_attribution.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_upstream.py' && inputs.script != 'tools/ci-heavy/lighton4b_dense_trace.py' && inputs.script != 'tools/ci-heavy/lighton4b_prefill_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_smoke_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_full_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_corrected_mixed_full_compare.py' && inputs.script != 'tools/ci-heavy/lighton4b_calibration_native.py' && inputs.script != 'tools/ci-heavy/lighton4b_q6_candidate.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_candidate.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_full.py' && inputs.script != 'tools/ci-heavy/lighton4b_gdn_out_q6_logo_diagnostic.py'
     if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_attribution.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_upstream.py'
+    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_remaining.py' && inputs.script != 'tools/ci-heavy/lighton4b_decoder_attribution.py' && inputs.script != 'tools/ci-heavy/lighton4b_calibration_native.py' && inputs.script != 'tools/ci-heavy/lighton4b_mixed_step33_compare.py'
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 350
     env:
@@ -721,6 +722,14 @@ jobs:
       CRISPEMBED_BUILD_MODE: portable
       KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
       KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
+
+  lighton4b_mixed_step33_reference:
+    if: inputs.script == 'tools/ci-heavy/lighton4b_mixed_step33_compare.py'
+    timeout-minutes: 25
+      STEP33_ARGS: ${{ inputs.args }}
+      STEP33_PIP: ${{ inputs.pip }}
+      STEP33_RUNNER: ${{ inputs.runner }}
+      STEP33_MODE: ${{ inputs.build_mode }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -890,5 +899,19 @@ jobs:
         with:
           name: lighton4b-gdn-out-q6-logo-${{ github.run_id }}
           path: ${{ env.HEAVY_OUT }}
+      - name: Require closed portable read-only scope
+          test -z "$STEP33_PIP"
+          test "$STEP33_RUNNER" = ubuntu-latest
+          test "$STEP33_MODE" = portable
+          mkdir -p "$RUNNER_TEMP/step33-out" "$RUNNER_TEMP/step33-scratch"
+      - name: Install only pinned comparison dependencies
+        run: python -m pip install numpy==2.3.5 kaggle==2.2.5 six==1.17.0
+      - name: Authenticate paired captures and compare without inference
+          HEAVY_OUT: ${{ runner.temp }}/step33-out
+          HEAVY_SCRATCH: ${{ runner.temp }}/step33-scratch
+          read -ra argv <<< "$STEP33_ARGS"
+          python tools/ci-heavy/lighton4b_mixed_step33_compare.py "${argv[@]}"
+          name: lighton4b-step33-compare-${{ github.run_id }}
+          path: ${{ runner.temp }}/step33-out/
           retention-days: 90
           if-no-files-found: warn

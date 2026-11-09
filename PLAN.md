@@ -3919,3 +3919,23 @@ actual cgroup margin/effective RAM guards can reject rather than overrun capacit
   SHA256`089649d1a4482935074e80ac8b86b81b03d642fa7ebf696f823da9266e9f5ed0`.
   The bounded retry fixes transport to the previously verifiedKaggle2.2.2 and
   explicitly pins`six==1.17.0`; mathematical/source controls are unchanged.
+
+One source-only bounded cap34 replay will capture50 actual step33 arrays matching
+nativeb988 trace names: actual input/positions,32layer outputs/finalnorm/head,
+layer0norm/QKV/z/a/b/attention/residual/FFN. All34 score hashes andIDs must remain
+exact against retained178 captureed4ef1b6. [Exact blueprint, scope and controls](docs/lighton4b-bf16-mixed-step33.md).
+This is shared genuine-mixed prefix, not official-unquantized teacher context.
+No native replay duplication; runtimeagent owns independent fullhead-roundAB.
+BF16 source parameter rounding versus nativeF32 dequant remains explicit before
+calling a stage difference an implementation bug. Productionruntime unchanged.
+
+### Read-only shared-prefix step33 consumer — prepared, awaiting nativeAB
+
+Originalsource8eeb completed50actualstages/34neutralrows, input68100/positions60,
+receipt5aa5a802. Native42168142185/b988 fullheadAB remains pending.
+[Closed paired consumer](docs/lighton4b-mixed-step33-comparison.md) authenticates
+both, compares48rawstages with actualRef and separateBF16RNE controls, checks
+head-only/nonhead invariance on identical prefixes and recordsmags/earliestfailure.
+No modelinference/acquisition. One20min read-only job can retainall178source rows
+andrawpairedstages90days in sameartifact, no modelpayload. Threeprovenance
+negativecontrols pass; no dispatch before complete nativeidentityreview.
