@@ -130,8 +130,9 @@ and non-Latin documents.
 
 ## Worthwhile subsequent work
 
-These are separate candidates, not functionality delivered by the repetition
-diagnostic.
+The user authorized these follow-ups on 9 November 2026. Their implementation
+and acceptance are tracked in [the task checklist](pdf-craft-tasks.md). The
+repetition diagnostic alone does not deliver or validate these features.
 
 1. **Persist and reopen extraction.** pdf-craft's
    [PCEX contract](https://github.com/oomol-lab/pdf-craft/blob/cf003c711b6a63cd0a0a64bfc490bd319ab20d92/docs/en/PCEX_FORMAT.md)

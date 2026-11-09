@@ -6,6 +6,13 @@ Owner lane: `feature/pdf-craft-document-quality-20261109`, based on
 `e4ee71937a68f1ff9d28f4d7cdbd66bda68ba05a`. All checkpoints remain on the
 upstream feature branch as requested; no main-branch or release changes.
 
+The user authorized the complete follow-up roadmap on 9 November. The executable
+[task checklist](docs/pdf-craft-tasks.md) tracks implementation and validation
+separately: native noncommercial admission, versioned extraction artifacts,
+source-linked chunks, bounded cancellation/resume, multilingual whitespace and
+footnote/page-label identities. Three coordinated implementation lanes share the
+native contracts; public API/bindings and final integration belong to this lane.
+
 | Work | State | Acceptance |
 |---|---|---|
 | Audit PDF Craft `cf003c711b6a63cd0a0a64bfc490bd319ab20d92` | [Source and dependency review](docs/pdf-craft-adoption.md) complete for the selected adaptation; MIT notice retained in the existing distributed `NOTICE.marker` | Excludes the Poppler/Qt/EasyDict dependency paths and the MinerU-referenced paragraph-merging material |
@@ -15,8 +22,8 @@ upstream feature branch as requested; no main-branch or release changes.
 The bounded runtime change reports suspicious OCR repetition; it does not delete
 content, retry inference, introduce models or qualify document accuracy. The
 existing PDFium renderer and native model implementations remain the integration
-points. Broader extraction persistence, recovery and source-linked paragraph
-assembly need separate acceptance evidence after this lane.
+points. The authorized follow-ups are now in progress and require their own
+acceptance evidence; initial diagnostic tests do not qualify those features.
 
 ## OCR review workspace integration — 8 November 2026
 
