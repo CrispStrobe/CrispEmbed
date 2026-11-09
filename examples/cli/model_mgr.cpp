@@ -4,6 +4,7 @@
 
 #include "crispembed.h"    // crispembed_accept_biometric_use
 #include "core/env_gate.h" // core_env::on
+#include "core/env_value.h"
 #include "core/license_gate.h"
 #include "model_hashes.h" // model_pinned_sha256 (generated)
 
@@ -2636,7 +2637,7 @@ bool accept_biometric_use(const char * model_label, bool accepted_flag) {
 }
 
 static bool license_accepted(const char * spdx, const std::string & accepted_arg, bool allow_blanket_arg) {
-    return core_license::accepted(spdx, accepted_arg, allow_blanket_arg, std::getenv("CRISPEMBED_ACCEPT_LICENSE"));
+    return core_license::accepted(spdx, accepted_arg, allow_blanket_arg, core_env::value("CRISPEMBED_ACCEPT_LICENSE"));
 }
 
 // Install an entry's companion file (an mmproj vision tower, say) next to the

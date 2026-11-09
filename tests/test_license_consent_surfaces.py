@@ -51,7 +51,7 @@ require(
         "core_license::is_blanket(accepted_spdx)",
         "return resolve_model_impl(arg, auto_download, accepted_license, true);",
         "return resolve_model_impl(arg, auto_download, accepted_spdx, false);",
-        'std::getenv("CRISPEMBED_ACCEPT_LICENSE")',
+        'core_env::value("CRISPEMBED_ACCEPT_LICENSE")',
     ],
 )
 require(
