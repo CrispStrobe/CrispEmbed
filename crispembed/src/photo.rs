@@ -62,7 +62,10 @@ fn take_image(
         .filter(|count| *count <= MAX_PIXELS)
         .and_then(|count| count.checked_mul(channels as usize))
         .ok_or("Photo transform returned an oversized image")?;
-    let copy = unsafe { std::slice::from_raw_parts(owned.0, count) }.to_vec();
+    let mut copy = Vec::new();
+    copy.try_reserve_exact(count)
+        .map_err(|_| "Not enough memory to copy the corrected photo")?;
+    copy.extend_from_slice(unsafe { std::slice::from_raw_parts(owned.0, count) });
     Ok((copy, width, height))
 }
 
