@@ -148,6 +148,15 @@ def main():
         finally:
             live.LINES = saved
 
+    def line_masks(sel):
+        rows, out, start = sel.any(axis=1), [], None
+        for y, on in enumerate(list(rows) + [False]):
+            if on and start is None:
+                start = y
+            elif not on and start is not None:
+                band = np.zeros_like(sel); band[start:y] = sel[start:y]; out.append(band); start = None
+        return out
+
     def thumb(img, name):
         img.save(f"{OUT}/thumbs/{name}.jpg", "JPEG", quality=85)
 
@@ -202,6 +211,12 @@ def main():
                 arrays[(cid, v)] = r
                 entry["vs_clean"] = live.scores(r, c, mk)
                 entry["outside_exact"] = bool(np.array_equal(r[~sel], s_[~sel])) if kind == "exact" else None
+                # Applied mask = pixels the engine changed (unmasked bytes are kept
+                # exactly), reported as coverage of each exact subtitle line.
+                changed = np.any(r != s_, axis=2)
+                entry["applied_mask"] = {"changed_px": int(changed.sum()),
+                                         "line_coverage": [round(float(changed[ln].sum()) / max(1, int(ln.sum())), 4)
+                                                           for ln in line_masks(sel)]}
                 if v.startswith("512-") and v != "512-F32" and (cid, "512-F32") in arrays:
                     a = live.agreement(r, arrays[(cid, "512-F32")], mk)
                     a["bar"] = BARS[v[4:]]
