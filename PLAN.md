@@ -3976,3 +3976,18 @@ and two-token diagnostic only; heldout remains untouched. Precision/gates remain
 identical; current Q4/Q8 types only. Fresh independent caches,12GiB/20GiB/2GiB
 memory/scratch/output guards,40-minute native and55-minute single hosted caps.
 No production recipe/runtime/default/release changes; prior panel retained.
+
+## Predeclared disjoint GDN projection screen (6 November, pending)
+
+After preserving architecture-partition evidence, the
+[projection protocol](docs/lighton4b-gdn-projection-sensitivity-v1.json) freezes
+8arms with Q8counts0/24/24/48/24/120/184/248: Q4,QKV,Z,a+b,out,GDN,
+mixers+down andfullQ8. The four projection classes are disjoint and exactly
+exhaust GDN120; packedQKV stays whole. All248 donor/475protected hashes remain
+pinned to the first-panel freeze and revalidated on actual loaded bytes before
+forward. Model-free count/disjoint/union controls precede acquisition. Same
+predeclared table/Arabic calibration inputs only,one full first-score row and
+two decoded tokens; no heldout or full-generation/EOS qualification. Fixed
+precision/vision/head gates,fresh caches,12GiB/20GiB/2GiB guards,45-minute native
+and60-minute single hosted caps. Prior protocols/panels remain intact. No new
+production profile,recipe,default,release or PR; noQ6_K admission.
