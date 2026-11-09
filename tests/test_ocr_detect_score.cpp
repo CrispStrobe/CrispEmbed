@@ -5,12 +5,13 @@
 // review: the first subtitle line of the DBNet street crop). With
 // score_undilated the score is taken over thresholded pixels only, as in
 // upstream PaddleOCR DBPostProcess, and the line is kept.
+#include "core/clean_exit.h"
 #include "ocr_detect.h"
 
 #include <cstdio>
 #include <vector>
 
-int main() {
+static int crispembed_test_main() {
     const int w = 120, h = 40;
     std::vector<float> prob(size_t(w) * h, 0.10f);
     for (int y = 18; y < 23; ++y)
@@ -35,4 +36,8 @@ int main() {
     check(fixed.size() == 1 && fixed[0].y <= 18.0f && fixed[0].y + fixed[0].h >= 23.0f, "box covers the line");
     check(undilated.size() == 1 && undilated[0].score == fixed[0].score, "no dilation: flag is a no-op on the score");
     return failures ? 1 : 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }
