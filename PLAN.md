@@ -30,6 +30,13 @@ points. The authorized follow-ups are implemented and independently reviewed in 
 executed hosted acceptance remains pending. Initial diagnostic tests do not
 qualify those features.
 
+Validation continuation: actual Rust/Dart lifecycle probes now cover six gated
+scenarios, and Windows native controls plus macOS Xcode/CocoaPods checks are wired
+into Build. Review corrected an Xcode per-source-definition incompatibility and
+shipped CocoaPods notice resources for local `:path` installs. Source review and
+available static checks are complete; executed hosted results and Flutter package
+readback remain open in [the task checklist](docs/pdf-craft-tasks.md).
+
 ## OCR review workspace integration — 8 November 2026
 
 Owner lane: `feature/ocr-production-workspace`, based on

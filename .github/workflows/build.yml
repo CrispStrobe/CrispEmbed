@@ -213,6 +213,15 @@ jobs:
       - name: Verify portable CPU baseline
         run: ${{ runner.os == 'Windows' && 'python' || 'python3' }} scripts/check-cpu-baseline.py build
 
+      - name: Validate Xcode configuration and CocoaPods syntax
+        if: runner.os == 'macOS' && needs.guards.outputs.native_tests == 'true'
+        run: |
+          cmake -S . -B build-xcode-check -G Xcode \
+            -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=ON \
+            -DCRISPEMBED_NATIVE=OFF ${{ matrix.cmake_args }}
+          ruby -c flutter/crispembed/ios/crispembed.podspec
+          ruby -c flutter/crispembed/macos/crispembed.podspec
+
       - name: Build all native targets
         if: needs.guards.outputs.native_tests == 'true'
         run: cmake --build build --config Release -j4
@@ -290,7 +299,7 @@ jobs:
           python3 tests/test_ultrabert_api_log.py -v
           python3 tests/test_vendored_kaggle_harness.py
 
-      - name: TeleOCR native feature and license gates (model-free, Linux)
+      - name: Native OCR admission and Python Marker lifecycle (model-free, Linux)
         if: runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
         run: |
           python3 -m pip install numpy==2.3.5 gguf==0.19.0
@@ -298,7 +307,28 @@ jobs:
           python3 tests/test_unlimited_ocr_license.py --lib build/libcrispembed.so --report build/unlimited-ocr-license.json
           python3 tests/test_marker_lifecycle.py --lib build/libcrispembed.so --pdfium build/libmarker-pdfium-fixture.so --report build/marker-python-lifecycle.json
 
-      - name: Retain TeleOCR loader diagnostics
+      - name: Rust toolchain for actual Marker consumer
+        if: runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.95.0
+
+      - name: Dart toolchain for actual Marker consumer
+        if: runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.13.7
+
+      - name: Actual Rust and Dart Marker lifecycle (model-free, Linux)
+        if: runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
+        timeout-minutes: 20
+        run: >-
+          python3 tests/run_marker_binding_lifecycle.py
+          --lib build/libcrispembed.so
+          --pdfium build/libmarker-pdfium-fixture.so
+          --report build/marker-binding-lifecycle.json
+
+      - name: Retain native admission and Marker client diagnostics
         if: always() && runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'
         uses: actions/upload-artifact@v4
         with:
@@ -307,6 +337,8 @@ jobs:
             build/teleocr-loader.json
             build/unlimited-ocr-license.json
             build/marker-python-lifecycle.json
+            build/marker-binding-lifecycle.json
+            build/marker-binding-lifecycle/
           if-no-files-found: warn
           retention-days: 30
 
@@ -330,6 +362,21 @@ jobs:
       - name: Smoke test (explicit Metal)
         if: runner.os == 'macOS'
         run: ./build/test-backend-smoke metal
+
+      - name: Marker document, artifact and lifecycle controls (Windows)
+        if: runner.os == 'Windows' && needs.guards.outputs.native_tests == 'true'
+        shell: pwsh
+        run: |
+          $runtimeDirs = @(
+            "$PWD\build\Release",
+            "$PWD\build\bin\Release",
+            "$PWD\build\bin"
+          )
+          $env:PATH = ($runtimeDirs -join ';') + ';' + $env:PATH
+          foreach ($test in @('test-marker-document', 'test-marker-artifact', 'test-marker-lifecycle')) {
+            & ".\build\Release\${test}.exe"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
 
       # Install into a staging prefix so the shared library is bundled with its
       # ggml runtime dylibs/sos and rewritten to a relocatable @loader_path /
@@ -557,6 +604,11 @@ jobs:
         run: |
           cp NOTICE.marker NOTICE.teleocr flutter/crispembed/
           cp models/licenses/apache-2.0/LICENSE flutter/crispembed/Apache-2.0.txt
+          for platform in ios macos; do
+            cmp NOTICE.marker "flutter/crispembed/$platform/Notices/NOTICE.marker"
+            cmp NOTICE.teleocr "flutter/crispembed/$platform/Notices/NOTICE.teleocr"
+            cmp models/licenses/apache-2.0/LICENSE "flutter/crispembed/$platform/Notices/Apache-2.0.txt"
+          done
 
       - name: Upload bundled plugin
         uses: actions/upload-artifact@v4

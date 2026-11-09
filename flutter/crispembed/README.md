@@ -70,6 +70,9 @@ files are included in the package and declared as Flutter assets, available at
 `packages/crispembed/NOTICE.marker`, `packages/crispembed/NOTICE.teleocr` and
 `packages/crispembed/Apache-2.0.txt` for an application's license view. Apple pod
 bundles additionally preserve notices supplied with the selected native archive.
+The platform-local `ios/Notices/` and `macos/Notices/` files ship with the package,
+so local CocoaPods `:path` installs retain their notice bundle even when
+`prepare_command` is skipped.
 
 Model weights keep their own upstream licenses, including noncommercial terms
 where applicable. Distributing these code notices does not acknowledge or change

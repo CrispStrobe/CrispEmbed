@@ -28,7 +28,7 @@ Pod::Spec.new do |s|
   # self-contained), so all of them are vendored and embedded.
   s.prepare_command = <<-CMD
     set -e
-    mkdir -p Libs/Notices
+    mkdir -p Libs Notices
     if ! ls Libs/*.dylib >/dev/null 2>&1; then
       # CRISPEMBED_PREBUILT_VERSION (opt-in) fetches the libs of another published release
       # tag, e.g. when this checkout's pubspec version has no release yet; unset = pod version.
@@ -41,7 +41,7 @@ Pod::Spec.new do |s|
       find "$tmp" -name '*.dylib' -exec cp -P {} Libs/ \\;
       for notice in NOTICE.marker NOTICE.teleocr Apache-2.0.txt; do
         if [ -f "$tmp/$notice" ]; then
-          cp "$tmp/$notice" "Libs/Notices/$notice"
+          cp "$tmp/$notice" "Notices/$notice"
         fi
       done
       rm -rf "$tmp"
@@ -49,8 +49,8 @@ Pod::Spec.new do |s|
     # Local binary drops and older archives use the notices shipped with this
     # plugin. A fetched archive's exact notices take precedence when present.
     for notice in NOTICE.marker NOTICE.teleocr Apache-2.0.txt; do
-      if [ ! -f "Libs/Notices/$notice" ]; then
-        cp "../$notice" "Libs/Notices/$notice"
+      if [ ! -f "Notices/$notice" ]; then
+        cp "../$notice" "Notices/$notice"
       fi
     done
     # One real file per library, named AND identified by its unversioned name
@@ -67,7 +67,8 @@ Pod::Spec.new do |s|
   CMD
 
   s.vendored_libraries = 'Libs/*.dylib'
-  s.resource_bundles = { 'crispembed_native_notices' => ['Libs/Notices/*'] }
+  # These files ship with the plugin: :path installs skip prepare_command.
+  s.resource_bundles = { 'crispembed_native_notices' => ['Notices/*'] }
 
   # Ensure the dylibs are code-signed and embedded in the app bundle.
   s.pod_target_xcconfig = {

@@ -442,7 +442,7 @@ list(APPEND CRISPEMBED_SOURCES src/marker.cpp src/marker_document.cpp src/marker
 # Keep Marker provenance identical in both, without changing other backends.
 include(cmake/MarkerIdentity.cmake)
 set_source_files_properties(src/marker.cpp PROPERTIES
-    COMPILE_DEFINITIONS "CRISPEMBED_VERSION_STR=\"${CRISPEMBED_VERSION_RAW}\";CRISPEMBED_MARKER_BUILD_ID=\"${CRISPEMBED_MARKER_BUILD_ID}\";CRISPEMBED_MARKER_BUILD_CONFIG=\"$<CONFIG>\"")
+    COMPILE_DEFINITIONS "CRISPEMBED_VERSION_STR=\"${CRISPEMBED_VERSION_RAW}\";CRISPEMBED_MARKER_BUILD_ID=\"${CRISPEMBED_MARKER_BUILD_ID}\"")
 list(APPEND CRISPEMBED_SOURCES src/table_parse.cpp)
 # MoEdern1.5M raw-text/role public API: default-off gates, exact arithmetic.
 set(CRISPEMBED_MOEDERN_SOURCES src/moedern_text_engine.cpp src/moedern_text_frontend.cpp src/moedern_family_engine.cpp
@@ -484,6 +484,9 @@ add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 # softwareVersion, PDF XMP). An archived document should be traceable to a
 # build, and naming the software without a version is not that.
 target_compile_definitions(crispembed PRIVATE CRISPEMBED_VERSION_STR="${CRISPEMBED_VERSION_RAW}")
+# Xcode supports configuration-dependent definitions on targets, not sources.
+# This also identifies multi-config builds without requiring a Git checkout.
+target_compile_definitions(crispembed PRIVATE CRISPEMBED_MARKER_BUILD_CONFIG="$<CONFIG>")
 if(CRISPEMBED_HAS_CRISP_AUDIO)
     target_compile_definitions(crispembed PRIVATE CRISPEMBED_HAS_CRISP_AUDIO)
 endif()
@@ -1428,7 +1431,10 @@ if(CRISPEMBED_BUILD_SHARED)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/examples/cli>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     )
-    target_compile_definitions(crispembed-shared PRIVATE CRISPEMBED_BUILD)
+    target_compile_definitions(crispembed-shared PRIVATE
+        CRISPEMBED_BUILD
+        CRISPEMBED_MARKER_BUILD_CONFIG="$<CONFIG>"
+    )
     if(CRISPEMBED_HAS_CRISP_AUDIO)
         target_compile_definitions(crispembed-shared PRIVATE CRISPEMBED_HAS_CRISP_AUDIO)
     endif()

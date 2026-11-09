@@ -128,9 +128,23 @@ restricted model.
   budgets, Unicode labels, cancellation, fresh-context resume, stale identity,
   corrupted checkpoint and later-page failure.
 - [ ] Hosted actual-native Python lifecycle and older-library compatibility.
-- [ ] Hosted Rust compilation and Dart analysis for the additive methods.
+- [ ] Hosted actual Rust/Dart lifecycle execution in six separately gated
+  scenarios, including partial/full four-render reopen and exact source maps.
+- [ ] Hosted Windows document/artifact/lifecycle controls, Xcode generation
+  and CocoaPods syntax checks.
 - [ ] Exact final-source ordinary CI and independent review recorded in the
   [task checklist](pdf-craft-tasks.md).
 
 The owned ABI fixture tests lifecycle and marshaling; it is not a substitute for
 real PDF rendering or representative model/document quality evaluation.
+
+The Linux Build job runs the real public clients through
+`tests/run_marker_binding_lifecycle.py`. It compiles isolated Rust and Dart
+consumers against the already-built shared library and owned fixture, then runs
+`artifacts-off`, `incremental-off` and `enabled` in each language. The supervisor
+requires named nonempty results, successful process exits and all six scenarios;
+timeouts, crashes and missing reports fail. Its JSON, command logs, native/source
+hashes and resolved dependency locks are retained with the loader diagnostics.
+The test-only Rust JSON parser is pinned to MIT/Apache-2.0 `serde_json` 1.0.145;
+production crate dependencies are unchanged. Dart uses the existing `ffi` 2.2.0
+test dependency. These authored controls still require hosted execution.

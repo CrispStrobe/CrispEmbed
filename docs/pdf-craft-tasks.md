@@ -112,6 +112,17 @@ Owner: document structure lane; PDF provider support owned by lifecycle lane.
   language validation remain hosted under repository policy.
 - [x] Independently review artifact limits, source-range truthfulness, native
   model admission and all public bindings before marking implementation done.
+- [x] Add actual Rust/Dart lifecycle probes and a bounded hosted supervisor,
+  with six gate scenarios, named checks and retained dependency/native identities.
+- [x] Select native client execution when Rust Marker wrappers or ABI build
+  inputs change; preserve crate-only selection for isolated package changes.
+- [x] Wire Windows document/artifact/lifecycle execution and macOS Xcode
+  generation/CocoaPods syntax checks into the existing Build workflow.
+- [ ] Read successful results for all six Rust/Dart scenarios and the added
+  Windows/macOS checks; preparation and static review are not execution.
+- [ ] Verify a produced Flutter package/archive includes all nine notice files
+  (package root and both platform-local directories); app-install qualification
+  remains separate from byte-copy and Ruby syntax checks.
 - [ ] Record exact final-source runs and remaining limits. No OCR accuracy,
   representative retrieval quality or release claim follows from model-free
   contract tests.
@@ -136,6 +147,26 @@ stay open until hosted results are read at the final source.
   trailing whitespace in a reopened artifact. Add an owned source-map regression.
 - [x] Carry exact MIT/Apache notices through native archives, Cargo vendoring
   and Flutter application/package resources.
+- [x] Move configuration-dependent Marker identity definitions from source
+  properties to native targets for the Xcode generator.
+- [x] Ship platform-local CocoaPods notice resources for `:path` installs,
+  where `prepare_command` does not run; preserve archive notice replacement.
+
+## Validation continuation
+
+The 9 November continuation merged main's documentation-only update
+`3646f8058103eb106f8b234ad0c9b1eb057fa9d2` into this feature branch as
+[`a236e65b8eb8eed4e47dafd9dca9074ef575c2d4`](https://github.com/CrispStrobe/CrispEmbed/commit/a236e65b8eb8eed4e47dafd9dca9074ef575c2d4).
+The existing build/controls jobs had no executed steps when rechecked. Source
+review found the Xcode-definition and CocoaPods path-install issues above;
+both are corrected, and the missing Rust/Dart execution coverage is authored.
+The hosted supervisor records failures rather than treating unavailable
+toolchains, crashes or absent probe results as skipped successes.
+
+The Rust probe's pinned `serde_json` 1.0.145 dependency is test-only and
+[MIT/Apache-2.0](https://docs.rs/crate/serde_json/1.0.145/source/Cargo.toml).
+No production dependency or model was added. Keep all executed-validation
+checkboxes open until final-source hosted results are available.
 
 ## Current evidence
 

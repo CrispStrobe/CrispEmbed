@@ -96,9 +96,14 @@ class RoutingTests(unittest.TestCase):
                     self.assertEqual({k for k, v in ci.selection([path], event_name=event_name)["lanes"].items() if v}, {"rust"})
 
     def test_linux_python_consumers_need_only_linux_native(self):
-        for path in ("tests/test_ultrabert_api_log.py", "tools/ci-heavy/ultrabert_api.py", "tests/results/ultrabert/source-audit.json", "kaggle_harness.py", "tools/kaggle/ocr-gpu-bench/kaggle_harness.py"):
+        for path in ("tests/test_ultrabert_api_log.py", "tests/run_marker_binding_lifecycle.py", "tools/ci-heavy/ultrabert_api.py", "tests/results/ultrabert/source-audit.json", "kaggle_harness.py", "tools/kaggle/ocr-gpu-bench/kaggle_harness.py"):
             with self.subTest(path=path):
                 self.assertEqual(self.lanes(path), {"native", "native_tests"})
+
+    def test_marker_rust_binding_changes_execute_the_native_consumer(self):
+        for path in ("crispembed/src/marker.rs", "crispembed/src/lib.rs", "crispembed-sys/src/lib.rs", "crispembed-sys/build.rs"):
+            with self.subTest(path=path):
+                self.assertEqual(self.lanes(path), {"rust", "native", "native_tests"})
 
     def test_desktop_legs_follow_lanes_and_imply_linux(self):
         report = ci.selection(["src/glm_ocr.cpp"])
@@ -150,7 +155,7 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual(self.lanes("tests/wasm-browser/e2e.test.js"), {"wasm_ocr"})
         self.assertEqual(self.lanes("wasm/embed_wrapper.c"), {"wasm_embed"})
         self.assertEqual(self.lanes("build-embed-wasm.sh"), {"wasm_embed"})
-        self.assertEqual(self.lanes("crispembed/src/lib.rs", "crispembed-sys/build.rs", "Cargo.lock"), {"rust"})
+        self.assertEqual(self.lanes("crispembed/Cargo.toml", "scripts/vendor_rust_sources.sh", "Cargo.lock"), {"rust"})
 
     def test_unreviewed_wasm_source_does_not_skip_embedding_build(self):
         for path in ("wasm/embed_helpers.h", "wasm/new-wrapper.js", "wasm/crispembed-ocr-wasm/src/lib.rs"):
@@ -345,6 +350,7 @@ CONSUMERS = {
     "tests/test_teleocr_loader.py": ("native", "native_tests"),
     "tests/test_unlimited_ocr_license.py": ("native", "native_tests"),
     "tests/test_marker_lifecycle.py": ("native", "native_tests"),
+    "tests/run_marker_binding_lifecycle.py": ("native", "native_tests"),
     "tools/wasm_size_report.py": ("wasm_ocr",),
     "scripts/check-cpu-baseline.py": ("native", "native_windows", "native_macos"),
 }
