@@ -84,3 +84,21 @@ error metrics, production source hashes and all reader-output hashes were
 checked again after download. Image arms remain available in the pinned hosted
 artifact until its recorded expiry; text and numerical evidence are also saved
 in git. Physical-device capture and native model qualification remain separate.
+
+## Identity-image follow-up
+
+[Run 42637037175](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42637037175/job/129247819057)
+also passes at `fe0e2798d0489c2db3be1bcf5a6924705ef38416`. Its
+[separate receipt](../tests/results/ocr-phone-photo/camera-fe0/artifact-identity.json)
+retains all 41 archive-member identities, including `phone-identity.png`. After
+verifying the 51,568,001-byte archive's SHA-256 and ZIP CRCs, that 960×1280 image
+was independently compared byte-for-byte with the original photograph's decoded
+RGB pixels and the retained original PNG. Both comparisons pass. All nine
+text/TSV pairs, nine source hashes, original fixtures, ground truth and independent
+perspective errors were rechecked. Production geometry still matches the
+qualified `9c44a69` runtime; the CER values above are unchanged.
+
+This closes the initial identity-image retention gap without replacing the
+original receipt. The complete new report and exact reader outputs are saved in
+git; full-resolution image arms remain in the hashed hosted artifact until its
+recorded expiry. No physical capture or native recognition-model claim is added.

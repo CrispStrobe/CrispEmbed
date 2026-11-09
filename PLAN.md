@@ -14,8 +14,10 @@ error; both photographs recover the added rotations. Printed-page prepared CER
 is 0.3690%, 0.4025% and 0.5032% for original, −4.2° and +6.7° inputs. All raw,
 deskew-only and whitening text remains retained. Whitening slightly worsens the
 already readable original, so it remains an explicit reviewed operation. The
-later `fe0e279` run separately checks enhanced identity-image retention. This
-does not qualify a new physical capture workflow or historical recognition.
+later `fe0e279` run also passes with [separate retained evidence](tests/results/ocr-phone-photo/camera-fe0/artifact-identity.json).
+Its preserved full-frame identity PNG independently matches every decoded RGB
+byte of the original photograph, closing the original artifact-retention gap.
+This does not qualify a new physical capture workflow or historical recognition.
 
 ## Windows document path boundary — 9 November 2026
 

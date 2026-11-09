@@ -2,6 +2,17 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+## 9 November 2026 — independently retained camera identity pixels
+
+[Follow-up run 42637037175](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42637037175/job/129247819057)
+passes at unchanged-production source `fe0e279`. The 51,568,001-byte artifact,
+all 41 member identities, all nine text/TSV pairs and nine source-file hashes
+were verified. Its retained 960×1280 identity PNG matches the original decoded
+RGB pixels exactly; perspective metrics and all printed-page CER values match
+the preceding run. The [new receipt](tests/results/ocr-phone-photo/camera-fe0/artifact-identity.json)
+closes the earlier identity-PNG retention gap while preserving that historical
+omission. No new physical-device capture or native recognition qualification.
+
 ## 9 November 2026 — retained phone-photo geometry and text evidence
 
 The [camera fixture job](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42635475023/job/129222355005)
