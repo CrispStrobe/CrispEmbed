@@ -48,6 +48,20 @@ Rust/application cross links, packaging and device execution. Configuration
 placeholder files do not qualify native binaries. This lane changes no release,
 model, inference default or existing immutable consumer pin.
 
+## App-owned model provisioning metadata — 9 November 2026
+
+Owner lane: `feat/ocr-photo-preprocessing`, paired with the mobile consumer.
+Additive fixed-v1 C metadata and owned Rust accessors expose exact registered
+URLs, filenames, optional SHA-256 pins, license requirements and companions.
+They perform no cache access, networking, license acceptance or global mutation.
+This supports an app-owned mobile installer while preserving the legacy resolver.
+See [the API and installer contract](docs/model-download-metadata.md).
+
+Hosted production-C, sanitizer and actual-wrapper tests are prepared. Pending:
+final-source contract results and the consumer's pinned streaming/atomic install,
+cancellation/recovery, mobile linking and device execution gates. No URL, pin,
+registry model, release or inference default is changed.
+
 ## OCR review workspace integration — 8 November 2026
 
 Owner lane: `feature/ocr-production-workspace`, based on

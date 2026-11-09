@@ -257,6 +257,35 @@ CRISPEMBED_API const char * crispembed_model_size(int index);
 CRISPEMBED_API const char * crispembed_model_license(int index);
 CRISPEMBED_API const char * crispembed_model_card_url(int index);
 
+// Read-only, exact-name download metadata. This fixed v1 layout is additive;
+// future layouts use a new type/function rather than extending this struct.
+// All non-NULL strings point to immutable registry storage for process lifetime.
+// sha256 is NULL when the registry has no pin; never infer a digest from a URL.
+typedef struct crispembed_model_download_file_v1 {
+    const char * filename;
+    const char * url;
+    const char * sha256;
+} crispembed_model_download_file_v1;
+
+typedef struct crispembed_model_download_info_v1 {
+    const char * name;
+    const char * license;
+    const char * model_card_url;
+    int requires_license_acceptance;
+    crispembed_model_download_file_v1 primary;
+    crispembed_model_download_file_v1 companion;
+    int has_companion;
+} crispembed_model_download_info_v1;
+
+// 1 = exact name found, 0 = unknown name, -1 = NULL argument.
+// A non-NULL out is cleared before lookup, including failure/unknown results.
+// No fuzzy/filename/path matching, cache access, license acceptance, environment
+// mutation or networking occurs. A declared but incomplete companion is exposed
+// with its missing strings NULL so callers can reject it. This is metadata,
+// not permission to download or evidence that an unpinned payload is trusted.
+CRISPEMBED_API int crispembed_get_model_download_info_v1(const char * exact_name,
+                                                         crispembed_model_download_info_v1 * out);
+
 // Encode a single text string. Returns a pointer to a float array of
 // length *out_n_dim (the model's output embedding dimension). The
 // returned pointer is valid until the next encode() call or free().

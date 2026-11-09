@@ -37,6 +37,8 @@ pub mod marker;
 pub use marker::{Marker, MarkerMode, MarkerOptions};
 pub mod photo;
 pub use photo::CrispScanPhoto;
+pub mod model_download;
+pub use model_download::{ModelDownloadFile, ModelDownloadInfo};
 
 pub mod moedern_text;
 pub use moedern_text::MoEdern;
@@ -227,6 +229,12 @@ impl CrispEmbed {
                 .to_string_lossy()
                 .into_owned()
         }
+    }
+
+    /// Read exact registered URLs, optional pins and companions without IO.
+    /// This does not download a model or accept its license.
+    pub fn model_download_info(exact_name: &str) -> Result<Option<ModelDownloadInfo>, String> {
+        model_download::model_download_info(exact_name)
     }
 
     pub fn list_models() -> Vec<ModelInfo> {

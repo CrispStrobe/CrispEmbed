@@ -1,0 +1,78 @@
+name: Model download metadata contract
+
+on:
+  push:
+    branches: [main, feat/ocr-photo-preprocessing]
+    paths:
+      - 'examples/cli/model_mgr.*'
+      - 'examples/cli/model_hashes.h'
+      - 'src/crispembed.h'
+      - 'crispembed/src/lib.rs'
+      - 'crispembed/src/model_download.rs'
+      - 'crispembed-sys/src/lib.rs'
+      - 'tests/test_model_download_info*'
+      - '.github/workflows/model-download-metadata.yml'
+  pull_request:
+    paths:
+      - 'examples/cli/model_mgr.*'
+      - 'examples/cli/model_hashes.h'
+      - 'src/crispembed.h'
+      - 'crispembed/src/lib.rs'
+      - 'crispembed/src/model_download.rs'
+      - 'crispembed-sys/src/lib.rs'
+      - 'tests/test_model_download_info*'
+      - '.github/workflows/model-download-metadata.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: model-download-metadata-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  metadata-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Exercise actual C registry metadata and C-compatible header
+        run: |
+          mkdir -p build-model-metadata/artifacts
+          printf '#include "crispembed.h"\nint main(void) { crispembed_model_download_info_v1 info; return crispembed_get_model_download_info_v1("ppocrv6-tiny-det", &info) != 1; }\n' \
+            > build-model-metadata/header.c
+          cc -std=c11 -Isrc -c build-model-metadata/header.c -o build-model-metadata/header.o
+          c++ -std=c++17 -O2 -ffunction-sections -fdata-sections -Isrc -Iexamples/cli \
+            tests/test_model_download_info.cpp examples/cli/model_mgr.cpp -Wl,--gc-sections \
+            -o build-model-metadata/test-metadata
+          CRISPEMBED_CACHE_DIR="$PWD/build-model-metadata/no-cache" \
+            build-model-metadata/test-metadata | tee build-model-metadata/artifacts/registry.json
+          test ! -e build-model-metadata/no-cache
+          git rev-parse HEAD > build-model-metadata/artifacts/source.txt
+      - name: Sanitize borrowed strings and invalid arguments
+        run: |
+          c++ -std=c++17 -O1 -g -fsanitize=address,undefined -ffunction-sections -fdata-sections \
+            -Isrc -Iexamples/cli tests/test_model_download_info.cpp examples/cli/model_mgr.cpp \
+            -Wl,--gc-sections -o build-model-metadata/test-metadata-sanitized
+          build-model-metadata/test-metadata-sanitized | tee build-model-metadata/artifacts/sanitized.json
+      - name: Exercise safe Rust ownership, optional pins and concurrent reads
+        run: |
+          c++ -std=c++17 -O2 -ffunction-sections -fdata-sections -Isrc -Iexamples/cli \
+            -c examples/cli/model_mgr.cpp -o build-model-metadata/model_mgr.o
+          ar rcs build-model-metadata/libmodel_metadata.a build-model-metadata/model_mgr.o
+          rustc --edition=2021 --test tests/test_model_download_info_rust.rs \
+            -L native=build-model-metadata -l static=model_metadata -l dylib=stdc++ \
+            -C link-arg=-Wl,--gc-sections -o build-model-metadata/test-metadata-rust
+          CRISPEMBED_CACHE_DIR="$PWD/build-model-metadata/no-cache" \
+            build-model-metadata/test-metadata-rust --nocapture | tee build-model-metadata/artifacts/rust.txt
+          test ! -e build-model-metadata/no-cache
+      - name: Preserve contract evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-download-metadata-contract
+          path: build-model-metadata/artifacts
+          if-no-files-found: error
+          retention-days: 90

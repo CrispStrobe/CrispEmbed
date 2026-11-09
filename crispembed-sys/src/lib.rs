@@ -4,6 +4,37 @@
 use std::ffi::{c_char, c_float, c_int};
 use std::os::raw::c_void;
 
+/// Immutable borrowed registry file metadata; NULL sha256 means unpinned.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct CrispembedModelDownloadFileV1 {
+    pub filename: *const c_char,
+    pub url: *const c_char,
+    pub sha256: *const c_char,
+}
+
+/// Fixed v1 layout. Do not extend; use a new version for any future layout.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct CrispembedModelDownloadInfoV1 {
+    pub name: *const c_char,
+    pub license: *const c_char,
+    pub model_card_url: *const c_char,
+    pub requires_license_acceptance: c_int,
+    pub primary: CrispembedModelDownloadFileV1,
+    pub companion: CrispembedModelDownloadFileV1,
+    pub has_companion: c_int,
+}
+
+extern "C" {
+    /// Exact-name, metadata-only lookup: 1 found, 0 unknown, -1 NULL argument.
+    /// Clears non-NULL output. Returned strings are immutable for process lifetime.
+    pub fn crispembed_get_model_download_info_v1(
+        exact_name: *const c_char,
+        out: *mut CrispembedModelDownloadInfoV1,
+    ) -> c_int;
+}
+
 #[repr(C)]
 pub struct CrispembedMarkerContext(c_void);
 
