@@ -1,5 +1,23 @@
 # CrispEmbed plan — open work (updated 7 November 2026)
 
+## PDF Craft adoption — 9 November 2026
+
+Owner lane: `feature/pdf-craft-document-quality-20261109`, based on
+`e4ee71937a68f1ff9d28f4d7cdbd66bda68ba05a`. All checkpoints remain on the
+upstream feature branch as requested; no main-branch or release changes.
+
+| Work | State | Acceptance |
+|---|---|---|
+| Audit PDF Craft `cf003c711b6a63cd0a0a64bfc490bd319ab20d92` | Source and dependency review in progress | Pin individual source provenance; exclude copyleft code/dependencies and preserve model restrictions |
+| Native OCR repetition diagnostics | Planned, default-off `CRISPEMBED_MARKER_REPETITION_CHECK` | Unicode consecutive n-grams, bounded work, asset exclusions, unchanged text/raw/geometry and default behavior; hosted model-free positive/negative controls |
+| TeleOCR weight-license metadata | Existing converter claims Apache-2.0 despite the documented Qwen Research vision lineage | Correct exported metadata and regression checks without changing model access or defaults |
+
+The bounded runtime change reports suspicious OCR repetition; it does not delete
+content, retry inference, introduce models or qualify document accuracy. The
+existing PDFium renderer and native model implementations remain the integration
+points. Broader extraction persistence, recovery and source-linked paragraph
+assembly need separate acceptance evidence after this lane.
+
 ## OCR review workspace integration — 8 November 2026
 
 Owner lane: `feature/ocr-production-workspace`, based on
