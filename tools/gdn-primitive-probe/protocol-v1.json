@@ -1,0 +1,119 @@
+{
+  "schema": "lighton4b-gdn-source-fed-primitives/v1",
+  "scope": "actualfirst16native projected inputs, plusfirst4prefix subset; no model/decode/quality claim",
+  "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "native_ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "source_url": "https://huggingface.co/richardyoung/LightOnOCR-3-4B-GGUF/resolve/8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01/LightOnOCR-3-4B-Q4_K_M.gguf",
+  "source_bytes": 2708804576,
+  "source_sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26",
+  "physical_result_sha256": "712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2",
+  "physical_source": "ac34f72ca89823a177c538ad598dfa00fc69f124",
+  "native_runtime_base": "285ab5a4e9d669746a3664ec7804783ca06cc6dd",
+  "tokens": [
+    4,
+    16
+  ],
+  "key_heads": 16,
+  "value_heads": 32,
+  "width": 128,
+  "conv_kernel": 4,
+  "eps": 1e-06,
+  "threads": 4,
+  "fused_gdn_ar": true,
+  "fused_gdn_ch": true,
+  "auto_fgdn": false,
+  "tensors": [
+    {
+      "physical_name": "blk.0.ssm_a",
+      "source_offset": 601467872,
+      "bytes": 128,
+      "source_packed_sha256": "58087ec9251767ad22ea349a3c5361e964be8ae277da1b4db9ce06d9800a5fdb",
+      "source_shape": [
+        32
+      ],
+      "type": 0,
+      "file": "A.f32"
+    },
+    {
+      "physical_name": "blk.0.ssm_conv1d.weight",
+      "source_offset": 601560160,
+      "bytes": 131072,
+      "source_packed_sha256": "3bc41a4142692d6d57be8b437cb4e58f1f5ae88eb918cac6a662df43ed3ee018",
+      "source_shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "file": "conv.f32"
+    },
+    {
+      "physical_name": "blk.0.ssm_dt.bias",
+      "source_offset": 601691232,
+      "bytes": 128,
+      "source_packed_sha256": "54314db72054ddcf664d15dd95ac238b9fac69e07d593b2d2531267e9edadaee",
+      "source_shape": [
+        32
+      ],
+      "type": 0,
+      "file": "dt.f32"
+    },
+    {
+      "physical_name": "blk.0.ssm_norm.weight",
+      "source_offset": 601691360,
+      "bytes": 512,
+      "source_packed_sha256": "65461d766b7eac74f206daddeab6b1271ecdaed1999fe756b8f1eb4f9ead3f0c",
+      "source_shape": [
+        128
+      ],
+      "type": 0,
+      "file": "norm.f32"
+    },
+    {
+      "physical_name": "blk.0.ssm_out.weight",
+      "source_offset": 601691872,
+      "bytes": 5898240,
+      "source_packed_sha256": "2efc8ee58fb2e23f9053bc359fe39f62170fb28a99ebf3aa66da597cf89d6f67",
+      "source_shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "file": "out.q4k"
+    }
+  ],
+  "actual_captures": {
+    "upstream_features/prefill.first_chunk.layer0.b.f32": {
+      "bytes": 2048,
+      "sha256": "aa6b9b2c16d53ea82b834552acee42ff7aaae6ceacdd38e6f9e56b7bd7dd657b"
+    },
+    "upstream_features/prefill.first_chunk.layer0.attention.f32": {
+      "bytes": 163840,
+      "sha256": "a3c841524f139d760b2600323a51ce5b58f4cf6049bc352e7c2ea7640384e8af"
+    },
+    "upstream_features/prefill.first_chunk.layer0.z.f32": {
+      "bytes": 262144,
+      "sha256": "b872a809eb2591451225e045586101787c96abcf390e2f2048987711c9fe7912"
+    },
+    "upstream_features/prefill.first_chunk.layer0.a.f32": {
+      "bytes": 2048,
+      "sha256": "38e07a69a1c2620de0e3e0453e2ad6d651d847e932c2683ee2b4dbb9cdc10e35"
+    },
+    "upstream_features/prefill.first_chunk.layer0.qkv.f32": {
+      "bytes": 524288,
+      "sha256": "cd98b7cd7669ac6d73c413730a4a1936d2573e2b21b3c034c5eb04d0bd3f9ef1"
+    }
+  },
+  "minimum_available_memory_bytes": 2147483648,
+  "minimum_scratch_bytes": 4294967296,
+  "total_timeout_seconds": 1800,
+  "model_forward_allowed": false,
+  "source_function_sha256": {
+    "src/models/qwen35.cpp": "3387cf23a95ca71d2a38fac4b32708d6424fc9888273148ff6b4db5e510c9406",
+    "src/models/models.h": "a18e20327512624d2add1ddbb4a94902dd3a79970fc3c16aba15ee675b3cd95f",
+    "src/models/delta-net-base.cpp": "9cd452f76d60df96a994a1ee545872896e32d0c0d1cb594afbc5fcea31a75a31",
+    "src/llama-context.cpp": "9502cb706594752543975730f0b769b043c430dda4b62b7a172e35b4150ff43c",
+    "common/common.h": "c3010a3c662a14556adb651b79bff00089564fde6b5e336959403e3db34e6073",
+    "common/common.cpp": "1b41b3613a10d579e2808bf5e1a73531980ca836d0f4d23dba22d7130d78985e"
+  },
+  "native_delta_sha256": "be17737dae21c29757fa139e48938fd7cd1b0b736b9c8e84b3fb736e0c1202e6"
+}

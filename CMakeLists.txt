@@ -1922,3 +1922,7 @@ add_executable(test-lighton4b-gdn-projection-policy EXCLUDE_FROM_ALL tests/test_
 target_link_libraries(test-lighton4b-gdn-projection-policy PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(lighton4b-gdn-projection-sensitivity EXCLUDE_FROM_ALL tests/lighton4b_gdn_projection_sensitivity.cpp src/lighton4b_tokenizer.cpp)
 target_link_libraries(lighton4b-gdn-projection-sensitivity PRIVATE crispembed-qwen35-delta crispembed-core)
+# Source-fed GDN recurrence diagnostics only; never installed with production.
+add_executable(test-lighton4b-gdn-source-primitive EXCLUDE_FROM_ALL tools/gdn-primitive-probe/main.cpp)
+target_compile_definitions(test-lighton4b-gdn-source-primitive PRIVATE CRISPEMBED_GDN_RUNTIME_PROBE=1)
+target_link_libraries(test-lighton4b-gdn-source-primitive PRIVATE crispembed-qwen35-delta crispembed-core)
