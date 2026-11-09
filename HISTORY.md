@@ -1,5 +1,36 @@
 ## 5 November 2026 — PR145 complete final-source CI
 
+## 5 November 2026 — Actual original BF16 CPU generation
+
+The source-pinned Kaggle CPU run `07543dcc80ebcecad644815d9397be2570a51dd4`
+loaded the full verified original 4B checkpoint with all 723 parameter objects in
+BF16, retaining the single tied head. The frozen form/empty-prompt request used
+official Transformers generation, 154 input tokens and cap256; 177 generated
+tokens ended in EOS after 567.890 seconds. The [original report](tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture.json)
+and [independent review](tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture-review.json)
+retain exact sources, checkpoint/tokenizer identity, decoded output, scores and
+measured memory. All 177 score objects remain on remote worker output; their names
+were independently enumerated and only first/last rows were downloaded and hash/
+finite/argmax checked. Python reported missing `wrapt` in `sitecustomize`;
+execution continued and pip check found no broken requirements. This is a separate
+BF16 CPU original output, not F32 equivalence, observer-off neutrality,
+native/quantized parity or document-quality qualification.
+
+## 5 November 2026 — Separate original BF16 capture preparation
+
+Hosted [41992437849](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41992437849)
+passed all5 synthetic methods but failed before checkpoint acquisition/forward:
+the official processor also requires torchvision. The distinct BF16 requirements
+now pin torchvision0.28.0+cpu alongside torch2.13.0+cpu; historical F32 requirements
+are unchanged. Corrected [41993030552](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41993030552)
+at `07543dcc80ebcecad644815d9397be2570a51dd4` passes all5 methods and official
+processor preparation. Independent review verifies source and saved-input hashes,
+the torchvision backend, grid `[1,20,28]`, pixels `[560,1536]` F32 and IDs/mask/types
+`[1,154]` int64. The [receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-preflight.json)
+retains both runs. No checkpoint/model forward or decoded-quality claim is made.
+
+## 5 November 2026 — Separate document-v2 packaging/consumption controls
+
 Re-query at `2d36eeb9492d4c241040411fb5340b6368a6b6f2` finds all13
 selected workflows completed successfully. The actual
 [Build41930954667](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930954667)

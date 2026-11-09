@@ -2,6 +2,35 @@
 
 ## OCR review workspace integration — 8 November 2026
 
+The separate [CPU BF16 free-generation lane](docs/lighton4b-bf16-freegen.md)
+completed an experimental Kaggle capture at exact source
+`07543dcc80ebcecad644815d9397be2570a51dd4`. Corrected hosted41993030552
+first passed5 synthetic methods and actual official-processor preparation; the
+[preflight receipt](tests/results/qwen35-ocr/lightonocr3-4b-bf16-preflight.json)
+preserves initial41992437849's missing-torchvision failure. The subsequent
+[actual capture and review](tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture-review.json)
+verify the full original checkpoint/tokenizer, BF16 parameter census, 177 original
+forward calls and 177 generated IDs ending in EOS. It recorded 9,908,559,872-byte
+process peak RSS and 19,794,493,440-byte worker cgroup peak; the latter includes
+file cache and other worker memory. The 177 score objects remain remote; their
+names were enumerated and the first/last independently read back. The remaining
+175 were not independently downloaded. The separate 22GiB BF16 admission does not
+alter F32's 40GiB/48GiB guards, hard capture default, v1/v2 producer admissions
+or the 256-token cap. The output is a French figure-style description of the form;
+verbatim transcription quality, observer-off replay, F32 equivalence and all
+native/quantized comparisons remain open. Scores are official generation scores,
+not independently observed raw logits.
+
+The separate [document-v2 packaging/admission contract](docs/lighton4b-document-v2.md)
+maps970 base plus67 fields per generated position into authenticated stage ranges
+and supports bounded lazy remote consumption through the unchanged Ref comparer.
+Actual hosted initial41981531300 and bounded41981959660 each pass all5 methods;
+independent review verifies all7 source hashes, exact1037-stage synthetic remote
+consumption and independent decoded negatives. The [receipt](tests/results/qwen35-ocr/lightonocr3-4b-document-v2-controls.json)
+closes only packaging/consumer mechanics. Actual producer lists, execution and large-retention
+admissions stay empty/false; v1, hard capture default and40GiB/48GiB guards stay
+unchanged. No actual original forward or original-output readiness is claimed.
+
 Owner lane: `feature/ocr-production-workspace`, based on
 `20d271f56ab948aa9347d1b1644a508a08bf9c7c`, paired with the same feature branch in
 [CrispSorter](https://github.com/CrispStrobe/CrispSorter/tree/feature/ocr-production-workspace).
