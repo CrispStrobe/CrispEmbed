@@ -1,0 +1,8 @@
+[ 16%] Built target ggml-base
+[ 50%] Built target ggml-cpu
+[ 50%] Built target ggml
+[ 66%] Built target crispembed-core
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-physical-f16-vision.dir/tests/test_lighton4b_physical_f16_vision.cpp.o
+[100%] Linking CXX executable test-lighton4b-physical-f16-vision
+[100%] Built target test-lighton4b-physical-f16-vision

@@ -1,0 +1,13 @@
+{
+  "schema": "lighton4b-private-artifact-relay/v1",
+  "status": "failed",
+  "inference_executed": false,
+  "model_downloaded": false,
+  "credential_values_logged": false,
+  "copied_bytes": 633351140,
+  "copied_files": 915,
+  "seconds_copy": 40.160759393999996,
+  "error_type": "ValueError",
+  "error": "Artifact relay or strict reader failed; capability URLs redacted",
+  "seconds": 46.540437217999994
+}

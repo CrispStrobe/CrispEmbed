@@ -1,0 +1,20 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+..F..
+======================================================================
+FAIL: test_environment_and_callback_failure_receipt (__main__.RuntimeGuardTests.test_environment_and_callback_failure_receipt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/lighton4b-physical-f16-full-form-v1/source/tools/physical-f16-attention-probe/test_runtime_guard.py", line 50, in test_environment_and_callback_failure_receipt
+    self.assertEqual((Path(folder) / 'env').read_text().strip(), 'bounded')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "Error in sitecustomize; set PYTHONVERBOS[67 chars]nded" != 'bounded'
+- Error in sitecustomize; set PYTHONVERBOSE for traceback:
+- ModuleNotFoundError: No module named 'wrapt'
+  bounded
+
+
+----------------------------------------------------------------------
+Ran 5 tests in 2.601s
+
+FAILED (failures=1)

@@ -1,0 +1,33 @@
+{
+  "full_source178": {
+    "members": 178,
+    "uncompressed_bytes": 176803840
+  },
+  "source_stages50": {
+    "members": 50,
+    "uncompressed_bytes": 1562908
+  },
+  "native_off_stages48": {
+    "members": 48,
+    "uncompressed_bytes": 1552652
+  },
+  "native_on_stages48": {
+    "members": 48,
+    "uncompressed_bytes": 1552652
+  },
+  "official_causal26": {
+    "members": 26,
+    "uncompressed_bytes": 25825280
+  },
+  "native_causal26": {
+    "members": 26,
+    "uncompressed_bytes": 25825280
+  },
+  "actual_head_rne_transform": {
+    "all248320_values_exact": true,
+    "off_sha256": "9aad6ace48b2ef0e10bec5af70fdb7efded85968e5c5652d34983a017dee6a7a",
+    "on_sha256": "f8adc42a9a53d1f6798e4c56457ea9c55446c4895e7b934776b449e37fe60b58",
+    "independent_rne_sha256": "f8adc42a9a53d1f6798e4c56457ea9c55446c4895e7b934776b449e37fe60b58",
+    "method": "independent scalar IEEE-F32 bitwise RNE on actual OFF payload; equals every actual ON value"
+  }
+}

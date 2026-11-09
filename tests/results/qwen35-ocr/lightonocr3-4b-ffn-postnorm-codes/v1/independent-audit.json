@@ -1,0 +1,318 @@
+{
+  "schema": "lighton4b-postnorm-independent-audit/v1",
+  "receipt_sha256": "c93689677044fa43a1fe98335abd6ad63db1127dfa0c2acf464772ef2bceb6db",
+  "status": "verified_actual_inputs_code_threshold_and_corner_outputs",
+  "model_inference_executed": false,
+  "arrays": {
+    "cases/source4/upstream-gate-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "7e42b847af6c67420a2c435a10f909f9c2f71b9355b851d469c8f08fe8bfb52f"
+    },
+    "cases/source4/native-gate-raw.f32": {
+      "bytes": 147456,
+      "sha256": "689e810e23b2d29f332cccc150c434b50d2ecb1c329fa8dc946abb1683c3ea4b"
+    },
+    "cases/source4/upstream-up-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "2e998f1a8b77fa9a0f8f053576560e870e07df3b65c919d4e0ff49852e24f46d"
+    },
+    "cases/source4/native-up-raw.f32": {
+      "bytes": 147456,
+      "sha256": "7214aec70087a1a27f6e23e31ddc0540cd96717ec3293d2c4c63e5d2808f9732"
+    },
+    "cases/source4/native-codes.bin": {
+      "bytes": 11680,
+      "sha256": "1349a935f83cf81950215946e115d2ff41a8d2f10308397bb7068a0e8b000354"
+    },
+    "cases/off4/upstream-gate-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "6b3c2ad67663d2439bb940addfb34e2c4bcf52cf6c22102018ac8bb9aebe5731"
+    },
+    "cases/off4/native-gate-raw.f32": {
+      "bytes": 147456,
+      "sha256": "ef058fd49b8746cfbc5da5b1cb25d4c9fc6591a456214a8ef0db72aa0677ced5"
+    },
+    "cases/off4/upstream-up-preferred.f32": {
+      "bytes": 147456,
+      "sha256": "e224cbe0f630d1fd9f255c3d1dd598100019566a26335f27f2e1e83f3c2ae479"
+    },
+    "cases/off4/native-up-raw.f32": {
+      "bytes": 147456,
+      "sha256": "69d3f0cf61c4f07e8193b707e38cafff858f7a9e0570d9e4a42d4ee6e2e08d07"
+    },
+    "cases/off4/native-codes.bin": {
+      "bytes": 11680,
+      "sha256": "fcb12b6dee62a1d2ff4b6c5c30289f3ce494c862604c43f5f86e683fe7991571"
+    },
+    "cases/on4/native-codes.bin": {
+      "bytes": 11680,
+      "sha256": "ccadb04f22c0bedec5c13f3ffbbed9ec3f7618900230231610ac9c19313f3a79"
+    },
+    "corners/off/native/native_qs_source_scale/up.f32": {
+      "bytes": 147456,
+      "sha256": "aa6e7a894e8858a7f4c43ee1908d6bbffaec8a635101ff0854236f9e57d23c6d"
+    },
+    "corners/off/native/native_qs_source_scale/gate.f32": {
+      "bytes": 147456,
+      "sha256": "1aa7c4213497695dfd523cc9f9a893d4e8fc3fa4c57f6bc8476b8cefc4a0246a"
+    },
+    "corners/off/native/source_qs_native_scale/up.f32": {
+      "bytes": 147456,
+      "sha256": "4c0290e9c90529b08ed28bee1007afa7904c13192bf9117e034ef3edd7210558"
+    },
+    "corners/off/native/source_qs_native_scale/gate.f32": {
+      "bytes": 147456,
+      "sha256": "860226b465ad7440b67c87ace52771e5aa05848e0d91181866029fbe7c279539"
+    },
+    "corners/off/native/native/up.f32": {
+      "bytes": 147456,
+      "sha256": "69d3f0cf61c4f07e8193b707e38cafff858f7a9e0570d9e4a42d4ee6e2e08d07"
+    },
+    "corners/off/native/native/gate.f32": {
+      "bytes": 147456,
+      "sha256": "ef058fd49b8746cfbc5da5b1cb25d4c9fc6591a456214a8ef0db72aa0677ced5"
+    },
+    "corners/off/native/source/up.f32": {
+      "bytes": 147456,
+      "sha256": "7214aec70087a1a27f6e23e31ddc0540cd96717ec3293d2c4c63e5d2808f9732"
+    },
+    "corners/off/native/source/gate.f32": {
+      "bytes": 147456,
+      "sha256": "689e810e23b2d29f332cccc150c434b50d2ecb1c329fa8dc946abb1683c3ea4b"
+    },
+    "inputs/source4/up.f32": {
+      "bytes": 147456,
+      "sha256": "2e998f1a8b77fa9a0f8f053576560e870e07df3b65c919d4e0ff49852e24f46d"
+    },
+    "inputs/source4/gate.f32": {
+      "bytes": 147456,
+      "sha256": "7e42b847af6c67420a2c435a10f909f9c2f71b9355b851d469c8f08fe8bfb52f"
+    },
+    "inputs/source4/postnorm.f32": {
+      "bytes": 40960,
+      "sha256": "54b7073707c3693830e390eae944187acc2d6e6317bea4385c40a9e2585436b3"
+    },
+    "inputs/off4/postnorm.f32": {
+      "bytes": 40960,
+      "sha256": "30a400ee1a55e924592b585224f591f825b5d99fb1c65752c0bfe67a6f00dfd0"
+    },
+    "inputs/on4/postnorm.f32": {
+      "bytes": 40960,
+      "sha256": "8b37a066be3ab5392a29052e9c2bd761f8cb4abac93bad3a06ea8c51713549b2"
+    }
+  },
+  "code_points": {
+    "off": {
+      "points": [
+        {
+          "token_index": 2,
+          "feature_index": 1292,
+          "block_index": 25,
+          "lane": 12,
+          "values": {
+            "source": {
+              "postnorm": -0.08202297240495682,
+              "signed_block_max": -1.3889206647872925,
+              "max_feature_index": 1302,
+              "inverse_scale": 91.43790435791016,
+              "stored_scale": 0.010936384089291096,
+              "scaled_input": -7.500008583068848,
+              "integer_code": -8
+            },
+            "off": {
+              "postnorm": -0.08201923966407776,
+              "signed_block_max": -1.3889180421829224,
+              "max_feature_index": 1302,
+              "inverse_scale": 91.43807983398438,
+              "stored_scale": 0.01093636266887188,
+              "scaled_input": -7.4996819496154785,
+              "integer_code": -7
+            }
+          }
+        }
+      ],
+      "input": {
+        "elements": 10240,
+        "bit_exact": false,
+        "rms": 1.2611334037053923e-06,
+        "max_abs": 8.798204362392426e-06,
+        "reference_rms_magnitude": 0.4465329171525552
+      },
+      "different_qs": 1,
+      "different_bsums": 1,
+      "different_scales": 36,
+      "scale_sign_changes": 0,
+      "decoded_q8_input": {
+        "elements": 10240,
+        "bit_exact": false,
+        "rms": 0.00010807747865767676,
+        "max_abs": 0.010936535894870758,
+        "reference_rms_magnitude": 0.4464721806170834
+      }
+    },
+    "on": {
+      "points": [
+        {
+          "token_index": 2,
+          "feature_index": 1292,
+          "block_index": 25,
+          "lane": 12,
+          "values": {
+            "source": {
+              "postnorm": -0.08202297240495682,
+              "signed_block_max": -1.3889206647872925,
+              "max_feature_index": 1302,
+              "inverse_scale": 91.43790435791016,
+              "stored_scale": 0.010936384089291096,
+              "scaled_input": -7.500008583068848,
+              "integer_code": -8
+            },
+            "on": {
+              "postnorm": -0.08202048391103745,
+              "signed_block_max": -1.3889192342758179,
+              "max_feature_index": 1302,
+              "inverse_scale": 91.43800354003906,
+              "stored_scale": 0.010936371982097626,
+              "scaled_input": -7.499789237976074,
+              "integer_code": -7
+            }
+          }
+        }
+      ],
+      "input": {
+        "elements": 10240,
+        "bit_exact": false,
+        "rms": 1.271985776258359e-06,
+        "max_abs": 7.748603820800781e-06,
+        "reference_rms_magnitude": 0.4465329171525552
+      },
+      "different_qs": 1,
+      "different_bsums": 1,
+      "different_scales": 38,
+      "scale_sign_changes": 0,
+      "decoded_q8_input": {
+        "elements": 10240,
+        "bit_exact": false,
+        "rms": 0.00010807668914551969,
+        "max_abs": 0.010936468839645386,
+        "reference_rms_magnitude": 0.4464721806170834
+      }
+    }
+  },
+  "roles": {
+    "gate": {
+      "total": {
+        "elements": 36864,
+        "bit_exact": false,
+        "rms": 4.948765076361029e-05,
+        "max_abs": 0.00036591291427612305,
+        "reference_rms_magnitude": 0.22776664960285287
+      },
+      "same_input_backend_and_route": {
+        "elements": 36864,
+        "bit_exact": false,
+        "rms": 1.0038952321658035e-07,
+        "max_abs": 1.1920928955078125e-06,
+        "reference_rms_magnitude": 0.22776663307894687
+      },
+      "fixed_preferred_route_input": {
+        "elements": 36864,
+        "bit_exact": false,
+        "rms": 4.948690261454678e-05,
+        "max_abs": 0.00036579370498657227,
+        "reference_rms_magnitude": 0.22776664960285287
+      },
+      "corner": {
+        "source": {
+          "elements": 36864,
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_rms_magnitude": 0.22776665011975133
+        },
+        "native": {
+          "elements": 36864,
+          "bit_exact": false,
+          "rms": 4.948689827388863e-05,
+          "max_abs": 0.00036591291427612305,
+          "reference_rms_magnitude": 0.22776665011975133
+        },
+        "source_qs_native_scale": {
+          "elements": 36864,
+          "bit_exact": false,
+          "rms": 2.73409989263078e-07,
+          "max_abs": 4.76837158203125e-06,
+          "reference_rms_magnitude": 0.22776665011975133
+        },
+        "native_qs_source_scale": {
+          "elements": 36864,
+          "bit_exact": false,
+          "rms": 4.9485813853985504e-05,
+          "max_abs": 0.00036585330963134766,
+          "reference_rms_magnitude": 0.22776665011975133
+        }
+      }
+    },
+    "up": {
+      "total": {
+        "elements": 36864,
+        "bit_exact": false,
+        "rms": 4.69959135444979e-05,
+        "max_abs": 0.00034578144550323486,
+        "reference_rms_magnitude": 0.19947203393320811
+      },
+      "same_input_backend_and_route": {
+        "elements": 36864,
+        "bit_exact": false,
+        "rms": 9.02798648751315e-08,
+        "max_abs": 5.364418029785156e-07,
+        "reference_rms_magnitude": 0.19947189619657782
+      },
+      "fixed_preferred_route_input": {
+        "elements": 36864,
+        "bit_exact": false,
+        "rms": 4.6994365170909723e-05,
+        "max_abs": 0.0003456920385360718,
+        "reference_rms_magnitude": 0.19947203393320811
+      },
+      "corner": {
+        "source": {
+          "elements": 36864,
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_rms_magnitude": 0.19947203340121072
+        },
+        "native": {
+          "elements": 36864,
+          "bit_exact": false,
+          "rms": 4.699556940498137e-05,
+          "max_abs": 0.00034581124782562256,
+          "reference_rms_magnitude": 0.19947203340121072
+        },
+        "source_qs_native_scale": {
+          "elements": 36864,
+          "bit_exact": false,
+          "rms": 2.4660106916805654e-07,
+          "max_abs": 2.5033950805664062e-06,
+          "reference_rms_magnitude": 0.19947203340121072
+        },
+        "native_qs_source_scale": {
+          "elements": 36864,
+          "bit_exact": false,
+          "rms": 4.6992184449090814e-05,
+          "max_abs": 0.0003460049629211426,
+          "reference_rms_magnitude": 0.19947203340121072
+        }
+      }
+    }
+  },
+  "reported_actual_projection_closures": 6,
+  "reported_forced_raw_q8_closures": 32,
+  "downloaded_selected_array_bytes": 2812128,
+  "limits": [
+    "Public converter vectors are interventions, not directly observed CPU_REPACK buffers.",
+    "Integer/scale corner vectors are synthetic, with coupled qs/bsums and no sign changes in this case.",
+    "No model/heldout/runtime change or quality claim."
+  ]
+}

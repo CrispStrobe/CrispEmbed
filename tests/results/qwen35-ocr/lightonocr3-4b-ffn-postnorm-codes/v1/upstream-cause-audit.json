@@ -1,0 +1,272 @@
+{
+  "schema": "lighton4b-postnorm-upstream-cause/v1",
+  "model_inference_executed": false,
+  "receipts": {
+    "gdn": "6b1f4f9c3150d06df0a195c1f21c42136874e69934b9586205712114354e798d",
+    "native_ab": "40b20127fe0a0ffbbbc227f40a847a31a5ac6c0c8c231edff24aa17ce1c6cdc5",
+    "source_capture": "8df1604435314b09ea8cbb60f47833a04307a492349191901313ed9b39540186"
+  },
+  "arrays": {
+    "gdn/zab4-hybrid/out_raw.f32": {
+      "bytes": 40960,
+      "sha256": "6d2fcceb5659687f60e776937cb076a710443ed4b1605c4e4360639a2aa7e0c3"
+    },
+    "gdn/zab4-hybrid/postnorm.f32": {
+      "bytes": 65536,
+      "sha256": "1bcacd8da142f7b1f359a1eed30ff61755119a32d247b4dbe5f408752f0a8d9f"
+    },
+    "gdn/zab4-hybrid/out_preferred.f32": {
+      "bytes": 40960,
+      "sha256": "1c0aeae6ab982cc26141b78b86f9e3435228260e54a4979353d4911558117266"
+    },
+    "gdn/native4-hybrid/out_raw.f32": {
+      "bytes": 40960,
+      "sha256": "7649cf3faba41e4f42588eb4b97d8eb942bb3186b82a2d896cd3596c3340388a"
+    },
+    "gdn/native4-hybrid/postnorm.f32": {
+      "bytes": 65536,
+      "sha256": "4c7e282f7dfd96f28e1cafe130188a46941db3934615a0aeb447a90a216bc2eb"
+    },
+    "gdn/native4-hybrid/out_preferred.f32": {
+      "bytes": 40960,
+      "sha256": "0e0f52cace961a1909adeb007eaa4481a6c4b9e622599e985d072606e9855dd1"
+    },
+    "gdn/native4-native/out_raw.f32": {
+      "bytes": 40960,
+      "sha256": "c642a00a190fbae7fb54d792af6a5dc4bab8daaf098abf8d4cafdc3657ee3f40"
+    },
+    "gdn/native4-native/postnorm.f32": {
+      "bytes": 65536,
+      "sha256": "e9ebb24c9c6dd61244e223a943037557e1a4c5eadef217415f5ac8e15346c4be"
+    },
+    "gdn/native4-native/out_preferred.f32": {
+      "bytes": 40960,
+      "sha256": "ba372650bddb5c5970f3408c8a1592a236569112528715a71fb6f1255ca42137"
+    },
+    "gdn/native16-hybrid/out_raw.f32": {
+      "bytes": 163840,
+      "sha256": "7b386b9c4caccb566689ce35f0c98b73fa64b222548aca7157419f57456833c5"
+    },
+    "gdn/native16-hybrid/postnorm.f32": {
+      "bytes": 262144,
+      "sha256": "e30016cbb9b0ffe91ddc8e1de2d2948e4f38b622be78cf1a3556510fcb49bdc2"
+    },
+    "gdn/native16-hybrid/out_preferred.f32": {
+      "bytes": 163840,
+      "sha256": "f9ddee3327aee6f57a37b204395ea747784705f55c9c4c0e62dd4984d170312b"
+    },
+    "gdn/native16-native/out_raw.f32": {
+      "bytes": 163840,
+      "sha256": "3957f3fb3eec8073af4b05d479ce8e4cbd63f717a52fe49af421136b6841ad75"
+    },
+    "gdn/native16-native/postnorm.f32": {
+      "bytes": 262144,
+      "sha256": "667b8ef8fa301a24902c82310a40886570cc426222245fb1e71db3e5c09eaa5b"
+    },
+    "gdn/native16-native/out_preferred.f32": {
+      "bytes": 163840,
+      "sha256": "a9460696c23f28e67d7695c27a24a529bb576b35d2f57316cf7a494d9c1228dd"
+    },
+    "native/simple_table/on/prefill.first_chunk.layer0.post_norm.f32": {
+      "bytes": 163840,
+      "sha256": "9709c47066424b1aa26076141b69c1b1e91c9c60ca80e32eece13041fe3443c4"
+    },
+    "native/simple_table/on/prefill.first_chunk.layer0.attention_residual.f32": {
+      "bytes": 163840,
+      "sha256": "4a3ee165c865da85f03a795c813fe49480da47e004e453d231cf7be66ec515b0"
+    },
+    "native/simple_table/off/prefill.first_chunk.layer0.input_norm.f32": {
+      "bytes": 163840,
+      "sha256": "41b5419e7f5bcd9c18e50f760a4ea64814d3ad6c8f23cc5fa621dcfd9161ce93"
+    },
+    "native/simple_table/off/prefill.first_chunk.layer0.post_norm.f32": {
+      "bytes": 163840,
+      "sha256": "57f78abc599666ff2d54c01abbccc2655431dcac82e32ee6f5cc2d1f85237f11"
+    },
+    "native/simple_table/off/prefill.first_chunk.layer0.attention_residual.f32": {
+      "bytes": 163840,
+      "sha256": "7012705cacdf9d92f9fe439c6dd96cd7c521e873f302dc8556b71b2c19cb49f7"
+    },
+    "native/simple_table/off/prefill.input.f32": {
+      "bytes": 880640,
+      "sha256": "bed1d3b680b330d40461b3c28b284c5fe2dfc4bd9d7f9b3bf377a6cceaf9d764"
+    },
+    "source/on/graph-1.attn_residual-0.bin": {
+      "bytes": 40960,
+      "sha256": "2d71513fa884e9f8be610910a9094864f1f4d3e3ff012459ff47aec59e2896d4"
+    },
+    "source/on/graph-1.attn_post_norm-0.bin": {
+      "bytes": 40960,
+      "sha256": "54b7073707c3693830e390eae944187acc2d6e6317bea4385c40a9e2585436b3"
+    },
+    "source/on/graph-1.attn_norm-0.bin": {
+      "bytes": 40960,
+      "sha256": "7a3fafed50f68cfdf0e41c2dadb3310c0512d8296155ad95de45567560064a96"
+    },
+    "source/on/graph-1.model.input_embed.bin": {
+      "bytes": 40960,
+      "sha256": "ca940b1a6f45bc487a4685205caca1e7fb64929c03b7c8d1b52769e26cc8b842"
+    }
+  },
+  "measurements": {
+    "off_actual_full16_attention_sha256": "3957f3fb3eec8073af4b05d479ce8e4cbd63f717a52fe49af421136b6841ad75",
+    "on_actual_full16_attention_sha256": "7b386b9c4caccb566689ce35f0c98b73fa64b222548aca7157419f57456833c5",
+    "off_attention_vs_source": {
+      "elements": 10240,
+      "bit_exact": false,
+      "rms": 6.851568101409169e-08,
+      "max_abs": 4.76837158203125e-07,
+      "reference_rms_magnitude": 0.059581604483636294
+    },
+    "on_attention_vs_source": {
+      "elements": 10240,
+      "bit_exact": false,
+      "rms": 6.882884780567833e-08,
+      "max_abs": 5.960464477539062e-07,
+      "reference_rms_magnitude": 0.059581604483636294
+    },
+    "on_attention_n16_vs_n4": {
+      "elements": 10240,
+      "bit_exact": true,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.05958160767970113
+    },
+    "same_input_out_buffer_route": {
+      "elements": 10240,
+      "bit_exact": false,
+      "rms": 6.559714305583295e-08,
+      "max_abs": 5.960464477539062e-07,
+      "reference_rms_magnitude": 0.05958160419781833
+    },
+    "preferred_out_projected_zab_input_effect": {
+      "elements": 10240,
+      "bit_exact": false,
+      "rms": 4.200309297242323e-08,
+      "max_abs": 3.5762786865234375e-07,
+      "reference_rms_magnitude": 0.059581604483636294
+    },
+    "gdn_postnorm_n16_vs_n4": {
+      "elements": 16384,
+      "bit_exact": true,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.07006274870134731
+    },
+    "embedding": {
+      "elements": 10240,
+      "bit_exact": true,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.013130501844094832
+    },
+    "initial_input_norm": {
+      "elements": 10240,
+      "bit_exact": true,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 1.156683446019308
+    },
+    "source_residual_add": {
+      "elements": 10240,
+      "bit_exact": true,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.059299653814095805
+    },
+    "off_residual_add": {
+      "elements": 10240,
+      "bit_exact": true,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.05929965789545832
+    },
+    "off_residual_vs_source": {
+      "elements": 10240,
+      "bit_exact": false,
+      "rms": 6.851691701085673e-08,
+      "max_abs": 4.76837158203125e-07,
+      "reference_rms_magnitude": 0.059299653814095805
+    },
+    "off_postnorm_vs_source": {
+      "elements": 10240,
+      "bit_exact": false,
+      "rms": 1.2611334037053923e-06,
+      "max_abs": 8.798204362392426e-06,
+      "reference_rms_magnitude": 0.4465329171525552
+    },
+    "on_residual_add": {
+      "elements": 10240,
+      "bit_exact": true,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.059299657645484075
+    },
+    "on_residual_vs_source": {
+      "elements": 10240,
+      "bit_exact": false,
+      "rms": 6.883012598050584e-08,
+      "max_abs": 5.960464477539062e-07,
+      "reference_rms_magnitude": 0.059299653814095805
+    },
+    "on_postnorm_vs_source": {
+      "elements": 10240,
+      "bit_exact": false,
+      "rms": 1.271985776258359e-06,
+      "max_abs": 7.748603820800781e-06,
+      "reference_rms_magnitude": 0.4465329171525552
+    }
+  },
+  "source_function_identity": {
+    "ggml_compute_forward_rms_norm_f32": {
+      "path": "src/ggml-cpu/ops.cpp",
+      "native_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+      "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+      "body_sha256": "0240273e8a8b271ecea17cfeac7d45ffbac91f92f3a3f1584a77fa1c2bb44a6a",
+      "body_bit_exact": true
+    },
+    "quantize_row_q8_K_ref": {
+      "path": "src/ggml-quants.c",
+      "native_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+      "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+      "body_sha256": "c83270e32c1003a2585b77b390c8a7516558ac64cc2fb2c5727968b62e198bf1",
+      "body_bit_exact": true
+    }
+  },
+  "limits": [
+    "Observed table layer0 first4 only; no heldout/decoded claim.",
+    "Projection route/source-projected-input interventions are not runtime recipe selection.",
+    "RMS kernel text identity is source evidence; an additional same-input kernel run on these residuals was not executed.",
+    "Attribution magnitudes are not unique causal variance shares."
+  ],
+  "points": {
+    "off": {
+      "token_index": 2,
+      "feature_index": 1292,
+      "attention": -0.02000528573989868,
+      "actual_source_attention": -0.020005464553833008,
+      "attention_residual": -0.003931701183319092,
+      "actual_source_residual": -0.003931879997253418,
+      "postnorm": -0.08201923966407776,
+      "actual_source_postnorm": -0.08202297240495682
+    },
+    "on": {
+      "token_index": 2,
+      "feature_index": 1292,
+      "attention": -0.020005345344543457,
+      "actual_source_attention": -0.020005464553833008,
+      "attention_residual": -0.003931760787963867,
+      "actual_source_residual": -0.003931879997253418,
+      "postnorm": -0.08202048391103745,
+      "actual_source_postnorm": -0.08202297240495682
+    },
+    "on_source_out_route": {
+      "actual_on16": -0.020005345344543457,
+      "native4_raw": -0.020005345344543457,
+      "native4_preferred": -0.020005464553833008,
+      "actual_source_preferred_zab": -0.020005464553833008
+    }
+  },
+  "downloaded_selected_array_bytes": 3485696,
+  "status": "verified_attention_residual_input_drift_before_ffn_norm"
+}

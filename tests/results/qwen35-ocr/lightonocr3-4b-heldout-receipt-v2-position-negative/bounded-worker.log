@@ -1,0 +1,44 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+phase source
+phase fetch-production
+phase production-bytes
+phase ggml
+phase native-configure
+phase native-build
+phase test-lighton4b-physical-f16-vision
+phase test-lighton4b-physical-f16-attention
+phase cli-native-composed
+phase cli-native-source-features
+phase cli-cap-low
+phase cli-cap-high
+phase cli-threads
+phase cli-mode
+phase cli-disabled
+phase cli-unflagged
+phase cli-old256
+phase cli-old512
+phase up-init
+phase up-remote
+phase up-fetch
+phase up-checkout
+phase up-configure
+phase up-build
+phase source-preflight-noargs
+phase server-help
+phase observed-control
+phase native-preflight
+phase source-preflight
+Traceback (most recent call last):
+  File "/tmp/lighton4b-heldout-historical-receipt-v1/source/tools/heldout/worker.py", line 124, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/tmp/lighton4b-heldout-historical-receipt-v1/source/tools/heldout/worker.py", line 99, in main
+    seal=out/'pre-forward-inputs.json';r['pre_forward_input_seal_sha256']=ex.seal_inputs(seal,case,ids,mods,grid,(pre/'prefill.positions.f32').read_bytes(),source_ids,source_mods,Path(str(sp)+'.positions.f32').read_bytes(),cfg['expected_media_prompt'],cfg);save()
+                                                                          ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-heldout-historical-receipt-v1/source/tools/heldout/execution.py", line 38, in seal_inputs
+    prepare.budget(len(ids),mods.count(1));require(len(native_positions)==len(source_positions)==3*len(ids)*4 and native_positions==source_positions,'actual source/native positional bytes')
+                                           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-heldout-historical-receipt-v1/source/tools/heldout/lighton4b_prepare.py", line 24, in require
+    raise ValueError(message)
+ValueError: actual source/native positional bytes

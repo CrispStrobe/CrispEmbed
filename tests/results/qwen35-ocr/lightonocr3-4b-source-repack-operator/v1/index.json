@@ -1,0 +1,26 @@
+{
+  "native-CMakeCache.txt": {
+    "bytes": 27729,
+    "sha256": "9b9e918bd4dc0c21573f753cd1079ceceed9cc6b53bfdc2fdc1315d92e4cd6ff"
+  },
+  "lighton-source-repack-operator.log": {
+    "bytes": 3871,
+    "sha256": "94dec7ee8919fbb9dd4c2606304e0cbe62f6a72a705eaf8a2f1f0c8e80b8f0bb"
+  },
+  "protocol.json": {
+    "bytes": 5414,
+    "sha256": "6ac20d68c87348396f04d655ad81ca94ea504dc3a268280423a13fa70559cb81"
+  },
+  "bootstrap.py": {
+    "bytes": 6038,
+    "sha256": "65e0328648860fd9d8ede6d9c2b4aae5a786399f59070457acd7613e7d2c943a"
+  },
+  "repack-operator.json": {
+    "bytes": 274791,
+    "sha256": "4dc28c17717082a36e9f2cad3729a31a83a97c3234b07d3c00002232744a66f5"
+  },
+  "upstream-CMakeCache.txt": {
+    "bytes": 30034,
+    "sha256": "a2f234477a290798eadab823dcdbbd6fd815101634536ea66b7ac7d4a77a8052"
+  }
+}

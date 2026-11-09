@@ -1,0 +1,22 @@
+{
+  "all_source_argmax_match_teacher": true,
+  "elements": 43952640,
+  "mean_kld_bf16_to_native": 0.012323851671954131,
+  "model_inference_executed": false,
+  "positions": 177,
+  "report_sha256": "b8b6bdf1eea0030f707475c2bc0c98fbb59d828fb8025083eaecc2dddd6e4d24",
+  "schema": "lighton4b-f16-teacher-independent-aggregate/v1",
+  "scope": "independent scalar aggregation of retained177remote-derived row records; actual score bytes audited remotely, not downloaded locally",
+  "top1_disagreements": [
+    9,
+    11,
+    25,
+    44,
+    54,
+    61,
+    144,
+    172
+  ],
+  "top1_matches": 169,
+  "weighted_error_rms": 0.38642533749176294
+}

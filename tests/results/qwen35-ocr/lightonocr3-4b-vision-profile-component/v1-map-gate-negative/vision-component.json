@@ -1,0 +1,205 @@
+{
+  "schema": "lighton4b-physical-vision-component/v1",
+  "status": "failed",
+  "commands": {
+    "source": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 63,
+      "elapsed_seconds": 0.004409068999962074,
+      "child_user_seconds": 0.0012699999999999999,
+      "child_system_seconds": 0.0012699999999999999,
+      "peak_rss_bytes_observed": 4022272,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 42827776
+    },
+    "fetch-tested": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 64,
+      "elapsed_seconds": 6.6709112730000015,
+      "child_user_seconds": 5.138994,
+      "child_system_seconds": 0.868736,
+      "peak_rss_bytes_observed": 5877760,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 210374656
+    },
+    "runtime-byte-guard": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 75,
+      "elapsed_seconds": 0.004378563000045688,
+      "child_user_seconds": 0.0021399999999998087,
+      "child_system_seconds": 0.0010580000000000034,
+      "peak_rss_bytes_observed": 192512,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 210374656
+    },
+    "ggml-init": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 76,
+      "elapsed_seconds": 10.371266468999977,
+      "child_user_seconds": 15.462319,
+      "child_system_seconds": 0.8347020000000002,
+      "peak_rss_bytes_observed": 4202496,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 210374656
+    },
+    "configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 118,
+      "elapsed_seconds": 3.519246911000039,
+      "child_user_seconds": 1.3747389999999982,
+      "child_system_seconds": 0.8287329999999997,
+      "peak_rss_bytes_observed": 26984448,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 210374656
+    },
+    "build": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 196,
+      "elapsed_seconds": 72.557201733,
+      "child_user_seconds": 123.95898399999999,
+      "child_system_seconds": 7.588730999999999,
+      "peak_rss_bytes_observed": 9891840,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434540544
+    },
+    "synthetic": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 601,
+      "elapsed_seconds": 7.5755676510000285,
+      "child_user_seconds": 25.996527000000015,
+      "child_system_seconds": 1.8775460000000006,
+      "peak_rss_bytes_observed": 152129536,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434540544
+    },
+    "legacy": {
+      "status": "failed",
+      "returncode": 1,
+      "pid": 605,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-vision-profile-component-v1/vision-component/build/lighton4b-vision-profile-probe'), PosixPath('/tmp/lighton4b-vision-profile-component-v1/vision-component/vision-only.f32'), PosixPath('/tmp/lighton4b-vision-profile-component-v1/vision-component/vision.schema'), PosixPath('<mounted-evidence-file>'), 317, 452, 'legacy', PosixPath('/kaggle/working/legacy')]' returned non-zero exit status 1.",
+      "elapsed_seconds": 0.008507246999954532,
+      "child_user_seconds": 0.0018369999999947595,
+      "child_system_seconds": 0.0018290000000007467,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434540544
+    }
+  },
+  "legacy_anchor_exact": false,
+  "source_metrics": {},
+  "text_model_instantiated": false,
+  "original_bf16_forward_executed": false,
+  "decoded_quality_qualified": false,
+  "downloaded_weight_bytes": 1334056960,
+  "phase": "legacy",
+  "source_sha": "d338c577c4454350da7feaa40f2f030b77271c34",
+  "canonical_precision_policy": {
+    "source_F32_parameters_kept_F32": 198,
+    "native_matrices_rounded_to_source_F16": 99,
+    "native_elements": 333514240,
+    "all_required_precision_transforms_bit_exact": true,
+    "unneeded_F32_to_F16_cast_mismatch_tensors": [
+      "v.blocks.0.norm2.weight",
+      "v.blocks.1.norm2.weight",
+      "v.blocks.16.attn.qkv.bias",
+      "v.blocks.2.norm2.weight",
+      "v.blocks.3.attn.qkv.bias",
+      "v.blocks.4.attn.qkv.bias",
+      "v.blocks.9.attn.qkv.bias",
+      "v.merger.linear_fc1.bias",
+      "v.merger.linear_fc2.bias",
+      "v.pos_embed.weight"
+    ],
+    "signed_zero_only_after_hypothetical_half_round_by_source_type": {
+      "0": 0,
+      "1": 0
+    },
+    "original_checkpoint_identity_proven": false
+  },
+  "capacity": {
+    "memory": {
+      "MemAvailable": 30919344128,
+      "SwapTotal": 0,
+      "SwapFree": 0,
+      "cgroup_observed": 1,
+      "finite_cgroup_bounds": 1
+    },
+    "scratch_free": 1037641703424,
+    "load": [
+      0.4814453125,
+      0.35498046875,
+      0.1650390625
+    ]
+  },
+  "vision_tensor_count": 297,
+  "full_native_container_downloaded": false,
+  "whole_native_container_sha_recomputed": false,
+  "vision_schema_sha256": "1de40b987ba017a8c583e96ada32f8155a63383ed82be0f1702d7ff43fb9b6db",
+  "legacy_gate_tuple": {
+    "CRISPEMBED_BUILD_MODE": "0",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_NORM": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_CONV": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_TABLE": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_OWNER": "1"
+  },
+  "error_type": "CalledProcessError",
+  "error": "Command '[PosixPath('/tmp/lighton4b-vision-profile-component-v1/vision-component/build/lighton4b-vision-profile-probe'), PosixPath('/tmp/lighton4b-vision-profile-component-v1/vision-component/vision-only.f32'), PosixPath('/tmp/lighton4b-vision-profile-component-v1/vision-component/vision.schema'), PosixPath('<mounted-evidence-file>'), 317, 452, 'legacy', PosixPath('/kaggle/working/legacy')]' returned non-zero exit status 1.",
+  "elapsed_seconds": 131.694572086,
+  "artifacts": {
+    "source.log": {
+      "bytes": 41,
+      "sha256": "d227ecedcea43cfd5b217d6d9c0a0b95492d949520cc946ec53f11620a5585d5"
+    },
+    "runtime-byte-guard.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "ggml-init.log": {
+      "bytes": 237,
+      "sha256": "0df0390d8000418d366fe6fed03360ddb9c61701700316319f4514e1fb234072"
+    },
+    "build.log": {
+      "bytes": 6263,
+      "sha256": "e4854374bdf609c2b0b33ffdbf907600206f9b73bc44d0331ee2242d93809ae7"
+    },
+    "legacy.log": {
+      "bytes": 28,
+      "sha256": "d6193746409ad66159e967108659c8e6072600def22450ef88f06923a13d5b0d"
+    },
+    "synthetic.log": {
+      "bytes": 101,
+      "sha256": "d58c15e1a57af3d53eada05f045b41d5fdb56580fc6854f8021f06a8bb03c7f2"
+    },
+    "configure.log": {
+      "bytes": 2049,
+      "sha256": "a658d8de4548432d1f836ef4ccf2beda8756956f4b61c511f96fe7393cfe77e8"
+    },
+    "CMakeCache.txt": {
+      "bytes": 29213,
+      "sha256": "9b0c879975e1c796f8990e48d0c3ae32171078e1d087f0e61a54b4ef4ce8907d"
+    },
+    "fetch-tested.log": {
+      "bytes": 125,
+      "sha256": "2eb9d36e378702e326ceaeda0eb34ca16b263648e3d86d2713df2ff68f6726ea"
+    }
+  },
+  "public_redaction": {
+    "original_private_receipt_sha256": "760db939e0a783812d4350dc517f32e1663809e15d7f4c19c1a5b8b06c3dfef3",
+    "scope": "Private Kaggle mounted-evidence locator strings replaced; measurements/status preserved."
+  }
+}

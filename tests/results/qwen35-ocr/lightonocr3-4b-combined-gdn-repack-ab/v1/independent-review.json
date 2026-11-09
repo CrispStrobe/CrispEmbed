@@ -1,0 +1,87 @@
+{
+  "receipt_sha256": "4428c4a2d8a877f64488847dfd7145fb0ccd1ba26810e6c0edf2229e6e40eac9",
+  "source_sha": "374d0438765c9e111b11499785eac86a46773452",
+  "selected_closed_files_hash_verified": [
+    "physical-pack.json",
+    "CMakeCache.txt",
+    "simple_form/on/generated.txt",
+    "simple_form/on/native-summary.json",
+    "simple_form/on/generated.ids",
+    "simple_form/off/generated.txt",
+    "simple_form/off/native-summary.json",
+    "simple_form/off/generated.ids",
+    "simple_table/on/generated.txt",
+    "simple_table/on/native-summary.json",
+    "simple_table/on/generated.ids",
+    "simple_table/off/generated.txt",
+    "simple_table/off/native-summary.json",
+    "simple_table/off/generated.ids"
+  ],
+  "cases": {
+    "simple_table": {
+      "off": {
+        "tokens": 282,
+        "eos": true,
+        "original_character_edits": 349,
+        "original_word_edits": 97
+      },
+      "on": {
+        "tokens": 282,
+        "eos": true,
+        "original_character_edits": 348,
+        "original_word_edits": 97
+      },
+      "actual_upstream_vs_original": {
+        "character_edits": 348,
+        "word_edits": 97
+      },
+      "on_meets_source_floor": true,
+      "on_ids_and_text_exact_upstream": true
+    },
+    "simple_form": {
+      "off": {
+        "tokens": 167,
+        "eos": true,
+        "original_character_edits": 175,
+        "original_word_edits": 45
+      },
+      "on": {
+        "tokens": 167,
+        "eos": true,
+        "original_character_edits": 194,
+        "original_word_edits": 40
+      },
+      "actual_upstream_vs_original": {
+        "character_edits": 189,
+        "word_edits": 46
+      },
+      "on_meets_source_floor": false,
+      "on_ids_and_text_exact_upstream": false
+    }
+  },
+  "reference_files": {
+    "simple_table": {
+      "original": {
+        "bytes": 80062,
+        "sha256": "6be5428f247b616e76d79513b62873cf0238842999be2fb0848997f8ced25763"
+      },
+      "upstream": {
+        "bytes": 342793,
+        "sha256": "93e5d2e177f8257837b93d1c1abf3e613a592602cd2e11705b8db5373efb66f3"
+      }
+    },
+    "simple_form": {
+      "original": {
+        "bytes": 69011,
+        "sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a"
+      },
+      "upstream": {
+        "bytes": 218666,
+        "sha256": "ddf699b954ebbdb82fb8f56dbe7992bf682f602ecfb7798045aa3be23b9354fb"
+      }
+    }
+  },
+  "limits": "Only selected small files independently downloaded and rehashed. Complete row/stage checks remain producer checks; large arrays stay remote. No additional inference or held-out execution.",
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "all_observed_floors_met": false
+}

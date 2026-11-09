@@ -1,0 +1,28 @@
+{
+  "available_ram_bytes": 32175415296,
+  "bootstrap_sha256": "20080215fda6b91aeaca4b2c275484740ec6c51b0c7945f11051bb4af8fe3999",
+  "checkpoint_downloaded": false,
+  "checks": 19,
+  "gpu_enabled": false,
+  "helper_sha256": "c1bd905abfdb65ca4bcc5dc3d23cc41b312e93877b1dfbed67b2eb29c981bae1",
+  "model_inference_executed": false,
+  "preflight": {
+    "free_disk_bytes": 20940550144,
+    "load": [
+      0.1640625,
+      0.30810546875,
+      0.173828125
+    ],
+    "logical_cpus": 4,
+    "memory_swap": {
+      "MemAvailable": "31928860 kB",
+      "SwapFree": "0 kB",
+      "SwapTotal": "0 kB"
+    }
+  },
+  "runtime_manifest_sha256": "b81c00a330f1f4fa030b5509e0ce533da66e89142f2538774dbf4a5404bcad8d",
+  "schema": "lighton4b-hf-tiled-out-controls-bootstrap/v1",
+  "seconds": 76.18410874799997,
+  "source_sha": "617534eff56c7e0ea98781b783d3d118f85e1c52",
+  "status": "passed"
+}

@@ -1,0 +1,241 @@
+{
+  "schema": "lighton4b-reconstructed-prefix-primitives/v1",
+  "status": "measured_operator_only",
+  "actual_source_graph_captured": false,
+  "actual_native_trace_compared": false,
+  "model_forward_executed": false,
+  "quality_qualified": false,
+  "ggml_profile": {
+    "llamafile": true,
+    "avx2": true,
+    "avx512": false,
+    "blas": false,
+    "threads": 4
+  },
+  "scope": "reconstructed4-tokenprefix only",
+  "source_sha": "4a8821e3e919a7be4ff71bcafe13e7a6d0881f08",
+  "preflight": {
+    "available_bytes": 31489974272,
+    "disk_free_bytes": 1037712588800,
+    "load": [
+      0.55078125,
+      0.27197265625,
+      0.12109375
+    ],
+    "cpuinfo": "processor\t: 0\nvendor_id\t: GenuineIntel\ncpu family\t: 6\nmodel\t\t: 79\nmodel name\t: Intel(R) Xeon(R) CPU @ 2.20GHz\nstepping\t: 0\nmicrocode\t: 0xffffffff\ncpu MHz\t\t: 2199.998\ncache size\t: 56320 KB\nphysical id\t: 0\nsiblings\t: 4\ncore id\t\t: 0\ncpu cores\t: 2\napicid\t\t: 0\ninitial apicid\t: 0\nfpu\t\t: yes\nfpu_exception\t: yes\ncpuid level\t: 13\nwp\t\t: yes\nflags\t\t: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch pti ssbd ibrs ibpb stibp fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm rdseed adx smap xsaveopt arat md_clear arch_capabilities\nbugs\t\t: cpu_meltdown spectre_v1 spectre_v2 spec_store_bypass l1tf mds swapgs taa mmio_stale_data retbleed bhi spectre_v2_user its\nbogomips\t: 4399.99\nclflush size\t: 64\ncache_alignment\t: 64\naddress sizes\t: 46 bits physical, 48 bits virtual\npower management:\n\nprocessor\t: 1\nvendor_id\t: GenuineIntel\ncpu family\t: 6\nmodel\t\t: 79\nmodel name\t: Intel(R) Xeon(R) CPU @ 2.20GHz\nstepping\t: 0\nmicrocode\t: 0xffffffff\ncpu MHz\t\t: 2199.998\ncache size\t: 56320 KB\nphysical id\t: 0\nsiblings\t: 4\ncore id\t\t: 1\ncpu cores\t: 2\napicid\t\t: 2\ninitial apicid\t: 2\nfpu\t\t: yes\nfpu_exception\t: yes\ncpuid level\t: 13\nwp\t\t: yes\nflags\t\t: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch pti ssbd ibrs ibpb stibp fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm rdseed adx smap xsaveopt arat md_clear arch_capabilities\nbugs\t\t: cpu_meltdown spectre_v1 spectre_v2 spec_store_bypass l1tf mds swapgs taa mmio_stale_data retbleed bhi spectre_v2_user its\nbogomips\t: 4399.99\nclflush size\t: 64\ncache_alignment\t: 64\naddress sizes\t: 46 bits physical, 48 bits virtual\npower management:\n\nprocessor\t: 2\nvendor_id\t: GenuineIntel\ncpu family\t: 6\nmodel\t\t: 79\nmodel name\t: Intel(R) Xeon(R) CPU @ 2.20GHz\nstepping\t: 0\nmicrocode\t: 0xffffffff\ncpu MHz\t\t: 2199.998\ncache size\t: 56320 KB\nphysical id\t: 0\nsiblings\t: 4\ncore id\t\t: 0\ncpu cores\t: 2\napicid\t\t: 1\ninitial apicid\t: 1\nfpu\t\t: yes\nfpu_exception\t: yes\ncpuid level\t: 13\nwp\t\t: yes\nflags\t\t: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch pti ssbd ibrs ibpb stibp fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm rdseed adx smap xsaveopt arat md_clear arch_capabilities\nbugs\t\t: cpu_meltdown spectre_v1 spectre_v2 spec_store_bypass l1tf mds swapgs taa mmio_stale_data retbleed bhi spectre_v2_user its\nbogomips\t: 4399.99\nclflush size\t: 64\ncache_alignment\t: 64\naddress sizes\t: 46 bits physical, 48 bits virtual\npower management:\n\nprocessor\t: 3\nvendor_id\t: GenuineIntel\ncpu family\t: 6\nmodel\t\t: 79\nmodel name\t: Intel(R) Xeon(R) CPU @ 2.20GHz\nstepping\t: 0\nmicrocode\t: 0xffffffff\ncpu MHz\t\t: 2199.998\ncache size\t: 56320 KB\nphysical id\t: 0\nsiblings\t: 4\ncore id\t\t: 1\ncpu cores\t: 2\napicid\t\t: 3\ninitial apicid\t: 3\nfpu\t\t: yes\nfpu_exception\t: yes\ncpuid level\t: 13\nwp\t\t: yes\nflags\t\t: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch pti ssbd ibrs ibpb stibp fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm rdseed adx smap xsaveopt arat md_clear arch_capabilities\nbugs\t\t: cpu_meltdown spectre_v1 spectre_v2 spec_store_bypass l1tf mds swapgs taa mmio_stale_data retbleed bhi spectre_v2_user its\nbogomips\t: 4399.99\nclflush size\t: 64\ncache_alignment\t: 64\naddress sizes\t: 46 bits physical, 48 bits virtual\npower management:\n\n"
+  },
+  "weights_manifest_sha256": "01746d191e0581fa0c7b6258bfca0e2e89576ae7729b9712a80ebb151eaa01e7",
+  "phase": "ssm_beta-upstream-norm-runtime-dequant",
+  "reconstructed_input_sha256": "ca940b1a6f45bc487a4685205caca1e7fb64929c03b7c8d1b52769e26cc8b842",
+  "norm": {
+    "backend_difference": {
+      "bit_exact": true,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_max_abs": 8.988195419311523
+    },
+    "scalar_vs_native_ggml": {
+      "bit_exact": false,
+      "rms": 5.228565303335678e-07,
+      "max_abs": 5.7220458984375e-06,
+      "reference_max_abs": 8.988195419311523
+    },
+    "scalar_vs_upstream": {
+      "bit_exact": false,
+      "rms": 5.228565303335678e-07,
+      "max_abs": 5.7220458984375e-06,
+      "reference_max_abs": 8.988195419311523
+    }
+  },
+  "projections": {
+    "attn_qkv": {
+      "reconstructed-native-scalar-norm": {
+        "runtime_direct_exact": true,
+        "runtime_dequant_exact": true,
+        "backend_direct": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 24.33184051513672
+        },
+        "backend_dequant": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 24.352741241455078
+        },
+        "upstream_direct_vs_dequant": {
+          "bit_exact": false,
+          "rms": 0.006449864728526206,
+          "max_abs": 0.05174112319946289,
+          "reference_max_abs": 24.352741241455078
+        }
+      },
+      "upstream-norm": {
+        "runtime_direct_exact": true,
+        "runtime_dequant_exact": true,
+        "backend_direct": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 24.33185577392578
+        },
+        "backend_dequant": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 24.352752685546875
+        },
+        "upstream_direct_vs_dequant": {
+          "bit_exact": false,
+          "rms": 0.006449874466685209,
+          "max_abs": 0.05173969268798828,
+          "reference_max_abs": 24.352752685546875
+        }
+      }
+    },
+    "attn_gate": {
+      "reconstructed-native-scalar-norm": {
+        "runtime_direct_exact": true,
+        "runtime_dequant_exact": true,
+        "backend_direct": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 13.31967830657959
+        },
+        "backend_dequant": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 13.310430526733398
+        },
+        "upstream_direct_vs_dequant": {
+          "bit_exact": false,
+          "rms": 0.0071098865295087755,
+          "max_abs": 0.040782928466796875,
+          "reference_max_abs": 13.310430526733398
+        }
+      },
+      "upstream-norm": {
+        "runtime_direct_exact": true,
+        "runtime_dequant_exact": true,
+        "backend_direct": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 13.31967830657959
+        },
+        "backend_dequant": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 13.310430526733398
+        },
+        "upstream_direct_vs_dequant": {
+          "bit_exact": false,
+          "rms": 0.007109899927634723,
+          "max_abs": 0.040784358978271484,
+          "reference_max_abs": 13.310430526733398
+        }
+      }
+    },
+    "ssm_alpha": {
+      "reconstructed-native-scalar-norm": {
+        "runtime_direct_exact": true,
+        "runtime_dequant_exact": true,
+        "backend_direct": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 17.69130516052246
+        },
+        "backend_dequant": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 17.686885833740234
+        },
+        "upstream_direct_vs_dequant": {
+          "bit_exact": false,
+          "rms": 0.0152110076166921,
+          "max_abs": 0.044841766357421875,
+          "reference_max_abs": 17.686885833740234
+        }
+      },
+      "upstream-norm": {
+        "runtime_direct_exact": true,
+        "runtime_dequant_exact": true,
+        "backend_direct": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 17.691314697265625
+        },
+        "backend_dequant": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 17.6868953704834
+        },
+        "upstream_direct_vs_dequant": {
+          "bit_exact": false,
+          "rms": 0.01521116500624142,
+          "max_abs": 0.04484272003173828,
+          "reference_max_abs": 17.6868953704834
+        }
+      }
+    },
+    "ssm_beta": {
+      "reconstructed-native-scalar-norm": {
+        "runtime_direct_exact": true,
+        "runtime_dequant_exact": true,
+        "backend_direct": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 4.268803596496582
+        },
+        "backend_dequant": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 4.263945579528809
+        },
+        "upstream_direct_vs_dequant": {
+          "bit_exact": false,
+          "rms": 0.006502805384631968,
+          "max_abs": 0.02707812190055847,
+          "reference_max_abs": 4.263945579528809
+        }
+      },
+      "upstream-norm": {
+        "runtime_direct_exact": true,
+        "runtime_dequant_exact": true,
+        "backend_direct": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 4.268803596496582
+        },
+        "backend_dequant": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_max_abs": 4.263945579528809
+        },
+        "upstream_direct_vs_dequant": {
+          "bit_exact": false,
+          "rms": 0.006502799337905866,
+          "max_abs": 0.02707812190055847,
+          "reference_max_abs": 4.263945579528809
+        }
+      }
+    }
+  },
+  "binary_sha256": {
+    "native": "b5c158557a8a59af57a65fdb48d366104e0b20b3db7e62225e7972a5c1c7844f",
+    "upstream": "0326afdb0d87abd7c2331a8b024a4b90b47dd9ac9e09d88c2eacd28acb4f010e",
+    "runtime": "c8d552c70acbe790a81466911929f2a6d8139b44f8b091ed8b94d8293b5ab086"
+  }
+}

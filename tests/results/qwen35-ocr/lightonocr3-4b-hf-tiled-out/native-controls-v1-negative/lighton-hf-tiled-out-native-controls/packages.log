@@ -1,0 +1,44 @@
+Collecting numpy==2.3.5
+  Downloading numpy-2.3.5-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+Collecting gguf==0.19.0
+  Downloading gguf-0.19.0-py3-none-any.whl.metadata (4.1 kB)
+Requirement already satisfied: PyYAML==6.0.3 in /usr/local/lib/python3.13/dist-packages (6.0.3)
+Collecting tqdm==4.67.1
+  Downloading tqdm-4.67.1-py3-none-any.whl.metadata (57 kB)
+Collecting requests==2.32.5
+  Downloading requests-2.32.5-py3-none-any.whl.metadata (4.9 kB)
+Requirement already satisfied: charset_normalizer<4,>=2 in /usr/local/lib/python3.13/dist-packages (from requests==2.32.5) (3.4.9)
+Requirement already satisfied: idna<4,>=2.5 in /usr/local/lib/python3.13/dist-packages (from requests==2.32.5) (3.20)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /usr/local/lib/python3.13/dist-packages (from requests==2.32.5) (2.8.0)
+Requirement already satisfied: certifi>=2017.4.17 in /usr/local/lib/python3.13/dist-packages (from requests==2.32.5) (2026.10.23)
+Downloading numpy-2.3.5-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.6 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.6/16.6 MB 36.8 MB/s  0:00:00
+Downloading gguf-0.19.0-py3-none-any.whl (118 kB)
+Downloading tqdm-4.67.1-py3-none-any.whl (78 kB)
+Downloading requests-2.32.5-py3-none-any.whl (64 kB)
+Installing collected packages: tqdm, requests, numpy, gguf
+  Attempting uninstall: tqdm
+    Found existing installation: tqdm 4.67.3
+    Not uninstalling tqdm at /usr/local/lib/python3.13/dist-packages, outside environment /kaggle/working/lighton-hf-tiled-out-native-controls-scratch/venv
+    Can't uninstall 'tqdm'. No files were found to uninstall.
+  Attempting uninstall: requests
+    Found existing installation: requests 2.34.2
+    Not uninstalling requests at /usr/local/lib/python3.13/dist-packages, outside environment /kaggle/working/lighton-hf-tiled-out-native-controls-scratch/venv
+    Can't uninstall 'requests'. No files were found to uninstall.
+  Attempting uninstall: numpy
+    Found existing installation: numpy 2.1.3
+    Not uninstalling numpy at /usr/local/lib/python3.13/dist-packages, outside environment /kaggle/working/lighton-hf-tiled-out-native-controls-scratch/venv
+    Can't uninstall 'numpy'. No files were found to uninstall.
+
+ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+bigframes 2.51.0 requires google-cloud-bigquery-storage<3.0.0,>=2.30.0, which is not installed.
+nilearn 0.14.1 requires requests>=2.33.0, but you have requests 2.32.5 which is incompatible.
+google-colab 1.0.0 requires jupyter-server==2.20.0, but you have jupyter-server 2.12.5 which is incompatible.
+google-colab 1.0.0 requires pandas==2.2.3, but you have pandas 2.3.3 which is incompatible.
+google-colab 1.0.0 requires requests==2.32.4, but you have requests 2.32.5 which is incompatible.
+dopamine-rl 4.1.2 requires gym<=0.25.2, but you have gym 0.26.2 which is incompatible.
+moviepy 1.0.3 requires decorator<5.0,>=4.0.2, but you have decorator 5.3.1 which is incompatible.
+ydf 0.15.0 requires protobuf<7.0.0,>=5.29.1, but you have protobuf 7.36.2 which is incompatible.
+numba 0.61.2 requires numpy<2.3,>=1.24, but you have numpy 2.3.5 which is incompatible.
+gradio 6.30.0 requires pillow<13.0,>=8.0, but you have pillow 13.0.0 which is incompatible.
+Successfully installed gguf-0.19.0 numpy-2.3.5 requests-2.32.5 tqdm-4.67.1

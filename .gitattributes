@@ -23,3 +23,57 @@ licenses/latent-inpaint/NOTICE.md -text
 # OvisOCR3 source audit retains the original CRLF license and Markdown bytes.
 tests/fixtures/ovisocr3-document-source/** -text -whitespace
 docs/ovisocr3-document-protocol.json -text
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-adapter/v*/lighton-imatrix-results/bootstrap.log whitespace=-trailing-space
+tests/results/qwen35-ocr/lightonocr3-4b-independent-llama/** whitespace=-trailing-space,-blank-at-eof
+# Raw Kaggle bootstrap bytes are SHA-pinned, including Git's trailing-space hints.
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4/bootstrap-v*/bootstrap.log -text whitespace=-trailing-space
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4/bootstrap-v*/lighton-weighted-q4-results/bootstrap.log -text whitespace=-trailing-space
+# Byte-pinned Kaggle component-control logs retain compiler/Git whitespace.
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-controls/**/*.log -text whitespace=-trailing-space,-blank-at-eof
+# Preserve byte-pinned conversion/control logs, including Git/compiler whitespace.
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/**/*.log -text whitespace=-trailing-space,-blank-at-eof
+# Preserve exact remote physical-import setup logs and their SHA evidence.
+tests/results/qwen35-ocr/lightonocr3-4b-upstream-physical-decode/**/*.log -text whitespace=-trailing-space,-blank-at-eof
+# Exact decoded/token bytes include the pinned capped baseline's trailing space.
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/full-calibration-v2/**/*.txt -text whitespace=-trailing-space,-blank-at-eof
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/full-calibration-v2/**/*.ids -text
+# Exact post-selection form output/reference bytes are independently SHA-pinned.
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/form-postselection-v1/**/*.txt -text whitespace=-trailing-space,-blank-at-eof
+tests/results/qwen35-ocr/lightonocr3-4b-imatrix-q4km-candidate/form-postselection-v1/**/*.ids -text
+
+# Retain exact source-pinned synthetic helper logs/cache bytes.
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/controls-v1/**/*.log -text whitespace=-trailing-space,-blank-at-eof
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/controls-v1/**/CMakeCache.txt -text whitespace=-trailing-space,-blank-at-eof
+
+# Preserve exact actual original-F16 paired-proof remote logs.
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/original-f16-proof-v1/**/*.log -text whitespace=-trailing-space,-blank-at-eof
+
+# Preserve initial HF-layout synthetic compile-negative raw output.
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v1-negative/**/*.log -text whitespace=-trailing-space,-blank-at-eof
+
+# Preserve exact source-fed GDN operator receipts, logs and build cache hashes.
+tests/results/qwen35-ocr/lightonocr3-4b-gdn-source-primitives/** -text whitespace=-trailing-space,-blank-at-eof
+
+# Preserve HF-layout synthetic backend-fixture negative byte hashes.
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v2-negative/**/*.log -text whitespace=-trailing-space,-blank-at-eof
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v2-negative/**/CMakeCache.txt -text whitespace=-trailing-space,-blank-at-eof
+
+# Retain exact passing HF-layout native controls and build cache bytes.
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v3/**/*.log -text whitespace=-trailing-space,-blank-at-eof
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/native-controls-v3/**/CMakeCache.txt -text whitespace=-trailing-space,-blank-at-eof
+
+# Preserve raw hosted HF-tiled decode logs byte-for-byte.
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/complete-decode-v1/** -whitespace
+tests/results/qwen35-ocr/lightonocr3-4b-hf-tiled-out/causal-readback-v1/** -whitespace
+
+# Preserve raw artifact-only teacher-reader setup negatives and actual proof.
+tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/teacher-readback-v*/** -whitespace
+
+# Preserve byte-pinned operator build-cache endings without changing raw hashes.
+tests/results/qwen35-ocr/lightonocr3-4b-live-gdn-replay/hybrid-v3/*-CMakeCache.txt -text whitespace=-blank-at-eof
+tests/results/qwen35-ocr/lightonocr3-4b-swiglu-source-probe/v1/*-CMakeCache.txt -text whitespace=-blank-at-eof
+tests/results/qwen35-ocr/lightonocr3-4b-ffn-postnorm-codes/v1/*-CMakeCache.txt -text whitespace=-blank-at-eof
+
+tests/results/qwen35-ocr/lightonocr3-4b-q6-qkv-batch/v1/*CMakeCache.txt -text whitespace=-blank-at-eof
+
+tests/results/qwen35-ocr/lightonocr3-4b-q6-tiled-helper/v1/*CMakeCache.txt -text whitespace=-blank-at-eof

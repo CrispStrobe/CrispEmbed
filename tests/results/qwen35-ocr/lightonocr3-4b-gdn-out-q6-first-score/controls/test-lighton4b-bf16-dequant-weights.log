@@ -1,0 +1,1 @@
+BF16_DEQUANT_WEIGHTS passed=1 checks=16 embedding_head=1 storage_unchanged=1 gate_off_byte_identity=1 model_payload=0

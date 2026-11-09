@@ -1,0 +1,34 @@
+# Workshop inventory
+
+München, 14 October 2026
+
+<table>
+  <tr>
+    <th>Part</th>
+    <th>Count</th>
+    <th>Unit EUR</th>
+  </tr>
+  <tr>
+    <td>Valve A7</td>
+    <td>2</td>
+    <td>12.40</td>
+  </tr>
+  <tr>
+    <td>Seal B4</td>
+    <td>5</td>
+    <td>0.85</td>
+  </tr>
+  <tr>
+    <td>Cable C9</td>
+    <td>1</td>
+    <td>6.30</td>
+  </tr>
+  <tr>
+    <td>Bracket D2</td>
+    <td>3</td>
+    <td>4.15</td>
+  </tr>
+</table>
+
+Checked by: R. Keller  
+Batch: WX-731

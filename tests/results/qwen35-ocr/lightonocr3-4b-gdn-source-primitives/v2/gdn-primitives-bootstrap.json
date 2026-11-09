@@ -1,0 +1,11 @@
+{
+  "schema": "lighton4b-gdn-source-bootstrap/v1",
+  "source_sha": "0bbe9d8769f13cacd8788194298bf8cb3c26f84e",
+  "status": "completed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "operator-only-primitives",
+  "worker_sha256": "97aeed30c141c5d547ef8f8ada92332d0e46578a7366003e8e3beca65ac1249d",
+  "worker_status": "measured"
+}

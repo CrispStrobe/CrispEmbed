@@ -1,0 +1,253 @@
+{
+  "bundled_repeat_checks": 19,
+  "checkpoint_payload_bytes": 0,
+  "helper_checks": 19,
+  "kernel_id": 143168048,
+  "limitations": [
+    "Synthetic helper proof only; no original checkpoint tensor reproduced yet.",
+    "No runtime owner, coordinate gate or decoded quality proof.",
+    "Neither the failed HF candidate nor any new recipe is promoted."
+  ],
+  "model_inference_executed": false,
+  "python_protocol_tests": 5,
+  "schema": "lighton4b-hf-tiled-out-controls-evidence/v1",
+  "seconds": 76.18410874799997,
+  "service": "Kaggle CPU",
+  "source_commit": "617534eff56c7e0ea98781b783d3d118f85e1c52",
+  "source_files": {
+    "lighton-hf-tiled-out-controls/CMakeCache.txt": {
+      "bytes": 29175,
+      "sha256": "52fd41e128a49886c915c9ba43f70ab031a270aa4a3a5dea6203e5118f20d109"
+    },
+    "lighton-hf-tiled-out-controls/bootstrap-receipt.json": {
+      "bytes": 874,
+      "sha256": "f7c4682d9e557fbd1d43c3848a373631f0dbd645785ca39f23c6b619bf3a993d"
+    },
+    "lighton-hf-tiled-out-controls/build.log": {
+      "bytes": 2522,
+      "sha256": "4d8ef50338061d92a91e3319a78b0af06cfc5cb2e635ef9a4cb210588d0d6e70"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixture-controls.log": {
+      "bytes": 71,
+      "sha256": "9842db2bd1a87799fe08e2010ee1eb5b61e60f82efa842f3ebe0ab599380bf5f"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/chunk1/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/chunk1/rows.json": {
+      "bytes": 1537,
+      "sha256": "8c757073357695994b6e9bea5cf2c9032decd2ecd5a37db9a316a844cd4f06ef"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/chunk16/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/chunk16/rows.json": {
+      "bytes": 1538,
+      "sha256": "5499d2a8e4a306bca8874ce0277fb0df7211637ea7447e09fcb2041021f5a027"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/chunk3/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/chunk3/rows.json": {
+      "bytes": 1538,
+      "sha256": "853f0869fb68116e64f024166aa4f8d3bd0ecbee8b4d4fab1bcec8f40ce15df8"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/controls.json": {
+      "bytes": 1008,
+      "sha256": "43042a34f55343fe1ccafbecd675d77c8cbf75a28adb881ccb6f32b440c9dbee"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/empty-energy-rejected/helper.log": {
+      "bytes": 36,
+      "sha256": "d09e6b52bd7eb559d4bf8a446b4127fd193ba732493fc8ec2b7d6ec2d30f7d59"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/inverse-statistics-negative/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/inverse-statistics-negative/rows.json": {
+      "bytes": 1539,
+      "sha256": "eebf541562224acc20f3e21b70209cf0dfc4b6f6447793d5e7ded89663e1e595"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/negative-importance-rejected/helper.log": {
+      "bytes": 43,
+      "sha256": "831c2d2e0fb870086c6b0739581f7d299778314c870c13cdc8bf2d07661fc961"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/nonfinite-importance-rejected/helper.log": {
+      "bytes": 43,
+      "sha256": "831c2d2e0fb870086c6b0739581f7d299778314c870c13cdc8bf2d07661fc961"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/nonfinite-source-rejected/helper.log": {
+      "bytes": 23,
+      "sha256": "f84d33e9344ff192dca8258dc4bc63f38b1be93bd31a81cd02144636e9d71f4d"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/overwrite/helper.log": {
+      "bytes": 32,
+      "sha256": "00aff24bec3d674ea22cb17b8c884c63214c4c30c25ec47c8d48610893c9e909"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/python-coordinate-reference/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/python-coordinate-reference/rows.json": {
+      "bytes": 1536,
+      "sha256": "d2c8de71301dba379e7aeecb4a0ca4eff80dba0b11eee90fcd1437e6d4133055"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/split-row-chunk-rejected/helper.log": {
+      "bytes": 39,
+      "sha256": "e32a665e2b941a23a11551870b12a79c1d4e25cc1b119cc26c812a5bb2da8fc0"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/truncated-source-rejected/helper.log": {
+      "bytes": 39,
+      "sha256": "e32a665e2b941a23a11551870b12a79c1d4e25cc1b119cc26c812a5bb2da8fc0"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/wrong-source-span-rejected/helper.log": {
+      "bytes": 37,
+      "sha256": "e3b877545cee2308c8a44a382edd6847ccddccd823a55755df95b5322337fc65"
+    },
+    "lighton-hf-tiled-out-controls/bundled-fixtures/wrong-width-rejected/helper.log": {
+      "bytes": 36,
+      "sha256": "305612a5a0f4f3ece6316ad5906b58518dadf1ebc5896ee0210094f091378354"
+    },
+    "lighton-hf-tiled-out-controls/checkout.log": {
+      "bytes": 91,
+      "sha256": "a86543ec45c5771a1442cbd8cc85f4ca710dbee7f432c907b828fc97f774864b"
+    },
+    "lighton-hf-tiled-out-controls/configure.log": {
+      "bytes": 2054,
+      "sha256": "f4f09c3e71b234ad46e75ca33fa1520c18ae3fe25d60bcc7f43b08298f0ca259"
+    },
+    "lighton-hf-tiled-out-controls/dependency-preflight.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-controls/fetch.log": {
+      "bytes": 123,
+      "sha256": "ffc8de0b823eb2d740e62d27170d78412208f6521418adfea4eda09f8f540bec"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/chunk1/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/chunk1/rows.json": {
+      "bytes": 1537,
+      "sha256": "8c757073357695994b6e9bea5cf2c9032decd2ecd5a37db9a316a844cd4f06ef"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/chunk16/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/chunk16/rows.json": {
+      "bytes": 1538,
+      "sha256": "5499d2a8e4a306bca8874ce0277fb0df7211637ea7447e09fcb2041021f5a027"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/chunk3/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/chunk3/rows.json": {
+      "bytes": 1538,
+      "sha256": "853f0869fb68116e64f024166aa4f8d3bd0ecbee8b4d4fab1bcec8f40ce15df8"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/controls.json": {
+      "bytes": 1008,
+      "sha256": "873de38742193bc42d1d71f3c6f8edd905d447a1dc6dddf9631660529910d326"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/empty-energy-rejected/helper.log": {
+      "bytes": 36,
+      "sha256": "d09e6b52bd7eb559d4bf8a446b4127fd193ba732493fc8ec2b7d6ec2d30f7d59"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/inverse-statistics-negative/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/inverse-statistics-negative/rows.json": {
+      "bytes": 1539,
+      "sha256": "eebf541562224acc20f3e21b70209cf0dfc4b6f6447793d5e7ded89663e1e595"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/negative-importance-rejected/helper.log": {
+      "bytes": 43,
+      "sha256": "831c2d2e0fb870086c6b0739581f7d299778314c870c13cdc8bf2d07661fc961"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/nonfinite-importance-rejected/helper.log": {
+      "bytes": 43,
+      "sha256": "831c2d2e0fb870086c6b0739581f7d299778314c870c13cdc8bf2d07661fc961"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/nonfinite-source-rejected/helper.log": {
+      "bytes": 23,
+      "sha256": "f84d33e9344ff192dca8258dc4bc63f38b1be93bd31a81cd02144636e9d71f4d"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/overwrite/helper.log": {
+      "bytes": 32,
+      "sha256": "00aff24bec3d674ea22cb17b8c884c63214c4c30c25ec47c8d48610893c9e909"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/python-coordinate-reference/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/python-coordinate-reference/rows.json": {
+      "bytes": 1536,
+      "sha256": "d2c8de71301dba379e7aeecb4a0ca4eff80dba0b11eee90fcd1437e6d4133055"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/split-row-chunk-rejected/helper.log": {
+      "bytes": 39,
+      "sha256": "e32a665e2b941a23a11551870b12a79c1d4e25cc1b119cc26c812a5bb2da8fc0"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/truncated-source-rejected/helper.log": {
+      "bytes": 39,
+      "sha256": "e32a665e2b941a23a11551870b12a79c1d4e25cc1b119cc26c812a5bb2da8fc0"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/wrong-source-span-rejected/helper.log": {
+      "bytes": 37,
+      "sha256": "e3b877545cee2308c8a44a382edd6847ccddccd823a55755df95b5322337fc65"
+    },
+    "lighton-hf-tiled-out-controls/fixtures/wrong-width-rejected/helper.log": {
+      "bytes": 36,
+      "sha256": "305612a5a0f4f3ece6316ad5906b58518dadf1ebc5896ee0210094f091378354"
+    },
+    "lighton-hf-tiled-out-controls/init.log": {
+      "bytes": 580,
+      "sha256": "b7293834863c5a8e8602a1e93924f9af48ce27c8168b9c7f3e14db42fd7d39ac"
+    },
+    "lighton-hf-tiled-out-controls/packages.log": {
+      "bytes": 3527,
+      "sha256": "1d01757cbfdcb52d22ac9dd5713f45f766728964c030d9e374482015c6f3fce1"
+    },
+    "lighton-hf-tiled-out-controls/python-controls.log": {
+      "bytes": 103,
+      "sha256": "173723c51405459d7776f373751eefb956edf91c4da71db14fd901bfc7e979b3"
+    },
+    "lighton-hf-tiled-out-controls/remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-controls/runtime-manifest.json": {
+      "bytes": 1575,
+      "sha256": "b81c00a330f1f4fa030b5509e0ce533da66e89142f2538774dbf4a5404bcad8d"
+    },
+    "lighton-hf-tiled-out-controls/submodule.log": {
+      "bytes": 357,
+      "sha256": "784d3b7bcf6ec21b568f4a6381266f0068f61f39eec404e0849b2b9bc5dfea11"
+    },
+    "lighton-hf-tiled-out-controls/synthetic-controls.log": {
+      "bytes": 71,
+      "sha256": "9842db2bd1a87799fe08e2010ee1eb5b61e60f82efa842f3ebe0ab599380bf5f"
+    },
+    "lighton-hf-tiled-out-controls/venv-prefix.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-controls/venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton4b-hf-tiled-out-controls.log": {
+      "bytes": 1841,
+      "sha256": "d0543b5a61a1b7048c578c7926e9b930123659e939af642b964938b50b307771"
+    }
+  },
+  "status": "passed",
+  "version": 1
+}

@@ -1,0 +1,31 @@
+{
+  "schema": "lighton4b-source-vision-runtime-amendment/v1",
+  "historical_protocol": "docs/lighton4b-physical-f16-full-form-v1.json",
+  "historical_protocol_sha256": "da10739fba67295a43ad796c9a3c7b37dc89f9bfbcfcf821d9f2a25d7a753370",
+  "historical_protocol_driver_sha256": "2739c5fd733c167f06afcb298e8befdadeeaa649b74a396284d24c93566bbd00",
+  "previous_pr155_source": "9ca2afd6544ea7facee2d92a66aca31413e53e00",
+  "previous_pr155_driver_sha256": "24becb20a71c2659766275121928b7a0d185d38d9a2a0fa2fa38b62fe2eaf425",
+  "tested_source": "b59e5d3a9d9e333f67f9646c1a43a1edc70fccfa",
+  "current_driver_sha256": "e162586bf5cc48684163967612f1cb7aba335421014d7ef8be2e55831bf85e2b",
+  "actual_full_form_source": "b98567cfd46aaf594f33076aaab4ff8e4610edbb",
+  "actual_full_form_receipt_sha256": "aec0d0b10befb5b3498b55a87f9cda785998242c0d9f49a4a1b3f72a92ed160b",
+  "changes": [
+    "Preserve old256 and table source-only512 CLI; add reference-only observed composed512 flag.",
+    "Pass verified physical owner to separately gated preprocessing/vision functions.",
+    "Preserve runtime physical weight-cache observer pointers and summary."
+  ],
+  "validation": {
+    "legacy_composed_ids": 194,
+    "legacy_all194_score_rows_exact": true,
+    "legacy_text_stage_checks": 38,
+    "legacy_vision_processor_anchors": 29,
+    "fixed_ids": 167,
+    "fixed_all167_score_rows_equal_retained_source_features": true,
+    "fixed_all28_vision_arrays_equal_upstream": true
+  },
+  "limits": [
+    "Historical protocol and receipt hashes remain unchanged.",
+    "Observed form only; no heldout/human-GT/general qualification.",
+    "Defaults off; public experimental format6 fence remains closed."
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "arabic_original_prepared_inputs_exact": true,
+  "bootstrap_sha256": "c70cd34f6fc7753e5da2fa4837477ddd939734a5b9d850e880d8ea40f67f8660",
+  "failure": "FileNotFoundError: /usr/bin/time unavailable on Kaggle CPU image",
+  "model_and_runtime_authenticated": true,
+  "native_model_forward_executed": false,
+  "raw_execution_flag_note": "The controller conservatively records attempted=True/executed=null; the missing outer executable prevents native process creation.",
+  "raw_files": {
+    "lighton-q4km-decode-results/arabic_printed_line-complete-greedy.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-q4km-decode-results/arabic_printed_line-preflight.log": {
+      "bytes": 88,
+      "sha256": "87c9f28be99e61cca579a0ea360b2a6da026cb88d4e6642cbb774eeba39d1aaf"
+    },
+    "lighton-q4km-decode-results/bootstrap-receipt.json": {
+      "bytes": 915,
+      "sha256": "d8e0cdefceb1c2966c4d75649d39b3e4a966e6b663664491eb5d5dc1890165bc"
+    },
+    "lighton-q4km-decode-results/bootstrap.log": {
+      "bytes": 1123,
+      "sha256": "cfc07044cf4f021735301274fd2bdbd16393c7a650b77fdced95c7cf4b7cb447"
+    },
+    "lighton-q4km-decode-results/controller.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-q4km-decode-results/packages.log": {
+      "bytes": 3103,
+      "sha256": "923bc5468326a5705f38d7eff9359a08d038c2a7b003eb10437c6a36629b2174"
+    },
+    "lighton-q4km-decode-results/q4km-complete-decode.json": {
+      "bytes": 15858,
+      "sha256": "b6fd1ffc6932c3de101e9c835f059139eda4c2ccbe988d72a1d699ead8070651"
+    },
+    "lighton4b-q4km-complete-calibration-decode.log": {
+      "bytes": 4857,
+      "sha256": "582ec6f81a9514de315919d044343bdfb2286aacabf525497fd96437387df493"
+    }
+  },
+  "recipe_changed": false,
+  "schema": "lighton4b-q4km-decode-setup-negative/v1",
+  "source_sha": "191406b823bcd6a61f88b6ee92f821acc40d8ca8"
+}

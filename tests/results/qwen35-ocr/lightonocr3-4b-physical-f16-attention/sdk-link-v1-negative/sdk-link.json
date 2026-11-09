@@ -1,0 +1,276 @@
+{
+  "schema": "lighton4b-physical-f16-sdk-link/v1",
+  "status": "failed",
+  "commands": {
+    "source-pin": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 50,
+      "elapsed_seconds": 0.004139917000003379,
+      "child_user_seconds": 0.001113,
+      "child_system_seconds": 0.001113,
+      "cumulative_child_peak_rss_bytes": 20217856
+    },
+    "source-membership": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 51,
+      "elapsed_seconds": 0.1652069929999982,
+      "child_user_seconds": 0.081547,
+      "child_system_seconds": 0.021967,
+      "cumulative_child_peak_rss_bytes": 20410368
+    },
+    "submodule": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 52,
+      "elapsed_seconds": 11.408644580000015,
+      "child_user_seconds": 19.103759,
+      "child_system_seconds": 0.818388,
+      "cumulative_child_peak_rss_bytes": 58916864
+    },
+    "native-configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 93,
+      "elapsed_seconds": 3.1774854390000087,
+      "child_user_seconds": 20.515179,
+      "child_system_seconds": 1.5424,
+      "cumulative_child_peak_rss_bytes": 58916864
+    },
+    "native-main-build": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 171,
+      "elapsed_seconds": 398.529798594,
+      "child_user_seconds": 774.979271,
+      "child_system_seconds": 33.196506,
+      "cumulative_child_peak_rss_bytes": 433889280
+    },
+    "native-main-link": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1124,
+      "elapsed_seconds": 0.004100177999930565,
+      "child_user_seconds": 774.981066,
+      "child_system_seconds": 33.197404,
+      "cumulative_child_peak_rss_bytes": 433889280
+    },
+    "sdk-init": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1125,
+      "elapsed_seconds": 0.008232197999973323,
+      "child_user_seconds": 774.982175,
+      "child_system_seconds": 33.200729,
+      "cumulative_child_peak_rss_bytes": 433889280
+    },
+    "sdk-remote": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1126,
+      "elapsed_seconds": 0.11510347800003728,
+      "child_user_seconds": 774.985141,
+      "child_system_seconds": 33.200729,
+      "cumulative_child_peak_rss_bytes": 433889280
+    },
+    "sdk-fetch": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1127,
+      "elapsed_seconds": 0.46670013699997526,
+      "child_user_seconds": 775.046859,
+      "child_system_seconds": 33.243404,
+      "cumulative_child_peak_rss_bytes": 433889280
+    },
+    "sdk-checkout": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1138,
+      "elapsed_seconds": 0.032473611000000346,
+      "child_user_seconds": 775.053763,
+      "child_system_seconds": 33.251295,
+      "cumulative_child_peak_rss_bytes": 433889280
+    },
+    "sdk-install": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1139,
+      "elapsed_seconds": 42.964556833000074,
+      "child_user_seconds": 814.515712,
+      "child_system_seconds": 40.415703,
+      "cumulative_child_peak_rss_bytes": 433889280
+    },
+    "sdk-activate": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1144,
+      "elapsed_seconds": 0.2652400760000546,
+      "child_user_seconds": 814.708787,
+      "child_system_seconds": 40.45872,
+      "cumulative_child_peak_rss_bytes": 433889280
+    },
+    "emcc-version": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1145,
+      "elapsed_seconds": 0.666750990999958,
+      "child_user_seconds": 815.246696,
+      "child_system_seconds": 40.572469,
+      "cumulative_child_peak_rss_bytes": 433889280
+    },
+    "wasm-configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1162,
+      "elapsed_seconds": 12.66021354399993,
+      "child_user_seconds": 822.722102,
+      "child_system_seconds": 42.091016,
+      "cumulative_child_peak_rss_bytes": 433889280
+    },
+    "wasm-build": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 1293,
+      "error_type": "CalledProcessError",
+      "error": "Command '['bash', '-c', 'source \"$1/emsdk_env.sh\" >/dev/null && shift && exec \"$@\"', '--', PosixPath('/tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk'), 'cmake', '--build', PosixPath('/tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/wasm'), '--target', 'physical-f16-shared-link', '--parallel', '2']' returned non-zero exit status 2.",
+      "elapsed_seconds": 38.81234838,
+      "child_user_seconds": 884.451997,
+      "child_system_seconds": 45.78677,
+      "cumulative_child_peak_rss_bytes": 433889280
+    }
+  },
+  "model_forward_executed": false,
+  "quality_qualified": false,
+  "emsdk_source_sha": "1693ce7359fc9694f198694f902a2cc061239b86",
+  "emsdk_version": "6.0.2",
+  "phase": "wasm-build",
+  "source_sha": "19b79effb657f73fc863586a32b33d5d153dbc62",
+  "preflight": {
+    "available_bytes": 31501041664,
+    "disk_free_bytes": 1037712142336,
+    "load": [
+      0.82763671875,
+      0.52685546875,
+      0.23291015625
+    ]
+  },
+  "compile_contract": {
+    "main_helper_present": true,
+    "main_private_abi": false,
+    "delta_private_abi": true
+  },
+  "error_type": "CalledProcessError",
+  "error": "Command '['bash', '-c', 'source \"$1/emsdk_env.sh\" >/dev/null && shift && exec \"$@\"', '--', PosixPath('/tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/emsdk'), 'cmake', '--build', PosixPath('/tmp/lighton4b-physical-f16-sdk-link-v1/sdk-link/wasm'), '--target', 'physical-f16-shared-link', '--parallel', '2']' returned non-zero exit status 2.",
+  "elapsed_seconds": 509.29785254,
+  "artifacts": {
+    "source-fetch.log": {
+      "bytes": 123,
+      "sha256": "e4f38c72326b55adf0169db997473df41a2c4b321b5c57ed56aed6206ada9940"
+    },
+    "native-main-link.log": {
+      "bytes": 37,
+      "sha256": "e40c9000f6e6d7cba997e679ba3e65d09b9136bb56bbd66e9952d2330044e0bb"
+    },
+    "wasm-build.log": {
+      "bytes": 6637,
+      "sha256": "020875bd2330e9a381913ef6fa1587a608bc4e976e1806db161ebe7740f5a187"
+    },
+    "wasm-CMakeCache.txt": {
+      "bytes": 26599,
+      "sha256": "bcb4d7ffeac7e201a670863f4e4682972065afa41868e5384d787f1c7f1574de"
+    },
+    "source-membership.log": {
+      "bytes": 200,
+      "sha256": "079e566baba6c25c3680c35d8e7a8950738a6432e4101b4ebe7bac9d3eba41c2"
+    },
+    "submodule.log": {
+      "bytes": 234,
+      "sha256": "ff508577c9b2cd54b941b4cca4f9cd325d32914cc8d03ae3bdeff897aca55849"
+    },
+    "sdk-init.log": {
+      "bytes": 582,
+      "sha256": "1022f0e4a3fb96dcc80a8fe9cd2eb131cb5ca5b7a9fd5203ea87c95746042dbe"
+    },
+    "native-main-build.log": {
+      "bytes": 263233,
+      "sha256": "c0d1ed15da7663f90ae2cb1404cfd3fa99fc183af841841a9be9c302f7cd872a"
+    },
+    "sdk-checkout.log": {
+      "bytes": 45,
+      "sha256": "dc8908e86d2bb643be83158f423a2d049f04830e3525c64cab94f535ea6a75af"
+    },
+    "source-init.log": {
+      "bytes": 574,
+      "sha256": "bbbf94ff01a0ef238ac2513afc58cc0aab86df17871d4c07d89ad7f757e3eef0"
+    },
+    "native-CMakeCache.txt": {
+      "bytes": 29027,
+      "sha256": "632c80a42cc37a0bda9b9705bd84f30a58eb59abcd1a0a36dd8fba5a33eaf370"
+    },
+    "pip-resolution.json": {
+      "bytes": 205584,
+      "sha256": "182672f676b0fee31e2e2cba68c6296615ab0a90bc9ac93c4c61da17a66f3934"
+    },
+    "source-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "dependencies.log": {
+      "bytes": 2561,
+      "sha256": "b08def74e88decb70d8b9efda2efff2090078f52d0ba0ea186e6cd402abc684f"
+    },
+    "sdk-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "wasm-configure.log": {
+      "bytes": 2457,
+      "sha256": "6a22c6d257fe1c44a8ee331bf6b32163e514ddbde49389ae9ff337db687c2c99"
+    },
+    "source-checkout.log": {
+      "bytes": 96,
+      "sha256": "b88e2ad31a9ee22ebd9af5e792cd19a8ee54cab877686913846c0c0aa3c8a154"
+    },
+    "native-configure.log": {
+      "bytes": 2027,
+      "sha256": "455d4cbb4ad188e12af5ea0381f3cac0e5a2e27b3a642e9cbd169cc7f71ef964"
+    },
+    "dependency-check.log": {
+      "bytes": 132,
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    "emcc-version.log": {
+      "bytes": 1069,
+      "sha256": "495dc3f9f153a9933d9e008354e62259dfa2e736bd7e2e5788c7b920845304f0"
+    },
+    "sdk-install.log": {
+      "bytes": 1688,
+      "sha256": "e81427195a312816a5c78fb9e794c4498a5a6a63c16f4d707165ba831a73f3e7"
+    },
+    "source-pin.log": {
+      "bytes": 41,
+      "sha256": "5f29c8729000b8bf27ed3c3dffbc809881f896e9805ffbf11145a26946a88778"
+    },
+    "physical-f16-bootstrap.json": {
+      "bytes": 352,
+      "sha256": "71e3ea87fdea27dbc7638c7c7ad2348cb62cab9253558441f6bb2a5cb97fb8e6"
+    },
+    "sdk-fetch.log": {
+      "bytes": 122,
+      "sha256": "679b5178d86681a2a778be4950f693999f062fac2aaa03f127d72a0aec7ee8a7"
+    },
+    "sdk-activate.log": {
+      "bytes": 936,
+      "sha256": "71a038929ba9558cfc22a8652822be862a7f94d5a826f9f6933f2afc7d1ac7e3"
+    },
+    "bounded-worker.log": {
+      "bytes": 390,
+      "sha256": "b27a41e9b7d7e7f4f62f385a192de76159930046925659f28cae90d280ca5f99"
+    }
+  }
+}

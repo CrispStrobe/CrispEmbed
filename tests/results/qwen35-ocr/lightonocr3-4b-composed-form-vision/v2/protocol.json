@@ -1,0 +1,46 @@
+{
+  "schema": "lighton4b-composed-form-vision/v1",
+  "case": "simple_form",
+  "arms": [
+    "old",
+    "fixed"
+  ],
+  "cap": 512,
+  "context": 2048,
+  "threads": 4,
+  "worker_seconds": 3600,
+  "arm_seconds": 1200,
+  "component_source_sha": "b59e5d3a9d9e333f67f9646c1a43a1edc70fccfa",
+  "component_receipt_sha256": "039b024f41b499cfd8344cb4e89835bbfe559a1f298225866c691000d4e6c8c0",
+  "composed_receipt_sha256": "1458d07e6098b4b1b8fa078c18fe0b636f832a0d1219f789b035e1a033ef4ba0",
+  "physical_receipt_sha256": "712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2",
+  "projector_receipt_sha256": "427b38fd03a9d4aec47c9292f15f8771e99e263b2258f415149f0f20dd612f0c",
+  "source_feature_sha256": "b9a171d18d5698e5c897662ddedf6cf399448838e55350c3b206e7a24c240d1b",
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "driver_sha256": "e162586bf5cc48684163967612f1cb7aba335421014d7ef8be2e55831bf85e2b",
+  "changed_gates": [
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_F16_VISION"
+  ],
+  "old_ids": 194,
+  "fixed_source_feature_ids": 167,
+  "original_reference_ids": 177,
+  "model_repo": "richardyoung/LightOnOCR-3-4B-GGUF",
+  "model_revision": "8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01",
+  "models": {
+    "Q4_K_M": {
+      "file": "LightOnOCR-3-4B-Q4_K_M.gguf",
+      "bytes": 2708804576,
+      "sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26"
+    }
+  },
+  "base_model": {
+    "repository": "cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
+    "revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+    "file": "lightonocr3-4b-q4_k-vision-f32.gguf",
+    "bytes": 4030957952,
+    "sha256": "f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91"
+  },
+  "quality_qualified": false,
+  "scope": "Observed form composed-native pixels only; no source/reference forward, no human-GT/heldout/general qualification. Old194 fullraw closure before exactly2vision gate changes; fixed must close167 source-feature decode."
+}

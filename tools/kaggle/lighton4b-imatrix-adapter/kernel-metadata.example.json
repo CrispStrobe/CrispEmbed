@@ -1,0 +1,14 @@
+{
+  "id": "__OWNER__/lighton4b-imatrix-adapter-cpu-controls",
+  "title": "LightOn4B imatrix adapter CPU controls",
+  "code_file": "kernel.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": []
+}

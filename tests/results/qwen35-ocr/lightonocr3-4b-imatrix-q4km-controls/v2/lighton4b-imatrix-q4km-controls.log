@@ -1,0 +1,46 @@
+[{"stream_name":"stdout","time":12.819258808,"data":"PHASE adapter-actual-means-and-legacy-controls\n"}
+,{"stream_name":"stdout","time":78.700955043,"data":"PHASE test_lighton4b_imatrix_q4km_recipe.py\n"}
+,{"stream_name":"stdout","time":79.1088724,"data":"PHASE test_lighton4b_q6_recipe.py\n"}
+,{"stream_name":"stdout","time":79.256562351,"data":"PHASE test_lighton4b_gdn_out_q6_recipe.py\n"}
+,{"stream_name":"stdout","time":79.452759545,"data":"PHASE fetch-frozen-receipt-commits\n"}
+,{"stream_name":"stdout","time":82.187384869,"data":"PHASE source-pin-check\n"}
+,{"stream_name":"stdout","time":82.441388197,"data":"PHASE build-policy-controls\n"}
+,{"stream_name":"stdout","time":113.692852936,"data":"PHASE new-q4km\n"}
+,{"stream_name":"stdout","time":113.722226602,"data":"PHASE old32-q8head\n"}
+,{"stream_name":"stdout","time":113.73976651,"data":"PHASE old24-q6out\n"}
+,{"stream_name":"stdout","time":113.759425672,"data":"PHASE old24-q8out\n"}
+,{"stream_name":"stdout","time":113.762887502,"data":"PHASE closed-cli-no-stats\n"}
+,{"stream_name":"stdout","time":113.76572339,"data":"PHASE closed-cli-wrong-method\n"}
+,{"stream_name":"stdout","time":113.803163454,"data":"PHASE closed-cli-override\n"}
+,{"stream_name":"stdout","time":113.840788856,"data":"PHASE closed-cli-legacy-header\n"}
+,{"stream_name":"stdout","time":113.878820753,"data":"PHASE closed-cli-wrong-original-source\n"}
+,{"stream_name":"stdout","time":113.921426454,"data":"PHASE q6-tied-head-and-public-fence\n"}
+,{"stream_name":"stderr","time":117.601259236,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":117.602651133,"data":"  File \"/kaggle/working/lighton-q4km-controls-source/tools/ci-heavy/lighton4b_imatrix_q4km_controls.py\", line 49, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":117.602681518,"data":"    if __name__=='__main__':main()\n"}
+,{"stream_name":"stderr","time":117.602687512,"data":"                            ~~~~^^\n"}
+,{"stream_name":"stderr","time":117.60269253,"data":"  File \"/kaggle/working/lighton-q4km-controls-source/tools/ci-heavy/lighton4b_imatrix_q4km_controls.py\", line 44, in main\n"}
+,{"stream_name":"stderr","time":117.602698312,"data":"    phase('q6-tied-head-and-public-fence');release=load('q4km_release',ROOT/'tools/kaggle/lighton4b_release_q6_head_controls.py');rout=out/'release';rout.mkdir();os.environ['HEAVY_OUT']=str(rout);os.environ['HEAVY_EXISTING_BUILD']=str(build);release.main();os.environ['HEAVY_OUT']=str(out)\n"}
+,{"stream_name":"stderr","time":117.602705499,"data":"                                                                                                                                                                                                                                                  ~~~~~~~~~~~~^^\n"}
+,{"stream_name":"stderr","time":117.60271083,"data":"  File \"/kaggle/working/lighton-q4km-controls-source/tools/kaggle/lighton4b_release_q6_head_controls.py\", line 30, in main\n"}
+,{"stream_name":"stderr","time":117.602715706,"data":"    run('configure',['cmake','-S',ROOT,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_CUDA=OFF','-DGGML_VULKAN=OFF']);run('build',['cmake','--build',build,'--target','test-lighton4b-q6-tied-head','test-lighton4b-release-fence','--parallel','2'])\n"}
+,{"stream_name":"stderr","time":117.602720835,"data":"                                                                                                                                                                     ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":117.602725897,"data":"  File \"/kaggle/working/lighton-q4km-controls-source/tools/kaggle/lighton4b_release_q6_head_controls.py\", line 15, in run\n"}
+,{"stream_name":"stderr","time":117.602748141,"data":"    with(out/(label+'.log')).open('w')as f:subprocess.run(list(map(str,args)),cwd=ROOT,stdout=f,stderr=subprocess.STDOUT,check=True)\n"}
+,{"stream_name":"stderr","time":117.602753204,"data":"                                           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":117.602757885,"data":"  File \"/usr/lib/python3.13/subprocess.py\", line 578, in run\n"}
+,{"stream_name":"stderr","time":117.602763191,"data":"    raise CalledProcessError(retcode, process.args,\n"}
+,{"stream_name":"stderr","time":117.60276696,"data":"                             output=stdout, stderr=stderr)\n"}
+,{"stream_name":"stderr","time":117.602770754,"data":"subprocess.CalledProcessError: Command '['cmake', '--build', '/kaggle/working/lighton-q4km-controls-scratch/lighton-imatrix/build', '--target', 'test-lighton4b-q6-tied-head', 'test-lighton4b-release-fence', '--parallel', '2']' returned non-zero exit status 2.\n"}
+,{"stream_name":"stderr","time":118.052257852,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":118.052779344,"data":"  File \"/kaggle/src/script.py\", line 33, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":118.052804431,"data":"    receipt=json.loads((out/'imatrix-q4km-controls.json').read_text());assert code==0 and receipt['status']=='passed'and receipt['all248_actual_means_verified']and receipt['q6_embedding_tied_head_and_public_fence_passed'];report['status']='passed'\n"}
+,{"stream_name":"stderr","time":118.052810408,"data":"                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":118.052814906,"data":"AssertionError\n"}
+,{"stream_name":"stderr","time":121.368123056,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":121.368168641,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":121.981800618,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":121.981838366,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":124.728187925,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":126.344086005,"data":"[NbConvertApp] Writing 293024 bytes to __results__.html\n"}
+]

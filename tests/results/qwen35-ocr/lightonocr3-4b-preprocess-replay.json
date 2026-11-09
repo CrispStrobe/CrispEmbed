@@ -1,0 +1,61 @@
+{
+  "decoded_parity_qualified": false,
+  "independent_review": {
+    "all_860160_values_exact": true,
+    "controls_stdout": "passed=1 checks=45 model_inference=0\n",
+    "source_sha256": {
+      "src/core/torch_bicubic_u8.h": "38f33a17ab22c75fd07576b4503cc8e0554a67032a102d5c84de47c30ba3d08b",
+      "src/lighton4b_image_compose.h": "658b88b606523a83c7203e71fa21e25a141cc5ac29e12f00e560bc8a0c6c7d2e",
+      "src/qwen35_image.cpp": "573e425d3d9127fbd5f1cf45189276580351bed7fe41be3b0f72e02841fdceed",
+      "tests/test_lighton4b_image_compose.cpp": "447873d991d6524447360c8645d770c3949f046727ecfc4d3c07158e773cfc13",
+      "tools/ci-heavy/lighton4b_preprocess_replay.py": "0068892836dfbdea86405dfaa896e0fc94aa71190e7ee3e38115770da8ebaacb"
+    }
+  },
+  "input_sha256": {
+    "attention_mask": "bf86c53fad0078f2c0b8ae6ebcc0bc1fad1469287a5fd2ce76c45558c45defe2",
+    "image_grid_thw": "31db2f395670c65f1329ed36856025a4e28158dd158ffcae567a939151283278",
+    "input_ids": "6f1b0a033c6d381c877956b6fbd215d8be4515d9a4ec733ad302b47a1743203d",
+    "mm_token_type_ids": "f5036a7310cca98c52e7846682523e02b245fbfb823ecf78fb59fe20832ae723",
+    "pixel_values": "4475c40a09fc35f429c104c6899a1d7a29e124d1327f893411c7d1699c09512b"
+  },
+  "model_bytes_downloaded": 0,
+  "native_model_forward_executed": false,
+  "native_source": "5f0ca990fa405d6430187488a873f3a9e0423289",
+  "original_capture_sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a",
+  "original_forward_executed": false,
+  "original_processor": {
+    "image_processor_backend": "torchvision",
+    "image_processor_class": "transformers.models.qwen2_vl.image_processing_qwen2_vl.Qwen2VLImageProcessor",
+    "image_processor_source_sha256": "de5859892f04c64f3e79c9d318842ac0040000788e43870997bd1ec6565c02bb"
+  },
+  "original_source": "07543dcc80ebcecad644815d9397be2570a51dd4",
+  "pixels": {
+    "cosine": 1.0,
+    "different_values": 0,
+    "elements": 860160,
+    "first_differing_flat_index": null,
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "native_abs_max": 1.0,
+    "native_l2": 831.4008051587742,
+    "native_raw_sha256": "d623c64f184a10b6964aedeb3cd90f5a4e2e7aa39f7c480a9f474757776b8d8d",
+    "original_abs_max": 1.0,
+    "original_l2": 831.4008051587742,
+    "original_npy_sha256": "4475c40a09fc35f429c104c6899a1d7a29e124d1327f893411c7d1699c09512b",
+    "rms_error": 0.0,
+    "shape": [
+      560,
+      1536
+    ]
+  },
+  "processor_gate_passed": true,
+  "run_id": 41999219551,
+  "schema": "lighton4b-retained-preprocess/v1",
+  "source_image": {
+    "file": "tests/regression/images/cc0/simple_form.png",
+    "rgb_sha256": "f29f48e94fd623b16bbe203f6c5918cdd5b08c9bc8926a1cc9659e5e67ff0a22",
+    "sha256": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc"
+  },
+  "status": "passed",
+  "workflow": ".github/workflows/heavy-cpu.yml"
+}

@@ -1,0 +1,12 @@
+{
+  "schema": "lighton4b-physical-controls-kaggle-bootstrap/v1",
+  "source_sha": "7facc65b382fbc9ebf3d6aa205ea390c5687ca53",
+  "status": "failed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "dependency-check",
+  "worker_sha256": "bda80149b7ab63944ebc54b21e78df1603bd2bbd40c0770c4d1b24b94d63e4c3",
+  "error_type": "FileNotFoundError",
+  "error": "Bounded independent upstream worker did not complete; retain per-phase logs and receipt"
+}

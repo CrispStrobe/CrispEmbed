@@ -1,0 +1,26 @@
+{
+  "bootstrap_sha256": "91cfeebbd65462d4494cea0833a2de0e340891b4c595a5457d330a38c6f2c6db",
+  "controller_returncode": 0,
+  "gpu_enabled": false,
+  "model_forward_executed": false,
+  "preflight": {
+    "disk_free_bytes": 20940558336,
+    "load": [
+      0.60009765625,
+      0.37451171875,
+      0.15478515625
+    ],
+    "memory_swap": {
+      "MemAvailable": "31929816 kB",
+      "SwapFree": "0 kB",
+      "SwapTotal": "0 kB"
+    }
+  },
+  "prior_gh_run_cancelled_queued": 42238407232,
+  "python": "3.13.18 (main, Oct 26 2026, 15:28:15) [GCC 13.3.0]",
+  "quantization_executed": false,
+  "schema": "lighton4b-imatrix-kaggle-bootstrap/v1",
+  "seconds": 57.315364098,
+  "source_sha": "911d707980bf75a819e862170a626279752e3515",
+  "status": "passed"
+}

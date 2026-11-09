@@ -1,0 +1,55 @@
+{
+  "schema": "lighton4b-physical-f16-full-form-evidence/v1",
+  "source_sha": "4a63d73bee7289deab41fb20f67765d3c6800182",
+  "protocol_source": "https://github.com/CrispStrobe/CrispEmbed/blob/4a63d73bee7289deab41fb20f67765d3c6800182/docs/lighton4b-physical-f16-full-form-v1.json",
+  "receipt_sha256": "0a0c2084baa4e46aa80f09f7ae94fd4b1c56ccae2bbf2f9ef6210e81e8cf1d01",
+  "model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "small_raw_artifacts": {
+    "bounded-worker.log": {
+      "bytes": 1413,
+      "sha256": "ba5814cc7d161b8e8150dc152307b04955731d8b39500d4f977d204ea6693444"
+    },
+    "independent-review.json": {
+      "bytes": 679,
+      "sha256": "663e5c1ae5a83af7ff23840906628475b50695bc0f696f0f38ebd3293898e474"
+    },
+    "physical-f16-full-form.json": {
+      "bytes": 1045099,
+      "sha256": "0a0c2084baa4e46aa80f09f7ae94fd4b1c56ccae2bbf2f9ef6210e81e8cf1d01"
+    },
+    "physical-f16-bootstrap.json": {
+      "bytes": 396,
+      "sha256": "5ec10f0a8ff80802bee53ed7c29a59893725ebfe80f18ede7d16ba6c61bd75d4"
+    },
+    "baseline-prefix/generated.ids": {
+      "bytes": 9,
+      "sha256": "8ca3f862b28f3484a355682f0dc4bc03893ee594828fda6fb1a24b81bf587dbc"
+    },
+    "baseline-prefix/native-summary.json": {
+      "bytes": 154,
+      "sha256": "70c921fe272e375cba0a831500f208460773434d1128ca397b2f4a8295faf24a"
+    },
+    "baseline-prefix/generated.txt": {
+      "bytes": 7,
+      "sha256": "750224b0d3f877b79f4ccb5e434e59109173d8ca1625491c6cd8aca6abc1ca8b"
+    },
+    "f16-full/generated.ids": {
+      "bytes": 774,
+      "sha256": "7b486f648aa28924ed517318ec42e4768cb4750ee35656a3a1ade902b4263049"
+    },
+    "f16-full/native-summary.json": {
+      "bytes": 159,
+      "sha256": "9f3f6bd9ae400d3d8af72b917547cf8cb25f1d65cbead2275a8a86a4c0231dd0"
+    },
+    "f16-full/generated.txt": {
+      "bytes": 657,
+      "sha256": "dd76fa10d0f4e6d2e6450523a3fc9a2e7cc3ba6690675d01fe38833313469909"
+    }
+  },
+  "quality_qualified": false,
+  "limitations": [
+    "One source-feature-fed form; composed vision and held-out qualification remain open.",
+    "All177teacher rows retained and producer finite-checked, independent artifact-only numeric comparison pending.",
+    "Observed greedy throughput is not a balanced same-host speed comparison."
+  ]
+}

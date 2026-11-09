@@ -1,0 +1,1 @@
+{"prompt_tokens":154,"image_tokens":140,"source_fed_vision":false,"upstream_physical":true,"physical_q4_repack":false,"physical_repack_entries":0,"physical_repack_bytes":0,"physical_repack_hits":0,"converted_f32_weight_entries":0,"converted_f32_weight_bytes":0,"teacher_positions":1,"generated_tokens":167,"eos":true,"cap":512}

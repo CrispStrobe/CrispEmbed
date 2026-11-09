@@ -1,0 +1,134 @@
+{
+  "closed426.tsv": {
+    "bytes": 21774,
+    "sha256": "9c741011b75623a621324d1819e45b715a0e3398a1f4cf386614ff4f1099222f"
+  },
+  "control-test_admission.py.log": {
+    "bytes": 203,
+    "sha256": "eea3782027dbff5c25b8ec3a48301efe976777bda35a2325a878cecf514b5fb6"
+  },
+  "control-test_runtime_guard.py.log": {
+    "bytes": 204,
+    "sha256": "f5f897c03a3795eaa47bb6834945c9c63776e0755bb61da8ee343a479e295893"
+  },
+  "dependencies.log": {
+    "bytes": 2563,
+    "sha256": "0b60f32d8c57d14d86db3b793deb670f1e730063878173bed2f83fe471e57ac5"
+  },
+  "dependency-check.log": {
+    "bytes": 132,
+    "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+  },
+  "environment.log": {
+    "bytes": 42,
+    "sha256": "d0477f3d2bf0b1837fe1c28f42e7e3fe6c6b7590aab2b34815f6351c2af3dd55"
+  },
+  "fetch-frozen-receipt-commits.log": {
+    "bytes": 275,
+    "sha256": "725df7c1a7fda21ba1fb7377d190662619b07760d9eb47a7bae5aeaee49f8b59"
+  },
+  "lighton4b-physical-f16-integration-controls-v1.log": {
+    "bytes": 2777,
+    "sha256": "8375f0d15be8dc9b47ae4e303984ac0651744ac5ec24b36e55af5fcd11e9a97d"
+  },
+  "native-pin.log": {
+    "bytes": 41,
+    "sha256": "e601323d793ee4e885b083f65101988246e42a4e9dd3aa1aec32f0124f3b45cc"
+  },
+  "native-submodule.log": {
+    "bytes": 246,
+    "sha256": "714cbccffb7bbd1294c2dc85640d9dfc28f18874c5e647935b2564afbbca7b73"
+  },
+  "operator-only-primitives.log": {
+    "bytes": 903,
+    "sha256": "36a812be441f323ba524534c80fb1b968f1197673f965b15a4732795382d2b4c"
+  },
+  "physical-f16-bootstrap.json": {
+    "bytes": 441,
+    "sha256": "de71b5f566a0d92ba40d33d8fbda7aeaa39f8b9e236e6d84d4e22754f769b4f0"
+  },
+  "physical-f16-controls.json": {
+    "bytes": 17745,
+    "sha256": "c976707dcda039a676ada98d55ac21b0518a946c1c447bbfcc5107335a4a7325"
+  },
+  "pip-resolution.json": {
+    "bytes": 205584,
+    "sha256": "182672f676b0fee31e2e2cba68c6296615ab0a90bc9ac93c4c61da17a66f3934"
+  },
+  "reference-configure.log": {
+    "bytes": 1439,
+    "sha256": "3305fbde8fb79ee1c96588376293934588f452740ce856ad09648a8d7fd2eee1"
+  },
+  "runtime-CMakeCache.txt": {
+    "bytes": 29401,
+    "sha256": "08d6fd60a9e8661c30b1c82def0a40674728e779b00caaed6ee2071a26878b8a"
+  },
+  "runtime-build.log": {
+    "bytes": 9294,
+    "sha256": "d9d9c54543cc0de83634c29b0c7df9f7f335a44947922d425580176f0a62b8a7"
+  },
+  "runtime-configure.log": {
+    "bytes": 2110,
+    "sha256": "21a6ed30e4d6c9622c400ddfea889203cb24d8a078e61bf04038c3c7b687fd7a"
+  },
+  "runtime-sourcefed.log": {
+    "bytes": 85,
+    "sha256": "f3ff3f89cc418ad1bbe542a5a4f0ec1dd2d090b2001c269d315f2114d687b621"
+  },
+  "source-checkout.log": {
+    "bytes": 101,
+    "sha256": "5624b131b716eb1107d8a4e1f639b954a08643e19dc99eb11fdc9189449d0970"
+  },
+  "source-fetch.log": {
+    "bytes": 123,
+    "sha256": "22239117901cdd64e871ff62f24fafd4c88706a13335fec4303f7b091a26d6f6"
+  },
+  "source-init.log": {
+    "bytes": 586,
+    "sha256": "8faef852fbbe67e1a519f1c5660287bd5db9f79c6a924f135c6d0fceda4cfd07"
+  },
+  "source-pin.log": {
+    "bytes": 41,
+    "sha256": "539737462f1971ad8d976c7ac7a8c33b3346f1e3bd18de317c11d5b7b4cecadc"
+  },
+  "source-pins.log": {
+    "bytes": 45,
+    "sha256": "286d64b42ca5d0653f39f75075fbdf6a62f6e2b124cdefaf3181887f5469dfcd"
+  },
+  "source-remote.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "test-lighton4b-physical-f16-attention.log": {
+    "bytes": 35,
+    "sha256": "5892c49ef41bc582baf756071bcb35987aa815a18b8e88452d1cfa601f57cdef"
+  },
+  "test-lighton4b-physical-f16-unsupported.log": {
+    "bytes": 41,
+    "sha256": "2765e6dc4cfc30d2c298728ea02a5c18f6efbb982436f8e66682fe1fd7e958ad"
+  },
+  "test-lighton4b-physical-f16-wasm-guard.log": {
+    "bytes": 41,
+    "sha256": "2765e6dc4cfc30d2c298728ea02a5c18f6efbb982436f8e66682fe1fd7e958ad"
+  },
+  "up-checkout.log": {
+    "bytes": 84,
+    "sha256": "401b0f35047d9999135ce240162909f4d3b9be4cafce7c16c1eafb93d3b7bff7"
+  },
+  "up-fetch.log": {
+    "bytes": 119,
+    "sha256": "5537e1fa1b4cf8d84bd910e3fed8a4a9e0803b4bddddf1cf9b9182e0f1b00983"
+  },
+  "up-init.log": {
+    "bytes": 610,
+    "sha256": "591737bc424f564b68d1c9dbd82b23143172522a842bb96b0eece07e2614641e"
+  },
+  "up-remote.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "venv.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

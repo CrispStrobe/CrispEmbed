@@ -1,0 +1,75 @@
+{
+  "schema": "lighton4b-physical-prefix-focused-index/v1",
+  "version": 3,
+  "source_sha": "a3f4b87aac82662393548b46ec19215618cfc038",
+  "actual_native_trace_compared": false,
+  "learned_model_forward_executed": false,
+  "quality_qualified": false,
+  "files": {
+    "native-CMakeCache.txt": {
+      "bytes": 29737,
+      "sha256": "f1d30e1fd8be89be529857d49790b2eaad6237a2e3a9296ce789fddaef15075e"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-runtime-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "11f6b670dbc4eeb476d93d576feeaca7b8ca466aae9a42ba7191cdcb805ebf7f"
+    },
+    "reconstructed-native-scalar-norm.f32": {
+      "bytes": 40960,
+      "sha256": "6a483ccb8ada19e78f2707edf8fda3c4ffb9ff2afc3922038a1c7f7d8c3ba773"
+    },
+    "runtime-norm.f32": {
+      "bytes": 40960,
+      "sha256": "7a3fafed50f68cfdf0e41c2dadb3310c0512d8296155ad95de45567560064a96"
+    },
+    "prefix-primitives.json": {
+      "bytes": 5891,
+      "sha256": "8a466df13a77c112dca9cc09ca4dc3b4fadbfebec45c64168739e05122407269"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-native-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "c195cd691ba1d254ecd7d3d2fe9d5fd0fe0bcbedf137143de20ee5902e728b92"
+    },
+    "upstream-CMakeCache.txt": {
+      "bytes": 30033,
+      "sha256": "7d6e3b47409ccb95c44a6dcdda4a5f70daf5987194ee23b25b956eb3be341b1a"
+    },
+    "upstream-norm.f32": {
+      "bytes": 40960,
+      "sha256": "7a3fafed50f68cfdf0e41c2dadb3310c0512d8296155ad95de45567560064a96"
+    },
+    "reconstructed-prefix.f32": {
+      "bytes": 40960,
+      "sha256": "ca940b1a6f45bc487a4685205caca1e7fb64929c03b7c8d1b52769e26cc8b842"
+    },
+    "pip-resolution.json": {
+      "bytes": 205584,
+      "sha256": "182672f676b0fee31e2e2cba68c6296615ab0a90bc9ac93c4c61da17a66f3934"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-upstream-direct.f32": {
+      "bytes": 131072,
+      "sha256": "aef9045166fc06f243ba0a98c7114ea07b3ed5c8e1da89c1cc6e303a0f811cd2"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-runtime-direct.f32": {
+      "bytes": 131072,
+      "sha256": "aef9045166fc06f243ba0a98c7114ea07b3ed5c8e1da89c1cc6e303a0f811cd2"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-upstream-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "c195cd691ba1d254ecd7d3d2fe9d5fd0fe0bcbedf137143de20ee5902e728b92"
+    },
+    "native-norm.f32": {
+      "bytes": 40960,
+      "sha256": "7a3fafed50f68cfdf0e41c2dadb3310c0512d8296155ad95de45567560064a96"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-native-direct.f32": {
+      "bytes": 131072,
+      "sha256": "aef9045166fc06f243ba0a98c7114ea07b3ed5c8e1da89c1cc6e303a0f811cd2"
+    },
+    "prefix-primitives-bootstrap.json": {
+      "bytes": 449,
+      "sha256": "3f99e9fa700f15cc75718cb94b34a9b4a8b347cc75f9368205ebc553606aa746"
+    }
+  },
+  "failure": "Strict F32-dequant QKV comparison failed: standalone ggml LLAMAFILE OFF versus actual runtime LLAMAFILE ON; RMS3.953194959e-7/max5.722045898e-6. Retained-quantized QKV and RMS already exact."
+}

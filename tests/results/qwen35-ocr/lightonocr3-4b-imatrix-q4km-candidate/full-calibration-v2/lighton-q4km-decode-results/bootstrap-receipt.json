@@ -1,0 +1,29 @@
+{
+  "bootstrap_sha256": "8bc640586a09baa5953ba6c1bcd7dac6f5431281e5c1f9460f7a84400f469f5d",
+  "calibration_floors_met": true,
+  "controller_returncode": 0,
+  "controller_status": "measured",
+  "github_dispatch_executed": false,
+  "gpu_enabled": false,
+  "model_forward_attempted": true,
+  "model_forward_executed": true,
+  "preflight": {
+    "disk_free_bytes": 20940533760,
+    "load": [
+      1.15380859375,
+      0.90966796875,
+      0.3759765625
+    ],
+    "memory_swap": {
+      "MemAvailable": "31863692 kB",
+      "SwapFree": "0 kB",
+      "SwapTotal": "0 kB"
+    }
+  },
+  "python": "3.13.18 (main, Oct 26 2026, 15:28:15) [GCC 13.3.0]",
+  "quantization_executed": false,
+  "schema": "lighton4b-q4km-decode-bootstrap/v1",
+  "seconds": 3928.186984678,
+  "source_sha": "e822a6de84c8fb546623a464c7e9c79a62e19bbc",
+  "status": "measured"
+}

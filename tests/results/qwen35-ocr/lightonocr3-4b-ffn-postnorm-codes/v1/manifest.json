@@ -1,0 +1,38 @@
+{
+  "native-CMakeCache.txt": {
+    "bytes": 27629,
+    "sha256": "75e297d7ec4c1d211e328b68ab1adb850e89c096557735b706d0c92bd4cbc5b1"
+  },
+  "native-controls.log": {
+    "bytes": 105,
+    "sha256": "7c1a1013bf063ce288339ce118983f8426dc2c7a060d6b53f34cfa5fe2484e19"
+  },
+  "protocol.json": {
+    "bytes": 4923,
+    "sha256": "476df97606fb47a0726970fb6a9828a799065d25819e9512327e801a308a1b15"
+  },
+  "independent-audit.json": {
+    "bytes": 10790,
+    "sha256": "5396f96b3c06cac6d87fe24ecc6a03dd852d9bc08bb5d5bbe36c5d73f652cd2d"
+  },
+  "upstream-cause-audit.json": {
+    "bytes": 9901,
+    "sha256": "47255af3c7de161c2430194d552bb74e71afb0e33b4061f8763af2dd0ba46cec"
+  },
+  "upstream-CMakeCache.txt": {
+    "bytes": 27925,
+    "sha256": "e20d807c37b1570b5fa11f2c6c20cdfb4383394b7cd5d3f31b49cd8b53630389"
+  },
+  "upstream-controls.log": {
+    "bytes": 105,
+    "sha256": "7c1a1013bf063ce288339ce118983f8426dc2c7a060d6b53f34cfa5fe2484e19"
+  },
+  "ffn-postnorm-probe.json": {
+    "bytes": 183333,
+    "sha256": "c93689677044fa43a1fe98335abd6ad63db1127dfa0c2acf464772ef2bceb6db"
+  },
+  "ffn-postnorm-bootstrap.json": {
+    "bytes": 1780,
+    "sha256": "ad76cdea1b17ad74b2898aa720af148e82405b66d8c27881795fa32fe2e5b45b"
+  }
+}

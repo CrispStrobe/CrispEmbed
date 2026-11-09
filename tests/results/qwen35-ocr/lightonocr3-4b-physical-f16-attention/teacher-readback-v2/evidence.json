@@ -1,0 +1,62 @@
+{
+  "bootstrap_sha256": "14df585c01e87bb20b59d2256987abd0ead44f9d6e7931086b14951c00467865",
+  "files": {
+    "lighton-f16-teacher-readback.log": {
+      "bytes": 2683,
+      "sha256": "823663f5ba617e72be1bf07399c034984349e064752fe20544ea43b96ea8b40a"
+    },
+    "lighton-f16-teacher-readback/actual-artifact-readback.log": {
+      "bytes": 1973,
+      "sha256": "d6936adfcb542cedd525dfeb800dbf6dedff65653fd5d6a0d426ab581f29b01f"
+    },
+    "lighton-f16-teacher-readback/bootstrap-receipt.json": {
+      "bytes": 785,
+      "sha256": "0d7718c9855185d7cf2e1be469e1568e9b16bf5ea1cc89f9e2c4e83c00998784"
+    },
+    "lighton-f16-teacher-readback/causal-row-controls.log": {
+      "bytes": 101,
+      "sha256": "921b60a7fd52e978fbb551cacd29df2d6708879400278e1fcc70fceeb0c6f8e0"
+    },
+    "lighton-f16-teacher-readback/checkout.log": {
+      "bytes": 89,
+      "sha256": "9a075cfb06c93967265d578281a4158a72841576ceb34cde2442dac0af134fff"
+    },
+    "lighton-f16-teacher-readback/dependency-preflight.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-f16-teacher-readback/fetch.log": {
+      "bytes": 123,
+      "sha256": "d4631678f3e0e97336e0f49c9b231037f88359df9062af6e7436c5552ce562d5"
+    },
+    "lighton-f16-teacher-readback/init.log": {
+      "bytes": 579,
+      "sha256": "be465fb7f90c458af70d6e68f339b46e3ee9de5d0b4c543d87cf2d4a3ad569d2"
+    },
+    "lighton-f16-teacher-readback/numpy.log": {
+      "bytes": 1469,
+      "sha256": "ee1f035ce481ce7851a7581280a856aa9ceb0ce4a1416a794de9dcf073ac8c07"
+    },
+    "lighton-f16-teacher-readback/remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-f16-teacher-readback/results/teacher-readback.json": {
+      "bytes": 288,
+      "sha256": "f39e35a746412fbe6eaec3fc49130b312901ca483f4e1c83b9c3cd6f4b96eacc"
+    },
+    "lighton-f16-teacher-readback/venv-prefix.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-f16-teacher-readback/venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "model_inference_executed": false,
+  "schema": "lighton4b-f16-teacher-readback-evidence/v1",
+  "service": "Kaggle CPU kernel143200239/version2",
+  "source_sha": "68379ea153e4517749002e0673b039f5b0f9e2f7",
+  "status": "failed"
+}

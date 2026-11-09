@@ -1,0 +1,14 @@
+{
+  "bootstrap-receipt.json": {
+    "bytes": 795,
+    "sha256": "03e04085e83e6adcbfa3c0181798c6b123b5eb31cedacb8cb2b3ec925290c138"
+  },
+  "bootstrap.log": {
+    "bytes": 1131,
+    "sha256": "3cf7d2115fdd14bfbf8b1f211a713b6f4dbd258057e06864bebf495c589e52d1"
+  },
+  "kernel.log": {
+    "bytes": 2155,
+    "sha256": "b3126e9055d54e99e55b07d2b391a1e194ce93828029b67518f818221be59966"
+  }
+}

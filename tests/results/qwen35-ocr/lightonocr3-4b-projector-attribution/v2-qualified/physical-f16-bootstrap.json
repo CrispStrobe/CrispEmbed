@@ -1,0 +1,11 @@
+{
+  "schema": "lighton4b-physical-f16-bootstrap/v1",
+  "source_sha": "c010086968ba44efcb07e7a9e27ff87dc9b36732",
+  "status": "completed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "bounded-worker",
+  "worker_sha256": "a5fa1d500dbea44da03365169eb71368e27becf0e9f68bc09b56acd0faeacb18",
+  "worker_status": "measured_projector_only_audit"
+}

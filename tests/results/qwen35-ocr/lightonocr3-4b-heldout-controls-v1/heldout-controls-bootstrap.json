@@ -1,0 +1,12 @@
+{
+  "schema": "lighton4b-heldout-controls-bootstrap/v1",
+  "source_sha": "874728b71d113bb1a02f7a1fa97717ec2b6281b5",
+  "status": "completed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "bounded-worker",
+  "worker_sha256": "7e1cf3d02329d8ee95c5e8a2d84d0d8fd9cfa0bb4f9f554cdc282a4722758fff",
+  "worker_status": "passed_model_free_heldout_controls",
+  "elapsed_seconds": 650.140458862
+}

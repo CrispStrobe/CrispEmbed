@@ -43,6 +43,9 @@ struct vision_outputs {
     std::vector<vision_layer_outputs> probes;
     std::vector<float> merger_norm, merger_up, merger_activation, merged;
 };
+// Validates exactly the 297 v.* tensors; text tensors may coexist in the owner.
+// No payload reads or format-5 admission. Failure clears weights and resets config.
+bool map_lighton4b_vision(const core_gguf::tensor_map & tensors, vision_weights & weights, vision_config & config);
 bool map_small_vision(const core_gguf::tensor_map & tensors, vision_weights & weights);
 // Packed patches [sum(t*h*w),C*T*P*P]; grid rows [t,h,w]. Attention is
 // non-causal per frame, never across images or frames. CPU reference path.

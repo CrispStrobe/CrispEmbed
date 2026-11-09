@@ -117,6 +117,9 @@ class SourceControls(unittest.TestCase):
     def test_current_workflow_routes_only_exact_selector_to_separate_permissions(self):
         workflow = (ROOT / ".github/workflows/heavy-cpu.yml").read_text()
         ordinary, selected = workflow.split("  ocr_evidence:\n", 1)
+        # Preserve the complete historical stdlib-only job span; the newer
+        # explicitly guarded native-attribution job has its own controls below.
+        selected = selected.split("  retained-block21:\n", 1)[0]
         self.assertIn("if: inputs.script != '" + evidence.SELECTOR + "'", ordinary)
         self.assertIn("if: inputs.script == '" + evidence.SELECTOR + "'", selected)
         self.assertNotIn("actions: read", ordinary)
@@ -133,6 +136,38 @@ class SourceControls(unittest.TestCase):
         self.assertNotIn("KAGGLE", selected)
         self.assertNotIn("pip install", selected)
         self.assertIn("cancel-in-progress: false", workflow)
+
+    def test_native_attribution_job_remains_separately_closed(self):
+        workflow = (ROOT / ".github/workflows/heavy-cpu.yml").read_text()
+        ordinary = workflow.split("  ocr_evidence:\n", 1)[0]
+        retained = workflow.split("  retained-block21:\n", 1)[1].split("  lighton4b_reference_compare:\n", 1)[0]
+        selectors = ("lighton4b_decoder_attribution.py", "lighton4b_decoder_upstream.py", "lighton4b_dense_trace.py")
+        expected = "    if: " + " || ".join("inputs.script == 'tools/ci-heavy/" + name + "'" for name in selectors)
+        self.assertIn(expected, retained)
+        for name in selectors:
+            self.assertIn("inputs.script != 'tools/ci-heavy/" + name + "'", ordinary)
+        self.assertIn("      contents: read\n      actions: read\n", retained)
+        self.assertIn("python -m pip install -r tools/lighton4b-gdn-requirements.txt", retained)
+        self.assertIn("run-id: 41979168300", retained)
+        self.assertIn("run-id: 41981848201", retained)
+        for forbidden in ("secrets.", "HF_TOKEN", "KAGGLE", "inputs.pip", "inputs.args"):
+            self.assertNotIn(forbidden, retained)
+
+    def test_lighton4b_reference_comparison_is_separately_closed(self):
+        workflow = (ROOT / ".github/workflows/heavy-cpu.yml").read_text()
+        ordinary = workflow.split("  ocr_evidence:\n", 1)[0]
+        selected = workflow.split("  lighton4b_reference_compare:\n", 1)[1]
+        names = ("lighton4b_prefill_compare.py", "lighton4b_smoke_compare.py", "lighton4b_full_compare.py")
+        self.assertIn("    if: " + " || ".join("inputs.script == 'tools/ci-heavy/" + name + "'" for name in names), selected)
+        for name in names:
+            self.assertIn("inputs.script != 'tools/ci-heavy/" + name + "'", ordinary)
+        self.assertIn("      contents: read\n      actions: read\n", selected)
+        self.assertIn("persist-credentials: false", selected)
+        self.assertIn('test -z "$REF_COMPARE_PIP"', selected)
+        self.assertIn('test "$REF_COMPARE_RUNNER" = ubuntu-latest', selected)
+        self.assertIn('test "$REF_COMPARE_MODE" = portable', selected)
+        for forbidden in ("HF_TOKEN", "contents: write", "actions: write", "eval "):
+            self.assertNotIn(forbidden, selected)
 
     def test_api_authentication_is_not_forwarded_on_redirects(self):
         request = evidence.api_request("/actions/runs/41810161887", "dummy")

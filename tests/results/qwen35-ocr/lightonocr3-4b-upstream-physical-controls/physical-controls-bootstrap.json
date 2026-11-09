@@ -1,0 +1,12 @@
+{
+  "schema": "lighton4b-physical-controls-kaggle-bootstrap/v1",
+  "source_sha": "0610af26d9cb8972ecdfe55204e2306e9e740d5e",
+  "status": "completed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "physical-model-free-controls",
+  "worker_sha256": "071605aaff63972ec071e8ce0e164fad4b4c0045511c148f64c0706050d27553",
+  "protocol_sha256": "29eb211690946c3e7b40c1902c1db9cd8045e3fcb3c5148d2b8a95c158dd9b3a",
+  "worker_status": "passed"
+}

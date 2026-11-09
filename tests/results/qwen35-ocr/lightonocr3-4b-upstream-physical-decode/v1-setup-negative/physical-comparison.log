@@ -1,0 +1,28 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+phase host-cpu
+phase submodules
+phase up-init
+phase up-remote
+phase up-fetch
+phase up-checkout
+phase up-configure
+phase up-build
+phase native-configure
+phase native-build
+phase download-LightOnOCR-3-4B-Q4_K_M.gguf
+phase download-mmproj-LightOnOCR-3-4B-F16.gguf
+phase download-protected-base
+phase lossless-pack
+Traceback (most recent call last):
+  File "/tmp/lighton4b-upstream-physical-decode-v1/source/tools/kaggle/lighton4b_upstream_physical_decode.py", line 179, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/tmp/lighton4b-upstream-physical-decode-v1/source/tools/kaggle/lighton4b_upstream_physical_decode.py", line 126, in main
+    sys.path.insert(0,str(repo/'gguf-py'));from gguf.quants import dequantize;from gguf import GGMLQuantizationType
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-upstream-physical-decode-v1/physical-decode/llama.cpp/gguf-py/gguf/__init__.py", line 9, in <module>
+    from .metadata import *
+  File "/tmp/lighton4b-upstream-physical-decode-v1/physical-decode/llama.cpp/gguf-py/gguf/metadata.py", line 5, in <module>
+    import yaml
+ModuleNotFoundError: No module named 'yaml'

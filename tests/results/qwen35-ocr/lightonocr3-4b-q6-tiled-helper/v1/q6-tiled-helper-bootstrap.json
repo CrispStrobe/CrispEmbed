@@ -1,0 +1,27 @@
+{
+  "schema": "lighton4b-q6-tiled-helper-bootstrap/v1",
+  "source_sha": "00c5faebd728c5b0694b10197d7ca971d803cbac",
+  "bootstrap_sha256": "4ca9be2f8655dbcd5b6affb5a61269214efd29f95e0088e81c2b2fba55a65156",
+  "status": "completed",
+  "gpu_requested": false,
+  "model_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "q6-tiled-helper",
+  "source_file_sha256": {
+    "tools/q6-tiled-probe/worker.py": "e718831f53fb29f4fd5793629fb71743760d6bbfe5e1c655c1b751b18a0e0525",
+    "tools/q6-tiled-probe/probe.cpp": "d8aa208b3285cdfdaaf1cd781d41f7f3132ec178343054775eb82f7a1772a6af",
+    "tools/q6-tiled-probe/CMakeLists.txt": "c62ccca533ca8e2e5649f9be07e1bc2a09ff5002b2c13484fb28d5ca557b095c",
+    "tools/q6-tiled-probe/protocol.json": "cf07f44b806b0fc303ae28eb0112c315dceafdafd408748211a8c4699039e51e",
+    "tools/q6-tiled-probe/test_controls.py": "c960992833d4a060718c7dc9dc308fd8342f3a8b3c6ca41aa95f1a90ab88b61d",
+    "tools/q6-tiled-probe/README.md": "1987a68ab3d3254d926e5566b863841e35c764211d041ac5cf9bfe49c8f83bb2",
+    "src/lighton4b_physical_q6_tiled.cpp": "097955fe71ef054741bd946c7c94129b71ad820d6a18902d4db8034edc29b898",
+    "src/lighton4b_physical_q6_tiled.h": "bf965a7ddbf92a94ceb74a01d5f9c63ed26566e5507fd85e456f78198e2f2951",
+    "src/core/env_gate.h": "2370e31636ea25bc1e5ca63e1e606f4cd3c07c65e0f4d1347b2ec6daf57eaa0e",
+    "tools/repack-probe/worker.py": "942bf150e767a761b28a7ac9883d22bfd400a86cf2ff0c22ea25d3ea591f811b",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21"
+  },
+  "worker_status": "measured_exact_source_q6_tiled_helper",
+  "elapsed_seconds": 115.80066181399997
+}

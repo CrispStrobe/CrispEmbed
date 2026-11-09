@@ -1,0 +1,43 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+PHASE source
+PHASE cpu
+PHASE up-init
+PHASE up-remote
+PHASE up-fetch
+PHASE up-checkout
+PHASE native-submodule
+PHASE native-configure
+PHASE native-build
+PHASE native-noargs
+PHASE native-backend-control
+PHASE upstream-configure
+PHASE upstream-build
+PHASE upstream-noargs
+PHASE upstream-backend-control
+PHASE hybrid-cache-build
+PHASE hybrid-cache-controls
+Traceback (most recent call last):
+  File "/tmp/lighton4b-physical-gdn-hybrid-v2/source/tools/gdn-hybrid-probe/worker.py", line 51, in run
+    try:command(args,out/(label+'.log'),min(limit,remaining()),report['commands'][label],env=env,cwd=ROOT)
+        ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-physical-gdn-hybrid-v2/source/tools/physical-f16-attention-probe/runtime_guard.py", line 71, in command
+    raise subprocess.CalledProcessError(code, args)
+subprocess.CalledProcessError: Command '[PosixPath('/tmp/lighton4b-physical-gdn-hybrid-v2/gdn-trace/native-build/gdn-hybrid-cache-controls')]' returned non-zero exit status 1.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/tmp/lighton4b-physical-gdn-hybrid-v2/source/tools/gdn-hybrid-probe/worker.py", line 151, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/tmp/lighton4b-physical-gdn-hybrid-v2/source/tools/gdn-hybrid-probe/worker.py", line 121, in main
+    run('hybrid-cache-build',['cmake','--build',work/'native-build','--target','gdn-hybrid-cache-controls','--parallel','2']);run('hybrid-cache-controls',[work/'native-build/gdn-hybrid-cache-controls'],120);require('PHYSICAL_GDN_SOURCE_OPS_CONTROLS PASS'in(out/'hybrid-cache-controls.log').read_text(),'actual full block cache/gate controls')
+                                                                                                                              ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-physical-gdn-hybrid-v2/source/tools/gdn-hybrid-probe/worker.py", line 53, in run
+    require(expected!=0 and error.returncode==expected,'actual expected loader returncode');report['commands'][label]['status']='completed_expected_failure'
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-physical-gdn-hybrid-v2/source/tools/kaggle/lighton4b_upstream_physical_decode.py", line 7, in require
+    if not ok:raise RuntimeError(msg)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: actual expected loader returncode

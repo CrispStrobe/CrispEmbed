@@ -1,0 +1,37 @@
+[{"stream_name":"stdout","time":0.733151363,"data":"PHASE source-init\n"}
+,{"stream_name":"stdout","time":0.798962164,"data":"PHASE source-remote\n"}
+,{"stream_name":"stdout","time":0.807501401,"data":"PHASE source-fetch\n"}
+,{"stream_name":"stdout","time":6.289393662,"data":"PHASE source-checkout\n"}
+,{"stream_name":"stdout","time":7.661072856,"data":"PHASE venv\n"}
+,{"stream_name":"stdout","time":7.775887564,"data":"PHASE dependencies\n"}
+,{"stream_name":"stdout","time":11.853952947,"data":"PHASE dependency-check\n"}
+,{"stream_name":"stdout","time":12.370251913,"data":"PHASE dependency-profile\n"}
+,{"stream_name":"stdout","time":13.213294351,"data":"PHASE control-runtime-guard\n"}
+,{"stream_name":"stdout","time":15.786968418,"data":"PHASE control-repack-admission\n"}
+,{"stream_name":"stdout","time":15.902124977,"data":"PHASE operator-only-repack\n"}
+,{"stream_name":"stdout","time":113.504029981,"data":"{\n"}
+,{"stream_name":"stdout","time":113.504087191,"data":"  \"schema\": \"lighton4b-source-repack-operator-bootstrap/v1\",\n"}
+,{"stream_name":"stdout","time":113.504099231,"data":"  \"source_sha\": \"3b41475c88f570cf899bac12ae6c4f80e4eb3400\",\n"}
+,{"stream_name":"stdout","time":113.504102711,"data":"  \"bootstrap_sha256\": \"65e0328648860fd9d8ede6d9c2b4aae5a786399f59070457acd7613e7d2c943a\",\n"}
+,{"stream_name":"stdout","time":113.504105831,"data":"  \"status\": \"completed\",\n"}
+,{"stream_name":"stdout","time":113.504108661,"data":"  \"gpu_requested\": false,\n"}
+,{"stream_name":"stdout","time":113.504111901,"data":"  \"model_forward_executed\": false,\n"}
+,{"stream_name":"stdout","time":113.504114711,"data":"  \"model_quality_qualified\": false,\n"}
+,{"stream_name":"stdout","time":113.504117441,"data":"  \"phase\": \"operator-only-repack\",\n"}
+,{"stream_name":"stdout","time":113.504120261,"data":"  \"source_file_sha256\": {\n"}
+,{"stream_name":"stdout","time":113.504123251,"data":"    \"tools/repack-probe/worker.py\": \"942bf150e767a761b28a7ac9883d22bfd400a86cf2ff0c22ea25d3ea591f811b\",\n"}
+,{"stream_name":"stdout","time":113.504126371,"data":"    \"tools/repack-probe/probe.cpp\": \"997fe02ee144a457f8d20a03d2b4adac8419d473bf5f49b60afad343b31c16f6\",\n"}
+,{"stream_name":"stdout","time":113.504129772,"data":"    \"tools/repack-probe/CMakeLists.txt\": \"dc72c505100d2199a14d75ce443745efda1a259b2e3411357d9c2aae0805c495\",\n"}
+,{"stream_name":"stdout","time":113.504132692,"data":"    \"tools/repack-probe/test_admission.py\": \"8bbcfcbca2bbb90091f4f2d1491d87484403c7929ecbf480ae4606c78da9ace7\",\n"}
+,{"stream_name":"stdout","time":113.504135741,"data":"    \"docs/lighton4b-source-repack-operator-v1.json\": \"6ac20d68c87348396f04d655ad81ca94ea504dc3a268280423a13fa70559cb81\"\n"}
+,{"stream_name":"stdout","time":113.504138732,"data":"  },\n"}
+,{"stream_name":"stdout","time":113.504141612,"data":"  \"worker_status\": \"measured_same_input_operator_only\",\n"}
+,{"stream_name":"stdout","time":113.504145501,"data":"  \"elapsed_seconds\": 112.150488156\n"}
+,{"stream_name":"stdout","time":113.504148692,"data":"}\n"}
+,{"stream_name":"stderr","time":115.813609835,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":115.813658825,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":116.15114094,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":116.15117866,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":117.634636028,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":118.631312188,"data":"[NbConvertApp] Writing 305908 bytes to __results__.html\n"}
+]

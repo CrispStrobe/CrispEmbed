@@ -1,0 +1,12 @@
+{
+  "schema": "lighton4b-softmax-vector-source-initial/v1",
+  "status": "failed-reference-helper-compile",
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42050508555",
+  "source_sha": "24362d744",
+  "artifact_id": 13427981148,
+  "phase": "compile-avx2-off",
+  "source_array_downloaded": false,
+  "model_forward_executed": false,
+  "runtime_changed": false,
+  "diagnosis": "Vectorized is in the ISA subnamespace, but reduce_all/map are in outer at::vec. Fix function qualification only; numerical algorithms, source pins and compiler controls unchanged."
+}

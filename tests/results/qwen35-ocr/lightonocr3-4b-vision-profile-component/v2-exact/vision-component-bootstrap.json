@@ -1,0 +1,12 @@
+{
+  "schema": "lighton4b-vision-component-bootstrap/v1",
+  "source_sha": "b59e5d3a9d9e333f67f9646c1a43a1edc70fccfa",
+  "status": "completed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "bounded-worker",
+  "worker_sha256": "41f98cd9425a2aaedded36a326539117b403cd0a7c3791445aa3505b70f014bc",
+  "worker_status": "measured_same_input_projector_component",
+  "elapsed_seconds": 302.06738262400006
+}

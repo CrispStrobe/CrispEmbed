@@ -1,0 +1,102 @@
+{
+  "CMakeCache.txt": {
+    "bytes": 29162,
+    "sha256": "0755c7e078879ccf1b7470af9127fecdeb45cb8b22345359e98c199f9cd6815a"
+  },
+  "build.log": {
+    "bytes": 2554,
+    "sha256": "758c1e852467392924dd0ae70cbef092dbc9556a46fcd32b7427ba049b47e034"
+  },
+  "configure.log": {
+    "bytes": 2041,
+    "sha256": "6e4126c9abe5b01473ff0851861b699f353f088dc825520f347b19995b8c8c4c"
+  },
+  "cpu.log": {
+    "bytes": 3127,
+    "sha256": "e68a238f7eb1b51e17602a78cf401768f91461e9b818feb2d5c1c51571c5d5d8"
+  },
+  "dependencies.log": {
+    "bytes": 2259,
+    "sha256": "625067a1721db696f701dc8bd458b6a869d876dfac24bf8eb63c06b4314b9296"
+  },
+  "dependency-check.log": {
+    "bytes": 132,
+    "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+  },
+  "native-dequant-plan.tsv": {
+    "bytes": 12340,
+    "sha256": "7bf02f2df9db40e8351e325a63a3eb68d73aac0a95a517c2b6f96b436517833b"
+  },
+  "native-dequant.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "native-dequant.tsv": {
+    "bytes": 50243,
+    "sha256": "e4d45a6619fbed18c3499a6a2a242cf67d1e6a643282e14f75f91f4345250b66"
+  },
+  "native-submodules.log": {
+    "bytes": 353,
+    "sha256": "8c663a731cc7ae857b904201eb5e1f8b00f72c44b3357391ffdd67bffdcb1d1f"
+  },
+  "physical-audit-bootstrap.json": {
+    "bytes": 494,
+    "sha256": "a1b981f82df46db4721f8fe723cb8dafbd79e1ca4a4465c28760c981b028b938"
+  },
+  "physical-audit.json": {
+    "bytes": 330725,
+    "sha256": "a65e1652448a65538b06cbd1897773a3df802be1eca040e12b842db0a991fe2b"
+  },
+  "physical-operator-audit.log": {
+    "bytes": 436,
+    "sha256": "d368c0e39b69bbbe2e6deaecd6e46d8587ced6adcfd345a39c327e3365e3cafe"
+  },
+  "physical-tensor-map.json": {
+    "bytes": 108724,
+    "sha256": "41e6106a9ee1cec9650ff7d94129254b24ac557812f1ff83fcf7f381deb9c661"
+  },
+  "pip-resolution.json": {
+    "bytes": 195360,
+    "sha256": "c4a4e4de8c26e5195814beaca4d9dbd84fff1746b3ef5a9e50931933f8c54656"
+  },
+  "source-checkout.log": {
+    "bytes": 87,
+    "sha256": "8ce23f1693ca1c53fa22e717f054e7e0463394ec0a49a6e78071a6099a305959"
+  },
+  "source-fetch.log": {
+    "bytes": 123,
+    "sha256": "f0c20125e706b52cba1dd38354ea6eec7a2333fae84f757e4eb978349749a5a8"
+  },
+  "source-init.log": {
+    "bytes": 576,
+    "sha256": "ab19f6e63f5e7be5321f3bc69508a0367dbe0f67c1aa8d7a24b932a7a9242221"
+  },
+  "source-remote.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "upstream-checkout.log": {
+    "bytes": 84,
+    "sha256": "401b0f35047d9999135ce240162909f4d3b9be4cafce7c16c1eafb93d3b7bff7"
+  },
+  "upstream-fetch.log": {
+    "bytes": 119,
+    "sha256": "5537e1fa1b4cf8d84bd910e3fed8a4a9e0803b4bddddf1cf9b9182e0f1b00983"
+  },
+  "upstream-init.log": {
+    "bytes": 593,
+    "sha256": "0c0fd026fb4e0e14e751210c1fcb7c4394e0639b21eab970d0268cabdedb7079"
+  },
+  "upstream-remote.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "venv.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "weight-free-map-controls.log": {
+    "bytes": 202,
+    "sha256": "5d7a1daf8fc3e202ee086ba4fc0b7e99a289f7e1dd7e41ec43ba0e5d66283ab4"
+  }
+}

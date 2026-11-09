@@ -1,0 +1,107 @@
+{
+  "schema": "lighton4b-upstream-physical-decode/v1",
+  "status": "failed",
+  "source_sha": "a6644247c48cb25e1b7e4b8da9e8ff91644eaca7",
+  "protocol_sha256": "caf8c285aa81fbd5d75e0624c5ad7332e0f1cded9aca613baf1fdc95114ab9e3",
+  "quality_qualified": false,
+  "f32_model_instantiated": false,
+  "original_forward_executed": false,
+  "preflight": {
+    "memory": {
+      "MemAvailable": 31495462912,
+      "SwapTotal": 0,
+      "SwapFree": 0,
+      "cgroup_observed": 1,
+      "finite_cgroup_bounds": 1
+    },
+    "scratch_free": 1037721686016,
+    "output_free": 20940460032,
+    "load": [
+      0.4990234375,
+      0.37109375,
+      0.1787109375
+    ]
+  },
+  "cases": {},
+  "process_resources": {
+    "host-cpu": {
+      "peak_rss_bytes_observed": 4096,
+      "elapsed_seconds": 0.017861342000003333,
+      "returncode": 0,
+      "status": "completed"
+    },
+    "submodules": {
+      "peak_rss_bytes_observed": 3833856,
+      "elapsed_seconds": 3.518104161999986,
+      "returncode": 0,
+      "status": "completed"
+    },
+    "up-init": {
+      "peak_rss_bytes_observed": 12288,
+      "elapsed_seconds": 0.00887278699997296,
+      "returncode": 0,
+      "status": "completed"
+    },
+    "up-remote": {
+      "peak_rss_bytes_observed": 208896,
+      "elapsed_seconds": 0.0044633359999579625,
+      "returncode": 0,
+      "status": "completed"
+    },
+    "up-fetch": {
+      "peak_rss_bytes_observed": 16912384,
+      "elapsed_seconds": 4.719933910000009,
+      "returncode": 0,
+      "status": "completed"
+    },
+    "up-checkout": {
+      "peak_rss_bytes_observed": 65695744,
+      "elapsed_seconds": 1.165789693000022,
+      "returncode": 0,
+      "status": "completed"
+    },
+    "up-configure": {
+      "peak_rss_bytes_observed": 19865600,
+      "elapsed_seconds": 3.319275793000031,
+      "returncode": 0,
+      "status": "completed"
+    },
+    "up-build": {
+      "peak_rss_bytes_observed": 9850880,
+      "elapsed_seconds": 424.055208359,
+      "returncode": 0,
+      "status": "completed"
+    },
+    "native-configure": {
+      "peak_rss_bytes_observed": 31346688,
+      "elapsed_seconds": 2.0339256470000464,
+      "returncode": 0,
+      "status": "completed"
+    },
+    "native-build": {
+      "peak_rss_bytes_observed": 10137600,
+      "elapsed_seconds": 68.10722922599996,
+      "returncode": 0,
+      "status": "completed"
+    }
+  },
+  "phase": "lossless-pack",
+  "observer_patch": {
+    "tools/mtmd/mtmd-helper.cpp": {
+      "original_sha256": "fd2b9fbb742c1d1d102cfacb70ab0dedc903603a22dc5cf504c77b389ce413d9",
+      "patched_sha256": "c221d09f8777a70b8e3ad37102f8c99aaaf69a027fc42a71a9f4d559d7045a83"
+    },
+    "common/sampling.cpp": {
+      "original_sha256": "e88c45dfdc58ef2e86b5519aac68c83ced333952ade7d4bd8fca5f1ce5bbea02",
+      "patched_sha256": "b01b9068378e045898607f46bfd99ab7d2096e53cb845d7d1507d5e399f94fa6"
+    }
+  },
+  "binary_sha256": {
+    "native": "bb3b51d430db076b571e0816df0a3b11c0b28e46983b0435031fa5bbdbd38c9b",
+    "upstream": "5329cf2d66ccb1416699499511127f892b5659f956ab0729e8ea3d4094bb8c7b"
+  },
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "candidate_bytes": 4041905760,
+  "error_type": "ModuleNotFoundError",
+  "error": "Worker phase failed; retain phase logs and partial captures"
+}

@@ -1,0 +1,78 @@
+{
+  "schema": "lighton4b-swiglu-independent-audit/v1",
+  "receipt_sha256": "d6372a51965f260a09437d9142ba80059a4c157f29f6a273220327908ed8a24d",
+  "model_inference_executed": false,
+  "arrays": {
+    "cases/source4/upstream-ggml.f32": {
+      "bytes": 147456,
+      "sha256": "3edff227a6fe462ffd7ec4ace787ef8bfc2eb07a4f82ee67bfe734a074b11bff"
+    },
+    "cases/source4/scalar.f32": {
+      "bytes": 147456,
+      "sha256": "7d3ffd775d696e79442d60e3ebf0ee0b7cedf0fa6a9b1f419ccbe29eb33447d4"
+    },
+    "cases/source4/native-ggml.f32": {
+      "bytes": 147456,
+      "sha256": "3edff227a6fe462ffd7ec4ace787ef8bfc2eb07a4f82ee67bfe734a074b11bff"
+    },
+    "cases/source4/upstream-ggml/native-prequantized.f32": {
+      "bytes": 40960,
+      "sha256": "2a9c6968d89d6fc445287928b12a19594c1ebd7383eb3ae80f1397d8f15fa60d"
+    },
+    "cases/source4/upstream-ggml/native-raw.f32": {
+      "bytes": 40960,
+      "sha256": "2a9c6968d89d6fc445287928b12a19594c1ebd7383eb3ae80f1397d8f15fa60d"
+    },
+    "cases/source4/upstream-ggml/native-codes.bin": {
+      "bytes": 42048,
+      "sha256": "dad81ceb1fd059067ab9ba38a6a35e5398650dccfd6edf9a60072a723fdfb629"
+    },
+    "cases/source4/scalar/native-prequantized.f32": {
+      "bytes": 40960,
+      "sha256": "894f2a6483a88ccc7bc574fed6635b37ca6bc62c6b9f15c90bea9e60683d5288"
+    },
+    "cases/source4/scalar/native-raw.f32": {
+      "bytes": 40960,
+      "sha256": "894f2a6483a88ccc7bc574fed6635b37ca6bc62c6b9f15c90bea9e60683d5288"
+    },
+    "cases/source4/scalar/native-codes.bin": {
+      "bytes": 42048,
+      "sha256": "876f3d65b555588ca5444ee4dec01633611271e05cc5257bcd4ee7a0b9c6dff8"
+    },
+    "inputs/source4/down.f32": {
+      "bytes": 40960,
+      "sha256": "2a9c6968d89d6fc445287928b12a19594c1ebd7383eb3ae80f1397d8f15fa60d"
+    },
+    "inputs/source4/activation.f32": {
+      "bytes": 147456,
+      "sha256": "3edff227a6fe462ffd7ec4ace787ef8bfc2eb07a4f82ee67bfe734a074b11bff"
+    }
+  },
+  "measurements": {
+    "source4_activation": {
+      "elements": 36864,
+      "fused_native_upstream_actual_bit_exact": true,
+      "scalar_different_words": 9023,
+      "scalar_rms": 1.3992145639446467e-09,
+      "scalar_max_abs": 5.960464477539063e-08,
+      "reference_rms_magnitude": 0.038185283706966784
+    },
+    "source4_same_weight_down": {
+      "elements": 10240,
+      "fused_output_matches_actual_source": true,
+      "both_forced_q8_output_closures_bit_exact": true,
+      "scalar_rms": 6.3716824157754365e-09,
+      "scalar_max_abs": 3.725290298461914e-08,
+      "reference_rms_magnitude": 0.04657781773616732
+    },
+    "public_converter_codes": {
+      "scope": "Intervention vectors, not directly observed internal buffers",
+      "blocks": 144,
+      "different_scales": 21,
+      "different_qs": 0,
+      "different_bsums": 0
+    }
+  },
+  "downloaded_activation_bytes": 878720,
+  "status": "verified_actual_source_activation_and_same_weight_interventions"
+}

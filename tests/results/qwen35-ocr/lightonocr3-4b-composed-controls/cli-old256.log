@@ -1,0 +1,2 @@
+gguf_init_from_file: failed to open GGUF file '/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.gguf' (No such file or directory)
+core_gguf: failed to open '/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.gguf' for metadata read

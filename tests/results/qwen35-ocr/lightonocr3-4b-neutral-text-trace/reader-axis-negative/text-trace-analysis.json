@@ -1,0 +1,15 @@
+{
+  "all_producer_artifacts_rehashed": 915,
+  "error": "exact pinned sequence-removal compatibility probe",
+  "error_type": "ValueError",
+  "inference_executed": false,
+  "model_downloaded": false,
+  "producer_artifact_bytes": 633351140,
+  "producer_receipt_sha256": "8df1604435314b09ea8cbb60f47833a04307a492349191901313ed9b39540186",
+  "quality_qualified": false,
+  "schema": "lighton4b-upstream-text-trace-reader/v1",
+  "seconds": 6.263201379999998,
+  "source_sha": "9d90579b29880eb4f208d11dd4a8f8fc92f1c6ee",
+  "status": "failed",
+  "table_receipt_sha256": "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3"
+}

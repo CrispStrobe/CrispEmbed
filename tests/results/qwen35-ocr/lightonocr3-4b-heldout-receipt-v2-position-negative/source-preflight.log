@@ -1,0 +1,455 @@
+llama_model_loader: loaded meta data with 41 key-value pairs and 426 tensors from /tmp/lighton4b-heldout-historical-receipt-v1/heldout/LightOnOCR-3-4B-Q4_K_M.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = qwen35
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                               general.name str              = B71010F095Dc3735De7Ee6B9969Bff8F8F50B39A
+llama_model_loader: - kv   3:                         general.size_label str              = 4.2B
+llama_model_loader: - kv   4:                            general.license str              = apache-2.0
+llama_model_loader: - kv   5:                               general.tags arr[str,7]       = ["ocr", "document-understanding", "vi...
+llama_model_loader: - kv   6:                         qwen35.block_count u32              = 32
+llama_model_loader: - kv   7:                      qwen35.context_length u32              = 262144
+llama_model_loader: - kv   8:                    qwen35.embedding_length u32              = 2560
+llama_model_loader: - kv   9:                 qwen35.feed_forward_length u32              = 9216
+llama_model_loader: - kv  10:                qwen35.attention.head_count u32              = 16
+llama_model_loader: - kv  11:             qwen35.attention.head_count_kv u32              = 4
+llama_model_loader: - kv  12:             qwen35.rope.dimension_sections arr[i32,4]       = [11, 11, 10, 0]
+llama_model_loader: - kv  13:                      qwen35.rope.freq_base f32              = 10000000.000000
+llama_model_loader: - kv  14:    qwen35.attention.layer_norm_rms_epsilon f32              = 0.000001
+llama_model_loader: - kv  15:                qwen35.attention.key_length u32              = 256
+llama_model_loader: - kv  16:              qwen35.attention.value_length u32              = 256
+llama_model_loader: - kv  17:                     qwen35.ssm.conv_kernel u32              = 4
+llama_model_loader: - kv  18:                      qwen35.ssm.state_size u32              = 128
+llama_model_loader: - kv  19:                     qwen35.ssm.group_count u32              = 16
+llama_model_loader: - kv  20:                  qwen35.ssm.time_step_rank u32              = 32
+llama_model_loader: - kv  21:                      qwen35.ssm.inner_size u32              = 4096
+llama_model_loader: - kv  22:          qwen35.attention.recurrent_layers arr[bool,32]     = [true, true, true, false, true, true,...
+llama_model_loader: - kv  23:             qwen35.full_attention_interval u32              = 4
+llama_model_loader: - kv  24:                qwen35.rope.dimension_count u32              = 64
+llama_model_loader: - kv  25:                       tokenizer.ggml.model str              = gpt2
+llama_model_loader: - kv  26:                         tokenizer.ggml.pre str              = qwen35
+llama_model_loader: - kv  27:                      tokenizer.ggml.tokens arr[str,248320]  = ["!", "\"", "#", "$", "%", "&", "'", ...
+llama_model_loader: - kv  28:                  tokenizer.ggml.token_type arr[i32,248320]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+llama_model_loader: - kv  29:                      tokenizer.ggml.merges arr[str,247587]  = ["Ġ Ġ", "ĠĠ ĠĠ", "i n", "Ġ t",...
+llama_model_loader: - kv  30:                tokenizer.ggml.eos_token_id u32              = 248046
+llama_model_loader: - kv  31:            tokenizer.ggml.padding_token_id u32              = 248044
+llama_model_loader: - kv  32:               tokenizer.ggml.add_bos_token bool             = false
+llama_model_loader: - kv  33:               tokenizer.ggml.add_eos_token bool             = false
+llama_model_loader: - kv  34:                    tokenizer.chat_template str              = {%- set image_count = namespace(value...
+llama_model_loader: - kv  35:               general.quantization_version u32              = 2
+llama_model_loader: - kv  36:                          general.file_type u32              = 15
+llama_model_loader: - kv  37:                      quantize.imatrix.file str              = /mnt/ssd-data/heretic/batch/quant_run...
+llama_model_loader: - kv  38:                   quantize.imatrix.dataset str              = /mnt/ssd-data/heretic/calibration_dat...
+llama_model_loader: - kv  39:             quantize.imatrix.entries_count u32              = 248
+llama_model_loader: - kv  40:              quantize.imatrix.chunks_count u32              = 129
+llama_model_loader: - type  f32:  177 tensors
+llama_model_loader: - type q4_K:  216 tensors
+llama_model_loader: - type q6_K:   33 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = Q4_K - Medium
+print_info: file size   = 2.51 GiB (5.13 BPW) 
+init_tokenizer: initializing tokenizer for type 2
+load: 0 unused tokens
+load: control token: 248075 '<tts_text_bos_single>' is not marked as EOG
+load: control token: 248074 '<tts_text_eod>' is not marked as EOG
+load: control token: 248070 '<|audio_start|>' is not marked as EOG
+load: control token: 248062 '<|fim_suffix|>' is not marked as EOG
+load: control token: 248056 '<|image_pad|>' is not marked as EOG
+load: control token: 248054 '<|vision_end|>' is not marked as EOG
+load: control token: 248053 '<|vision_start|>' is not marked as EOG
+load: control token: 248045 '<|im_start|>' is not marked as EOG
+load: control token: 248073 '<tts_text_bos>' is not marked as EOG
+load: control token: 248055 '<|vision_pad|>' is not marked as EOG
+load: control token: 248049 '<|box_start|>' is not marked as EOG
+load: control token: 248052 '<|quad_end|>' is not marked as EOG
+load: control token: 248076 '<|audio_pad|>' is not marked as EOG
+load: control token: 248060 '<|fim_prefix|>' is not marked as EOG
+load: control token: 248051 '<|quad_start|>' is not marked as EOG
+load: control token: 248072 '<tts_pad>' is not marked as EOG
+load: control token: 248071 '<|audio_end|>' is not marked as EOG
+load: control token: 248050 '<|box_end|>' is not marked as EOG
+load: control token: 248061 '<|fim_middle|>' is not marked as EOG
+load: control token: 248057 '<|video_pad|>' is not marked as EOG
+load: control token: 248048 '<|object_ref_end|>' is not marked as EOG
+load: control token: 248047 '<|object_ref_start|>' is not marked as EOG
+load: printing all EOG tokens:
+load:   - 248044 ('<|endoftext|>')
+load:   - 248046 ('<|im_end|>')
+load:   - 248063 ('<|fim_pad|>')
+load:   - 248064 ('<|repo_name|>')
+load:   - 248065 ('<|file_sep|>')
+load: special tokens cache size = 33
+load: token to piece cache size = 1.7581 MB
+print_info: arch                  = qwen35
+print_info: vocab_only            = 1
+print_info: no_alloc              = 0
+print_info: vocab type            = BPE
+print_info: n_vocab               = 248320
+print_info: n_merges              = 247587
+print_info: BOS token             = 11 ','
+print_info: EOS token             = 248046 '<|im_end|>'
+print_info: EOT token             = 248046 '<|im_end|>'
+print_info: PAD token             = 248044 '<|endoftext|>'
+print_info: LF token              = 198 'Ċ'
+print_info: FIM PRE token         = 248060 '<|fim_prefix|>'
+print_info: FIM SUF token         = 248062 '<|fim_suffix|>'
+print_info: FIM MID token         = 248061 '<|fim_middle|>'
+print_info: FIM PAD token         = 248063 '<|fim_pad|>'
+print_info: FIM REP token         = 248064 '<|repo_name|>'
+print_info: FIM SEP token         = 248065 '<|file_sep|>'
+print_info: EOG token             = 248044 '<|endoftext|>'
+print_info: EOG token             = 248046 '<|im_end|>'
+print_info: EOG token             = 248063 '<|fim_pad|>'
+print_info: EOG token             = 248064 '<|repo_name|>'
+print_info: EOG token             = 248065 '<|file_sep|>'
+print_info: max token length      = 256
+llama_model_load: vocab only - skipping tensors
+clip_model_loader: model name:   B71010F095Dc3735De7Ee6B9969Bff8F8F50B39A
+clip_model_loader: description:  
+clip_model_loader: GGUF version: 3
+clip_model_loader: alignment:    32
+clip_model_loader: n_tensors:    298
+clip_model_loader: n_kv:         23
+
+clip_model_loader: has vision encoder
+clip_model_loader: tensor[0]: n_dims = 1, name = v.blk.0.attn_out.bias, tensor_size=4096, offset=0, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[1]: n_dims = 2, name = v.blk.0.attn_out.weight, tensor_size=2097152, offset=4096, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[2]: n_dims = 1, name = v.blk.0.attn_qkv.bias, tensor_size=12288, offset=2101248, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[3]: n_dims = 2, name = v.blk.0.attn_qkv.weight, tensor_size=6291456, offset=2113536, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[4]: n_dims = 1, name = v.blk.0.ffn_up.bias, tensor_size=16384, offset=8404992, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[5]: n_dims = 2, name = v.blk.0.ffn_up.weight, tensor_size=8388608, offset=8421376, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[6]: n_dims = 1, name = v.blk.0.ffn_down.bias, tensor_size=4096, offset=16809984, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[7]: n_dims = 2, name = v.blk.0.ffn_down.weight, tensor_size=8388608, offset=16814080, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[8]: n_dims = 1, name = v.blk.0.ln1.bias, tensor_size=4096, offset=25202688, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[9]: n_dims = 1, name = v.blk.0.ln1.weight, tensor_size=4096, offset=25206784, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[10]: n_dims = 1, name = v.blk.0.ln2.bias, tensor_size=4096, offset=25210880, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[11]: n_dims = 1, name = v.blk.0.ln2.weight, tensor_size=4096, offset=25214976, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[12]: n_dims = 1, name = v.blk.1.attn_out.bias, tensor_size=4096, offset=25219072, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[13]: n_dims = 2, name = v.blk.1.attn_out.weight, tensor_size=2097152, offset=25223168, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[14]: n_dims = 1, name = v.blk.1.attn_qkv.bias, tensor_size=12288, offset=27320320, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[15]: n_dims = 2, name = v.blk.1.attn_qkv.weight, tensor_size=6291456, offset=27332608, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[16]: n_dims = 1, name = v.blk.1.ffn_up.bias, tensor_size=16384, offset=33624064, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[17]: n_dims = 2, name = v.blk.1.ffn_up.weight, tensor_size=8388608, offset=33640448, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[18]: n_dims = 1, name = v.blk.1.ffn_down.bias, tensor_size=4096, offset=42029056, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[19]: n_dims = 2, name = v.blk.1.ffn_down.weight, tensor_size=8388608, offset=42033152, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[20]: n_dims = 1, name = v.blk.1.ln1.bias, tensor_size=4096, offset=50421760, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[21]: n_dims = 1, name = v.blk.1.ln1.weight, tensor_size=4096, offset=50425856, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[22]: n_dims = 1, name = v.blk.1.ln2.bias, tensor_size=4096, offset=50429952, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[23]: n_dims = 1, name = v.blk.1.ln2.weight, tensor_size=4096, offset=50434048, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[24]: n_dims = 1, name = v.blk.10.attn_out.bias, tensor_size=4096, offset=50438144, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[25]: n_dims = 2, name = v.blk.10.attn_out.weight, tensor_size=2097152, offset=50442240, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[26]: n_dims = 1, name = v.blk.10.attn_qkv.bias, tensor_size=12288, offset=52539392, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[27]: n_dims = 2, name = v.blk.10.attn_qkv.weight, tensor_size=6291456, offset=52551680, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[28]: n_dims = 1, name = v.blk.10.ffn_up.bias, tensor_size=16384, offset=58843136, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[29]: n_dims = 2, name = v.blk.10.ffn_up.weight, tensor_size=8388608, offset=58859520, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[30]: n_dims = 1, name = v.blk.10.ffn_down.bias, tensor_size=4096, offset=67248128, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[31]: n_dims = 2, name = v.blk.10.ffn_down.weight, tensor_size=8388608, offset=67252224, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[32]: n_dims = 1, name = v.blk.10.ln1.bias, tensor_size=4096, offset=75640832, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[33]: n_dims = 1, name = v.blk.10.ln1.weight, tensor_size=4096, offset=75644928, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[34]: n_dims = 1, name = v.blk.10.ln2.bias, tensor_size=4096, offset=75649024, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[35]: n_dims = 1, name = v.blk.10.ln2.weight, tensor_size=4096, offset=75653120, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[36]: n_dims = 1, name = v.blk.11.attn_out.bias, tensor_size=4096, offset=75657216, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[37]: n_dims = 2, name = v.blk.11.attn_out.weight, tensor_size=2097152, offset=75661312, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[38]: n_dims = 1, name = v.blk.11.attn_qkv.bias, tensor_size=12288, offset=77758464, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[39]: n_dims = 2, name = v.blk.11.attn_qkv.weight, tensor_size=6291456, offset=77770752, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[40]: n_dims = 1, name = v.blk.11.ffn_up.bias, tensor_size=16384, offset=84062208, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[41]: n_dims = 2, name = v.blk.11.ffn_up.weight, tensor_size=8388608, offset=84078592, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[42]: n_dims = 1, name = v.blk.11.ffn_down.bias, tensor_size=4096, offset=92467200, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[43]: n_dims = 2, name = v.blk.11.ffn_down.weight, tensor_size=8388608, offset=92471296, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[44]: n_dims = 1, name = v.blk.11.ln1.bias, tensor_size=4096, offset=100859904, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[45]: n_dims = 1, name = v.blk.11.ln1.weight, tensor_size=4096, offset=100864000, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[46]: n_dims = 1, name = v.blk.11.ln2.bias, tensor_size=4096, offset=100868096, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[47]: n_dims = 1, name = v.blk.11.ln2.weight, tensor_size=4096, offset=100872192, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[48]: n_dims = 1, name = v.blk.12.attn_out.bias, tensor_size=4096, offset=100876288, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[49]: n_dims = 2, name = v.blk.12.attn_out.weight, tensor_size=2097152, offset=100880384, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[50]: n_dims = 1, name = v.blk.12.attn_qkv.bias, tensor_size=12288, offset=102977536, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[51]: n_dims = 2, name = v.blk.12.attn_qkv.weight, tensor_size=6291456, offset=102989824, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[52]: n_dims = 1, name = v.blk.12.ffn_up.bias, tensor_size=16384, offset=109281280, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[53]: n_dims = 2, name = v.blk.12.ffn_up.weight, tensor_size=8388608, offset=109297664, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[54]: n_dims = 1, name = v.blk.12.ffn_down.bias, tensor_size=4096, offset=117686272, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[55]: n_dims = 2, name = v.blk.12.ffn_down.weight, tensor_size=8388608, offset=117690368, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[56]: n_dims = 1, name = v.blk.12.ln1.bias, tensor_size=4096, offset=126078976, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[57]: n_dims = 1, name = v.blk.12.ln1.weight, tensor_size=4096, offset=126083072, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[58]: n_dims = 1, name = v.blk.12.ln2.bias, tensor_size=4096, offset=126087168, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[59]: n_dims = 1, name = v.blk.12.ln2.weight, tensor_size=4096, offset=126091264, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[60]: n_dims = 1, name = v.blk.13.attn_out.bias, tensor_size=4096, offset=126095360, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[61]: n_dims = 2, name = v.blk.13.attn_out.weight, tensor_size=2097152, offset=126099456, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[62]: n_dims = 1, name = v.blk.13.attn_qkv.bias, tensor_size=12288, offset=128196608, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[63]: n_dims = 2, name = v.blk.13.attn_qkv.weight, tensor_size=6291456, offset=128208896, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[64]: n_dims = 1, name = v.blk.13.ffn_up.bias, tensor_size=16384, offset=134500352, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[65]: n_dims = 2, name = v.blk.13.ffn_up.weight, tensor_size=8388608, offset=134516736, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[66]: n_dims = 1, name = v.blk.13.ffn_down.bias, tensor_size=4096, offset=142905344, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[67]: n_dims = 2, name = v.blk.13.ffn_down.weight, tensor_size=8388608, offset=142909440, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[68]: n_dims = 1, name = v.blk.13.ln1.bias, tensor_size=4096, offset=151298048, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[69]: n_dims = 1, name = v.blk.13.ln1.weight, tensor_size=4096, offset=151302144, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[70]: n_dims = 1, name = v.blk.13.ln2.bias, tensor_size=4096, offset=151306240, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[71]: n_dims = 1, name = v.blk.13.ln2.weight, tensor_size=4096, offset=151310336, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[72]: n_dims = 1, name = v.blk.14.attn_out.bias, tensor_size=4096, offset=151314432, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[73]: n_dims = 2, name = v.blk.14.attn_out.weight, tensor_size=2097152, offset=151318528, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[74]: n_dims = 1, name = v.blk.14.attn_qkv.bias, tensor_size=12288, offset=153415680, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[75]: n_dims = 2, name = v.blk.14.attn_qkv.weight, tensor_size=6291456, offset=153427968, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[76]: n_dims = 1, name = v.blk.14.ffn_up.bias, tensor_size=16384, offset=159719424, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[77]: n_dims = 2, name = v.blk.14.ffn_up.weight, tensor_size=8388608, offset=159735808, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[78]: n_dims = 1, name = v.blk.14.ffn_down.bias, tensor_size=4096, offset=168124416, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[79]: n_dims = 2, name = v.blk.14.ffn_down.weight, tensor_size=8388608, offset=168128512, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[80]: n_dims = 1, name = v.blk.14.ln1.bias, tensor_size=4096, offset=176517120, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[81]: n_dims = 1, name = v.blk.14.ln1.weight, tensor_size=4096, offset=176521216, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[82]: n_dims = 1, name = v.blk.14.ln2.bias, tensor_size=4096, offset=176525312, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[83]: n_dims = 1, name = v.blk.14.ln2.weight, tensor_size=4096, offset=176529408, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[84]: n_dims = 1, name = v.blk.15.attn_out.bias, tensor_size=4096, offset=176533504, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[85]: n_dims = 2, name = v.blk.15.attn_out.weight, tensor_size=2097152, offset=176537600, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[86]: n_dims = 1, name = v.blk.15.attn_qkv.bias, tensor_size=12288, offset=178634752, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[87]: n_dims = 2, name = v.blk.15.attn_qkv.weight, tensor_size=6291456, offset=178647040, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[88]: n_dims = 1, name = v.blk.15.ffn_up.bias, tensor_size=16384, offset=184938496, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[89]: n_dims = 2, name = v.blk.15.ffn_up.weight, tensor_size=8388608, offset=184954880, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[90]: n_dims = 1, name = v.blk.15.ffn_down.bias, tensor_size=4096, offset=193343488, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[91]: n_dims = 2, name = v.blk.15.ffn_down.weight, tensor_size=8388608, offset=193347584, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[92]: n_dims = 1, name = v.blk.15.ln1.bias, tensor_size=4096, offset=201736192, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[93]: n_dims = 1, name = v.blk.15.ln1.weight, tensor_size=4096, offset=201740288, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[94]: n_dims = 1, name = v.blk.15.ln2.bias, tensor_size=4096, offset=201744384, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[95]: n_dims = 1, name = v.blk.15.ln2.weight, tensor_size=4096, offset=201748480, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[96]: n_dims = 1, name = v.blk.16.attn_out.bias, tensor_size=4096, offset=201752576, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[97]: n_dims = 2, name = v.blk.16.attn_out.weight, tensor_size=2097152, offset=201756672, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[98]: n_dims = 1, name = v.blk.16.attn_qkv.bias, tensor_size=12288, offset=203853824, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[99]: n_dims = 2, name = v.blk.16.attn_qkv.weight, tensor_size=6291456, offset=203866112, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[100]: n_dims = 1, name = v.blk.16.ffn_up.bias, tensor_size=16384, offset=210157568, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[101]: n_dims = 2, name = v.blk.16.ffn_up.weight, tensor_size=8388608, offset=210173952, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[102]: n_dims = 1, name = v.blk.16.ffn_down.bias, tensor_size=4096, offset=218562560, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[103]: n_dims = 2, name = v.blk.16.ffn_down.weight, tensor_size=8388608, offset=218566656, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[104]: n_dims = 1, name = v.blk.16.ln1.bias, tensor_size=4096, offset=226955264, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[105]: n_dims = 1, name = v.blk.16.ln1.weight, tensor_size=4096, offset=226959360, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[106]: n_dims = 1, name = v.blk.16.ln2.bias, tensor_size=4096, offset=226963456, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[107]: n_dims = 1, name = v.blk.16.ln2.weight, tensor_size=4096, offset=226967552, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[108]: n_dims = 1, name = v.blk.17.attn_out.bias, tensor_size=4096, offset=226971648, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[109]: n_dims = 2, name = v.blk.17.attn_out.weight, tensor_size=2097152, offset=226975744, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[110]: n_dims = 1, name = v.blk.17.attn_qkv.bias, tensor_size=12288, offset=229072896, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[111]: n_dims = 2, name = v.blk.17.attn_qkv.weight, tensor_size=6291456, offset=229085184, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[112]: n_dims = 1, name = v.blk.17.ffn_up.bias, tensor_size=16384, offset=235376640, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[113]: n_dims = 2, name = v.blk.17.ffn_up.weight, tensor_size=8388608, offset=235393024, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[114]: n_dims = 1, name = v.blk.17.ffn_down.bias, tensor_size=4096, offset=243781632, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[115]: n_dims = 2, name = v.blk.17.ffn_down.weight, tensor_size=8388608, offset=243785728, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[116]: n_dims = 1, name = v.blk.17.ln1.bias, tensor_size=4096, offset=252174336, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[117]: n_dims = 1, name = v.blk.17.ln1.weight, tensor_size=4096, offset=252178432, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[118]: n_dims = 1, name = v.blk.17.ln2.bias, tensor_size=4096, offset=252182528, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[119]: n_dims = 1, name = v.blk.17.ln2.weight, tensor_size=4096, offset=252186624, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[120]: n_dims = 1, name = v.blk.18.attn_out.bias, tensor_size=4096, offset=252190720, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[121]: n_dims = 2, name = v.blk.18.attn_out.weight, tensor_size=2097152, offset=252194816, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[122]: n_dims = 1, name = v.blk.18.attn_qkv.bias, tensor_size=12288, offset=254291968, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[123]: n_dims = 2, name = v.blk.18.attn_qkv.weight, tensor_size=6291456, offset=254304256, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[124]: n_dims = 1, name = v.blk.18.ffn_up.bias, tensor_size=16384, offset=260595712, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[125]: n_dims = 2, name = v.blk.18.ffn_up.weight, tensor_size=8388608, offset=260612096, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[126]: n_dims = 1, name = v.blk.18.ffn_down.bias, tensor_size=4096, offset=269000704, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[127]: n_dims = 2, name = v.blk.18.ffn_down.weight, tensor_size=8388608, offset=269004800, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[128]: n_dims = 1, name = v.blk.18.ln1.bias, tensor_size=4096, offset=277393408, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[129]: n_dims = 1, name = v.blk.18.ln1.weight, tensor_size=4096, offset=277397504, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[130]: n_dims = 1, name = v.blk.18.ln2.bias, tensor_size=4096, offset=277401600, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[131]: n_dims = 1, name = v.blk.18.ln2.weight, tensor_size=4096, offset=277405696, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[132]: n_dims = 1, name = v.blk.19.attn_out.bias, tensor_size=4096, offset=277409792, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[133]: n_dims = 2, name = v.blk.19.attn_out.weight, tensor_size=2097152, offset=277413888, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[134]: n_dims = 1, name = v.blk.19.attn_qkv.bias, tensor_size=12288, offset=279511040, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[135]: n_dims = 2, name = v.blk.19.attn_qkv.weight, tensor_size=6291456, offset=279523328, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[136]: n_dims = 1, name = v.blk.19.ffn_up.bias, tensor_size=16384, offset=285814784, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[137]: n_dims = 2, name = v.blk.19.ffn_up.weight, tensor_size=8388608, offset=285831168, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[138]: n_dims = 1, name = v.blk.19.ffn_down.bias, tensor_size=4096, offset=294219776, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[139]: n_dims = 2, name = v.blk.19.ffn_down.weight, tensor_size=8388608, offset=294223872, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[140]: n_dims = 1, name = v.blk.19.ln1.bias, tensor_size=4096, offset=302612480, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[141]: n_dims = 1, name = v.blk.19.ln1.weight, tensor_size=4096, offset=302616576, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[142]: n_dims = 1, name = v.blk.19.ln2.bias, tensor_size=4096, offset=302620672, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[143]: n_dims = 1, name = v.blk.19.ln2.weight, tensor_size=4096, offset=302624768, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[144]: n_dims = 1, name = v.blk.2.attn_out.bias, tensor_size=4096, offset=302628864, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[145]: n_dims = 2, name = v.blk.2.attn_out.weight, tensor_size=2097152, offset=302632960, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[146]: n_dims = 1, name = v.blk.2.attn_qkv.bias, tensor_size=12288, offset=304730112, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[147]: n_dims = 2, name = v.blk.2.attn_qkv.weight, tensor_size=6291456, offset=304742400, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[148]: n_dims = 1, name = v.blk.2.ffn_up.bias, tensor_size=16384, offset=311033856, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[149]: n_dims = 2, name = v.blk.2.ffn_up.weight, tensor_size=8388608, offset=311050240, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[150]: n_dims = 1, name = v.blk.2.ffn_down.bias, tensor_size=4096, offset=319438848, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[151]: n_dims = 2, name = v.blk.2.ffn_down.weight, tensor_size=8388608, offset=319442944, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[152]: n_dims = 1, name = v.blk.2.ln1.bias, tensor_size=4096, offset=327831552, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[153]: n_dims = 1, name = v.blk.2.ln1.weight, tensor_size=4096, offset=327835648, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[154]: n_dims = 1, name = v.blk.2.ln2.bias, tensor_size=4096, offset=327839744, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[155]: n_dims = 1, name = v.blk.2.ln2.weight, tensor_size=4096, offset=327843840, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[156]: n_dims = 1, name = v.blk.20.attn_out.bias, tensor_size=4096, offset=327847936, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[157]: n_dims = 2, name = v.blk.20.attn_out.weight, tensor_size=2097152, offset=327852032, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[158]: n_dims = 1, name = v.blk.20.attn_qkv.bias, tensor_size=12288, offset=329949184, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[159]: n_dims = 2, name = v.blk.20.attn_qkv.weight, tensor_size=6291456, offset=329961472, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[160]: n_dims = 1, name = v.blk.20.ffn_up.bias, tensor_size=16384, offset=336252928, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[161]: n_dims = 2, name = v.blk.20.ffn_up.weight, tensor_size=8388608, offset=336269312, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[162]: n_dims = 1, name = v.blk.20.ffn_down.bias, tensor_size=4096, offset=344657920, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[163]: n_dims = 2, name = v.blk.20.ffn_down.weight, tensor_size=8388608, offset=344662016, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[164]: n_dims = 1, name = v.blk.20.ln1.bias, tensor_size=4096, offset=353050624, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[165]: n_dims = 1, name = v.blk.20.ln1.weight, tensor_size=4096, offset=353054720, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[166]: n_dims = 1, name = v.blk.20.ln2.bias, tensor_size=4096, offset=353058816, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[167]: n_dims = 1, name = v.blk.20.ln2.weight, tensor_size=4096, offset=353062912, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[168]: n_dims = 1, name = v.blk.21.attn_out.bias, tensor_size=4096, offset=353067008, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[169]: n_dims = 2, name = v.blk.21.attn_out.weight, tensor_size=2097152, offset=353071104, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[170]: n_dims = 1, name = v.blk.21.attn_qkv.bias, tensor_size=12288, offset=355168256, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[171]: n_dims = 2, name = v.blk.21.attn_qkv.weight, tensor_size=6291456, offset=355180544, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[172]: n_dims = 1, name = v.blk.21.ffn_up.bias, tensor_size=16384, offset=361472000, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[173]: n_dims = 2, name = v.blk.21.ffn_up.weight, tensor_size=8388608, offset=361488384, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[174]: n_dims = 1, name = v.blk.21.ffn_down.bias, tensor_size=4096, offset=369876992, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[175]: n_dims = 2, name = v.blk.21.ffn_down.weight, tensor_size=8388608, offset=369881088, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[176]: n_dims = 1, name = v.blk.21.ln1.bias, tensor_size=4096, offset=378269696, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[177]: n_dims = 1, name = v.blk.21.ln1.weight, tensor_size=4096, offset=378273792, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[178]: n_dims = 1, name = v.blk.21.ln2.bias, tensor_size=4096, offset=378277888, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[179]: n_dims = 1, name = v.blk.21.ln2.weight, tensor_size=4096, offset=378281984, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[180]: n_dims = 1, name = v.blk.22.attn_out.bias, tensor_size=4096, offset=378286080, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[181]: n_dims = 2, name = v.blk.22.attn_out.weight, tensor_size=2097152, offset=378290176, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[182]: n_dims = 1, name = v.blk.22.attn_qkv.bias, tensor_size=12288, offset=380387328, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[183]: n_dims = 2, name = v.blk.22.attn_qkv.weight, tensor_size=6291456, offset=380399616, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[184]: n_dims = 1, name = v.blk.22.ffn_up.bias, tensor_size=16384, offset=386691072, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[185]: n_dims = 2, name = v.blk.22.ffn_up.weight, tensor_size=8388608, offset=386707456, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[186]: n_dims = 1, name = v.blk.22.ffn_down.bias, tensor_size=4096, offset=395096064, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[187]: n_dims = 2, name = v.blk.22.ffn_down.weight, tensor_size=8388608, offset=395100160, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[188]: n_dims = 1, name = v.blk.22.ln1.bias, tensor_size=4096, offset=403488768, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[189]: n_dims = 1, name = v.blk.22.ln1.weight, tensor_size=4096, offset=403492864, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[190]: n_dims = 1, name = v.blk.22.ln2.bias, tensor_size=4096, offset=403496960, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[191]: n_dims = 1, name = v.blk.22.ln2.weight, tensor_size=4096, offset=403501056, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[192]: n_dims = 1, name = v.blk.23.attn_out.bias, tensor_size=4096, offset=403505152, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[193]: n_dims = 2, name = v.blk.23.attn_out.weight, tensor_size=2097152, offset=403509248, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[194]: n_dims = 1, name = v.blk.23.attn_qkv.bias, tensor_size=12288, offset=405606400, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[195]: n_dims = 2, name = v.blk.23.attn_qkv.weight, tensor_size=6291456, offset=405618688, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[196]: n_dims = 1, name = v.blk.23.ffn_up.bias, tensor_size=16384, offset=411910144, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[197]: n_dims = 2, name = v.blk.23.ffn_up.weight, tensor_size=8388608, offset=411926528, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[198]: n_dims = 1, name = v.blk.23.ffn_down.bias, tensor_size=4096, offset=420315136, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[199]: n_dims = 2, name = v.blk.23.ffn_down.weight, tensor_size=8388608, offset=420319232, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[200]: n_dims = 1, name = v.blk.23.ln1.bias, tensor_size=4096, offset=428707840, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[201]: n_dims = 1, name = v.blk.23.ln1.weight, tensor_size=4096, offset=428711936, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[202]: n_dims = 1, name = v.blk.23.ln2.bias, tensor_size=4096, offset=428716032, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[203]: n_dims = 1, name = v.blk.23.ln2.weight, tensor_size=4096, offset=428720128, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[204]: n_dims = 1, name = v.blk.3.attn_out.bias, tensor_size=4096, offset=428724224, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[205]: n_dims = 2, name = v.blk.3.attn_out.weight, tensor_size=2097152, offset=428728320, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[206]: n_dims = 1, name = v.blk.3.attn_qkv.bias, tensor_size=12288, offset=430825472, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[207]: n_dims = 2, name = v.blk.3.attn_qkv.weight, tensor_size=6291456, offset=430837760, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[208]: n_dims = 1, name = v.blk.3.ffn_up.bias, tensor_size=16384, offset=437129216, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[209]: n_dims = 2, name = v.blk.3.ffn_up.weight, tensor_size=8388608, offset=437145600, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[210]: n_dims = 1, name = v.blk.3.ffn_down.bias, tensor_size=4096, offset=445534208, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[211]: n_dims = 2, name = v.blk.3.ffn_down.weight, tensor_size=8388608, offset=445538304, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[212]: n_dims = 1, name = v.blk.3.ln1.bias, tensor_size=4096, offset=453926912, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[213]: n_dims = 1, name = v.blk.3.ln1.weight, tensor_size=4096, offset=453931008, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[214]: n_dims = 1, name = v.blk.3.ln2.bias, tensor_size=4096, offset=453935104, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[215]: n_dims = 1, name = v.blk.3.ln2.weight, tensor_size=4096, offset=453939200, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[216]: n_dims = 1, name = v.blk.4.attn_out.bias, tensor_size=4096, offset=453943296, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[217]: n_dims = 2, name = v.blk.4.attn_out.weight, tensor_size=2097152, offset=453947392, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[218]: n_dims = 1, name = v.blk.4.attn_qkv.bias, tensor_size=12288, offset=456044544, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[219]: n_dims = 2, name = v.blk.4.attn_qkv.weight, tensor_size=6291456, offset=456056832, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[220]: n_dims = 1, name = v.blk.4.ffn_up.bias, tensor_size=16384, offset=462348288, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[221]: n_dims = 2, name = v.blk.4.ffn_up.weight, tensor_size=8388608, offset=462364672, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[222]: n_dims = 1, name = v.blk.4.ffn_down.bias, tensor_size=4096, offset=470753280, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[223]: n_dims = 2, name = v.blk.4.ffn_down.weight, tensor_size=8388608, offset=470757376, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[224]: n_dims = 1, name = v.blk.4.ln1.bias, tensor_size=4096, offset=479145984, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[225]: n_dims = 1, name = v.blk.4.ln1.weight, tensor_size=4096, offset=479150080, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[226]: n_dims = 1, name = v.blk.4.ln2.bias, tensor_size=4096, offset=479154176, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[227]: n_dims = 1, name = v.blk.4.ln2.weight, tensor_size=4096, offset=479158272, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[228]: n_dims = 1, name = v.blk.5.attn_out.bias, tensor_size=4096, offset=479162368, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[229]: n_dims = 2, name = v.blk.5.attn_out.weight, tensor_size=2097152, offset=479166464, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[230]: n_dims = 1, name = v.blk.5.attn_qkv.bias, tensor_size=12288, offset=481263616, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[231]: n_dims = 2, name = v.blk.5.attn_qkv.weight, tensor_size=6291456, offset=481275904, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[232]: n_dims = 1, name = v.blk.5.ffn_up.bias, tensor_size=16384, offset=487567360, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[233]: n_dims = 2, name = v.blk.5.ffn_up.weight, tensor_size=8388608, offset=487583744, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[234]: n_dims = 1, name = v.blk.5.ffn_down.bias, tensor_size=4096, offset=495972352, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[235]: n_dims = 2, name = v.blk.5.ffn_down.weight, tensor_size=8388608, offset=495976448, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[236]: n_dims = 1, name = v.blk.5.ln1.bias, tensor_size=4096, offset=504365056, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[237]: n_dims = 1, name = v.blk.5.ln1.weight, tensor_size=4096, offset=504369152, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[238]: n_dims = 1, name = v.blk.5.ln2.bias, tensor_size=4096, offset=504373248, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[239]: n_dims = 1, name = v.blk.5.ln2.weight, tensor_size=4096, offset=504377344, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[240]: n_dims = 1, name = v.blk.6.attn_out.bias, tensor_size=4096, offset=504381440, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[241]: n_dims = 2, name = v.blk.6.attn_out.weight, tensor_size=2097152, offset=504385536, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[242]: n_dims = 1, name = v.blk.6.attn_qkv.bias, tensor_size=12288, offset=506482688, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[243]: n_dims = 2, name = v.blk.6.attn_qkv.weight, tensor_size=6291456, offset=506494976, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[244]: n_dims = 1, name = v.blk.6.ffn_up.bias, tensor_size=16384, offset=512786432, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[245]: n_dims = 2, name = v.blk.6.ffn_up.weight, tensor_size=8388608, offset=512802816, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[246]: n_dims = 1, name = v.blk.6.ffn_down.bias, tensor_size=4096, offset=521191424, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[247]: n_dims = 2, name = v.blk.6.ffn_down.weight, tensor_size=8388608, offset=521195520, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[248]: n_dims = 1, name = v.blk.6.ln1.bias, tensor_size=4096, offset=529584128, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[249]: n_dims = 1, name = v.blk.6.ln1.weight, tensor_size=4096, offset=529588224, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[250]: n_dims = 1, name = v.blk.6.ln2.bias, tensor_size=4096, offset=529592320, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[251]: n_dims = 1, name = v.blk.6.ln2.weight, tensor_size=4096, offset=529596416, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[252]: n_dims = 1, name = v.blk.7.attn_out.bias, tensor_size=4096, offset=529600512, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[253]: n_dims = 2, name = v.blk.7.attn_out.weight, tensor_size=2097152, offset=529604608, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[254]: n_dims = 1, name = v.blk.7.attn_qkv.bias, tensor_size=12288, offset=531701760, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[255]: n_dims = 2, name = v.blk.7.attn_qkv.weight, tensor_size=6291456, offset=531714048, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[256]: n_dims = 1, name = v.blk.7.ffn_up.bias, tensor_size=16384, offset=538005504, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[257]: n_dims = 2, name = v.blk.7.ffn_up.weight, tensor_size=8388608, offset=538021888, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[258]: n_dims = 1, name = v.blk.7.ffn_down.bias, tensor_size=4096, offset=546410496, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[259]: n_dims = 2, name = v.blk.7.ffn_down.weight, tensor_size=8388608, offset=546414592, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[260]: n_dims = 1, name = v.blk.7.ln1.bias, tensor_size=4096, offset=554803200, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[261]: n_dims = 1, name = v.blk.7.ln1.weight, tensor_size=4096, offset=554807296, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[262]: n_dims = 1, name = v.blk.7.ln2.bias, tensor_size=4096, offset=554811392, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[263]: n_dims = 1, name = v.blk.7.ln2.weight, tensor_size=4096, offset=554815488, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[264]: n_dims = 1, name = v.blk.8.attn_out.bias, tensor_size=4096, offset=554819584, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[265]: n_dims = 2, name = v.blk.8.attn_out.weight, tensor_size=2097152, offset=554823680, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[266]: n_dims = 1, name = v.blk.8.attn_qkv.bias, tensor_size=12288, offset=556920832, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[267]: n_dims = 2, name = v.blk.8.attn_qkv.weight, tensor_size=6291456, offset=556933120, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[268]: n_dims = 1, name = v.blk.8.ffn_up.bias, tensor_size=16384, offset=563224576, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[269]: n_dims = 2, name = v.blk.8.ffn_up.weight, tensor_size=8388608, offset=563240960, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[270]: n_dims = 1, name = v.blk.8.ffn_down.bias, tensor_size=4096, offset=571629568, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[271]: n_dims = 2, name = v.blk.8.ffn_down.weight, tensor_size=8388608, offset=571633664, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[272]: n_dims = 1, name = v.blk.8.ln1.bias, tensor_size=4096, offset=580022272, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[273]: n_dims = 1, name = v.blk.8.ln1.weight, tensor_size=4096, offset=580026368, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[274]: n_dims = 1, name = v.blk.8.ln2.bias, tensor_size=4096, offset=580030464, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[275]: n_dims = 1, name = v.blk.8.ln2.weight, tensor_size=4096, offset=580034560, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[276]: n_dims = 1, name = v.blk.9.attn_out.bias, tensor_size=4096, offset=580038656, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[277]: n_dims = 2, name = v.blk.9.attn_out.weight, tensor_size=2097152, offset=580042752, shape:[1024, 1024, 1, 1], type = f16
+clip_model_loader: tensor[278]: n_dims = 1, name = v.blk.9.attn_qkv.bias, tensor_size=12288, offset=582139904, shape:[3072, 1, 1, 1], type = f32
+clip_model_loader: tensor[279]: n_dims = 2, name = v.blk.9.attn_qkv.weight, tensor_size=6291456, offset=582152192, shape:[1024, 3072, 1, 1], type = f16
+clip_model_loader: tensor[280]: n_dims = 1, name = v.blk.9.ffn_up.bias, tensor_size=16384, offset=588443648, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[281]: n_dims = 2, name = v.blk.9.ffn_up.weight, tensor_size=8388608, offset=588460032, shape:[1024, 4096, 1, 1], type = f16
+clip_model_loader: tensor[282]: n_dims = 1, name = v.blk.9.ffn_down.bias, tensor_size=4096, offset=596848640, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[283]: n_dims = 2, name = v.blk.9.ffn_down.weight, tensor_size=8388608, offset=596852736, shape:[4096, 1024, 1, 1], type = f16
+clip_model_loader: tensor[284]: n_dims = 1, name = v.blk.9.ln1.bias, tensor_size=4096, offset=605241344, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[285]: n_dims = 1, name = v.blk.9.ln1.weight, tensor_size=4096, offset=605245440, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[286]: n_dims = 1, name = v.blk.9.ln2.bias, tensor_size=4096, offset=605249536, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[287]: n_dims = 1, name = v.blk.9.ln2.weight, tensor_size=4096, offset=605253632, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[288]: n_dims = 1, name = mm.0.bias, tensor_size=16384, offset=605257728, shape:[4096, 1, 1, 1], type = f32
+clip_model_loader: tensor[289]: n_dims = 2, name = mm.0.weight, tensor_size=33554432, offset=605274112, shape:[4096, 4096, 1, 1], type = f16
+clip_model_loader: tensor[290]: n_dims = 1, name = mm.2.bias, tensor_size=10240, offset=638828544, shape:[2560, 1, 1, 1], type = f32
+clip_model_loader: tensor[291]: n_dims = 2, name = mm.2.weight, tensor_size=20971520, offset=638838784, shape:[4096, 2560, 1, 1], type = f16
+clip_model_loader: tensor[292]: n_dims = 1, name = v.post_ln.bias, tensor_size=4096, offset=659810304, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[293]: n_dims = 1, name = v.post_ln.weight, tensor_size=4096, offset=659814400, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[294]: n_dims = 1, name = v.patch_embd.bias, tensor_size=4096, offset=659818496, shape:[1024, 1, 1, 1], type = f32
+clip_model_loader: tensor[295]: n_dims = 4, name = v.patch_embd.weight, tensor_size=1572864, offset=659822592, shape:[16, 16, 3, 1024], type = f16
+clip_model_loader: tensor[296]: n_dims = 4, name = v.patch_embd.weight.1, tensor_size=1572864, offset=661395456, shape:[16, 16, 3, 1024], type = f16
+clip_model_loader: tensor[297]: n_dims = 2, name = v.position_embd.weight, tensor_size=9437184, offset=662968320, shape:[1024, 2304, 1, 1], type = f32
+clip_ctx: CLIP using CPU backend
+load_hparams: Qwen-VL models require at minimum 1024 image tokens to function correctly on grounding tasks
+load_hparams: if you encounter problems with accuracy, try adding --image-min-tokens 1024
+load_hparams: more info: https://github.com/ggml-org/llama.cpp/issues/16842
+
+load_hparams: projector:          qwen3vl_merger
+load_hparams: n_embd:             1024
+load_hparams: n_head:             16
+load_hparams: n_ff:               4096
+load_hparams: n_layer:            24
+load_hparams: ffn_op:             gelu
+load_hparams: projection_dim:     2560
+
+--- vision hparams ---
+load_hparams: image_size:         768
+load_hparams: patch_size:         16
+load_hparams: has_llava_proj:     0
+load_hparams: minicpmv_version:   0
+load_hparams: n_merge:            2
+load_hparams: n_wa_pattern: 0
+load_hparams: image_min_pixels:   65536 (custom value)
+load_hparams: image_max_pixels:   262144 (custom value)
+
+load_hparams: model size:         641.26 MiB
+load_hparams: metadata size:      0.10 MiB
+load_tensors: loaded 298 tensors from /tmp/lighton4b-heldout-historical-receipt-v1/heldout/mmproj-LightOnOCR-3-4B-F16.gguf
+get_dummy_batch: warmup with image size = 512 x 512
+mtmd_group_mergeable_bitmaps: no merging for part index 1
+add_text: <|im_start|>user
+
+add_text: <|vision_start|>
+add_media: preproc_out has 1 entries, grid_x = 0, grid_y = 0, has_overview = 0
+image_tokens->nx = 11
+image_tokens->ny = 22
+batch_f32 size = 1
+add_text: <|vision_end|>
+add_text: <|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+
+SOURCE_HELDOUT_PREFLIGHT PASS forwards=0

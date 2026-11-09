@@ -1,0 +1,5 @@
+Submodule 'ggml' (https://github.com/CrispStrobe/ggml.git) registered for path 'ggml'
+Cloning into '/tmp/lighton4b-upstream-physical-decode-v1/source/ggml'...
+From https://github.com/CrispStrobe/ggml
+ * branch            3a27b6c665b191cb230be367db5c52d81dd3e2ac -> FETCH_HEAD
+Submodule path 'ggml': checked out '3a27b6c665b191cb230be367db5c52d81dd3e2ac'

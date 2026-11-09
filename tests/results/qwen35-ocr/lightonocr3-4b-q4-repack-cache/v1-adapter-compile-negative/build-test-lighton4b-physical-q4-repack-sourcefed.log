@@ -1,0 +1,14 @@
+[ 14%] Built target ggml-base
+[ 42%] Built target ggml-cpu
+[ 42%] Built target ggml
+[ 57%] Built target crispembed-core
+[ 85%] Built target crispembed-qwen35-delta
+[ 85%] Building CXX object CMakeFiles/test-lighton4b-physical-q4-repack-sourcefed.dir/tests/lighton4b_physical_q4_repack_probe.cpp.o
+/tmp/lighton4b-runtime-q4-repack-controls-v1/source/tests/lighton4b_physical_q4_repack_probe.cpp: In function ‘int main(int, char**)’:
+/tmp/lighton4b-runtime-q4-repack-controls-v1/source/tests/lighton4b_physical_q4_repack_probe.cpp:29:10: error: ‘project_cpu’ was not declared in this scope
+   29 |  require(project_cpu({t},x.data(),width,tokens,4,output,mode=="on"?&cache:nullptr,true)&&output.size()==1&&output[0].size()==size_t(rows)*tokens,"actual runtime project");require(cache.bytes()==0&&cache.entries()==0,"no F32 weight cache");require(mode=="off"||cache.physical_repack_entries()==size_t(type==GGML_TYPE_Q4_K),"only Q4 preferred storage");
+      |          ^~~~~~~~~~~
+gmake[3]: *** [CMakeFiles/test-lighton4b-physical-q4-repack-sourcefed.dir/build.make:79: CMakeFiles/test-lighton4b-physical-q4-repack-sourcefed.dir/tests/lighton4b_physical_q4_repack_probe.cpp.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:11964: CMakeFiles/test-lighton4b-physical-q4-repack-sourcefed.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:11971: CMakeFiles/test-lighton4b-physical-q4-repack-sourcefed.dir/rule] Error 2
+gmake: *** [Makefile:4173: test-lighton4b-physical-q4-repack-sourcefed] Error 2

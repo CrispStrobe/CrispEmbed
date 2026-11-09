@@ -1,0 +1,199 @@
+{
+  "actual_ref_binary_sha256": "d6898491984110b0536dcd43ddb1091f6559495a79dfb23389baedb8dc4ae246",
+  "actual_ref_controls_passed": true,
+  "all172_raw_comparisons_failed": true,
+  "artifact": {
+    "bytes": 177270896,
+    "expires_at": "2027-02-04T09:07:44Z",
+    "id": 13491795001,
+    "sha256": "f19ddbdcc806b322b1d705442e1a02b9b089b9cd94d407c1d537a055dda5ad9d"
+  },
+  "consumer_source": "7fbc2ec6771c616948fc6a1120c0a6e3885978b9",
+  "different_context_rows172_to255_excluded": true,
+  "expected_numerical_failure": true,
+  "inference_executed": false,
+  "largest_same_context_rms": {
+    "native_id": 371,
+    "native_sha256": "56a1df727457f635265dbf4a8c6fe1922593ecc8f1a5b51d60866fc768f20c57",
+    "position": 125,
+    "raw": {
+      "cosine": 0.9870476793888068,
+      "max_abs": 3.03125,
+      "returncode": 1,
+      "rms": 0.49875835378741906,
+      "stage": "STAGE stage passed=0 finite=1 count=248320 max_abs=3.03125 mean_abs=0.391184539 rms=0.498758346 row_cos=0.987047672 ref_norm=1545.35754 native_norm=1542.92126"
+    },
+    "same_previous_ids": true,
+    "selected_logits": {
+      "371": {
+        "native": 38.75,
+        "source": 38.0
+      }
+    },
+    "source_id": 371,
+    "source_sha256": "58a37b893c2e730734b798c3e2b0ab92798973553e9785ab816f819ad9c0a7a0"
+  },
+  "limits": "Scores only; no earliest decoder operator attribution. BF16-rounded source versus F32-dequant native weights remain distinguished. Both full outputs cap without EOS; no absolute OCR quality claim.",
+  "native_same_causal_rows": 172,
+  "native_same_causal_score_bytes": 170844160,
+  "representative_rows": [
+    {
+      "native_id": 20353,
+      "native_sha256": "f4d483b86617d9548741b8335b79167ddaf560a90be5baf3da5de51e42b2ab8f",
+      "position": 0,
+      "raw": {
+        "cosine": 0.9999432636749409,
+        "max_abs": 0.15625,
+        "returncode": 1,
+        "rms": 0.026720015413729134,
+        "stage": "STAGE stage passed=0 finite=1 count=248320 max_abs=0.15625 mean_abs=0.0206219666 rms=0.0267200153 row_cos=0.999943256 ref_norm=1246.60376 native_norm=1245.55505"
+      },
+      "same_previous_ids": true,
+      "selected_logits": {
+        "20353": {
+          "native": 22.0,
+          "source": 22.0
+        }
+      },
+      "source_id": 20353,
+      "source_sha256": "e59d6054c85e81fb1be7101c9899287fa3a1cdd23a3110c8e03d874992387a0d"
+    },
+    {
+      "native_id": 672,
+      "native_sha256": "831eea97d67e171200307d8ca0bd7eb2e612eec4dd83b3546f732e0980cc2d94",
+      "position": 33,
+      "raw": {
+        "cosine": 0.9999241211178389,
+        "max_abs": 0.25,
+        "returncode": 1,
+        "rms": 0.04264112231794691,
+        "stage": "STAGE stage passed=0 finite=1 count=248320 max_abs=0.25 mean_abs=0.0331509784 rms=0.0426411219 row_cos=0.999924123 ref_norm=1696.84363 native_norm=1692.89722"
+      },
+      "same_previous_ids": true,
+      "selected_logits": {
+        "672": {
+          "native": 34.5,
+          "source": 34.75
+        }
+      },
+      "source_id": 672,
+      "source_sha256": "9fc3e007c7756f00e35a58109dd9ce13bba5d725a76c53444501ae90a16936a5"
+    },
+    {
+      "native_id": 371,
+      "native_sha256": "4e1b368bf902f518aea44c8145b19767c7c25fb6179082de3fe76624cd197dfc",
+      "position": 100,
+      "raw": {
+        "cosine": 0.9997611782530841,
+        "max_abs": 0.5625,
+        "returncode": 1,
+        "rms": 0.08100626222835813,
+        "stage": "STAGE stage passed=0 finite=1 count=248320 max_abs=0.5625 mean_abs=0.0632351562 rms=0.0810062587 row_cos=0.999761164 ref_norm=1804.32239 native_norm=1812.53198"
+      },
+      "same_previous_ids": true,
+      "selected_logits": {
+        "371": {
+          "native": 39.25,
+          "source": 39.25
+        }
+      },
+      "source_id": 371,
+      "source_sha256": "9e70043c4db5dee349f6b96021ad528685b8f5e887f1bae4801bb91a88b8f7b7"
+    },
+    {
+      "native_id": 371,
+      "native_sha256": "56a1df727457f635265dbf4a8c6fe1922593ecc8f1a5b51d60866fc768f20c57",
+      "position": 125,
+      "raw": {
+        "cosine": 0.9870476793888068,
+        "max_abs": 3.03125,
+        "returncode": 1,
+        "rms": 0.49875835378741906,
+        "stage": "STAGE stage passed=0 finite=1 count=248320 max_abs=3.03125 mean_abs=0.391184539 rms=0.498758346 row_cos=0.987047672 ref_norm=1545.35754 native_norm=1542.92126"
+      },
+      "same_previous_ids": true,
+      "selected_logits": {
+        "371": {
+          "native": 38.75,
+          "source": 38.0
+        }
+      },
+      "source_id": 371,
+      "source_sha256": "58a37b893c2e730734b798c3e2b0ab92798973553e9785ab816f819ad9c0a7a0"
+    },
+    {
+      "native_id": 29,
+      "native_sha256": "0d483c808cbe885127b362382518a913ce157b698889ded59be52bdb7ce1103a",
+      "position": 126,
+      "raw": {
+        "cosine": 0.9997928671234163,
+        "max_abs": 0.46875,
+        "returncode": 1,
+        "rms": 0.07585576000765121,
+        "stage": "STAGE stage passed=0 finite=1 count=248320 max_abs=0.46875 mean_abs=0.0596070141 rms=0.0758557618 row_cos=0.999792874 ref_norm=1815.32202 native_norm=1822.93542"
+      },
+      "same_previous_ids": true,
+      "selected_logits": {
+        "29": {
+          "native": 34.0,
+          "source": 34.0
+        }
+      },
+      "source_id": 29,
+      "source_sha256": "e3c65b7bcbb6b6a2130c63a2d6e1ee960d4d8e7df93cdca0f78a1e2568191cd1"
+    },
+    {
+      "native_id": 29,
+      "native_sha256": "93acb27dca0faa1f448cf8df4df805d4bc18b067659f3025614f4a603b63fc72",
+      "position": 170,
+      "raw": {
+        "cosine": 0.9999649606343617,
+        "max_abs": 0.34375,
+        "returncode": 1,
+        "rms": 0.03572287916272961,
+        "stage": "STAGE stage passed=0 finite=1 count=248320 max_abs=0.34375 mean_abs=0.0266979542 rms=0.0357228778 row_cos=0.999964952 ref_norm=2126.48828 native_norm=2126.4165"
+      },
+      "same_previous_ids": true,
+      "selected_logits": {
+        "29": {
+          "native": 27.25,
+          "source": 27.25
+        }
+      },
+      "source_id": 29,
+      "source_sha256": "b2cd61db128eac1ae274993cb87551072a930b3ca0dbd036532742d0398c2b7e"
+    },
+    {
+      "native_id": 1058,
+      "native_sha256": "3858bfd83988d5d49b6fbb2befcc4240147d035007682e1344734b96fc20d7f9",
+      "position": 171,
+      "raw": {
+        "cosine": 0.9998463055004294,
+        "max_abs": 0.203125,
+        "returncode": 1,
+        "rms": 0.03414869215374933,
+        "stage": "STAGE stage passed=0 finite=1 count=248320 max_abs=0.203125 mean_abs=0.0265860669 rms=0.0341486931 row_cos=0.99984628 ref_norm=970.475342 native_norm=970.627197"
+      },
+      "same_previous_ids": true,
+      "selected_logits": {
+        "1058": {
+          "native": 20.5,
+          "source": 20.375
+        },
+        "27287": {
+          "native": 20.5,
+          "source": 20.5
+        }
+      },
+      "source_id": 27287,
+      "source_sha256": "6af9883e81d4369199ef72117113c8ae0563ed1abba7718e73365dfdfdf82859"
+    }
+  ],
+  "schema": "lighton4b-plain-q4-raw-preservation/v1",
+  "source_hidden_operator_arrays_available": false,
+  "source_ids_and_decoded_preserved": true,
+  "source_rows": 256,
+  "source_score_bytes": 254279680,
+  "status": "compared",
+  "workflow_run": 42192667516
+}

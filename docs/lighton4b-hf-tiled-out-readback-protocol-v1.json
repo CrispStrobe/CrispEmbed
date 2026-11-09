@@ -1,0 +1,44 @@
+{
+  "artifact_checks": [
+    "Full actual retained model SHA, all723 named payloads and exact dtype census",
+    "699 payloads against separately authenticated original5d manifest",
+    "24 payloads against original-F16-proven publisher hashes",
+    "Every current complete vocabulary row finite, hash authenticated and selected argmax checked",
+    "Raw text and IDs against sealed reports; primary EOS/cap independent",
+    "Prefill input and positions bit exact before comparing32 actual layer boundaries and finalnorm/logits",
+    "Greedy numerical comparison only through the first differing selection inclusive; no post-divergence comparison"
+  ],
+  "bounds": {
+    "bootstrap_seconds": 1500,
+    "minimum_available_ram_bytes": 4294967296,
+    "minimum_free_disk_bytes": 1073741824,
+    "per_array_bytes": 16777216,
+    "reader_seconds": 1200,
+    "service_seconds": 1800
+  },
+  "cases": [
+    "simple_form",
+    "simple_table",
+    "arabic_printed_line"
+  ],
+  "large_artifact_copy_allowed": false,
+  "limitations": [
+    "Recipe A/B on native builds and common causal inputs; not same-weight original BF16 parity",
+    "No missing suboperator/source stages are inferred",
+    "Quantized-byte equality does not prove publisher float-checkpoint identity",
+    "No heldout or shipping claim"
+  ],
+  "model_inference_allowed": false,
+  "model_report_sha256": "63a586c07b0c2125e448e4f425bc9760ff9b5eb7c3123c7de0a60fde0a790361",
+  "model_source": "b2a3778e424559b7216e1b11f21c7b38b71b02d8",
+  "old_calibration_report_sha256": "1f296b54b74e2660f81f7fa7d9aae9850bb3d22fb19c5024c7a28908248090e7",
+  "old_form_report_sha256": "a483fe4d56cfdde2c3835d2cf7ca1f322d09c4594664405e0faa8da073230643",
+  "old_payload_manifest_sha256": "36c6d9deeeea000e560a5532a24e27a9019f0376f80e8e14e13a6a1e0316f64e",
+  "quantization_allowed": false,
+  "reported_errors": [
+    "reference/candidate RMS and maximum magnitudes",
+    "RMS and max absolute error",
+    "bit-pattern and numerical inequality counts separately"
+  ],
+  "schema": "lighton4b-hf-tiled-out-readback-protocol/v1"
+}

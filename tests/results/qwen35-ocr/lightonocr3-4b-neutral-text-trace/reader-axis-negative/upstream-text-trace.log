@@ -1,0 +1,10 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+Traceback (most recent call last):
+  File "/tmp/lighton4b-upstream-text-trace-reader-v1/source/tools/text-trace-probe/relay.py", line 48, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/tmp/lighton4b-upstream-text-trace-reader-v1/source/tools/text-trace-probe/relay.py", line 44, in main
+    except BaseException as e:report['error_type']=type(e).__name__;report['error']='Artifact relay or strict reader failed; capability URLs redacted';raise RuntimeError(report['error'])from None
+                                                                                                                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Artifact relay or strict reader failed; capability URLs redacted

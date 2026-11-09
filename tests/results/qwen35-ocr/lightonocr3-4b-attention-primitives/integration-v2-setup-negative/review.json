@@ -1,0 +1,15 @@
+{
+  "schema": "lighton4b-physical-f16-integration-initial-review/v1",
+  "source_sha": "6ed974440187cf6aa47e1b62b257ccff0d59bc26",
+  "report_sha256": "c28720bfb17ca132d4c7b187e2c7f3940875b972e8bad1d8d07e35b9b0ce0539",
+  "status": "second_harness_argument_failure",
+  "phase": "test-lighton4b-release-fence",
+  "elapsed_seconds": 121.72263109100004,
+  "cause": "Old release-fence executable requires an output fixture path; omitted argument causes exit2. No runtime or numerical failure.",
+  "supported_runtime_controls_passed": 255297,
+  "old_physical_policy_controls_passed": 557865,
+  "actual_sourcefed_cases_compared": 0,
+  "proposed_fix_source_sha": "4f243a180",
+  "fix_scope": "Tools-only: supply fixture output and statically check all9 actual C++ CLI signatures; source-fed replay now precedes legacy compatibility controls. Runtime bytes unchanged.",
+  "quality_qualified": false
+}

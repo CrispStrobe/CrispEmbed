@@ -1,0 +1,17 @@
+[{"stream_name":"stdout","time":1.034424435,"data":"PHASE init\n"}
+,{"stream_name":"stdout","time":1.167743918,"data":"PHASE remote\n"}
+,{"stream_name":"stdout","time":1.178072714,"data":"PHASE fetch\n"}
+,{"stream_name":"stdout","time":6.91573569,"data":"PHASE checkout\n"}
+,{"stream_name":"stdout","time":8.540096493,"data":"PHASE venv\n"}
+,{"stream_name":"stdout","time":8.705689173,"data":"PHASE venv-prefix\n"}
+,{"stream_name":"stdout","time":8.82051878,"data":"PHASE numpy\n"}
+,{"stream_name":"stdout","time":18.472996969,"data":"PHASE dependency-preflight\n"}
+,{"stream_name":"stdout","time":18.789107128,"data":"PHASE causal-row-controls\n"}
+,{"stream_name":"stdout","time":19.055097708,"data":"PHASE actual-artifact-readback\n"}
+,{"stream_name":"stderr","time":189.249283796,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":189.249388966,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":189.723240383,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":189.723278395,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":190.9695495,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":192.461847886,"data":"[NbConvertApp] Writing 299910 bytes to __results__.html\n"}
+]

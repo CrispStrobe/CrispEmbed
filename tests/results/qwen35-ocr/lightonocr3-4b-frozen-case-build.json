@@ -1,0 +1,16 @@
+{
+  "schema": "lighton4b-frozen-case-build/v1",
+  "status": "passed",
+  "model_payload_bytes": 0,
+  "quality_qualified": false,
+  "source_sha": "84691b26494e61d82efcc436b083b48a1a639236",
+  "executable_sha256": "5992dcfcf7ee406f63a1459004ed944665a05d279d7f3385a144c7d4b1eb0661",
+  "lighton4b-native-document_sha256": "c0dc3e647e90782b114e1e9b2187ebcccf78dfca0b3ea6a0f021044fe2ee9ef5",
+  "test-qwen35-stream-projection_sha256": "18225c36042cb1e5702caba9fddcbc6fb94afa487b461187919c1a7396bd9e5d",
+  "lighton4b-native-case-preflight_sha256": "8c9d6b08ecb337f7b12915ad33788dafd59366184664d5b38f98ddea533b5732",
+  "test-lighton4b-mixed-policy_sha256": "b84bae76c90ecdbd05eb7b3c78d2671119d0d30ee00164670bfd9cb491c6b1ee",
+  "mixed_policy_stdout": "MIXED_POLICY controls=74 passed=1 payload_bytes=0 quality_qualified=0\n",
+  "stdout": "gguf_init_from_file: failed to open GGUF file 'missing.gguf' (No such file or directory)\nnative-context controls=9 passed=1 model_payload=0\n",
+  "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42006252927",
+  "case_contract_stdout": "...\n----------------------------------------------------------------------\nRan 3 tests in 0.003s\n\nOK\n"
+}

@@ -1,0 +1,67 @@
+{
+  "receipt_sha256": "aec0d0b10befb5b3498b55a87f9cda785998242c0d9f49a4a1b3f72a92ed160b",
+  "source_sha": "b98567cfd46aaf594f33076aaab4ff8e4610edbb",
+  "status": "independently_reviewed_observed_form_positive",
+  "artifacts_rehashed": {
+    "old/generated.ids": {
+      "bytes": 906,
+      "sha256": "40db6e27b836e8959b03c57afe8199d8885da338a68696f085e4755da4b92f7f"
+    },
+    "old/generated.txt": {
+      "bytes": 718,
+      "sha256": "ea8d430acfd56011a369143b8b895bc99454b2e70b190821350d5d326108d74f"
+    },
+    "old/native-summary.json": {
+      "bytes": 328,
+      "sha256": "e671fd2e0d03e1e287df17b5a14a15438d3dac63109b71f6f2753eafe1028536"
+    },
+    "fixed/generated.ids": {
+      "bytes": 774,
+      "sha256": "7b486f648aa28924ed517318ec42e4768cb4750ee35656a3a1ade902b4263049"
+    },
+    "fixed/generated.txt": {
+      "bytes": 657,
+      "sha256": "dd76fa10d0f4e6d2e6450523a3fc9a2e7cc3ba6690675d01fe38833313469909"
+    },
+    "fixed/native-summary.json": {
+      "bytes": 328,
+      "sha256": "524174705b7e348abab616899d1a30c62d67683d1cb1a29055f76d5c10247522"
+    }
+  },
+  "metrics": {
+    "old": {
+      "original": {
+        "character_edits": 259,
+        "reference_codepoints": 656,
+        "word_edits": 47,
+        "reference_words": 90
+      },
+      "upstream": {
+        "character_edits": 261,
+        "reference_codepoints": 647,
+        "word_edits": 45,
+        "reference_words": 86
+      }
+    },
+    "fixed": {
+      "original": {
+        "character_edits": 175,
+        "reference_codepoints": 656,
+        "word_edits": 45,
+        "reference_words": 90
+      },
+      "upstream": {
+        "character_edits": 80,
+        "reference_codepoints": 647,
+        "word_edits": 18,
+        "reference_words": 86
+      }
+    }
+  },
+  "exactly_two_gates_changed": true,
+  "all_component_owned_members_rehashed_by_producer": 73,
+  "old_194_anchors_exact": true,
+  "fixed_167_sourcefeature_text_rows_exact": true,
+  "fixed_actual_source_vision_processor_exact": true,
+  "limits": "Producer source-bound all194/167raw rows+38text stages and29vision/processor checks, finite/argmax hashes; full arrays remain remote. One teacher row, observed form only. BF16 is output reference, not human GT; no table/Arabic/heldout or shipping qualification."
+}

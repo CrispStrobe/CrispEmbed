@@ -1,0 +1,12 @@
+/tmp/lighton4b-attention-sourcefed-primitives-v1/source/ggml/src/ggml-backend.cpp:342: GGML_ASSERT(buf != NULL && "tensor buffer not set") failed
+/tmp/lighton4b-attention-sourcefed-primitives-v1/attention-primitives/runtime-build/ggml/src/libggml-base.so.0(+0x1c12b)[0x7b7863d3112b]
+/tmp/lighton4b-attention-sourcefed-primitives-v1/attention-primitives/runtime-build/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7b7863d315ac]
+/tmp/lighton4b-attention-sourcefed-primitives-v1/attention-primitives/runtime-build/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7b7863d3178b]
+/tmp/lighton4b-attention-sourcefed-primitives-v1/attention-primitives/runtime-build/ggml/src/libggml-base.so.0(ggml_backend_tensor_get+0xc7)[0x7b7863d4a2a7]
+/tmp/lighton4b-attention-sourcefed-primitives-v1/attention-primitives/runtime-build/lighton4b-attention-native-probe(+0xc319)[0x55ceac42e319]
+/tmp/lighton4b-attention-sourcefed-primitives-v1/attention-primitives/runtime-build/lighton4b-attention-native-probe(+0xa2a0)[0x55ceac42c2a0]
+/tmp/lighton4b-attention-sourcefed-primitives-v1/attention-primitives/runtime-build/lighton4b-attention-native-probe(+0xaf80)[0x55ceac42cf80]
+/tmp/lighton4b-attention-sourcefed-primitives-v1/attention-primitives/runtime-build/lighton4b-attention-native-probe(+0x608f)[0x55ceac42808f]
+/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca)[0x7b78637861ca]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b)[0x7b786378628b]
+/tmp/lighton4b-attention-sourcefed-primitives-v1/attention-primitives/runtime-build/lighton4b-attention-native-probe(+0x6a95)[0x55ceac428a95]

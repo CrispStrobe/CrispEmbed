@@ -1,0 +1,11 @@
+{
+  "schema": "lighton4b-physical-native-ops-ablation-bootstrap/v1",
+  "source_sha": "7ccb0c46805239aa9fef874809387a82f2eadda7",
+  "status": "completed",
+  "gpu_requested": false,
+  "full_completion_executed": false,
+  "quality_qualified": false,
+  "phase": "same-feature-ablations",
+  "worker_sha256": "577fd332d5d2a4878aa706bfa18727e15ba20ae956fc1eeabd335d6ad698bd41",
+  "protocol_sha256": "659b3ba93be4b046a1135821b830eb2ba0a8910337a1f01183073d077b6f3ddc"
+}

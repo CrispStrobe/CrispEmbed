@@ -1,0 +1,15 @@
+{
+  "schema": "lighton4b-physical-actual-trace-review/v1",
+  "report_sha256": "9b4d53bde6a79ac4fee7188b2b99d973b9908f33b7704c52579c3b8e96f1b0fb",
+  "source_sha": "9918eae569bd8003a236b08ab1c44a30db83bab7",
+  "baseline_report_sha256": "712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2",
+  "primitive_report_sha256": "79dff60f82e76d689811d2151d3c76469e0b80c3a6e5d64eabe6eba0c085f398",
+  "actual_prefix_input_scalar_rms_and_dequant_qkv_z_a_b_exact": true,
+  "all_percase_artifacts_rehashed_remote": 664,
+  "bytes_streamed_remote": 584443630,
+  "actual_first16_output_reconstructed_exact": true,
+  "source_internal_graph_capture": false,
+  "learned_model_forward": false,
+  "local_raw_arrays_downloaded": false,
+  "quality_qualified": false
+}

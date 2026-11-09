@@ -1,0 +1,113 @@
+{
+  "all_read_rows_bf16_expanded_f32": true,
+  "cases": {
+    "arabic_printed_line": {
+      "arms": {
+        "plain_q4": {
+          "centered_rms_error": 0.36434924247935124,
+          "max_abs_error": 2.953125,
+          "max_abs_score": 18.25,
+          "mean_logit_error": 0.014337735922200624,
+          "original_probability": 0.9318797871489876,
+          "original_selected_id": 67321,
+          "probability_of_original_id": 0.8717670239415881,
+          "rms_error": 0.36463123997629693,
+          "score_rms": 2.0892761974575915,
+          "score_sha256": "823de94f5bb8e96a32d33fd9382c7f7d62e436181bad60276c5f238d655625e2",
+          "selected_id": 67321,
+          "source_to_native_next_token_kld": 0.030166368661896384
+        },
+        "prior_weighted_plain_q4": {
+          "centered_rms_error": 0.3601664228245838,
+          "gold_id_logit": 18.375,
+          "max_abs_error": 2.21875,
+          "max_abs_score": 18.375,
+          "mean_logit_error": 0.14250771578175697,
+          "non_bf16_expanded_f32_values": 0,
+          "probability_of_original_id": 0.8927936806139692,
+          "rms_error": 0.38733486957359115,
+          "score_rms": 2.0187641523743025,
+          "sha256": "6c2a414c6e2e1df5dbe2c84809f181a56fcd982740261fe0b5a6fa06edb174cc",
+          "source_to_native_next_token_kld": 0.0155036099641733,
+          "top1_id": 67321
+        },
+        "weighted_q4km": {
+          "centered_rms_error": 0.3309955411681365,
+          "max_abs_error": 2.09375,
+          "max_abs_score": 18.125,
+          "mean_logit_error": 0.0630854820117316,
+          "original_probability": 0.9318797871489876,
+          "original_selected_id": 67321,
+          "probability_of_original_id": 0.8582626711395523,
+          "rms_error": 0.3369537450657583,
+          "score_rms": 2.049721197791138,
+          "score_sha256": "9ff48e7882c8c090206be60e41cae7591eca3fc599474d1779bc55bcca951a82",
+          "selected_id": 67321,
+          "source_to_native_next_token_kld": 0.032227619008434905
+        }
+      },
+      "original_capture_sha256": "ff1a390370b702fabf8b5a25f0feec76888bb1ad8197cf08c3efd44adec1de84",
+      "original_score_sha256": "86992379e43f872e2958fd81c16b5aef548a43c588400d18e1154335bb3b8f05"
+    },
+    "simple_table": {
+      "arms": {
+        "plain_q4": {
+          "centered_rms_error": 0.6850128113632385,
+          "max_abs_error": 4.2265625,
+          "max_abs_score": 20.625,
+          "mean_logit_error": 0.17193342337490433,
+          "original_probability": 0.6939341227257515,
+          "original_selected_id": 27,
+          "probability_of_original_id": 0.4055778795243089,
+          "rms_error": 0.7062603300520156,
+          "score_rms": 2.0481310345541686,
+          "score_sha256": "74786da3f763d3aafeea14954a06e80b291d340005ffc413d804e71a21071a57",
+          "selected_id": 20353,
+          "source_to_native_next_token_kld": 0.18151131585953523
+        },
+        "prior_weighted_plain_q4": {
+          "centered_rms_error": 0.6233124946510975,
+          "gold_id_logit": 20.0,
+          "margin_27_over_20353": 0.875,
+          "max_abs_error": 4.3515625,
+          "max_abs_score": 20.0,
+          "mean_logit_error": -0.599867182628242,
+          "non_bf16_expanded_f32_values": 0,
+          "probability_of_original_id": 0.5904333187395782,
+          "rms_error": 0.8650775125863109,
+          "score_rms": 1.748705662659276,
+          "sha256": "c23329ed3fff83d49e206f92057caec2c2ac71dcaf6e524f7dc93d4a8a36e723",
+          "source_to_native_next_token_kld": 0.125953174434451,
+          "top1_id": 27
+        },
+        "weighted_q4km": {
+          "centered_rms_error": 0.5694161107099881,
+          "max_abs_error": 3.79296875,
+          "max_abs_score": 20.0,
+          "mean_logit_error": -0.5278282283994936,
+          "original_probability": 0.6939341227257515,
+          "original_selected_id": 27,
+          "probability_of_original_id": 0.5037892484027885,
+          "rms_error": 0.7764260079566097,
+          "score_rms": 1.770711232794484,
+          "score_sha256": "dde17c5485bfe6d2c73e080c890c302ff3f97bed3553a2edc987be7616adfdab",
+          "selected_id": 27,
+          "source_to_native_next_token_kld": 0.13786195796954326
+        }
+      },
+      "original_capture_sha256": "6be5428f247b616e76d79513b62873cf0238842999be2fb0848997f8ced25763",
+      "original_score_sha256": "e649ef0638ff33b3bdaee946b285f5265359b2608b0a7381d1095d2e9ac467f9"
+    }
+  },
+  "diagnostics_blob_sha256": "2776dd4bb8383c8c6d46aa30af6f5bddd6b1223bc8969a9415fbbbb7bcc293f6",
+  "diagnostics_source": "8bae598d3d616c4e406609c17d56eadd34968267",
+  "f32_model_instantiated": false,
+  "interpretation": "Posthoc one-position diagnostics; source||candidate KLD is not publisher corpus KLD, recipe selection, decoded quality or shipping qualification.",
+  "model_downloaded": false,
+  "prior_consumer_sha256": "26a5ef539e00cfc94ff86a9bef099d5aed298e3b86626d211f2d96e1452b9440",
+  "producer_receipt_sha256": "e16d484e308795a50d8d71f416517c67bd3235e631a8aa524308535765dea0df",
+  "producer_source": "a4f2c908ffaf3f17eb770973017e3de8a08bb121",
+  "reference_model_forward_executed": false,
+  "schema": "lighton4b-q4km-style-first-score-independent-consumer/v1",
+  "six_selected_rows_only": true
+}

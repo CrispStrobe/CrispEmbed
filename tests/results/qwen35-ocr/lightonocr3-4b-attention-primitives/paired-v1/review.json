@@ -1,0 +1,18 @@
+{
+  "schema": "lighton4b-paired-f16-independent-review/v1",
+  "status": "measured_operator_only_not_exact_source_graph",
+  "source_sha": "0b76ce1365b57360616e5fce44784db1665bbf10",
+  "report_sha256": "04b194e16e7243dbc22d3db74c9d86a0d42e8d4918b528064c0afdf50b369904",
+  "selected_stage_files_hashed": 10,
+  "native_upstream_stage_hash_pairs_exact": 10,
+  "n16_metrics_recomputed": 10,
+  "metric_readback": "max/bit-exact exactly reproduced, RMS within one binary64 ULP",
+  "rounded_probability_changed_entries": 1,
+  "rounded_probability_changed_flat_index": 23300,
+  "rounded_probability_delta": 0.000244140625,
+  "interpretation": "Do not attribute downstream context residual independently to PV; one source/helper softmax value crosses an F16 rounding boundary. Exact source-P-fed PV and actual QK dispatch controls remain pending.",
+  "model_forward_executed": false,
+  "vendor_traits_changed": false,
+  "production_math_changed": false,
+  "quality_qualified": false
+}

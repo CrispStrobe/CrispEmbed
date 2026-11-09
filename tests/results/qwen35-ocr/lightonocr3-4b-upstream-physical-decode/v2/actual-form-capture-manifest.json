@@ -1,0 +1,78 @@
+{
+  "source": "ac34f72ca89823a177c538ad598dfa00fc69f124",
+  "report_sha256": "712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2",
+  "kernel_id": 143153961,
+  "version": 2,
+  "case": "simple_form",
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "captures": {
+    "observer-on/source.logits.0.f32": {
+      "bytes": 993280,
+      "sha256": "4cbf1fcfb2f356e7e484474240e4cecca110010116b55efd835cfdb3e891d415"
+    },
+    "observer-on/source.vision.0.f32": {
+      "bytes": 1433600,
+      "sha256": "b9a171d18d5698e5c897662ddedf6cf399448838e55350c3b206e7a24c240d1b"
+    },
+    "upstream_features/prefill.first_chunk.layer0.b.f32": {
+      "bytes": 2048,
+      "sha256": "aa6b9b2c16d53ea82b834552acee42ff7aaae6ceacdd38e6f9e56b7bd7dd657b"
+    },
+    "upstream_features/prefill.first_chunk.layer0.up.f32": {
+      "bytes": 589824,
+      "sha256": "34c8dcfeaf5a022a409a9364afac98a0468da0c2de2751645f71ebd525d660f1"
+    },
+    "upstream_features/prefill.input.f32": {
+      "bytes": 1576960,
+      "sha256": "44cdcd39c149c581910cff5938a0ffb3fe8a28a268d55479abec19ccb1f04b69"
+    },
+    "upstream_features/prefill.first_chunk.layer0.attention_residual.f32": {
+      "bytes": 163840,
+      "sha256": "67ea2d3525cb1b914d924ecc3278340352ed0c90fcf711fc935413621649472a"
+    },
+    "upstream_features/prefill.first_chunk.layer0.activation.f32": {
+      "bytes": 589824,
+      "sha256": "fed3b8db5a357813534119f082e9bdd506291a7cf37462b4a89eb6b66687e56c"
+    },
+    "upstream_features/prefill.first_chunk.layer0.attention.f32": {
+      "bytes": 163840,
+      "sha256": "a3c841524f139d760b2600323a51ce5b58f4cf6049bc352e7c2ea7640384e8af"
+    },
+    "upstream_features/prefill.first_chunk.layer0.gate.f32": {
+      "bytes": 589824,
+      "sha256": "298479b1e65f7b4ab24afaca6660a7ab7c08991bd62e7cb3fe19d3c08a7d028b"
+    },
+    "upstream_features/prefill.first_chunk.layer0.z.f32": {
+      "bytes": 262144,
+      "sha256": "b872a809eb2591451225e045586101787c96abcf390e2f2048987711c9fe7912"
+    },
+    "upstream_features/prefill.first_chunk.layer0.post_norm.f32": {
+      "bytes": 163840,
+      "sha256": "c3d0821d536ffef4347d6555a52c43fcd780860229476067cc9ed46e87395b0f"
+    },
+    "upstream_features/prefill.first_chunk.layer0.a.f32": {
+      "bytes": 2048,
+      "sha256": "38e07a69a1c2620de0e3e0453e2ad6d651d847e932c2683ee2b4dbb9cdc10e35"
+    },
+    "upstream_features/prefill.first_chunk.layer0.down.f32": {
+      "bytes": 163840,
+      "sha256": "6755f4f52f88b42054b8ee609c92fa31849d655365ead67471f24173aca5716b"
+    },
+    "upstream_features/prefill.first_chunk.layer0.input_norm.f32": {
+      "bytes": 163840,
+      "sha256": "cb0b08bbecfc9fb8f55385b3c83c82ef18b3ab418b5eec5c5c7a4839b35c9434"
+    },
+    "upstream_features/text.embedded.f32": {
+      "bytes": 1576960,
+      "sha256": "8b27dde2bf6f17d1d47136a56d778ce0794912aac53dfbded30c4c21d5ba7c54"
+    },
+    "upstream_features/prefill.positions.f32": {
+      "bytes": 1848,
+      "sha256": "007b6bc39e71ffd2c3f6813808f4455a129e5aafd6fda1f186f084ac46573729"
+    },
+    "upstream_features/prefill.first_chunk.layer0.qkv.f32": {
+      "bytes": 524288,
+      "sha256": "cd98b7cd7669ac6d73c413730a4a1936d2573e2b21b3c034c5eb04d0bd3f9ef1"
+    }
+  }
+}

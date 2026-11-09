@@ -1,0 +1,78 @@
+{
+  "receipt_sha256": "40b20127fe0a0ffbbbc227f40a847a31a5ac6c0c8c231edff24aa17ce1c6cdc5",
+  "source_sha": "f6a1e60d3cea5a1f6841079697734906f70d8b40",
+  "selected_closed_files_hash_verified": [
+    "physical-pack.json",
+    "CMakeCache.txt",
+    "simple_form/on/generated.txt",
+    "simple_form/on/native-summary.json",
+    "simple_form/on/generated.ids",
+    "simple_form/off/generated.txt",
+    "simple_form/off/native-summary.json",
+    "simple_form/off/generated.ids",
+    "simple_table/on/generated.txt",
+    "simple_table/on/native-summary.json",
+    "simple_table/on/generated.ids",
+    "simple_table/off/generated.txt",
+    "simple_table/off/native-summary.json",
+    "simple_table/off/generated.ids"
+  ],
+  "cases": {
+    "simple_table": {
+      "off": {
+        "tokens": 282,
+        "eos": true,
+        "original_character_edits": 349,
+        "original_word_edits": 97
+      },
+      "on": {
+        "tokens": 294,
+        "eos": true,
+        "original_character_edits": 364,
+        "original_word_edits": 104
+      },
+      "off_on_ids_exact": false,
+      "off_on_raw_text_exact": false
+    },
+    "simple_form": {
+      "off": {
+        "tokens": 167,
+        "eos": true,
+        "original_character_edits": 175,
+        "original_word_edits": 45
+      },
+      "on": {
+        "tokens": 167,
+        "eos": true,
+        "original_character_edits": 175,
+        "original_word_edits": 45
+      },
+      "off_on_ids_exact": true,
+      "off_on_raw_text_exact": true
+    }
+  },
+  "limits": "Only selected small files independently downloaded and rehashed; full vocabulary rows/stages remain remote and were checked by the producer. No additional inference.",
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "reference_files_authenticated": {
+    "simple_form/original.json": {
+      "bytes": 69011,
+      "sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a"
+    },
+    "simple_table/original.json": {
+      "bytes": 80062,
+      "sha256": "6be5428f247b616e76d79513b62873cf0238842999be2fb0848997f8ced25763"
+    },
+    "simple_form/upstream.json": {
+      "bytes": 218666,
+      "sha256": "ddf699b954ebbdb82fb8f56dbe7992bf682f602ecfb7798045aa3be23b9354fb"
+    },
+    "simple_table/upstream.json": {
+      "bytes": 342793,
+      "sha256": "93e5d2e177f8257837b93d1c1abf3e613a592602cd2e11705b8db5373efb66f3"
+    }
+  },
+  "reference_receipts_authenticated": [
+    "712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2",
+    "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3"
+  ]
+}

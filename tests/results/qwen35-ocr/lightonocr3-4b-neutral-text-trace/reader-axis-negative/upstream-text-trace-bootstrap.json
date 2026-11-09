@@ -1,0 +1,28 @@
+{
+  "schema": "lighton4b-upstream-text-trace-bootstrap/v1",
+  "source_sha": "9d90579b29880eb4f208d11dd4a8f8fc92f1c6ee",
+  "bootstrap_sha256": "e980c66af1293389b697af91fba274fa72215c11242c5aaa228ae32d5cbd044e",
+  "status": "failed",
+  "gpu_requested": false,
+  "model_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "upstream-text-trace",
+  "source_file_sha256": {
+    "tools/text-trace-probe/worker.py": "93b78de169457ea7a77f4d6d929d2e36f9b37403bc9c9943fc380935d781851b",
+    "tools/text-trace-probe/source_patch.py": "7bbb99aed40f502664e608b7afa8a0b48546da5e06fe990993867abc5649c2e8",
+    "tools/text-trace-probe/analysis.py": "b9cc198c7573e104898dec590dcc6d56f37c307c78565ca6e8a8b27d2598e488",
+    "tools/text-trace-probe/test_controls.py": "284119257afb05882221df7fbd331836408e9143a19cfe80674339bee609bb68",
+    "tools/lighton4b_upstream_observer_patch.py": "80c229113c4836c1447661d843dba9cc1fff573840ad128e6aee79b6a0e285a5",
+    "tools/lighton4b_upstream_dispatch_log.py": "aa4e955add0a590a6fc67cffb97eedd09cbd176e9bcc6c8b7b2fcbed27a684e1",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "docs/lighton4b-upstream-physical-decode-v1.json": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d",
+    "docs/lighton4b-upstream-text-trace-v1.md": "f3460cb1f6914e0da720184efe328fefb3dc240525d02509afd4d340127b72ba",
+    "tools/text-trace-probe/read_trace.py": "b9df242be9797b0b63888f92c9840dd29fc3c5f4e83fc60121d709ce2c1e52b6",
+    "tools/text-trace-probe/relay.py": "68cae8127c2409c53b14957ec561020656af8ce14f0c3ad33c65c40b64992d13"
+  },
+  "error_type": "RuntimeError",
+  "error": "upstream-text-trace nonzero",
+  "elapsed_seconds": 65.09062724600003
+}

@@ -1,0 +1,607 @@
+{
+  "schema": "lighton4b-provisional-heldout-result/v1",
+  "status": "failed",
+  "case": "historical-receipt",
+  "commands": {
+    "source": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 64,
+      "elapsed_seconds": 0.004141941999932897,
+      "child_user_seconds": 0.0008259999999999999,
+      "child_system_seconds": 0.0016519999999999998,
+      "peak_rss_bytes_observed": 4096,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 46735360
+    },
+    "fetch-production": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 65,
+      "elapsed_seconds": 8.068929833000084,
+      "child_user_seconds": 6.017758,
+      "child_system_seconds": 0.682578,
+      "peak_rss_bytes_observed": 6008832,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 211165184
+    },
+    "production-bytes": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 76,
+      "elapsed_seconds": 0.00406143999998676,
+      "child_user_seconds": 0.0009079999999999089,
+      "child_system_seconds": 0.0018249999999999655,
+      "peak_rss_bytes_observed": 180224,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 211165184
+    },
+    "ggml": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 77,
+      "elapsed_seconds": 11.270567153000002,
+      "child_user_seconds": 18.728599,
+      "child_system_seconds": 0.6907899999999999,
+      "peak_rss_bytes_observed": 4063232,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 211165184
+    },
+    "native-configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 118,
+      "elapsed_seconds": 2.718670675000112,
+      "child_user_seconds": 1.3745460000000023,
+      "child_system_seconds": 0.6915880000000003,
+      "peak_rss_bytes_observed": 24252416,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 211165184
+    },
+    "native-build": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 196,
+      "elapsed_seconds": 85.962730749,
+      "child_user_seconds": 147.15139,
+      "child_system_seconds": 7.6639029999999995,
+      "peak_rss_bytes_observed": 10137600,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "test-lighton4b-physical-f16-vision": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 715,
+      "elapsed_seconds": 7.218487406999884,
+      "child_user_seconds": 22.327404,
+      "child_system_seconds": 1.9700550000000003,
+      "peak_rss_bytes_observed": 207548416,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "test-lighton4b-physical-f16-attention": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 719,
+      "elapsed_seconds": 2.4669901380000283,
+      "child_user_seconds": 3.0019939999999963,
+      "child_system_seconds": 1.1947289999999988,
+      "peak_rss_bytes_observed": 144592896,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "cli-native-composed": {
+      "status": "failed",
+      "returncode": 4,
+      "pid": 873,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/native-build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), 1, 1, PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/one.ids'), PosixPath('/kaggle/working'), 1536, 4, 'greedy-full', '--provisional-heldout-cap1536']' returned non-zero exit status 4.",
+      "elapsed_seconds": 0.004243034000182888,
+      "child_user_seconds": 0.0018140000000244072,
+      "child_system_seconds": 0.0009069999999997691,
+      "peak_rss_bytes_observed": 208896,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "cli-native-source-features": {
+      "status": "failed",
+      "returncode": 4,
+      "pid": 874,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/native-build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), 1, 1, PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/one.ids'), PosixPath('/kaggle/working'), 1536, 4, 'greedy-full', '--upstream-vision', PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), '--provisional-heldout-cap1536']' returned non-zero exit status 4.",
+      "elapsed_seconds": 0.0040048680000381864,
+      "child_user_seconds": 0.0024449999999944794,
+      "child_system_seconds": 0.0,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "cli-cap-low": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 875,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/native-build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), 1, 1, PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/one.ids'), PosixPath('/kaggle/working'), 1535, 4, 'greedy-full', '--provisional-heldout-cap1536']' returned non-zero exit status 2.",
+      "elapsed_seconds": 0.0041490610001346795,
+      "child_user_seconds": 0.0,
+      "child_system_seconds": 0.0022700000000011045,
+      "peak_rss_bytes_observed": 196608,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "cli-cap-high": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 876,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/native-build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), 1, 1, PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/one.ids'), PosixPath('/kaggle/working'), 1537, 4, 'greedy-full', '--provisional-heldout-cap1536']' returned non-zero exit status 2.",
+      "elapsed_seconds": 0.004044947000011234,
+      "child_user_seconds": 0.0022799999999847387,
+      "child_system_seconds": 0.0,
+      "peak_rss_bytes_observed": 200704,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "cli-threads": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 877,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/native-build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), 1, 1, PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/one.ids'), PosixPath('/kaggle/working'), 1536, 2, 'greedy-full', '--provisional-heldout-cap1536']' returned non-zero exit status 2.",
+      "elapsed_seconds": 0.004182562000096368,
+      "child_user_seconds": 0.0008290000000101827,
+      "child_system_seconds": 0.0016479999999994277,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "cli-mode": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 878,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/native-build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), 1, 1, PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/one.ids'), PosixPath('/kaggle/working'), 1536, 4, 'full', '--provisional-heldout-cap1536']' returned non-zero exit status 2.",
+      "elapsed_seconds": 0.004146825000134413,
+      "child_user_seconds": 0.0,
+      "child_system_seconds": 0.0026410000000005596,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "cli-disabled": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 879,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/native-build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), 1, 1, PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/one.ids'), PosixPath('/kaggle/working'), 1536, 4, 'greedy-full', '--provisional-heldout-cap1536']' returned non-zero exit status 2.",
+      "elapsed_seconds": 0.004000915000005989,
+      "child_user_seconds": 0.002267999999986614,
+      "child_system_seconds": 0.0,
+      "peak_rss_bytes_observed": 196608,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "cli-unflagged": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 880,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/native-build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), 1, 1, PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/one.ids'), PosixPath('/kaggle/working'), 1536, 4, 'greedy-full']' returned non-zero exit status 2.",
+      "elapsed_seconds": 0.0040540429999964545,
+      "child_user_seconds": 0.0011690000000044165,
+      "child_system_seconds": 0.0011689999999990874,
+      "peak_rss_bytes_observed": 192512,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "cli-old256": {
+      "status": "failed",
+      "returncode": 4,
+      "pid": 881,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/native-build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), 1, 1, PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/one.ids'), PosixPath('/kaggle/working'), 256, 4, 'greedy-full']' returned non-zero exit status 4.",
+      "elapsed_seconds": 0.004057084000123723,
+      "child_user_seconds": 0.0012059999999962656,
+      "child_system_seconds": 0.0012059999999998183,
+      "peak_rss_bytes_observed": 196608,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "cli-old512": {
+      "status": "failed",
+      "returncode": 4,
+      "pid": 882,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/native-build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/missing'), 1, 1, PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/one.ids'), PosixPath('/kaggle/working'), 512, 4, 'greedy-full', '--observed-composed-cap512']' returned non-zero exit status 4.",
+      "elapsed_seconds": 0.0041370809999534686,
+      "child_user_seconds": 0.0012570000000096115,
+      "child_system_seconds": 0.0012570000000007298,
+      "peak_rss_bytes_observed": 192512,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "up-init": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 883,
+      "elapsed_seconds": 0.008440909000000829,
+      "child_user_seconds": 0.002345999999988635,
+      "child_system_seconds": 0.002347000000000321,
+      "peak_rss_bytes_observed": 184320,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "up-remote": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 884,
+      "elapsed_seconds": 0.008259776999921087,
+      "child_user_seconds": 0.001964000000015176,
+      "child_system_seconds": 0.0009809999999994545,
+      "peak_rss_bytes_observed": 208896,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "up-fetch": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 885,
+      "elapsed_seconds": 5.519088277000037,
+      "child_user_seconds": 2.6556170000000066,
+      "child_system_seconds": 0.46365500000000104,
+      "peak_rss_bytes_observed": 16969728,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "up-checkout": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 896,
+      "elapsed_seconds": 1.2659611909998603,
+      "child_user_seconds": 0.9033319999999776,
+      "child_system_seconds": 0.27442999999999884,
+      "peak_rss_bytes_observed": 63651840,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "up-configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 898,
+      "elapsed_seconds": 1.6669969770000534,
+      "child_user_seconds": 1.1157859999999857,
+      "child_system_seconds": 0.5057279999999995,
+      "peak_rss_bytes_observed": 18841600,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 445054976
+    },
+    "up-build": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1041,
+      "elapsed_seconds": 498.185804319,
+      "child_user_seconds": 940.290474,
+      "child_system_seconds": 38.635795,
+      "peak_rss_bytes_observed": 10031104,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 648503296
+    },
+    "source-preflight-noargs": {
+      "status": "failed",
+      "returncode": 1,
+      "pid": 2287,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-heldout-historical-receipt-v1/heldout/up-build/bin/heldout-source-preflight')]' returned non-zero exit status 1.",
+      "elapsed_seconds": 0.01638198000000557,
+      "child_user_seconds": 0.0027880000000095606,
+      "child_system_seconds": 0.0027889999999999304,
+      "peak_rss_bytes_observed": 196608,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 648503296
+    },
+    "server-help": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2288,
+      "elapsed_seconds": 0.016315714000029402,
+      "child_user_seconds": 0.004803999999921871,
+      "child_system_seconds": 0.005763000000001739,
+      "peak_rss_bytes_observed": 176128,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 648503296
+    }
+  },
+  "arms": {},
+  "qualified": false,
+  "references_expert_adjudicated": false,
+  "heldout_forward_executed": false,
+  "model_acquisition": true,
+  "reference_limits": {
+    "gold_registry_sha256": "dd4ba6eff5922febe81c6ec71b6c70d1b0117d392e4ff3d581564a61caa82b4d",
+    "status": "Existing prior assistant visual transcription, no OCR output consulted, not expert-human adjudicated. Inventory literal source authored independently.",
+    "scorer": {
+      "tools/ocr_quality.py": "de93f01d26759e052e4c99c224b3184a39bdf3bbd11f768318c672ccad7fa0c5",
+      "tools/ci-heavy/qwen35_quant_calibration.py": "bf03b5a66fd6d42700eaf5e4dcc9a5705ea208df3e903c2187f576b7b45ebed6"
+    },
+    "policy": "crispembed-ocr-quality-v1; raw and parsed-content CER/WER; positional table-cell errors; no winner-tuned normalization"
+  },
+  "source_observer_scope": "Observer OFF retains full IDs/probabilities/text; observer ON retains all raw logits after complete neutrality. No claim of unobserved OFF raw-vocabulary bytes.",
+  "phase": "server-help",
+  "source_sha": "6ec3b4f9dff8849c2a514b3838fd8e931f67bf69",
+  "capacity": {
+    "memory": {
+      "MemAvailable": 31480156160,
+      "SwapTotal": 0,
+      "SwapFree": 0,
+      "cgroup_observed": 1,
+      "finite_cgroup_bounds": 1
+    },
+    "scratch_free": 1037710561280,
+    "output_free": 20940271616
+  },
+  "actual_cli_controls": 10,
+  "observer_patch": {
+    "tools/mtmd/mtmd-helper.cpp": {
+      "original_sha256": "fd2b9fbb742c1d1d102cfacb70ab0dedc903603a22dc5cf504c77b389ce413d9",
+      "patched_sha256": "a14ea5ccb24afea929ef2f7c1d35b5bdc98954e18efac0b8c365ba8f444b6364"
+    },
+    "common/sampling.cpp": {
+      "original_sha256": "e88c45dfdc58ef2e86b5519aac68c83ced333952ade7d4bd8fca5f1ce5bbea02",
+      "patched_sha256": "b01b9068378e045898607f46bfd99ab7d2096e53cb845d7d1507d5e399f94fa6"
+    }
+  },
+  "native_binary_sha256": "37a3f95886266204ece733a7783d74bd1677ec7f856d1b6356fb4e675f0badb1",
+  "source_binary_sha256": "b3f8f3daca52bb5792906e74a90eb638f06e0a17471b8817d56f6c3f3b0e9693",
+  "source_preflight_binary_sha256": "7e3f12efb8a92edc0e912f7dcc011d69bb8359e3f766f9006ed8c2f483c9ea03",
+  "input_preparation": {
+    "schema": "lighton4b-heldout-admission/v1",
+    "status": "inputs_verified_execution_blocked",
+    "quality_qualified": false,
+    "reference_status": "Existing prior assistant visual transcription, no OCR output consulted, not expert-human adjudicated. Inventory literal source authored independently.",
+    "model_inference_performed": false,
+    "candidate_outputs_read": false,
+    "cases": [
+      {
+        "id": "historical-receipt",
+        "png_sha256": "7aa766b0a5bd886e769cb1559d16a71312e9f9929669ac5d847c241bec10564b",
+        "rgb_sha256": "34260ff707cfb3628e622007464cdeb32a960cd66c03eb34a36044f0e2c2dca4",
+        "size": [
+          352,
+          704
+        ],
+        "gold_sha256": "125c47bc521ded86512c6ba3bc85feb1a9a19a371a64bf8a9e8ccb3453d7705e",
+        "nominal_merged_image_tokens": 242,
+        "execution_order": [
+          "upstream Q4_K_M composed, observer OFF",
+          "upstream Q4_K_M composed, observer ON; full output/probability neutrality required",
+          "native same-weight composed vision; primary quality arm",
+          "native same-weight upstream features; secondary decoder isolation only"
+        ]
+      },
+      {
+        "id": "two-column-page",
+        "png_sha256": "36a6ca6306a9f74ceee06b1a5268c8eae354b53212417d3eac0f2b70b2bada21",
+        "rgb_sha256": "3a462c9b8a913ffd4102fe8fd3b9bc2eac103a0c855c83b68c929a844d900290",
+        "size": [
+          448,
+          576
+        ],
+        "gold_sha256": "abf6dfbf6d2461f79dd6911b5e7bd259a56fb0fc6534155bc34eb5fce41044b7",
+        "nominal_merged_image_tokens": 252,
+        "execution_order": [
+          "upstream Q4_K_M composed, observer OFF",
+          "upstream Q4_K_M composed, observer ON; full output/probability neutrality required",
+          "native same-weight composed vision; primary quality arm",
+          "native same-weight upstream features; secondary decoder isolation only"
+        ]
+      },
+      {
+        "id": "inventory-table",
+        "png_sha256": "1e7a3073bd158dc87613463e45eafc52cec0c48f3655a6937a583767e26f4b4f",
+        "rgb_sha256": "9ac5313218d0c513e4312cf5669ea6def4c77d32562f317d8b1367b7b2b273a4",
+        "size": [
+          448,
+          448
+        ],
+        "gold_sha256": "801171c1459131e5d34479d6820fcc3dd260c9ea7110b0cbb4a6705e0f729e76",
+        "nominal_merged_image_tokens": 196,
+        "execution_order": [
+          "upstream Q4_K_M composed, observer OFF",
+          "upstream Q4_K_M composed, observer ON; full output/probability neutrality required",
+          "native same-weight composed vision; primary quality arm",
+          "native same-weight upstream features; secondary decoder isolation only"
+        ]
+      }
+    ],
+    "blockers": [
+      "Expert-human adjudication of existing references and reading order before release qualification.",
+      "Two-column image CC0 declaration does not independently clear embedded literary text; review underlying text rights before new distribution.",
+      "Generic heldout test executor cap1536 is not implemented: current driver admits256 and table-only512. Require bounded cap extension and default-off/old-stage byte controls.",
+      "Freeze exact binary/library hashes, complete gate tuple, prompt/chat-template/token IDs, geometry/grid/positions and context+generation fit before any forward. No implicit crop/resize or prompt tuning.",
+      "Verify native composed vision supports all three geometries; keep source features secondary.",
+      "Separate authorization/resource preflight required before workers; this protocol launches none.",
+      "Physical F16 KV capacity is fixed2048: actual prompt tokens +1536 generation budget must be <=2048 before forward; prompt maximum512. Reject, do not resize or shorten outputs to fit."
+    ],
+    "required_runtime_contract": {
+      "cap": 1536,
+      "threads": 4,
+      "context": 2048,
+      "modes": [
+        "composed-primary",
+        "source-feature-secondary"
+      ],
+      "prompt_tokens_max": 512,
+      "image_tokens_max": 256,
+      "completed_outputs_required": true,
+      "generic_driver_available": false
+    }
+  },
+  "native_gates": {
+    "CRISPEMBED_BUILD_MODE": "0",
+    "CRISPEMBED_LIGHTON4B_PROVISIONAL_HELDOUT": "1",
+    "CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT": "1",
+    "CRISPEMBED_LIGHTON4B_QUANT": "1",
+    "CRISPEMBED_QWEN35_QUANT": "1",
+    "CRISPEMBED_LIGHTON4B_GGUF_INSPECTION": "1",
+    "CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER": "1",
+    "CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_OWNER": "1",
+    "CRISPEMBED_QWEN35_OCR": "1",
+    "CRISPEMBED_LIGHTON4B_DECODER_COMPOSE": "1",
+    "CRISPEMBED_LIGHTON4B_LINEAR_BLOCK": "1",
+    "CRISPEMBED_LIGHTON4B_ATTENTION_BLOCK": "1",
+    "CRISPEMBED_QWEN35_GDN_GROUPED_HEADS": "1",
+    "CRISPEMBED_QWEN35_STREAM_PROJECTION": "1",
+    "CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE": "1",
+    "CRISPEMBED_LIGHTON4B_FRONTEND": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_NORM": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_CONV": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_TABLE": "1",
+    "CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL": "1",
+    "CRISPEMBED_LIGHTON4B_Q6_K": "1",
+    "CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT": "1",
+    "CRISPEMBED_LIGHTON4B_HEAD_BF16": "0",
+    "CRISPEMBED_LIGHTON4B_BF16_LINEAR": "0",
+    "CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS": "0",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION": "all",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_F16_VISION": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK": "0",
+    "CRISPEMBED_LIGHTON4B_FROZEN_CASES": "1"
+  },
+  "error_type": "TimeoutError",
+  "error": "The read operation timed out",
+  "elapsed_seconds": 799.76841874,
+  "artifacts": {
+    "test-lighton4b-physical-f16-attention.log": {
+      "bytes": 35,
+      "sha256": "5892c49ef41bc582baf756071bcb35987aa815a18b8e88452d1cfa601f57cdef"
+    },
+    "cli-cap-high.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-cap-low.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "production-bytes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "up-build.log": {
+      "bytes": 15172,
+      "sha256": "d430e0cf8681536d972df2bb11edc0897bd1775395a7cfaeb3baa05c3049aaa1"
+    },
+    "up-checkout.log": {
+      "bytes": 84,
+      "sha256": "401b0f35047d9999135ce240162909f4d3b9be4cafce7c16c1eafb93d3b7bff7"
+    },
+    "cli-mode.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "upstream-CMakeCache.txt": {
+      "bytes": 32039,
+      "sha256": "9ae25872a86070634855254162e455ab4120ef93ac1a7745443b0ddb4528715f"
+    },
+    "cli-old256.log": {
+      "bytes": 244,
+      "sha256": "cb263bb0a80ee74a2f94759a9e78262f23f7bc04b78c8116b4d393d5f1955e58"
+    },
+    "up-fetch.log": {
+      "bytes": 119,
+      "sha256": "5537e1fa1b4cf8d84bd910e3fed8a4a9e0803b4bddddf1cf9b9182e0f1b00983"
+    },
+    "up-configure.log": {
+      "bytes": 1575,
+      "sha256": "e62411c7fc5a14dbd9b3d3f84aff9b614aee98244d3f447edf3ca224c44f78be"
+    },
+    "source-preflight-noargs.log": {
+      "bytes": 68,
+      "sha256": "5ce1a5f0aeee572396c9fd49477aa0b8d364d54bce17b44bf1c2fa27d06ad514"
+    },
+    "native-configure.log": {
+      "bytes": 2057,
+      "sha256": "c78e792e015554fcf0726ff1215b1e4c8b4af2262f17c037d4bbe6ee274c1443"
+    },
+    "cli-native-composed.log": {
+      "bytes": 244,
+      "sha256": "cb263bb0a80ee74a2f94759a9e78262f23f7bc04b78c8116b4d393d5f1955e58"
+    },
+    "cli-threads.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "fetch-production.log": {
+      "bytes": 125,
+      "sha256": "5209a7805ca7161c4fee0073a12958fc6929dfbfb6173ff63519cffbe88e81a2"
+    },
+    "up-init.log": {
+      "bytes": 589,
+      "sha256": "9744425c4d2ba55d76484c6ef1bbe24733f6780047e00ca878c64d87368c572b"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "cbd07663dfd34ec035604ba1c1abde3c7c097cd0813e5b53f30c186185a953cc"
+    },
+    "server-help.log": {
+      "bytes": 60758,
+      "sha256": "649ca487aced48d55b6ce3f4dca02923380887c262a65d5c939171b30dd6a61f"
+    },
+    "cli-disabled.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "up-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-unflagged.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "ggml.log": {
+      "bytes": 239,
+      "sha256": "bdfbf5c3d23b44c387df5667066d9f9016df6861f25a2c1fe3a996f044f35885"
+    },
+    "test-lighton4b-physical-f16-vision.log": {
+      "bytes": 101,
+      "sha256": "d58c15e1a57af3d53eada05f045b41d5fdb56580fc6854f8021f06a8bb03c7f2"
+    },
+    "cli-old512.log": {
+      "bytes": 244,
+      "sha256": "cb263bb0a80ee74a2f94759a9e78262f23f7bc04b78c8116b4d393d5f1955e58"
+    },
+    "cli-native-source-features.log": {
+      "bytes": 244,
+      "sha256": "cb263bb0a80ee74a2f94759a9e78262f23f7bc04b78c8116b4d393d5f1955e58"
+    },
+    "native-build.log": {
+      "bytes": 7276,
+      "sha256": "9f469651a4574e91bc0c5d5174e4ce4df57b47297f40d31469559dce24ac3977"
+    },
+    "native-CMakeCache.txt": {
+      "bytes": 29227,
+      "sha256": "19393fc0dd4b6ce49764e6e003b1d6274477c1211abafda17d614d848509b516"
+    },
+    "inputs/input.rgb": {
+      "bytes": 743424,
+      "sha256": "34260ff707cfb3628e622007464cdeb32a960cd66c03eb34a36044f0e2c2dca4"
+    },
+    "inputs/input.png": {
+      "bytes": 379500,
+      "sha256": "7aa766b0a5bd886e769cb1559d16a71312e9f9929669ac5d847c241bec10564b"
+    }
+  }
+}

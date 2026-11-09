@@ -2,6 +2,7 @@
 #include "qwen35_attention.h"
 #include "qwen35_linear.h"
 #include "core/gguf_loader.h"
+#include <memory>
 namespace qwen35_ocr {
 struct decoder_layer_weights {
     bool full_attention = false;
@@ -12,12 +13,19 @@ struct decoder_layer_weights {
     ggml_tensor * gate = nullptr;
     ggml_tensor * up = nullptr;
     ggml_tensor * down = nullptr;
+    bool upstream_physical = false;
+    bool physical_q4_repack = false;
+    converted_weight_cache * physical_weights_cache = nullptr;
 };
 struct decoder_weights {
     std::vector<decoder_layer_weights> layers;
     ggml_tensor * norm = nullptr;
     ggml_tensor * embedding = nullptr;
     ggml_tensor * head = nullptr;
+    bool upstream_physical = false;
+    bool hf_tiled_out = false;
+    bool physical_q4_repack = false;
+    std::shared_ptr<converted_weight_cache> physical_weights_cache;
 };
 struct decoder_layer_cache {
     std::vector<float> conv, recurrent;

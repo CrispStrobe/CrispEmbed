@@ -1,0 +1,9 @@
+{
+  "large_artifact_copy_executed": false,
+  "model_inference_executed": false,
+  "protocol_sha256": "0f1fa0322d7e22953417880d9bbf98080f2642c80ead99b2a8bcf4fb90f57e4b",
+  "rows": [],
+  "schema": "lighton4b-f16-teacher-readback/v1",
+  "seconds": 14.019410304999951,
+  "status": "failed"
+}

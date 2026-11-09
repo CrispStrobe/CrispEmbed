@@ -1,0 +1,71 @@
+[  0%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml.c.o
+[  0%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml.cpp.o
+[  0%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o
+[  0%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o
+[  0%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o
+[ 16%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o
+[ 16%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o
+[ 16%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o
+[ 16%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/gguf.cpp.o
+[ 16%] Linking CXX shared library libggml-base.so
+[ 16%] Built target ggml-base
+[ 16%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o
+[ 16%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o
+[ 16%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o
+[ 16%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o
+[ 16%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile/sgemm.cpp.o
+[ 33%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o
+[ 50%] Linking CXX shared library libggml-cpu.so
+[ 50%] Built target ggml-cpu
+[ 50%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o
+[ 50%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o
+[ 50%] Linking CXX shared library libggml.so
+[ 50%] Built target ggml
+[ 50%] Building CXX object CMakeFiles/crispembed-core.dir/src/core/gguf_loader.cpp.o
+[ 50%] Building CXX object CMakeFiles/crispembed-core.dir/src/core/mel.cpp.o
+[ 50%] Building CXX object CMakeFiles/crispembed-core.dir/src/core/image_out.cpp.o
+[ 66%] Building C object CMakeFiles/crispembed-core.dir/src/core/shortest_double.c.o
+[ 66%] Linking CXX static library libcrispembed-core.a
+[ 66%] Built target crispembed-core
+[ 66%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_delta.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_linear.cpp.o
+/tmp/lighton4b-vision-profile-controls-v1/source/src/qwen35_delta.cpp: In lambda function:
+/tmp/lighton4b-vision-profile-controls-v1/source/src/qwen35_delta.cpp:224:41: warning: ‘ggml_tensor* ggml_add1(ggml_context*, ggml_tensor*, ggml_tensor*)’ is deprecated: use ggml_add instead [-Wdeprecated-declarations]
+  224 |             ggml_sqrt(context, ggml_add1(context, ggml_sum_rows(context, ggml_sqr(context, tensor)), epsilon));
+      |                                ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /tmp/lighton4b-vision-profile-controls-v1/source/ggml/src/../include/ggml-backend.h:3,
+                 from /tmp/lighton4b-vision-profile-controls-v1/source/src/qwen35_delta.cpp:4:
+/tmp/lighton4b-vision-profile-controls-v1/source/ggml/src/../include/ggml.h:929:51: note: declared here
+  929 |     GGML_DEPRECATED(GGML_API struct ggml_tensor * ggml_add1(
+      |                                                   ^~~~~~~~~
+/tmp/lighton4b-vision-profile-controls-v1/source/ggml/src/../include/ggml.h:192:41: note: in definition of macro ‘GGML_DEPRECATED’
+  192 | #    define GGML_DEPRECATED(func, hint) func __attribute__((deprecated(hint)))
+      |                                         ^~~~
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_attention.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_decoder.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_vision.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/lighton4b_vision_owner.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_norm.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_profile.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_positions.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_image.cpp.o
+[ 83%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/lighton4b_pillow_resize.cpp.o
+[100%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/lighton4b_physical_f16_vision.cpp.o
+[100%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_tokenizer.cpp.o
+[100%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_ocr.cpp.o
+[100%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/lighton4b_vision_bf16.cpp.o
+[100%] Building CXX object CMakeFiles/crispembed-qwen35-delta.dir/src/lighton4b_physical_f16_attention.cpp.o
+[100%] Linking CXX static library libcrispembed-qwen35-delta.a
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-pillow-resize.dir/tests/test_lighton4b_pillow_resize.cpp.o
+[100%] Linking CXX executable test-lighton4b-pillow-resize
+[100%] Built target test-lighton4b-pillow-resize

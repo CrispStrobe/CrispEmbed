@@ -1,0 +1,12 @@
+{
+  "schema": "lighton4b-reconstructed-prefix-bootstrap/v1",
+  "source_sha": "f155c591e3e8fa7e3cfb59f719a477a886976fc7",
+  "status": "failed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "dependency-check",
+  "worker_sha256": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+  "error_type": "FileNotFoundError",
+  "error": "Bounded independent upstream worker did not complete; retain per-phase logs and receipt"
+}

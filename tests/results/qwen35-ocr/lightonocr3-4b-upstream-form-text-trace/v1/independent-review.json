@@ -1,0 +1,14 @@
+{
+  "status": "independently_verified_setup_negative",
+  "report_sha256": "efc56873ff7f8d4235688badc3ce1307974e647f6e93817e6d373527a3c670c3",
+  "failure": "independent complete source EOS/prompt",
+  "source_count_required_wrongly": 174,
+  "authenticated_original_source_count": 170,
+  "old_native_physical_count": 174,
+  "original_response_sha256": "ddf699b954ebbdb82fb8f56dbe7992bf682f602ecfb7798045aa3be23b9354fb",
+  "prompt_tokens": 154,
+  "eos": 248046,
+  "native_combined_prefix_matching": 31,
+  "before_upstream_checkout_build_weights_or_forward": true,
+  "numerical_result_available": false
+}

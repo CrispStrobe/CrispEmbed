@@ -1,0 +1,16 @@
+{
+  "run": 42206305308,
+  "source": "cf71c6733",
+  "status": "failed-control",
+  "builds_passed": true,
+  "model_payload_bytes": 0,
+  "failed_control": 703,
+  "reason": "project_rows_cpu still rejected Q6_K in its narrower type whitelist; generic full projection and independent dequant controls before703 passed",
+  "additional_route_found": "linear_grouped_cpu also had a Q8/Q4-only projection validator",
+  "artifact": {
+    "id": 13496702895,
+    "sha256": "8c1f00d51e85ad7d11632b79721ef9c0b7667c9e36ee8edc68807200b3609f5e",
+    "bytes": 4746,
+    "expires_at": "2027-02-04T10:55:12Z"
+  }
+}

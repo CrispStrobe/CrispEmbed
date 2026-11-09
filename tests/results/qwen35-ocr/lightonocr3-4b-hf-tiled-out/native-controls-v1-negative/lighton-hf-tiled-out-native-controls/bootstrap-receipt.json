@@ -1,0 +1,27 @@
+{
+  "available_ram_bytes": 32175439872,
+  "bootstrap_sha256": "ddc3557f0c0fa872be10b994f5c7ab437868c211ef1065c01d7efce0c2432bce",
+  "checkpoint_downloaded": false,
+  "error": "bounded synthetic controls failed",
+  "error_type": "RuntimeError",
+  "gpu_enabled": false,
+  "model_inference_executed": false,
+  "preflight": {
+    "free_disk_bytes": 20940546048,
+    "load": [
+      0.8486328125,
+      0.48974609375,
+      0.20166015625
+    ],
+    "logical_cpus": 4,
+    "memory_swap": {
+      "MemAvailable": "31902736 kB",
+      "SwapFree": "0 kB",
+      "SwapTotal": "0 kB"
+    }
+  },
+  "schema": "lighton4b-hf-tiled-out-native-controls-bootstrap/v1",
+  "seconds": 96.01165148300001,
+  "source_sha": "11e64198f37e6ee9ed00f12ace3b9031320c210b",
+  "status": "failed"
+}

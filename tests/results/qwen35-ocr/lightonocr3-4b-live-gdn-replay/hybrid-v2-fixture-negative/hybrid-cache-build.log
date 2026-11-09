@@ -1,0 +1,24 @@
+[ 27%] Built target ggml-base
+[ 70%] Built target ggml-cpu
+[ 78%] Built target ggml
+[ 81%] Building CXX object CMakeFiles/gdn-hybrid-cache-controls.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/tests/test_lighton4b_physical_gdn_source_ops.cpp.o
+[ 83%] Building CXX object CMakeFiles/gdn-hybrid-cache-controls.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp.o
+/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp: In lambda function:
+/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp:227:41: warning: ‘ggml_tensor* ggml_add1(ggml_context*, ggml_tensor*, ggml_tensor*)’ is deprecated: use ggml_add instead [-Wdeprecated-declarations]
+  227 |             ggml_sqrt(context, ggml_add1(context, ggml_sum_rows(context, ggml_sqr(context, tensor)), epsilon));
+      |                                ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /tmp/lighton4b-physical-gdn-hybrid-v2/source/ggml/src/../include/ggml-backend.h:3,
+                 from /tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp:5:
+/tmp/lighton4b-physical-gdn-hybrid-v2/source/ggml/src/../include/ggml.h:929:51: note: declared here
+  929 |     GGML_DEPRECATED(GGML_API struct ggml_tensor * ggml_add1(
+      |                                                   ^~~~~~~~~
+/tmp/lighton4b-physical-gdn-hybrid-v2/source/ggml/src/../include/ggml.h:192:41: note: in definition of macro ‘GGML_DEPRECATED’
+  192 | #    define GGML_DEPRECATED(func, hint) func __attribute__((deprecated(hint)))
+      |                                         ^~~~
+[ 86%] Building CXX object CMakeFiles/gdn-hybrid-cache-controls.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/lighton4b_physical_gdn_source_ops.cpp.o
+[ 89%] Building CXX object CMakeFiles/gdn-hybrid-cache-controls.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_linear.cpp.o
+[ 91%] Building CXX object CMakeFiles/gdn-hybrid-cache-controls.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_norm.cpp.o
+[ 94%] Building CXX object CMakeFiles/gdn-hybrid-cache-controls.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_profile.cpp.o
+[ 97%] Building CXX object CMakeFiles/gdn-hybrid-cache-controls.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/lighton4b_physical_f16_attention.cpp.o
+[100%] Linking CXX executable gdn-hybrid-cache-controls
+[100%] Built target gdn-hybrid-cache-controls

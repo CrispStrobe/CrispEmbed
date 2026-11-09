@@ -1,0 +1,8 @@
+	linux-vdso.so.1 (0x00007b3d82014000)
+	libggml-cpu.so.0 => /kaggle/working/lighton-q4km-candidate-results/runtime/lib/libggml-cpu.so.0 (0x00007b3d81e2d000)
+	libggml-base.so.0 => /kaggle/working/lighton-q4km-candidate-results/runtime/lib/libggml-base.so.0 (0x00007b3d81d5f000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007b3d81ad2000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007b3d819e9000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007b3d819bb000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007b3d817a6000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007b3d82016000)

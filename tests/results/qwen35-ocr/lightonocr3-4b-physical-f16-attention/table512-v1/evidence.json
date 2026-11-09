@@ -1,0 +1,71 @@
+{
+  "schema": "lighton4b-physical-f16-table512-evidence/v1",
+  "source_sha": "f789609c2f1ff1a9527c8d02545d096ed10446b0",
+  "receipt_sha256": "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3",
+  "same_quantized_weights": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "upstream_and_native_generated_tokens": 282,
+  "both_eos": true,
+  "native_vs_bf16_character_edits": 349,
+  "upstream_vs_bf16_character_edits": 348,
+  "reference_codepoints": 607,
+  "both_word_edits": 97,
+  "reference_words": 106,
+  "quality_qualified": false,
+  "old_cap256_result_replaced": false,
+  "actual_metadata": "QKV Q6 and tied embedding/head use CPU_Mapped extra=0; selected Q4 Z/alpha/beta/out/FFN gate use CPU_REPACK extra=1. Metadata is not a per-operation execution trace.",
+  "test_driver_change": "Only explicit source-vision greedy-full cap512/4-thread reference CLI opt-in; default256 unchanged. Same production source/CMake/GGML/profile rebuilt, all old256 raw row and38 prefill stage hashes reproduced.",
+  "artifacts": {
+    "native-CMakeCache.txt": {
+      "bytes": 29172,
+      "sha256": "8d71ae1e66b7188d1bc63fac43c27512ffe2309050c296a91e03fa03b48f5fd4"
+    },
+    "physical-f16-table512.json": {
+      "bytes": 126623,
+      "sha256": "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3"
+    },
+    "independent-review.json": {
+      "bytes": 1053,
+      "sha256": "cf42d3c0a013a4020943a84eb716644312f04800a3a63e97fa8e30abbfbbd7fe"
+    },
+    "physical-f16-bootstrap.json": {
+      "bytes": 401,
+      "sha256": "64d1f57d03e46ab8c65ee52e6739b98f615c135617f5178544385a7fc3b2625c"
+    },
+    "native-supported-guard.log": {
+      "bytes": 35,
+      "sha256": "5892c49ef41bc582baf756071bcb35987aa815a18b8e88452d1cfa601f57cdef"
+    },
+    "upstream-CMakeCache.txt": {
+      "bytes": 32010,
+      "sha256": "c382fde05509f1ca5f8ebbaea5f9dcdd177b4e8a4b912e1d30e5536833ebee4b"
+    },
+    "upstream-off/source.tensor-dispatch.tsv": {
+      "bytes": 981,
+      "sha256": "c96ee9270d87024724608ca55b280828bb46d40bbc1db966703506320b9302c4"
+    },
+    "upstream-off/response.json": {
+      "bytes": 342793,
+      "sha256": "93e5d2e177f8257837b93d1c1abf3e613a592602cd2e11705b8db5373efb66f3"
+    },
+    "native/generated.ids": {
+      "bytes": 1190,
+      "sha256": "8f05d0b19147c735ab619f8953469b338549e3eab43c65a923f1f2694ec77de3"
+    },
+    "native/native-summary.json": {
+      "bytes": 155,
+      "sha256": "0bb0dbb10a287f197a6f4087fc41938fa025c9c918fb37aad6a345e04c0bbb7c"
+    },
+    "native/generated.txt": {
+      "bytes": 841,
+      "sha256": "4833712b9082c4c283907f5934f2f70e788deebad99922e4ce391906876f3f62"
+    },
+    "upstream-on/source.tensor-dispatch.tsv": {
+      "bytes": 981,
+      "sha256": "c96ee9270d87024724608ca55b280828bb46d40bbc1db966703506320b9302c4"
+    },
+    "upstream-on/response.json": {
+      "bytes": 342792,
+      "sha256": "5b6d2a275d18f5d6f59122dcb042a18adb220c63f37abc3961c117fc3a68f1b5"
+    }
+  }
+}

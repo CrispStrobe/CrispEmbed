@@ -1,0 +1,30 @@
+[{"stream_name":"stdout","time":14.368682674,"data":"PHASE adapter-actual-means-and-legacy-controls\n"}
+,{"stream_name":"stdout","time":77.864736789,"data":"PHASE test_lighton4b_imatrix_q4km_recipe.py\n"}
+,{"stream_name":"stdout","time":78.304209901,"data":"PHASE test_lighton4b_q6_recipe.py\n"}
+,{"stream_name":"stdout","time":78.453191344,"data":"PHASE test_lighton4b_gdn_out_q6_recipe.py\n"}
+,{"stream_name":"stdout","time":78.651245633,"data":"PHASE fetch-frozen-receipt-commits\n"}
+,{"stream_name":"stdout","time":82.352209846,"data":"PHASE source-pin-check\n"}
+,{"stream_name":"stdout","time":82.607735794,"data":"PHASE build-policy-controls\n"}
+,{"stream_name":"stderr","time":103.645305179,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":103.646055482,"data":"  File \"/kaggle/working/lighton-q4km-controls-source/tools/ci-heavy/lighton4b_imatrix_q4km_controls.py\", line 49, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":103.64607749,"data":"    if __name__=='__main__':main()\n"}
+,{"stream_name":"stderr","time":103.646084229,"data":"                            ~~~~^^\n"}
+,{"stream_name":"stderr","time":103.646090595,"data":"  File \"/kaggle/working/lighton-q4km-controls-source/tools/ci-heavy/lighton4b_imatrix_q4km_controls.py\", line 29, in main\n"}
+,{"stream_name":"stderr","time":103.646097254,"data":"    run('build-policy-controls',['cmake','--build',build,'--target',*targets,'--parallel','2'])\n"}
+,{"stream_name":"stderr","time":103.646103452,"data":"    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":103.646109731,"data":"  File \"/kaggle/working/lighton-q4km-controls-source/tools/ci-heavy/lighton4b_imatrix_q4km_controls.py\", line 19, in run\n"}
+,{"stream_name":"stderr","time":103.646119909,"data":"    if r.returncode!=expect:raise ValueError('control failed: '+label)\n"}
+,{"stream_name":"stderr","time":103.646126568,"data":"                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":103.646133076,"data":"ValueError: control failed: build-policy-controls\n"}
+,{"stream_name":"stderr","time":104.085930292,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":104.086504546,"data":"  File \"/kaggle/src/script.py\", line 33, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":104.086530986,"data":"    receipt=json.loads((out/'imatrix-q4km-controls.json').read_text());assert code==0 and receipt['status']=='passed'and receipt['all248_actual_means_verified']and receipt['q6_embedding_tied_head_and_public_fence_passed'];report['status']='passed'\n"}
+,{"stream_name":"stderr","time":104.086540833,"data":"                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":104.086547456,"data":"AssertionError\n"}
+,{"stream_name":"stderr","time":106.97609102,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":106.976129244,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":107.365152662,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":107.365180069,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":109.04037998,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":110.324379641,"data":"[NbConvertApp] Writing 293024 bytes to __results__.html\n"}
+]

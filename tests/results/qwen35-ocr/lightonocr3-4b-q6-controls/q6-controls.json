@@ -1,0 +1,21 @@
+{
+  "binary_sha256": {
+    "lighton4b-native-case-preflight": "de74079970bf311cd08dd047cea2ce0183219ca5f378dff83037d0750c720068",
+    "lighton4b-native-document": "b3032f79174cc14cb8a805573e1e130725053587059c2428c27376505db7d293",
+    "test-lighton4b-bf16-dequant-weights": "fde75b9ec016939436876868427a050dc8c5688e3f78fd5ac383a1913fe7f6fc",
+    "test-lighton4b-mixed-policy": "aea8e2ce49011c08a1fc66acf2e2fbae04fa40601cf84d7986b72ca1ffcfa118",
+    "test-lighton4b-native-context": "ac851637a700d0646a8b63d70e12e135c549281c6b26df2646ea386641228a48",
+    "test-lighton4b-q6-policy": "3ad913354a3c79d48d9d2f07c4cabec9775c03e8a84c9a9dc17aa2b4deb33f9d"
+  },
+  "lighton4b-native-case-preflight_argument_returncode": 2,
+  "lighton4b-native-document_argument_returncode": 2,
+  "model_inference_executed": false,
+  "model_payload_bytes": 0,
+  "q6_names_sha256": "cfa42b73f9eff0e209673730dbadbc275bef9289017ddb2f4df044c674c12382",
+  "quality_qualified": false,
+  "recipe": "lighton4b-q4km-q6-q8head-v1",
+  "schema": "lighton4b-q6-controls/v1",
+  "source_sha": "20199554a92e1aba04fc3c28593d717d53892693",
+  "status": "passed",
+  "stdout": "Q6_POLICY passed=1 checks=713 q6_matrices=32 q8_tied_head=1 independent_dequant=1 synthetic_values=65792 grouped_q6_prefill_decode=1 storage_unchanged=1 model_payload=0\n"
+}

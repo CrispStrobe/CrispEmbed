@@ -1,0 +1,26 @@
+{
+  "schema": "lighton4b-upstream-form-text-trace-bootstrap/v1",
+  "source_sha": "da5fa7635473b27a13285dfeb579da53af56a83e",
+  "bootstrap_sha256": "ece2ce6d5f3f1e8548174ef996a3203adf0548437fcbfba367c79b01e3492197",
+  "status": "completed",
+  "gpu_requested": false,
+  "model_forward_executed": true,
+  "model_quality_qualified": false,
+  "phase": "upstream-form-text-trace",
+  "source_file_sha256": {
+    "tools/form-text-trace-probe/worker.py": "0a28ff1a8a9f2c13d5f89901ad20ad4a19181a2a0ce19f75afbb8743172f81f4",
+    "tools/form-text-trace-probe/source_patch.py": "5829efd0b9179f3eed95955c339438fa1430ee772dbc418ba6692b965eeb2e74",
+    "tools/form-text-trace-probe/analysis.py": "dc685a6a2b25fde26df83c79a923f537e328c9eac16e8da87843da9d66e924ba",
+    "tools/form-text-trace-probe/test_controls.py": "bea2b9507832a2d5f8155f80096b0a0ad3d6a448fa1e50645adc6fbf12285fe8",
+    "tools/form-text-trace-probe/protocol.json": "ea4242649f7c9723278eb5010f7c5317fead437d62ab078e5514cbbfd7e3d8ad",
+    "tools/form-text-trace-probe/README.md": "ae4fc346b5093c8404213a7ca39681e4ba71e550f2944dbc29cef1e087d39a54",
+    "tools/lighton4b_upstream_observer_patch.py": "80c229113c4836c1447661d843dba9cc1fff573840ad128e6aee79b6a0e285a5",
+    "tools/lighton4b_upstream_dispatch_log.py": "aa4e955add0a590a6fc67cffb97eedd09cbd176e9bcc6c8b7b2fcbed27a684e1",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "docs/lighton4b-upstream-physical-decode-v1.json": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d"
+  },
+  "worker_status": "measured_neutral_form_text_trace",
+  "elapsed_seconds": 656.2721582910001
+}

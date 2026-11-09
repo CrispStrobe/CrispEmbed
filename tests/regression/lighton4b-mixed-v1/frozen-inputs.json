@@ -1,0 +1,86 @@
+{
+  "schema": "lighton4b-mixed-frozen-inputs/v1",
+  "status": "prepared-before-model-outputs",
+  "source_sha": "98e4b7d71e75e893a2f5c86c1022b50fb6251372",
+  "protocol_sha256": "3a1738c26cf5a34680fea1468bea07c06ee26659f7ddb7e249299677746ba36d",
+  "model_downloaded": false,
+  "model_forward_executed": false,
+  "cases": [
+    {
+      "id": "simple_table",
+      "split": "calibration",
+      "source_sha256": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8",
+      "png_file": "simple_table/input.png",
+      "png_sha256": "8dc41570c6544efb134d1fa798c75cc48dde821bc31f49d819279583f3467c2d",
+      "png_bytes": 10308,
+      "rgb_file": "simple_table/input.rgb",
+      "rgb_sha256": "69158b04ff5ffca79dc4fb2b8d731c19858f02e0427ef55c9d42a7beaa9d3514",
+      "rgb_bytes": 61200,
+      "width": 200,
+      "height": 102,
+      "expected_grid": [
+        1,
+        12,
+        24
+      ],
+      "expected_input_tokens": 86
+    },
+    {
+      "id": "arabic_printed_line",
+      "split": "calibration",
+      "source_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "png_file": "arabic_printed_line/input.png",
+      "png_sha256": "b132a9516f83949f1a31058f24ce6292b84d5e0f44cf099f97888e4934e01a3b",
+      "png_bytes": 811,
+      "rgb_file": "arabic_printed_line/input.rgb",
+      "rgb_sha256": "21b76e3ab8f3fdabe6bfbf029e6cfc8dc17b5d0166095acd4b789c55c20407da",
+      "rgb_bytes": 10353,
+      "width": 119,
+      "height": 29,
+      "expected_grid": [
+        1,
+        8,
+        34
+      ],
+      "expected_input_tokens": 82
+    },
+    {
+      "id": "receipt_example",
+      "split": "heldout",
+      "source_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "png_file": "receipt_example/input.png",
+      "png_sha256": "8f7b96c28c1a96774bb088699dc5122c54df57f27029ed44113e443101a016c9",
+      "png_bytes": 77843,
+      "rgb_file": "receipt_example/input.rgb",
+      "rgb_sha256": "eb4912c8f649a8740102ab7255845f22660bbeb5d1bcc9f684939697b34b9f26",
+      "rgb_bytes": 473088,
+      "width": 352,
+      "height": 448,
+      "expected_grid": [
+        1,
+        28,
+        22
+      ],
+      "expected_input_tokens": 168
+    },
+    {
+      "id": "handwritten_letter",
+      "split": "heldout",
+      "source_sha256": "a2bf46ca2b3a6e8c8069e782751424bb986be155f828dc0be69b94c9af2a2123",
+      "png_file": "handwritten_letter/input.png",
+      "png_sha256": "82e1e234909ed296b5db6a425c9469a8c280b6565b47c7997f72a4e38162e5f6",
+      "png_bytes": 13594,
+      "rgb_file": "handwritten_letter/input.rgb",
+      "rgb_sha256": "8423549002bfc1de337f18e4b9edb6b25db5896ca5cc0d7aa297454d13c7c52c",
+      "rgb_bytes": 430080,
+      "width": 448,
+      "height": 320,
+      "expected_grid": [
+        1,
+        20,
+        28
+      ],
+      "expected_input_tokens": 154
+    }
+  ]
+}

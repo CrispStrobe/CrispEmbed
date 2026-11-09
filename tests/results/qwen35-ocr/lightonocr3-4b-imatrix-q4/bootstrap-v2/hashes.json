@@ -1,0 +1,142 @@
+{
+  "independent-consumer.json": {
+    "bytes": 4857,
+    "sha256": "26a5ef539e00cfc94ff86a9bef099d5aed298e3b86626d211f2d96e1452b9440"
+  },
+  "lighton-weighted-q4-results/actual248-means.log": {
+    "bytes": 26377,
+    "sha256": "bbdca3d05177173dea7a158737031c87915f6b497f8dfe086c0fb62280407d47"
+  },
+  "lighton-weighted-q4-results/adapter.json": {
+    "bytes": 72926,
+    "sha256": "3c775d4ef6eefada3f76f79b4ccb0515f8539c861e69c9e7ed6be8b71c06e9f8"
+  },
+  "lighton-weighted-q4-results/arabic_printed_line-plain_q4-native.log": {
+    "bytes": 70,
+    "sha256": "2da95cfaf7336ae1188c023606975570f1249173c34abefc67cc1f792028fb2a"
+  },
+  "lighton-weighted-q4-results/arabic_printed_line-plain_q4-preflight.log": {
+    "bytes": 88,
+    "sha256": "87c9f28be99e61cca579a0ea360b2a6da026cb88d4e6642cbb774eeba39d1aaf"
+  },
+  "lighton-weighted-q4-results/arabic_printed_line-weighted_q4-native.log": {
+    "bytes": 70,
+    "sha256": "2da95cfaf7336ae1188c023606975570f1249173c34abefc67cc1f792028fb2a"
+  },
+  "lighton-weighted-q4-results/arabic_printed_line-weighted_q4-preflight.log": {
+    "bytes": 88,
+    "sha256": "87c9f28be99e61cca579a0ea360b2a6da026cb88d4e6642cbb774eeba39d1aaf"
+  },
+  "lighton-weighted-q4-results/arabic_printed_line-weighted_q4_full-native.log": {
+    "bytes": 70,
+    "sha256": "f3ffdb6adabd88655399d54f5fe7888bc7ca768069db14c7cabd1edf7337bf7b"
+  },
+  "lighton-weighted-q4-results/arabic_printed_line-weighted_q4_full-preflight.log": {
+    "bytes": 88,
+    "sha256": "87c9f28be99e61cca579a0ea360b2a6da026cb88d4e6642cbb774eeba39d1aaf"
+  },
+  "lighton-weighted-q4-results/arabic_printed_line/plain_q4/native/native-summary.json": {
+    "bytes": 102,
+    "sha256": "318f08e01cb2daef45e58d6a7015d435f7da4508c9d3259677ab670c593787ca"
+  },
+  "lighton-weighted-q4-results/arabic_printed_line/weighted_q4/native/native-summary.json": {
+    "bytes": 102,
+    "sha256": "318f08e01cb2daef45e58d6a7015d435f7da4508c9d3259677ab670c593787ca"
+  },
+  "lighton-weighted-q4-results/arabic_printed_line/weighted_q4_full/native/native-summary.json": {
+    "bytes": 103,
+    "sha256": "fa3f81ab4a433506137007838143a19dc609fb5efb4edb10e5c72259db28560c"
+  },
+  "lighton-weighted-q4-results/bootstrap-receipt.json": {
+    "bytes": 847,
+    "sha256": "0c7ea4c372dfe563fabc7e98b6ab42b784a3a6a3439552bbe8fbfde164896bd6"
+  },
+  "lighton-weighted-q4-results/bootstrap.log": {
+    "bytes": 1142,
+    "sha256": "20b21fbef1e9f43c0c27db3e857d38e98c38a9aef6d2067eec40cc52a66b3cbe"
+  },
+  "lighton-weighted-q4-results/build.log": {
+    "bytes": 6336,
+    "sha256": "fc17fa1d53fa5e4a985ab753603a6ffaae4249fa9604033fefd16eee443783a0"
+  },
+  "lighton-weighted-q4-results/configure.log": {
+    "bytes": 2016,
+    "sha256": "1132d78557eb829c68c591b6e38861f908ce6762dbf7b2ad30ad14d1b1a74764"
+  },
+  "lighton-weighted-q4-results/controller.log": {
+    "bytes": 2607,
+    "sha256": "48de76685e73494c63f646f5389de6a7d568159c784a14d125062745928cafba"
+  },
+  "lighton-weighted-q4-results/null-payload-audit.json": {
+    "bytes": 78123,
+    "sha256": "0fdb317c3770e475763185bf23bbf5a8fef239b7ef9f3670d96dd0ca1a07fa87"
+  },
+  "lighton-weighted-q4-results/packages.log": {
+    "bytes": 3103,
+    "sha256": "800cff3adbe74ff1e4e167eb3dbb0d3cb7305e32da95b6fa3e18ca99f6d884dd"
+  },
+  "lighton-weighted-q4-results/simple_table-plain_q4-native.log": {
+    "bytes": 70,
+    "sha256": "2da95cfaf7336ae1188c023606975570f1249173c34abefc67cc1f792028fb2a"
+  },
+  "lighton-weighted-q4-results/simple_table-plain_q4-preflight.log": {
+    "bytes": 88,
+    "sha256": "434497c54aca1e8f9044435ca4369595675c40933490f3e923ba9b8a00579c60"
+  },
+  "lighton-weighted-q4-results/simple_table-weighted_q4-native.log": {
+    "bytes": 70,
+    "sha256": "2da95cfaf7336ae1188c023606975570f1249173c34abefc67cc1f792028fb2a"
+  },
+  "lighton-weighted-q4-results/simple_table-weighted_q4-preflight.log": {
+    "bytes": 88,
+    "sha256": "434497c54aca1e8f9044435ca4369595675c40933490f3e923ba9b8a00579c60"
+  },
+  "lighton-weighted-q4-results/simple_table-weighted_q4_full-native.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "lighton-weighted-q4-results/simple_table-weighted_q4_full-preflight.log": {
+    "bytes": 88,
+    "sha256": "434497c54aca1e8f9044435ca4369595675c40933490f3e923ba9b8a00579c60"
+  },
+  "lighton-weighted-q4-results/simple_table/plain_q4/native/native-summary.json": {
+    "bytes": 102,
+    "sha256": "49c73b9556582b868b8b3830f618308a3f4ff3626d7a1ad3ddb10d7b023bcf68"
+  },
+  "lighton-weighted-q4-results/simple_table/weighted_q4/native/native-summary.json": {
+    "bytes": 102,
+    "sha256": "49c73b9556582b868b8b3830f618308a3f4ff3626d7a1ad3ddb10d7b023bcf68"
+  },
+  "lighton-weighted-q4-results/unweighted-null-quantization.log": {
+    "bytes": 66600,
+    "sha256": "63f2acf2ff3c86239f9aaee4798d075d5dd841977c3264ffd4bf5f1d57cdc377"
+  },
+  "lighton-weighted-q4-results/weighted-payload-audit.json": {
+    "bytes": 88983,
+    "sha256": "18670ea64bba3ba451835cac715991c3fdf9a41e10f7855c5f9304c71b3953aa"
+  },
+  "lighton-weighted-q4-results/weighted-q4-calibration.json": {
+    "bytes": 84519,
+    "sha256": "f657fe33af15fc98a91cd94f0b89c999dc9427fa0ccfe72358714526c37787b9"
+  },
+  "lighton-weighted-q4-results/weighted-quantization.log": {
+    "bytes": 69120,
+    "sha256": "eee4d1947935264498739f47883cd626ae73b84f03854851be410debe8e4978b"
+  },
+  "lighton4b-external-text-imatrix-q4-calibration.log": {
+    "bytes": 1851,
+    "sha256": "deb9c65c87c9a88d3dd01e677aacfdae7f3caa9510ea5baad78126ae2080c155"
+  },
+  "remote-output-inventory.json": {
+    "bytes": 66700,
+    "sha256": "a30e262a089c242f78071b1737a027eba5867b3685393b778973533cb1b66b5a"
+  },
+  "source/arabic_printed_line/capture.json": {
+    "bytes": 5363,
+    "sha256": "ff1a390370b702fabf8b5a25f0feec76888bb1ad8197cf08c3efd44adec1de84"
+  },
+  "source/simple_table/capture.json": {
+    "bytes": 80062,
+    "sha256": "6be5428f247b616e76d79513b62873cf0238842999be2fb0848997f8ced25763"
+  }
+}

@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/kaggle/working/lighton-imatrix-source/tools/ci-heavy/lighton4b_imatrix_adapter_controls.py", line 38, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/kaggle/working/lighton-imatrix-source/tools/ci-heavy/lighton4b_imatrix_adapter_controls.py", line 31, in main
+    actual=json.loads(run('real-consumer',[binary,'--check-lighton4b-imatrix',adapted,header]));expected={row['target']:row['normalized_f32_sha256']for row in audit['tensors']};adapter.require(actual['quantization_executed']is False and actual['model_payload_bytes']==0 and actual['normalized_f32_sha256']==expected,'actual C++ consumer means differ');r['actual_consumer']=actual
+                      ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/lighton-imatrix-source/tools/ci-heavy/lighton4b_imatrix_adapter_controls.py", line 23, in run
+    result=subprocess.run(list(map(str,args)),cwd=ROOT,capture_output=True,text=True);(out/(name+'.log')).write_text(result.stdout+result.stderr);adapter.require(result.returncode==expect,'control failed: '+name);return result.stdout
+                                                                                                                                                  ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/lighton-imatrix-source/tools/lighton4b_imatrix_adapter.py", line 14, in require
+    if not ok:raise ValueError(message)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: control failed: real-consumer

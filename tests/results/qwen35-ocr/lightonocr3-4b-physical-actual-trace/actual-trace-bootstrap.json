@@ -1,0 +1,11 @@
+{
+  "schema": "lighton4b-actual-trace-bootstrap/v1",
+  "source_sha": "9918eae569bd8003a236b08ab1c44a30db83bab7",
+  "status": "completed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "read-only-actual-trace",
+  "worker_sha256": "78769f520a3d8620b312c9b247b9d71326718eea0da34a17e12944d4f9cfb7b2",
+  "worker_status": "compared_actual_trace"
+}

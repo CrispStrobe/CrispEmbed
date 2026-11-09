@@ -1,0 +1,26 @@
+{
+  "schema": "lighton4b-upstream-text-trace-bootstrap/v1",
+  "source_sha": "9986aaa3c5dfb27e064d73a39546ca8f9db919f6",
+  "bootstrap_sha256": "fab6bd5651721dad0a89a471816571e486d303d93d862c28a8f4d2b26cbec89b",
+  "status": "failed",
+  "gpu_requested": false,
+  "model_forward_executed": null,
+  "model_quality_qualified": false,
+  "phase": "upstream-text-trace",
+  "source_file_sha256": {
+    "tools/text-trace-probe/worker.py": "ec9c18e4073fcaa233c3b3f42f837c46abeb27aaf473a9beba13b03c67959050",
+    "tools/text-trace-probe/source_patch.py": "7bbb99aed40f502664e608b7afa8a0b48546da5e06fe990993867abc5649c2e8",
+    "tools/text-trace-probe/analysis.py": "f90be1e4cb323f1a085e226bf140efae596b6fcbd58fa5af2208d27853ad3d99",
+    "tools/text-trace-probe/test_controls.py": "cccfe5d2cd45b41f479a205a5b420ea22503fa98b2fbf6bdb46eb2a492af3844",
+    "tools/lighton4b_upstream_observer_patch.py": "80c229113c4836c1447661d843dba9cc1fff573840ad128e6aee79b6a0e285a5",
+    "tools/lighton4b_upstream_dispatch_log.py": "aa4e955add0a590a6fc67cffb97eedd09cbd176e9bcc6c8b7b2fcbed27a684e1",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "docs/lighton4b-upstream-physical-decode-v1.json": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d",
+    "docs/lighton4b-upstream-text-trace-v1.md": "b7c82f1cdcac5d81303fc6d52d3d78252bd5167bdb4bf9dc1628275109fdf19a"
+  },
+  "error_type": "RuntimeError",
+  "error": "upstream-text-trace nonzero",
+  "elapsed_seconds": 56.51985577800002
+}

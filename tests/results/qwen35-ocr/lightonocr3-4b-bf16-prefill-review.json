@@ -1,0 +1,63 @@
+{
+  "arrays_retained_remotely": true,
+  "baseline_source_sha": "07543dcc80ebcecad644815d9397be2570a51dd4",
+  "checkpoint": {
+    "bytes": 9078620536,
+    "file": "model.safetensors",
+    "header_sha256": "a1e36638b195f2d5943e000fcb069b275cb22ccc28b1b6184ddee7bdea7ef081",
+    "payload_verified": true,
+    "sha256": "6b0dab74a2dab02d5b10ca56322255024ed8dca35c02746b42e9f296aaeb4e67",
+    "tensor_count": 723
+  },
+  "first_score": {
+    "bytes": 993280,
+    "file": "scores-000.f32",
+    "position": 0,
+    "score_dtype": "float32",
+    "selected_id": 27,
+    "selected_probability": 0.821857347181417,
+    "sha256": "a4bece2310050081b502a3910a19469e47016829d74abebb29861739f3205ffd",
+    "shape": [
+      1,
+      248320
+    ]
+  },
+  "generated_ids": [
+    27
+  ],
+  "generation_seconds": 115.05811475299993,
+  "measured_memory_peaks": {
+    "cgroup_current_bytes": 22385872896,
+    "process_hwm_bytes": 9810825216,
+    "process_rss_bytes": 9810825216,
+    "process_ru_maxrss_bytes": 9810440192,
+    "worker_cgroup_peak_bytes": 22394761216
+  },
+  "only_small_reports_downloaded_for_review": true,
+  "original_forward_calls": 1,
+  "original_source_sha": "8d3b2331d1b57e285f7ba348fc1eacd689b79aa8",
+  "packages": {
+    "gguf": "0.19.0",
+    "numpy": "2.3.5",
+    "pillow": "12.0.0",
+    "tokenizers": "0.22.2",
+    "torch": "2.13.0+cpu",
+    "torchvision": "0.28.0+cpu",
+    "transformers": "5.5.4"
+  },
+  "quality_qualified": false,
+  "schema": "lighton4b-bf16-prefill-review/v1",
+  "snapshot_bytes": 130163104,
+  "stage_manifest_sha256": "036a936cdbd360208b5cf54c2604d671b9a919f1c8777bc7cf97b2585b010a78",
+  "stages": 71,
+  "status": "reviewed",
+  "upstream": {
+    "loaded_source_sha256": {
+      "config": "cbea1f42a949edb6b9b001109df68cbf7cff04c96d3fe8a8e96602cb017b5a36",
+      "model": "aee59d55ee4e8ce0e50bf0e279796b85c2c66a28dfae55c3fcbb62fa9bcba048"
+    },
+    "scope": "meta-schema-only; no model forward",
+    "transformers_version": "5.5.4",
+    "upstream_revision": "75d3bdcd4b3ba70cee21287218d9764f33da41f0"
+  }
+}

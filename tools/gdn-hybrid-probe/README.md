@@ -1,0 +1,9 @@
+# Physical GDN hybrid operator controls
+
+**Single-gate full decoded A/B regresses table output; the later two-gate combination matches table but fails the form character floor. Keep both gates default-off and unqualified; do not ship.** [Measured result and limits](../../docs/lighton4b-physical-gdn-source-ops.md).
+
+Reference-only harness for a separately gated production helper. Fourteen fixed runs compare old native operators, pinned upstream GGML, native GGML source graph and the actual gated helper on observed table inputs. Geometry is 1/4/16 tokens, B1, 16 QK heads, 32 value heads, width128 and kernel4.
+
+Mandatory admission retains actual old sixteen-token RAW attention closure, actual upstream first-four conv/SiLU/postnorm/preferred-output closure and composed-versus-observed neutrality. The hybrid keeps native scalar log1p softplus; it changes no quantized projection, output projection or global repack setting. Its first-four preferred-input and actual nonzero-state one-token continuation must close same-input upstream postnorm/state/output bits. The continuation is an operator intervention at the image-prefix boundary, not the actual source 72-token batch output or a decoded model result.
+
+A synthetic full block executes both modes, rejects cross-mode caches and checks same-mode continuation. Buffers are bounded and aligned. The hosted worker builds and runs no-argument/backend/cache controls before transferring five original whole parameter ranges totaling6,030,080bytes. No full model, heldout, inference or quality selection occurs; raw arrays and failures are retained remotely.

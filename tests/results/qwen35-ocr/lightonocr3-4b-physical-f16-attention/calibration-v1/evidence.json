@@ -1,0 +1,59 @@
+{
+  "schema": "lighton4b-physical-f16-calibration-evidence/v1",
+  "source_sha": "fa3aab1566bbc0fd10287149b9e641d8b1a19fe0",
+  "receipt_sha256": "7639d6559da7cc58443ccfbe1dac518af0d70f3e7a83718d037a97bb147eb2b7",
+  "same_actual_form_binary_bundle_gates_weights": true,
+  "quality_qualified": false,
+  "table_cap_hit": true,
+  "table_vs_bf16_character_edits": 316,
+  "retained_upstream_vs_bf16_character_edits": 315,
+  "table_reference_codepoints": 607,
+  "arabic_raw_ids_and_text_exact_both_references": true,
+  "artifacts": {
+    "bounded-worker.log": {
+      "bytes": 179,
+      "sha256": "807a17c83b3864ab3a401d501a7cf33c2243d118ad9d8a858fc47848546aa6a3"
+    },
+    "independent-review.json": {
+      "bytes": 812,
+      "sha256": "77d44be1d8f95aedf697dcc9a66d7fb9d4f2ba15e8ecf209b4b7adc76669e1b4"
+    },
+    "physical-f16-bootstrap.json": {
+      "bytes": 407,
+      "sha256": "3807e77e601ac67d8a755bb591bf3fb39c41937be65eaab66d0774533f5c7ca7"
+    },
+    "physical-f16-calibration.json": {
+      "bytes": 1361228,
+      "sha256": "7639d6559da7cc58443ccfbe1dac518af0d70f3e7a83718d037a97bb147eb2b7"
+    },
+    "arabic_printed_line/generated.ids": {
+      "bytes": 39,
+      "sha256": "c619a15be2844fa72f35be1d86c09c04e28a1e58ff63bc96d68303d13616559b"
+    },
+    "arabic_printed_line/native-summary.json": {
+      "bytes": 153,
+      "sha256": "b6ddcd3e64ad8488dd755ea8128d0b1f3f10058fea57e3acef5a7393766ec78a"
+    },
+    "arabic_printed_line/generated.txt": {
+      "bytes": 23,
+      "sha256": "24de6e789e4550dec9afdb7013d4e7d455b99f6a7ba75f2d166c0f20a896cc39"
+    },
+    "simple_table/generated.ids": {
+      "bytes": 1078,
+      "sha256": "58968f5f5052bb94829cfb662718792f4927b8941390be454f0c26612a571ffb"
+    },
+    "simple_table/native-summary.json": {
+      "bytes": 158,
+      "sha256": "82371290974a2d8e316fbff108e166a9ca374ef344b6d08d911324bdd37c0c9b"
+    },
+    "simple_table/generated.txt": {
+      "bytes": 785,
+      "sha256": "350dbbcf971e2ec946eb2545e01cebe08c3dc9ae682ed3b9ba6a7cb97c84a008"
+    }
+  },
+  "limitations": [
+    "Table is capped at256 with no EOS; incomplete output and one more character error than retained upstream, so this is a negative qualification result.",
+    "All222/6teacher rows retained and producer finite/greedyargmax checked; rawarrays stayremote.",
+    "No heldout or composed-native-vision qualification."
+  ]
+}

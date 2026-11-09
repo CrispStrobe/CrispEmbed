@@ -1,0 +1,27 @@
+{
+  "schema": "lighton4b-upstream-form-text-trace-bootstrap/v1",
+  "source_sha": "8f5aef464c5d328261018659590b2a831c1ce724",
+  "bootstrap_sha256": "4e75cc7027327f1b6a54770c43942e1b4b44ff43a8c11ef2c946080af084f722",
+  "status": "failed",
+  "gpu_requested": false,
+  "model_forward_executed": null,
+  "model_quality_qualified": false,
+  "phase": "upstream-form-text-trace",
+  "source_file_sha256": {
+    "tools/form-text-trace-probe/worker.py": "6b10b0653b57b89130e40fb2c36c2f4d8242a1819ac0f375e8a3032e4a40cfc0",
+    "tools/form-text-trace-probe/source_patch.py": "5829efd0b9179f3eed95955c339438fa1430ee772dbc418ba6692b965eeb2e74",
+    "tools/form-text-trace-probe/analysis.py": "439ada31effa68ae0dd4083273ea00c6e4028af221a26cbac75ec260605bab21",
+    "tools/form-text-trace-probe/test_controls.py": "518b1f9f18068a5be16ceb827ec5c886f5534d63f69aae7d6f234dae27a86768",
+    "tools/form-text-trace-probe/protocol.json": "41560dde03a67e4d215527bcc51035109763a8753c1f77db659febbf78d460c6",
+    "tools/form-text-trace-probe/README.md": "37e7e7c6cee4181b44ae356ab4897821081bc7e0261d1f617f14fc830306f094",
+    "tools/lighton4b_upstream_observer_patch.py": "80c229113c4836c1447661d843dba9cc1fff573840ad128e6aee79b6a0e285a5",
+    "tools/lighton4b_upstream_dispatch_log.py": "aa4e955add0a590a6fc67cffb97eedd09cbd176e9bcc6c8b7b2fcbed27a684e1",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "docs/lighton4b-upstream-physical-decode-v1.json": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d"
+  },
+  "error_type": "RuntimeError",
+  "error": "upstream-form-text-trace nonzero",
+  "elapsed_seconds": 19.285189898999988
+}

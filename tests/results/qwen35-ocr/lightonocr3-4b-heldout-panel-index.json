@@ -1,0 +1,232 @@
+{
+  "schema": "lighton4b-frozen-provisional-panel/v1",
+  "model_source_sha": "d378c6cc055e3a31b0d4cc9dad54a5b41f10d792",
+  "production_source_sha": "696845d0562e0e96f403fce8d31c5b653767ac0c",
+  "upstream_source_sha": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "native_ggml_sha": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "same_source_weights_gates_prompt_and_scoring_all_cases": true,
+  "qualified": false,
+  "all_declared_floors_pass": false,
+  "no_ship": true,
+  "rows": [
+    {
+      "case": "historical-receipt",
+      "original_report_sha256": "8bf1ebbdf12b9dd2b20603c11a9b7d4c990e97e7f37a2f5aca3fb3324b3c8dfc",
+      "source_sha": "d378c6cc055e3a31b0d4cc9dad54a5b41f10d792",
+      "worker_seconds": 2104.706741348,
+      "all_four_eos": true,
+      "source_tokens": 465,
+      "native_tokens": 469,
+      "source_metrics": {
+        "tokens": 465,
+        "eos": true,
+        "raw_char_edits": 103,
+        "raw_char_total": 768,
+        "raw_word_edits": 18,
+        "raw_word_total": 144,
+        "parse_ok": true,
+        "content_char_edits": 24,
+        "content_char_total": 768,
+        "content_word_edits": 18,
+        "content_word_total": 144,
+        "table": null,
+        "table_shape_valid": null
+      },
+      "native_metrics": {
+        "tokens": 469,
+        "eos": true,
+        "raw_char_edits": 104,
+        "raw_char_total": 768,
+        "raw_word_edits": 19,
+        "raw_word_total": 144,
+        "parse_ok": true,
+        "content_char_edits": 25,
+        "content_char_total": 768,
+        "content_word_edits": 19,
+        "content_word_total": 144,
+        "table": null,
+        "table_shape_valid": null
+      },
+      "floor": false,
+      "merged": {
+        "bytes": 2478080,
+        "bit_exact": true
+      },
+      "native_raw_rows_equal_secondary": true,
+      "firstscore": {
+        "rms": 0.1414597689510285,
+        "max_abs": 0.9869832992553711
+      },
+      "magnitudes": {
+        "source_score_rms": 2.042906590477406,
+        "native_score_rms": 2.0253164606361618,
+        "source_score_max_abs": 20.280746459960938,
+        "native_score_max_abs": 20.558019638061523,
+        "source_merged_max_abs": 8.5079927444458,
+        "prompt_tokens": 256,
+        "image_tokens": 242,
+        "source_wall": 121.99936643800015,
+        "native_wall": 382.1098348209998,
+        "native_rss": 4363198464
+      },
+      "owned_files": 304,
+      "owned_bytes": 2017396091,
+      "raw_outputs_published": true
+    },
+    {
+      "case": "two-column-page",
+      "original_report_sha256": "9b88195d5a8058dea4fab87472009d3826bc1fa3b5d0575aa2e33698316d5722",
+      "source_sha": "d378c6cc055e3a31b0d4cc9dad54a5b41f10d792",
+      "worker_seconds": 2623.379106389,
+      "all_four_eos": true,
+      "source_tokens": 654,
+      "native_tokens": 697,
+      "source_metrics": {
+        "tokens": 654,
+        "eos": true,
+        "raw_char_edits": 588,
+        "raw_char_total": 2981,
+        "raw_word_edits": 148,
+        "raw_word_total": 556,
+        "parse_ok": true,
+        "content_char_edits": 526,
+        "content_char_total": 2981,
+        "content_word_edits": 146,
+        "content_word_total": 556,
+        "table": null,
+        "table_shape_valid": null
+      },
+      "native_metrics": {
+        "tokens": 697,
+        "eos": true,
+        "raw_char_edits": 443,
+        "raw_char_total": 2981,
+        "raw_word_edits": 113,
+        "raw_word_total": 556,
+        "parse_ok": true,
+        "content_char_edits": 373,
+        "content_char_total": 2981,
+        "content_word_edits": 111,
+        "content_word_total": 556,
+        "table": null,
+        "table_shape_valid": null
+      },
+      "floor": true,
+      "merged": {
+        "bytes": 2580480,
+        "bit_exact": true
+      },
+      "native_raw_rows_equal_secondary": true,
+      "firstscore": {
+        "rms": 0.16594781263025712,
+        "max_abs": 0.8499665260314941
+      },
+      "magnitudes": {
+        "source_score_rms": 1.9516177905276242,
+        "native_score_rms": 1.9637236787596795,
+        "source_score_max_abs": 21.07120132446289,
+        "native_score_max_abs": 20.94915008544922,
+        "source_merged_max_abs": 11.141365051269531,
+        "prompt_tokens": 266,
+        "image_tokens": 252,
+        "source_wall": 164.47797659599996,
+        "native_wall": 571.5460037019998,
+        "native_rss": 4457672704
+      },
+      "owned_files": 304,
+      "owned_bytes": 2671507319,
+      "raw_outputs_published": false
+    },
+    {
+      "case": "inventory-table",
+      "original_report_sha256": "d5b7f992249a3f6b553bd3e41f73cc5e590eeaae2d1380d9d34d81aaf3d316e8",
+      "source_sha": "d378c6cc055e3a31b0d4cc9dad54a5b41f10d792",
+      "worker_seconds": 1429.783137986,
+      "all_four_eos": true,
+      "source_tokens": 248,
+      "native_tokens": 248,
+      "source_metrics": {
+        "tokens": 248,
+        "eos": true,
+        "raw_char_edits": 294,
+        "raw_char_total": 165,
+        "raw_word_edits": 33,
+        "raw_word_total": 32,
+        "parse_ok": true,
+        "content_char_edits": 0,
+        "content_char_total": 165,
+        "content_word_edits": 0,
+        "content_word_total": 32,
+        "table": {
+          "expected": 1,
+          "actual": 1,
+          "expected_cells": 15,
+          "cell_errors": 0,
+          "exact": true
+        },
+        "table_shape_valid": true
+      },
+      "native_metrics": {
+        "tokens": 248,
+        "eos": true,
+        "raw_char_edits": 294,
+        "raw_char_total": 165,
+        "raw_word_edits": 33,
+        "raw_word_total": 32,
+        "parse_ok": true,
+        "content_char_edits": 0,
+        "content_char_total": 165,
+        "content_word_edits": 0,
+        "content_word_total": 32,
+        "table": {
+          "expected": 1,
+          "actual": 1,
+          "expected_cells": 15,
+          "cell_errors": 0,
+          "exact": true
+        },
+        "table_shape_valid": true
+      },
+      "floor": true,
+      "merged": {
+        "bytes": 2007040,
+        "bit_exact": true
+      },
+      "native_raw_rows_equal_secondary": true,
+      "firstscore": {
+        "rms": 0.21128732388491347,
+        "max_abs": 1.0026350021362305
+      },
+      "magnitudes": {
+        "source_score_rms": 2.246865113972659,
+        "native_score_rms": 2.342711065067155,
+        "source_score_max_abs": 26.21562957763672,
+        "native_score_max_abs": 25.751937866210938,
+        "source_merged_max_abs": 7.0299601554870605,
+        "prompt_tokens": 210,
+        "image_tokens": 196,
+        "source_wall": 70.19866489700007,
+        "native_wall": 197.75046505199998,
+        "native_rss": 4352692224
+      },
+      "owned_files": 304,
+      "owned_bytes": 1303676475,
+      "raw_outputs_published": true
+    }
+  ],
+  "independent_remote_closure": {
+    "owned_files": 912,
+    "owned_bytes": 5992579885,
+    "raw_rows_including_observed_controls": 4696,
+    "all_file_and_zip_row_hashes_finite_argmax_verified": true,
+    "inventory_audit_sha256": "00f077ec4ae16d78752330ad1e378666b9ebdd8c72d235073092a793d3b4146c"
+  },
+  "limits": [
+    "Receipt misses per-case floor; no average or other positive case overrides it.",
+    "Receipt/two-column references are provisional prior transcriptions, not adjudicated human ground truth.",
+    "Inventory is an authored literal and is not representative document qualification.",
+    "No source internal text layers captured in these held-out jobs.",
+    "Two-column recognized text/output IDs/full report stay private because embedded literary-text rights remain unclear.",
+    "No default, public loading fence, model alias, package or release changed."
+  ]
+}

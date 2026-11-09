@@ -1,0 +1,27 @@
+{
+  "status": "independently_verified_exact_q6_helper",
+  "report_sha256": "2d9e32d3c7ba4ed5ccffc73a3f4e488943ad737896211533097dac17b9c9cbfc",
+  "owned_files_verified": {
+    "candidate-t4-source140.f32": {
+      "bytes": 4587520,
+      "sha256": "3fb51d30cd8caaa5854e3b5dc848efb329d924b146afd29407cde6de6fc06790"
+    },
+    "build.log": {
+      "bytes": 2642,
+      "sha256": "ffca9292c85f35ee42488f5bac56494de2fef0d95168a903d1a5369b63d33cf4"
+    },
+    "native-ON-CMakeCache.txt": {
+      "bytes": 27657,
+      "sha256": "5df78da6910cd047fdf93fcd1ebc5e2678469fd858c28d3ffbae69ebd81acb3d"
+    }
+  },
+  "all_retained_case_hashes_exact": 68,
+  "source140_elements_byte_exact": 1146880,
+  "source140_original_raw_sha256": "f8797400ae24df3794b0670cffebdebd7c22502b8d1bde225a52c0bec83f1e08",
+  "candidate_source140_sha256": "3fb51d30cd8caaa5854e3b5dc848efb329d924b146afd29407cde6de6fc06790",
+  "no_model_forward": true,
+  "limits": [
+    "QKV width2560 only; structural controls and full decoded A/B are separate.",
+    "Generic N>=8 routing preserves native graph boundaries, which differ from upstream original4/140/6/4."
+  ]
+}

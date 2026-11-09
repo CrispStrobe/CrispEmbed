@@ -1,0 +1,107 @@
+{
+  "source": "b59e5d3a9d9e333f67f9646c1a43a1edc70fccfa",
+  "receipt_sha256": "039b024f41b499cfd8344cb4e89835bbfe559a1f298225866c691000d4e6c8c0",
+  "files": {
+    "dependency-check.log": {
+      "bytes": 132,
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    "vision-component.json": {
+      "bytes": 32044,
+      "sha256": "039b024f41b499cfd8344cb4e89835bbfe559a1f298225866c691000d4e6c8c0"
+    },
+    "bounded-worker.log": {
+      "bytes": 272,
+      "sha256": "c3019f043bfb0c4a6683f202404e36d2e465da6fbe13a77e3d21115b13960b11"
+    },
+    "venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "synthetic.log": {
+      "bytes": 101,
+      "sha256": "d58c15e1a57af3d53eada05f045b41d5fdb56580fc6854f8021f06a8bb03c7f2"
+    },
+    "legacy.log": {
+      "bytes": 62,
+      "sha256": "546df96e2e61ab5b14518e777d97c75549df8b046c13ab4e2e4178b996cc8546"
+    },
+    "CMakeCache.txt": {
+      "bytes": 29213,
+      "sha256": "d61f1fa612c238cd071fc3aac787c95b342f164421e0a0871211288a9766b5ad"
+    },
+    "vision-component-bootstrap.json": {
+      "bytes": 462,
+      "sha256": "da36927cda4b12df052484b684b4d9c9d3e0e1ee6453949da15a54492cb943cc"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "f04fc7d6ea6e7832d477282c740a67cc4bc9328977412f5a3cc098b0e60871d5"
+    },
+    "control-test_projector_controls.py.log": {
+      "bytes": 219,
+      "sha256": "8c6d5c47349d657be86b0cf3d399c2dc087dbce3927bf153e1d252ceb143501e"
+    },
+    "fetch-tested.log": {
+      "bytes": 125,
+      "sha256": "2eb9d36e378702e326ceaeda0eb34ca16b263648e3d86d2713df2ff68f6726ea"
+    },
+    "independent-review.json": {
+      "bytes": 2302,
+      "sha256": "e867d01994d27a80529f069302ebbaa0bdc8caed2ee00dcf591ffb077ab378be"
+    },
+    "metadata-before-weights.log": {
+      "bytes": 61,
+      "sha256": "cc3f6fd8aa5a57427a556374635d89ecf5f27a6cbeddb0447ae128cffcf38934"
+    },
+    "build.log": {
+      "bytes": 6263,
+      "sha256": "a113bda08d756e902211e71ddeecd0be9ce3a0109988c11494c399e8d2a5392e"
+    },
+    "source-checkout.log": {
+      "bytes": 94,
+      "sha256": "d3c929ff06e4c2b7e358f90dda7c481270cfc48942dc00149e8c87a83751344a"
+    },
+    "dependencies.log": {
+      "bytes": 2563,
+      "sha256": "a80f6a94c3110df830bf1e0608d6a542748bab616b4a6873152d3da5344d83fb"
+    },
+    "runtime-byte-guard.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "bootstrap.py": {
+      "bytes": 7486,
+      "sha256": "4ec46c4d44b01bfdcfebbe64fa39ac7b9d157cbce354117fd600cb992d2cae1f"
+    },
+    "ggml-init.log": {
+      "bytes": 237,
+      "sha256": "8d8546754a96865c47ad7f91c253f35decd4be868febb1e35e3f02063f62e250"
+    },
+    "configure.log": {
+      "bytes": 2049,
+      "sha256": "c55401b73432e1773407f95b44ef317139e56e312df67d00d00d923fcbf05a89"
+    },
+    "f16.log": {
+      "bytes": 59,
+      "sha256": "13b614341d52206617fb65e94cda24f4fda4c2dd1cfce49c2f07355dcaad6956"
+    },
+    "control-test_runtime_guard.py.log": {
+      "bytes": 205,
+      "sha256": "629d2915f189d1087d2c6d669f5ba5c02019fd6aaad4cc6b751d89086336194b"
+    },
+    "source-fetch.log": {
+      "bytes": 123,
+      "sha256": "c7e3212755e46be7dc5f3937f92bf55b6c83f3dbdaf155290a939e23d4525ce2"
+    },
+    "source-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source-init.log": {
+      "bytes": 577,
+      "sha256": "79ad5caeada80ff12e38f8c1fcc37473bfca64ec36621577025d7cf6ff10fca6"
+    }
+  },
+  "large_vectors": "All actual arrays retained remotely. Independent local9file/18.2MB subset is recorded; full73owned+28source-file remote rehash is a mandatory composed-form pre-model gate."
+}

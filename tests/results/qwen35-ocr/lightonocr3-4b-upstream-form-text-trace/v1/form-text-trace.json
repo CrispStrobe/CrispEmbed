@@ -1,0 +1,59 @@
+{
+  "arms": {},
+  "artifacts": {
+    "cpu.log": {
+      "bytes": 3071,
+      "sha256": "37c6c78792e9e491c751a01fd3215751a1292a0c9a218023dccde67341fea8df"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "67d62dc3ef12af465c3d674539bf7119bcd6e60e1474ec849a441bb3dae897f2"
+    }
+  },
+  "capacity": {
+    "memory": {
+      "MemAvailable": 31491207168,
+      "SwapFree": 0,
+      "SwapTotal": 0,
+      "cgroup_observed": 1,
+      "finite_cgroup_bounds": 1
+    },
+    "output_free": 20940414976,
+    "scratch_free": 1037718589440
+  },
+  "commands": {
+    "cpu": {
+      "child_system_seconds": 0.002726,
+      "child_user_seconds": 0.001362,
+      "cumulative_child_peak_rss_bytes": 45494272,
+      "elapsed_seconds": 0.009526736999987406,
+      "peak_rss_bytes_observed": 4096,
+      "pid": 61,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source": {
+      "child_system_seconds": 0.0017679999999999998,
+      "child_user_seconds": 0.0,
+      "cumulative_child_peak_rss_bytes": 45494272,
+      "elapsed_seconds": 0.002240378999999848,
+      "peak_rss_bytes_observed": 475136,
+      "pid": 60,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    }
+  },
+  "error": "independent complete source EOS/prompt",
+  "error_type": "RuntimeError",
+  "f32_model_instantiated": false,
+  "native_forward_executed": false,
+  "original_bf16_forward_executed": false,
+  "phase": "cpu",
+  "quality_qualified": false,
+  "schema": "lighton4b-upstream-form-text-trace/v1",
+  "seconds": 0.4647212570000079,
+  "source_sha": "8f5aef464c5d328261018659590b2a831c1ce724",
+  "status": "failed"
+}

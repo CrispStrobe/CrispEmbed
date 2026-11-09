@@ -1,0 +1,47 @@
+{
+  "schema": "lighton4b-release-q6-head-controls/v1",
+  "status": "failed",
+  "source_sha": "e0c60e0ed420754d839c10a6bfc7687cc2b54867",
+  "execution_host": "kaggle-cpu",
+  "model_payload_bytes": 0,
+  "model_forward_executed": false,
+  "quantization_executed": false,
+  "quality_qualified": false,
+  "current_q4_shipping_approved": false,
+  "gate_or_alias_promoted": false,
+  "preflight": {
+    "memory_swap": {
+      "MemAvailable": "31660416 kB",
+      "SwapTotal": "0 kB",
+      "SwapFree": "0 kB"
+    },
+    "available_bytes": 30916100096,
+    "cgroup_limit": "32212254720",
+    "cgroup_current_bytes": 1296154624,
+    "disk_free_bytes": 20420288512,
+    "load_average": [
+      1.4658203125,
+      0.71337890625,
+      0.3095703125
+    ]
+  },
+  "release_fence": {
+    "registry_no_4b_alias_or_payload": true,
+    "public_allowed_formats": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "explicit_release_binary_lists": [
+      "crispembed crispembed-server crispembed-quantize",
+      "crispembed crispembed-server crispembed-quantize",
+      "crispembed crispembed-server crispembed-quantize",
+      "crispembed.exe crispembed-server.exe crispembed-quantize.exe"
+    ],
+    "source_default_gates_not_forced_on": true,
+    "note": "Existing experimental remote GGUFs remain research artifacts; not release/default aliases. This is no shipping approval."
+  },
+  "error_type": "CalledProcessError",
+  "error": "bounded native controls failed; inspect logs"
+}

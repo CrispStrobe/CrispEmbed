@@ -1,0 +1,12 @@
+{
+  "schema": "lighton4b-vision-controls-bootstrap/v1",
+  "source_sha": "0eca8d13ff55169ad47efcb446fa32786bbf9d3e",
+  "status": "completed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "bounded-worker",
+  "worker_sha256": "cadf5c775905e9d2749eef4b570bc566513b04f9f4b526d215db9b5d61b1da12",
+  "worker_status": "passed_model_free_vision_controls",
+  "elapsed_seconds": 711.188417802
+}

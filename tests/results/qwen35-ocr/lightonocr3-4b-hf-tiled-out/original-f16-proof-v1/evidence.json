@@ -1,0 +1,282 @@
+{
+  "full249_quantization_reexecuted_in_this_worker": false,
+  "helper_source_sha": "617534eff56c7e0ea98781b783d3d118f85e1c52",
+  "kernel_id": 143168450,
+  "limitations": [
+    "This independently reproduces24 output payloads; the earlier separate225 named-payload audit supplies the remaining quantized-byte comparison.",
+    "Lossy quantized equality does not prove the publisher original checkpoint identity.",
+    "Weight RMSE is not decoded-quality evidence. Tiled unweighted RMSE is slightly worse.",
+    "A future HF-tiled candidate also changes physical projection reduction order and requires its own gated runtime/decoded controls.",
+    "Remote Kaggle output retention has no independently guaranteed90-day expiry."
+  ],
+  "model_forward_executed": false,
+  "raw_files": {
+    "lighton-hf-tiled-out-proof/bootstrap-receipt.json": {
+      "bytes": 1877,
+      "sha256": "06e91aff296fd745938446c4d57b711193d692c6b776ec77c8f53c9aad7ab63f"
+    },
+    "lighton-hf-tiled-out-proof/checkout.log": {
+      "bytes": 88,
+      "sha256": "2fda61350f125b554c0340b91db389db7a9feb304056f7c7e6aefd222daca402"
+    },
+    "lighton-hf-tiled-out-proof/dependency-preflight.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/download-original-and-stats.log": {
+      "bytes": 108,
+      "sha256": "3ea6091bce9f583d0f6a6b0e3c9c75e640da1df78910290f3ea88cd1162c0a22"
+    },
+    "lighton-hf-tiled-out-proof/download-receipt.json": {
+      "bytes": 267,
+      "sha256": "14d49c40a8331cdad480f38587be233f804beb8654aff8bd6407f91737222fc5"
+    },
+    "lighton-hf-tiled-out-proof/fetch.log": {
+      "bytes": 123,
+      "sha256": "18d573eb3d69892b713306ab6b00bac3520b84b8f8c02bf6576594079d97a5ff"
+    },
+    "lighton-hf-tiled-out-proof/init.log": {
+      "bytes": 577,
+      "sha256": "f7e2ac8cdf690d7014b9e0db6ae59342c7ed4963d165bea5a647590be8b948d0"
+    },
+    "lighton-hf-tiled-out-proof/packages.log": {
+      "bytes": 3518,
+      "sha256": "fa8fd64c4e4bedae40405f531c8264e5576c9018f872681faf38f6216303f676"
+    },
+    "lighton-hf-tiled-out-proof/paired24-proof.log": {
+      "bytes": 1120,
+      "sha256": "019044da9abec7d4febbd1b206fe2a1e57987132ebe56eb222c1ca663433d5c3"
+    },
+    "lighton-hf-tiled-out-proof/paired24-receipt.json": {
+      "bytes": 66618,
+      "sha256": "e87e6b28936e1022b6207cb942ba5e1d468b309bf731c24bf44f136dbd20b215"
+    },
+    "lighton-hf-tiled-out-proof/python-controls.log": {
+      "bytes": 103,
+      "sha256": "0e3961b74311b0d72dcfee6fda815b44d19809f76c1625e75fc0dd2751371be1"
+    },
+    "lighton-hf-tiled-out-proof/remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.0.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.0.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1571,
+      "sha256": "0a83f2290a76ce387c34fbd4ee911014096e584c9b33e2ad9d49d06350a6e9e5"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.1.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.1.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1576,
+      "sha256": "1d899c1112b492675315ae8c0d6c8f1b71ad30dc75fef4a565ddc2e6bb3e3b2e"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.10.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.10.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1574,
+      "sha256": "e0f9cfd404d50b4399d01c36af11d433cddbfd8fe7e572e59bc86a060595411d"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.12.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.12.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1574,
+      "sha256": "4596a9aac63b356c6ae4f15d843be90547faea1f08231a3ba707f54d10ae6d6c"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.13.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.13.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1575,
+      "sha256": "6f44a2c1b5a6986d814777cb3dbe35ff2547cbf379865534220d9c06813b507c"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.14.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.14.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1576,
+      "sha256": "1aeb5c23a56145501857beb1fc2a6037b05c155ce9adb131c3c9130ed283256a"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.16.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.16.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1574,
+      "sha256": "74a85752b08070c8247b223d55bba2f228072ea50efa27c5288f7d5505de56e0"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.17.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.17.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1576,
+      "sha256": "976aa51b0dedd0abe79f95332d3418d6fa00867c34e041299f5ee08e16d13d34"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.18.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.18.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1576,
+      "sha256": "17e2e03b4bb7627cb8fb42a17648b452bc6bdfa6113aee760820e7f7ac145bb1"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.2.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.2.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1575,
+      "sha256": "6b46080e74353d7b0af458003fcadf3a815f413c7cb4a0105803c4454b5014e7"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.20.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.20.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1571,
+      "sha256": "91e83f844901f36715def43be9a0562215d38000c5caa4b90091f073b5af7d67"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.21.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.21.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1566,
+      "sha256": "76d1af467249dcbad7ee4ca3a3631ce7d557346e13e2f84106b6000f30b32d20"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.22.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.22.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1575,
+      "sha256": "13c35d02ea8fef70d6087b5a5cb96df0d495181070ae418aa5f2a93d0971479c"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.24.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.24.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1575,
+      "sha256": "944eaf92440917074f75be96122a033b126b6a147039d72276368f019e4fe213"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.25.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.25.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1576,
+      "sha256": "ec0ccf2e2ebee3b0a7a0e6c196c1e6949cd9a68191b8d0ad732036048583189d"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.26.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.26.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1574,
+      "sha256": "b49be0f22b3f4a5895e1637ee28cd72d2435ef2057d759473499768ab15ec5d9"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.28.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.28.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1576,
+      "sha256": "014b44cf7af07d37b57a92a4271e39938573290d3333e67c53508717a6944f3f"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.29.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.29.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1571,
+      "sha256": "de31540938b2878c1721b8623a0da34fe24436c105923fd6db2fe1a5038e7bd0"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.30.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.30.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1574,
+      "sha256": "a13b37441758e081f52db1021909b31d5705ae8c4cf735a017f8d44eb534e235"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.4.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.4.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1576,
+      "sha256": "7007c6442c2cf92b4b9a1f0215f001e00ae4e03b9c7ca2d962fcc25d2723e49c"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.5.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.5.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1576,
+      "sha256": "094f973918d2655312ffdaaf6906698bdddd74d748e32c85b8ad71b28145394b"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.6.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.6.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1576,
+      "sha256": "016896be735d418f181193addbb815e4effc4709447ae5ff262ba619f4ffd5e7"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.8.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.8.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1575,
+      "sha256": "95ebbd8af9590aeb1ac27d9d3260a1f3d11a717e2020f154bf0ec7f74721fed4"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.9.linear_attn.out_proj.weight/helper.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/tensors/l.layers.9.linear_attn.out_proj.weight/rows.json": {
+      "bytes": 1574,
+      "sha256": "69d3d5d59a0ea896b227aacb9cb8383ab68c824808305d6b3b514ab2926e8938"
+    },
+    "lighton-hf-tiled-out-proof/venv-prefix.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-proof/venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton4b-hf-tiled-out-proof.log": {
+      "bytes": 1631,
+      "sha256": "7691b75f73578fad2553d8060c686edd3f3e410cd85e2d62a12b580dc84ae778"
+    }
+  },
+  "schema": "lighton4b-hf-tiled-out-original-f16-evidence/v1",
+  "source_sha": "24208e2acf15e1c2e2d9c3504731a06dc8270aca",
+  "status": "reproduced",
+  "summary": {
+    "all24_hf_payloads_exact": true,
+    "all24_publisher_payloads_exact": true,
+    "canonical_different_bits": 250347761,
+    "canonical_max_abs_difference": 0.04689359664916992,
+    "canonical_rms_difference": 0.0005964094287604289,
+    "elements": 251658240,
+    "hf_rmse_vs_original_f16": 0.0009088288345967706,
+    "layers_improved_importance_normalized_weight_rmse": 16,
+    "tiled_rmse_vs_original_f16": 0.0009091474570884511
+  },
+  "version": 1
+}

@@ -1,0 +1,39 @@
+{
+  "all24_native_controls_exact": true,
+  "all24_publisher_tiled_payloads_exact": true,
+  "bootstrap_sha256": "eb2a221e3464bb8743e3f0469e5ad41071e1fb6bc80a031576349e0d2a707612",
+  "candidate_conversion_allowed": true,
+  "controls_receipt_sha256": "f7c4682d9e557fbd1d43c3848a373631f0dbd645785ca39f23c6b619bf3a993d",
+  "controls_source_sha": "617534eff56c7e0ea98781b783d3d118f85e1c52",
+  "cpu_profile": {
+    "flags": "fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch pti ssbd ibrs ibpb stibp fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm rdseed adx smap xsaveopt arat md_clear arch_capabilities",
+    "model name": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+    "vendor_id": "GenuineIntel"
+  },
+  "full_f32_model_instantiated": false,
+  "gpu_enabled": false,
+  "model_inference_executed": false,
+  "paired_receipt_sha256": "e87e6b28936e1022b6207cb942ba5e1d468b309bf731c24bf44f136dbd20b215",
+  "preflight": {
+    "available_ram_bytes": 32175448064,
+    "free_disk_bytes": 20940529664,
+    "load": [
+      0.3359375,
+      0.24267578125,
+      0.09521484375
+    ],
+    "logical_cpus": 4,
+    "memory_swap": {
+      "MemAvailable": 32702955520,
+      "SwapFree": 0,
+      "SwapTotal": 0
+    }
+  },
+  "protocol_sha256": "c21003e25e95509ecf71e386017b813d410490a696737eb31d45b3c08caa310f",
+  "quantized_donor_used": false,
+  "runtime_manifest_sha256": "b81c00a330f1f4fa030b5509e0ce533da66e89142f2538774dbf4a5404bcad8d",
+  "schema": "lighton4b-hf-tiled-out-proof-bootstrap/v1",
+  "seconds": 294.671255894,
+  "source_sha": "24208e2acf15e1c2e2d9c3504731a06dc8270aca",
+  "status": "reproduced"
+}

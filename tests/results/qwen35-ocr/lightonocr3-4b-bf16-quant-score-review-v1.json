@@ -1,0 +1,254 @@
+{
+  "arms": {
+    "original": {
+      "primary_eos248046_probability": 0.004886942422354252,
+      "row_sha256": "a4bece2310050081b502a3910a19469e47016829d74abebb29861739f3205ffd",
+      "selected_ids": [
+        27
+      ],
+      "source_text_eos248044_probability": 6.030966069256215e-07,
+      "top8": [
+        {
+          "id": 27,
+          "probability": 0.8218573471814169,
+          "score": 22.875
+        },
+        {
+          "id": 20353,
+          "probability": 0.09815686246568853,
+          "score": 20.75
+        },
+        {
+          "id": 2,
+          "probability": 0.028122411941165708,
+          "score": 19.5
+        },
+        {
+          "id": 8909,
+          "probability": 0.015052842389027866,
+          "score": 18.875
+        },
+        {
+          "id": 2425,
+          "probability": 0.013284086783411194,
+          "score": 18.75
+        },
+        {
+          "id": 248046,
+          "probability": 0.004886942422354252,
+          "score": 17.75
+        },
+        {
+          "id": 550,
+          "probability": 0.003358743132952861,
+          "score": 17.375
+        },
+        {
+          "id": 6164,
+          "probability": 0.0029640804114081797,
+          "score": 17.25
+        }
+      ]
+    },
+    "q4_k": {
+      "comparison_limit": "Different effective weight precision and runtime; probability comparison does not isolate one operator or permit subtracting errors.",
+      "legacy_native_row_sha256": "0e046a3d880ec7d24a89588ad856f1ed3afa1ef671b0bacb0bfeae192c215fea",
+      "legacy_native_run": "41999584163",
+      "legacy_native_source": "fd150b98f488a6884a6e8d8127e7dfb263cab237",
+      "legacy_native_top8": [
+        {
+          "id": 20353,
+          "probability": 0.525659106356009,
+          "score": 21.93735122680664
+        },
+        {
+          "id": 27,
+          "probability": 0.24570039994857223,
+          "score": 21.17681121826172
+        },
+        {
+          "id": 2425,
+          "probability": 0.05565614008564934,
+          "score": 19.691890716552734
+        },
+        {
+          "id": 8909,
+          "probability": 0.046089545401348075,
+          "score": 19.503284454345703
+        },
+        {
+          "id": 550,
+          "probability": 0.03849354137758486,
+          "score": 19.32318878173828
+        },
+        {
+          "id": 2,
+          "probability": 0.037139530242795246,
+          "score": 19.28738021850586
+        },
+        {
+          "id": 1307,
+          "probability": 0.014438905776793118,
+          "score": 18.34262466430664
+        },
+        {
+          "id": 6164,
+          "probability": 0.008880701183216813,
+          "score": 17.856578826904297
+        }
+      ],
+      "max_dequant_to_bf16_rounding": 0.0018157958984375,
+      "primary_eos248046_probability": 0.0015468780424191815,
+      "row_sha256": "e59d6054c85e81fb1be7101c9899287fa3a1cdd23a3110c8e03d874992387a0d",
+      "selected_ids": [
+        20353
+      ],
+      "source_text_eos248044_probability": 3.796498162093746e-07,
+      "top8": [
+        {
+          "id": 20353,
+          "probability": 0.5507267301513681,
+          "score": 22.0
+        },
+        {
+          "id": 27,
+          "probability": 0.20260104172626103,
+          "score": 21.0
+        },
+        {
+          "id": 2425,
+          "probability": 0.05804617030344531,
+          "score": 19.75
+        },
+        {
+          "id": 2,
+          "probability": 0.04520640288661934,
+          "score": 19.5
+        },
+        {
+          "id": 550,
+          "probability": 0.04520640288661934,
+          "score": 19.5
+        },
+        {
+          "id": 8909,
+          "probability": 0.04520640288661934,
+          "score": 19.5
+        },
+        {
+          "id": 1307,
+          "probability": 0.016630506231300596,
+          "score": 18.5
+        },
+        {
+          "id": 6164,
+          "probability": 0.008901668522359926,
+          "score": 17.875
+        }
+      ]
+    },
+    "q8_0": {
+      "comparison_limit": "Different effective weight precision and runtime; probability comparison does not isolate one operator or permit subtracting errors.",
+      "legacy_native_row_sha256": "ae1eae4fc4eacf48d1bfe74e2beadb8d2f1cc41fa7fb3e959e27fd8cff1e8ed4",
+      "legacy_native_run": "41999580781",
+      "legacy_native_source": "fd150b98f488a6884a6e8d8127e7dfb263cab237",
+      "legacy_native_top8": [
+        {
+          "id": 27,
+          "probability": 0.826125772868969,
+          "score": 22.854671478271484
+        },
+        {
+          "id": 20353,
+          "probability": 0.09710658834705788,
+          "score": 20.713733673095703
+        },
+        {
+          "id": 2,
+          "probability": 0.0244837870076663,
+          "score": 19.335935592651367
+        },
+        {
+          "id": 8909,
+          "probability": 0.015843539506096294,
+          "score": 18.900686264038086
+        },
+        {
+          "id": 2425,
+          "probability": 0.013559583360656836,
+          "score": 18.745018005371094
+        },
+        {
+          "id": 248046,
+          "probability": 0.005836644658464207,
+          "score": 17.902080535888672
+        },
+        {
+          "id": 550,
+          "probability": 0.0027183952023657654,
+          "score": 17.13796615600586
+        },
+        {
+          "id": 6164,
+          "probability": 0.0026610566250730955,
+          "score": 17.116647720336914
+        }
+      ],
+      "max_dequant_to_bf16_rounding": 0.00096893310546875,
+      "primary_eos248046_probability": 0.006270043137876333,
+      "row_sha256": "d620c91a169dc85b77fc81e2e0f615da4516ccd8dce21d0cc152674932d6c400",
+      "selected_ids": [
+        27
+      ],
+      "source_text_eos248044_probability": 6.828626850843122e-07,
+      "top8": [
+        {
+          "id": 27,
+          "probability": 0.8212135905786566,
+          "score": 22.875
+        },
+        {
+          "id": 20353,
+          "probability": 0.09807997670377958,
+          "score": 20.75
+        },
+        {
+          "id": 2,
+          "probability": 0.028100383801568544,
+          "score": 19.5
+        },
+        {
+          "id": 8909,
+          "probability": 0.015041051575559471,
+          "score": 18.875
+        },
+        {
+          "id": 2425,
+          "probability": 0.013273681427046383,
+          "score": 18.75
+        },
+        {
+          "id": 248046,
+          "probability": 0.006270043137876333,
+          "score": 18.0
+        },
+        {
+          "id": 550,
+          "probability": 0.003356112246855378,
+          "score": 17.375
+        },
+        {
+          "id": 6164,
+          "probability": 0.0029617586625760983,
+          "score": 17.25
+        }
+      ]
+    }
+  },
+  "full_report_sha256": "03119ea4d0fbbf5cc86b91f80b47bbda22d90b417d89dd0c16b8fafa1a85a89b",
+  "native_forward_repeated": false,
+  "original_source": "8d3b2331d1b57e285f7ba348fc1eacd689b79aa8",
+  "quality_qualified": false,
+  "schema": "lighton4b-bf16-quant-first-score-review/v1",
+  "source_sha": "048fd683f4ad4adf50f945f6d7c6b436bacdb9aa"
+}

@@ -1,0 +1,27 @@
+{
+  "model_inference_observed": false,
+  "native_parity_qualified": false,
+  "runs": [
+    {
+      "controls_stdout": "passed=1 checks=34 model_inference=0\n",
+      "model_inference": false,
+      "quality_qualified": false,
+      "run_id": 41996964796,
+      "schema": "lighton4b-image-compose/v1",
+      "source_sha": "9de9011c28b8d332c713f2ea08b94ee3da51d6da",
+      "status": "passed",
+      "workflow": ".github/workflows/heavy-cpu.yml"
+    },
+    {
+      "controls_stdout": "passed=1 checks=45 model_inference=0\n",
+      "model_inference": false,
+      "quality_qualified": false,
+      "run_id": 41997341624,
+      "schema": "lighton4b-image-compose/v1",
+      "source_sha": "0d3ff8da62c8d59cfc493b8a656263c0b49461c0",
+      "status": "passed",
+      "workflow": ".github/workflows/heavy-cpu.yml"
+    }
+  ],
+  "schema": "lighton4b-image-compose-reviewed/v1"
+}

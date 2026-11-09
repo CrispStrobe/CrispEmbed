@@ -1,0 +1,571 @@
+{
+  "schema": "lighton4b-physical-prefix-focused-index/v1",
+  "version": 4,
+  "source_sha": "dffc7780c8baf791c32a26259efdbd65953d4988",
+  "actual_native_trace_compared": false,
+  "learned_model_forward_executed": false,
+  "quality_qualified": false,
+  "files": {
+    "ssm_beta-upstream-norm-upstream-direct.f32": {
+      "bytes": 512,
+      "sha256": "fac1107c522adcabe85c4883ddd8b674afb54057874cfdc3efd608f267dacd21"
+    },
+    "ssm_beta-reconstructed-native-scalar-norm-upstream-dequant.f32": {
+      "bytes": 512,
+      "sha256": "17eabb8127c04ec3ee27db9633e643df3338a8b6d29385de23c8e8ce24031cc2"
+    },
+    "ssm_alpha-upstream-norm-native-direct.f32": {
+      "bytes": 512,
+      "sha256": "93aef21727991a8f43ff341f28ff6c8497301a0679a0e303e5334263b4c3af0d"
+    },
+    "native-CMakeCache.txt": {
+      "bytes": 29736,
+      "sha256": "4cfae4d8b4cfcb6c538b3a3d27edf9ca1c84bd86ad504e6eaf44f219ad03d1a4"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-runtime-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "11f6b670dbc4eeb476d93d576feeaca7b8ca466aae9a42ba7191cdcb805ebf7f"
+    },
+    "reconstructed-native-scalar-norm.f32": {
+      "bytes": 40960,
+      "sha256": "6a483ccb8ada19e78f2707edf8fda3c4ffb9ff2afc3922038a1c7f7d8c3ba773"
+    },
+    "runtime-norm.f32": {
+      "bytes": 40960,
+      "sha256": "7a3fafed50f68cfdf0e41c2dadb3310c0512d8296155ad95de45567560064a96"
+    },
+    "prefix-primitives.json": {
+      "bytes": 11684,
+      "sha256": "79dff60f82e76d689811d2151d3c76469e0b80c3a6e5d64eabe6eba0c085f398"
+    },
+    "attn_gate-reconstructed-native-scalar-norm-native-direct.f32": {
+      "bytes": 65536,
+      "sha256": "8f8c38543df8c9b1ae2956e17196f72581d84d7f6796c7301f2e9bd3dc2294e8"
+    },
+    "attn_gate-reconstructed-native-scalar-norm-runtime-direct.f32": {
+      "bytes": 65536,
+      "sha256": "8f8c38543df8c9b1ae2956e17196f72581d84d7f6796c7301f2e9bd3dc2294e8"
+    },
+    "ssm_alpha-upstream-norm-upstream-dequant.f32": {
+      "bytes": 512,
+      "sha256": "85bf020210f69eeedd7bb2e6bc9870445c34660a0fed2b7340e997d3383ff062"
+    },
+    "attn_gate-reconstructed-native-scalar-norm-runtime-dequant.f32": {
+      "bytes": 65536,
+      "sha256": "4534b3f56c39eb33e6602c0cfb902b857be1d2e986fcfbda4d50361b31d792ed"
+    },
+    "runtime-CMakeCache.txt": {
+      "bytes": 29219,
+      "sha256": "0a9c9bb8081ddc96f69026e7edac0c588dc62099a41eaf32d16c236a3eb9d625"
+    },
+    "ssm_alpha-reconstructed-native-scalar-norm-upstream-direct.f32": {
+      "bytes": 512,
+      "sha256": "b9f22f91cdf53c3e88fae459aa9777310fc2db8d6ef216a97d20f668a3d47832"
+    },
+    "ssm_beta-reconstructed-native-scalar-norm-native-dequant.f32": {
+      "bytes": 512,
+      "sha256": "17eabb8127c04ec3ee27db9633e643df3338a8b6d29385de23c8e8ce24031cc2"
+    },
+    "ssm_alpha-upstream-norm-upstream-direct.f32": {
+      "bytes": 512,
+      "sha256": "93aef21727991a8f43ff341f28ff6c8497301a0679a0e303e5334263b4c3af0d"
+    },
+    "attn_gate-reconstructed-native-scalar-norm-upstream-dequant.f32": {
+      "bytes": 65536,
+      "sha256": "4534b3f56c39eb33e6602c0cfb902b857be1d2e986fcfbda4d50361b31d792ed"
+    },
+    "ssm_beta-upstream-norm-native-dequant.f32": {
+      "bytes": 512,
+      "sha256": "565f50625beff4bc0e2f6a4f639ecb8cf831a56fab6c24ea316b2a8c7e3b4541"
+    },
+    "attn_gate-upstream-norm-runtime-dequant.f32": {
+      "bytes": 65536,
+      "sha256": "f13b8ce282d5c71f5f7d7188e21bae5d1cae1d09545c2ced2e91908e01f90011"
+    },
+    "ssm_beta-reconstructed-native-scalar-norm-runtime-dequant.f32": {
+      "bytes": 512,
+      "sha256": "17eabb8127c04ec3ee27db9633e643df3338a8b6d29385de23c8e8ce24031cc2"
+    },
+    "ssm_alpha-reconstructed-native-scalar-norm-upstream-dequant.f32": {
+      "bytes": 512,
+      "sha256": "64d21c62adb950b9d6a41f945cd58b20662c8bae25dd8cf61b9a1564f329473f"
+    },
+    "attn_qkv-upstream-norm-upstream-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "eea69be9629d4494fa5405d0fea6d0b2b5428dace827bff8fec95c113c7d1f64"
+    },
+    "attn_qkv-upstream-norm-native-direct.f32": {
+      "bytes": 131072,
+      "sha256": "253e66a332f5bf4d5fb59828f2c077612c23246bf2c317916ee3b8930c63f243"
+    },
+    "ssm_beta-upstream-norm-runtime-direct.f32": {
+      "bytes": 512,
+      "sha256": "fac1107c522adcabe85c4883ddd8b674afb54057874cfdc3efd608f267dacd21"
+    },
+    "ssm_beta-reconstructed-native-scalar-norm-native-direct.f32": {
+      "bytes": 512,
+      "sha256": "72295df03038f750f03744c196f33941bc0de236f83483028625125e0921355b"
+    },
+    "attn_gate-upstream-norm-upstream-direct.f32": {
+      "bytes": 65536,
+      "sha256": "72bcbc9127a7734acf0f89da537d1d6bcdbe3ee3a07fda7485d9dc8daef1f169"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-native-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "11f6b670dbc4eeb476d93d576feeaca7b8ca466aae9a42ba7191cdcb805ebf7f"
+    },
+    "attn_gate-upstream-norm-native-dequant.f32": {
+      "bytes": 65536,
+      "sha256": "f13b8ce282d5c71f5f7d7188e21bae5d1cae1d09545c2ced2e91908e01f90011"
+    },
+    "ssm_alpha-upstream-norm-native-dequant.f32": {
+      "bytes": 512,
+      "sha256": "85bf020210f69eeedd7bb2e6bc9870445c34660a0fed2b7340e997d3383ff062"
+    },
+    "ssm_alpha-upstream-norm-runtime-dequant.f32": {
+      "bytes": 512,
+      "sha256": "85bf020210f69eeedd7bb2e6bc9870445c34660a0fed2b7340e997d3383ff062"
+    },
+    "upstream-CMakeCache.txt": {
+      "bytes": 30032,
+      "sha256": "4737d58213c89977bdfa5814c5f7d805ea42b3328f91e9986c2e0ae92be5a86e"
+    },
+    "attn_gate-upstream-norm-upstream-dequant.f32": {
+      "bytes": 65536,
+      "sha256": "f13b8ce282d5c71f5f7d7188e21bae5d1cae1d09545c2ced2e91908e01f90011"
+    },
+    "ssm_alpha-reconstructed-native-scalar-norm-runtime-dequant.f32": {
+      "bytes": 512,
+      "sha256": "64d21c62adb950b9d6a41f945cd58b20662c8bae25dd8cf61b9a1564f329473f"
+    },
+    "ssm_alpha-reconstructed-native-scalar-norm-runtime-direct.f32": {
+      "bytes": 512,
+      "sha256": "b9f22f91cdf53c3e88fae459aa9777310fc2db8d6ef216a97d20f668a3d47832"
+    },
+    "upstream-norm.f32": {
+      "bytes": 40960,
+      "sha256": "7a3fafed50f68cfdf0e41c2dadb3310c0512d8296155ad95de45567560064a96"
+    },
+    "ssm_beta-reconstructed-native-scalar-norm-upstream-direct.f32": {
+      "bytes": 512,
+      "sha256": "72295df03038f750f03744c196f33941bc0de236f83483028625125e0921355b"
+    },
+    "ssm_alpha-reconstructed-native-scalar-norm-native-dequant.f32": {
+      "bytes": 512,
+      "sha256": "64d21c62adb950b9d6a41f945cd58b20662c8bae25dd8cf61b9a1564f329473f"
+    },
+    "ssm_beta-reconstructed-native-scalar-norm-runtime-direct.f32": {
+      "bytes": 512,
+      "sha256": "72295df03038f750f03744c196f33941bc0de236f83483028625125e0921355b"
+    },
+    "attn_gate-reconstructed-native-scalar-norm-upstream-direct.f32": {
+      "bytes": 65536,
+      "sha256": "8f8c38543df8c9b1ae2956e17196f72581d84d7f6796c7301f2e9bd3dc2294e8"
+    },
+    "reconstructed-prefix.f32": {
+      "bytes": 40960,
+      "sha256": "ca940b1a6f45bc487a4685205caca1e7fb64929c03b7c8d1b52769e26cc8b842"
+    },
+    "ssm_beta-upstream-norm-upstream-dequant.f32": {
+      "bytes": 512,
+      "sha256": "565f50625beff4bc0e2f6a4f639ecb8cf831a56fab6c24ea316b2a8c7e3b4541"
+    },
+    "ssm_alpha-reconstructed-native-scalar-norm-native-direct.f32": {
+      "bytes": 512,
+      "sha256": "b9f22f91cdf53c3e88fae459aa9777310fc2db8d6ef216a97d20f668a3d47832"
+    },
+    "attn_gate-upstream-norm-runtime-direct.f32": {
+      "bytes": 65536,
+      "sha256": "72bcbc9127a7734acf0f89da537d1d6bcdbe3ee3a07fda7485d9dc8daef1f169"
+    },
+    "pip-resolution.json": {
+      "bytes": 205584,
+      "sha256": "182672f676b0fee31e2e2cba68c6296615ab0a90bc9ac93c4c61da17a66f3934"
+    },
+    "attn_qkv-upstream-norm-upstream-direct.f32": {
+      "bytes": 131072,
+      "sha256": "253e66a332f5bf4d5fb59828f2c077612c23246bf2c317916ee3b8930c63f243"
+    },
+    "ssm_beta-upstream-norm-native-direct.f32": {
+      "bytes": 512,
+      "sha256": "fac1107c522adcabe85c4883ddd8b674afb54057874cfdc3efd608f267dacd21"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-upstream-direct.f32": {
+      "bytes": 131072,
+      "sha256": "aef9045166fc06f243ba0a98c7114ea07b3ed5c8e1da89c1cc6e303a0f811cd2"
+    },
+    "ssm_alpha-upstream-norm-runtime-direct.f32": {
+      "bytes": 512,
+      "sha256": "93aef21727991a8f43ff341f28ff6c8497301a0679a0e303e5334263b4c3af0d"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-runtime-direct.f32": {
+      "bytes": 131072,
+      "sha256": "aef9045166fc06f243ba0a98c7114ea07b3ed5c8e1da89c1cc6e303a0f811cd2"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-upstream-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "11f6b670dbc4eeb476d93d576feeaca7b8ca466aae9a42ba7191cdcb805ebf7f"
+    },
+    "attn_gate-upstream-norm-native-direct.f32": {
+      "bytes": 65536,
+      "sha256": "72bcbc9127a7734acf0f89da537d1d6bcdbe3ee3a07fda7485d9dc8daef1f169"
+    },
+    "native-norm.f32": {
+      "bytes": 40960,
+      "sha256": "7a3fafed50f68cfdf0e41c2dadb3310c0512d8296155ad95de45567560064a96"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-native-direct.f32": {
+      "bytes": 131072,
+      "sha256": "aef9045166fc06f243ba0a98c7114ea07b3ed5c8e1da89c1cc6e303a0f811cd2"
+    },
+    "prefix-primitives-bootstrap.json": {
+      "bytes": 418,
+      "sha256": "b774d5c0fea238ec948f99ea9657998d6de552f178164fc42fdf9b07c1c9fb31"
+    },
+    "attn_gate-reconstructed-native-scalar-norm-native-dequant.f32": {
+      "bytes": 65536,
+      "sha256": "4534b3f56c39eb33e6602c0cfb902b857be1d2e986fcfbda4d50361b31d792ed"
+    },
+    "attn_qkv-upstream-norm-runtime-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "eea69be9629d4494fa5405d0fea6d0b2b5428dace827bff8fec95c113c7d1f64"
+    },
+    "attn_qkv-upstream-norm-runtime-direct.f32": {
+      "bytes": 131072,
+      "sha256": "253e66a332f5bf4d5fb59828f2c077612c23246bf2c317916ee3b8930c63f243"
+    },
+    "ssm_beta-upstream-norm-runtime-dequant.f32": {
+      "bytes": 512,
+      "sha256": "565f50625beff4bc0e2f6a4f639ecb8cf831a56fab6c24ea316b2a8c7e3b4541"
+    },
+    "attn_qkv-upstream-norm-native-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "eea69be9629d4494fa5405d0fea6d0b2b5428dace827bff8fec95c113c7d1f64"
+    }
+  },
+  "independent_review": {
+    "checks": 28,
+    "three_way_identical_output_groups": 17,
+    "direct_dequant_groups": 16,
+    "norm_groups": 1,
+    "all_three_llamafile_on": true,
+    "all_reported_projection_rms_recomputed_exact": true
+  },
+  "build_profiles": {
+    "native": {
+      "GGML_ACCELERATE": "ON",
+      "GGML_ALL_WARNINGS": "ON",
+      "GGML_ALL_WARNINGS_3RD_PARTY": "OFF",
+      "GGML_AMX_BF16": "OFF",
+      "GGML_AMX_INT8": "OFF",
+      "GGML_AMX_TILE": "OFF",
+      "GGML_AVX": "ON",
+      "GGML_AVX2": "ON",
+      "GGML_AVX512": "OFF",
+      "GGML_AVX512_BF16": "OFF",
+      "GGML_AVX512_VBMI": "OFF",
+      "GGML_AVX512_VNNI": "OFF",
+      "GGML_AVX_VNNI": "OFF",
+      "GGML_BACKEND_DL": "OFF",
+      "GGML_BLAS": "OFF",
+      "GGML_BMI2": "ON",
+      "GGML_BUILD_EXAMPLES": "OFF",
+      "GGML_BUILD_TESTS": "OFF",
+      "GGML_CCACHE": "ON",
+      "GGML_CPU": "ON",
+      "GGML_CPU_ALL_VARIANTS": "OFF",
+      "GGML_CPU_HBM": "OFF",
+      "GGML_CPU_KLEIDIAI": "OFF",
+      "GGML_CPU_REPACK": "ON",
+      "GGML_CUDA": "OFF",
+      "GGML_CUDA_CRISPASR_FA_PERHEAD_MASK": "OFF",
+      "GGML_CUDA_FA": "ON",
+      "GGML_CUDA_FA_ALL_QUANTS": "OFF",
+      "GGML_CUDA_FORCE_CUBLAS": "OFF",
+      "GGML_CUDA_FORCE_MMQ": "OFF",
+      "GGML_CUDA_GRAPHS": "ON",
+      "GGML_CUDA_NCCL": "ON",
+      "GGML_CUDA_NO_PEER_COPY": "OFF",
+      "GGML_CUDA_NO_VMM": "OFF",
+      "GGML_ET": "OFF",
+      "GGML_ET_SYSEMU": "OFF",
+      "GGML_F16C": "ON",
+      "GGML_FATAL_WARNINGS": "OFF",
+      "GGML_FMA": "ON",
+      "GGML_GPROF": "OFF",
+      "GGML_HEXAGON": "OFF",
+      "GGML_HIP": "OFF",
+      "GGML_HIP_EXPORT_METRICS": "OFF",
+      "GGML_HIP_GRAPHS": "ON",
+      "GGML_HIP_MMQ_MFMA": "ON",
+      "GGML_HIP_NO_VMM": "ON",
+      "GGML_HIP_RCCL": "OFF",
+      "GGML_HIP_ROCWMMA_FATTN": "OFF",
+      "GGML_LASX": "ON",
+      "GGML_LLAMAFILE": "ON",
+      "GGML_LSX": "ON",
+      "GGML_LTO": "OFF",
+      "GGML_METAL": "OFF",
+      "GGML_METAL_EMBED_LIBRARY": "OFF",
+      "GGML_METAL_NDEBUG": "OFF",
+      "GGML_METAL_SHADER_DEBUG": "OFF",
+      "GGML_MUSA": "OFF",
+      "GGML_MUSA_GRAPHS": "OFF",
+      "GGML_MUSA_MUDNN_COPY": "OFF",
+      "GGML_NATIVE": "OFF",
+      "GGML_OPENCL": "OFF",
+      "GGML_OPENCL_EMBED_KERNELS": "ON",
+      "GGML_OPENCL_PROFILING": "OFF",
+      "GGML_OPENCL_USE_ADRENO_KERNELS": "ON",
+      "GGML_OPENMP": "ON",
+      "GGML_OPENVINO": "OFF",
+      "GGML_RPC": "OFF",
+      "GGML_RVV": "ON",
+      "GGML_RV_ZFH": "ON",
+      "GGML_RV_ZICBOP": "ON",
+      "GGML_RV_ZIHINTPAUSE": "ON",
+      "GGML_RV_ZVFBFWMA": "OFF",
+      "GGML_RV_ZVFH": "ON",
+      "GGML_SANITIZE_ADDRESS": "OFF",
+      "GGML_SANITIZE_THREAD": "OFF",
+      "GGML_SANITIZE_UNDEFINED": "OFF",
+      "GGML_SCHED_NO_REALLOC": "OFF",
+      "GGML_SSE42": "ON",
+      "GGML_STATIC": "OFF",
+      "GGML_SYCL": "OFF",
+      "GGML_SYCL_DNN": "ON",
+      "GGML_SYCL_F16": "OFF",
+      "GGML_SYCL_GRAPH": "ON",
+      "GGML_SYCL_HOST_MEM_FALLBACK": "ON",
+      "GGML_SYCL_SUPPORT_LEVEL_ZERO_API": "ON",
+      "GGML_VIRTGPU": "OFF",
+      "GGML_VIRTGPU_BACKEND": "OFF",
+      "GGML_VULKAN": "OFF",
+      "GGML_VULKAN_CHECK_RESULTS": "OFF",
+      "GGML_VULKAN_DEBUG": "OFF",
+      "GGML_VULKAN_MEMORY_DEBUG": "OFF",
+      "GGML_VULKAN_RUN_TESTS": "OFF",
+      "GGML_VULKAN_SHADER_DEBUG_INFO": "OFF",
+      "GGML_VULKAN_VALIDATE": "OFF",
+      "GGML_VXE": "OFF",
+      "GGML_WEBGPU": "OFF",
+      "GGML_WEBGPU_CPU_PROFILE": "OFF",
+      "GGML_WEBGPU_DEBUG": "OFF",
+      "GGML_WEBGPU_GPU_PROFILE": "OFF",
+      "GGML_WEBGPU_JSPI": "ON",
+      "GGML_XTHEADVECTOR": "OFF",
+      "GGML_ZDNN": "OFF",
+      "GGML_ZENDNN": "OFF"
+    },
+    "upstream": {
+      "GGML_ACCELERATE": "ON",
+      "GGML_ALL_WARNINGS": "ON",
+      "GGML_ALL_WARNINGS_3RD_PARTY": "OFF",
+      "GGML_AMX_BF16": "OFF",
+      "GGML_AMX_INT8": "OFF",
+      "GGML_AMX_TILE": "OFF",
+      "GGML_AVX": "ON",
+      "GGML_AVX2": "ON",
+      "GGML_AVX512": "OFF",
+      "GGML_AVX512_BF16": "OFF",
+      "GGML_AVX512_VBMI": "OFF",
+      "GGML_AVX512_VNNI": "OFF",
+      "GGML_AVX_VNNI": "OFF",
+      "GGML_BACKEND_DL": "OFF",
+      "GGML_BLAS": "OFF",
+      "GGML_BMI2": "ON",
+      "GGML_BUILD_EXAMPLES": "OFF",
+      "GGML_BUILD_TESTS": "OFF",
+      "GGML_CCACHE": "ON",
+      "GGML_CPU": "ON",
+      "GGML_CPU_ALL_VARIANTS": "OFF",
+      "GGML_CPU_HBM": "OFF",
+      "GGML_CPU_KLEIDIAI": "OFF",
+      "GGML_CPU_REPACK": "ON",
+      "GGML_CUDA": "OFF",
+      "GGML_CUDA_FA": "ON",
+      "GGML_CUDA_FA_ALL_QUANTS": "OFF",
+      "GGML_CUDA_FORCE_CUBLAS": "OFF",
+      "GGML_CUDA_FORCE_MMQ": "OFF",
+      "GGML_CUDA_GRAPHS": "OFF",
+      "GGML_CUDA_NCCL": "ON",
+      "GGML_CUDA_NO_PEER_COPY": "OFF",
+      "GGML_CUDA_NO_VMM": "OFF",
+      "GGML_ET": "OFF",
+      "GGML_ET_SYSEMU": "OFF",
+      "GGML_F16C": "ON",
+      "GGML_FATAL_WARNINGS": "OFF",
+      "GGML_FMA": "ON",
+      "GGML_GPROF": "OFF",
+      "GGML_HEXAGON": "OFF",
+      "GGML_HIP": "OFF",
+      "GGML_HIP_EXPORT_METRICS": "OFF",
+      "GGML_HIP_GRAPHS": "ON",
+      "GGML_HIP_MMQ_MFMA": "ON",
+      "GGML_HIP_NO_VMM": "ON",
+      "GGML_HIP_RCCL": "OFF",
+      "GGML_LASX": "ON",
+      "GGML_LLAMAFILE": "ON",
+      "GGML_LSX": "ON",
+      "GGML_LTO": "OFF",
+      "GGML_METAL": "OFF",
+      "GGML_METAL_EMBED_LIBRARY": "OFF",
+      "GGML_METAL_NDEBUG": "OFF",
+      "GGML_METAL_SHADER_DEBUG": "OFF",
+      "GGML_MUSA": "OFF",
+      "GGML_MUSA_GRAPHS": "OFF",
+      "GGML_MUSA_MUDNN_COPY": "OFF",
+      "GGML_NATIVE": "OFF",
+      "GGML_OPENCL": "OFF",
+      "GGML_OPENCL_EMBED_KERNELS": "ON",
+      "GGML_OPENCL_PROFILING": "OFF",
+      "GGML_OPENCL_USE_ADRENO_KERNELS": "ON",
+      "GGML_OPENMP": "ON",
+      "GGML_OPENMP_FETCH": "OFF",
+      "GGML_OPENVINO": "OFF",
+      "GGML_RPC": "OFF",
+      "GGML_RVV": "ON",
+      "GGML_RV_ZFH": "ON",
+      "GGML_RV_ZICBOP": "ON",
+      "GGML_RV_ZIHINTPAUSE": "ON",
+      "GGML_RV_ZVFBFWMA": "OFF",
+      "GGML_RV_ZVFH": "ON",
+      "GGML_SANITIZE_ADDRESS": "OFF",
+      "GGML_SANITIZE_THREAD": "OFF",
+      "GGML_SANITIZE_UNDEFINED": "OFF",
+      "GGML_SCHED_NO_REALLOC": "OFF",
+      "GGML_SSE42": "ON",
+      "GGML_STATIC": "OFF",
+      "GGML_SYCL": "OFF",
+      "GGML_SYCL_DNN": "ON",
+      "GGML_SYCL_F16": "OFF",
+      "GGML_SYCL_GRAPH": "ON",
+      "GGML_SYCL_HOST_MEM_FALLBACK": "ON",
+      "GGML_SYCL_SUPPORT_LEVEL_ZERO_API": "ON",
+      "GGML_SYCL_SUPPORT_XMX": "ON",
+      "GGML_VIRTGPU": "OFF",
+      "GGML_VIRTGPU_BACKEND": "OFF",
+      "GGML_VULKAN": "OFF",
+      "GGML_VULKAN_CHECK_RESULTS": "OFF",
+      "GGML_VULKAN_DEBUG": "OFF",
+      "GGML_VULKAN_MEMORY_DEBUG": "OFF",
+      "GGML_VULKAN_RUN_TESTS": "OFF",
+      "GGML_VULKAN_SHADER_DEBUG_INFO": "OFF",
+      "GGML_VULKAN_VALIDATE": "OFF",
+      "GGML_VXE": "OFF",
+      "GGML_WEBGPU": "OFF",
+      "GGML_WEBGPU_CPU_PROFILE": "OFF",
+      "GGML_WEBGPU_DEBUG": "OFF",
+      "GGML_WEBGPU_GPU_PROFILE": "OFF",
+      "GGML_WEBGPU_JSPI": "ON",
+      "GGML_XTHEADVECTOR": "OFF",
+      "GGML_ZDNN": "OFF",
+      "GGML_ZENDNN": "OFF"
+    },
+    "runtime": {
+      "GGML_ACCELERATE": "ON",
+      "GGML_ALL_WARNINGS": "ON",
+      "GGML_ALL_WARNINGS_3RD_PARTY": "OFF",
+      "GGML_AMX_BF16": "OFF",
+      "GGML_AMX_INT8": "OFF",
+      "GGML_AMX_TILE": "OFF",
+      "GGML_AVX": "ON",
+      "GGML_AVX2": "ON",
+      "GGML_AVX512": "OFF",
+      "GGML_AVX512_BF16": "OFF",
+      "GGML_AVX512_VBMI": "OFF",
+      "GGML_AVX512_VNNI": "OFF",
+      "GGML_AVX_VNNI": "OFF",
+      "GGML_BACKEND_DL": "OFF",
+      "GGML_BLAS": "OFF",
+      "GGML_BMI2": "ON",
+      "GGML_BUILD_EXAMPLES": "OFF",
+      "GGML_BUILD_TESTS": "OFF",
+      "GGML_CCACHE": "ON",
+      "GGML_CPU": "ON",
+      "GGML_CPU_ALL_VARIANTS": "OFF",
+      "GGML_CPU_HBM": "OFF",
+      "GGML_CPU_KLEIDIAI": "OFF",
+      "GGML_CPU_REPACK": "ON",
+      "GGML_CUDA": "OFF",
+      "GGML_CUDA_CRISPASR_FA_PERHEAD_MASK": "OFF",
+      "GGML_CUDA_FA": "ON",
+      "GGML_CUDA_FA_ALL_QUANTS": "OFF",
+      "GGML_CUDA_FORCE_CUBLAS": "OFF",
+      "GGML_CUDA_FORCE_MMQ": "OFF",
+      "GGML_CUDA_GRAPHS": "ON",
+      "GGML_CUDA_NCCL": "ON",
+      "GGML_CUDA_NO_PEER_COPY": "OFF",
+      "GGML_CUDA_NO_VMM": "OFF",
+      "GGML_ET": "OFF",
+      "GGML_ET_SYSEMU": "OFF",
+      "GGML_F16C": "ON",
+      "GGML_FATAL_WARNINGS": "OFF",
+      "GGML_FMA": "ON",
+      "GGML_GPROF": "OFF",
+      "GGML_HEXAGON": "OFF",
+      "GGML_HIP": "OFF",
+      "GGML_HIP_EXPORT_METRICS": "OFF",
+      "GGML_HIP_GRAPHS": "ON",
+      "GGML_HIP_MMQ_MFMA": "ON",
+      "GGML_HIP_NO_VMM": "ON",
+      "GGML_HIP_RCCL": "OFF",
+      "GGML_HIP_ROCWMMA_FATTN": "OFF",
+      "GGML_LASX": "ON",
+      "GGML_LLAMAFILE": "ON",
+      "GGML_LSX": "ON",
+      "GGML_LTO": "OFF",
+      "GGML_METAL": "OFF",
+      "GGML_METAL_EMBED_LIBRARY": "OFF",
+      "GGML_METAL_NDEBUG": "OFF",
+      "GGML_METAL_SHADER_DEBUG": "OFF",
+      "GGML_MUSA": "OFF",
+      "GGML_MUSA_GRAPHS": "OFF",
+      "GGML_MUSA_MUDNN_COPY": "OFF",
+      "GGML_NATIVE": "OFF",
+      "GGML_OPENCL": "OFF",
+      "GGML_OPENCL_EMBED_KERNELS": "ON",
+      "GGML_OPENCL_PROFILING": "OFF",
+      "GGML_OPENCL_USE_ADRENO_KERNELS": "ON",
+      "GGML_OPENMP": "OFF",
+      "GGML_OPENVINO": "OFF",
+      "GGML_RPC": "OFF",
+      "GGML_RVV": "ON",
+      "GGML_RV_ZFH": "ON",
+      "GGML_RV_ZICBOP": "ON",
+      "GGML_RV_ZIHINTPAUSE": "ON",
+      "GGML_RV_ZVFBFWMA": "OFF",
+      "GGML_RV_ZVFH": "ON",
+      "GGML_SANITIZE_ADDRESS": "OFF",
+      "GGML_SANITIZE_THREAD": "OFF",
+      "GGML_SANITIZE_UNDEFINED": "OFF",
+      "GGML_SCHED_NO_REALLOC": "OFF",
+      "GGML_SSE42": "ON",
+      "GGML_STATIC": "OFF",
+      "GGML_SYCL": "OFF",
+      "GGML_SYCL_DNN": "ON",
+      "GGML_SYCL_F16": "OFF",
+      "GGML_SYCL_GRAPH": "ON",
+      "GGML_SYCL_HOST_MEM_FALLBACK": "ON",
+      "GGML_SYCL_SUPPORT_LEVEL_ZERO_API": "ON",
+      "GGML_VIRTGPU": "OFF",
+      "GGML_VIRTGPU_BACKEND": "OFF",
+      "GGML_VULKAN": "OFF",
+      "GGML_VULKAN_CHECK_RESULTS": "OFF",
+      "GGML_VULKAN_DEBUG": "OFF",
+      "GGML_VULKAN_MEMORY_DEBUG": "OFF",
+      "GGML_VULKAN_RUN_TESTS": "OFF",
+      "GGML_VULKAN_SHADER_DEBUG_INFO": "OFF",
+      "GGML_VULKAN_VALIDATE": "OFF",
+      "GGML_VXE": "OFF",
+      "GGML_WEBGPU": "OFF",
+      "GGML_WEBGPU_CPU_PROFILE": "OFF",
+      "GGML_WEBGPU_DEBUG": "OFF",
+      "GGML_WEBGPU_GPU_PROFILE": "OFF",
+      "GGML_WEBGPU_JSPI": "ON",
+      "GGML_XTHEADVECTOR": "OFF",
+      "GGML_ZDNN": "OFF",
+      "GGML_ZENDNN": "OFF"
+    }
+  }
+}

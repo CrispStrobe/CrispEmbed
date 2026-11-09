@@ -1,0 +1,23 @@
+PHASE adapter-actual-means-and-legacy-controls
+PHASE test_lighton4b_imatrix_q4km_recipe.py
+PHASE test_lighton4b_q6_recipe.py
+PHASE test_lighton4b_gdn_out_q6_recipe.py
+PHASE fetch-frozen-receipt-commits
+PHASE source-pin-check
+PHASE build-policy-controls
+PHASE new-q4km
+PHASE old32-q8head
+PHASE old24-q6out
+PHASE old24-q8out
+PHASE stream-graph-off-on
+Traceback (most recent call last):
+  File "/kaggle/working/lighton-q4km-candidate-source/tools/ci-heavy/lighton4b_imatrix_q4km_controls.py", line 49, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/kaggle/working/lighton-q4km-candidate-source/tools/ci-heavy/lighton4b_imatrix_q4km_controls.py", line 36, in main
+    run('old24-q8out',[build/targets[3]]);run('stream-graph-off-on',[build/targets[4]])
+                                          ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/lighton-q4km-candidate-source/tools/ci-heavy/lighton4b_imatrix_q4km_controls.py", line 19, in run
+    if r.returncode!=expect:raise ValueError('control failed: '+label)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: control failed: stream-graph-off-on

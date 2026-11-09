@@ -1,0 +1,25 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+PHASE source
+PHASE cpu
+PHASE init
+PHASE remote
+PHASE fetch
+PHASE checkout
+PHASE configure
+PHASE build
+PHASE loader-version
+Traceback (most recent call last):
+  File "/tmp/lighton4b-upstream-text-trace-v1/source/tools/text-trace-probe/worker.py", line 94, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/tmp/lighton4b-upstream-text-trace-v1/source/tools/text-trace-probe/worker.py", line 88, in main
+    require(responses[0]['tokens']==responses[1]['tokens']and responses[0]['completion_probabilities']==responses[1]['completion_probabilities'],'complete live observer neutrality');report['all282_scores_observer_neutral']=True;report['analysis']=analysis.analyze(out/'on',native,out/'on/source.logits.0.f32',out/'on/source.logits.126.f32',frozen['tokens']);report['status']='measured_neutral_text_trace';report['limits']=['One observed table and same-prefix step126; no heldout/general quality claim.','Stored-quantized actual upstream versus immutable native; no original BF16/F32 model instantiated.','Actual upstream batching/cropping retained; pure operator attribution requires matching stage inputs.','Only retained actual native prefill/first-block arrays exist; step126 native intermediates are not inferred.']
+                                                                                                                                                                                                                                                       ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-upstream-text-trace-v1/source/tools/text-trace-probe/analysis.py", line 35, in analyze
+    all_graphs,total=load_graphs(folder);graphs=[g for g in all_graphs if g['sample_count']==0];steps=[g for g in all_graphs if g['sample_count']==126];require(len(steps)==1 and steps[0]['tokens']==1,'one actual same-prefix126 graph');native=Path(native_folder);count=sum(g['tokens']for g in graphs);require(count==86,'actual table prompt token census');input_native=np.fromfile(native/'prefill.input.f32',dtype='<f4').reshape(86,2560);pos_native=np.fromfile(native/'prefill.positions.f32',dtype='<f4').reshape(3,86);emb=np.concatenate([g['arrays']['model.input_embed'].reshape(g['tokens'],2560)for g in graphs]);pos=[];offset=0
+                                                                                                                                                                                                                                                                                                            ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-upstream-text-trace-v1/source/tools/text-trace-probe/analysis.py", line 9, in require
+    if not ok:raise ValueError(why)
+              ^^^^^^^^^^^^^^^^^^^^^
+ValueError: actual table prompt token census

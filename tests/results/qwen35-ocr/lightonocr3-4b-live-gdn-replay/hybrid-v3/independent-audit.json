@@ -1,0 +1,72 @@
+{
+  "schema": "lighton4b-hybrid-independent-audit/v1",
+  "source_sha": "cd50e9e691530525fb998edda8a449cc0725be91",
+  "receipt_sha256": "6b1f4f9c3150d06df0a195c1f21c42136874e69934b9586205712114354e798d",
+  "downloaded_activation_bytes": 4378624,
+  "arrays": {
+    "zab4-hybrid/postnorm.f32": {
+      "bytes": 65536,
+      "sha256": "1bcacd8da142f7b1f359a1eed30ff61755119a32d247b4dbe5f408752f0a8d9f"
+    },
+    "zab4-source-upstream/postnorm.f32": {
+      "bytes": 65536,
+      "sha256": "1bcacd8da142f7b1f359a1eed30ff61755119a32d247b4dbe5f408752f0a8d9f"
+    },
+    "continuation1-hybrid/state.f32": {
+      "bytes": 2097152,
+      "sha256": "f3eac714ad6cd8bc549f82a140f2c34ceefc9f3420eade3132a13e74a95ed92c"
+    },
+    "continuation1-hybrid/postnorm.f32": {
+      "bytes": 16384,
+      "sha256": "0c3ecf8c10f6778ca64047b328d2d3539b3764bed5b31a30aad2462a09cc5e9b"
+    },
+    "continuation1-hybrid/out_preferred.f32": {
+      "bytes": 10240,
+      "sha256": "79f129092da6f13b61566639662d1e863c6750f8e17144b2b4e7ba6f0d2c309a"
+    },
+    "continuation1-source-upstream/state.f32": {
+      "bytes": 2097152,
+      "sha256": "f3eac714ad6cd8bc549f82a140f2c34ceefc9f3420eade3132a13e74a95ed92c"
+    },
+    "continuation1-source-upstream/postnorm.f32": {
+      "bytes": 16384,
+      "sha256": "0c3ecf8c10f6778ca64047b328d2d3539b3764bed5b31a30aad2462a09cc5e9b"
+    },
+    "continuation1-source-upstream/out_preferred.f32": {
+      "bytes": 10240,
+      "sha256": "79f129092da6f13b61566639662d1e863c6750f8e17144b2b4e7ba6f0d2c309a"
+    }
+  },
+  "cases": {
+    "zab4": {
+      "postnorm": {
+        "elements": 16384,
+        "bit_exact": true,
+        "rms_error": 0.0,
+        "reference_rms_magnitude": 0.07006274837823559
+      }
+    },
+    "continuation1": {
+      "postnorm": {
+        "elements": 4096,
+        "bit_exact": true,
+        "rms_error": 0.0,
+        "reference_rms_magnitude": 0.14549115538725807
+      },
+      "state": {
+        "elements": 524288,
+        "bit_exact": true,
+        "rms_error": 0.0,
+        "reference_rms_magnitude": 0.03234454064238204
+      },
+      "out_preferred": {
+        "elements": 2560,
+        "bit_exact": true,
+        "rms_error": 0.0,
+        "reference_rms_magnitude": 0.05778029545460735
+      }
+    }
+  },
+  "model_or_inference_executed": false,
+  "status": "verified_bounded_actual_arrays_and_baseline_closure"
+}

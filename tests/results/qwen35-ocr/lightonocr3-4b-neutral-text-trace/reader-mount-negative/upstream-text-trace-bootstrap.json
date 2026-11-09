@@ -1,0 +1,27 @@
+{
+  "schema": "lighton4b-upstream-text-trace-bootstrap/v1",
+  "source_sha": "6ab05fcb8bb21fec93c8245a7e434c4efc6c6880",
+  "bootstrap_sha256": "a537acb77db7584e97fd1dccfb6491f049ffa34eb9d21210f0303966be8e865e",
+  "status": "failed",
+  "gpu_requested": false,
+  "model_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "dependency-profile",
+  "source_file_sha256": {
+    "tools/text-trace-probe/worker.py": "93b78de169457ea7a77f4d6d929d2e36f9b37403bc9c9943fc380935d781851b",
+    "tools/text-trace-probe/source_patch.py": "7bbb99aed40f502664e608b7afa8a0b48546da5e06fe990993867abc5649c2e8",
+    "tools/text-trace-probe/analysis.py": "7663c139ac99f85d9a860059c8fce3ce2942dbabf3eb19fabb2a870d638af463",
+    "tools/text-trace-probe/test_controls.py": "217aba0129fcc73e43e2b2f6ee1967b537acd7ec807bb1160abe5468f46361a1",
+    "tools/lighton4b_upstream_observer_patch.py": "80c229113c4836c1447661d843dba9cc1fff573840ad128e6aee79b6a0e285a5",
+    "tools/lighton4b_upstream_dispatch_log.py": "aa4e955add0a590a6fc67cffb97eedd09cbd176e9bcc6c8b7b2fcbed27a684e1",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "docs/lighton4b-upstream-physical-decode-v1.json": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d",
+    "docs/lighton4b-upstream-text-trace-v1.md": "6ea2037b106ecda76607172866ab8816c7f7b8c8324cf6aa4082f39b4209ece0",
+    "tools/text-trace-probe/read_trace.py": "738d31dd257fed3ee0901772f20cdfc1fe9250786aaa3870cd828c7c9af9889f"
+  },
+  "error_type": "RuntimeError",
+  "error": "one exact complete dependency required: text-trace.json",
+  "elapsed_seconds": 15.737567721999994
+}

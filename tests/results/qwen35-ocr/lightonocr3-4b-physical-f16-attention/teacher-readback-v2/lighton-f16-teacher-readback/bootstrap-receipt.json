@@ -1,0 +1,24 @@
+{
+  "bootstrap_sha256": "14df585c01e87bb20b59d2256987abd0ead44f9d6e7931086b14951c00467865",
+  "error": "bounded readback failed; negative preserved",
+  "error_type": "RuntimeError",
+  "gpu_enabled": false,
+  "large_artifacts_copied": false,
+  "model_inference_executed": false,
+  "model_receipt_sha256": "0a0c2084baa4e46aa80f09f7ae94fd4b1c56ccae2bbf2f9ef6210e81e8cf1d01",
+  "preflight": {
+    "available_ram_bytes": 32175636480,
+    "free_disk_bytes": 20940525568,
+    "load": [
+      0.02001953125,
+      0.23388671875,
+      0.171875
+    ],
+    "logical_cpus": 4
+  },
+  "schema": "lighton4b-f16-teacher-readback-bootstrap/v1",
+  "seconds": 33.12668343500002,
+  "source_sha": "68379ea153e4517749002e0673b039f5b0f9e2f7",
+  "status": "failed",
+  "weight_quantization_executed": false
+}

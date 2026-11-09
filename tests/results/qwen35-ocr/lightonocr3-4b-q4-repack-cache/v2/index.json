@@ -1,0 +1,50 @@
+{
+  "CMakeCache.txt": {
+    "bytes": 29227,
+    "sha256": "a5483c43954fae82d441117d88605a13329d5d1328570b08a63d77e016d32f54"
+  },
+  "run-test-lighton4b-main-f16-link.log": {
+    "bytes": 37,
+    "sha256": "e40c9000f6e6d7cba997e679ba3e65d09b9136bb56bbd66e9952d2330044e0bb"
+  },
+  "independent-review.json": {
+    "bytes": 676,
+    "sha256": "b4291098c67a56c1b00f44e349590eb5d487e1f65ecfee8d791905364131f8bf"
+  },
+  "runtime-repack-bootstrap.json": {
+    "bytes": 1398,
+    "sha256": "d8bb2c9994376b6bcfe33f2b930cdcd02d5a13c4fcc737b05fa5a0ea64afe044"
+  },
+  "bootstrap.py": {
+    "bytes": 6568,
+    "sha256": "d8bb8318f94c3770cf8183862664f46d0308ab60eddd05d415ba8bbec4c6bca8"
+  },
+  "run-test-lighton4b-q6-tied-head.log": {
+    "bytes": 171,
+    "sha256": "9481438a41c398f486457154426d6fd0656dc8b13ec6eb171cb3a1d9c8d885cd"
+  },
+  "runtime-repack-controls.json": {
+    "bytes": 47573,
+    "sha256": "c7130c6d7b54e6859439bbf87c8e54880c30bd5d2db33c3571ded179e6711cf5"
+  },
+  "run-test-lighton4b-physical-f16-attention.log": {
+    "bytes": 35,
+    "sha256": "5892c49ef41bc582baf756071bcb35987aa815a18b8e88452d1cfa601f57cdef"
+  },
+  "run-test-lighton4b-hf-tiled-out-operator.log": {
+    "bytes": 103,
+    "sha256": "586f2e5c355e94d02b7d93facce25ff5e4525f46d9c5be5f850538bb080d03b3"
+  },
+  "run-test-lighton4b-physical-q4-repack.log": {
+    "bytes": 101,
+    "sha256": "3c9df6965787489db5717598b1e39e2d8ca31d7273e512cc53fbb587bf1b80dd"
+  },
+  "run-test-lighton4b-physical-q4-repack-main-stub.log": {
+    "bytes": 45,
+    "sha256": "4b2cd3fcf2c0aa681952730fec44b0f3d59a4b287cc4c37507e071179b04f61c"
+  },
+  "run-test-lighton4b-physical-native-ops.log": {
+    "bytes": 194,
+    "sha256": "55be879453faae1ad12ba240d135d6b094020c1bed1c23945f07eb0c373b1063"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "schema": "lighton4b-upstream-text-trace-bootstrap/v1",
+  "source_sha": "6e5c989776b7e16e4ffeea8a388cfc897edf7c46",
+  "bootstrap_sha256": "907ae9195fcb7434a709ecd621ac2aaee1f5895d3ec445c641744c81c735c6a0",
+  "status": "completed",
+  "gpu_requested": false,
+  "model_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "upstream-text-trace",
+  "source_file_sha256": {
+    "tools/text-trace-probe/worker.py": "93b78de169457ea7a77f4d6d929d2e36f9b37403bc9c9943fc380935d781851b",
+    "tools/text-trace-probe/source_patch.py": "7bbb99aed40f502664e608b7afa8a0b48546da5e06fe990993867abc5649c2e8",
+    "tools/text-trace-probe/analysis.py": "6cb13fb898d12803c160a881c36bd3cbcaacf8f1c27e7d7ad33271d86176f1ad",
+    "tools/text-trace-probe/test_controls.py": "7a9fdc460a49486dc77614c6db932ed2dd9a32b4da41e472b4c4edbe30f2f555",
+    "tools/lighton4b_upstream_observer_patch.py": "80c229113c4836c1447661d843dba9cc1fff573840ad128e6aee79b6a0e285a5",
+    "tools/lighton4b_upstream_dispatch_log.py": "aa4e955add0a590a6fc67cffb97eedd09cbd176e9bcc6c8b7b2fcbed27a684e1",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "docs/lighton4b-upstream-physical-decode-v1.json": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d",
+    "docs/lighton4b-upstream-text-trace-v1.md": "b994acbb61fa885f1ec8eca4c1380b4b9492feac7a9e11b9f20b5dfc15d99666",
+    "tools/text-trace-probe/read_trace.py": "b9df242be9797b0b63888f92c9840dd29fc3c5f4e83fc60121d709ce2c1e52b6",
+    "tools/text-trace-probe/relay.py": "68cae8127c2409c53b14957ec561020656af8ce14f0c3ad33c65c40b64992d13"
+  },
+  "worker_status": "measured_neutral_aligned_text_trace",
+  "elapsed_seconds": 178.67340611199995
+}

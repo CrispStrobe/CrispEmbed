@@ -1,0 +1,65 @@
+{
+  "artifact": {
+    "archive_sha256": "690e8bab15b1213b4ca7789b688f237d0bd35b51aa05b5d2d4fd789d80b7b1a2",
+    "bytes": 6364,
+    "id": 13369739817,
+    "name": "heavy-41930138239"
+  },
+  "controls_stdout": "LIGHTON4B_TEXT_OWNER controls=3498 passed=1 payload_bytes=0 model_inference=0\n",
+  "executable_sha256": "a1f9bb9c6e440141b7162cbdd0b67836fe2a279ff9f39cde69b54db92a45f1ab",
+  "format5_admitted": false,
+  "independent_review": {
+    "all_recorded_sources_match_current_checkout": true,
+    "controls": 3498,
+    "historical_driver_bytes_unchanged": true,
+    "later_gdn_test_change_whitespace_only": true,
+    "matrix_rows": 249,
+    "protected_rows": 177,
+    "python_control_tests": 36,
+    "python_logs": {
+      "gdn-protocol-controls": {
+        "passed": true,
+        "sha256": "1c285155c76690590d0df3ff0d19f281c3b265ecbc282af2f9b360bb604a474d",
+        "tests": 17
+      },
+      "ovis-frozen-closure-controls": {
+        "passed": true,
+        "sha256": "42c4aa4d441d9829f227f0d6257c1e9197d9a321ea9306956ed5b33c97fbb47a",
+        "tests": 6
+      },
+      "ovis-frozen-large-input-controls": {
+        "passed": true,
+        "sha256": "10503aa25cc36fa4f2df9f2594aa9e195b9605939cd2f01c9a0cc6d8d2160c41",
+        "tests": 13
+      }
+    },
+    "reviewed_head": "f58d961cc943d4155600134cb5145d7c8a33f479",
+    "schema_digest_verified": true,
+    "unique_text_rows": 426
+  },
+  "model_payload_bytes": 0,
+  "native_inference_observed": false,
+  "original": {
+    "header_sha256": "a1e36638b195f2d5943e000fcb069b275cb22ccc28b1b6184ddee7bdea7ef081",
+    "model": "lightonai/LightOnOCR-3-4B",
+    "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+    "schema_sha256": "441d2124086f5194d7fb52e6780f8e09b59878ee15dfba4f5e4971429fd8059b",
+    "text_tensors": 426
+  },
+  "quality_qualified": false,
+  "run_id": "41930138239",
+  "schema": "lighton4b-text-owner/v1",
+  "source_sha": "522ed4aa67b36adbe07e31384d4abc20a36697ec",
+  "source_sha256": {
+    "CMakeLists.txt": "957a4858fc147cad159f2778c22ee3ef8bf6a21d4fa32fa90a692b9cf0c8784b",
+    "src/qwen35_lighton4b_text.h": "2ab01f3c48b51eea21837f437ddeb5c1304ae26798e39d07dfaa19a49cc7405b",
+    "tests/test_lighton4b_gdn_reference.py": "7afbb938b519d8a8f838edd7e9791b2694a0333dba82b42f0154e632b9066dcf",
+    "tests/test_lighton4b_text_owner.cpp": "fb1a618b9a3046d39443b70adc71f819cfa39fade0330710b3bcdba7e52ab03d",
+    "tests/test_ovisocr2_large_inputs.py": "d738e386e1d8c6925c32d49b60a0ed092d79cefc6725015e1a018cf6f7608bf2",
+    "tests/test_ovisocr2_native_replay.py": "a8a0d0dee4668259ca94bba38e9f0009c4a9c5002adc45070c83722fef0d35ce",
+    "tools/ci-heavy/lighton4b_gdn_reference.py": "de650114fdb2fde4938a1b0a5fa1a14ff9e4016016c7d8fc2a2b1801895cf142",
+    "tools/ci-heavy/lighton4b_text_owner.py": "43ce5797f03d31eb31663bfe126ede58f10f2be47509b1914a5a271b41093486",
+    "tools/ci-heavy/ovisocr2_native_replay.py": "cc515a3fab916692c1139de5db5a7bb46762ae677a72f93af7a691ccd0bd4dae"
+  },
+  "status": "passed"
+}

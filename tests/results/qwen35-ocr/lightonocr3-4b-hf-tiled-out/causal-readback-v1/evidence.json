@@ -1,0 +1,94 @@
+{
+  "bootstrap_sha256": "0e2140052ac00263c12d2df88ad4354907138204089218b4f9b264225e080a1f",
+  "files": {
+    "lighton-hf-tiled-out-artifact-readback.log": {
+      "bytes": 1545,
+      "sha256": "f61a5bc0683c833a91b7b363966411139d1f0fb18c0da645571ddf74996d94d6"
+    },
+    "lighton-hf-tiled-out-readback/actual-artifact-readback.log": {
+      "bytes": 149,
+      "sha256": "baf02929a61914d84c19a752a1190a0d4934fe50fc811b1d08fa9f13a3b5a7c2"
+    },
+    "lighton-hf-tiled-out-readback/bootstrap-receipt.json": {
+      "bytes": 893,
+      "sha256": "8397bd4a0604d8c1bdf8749dec5dbf8838e3b0680e83b44075b726ecdcda0bfa"
+    },
+    "lighton-hf-tiled-out-readback/causal-row-controls.log": {
+      "bytes": 100,
+      "sha256": "a6707d4eff38012da33ddc34bc6dc076a3b17151cfc9aef223c8790cbe64c3da"
+    },
+    "lighton-hf-tiled-out-readback/checkout.log": {
+      "bytes": 82,
+      "sha256": "552fb6d4207ba3376c9cac9dd46273de318bcca69bf7c1ade06abb265739c448"
+    },
+    "lighton-hf-tiled-out-readback/dependency-preflight.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-readback/fetch.log": {
+      "bytes": 123,
+      "sha256": "53767a76cf76bb78913a5172b45934bd1354dab199bf7f4db767124aef4a2ac0"
+    },
+    "lighton-hf-tiled-out-readback/init.log": {
+      "bytes": 580,
+      "sha256": "be576c25fa046a1339273a452b71cef9ac8e16e7ad36460b7c544c3c38fc643a"
+    },
+    "lighton-hf-tiled-out-readback/numpy.log": {
+      "bytes": 1470,
+      "sha256": "eaaf77efb4b30a81a40df7676d3f3628beda4f6c1db66fc85e730d97e738097f"
+    },
+    "lighton-hf-tiled-out-readback/remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-readback/results/actual723-payloads.json": {
+      "bytes": 204501,
+      "sha256": "5643d9992048ffb855e631626a436219686bae10e2ac63b8a52d869ba428c50e"
+    },
+    "lighton-hf-tiled-out-readback/results/arabic_printed_line/generated.ids": {
+      "bytes": 39,
+      "sha256": "c619a15be2844fa72f35be1d86c09c04e28a1e58ff63bc96d68303d13616559b"
+    },
+    "lighton-hf-tiled-out-readback/results/arabic_printed_line/generated.txt": {
+      "bytes": 23,
+      "sha256": "24de6e789e4550dec9afdb7013d4e7d455b99f6a7ba75f2d166c0f20a896cc39"
+    },
+    "lighton-hf-tiled-out-readback/results/old-payload-audit.json": {
+      "bytes": 89179,
+      "sha256": "36c6d9deeeea000e560a5532a24e27a9019f0376f80e8e14e13a6a1e0316f64e"
+    },
+    "lighton-hf-tiled-out-readback/results/readback.json": {
+      "bytes": 202353,
+      "sha256": "cb7a0a3e9a5e9a40c24c9e3ea2e9a618c4bfb0b2a973edbf1bd91888a54f09f5"
+    },
+    "lighton-hf-tiled-out-readback/results/simple_form/generated.ids": {
+      "bytes": 836,
+      "sha256": "f6d2a007f1d3b679e61d21a639fd9c85366ed575a94240e620cf68bf90124a13"
+    },
+    "lighton-hf-tiled-out-readback/results/simple_form/generated.txt": {
+      "bytes": 679,
+      "sha256": "0cd35b2322b8f3a1431e1ae833d4be87265f1edefe928b85d121b50abc3ffc31"
+    },
+    "lighton-hf-tiled-out-readback/results/simple_table/generated.ids": {
+      "bytes": 1053,
+      "sha256": "fc1714cf1bfcac2a7da7ea869bb4a371463cbaf90d82ea74b45fd257dda9c1a7"
+    },
+    "lighton-hf-tiled-out-readback/results/simple_table/generated.txt": {
+      "bytes": 776,
+      "sha256": "ca2eab2e59e4a94eb83277fbac468f25e8a445b96d4c3890a278f5d30ec9a8ae"
+    },
+    "lighton-hf-tiled-out-readback/venv-prefix.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-hf-tiled-out-readback/venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "model_inference_executed": false,
+  "schema": "lighton4b-hf-tiled-out-causal-readback-evidence/v1",
+  "service": "Kaggle CPU kernel143195841/version1",
+  "source_sha": "0d90fd0b2a24fc7990cbd8bc052c478bd28bf0f2",
+  "weight_quantization_executed": false
+}

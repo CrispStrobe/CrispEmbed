@@ -1,0 +1,24 @@
+{
+  "schema": "lighton4b-tokenizer-controls/v1",
+  "status": "passed",
+  "source_sha": "9ba48e388708f9013b0e648fb7acee4214256187",
+  "model_weights_downloaded": false,
+  "model_forward_executed": false,
+  "native_model_qualified": false,
+  "unicode_added_token_cases_exact": 7,
+  "original_prompt_ids_exact": true,
+  "original_modalities_exact": true,
+  "original_decoded_text_exact": true,
+  "original_generated_ids": 177,
+  "original_prompt_ids": 154,
+  "negative_controls": 6,
+  "tokenizer_payload_sha256": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4",
+  "source_sha256": {
+    "src/lighton4b_frontend.h": "4bd6be0459365cc5bafcc687666875f7980af5028beaad4b09e34f2949ccb2a2",
+    "src/lighton4b_tokenizer.cpp": "50bb3eb58af2e105bf440a2fe6cee8e39618203ffd76a4c4a20e42ffef3a0a1b",
+    "src/qwen35_tokenizer.cpp": "b43702d4846c274778d927e219228da61e7865e80e1cdcf9d9ecd960b76677c2",
+    "tests/lighton4b_tokenizer.cpp": "547ee6d4eadf7b577576c64a48a64646346bb8fe9cb5c4b736e01440ffcc0beb",
+    "tools/ci-heavy/lighton4b_tokenizer_controls.py": "79cccc71f3878bffe4c71c29245b2445affe3ab3bff905c7861ee614283e2a6a",
+    "docs/lighton4b-tokenizer-reference-v1.json": "ee4d8e02f81a7ac22fbd9d87dbf2370fac5f6e44bf1b8ada3ec3b8a9b2c29dd2"
+  }
+}

@@ -1,0 +1,21 @@
+[{"stream_name":"stdout","time":0.966027277,"data":"PHASE init\n"}
+,{"stream_name":"stdout","time":1.033234636,"data":"PHASE remote\n"}
+,{"stream_name":"stdout","time":1.041214233,"data":"PHASE fetch\n"}
+,{"stream_name":"stdout","time":6.375676926,"data":"PHASE checkout\n"}
+,{"stream_name":"stdout","time":7.997216157,"data":"PHASE submodule\n"}
+,{"stream_name":"stdout","time":10.682007217,"data":"PHASE venv\n"}
+,{"stream_name":"stdout","time":10.847054968,"data":"PHASE venv-prefix\n"}
+,{"stream_name":"stdout","time":10.961808324,"data":"PHASE packages\n"}
+,{"stream_name":"stdout","time":21.865838006,"data":"PHASE dependency-preflight\n"}
+,{"stream_name":"stdout","time":22.633294883,"data":"PHASE configure\n"}
+,{"stream_name":"stdout","time":25.458982203,"data":"PHASE build\n"}
+,{"stream_name":"stdout","time":75.135044628,"data":"PHASE python-controls\n"}
+,{"stream_name":"stdout","time":75.450711303,"data":"PHASE synthetic-controls\n"}
+,{"stream_name":"stdout","time":76.299527413,"data":"PHASE bundled-fixture-controls\n"}
+,{"stream_name":"stderr","time":80.290689767,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":80.290733849,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":80.657931502,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":80.657966841,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":81.822639464,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":83.159663687,"data":"[NbConvertApp] Writing 313815 bytes to __results__.html\n"}
+]

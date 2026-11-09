@@ -1,0 +1,1 @@
+Q6_POLICY passed=1 checks=713 q6_matrices=32 q8_tied_head=1 independent_dequant=1 synthetic_values=65792 grouped_q6_prefill_decode=1 storage_unchanged=1 model_payload=0

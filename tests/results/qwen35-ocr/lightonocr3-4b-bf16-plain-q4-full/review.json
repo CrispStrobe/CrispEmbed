@@ -1,0 +1,32 @@
+{
+  "both_cap256": true,
+  "decoded_numerical_quality_qualified": false,
+  "local_selected_raw_vectors": "two source/native rows only, independently verified against both manifests; no model inference",
+  "native_artifact": {
+    "bytes": 181791946,
+    "id": 13488399938,
+    "sha256": "e896e23af456ad3bc1a1a482aa2420f5dfbfc93fafbf7def27a76c80a0f7a61e"
+  },
+  "native_report_sha256": "c726b09da906562a7f8cdd20a696d7e7d634745f7b329400f056fc4275e45d4e",
+  "native_run": 42183620520,
+  "native_source": "4443861693fc7bc4afeaa85f97e4cb2820250610",
+  "next_boundary": "row171: source27287=20.5,1058=20.375; native both20.5 and valid lower-ID argmax1058; hidden/operator arrays absent at this step",
+  "plain_q4_semantics": "unchanged f873 file;248 Q4_K matrices plus Q8_0 embedding, no overrides",
+  "raw_source_payloads": "All256 raw source scores and172 matched-context native scores archived90days in artifact13491795001; see raw-preservation-review.json",
+  "read_only_consumer_run": 42192667516,
+  "reference_scope": "frozen Intel AVX2 profile; AMD diagnostics remain separate; original BF16 Q4 same stored quant weights, differing native F32 versus source BF16 parameter representation retained",
+  "schema": "lighton4b-bf16-plain-q4-full-review/v1",
+  "source_and_native_completed_eos": false,
+  "source_and_native_same_recipe": true,
+  "source_original723_parameter_hashes_match": true,
+  "source_protected474_and_tied_head_verified": true,
+  "source_quant249_parameter_hashes_match": true,
+  "source_report_sha256": "1096b5f0f6ce26f0fa26ff9cc86dd606fbb3da24a3feca06768f2f8cd66d6d1b",
+  "source_service": {
+    "bootstrap_sha256": "b94074a5eb158a4ea6a861b0571f7bc2948f9dab2c7a61edcc4cf16bbcf68602",
+    "kernel_slug": "lighton4b-bf16-plain-q4-free-generation-v1",
+    "remote_bootstrap_byte_exact": true,
+    "version": 4
+  },
+  "source_sha": "bd87593040c9a31cf5ca6ec2fd2369de6f34b995"
+}

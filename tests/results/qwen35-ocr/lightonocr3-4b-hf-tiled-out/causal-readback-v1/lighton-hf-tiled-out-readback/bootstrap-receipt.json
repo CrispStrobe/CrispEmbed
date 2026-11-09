@@ -1,0 +1,24 @@
+{
+  "bootstrap_sha256": "0e2140052ac00263c12d2df88ad4354907138204089218b4f9b264225e080a1f",
+  "candidate_sha256": "cc6ce27eded435b8ac278229a8c6ff553f1654d865ff14a1b67c597fa0ca5254",
+  "gpu_enabled": false,
+  "large_artifacts_copied": false,
+  "model_inference_executed": false,
+  "model_receipt_sha256": "63a586c07b0c2125e448e4f425bc9760ff9b5eb7c3123c7de0a60fde0a790361",
+  "preflight": {
+    "available_ram_bytes": 32175620096,
+    "free_disk_bytes": 20940529664,
+    "load": [
+      0.7255859375,
+      0.4326171875,
+      0.17529296875
+    ],
+    "logical_cpus": 4
+  },
+  "readback_receipt_sha256": "cb7a0a3e9a5e9a40c24c9e3ea2e9a618c4bfb0b2a973edbf1bd91888a54f09f5",
+  "schema": "lighton4b-hf-tiled-out-readback-bootstrap/v1",
+  "seconds": 184.827571315,
+  "source_sha": "0d90fd0b2a24fc7990cbd8bc052c478bd28bf0f2",
+  "status": "readback-verified",
+  "weight_quantization_executed": false
+}

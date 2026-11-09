@@ -1,0 +1,27 @@
+[{"stream_name":"stdout","time":21.648095629,"data":"PHASE post-merge-model-free\n"}
+,{"stream_name":"stderr","time":113.676351251,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":113.677230955,"data":"  File \"/kaggle/working/lighton-q4km-candidate-source/tools/ci-heavy/lighton4b_imatrix_q4km_candidate.py\", line 198, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":113.677253715,"data":"    if __name__=='__main__':main()\n"}
+,{"stream_name":"stderr","time":113.677259676,"data":"                            ~~~~^^\n"}
+,{"stream_name":"stderr","time":113.677264798,"data":"  File \"/kaggle/working/lighton-q4km-candidate-source/tools/ci-heavy/lighton4b_imatrix_q4km_candidate.py\", line 127, in main\n"}
+,{"stream_name":"stderr","time":113.677271137,"data":"    phase_out=out/'controls';phase_out.mkdir();run('post-merge-model-free',[sys.executable,ROOT/'tools/ci-heavy/lighton4b_imatrix_q4km_controls.py'],dict(os.environ,HEAVY_OUT=str(phase_out)),timeout=20*60)\n"}
+,{"stream_name":"stderr","time":113.677278331,"data":"                                               ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":113.677283746,"data":"  File \"/kaggle/working/lighton-q4km-candidate-source/tools/ci-heavy/lighton4b_imatrix_q4km_candidate.py\", line 102, in run\n"}
+,{"stream_name":"stderr","time":113.677289717,"data":"    require(code == 0, 'bounded child failed: ' + label)\n"}
+,{"stream_name":"stderr","time":113.677293019,"data":"    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":113.677296293,"data":"  File \"/kaggle/working/lighton-q4km-candidate-source/tools/lighton4b_imatrix_adapter.py\", line 14, in require\n"}
+,{"stream_name":"stderr","time":113.677299877,"data":"    if not ok:raise ValueError(message)\n"}
+,{"stream_name":"stderr","time":113.677306774,"data":"              ^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":113.677309975,"data":"ValueError: bounded child failed: post-merge-model-free\n"}
+,{"stream_name":"stderr","time":114.133600622,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":114.134137708,"data":"  File \"/kaggle/src/script.py\", line 41, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":114.134152433,"data":"    receipt=json.loads((out/'q4km-candidate-first-score.json').read_text());assert code==0 and receipt['status']=='measured'and receipt['actual248_applied']and receipt['both_frozen_null_scores_exact']and receipt['post_merge_model_free_controls_passed'];report['status']='measured';report['candidate']=receipt['candidate'];report['quantization_executed']=True;report['model_forward_executed']=True\n"}
+,{"stream_name":"stderr","time":114.134160759,"data":"                                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":114.134167632,"data":"AssertionError\n"}
+,{"stream_name":"stderr","time":116.653266935,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":116.653301825,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":116.999832987,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":116.999863402,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":118.035313722,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":119.244464487,"data":"[NbConvertApp] Writing 297174 bytes to __results__.html\n"}
+]

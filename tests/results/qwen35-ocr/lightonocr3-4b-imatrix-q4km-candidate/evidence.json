@@ -1,0 +1,347 @@
+{
+  "actual248_applications": true,
+  "all474_protected_payloads_exact": true,
+  "bootstrap_sha256": "0f53bde57f1c25f1f5c649623eb268950237ac06fa1cc157ea07373f4e557bba",
+  "candidate_bytes": 4041905312,
+  "candidate_sha256": "5d133ae02c12611572c02e2d43bd06f4fecc5e059f94709a13bdb36458fadb29",
+  "candidate_type_counts": {
+    "0": 474,
+    "12": 216,
+    "14": 33
+  },
+  "first_score_comparison": {
+    "arabic_printed_line": {
+      "plain_q4": {
+        "cosine": 0.9849978055481602,
+        "first_score_sha256": "823de94f5bb8e96a32d33fd9382c7f7d62e436181bad60276c5f238d655625e2",
+        "generated_ids": [
+          67321
+        ],
+        "max_abs": 2.953125,
+        "probability_of_original_id": 0.8717670239415884,
+        "rms": 0.36463123997629693
+      },
+      "weighted_plain_q4": {
+        "cosine": 0.9834374346086874,
+        "first_score_sha256": "6c2a414c6e2e1df5dbe2c84809f181a56fcd982740261fe0b5a6fa06edb174cc",
+        "generated_ids": [
+          67321
+        ],
+        "max_abs": 2.21875,
+        "probability_of_original_id": 0.8927936806139694,
+        "rms": 0.38733486957359115
+      },
+      "weighted_q4km_style_q6head": {
+        "cosine": 0.9873426022699264,
+        "first_score_sha256": "9ff48e7882c8c090206be60e41cae7591eca3fc599474d1779bc55bcca951a82",
+        "generated_ids": [
+          67321
+        ],
+        "max_abs": 2.09375,
+        "probability_of_original_id": 0.8582626711395523,
+        "rms": 0.3369537450657583
+      }
+    },
+    "simple_table": {
+      "plain_q4": {
+        "cosine": 0.9388653696496515,
+        "first_score_sha256": "74786da3f763d3aafeea14954a06e80b291d340005ffc413d804e71a21071a57",
+        "generated_ids": [
+          20353
+        ],
+        "max_abs": 4.2265625,
+        "probability_of_original_id": 0.4055778795243088,
+        "rms": 0.7062603300520156
+      },
+      "weighted_plain_q4": {
+        "cosine": 0.8976490242893929,
+        "first_score_sha256": "c23329ed3fff83d49e206f92057caec2c2ac71dcaf6e524f7dc93d4a8a36e723",
+        "generated_ids": [
+          27
+        ],
+        "max_abs": 4.3515625,
+        "probability_of_original_id": 0.5904333187395782,
+        "rms": 0.8650775125863109
+      },
+      "weighted_q4km_style_q6head": {
+        "cosine": 0.9185719992446565,
+        "first_score_sha256": "dde17c5485bfe6d2c73e080c890c302ff3f97bed3553a2edc987be7616adfdab",
+        "generated_ids": [
+          27
+        ],
+        "max_abs": 3.79296875,
+        "probability_of_original_id": 0.5037892484027885,
+        "rms": 0.7764260079566097
+      }
+    }
+  },
+  "fixed_remote_expiry_guarantee": false,
+  "full_decoded_quality_measured": false,
+  "heldout_read": false,
+  "local_receipt_consistency": {
+    "249_quantized_payloads_changed": true,
+    "474_protected_payloads_equal_null": true,
+    "723_payload_hashes": true
+  },
+  "original_f32_model_instantiated": false,
+  "prior_plain_weighted_q4_candidate_sha256": "65fcdbd4dfd331e9a48ace0cde086b980f4fb0a61d78555f8b7ef8157948f42f",
+  "raw_files": {
+    "lighton-q4km-candidate-results/actual248-source-header.log": {
+      "bytes": 26377,
+      "sha256": "bbdca3d05177173dea7a158737031c87915f6b497f8dfe086c0fb62280407d47"
+    },
+    "lighton-q4km-candidate-results/arabic_printed_line-plain_q4-native.log": {
+      "bytes": 70,
+      "sha256": "2da95cfaf7336ae1188c023606975570f1249173c34abefc67cc1f792028fb2a"
+    },
+    "lighton-q4km-candidate-results/arabic_printed_line-plain_q4-preflight.log": {
+      "bytes": 88,
+      "sha256": "87c9f28be99e61cca579a0ea360b2a6da026cb88d4e6642cbb774eeba39d1aaf"
+    },
+    "lighton-q4km-candidate-results/arabic_printed_line-weighted_q4km-native.log": {
+      "bytes": 70,
+      "sha256": "2da95cfaf7336ae1188c023606975570f1249173c34abefc67cc1f792028fb2a"
+    },
+    "lighton-q4km-candidate-results/arabic_printed_line-weighted_q4km-preflight.log": {
+      "bytes": 88,
+      "sha256": "87c9f28be99e61cca579a0ea360b2a6da026cb88d4e6642cbb774eeba39d1aaf"
+    },
+    "lighton-q4km-candidate-results/arabic_printed_line/plain_q4/native/native-summary.json": {
+      "bytes": 102,
+      "sha256": "318f08e01cb2daef45e58d6a7015d435f7da4508c9d3259677ab670c593787ca"
+    },
+    "lighton-q4km-candidate-results/arabic_printed_line/weighted_q4km/native/native-summary.json": {
+      "bytes": 102,
+      "sha256": "318f08e01cb2daef45e58d6a7015d435f7da4508c9d3259677ab670c593787ca"
+    },
+    "lighton-q4km-candidate-results/bootstrap-receipt.json": {
+      "bytes": 12524,
+      "sha256": "07df29af16db08f58dad75278eeff0618d96ea6b19e3829a58daf2482f5d6623"
+    },
+    "lighton-q4km-candidate-results/bootstrap.log": {
+      "bytes": 1140,
+      "sha256": "1924bfa4b5d16454909aae5d717e7fc3a1948436b25034c977117530504db76f"
+    },
+    "lighton-q4km-candidate-results/build-native-runners.log": {
+      "bytes": 970,
+      "sha256": "4b18e290257624f207d9d72c967a27ca0ef64bda2f2e2667695e7fa5344af07e"
+    },
+    "lighton-q4km-candidate-results/candidate-payload-audit.json": {
+      "bytes": 89179,
+      "sha256": "36c6d9deeeea000e560a5532a24e27a9019f0376f80e8e14e13a6a1e0316f64e"
+    },
+    "lighton-q4km-candidate-results/controller.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-q4km-candidate-results/controls/adapter/adapter.json": {
+      "bytes": 72926,
+      "sha256": "3c775d4ef6eefada3f76f79b4ccb0515f8539c861e69c9e7ed6be8b71c06e9f8"
+    },
+    "lighton-q4km-candidate-results/controls/adapter/build.log": {
+      "bytes": 2491,
+      "sha256": "3824efbe1d4a3267c86695862d5fcdd9d3e07009f8bedcf9d08ea1e8ac1b6377"
+    },
+    "lighton-q4km-candidate-results/controls/adapter/configure.log": {
+      "bytes": 2035,
+      "sha256": "0c1167eb852ae678a58d43dc1f373c05f53614e63924cb0ecf3eaccbaa163a0f"
+    },
+    "lighton-q4km-candidate-results/controls/adapter/imatrix-adapter-controls.json": {
+      "bytes": 106041,
+      "sha256": "9ecfb8f5114bb02f494aa89931dc8501a5c97f3d8a8548d65b7d5667bf7447eb"
+    },
+    "lighton-q4km-candidate-results/controls/adapter/production-adapted-coverage-negative.log": {
+      "bytes": 175,
+      "sha256": "bf2a9aa357ccb5bafdedf03526d0e10eead2fe3e07c842278717e619933d1289"
+    },
+    "lighton-q4km-candidate-results/controls/adapter/production-legacy-load-preserved.log": {
+      "bytes": 681,
+      "sha256": "9e137bec868d0f5050516cee60a127993774761f8c08d1606f72a2f7cdb32273"
+    },
+    "lighton-q4km-candidate-results/controls/adapter/python-controls.log": {
+      "bytes": 106,
+      "sha256": "8550359c715e784be94fcbc5d805110a1ca14f4906390b5d109ba6989fad8e79"
+    },
+    "lighton-q4km-candidate-results/controls/adapter/raw-upstream-no-fallback.log": {
+      "bytes": 185,
+      "sha256": "a2f1e85fde567d75c36e519788c3467f093bab5e42c44dd4e67bdfb8f5de3771"
+    },
+    "lighton-q4km-candidate-results/controls/adapter/real-consumer.log": {
+      "bytes": 26377,
+      "sha256": "bbdca3d05177173dea7a158737031c87915f6b497f8dfe086c0fb62280407d47"
+    },
+    "lighton-q4km-candidate-results/controls/adapter/tamper-negative.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-q4km-candidate-results/controls/adapter/target-name-negative.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-q4km-candidate-results/controls/adapter/target-width-negative.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lighton-q4km-candidate-results/controls/build-policy-controls.log": {
+      "bytes": 4845,
+      "sha256": "11304ea2663db9fb4ccdae5c3f9d92fa0f7fa16607a8898177e96b2e846dae7f"
+    },
+    "lighton-q4km-candidate-results/controls/closed-cli-legacy-header.log": {
+      "bytes": 80,
+      "sha256": "673a4a0d560dbfe232f9190dec2ac48c0efe5f7394a122a60438be275c8df4e8"
+    },
+    "lighton-q4km-candidate-results/controls/closed-cli-no-stats.log": {
+      "bytes": 80,
+      "sha256": "673a4a0d560dbfe232f9190dec2ac48c0efe5f7394a122a60438be275c8df4e8"
+    },
+    "lighton-q4km-candidate-results/controls/closed-cli-override.log": {
+      "bytes": 80,
+      "sha256": "673a4a0d560dbfe232f9190dec2ac48c0efe5f7394a122a60438be275c8df4e8"
+    },
+    "lighton-q4km-candidate-results/controls/closed-cli-wrong-method.log": {
+      "bytes": 80,
+      "sha256": "673a4a0d560dbfe232f9190dec2ac48c0efe5f7394a122a60438be275c8df4e8"
+    },
+    "lighton-q4km-candidate-results/controls/closed-cli-wrong-original-source.log": {
+      "bytes": 194,
+      "sha256": "3b56478dd8735425ab494a9a3e3118cf2208ba29e8a460879040a10cf3f47f66"
+    },
+    "lighton-q4km-candidate-results/controls/fetch-frozen-receipt-commits.log": {
+      "bytes": 275,
+      "sha256": "725df7c1a7fda21ba1fb7377d190662619b07760d9eb47a7bae5aeaee49f8b59"
+    },
+    "lighton-q4km-candidate-results/controls/imatrix-q4km-controls.json": {
+      "bytes": 679,
+      "sha256": "ce179a49193989544aa80f9455ff7cf31aebde412b610a280d07410322d4e578"
+    },
+    "lighton-q4km-candidate-results/controls/legacy-stream-controls.log": {
+      "bytes": 117,
+      "sha256": "f97cf909c059b4d9e12404a53a7cca90b33e9e04732621589fb8599dfc1748d6"
+    },
+    "lighton-q4km-candidate-results/controls/new-q4km.log": {
+      "bytes": 41,
+      "sha256": "b718a90496d487001c277195421800d1ace06518c39c469ad78d97fa1a3e9774"
+    },
+    "lighton-q4km-candidate-results/controls/old24-q6out.log": {
+      "bytes": 126,
+      "sha256": "30283288ec02a61588fbbdacbfa2b8ac5f1247302281b75c38bb02e266ecc07e"
+    },
+    "lighton-q4km-candidate-results/controls/old24-q8out.log": {
+      "bytes": 100,
+      "sha256": "9db2eb2cdc6c2eb214d69bd8b3b6ed059efcb3ced77dbbac279771ec3c045c30"
+    },
+    "lighton-q4km-candidate-results/controls/old32-q8head.log": {
+      "bytes": 169,
+      "sha256": "eb884a08b40464888fa1f2e00e58a73056f540f5116b50319ead4526f2a9179f"
+    },
+    "lighton-q4km-candidate-results/controls/release/build-q6-head.log": {
+      "bytes": 380,
+      "sha256": "7c0cdfc82e029b04e9b353f5eb9698114fd3cba274a62f7d182a17e0d5710a4b"
+    },
+    "lighton-q4km-candidate-results/controls/release/build-release-fence.log": {
+      "bytes": 384,
+      "sha256": "9a593a14983ab6d4e08b3f888f2f5ade22e046cbebc8dcbdcf36b62736ca7922"
+    },
+    "lighton-q4km-candidate-results/controls/release/configure.log": {
+      "bytes": 1337,
+      "sha256": "f49b16a1b46c81e0a3d78b9b34d450dab544090e67428e015f18f7d25b813f96"
+    },
+    "lighton-q4km-candidate-results/controls/release/public-release-fence.log": {
+      "bytes": 152,
+      "sha256": "ca59706d04d01d7cdab43a22aef465f7086edbd4ed87541e81564fa80ebbe887"
+    },
+    "lighton-q4km-candidate-results/controls/release/q6-tied-head.log": {
+      "bytes": 171,
+      "sha256": "9481438a41c398f486457154426d6fd0656dc8b13ec6eb171cb3a1d9c8d885cd"
+    },
+    "lighton-q4km-candidate-results/controls/release/release-q6-head-controls.json": {
+      "bytes": 3147,
+      "sha256": "8861b98f66c81fd3b68dcc683f5ffb7e7002960161e5c3b65368d63e15069c17"
+    },
+    "lighton-q4km-candidate-results/controls/source-pin-check.log": {
+      "bytes": 45,
+      "sha256": "286d64b42ca5d0653f39f75075fbdf6a62f6e2b124cdefaf3181887f5469dfcd"
+    },
+    "lighton-q4km-candidate-results/controls/test_lighton4b_gdn_out_q6_recipe.py.log": {
+      "bytes": 102,
+      "sha256": "7d1461f08534b948438fb941919fd98874513233d01f311956b60134240b8417"
+    },
+    "lighton-q4km-candidate-results/controls/test_lighton4b_imatrix_q4km_recipe.py.log": {
+      "bytes": 101,
+      "sha256": "383e50d5bc240df73a4249f5cf6d2dc63555244d9af862a7eec6577ec76ee189"
+    },
+    "lighton-q4km-candidate-results/controls/test_lighton4b_q6_recipe.py.log": {
+      "bytes": 102,
+      "sha256": "256e590ba9183f73cc663d8cfa132c3c8611787f5bb806ea54e951f3d8a7d3ca"
+    },
+    "lighton-q4km-candidate-results/head/manifest.json": {
+      "bytes": 410,
+      "sha256": "057cd3a91255544b4faa321c69429b3abf574a1e0a4f47de65ae7e2c13fd1021"
+    },
+    "lighton-q4km-candidate-results/lighton4b-native-case-preflight-ldd.log": {
+      "bytes": 612,
+      "sha256": "6e6cfa0ebe5d33bf7a8e14c7365639b9b9e2a07533975372d0459fe4e42444cd"
+    },
+    "lighton-q4km-candidate-results/lighton4b-native-document-ldd.log": {
+      "bytes": 612,
+      "sha256": "1d1d54bde309d9ae8c4bda92d960c2a8c6b1fb3fd8e4655e9cb23ff3d70e7cbe"
+    },
+    "lighton-q4km-candidate-results/null-payload-audit.json": {
+      "bytes": 78123,
+      "sha256": "0fdb317c3770e475763185bf23bbf5a8fef239b7ef9f3670d96dd0ca1a07fa87"
+    },
+    "lighton-q4km-candidate-results/one-pass-original-q4km-quantization.log": {
+      "bytes": 68409,
+      "sha256": "a1c0e6f38ceb307f9a84072b1df3ba3d9ccf1d91d0169bcf4d16e76ed85f0167"
+    },
+    "lighton-q4km-candidate-results/packages.log": {
+      "bytes": 3109,
+      "sha256": "361069215038a6e54adf35391e212d423dc1b2f012f7818cedb9d33f3092753a"
+    },
+    "lighton-q4km-candidate-results/post-merge-model-free.log": {
+      "bytes": 540,
+      "sha256": "59b7fd30e34c0dd233ccc066ef2dc1e413ae60a554ea8619bbaa92bbe945dd47"
+    },
+    "lighton-q4km-candidate-results/q4km-candidate-first-score.json": {
+      "bytes": 71199,
+      "sha256": "e16d484e308795a50d8d71f416517c67bd3235e631a8aa524308535765dea0df"
+    },
+    "lighton-q4km-candidate-results/runtime-bundle.json": {
+      "bytes": 1727,
+      "sha256": "136765453b793180ad4c56eba95a633437907276dd295500243b90aa41d8427c"
+    },
+    "lighton-q4km-candidate-results/simple_table-plain_q4-native.log": {
+      "bytes": 70,
+      "sha256": "2da95cfaf7336ae1188c023606975570f1249173c34abefc67cc1f792028fb2a"
+    },
+    "lighton-q4km-candidate-results/simple_table-plain_q4-preflight.log": {
+      "bytes": 88,
+      "sha256": "434497c54aca1e8f9044435ca4369595675c40933490f3e923ba9b8a00579c60"
+    },
+    "lighton-q4km-candidate-results/simple_table-weighted_q4km-native.log": {
+      "bytes": 70,
+      "sha256": "2da95cfaf7336ae1188c023606975570f1249173c34abefc67cc1f792028fb2a"
+    },
+    "lighton-q4km-candidate-results/simple_table-weighted_q4km-preflight.log": {
+      "bytes": 88,
+      "sha256": "434497c54aca1e8f9044435ca4369595675c40933490f3e923ba9b8a00579c60"
+    },
+    "lighton-q4km-candidate-results/simple_table/plain_q4/native/native-summary.json": {
+      "bytes": 102,
+      "sha256": "49c73b9556582b868b8b3830f618308a3f4ff3626d7a1ad3ddb10d7b023bcf68"
+    },
+    "lighton-q4km-candidate-results/simple_table/weighted_q4km/native/native-summary.json": {
+      "bytes": 102,
+      "sha256": "49c73b9556582b868b8b3830f618308a3f4ff3626d7a1ad3ddb10d7b023bcf68"
+    },
+    "lighton4b-imatrix-q4km-candidate.log": {
+      "bytes": 2172,
+      "sha256": "239e7e1a19385821b7dd3cd32323eca95f339e8a2bc8acf37792c1f8f776e39e"
+    }
+  },
+  "remote_model_retained": true,
+  "schema": "lighton4b-imatrix-q4km-candidate-evidence/v1",
+  "shipping_approved": false,
+  "source_sha": "a4f2c908ffaf3f17eb770973017e3de8a08bb121",
+  "status": "measured-first-score-only"
+}

@@ -1,0 +1,51 @@
+{
+  "schema": "lighton4b-independent-llama-result/v1",
+  "status": "failed",
+  "source_sha": "82890a9871bb22a8e4d9c268a420c769a8b57494",
+  "protocol_sha256": "c79a17997c3fbb39bb30a4d6590d00ab382e91f5ef2959bf96679dd8e0aa37c3",
+  "quality_qualified": false,
+  "original_forward_executed": false,
+  "provider": "kaggle-cpu",
+  "preflight": {
+    "memory": {
+      "MemAvailable": 31477190656,
+      "SwapTotal": 0,
+      "SwapFree": 0,
+      "cgroup_observed": 1,
+      "finite_cgroup_bounds": 1
+    },
+    "load": [
+      0.306640625,
+      0.36376953125,
+      0.18896484375
+    ],
+    "scratch_free_bytes": 1037703356416,
+    "output_free_bytes": 20940460032
+  },
+  "arms": {
+    "Q4_K_M": {}
+  },
+  "limits": [
+    "Published upstream converted weights, not same-weight CrispEmbed container or arithmetic.",
+    "Q8 decoder control plus F16 vision projector, not original BF16/F16 decoder.",
+    "Publisher card lacks exact conversion/benchmark commit and raw evidence; same source checkpoint revision cannot be proven from card alone.",
+    "Actual upstream resize/interpolation/vision compute can differ; prompt IDs/length admitted separately, not vision-byte parity.",
+    "No original rerun, human ground-truth claim, model publication/default/release or new PR."
+  ],
+  "phase": "run-Q4_K_M-simple_form",
+  "cmake_options": [
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DLLAMA_BUILD_SERVER=ON",
+    "-DLLAMA_BUILD_TESTS=OFF",
+    "-DLLAMA_BUILD_EXAMPLES=OFF",
+    "-DLLAMA_CURL=OFF",
+    "-DLLAMA_OPENSSL=OFF",
+    "-DGGML_NATIVE=OFF",
+    "-DGGML_AVX2=ON",
+    "-DGGML_AVX512=OFF",
+    "-DGGML_BLAS=OFF",
+    "-DGGML_CUDA=OFF",
+    "-DGGML_VULKAN=OFF"
+  ],
+  "binary_sha256": "ae5a461b42e3195792c1b4e9c4318077a864f308acfacaf0c7b1b37e9177f223"
+}

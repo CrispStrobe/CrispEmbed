@@ -1,0 +1,69 @@
+{
+  "all24_replaced_payload_records_differ": true,
+  "all699_protected_payload_records_exact": true,
+  "candidate_sha256": "cc6ce27eded435b8ac278229a8c6ff553f1654d865ff14a1b67c597fa0ca5254",
+  "cases": {
+    "arabic_printed_line": {
+      "cap_hit": false,
+      "decoded": "\u0623\u0628\u062c\u062f\u064a\u0629 \u0639\u0631\u0628\u064a\u0629",
+      "eos": true,
+      "floor_met": true,
+      "pinned_llama_cer_edits": 0,
+      "pinned_llama_wer_edits": 0,
+      "raw_cer_edits": 0,
+      "raw_wer_edits": 0,
+      "reference_codepoints": 12,
+      "reference_words": 2,
+      "text_sha256": "24de6e789e4550dec9afdb7013d4e7d455b99f6a7ba75f2d166c0f20a896cc39",
+      "tokens": 6
+    },
+    "simple_form": {
+      "cap_hit": false,
+      "decoded": "<figure>\n### Figure \u2013 Interface de saisie\n*Type: autre*\n\nL'image montre une interface de saisie avec plusieurs champs et options. Elle inclut des champs pour l'input, le texte, le nombre, la date, le mot de passe, et des boutons pour la recherche et l'ajout d'un utilisateur.\n\nLes \u00e9l\u00e9ments visibles incluent : \"Input\", \"Texte\", \"Number\", \"Date\", \"Password\", \"a label\", \"ANOTHER LABEL\", \"Yet another label\", \"combo suggest\" avec les options \"Finland\", \"France\", \"checkbox1\", \"checkbox2\", \"checkbox3\", \"CodeLabel\", \"code fill\", \"code\", \"Button\", \"Rechercher...\", \"Ajouter l'utilisateur\". Les options \"Drag and drop frames\" et \"Fixe frames\" sont \u00e9galement pr\u00e9sentes.\n</figure>",
+      "eos": true,
+      "floor_met": false,
+      "pinned_llama_cer_edits": 189,
+      "pinned_llama_wer_edits": 46,
+      "raw_cer_edits": 217,
+      "raw_wer_edits": 43,
+      "reference_codepoints": 656,
+      "reference_words": 90,
+      "text_sha256": "0cd35b2322b8f3a1431e1ae833d4be87265f1edefe928b85d121b50abc3ffc31",
+      "tokens": 182
+    },
+    "simple_table": {
+      "cap_hit": true,
+      "decoded": "<figure>\n### Figure \u2013 Temperature of Substances Over Heat\n*Type: table*\n\nThis image is a table showing the temperature of three substances over a period of time. The table illustrates how the temperature changes as heat is applied.\n\nThe table includes columns for \"Time (min)\", \"Sample 1\", \"Sample 2\", \"Sample 3\", and \"Sample 4\". The rows show temperatures at different time intervals: 0, 5, 10, 15, and 20 minutes. The temperatures are as follows: at 0 minutes, all samples are at 20\u00b0C; at 5 minutes, Sample 1 is at 50\u00b0C, Sample 2 at 50\u00b0C, Sample 3 at 50\u00b0C, and Sample 4 at 1\u00b0C; at 10 minutes, Sample 1 is at 70\u00b0C, Sample 2 at 70\u00b0C, Sample 3 at 70\u00b0C, and Sample 4 at 14\u00b0C; at 15 minutes, Sample 1 is at 80\u00b0C, Sample 2 at 80\u00b0C, Sample 3 at 80\u00b0C, and Sample 4 at ",
+      "eos": false,
+      "floor_met": false,
+      "pinned_llama_cer_edits": 315,
+      "pinned_llama_wer_edits": 88,
+      "raw_cer_edits": 237,
+      "raw_wer_edits": 70,
+      "reference_codepoints": 607,
+      "reference_words": 106,
+      "text_sha256": "ca2eab2e59e4a94eb83277fbac468f25e8a445b96d4c3890a278f5d30ec9a8ae",
+      "tokens": 256
+    }
+  },
+  "limitations": [
+    "Large model/score bytes remain remote; producer full-file/row audits and immutable source are retained.",
+    "No general/heldout qualification or shipping claim."
+  ],
+  "model_inference_executed": false,
+  "receipt_sha256": "63a586c07b0c2125e448e4f425bc9760ff9b5eb7c3123c7de0a60fde0a790361",
+  "reference_text_sha256": {
+    "original-bf16": {
+      "arabic_printed_line": "24de6e789e4550dec9afdb7013d4e7d455b99f6a7ba75f2d166c0f20a896cc39",
+      "simple_form": "f6c56ad4da16752f2a4a2b92a3a48d11c34afd6ad69c818c99227ead66e0749f",
+      "simple_table": "4ffbf7029cdc1a3a8b8a544b21709b16dd96c55ffbe88445b752b6e942b486bd"
+    },
+    "pinned-llama": {
+      "arabic_printed_line": "24de6e789e4550dec9afdb7013d4e7d455b99f6a7ba75f2d166c0f20a896cc39",
+      "simple_form": "167e0ea13ebb831a75e400ed8ee08f9ca221569211ae16fb8ca2a5a5071e7097",
+      "simple_table": "4b5923bfbc35a9760a6a00b6a340fc81e73c029042d801525d9d515b4392a261"
+    }
+  },
+  "schema": "lighton4b-hf-tiled-out-independent-readback/v1",
+  "source_sha": "b2a3778e424559b7216e1b11f21c7b38b71b02d8"
+}

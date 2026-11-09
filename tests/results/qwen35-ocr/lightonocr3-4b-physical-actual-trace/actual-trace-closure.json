@@ -1,0 +1,161 @@
+{
+  "schema": "lighton4b-physical-actual-trace-closure/v1",
+  "status": "compared_actual_trace",
+  "source_sha": "9918eae569bd8003a236b08ab1c44a30db83bab7",
+  "model_forward_executed": false,
+  "build_executed": false,
+  "quality_qualified": false,
+  "upstream_internal_graph_captured": false,
+  "comparison_scope": "actual native first4 prefix versus authenticated4-token primitives; native main uses16-token batching",
+  "baseline_report_sha256": "712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2",
+  "primitive_report_sha256": "79dff60f82e76d689811d2151d3c76469e0b80c3a6e5d64eabe6eba0c085f398",
+  "all_actual_case_artifacts_verified": {
+    "counts": {
+      "simple_form": 250,
+      "simple_table": 332,
+      "arabic_printed_line": 82
+    },
+    "bytes_streamed": 584443630,
+    "all_exact": true
+  },
+  "actual_prefix_input_exact": true,
+  "actual_prefix_sha256": "ca940b1a6f45bc487a4685205caca1e7fb64929c03b7c8d1b52769e26cc8b842",
+  "norm": {
+    "actual_vs_reconstructed_scalar": {
+      "bit_exact": true,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_max_abs": 8.988189697265625
+    },
+    "actual_vs_upstream_rms": {
+      "bit_exact": false,
+      "rms": 5.228565303335678e-07,
+      "max_abs": 5.7220458984375e-06,
+      "reference_max_abs": 8.988195419311523
+    }
+  },
+  "actual_first16_main_output_exact": true,
+  "projections": {
+    "qkv": {
+      "reconstructed-native-scalar-norm-direct": {
+        "bit_exact": false,
+        "rms": 0.006449864728526206,
+        "max_abs": 0.05174112319946289,
+        "reference_max_abs": 24.33184051513672
+      },
+      "reconstructed-native-scalar-norm-dequant": {
+        "bit_exact": true,
+        "rms": 0.0,
+        "max_abs": 0.0,
+        "reference_max_abs": 24.352741241455078
+      },
+      "upstream-norm-direct": {
+        "bit_exact": false,
+        "rms": 0.006449935130843199,
+        "max_abs": 0.05173540115356445,
+        "reference_max_abs": 24.33185577392578
+      },
+      "upstream-norm-dequant": {
+        "bit_exact": false,
+        "rms": 1.010184209035928e-06,
+        "max_abs": 1.52587890625e-05,
+        "reference_max_abs": 24.352752685546875
+      },
+      "same_input_scalar_norm_exact": true,
+      "native_batch_tokens": 16,
+      "primitive_batch_tokens": 4
+    },
+    "z": {
+      "reconstructed-native-scalar-norm-direct": {
+        "bit_exact": false,
+        "rms": 0.0071098865295087755,
+        "max_abs": 0.040782928466796875,
+        "reference_max_abs": 13.31967830657959
+      },
+      "reconstructed-native-scalar-norm-dequant": {
+        "bit_exact": true,
+        "rms": 0.0,
+        "max_abs": 0.0,
+        "reference_max_abs": 13.310430526733398
+      },
+      "upstream-norm-direct": {
+        "bit_exact": false,
+        "rms": 0.007109947721371257,
+        "max_abs": 0.040789127349853516,
+        "reference_max_abs": 13.31967830657959
+      },
+      "upstream-norm-dequant": {
+        "bit_exact": false,
+        "rms": 7.171010872291454e-07,
+        "max_abs": 9.5367431640625e-06,
+        "reference_max_abs": 13.310430526733398
+      },
+      "same_input_scalar_norm_exact": true,
+      "native_batch_tokens": 16,
+      "primitive_batch_tokens": 4
+    },
+    "a": {
+      "reconstructed-native-scalar-norm-direct": {
+        "bit_exact": false,
+        "rms": 0.0152110076166921,
+        "max_abs": 0.044841766357421875,
+        "reference_max_abs": 17.69130516052246
+      },
+      "reconstructed-native-scalar-norm-dequant": {
+        "bit_exact": true,
+        "rms": 0.0,
+        "max_abs": 0.0,
+        "reference_max_abs": 17.686885833740234
+      },
+      "upstream-norm-direct": {
+        "bit_exact": false,
+        "rms": 0.01521153668756663,
+        "max_abs": 0.04484844207763672,
+        "reference_max_abs": 17.691314697265625
+      },
+      "upstream-norm-dequant": {
+        "bit_exact": false,
+        "rms": 3.303805630746168e-06,
+        "max_abs": 9.5367431640625e-06,
+        "reference_max_abs": 17.6868953704834
+      },
+      "same_input_scalar_norm_exact": true,
+      "native_batch_tokens": 16,
+      "primitive_batch_tokens": 4
+    },
+    "b": {
+      "reconstructed-native-scalar-norm-direct": {
+        "bit_exact": false,
+        "rms": 0.006502805384631968,
+        "max_abs": 0.02707812190055847,
+        "reference_max_abs": 4.268803596496582
+      },
+      "reconstructed-native-scalar-norm-dequant": {
+        "bit_exact": true,
+        "rms": 0.0,
+        "max_abs": 0.0,
+        "reference_max_abs": 4.263945579528809
+      },
+      "upstream-norm-direct": {
+        "bit_exact": false,
+        "rms": 0.006502907179551591,
+        "max_abs": 0.02707812190055847,
+        "reference_max_abs": 4.268803596496582
+      },
+      "upstream-norm-dequant": {
+        "bit_exact": false,
+        "rms": 6.957160408841906e-07,
+        "max_abs": 2.6226043701171875e-06,
+        "reference_max_abs": 4.263945579528809
+      },
+      "same_input_scalar_norm_exact": true,
+      "native_batch_tokens": 16,
+      "primitive_batch_tokens": 4
+    }
+  },
+  "limits": [
+    "Actual source internal graph intermediates are not captured.",
+    "16-token native projection and4-token source primitive can differ in batching kernels.",
+    "No learned model inference, new generation or quality promotion."
+  ]
+}

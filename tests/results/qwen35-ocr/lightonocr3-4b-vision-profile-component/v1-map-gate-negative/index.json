@@ -1,0 +1,41 @@
+{
+  "original_private_receipt_sha256": "760db939e0a783812d4350dc517f32e1663809e15d7f4c19c1a5b8b06c3dfef3",
+  "public_files": {
+    "vision-component.json": {
+      "bytes": 8289,
+      "sha256": "4814f96e2fd98d71cb50600a41365c7a91a2ec8c527c70b3fa06ce50dd58b1ab"
+    },
+    "bounded-worker.log": {
+      "bytes": 1896,
+      "sha256": "f8051949ccb473dbcdf2a9758c8bc01963a81771ee5c363e5e07c881d8b79eb2"
+    },
+    "synthetic.log": {
+      "bytes": 101,
+      "sha256": "d58c15e1a57af3d53eada05f045b41d5fdb56580fc6854f8021f06a8bb03c7f2"
+    },
+    "legacy.log": {
+      "bytes": 28,
+      "sha256": "d6193746409ad66159e967108659c8e6072600def22450ef88f06923a13d5b0d"
+    },
+    "CMakeCache.txt": {
+      "bytes": 29213,
+      "sha256": "9b0c879975e1c796f8990e48d0c3ae32171078e1d087f0e61a54b4ef4ce8907d"
+    },
+    "vision-component-bootstrap.json": {
+      "bytes": 466,
+      "sha256": "97b772a41d1fc78ba0ba40966f46028a70534096dc7e1538c147710acc93f619"
+    },
+    "build.log": {
+      "bytes": 6263,
+      "sha256": "e4854374bdf609c2b0b33ffdbf907600206f9b73bc44d0331ee2242d93809ae7"
+    },
+    "runtime-byte-guard.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "scope": "Failed reference metadata-map admission; all297native tensor SHAs authenticated, synthetic graph passed; no actual-weight vision or text forward. Raw original retained remotely and privately. Public receipt/log copies redact private mounted-evidence locator strings.",
+  "cause": "OCR gate was set after map_lighton4b_vision; the controller correctly cleared inherited gates.",
+  "correction_source": "b59e5d3a9",
+  "production_runtime_changed": false
+}

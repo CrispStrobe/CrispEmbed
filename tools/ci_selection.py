@@ -64,6 +64,22 @@ NATIVE_PYTHON = (
     "tests/test_ultrabert_*.py", "tools/ultrabert*.py", "tools/dump_ultrabert*.py", "tools/ci-heavy/*ultrabert*.py",
     "models/convert-ultrabert-to-gguf.py", "tests/results/ultrabert/*.json",
 )
+# Exact inputs to the LightOnOCR-3-4B source preflight in controls.yml. These
+# contain metadata, bounded tokenizer prefixes, notices and a tensor header,
+# not weights or native build inputs.
+# Keep this an explicit file list: new fixtures still require routing review.
+# Consumed ordinary-lane dependencies above retain precedence; the closure
+# checks in tests/test_ci_selection.py guard new ordinary consumers as well.
+SOURCE_PREFLIGHT_FIXTURES = frozenset(
+    "tests/fixtures/lightonocr3-4b-source/" + name for name in (
+        "audit_manifest.json", "huggingface_model_api.json", "config.json",
+        "generation_config.json", "processor_config.json", "preprocessor_config.json",
+        "tokenizer_config.json", "chat_template.jinja", "model.safetensors.header.json",
+        "README.md", "README.no_thinking.md", "NOTICE.md", "tokenizer_prefix_audit.json",
+        "LightOnOCR-3-4B-tokenizer.prefix.txt", "LightOnOCR-3-0.8B-tokenizer.prefix.txt",
+        "LightOnOCR-Apache-2.0-LICENSE.txt",
+    )
+)
 # Paths that no ordinary build lane compiles, packages or reads once the
 # consumed exceptions above have been matched: evidence receipts, other
 # workflows and their private actions, machine-readable docs, and Python
@@ -164,6 +180,8 @@ def selection(paths: list[str], *, force_full: str | None = None, event_name: st
             lanes["native"] = lanes["native_windows"] = lanes["native_macos"] = True
         elif matches(path, NATIVE_PYTHON):
             lanes["native"] = lanes["native_tests"] = True
+        elif path in SOURCE_PREFLIGHT_FIXTURES:
+            pass  # Covered by the model-free controls workflow.
         elif matches(path, NOT_BUILT):
             if path.endswith(COMPILED_EXTENSIONS) and path.startswith(("tests/", "tools/")):
                 lanes["rust"] = True
@@ -349,3 +367,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

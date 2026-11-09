@@ -1,0 +1,94 @@
+{
+  "schema": "lighton4b-physical-native-ops-smoke/v1",
+  "selection": "One previously observed form, independent two-token prefix only; no full decoded or heldout claim.",
+  "upstream_repo": "https://github.com/ggml-org/llama.cpp",
+  "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "model_repo": "richardyoung/LightOnOCR-3-4B-GGUF",
+  "model_revision": "8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01",
+  "models": {
+    "Q4_K_M": {
+      "file": "LightOnOCR-3-4B-Q4_K_M.gguf",
+      "bytes": 2708804576,
+      "sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26"
+    }
+  },
+  "projector": {
+    "file": "mmproj-LightOnOCR-3-4B-F16.gguf",
+    "bytes": 672423200,
+    "sha256": "21eae623f60580f19ae4f04716292cd76ad36b420ee01e761254c8b1ec966321"
+  },
+  "publisher_readme_sha256": "e36445d7b467aff1f366b94459c2988e8733c5960c6fd268992258d094bbfbb3",
+  "cases": [
+    {
+      "id": "simple_form",
+      "image": "tests/regression/images/cc0/simple_form.png",
+      "image_sha256": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+      "image_tokens": 140,
+      "expected_prompt_tokens": 154,
+      "reference_path": null,
+      "reference_url": "https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/26fe41e35/tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture.json",
+      "reference_sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a",
+      "expected_input_ids_npy_sha256": "6f1b0a033c6d381c877956b6fbd215d8be4515d9a4ec733ad302b47a1743203d",
+      "reference_generated_ids": 177,
+      "reference_eos": true,
+      "reference_cap": false,
+      "upstream_response_sha256": "ddf699b954ebbdb82fb8f56dbe7992bf682f602ecfb7798045aa3be23b9354fb",
+      "upstream_response_url": "https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/9dab2f1d96ddab8cb24f0b492d7ca0aeafe4d1e8/tests/results/qwen35-ocr/lightonocr3-4b-independent-llama/Q4_K_M-simple_form/response.json"
+    }
+  ],
+  "cap": 2,
+  "threads": 4,
+  "context": 2048,
+  "image_min_tokens": 64,
+  "image_max_tokens": 256,
+  "minimum_available_memory_bytes": 10737418240,
+  "minimum_scratch_free_bytes": 25769803776,
+  "minimum_output_free_bytes": 8589934592,
+  "request_timeout_seconds": 300,
+  "total_model_timeout_seconds": 2400,
+  "expected_media_prompt": "<|im_start|>user\n<__media__><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "limits": [
+    "Same physical TEXT quant blocks and authoritative F32 scalars; no full F32 model, quantizer, or BF16 original forward.",
+    "Source-fed upstream merged vision is explicitly a reference-only decoder isolation arm.",
+    "Composed path retains original protected vision and differs from upstream F16 mmproj.",
+    "OFF/ON after-compute observer first two IDs and probability records must exactly match retained baseline; no graph callback.",
+    "Actual prefill input and image positions must match independently decoded Q6 embeddings and source features bitwise.",
+    "No speed/component similarity substitutes for complete IDs/text/EOG/cap evidence."
+  ],
+  "physical_source_controls": "0610af26d9cb8972ecdfe55204e2306e9e740d5e",
+  "native_arm_timeout_seconds": 900,
+  "source_prefix_tokens": 2,
+  "arms": [
+    "reference",
+    "off",
+    "on"
+  ],
+  "base_model": {
+    "repository": "cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
+    "revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+    "file": "lightonocr3-4b-q4_k-vision-f32.gguf",
+    "bytes": 4030957952,
+    "sha256": "f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91"
+  },
+  "execution_order": "Regenerate pinned upstream observer OFF/ON source controls; regenerate native ac34 cap2 reference; require new OFF all38stage hashes exact; execute new ON cap2 on same candidate/features.",
+  "budget_basis": "Two short native arms, source2prefixcontrols, build/download/import;40mincontroller/45minservice.",
+  "failure_receipt": "Every spawned command records elapsed time, observed RSS peak, final return code and failure stage/type in finally, including timeout, byte-check callback failure, signal, nonzero exit and spawn failure. Partial raw output remains retained.",
+  "frozen_source_feature_scope_guard": true,
+  "upstream_feature_capture_boundary": "mtmd_helper_decode_image_chunk(encoded_embd), shared by server batched-media and CLI paths, after encoding/before consuming identical pointer",
+  "initial_routing_setup_source": "a6644247c48cb25e1b7e4b8da9e8ff91644eaca7",
+  "python_pins": {
+    "numpy": "2.3.5",
+    "pillow": "11.3.0",
+    "PyYAML": "6.0.3",
+    "tqdm": "4.67.1",
+    "requests": "2.32.5",
+    "charset-normalizer": "3.5.2",
+    "idna": "3.20",
+    "urllib3": "2.8.0",
+    "certifi": "2026.10.23"
+  },
+  "expected_candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "actual_baseline_source_sha": "ac34f72ca89823a177c538ad598dfa00fc69f124",
+  "baseline_protocol_sha256": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d",
+  "baseline_kind": "Fresh actual ac34 native prefix, not substituted for frozen physical v2 full-run evidence."
+}
