@@ -176,7 +176,7 @@ static void test_pdf_renderer() {
     check("has Unicode map", pdf.find("/ToUnicode") != std::string::npos);
     check("has embedded font", pdf.find("/FontFile2") != std::string::npos);
     check("no renderer error", ocr_render_error(r) == nullptr);
-    check("PDF capabilities are explicit", crispembed_ocr_render_capabilities() == 31);
+    check("PDF capabilities exclude unqualified bidi", crispembed_ocr_render_capabilities() == 47);
 
     ocr_render_free(r);
 }
@@ -374,8 +374,8 @@ static void test_pdf_stream_writer() {
     for (int i = 0; i < 32; i++) ocr_render_add_page(renderer, &page);
     ocr_render_end(renderer);
     check("stream cap rejects before writing beyond its limit",
-          ocr_render_error(renderer) && contains(ocr_render_error(renderer), "byte limit") &&
-              sink.bytes.size() <= 4096);
+          ocr_render_error(renderer) && contains(ocr_render_error(renderer), "byte limit") && !sink.bytes.empty() &&
+              sink.bytes.size() <= 4096 && !contains(sink.bytes.c_str(), "%%EOF"));
 
     ocr_render_begin(renderer);
     ocr_render_set_pdf_writer(renderer, write_pdf_probe, &sink, 2147483649ull);

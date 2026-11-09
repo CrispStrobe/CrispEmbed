@@ -43,6 +43,9 @@ class Page(C.Structure):
                 ("width", C.c_int), ("height", C.c_int), ("image_path", C.c_char_p)]
 
 
+WriteCallback = C.CFUNCTYPE(C.c_int, C.c_void_p, C.POINTER(C.c_ubyte), C.c_size_t)
+
+
 def native_library(path):
     lib = C.CDLL(str(Path(path).resolve()))
     signatures = {
@@ -50,6 +53,7 @@ def native_library(path):
         "crispembed_ocr_render_capabilities": ([], C.c_uint32),
         "ocr_render_set_pdfa": ([C.c_void_p, C.c_int], None),
         "ocr_render_set_pdf_bidi": ([C.c_void_p, C.c_int], None),
+        "ocr_render_set_pdf_writer": ([C.c_void_p, WriteCallback, C.c_void_p, C.c_uint64], None),
         "ocr_render_begin": ([C.c_void_p], None),
         "ocr_render_set_page_size_points": ([C.c_void_p, C.c_double, C.c_double], None),
         "ocr_render_add_page": ([C.c_void_p, C.POINTER(Page)], None),
@@ -93,14 +97,32 @@ class ArtifactTests(unittest.TestCase):
         (cls.root / "validation.json").write_text(json.dumps(cls.receipt, indent=2, ensure_ascii=False))
         cls.temporary.cleanup()
 
-    def render(self, name, pages, fmt=3, pdfa=False, bidi=False, expected_error=None):
+    def render(self, name, pages, fmt=3, pdfa=False, bidi=False, expected_error=None, stream=False):
         lib = self.lib
         renderer = lib.ocr_render_create(fmt)
         self.assertTrue(renderer)
+        output = self.root / name
+        sink = output.open("wb") if stream else None
+        receipt = {"streamed_file": name, "calls": 0, "written": 0, "maximum_slice": 0, "errors": []}
+
+        def write_slice(context, data, size):
+            try:
+                sink.write(C.string_at(data, size))
+                receipt["calls"] += 1
+                receipt["written"] += size
+                receipt["maximum_slice"] = max(receipt["maximum_slice"], size)
+                return 0
+            except Exception as error:
+                receipt["errors"].append(str(error))
+                return 1
+
+        callback = WriteCallback(write_slice)
         try:
             lib.ocr_render_set_pdfa(renderer, int(pdfa))
             lib.ocr_render_set_pdf_bidi(renderer, int(bidi))
             lib.ocr_render_begin(renderer)
+            if stream:
+                lib.ocr_render_set_pdf_writer(renderer, callback, None, 256 * 1024 * 1024)
             for page in pages:
                 records = page.get("regions", [("Image text", 40, 40, 240, 24)])
                 words = (Word * len(records))()
@@ -124,12 +146,22 @@ class ArtifactTests(unittest.TestCase):
                 self.assertEqual(size, 0)
                 return None
             self.assertIsNone(error, error.decode() if error else "")
-            data = C.string_at(lib.ocr_render_output(renderer), size)
-            output = self.root / name
-            output.write_bytes(data)
+            if stream:
+                self.assertEqual(size, 0, "Streaming must not retain a whole-document output buffer")
+                self.assertFalse(receipt["errors"])
+                self.assertLessEqual(receipt["maximum_slice"], 64 * 1024)
+                self.assertGreater(receipt["calls"], 1)
+                sink.flush()
+                self.assertEqual(output.stat().st_size, receipt["written"])
+                self.receipt["tests"].append(receipt)
+            else:
+                data = C.string_at(lib.ocr_render_output(renderer), size)
+                output.write_bytes(data)
             return output
         finally:
             lib.ocr_render_free(renderer)
+            if sink:
+                sink.close()
 
     def read_pdf(self, path):
         reader = PdfReader(path, strict=True)
@@ -144,10 +176,13 @@ class ArtifactTests(unittest.TestCase):
         self.assertEqual(result.stderr, b"", result.stderr.decode(errors="replace"))
         return result.stdout.decode("utf-8")
 
-    def probe_pdf(self, path, engine, searches=()):
-        receipt = self.root / (path.stem + "-" + engine.lower() + "-probe.json")
+    def probe_pdf(self, path, engine, searches=(), page_index=None):
+        suffix = "" if page_index is None else "-page-" + str(page_index + 1)
+        receipt = self.root / (path.stem + suffix + "-" + engine.lower() + "-probe.json")
         command = [sys.executable, str(Path(__file__).with_name("ocr_render_reader_probe.py")),
                    "--engine", engine, "--pdf", str(path), "--output", str(receipt)]
+        if page_index is not None:
+            command.extend(["--page-index", str(page_index)])
         for query in searches:
             command.extend(["--search", query])
         try:
@@ -322,7 +357,7 @@ class ArtifactTests(unittest.TestCase):
         self.receipt["tests"].append({"xml_bytes": len(text.encode()), "controls": "replacement-decoded"})
 
     def test_error_contract(self):
-        self.assertEqual(self.lib.crispembed_ocr_render_capabilities() & 31, 31)
+        self.assertEqual(self.lib.crispembed_ocr_render_capabilities(), 47)
         self.render("missing.pdf", [{"image": self.root / "missing.png"}], expected_error="Could not read")
         self.render("mismatch.pdf", [{"image": self.root / "rgb.png", "width": 640}], expected_error="dimensions")
         self.render("outside.pdf", [{"regions": [("outside", 310, 0, 50, 20)]}], expected_error="bounds")
@@ -377,6 +412,50 @@ class ArtifactTests(unittest.TestCase):
                                               "pixel_control": "exact", "declared_profile": "PDF/A-2b"})
                 document.close()
                 control.close()
+
+    def test_streamed_output_preserves_pages_images_and_unicode(self):
+        text = "Reviewed archive café 中文 😀 e\u0301"
+        for name, image in (("rgb", "rgb.png"), ("gray", "gray.png"), ("alpha", "alpha.png"),
+                            ("jpeg", "rgb.jpg"), ("text", None)):
+            with self.subTest(image=name):
+                pages = [{"image": self.root / image if image else None, "points": (160, 120),
+                          "regions": [(text, 20, 30, 280, 30)]},
+                         {"image": self.root / image if image else None, "points": (180, 135),
+                          "regions": [("Second page café 中文 😀", 20, 100, 280, 30)]}]
+                path = self.render("archival-streamed-" + name + ".pdf", pages, pdfa=True, stream=True)
+                control_path = self.render("control-streamed-" + name + ".pdf", pages, pdfa=True)
+                reader, document = self.read_pdf(path)
+                control = fitz.open(control_path)
+                self.assertEqual(len(document), 2)
+                for index, expected in enumerate((text, "Second page café 中文 😀")):
+                    self.assertEqual(document[index].rect, control[index].rect)
+                    self.assertEqual(document[index].get_pixmap(alpha=False).samples,
+                                     control[index].get_pixmap(alpha=False).samples)
+                    self.assertIn(expected, document[index].get_text())
+                    self.assertIn(expected, reader.pages[index].extract_text())
+                for engine in ("PyMuPDF", "Poppler", "pypdf", "PDFium"):
+                    probe = self.probe_pdf(path, engine, ["café", "😀"] if engine in ("PyMuPDF", "PDFium") else ())
+                    self.assertEqual(probe["exit_code"], 0, str(probe))
+                    self.assertIn(text, probe["extracted"], str(probe))
+                    if engine in ("PyMuPDF", "PDFium"):
+                        self.assertTrue(all(probe["search"].values()), str(probe))
+                self.receipt["tests"].append({"stream_preserved": path.name, "pages": 2,
+                    "image_pixels": "equal_to_byte_api", "readers": 4, "search_readers": 2})
+                document.close(); control.close()
+
+    def test_ltr_opt_in_preserves_scalar_encoding(self):
+        text = "Invoice 123: café 中文 😀 e\u0301"
+        pages = [{"image": self.root / "rgb.png", "regions": [(text, 10, 30, 300, 30)]}]
+        normal = self.render("ltr-default.pdf", pages)
+        opt_in = self.render("ltr-opt-in.pdf", pages, bidi=True)
+        original, opted = PdfReader(normal), PdfReader(opt_in)
+        self.assertEqual(original.pages[0].get_contents().get_data(), opted.pages[0].get_contents().get_data())
+        self.assertNotIn(b"/ActualText", opted.pages[0].get_contents().get_data())
+        for engine in ("PyMuPDF", "Poppler", "pypdf", "PDFium"):
+            probe = self.probe_pdf(opt_in, engine)
+            self.assertEqual(probe["exit_code"], 0, str(probe))
+            self.assertIn(text, probe["extracted"], str(probe))
+        self.receipt["tests"].append({"ltr_opt_in": "identical_scalar_content", "readers": 4})
 
     def test_bidirectional_logical_text_search_and_geometry(self):
         cases = [

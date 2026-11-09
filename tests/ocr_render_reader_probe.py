@@ -20,10 +20,11 @@ def main():
     parser.add_argument("--engine", choices=("PyMuPDF", "Poppler", "pypdf", "PDFium"), required=True)
     parser.add_argument("--pdf", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--page-index", type=int, default=0)
     parser.add_argument("--search", action="append", default=[])
     options = parser.parse_args()
     faulthandler.enable()
-    record = {"engine": options.engine, "file": options.pdf.name, "status": "running"}
+    record = {"engine": options.engine, "file": options.pdf.name, "status": "running", "page_index": options.page_index}
 
     def progress(stage):
         record["stage"] = stage
@@ -40,15 +41,15 @@ def main():
                 record["repaired"] = document.is_repaired
                 record["pages"] = len(document)
                 progress("extract_text")
-                record["extracted"] = document[0].get_text()
+                record["extracted"] = document[options.page_index].get_text()
                 progress("text_geometry")
-                record["glyph_trace"] = document[0].get_texttrace()
+                record["glyph_trace"] = document[options.page_index].get_texttrace()
                 record["search"] = {}
                 for query in options.search:
                     progress("search:" + query)
-                    record["search"][query] = [list(rect) for rect in document[0].search_for(query)]
+                    record["search"][query] = [list(rect) for rect in document[options.page_index].search_for(query)]
                 progress("rasterize")
-                pixmap = document[0].get_pixmap(alpha=False)
+                pixmap = document[options.page_index].get_pixmap(alpha=False)
                 record["pixel_sha256"] = hashlib.sha256(pixmap.samples).hexdigest()
                 record["pixel_size"] = [pixmap.width, pixmap.height]
         elif options.engine == "pypdf":
@@ -56,12 +57,21 @@ def main():
             reader = PdfReader(options.pdf, strict=True)
             record["pages"] = len(reader.pages)
             progress("extract_text")
-            record["extracted"] = reader.pages[0].extract_text()
+            record["extracted"] = reader.pages[options.page_index].extract_text()
         elif options.engine == "PDFium":
             import pypdfium2 as pdfium
+            import pypdfium2_raw as raw
+            import pypdfium2.version as version
+            record["versions"] = {"wrapper": str(version.PYPDFIUM_INFO),
+                                  "pdfium": str(version.PDFIUM_INFO),
+                                  "flags": list(version.PDFIUM_INFO.flags)}
+            binaries = sorted(Path(raw.__file__).parent.glob("*pdfium*.so"))
+            record["binary_sha256"] = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in binaries}
+            if len(binaries) != 1:
+                raise RuntimeError("Expected exactly one identifiable PDFium shared library")
             with pdfium.PdfDocument(options.pdf) as document:
                 record["pages"] = len(document)
-                page = document[0]
+                page = document[options.page_index]
                 try:
                     text = page.get_textpage()
                     try:
@@ -69,6 +79,8 @@ def main():
                         # GetText is UCS-2-limited; the bounded API preserves
                         # supplementary Unicode and exposes PDFium's actual text.
                         record["extracted"] = text.get_text_bounded(errors="strict")
+                        record["character_unicode"] = [int(raw.FPDFText_GetUnicode(text.raw, i))
+                                                       for i in range(text.count_chars())]
                         record["search"] = {}
                         for query in options.search:
                             progress("search:" + query)
@@ -84,13 +96,14 @@ def main():
                     page.close()
         else:
             progress("extract_text")
-            result = subprocess.run(["pdftotext", "-raw", "-enc", "UTF-8", str(options.pdf), "-"],
+            selected = ["-f", str(options.page_index + 1), "-l", str(options.page_index + 1)]
+            result = subprocess.run(["pdftotext", "-raw", "-enc", "UTF-8", *selected, str(options.pdf), "-"],
                                     capture_output=True, timeout=60)
             record["reader_exit_code"] = result.returncode
             record["reader_stderr"] = result.stderr.decode("utf-8", errors="replace")
             record["extracted"] = result.stdout.decode("utf-8")
             progress("extract_raw_words")
-            words = subprocess.run(["pdftotext", "-raw", "-bbox", "-enc", "UTF-8", str(options.pdf), "-"],
+            words = subprocess.run(["pdftotext", "-raw", "-bbox", "-enc", "UTF-8", *selected, str(options.pdf), "-"],
                                    capture_output=True, timeout=60)
             record["word_api_exit_code"] = words.returncode
             record["word_api_stderr"] = words.stderr.decode("utf-8", errors="replace")

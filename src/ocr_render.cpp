@@ -55,6 +55,7 @@ struct pdf_text_span {
     std::vector<uint32_t> text;
     uint32_t character;
     double x, y, width, height;
+    bool continue_cluster;
 };
 
 // Stored page data (for PDF which needs all pages at end)
@@ -745,7 +746,9 @@ static void pdf_word(std::string & content, const stored_word & word, int page_h
         if (trailing_space && row + 1 == rows.size() && scalars.back() != ' ') scalars.push_back(' ');
         const double advance = double(word.w) / double(scalars.size());
         const double y = double(page_height) - word.y - (row + 1) * height;
-        content += "/Span << /ActualText " + pdf_unicode_string(scalars) + " >> BDC\nBT\n3 Tr\n";
+        // Each scalar already has an exact ToUnicode mapping. Redundant
+        // replacement text makes some readers discard supplementary Unicode.
+        content += "BT\n3 Tr\n";
         for (size_t start = 0; start < scalars.size();) {
             const size_t font = (characters.at(scalars[start]) - 1) / pdf_cids_per_font;
             size_t end = start;
@@ -759,7 +762,7 @@ static void pdf_word(std::string & content, const stored_word & word, int page_h
                        " " + decimal(word.x + start * advance) + " " + decimal(y) + " Tm\n" + encoded;
             start = end;
         }
-        content += "ET\nEMC\n";
+        content += "ET\n";
         doc.check_bytes(content.size());
     }
 }
@@ -971,7 +974,8 @@ static void prepare_pdf_bidi_word(stored_word & word, int page_height, bool trai
                 if (++span_count > pdf_max_spans)
                     throw std::runtime_error(
                         "PDF exceeds the document text-layout limit; export a smaller page selection");
-                word.pdf_spans.push_back({ std::move(logical), code, x, y, width, height });
+                const bool continuation = start != run.start && pdf_combining_mark(text[start]);
+                word.pdf_spans.push_back({ std::move(logical), code, x, y, width, height, continuation });
                 start = end;
             }
         }
@@ -980,11 +984,15 @@ static void prepare_pdf_bidi_word(stored_word & word, int page_height, bool trai
 
 static void pdf_bidi_word(std::string & content, const stored_word & word,
                           const std::map<uint32_t, size_t> & characters, const pdf_document & doc) {
-    // BT resets direction state in readers. Keep fragments in one text
-    // object so a mapping beginning with a combining mark inherits the
-    // direction of its base, including very long base/mark clusters.
-    content += "BT\n3 Tr\n";
+    // Preserve direction only across a split base/mark cluster. An unrelated
+    // space-prefixed Latin fragment must start with fresh direction context.
+    bool begun = false;
     for (const auto & span : word.pdf_spans) {
+        if (!begun || !span.continue_cluster) {
+            if (begun) content += "ET\n";
+            content += "BT\n3 Tr\n";
+            begun = true;
+        }
         const size_t character = characters.at(span.character) - 1;
         content += "/Span << /ActualText " + pdf_unicode_string(span.text) + " >> BDC\n";
         // Real embedded advance widths keep the text matrix uniform. An
@@ -1173,8 +1181,10 @@ ocr_renderer * ocr_render_create(ocr_render_format format) {
 }
 
 uint32_t crispembed_ocr_render_capabilities(void) {
+    // Keep the experimental bidi option available to the strict reader lane,
+    // but do not advertise it to applications while reader failures remain.
     return OCR_RENDER_CAP_PDF | OCR_RENDER_CAP_UNICODE | OCR_RENDER_CAP_RASTER_IMAGES | OCR_RENDER_CAP_ARCHIVAL |
-           OCR_RENDER_CAP_BIDI | OCR_RENDER_CAP_STREAM;
+           OCR_RENDER_CAP_STREAM;
 }
 
 void ocr_render_set_separator(ocr_renderer * r, const char * sep) {

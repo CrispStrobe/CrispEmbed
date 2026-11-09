@@ -81,8 +81,8 @@ typedef enum ocr_render_capability {
     OCR_RENDER_CAP_STREAM = 32,
 } ocr_render_capability;
 
-/// No model load required. ARCHIVAL declares PDF/A-2b; BIDI declares the
-/// explicit Unicode 17 bidirectional layout option below.
+/// No model load required. ARCHIVAL declares PDF/A-2b. BIDI is withheld while
+/// the explicit Unicode 17 layout option has unresolved reader failures.
 CRISPEMBED_API uint32_t crispembed_ocr_render_capabilities(void);
 
 /// Create a renderer for the given format.
@@ -97,7 +97,8 @@ CRISPEMBED_API void ocr_render_set_separator(ocr_renderer * r, const char * sep)
 /// Must be called before ocr_render_begin(). Only affects PDF format.
 CRISPEMBED_API void ocr_render_set_pdfa(ocr_renderer * r, int enabled);
 
-/// Opt into Unicode 17 bidirectional layout for the invisible PDF text layer.
+/// Experimental Unicode 17 layout for the invisible PDF text layer. It remains
+/// available for qualification, but BIDI is not advertised to applications yet.
 /// Text supplied by callers must be in logical reading order. Visual positions
 /// are estimated inside each OCR region; page images are never repainted.
 /// The legacy default rejects RTL scripts/directional controls. Set before begin.

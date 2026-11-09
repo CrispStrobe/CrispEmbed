@@ -3762,15 +3762,37 @@ unsafe extern "C" fn ocr_pdf_write_callback<W: std::io::Write>(
         return 0;
     }
     if data.is_null() {
-        state.error = Some(std::io::Error::new(std::io::ErrorKind::InvalidData, "PDF writer received a null slice"));
+        state.error = Some(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "PDF writer received a null slice",
+        ));
         return 1;
     }
     let Some(total) = state.written.checked_add(size as u64) else {
-        state.error = Some(std::io::Error::new(std::io::ErrorKind::InvalidData, "PDF writer byte counter overflow"));
+        state.error = Some(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "PDF writer byte counter overflow",
+        ));
         return 1;
     };
     let bytes = unsafe { std::slice::from_raw_parts(data, size) };
-    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| state.writer.write_all(bytes))) {
+    let write = || -> std::io::Result<()> {
+        let mut remaining = bytes;
+        while !remaining.is_empty() {
+            // Preserve Interrupted as well as other I/O errors. write_all()
+            // retries it indefinitely, which can swallow caller cancellation.
+            let size = state.writer.write(remaining)?;
+            if size == 0 {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::WriteZero,
+                    "PDF writer made no progress",
+                ));
+            }
+            remaining = &remaining[size..];
+        }
+        Ok(())
+    };
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(write)) {
         Ok(Ok(())) => {
             state.written = total;
             0
@@ -3793,7 +3815,8 @@ unsafe extern "C" fn ocr_pdf_write_callback<W: std::io::Write>(
 /// Page/text/layout limits and each page's decode/compression working memory
 /// still apply. The native renderer does not accumulate the whole PDF.
 ///
-/// Original writer I/O errors are returned unchanged. Native validation and
+/// Original writer I/O errors, including Interrupted, are returned unchanged.
+/// Partial successful writes are completed; zero progress is WriteZero. Native validation and
 /// rendering errors become `InvalidData`; callback panics become `Other`.
 /// The writer is flushed before success. Use a temporary file and publish it
 /// only after success; a failure can leave a partial destination. No callback
@@ -3807,12 +3830,24 @@ pub fn ocr_render_pdf_to_writer_checked<W: std::io::Write>(
     writer: &mut W,
 ) -> std::io::Result<u64> {
     if ocr_render_capabilities() & 32 == 0 {
-        return Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "Native PDF streaming is unavailable"));
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Unsupported,
+            "Native PDF streaming is unavailable",
+        ));
     }
-    let mut state = OcrPdfWriteState { writer, error: None, written: 0 };
+    let mut state = OcrPdfWriteState {
+        writer,
+        error: None,
+        written: 0,
+    };
     let context = (&mut state as *mut OcrPdfWriteState<'_, W>).cast();
     let result = ocr_render_document(pages, "pdf", pdfa, sizes, bidi, |renderer| unsafe {
-        crispembed_sys::ocr_render_set_pdf_writer(renderer, Some(ocr_pdf_write_callback::<W>), context, max_output_bytes);
+        crispembed_sys::ocr_render_set_pdf_writer(
+            renderer,
+            Some(ocr_pdf_write_callback::<W>),
+            context,
+            max_output_bytes,
+        );
     });
     if let Some(error) = state.error.take() {
         return Err(error);
