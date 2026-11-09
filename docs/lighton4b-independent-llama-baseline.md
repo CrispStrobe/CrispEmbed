@@ -106,7 +106,6 @@ new PR, model publication, default or release change follows.
 
 This is a distinct upstream implementation and published-weight baseline, not a
 same-weight CrispEmbed operator test. No benchmark result is claimed yet.
-
 The actual upstream code is pinned to
 [`6c01da6278ab6c69ed67d9124806b50d2b299ba7`](https://github.com/ggml-org/llama.cpp/tree/6c01da6278ab6c69ed67d9124806b50d2b299ba7).
 Its [`Qwen3_5TextModel`](https://github.com/ggml-org/llama.cpp/blob/6c01da6278ab6c69ed67d9124806b50d2b299ba7/conversion/qwen.py#L693)

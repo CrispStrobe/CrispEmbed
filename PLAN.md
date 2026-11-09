@@ -3118,6 +3118,7 @@ license and calibration source weights remain unauthenticated; no pretrained ima
 imatrix is assumed. Next is reviewed Kaggle-only fresh-source weighted plainQ4,
 with exact unweightedf873 control and248 actual application checks, preserving
 protected tensors/gates and all reference/model-quality limits.
+
 ### Independent upstream llama.cpp CPU baseline completed on observed cases
 
 [Full source/result evidence](docs/lighton4b-independent-llama-baseline.md) pins
@@ -3133,7 +3134,6 @@ human accuracy or broad qualification claim. GH cancellation and Kagglev1/v2
 setup failures preserved; no new GH dispatch or PR/default/release/model upload.
 Next bounded work requires a separately frozen conversion/arithmetic attribution,
 not promotion based solely on these observed three-case outputs.
-
 ### External-text weighted plain Q4: verified application, partial decode negative
 
 [Complete calibration evidence](docs/lighton4b-imatrix-q4-calibration-results.md)
