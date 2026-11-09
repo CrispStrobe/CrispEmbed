@@ -1,0 +1,20 @@
+{
+  "schema": "lighton4b-gdn-full-ab/v1",
+  "proof_receipt": "6b1f4f9c3150d06df0a195c1f21c42136874e69934b9586205712114354e798d",
+  "production_source": "cd50e9e691530525fb998edda8a449cc0725be91",
+  "cases": [
+    "simple_table",
+    "simple_form"
+  ],
+  "cap": 512,
+  "threads": 4,
+  "context": 2048,
+  "arms": [
+    "off",
+    "on"
+  ],
+  "whole_seconds": 6000,
+  "arm_seconds": 900,
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "scope": "Observed calibration only; pixel input, unchanged corrected vision/decoder settings; no reference forward, heldout, promotion or release."
+}

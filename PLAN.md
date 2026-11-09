@@ -4180,3 +4180,7 @@ Prepare `tools/gdn-trace-replay` after merging current main cc519. Reuse immutab
 ### Default-off physical GDN source-operator candidate
 
 The actual-input replay `2f1261053` closes source convolution, SiLU, post-normalization, preferred output and nonzero next state. A separate unqualified candidate `CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS` retains the existing scalar log1p softplus (already exact upstream) and tests source-shaped convolution/QK RMS/K1 recurrence/post-RMS/SiLU operators. It preserves all quantized projections, output routes, old code when disabled, and distinct cache-mode rejection. The [bounded operator protocol](tools/gdn-hybrid-probe/protocol.json) predeclares 14 runs and an actual nonzero-state continuation; synthetic cache/gate controls execute before five parameter ranges are fetched. Hosted compilation and source-fed equivalence remain pending; no decoded or held-out qualification is claimed.
+
+## Physical GDN full observed-case A/B preparation
+
+Operator source `cd50e9e69` passed actual source four-token/nonzero-state closures (receipt `6b1f4f9c`). A separate tools-only [bounded table/form A/B](docs/lighton4b-gdn-full-ab-v1.md) rebuilds those exact runtime bytes, closes OFF all282/167 rows and38 text stages before independent ON greedy cap512. Only the default-off physical GDN gate changes. Preparation is not dispatch or quality qualification; table and historical-receipt floors remain unresolved. No release/default/app pin change.
