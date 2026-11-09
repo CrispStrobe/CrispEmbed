@@ -81,6 +81,7 @@ mod writer_contracts {
 
     #[test]
     fn preserves_the_original_operating_system_error() {
+        const DENIED: i32 = if cfg!(windows) { 5 } else { 13 };
         struct Failing {
             writes: usize,
             flushed: bool,
@@ -88,7 +89,7 @@ mod writer_contracts {
         impl Write for Failing {
             fn write(&mut self, _: &[u8]) -> io::Result<usize> {
                 self.writes += 1;
-                Err(io::Error::from_raw_os_error(13))
+                Err(io::Error::from_raw_os_error(DENIED))
             }
             fn flush(&mut self) -> io::Result<()> {
                 self.flushed = true;
@@ -97,7 +98,7 @@ mod writer_contracts {
         }
         let mut writer = Failing { writes: 0, flushed: false };
         let error = render(&mut writer, 256 * 1024 * 1024, "Original I/O error").unwrap_err();
-        assert_eq!(error.raw_os_error(), Some(13));
+        assert_eq!(error.raw_os_error(), Some(DENIED));
         assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
         assert_eq!(writer.writes, 1);
         assert!(!writer.flushed);
@@ -150,6 +151,31 @@ mod writer_contracts {
         let mut recovered = Vec::new();
         assert!(render(&mut recovered, 256 * 1024 * 1024, "Recovered job").unwrap() > 0);
         assert!(recovered.ends_with(b"%%EOF\n"));
+    }
+
+    #[test]
+    fn panic_payload_destructor_cannot_unwind_across_c() {
+        use std::sync::{atomic::{AtomicUsize, Ordering}, Arc};
+        struct Payload(Arc<AtomicUsize>);
+        impl Drop for Payload {
+            fn drop(&mut self) {
+                self.0.fetch_add(1, Ordering::SeqCst);
+                panic!("injected panic-payload destructor");
+            }
+        }
+        struct Panics(Arc<AtomicUsize>);
+        impl Write for Panics {
+            fn write(&mut self, _: &[u8]) -> io::Result<usize> {
+                std::panic::panic_any(Payload(self.0.clone()))
+            }
+            fn flush(&mut self) -> io::Result<()> { Ok(()) }
+        }
+        let dropped = Arc::new(AtomicUsize::new(0));
+        let mut writer = Panics(dropped.clone());
+        let error = render(&mut writer, 256 * 1024 * 1024, "Panic payload containment").unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::Other);
+        assert_eq!(error.to_string(), "PDF writer panicked");
+        assert_eq!(dropped.load(Ordering::SeqCst), 0);
     }
 
     #[test]

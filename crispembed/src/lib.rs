@@ -3801,7 +3801,10 @@ unsafe extern "C" fn ocr_pdf_write_callback<W: std::io::Write>(
             state.error = Some(error);
             1
         }
-        Err(_) => {
+        Err(payload) => {
+            // A custom panic payload may itself panic during Drop. Forget
+            // this exceptional payload so no second unwind crosses C.
+            std::mem::forget(payload);
             state.error = Some(std::io::Error::other("PDF writer panicked"));
             1
         }

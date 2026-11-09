@@ -2,7 +2,7 @@ name: OCR bounded writer and archival qualification
 
 on:
   push:
-    branches: [feat/ocr-pdf-stream-writer]
+    branches: [feat/ocr-pdf-stream-writer, feat/ocr-pdf-stream-hardening]
     paths:
       - 'src/ocr_render.*'
       - 'src/ocr_pdf_*.h'
