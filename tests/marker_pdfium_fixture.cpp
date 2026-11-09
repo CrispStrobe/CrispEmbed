@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #ifdef _WIN32
@@ -22,12 +23,18 @@
 namespace {
 struct fixture_document {
     bool fail_second = false;
+    std::string font_name = "FixtureSans";
+    int font_flags = 0;
 };
 struct fixture_page {
     int index;
+    std::string font_name;
+    int font_flags;
 };
 struct fixture_text {
     int index;
+    std::string font_name;
+    int font_flags;
 };
 struct fixture_rectangle {
     float left, top, right, bottom;
@@ -71,7 +78,19 @@ FIXTURE_EXPORT void * FIXTURE_CALL FPDF_LoadDocument(const char * path, const ch
         last_error = 3;
         return nullptr;
     }
-    return new fixture_document{ contents.find("FAIL_SECOND_PAGE") != std::string::npos };
+    fixture_document document;
+    document.fail_second = contents.find("FAIL_SECOND_PAGE") != std::string::npos;
+    const auto font = contents.find("\nFONT_NAME=");
+    if (font != std::string::npos) {
+        const auto end = contents.find('\n', font + 11);
+        document.font_name = contents.substr(font + 11, end - (font + 11));
+        if (document.font_name.empty() || document.font_name.size() > 256) {
+            last_error = 3;
+            return nullptr;
+        }
+        document.font_flags = contents.find("\nFONT_FIXED=1\n") != std::string::npos ? 1 : 0;
+    }
+    return new fixture_document(std::move(document));
 }
 
 FIXTURE_EXPORT void FIXTURE_CALL FPDF_CloseDocument(void * document) {
@@ -86,7 +105,8 @@ FIXTURE_EXPORT void * FIXTURE_CALL FPDF_LoadPage(void * document, int index) {
         last_error = 6;
         return nullptr;
     }
-    return new fixture_page{ index };
+    const auto & source = *static_cast<fixture_document *>(document);
+    return new fixture_page{ index, source.font_name, source.font_flags };
 }
 FIXTURE_EXPORT void FIXTURE_CALL FPDF_ClosePage(void * page) {
     delete static_cast<fixture_page *>(page);
@@ -127,7 +147,9 @@ FIXTURE_EXPORT int FIXTURE_CALL FPDF_PageToDevice(void * page, int x, int y, int
 }
 
 FIXTURE_EXPORT void * FIXTURE_CALL FPDFText_LoadPage(void * page) {
-    return page ? new fixture_text{ static_cast<fixture_page *>(page)->index } : nullptr;
+    if (!page) return nullptr;
+    const auto & source = *static_cast<fixture_page *>(page);
+    return new fixture_text{ source.index, source.font_name, source.font_flags };
 }
 FIXTURE_EXPORT void FIXTURE_CALL FPDFText_ClosePage(void * text) {
     delete static_cast<fixture_text *>(text);
@@ -152,12 +174,14 @@ FIXTURE_EXPORT int FIXTURE_CALL FPDFText_GetCharBox(void * text, int index, doub
 FIXTURE_EXPORT double FIXTURE_CALL FPDFText_GetFontSize(void *, int) {
     return 12;
 }
-FIXTURE_EXPORT unsigned long FIXTURE_CALL FPDFText_GetFontInfo(void *, int, void * buffer, unsigned long capacity,
+FIXTURE_EXPORT unsigned long FIXTURE_CALL FPDFText_GetFontInfo(void * text, int, void * buffer, unsigned long capacity,
                                                                int * flags) {
-    static constexpr char name[] = "FixtureSans";
-    if (flags) *flags = 0;
-    if (buffer && capacity >= sizeof(name)) std::memcpy(buffer, name, sizeof(name));
-    return sizeof(name);
+    if (!text) return 0;
+    const auto & source = *static_cast<fixture_text *>(text);
+    if (flags) *flags = source.font_flags;
+    const auto size = static_cast<unsigned long>(source.font_name.size() + 1);
+    if (buffer && capacity >= size) std::memcpy(buffer, source.font_name.c_str(), size);
+    return size;
 }
 FIXTURE_EXPORT int FIXTURE_CALL FPDFText_GetFontWeight(void *, int) {
     return 400;

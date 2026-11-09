@@ -44,9 +44,13 @@ evidence in separate, incrementally pushed checkpoints.
   [complete input receipt](../tests/results/marker/pdf-craft-corpus-2026-11-09/input-assets.json).
   Four accounting controls cover coordinate scaling, complete UTF-8 windows,
   truthful source ranges and dehyphenation before the full run.
-- [ ] Execute the frozen protocol with fresh Tesseract OCR, real native Marker
+- [x] Execute the frozen protocol with fresh Tesseract OCR, real native Marker
   processing and real native MiniLM embeddings; do not imply fresh TeleOCR
-  execution or use retained OCR output as fresh inference.
+  execution or use retained OCR output as fresh inference. All 57 pages execute;
+  off/on output quality does not regress, but all 57 fail the combined absolute
+  OCR/layout floor. The 17-query retrieval panel passes Recall@3=1.0 and
+  MRR=0.960784 with byte-identical off/on vectors. Keep this failed qualification
+  distinct from successful execution and scoped retrieval.
 - [x] Preserve exact Windows/macOS/iOS job results and source identities in
   the [platform receipt](../tests/results/marker/pdf-craft-platform-2026-11-09/README.md):
   Windows document/artifact/lifecycle 185/82/471; macOS 185/87/480 plus C API,
@@ -88,9 +92,11 @@ OCR/layout result remains intact; its 17-query MiniLM retrieval result passes.
 - [x] Freeze a [separate three-arm replay protocol](../tests/regression/marker/pdf-craft-glyphless-followup-v1.json)
   before candidate output, binding all 57 already-recognized PDFs by SHA-256
   and retaining the original gold, scorers, queries and absolute thresholds.
-- [ ] Add default-off `CRISPEMBED_MARKER_GLYPHLESS_TEXT` to suppress only the
+- [x] Add default-off `CRISPEMBED_MARKER_GLYPHLESS_TEXT` to suppress only the
   artificial monospace style of exact GlyphLessFont/subset names; retain text,
   coordinates, genuine Courier/Mono styles and current space reconstruction.
+  The public native controls reproduce the original classification and resume
+  identity failures before the fix; final rebuilt-source execution follows.
 - [ ] Verify false/unset behavior, exact font-name boundaries, truthful
   diagnostics and changed-gate resume rejection with owned controls.
 - [ ] Replay the frozen PDFs through legacy, font-only and font-plus-document

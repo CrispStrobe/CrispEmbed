@@ -309,6 +309,7 @@ jobs:
           python3 tests/test_teleocr_loader.py --lib build/libcrispembed.so --report build/teleocr-loader.json
           python3 tests/test_unlimited_ocr_license.py --lib build/libcrispembed.so --report build/unlimited-ocr-license.json
           python3 tests/test_marker_lifecycle.py --lib build/libcrispembed.so --pdfium build/libmarker-pdfium-fixture.so --report build/marker-python-lifecycle.json
+          python3 tests/test_marker_glyphless.py --lib build/libcrispembed.so --fixture build/libmarker-pdfium-fixture.so --out build/marker-glyphless --native-source-commit "$(git rev-parse HEAD)"
           pdfium_library=$(python3 -c 'from pathlib import Path; import pypdfium2_raw; print(Path(pypdfium2_raw.__file__).with_name("libpdfium.so"))')
           python3 tests/test_marker_real_pdf.py --lib build/libcrispembed.so --pdfium "$pdfium_library" --out build/marker-real-pdf
 
@@ -343,6 +344,7 @@ jobs:
             build/unlimited-ocr-license.json
             build/marker-python-lifecycle.json
             build/marker-real-pdf/
+            build/marker-glyphless/
             build/marker-binding-lifecycle.json
             build/marker-binding-lifecycle/
           if-no-files-found: warn

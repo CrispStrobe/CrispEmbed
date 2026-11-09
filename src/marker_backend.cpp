@@ -505,6 +505,15 @@ size_t monospace_spaces(pdf_api & api, void * text, int index, int count) {
     return static_cast<size_t>(rounded);
 }
 
+bool glyphless_ocr_font(const std::string & name) {
+    // PDF font names are case-sensitive. A subset tag is exactly six uppercase
+    // ASCII letters followed by '+', not an arbitrary suffix/substring match.
+    const std::string family = "GlyphLessFont";
+    if (name == family) return true;
+    return name.size() == family.size() + 7 && name[6] == '+' && name.compare(7, family.size(), family) == 0 &&
+           std::all_of(name.begin(), name.begin() + 6, [](char c) { return c >= 'A' && c <= 'Z'; });
+}
+
 } // namespace
 
 struct pdf_provider::impl {
@@ -646,7 +655,8 @@ page pdf_provider::read_page(int index, bool extract_text) {
     }
     line current;
     std::string pending_spaces;
-    int unmapped = 0, invalid_boxes = 0, restored_spaces = 0;
+    int unmapped = 0, invalid_boxes = 0, restored_spaces = 0, glyphless_styles = 0;
+    const bool glyphless_text = core_env::on("CRISPEMBED_MARKER_GLYPHLESS_TEXT");
     const auto flush = [&]() {
         if (!current.spans.empty()) out.text_lines.push_back(std::move(current));
         current = line{};
@@ -716,13 +726,21 @@ page pdf_provider::read_page(int index, bool extract_text) {
         const unsigned long required = api.FPDFText_GetFontInfo(text.value, character_index, font.data(),
                                                                 static_cast<unsigned long>(font.size()), &flags);
         font.back() = 0;
-        const std::string font_name = required > 0 && required <= font.size() ? lower_ascii(font.data()) : "";
+        const std::string original_font_name = required > 0 && required <= font.size() ? font.data() : "";
+        const std::string font_name = lower_ascii(original_font_name);
         const int weight = api.FPDFText_GetFontWeight ? api.FPDFText_GetFontWeight(text.value, character_index) : 0;
         bool bold = weight >= 700 || font_name.find("bold") != std::string::npos || (flags & (1 << 18));
         bool italic = (flags & 64) || font_name.find("italic") != std::string::npos ||
                       font_name.find("oblique") != std::string::npos;
         bool mono = (flags & 1) || font_name.find("mono") != std::string::npos ||
                     font_name.find("courier") != std::string::npos;
+        // The invisible OCR support font's fixed-pitch bit describes its dummy
+        // glyphs, not the photographed text. Do not infer Code from that bit.
+        // Keep glyph/line text, boxes, other styles and space reconstruction.
+        if (glyphless_text && mono && glyphless_ocr_font(original_font_name)) {
+            mono = false;
+            ++glyphless_styles;
+        }
         std::string url;
         const double center_x = (bounds.x0 + bounds.x1) * 0.5, center_y = (bounds.y0 + bounds.y1) * 0.5;
         for (const auto & link : links)
@@ -764,6 +782,9 @@ page pdf_provider::read_page(int index, bool extract_text) {
     if (restored_spaces)
         out.warnings.push_back(std::to_string(restored_spaces) +
                                " collapsed monospace spaces restored from PDF glyph advances");
+    if (glyphless_styles)
+        out.warnings.push_back("Glyphless OCR font style is unknown; artificial monospace styling ignored for " +
+                               std::to_string(glyphless_styles) + " characters");
     return out;
 }
 

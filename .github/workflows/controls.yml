@@ -26,6 +26,8 @@ on:
       - 'tests/test_ocr_document_eval.py'
       - 'tests/marker_corpus_ab.py'
       - 'tests/test_marker_corpus_ab.py'
+      - 'tests/marker_glyphless_ab.py'
+      - 'tests/test_marker_glyphless_ab.py'
       - 'tools/ocr-gold-corpus/fetch_marker_ab.py'
       - 'tests/regression/marker/pdf-craft-corpus-v1.json'
       - 'models/convert-lightonocr-to-gguf.py'
@@ -136,6 +138,8 @@ on:
       - 'tests/test_ocr_document_eval.py'
       - 'tests/marker_corpus_ab.py'
       - 'tests/test_marker_corpus_ab.py'
+      - 'tests/marker_glyphless_ab.py'
+      - 'tests/test_marker_glyphless_ab.py'
       - 'tools/ocr-gold-corpus/fetch_marker_ab.py'
       - 'tests/regression/marker/pdf-craft-corpus-v1.json'
       - 'models/convert-lightonocr-to-gguf.py'
@@ -276,6 +280,9 @@ jobs:
       - name: Marker corpus geometry and source accounting controls
         if: ${{ !cancelled() }}
         run: python tests/test_marker_corpus_ab.py -v
+
+      - name: Glyphless replay accounting controls (model-free)
+        run: python tests/test_marker_glyphless_ab.py -v
 
       - name: Retained OCR report extraction controls
         if: ${{ !cancelled() }}

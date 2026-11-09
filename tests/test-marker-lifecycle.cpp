@@ -373,6 +373,13 @@ void identity_controls(const fs::path & root, const fs::path & source) {
     error_has(ctx.get(), "does not match");
     set_env("CRISPEMBED_MARKER_REFERENCES", "1");
 
+    set_env("CRISPEMBED_MARKER_GLYPHLESS_TEXT", "1");
+    check(crispembed_marker_start(ctx.get(), source.u8string().c_str(), raw.u8string().c_str(), 1) == 0,
+          "glyphless PDF font handling mismatch rejects resume");
+    error_has(ctx.get(), "does not match");
+    check(bytes(raw) == original, "changed glyphless handling preserves the raw checkpoint");
+    set_env("CRISPEMBED_MARKER_GLYPHLESS_TEXT", "0");
+
     const auto source_bytes = bytes(source);
     write(source, source_bytes + "changed source bytes\n");
     check(crispembed_marker_start(ctx.get(), source.u8string().c_str(), raw.u8string().c_str(), 1) == 0,
@@ -559,8 +566,8 @@ int test_main() {
                                    "CRISPEMBED_MARKER_REFERENCES" })
             set_env(name, "1");
         for (const char * name : { "CRISPEMBED_MARKER_REPETITION_CHECK", "CRISPEMBED_MARKER_SOURCE_LINKS",
-                                   "CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE", "CRISPEMBED_TELEOCR",
-                                   "CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE" })
+                                   "CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE", "CRISPEMBED_MARKER_GLYPHLESS_TEXT",
+                                   "CRISPEMBED_TELEOCR", "CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE" })
             set_env(name, "0");
         check(fs::is_regular_file(fs::u8path(MARKER_FIXTURE_LIBRARY)), "explicit owned PDFium fixture exists");
         gate_controls(owned.path, source);

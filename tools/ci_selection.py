@@ -64,6 +64,7 @@ NATIVE_PYTHON = (
     "tests/test_unlimited_ocr_license.py",
     "tests/test_marker_lifecycle.py",
     "tests/test_marker_real_pdf.py",
+    "tests/test_marker_glyphless.py",
     "tests/test_marker_installed_wheel.py",
     "tests/run_marker_binding_lifecycle.py",
     "kaggle_harness.py", "tools/kaggle/*/kaggle_harness.py",

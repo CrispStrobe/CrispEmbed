@@ -355,6 +355,7 @@ CONSUMERS = {
     "tests/test_unlimited_ocr_license.py": ("native", "native_tests"),
     "tests/test_marker_lifecycle.py": ("native", "native_tests"),
     "tests/test_marker_real_pdf.py": ("native", "native_tests"),
+    "tests/test_marker_glyphless.py": ("native", "native_tests"),
     "tests/test_marker_installed_wheel.py": ("native", "native_tests"),
     "tests/test_flutter_pod_resources.py": ("native", "native_macos", "native_tests", "mobile"),
     "tests/run_marker_binding_lifecycle.py": ("native", "native_tests"),
