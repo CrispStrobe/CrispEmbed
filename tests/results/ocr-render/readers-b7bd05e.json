@@ -1,0 +1,1084 @@
+{
+  "source_sha": "b7bd05e7bd5396f415efc653e343651b995b95a5",
+  "run_id": 42613367285,
+  "job_id": 129147128971,
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42613367285",
+  "conclusion": "failure",
+  "artifact": {
+    "id": 13671453555,
+    "name": "ocr-export-artifacts",
+    "sha256": "c1088e03de6adfb2c1b37ea1f2645536d6802d7ea39dc41a70911ba9c1d5fd63",
+    "bytes": 877013,
+    "retention_days": 7,
+    "download_digest_verified": true
+  },
+  "native_checks": {
+    "passed": 59,
+    "failed": 0,
+    "includes_document_limits_and_recovery": true
+  },
+  "verapdf": {
+    "validator": "veraPDF 1.30.2\nBuilt: Wed Jun 03 10:55:00 UTC 2026\nDeveloped and released by the veraPDF Consortium.\nFunded by the PREFORMA project.\nReleased under the GNU General Public License v3\nand the Mozilla Public License v2 or later.",
+    "profile": "2b",
+    "positive": [
+      {
+        "file": "archival-alpha.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "archival-gray.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "archival-jpeg.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "archival-rgb.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "archival-text.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-arabic.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-combining-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-hebrew.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-isolate.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-mapping-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-marks.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-mixed-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-mixed-rtl.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-multiline.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-override.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-supplementary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      }
+    ],
+    "negative": [
+      {
+        "file": "missing-output-intent.pdf",
+        "exit_code": 1,
+        "compliant": false,
+        "failed_rules": [
+          "<rule specification=\"ISO 19005-2:2011\" clause=\"6.2.4.3\" testNumber=\"2\" status=\"failed\" failedChecks=\"2\">\n            <description>DeviceRGB shall only be used if a device independent DefaultRGB colour space has been set when the DeviceRGB colour space is used, or if the file has a PDF/A OutputIntent that contains an RGB destination profile</description>\n            <object>PDDeviceRGB</object>\n            <test>gOutputCS != null &amp;&amp; gOutputCS == \"RGB \"</test>\n            <check status=\"failed\">\n              <context>root/document[0]/pages[0](11 0 obj PDPage)/contentStream[0](10 0 obj PDContentStream)/operators[4]/xObject[0](9 0 obj PDXImage)/imageCS[0]</context>\n              <errorMessage>DeviceRGB colour space is used without RGB output intent profile</errorMessage>\n            </check>\n            <check status=\"failed\">\n              <context>root/document[0]/pages[1](14 0 obj PDPage)/contentStream[0](13 0 obj PDContentStream)/operators[4]/xObject[0](12 0 obj PDXImage)/imageCS[0]</context>\n              <errorMessage>DeviceRGB colour space is used without RGB output intent profile</errorMessage>\n            </check>\n          </rule>\n        "
+        ]
+      },
+      {
+        "file": "missing-xmp.pdf",
+        "exit_code": 1,
+        "compliant": false,
+        "failed_rules": [
+          "<rule specification=\"ISO 19005-2:2011\" clause=\"6.6.2.1\" testNumber=\"1\" status=\"failed\" failedChecks=\"1\">\n            <description>The Catalog dictionary of a conforming file shall contain the Metadata key whose value is a metadata stream as defined in ISO 32000-1:2008, 14.3.2. The metadata stream dictionary shall contain entry Type with value /Metadata and entry Subtype with value /XML</description>\n            <object>PDDocument</object>\n            <test>containsMetadata == true</test>\n            <check status=\"failed\">\n              <context>root/document[0]</context>\n              <errorMessage>The document catalog dictionary doesn't contain metadata key or metadata stream dictionary does not contain either entry Type with value /Metadata or entry Subtype with value /XML</errorMessage>\n            </check>\n          </rule>\n        "
+        ]
+      }
+    ],
+    "missing_cases": [],
+    "errors": []
+  },
+  "extraction": [
+    {
+      "case": "arabic",
+      "source": "العربية",
+      "actual_text": "العربية",
+      "logical_actual_text_exact": true,
+      "embedded_advances_verified": 1,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "العربية\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": {
+            "العربية": [
+              [
+                10.0,
+                30.0,
+                310.0,
+                60.0
+              ]
+            ]
+          },
+          "raw_words": null
+        },
+        "Poppler": {
+          "extracted": "‫ةيبرعلا‬\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": [
+            {
+              "text": "العربية",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "30.000000",
+                "xMax": "310.000000",
+                "yMax": "70.500000"
+              }
+            }
+          ]
+        },
+        "pypdf": {
+          "extracted": "العربية",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        },
+        "PDFium": {
+          "extracted": null,
+          "logical_text_exact": null,
+          "exit_code": 1,
+          "status": "failed",
+          "error": "Traceback (most recent call last):\n  File \"/home/runner/work/CrispEmbed/CrispEmbed/tests/ocr_render_reader_probe.py\", line 61, in main\n    with document[0] as page, page.get_textpage() as text:\nTypeError: 'PdfPage' object does not support the context manager protocol\n",
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        }
+      }
+    },
+    {
+      "case": "combining-boundary",
+      "source": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+      "actual_text": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+      "logical_actual_text_exact": true,
+      "embedded_advances_verified": 6,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַ \n123\n \nABC\n",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": {},
+          "raw_words": null
+        },
+        "Poppler": {
+          "extracted": "‫ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמ‬\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ\nַַַַַַַַַַַַַַַַַַַ \n123\nABC\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": [
+            {
+              "text": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ",
+              "bounds": {
+                "xMin": "302.250923",
+                "yMin": "30.000000",
+                "xMax": "310.000923",
+                "yMax": "31.350000"
+              }
+            },
+            {
+              "text": "ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ",
+              "bounds": {
+                "xMin": "294.501845",
+                "yMin": "30.000000",
+                "xMax": "302.251845",
+                "yMax": "31.350000"
+              }
+            },
+            {
+              "text": "ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ",
+              "bounds": {
+                "xMin": "286.752768",
+                "yMin": "30.000000",
+                "xMax": "294.502768",
+                "yMax": "31.350000"
+              }
+            },
+            {
+              "text": "ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ",
+              "bounds": {
+                "xMin": "279.003690",
+                "yMin": "30.000000",
+                "xMax": "286.753690",
+                "yMax": "31.350000"
+              }
+            },
+            {
+              "text": "ַַַַַַַַַַַַַַַַַַַ ",
+              "bounds": {
+                "xMin": "243.333333",
+                "yMin": "30.000000",
+                "xMax": "279.005208",
+                "yMax": "31.350000"
+              }
+            },
+            {
+              "text": "123",
+              "bounds": {
+                "xMin": "143.333333",
+                "yMin": "30.000000",
+                "xMax": "243.333333",
+                "yMax": "31.350000"
+              }
+            },
+            {
+              "text": "ABC",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "30.000000",
+                "xMax": "110.000000",
+                "yMax": "31.350000"
+              }
+            }
+          ]
+        },
+        "pypdf": {
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        },
+        "PDFium": {
+          "extracted": null,
+          "logical_text_exact": null,
+          "exit_code": 1,
+          "status": "failed",
+          "error": "Traceback (most recent call last):\n  File \"/home/runner/work/CrispEmbed/CrispEmbed/tests/ocr_render_reader_probe.py\", line 61, in main\n    with document[0] as page, page.get_textpage() as text:\nTypeError: 'PdfPage' object does not support the context manager protocol\n",
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        }
+      }
+    },
+    {
+      "case": "hebrew",
+      "source": "שלום",
+      "actual_text": "שלום",
+      "logical_actual_text_exact": true,
+      "embedded_advances_verified": 1,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "שלום\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": {
+            "שלום": [
+              [
+                10.0,
+                30.0,
+                310.0,
+                60.0
+              ]
+            ]
+          },
+          "raw_words": null
+        },
+        "Poppler": {
+          "extracted": "‫םולש‬\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": [
+            {
+              "text": "שלום",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "30.000000",
+                "xMax": "310.000000",
+                "yMax": "70.500000"
+              }
+            }
+          ]
+        },
+        "pypdf": {
+          "extracted": "שלום",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        },
+        "PDFium": {
+          "extracted": null,
+          "logical_text_exact": null,
+          "exit_code": 1,
+          "status": "failed",
+          "error": "Traceback (most recent call last):\n  File \"/home/runner/work/CrispEmbed/CrispEmbed/tests/ocr_render_reader_probe.py\", line 61, in main\n    with document[0] as page, page.get_textpage() as text:\nTypeError: 'PdfPage' object does not support the context manager protocol\n",
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        }
+      }
+    },
+    {
+      "case": "isolate",
+      "source": "Report ⁧العربية 123⁩: ABC",
+      "actual_text": "Report ⁧العربية 123⁩: ABC",
+      "logical_actual_text_exact": true,
+      "embedded_advances_verified": 3,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "Report ⁧العربية 123⁩: ABC\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": {},
+          "raw_words": null
+        },
+        "Poppler": {
+          "extracted": "Report ⁧‫ ةيبرعلا‬123⁩: ABC\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": [
+            {
+              "text": "Report ⁧العربية 123⁩: ABC",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "30.000000",
+                "xMax": "309.938859",
+                "yMax": "70.500000"
+              }
+            }
+          ]
+        },
+        "pypdf": {
+          "extracted": "Report ⁧العربية 123⁩: ABC",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        },
+        "PDFium": {
+          "extracted": null,
+          "logical_text_exact": null,
+          "exit_code": 1,
+          "status": "failed",
+          "error": "Traceback (most recent call last):\n  File \"/home/runner/work/CrispEmbed/CrispEmbed/tests/ocr_render_reader_probe.py\", line 61, in main\n    with document[0] as page, page.get_textpage() as text:\nTypeError: 'PdfPage' object does not support the context manager protocol\n",
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        }
+      }
+    },
+    {
+      "case": "mapping-boundary",
+      "source": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+      "actual_text": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+      "logical_actual_text_exact": true,
+      "embedded_advances_verified": 4,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא\nאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא\nאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": {},
+          "raw_words": null
+        },
+        "Poppler": {
+          "extracted": "‫אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n‫אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n‫𞤀𞤀𞤀𞤀 אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n𞤀𞤀𞤀\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": [
+            {
+              "text": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא",
+              "bounds": {
+                "xMin": "242.740214",
+                "yMin": "30.000000",
+                "xMax": "310.005839",
+                "yMax": "31.350000"
+              }
+            },
+            {
+              "text": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא",
+              "bounds": {
+                "xMin": "175.480427",
+                "yMin": "30.000000",
+                "xMax": "242.746052",
+                "yMax": "31.350000"
+              }
+            },
+            {
+              "text": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀",
+              "bounds": {
+                "xMin": "112.491103",
+                "yMin": "30.000000",
+                "xMax": "175.475478",
+                "yMax": "31.350000"
+              }
+            },
+            {
+              "text": "𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+              "bounds": {
+                "xMin": "79.395018",
+                "yMin": "30.000000",
+                "xMax": "112.488768",
+                "yMax": "31.350000"
+              }
+            },
+            {
+              "text": "𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+              "bounds": {
+                "xMin": "46.298932",
+                "yMin": "30.000000",
+                "xMax": "79.392682",
+                "yMax": "31.350000"
+              }
+            },
+            {
+              "text": "𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+              "bounds": {
+                "xMin": "13.202847",
+                "yMin": "30.000000",
+                "xMax": "46.296597",
+                "yMax": "31.350000"
+              }
+            },
+            {
+              "text": "𞤀𞤀𞤀",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "30.000000",
+                "xMax": "13.203125",
+                "yMax": "31.350000"
+              }
+            }
+          ]
+        },
+        "pypdf": {
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        },
+        "PDFium": {
+          "extracted": null,
+          "logical_text_exact": null,
+          "exit_code": 1,
+          "status": "failed",
+          "error": "Traceback (most recent call last):\n  File \"/home/runner/work/CrispEmbed/CrispEmbed/tests/ocr_render_reader_probe.py\", line 61, in main\n    with document[0] as page, page.get_textpage() as text:\nTypeError: 'PdfPage' object does not support the context manager protocol\n",
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        }
+      }
+    },
+    {
+      "case": "marks",
+      "source": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+      "actual_text": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+      "logical_actual_text_exact": true,
+      "embedded_advances_verified": 4,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "مَرْحَبًا שָׁלוֹם ١٢٣ / \n42\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": {},
+          "raw_words": null
+        },
+        "Poppler": {
+          "extracted": "‫ םֹולָׁש اًبَحْرَم‬\n١٢٣\n / \n42\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": [
+            {
+              "text": "مَرْحَبًا שָׁלוֹם ",
+              "bounds": {
+                "xMin": "136.315789",
+                "yMin": "30.000000",
+                "xMax": "310.222039",
+                "yMax": "70.500000"
+              }
+            },
+            {
+              "text": "١٢٣",
+              "bounds": {
+                "xMin": "88.947368",
+                "yMin": "30.000000",
+                "xMax": "136.291118",
+                "yMax": "70.500000"
+              }
+            },
+            {
+              "text": " / ",
+              "bounds": {
+                "xMin": "41.578947",
+                "yMin": "30.000000",
+                "xMax": "88.922697",
+                "yMax": "70.500000"
+              }
+            },
+            {
+              "text": "42",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "30.000000",
+                "xMax": "41.406250",
+                "yMax": "70.500000"
+              }
+            }
+          ]
+        },
+        "pypdf": {
+          "extracted": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        },
+        "PDFium": {
+          "extracted": null,
+          "logical_text_exact": null,
+          "exit_code": 1,
+          "status": "failed",
+          "error": "Traceback (most recent call last):\n  File \"/home/runner/work/CrispEmbed/CrispEmbed/tests/ocr_render_reader_probe.py\", line 61, in main\n    with document[0] as page, page.get_textpage() as text:\nTypeError: 'PdfPage' object does not support the context manager protocol\n",
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        }
+      }
+    },
+    {
+      "case": "mixed-ltr",
+      "source": "Invoice 123: العربية / שלום (45) café é",
+      "actual_text": "Invoice 123: العربية / שלום (45) café é",
+      "logical_actual_text_exact": true,
+      "embedded_advances_verified": 3,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "Invoice 123: العربية / שלום (45) café é\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": {},
+          "raw_words": null
+        },
+        "Poppler": {
+          "extracted": "Invoice 123: ‫ ةيبرعلا‬/ ‫( םולש‬45) café é\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": [
+            {
+              "text": "Invoice 123: العربية / שלום (45) café é",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "30.000000",
+                "xMax": "310.060096",
+                "yMax": "70.500000"
+              }
+            }
+          ]
+        },
+        "pypdf": {
+          "extracted": "Invoice 123: العربية / שלום (45) café é",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        },
+        "PDFium": {
+          "extracted": null,
+          "logical_text_exact": null,
+          "exit_code": 1,
+          "status": "failed",
+          "error": "Traceback (most recent call last):\n  File \"/home/runner/work/CrispEmbed/CrispEmbed/tests/ocr_render_reader_probe.py\", line 61, in main\n    with document[0] as page, page.get_textpage() as text:\nTypeError: 'PdfPage' object does not support the context manager protocol\n",
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        }
+      }
+    },
+    {
+      "case": "mixed-rtl",
+      "source": "العربية 123 ABC",
+      "actual_text": "العربية 123 ABC",
+      "logical_actual_text_exact": true,
+      "embedded_advances_verified": 4,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "العربية 123\n \nABC\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": {
+            "العربية": [
+              [
+                150.0,
+                30.0,
+                309.8399963378906,
+                60.0
+              ]
+            ],
+            "ABC": [
+              [
+                10.0,
+                30.0,
+                70.0,
+                60.0
+              ]
+            ]
+          },
+          "raw_words": null
+        },
+        "Poppler": {
+          "extracted": "‫ ةيبرعلا‬\n123\nABC\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": [
+            {
+              "text": "العربية ",
+              "bounds": {
+                "xMin": "150.000000",
+                "yMin": "30.000000",
+                "xMax": "309.843750",
+                "yMax": "70.500000"
+              }
+            },
+            {
+              "text": "123",
+              "bounds": {
+                "xMin": "90.000000",
+                "yMin": "30.000000",
+                "xMax": "150.000000",
+                "yMax": "70.500000"
+              }
+            },
+            {
+              "text": "ABC",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "30.000000",
+                "xMax": "70.000000",
+                "yMax": "70.500000"
+              }
+            }
+          ]
+        },
+        "pypdf": {
+          "extracted": "العربية 123 ABC",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        },
+        "PDFium": {
+          "extracted": null,
+          "logical_text_exact": null,
+          "exit_code": 1,
+          "status": "failed",
+          "error": "Traceback (most recent call last):\n  File \"/home/runner/work/CrispEmbed/CrispEmbed/tests/ocr_render_reader_probe.py\", line 61, in main\n    with document[0] as page, page.get_textpage() as text:\nTypeError: 'PdfPage' object does not support the context manager protocol\n",
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        }
+      }
+    },
+    {
+      "case": "multiline",
+      "source": "العربية 123\nשלום ABC\r\nMixed العربية סיום Final ABC",
+      "actual_text": "العربية 123\nשלום ABC\r\nMixed العربية סיום Final ABC",
+      "logical_actual_text_exact": true,
+      "embedded_advances_verified": 12,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "العربية 123\n\nשלום ABC\n\r\nMixed العربية \nסיום \nFinal ABC\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": {},
+          "raw_words": null
+        },
+        "Poppler": {
+          "extracted": "‫ ةيبرعلا‬\n123\n‫ םולש‬\nABC\n\r\n\nMixed ‫ةيبرعلا‬\n‫םויס‬\nFinal ABC\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": [
+            {
+              "text": "العربية ",
+              "bounds": {
+                "xMin": "91.818182",
+                "yMin": "30.000000",
+                "xMax": "310.068182",
+                "yMax": "51.600000"
+              }
+            },
+            {
+              "text": "123",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "30.000000",
+                "xMax": "91.750000",
+                "yMax": "51.600000"
+              }
+            },
+            {
+              "text": "שלום ",
+              "bounds": {
+                "xMin": "122.500000",
+                "yMin": "46.000000",
+                "xMax": "310.000000",
+                "yMax": "67.600000"
+              }
+            },
+            {
+              "text": "ABC",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "46.000000",
+                "xMax": "122.500000",
+                "yMax": "67.600000"
+              }
+            },
+            {
+              "text": "\n",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "46.000000",
+                "xMax": "10.000000",
+                "yMax": "67.600000"
+              }
+            },
+            {
+              "text": "Mixed العربية",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "62.000000",
+                "xMax": "309.961538",
+                "yMax": "83.600000"
+              }
+            },
+            {
+              "text": "סיום",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "78.000000",
+                "xMax": "310.000000",
+                "yMax": "99.600000"
+              }
+            },
+            {
+              "text": "Final ABC",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "94.000000",
+                "xMax": "310.000000",
+                "yMax": "115.600000"
+              }
+            }
+          ]
+        },
+        "pypdf": {
+          "extracted": "العربية 123\nשלום ABC\r\nMixed العربية \nסיום \nFinal ABC",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        },
+        "PDFium": {
+          "extracted": null,
+          "logical_text_exact": null,
+          "exit_code": 1,
+          "status": "failed",
+          "error": "Traceback (most recent call last):\n  File \"/home/runner/work/CrispEmbed/CrispEmbed/tests/ocr_render_reader_probe.py\", line 61, in main\n    with document[0] as page, page.get_textpage() as text:\nTypeError: 'PdfPage' object does not support the context manager protocol\n",
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        }
+      }
+    },
+    {
+      "case": "override",
+      "source": "‮ABCD‬ 123",
+      "actual_text": "‮ABCD‬ 123",
+      "logical_actual_text_exact": true,
+      "embedded_advances_verified": 2,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "‮ABCD‬ 123\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": {},
+          "raw_words": null
+        },
+        "Poppler": {
+          "extracted": "‫‮‬ABCD‬ 123\n\f",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": [
+            {
+              "text": "‮",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "30.000000",
+                "xMax": "10.000000",
+                "yMax": "70.500000"
+              }
+            },
+            {
+              "text": "ABCD‬ 123",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "30.000000",
+                "xMax": "310.000000",
+                "yMax": "70.500000"
+              }
+            }
+          ]
+        },
+        "pypdf": {
+          "extracted": "‮ABCD‬ 123",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        },
+        "PDFium": {
+          "extracted": null,
+          "logical_text_exact": null,
+          "exit_code": 1,
+          "status": "failed",
+          "error": "Traceback (most recent call last):\n  File \"/home/runner/work/CrispEmbed/CrispEmbed/tests/ocr_render_reader_probe.py\", line 61, in main\n    with document[0] as page, page.get_textpage() as text:\nTypeError: 'PdfPage' object does not support the context manager protocol\n",
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        }
+      }
+    },
+    {
+      "case": "supplementary",
+      "source": "𞤀𞤢 123 ABC",
+      "actual_text": "𞤀𞤢 123 ABC",
+      "logical_actual_text_exact": true,
+      "embedded_advances_verified": 4,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "𞤀𞤢 123\n \nABC\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": {},
+          "raw_words": null
+        },
+        "Poppler": {
+          "extracted": "𞤀𞤢 \n123\nABC\n\f",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": [
+            {
+              "text": "𞤀𞤢 ",
+              "bounds": {
+                "xMin": "220.000000",
+                "yMin": "30.000000",
+                "xMax": "310.000000",
+                "yMax": "70.500000"
+              }
+            },
+            {
+              "text": "123",
+              "bounds": {
+                "xMin": "130.000000",
+                "yMin": "30.000000",
+                "xMax": "220.000000",
+                "yMax": "70.500000"
+              }
+            },
+            {
+              "text": "ABC",
+              "bounds": {
+                "xMin": "10.000000",
+                "yMin": "30.000000",
+                "xMax": "100.000000",
+                "yMax": "70.500000"
+              }
+            }
+          ]
+        },
+        "pypdf": {
+          "extracted": "𞤀𞤢 123 ABC",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "error": null,
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        },
+        "PDFium": {
+          "extracted": null,
+          "logical_text_exact": null,
+          "exit_code": 1,
+          "status": "failed",
+          "error": "Traceback (most recent call last):\n  File \"/home/runner/work/CrispEmbed/CrispEmbed/tests/ocr_render_reader_probe.py\", line 61, in main\n    with document[0] as page, page.get_textpage() as text:\nTypeError: 'PdfPage' object does not support the context manager protocol\n",
+          "parsing_warnings": "",
+          "search": null,
+          "raw_words": null
+        }
+      }
+    }
+  ],
+  "qualification": {
+    "archival": "All 16 positive PDF/A-2b cases passed independent validation; both damaged controls rejected.",
+    "unicode": "ActualText exact in 11/11; pypdf exact in 11/11; MuPDF exact in 9/11, with artificial line breaks at mapping boundaries.",
+    "poppler": "Strict CLI exact in 2/11. Raw word text and coordinates retained separately; they do not replace the CLI gate.",
+    "pdfium": "Not exercised: the test harness incorrectly used PdfPage as a context manager and failed before extraction.",
+    "metrics": "fontTools decoded and verified all 11 embedded metric fonts, CID advances, outline bounds and whole-font checksums.",
+    "scope": "No universal copy/search or mobile peak-memory qualification."
+  },
+  "followup": [
+    "Close PDFium page/text/search handles explicitly, then retain actual extraction/search results.",
+    "Record MuPDF glyph traces for the two remaining mapping-boundary failures.",
+    "Keep the per-character alternative on its isolated test-only branch."
+  ]
+}

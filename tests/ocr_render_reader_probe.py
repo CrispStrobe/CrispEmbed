@@ -35,11 +35,14 @@ def main():
         progress("open")
         if options.engine == "PyMuPDF":
             import fitz
+            record["versions"] = {"pymupdf": fitz.VersionBind, "mupdf": fitz.VersionFitz}
             with fitz.open(options.pdf) as document:
                 record["repaired"] = document.is_repaired
                 record["pages"] = len(document)
                 progress("extract_text")
                 record["extracted"] = document[0].get_text()
+                progress("text_geometry")
+                record["glyph_trace"] = document[0].get_texttrace()
                 record["search"] = {}
                 for query in options.search:
                     progress("search:" + query)
@@ -58,17 +61,27 @@ def main():
             import pypdfium2 as pdfium
             with pdfium.PdfDocument(options.pdf) as document:
                 record["pages"] = len(document)
-                with document[0] as page, page.get_textpage() as text:
-                    progress("extract_text")
-                    # GetText is UCS-2-limited; the bounded API preserves
-                    # supplementary Unicode and exposes PDFium's actual text.
-                    record["extracted"] = text.get_text_bounded(errors="strict")
-                    record["search"] = {}
-                    for query in options.search:
-                        progress("search:" + query)
-                        with text.search(query) as search:
-                            match = search.get_next()
-                            record["search"][query] = list(match) if match else []
+                page = document[0]
+                try:
+                    text = page.get_textpage()
+                    try:
+                        progress("extract_text")
+                        # GetText is UCS-2-limited; the bounded API preserves
+                        # supplementary Unicode and exposes PDFium's actual text.
+                        record["extracted"] = text.get_text_bounded(errors="strict")
+                        record["search"] = {}
+                        for query in options.search:
+                            progress("search:" + query)
+                            search = text.search(query)
+                            try:
+                                match = search.get_next()
+                                record["search"][query] = list(match) if match else []
+                            finally:
+                                search.close()
+                    finally:
+                        text.close()
+                finally:
+                    page.close()
         else:
             progress("extract_text")
             result = subprocess.run(["pdftotext", "-raw", "-enc", "UTF-8", str(options.pdf), "-"],
