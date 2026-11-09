@@ -230,6 +230,9 @@ switches are listed at the end of the inventory.
 `CRISPEMBED_PIXELHACKER` gate the experimental inpainting engines;
 `CRISPEMBED_INPAINT_*` and `CRISPEMBED_MIGAN_*` select graph/GPU/quantized
 kernels. See [inpainting-engines.md](inpainting-engines.md).
+`CRISPEMBED_INPAINT_TEXT_MASK_SCORE_UNDILATED` (default on, `=0` opts out) scores
+`--mask-from-text` DBNet components over thresholded pixels only, so thin subtitle
+lines are not lost to the dilation ring; see [inpainting-cli.md](inpainting-cli.md).
 
 ## Full inventory
 
@@ -237,7 +240,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-431 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+432 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -248,6 +251,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_ALLOW_UNPINNED_MODEL` | value | unset | path | tuning / config | `examples/cli/model_mgr.cpp` |  |
 | `CRISPEMBED_CACHE_DIR` | set/value | unset | path | tuning / config | `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp` | else |
 | `CRISPEMBED_INPAINT_STREAM` | on | off | bool | default-off experimental / opt-in | `examples/cli/inpaint_cli.cpp` |  |
+| `CRISPEMBED_INPAINT_TEXT_MASK_SCORE_UNDILATED` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `examples/cli/inpaint_cli.cpp` | one-pixel dilation ring and drop out of the mask (issue 71 owner review, still-street-dbnet). =0 restores the shared OCR scoring. |
 | `CRISPEMBED_LAYOUT_REPEAT` | value | unset | int | tuning / config | `examples/cli/main.cpp` |  |
 | `CRISPEMBED_LIB` | value | unset | path | tuning / config | `examples/demo/demo.py`, `examples/face_verify.py` |  |
 | `CRISPEMBED_MODEL` | value | unset | path | tuning / config | `examples/demo/demo.py`, `examples/demo/demo.rs` |  |

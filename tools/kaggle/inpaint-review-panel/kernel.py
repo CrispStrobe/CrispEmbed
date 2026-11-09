@@ -148,6 +148,15 @@ def main():
         finally:
             live.LINES = saved
 
+    def line_masks(sel):
+        rows, out, start = sel.any(axis=1), [], None
+        for y, on in enumerate(list(rows) + [False]):
+            if on and start is None:
+                start = y
+            elif not on and start is not None:
+                band = np.zeros_like(sel); band[start:y] = sel[start:y]; out.append(band); start = None
+        return out
+
     def thumb(img, name):
         img.save(f"{OUT}/thumbs/{name}.jpg", "JPEG", quality=85)
 
@@ -176,18 +185,21 @@ def main():
         sel = mk > 0
         case = {"id": cid, "photo": photo, "pan_dx": dx, "clip": clip, "mask": kind, "subtitle": lines,
                 "masked_pixels": int(sel.sum()), "outputs": {}}
-        for v in variants:
+        # DBNet case: also the legacy text-mask scoring (gate =0) as the before column.
+        for v in variants + (["512-F32-legacy-mask"] if kind == "dbnet" else []):
             if v == "256-F32":
                 if not m256:
                     case["outputs"][v] = {"error": "model unavailable"}; continue
                 eargs, env = ["--inpaint-model", m256], dict(os.environ, CRISPEMBED_MIGAN="1")
             else:
-                path, sha = models[v]
+                path, sha = models[v.replace("-legacy-mask", "")]
                 eargs = ["--inpaint-engine", "migan512", "--inpaint-model", path, "--inpaint-model-sha256", sha,
                          "--inpaint-checkpoint-sha256", CKPT512]
                 env = dict(os.environ, CRISPEMBED_MIGAN="1", CRISPEMBED_MIGAN512="1")
-                if not v.endswith("F32"):
+                if not v.startswith("512-F32"):
                     env["CRISPEMBED_INPAINT_QUANT"] = "1"
+                if v.endswith("-legacy-mask"):
+                    env["CRISPEMBED_INPAINT_TEXT_MASK_SCORE_UNDILATED"] = "0"
             margs = ["--mask", d + "/mask.png"] if kind == "exact" else \
                 ["--mask-from-text", "--mask-text-model", dbnet or "missing", "--mask-dilate", "6"]
             dest = f"{d}/{v}.png"
@@ -202,7 +214,13 @@ def main():
                 arrays[(cid, v)] = r
                 entry["vs_clean"] = live.scores(r, c, mk)
                 entry["outside_exact"] = bool(np.array_equal(r[~sel], s_[~sel])) if kind == "exact" else None
-                if v.startswith("512-") and v != "512-F32" and (cid, "512-F32") in arrays:
+                # Applied mask = pixels the engine changed (unmasked bytes are kept
+                # exactly), reported as coverage of each exact subtitle line.
+                changed = np.any(r != s_, axis=2)
+                entry["applied_mask"] = {"changed_px": int(changed.sum()),
+                                         "line_coverage": [round(float(changed[ln].sum()) / max(1, int(ln.sum())), 4)
+                                                           for ln in line_masks(sel)]}
+                if v[4:] in BARS and (cid, "512-F32") in arrays:
                     a = live.agreement(r, arrays[(cid, "512-F32")], mk)
                     a["bar"] = BARS[v[4:]]
                     a["below_bar"] = a["rgb_cosine"] is not None and a["rgb_cosine"] <= BARS[v[4:]]

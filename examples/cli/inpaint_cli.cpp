@@ -542,9 +542,12 @@ bool make_mask(const options & opt, const frame & item, const uint8_t * rgb, ocr
     mask.assign(size_t(item.width) * item.height, 0);
     if (opt.from_text) {
         std::vector<ocr_detect::text_box> boxes;
-        if (!ocr_detect::detect_rgb_checked(detector, rgb, item.width, item.height, 3, ocr_detect::rapid_defaults(),
-                                            boxes, error))
-            return false;
+        ocr_detect::detect_options det = ocr_detect::rapid_defaults();
+        // Thin subtitle lines otherwise lose their score to the detector's
+        // one-pixel dilation ring and drop out of the mask (issue 71 owner
+        // review, still-street-dbnet). =0 restores the shared OCR scoring.
+        det.score_undilated = !core_env::explicitly_off("CRISPEMBED_INPAINT_TEXT_MASK_SCORE_UNDILATED");
+        if (!ocr_detect::detect_rgb_checked(detector, rgb, item.width, item.height, 3, det, boxes, error)) return false;
         for (const auto & box : boxes)
             if (!rasterize(box, item.width, item.height, mask, error)) return false;
     } else {
