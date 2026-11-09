@@ -11,6 +11,7 @@ import ctypes as C
 from io import BytesIO
 import json
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import unittest
@@ -325,6 +326,8 @@ class ArtifactTests(unittest.TestCase):
             ("isolate", "Report \u2067العربية 123\u2069: ABC"),
             ("override", "\u202eABCD\u202c 123"),
             ("supplementary", "\U0001e900\U0001e922 123 ABC"),
+            ("mapping-boundary", "א" * 180 + " " + "\U0001e900" * 100),
+            ("combining-boundary", "מ" + "\u05b7" * 270 + " 123 ABC"),
         ]
         controls = dict.fromkeys([0x061c, 0x200e, 0x200f, *range(0x202a, 0x202f), *range(0x2066, 0x206a)])
         def normal(text):
@@ -332,7 +335,7 @@ class ArtifactTests(unittest.TestCase):
         for name, text in cases:
             with self.subTest(text=name):
                 path = self.render("bidi-" + name + ".pdf", [{"image": self.root / "rgb.png",
-                    "regions": [(text, 10, 30, 300, 30)]}], pdfa=True, bidi=True)
+                    "regions": [(text, 10, 30, 300, 1 if name.endswith("boundary") else 30)]}], pdfa=True, bidi=True)
                 reader, document = self.read_pdf(path)
                 extracted = {"PyMuPDF": document[0].get_text(), "Poppler": self.poppler_text(path),
                              "pypdf": reader.pages[0].extract_text()}
@@ -344,8 +347,22 @@ class ArtifactTests(unittest.TestCase):
                     json.dumps(record, ensure_ascii=False, indent=2))
                 self.receipt["tests"].append(record)
                 self.assertEqual(logical, text, "Logical source text changed in the PDF content")
+                mappings = []
+                for font in reader.pages[0]["/Resources"]["/Font"].values():
+                    cmap = font.get_object()["/ToUnicode"].get_data()
+                    mappings += re.findall(rb"<[0-9A-F]+>\s*<([0-9A-F]+)>", cmap)
+                self.assertTrue(all(len(value) // 2 <= 512 for value in mappings), "ToUnicode exceeds ISO string limit")
                 for engine, actual in extracted.items():
                     self.assertEqual(normal(actual), normal(text), engine + " changed logical reading order")
+                # pypdf currently ignores ActualText and recognizes only a
+                # subset of RTL scripts. Verify the complete Unicode fallback
+                # separately, with the replacement-text property removed.
+                if name in ("marks", "supplementary", "mapping-boundary", "combining-boundary"):
+                    fallback = path.read_bytes().replace(b"/ActualText", b"/StoredText")
+                    fallback_path = self.root / ("fallback-" + name + ".pdf")
+                    fallback_path.write_bytes(fallback)
+                    self.assertEqual(normal(PdfReader(BytesIO(fallback), strict=True).pages[0].extract_text()),
+                                     normal(text), "ToUnicode fallback lost logical Unicode")
                 # The selectable Arabic run belongs to the right side of an
                 # RTL paragraph, while its trailing Latin run belongs left.
                 if name == "mixed-rtl":

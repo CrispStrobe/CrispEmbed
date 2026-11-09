@@ -24,8 +24,14 @@ these options and use the binary-safe length/byte APIs.
 The pinned [SheenBidi source](../vendor/sheenbidi/UPSTREAM.md) resolves Unicode
 paragraph levels before estimated wrapping, including embeddings, overrides,
 isolates, brackets, Arabic/Hebrew, mixed Latin text and numeric runs. Combining
-marks share their base's selection cell. Each run has logical UTF-16
-`ActualText` and an independently positioned visual glyph stream; the visible
+marks share their base's selection cell. Each run fragment has logical UTF-16
+`ActualText` and the same complete logical sequence in its `ToUnicode` mapping.
+It uses one invisible metric glyph per fragment, as PDF permits for ligatures,
+at the run's independently resolved visual rectangle. This avoids depending on
+an extractor's incomplete or older Unicode reversal rules. Mapping fragments
+respect the 512-byte UTF-16BE limit in
+[ISO 32000-1 section 9.10.3](https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf),
+including supplementary pairs and combining clusters at that boundary. The visible
 page is always the original supplied raster. Selection geometry remains an
 estimate within the supplied OCR region: the renderer does not recover fonts,
 typography or character boxes that were not supplied by recognition.
@@ -56,6 +62,14 @@ image equality, page count and physical sizes, font subset boundaries, long
 corrections, supplementary Unicode, search geometry and mixed-direction text.
 Every bidi fixture retains its source, `ActualText`, all extracted strings and
 the complete PDF even when an assertion fails.
+
+The reader follow-up branch also retains an intermediate fix for redundant
+font selection: some extractors flush a directional text buffer on every `Tf`
+operator even when the font is unchanged. The final run-fragment encoding
+avoids per-character font selections entirely and tests the `ToUnicode`
+fallback with `ActualText` removed from marked/supplementary samples. Initial
+baseline and follow-up source refs remain separate for independent comparison;
+no pending reader result is described as a pass.
 
 The workflow installs **veraPDF 1.30.2** from the official release archive with
 a pinned SHA-256, then explicitly validates **2b**. The XML report is checked

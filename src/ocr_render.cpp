@@ -37,11 +37,21 @@ unsigned char * stbi_zlib_compress(unsigned char * data, int data_len, int * out
 // Renderer state
 // ---------------------------------------------------------------------------
 
+// A logical run fragment with its estimated visual selection rectangle. One
+// invisible metric glyph maps to the complete Unicode sequence, like a PDF
+// ligature. Readers do not need their own Unicode-version-dependent reversal.
+struct pdf_text_span {
+    std::vector<uint32_t> text;
+    uint32_t character;
+    double x, y, width, height;
+};
+
 // Stored page data (for PDF which needs all pages at end)
 struct stored_word {
     std::string text;
     int x, y, w, h;
     float confidence;
+    std::vector<pdf_text_span> pdf_spans;
 };
 struct stored_line {
     std::vector<stored_word> words;
@@ -460,7 +470,7 @@ static void pdf_add_page(ocr_renderer * r, const ocr_render_page * page) {
         sl.h = line->h;
         for (int j = 0; j < line->n_words; j++) {
             const ocr_render_word * w = &line->words[j];
-            sl.words.push_back({ w->text ? w->text : "", w->x, w->y, w->w, w->h, w->confidence });
+            sl.words.push_back({ w->text ? w->text : "", w->x, w->y, w->w, w->h, w->confidence, {} });
         }
         sp.lines.push_back(std::move(sl));
     }
@@ -468,7 +478,8 @@ static void pdf_add_page(ocr_renderer * r, const ocr_render_page * page) {
     r->page_count++;
 }
 
-static std::vector<int> pdf_fonts(pdf_document & doc, const std::map<uint32_t, size_t> & characters) {
+static std::vector<int> pdf_fonts(pdf_document & doc, const std::map<uint32_t, size_t> & characters,
+                                  const std::map<uint32_t, std::vector<uint32_t>> & sequences) {
     if (characters.empty()) return {};
     const int font_file =
         doc.hex_stream(std::string(reinterpret_cast<const char *>(ocr_pdf_font), sizeof(ocr_pdf_font)),
@@ -495,7 +506,19 @@ static std::vector<int> pdf_fonts(pdf_document & doc, const std::map<uint32_t, s
                 cmap += '<';
                 hex16(cmap, pdf_cid(i));
                 cmap += "> <";
-                utf16_hex(cmap, subset[i]);
+                const auto sequence = sequences.find(subset[i]);
+                if (sequence == sequences.end()) {
+                    utf16_hex(cmap, subset[i]);
+                } else {
+                    // ISO 32000-1, 9.10.3: each ToUnicode destination string
+                    // is limited to 512 bytes of UTF-16BE (no leading BOM).
+                    size_t units = 0;
+                    for (const uint32_t cp : sequence->second) {
+                        units += cp <= 0xffff ? 1 : 2;
+                        utf16_hex(cmap, cp);
+                    }
+                    if (units > 256) throw std::runtime_error("PDF Unicode mapping exceeds 512 bytes");
+                }
                 cmap += ">\n";
             }
             cmap += "endbfchar\n";
@@ -630,8 +653,11 @@ static bool pdf_combining_mark(uint32_t cp) {
     return SBGeneralCategoryIsMark(SBCodepointGetGeneralCategory(cp));
 }
 
-static void pdf_bidi_word(std::string & content, const stored_word & word, int page_height,
-                          const std::map<uint32_t, size_t> & characters, bool trailing_space) {
+static void prepare_pdf_bidi_word(stored_word & word, int page_height, bool trailing_space,
+                                  std::map<uint32_t, size_t> & characters,
+                                  std::map<uint32_t, std::vector<uint32_t>> & sequences,
+                                  std::map<std::vector<uint32_t>, uint32_t> & sequence_codes) {
+    word.pdf_spans.clear();
     auto text = unicode_scalars(word.text.c_str());
     if (text.empty()) return;
     if (trailing_space && text.back() != ' ') text.push_back(' ');
@@ -726,35 +752,70 @@ static void pdf_bidi_word(std::string & content, const stored_word & word, int p
         }
         const double advance = double(word.w) / double(cells);
         const double y = double(page_height) - word.y - (row_index + 1) * height;
-        // Store runs in logical reading order, with independently resolved
-        // visual positions. Per-run ActualText supports accurate run selection;
-        // the glyph stream is in visual order for older untagged PDF readers.
+        // Store logical text in both ActualText and the ToUnicode fallback.
+        // Visual run placement comes from UAX #9, not a reader's incomplete
+        // script table. A run fragment is one invisible metric glyph, whose
+        // Unicode mapping is the full logical sequence (as for a ligature).
         std::sort(runs.begin(), runs.end(),
                   [](const visual_run & a, const visual_run & b) { return a.start < b.start; });
         for (const auto & run : runs) {
-            const std::vector<uint32_t> logical(text.begin() + run.start, text.begin() + run.end);
-            content += "/Span << /ActualText " + pdf_unicode_string(logical) + " >> BDC\nBT\n3 Tr\n";
-            size_t current_font = std::numeric_limits<size_t>::max();
-            for (size_t cell = 0; cell < run.clusters.size(); cell++) {
-                for (const auto index : run.clusters[cell]) {
-                    const size_t character = characters.at(text[index]) - 1;
-                    const size_t font = character / pdf_cids_per_font;
-                    // Readers can flush their directional text buffer on Tf,
-                    // even when the selected font does not change. Preserve a
-                    // buffered run instead of selecting its font per glyph.
-                    if (font != current_font) {
-                        content += "/F" + std::to_string(font + 1) + " 1 Tf\n";
-                        current_font = font;
-                    }
-                    std::string encoded = "<";
-                    hex16(encoded, pdf_cid(character % pdf_cids_per_font));
-                    content += decimal(advance) + " 0 0 " + decimal(height) + " " +
-                               decimal(word.x + (run.cell + cell) * advance) + " " + decimal(y) + " Tm\n" + encoded +
-                               "> Tj\n";
+            for (size_t start = run.start; start < run.end;) {
+                size_t end = start, units = 0;
+                while (end < run.end && units + (text[end] <= 0xffff ? 1 : 2) <= 256) {
+                    units += text[end] <= 0xffff ? 1 : 2;
+                    end++;
                 }
+                // Prefer a complete base/mark cluster at the mapping limit.
+                // Pathological >512-byte clusters still retain every scalar
+                // in successive fragments at the same selection cell.
+                if (end < run.end && pdf_combining_mark(text[end])) {
+                    size_t boundary = end;
+                    while (boundary > start && pdf_combining_mark(text[boundary])) boundary--;
+                    if (boundary > start) end = boundary;
+                }
+                std::vector<uint32_t> logical(text.begin() + start, text.begin() + end);
+                uint32_t code = logical.front();
+                if (logical.size() > 1) {
+                    auto found = sequence_codes.find(logical);
+                    if (found == sequence_codes.end()) {
+                        if (sequence_codes.size() >= std::numeric_limits<uint32_t>::max() - 0x110000u)
+                            throw std::runtime_error("PDF has too many Unicode sequences");
+                        code = 0x110000u + uint32_t(sequence_codes.size());
+                        sequence_codes.emplace(logical, code);
+                        sequences.emplace(code, logical);
+                        characters.emplace(code, 0);
+                    } else
+                        code = found->second;
+                }
+                size_t first = cells, last = 0;
+                bool placed = false;
+                for (size_t cell = 0; cell < run.clusters.size(); cell++) {
+                    for (const size_t index : run.clusters[cell]) {
+                        if (index >= start && index < end) {
+                            first = std::min(first, run.cell + cell);
+                            last = std::max(last, run.cell + cell);
+                            placed = true;
+                        }
+                    }
+                }
+                const double x = word.x + (placed ? first : std::min(run.cell, cells - 1)) * advance;
+                const double width = placed ? (last - first + 1) * advance : std::min(0.01, advance);
+                word.pdf_spans.push_back({ std::move(logical), code, x, y, width, height });
+                start = end;
             }
-            content += "ET\nEMC\n";
         }
+    }
+}
+
+static void pdf_bidi_word(std::string & content, const stored_word & word,
+                          const std::map<uint32_t, size_t> & characters) {
+    for (const auto & span : word.pdf_spans) {
+        const size_t character = characters.at(span.character) - 1;
+        content += "/Span << /ActualText " + pdf_unicode_string(span.text) + " >> BDC\nBT\n3 Tr\n";
+        content += "/F" + std::to_string(character / pdf_cids_per_font + 1) + " 1 Tf\n" + decimal(span.width) +
+                   " 0 0 " + decimal(span.height) + " " + decimal(span.x) + " " + decimal(span.y) + " Tm\n<";
+        hex16(content, pdf_cid(character % pdf_cids_per_font));
+        content += "> Tj\nET\nEMC\n";
     }
 }
 
@@ -799,20 +860,27 @@ static void pdf_end(ocr_renderer * r) {
     const int catalog = doc.reserve();
     const int pages = doc.reserve();
     std::map<uint32_t, size_t> characters;
+    std::map<uint32_t, std::vector<uint32_t>> sequences;
+    std::map<std::vector<uint32_t>, uint32_t> sequence_codes;
     characters.emplace(' ', 0);
-    for (const auto & page : r->pages)
-        for (const auto & line : page.lines)
-            for (const auto & word : line.words)
-                for (uint32_t cp : unicode_scalars(word.text.c_str())) {
-                    if (!r->pdf_bidi && needs_bidirectional_layout(cp))
-                        throw std::runtime_error("Searchable PDF for right-to-left scripts or directional controls "
-                                                 "requires a verified bidirectional layout engine; export hOCR, ALTO "
-                                                 "or text to preserve the reviewed Unicode text");
-                    characters.emplace(cp, 0);
-                }
+    for (auto & page : r->pages)
+        for (auto & line : page.lines)
+            for (size_t i = 0; i < line.words.size(); i++) {
+                auto & word = line.words[i];
+                const auto scalars = unicode_scalars(word.text.c_str());
+                const bool bidi = std::any_of(scalars.begin(), scalars.end(), needs_bidirectional_layout);
+                if (!r->pdf_bidi && bidi)
+                    throw std::runtime_error("Searchable PDF for right-to-left scripts or directional controls "
+                                             "requires a verified bidirectional layout engine; export hOCR, ALTO "
+                                             "or text to preserve the reviewed Unicode text");
+                for (const uint32_t cp : scalars) characters.emplace(cp, 0);
+                if (bidi)
+                    prepare_pdf_bidi_word(word, page.height, i + 1 < line.words.size(), characters, sequences,
+                                          sequence_codes);
+            }
     size_t next_character = 1;
     for (auto & entry : characters) entry.second = next_character++;
-    const auto fonts = pdf_fonts(doc, characters);
+    const auto fonts = pdf_fonts(doc, characters, sequences);
     std::string font_resources = " /Font <<";
     for (size_t f = 0; f < fonts.size(); f++) font_resources += " /F" + std::to_string(f + 1) + " " + pdf_ref(fonts[f]);
     font_resources += " >>";
@@ -826,9 +894,8 @@ static void pdf_end(ocr_renderer * r) {
                 "q\n" + std::to_string(page.width) + " 0 0 " + std::to_string(page.height) + " 0 0 cm\n/Im1 Do\nQ\n";
         for (const auto & line : page.lines)
             for (size_t i = 0; i < line.words.size(); i++) {
-                const auto scalars = unicode_scalars(line.words[i].text.c_str());
-                if (r->pdf_bidi && std::any_of(scalars.begin(), scalars.end(), needs_bidirectional_layout))
-                    pdf_bidi_word(content, line.words[i], page.height, characters, i + 1 < line.words.size());
+                if (!line.words[i].pdf_spans.empty())
+                    pdf_bidi_word(content, line.words[i], characters);
                 else
                     pdf_word(content, line.words[i], page.height, characters, i + 1 < line.words.size());
             }

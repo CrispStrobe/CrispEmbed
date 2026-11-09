@@ -41,8 +41,8 @@ def main():
     reports.mkdir(exist_ok=True)
     candidates = sorted(root.glob("archival-*.pdf")) + sorted(root.glob("bidi-*.pdf"))
     candidates = [path for path in candidates if not path.name.startswith("archival-control-")]
-    if len(candidates) < 13:
-        raise AssertionError(f"Expected all 13 archival image/text/bidi cases, got {len(candidates)}")
+    if len(candidates) < 15:
+        raise AssertionError(f"Expected all 15 archival image/text/bidi cases, got {len(candidates)}")
     receipt = {"validator": subprocess.check_output([options.verapdf, "--version"], text=True).strip(),
                "profile": "2b", "positive": [], "negative": []}
     try:
