@@ -1,10 +1,18 @@
 ## Reviewed PDF export qualification (9 November 2026)
 
-The explicit bidi and PDF/A-2b paths have source-level guards and an independent
-hosted artifact lane. Initial runtime, extraction and conformance measurements
-are pending; no performance or archival-validation result is inferred from
-metadata presence. Source image preservation and logical Unicode extraction
-are distinct gates. Selection geometry is estimated within OCR regions rather
+At the [initial baseline](tests/results/ocr-render/baseline-87357610.json), five
+two-page archival cases (RGB, grayscale, alpha, JPEG, text-only) retain zero pixel
+difference against standard export, and all 51 native checks pass. The first two
+RTL cases fail all three independent extractors; the third crashes an in-process
+reader. No conformance result exists for that source because its missing-case
+precondition stopped before veraPDF. Corrected logical mapping, isolated-reader
+and independent conformance gates remain pending.
+
+Whole-document ceilings of 5,000 pages, 128 MiB output and 16 MiB input
+text/geometry bound accumulation. They are not measured native throughput or
+peak-memory results; a source image's separate decode/compression buffers still
+contribute to peak memory. Workspace history scaling does not qualify PDF
+export scaling. Selection geometry remains estimated within OCR regions rather
 than recovered typography. See [the protocol](docs/ocr-reviewed-pdf.md).
 
 ## Explicit phone-photo API (9 November 2026, hosted synthetic CPU panel)

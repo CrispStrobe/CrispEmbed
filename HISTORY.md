@@ -4,6 +4,15 @@ for final verdicts, live jobs and remaining tasks.
 
 ## 9 November 2026 — reviewed PDF export implementation checkpoint
 
+The initial [87357610 baseline](tests/results/ocr-render/baseline-87357610.json)
+passed 51 native checks and all five two-page archival pixel/text-preservation
+cases. Arabic and Hebrew extraction reversed in all three readers; a mixed-text
+reader crash stopped the remaining cases. The old validator's missing-input
+precondition prevented all conformance validation, so no PDF/A pass follows.
+The corrected reader branch preserves logical run mappings and isolates reader
+processes. A separate limits checkpoint adds whole-document ceilings and
+progressive buffer release without cancelling that pending reader run.
+
 The isolated `feat/ocr-reviewed-pdf-conformance` lane adds an explicit native
 and Rust Unicode bidi option and PDF/A-2b resources to reviewed exports. The
 existing image/text renderer and compatibility default remain available for

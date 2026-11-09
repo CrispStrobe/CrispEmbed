@@ -82,7 +82,12 @@ rejecting path available; PDF/A remains an explicit export request.
 
 Implemented source: pinned Apache-2.0 SheenBidi, embedded generated sRGB output
 intent, synchronized XMP, PDF file IDs, native/Rust options, and independent
-artifact/negative-control gates. Initial hosted verification is pending.
+artifact/negative-control gates. The original `87357610` run failed extraction
+and crashed before conformance validation; its [exact receipt](tests/results/ocr-render/baseline-87357610.json)
+is preserved. `feat/ocr-reviewed-pdf-readers` isolates the corrected reader
+checks; `feat/ocr-reviewed-pdf-limits` adds whole-document memory/page ceilings
+without moving the queued reader source. Final combined-source qualification
+is pending; limits are not a native scale-performance claim.
 Acceptance requires unchanged page pixels/sizes, logical mixed-direction copy
 and search, combining marks, independent veraPDF 2b compliance and deliberately
 invalid controls rejected. Exact extracted strings and validator failures are
