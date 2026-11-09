@@ -1,5 +1,17 @@
 # CrispEmbed plan — open work (updated 7 November 2026)
 
+## Windows document path boundary — 9 November 2026
+
+Owner lane: `feat/ocr-windows-unicode-paths`, based on frozen renderer candidate
+`2111db64d845b4ef6a374da2a2f69c202f1d1ce7`; main `e4ee7193` is already an ancestor.
+Enable the upstream Windows UTF-8 filename adapters in the actual production
+image loader/writer and their standalone OCR harness. This is a file-I/O boundary
+repair, preserving image math, inference defaults, releases and model aliases.
+The [Windows protocol](docs/ocr-windows-paths.md) executes production translation
+units, exact ASCII/Unicode pixel and patch comparisons, four independently read
+PDFs and a historical ANSI negative control. Hosted execution is pending; no
+native/model build is performed in the editing environment.
+
 ## Phone-photo geometry — 9 November 2026
 
 Owner lane: `feat/ocr-photo-preprocessing`, based on
