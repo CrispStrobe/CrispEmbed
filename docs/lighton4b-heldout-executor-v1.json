@@ -1,0 +1,69 @@
+{
+  "schema": "lighton4b-provisional-heldout-executor/v1",
+  "status": "source-preparation-controls-required",
+  "selection_protocol_sha256": "1a5cf84d5d83c22a041e774aaa00e682a28d302a2542ef02606e5dfa0ef3cd4b",
+  "cases": [
+    "historical-receipt",
+    "two-column-page",
+    "inventory-table"
+  ],
+  "arms": [
+    "upstream-off",
+    "upstream-on",
+    "native-composed",
+    "native-source-features"
+  ],
+  "cap": 1536,
+  "context": 2048,
+  "maximum_prompt_tokens": 512,
+  "maximum_image_tokens": 256,
+  "threads": 4,
+  "build_threads": 2,
+  "case_worker_seconds": 6000,
+  "arm_seconds": 1200,
+  "workers_max": 1,
+  "qualified": false,
+  "references_expert_adjudicated": false,
+  "normalization_policy": "crispembed-ocr-quality-v1",
+  "production_source": "696845d0562e0e96f403fce8d31c5b653767ac0c",
+  "upstream_source": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "driver_sha256": "912b5d0d34f13589e3848b419cfb51c3854acdbbe5f0380526d313c9c77cf879",
+  "native_preflight_sha256": "09b45d7195bd5832ac6e209b62eb4028ae7b4a39f1b558f53607480a2eaff5cf",
+  "source_preflight_sha256": "c416a1ba7628191715dc5bee2bd07d9fc170e0c1c58c56e5bf0e03abe02c0860",
+  "controls_receipt_sha256": "7b090c04f11cd48e27e49dd290fef1b5405bfbd058d658b6ee13e44e5315bc07",
+  "observed_form_receipt_sha256": "aec0d0b10befb5b3498b55a87f9cda785998242c0d9f49a4a1b3f72a92ed160b",
+  "expected_media_prompt": "<|im_start|>user\n<__media__><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "model_repo": "richardyoung/LightOnOCR-3-4B-GGUF",
+  "model_revision": "8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01",
+  "models": {
+    "Q4_K_M": {
+      "file": "LightOnOCR-3-4B-Q4_K_M.gguf",
+      "bytes": 2708804576,
+      "sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26"
+    }
+  },
+  "projector": {
+    "file": "mmproj-LightOnOCR-3-4B-F16.gguf",
+    "bytes": 672423200,
+    "sha256": "21eae623f60580f19ae4f04716292cd76ad36b420ee01e761254c8b1ec966321"
+  },
+  "base_model": {
+    "repository": "cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2",
+    "revision": "a7ec2e54103165a96b8bb6dc3478a2887edd7459",
+    "file": "lightonocr3-4b-q4_k-vision-f32.gguf",
+    "bytes": 4030957952,
+    "sha256": "f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91"
+  },
+  "input_seal": "Exact IDs, modalities, grid, positional bytes and template sealed exclusively before any held-out forward. No implicit resize/prompt/cap changes.",
+  "reference_limits": {
+    "gold_registry_sha256": "dd4ba6eff5922febe81c6ec71b6c70d1b0117d392e4ff3d581564a61caa82b4d",
+    "status": "Existing prior assistant visual transcription, no OCR output consulted, not expert-human adjudicated. Inventory literal source authored independently.",
+    "scorer": {
+      "tools/ocr_quality.py": "de93f01d26759e052e4c99c224b3184a39bdf3bbd11f768318c672ccad7fa0c5",
+      "tools/ci-heavy/qwen35_quant_calibration.py": "bf03b5a66fd6d42700eaf5e4dcc9a5705ea208df3e903c2187f576b7b45ebed6"
+    },
+    "policy": "crispembed-ocr-quality-v1; raw and parsed-content CER/WER; positional table-cell errors; no winner-tuned normalization"
+  },
+  "source_raw_scope": "Observer OFF retains full IDs/probabilities/text; observer ON retains all raw logits after complete neutrality. No claim of unobserved OFF raw-vocabulary bytes."
+}

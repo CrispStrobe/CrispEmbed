@@ -48,6 +48,11 @@ static int crispembed_test_main(int argc, char ** argv) {
         if (!f) return 8;
     }
     std::ofstream(out + "/rendered.txt") << rendered;
+    position_outputs positions;
+    if (!image_positions(mods, image.grid, 2, positions)) return 8;
+    std::ofstream position_file(out + "/prefill.positions.f32", std::ios::binary);
+    position_file.write(reinterpret_cast<const char *>(positions.axes.data()), positions.axes.size() * 4);
+    if (!position_file) return 8;
     std::cout << "NATIVE_CASE_PREFLIGHT payload_bytes=0 model_forward_calls=0 input_tokens=" << ids.size()
               << " patches=" << image.patches.size() / 1536 << "\n";
     return 0;
