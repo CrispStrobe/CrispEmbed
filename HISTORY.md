@@ -96,6 +96,43 @@ text-tensor ownership, not composed decoder, tokenizer, vision, vocabulary
 projection, decoded quality or publication qualification. Existing mapper and
 source closures remain unchanged.
 
+## 4–5 November 2026 — LightOn4B experimental conversion and readback
+
+The third Kaggle CPU attempt at source `94ad7bda378ac285f03fda28dcb97d29cb496418`
+completed the source/meta checks, pinned checkpoint conversion, Q8_0 and Q4_K
+quantization, complete tensor scans and independent empty-cache worker readback.
+The [public experimental model revision](https://huggingface.co/cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2/tree/a7ec2e54103165a96b8bb6dc3478a2887edd7459)
+contains all three files, license, notice, baseline manifest and receipt. Baseline
+is 9,757,493,600 bytes (474 F32/249 F16); Q8 is 5,815,503,232 bytes (474 F32/
+249 Q8_0); Q4 is 4,030,957,952 bytes (474 F32/248 Q4_K/1 Q8_0). Each contains
+723 tensors. All 297 vision payloads, including 100 matrices, are byte-identical
+across candidates; no undeclared fallback was observed. Hashes and all per-tensor
+records are in [the review](tests/results/qwen35-ocr/lightonocr3-4b-kaggle-conversion-review.json)
+and [original audit](tests/results/qwen35-ocr/lightonocr3-4b-conversion-tensor-audit.json).
+Readback checked whole-file hashes and GGUF metadata on the worker, not local large
+downloads. The first two CPU attempts failed before checkpoint acquisition on
+credential delivery and venv creation respectively. Python `sitecustomize`
+reported missing `wrapt` on the successful attempt; the source/meta probes and
+conversion continued and `pip check` reported no broken requirements. The
+converter's original `gguf_roundtrip_verified=false` field remains unchanged;
+the separate audit records reader verification. No native model inference,
+decoded comparison, quality qualification, registry alias or release followed.
+
+## 4 November 2026 — Hosted LightOn4B quantizer build
+
+[41926516321](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41926516321)
+built the portable CPU quantizer from `0c0ebb322cf20167eba63ac881cc25b5d057c32e`
+with ggml `3a27b6c665b191cb230be367db5c52d81dd3e2ac`. The independently
+read-back 907,856-byte executable hashes to
+`a09dd36ebc5a28d757a2950624c4b517363f3353b1dddf22dbf6519a65f9ae0f`;
+[the receipt](tests/results/qwen35-ocr/lightonocr3-4b-quantizer-build.json)
+retains source/compiler/artifact identities. Static ggml has no external libggml
+dependency. No model conversion, inference, publication or quality check ran in
+this build. Small independent reader controls passed all 723 synthetic tensors
+and rejected a corrupted manifest; actual runner-sized Q8/Q4 dequant scans
+accepted finite blocks and rejected infinite scales. The Python library does not
+implement Q4 quantization; actual candidate packing uses the hosted C++ binary.
+
 ## 4 November 2026 — LightOn4B grouped-head component and original-reference CI
 
 The additive `linear_grouped_core_cpu`/`linear_grouped_cpu` APIs keep compact

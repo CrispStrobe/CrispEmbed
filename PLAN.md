@@ -114,6 +114,18 @@ decoder dispatch/cache behavior, bounded full-vocabulary projection, original
 intermediates/decoded outputs, tokenizer and public inference remain separate
 gates; no native model support or quality claim follows.
 
+Bounded LightOn4B conversion work adds the hosted portable quantizer builder
+`tools/ci-heavy/lighton4b_quantizer_build.sh` and source-pinned
+`tools/ci-heavy/lighton4b_convert_quant.py`. The latter retains 723-tensor
+reader/finite/hash/type and protected-vision checks separately from the converter's
+historical false roundtrip flag. Initial source is `295fc0ec9`; original model
+revision remains `b71010f095dc3735de7ee6b9969bff8f8f50b39a`.
+The actual CPU conversion, Q8/Q4 tensor audits, experimental upload and independent
+empty-cache worker readback are complete, as recorded in [the review](tests/results/qwen35-ocr/lightonocr3-4b-kaggle-conversion-review.json).
+Experimental format-5 native inference now runs; initial Q8 and Q4_K comparisons
+fail the score tolerance and Q4_K differs at the first decoded token. No native
+quality, model alias or runtime release follows.
+
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
 [the 3 November handoff](docs/handoff-2026-11-03.md) and
@@ -149,6 +161,209 @@ controls passed. Maximum absolute errors there were 0.00025432, 0.00334059,
 retains the reviewed reports; the large original artifact remains remote. Diagnose
 the full-prefix recurrence and frozen inputs before changing thresholds or gates.
 Conversion, GGUF readback, native full-model inference and decoded quality remain open.
+
+LightOn4B conversion continuation: the portable quantizer built on hosted CI
+[41926516321](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41926516321)
+is recorded in [its build receipt](tests/results/qwen35-ocr/lightonocr3-4b-quantizer-build.json).
+The audited conversion runner is `94ad7bda378ac285f03fda28dcb97d29cb496418`;
+its source differs from the build only in the conversion runner. The first Kaggle
+CPU attempt failed before model download because a GitHub credential was absent
+from the mounted input. The second embedded the independently verified public
+quantizer, passed network/source/quantizer checks, and failed creating a Python
+venv before model download. Preserve both negative outputs. A third CPU attempt
+uses `venv --without-pip` and the worker's pip targeting that interpreter; its
+uploaded script SHA-256 is
+`537c57badbe9f11a12225f09ab97d64a76a42e05cca49149281b03d739fe1767`.
+The third attempt completed conversion and all declared tensor audits, followed by
+[experimental upload and worker readback](https://huggingface.co/cstr/LightOnOCR-3-4B-GGUF-experimental-6b9dfe91eaa2/tree/a7ec2e54103165a96b8bb6dc3478a2887edd7459).
+The [complete per-tensor audit](tests/results/qwen35-ocr/lightonocr3-4b-conversion-tensor-audit.json)
+preserves the original converter's false roundtrip field as distinct from its
+independent readback. Python startup reported a missing `wrapt` in `sitecustomize`;
+execution continued and `pip check` reported no broken requirements. The user
+explicitly selects the captured BF16 original reference; an F32 reference is
+not a prerequisite. Continue with Q8_0 and Q4_K native teacher-forced scores,
+independent free decoding and `crispembed-diff`, then evaluate changes on distinct
+calibration and held-out documents. Full-document parity and decoded quality
+have not been established.
+
+The actual BF16 original preprocessing replay [41999219551](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999219551)
+matches all 860,160 pixel values and the `[1,20,28]` grid bit-for-bit; the
+tokenizer replay [41999152372](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999152372)
+matches all 154 prompt IDs/modalities and decodes all 177 original IDs exactly.
+The first native Q8/Q4 smoke attempts stopped before inference on a tokenizer
+profile mismatch; corrected smokes [41999580781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999580781)
+and [41999584163](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999584163)
+ran native vision and decoder inference at `fd150b98f488a6884a6e8d8127e7dfb263cab237`.
+Q8's first two tokens `[27,17251]` match the BF16 original; Q4_K's
+`[20353,29]` decode to `<table>` rather than the original `<figure` prefix.
+The independently executed `crispembed-diff` first-score comparisons for
+[Q8](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001979476) and
+[Q4_K](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001983230)
+both fail the numerical budget at position zero, over 248,320 finite values.
+Q8 maximum/mean/RMS absolute errors are 0.568259001/0.108710214/0.130495042,
+with cosine 0.99846971; Q4_K errors are 2.49422884/0.466762543/0.571912766,
+with cosine 0.976987541. These compare the BF16 generation score against native
+scores, not independently captured original raw logits. Full teacher-forced and
+independent free-generation panels are running in
+[Q8](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001328483) and
+[Q4_K](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001333207)
+completed 177 teacher-forced rows and independent decoding. Q8 generated 160
+tokens with EOS, diverging at token 9 from the original 177-token output; raw
+reference-text character error rate was 0.2134. Q4_K generated 256 tokens without
+EOS, producing a truncated table; raw reference-text character error rate was
+0.8277. These are fidelity to the original model's generated text, not OCR
+accuracy against human ground truth. The first full-score jobs failed before
+comparison due to a missing standalone reader in the consolidated branch.
+After repair, the [Q8](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42012564139)
+and [Q4_K](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42012559942)
+replays each compared all 177 rows of 248,320 finite scores; all rows failed
+the strict budget. Q8 maximum absolute error was 2.93674088 and minimum row
+cosine 0.958800077; Q4_K maximum was 11.067977 and minimum cosine 0.666163504.
+A separate BF16 prefill capture localizes the earliest stage.
+That capture's first score is byte-identical to the earlier BF16 capture, and
+[the hosted stage comparison](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42002886215)
+finds the earliest native divergence in vision patch projection: maximum
+absolute error 0.0126757622, RMS 0.000805617467, cosine 0.9999986088, against
+original absolute maximum 4.3125. Native Q8 and Q4_K arrays are byte-identical
+through the vision path and decoder prefill input; their first recipe-specific
+difference occurs at decoder layer 0. The original uses BF16 vision arithmetic
+where this native path uses F32, so arithmetic attribution and any candidate
+correction require separate checks. Component agreement alone is not decoded
+quality evidence.
+The separate Q8/Q4 bounded
+vocabulary projection passed [41996887406](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41996887406).
+
+Three separately gated owner preparations are available as draft PRs: [vision
+PR144](https://github.com/CrispStrobe/CrispEmbed/pull/144), [text PR145](https://github.com/CrispStrobe/CrispEmbed/pull/145)
+and stacked [combined PR146](https://github.com/CrispStrobe/CrispEmbed/pull/146).
+The combined owner passes [5,281 metadata controls and 36 protocol checks](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41973787198)
+at `8ea8f4d03`; its initial gate-expectation failure is retained in its branch.
+These are borrowed tensor ownership controls, not an admitted 723-tensor GGUF
+context or a composed image/decoder path. Preserve the original source guards,
+wire actual format-5 ownership and the grouped heads, cache, vocabulary projection
+and tokenizer, then capture the pinned original before native comparisons.
+
+The separate [GGUF inspection PR147](https://github.com/CrispStrobe/CrispEmbed/pull/147)
+checks a metadata-owning format-5 context without enabling recognition. Its
+[actual published-header run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41975926521)
+verified all 723 names/shapes/types/offsets and 34 metadata fields. Three HTTP
+range responses fetched 12,582,912 bytes, including 2,571,936 weight bytes that
+were discarded; only the 10,010,976-byte header was retained and the native
+inspector read no weight payload. This header run did not rehash the whole file
+or tensors; the distinct completed worker readback above supplies that evidence.
+
+The separately gated [linear decoder block PR148](https://github.com/CrispStrobe/CrispEmbed/pull/148)
+passed 33 synthetic original/native stage comparisons and 52 native controls in
+[41976928016](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41976928016).
+The earliest difference was prefill input norm, max absolute error 3.57628e-7
+versus original max magnitude 1.42996; the largest block error was 2.86103e-6.
+Final hidden max errors were 1.90735e-6 for prefill/full-prefix and 1.31131e-6
+for cached decode. These are F32 one-block synthetic data, not checkpoint,
+logit or decoded-output evidence. Full-attention integration, decoder composition, caches, vocabulary projection
+and original document capture remain open.
+
+The separate [full-attention block PR149](https://github.com/CrispStrobe/CrispEmbed/pull/149)
+passed 51 synthetic F32 original/native stage pairs and 72 native controls in
+[41977890812](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41977890812)
+at `9f64a417a`. The first input-norm max absolute error was 3.57628e-7 against
+original max magnitude 1.42996; the worst activation error was 5.72205e-6 against
+magnitude 4.79096. Final hidden errors were at most 3.75510e-6. These are
+one-block synthetic data, not full-decoder, checkpoint or decoded-quality proof.
+
+The separate [32-layer synthetic decoder composition PR150](https://github.com/CrispStrobe/CrispEmbed/pull/150)
+is **negative**: [41979168300](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41979168300)
+passed 290/291 stage pairs and all 347 native controls; `prefill.cache.21.recurrent`
+failed the unchanged minimum row cosine with 0.999980919 and max absolute error
+1.04774e-7 versus original max magnitude 0.0127161. A retained-input block-only
+[attribution](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41980636649)
+passed on matched inputs and reproduced the failure in the original block using
+the retained native input, identifying upstream input drift as the cause at that
+boundary. No threshold or runtime change follows. Preserve the original negative
+and continue tracing prior layers before decoder qualification or decoded claims.
+
+The [earlier-layer attribution](https://github.com/CrispStrobe/CrispEmbed/pull/151)
+used retained inputs in [41981848201](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41981848201).
+At the first observed amplification, layer 1, input RMS already differed by
+2.38419e-6 against original max magnitude 3.45225. Dense projections on exact
+matching inputs still differed by 2.15e-6–2.50e-6; using the original gate/up
+values reduced the activation difference to 2.38419e-7. The specific kernel or
+reduction-order cause remains unknown. Preserve all original budgets and the
+negative 290/291 full-decoder result.
+
+The retained-input [dense projection trace](https://github.com/CrispStrobe/CrispEmbed/pull/152)
+observed two native llamafile calls with exact operands in
+[41984176263](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41984176263).
+All 18,432 native outputs match the eight-lane fused reconstruction exactly;
+the first original/native difference is 4.76837e-7 and the largest is 2.14577e-6.
+The initial trace did not observe the shared-library route and remains retained.
+Torch's internal GEMM order is unobserved, so no disabling-FMA correction or
+decoder-parity claim follows. The original full-decoder result remains negative.
+
+The separate [document protocol and harness](https://github.com/CrispStrobe/CrispEmbed/blob/958ff9fd8b386e6f3faaae92b6322a519200cc9a/docs/lighton4b-document-parity-v1.json)
+freezes one public-domain form, empty prompt, cap256 and all-position full-vocabulary
+comparison. The initial and hardened synthetic controls passed at
+[41974416327](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41974416327)
+and [41974795749](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41974795749).
+Its predicted 560 patches and 140 image tokens are not observed processor outputs;
+both original and native producer admissions remain empty. Original generated-position
+final-norm/cache and full-logit capture, plus composed native format-5 context,
+tokenizer, cache and projection, are required before running it on the model.
+Current Kaggle GPU quota
+was exhausted on 5 November; the service reported its next refresh for
+7 November 2026. Re-query before scheduling; do not start a non-GPU job on GPU.
+
+The separately source-bound [original generated-position adapter](https://github.com/CrispStrobe/CrispEmbed/blob/d6896b154b6705881b8005ed455e443d5b5d1597/docs/lighton4b-original-adapter-v1.md)
+passed five synthetic controls in [41976285821](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41976285821).
+Its capture remains hard-disabled pending an independently reviewed large-shard
+transport; document-v1's 2 GiB archive limit and empty producer admissions remain
+unchanged. Its conservative 40 GiB RAM/48 GiB disk bounds reject the observed
+32 GB Kaggle worker. A lower-memory sequential capture would require its own
+implementation, measured peak and original-trace equivalence, not relaxed guards.
+No original model forward was run by these controls.
+
+For a smaller first reference, the separate BF16 CPU free-generation protocol
+at source `07543dcc80ebcecad644815d9397be2570a51dd4` uses the official original
+model with BF16 parameters, one `generate()` call, the frozen form/empty prompt
+and the unchanged 256-token cap. It retains all generated full-vocabulary
+scores but not per-layer cache snapshots or the F32 legacy trace dictionary.
+The first processor-only hosted attempt [41992437849](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41992437849)
+failed before checkpoint acquisition because Torchvision was absent. The
+corrected [41993030552](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41993030552)
+passed synthetic controls and verified the official processor's actual 560-patch,
+1×20×28 grid and 154-token input without model weights or a forward. A CPU-only
+Kaggle capture completed with bootstrap SHA-256
+`c370b097a45c2d8158343fa1a3a3c510f9bea3b84912565e896b5ded37fd93f6`;
+the [review](https://github.com/CrispStrobe/CrispEmbed/blob/26fe41e35/tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture-review.json)
+records 177 tokens, EOS, 567.890 seconds generation, 9.228 GiB process peak RSS
+and 18.435 GiB worker cgroup peak (including file cache and other worker memory).
+All 177 official generation-score objects remain remotely; their names were
+enumerated and only first/last rows independently downloaded and verified.
+The observed output was a French figure-style description of the form, not a
+demonstrated transcription. This is a BF16 reference, not the F32 intermediate
+reference, observer-off proof or a native/quantized parity result.
+
+The separately versioned [sharded transport](https://github.com/CrispStrobe/CrispEmbed/blob/f99b5b618cdf8438f29a655790993a6aef95e8cd/docs/lighton4b-original-sharded-transport-v1.md)
+passed initial and hardened fixture controls in [41977694403](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41977694403)
+and [41977934618](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41977934618).
+These check immutable multipart upload, independent cold restoration and failure
+handling against a hosted HTTP fixture. A subsequent [tiny provider test](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41979390868)
+and independent cold readback verified four parts and 68 reconstructed files,
+preserving all existing destination files. [The reviewed receipt](https://github.com/CrispStrobe/CrispEmbed/blob/2e904e5856dacb7bd5e0c87046fc9e6f5eaddb53/tests/results/qwen35-ocr/lightonocr3-4b-real-provider-transport.json)
+contains only public-safe fingerprints. This is point-in-time evidence for a
+13,239-byte fixture, not large-capture or long-term retention qualification;
+capture remains disabled and the old document-v1 archive limit remains intact.
+Full cold restore needs source size plus one part and 1 GiB free, potentially on
+a separate host from the original capture.
+
+The distinct [document-v2 consumer](https://github.com/CrispStrobe/CrispEmbed/blob/dcb7bacf69efe5661700fff2e18542e5f7a9c6a1/docs/lighton4b-document-v2.md)
+uses verified remote parts and one bounded stage pair at a time. Initial and
+hardened synthetic controls passed in [41981531300](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41981531300)
+and [41981959660](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41981959660).
+They exercise 1,037 synthetic stages and decoded mismatch rejection, not actual
+model output or large-scale retention. Original/native producer admissions,
+capture hard-off and original resource bounds remain unchanged. Real producer
+admission, full-scale storage/hardware proof and original/native execution remain
+necessary before any quality comparison or model qualification.
 
 | Lane | State | Next action | Done when |
 |---|---|---|---|

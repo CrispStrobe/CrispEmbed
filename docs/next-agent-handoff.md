@@ -10,6 +10,19 @@ were excluded and remain with their owners. App 0.17.12, disabled package publis
 model qualification limits and default-off LightOn3 corrections are unchanged.
 Older dated release/candidate statements below describe their historical phase.
 
+## LightOn4B conversion continuation — 4–5 November 2026
+
+Use the [conversion review](../tests/results/qwen35-ocr/lightonocr3-4b-kaggle-conversion-review.json)
+and [tensor audit](../tests/results/qwen35-ocr/lightonocr3-4b-conversion-tensor-audit.json)
+on `audit/lighton4b-convert-runner-20261104`. The third Kaggle CPU attempt
+completed baseline, Q8_0 and Q4_K exports and verified the experimental Hub
+files from an independent worker cache. Do not repeat the conversion merely to
+make historical `gguf_roundtrip_verified=false` true. The two initial failed
+attempts and the successful worker's `sitecustomize` warning remain recorded.
+The separately gated text/vision owners and grouped/projection components still
+need integrated format-5 admission, full original/native intermediates, logits,
+independent free decoding and held-out document quality before any alias or
+qualification. The published GGUFs alone do not establish those gates.
 
 ## Current entry —4 November2026
 
