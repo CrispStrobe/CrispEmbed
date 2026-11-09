@@ -30,7 +30,9 @@ int stbi_write_png(const char *, int, int, int, const void *, int);
 extern "C" int scan_cleanup_deskew_rgb(const uint8_t *, int, int, int, float, uint8_t **, int *, int *) {
     std::abort();
 }
-extern "C" void scan_cleanup_free_image(uint8_t *) { std::abort(); }
+extern "C" void scan_cleanup_free_image(uint8_t *) {
+    std::abort();
+}
 #endif
 
 namespace fs = std::filesystem;
@@ -42,7 +44,7 @@ static void require(bool ok, const char * message) {
 static std::vector<unsigned char> read_bytes(const fs::path & path) {
     std::ifstream file(path, std::ios::binary);
     require(bool(file), "could not read fixture/output through its wide filesystem path");
-    return {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+    return { std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>() };
 }
 static bool decoded_equals(const std::string & path, const std::vector<unsigned char> & rgb) {
     int width = 0, height = 0, channels = 0;
@@ -51,13 +53,14 @@ static bool decoded_equals(const std::string & path, const std::vector<unsigned 
     return pixels && width == 4 && height == 3 && std::equal(rgb.begin(), rgb.end(), pixels.get());
 }
 static void export_pdf(const std::string & image, const fs::path & output) {
-    std::unique_ptr<ocr_renderer, decltype(&ocr_render_free)> renderer(ocr_render_create(OCR_RENDER_PDF), ocr_render_free);
+    std::unique_ptr<ocr_renderer, decltype(&ocr_render_free)> renderer(ocr_render_create(OCR_RENDER_PDF),
+                                                                       ocr_render_free);
     require(bool(renderer), "renderer allocation failed");
     ocr_render_begin(renderer.get());
     ocr_render_set_page_size_points(renderer.get(), 288, 216);
-    ocr_render_word word{"Reviewed Unicode path", 0, 0, 4, 1, 1.0f};
-    ocr_render_line line{&word, 1, 0, 0, 4, 1};
-    ocr_render_page page{&line, 1, 4, 3, image.c_str()};
+    ocr_render_word word{ "Reviewed Unicode path", 0, 0, 4, 1, 1.0f };
+    ocr_render_line line{ &word, 1, 0, 0, 4, 1 };
+    ocr_render_page page{ &line, 1, 4, 3, image.c_str() };
     ocr_render_add_page(renderer.get(), &page);
     ocr_render_end(renderer.get());
     const char * error = ocr_render_error(renderer.get());
@@ -82,11 +85,12 @@ static int crispembed_test_main(int argc, char ** argv) {
         const fs::path unicode = nested / fs::u8path(u8"Seite-\u00e9-\u6771\u4eac-\U0001f600.png");
         const fs::path written = nested / fs::u8path(u8"Kopie-\u00fc-\u6587-\U0001f600.png");
         std::vector<unsigned char> rgb;
-        for (int y = 0; y < 3; y++) for (int x = 0; x < 4; x++) {
-            rgb.push_back(static_cast<unsigned char>(x * 60 + y * 10));
-            rgb.push_back(static_cast<unsigned char>(y * 80 + x * 5));
-            rgb.push_back(static_cast<unsigned char>(240 - x * 40 - y * 15));
-        }
+        for (int y = 0; y < 3; y++)
+            for (int x = 0; x < 4; x++) {
+                rgb.push_back(static_cast<unsigned char>(x * 60 + y * 10));
+                rgb.push_back(static_cast<unsigned char>(y * 80 + x * 5));
+                rgb.push_back(static_cast<unsigned char>(240 - x * 40 - y * 15));
+            }
         require(stbi_write_png(ascii.u8string().c_str(), 4, 3, 3, rgb.data(), 12) != 0, "ASCII PNG write failed");
         require(decoded_equals(ascii.u8string(), rgb), "ASCII decoded pixels differ");
         fs::copy_file(ascii, unicode, fs::copy_options::overwrite_existing);
@@ -108,8 +112,12 @@ static int crispembed_test_main(int argc, char ** argv) {
         export_pdf(unicode.u8string(), nested / fs::u8path(u8"Gepr\u00fcft-\u6587-\U0001f600.pdf"));
 #ifndef OCR_PATHS_STANDALONE
         image_preproc::config config;
-        config.patch_size = 1; config.merge_size = 1; config.temporal_patch_size = 1;
-        config.min_pixels = 12; config.max_pixels = 12; config.deskew = 0;
+        config.patch_size = 1;
+        config.merge_size = 1;
+        config.temporal_patch_size = 1;
+        config.min_pixels = 12;
+        config.max_pixels = 12;
+        config.deskew = 0;
         image_preproc::result a, b;
         require(image_preproc::preprocess_file(ascii.u8string().c_str(), config, a), "ASCII preprocessing failed");
         require(image_preproc::preprocess_file(unicode.u8string().c_str(), config, b), "UTF-8 preprocessing failed");
