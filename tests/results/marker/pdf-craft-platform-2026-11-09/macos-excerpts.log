@@ -1,0 +1,21 @@
+Full job steps and scope are recorded in receipt.json.
+2026-11-09T12:15:34.6577700Z HEAD is now at e827fb5 Merge b34fe99611a6168f572630904531c79b02477b9f into dc4f51c755bf78139f1f6ea87941748b05e75971
+2026-11-09T12:15:47.5593800Z -- The C compiler identification is AppleClang 21.0.0.21000101
+2026-11-09T12:15:49.7060270Z -- The CXX compiler identification is AppleClang 21.0.0.21000101
+2026-11-09T12:15:56.7439610Z -- Configuring done (11.9s)
+2026-11-09T12:15:58.3803260Z -- Generating done (1.6s)
+2026-11-09T12:15:58.7572990Z ##[group]Run cmake -S . -B build-xcode-check -G Xcode \
+2026-11-09T12:16:17.0467150Z -- The C compiler identification is AppleClang 21.0.0.21000101
+2026-11-09T12:16:20.0332550Z -- The CXX compiler identification is AppleClang 21.0.0.21000101
+2026-11-09T12:16:46.6764680Z -- Configuring done (47.9s)
+2026-11-09T12:16:47.8026700Z -- Generating done (1.1s)
+2026-11-09T12:16:47.9677690Z Syntax OK
+2026-11-09T12:16:47.9854090Z Syntax OK
+2026-11-09T12:22:39.6028300Z marker document: 185 checks, 0 failures
+2026-11-09T12:22:39.6321230Z marker artifact: 87 checks, 0 failures
+2026-11-09T12:22:39.7580560Z Marker lifecycle ABI: 480 checks passed (owned fixture; no rendering/OCR qualification)
+2026-11-09T12:22:39.8665390Z Marker C API: 74 checks passed
+2026-11-09T12:22:39.8935830Z 38/38 Marker save checks passed
+2026-11-09T12:22:39.9379810Z marker backend: 18 passed, 0 failed
+2026-11-09T12:22:47.0845830Z python3 -c "import ctypes,sys; ctypes.CDLL(sys.argv[1]).crispembed_init; print('dlopen OK')" \
+2026-11-09T12:22:53.5122430Z dlopen OK

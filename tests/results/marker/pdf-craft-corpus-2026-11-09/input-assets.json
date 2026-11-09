@@ -1,0 +1,876 @@
+{
+  "kind": "marker-gold-ab-asset-fetch",
+  "protocol_sha256": "918aeaefc418cf10480d73739a22b1b85676b9ff4bb5c62ba0c073943bfca1c7",
+  "corpus_sha256": "1da42d96eed25aac6215fce60c5bcd05c8a25bbaae710081f4963f4e37fd1ed5",
+  "script_sha256": "852242c7e05360e13e9f312eaa18e6af886db1c71b9201e42b8f5b3247c978a0",
+  "assets": {
+    "eng.traineddata": {
+      "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/eng.traineddata",
+      "expected_sha256": null,
+      "expected_git_blob": "bbef4675053b5b468cdb477053e28b1c698ba08e",
+      "bytes": 4113088,
+      "sha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2",
+      "git_blob": "bbef4675053b5b468cdb477053e28b1c698ba08e",
+      "passed": true,
+      "cached": false,
+      "resolved_path": "eng.traineddata",
+      "repository_revision": "87416418657359cb625c412a48b6e1d6d41c29bd"
+    },
+    "fra.traineddata": {
+      "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/fra.traineddata",
+      "expected_sha256": null,
+      "expected_git_blob": "d9e2b2160be0d1ca3b8f1bf2730fae476ef3b4a6",
+      "bytes": 1130365,
+      "sha256": "ced037562e8c80c13122dece28dd477d399af80911a28791a66a63ac1e3445ca",
+      "git_blob": "d9e2b2160be0d1ca3b8f1bf2730fae476ef3b4a6",
+      "passed": true,
+      "cached": false,
+      "resolved_path": "fra.traineddata",
+      "repository_revision": "87416418657359cb625c412a48b6e1d6d41c29bd"
+    },
+    "deu.traineddata": {
+      "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/deu.traineddata",
+      "expected_sha256": null,
+      "expected_git_blob": "97ed7b2b60f2771c07040660ef0f6daf596dc7bf",
+      "bytes": 1525436,
+      "sha256": "19d219bbb6672c869d20a9636c6816a81eb9a71796cb93ebe0cb1530e2cdb22d",
+      "git_blob": "97ed7b2b60f2771c07040660ef0f6daf596dc7bf",
+      "passed": true,
+      "cached": false,
+      "resolved_path": "deu.traineddata",
+      "repository_revision": "87416418657359cb625c412a48b6e1d6d41c29bd"
+    },
+    "frk.traineddata": {
+      "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/deu_latf.traineddata",
+      "expected_sha256": null,
+      "expected_git_blob": "11a641044a93413454f75fbb8e05b085bd0b9d8d",
+      "bytes": 6423052,
+      "sha256": "7cd1b541e9d3884b9546a7d292c4f349cdb45ff646b4b43166dfc5099a8ad1a1",
+      "git_blob": "11a641044a93413454f75fbb8e05b085bd0b9d8d",
+      "passed": true,
+      "cached": false,
+      "resolved_path": "deu_latf.traineddata",
+      "repository_revision": "87416418657359cb625c412a48b6e1d6d41c29bd"
+    },
+    "LICENSE": {
+      "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/LICENSE",
+      "expected_sha256": null,
+      "expected_git_blob": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "git_blob": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+      "passed": true,
+      "cached": false,
+      "resolved_path": "LICENSE",
+      "repository_revision": "87416418657359cb625c412a48b6e1d6d41c29bd"
+    },
+    "pdf.ttf": {
+      "passed": true,
+      "sha256": "c7845420925a23d88ed830a63957b8af85a66a8daf8d9fc90e843673b2ef1a59",
+      "bytes": 572,
+      "source": "installed Tesseract 5.5.0 support font"
+    },
+    "embedding_model": {
+      "url": "https://huggingface.co/cstr/all-MiniLM-L6-v2-GGUF/resolve/f0673ed53d37dfda08c0407b257440450d816980/all-MiniLM-L6-v2-f32.gguf",
+      "expected_sha256": "fc24c0855e67ae851fe043a1b1c09a493fb71d95157a710fa0cbe508bc9f2542",
+      "expected_git_blob": null,
+      "bytes": 91304064,
+      "sha256": "fc24c0855e67ae851fe043a1b1c09a493fb71d95157a710fa0cbe508bc9f2542",
+      "passed": true,
+      "cached": false
+    },
+    "cord_parquet": {
+      "url": "https://huggingface.co/datasets/naver-clova-ix/cord-v2/resolve/7f0115a4b758a71d6473b8d085751692da2fef98/data/test-00000-of-00001-9c204eb3f4e11791.parquet",
+      "expected_sha256": "51c65f1788faff392abe2a0b55b023eb23e9be551c509138eaa3a832514224e7",
+      "expected_git_blob": null,
+      "bytes": 234202795,
+      "sha256": "51c65f1788faff392abe2a0b55b023eb23e9be551c509138eaa3a832514224e7",
+      "passed": true,
+      "cached": false
+    }
+  },
+  "pages": {
+    "en-prose-constitution-13": {
+      "passed": true,
+      "sha256": "36c1b61692719239b011442ad4670655374d8c219b333b054fbcb05a46a38a86",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/The_English_Constitution_%281894%29.djvu/page13-1280px-The_English_Constitution_%281894%29.djvu.jpg?20080713125819",
+          "expected_sha256": "36c1b61692719239b011442ad4670655374d8c219b333b054fbcb05a46a38a86",
+          "expected_git_blob": null,
+          "bytes": 330404,
+          "sha256": "36c1b61692719239b011442ad4670655374d8c219b333b054fbcb05a46a38a86",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "de-fraktur-grimm-319": {
+      "passed": true,
+      "sha256": "83e1cabd6fd70576dc3351c1c5655d40a7056fd49ca6e0e3192dd14abc9d42b5",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/aa/Kinder-_und_Haus-M%C3%A4rchen_1837_Band_2.djvu/page319-1280px-Kinder-_und_Haus-M%C3%A4rchen_1837_Band_2.djvu.jpg?20100619164508",
+          "expected_sha256": "83e1cabd6fd70576dc3351c1c5655d40a7056fd49ca6e0e3192dd14abc9d42b5",
+          "expected_git_blob": null,
+          "bytes": 281817,
+          "sha256": "83e1cabd6fd70576dc3351c1c5655d40a7056fd49ca6e0e3192dd14abc9d42b5",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-table-climatic-26": {
+      "passed": true,
+      "sha256": "1e72426a797315540ad1b06f52eaac948fe109c80301738b5c69aa114bda3635",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/59/Climatic_Cycles_and_Tree-Growth_-_1919.djvu/page26-1280px-Climatic_Cycles_and_Tree-Growth_-_1919.djvu.jpg?20100213051223",
+          "expected_sha256": "1e72426a797315540ad1b06f52eaac948fe109c80301738b5c69aa114bda3635",
+          "expected_git_blob": null,
+          "bytes": 700043,
+          "sha256": "1e72426a797315540ad1b06f52eaac948fe109c80301738b5c69aa114bda3635",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "de-antiqua-kafka-schloss-211": {
+      "passed": true,
+      "sha256": "4758ee30dc4d6fa9766e05c81efbbc57a490f4ba0b11b8fa875ba67dfcbad593",
+      "attempts": [
+        {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/0/01/De_Kafka_Schlo%C3%9F_211.jpg?20070508132440",
+          "expected_sha256": "4758ee30dc4d6fa9766e05c81efbbc57a490f4ba0b11b8fa875ba67dfcbad593",
+          "expected_git_blob": null,
+          "bytes": 117978,
+          "sha256": "4758ee30dc4d6fa9766e05c81efbbc57a490f4ba0b11b8fa875ba67dfcbad593",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-form-economic-journal-67": {
+      "passed": true,
+      "sha256": "4d6e0d71fe7efdbce4947ccadc4dac2b15743026ea3bac9d84a45ef959a7051a",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/The_Economic_Journal_Volume_1.djvu/page67-1920px-The_Economic_Journal_Volume_1.djvu.jpg?20120729070042",
+          "expected_sha256": "4d6e0d71fe7efdbce4947ccadc4dac2b15743026ea3bac9d84a45ef959a7051a",
+          "expected_git_blob": null,
+          "bytes": 709225,
+          "sha256": "4d6e0d71fe7efdbce4947ccadc4dac2b15743026ea3bac9d84a45ef959a7051a",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "de-degraded-freiligrath-46": {
+      "passed": true,
+      "sha256": "1673be87eec8e4dac9d5d2f7a0341e88e6e0498b8044e10dd282220773603bfd",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/%C3%87a_ira%21_Freiligrath-1846.pdf/page46-960px-%C3%87a_ira%21_Freiligrath-1846.pdf.jpg?20120926201949",
+          "expected_sha256": "1673be87eec8e4dac9d5d2f7a0341e88e6e0498b8044e10dd282220773603bfd",
+          "expected_git_blob": null,
+          "bytes": 154017,
+          "sha256": "1673be87eec8e4dac9d5d2f7a0341e88e6e0498b8044e10dd282220773603bfd",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "de-2col-meyers-b13-103": {
+      "passed": true,
+      "sha256": "65adda61b339c48c5b8992e63ac3069bf0deae467fcfa07518a39fb33e080dad",
+      "attempts": [
+        {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/5/59/Meyers_b13_s0103.jpg?20060828190923",
+          "expected_sha256": "65adda61b339c48c5b8992e63ac3069bf0deae467fcfa07518a39fb33e080dad",
+          "expected_git_blob": null,
+          "bytes": 389497,
+          "sha256": "65adda61b339c48c5b8992e63ac3069bf0deae467fcfa07518a39fb33e080dad",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-2col-eb1911-v04-246": {
+      "passed": true,
+      "sha256": "0a45ad3aa1b3585c70acb42f17b3c51bd3f507858936da5ece15e2ab06295ef3",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/EB1911_-_Volume_04.djvu/page246-1920px-EB1911_-_Volume_04.djvu.jpg?20100806111840",
+          "expected_sha256": "0a45ad3aa1b3585c70acb42f17b3c51bd3f507858936da5ece15e2ab06295ef3",
+          "expected_git_blob": null,
+          "bytes": 1499108,
+          "sha256": "0a45ad3aa1b3585c70acb42f17b3c51bd3f507858936da5ece15e2ab06295ef3",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-report-amtrak-23": {
+      "passed": true,
+      "sha256": "0cdddf9600147df5ec88840dc9d8a33a2e470f27b69ae03727cfbe189ad38c13",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c9/Derailment_of_Amtrak_Passenger_Train_188_Philadelphia%2C_Pennsylvania_May_12%2C_2015.djvu/page23-1920px-Derailment_of_Amtrak_Passenger_Train_188_Philadelphia%2C_Pennsylvania_May_12%2C_2015.djvu.jpg?20171220205200",
+          "expected_sha256": "0cdddf9600147df5ec88840dc9d8a33a2e470f27b69ae03727cfbe189ad38c13",
+          "expected_git_blob": null,
+          "bytes": 683690,
+          "sha256": "0cdddf9600147df5ec88840dc9d8a33a2e470f27b69ae03727cfbe189ad38c13",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "de-table-rgbl-1867-403": {
+      "passed": true,
+      "sha256": "ecf3f575a3589ae62e28aadd2dd5d7914e40a5c3c8e1c2287e3240918da60f42",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e1/Reichsgesetzblatt_%28Austria%29_1867_0403.jpg/1920px-Reichsgesetzblatt_%28Austria%29_1867_0403.jpg?20070729221105",
+          "expected_sha256": "ecf3f575a3589ae62e28aadd2dd5d7914e40a5c3c8e1c2287e3240918da60f42",
+          "expected_git_blob": null,
+          "bytes": 870591,
+          "sha256": "ecf3f575a3589ae62e28aadd2dd5d7914e40a5c3c8e1c2287e3240918da60f42",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "de-antiqua-kafka-betrachtung-94": {
+      "passed": true,
+      "sha256": "e736273f999f2c402e74dab2d07afd271b1cb3373f018b5a3c08350129a9b2c0",
+      "attempts": [
+        {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/2/22/De_Kafka_Betrachtung_%281908%29_94.jpg?20090617155209",
+          "expected_sha256": "e736273f999f2c402e74dab2d07afd271b1cb3373f018b5a3c08350129a9b2c0",
+          "expected_git_blob": null,
+          "bytes": 103026,
+          "sha256": "e736273f999f2c402e74dab2d07afd271b1cb3373f018b5a3c08350129a9b2c0",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "de-mixed-welzheim-188": {
+      "passed": true,
+      "sha256": "8ef162bd88af7389353e9d9ba96a01f66454ea5145e63cb491e3b3e46f31477f",
+      "attempts": [
+        {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Oberamt_Welzheim_188.jpg?20090619171204",
+          "expected_sha256": "8ef162bd88af7389353e9d9ba96a01f66454ea5145e63cb491e3b3e46f31477f",
+          "expected_git_blob": null,
+          "bytes": 367928,
+          "sha256": "8ef162bd88af7389353e9d9ba96a01f66454ea5145e63cb491e3b3e46f31477f",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-old-statutes-v1-772": {
+      "passed": true,
+      "sha256": "163231969e7ac786adbe01f4c98703007061b30ce047c47957833b987b026796",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0e/United_States_Statutes_at_Large_Volume_1.djvu/page772-1280px-United_States_Statutes_at_Large_Volume_1.djvu.jpg?20081122084711",
+          "expected_sha256": "163231969e7ac786adbe01f4c98703007061b30ce047c47957833b987b026796",
+          "expected_git_blob": null,
+          "bytes": 552901,
+          "sha256": "163231969e7ac786adbe01f4c98703007061b30ce047c47957833b987b026796",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-prose-constitution-81": {
+      "passed": true,
+      "sha256": "56a70bc88b80113340f92598329a816a46f584a627cc9e1343c9858de09e9a6d",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/The_English_Constitution_%281894%29.djvu/page81-1280px-The_English_Constitution_%281894%29.djvu.jpg?20080713125819",
+          "expected_sha256": "56a70bc88b80113340f92598329a816a46f584a627cc9e1343c9858de09e9a6d",
+          "expected_git_blob": null,
+          "bytes": 351691,
+          "sha256": "56a70bc88b80113340f92598329a816a46f584a627cc9e1343c9858de09e9a6d",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-2col-eb1911-v25-5": {
+      "passed": true,
+      "sha256": "de1bf2bbd75acc6f9b452c8968b9333012ec28e64400ac0656efeb471dc0c9ac",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f0/EB1911_-_Volume_25.djvu/page5-1920px-EB1911_-_Volume_25.djvu.jpg?20150207120624",
+          "expected_sha256": "de1bf2bbd75acc6f9b452c8968b9333012ec28e64400ac0656efeb471dc0c9ac",
+          "expected_git_blob": null,
+          "bytes": 654435,
+          "sha256": "de1bf2bbd75acc6f9b452c8968b9333012ec28e64400ac0656efeb471dc0c9ac",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-register-1775-606": {
+      "passed": true,
+      "sha256": "211a4a0a8e085b489dab6932496ee96410b522bf90ed2b0e7253781c61f69332",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7b/The_annual_register%2C_or%2C_a_view_of_the_history%2C_politicks%2C_and_literature_for_the_year._Volume_18_%28The_fourth_edition%29%2C_1775_%28IA_s25id13210950%29.pdf/page606-960px-The_annual_register%2C_or%2C_a_view_of_the_history%2C_politicks%2C_and_literature_for_the_year._Volume_18_%28The_fourth_edition%29%2C_1775_%28IA_s25id13210950%29.pdf.jpg?20200719014410",
+          "expected_sha256": "211a4a0a8e085b489dab6932496ee96410b522bf90ed2b0e7253781c61f69332",
+          "expected_git_blob": null,
+          "bytes": 376857,
+          "sha256": "211a4a0a8e085b489dab6932496ee96410b522bf90ed2b0e7253781c61f69332",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-register-1758-16": {
+      "passed": true,
+      "sha256": "d02a5cdcebfd823db34046b6fd311aefc4a04bf610228da5e81fe7dc1ba4a24f",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2e/The_Annual_Register_1758.djvu/page16-1920px-The_Annual_Register_1758.djvu.jpg?20120228184735",
+          "expected_sha256": "d02a5cdcebfd823db34046b6fd311aefc4a04bf610228da5e81fe7dc1ba4a24f",
+          "expected_git_blob": null,
+          "bytes": 987950,
+          "sha256": "d02a5cdcebfd823db34046b6fd311aefc4a04bf610228da5e81fe7dc1ba4a24f",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-catalogue-library-11": {
+      "passed": true,
+      "sha256": "26c0cd8e114545f2dee8ef908c6b6cfcb6b337b373df8bfce1047c3eb4249c19",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/61/Catalogue_of_books_suitable_for_a_popular_library.djvu/page11-1920px-Catalogue_of_books_suitable_for_a_popular_library.djvu.jpg?20081213203225",
+          "expected_sha256": "26c0cd8e114545f2dee8ef908c6b6cfcb6b337b373df8bfce1047c3eb4249c19",
+          "expected_git_blob": null,
+          "bytes": 236872,
+          "sha256": "26c0cd8e114545f2dee8ef908c6b6cfcb6b337b373df8bfce1047c3eb4249c19",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-psm-v2-13": {
+      "passed": true,
+      "sha256": "eb87c407686d9f0697dd20a815ca6c09f273ff696d598f4d6c8c49ddbd6a626e",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3f/Popular_Science_Monthly_Volume_2.djvu/page13-1920px-Popular_Science_Monthly_Volume_2.djvu.jpg?20090205094114",
+          "expected_sha256": "eb87c407686d9f0697dd20a815ca6c09f273ff696d598f4d6c8c49ddbd6a626e",
+          "expected_git_blob": null,
+          "bytes": 710693,
+          "sha256": "eb87c407686d9f0697dd20a815ca6c09f273ff696d598f4d6c8c49ddbd6a626e",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-report-delhi-agra-26": {
+      "passed": true,
+      "sha256": "9f51c308fe4719084819a544212ad5b7b909a059b381d356d596a7ef2a531277",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/89/Report_for_the_Year_1871-72-_Delhi_and_Agra.djvu/page26-500px-Report_for_the_Year_1871-72-_Delhi_and_Agra.djvu.jpg?20211221162234",
+          "expected_sha256": "9f51c308fe4719084819a544212ad5b7b909a059b381d356d596a7ef2a531277",
+          "expected_git_blob": null,
+          "bytes": 123316,
+          "sha256": "9f51c308fe4719084819a544212ad5b7b909a059b381d356d596a7ef2a531277",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-nature-1836-12": {
+      "passed": true,
+      "sha256": "3a42ca64c11aae2d5da3dd7464c4a2e49b82c0f4cbb2b0972a32901e83c09fed",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/Nature_%281836%29.djvu/page12-1920px-Nature_%281836%29.djvu.jpg?20090630030230",
+          "expected_sha256": "3a42ca64c11aae2d5da3dd7464c4a2e49b82c0f4cbb2b0972a32901e83c09fed",
+          "expected_git_blob": null,
+          "bytes": 521635,
+          "sha256": "3a42ca64c11aae2d5da3dd7464c4a2e49b82c0f4cbb2b0972a32901e83c09fed",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-list-geolsoc-v2-176": {
+      "passed": true,
+      "sha256": "480a71129717352e2e1c807a800c3ae1e9b850bb6f8af62378b8a5552e40ed8a",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Transactions_of_the_Geological_Society%2C_1st_series%2C_vol._2.djvu/page176-1280px-Transactions_of_the_Geological_Society%2C_1st_series%2C_vol._2.djvu.jpg?20090922070230",
+          "expected_sha256": "480a71129717352e2e1c807a800c3ae1e9b850bb6f8af62378b8a5552e40ed8a",
+          "expected_git_blob": null,
+          "bytes": 402035,
+          "sha256": "480a71129717352e2e1c807a800c3ae1e9b850bb6f8af62378b8a5552e40ed8a",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-list-geolsoc-v2-183": {
+      "passed": true,
+      "sha256": "08695b7d9c23c657a71a7905d35c075d3d95f7fd105e7205e7fe87bec396add3",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Transactions_of_the_Geological_Society%2C_1st_series%2C_vol._2.djvu/page183-1280px-Transactions_of_the_Geological_Society%2C_1st_series%2C_vol._2.djvu.jpg?20090922070230",
+          "expected_sha256": "08695b7d9c23c657a71a7905d35c075d3d95f7fd105e7205e7fe87bec396add3",
+          "expected_git_blob": null,
+          "bytes": 445486,
+          "sha256": "08695b7d9c23c657a71a7905d35c075d3d95f7fd105e7205e7fe87bec396add3",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "en-table-cakchiquels-13": {
+      "passed": true,
+      "sha256": "33e55011a5dee2a81e853a4388d35791bd4e915f509dc9f4e7df60cf50e4b5dd",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/The_Annals_of_the_Cakchiquels.djvu/page13-1920px-The_Annals_of_the_Cakchiquels.djvu.jpg?20150220040445",
+          "expected_sha256": "33e55011a5dee2a81e853a4388d35791bd4e915f509dc9f4e7df60cf50e4b5dd",
+          "expected_git_blob": null,
+          "bytes": 297597,
+          "sha256": "33e55011a5dee2a81e853a4388d35791bd4e915f509dc9f4e7df60cf50e4b5dd",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "de-2col-gartenlaube-1866-023": {
+      "passed": true,
+      "sha256": "b1b8ee568e73c3801a06d517b02afabc727019d493455a8de7abfa58db095274",
+      "attempts": [
+        {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/7/78/Die_Gartenlaube_%281866%29_023.jpg?20110320102422",
+          "expected_sha256": "b1b8ee568e73c3801a06d517b02afabc727019d493455a8de7abfa58db095274",
+          "expected_git_blob": null,
+          "bytes": 1637598,
+          "sha256": "b1b8ee568e73c3801a06d517b02afabc727019d493455a8de7abfa58db095274",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "de-2col-gartenlaube-1866-007": {
+      "passed": true,
+      "sha256": "668170b851ec25ee4ca682858a1c6fee47071105ce486da7bf16c2a12a70dd7f",
+      "attempts": [
+        {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/a/a1/Die_Gartenlaube_%281866%29_007.jpg?20110320101230",
+          "expected_sha256": "668170b851ec25ee4ca682858a1c6fee47071105ce486da7bf16c2a12a70dd7f",
+          "expected_git_blob": null,
+          "bytes": 1597008,
+          "sha256": "668170b851ec25ee4ca682858a1c6fee47071105ce486da7bf16c2a12a70dd7f",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "de-2col-gartenlaube-1866-044": {
+      "passed": true,
+      "sha256": "cbb7c8cbf2674ff40b858dea6b1111291693cf8fc0aa1f1ed4593340dbbf8cf7",
+      "attempts": [
+        {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/1/11/Die_Gartenlaube_%281866%29_044.jpg?20110320103852",
+          "expected_sha256": "cbb7c8cbf2674ff40b858dea6b1111291693cf8fc0aa1f1ed4593340dbbf8cf7",
+          "expected_git_blob": null,
+          "bytes": 1635960,
+          "sha256": "cbb7c8cbf2674ff40b858dea6b1111291693cf8fc0aa1f1ed4593340dbbf8cf7",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "de-table-meyers-b1-168": {
+      "passed": true,
+      "sha256": "ff9e0bdc3e9f4ded88771276fc7b4bcd82a72f3a81e06e106961a7fcc62e6624",
+      "attempts": [
+        {
+          "url": "https://upload.wikimedia.org/wikipedia/commons/8/8b/Meyers_b1_s0168.jpg?20060825180808",
+          "expected_sha256": "ff9e0bdc3e9f4ded88771276fc7b4bcd82a72f3a81e06e106961a7fcc62e6624",
+          "expected_git_blob": null,
+          "bytes": 391196,
+          "sha256": "ff9e0bdc3e9f4ded88771276fc7b4bcd82a72f3a81e06e106961a7fcc62e6624",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "de-fraktur-kant-himmel-12": {
+      "passed": true,
+      "sha256": "df0319846729b85ec1e323271bec3b12335971039d6a4878c638e77fd1b1bd4d",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/Allgemeine_Naturgeschichte_und_Theorie_des_Himmels.djvu/page12-1280px-Allgemeine_Naturgeschichte_und_Theorie_des_Himmels.djvu.jpg?20080921100417",
+          "expected_sha256": "df0319846729b85ec1e323271bec3b12335971039d6a4878c638e77fd1b1bd4d",
+          "expected_git_blob": null,
+          "bytes": 377385,
+          "sha256": "df0319846729b85ec1e323271bec3b12335971039d6a4878c638e77fd1b1bd4d",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "de-2col-amz-1823-2": {
+      "passed": true,
+      "sha256": "c09d69b8f14086f11ce643debdea8ec4c2e9aeb72c5def5869f5d6a724b1d358",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9d/ALLGEMEINE_MUSIKALISCHE_ZEITUNG-92-94%2C97-98%2C159%2C168-169.pdf/page2-960px-ALLGEMEINE_MUSIKALISCHE_ZEITUNG-92-94%2C97-98%2C159%2C168-169.pdf.jpg?20110505080325",
+          "expected_sha256": "c09d69b8f14086f11ce643debdea8ec4c2e9aeb72c5def5869f5d6a724b1d358",
+          "expected_git_blob": null,
+          "bytes": 383065,
+          "sha256": "c09d69b8f14086f11ce643debdea8ec4c2e9aeb72c5def5869f5d6a724b1d358",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "fr-footnote-tableau-france-20": {
+      "passed": true,
+      "sha256": "0e6b76ad59a6bfb81a4db243e4102501ee36459c1c3f6cddc92ed0afd00023bc",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Tableau_de_la_france_g%C3%A9ographie_physique_politique_et_morale_1875.djvu/page20-1920px-Tableau_de_la_france_g%C3%A9ographie_physique_politique_et_morale_1875.djvu.jpg?20081129052442",
+          "expected_sha256": "0e6b76ad59a6bfb81a4db243e4102501ee36459c1c3f6cddc92ed0afd00023bc",
+          "expected_git_blob": null,
+          "bytes": 1362199,
+          "sha256": "0e6b76ad59a6bfb81a4db243e4102501ee36459c1c3f6cddc92ed0afd00023bc",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "fr-table-tableau-france-2": {
+      "passed": true,
+      "sha256": "a6235a9827d20d70746a1c8205576bdca4796d6af3f669a20aa5a07697461869",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Tableau_de_la_france_g%C3%A9ographie_physique_politique_et_morale_1875.djvu/page2-1920px-Tableau_de_la_france_g%C3%A9ographie_physique_politique_et_morale_1875.djvu.jpg?20081129052442",
+          "expected_sha256": "a6235a9827d20d70746a1c8205576bdca4796d6af3f669a20aa5a07697461869",
+          "expected_git_blob": null,
+          "bytes": 535022,
+          "sha256": "a6235a9827d20d70746a1c8205576bdca4796d6af3f669a20aa5a07697461869",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "fr-table-hauy-physique-13": {
+      "passed": true,
+      "sha256": "de8ffa974976e53a07f21d8289812ed676c8f38b1c96d40462abd07fbd35b86f",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/61/R.-J._Ha%C3%BCy_-_Trait%C3%A9_%C3%A9l%C3%A9mentaire_de_physique_-_1803_-_Vol_1.djvu/page13-1280px-R.-J._Ha%C3%BCy_-_Trait%C3%A9_%C3%A9l%C3%A9mentaire_de_physique_-_1803_-_Vol_1.djvu.jpg?20151108133149",
+          "expected_sha256": "de8ffa974976e53a07f21d8289812ed676c8f38b1c96d40462abd07fbd35b86f",
+          "expected_git_blob": null,
+          "bytes": 85179,
+          "sha256": "de8ffa974976e53a07f21d8289812ed676c8f38b1c96d40462abd07fbd35b86f",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "fr-table-sabatier-chimie-7": {
+      "passed": true,
+      "sha256": "9c04f9d497d4ab95dfe4117a1ec4bc35fabb9ddd4964924b8442f437a730eef4",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Sabatier_-_Le%C3%A7ons_%C3%A9l%C3%A9mentaires_de_chimie_agricole.djvu/page7-1920px-Sabatier_-_Le%C3%A7ons_%C3%A9l%C3%A9mentaires_de_chimie_agricole.djvu.jpg?20130105003921",
+          "expected_sha256": "9c04f9d497d4ab95dfe4117a1ec4bc35fabb9ddd4964924b8442f437a730eef4",
+          "expected_git_blob": null,
+          "bytes": 195371,
+          "sha256": "9c04f9d497d4ab95dfe4117a1ec4bc35fabb9ddd4964924b8442f437a730eef4",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "fr-footnote-caboul-19": {
+      "passed": true,
+      "sha256": "50ffd6a7aee724c0e13bbce0acf9019c90b1adc7014d779b3f7498fa70a069f3",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/12/Tableau_du_royaume_de_Caboul_et_de_ses_d%C3%A9pendances_dans_la_Perse%2C_la_Tartarie_et_l%27Inde_-_Tome_1.pdf/page19-1920px-Tableau_du_royaume_de_Caboul_et_de_ses_d%C3%A9pendances_dans_la_Perse%2C_la_Tartarie_et_l%27Inde_-_Tome_1.pdf.jpg?20230303150049",
+          "expected_sha256": "50ffd6a7aee724c0e13bbce0acf9019c90b1adc7014d779b3f7498fa70a069f3",
+          "expected_git_blob": null,
+          "bytes": 508619,
+          "sha256": "50ffd6a7aee724c0e13bbce0acf9019c90b1adc7014d779b3f7498fa70a069f3",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "fr-old-tachard-siam-102": {
+      "passed": true,
+      "sha256": "41d697a43ebda3989b485acaeffdfa5152a08db493a88977d5af1b3e1bc64c34",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/23/Tachard_-_Voyage_de_Siam%2C_des_P%C3%A8res_j%C3%A9suites%2C_1686.djvu/page102-1920px-Tachard_-_Voyage_de_Siam%2C_des_P%C3%A8res_j%C3%A9suites%2C_1686.djvu.jpg?20240709104628",
+          "expected_sha256": "41d697a43ebda3989b485acaeffdfa5152a08db493a88977d5af1b3e1bc64c34",
+          "expected_git_blob": null,
+          "bytes": 464560,
+          "sha256": "41d697a43ebda3989b485acaeffdfa5152a08db493a88977d5af1b3e1bc64c34",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "fr-footnote-vallat-rabelais-13": {
+      "passed": true,
+      "sha256": "d03ae92f246a590bf2ce1bca729cc197a6bc5e1a84780f9509190f4622f92c1e",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/73/Vallat_-_Le_G%C3%A9nie_de_Rabelais%2C_1880.djvu/page13-1920px-Vallat_-_Le_G%C3%A9nie_de_Rabelais%2C_1880.djvu.jpg?20180129133518",
+          "expected_sha256": "d03ae92f246a590bf2ce1bca729cc197a6bc5e1a84780f9509190f4622f92c1e",
+          "expected_git_blob": null,
+          "bytes": 494127,
+          "sha256": "d03ae92f246a590bf2ce1bca729cc197a6bc5e1a84780f9509190f4622f92c1e",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "fr-footnote-maccarthy-coree-17": {
+      "passed": true,
+      "sha256": "18aca959469d8c9fd112989d7e3b9506c82941c80c96e87536da71187a4ca548",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d6/Mac_Carthy_-_La_Cor%C3%A9e%2C_%C3%A9tude_d%27hydrographie_et_de_g%C3%A9ographie%2C_1848.pdf/page17-500px-Mac_Carthy_-_La_Cor%C3%A9e%2C_%C3%A9tude_d%27hydrographie_et_de_g%C3%A9ographie%2C_1848.pdf.jpg?20230512080936",
+          "expected_sha256": "18aca959469d8c9fd112989d7e3b9506c82941c80c96e87536da71187a4ca548",
+          "expected_git_blob": null,
+          "bytes": 116922,
+          "sha256": "18aca959469d8c9fd112989d7e3b9506c82941c80c96e87536da71187a4ca548",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "fr-figure-tour-france-117": {
+      "passed": true,
+      "sha256": "389e63db0351caab48e46cb0b0c25f1d54657d35fb7a79e4c8fb6615cbd29cc3",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/G._Bruno_-_Le_Tour_de_la_France_par_deux_enfants%2C_1904.djvu/page117-1280px-G._Bruno_-_Le_Tour_de_la_France_par_deux_enfants%2C_1904.djvu.jpg?20120905131046",
+          "expected_sha256": "389e63db0351caab48e46cb0b0c25f1d54657d35fb7a79e4c8fb6615cbd29cc3",
+          "expected_git_blob": null,
+          "bytes": 605401,
+          "sha256": "389e63db0351caab48e46cb0b0c25f1d54657d35fb7a79e4c8fb6615cbd29cc3",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "fr-footnote-sable-maximes-20": {
+      "passed": true,
+      "sha256": "916dd848213724d8bcc3d477841c2615acc6723e0d74b3fecffba838343299b7",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e8/Sabl%C3%A9_-_Maximes%2C_1870.djvu/page20-1920px-Sabl%C3%A9_-_Maximes%2C_1870.djvu.jpg?20091120061416",
+          "expected_sha256": "916dd848213724d8bcc3d477841c2615acc6723e0d74b3fecffba838343299b7",
+          "expected_git_blob": null,
+          "bytes": 622055,
+          "sha256": "916dd848213724d8bcc3d477841c2615acc6723e0d74b3fecffba838343299b7",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "fr-prose-rabaut-cevenol-20": {
+      "passed": true,
+      "sha256": "0eb8dd13825d4ccefd1303097121f2adc3d07ded961b53845801d18d00d4fc3c",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b4/Rabaut_-_Le_vieux_C%C3%A9venol%2C_1886.djvu/page20-1280px-Rabaut_-_Le_vieux_C%C3%A9venol%2C_1886.djvu.jpg?20200911171159",
+          "expected_sha256": "0eb8dd13825d4ccefd1303097121f2adc3d07ded961b53845801d18d00d4fc3c",
+          "expected_git_blob": null,
+          "bytes": 371804,
+          "sha256": "0eb8dd13825d4ccefd1303097121f2adc3d07ded961b53845801d18d00d4fc3c",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "fr-prose-dupin-droit-108": {
+      "passed": true,
+      "sha256": "dfda2f313d454c74402d963b2d6eb0786725466dce0d8247f9b6960de783de0a",
+      "attempts": [
+        {
+          "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/46/M_Dupin_-_Pr%C3%A9cis_historique_du_droit_romain%2C_1819.djvu/page108-1920px-M_Dupin_-_Pr%C3%A9cis_historique_du_droit_romain%2C_1819.djvu.jpg?20250811173310",
+          "expected_sha256": "dfda2f313d454c74402d963b2d6eb0786725466dce0d8247f9b6960de783de0a",
+          "expected_git_blob": null,
+          "bytes": 385391,
+          "sha256": "dfda2f313d454c74402d963b2d6eb0786725466dce0d8247f9b6960de783de0a",
+          "passed": true,
+          "cached": false,
+          "round": 1
+        }
+      ]
+    },
+    "receipt-cord-test-29": {
+      "passed": true,
+      "sha256": "1f065c268473d727282005e57441c55c3249afe0da54f3bc08823d0cbe730610",
+      "expected_sha256": "1f065c268473d727282005e57441c55c3249afe0da54f3bc08823d0cbe730610",
+      "bytes": 1390407,
+      "parquet_row": 29
+    },
+    "receipt-cord-test-4": {
+      "passed": true,
+      "sha256": "8f3eee7068c96e86cdb2e4b5c53085cb5e1439462edd55c373548cb1962801ad",
+      "expected_sha256": "8f3eee7068c96e86cdb2e4b5c53085cb5e1439462edd55c373548cb1962801ad",
+      "bytes": 1643699,
+      "parquet_row": 4
+    },
+    "receipt-cord-test-16": {
+      "passed": true,
+      "sha256": "eef326565b3945217a69afd84c893afdffd03a2f487943661c2423e6d6ec0d7d",
+      "expected_sha256": "eef326565b3945217a69afd84c893afdffd03a2f487943661c2423e6d6ec0d7d",
+      "bytes": 1732233,
+      "parquet_row": 16
+    },
+    "receipt-cord-test-20": {
+      "passed": true,
+      "sha256": "6213439292eb4c2ad7e04afab6bb5bc7d1d5925d18dc392c36f233d394ca7c19",
+      "expected_sha256": "6213439292eb4c2ad7e04afab6bb5bc7d1d5925d18dc392c36f233d394ca7c19",
+      "bytes": 1638174,
+      "parquet_row": 20
+    },
+    "receipt-cord-test-14": {
+      "passed": true,
+      "sha256": "9dcf1f9f86c909b762767cb07d1cc0db30773d556154ce42e0210f65270ee39d",
+      "expected_sha256": "9dcf1f9f86c909b762767cb07d1cc0db30773d556154ce42e0210f65270ee39d",
+      "bytes": 3670113,
+      "parquet_row": 14
+    },
+    "receipt-cord-test-17": {
+      "passed": true,
+      "sha256": "4322ab5ec4f0b1365e08af0c31288e65e8cbd2c8eb5241adfb329244acbbb30b",
+      "expected_sha256": "4322ab5ec4f0b1365e08af0c31288e65e8cbd2c8eb5241adfb329244acbbb30b",
+      "bytes": 1235872,
+      "parquet_row": 17
+    },
+    "receipt-cord-test-26": {
+      "passed": true,
+      "sha256": "ca18f6b8a3b43f3d5b916d382fe2f8e482e318c023884dca8dca3ecc1ab5d562",
+      "expected_sha256": "ca18f6b8a3b43f3d5b916d382fe2f8e482e318c023884dca8dca3ecc1ab5d562",
+      "bytes": 587321,
+      "parquet_row": 26
+    },
+    "receipt-cord-test-28": {
+      "passed": true,
+      "sha256": "d94cc999dbef6b8384afd158cf4757b4df2bd8fadfc8ba4f077b618dc9c32dc0",
+      "expected_sha256": "d94cc999dbef6b8384afd158cf4757b4df2bd8fadfc8ba4f077b618dc9c32dc0",
+      "bytes": 2671788,
+      "parquet_row": 28
+    },
+    "receipt-cord-test-33": {
+      "passed": true,
+      "sha256": "c0561fcfa9cd1aea727ae12b63aaadf6e9d721e1bc9510686b53f8622e42a1d5",
+      "expected_sha256": "c0561fcfa9cd1aea727ae12b63aaadf6e9d721e1bc9510686b53f8622e42a1d5",
+      "bytes": 839389,
+      "parquet_row": 33
+    },
+    "receipt-cord-test-38": {
+      "passed": true,
+      "sha256": "b7afc72ae79e1c0b23b46c83ae89031bb08ce5aec5e532e7a6f74b9511dc7fda",
+      "expected_sha256": "b7afc72ae79e1c0b23b46c83ae89031bb08ce5aec5e532e7a6f74b9511dc7fda",
+      "bytes": 12267981,
+      "parquet_row": 38
+    },
+    "receipt-cord-test-41": {
+      "passed": true,
+      "sha256": "994b983a7f51670ca67b35bbaf9a11c8852abf1711651448d4ce39f8f8119d6f",
+      "expected_sha256": "994b983a7f51670ca67b35bbaf9a11c8852abf1711651448d4ce39f8f8119d6f",
+      "bytes": 606871,
+      "parquet_row": 41
+    },
+    "receipt-cord-test-51": {
+      "passed": true,
+      "sha256": "d7bb9ae6973048a5fccafd2559315523040d6450e6bf678c42c42f58508b9d88",
+      "expected_sha256": "d7bb9ae6973048a5fccafd2559315523040d6450e6bf678c42c42f58508b9d88",
+      "bytes": 1417737,
+      "parquet_row": 51
+    },
+    "receipt-cord-test-59": {
+      "passed": true,
+      "sha256": "e0dde2c7e46f02fedae4671b4908b84f097f7b047b6d50bee9beb6f59e06f088",
+      "expected_sha256": "e0dde2c7e46f02fedae4671b4908b84f097f7b047b6d50bee9beb6f59e06f088",
+      "bytes": 17240894,
+      "parquet_row": 59
+    },
+    "receipt-cord-test-61": {
+      "passed": true,
+      "sha256": "d353b8f5a91a1fb031bbde6b91b2143b7282067cd0f8569000b901de79487bf6",
+      "expected_sha256": "d353b8f5a91a1fb031bbde6b91b2143b7282067cd0f8569000b901de79487bf6",
+      "bytes": 934081,
+      "parquet_row": 61
+    },
+    "receipt-cord-test-70": {
+      "passed": true,
+      "sha256": "ca0698c4e0e39499e2b5f2ac1ecac60498fc7554a03f5f298d2eeace5af34fe2",
+      "expected_sha256": "ca0698c4e0e39499e2b5f2ac1ecac60498fc7554a03f5f298d2eeace5af34fe2",
+      "bytes": 2222227,
+      "parquet_row": 70
+    }
+  },
+  "candidate_outputs_examined": false,
+  "elapsed_seconds": 196.32524604300124,
+  "passed_pages": 57,
+  "total_pages": 57,
+  "passed": true
+}

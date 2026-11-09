@@ -89,8 +89,8 @@ std::string processing_fingerprint(const options & o) {
     // absolute paths are deliberately absent from the serialized identity.
     s << ',' << core_env::on("CRISPEMBED_MARKER_REPETITION_CHECK") << ','
       << core_env::on("CRISPEMBED_MARKER_SOURCE_LINKS") << ','
-      << core_env::on("CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE") << ','
-      << core_env::on("CRISPEMBED_MARKER_REFERENCES");
+      << core_env::on("CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE") << ',' << core_env::on("CRISPEMBED_MARKER_REFERENCES")
+      << ',' << core_env::on("CRISPEMBED_MARKER_GLYPHLESS_TEXT");
     const auto text = s.str();
     return core_sha256::bytes(text.data(), text.size());
 }

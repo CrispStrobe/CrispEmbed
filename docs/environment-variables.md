@@ -264,7 +264,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-486 `CRISPEMBED_*` variables and 225 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+487 `CRISPEMBED_*` variables and 225 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -844,6 +844,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/marker.cpp` +2 | TeleOCR's vision tower is under the Qwen RESEARCH LICENSE (docs/teleocr-license.md); the PDFium text mode loads no model and needs no acknowledgement. |
 | `CRISPEMBED_MARKER` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp` |  |
 | `CRISPEMBED_MARKER_ARTIFACTS` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp`, `src/marker_backend.cpp` |  |
+| `CRISPEMBED_MARKER_GLYPHLESS_TEXT` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp`, `src/marker_backend.cpp` |  |
 | `CRISPEMBED_MARKER_INCREMENTAL` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp` |  |
 | `CRISPEMBED_MARKER_MULTILINGUAL_NORMALIZE` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp`, `src/marker_document.cpp` |  |
 | `CRISPEMBED_MARKER_REFERENCES` | on | off | bool | default-off experimental / opt-in | `src/marker.cpp`, `src/marker_backend.cpp`, `src/marker_document.cpp` |  |

@@ -46,10 +46,12 @@ class CrispSystemOne {
   CrispSystemOne(String modelPath,
       {int nThreads = 2, String? libPath, bool? autoDownload, bool? offline}) {
     _requireScalarString(modelPath);
-    if (modelPath.contains('\u0000'))
+    if (modelPath.contains('\u0000')) {
       throw ArgumentError('SystemOne model path contains NUL');
-    if (nThreads < 0 || nThreads > 64)
+    }
+    if (nThreads < 0 || nThreads > 64) {
       throw ArgumentError('SystemOne threads must be0..64');
+    }
     _lib = libPath != null
         ? DynamicLibrary.open(libPath)
         : Platform.isIOS
@@ -66,8 +68,9 @@ class CrispSystemOne {
       'crispembed_systemone_error',
       'crispembed_systemone_profile'
     ]) {
-      if (!_lib.providesSymbol(name))
+      if (!_lib.providesSymbol(name)) {
         throw StateError('Native library does not provide SystemOne support');
+      }
     }
     final init =
         _lib.lookupFunction<_InitNative, _Init>('crispembed_systemone_init');
@@ -79,9 +82,10 @@ class CrispSystemOne {
         _lib.lookupFunction<_TextNative, _Text>('crispembed_systemone_error');
     _profile =
         _lib.lookupFunction<_TextNative, _Text>('crispembed_systemone_profile');
-    if (offline != null)
+    if (offline != null) {
       _lib.lookupFunction<_OfflineNative, _Offline>('crispembed_set_offline')(
           offline ? 1 : 0);
+    }
     final resolver = _lib
         .lookupFunction<_ResolveNative, _Resolve>('crispembed_resolve_model');
     final arg = modelPath.toNativeUtf8();
@@ -95,11 +99,13 @@ class CrispSystemOne {
                       !modelPath.contains('\\')))
               ? 1
               : 0);
-      if (value == nullptr)
+      if (value == nullptr) {
         throw StateError('Could not resolve SystemOne model');
+      }
       resolved = value.toDartString();
-      if (resolved.isEmpty)
+      if (resolved.isEmpty) {
         throw StateError('Could not resolve SystemOne model');
+      }
     } finally {
       calloc.free(arg);
     }

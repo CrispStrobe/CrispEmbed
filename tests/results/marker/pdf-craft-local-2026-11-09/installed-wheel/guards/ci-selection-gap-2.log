@@ -1,0 +1,13 @@
+.........................................F......
+======================================================================
+FAIL: test_every_tracked_file_the_filter_excludes_selects_nothing (__main__.WorkflowFilterTests.test_every_tracked_file_the_filter_excludes_selects_nothing)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<REPOSITORY>/tests/test_ci_selection.py", line 499, in test_every_tracked_file_the_filter_excludes_selects_nothing
+    self.fail(f"{path} is filtered out of the ordinary workflows but selects {report['reason']}")
+AssertionError: models/licenses/apache-2.0/LICENSE is filtered out of the ordinary workflows but selects shared build/runtime dependency changed
+
+----------------------------------------------------------------------
+Ran 48 tests in 0.756s
+
+FAILED (failures=1)
