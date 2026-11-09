@@ -734,14 +734,23 @@ static void pdf_bidi_word(std::string & content, const stored_word & word, int p
         for (const auto & run : runs) {
             const std::vector<uint32_t> logical(text.begin() + run.start, text.begin() + run.end);
             content += "/Span << /ActualText " + pdf_unicode_string(logical) + " >> BDC\nBT\n3 Tr\n";
+            size_t current_font = std::numeric_limits<size_t>::max();
             for (size_t cell = 0; cell < run.clusters.size(); cell++) {
                 for (const auto index : run.clusters[cell]) {
                     const size_t character = characters.at(text[index]) - 1;
+                    const size_t font = character / pdf_cids_per_font;
+                    // Readers can flush their directional text buffer on Tf,
+                    // even when the selected font does not change. Preserve a
+                    // buffered run instead of selecting its font per glyph.
+                    if (font != current_font) {
+                        content += "/F" + std::to_string(font + 1) + " 1 Tf\n";
+                        current_font = font;
+                    }
                     std::string encoded = "<";
                     hex16(encoded, pdf_cid(character % pdf_cids_per_font));
-                    content += "/F" + std::to_string(character / pdf_cids_per_font + 1) + " 1 Tf\n" + decimal(advance) +
-                               " 0 0 " + decimal(height) + " " + decimal(word.x + (run.cell + cell) * advance) + " " +
-                               decimal(y) + " Tm\n" + encoded + "> Tj\n";
+                    content += decimal(advance) + " 0 0 " + decimal(height) + " " +
+                               decimal(word.x + (run.cell + cell) * advance) + " " + decimal(y) + " Tm\n" + encoded +
+                               "> Tj\n";
                 }
             }
             content += "ET\nEMC\n";
