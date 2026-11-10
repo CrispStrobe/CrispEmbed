@@ -77,7 +77,7 @@
           "from": "a603dcf32f3fee0f75401bfedd9cfaac4eae7fe3",
           "to": "0845453a188ac38a4f1ab2decae34bde3938815a",
           "changed_by": [
-            "PENDING-SHA frozen-guard re-pin commit (this PR)"
+            "f8549a81c8e2d28997134ac611e10379d4adc838 Re-pin stale frozen guards with recorded amendments; fix ci_process RSS test"
           ],
           "classification": "behaviour-neutral",
           "reason": "Guard-code change made by the frozen-guard re-pin PR itself: check_v1_unchanged/check_evidence now consult tools/frozen_guard_amendments.py (exact recorded blob re-pins and an exact-path list of later additions in tests/results/frozen-guards/successor.json). No producer/consumer matrix, closure, gate, tolerance or expectation changes; tool-only, no runtime source involved."
@@ -96,7 +96,7 @@
           "from": "a603dcf32f3fee0f75401bfedd9cfaac4eae7fe3",
           "to": "0845453a188ac38a4f1ab2decae34bde3938815a",
           "changed_by": [
-            "PENDING-SHA frozen-guard re-pin commit (this PR)"
+            "f8549a81c8e2d28997134ac611e10379d4adc838 Re-pin stale frozen guards with recorded amendments; fix ci_process RSS test"
           ],
           "classification": "behaviour-neutral",
           "reason": "Guard-code change made by the frozen-guard re-pin PR itself: check_v1_unchanged/check_evidence now consult tools/frozen_guard_amendments.py (exact recorded blob re-pins and an exact-path list of later additions in tests/results/frozen-guards/successor.json). No producer/consumer matrix, closure, gate, tolerance or expectation changes; tool-only, no runtime source involved."
@@ -115,7 +115,7 @@
           "from": "d135d092c8f60f4eff7bc68ba937d9e67b59f384",
           "to": "a5dec370f6f2e6493f7c1ce8e058c0f92951a4db",
           "changed_by": [
-            "PENDING-SHA frozen-guard re-pin commit (this PR)"
+            "f8549a81c8e2d28997134ac611e10379d4adc838 Re-pin stale frozen guards with recorded amendments; fix ci_process RSS test"
           ],
           "classification": "behaviour-neutral",
           "reason": "Guard-code change made by the frozen-guard re-pin PR itself: check_pins compares against frozen_guard_amendments.expected() (frozen blob or newest recorded re-pin, exact match). No base, producer, gate, tolerance or expectation changes; tool-only."
@@ -134,7 +134,7 @@
           "from": "6af39a788b19cfbd04b5c2cb686202e2ccc18203",
           "to": "478a554897479d4acaec011ccfb103fc0be13cfe",
           "changed_by": [
-            "PENDING-SHA frozen-guard re-pin commit (this PR)"
+            "f8549a81c8e2d28997134ac611e10379d4adc838 Re-pin stale frozen guards with recorded amendments; fix ci_process RSS test"
           ],
           "classification": "behaviour-neutral",
           "reason": "Test change made by the frozen-guard re-pin PR itself: test_carried_evidence_complete expects the carried count to equal every packaging receipt minus the exact recorded later additions (previously every receipt). Same exact equality; test-only, no runtime source."
@@ -153,7 +153,7 @@
           "from": "6af39a788b19cfbd04b5c2cb686202e2ccc18203",
           "to": "478a554897479d4acaec011ccfb103fc0be13cfe",
           "changed_by": [
-            "PENDING-SHA frozen-guard re-pin commit (this PR)"
+            "f8549a81c8e2d28997134ac611e10379d4adc838 Re-pin stale frozen guards with recorded amendments; fix ci_process RSS test"
           ],
           "classification": "behaviour-neutral",
           "reason": "Test change made by the frozen-guard re-pin PR itself: test_carried_evidence_complete expects the carried count to equal every packaging receipt minus the exact recorded later additions (previously every receipt). Same exact equality; test-only, no runtime source."
