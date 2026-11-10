@@ -5,7 +5,7 @@ Some model-free guards freeze the exact bytes (sha256), git objects (blob/tree/g
 ids) or literal source text their evidence ran on. Those frozen values are never
 rewritten. When a pinned value later changes for a reviewed, behaviour-neutral reason
 (formatting, comments, refactors, includes, additive default-off gates), the change is
-declared in tests/results/frozen-guards/amendments.json: the guard, the path, the
+declared in one of tests/results/frozen-guards/*.json (one file per guard family): the guard, the path, the
 frozen value and every re-pin (previous -> new value, the commits that changed it and
 why). Same chain rules as tools/qwen35_source_pins.py: a guard accepts only the frozen
 value or the newest recorded re-pin, so exact-match semantics are unchanged.
@@ -21,26 +21,24 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-AMENDMENTS = 'tests/results/frozen-guards/amendments.json'
+AMENDMENTS = 'tests/results/frozen-guards'
 SCHEMA = 'crispembed-frozen-guard-amendments/v1'
 KINDS = {'sha256', 'git-object', 'text'}
 
 
 def load(repo=ROOT):
-    path = Path(repo) / AMENDMENTS
-    if not path.exists():
-        return {}
-    data = json.loads(path.read_text())
-    if data.get('schema') != SCHEMA:
-        raise ValueError('Unknown frozen-guard amendment schema')
     out = {}
-    for a in data['amendments']:
-        if a['kind'] not in KINDS:
-            raise ValueError('Unknown amendment kind: %r' % a['kind'])
-        key = (a['guard'], a['path'], a['frozen'])
-        if key in out:
-            raise ValueError('Duplicate amendment: %r' % (key,))
-        out[key] = a
+    for path in sorted((Path(repo) / AMENDMENTS).glob('*.json')):
+        data = json.loads(path.read_text())
+        if data.get('schema') != SCHEMA:
+            raise ValueError('Unknown frozen-guard amendment schema: ' + path.name)
+        for a in data['amendments']:
+            if a['kind'] not in KINDS:
+                raise ValueError('Unknown amendment kind: %r' % a['kind'])
+            key = (a['guard'], a['path'], a['frozen'])
+            if key in out:
+                raise ValueError('Duplicate amendment: %r' % (key,))
+            out[key] = a
     return out
 
 
