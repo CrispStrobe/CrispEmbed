@@ -1,3 +1,14 @@
+## 0.17.17
+
+- Add phone-photo preparation APIs (projective crops, measured rotation,
+  validated corners) and exact registry model metadata.
+- Add bounded reviewed-PDF writers and PDF/A-2b archival output. Right-to-left
+  text in PDF text layers is still refused safely (capabilities omit BIDI).
+- Add per-call licence acceptance: `resolveModelAccepting` and
+  `modelLicenseInfo`.
+- Add resumable, source-linked document extraction with checkpoints.
+- iOS pod: keep the `-force_load` path quoted so plugin paths with spaces link.
+
 ## 0.17.16
 
 - Add versioned OCR review snapshots (geometry and confidence provenance) and
