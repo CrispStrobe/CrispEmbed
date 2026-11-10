@@ -1,7 +1,8 @@
 #include "lighton4b_sensitivity_policy.h"
+#include "core/clean_exit.h"
 #include <set>
 #include <iostream>
-int main() {
+static int crispembed_test_main() {
     qwen35_ocr::decoder_weights w;
     w.layers.resize(32);
     for (int i = 0; i < 32; ++i) w.layers[i].full_attention = i % 4 == 3;
@@ -21,4 +22,8 @@ int main() {
     w.layers.pop_back();
     if (!sensitivity::slots(w).empty()) return 4;
     std::cout << "SENSITIVITY_POLICY passed=1 unique_slots=248 counts=0,152,32,96,248 heldout=0 model_payload=0\n";
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

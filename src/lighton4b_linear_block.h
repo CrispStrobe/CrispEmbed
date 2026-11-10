@@ -42,19 +42,26 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     };
     const bool bf16 = lighton4b_bf16_linear_enabled();
     const bool repack = lighton4b_physical_q4_repack_mode(w.upstream_physical);
-    const bool q6_tiled=lighton4b_physical_q6_tiled_mode(w.upstream_physical);
-    if (!lighton4b_physical_q6_tiled_valid(w.upstream_physical) || (previous && previous->physical_q6_tiled != q6_tiled)) return false;
+    const bool q6_tiled = lighton4b_physical_q6_tiled_mode(w.upstream_physical);
+    if (!lighton4b_physical_q6_tiled_valid(w.upstream_physical) ||
+        (previous && previous->physical_q6_tiled != q6_tiled))
+        return false;
     const bool source_gdn = lighton4b_physical_gdn_source_ops_mode(w.upstream_physical);
     if (previous && previous->physical_gdn_source_ops != source_gdn) return false;
     if (!lighton4b_physical_q4_repack_valid(w.upstream_physical) || w.physical_q4_repack != repack ||
         w.linear.physical_q4_repack != repack ||
         bool(w.physical_weights_cache && w.physical_weights_cache->physical_repack_enabled()) != repack ||
-        (previous && previous->physical_q4_repack != repack)) return false;
-    if (!lighton4b_hf_tiled_out_mode_valid(w.linear.hf_tiled_out,w.upstream_physical) ||
-        (previous && previous->hf_tiled_out != w.linear.hf_tiled_out)) return false;
-    if (!lighton4b_upstream_physical_mode_valid(w.upstream_physical) || !lighton4b_physical_native_ops_valid(w.upstream_physical) ||
+        (previous && previous->physical_q4_repack != repack))
+        return false;
+    if (!lighton4b_hf_tiled_out_mode_valid(w.linear.hf_tiled_out, w.upstream_physical) ||
+        (previous && previous->hf_tiled_out != w.linear.hf_tiled_out))
+        return false;
+    if (!lighton4b_upstream_physical_mode_valid(w.upstream_physical) ||
+        !lighton4b_physical_native_ops_valid(w.upstream_physical) ||
         w.linear.upstream_physical != w.upstream_physical ||
-        (previous && (previous->upstream_physical != w.upstream_physical || previous->physical_native_ops != lighton4b_physical_native_ops_mode(w.upstream_physical)))) return false;
+        (previous && (previous->upstream_physical != w.upstream_physical ||
+                      previous->physical_native_ops != lighton4b_physical_native_ops_mode(w.upstream_physical))))
+        return false;
     const int past = previous ? previous->tokens : 0;
     if (past < 0 || past > 4096 - tokens ||
         (previous && (previous->bf16_activations != bf16 || past == 0 || previous->conv.size() != 32768 ||
@@ -79,26 +86,28 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     auto rms = [&](const std::vector<float> & x, ggml_tensor * norm, std::vector<float> & y) {
         std::vector<float> weights(2560);
         if (!tensor_floats(norm, weights.data()) || !finite(weights)) return false;
-        if (lighton4b_physical_native_component(w.upstream_physical,2))
+        if (lighton4b_physical_native_component(w.upstream_physical, 2))
             return lighton4b_physical_rms(x.data(), weights.data(), 2560, tokens, threads, y);
         y.resize(x.size());
         for (int token = 0; token < tokens; ++token) {
             const size_t base = size_t(token) * 2560;
             const float scale = bf16 ? lighton4b_bf16_rms_scale(x.data() + base, 2560, 1e-6f)
                                      : rms_scale_cpu(x.data() + base, 2560, 1e-6f);
-            for (int i = 0; i < 2560; ++i) y[base + i] = (x[base + i] * scale) * lighton4b_upstream_gamma(weights[i], w.upstream_physical);
+            for (int i = 0; i < 2560; ++i)
+                y[base + i] = (x[base + i] * scale) * lighton4b_upstream_gamma(weights[i], w.upstream_physical);
         }
         if (bf16) lighton4b_bf16_round(y);
         return finite(y);
     };
     if (!rms(candidate.hidden, w.input_norm, candidate.input_norm)) return false;
     projected_linear_outputs linear;
-    const bool linear_ok = bf16 ? lighton4b_bf16_grouped_cpu(w.linear, candidate.input_norm.data(), tokens, threads,
-                                                             previous ? previous->conv.data() : nullptr,
-                                                             previous ? previous->recurrent.data() : nullptr, linear)
-                                : linear_grouped_cpu(w.linear, 16, candidate.input_norm.data(), 1, tokens, threads,
-                                                     previous ? previous->conv.data() : nullptr,
-                                                     previous ? previous->recurrent.data() : nullptr, linear, w.physical_weights_cache);
+    const bool linear_ok =
+        bf16 ? lighton4b_bf16_grouped_cpu(w.linear, candidate.input_norm.data(), tokens, threads,
+                                          previous ? previous->conv.data() : nullptr,
+                                          previous ? previous->recurrent.data() : nullptr, linear)
+             : linear_grouped_cpu(w.linear, 16, candidate.input_norm.data(), 1, tokens, threads,
+                                  previous ? previous->conv.data() : nullptr,
+                                  previous ? previous->recurrent.data() : nullptr, linear, w.physical_weights_cache);
     if (!linear_ok) return false;
     candidate.attention = std::move(linear.attention);
     if (candidate.attention.size() != candidate.hidden.size() || !finite(candidate.attention)) return false;
@@ -107,7 +116,9 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     candidate.attention_residual = candidate.hidden;
     if (!rms(candidate.hidden, w.post_norm, candidate.post_norm)) return false;
     std::vector<std::vector<float>> projections;
-    if (!project_cpu({ w.gate, w.up }, candidate.post_norm.data(), 2560, tokens, threads, projections, w.physical_weights_cache, w.upstream_physical)) return false;
+    if (!project_cpu({ w.gate, w.up }, candidate.post_norm.data(), 2560, tokens, threads, projections,
+                     w.physical_weights_cache, w.upstream_physical))
+        return false;
     candidate.gate = std::move(projections[0]);
     candidate.up = std::move(projections[1]);
     if (bf16) {
@@ -122,7 +133,9 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
                                        : activated * candidate.up[i];
     }
     projections.clear();
-    if (!project_cpu({ w.down }, candidate.activation.data(), 9216, tokens, threads, projections, w.physical_weights_cache, w.upstream_physical)) return false;
+    if (!project_cpu({ w.down }, candidate.activation.data(), 9216, tokens, threads, projections,
+                     w.physical_weights_cache, w.upstream_physical))
+        return false;
     candidate.down = std::move(projections[0]);
     if (bf16) lighton4b_bf16_round(candidate.down);
     for (size_t i = 0; i < candidate.hidden.size(); ++i) candidate.hidden[i] += candidate.down[i];

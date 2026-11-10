@@ -31,5 +31,6 @@ bool tensor_floats(ggml_tensor * source, float * target, int threads = 1);
 bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int tokens, int threads, int tile_rows,
                       std::vector<float> & output, bool upstream_physical = false);
 bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens, int threads,
-                 std::vector<std::vector<float>> & output, converted_weight_cache * weights_cache = nullptr, bool upstream_physical = false);
+                 std::vector<std::vector<float>> & output, converted_weight_cache * weights_cache = nullptr,
+                 bool upstream_physical = false);
 } // namespace qwen35_ocr

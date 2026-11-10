@@ -97,8 +97,9 @@ static bool decoder_impl(const decoder_weights & w, const attention_config & c, 
                          decoder_outputs & output, converted_weight_cache * weights_cache, bool hidden_only) {
     output = {};
     if (w.upstream_physical || std::any_of(w.layers.begin(), w.layers.end(), [](const decoder_layer_weights & l) {
-        return l.upstream_physical || l.linear.upstream_physical || l.attention.upstream_physical;
-    })) return false; // physical source semantics use the explicitly scoped LightOn4B composer
+            return l.upstream_physical || l.linear.upstream_physical || l.attention.upstream_physical;
+        }))
+        return false; // physical source semantics use the explicitly scoped LightOn4B composer
 
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !input || !positions || !w.embedding || w.layers.empty() ||
         w.layers.size() > 64 || batch < 1 || batch > 4 || tokens < 1 || tokens > 4096 || threads < 1 || threads > 256 ||

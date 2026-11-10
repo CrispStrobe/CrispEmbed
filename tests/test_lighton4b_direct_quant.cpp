@@ -1,4 +1,5 @@
 #include "qwen35_math.h"
+#include "core/clean_exit.h"
 #include "ggml.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -18,7 +19,7 @@ static void gate(const char * name, const char * value) {
     setenv(name, value, 1);
 #endif
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 2) return 2;
     std::cout << std::setprecision(17);
     gate("CRISPEMBED_QWEN35_OCR", "1");
@@ -101,4 +102,8 @@ int main(int argc, char ** argv) {
             }
         }
     std::cout << "DIRECT_QUANT_CONTROLS passed=1 quality_qualified=0\n";
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

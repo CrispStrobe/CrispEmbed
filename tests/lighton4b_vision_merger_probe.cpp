@@ -1,5 +1,6 @@
 // Test-only source-fed merger, never linked into the production target.
 #include "lighton4b_vision_bf16.cpp"
+#include "core/clean_exit.h"
 #include "ggml-cpu.h"
 #include <fstream>
 #include <stdexcept>
@@ -19,7 +20,7 @@ static float source_erf(float x) {
     const float result = std::fma(partial, r, 1.0f);
     return std::signbit(x) ? -result : result;
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 2) return 2;
     const std::string dir = argv[1];
     auto read = [&](const std::string & name, size_t n) {
@@ -104,4 +105,8 @@ int main(int argc, char ** argv) {
     ggml_backend_free(backend);
     ggml_free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

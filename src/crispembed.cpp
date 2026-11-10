@@ -4753,7 +4753,7 @@ extern "C" void * crispembed_ocr_model_init(const char * path, int n_threads) {
     bool unqualified_4b = false;
     auto type = detect_arch(path, unqualified_4b);
     if (unqualified_4b) {
-        fprintf(stderr,"crispembed_ocr_model: unqualified qwen35/LightOn4B profile rejected before payload loading\n");
+        fprintf(stderr, "crispembed_ocr_model: unqualified qwen35/LightOn4B profile rejected before payload loading\n");
         return nullptr;
     }
     void * inner = nullptr;

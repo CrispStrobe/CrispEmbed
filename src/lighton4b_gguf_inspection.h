@@ -57,13 +57,13 @@ public:
             const auto index = gguf_find_key(g, key);
             return index >= 0 && gguf_get_kv_type(g, index) == GGUF_TYPE_BOOL && gguf_get_val_bool(g, index);
         };
-        const bool physical = lighton4b_upstream_physical_enabled() &&
-            lighton4b_upstream_physical_metadata_matches(g);
+        const bool physical = lighton4b_upstream_physical_enabled() && lighton4b_upstream_physical_metadata_matches(g);
         if (!string("general.architecture", "qwen35_ocr") ||
             !string("general.source.huggingface.repository", "lightonai/LightOnOCR-3-4B") ||
             !string("general.source.huggingface.revision", "b71010f095dc3735de7ee6b9969bff8f8f50b39a") ||
-            !string("qwen35_ocr.profile", "lightonocr3-4b") || !integer("qwen35_ocr.format_version", physical ? 6 : 5) ||
-            !boolean("qwen35_ocr.tie_word_embeddings") || (!physical && !boolean("qwen35_ocr.zero_centered_text_norm")))
+            !string("qwen35_ocr.profile", "lightonocr3-4b") ||
+            !integer("qwen35_ocr.format_version", physical ? 6 : 5) || !boolean("qwen35_ocr.tie_word_embeddings") ||
+            (!physical && !boolean("qwen35_ocr.zero_centered_text_norm")))
             return nullptr;
         // Validate geometry and distinct EOS declarations before exposing headers.
         const std::pair<const char *, uint32_t> geometry[]{ { "embedding_length", 2560 },

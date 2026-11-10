@@ -1,5 +1,6 @@
 // Test-only same-input production expression observer, not a production target.
 #include "lighton4b_vision_bf16.cpp"
+#include "core/clean_exit.h"
 #include <fstream>
 #include <stdexcept>
 using namespace qwen35_ocr;
@@ -22,7 +23,7 @@ static float trig_nonfused(float angle, bool cosine) {
     u = add(mul(square, mul(u, d)), d);
     return !cosine && angle == 0 ? angle : u;
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 3) return 2;
     const std::string dir = argv[1], mode = argv[2];
     auto read = [&](const std::string & name, size_t count) {
@@ -80,4 +81,8 @@ int main(int argc, char ** argv) {
     emit("source.rotary_pooled",
          attention(qkv, c, tokens, offsets, read("source.cos", tokens * d), read("source.sin", tokens * d)));
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

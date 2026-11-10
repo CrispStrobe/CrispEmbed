@@ -52,7 +52,7 @@ bool frontend_tokenizer::is_stop(int id) const {
 bool frontend_tokenizer::load(gguf_context * meta) {
     *this = {};
     const bool physical = qwen35_ocr::lighton4b_upstream_physical_enabled() &&
-        qwen35_ocr::lighton4b_upstream_physical_metadata_matches(meta);
+                          qwen35_ocr::lighton4b_upstream_physical_metadata_matches(meta);
     if (!enabled() || !meta || core_gguf::kv_str(meta, "general.architecture", "") != "qwen35_ocr" ||
         core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) != (physical ? 6u : 5u) ||
         core_gguf::kv_str(meta, "general.source.huggingface.repository", "") != "lightonai/LightOnOCR-3-4B" ||

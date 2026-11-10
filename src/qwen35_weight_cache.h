@@ -29,8 +29,7 @@ public:
     // their bytes remain charged until the last alias releases the allocation.
     static constexpr std::size_t maximum_physical_repack_budget = 2ull * 1024 * 1024 * 1024;
     static constexpr std::size_t physical_repack_entry_overhead = 80ull * 1024;
-    bool enable_physical_repack(bool physical_owner,
-                                std::size_t budget = maximum_physical_repack_budget);
+    bool enable_physical_repack(bool physical_owner, std::size_t budget = maximum_physical_repack_budget);
     bool physical_repack_enabled() const;
     std::shared_ptr<ggml_tensor> get_physical_repacked(ggml_tensor * source, ggml_backend_device * device);
     std::size_t physical_repack_bytes() const;

@@ -1,4 +1,5 @@
 #include "lighton4b_image_compose.h"
+#include "core/clean_exit.h"
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
@@ -35,7 +36,7 @@ static void floats(const std::string & p, const std::vector<float> & v) {
     f.write(reinterpret_cast<const char *>(v.data()), v.size() * 4);
     check(bool(f), "F32 write");
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     try {
         if (argc == 7) {
             int h = std::stoi(argv[2]), w = std::stoi(argv[3]), oh = std::stoi(argv[4]), ow = std::stoi(argv[5]);
@@ -105,4 +106,8 @@ int main(int argc, char ** argv) {
         std::cerr << e.what() << "\n";
         return 1;
     }
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

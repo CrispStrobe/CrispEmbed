@@ -1,5 +1,6 @@
 // Complete-profile model arithmetic proof; no checkpoint or activation input.
 #include "lighton4b_vision_bf16.cpp"
+#include "core/clean_exit.h"
 #include "lighton4b_rotary_table.h"
 #include <fstream>
 #include <iostream>
@@ -15,7 +16,7 @@ static void gate(const char * value) {
         unsetenv("CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_TABLE");
 #endif
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 4) return 2;
     if (!source_avx2_softmax_supported()) throw std::runtime_error("source-compatible CPU profile required");
     vision_config c;
@@ -147,4 +148,8 @@ int main(int argc, char ** argv) {
               << ",\"constant_bytes\":" << sizeof(lighton4b_rotary_profile::rotary_bits)
               << ",\"product_mkl_dependency\":false}\n";
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

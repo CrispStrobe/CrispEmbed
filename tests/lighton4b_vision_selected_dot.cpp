@@ -2,13 +2,14 @@
 // Scalar adaptation of PyTorch v2.13 ReducedPrecisionFloatGemvFastPathKernel.
 // PyTorch BSD notice: core/third_party/pytorch/LICENSE; ggml MIT notice: ggml/LICENSE.
 #include "lighton4b_vision_bf16.h"
+#include "core/clean_exit.h"
 #include <array>
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 using qwen35_ocr::lighton4b_bf16;
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 2) return 2;
     const std::string dir = argv[1];
     constexpr int width = 1024, rows = 3072, tokens = 560;
@@ -67,4 +68,8 @@ int main(int argc, char ** argv) {
         if (!f) return 5;
     }
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

@@ -1,5 +1,6 @@
 // Actual frozen RGB -> native frontend -> native vision; source arrays compare only.
 #include "lighton4b_vision_bf16.h"
+#include "core/clean_exit.h"
 #define lighton4b_vision_bf16_cpu lighton4b_vision_observed_cpu
 #include "lighton4b_vision_observed.inc"
 #undef lighton4b_vision_bf16_cpu
@@ -43,7 +44,7 @@ static std::vector<std::pair<std::string, const std::vector<float> *>> stages(co
         v.emplace_back(x.first, x.second);
     return v;
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 9) return 2; // weights root, case root, height,width,reference H,W,threads,mode
     const std::string weights_root = argv[1], root = argv[2], mode = argv[8];
     int h = std::stoi(argv[3]), w = std::stoi(argv[4]), gh = std::stoi(argv[5]), gw = std::stoi(argv[6]),
@@ -146,4 +147,8 @@ int main(int argc, char ** argv) {
     ggml_backend_free(backend);
     ggml_free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

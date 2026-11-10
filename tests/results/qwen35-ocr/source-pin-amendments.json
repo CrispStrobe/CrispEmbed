@@ -52,6 +52,17 @@
           "recorded": "2026-11-07",
           "changed_by": [],
           "reason": "Internal optional physical-owner argument dispatches default-off retained quantized path; all existing callers retain legacy defaults."
+        },
+        {
+          "from_sha256": "cc0a6df67af20d9383d91fbc2cb71d2d66521ba92f070571e15747683d936e5b",
+          "to_sha256": "b70e0d5f0f786c86a3c2227b5368c23bef45e21071c7293988fbb95f48603d0f",
+          "to_blob": "e39ec93b36ce250e3178c8a2e98faaaa08a0530c",
+          "recorded_at_commit": "a6f857c697c1c70eaa9277ffa15151fbddf73f9f",
+          "recorded": "2026-11-10",
+          "changed_by": [
+            "d0eed902b6373537cdb0b19454ac87e981dd15f4 Integrate closed physical upstream import and gated native arithmetic [skip ci]"
+          ],
+          "reason": "clang-format (style-only, required by the lint gate) applied in the aggregate integration PR199; no semantic change"
         }
       ]
     },
@@ -187,6 +198,15 @@
             "e480df3e2cad54498ec8f543d35ba681add89332 feat: gate source-compatible physical Q6 block reduction [skip ci]"
           ],
           "reason": "Default-off physical Q6 tiled admission, preserving existing projections and historical receipts; source-compatible helper remains gated pending exact operator and decoded proof."
+        },
+        {
+          "from_sha256": "fde01493f3869eb2855221a823adad5cdd192060c47088105c87fad98b9d08ef",
+          "to_sha256": "cdefed141b2840363672a111ebf56def2193f0f527ea1402b3bb18d59d6d4262",
+          "to_blob": "a29657cc71b12ac128ff28dd201c865451f81f96",
+          "recorded_at_commit": "a6f857c697c1c70eaa9277ffa15151fbddf73f9f",
+          "recorded": "2026-11-10",
+          "changed_by": [],
+          "reason": "clang-format (style-only, required by the lint gate) applied in the aggregate integration PR199; no semantic change"
         }
       ]
     },

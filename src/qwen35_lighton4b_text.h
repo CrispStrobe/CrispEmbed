@@ -16,7 +16,8 @@ inline bool lighton4b_matrix_type(const ggml_tensor * t) {
     return t && (t->type == GGML_TYPE_F32 || t->type == GGML_TYPE_F16 ||
                  (core_env::on("CRISPEMBED_LIGHTON4B_QUANT") && core_env::on("CRISPEMBED_QWEN35_QUANT") &&
                   (t->type == GGML_TYPE_Q8_0 || t->type == GGML_TYPE_Q4_K ||
-                   (t->type == GGML_TYPE_Q6_K && lighton4b_q6_enabled())) && matrix_type_supported(t)));
+                   (t->type == GGML_TYPE_Q6_K && lighton4b_q6_enabled())) &&
+                  matrix_type_supported(t)));
 }
 struct lighton4b_text_owner {
     decoder_weights decoder;

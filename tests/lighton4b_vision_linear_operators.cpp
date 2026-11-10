@@ -1,5 +1,6 @@
 // Actual private production linear helper against retained full source-fed operators.
 #include "lighton4b_vision_bf16.cpp"
+#include "core/clean_exit.h"
 #include "ggml-cpu.h"
 #include <fstream>
 #include <iostream>
@@ -14,7 +15,7 @@ static void env(const char * value) {
         unsetenv("CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR");
 #endif
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 2) return 2;
 #ifdef _WIN32
     _putenv_s("CRISPEMBED_QWEN35_OCR", "1");
@@ -75,4 +76,8 @@ int main(int argc, char ** argv) {
     env(nullptr);
     std::cout << "LINEAR_OPERATOR_CONTROLS passed=1 non_bf16_rejected=1 nonfinite_rejected=1\n";
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

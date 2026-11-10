@@ -1,11 +1,12 @@
 // Test-only original PyTorch header-fed moments and vector affine control.
 #include <ATen/native/cpu/moments_utils.h>
+#include "core/clean_exit.h"
 #include <fstream>
 #include <vector>
 #include <string>
 #include <cmath>
 using at::BFloat16;
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 3) return 2;
     const std::string dir = argv[1], mode = argv[2];
     constexpr int tokens = 560, width = 1024;
@@ -43,4 +44,8 @@ int main(int argc, char ** argv) {
         emit(mode + "." + norm + ".control", y);
     }
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

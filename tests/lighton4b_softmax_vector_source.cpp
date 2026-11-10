@@ -1,12 +1,13 @@
 // Test-only exact installed PyTorch vector-header softmax control.
 #include <ATen/cpu/vec/functional.h>
+#include "core/clean_exit.h"
 #include <fstream>
 #include <vector>
 #include <string>
 #include <stdexcept>
 #include <iostream>
 namespace vx = at::vec::CPU_CAPABILITY;
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     using V = vx::Vectorized<float>;
     if (argc != 3) return 2;
     const std::string dir = argv[1], name = argv[2];
@@ -41,4 +42,8 @@ int main(int argc, char ** argv) {
     std::ofstream report(dir + "/" + name + ".json");
     report << "{\"lanes\":" << V::size() << ",\"exp_zero_exact_one\":" << (exp0 ? "true" : "false") << "}\n";
     return exp0 ? 0 : 4;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

@@ -1,5 +1,6 @@
 // Test-only normalization attribution, consuming retained inputs and weights.
 #include "lighton4b_vision_bf16.cpp"
+#include "core/clean_exit.h"
 #include <fstream>
 #include "ggml-cpu.h"
 #include <iostream>
@@ -14,7 +15,7 @@ static void env(const char * name, const char * value) {
         unsetenv(name);
 #endif
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 2) return 2;
     const std::string dir = argv[1];
     constexpr int tokens = 560, width = 1024;
@@ -87,4 +88,8 @@ int main(int argc, char ** argv) {
         }
     }
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

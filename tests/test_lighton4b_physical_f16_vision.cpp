@@ -1,4 +1,5 @@
 #include "lighton4b_physical_f16_vision.h"
+#include "core/clean_exit.h"
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
@@ -15,7 +16,7 @@ static void check(bool ok, const char * why) {
 static void flag(const char * k, const char * v) {
     setenv(k, v, 1);
 }
-int main() {
+static int crispembed_test_main() {
     try {
         flag("CRISPEMBED_LIGHTON4B_PHYSICAL_F16_VISION", "0");
         check(!lighton4b_physical_f16_vision_mode(true), "default disabled");
@@ -118,4 +119,8 @@ int main() {
         std::cerr << e.what() << "\n";
         return 1;
     }
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

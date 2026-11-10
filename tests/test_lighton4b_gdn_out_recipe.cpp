@@ -1,4 +1,5 @@
 #include "lighton4b_native_context.h"
+#include "core/clean_exit.h"
 #include <cstdlib>
 #include <iostream>
 using namespace qwen35_ocr;
@@ -12,7 +13,7 @@ static void gate(const char * n, const char * v) {
         unsetenv(n);
 #endif
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc == 3 && std::string(argv[1]) == "--metadata") {
         auto * meta = core_gguf::open_metadata(argv[2]);
         bool ok = lighton4b_gdn_out_metadata_matches(meta);
@@ -119,4 +120,8 @@ int main(int argc, char ** argv) {
     gguf_free(meta);
     std::cout << "GDN_OUT_RECIPE passed=1 checks=" << checks
               << " payload_bytes=0 default_off=1 recipe=lighton4b-q4k-gdn-out-q8-v1\n";
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

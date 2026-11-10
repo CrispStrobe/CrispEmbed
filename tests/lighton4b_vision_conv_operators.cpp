@@ -1,5 +1,6 @@
 // Original Conv3D patch fed into actual dispatch and independent sum-order probes.
 #include "lighton4b_vision_bf16.cpp"
+#include "core/clean_exit.h"
 #include "ggml-cpu.h"
 #include <fstream>
 #include <iostream>
@@ -14,7 +15,7 @@ static void set(const char * name, const char * value) {
         unsetenv(name);
 #endif
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 2) return 2;
     const std::string dir = argv[1];
     constexpr int tokens = 560, width = 1536, outputs = 1024;
@@ -96,4 +97,8 @@ int main(int argc, char ** argv) {
     ggml_backend_free(backend);
     ggml_free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

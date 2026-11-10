@@ -1,8 +1,9 @@
 // Test-only installed vector-header trig/dispatch control.
 #include <ATen/cpu/vec/functional.h>
+#include "core/clean_exit.h"
 #include <fstream>
 #include <vector>
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 4) return 2;
     using V = at::vec::CPU_CAPABILITY::Vectorized<float>;
     std::vector<float> x(2000), y(x.size()), z(x.size());
@@ -18,4 +19,8 @@ int main(int argc, char ** argv) {
     co.write(reinterpret_cast<const char *>(y.data()), y.size() * 4);
     si.write(reinterpret_cast<const char *>(z.data()), z.size() * 4);
     return co && si ? 0 : 4;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

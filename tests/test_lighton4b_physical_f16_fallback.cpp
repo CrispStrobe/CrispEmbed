@@ -1,9 +1,10 @@
 #include "lighton4b_physical_f16_attention.h"
+#include "core/clean_exit.h"
 #include "qwen35_attention.h"
 #include <cstdlib>
 #include <cstdio>
 using namespace qwen35_ocr;
-int main() {
+static int crispembed_test_main() {
 #ifdef _WIN32
     _putenv_s("CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION", "1");
 #else
@@ -20,4 +21,8 @@ int main() {
         return 1;
     std::puts("PHYSICAL_F16_UNSUPPORTED_FALLBACK PASS 5");
     return 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

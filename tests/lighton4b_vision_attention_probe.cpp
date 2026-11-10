@@ -1,5 +1,6 @@
 // Test-only native attention observer and source-fed primitive alternatives.
 #include "lighton4b_vision_bf16.cpp"
+#include "core/clean_exit.h"
 #include <fstream>
 #include <stdexcept>
 using namespace qwen35_ocr;
@@ -7,7 +8,7 @@ constexpr int N = 560, W = 1024, H = 16, D = 64;
 static float reduce8(const std::array<float, 8> & s) {
     return ((s[0] + s[4]) + (s[2] + s[6])) + ((s[1] + s[5]) + (s[3] + s[7]));
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 2) return 2;
     const std::string dir = argv[1];
     auto read = [&](const std::string & name, size_t n) {
@@ -193,4 +194,8 @@ int main(int argc, char ** argv) {
     emit("sourcefed.pv8", pool(op, 8));
     emit("sourcefed.pvdouble", pool(op, 0));
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

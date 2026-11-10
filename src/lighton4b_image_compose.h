@@ -18,7 +18,7 @@ inline bool lighton4b_image_enabled() {
 // min/max pixels 65536/16777216. Native execution remains bounded to1024
 // patches; this does not admit the original processor's entire size range.
 inline bool lighton4b_preprocess_rgb(const uint8_t * rgb, int height, int width, image_inputs & output,
-                                         bool upstream_physical_owner = false) {
+                                     bool upstream_physical_owner = false) {
     output = {};
     if (!lighton4b_image_enabled()) return false;
     if (upstream_physical_owner && core_env::on("CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE"))

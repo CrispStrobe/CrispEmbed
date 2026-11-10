@@ -47,12 +47,11 @@ inline bool lighton4b_physical_q4_repack_mode(bool physical) {
 }
 inline bool lighton4b_physical_q4_repack_valid(bool physical) {
     return !lighton4b_physical_q4_repack_mode(physical) ||
-           (lighton4b_physical_native_component(physical, 1) &&
-            lighton4b_physical_f16_attention_available());
+           (lighton4b_physical_native_component(physical, 1) && lighton4b_physical_f16_attention_available());
 }
 inline bool lighton4b_physical_q6_tiled_valid(bool physical) {
     return !lighton4b_physical_q6_tiled_mode(physical) ||
-           (lighton4b_physical_native_component(physical,1) && lighton4b_physical_f16_attention_available() &&
+           (lighton4b_physical_native_component(physical, 1) && lighton4b_physical_f16_attention_available() &&
             lighton4b_physical_q6_tiled_available());
 }
 // Borrow original quant storage, or retain explicitly owned Q4 repacked bytes.
@@ -66,7 +65,8 @@ inline bool lighton4b_physical_matmul(const std::vector<ggml_tensor *> & matrice
         return false;
     const bool repack = lighton4b_physical_q4_repack_mode(true);
     if (!lighton4b_physical_q4_repack_valid(true) || !lighton4b_physical_q6_tiled_valid(true) ||
-        (!head && bool(weights_cache && weights_cache->physical_repack_enabled()) != repack)) return false;
+        (!head && bool(weights_cache && weights_cache->physical_repack_enabled()) != repack))
+        return false;
     size_t elements = size_t(width) * tokens;
     for (auto * m : matrices) {
         if (!m || m->ne[0] != width || m->ne[1] < 1 || m->ne[1] > 300000 || m->ne[2] != 1 || m->ne[3] != 1 ||
@@ -92,8 +92,10 @@ inline bool lighton4b_physical_matmul(const std::vector<ggml_tensor *> & matrice
     std::vector<std::shared_ptr<ggml_tensor>> leases;
     for (auto * source : matrices) {
         if (source->type == GGML_TYPE_Q6_K && tokens >= 8 && lighton4b_physical_q6_tiled_mode(true)) {
-            auto & values=tiled_results[results.size()];
-            if (!lighton4b_physical_q6_tiled_cpu(source->data,ggml_nbytes(source),hidden,width,source->ne[1],tokens,threads,values)) return false;
+            auto & values = tiled_results[results.size()];
+            if (!lighton4b_physical_q6_tiled_cpu(source->data, ggml_nbytes(source), hidden, width, source->ne[1],
+                                                 tokens, threads, values))
+                return false;
             results.push_back(nullptr);
             continue;
         }
@@ -115,12 +117,16 @@ inline bool lighton4b_physical_matmul(const std::vector<ggml_tensor *> & matrice
         ggml_build_forward_expand(graph, result);
         results.push_back(result);
     }
-    if (std::any_of(results.begin(),results.end(),[](auto * value){return value!=nullptr;}) &&
-        ggml_backend_graph_compute(backend.get(), graph) != GGML_STATUS_SUCCESS) return false;
+    if (std::any_of(results.begin(), results.end(), [](auto * value) { return value != nullptr; }) &&
+        ggml_backend_graph_compute(backend.get(), graph) != GGML_STATUS_SUCCESS)
+        return false;
     std::vector<std::vector<float>> complete;
-    for (size_t i=0;i<results.size();++i) {
-        auto * result=results[i];
-        if (!result) {complete.push_back(std::move(tiled_results[i]));continue;}
+    for (size_t i = 0; i < results.size(); ++i) {
+        auto * result = results[i];
+        if (!result) {
+            complete.push_back(std::move(tiled_results[i]));
+            continue;
+        }
         auto * values = static_cast<const float *>(result->data);
         const auto count = size_t(ggml_nelements(result));
         if (!std::all_of(values, values + count, [](float x) { return std::isfinite(x); })) return false;

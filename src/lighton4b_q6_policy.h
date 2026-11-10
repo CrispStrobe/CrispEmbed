@@ -36,13 +36,15 @@ inline bool lighton4b_imatrix_q4km_metadata(gguf_context * metadata) {
     };
     return string("qwen35_ocr.mixed_quant_recipe", lighton4b_imatrix_q4km_recipe) &&
            string("qwen35_ocr.q6_names_sha256", "0ebc0b6104238b46de946f940f61cdc90e04a0eb187553026714fc1270cdb44c") &&
-           string("qwen35_ocr.quant_source_f16_sha256", "757ad5d0ea7699b3d0ce4cbb70978de442e5b95e660da0a13cf048980e255606") &&
+           string("qwen35_ocr.quant_source_f16_sha256",
+                  "757ad5d0ea7699b3d0ce4cbb70978de442e5b95e660da0a13cf048980e255606") &&
            string("qwen35_ocr.quant_coordinate_profile", "hf-grouped-v1") &&
-           string("crispembed.quantization.imatrix_source_sha256", "10e8194af99deb61c457b7f84b39c57224c72f0b9ed262b27c626dc92887afd7") &&
+           string("crispembed.quantization.imatrix_source_sha256",
+                  "10e8194af99deb61c457b7f84b39c57224c72f0b9ed262b27c626dc92887afd7") &&
            string("crispembed.quantization.imatrix_profile", "lighton4b-text-inputs-hf-grouped-v1") &&
            number("crispembed.quantization.imatrix_expected_entries", 248) &&
-           number("crispembed.quantization.imatrix_applied_entries", 248) &&
-           number("qwen35_ocr.q6_tensor_count", 33) && number("general.file_type", 15);
+           number("crispembed.quantization.imatrix_applied_entries", 248) && number("qwen35_ocr.q6_tensor_count", 33) &&
+           number("general.file_type", 15);
 }
 inline bool lighton4b_q6_metadata(gguf_context * metadata) {
     if (!metadata || !lighton4b_q6_enabled()) return false;
