@@ -1,3 +1,10 @@
+## 0.17.18
+
+- Native library update: experimental LightOn4B OCR code, default-off and
+  env-gated, not qualified, no new model alias. Unqualified LightOn4B GGUF
+  profiles are rejected at OCR model load.
+- Android: no x86 CPU-feature probe in mobile builds.
+
 ## 0.17.17
 
 - Add phone-photo preparation APIs (projective crops, measured rotation,
