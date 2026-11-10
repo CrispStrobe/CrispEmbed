@@ -12,7 +12,7 @@ from pathlib import Path
 SHA = "__SHA__"
 REPO = "https://github.com/CrispStrobe/CrispEmbed.git"
 WORK = Path("/kaggle/working")
-TMP = Path("/kaggle/tmp"); TMP.mkdir(parents=True, exist_ok=True)
+TMP = Path("/kaggle/temp"); TMP.mkdir(parents=True, exist_ok=True)
 
 
 def sh(cmd, **kw):
@@ -21,7 +21,9 @@ def sh(cmd, **kw):
 
 
 venv = TMP / "venv"
-sh([sys.executable, "-m", "venv", str(venv)])
+# Kaggle's system python lacks ensurepip; virtualenv bootstraps pip itself.
+sh([sys.executable, "-m", "pip", "install", "-q", "virtualenv"])
+sh([sys.executable, "-m", "virtualenv", "-q", str(venv)])
 py = str(venv / "bin" / "python")
 sh([py, "-m", "pip", "install", "-q", "pytest", "numpy", "pillow", "gguf", "sentencepiece", "tokenizers"])
 
