@@ -227,6 +227,7 @@ FRESH_PROCESS_TESTS = frozenset({
     "tests/test_moedern_colbert_contract.py::ContractTests::test_direct_forward_mapping_observer_restores_and_is_neutral",
     "tests/test_moedern_colbert_contract.py::ContractTests::test_direct_forward_restores_after_original_exception",
     "tests/test_moedern_colbert_contract.py::ContractTests::test_direct_forward_restores_existing_override_after_exception",
+    "tests/test_moedern_native_v2.py::Controls::test_exact_old_schema_materializes_without_inference_worker",
     "tests/test_moedern_q4k.py::Controls::test_host_barrier_precedes_payload_and_frameworks",
     "tests/test_moedern_scifact_gha_adapter.py::AdapterControls::test_entrypoint_imports_before_any_optional_packages_or_payloads",
     "tests/test_moedern_text_composed.py::Controls::test_actual_cli_pending_negative_creates_evidence_without_api",
