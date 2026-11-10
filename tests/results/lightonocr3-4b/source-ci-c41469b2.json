@@ -1,0 +1,123 @@
+{
+  "schema": "crispembed.lightonocr3-4b.source-ci.v1",
+  "recorded_date": "2026-11-04",
+  "repository": "CrispStrobe/CrispEmbed",
+  "branch": "feat/ocr-next-models-20261104",
+  "pull_request": "https://github.com/CrispStrobe/CrispEmbed/pull/143",
+  "base_commit": "2f748825ff3b56b8f2b89d156986b94218ae28c3",
+  "implementation_commit": "c41469b24cb7835b4fe2706835b59db583392c76",
+  "implementation_tree": "d3b2872c0297c72b43a50b8f4f3c808465325344",
+  "tested_checkout_merge_commit": "34fcb32e60893df6b31e9a087ddd0564685f7c22",
+  "tested_checkout_tree_matches_implementation": true,
+  "scope": "Pinned source metadata, actual safetensors header, bounded tokenizer prefixes and model-free CI routing; no model execution",
+  "hosted_controls": {
+    "run_id": 41908139315,
+    "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41908139315",
+    "job_id": 126848194756,
+    "job_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41908139315/job/126848194756",
+    "event": "pull_request",
+    "attempt": 1,
+    "conclusion": "success",
+    "completed_at_utc": "2026-11-04T20:36:22Z",
+    "lightonocr3_4b_tests": {
+      "count": 23,
+      "passed": 23,
+      "skipped": 0,
+      "failed": 0,
+      "seconds": 0.202
+    },
+    "entire_job_unittest_runs": 18,
+    "entire_job_tests": 236,
+    "entire_job_individual_ok": 236,
+    "entire_job_skipped": 0,
+    "entire_job_failed": 0
+  },
+  "ci_selection_controls": {
+    "run_id": 41908139236,
+    "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41908139236",
+    "job_id": 126848192178,
+    "job_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41908139236/job/126848192178",
+    "job_name": "Static guards",
+    "conclusion": "success",
+    "completed_at_utc": "2026-11-04T20:36:33Z",
+    "count": 51,
+    "passed": 51,
+    "failed": 0,
+    "seconds": 4.87,
+    "new_routing_tests": 5,
+    "ordinary_consumer_dependency_closure_preserved": true,
+    "overall_build_conclusion": "not yet observed; other platform jobs were queued or running"
+  },
+  "source_census": {
+    "model": "lightonai/LightOnOCR-3-4B",
+    "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+    "tensor_count": 723,
+    "parameter_count": 4539265536,
+    "dtype": "BF16",
+    "payload_bytes_implied_by_header": 9078531072,
+    "header_bytes": 89456,
+    "declared_checkpoint_bytes": 9078620536,
+    "checkpoint_payload_verified": false,
+    "tokenizer_prefixes": 2,
+    "bytes_per_prefix": 65536,
+    "identical_added_token_count": 33,
+    "different_tokenizer_metadata_fields": [
+      "decoder",
+      "pre_tokenizer"
+    ],
+    "full_tokenizer_verified": false,
+    "tokenizer_runtime_qualified": false
+  },
+  "local_validation": {
+    "syntax_files": [
+      "models/lightonocr3_4b_profile.py",
+      "tests/test_lightonocr3_4b_profile.py",
+      "tools/ci_selection.py",
+      "tests/test_ci_selection.py"
+    ],
+    "positive_cli": "pass",
+    "negative_unpinned_revision_cli": "rejected",
+    "tensor_contract": {
+      "dtype": "BF16",
+      "mtp_tensor_count": 0,
+      "parameter_count": 4539265536,
+      "payload_bytes_from_header": 9078531072,
+      "payload_verified": false,
+      "tensor_count": 723,
+      "tied_head_stored_once": true
+    },
+    "tokenizer_prefix_count": 2,
+    "added_tokens": 33,
+    "differing_tokenizer_fields": [
+      "decoder",
+      "pre_tokenizer"
+    ],
+    "native_supported": false,
+    "native_qualified": false,
+    "framework_runtime_observed": false
+  },
+  "remote_blob_readback": {
+    "HISTORY.md": "c2a7ecddc9697f9e2e85e377453db7697acb1a23",
+    "models/lightonocr3_4b_profile.py": "585e2766205b851f8c6a31535f574ff803698259",
+    "tests/fixtures/lightonocr3-4b-source/model.safetensors.header.json": "9d942af144506b13d7ab1149f96ebbad2ac8c293",
+    "tests/fixtures/lightonocr3-4b-source/LightOnOCR-3-4B-tokenizer.prefix.txt": "03f09f1c6e7c8952f6d72b3bb43d5ea974457159",
+    "tests/fixtures/lightonocr3-4b-source/LightOnOCR-3-0.8B-tokenizer.prefix.txt": "63a934e81d18c33d8aec2f8c2e2b749043e313db",
+    "tests/fixtures/lightonocr3-4b-source/tokenizer_prefix_audit.json": "ff2aae06c7b8d4c853274f83318a173f70ea3bfb"
+  },
+  "qualification": {
+    "native_supported": false,
+    "native_qualified": false,
+    "export_qualified": false,
+    "native_alias_qualified": false,
+    "image_max_qualified": false,
+    "full_document_qualified": false,
+    "framework_runtime_observed": false
+  },
+  "limits": [
+    "No checkpoint payload or complete tokenizer was downloaded for this slice.",
+    "No framework or native inference, conversion, numerical parity or document-quality run was performed.",
+    "All test counts are source/control evidence; component and decoded model quality remain unverified.",
+    "No runtime default, registry alias, source-pin amendment or release metadata changed.",
+    "Hosted source evidence applies to the implementation commit and identical-tree PR checkout above; later documentation commits do not create a new model qualification."
+  ]
+}

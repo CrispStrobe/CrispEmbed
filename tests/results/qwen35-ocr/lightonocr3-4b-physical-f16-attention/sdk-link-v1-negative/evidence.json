@@ -1,0 +1,28 @@
+{
+  "schema": "lighton4b-physical-f16-sdk-link-negative/v1",
+  "source_sha": "19b79effb657f73fc863586a32b33d5d153dbc62",
+  "native_main_archive_link": "PASS 5",
+  "wasm_status": "compiled_shared_attention_and_stub_but_final_link_failed",
+  "cause": "Focused harness omitted production EMSCRIPTEN_SYSTEM_PROCESSOR=wasm, excluding ggml arch/wasm/quants.c and leaving quantize_row_q8_0_wasm_nearest undefined.",
+  "runtime_or_vendor_code_changed": false,
+  "fix_source_sha": "d7a35a13d6960a836da3831d515cb0ede09083bc",
+  "full_wasm_qualification": false,
+  "artifacts": {
+    "wasm-build.log": {
+      "bytes": 6637,
+      "sha256": "020875bd2330e9a381913ef6fa1587a608bc4e976e1806db161ebe7740f5a187"
+    },
+    "physical-f16-bootstrap.json": {
+      "bytes": 421,
+      "sha256": "cb6bf7520bdd00c8eb1a4c2a69b700de39de6a7187d946bb6620bddaaf69dfff"
+    },
+    "native-main-link.log": {
+      "bytes": 37,
+      "sha256": "e40c9000f6e6d7cba997e679ba3e65d09b9136bb56bbd66e9952d2330044e0bb"
+    },
+    "sdk-link.json": {
+      "bytes": 9326,
+      "sha256": "b747ca4d1565dbe74fc9c4db03e75e0e765050049e48f90f2e515f731c6a126b"
+    }
+  }
+}

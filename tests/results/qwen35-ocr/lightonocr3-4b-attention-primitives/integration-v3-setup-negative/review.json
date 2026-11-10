@@ -1,0 +1,14 @@
+{
+  "schema": "lighton4b-physical-f16-integration-initial-review/v1",
+  "source_sha": "4f243a1807f7ce7018e3e18ee11365c54226721f",
+  "report_sha256": "f4a05c8683327d89627476ae65274b839882e83ed06341e0c1dfde84ec1bd53f",
+  "status": "historical_source_verification_setup_failure",
+  "phase": "source-pins",
+  "elapsed_seconds": 86.55499547099998,
+  "cause": "Shallow hosted checkout lacks exact historical receipt commit required by --verify-git; no source mismatch/numerical failure established.",
+  "supported_runtime_controls_passed": 255297,
+  "actual_sourcefed_cases_compared": 0,
+  "proposed_fix_source_sha": "bfb09595a",
+  "fix_scope": "Fetch exact immutable receipt commits before verification and perform history/env admission before compilation; runtime bytes unchanged.",
+  "quality_qualified": false
+}

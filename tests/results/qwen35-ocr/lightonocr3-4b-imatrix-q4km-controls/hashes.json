@@ -1,0 +1,510 @@
+{
+  "candidate-preflight-negative/lighton-q4km-candidate-results/bootstrap-receipt.json": {
+    "bytes": 837,
+    "sha256": "b419c48958040d075ad6941f5310b8200b464fce1fad9efe863bfc59b392cb38"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/bootstrap.log": {
+    "bytes": 1150,
+    "sha256": "abb47ddc551e96651f9451322755361f869f6a7dad43abb972b7fae27dd176cf"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controller.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/adapter/adapter.json": {
+    "bytes": 72926,
+    "sha256": "3c775d4ef6eefada3f76f79b4ccb0515f8539c861e69c9e7ed6be8b71c06e9f8"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/adapter/build.log": {
+    "bytes": 2491,
+    "sha256": "5a20594a45d02080e68e3ad75da9bdd1da7e65f7c7d7528b8e0221d909441bbd"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/adapter/configure.log": {
+    "bytes": 2035,
+    "sha256": "8538c47569b8d27d96ac04b5b85f8dc0d3721a1439f3bef7bc88af89c682c483"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/adapter/imatrix-adapter-controls.json": {
+    "bytes": 106037,
+    "sha256": "5dfcb5ac2ffa6a850b4e42ae39427ba3877582fdb237789aa4545d8a71f7250e"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/adapter/production-adapted-coverage-negative.log": {
+    "bytes": 175,
+    "sha256": "bf2a9aa357ccb5bafdedf03526d0e10eead2fe3e07c842278717e619933d1289"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/adapter/production-legacy-load-preserved.log": {
+    "bytes": 681,
+    "sha256": "9e137bec868d0f5050516cee60a127993774761f8c08d1606f72a2f7cdb32273"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/adapter/python-controls.log": {
+    "bytes": 106,
+    "sha256": "b8b2792777aafb22b85dd7c53721703e4faf280ea97ba9e3be1e84cbf508601d"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/adapter/raw-upstream-no-fallback.log": {
+    "bytes": 185,
+    "sha256": "a2f1e85fde567d75c36e519788c3467f093bab5e42c44dd4e67bdfb8f5de3771"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/adapter/real-consumer.log": {
+    "bytes": 26377,
+    "sha256": "bbdca3d05177173dea7a158737031c87915f6b497f8dfe086c0fb62280407d47"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/adapter/tamper-negative.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/adapter/target-name-negative.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/adapter/target-width-negative.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/build-policy-controls.log": {
+    "bytes": 4845,
+    "sha256": "cf04b46faa6848bfb772e1b0685bdea7c35c9ec4b10fabf30d151571d0d3b9d1"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/fetch-frozen-receipt-commits.log": {
+    "bytes": 275,
+    "sha256": "725df7c1a7fda21ba1fb7377d190662619b07760d9eb47a7bae5aeaee49f8b59"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/imatrix-q4km-controls.json": {
+    "bytes": 424,
+    "sha256": "92dc9199d789798f1c1c314bef4c7c53dfdccd2a010ac9f654a604e38b2799ee"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/new-q4km.log": {
+    "bytes": 41,
+    "sha256": "b718a90496d487001c277195421800d1ace06518c39c469ad78d97fa1a3e9774"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/old24-q6out.log": {
+    "bytes": 126,
+    "sha256": "30283288ec02a61588fbbdacbfa2b8ac5f1247302281b75c38bb02e266ecc07e"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/old24-q8out.log": {
+    "bytes": 100,
+    "sha256": "9db2eb2cdc6c2eb214d69bd8b3b6ed059efcb3ced77dbbac279771ec3c045c30"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/old32-q8head.log": {
+    "bytes": 169,
+    "sha256": "eb884a08b40464888fa1f2e00e58a73056f540f5116b50319ead4526f2a9179f"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/source-pin-check.log": {
+    "bytes": 45,
+    "sha256": "286d64b42ca5d0653f39f75075fbdf6a62f6e2b124cdefaf3181887f5469dfcd"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/stream-graph-off-on.log": {
+    "bytes": 207,
+    "sha256": "e4b641bc65372588d9bec9aa791b472ce3daca7b3c2f72f04b474d6aea3fb527"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/test_lighton4b_gdn_out_q6_recipe.py.log": {
+    "bytes": 102,
+    "sha256": "44825f24cdbd1bcc73113cc0e880161c602c66296af8171cc29ead1360391377"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/test_lighton4b_imatrix_q4km_recipe.py.log": {
+    "bytes": 101,
+    "sha256": "0e49a2bca0bc49298afe5c1c5c91a926cd479b9419164b3fd93cda8cbfc59da8"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/controls/test_lighton4b_q6_recipe.py.log": {
+    "bytes": 102,
+    "sha256": "bf7dcac0b79efbc45b48183e4fb256198febe14d06570821cd04d8f13aca97c8"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/packages.log": {
+    "bytes": 3110,
+    "sha256": "66bfb0772f82135163c4e3caad3e23acb3cd5a041381118d3ed6cf1c806c058d"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/post-merge-model-free.log": {
+    "bytes": 1192,
+    "sha256": "42ba256f4f481f2f821b12261ac1103ea5e03fec4c813a912d7e71a793bb9150"
+  },
+  "candidate-preflight-negative/lighton-q4km-candidate-results/q4km-candidate-first-score.json": {
+    "bytes": 1617,
+    "sha256": "d92401b2d3f4f29978093402e1ef44a2efb76ac08eac1bc58d4f939754b0575f"
+  },
+  "candidate-preflight-negative/lighton4b-imatrix-q4km-candidate.log": {
+    "bytes": 4036,
+    "sha256": "b956f8688dc9b49176dc60b558439ee2787fa0b2399a4d827dc00404e629ac9f"
+  },
+  "v1/lighton-q4km-controls-results/adapter/adapter.json": {
+    "bytes": 72926,
+    "sha256": "3c775d4ef6eefada3f76f79b4ccb0515f8539c861e69c9e7ed6be8b71c06e9f8"
+  },
+  "v1/lighton-q4km-controls-results/adapter/build.log": {
+    "bytes": 2491,
+    "sha256": "72f86afb74724f833147a4e210716660818199e421971ad602d26c04c17c8d5d"
+  },
+  "v1/lighton-q4km-controls-results/adapter/configure.log": {
+    "bytes": 2030,
+    "sha256": "8adb4d8a3a821133bd5b9be599f736a3ef2bbc803b82dc31b27d0ec3046ebcdd"
+  },
+  "v1/lighton-q4km-controls-results/adapter/imatrix-adapter-controls.json": {
+    "bytes": 106035,
+    "sha256": "963afd3002b0b31a2ec8bb700e291366bab3db0ca58b81e87a49d5bfc455b2be"
+  },
+  "v1/lighton-q4km-controls-results/adapter/production-adapted-coverage-negative.log": {
+    "bytes": 174,
+    "sha256": "a7d42d42d217cdcbd59da89857917f43f34fb1a169415c50336f0bf9818153f5"
+  },
+  "v1/lighton-q4km-controls-results/adapter/production-legacy-load-preserved.log": {
+    "bytes": 676,
+    "sha256": "705fccbbd340111c794b993fb3aad411f8c71ece09cf46a595855c6243ae0223"
+  },
+  "v1/lighton-q4km-controls-results/adapter/python-controls.log": {
+    "bytes": 106,
+    "sha256": "bbd10e38b349f240ecddeafa5697ed04e3f5d66167075de5786ad5b83a04c042"
+  },
+  "v1/lighton-q4km-controls-results/adapter/raw-upstream-no-fallback.log": {
+    "bytes": 175,
+    "sha256": "32d087971dc4296bcf6b6c228a110ab0b81a10746fbb6c62409a9c4a9b8fdcb2"
+  },
+  "v1/lighton-q4km-controls-results/adapter/real-consumer.log": {
+    "bytes": 26377,
+    "sha256": "bbdca3d05177173dea7a158737031c87915f6b497f8dfe086c0fb62280407d47"
+  },
+  "v1/lighton-q4km-controls-results/adapter/tamper-negative.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "v1/lighton-q4km-controls-results/adapter/target-name-negative.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "v1/lighton-q4km-controls-results/adapter/target-width-negative.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "v1/lighton-q4km-controls-results/bootstrap-receipt.json": {
+    "bytes": 832,
+    "sha256": "0ff617782e0fec7abc840dbc73c6b0f7c31be49245bafc57e5261227b83c88e9"
+  },
+  "v1/lighton-q4km-controls-results/bootstrap.log": {
+    "bytes": 1140,
+    "sha256": "2ab06e49b7cac104855ed77db069557a195f1d7f7d75daf59eaea3fd6bbc6539"
+  },
+  "v1/lighton-q4km-controls-results/build-policy-controls.log": {
+    "bytes": 4060,
+    "sha256": "7fdeee499fd3df510163bf537b516f8f6f499e28f35b0b182066975ef941f232"
+  },
+  "v1/lighton-q4km-controls-results/controller-invocation.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "v1/lighton-q4km-controls-results/fetch-frozen-receipt-commits.log": {
+    "bytes": 275,
+    "sha256": "725df7c1a7fda21ba1fb7377d190662619b07760d9eb47a7bae5aeaee49f8b59"
+  },
+  "v1/lighton-q4km-controls-results/imatrix-q4km-controls.json": {
+    "bytes": 428,
+    "sha256": "89def69ee058d4097570cafe77557f58a8c482aefad090abd573de62c56e1b54"
+  },
+  "v1/lighton-q4km-controls-results/source-pin-check.log": {
+    "bytes": 45,
+    "sha256": "286d64b42ca5d0653f39f75075fbdf6a62f6e2b124cdefaf3181887f5469dfcd"
+  },
+  "v1/lighton-q4km-controls-results/test_lighton4b_gdn_out_q6_recipe.py.log": {
+    "bytes": 102,
+    "sha256": "e12137efc563f4465212fba471d7b78357f22786d4b5499b5a1e7b9a75714cac"
+  },
+  "v1/lighton-q4km-controls-results/test_lighton4b_imatrix_q4km_recipe.py.log": {
+    "bytes": 101,
+    "sha256": "1963e70213feef55673b93f60bfe906a553ca265e108532b52138021cdcb5910"
+  },
+  "v1/lighton-q4km-controls-results/test_lighton4b_q6_recipe.py.log": {
+    "bytes": 102,
+    "sha256": "256e590ba9183f73cc663d8cfa132c3c8611787f5bb806ea54e951f3d8a7d3ca"
+  },
+  "v1/lighton4b-imatrix-q4km-controls.log": {
+    "bytes": 3846,
+    "sha256": "5670552ed81639e787168cffc20f658568d7e8c9d92a03e8b96786e5bcb4bc1a"
+  },
+  "v2/lighton-q4km-controls-results/adapter/adapter.json": {
+    "bytes": 72926,
+    "sha256": "3c775d4ef6eefada3f76f79b4ccb0515f8539c861e69c9e7ed6be8b71c06e9f8"
+  },
+  "v2/lighton-q4km-controls-results/adapter/build.log": {
+    "bytes": 2491,
+    "sha256": "72f86afb74724f833147a4e210716660818199e421971ad602d26c04c17c8d5d"
+  },
+  "v2/lighton-q4km-controls-results/adapter/configure.log": {
+    "bytes": 2030,
+    "sha256": "b554f659740aeeb832f3806aa874dcd75f99e3f819400213910bc42317ba2338"
+  },
+  "v2/lighton-q4km-controls-results/adapter/imatrix-adapter-controls.json": {
+    "bytes": 106037,
+    "sha256": "e863f7d837d7458834e6adb9c0543cae9754284c660514fd38d94f7a5bd01595"
+  },
+  "v2/lighton-q4km-controls-results/adapter/production-adapted-coverage-negative.log": {
+    "bytes": 174,
+    "sha256": "a7d42d42d217cdcbd59da89857917f43f34fb1a169415c50336f0bf9818153f5"
+  },
+  "v2/lighton-q4km-controls-results/adapter/production-legacy-load-preserved.log": {
+    "bytes": 676,
+    "sha256": "705fccbbd340111c794b993fb3aad411f8c71ece09cf46a595855c6243ae0223"
+  },
+  "v2/lighton-q4km-controls-results/adapter/python-controls.log": {
+    "bytes": 106,
+    "sha256": "8dec2f14586ef440ed58758bc6d58d814b6d42cc52bae01ad0df1f45e2286330"
+  },
+  "v2/lighton-q4km-controls-results/adapter/raw-upstream-no-fallback.log": {
+    "bytes": 175,
+    "sha256": "32d087971dc4296bcf6b6c228a110ab0b81a10746fbb6c62409a9c4a9b8fdcb2"
+  },
+  "v2/lighton-q4km-controls-results/adapter/real-consumer.log": {
+    "bytes": 26377,
+    "sha256": "bbdca3d05177173dea7a158737031c87915f6b497f8dfe086c0fb62280407d47"
+  },
+  "v2/lighton-q4km-controls-results/adapter/tamper-negative.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "v2/lighton-q4km-controls-results/adapter/target-name-negative.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "v2/lighton-q4km-controls-results/adapter/target-width-negative.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "v2/lighton-q4km-controls-results/bootstrap-receipt.json": {
+    "bytes": 830,
+    "sha256": "e910fe799a269d4a09abf8a2bdeb9dbf0a04305afc0bf31021345671a8aafb4b"
+  },
+  "v2/lighton-q4km-controls-results/bootstrap.log": {
+    "bytes": 1125,
+    "sha256": "00754ddc0f8a22bf74398f77ebedcd2e55ec80c49a5c85c640ee438bc161985b"
+  },
+  "v2/lighton-q4km-controls-results/build-policy-controls.log": {
+    "bytes": 4451,
+    "sha256": "77fd2ad595a90091b5c27e7f0a0380a26dceab01324f62a5da42df0f9fa73157"
+  },
+  "v2/lighton-q4km-controls-results/closed-cli-legacy-header.log": {
+    "bytes": 80,
+    "sha256": "673a4a0d560dbfe232f9190dec2ac48c0efe5f7394a122a60438be275c8df4e8"
+  },
+  "v2/lighton-q4km-controls-results/closed-cli-no-stats.log": {
+    "bytes": 80,
+    "sha256": "673a4a0d560dbfe232f9190dec2ac48c0efe5f7394a122a60438be275c8df4e8"
+  },
+  "v2/lighton-q4km-controls-results/closed-cli-override.log": {
+    "bytes": 80,
+    "sha256": "673a4a0d560dbfe232f9190dec2ac48c0efe5f7394a122a60438be275c8df4e8"
+  },
+  "v2/lighton-q4km-controls-results/closed-cli-wrong-method.log": {
+    "bytes": 80,
+    "sha256": "673a4a0d560dbfe232f9190dec2ac48c0efe5f7394a122a60438be275c8df4e8"
+  },
+  "v2/lighton-q4km-controls-results/closed-cli-wrong-original-source.log": {
+    "bytes": 193,
+    "sha256": "1b36e1137ab68d67395149792efecff805e2e26de28267fcd058d808ff91e8e7"
+  },
+  "v2/lighton-q4km-controls-results/controller-invocation.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "v2/lighton-q4km-controls-results/fetch-frozen-receipt-commits.log": {
+    "bytes": 275,
+    "sha256": "725df7c1a7fda21ba1fb7377d190662619b07760d9eb47a7bae5aeaee49f8b59"
+  },
+  "v2/lighton-q4km-controls-results/imatrix-q4km-controls.json": {
+    "bytes": 441,
+    "sha256": "f1072564557da2f838278178e07379960c6ec9f3cc5cf6d6a309f6a37d4190c6"
+  },
+  "v2/lighton-q4km-controls-results/new-q4km.log": {
+    "bytes": 41,
+    "sha256": "ae6e0764aa441c22e850e0e990bf59e6f1eaee060a15ad5557c2f3590e94dbd2"
+  },
+  "v2/lighton-q4km-controls-results/old24-q6out.log": {
+    "bytes": 126,
+    "sha256": "30283288ec02a61588fbbdacbfa2b8ac5f1247302281b75c38bb02e266ecc07e"
+  },
+  "v2/lighton-q4km-controls-results/old24-q8out.log": {
+    "bytes": 100,
+    "sha256": "9db2eb2cdc6c2eb214d69bd8b3b6ed059efcb3ced77dbbac279771ec3c045c30"
+  },
+  "v2/lighton-q4km-controls-results/old32-q8head.log": {
+    "bytes": 169,
+    "sha256": "eb884a08b40464888fa1f2e00e58a73056f540f5116b50319ead4526f2a9179f"
+  },
+  "v2/lighton-q4km-controls-results/release/build.log": {
+    "bytes": 1656,
+    "sha256": "ce879ef5988ad5d534678bcf8a456d21324e29a3513b811cbc434f271bc8d0b6"
+  },
+  "v2/lighton-q4km-controls-results/release/configure.log": {
+    "bytes": 1332,
+    "sha256": "ab6d6ad582ef68e497c4badabd9882d61d04177a7d4dc9c1a5f210fdb03e592b"
+  },
+  "v2/lighton-q4km-controls-results/release/release-q6-head-controls.json": {
+    "bytes": 1463,
+    "sha256": "6c9f8252e2ea0ba1a59ff27b342ac303e539d54463f288b6c2832e8c4d8c18d4"
+  },
+  "v2/lighton-q4km-controls-results/source-pin-check.log": {
+    "bytes": 45,
+    "sha256": "286d64b42ca5d0653f39f75075fbdf6a62f6e2b124cdefaf3181887f5469dfcd"
+  },
+  "v2/lighton-q4km-controls-results/test_lighton4b_gdn_out_q6_recipe.py.log": {
+    "bytes": 102,
+    "sha256": "98255317dbdec068621cfd1c730ebd962e38b6f8c534b73c2b3cbfc806ea738c"
+  },
+  "v2/lighton-q4km-controls-results/test_lighton4b_imatrix_q4km_recipe.py.log": {
+    "bytes": 101,
+    "sha256": "0e49a2bca0bc49298afe5c1c5c91a926cd479b9419164b3fd93cda8cbfc59da8"
+  },
+  "v2/lighton-q4km-controls-results/test_lighton4b_q6_recipe.py.log": {
+    "bytes": 102,
+    "sha256": "bf7dcac0b79efbc45b48183e4fb256198febe14d06570821cd04d8f13aca97c8"
+  },
+  "v2/lighton4b-imatrix-q4km-controls.log": {
+    "bytes": 6603,
+    "sha256": "f0aa8792afd23178e37d63f672e9d87df1c1233b7c751d263463f1138488528f"
+  },
+  "v3/lighton-q4km-controls-results/adapter/adapter.json": {
+    "bytes": 72926,
+    "sha256": "3c775d4ef6eefada3f76f79b4ccb0515f8539c861e69c9e7ed6be8b71c06e9f8"
+  },
+  "v3/lighton-q4km-controls-results/adapter/build.log": {
+    "bytes": 2491,
+    "sha256": "72f86afb74724f833147a4e210716660818199e421971ad602d26c04c17c8d5d"
+  },
+  "v3/lighton-q4km-controls-results/adapter/configure.log": {
+    "bytes": 2030,
+    "sha256": "a0409d43d00eeef491efcb32c6284124f25ad14cf979fe8d9b2f870d2cbb18eb"
+  },
+  "v3/lighton-q4km-controls-results/adapter/imatrix-adapter-controls.json": {
+    "bytes": 106039,
+    "sha256": "67b305780895c8d7ec499025232fd5cfda906c8dcfc575bf2b861423251525ec"
+  },
+  "v3/lighton-q4km-controls-results/adapter/production-adapted-coverage-negative.log": {
+    "bytes": 174,
+    "sha256": "a7d42d42d217cdcbd59da89857917f43f34fb1a169415c50336f0bf9818153f5"
+  },
+  "v3/lighton-q4km-controls-results/adapter/production-legacy-load-preserved.log": {
+    "bytes": 676,
+    "sha256": "705fccbbd340111c794b993fb3aad411f8c71ece09cf46a595855c6243ae0223"
+  },
+  "v3/lighton-q4km-controls-results/adapter/python-controls.log": {
+    "bytes": 106,
+    "sha256": "82905e2296c4d4d91738a085f00513383a9acaf5786850a28ea382df0090d815"
+  },
+  "v3/lighton-q4km-controls-results/adapter/raw-upstream-no-fallback.log": {
+    "bytes": 175,
+    "sha256": "32d087971dc4296bcf6b6c228a110ab0b81a10746fbb6c62409a9c4a9b8fdcb2"
+  },
+  "v3/lighton-q4km-controls-results/adapter/real-consumer.log": {
+    "bytes": 26377,
+    "sha256": "bbdca3d05177173dea7a158737031c87915f6b497f8dfe086c0fb62280407d47"
+  },
+  "v3/lighton-q4km-controls-results/adapter/tamper-negative.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "v3/lighton-q4km-controls-results/adapter/target-name-negative.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "v3/lighton-q4km-controls-results/adapter/target-width-negative.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "v3/lighton-q4km-controls-results/bootstrap-receipt.json": {
+    "bytes": 741,
+    "sha256": "309e45e3e061ebc3bf523173f25effd2c11fbf57e01ac310c021e6302fedcc31"
+  },
+  "v3/lighton-q4km-controls-results/bootstrap.log": {
+    "bytes": 1139,
+    "sha256": "7e7ababee2add2a4fa81750afea49cb3bec4918956158a2185e0935a9cbc6b04"
+  },
+  "v3/lighton-q4km-controls-results/build-policy-controls.log": {
+    "bytes": 4451,
+    "sha256": "b8b849f47957500c334f2c39507c378379362eefa35a711a2c171fd556c43fd0"
+  },
+  "v3/lighton-q4km-controls-results/closed-cli-legacy-header.log": {
+    "bytes": 80,
+    "sha256": "673a4a0d560dbfe232f9190dec2ac48c0efe5f7394a122a60438be275c8df4e8"
+  },
+  "v3/lighton-q4km-controls-results/closed-cli-no-stats.log": {
+    "bytes": 80,
+    "sha256": "673a4a0d560dbfe232f9190dec2ac48c0efe5f7394a122a60438be275c8df4e8"
+  },
+  "v3/lighton-q4km-controls-results/closed-cli-override.log": {
+    "bytes": 80,
+    "sha256": "673a4a0d560dbfe232f9190dec2ac48c0efe5f7394a122a60438be275c8df4e8"
+  },
+  "v3/lighton-q4km-controls-results/closed-cli-wrong-method.log": {
+    "bytes": 80,
+    "sha256": "673a4a0d560dbfe232f9190dec2ac48c0efe5f7394a122a60438be275c8df4e8"
+  },
+  "v3/lighton-q4km-controls-results/closed-cli-wrong-original-source.log": {
+    "bytes": 193,
+    "sha256": "1b36e1137ab68d67395149792efecff805e2e26de28267fcd058d808ff91e8e7"
+  },
+  "v3/lighton-q4km-controls-results/controller-invocation.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "v3/lighton-q4km-controls-results/fetch-frozen-receipt-commits.log": {
+    "bytes": 275,
+    "sha256": "725df7c1a7fda21ba1fb7377d190662619b07760d9eb47a7bae5aeaee49f8b59"
+  },
+  "v3/lighton-q4km-controls-results/imatrix-q4km-controls.json": {
+    "bytes": 679,
+    "sha256": "8d77c500424fc9ca5a2e68540f4ecbb11e40c1d7e407992a03469686ca9578ec"
+  },
+  "v3/lighton-q4km-controls-results/new-q4km.log": {
+    "bytes": 41,
+    "sha256": "b718a90496d487001c277195421800d1ace06518c39c469ad78d97fa1a3e9774"
+  },
+  "v3/lighton-q4km-controls-results/old24-q6out.log": {
+    "bytes": 126,
+    "sha256": "30283288ec02a61588fbbdacbfa2b8ac5f1247302281b75c38bb02e266ecc07e"
+  },
+  "v3/lighton-q4km-controls-results/old24-q8out.log": {
+    "bytes": 100,
+    "sha256": "9db2eb2cdc6c2eb214d69bd8b3b6ed059efcb3ced77dbbac279771ec3c045c30"
+  },
+  "v3/lighton-q4km-controls-results/old32-q8head.log": {
+    "bytes": 169,
+    "sha256": "eb884a08b40464888fa1f2e00e58a73056f540f5116b50319ead4526f2a9179f"
+  },
+  "v3/lighton-q4km-controls-results/release/build-q6-head.log": {
+    "bytes": 380,
+    "sha256": "7c0cdfc82e029b04e9b353f5eb9698114fd3cba274a62f7d182a17e0d5710a4b"
+  },
+  "v3/lighton-q4km-controls-results/release/build-release-fence.log": {
+    "bytes": 384,
+    "sha256": "f251b551873172337e7713df20610629210b1660837f09419ff6fcb8f950e9de"
+  },
+  "v3/lighton-q4km-controls-results/release/configure.log": {
+    "bytes": 1332,
+    "sha256": "c2dc0ff27c7a11d4c2e2867505373a1f42d911c0a5983c3913ade76a3a22e2d1"
+  },
+  "v3/lighton-q4km-controls-results/release/public-release-fence.log": {
+    "bytes": 152,
+    "sha256": "ca59706d04d01d7cdab43a22aef465f7086edbd4ed87541e81564fa80ebbe887"
+  },
+  "v3/lighton-q4km-controls-results/release/q6-tied-head.log": {
+    "bytes": 171,
+    "sha256": "9481438a41c398f486457154426d6fd0656dc8b13ec6eb171cb3a1d9c8d885cd"
+  },
+  "v3/lighton-q4km-controls-results/release/release-q6-head-controls.json": {
+    "bytes": 3145,
+    "sha256": "7a94380bc052fafa55fe1837fd8324dda569d46954611d73a437fce5511560b4"
+  },
+  "v3/lighton-q4km-controls-results/source-pin-check.log": {
+    "bytes": 45,
+    "sha256": "286d64b42ca5d0653f39f75075fbdf6a62f6e2b124cdefaf3181887f5469dfcd"
+  },
+  "v3/lighton-q4km-controls-results/test_lighton4b_gdn_out_q6_recipe.py.log": {
+    "bytes": 102,
+    "sha256": "b447673467de6e875ff3540180d0afdf3c3c9ba37ffbad827b4cb2a075505ede"
+  },
+  "v3/lighton-q4km-controls-results/test_lighton4b_imatrix_q4km_recipe.py.log": {
+    "bytes": 101,
+    "sha256": "25d4a9087682165fc994074743288ff9ca5e7ad22d4bc98bae43274a05732799"
+  },
+  "v3/lighton-q4km-controls-results/test_lighton4b_q6_recipe.py.log": {
+    "bytes": 102,
+    "sha256": "ccf7b54f144d3e9682c95e71a54d347376487292982197f61b4f9bb2d6f65cc8"
+  },
+  "v3/lighton4b-imatrix-q4km-controls.log": {
+    "bytes": 2298,
+    "sha256": "579b705d032fdd29d9e61cea8b0cf3f4f4f8c197a7fc62e633c9e396704f907b"
+  }
+}

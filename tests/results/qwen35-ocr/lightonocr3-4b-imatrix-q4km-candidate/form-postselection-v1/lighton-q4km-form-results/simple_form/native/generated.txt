@@ -1,0 +1,8 @@
+<figure>
+### Figure – Interface de saisie
+*Type: autre*
+
+L'image montre une interface de saisie avec plusieurs champs et options. Elle inclut des champs pour l'input, le texte, le nombre, la date, le mot de passe, et des boutons pour la recherche et l'ajout d'un utilisateur.
+
+Les éléments visibles incluent : "Input", "Texte", "Number", "Date", "Password", "a label", "ANOTHER LABEL", "Yet another label", "combo suggest" avec les options "Finland", "France", "checkbox1", "checkbox2", "checkbox3", "CodeLabel", "code fill", "code", "Button", "Rechercher...", "Ajouter l'utilisateur". Les options "Drag and drop frames" et "Fixe frames" sont également présentes.
+</figure>

@@ -1,0 +1,8 @@
+<figure>
+### Figure – Temperature of Substances Over Heat
+*Type: table*
+
+This image is a table showing the temperature of three substances over a period of time. The table illustrates how the temperature changes as heat is applied.
+
+The table includes columns for "Time (min)", "Sample 1", "Sample 2", "Sample 3", and "Sample 4". The rows show temperatures at different time intervals: 0, 5, 10, 15, and 20 minutes. The temperatures are as follows: at 0 minutes, all samples are at 20°C; at 5 minutes, Sample 1 is at 50°C, Sample 2 at 50°C, Sample 3 at 50°C, and Sample 4 at 1°C; at 10 minutes, Sample 1 is at 70°C, Sample 2 at 80°C, Sample 3 at 80°C, and Sample 4 at 5°C; at 15 minutes, Sample 1 is at 80°C, Sample 2 at 90°C, Sample 3 at 90°C, and Sample 4 at 70°C; at 20 minutes, Sample 1 is at 90°C, Sample 2 at 90°C, Sample 3 at 100°C, and Sample 4 at 70°C.
+</figure>

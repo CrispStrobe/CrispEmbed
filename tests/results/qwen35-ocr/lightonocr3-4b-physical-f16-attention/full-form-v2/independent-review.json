@@ -1,0 +1,19 @@
+{
+  "schema": "lighton4b-physical-f16-full-form-independent-review/v1",
+  "receipt_sha256": "0a0c2084baa4e46aa80f09f7ae94fd4b1c56ccae2bbf2f9ef6210e81e8cf1d01",
+  "small_artifacts_rehashed": [
+    "baseline-prefix/generated.ids",
+    "baseline-prefix/generated.txt",
+    "baseline-prefix/native-summary.json",
+    "f16-full/generated.ids",
+    "f16-full/generated.txt",
+    "f16-full/native-summary.json"
+  ],
+  "generated_ids_match_report": true,
+  "raw_utf8_matches_report": true,
+  "teacher_manifest_rows": 177,
+  "teacher_rows_rehashed_independently": false,
+  "producer_all_rows_finite_and_greedy_argmax_verified": true,
+  "eos_token": 248046,
+  "quality_qualified": false
+}

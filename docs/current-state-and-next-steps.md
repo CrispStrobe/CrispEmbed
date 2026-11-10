@@ -38,6 +38,17 @@ CrispEmbed [v0.17.15](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.
 
 CrispMath's recorded App Store state on 5 November is build 27 awaiting review, not proof of a later approval; physical-device evidence remains open. Older dated sections below are historical snapshots and cannot supersede this checkpoint or current linked run results.
 
+## LightOn4B conversion continuation — 4–5 November 2026
+
+On the separate `audit/lighton4b-convert-runner-20261104` branch, the pinned
+checkpoint was converted and experimental F32-vision/F16, Q8_0 and Q4_K GGUFs
+were uploaded and independently read back on the worker. [The conversion review](../tests/results/qwen35-ocr/lightonocr3-4b-kaggle-conversion-review.json)
+and [complete tensor audit](../tests/results/qwen35-ocr/lightonocr3-4b-conversion-tensor-audit.json)
+record the immutable public revision, all hashes and the nonfatal `sitecustomize`
+warning. All 723 tensor records and 297 protected vision payloads were checked.
+The earlier failed CPU attempts remain recorded in [PLAN](../PLAN.md). Native
+format-5 inference, full-position/original comparisons and decoded document
+quality are still open; the experimental files have no registry alias.
 
 ## State on 4 November 2026 — reviewed OCR execution
 
@@ -91,12 +102,18 @@ closure before reuse. This is a qualification gap, not a demonstrated numerical
 regression. No expensive shared-host work, new model publication, tag, default
 flip or app upgrade follows from these bounded reports.
 
-New draft [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143),
-head19531b886, adds723-tensor LightOn3-4B source preflight and23 profile controls.
-Its ordinary checks pass on its older base. Current-main rebase/integration and
-combined controls are still required; keep its owned implementation intact and
-preserve the complete PR141 receipts. It does not load weights, export GGUF or
-admit native4B. PLAN scopes both integration and the separate native effort.
+[PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143) adds the 723-tensor
+LightOn3-4B source preflight and 23 profile controls. Main `17c96639` is integrated
+at `91b24764`; all seven selected workflows pass, including 317 controls in
+27 suites. The explicit 4B converter and separate 24-layer precision recipe now
+require exact source/payload/schema proof and emit unqualified format 5.
+All 16 export controls pass at `aa661568` (333 overall); a shared inline-command
+workflow assertion stopped five ordinary workflows before compilation and is
+repaired by restoring the original source-preflight step. Default-off grouped-head
+APIs and hosted original/meta protocols are implemented. Actual meta construction,
+208 component stages/cache controls and combined regression CI are next. Component evidence and
+export admission do not qualify a native model. See PLAN and the
+[4B technical handoff](lightonocr3-4b.md) for ownership and remaining gates.
 
 ## State on 3 November 2026
 

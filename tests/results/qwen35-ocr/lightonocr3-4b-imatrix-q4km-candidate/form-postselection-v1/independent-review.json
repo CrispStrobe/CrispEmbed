@@ -1,0 +1,43 @@
+{
+  "actual_eos": true,
+  "all182_row_manifest_entries_consistent": true,
+  "baseline_against_BF16": {
+    "character_edits": 189,
+    "eos_completed": true,
+    "reference_codepoints": 656,
+    "reference_words": 90,
+    "word_edits": 46
+  },
+  "bootstrap_sha256": "0faac598a3d5c87a0f441578fc55ce35bb065e79802ee11079a22a5ad629d0a3",
+  "cap_hit": false,
+  "decoded_sha256": "0cd35b2322b8f3a1431e1ae833d4be87265f1edefe928b85d121b50abc3ffc31",
+  "edit_distances": {
+    "BF16": {
+      "character_edits": 217,
+      "reference_codepoints": 656,
+      "reference_words": 90,
+      "word_edits": 43
+    },
+    "llama_Q4_K_M": {
+      "character_edits": 220,
+      "reference_codepoints": 647,
+      "reference_words": 86,
+      "word_edits": 45
+    }
+  },
+  "exact_same_producer_platform_stages": 70,
+  "form_original_prepared_input_guard_passed": true,
+  "generated_ids_sha256": "f6d2a007f1d3b679e61d21a639fd9c85366ed575a94240e620cf68bf90124a13",
+  "model_or_large_score_arrays_downloaded": false,
+  "new_inference": false,
+  "observed_floor_met": false,
+  "quality_qualified": false,
+  "reason": "CER is worse; WER is better. The predeclared per-case criterion requires both, so no aggregate or one-metric promotion.",
+  "receipt_sha256": "a483fe4d56cfdde2c3835d2cf7ca1f322d09c4594664405e0faa8da073230643",
+  "schema": "lighton4b-q4km-postselection-form-independent-review/v1",
+  "source_sha": "b978b1cefb9cafee88a70e23f4f4faf1b6ab90a5",
+  "status": "valid-measurement-floor-failed",
+  "text_codepoints": 673,
+  "text_words": 94,
+  "token_count": 182
+}

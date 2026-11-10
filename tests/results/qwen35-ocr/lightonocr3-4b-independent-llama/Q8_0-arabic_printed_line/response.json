@@ -1,0 +1,502 @@
+{
+  "index": 0,
+  "content": "أبجدية عربية",
+  "tokens": [
+    67321,
+    20704,
+    150386,
+    70943,
+    203974,
+    248046
+  ],
+  "id_slot": 0,
+  "stop": true,
+  "model": "/tmp/lighton4b-independent-llama-cpu-v1/independent-llama/LightOnOCR-3-4B-Q8_0.gguf",
+  "tokens_predicted": 6,
+  "tokens_evaluated": 82,
+  "generation_settings": {
+    "seed": 0,
+    "temperature": 0.0,
+    "dynatemp_range": 0.0,
+    "dynatemp_exponent": 1.0,
+    "top_k": 1,
+    "top_p": 1.0,
+    "min_p": 0.0,
+    "top_n_sigma": -1.0,
+    "xtc_probability": 0.0,
+    "xtc_threshold": 0.10000000149011612,
+    "typical_p": 1.0,
+    "repeat_last_n": 64,
+    "repeat_penalty": 1.0,
+    "presence_penalty": 0.0,
+    "frequency_penalty": 0.0,
+    "dry_multiplier": 0.0,
+    "dry_base": 1.75,
+    "dry_allowed_length": 2,
+    "dry_penalty_last_n": 64,
+    "dry_sequence_breakers": [
+      "\n",
+      ":",
+      "\"",
+      "*"
+    ],
+    "mirostat": 0,
+    "mirostat_tau": 5.0,
+    "mirostat_eta": 0.10000000149011612,
+    "adaptive_target": -1.0,
+    "adaptive_decay": 0.8999999761581421,
+    "stop": [],
+    "max_tokens": 256,
+    "n_predict": 256,
+    "n_keep": 0,
+    "n_discard": 0,
+    "ignore_eos": false,
+    "stream": false,
+    "logit_bias": [],
+    "n_probs": 5,
+    "min_keep": 0,
+    "grammar": "",
+    "grammar_lazy": false,
+    "grammar_triggers": [],
+    "preserved_tokens": [],
+    "chat_format": "Content-only",
+    "reasoning_format": "deepseek",
+    "reasoning_in_content": false,
+    "generation_prompt": "",
+    "samplers": [
+      "penalties",
+      "dry",
+      "top_n_sigma",
+      "top_k",
+      "typ_p",
+      "top_p",
+      "min_p",
+      "xtc",
+      "temperature"
+    ],
+    "speculative.types": "none",
+    "timings_per_token": false,
+    "post_sampling_probs": false,
+    "backend_sampling": false,
+    "lora": []
+  },
+  "prompt": "<|im_start|>user\n<|vision_start|><|vision_end|><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "has_new_line": false,
+  "truncated": false,
+  "stop_type": "eos",
+  "stopping_word": "",
+  "tokens_cached": 87,
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 82,
+    "prompt_ms": 10803.147,
+    "prompt_per_token_ms": 131.74569512195123,
+    "prompt_per_second": 7.5903808399533945,
+    "predicted_n": 6,
+    "predicted_ms": 1832.994,
+    "predicted_per_token_ms": 366.5988,
+    "predicted_per_second": 2.7277776141111207
+  },
+  "completion_probabilities": [
+    {
+      "id": 67321,
+      "token": "أ",
+      "bytes": [
+        216,
+        163
+      ],
+      "logprob": -0.07784374058246613,
+      "top_logprobs": [
+        {
+          "id": 67321,
+          "token": "أ",
+          "bytes": [
+            216,
+            163
+          ],
+          "logprob": -0.07784374058246613
+        },
+        {
+          "id": 68216,
+          "token": "اب",
+          "bytes": [
+            216,
+            167,
+            216,
+            168
+          ],
+          "logprob": -4.218488693237305
+        },
+        {
+          "id": 248046,
+          "token": "",
+          "bytes": [],
+          "logprob": -4.9939422607421875
+        },
+        {
+          "id": 177842,
+          "token": "الأ",
+          "bytes": [
+            216,
+            167,
+            217,
+            132,
+            216,
+            163
+          ],
+          "logprob": -5.055271148681641
+        },
+        {
+          "id": 30350,
+          "token": "ال",
+          "bytes": [
+            216,
+            167,
+            217,
+            132
+          ],
+          "logprob": -5.0618391036987305
+        }
+      ]
+    },
+    {
+      "id": 20704,
+      "token": "ب",
+      "bytes": [
+        216,
+        168
+      ],
+      "logprob": -0.07487041503190994,
+      "top_logprobs": [
+        {
+          "id": 20704,
+          "token": "ب",
+          "bytes": [
+            216,
+            168
+          ],
+          "logprob": -0.07487041503190994
+        },
+        {
+          "id": 205723,
+          "token": "بحاث",
+          "bytes": [
+            216,
+            168,
+            216,
+            173,
+            216,
+            167,
+            216,
+            171
+          ],
+          "logprob": -3.071845293045044
+        },
+        {
+          "id": 150765,
+          "token": "َب",
+          "bytes": [
+            217,
+            142,
+            216,
+            168
+          ],
+          "logprob": -5.507471561431885
+        },
+        {
+          "id": 62422,
+          "token": "ُ",
+          "bytes": [
+            217,
+            143
+          ],
+          "logprob": -5.610808849334717
+        },
+        {
+          "id": 149330,
+          "token": "بح",
+          "bytes": [
+            216,
+            168,
+            216,
+            173
+          ],
+          "logprob": -5.794230937957764
+        }
+      ]
+    },
+    {
+      "id": 150386,
+      "token": "جد",
+      "bytes": [
+        216,
+        172,
+        216,
+        175
+      ],
+      "logprob": -0.013591143302619457,
+      "top_logprobs": [
+        {
+          "id": 150386,
+          "token": "جد",
+          "bytes": [
+            216,
+            172,
+            216,
+            175
+          ],
+          "logprob": -0.013591143302619457
+        },
+        {
+          "id": 31993,
+          "token": "ج",
+          "bytes": [
+            216,
+            172
+          ],
+          "logprob": -4.658143520355225
+        },
+        {
+          "id": 148997,
+          "token": "حد",
+          "bytes": [
+            216,
+            173,
+            216,
+            175
+          ],
+          "logprob": -7.469433307647705
+        },
+        {
+          "id": 150082,
+          "token": "جل",
+          "bytes": [
+            216,
+            172,
+            217,
+            132
+          ],
+          "logprob": -8.083625793457031
+        },
+        {
+          "id": 148643,
+          "token": "اج",
+          "bytes": [
+            216,
+            167,
+            216,
+            172
+          ],
+          "logprob": -8.11124038696289
+        }
+      ]
+    },
+    {
+      "id": 70943,
+      "token": "ية",
+      "bytes": [
+        217,
+        138,
+        216,
+        169
+      ],
+      "logprob": -0.00011611659283516929,
+      "top_logprobs": [
+        {
+          "id": 70943,
+          "token": "ية",
+          "bytes": [
+            217,
+            138,
+            216,
+            169
+          ],
+          "logprob": -0.00011611659283516929
+        },
+        {
+          "id": 53208,
+          "token": "ى",
+          "bytes": [
+            217,
+            137
+          ],
+          "logprob": -10.53186321258545
+        },
+        {
+          "id": 47552,
+          "token": "ие",
+          "bytes": [
+            208,
+            184,
+            208,
+            181
+          ],
+          "logprob": -11.041337013244629
+        },
+        {
+          "id": 151552,
+          "token": "ית",
+          "bytes": [
+            215,
+            153,
+            215,
+            170
+          ],
+          "logprob": -11.631869316101074
+        },
+        {
+          "id": 150069,
+          "token": "وية",
+          "bytes": [
+            217,
+            136,
+            217,
+            138,
+            216,
+            169
+          ],
+          "logprob": -11.732421875
+        }
+      ]
+    },
+    {
+      "id": 203974,
+      "token": " عربية",
+      "bytes": [
+        32,
+        216,
+        185,
+        216,
+        177,
+        216,
+        168,
+        217,
+        138,
+        216,
+        169
+      ],
+      "logprob": -0.007627415005117655,
+      "top_logprobs": [
+        {
+          "id": 203974,
+          "token": " عربية",
+          "bytes": [
+            32,
+            216,
+            185,
+            216,
+            177,
+            216,
+            168,
+            217,
+            138,
+            216,
+            169
+          ],
+          "logprob": -0.007627415005117655
+        },
+        {
+          "id": 214802,
+          "token": " عراق",
+          "bytes": [
+            32,
+            216,
+            185,
+            216,
+            177,
+            216,
+            167,
+            217,
+            130
+          ],
+          "logprob": -5.668634414672852
+        },
+        {
+          "id": 42526,
+          "token": " ع",
+          "bytes": [
+            32,
+            216,
+            185
+          ],
+          "logprob": -6.139735221862793
+        },
+        {
+          "id": 183680,
+          "token": " شرق",
+          "bytes": [
+            32,
+            216,
+            180,
+            216,
+            177,
+            217,
+            130
+          ],
+          "logprob": -8.289710998535156
+        },
+        {
+          "id": 148896,
+          "token": " غ",
+          "bytes": [
+            32,
+            216,
+            186
+          ],
+          "logprob": -8.548746109008789
+        }
+      ]
+    },
+    {
+      "id": 248046,
+      "token": "",
+      "bytes": [],
+      "logprob": -0.009067212231457233,
+      "top_logprobs": [
+        {
+          "id": 248046,
+          "token": "",
+          "bytes": [],
+          "logprob": -0.009067212231457233
+        },
+        {
+          "id": 13,
+          "token": ".",
+          "bytes": [
+            46
+          ],
+          "logprob": -6.139585018157959
+        },
+        {
+          "id": 271,
+          "token": "\n\n",
+          "bytes": [
+            10,
+            10
+          ],
+          "logprob": -6.3724894523620605
+        },
+        {
+          "id": 75045,
+          "token": " ق",
+          "bytes": [
+            32,
+            217,
+            130
+          ],
+          "logprob": -7.838389873504639
+        },
+        {
+          "id": 2228,
+          "token": "  \n",
+          "bytes": [
+            32,
+            32,
+            10
+          ],
+          "logprob": -8.17115592956543
+        }
+      ]
+    }
+  ]
+}

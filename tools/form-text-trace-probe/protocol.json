@@ -1,0 +1,30 @@
+{
+  "schema": "lighton4b-upstream-form-text-trace/v1",
+  "case": "simple_form",
+  "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "combined_receipt_sha256": "4428c4a2d8a877f64488847dfd7145fb0ccd1ba26810e6c0edf2229e6e40eac9",
+  "physical_receipt_sha256": "712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2",
+  "prompt_tokens": 154,
+  "image_tokens": 140,
+  "generated_tokens": 170,
+  "source_eos": 248046,
+  "same_prefix_tokens": 31,
+  "native_generated_tokens": 167,
+  "context": 2048,
+  "threads": 4,
+  "build_threads": 2,
+  "worker_seconds": 3600,
+  "source_arm_seconds": 900,
+  "max_trace_graphs": 16,
+  "max_tensor_bytes": 8388608,
+  "max_text_trace_bytes": 134217728,
+  "startup_probe_source_sha256": {
+    "common/common.cpp": "1b41b3613a10d579e2808bf5e1a73531980ca836d0f4d23dba22d7130d78985e",
+    "tools/server/server-context.cpp": "e0e43f22fd2357a1e76ad6b8996b099d62615dd973de33feaa02fa0ee1a2a973"
+  },
+  "original_bf16_forward_allowed": false,
+  "native_forward_allowed": false,
+  "full_f32_model_allowed": false,
+  "heldout_allowed": false,
+  "analysis_gate": "Source capture status requires observer-neutral170 rawrows and all original response/two-row/vision/prompt anchors. Reader/crop blockage remains explicit and does not discard a valid capture."
+}

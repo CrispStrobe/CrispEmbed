@@ -1,0 +1,24 @@
+{
+  "bootstrap_sha256": "5c1ad4b07ed501116529ed5504138689237f6b43346b02bca69edf6aa536b45e",
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "gpu_enabled": false,
+  "large_artifacts_copied": false,
+  "model_inference_executed": false,
+  "model_receipt_sha256": "0a0c2084baa4e46aa80f09f7ae94fd4b1c56ccae2bbf2f9ef6210e81e8cf1d01",
+  "preflight": {
+    "available_ram_bytes": 32175849472,
+    "free_disk_bytes": 20940525568,
+    "load": [
+      0.1494140625,
+      0.1240234375,
+      0.1015625
+    ],
+    "logical_cpus": 4
+  },
+  "readback_receipt_sha256": "b8b6bdf1eea0030f707475c2bc0c98fbb59d828fb8025083eaecc2dddd6e4d24",
+  "schema": "lighton4b-f16-teacher-readback-bootstrap/v1",
+  "seconds": 91.86457820199996,
+  "source_sha": "bcbd50b1894a465e0bc44c1f8b3ef54c879d6529",
+  "status": "readback-verified",
+  "weight_quantization_executed": false
+}

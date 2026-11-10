@@ -1,0 +1,36 @@
+{
+  "schema": "lighton4b-q6-heldout-receipt-negative-independent-review/v1",
+  "receipt_sha256": "49da9537e79636855c3f5c6bd4f4859a7e1d14820d384fbc27bef2c45bf44000",
+  "source": "001a7cc958badfecf8fd2c4698f4bbe3d235bb4f",
+  "status": "setup-negative-before-heldout-forward",
+  "observed_old_and_corrected167_producer_byte_guards": true,
+  "heldout_forward": false,
+  "heldout_outputs": false,
+  "scope": "Report/log boundary independently reviewed; large observed control ZIPs remain remote. No independent re-audit of all observed rows claimed here.",
+  "files": {
+    "bounded-worker.log": {
+      "bytes": 1990,
+      "sha256": "c46f0320f1811a603f979dcf05d531b92ec9e72bbaff3d1cdf9012ed8b09b82f"
+    },
+    "native-preflight.log": {
+      "bytes": 89,
+      "sha256": "cdc2ddd5a1f9c882037f791810a01ee9161837034332b84b2376bfb579f3b931"
+    },
+    "q6-heldout.json": {
+      "bytes": 120943,
+      "sha256": "49da9537e79636855c3f5c6bd4f4859a7e1d14820d384fbc27bef2c45bf44000"
+    },
+    "bootstrap.py": {
+      "bytes": 8027,
+      "sha256": "aa85a9a5965d0a9b57750795aa58801d73b7d723a14198afe8d6dc1a86d40d13"
+    },
+    "q6-heldout-case-bootstrap.json": {
+      "bytes": 466,
+      "sha256": "d843c2229761c8802a53f58bb1e465c85980f2365479c4ee61a5eaf0d889d40b"
+    },
+    "client-readback-negative.json": {
+      "bytes": 194,
+      "sha256": "9bc8f02203e0a08338e0447c862ef56bc064eaefbbd958885c07cee585be43e8"
+    }
+  }
+}

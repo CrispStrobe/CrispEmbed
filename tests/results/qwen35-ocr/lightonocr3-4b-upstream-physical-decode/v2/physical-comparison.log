@@ -1,0 +1,32 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+phase host-cpu
+phase submodules
+phase up-init
+phase up-remote
+phase up-fetch
+phase up-checkout
+phase up-configure
+phase up-build
+phase native-configure
+phase native-build
+phase download-LightOnOCR-3-4B-Q4_K_M.gguf
+phase download-mmproj-LightOnOCR-3-4B-F16.gguf
+phase download-protected-base
+phase lossless-pack
+phase simple_form-source-control
+phase simple_table-source-control
+phase arabic_printed_line-source-control
+phase all-three-source-controls-exact
+phase simple_form-upstream_features
+phase simple_form-upstream_features-early-controls-exact
+phase simple_form-upstream_features-measured
+phase simple_form-complete
+phase simple_table-upstream_features
+phase simple_table-upstream_features-early-controls-exact
+phase simple_table-upstream_features-measured
+phase simple_table-complete
+phase arabic_printed_line-upstream_features
+phase arabic_printed_line-upstream_features-early-controls-exact
+phase arabic_printed_line-upstream_features-measured
+phase arabic_printed_line-complete

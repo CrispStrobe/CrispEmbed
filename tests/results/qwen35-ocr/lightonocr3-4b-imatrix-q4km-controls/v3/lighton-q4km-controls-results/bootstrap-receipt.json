@@ -1,0 +1,26 @@
+{
+  "bootstrap_sha256": "b57417d9d65f5f0c6b4a4ec31581d76a70ba25620b92a9b5bc3fe6db48a608c2",
+  "controller_returncode": 0,
+  "github_dispatch_executed": false,
+  "gpu_enabled": false,
+  "model_forward_executed": false,
+  "preflight": {
+    "disk_free_bytes": 20940558336,
+    "load": [
+      0.37646484375,
+      0.2822265625,
+      0.11767578125
+    ],
+    "memory_swap": {
+      "MemAvailable": "31894808 kB",
+      "SwapFree": "0 kB",
+      "SwapTotal": "0 kB"
+    }
+  },
+  "python": "3.13.18 (main, Oct 26 2026, 15:28:15) [GCC 13.3.0]",
+  "quantization_executed": false,
+  "schema": "lighton4b-imatrix-q4km-bootstrap/v1",
+  "seconds": 111.22726010499997,
+  "source_sha": "6d751828e61937fe816a04ab355e7305239d63ff",
+  "status": "passed"
+}

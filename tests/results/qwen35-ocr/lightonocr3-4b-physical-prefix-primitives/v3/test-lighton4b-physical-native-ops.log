@@ -1,0 +1,1 @@
+PHYSICAL_NATIVE_OPS pass=1 checks=68 gate_off_legacy_exact=1 nonphysical_unchanged=1 streamed_head_exact=1 physical_cache_toggle=1 learned_model_forward=0

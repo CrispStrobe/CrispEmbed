@@ -1,0 +1,56 @@
+{
+  "receipt_sha256": "039b024f41b499cfd8344cb4e89835bbfe559a1f298225866c691000d4e6c8c0",
+  "source": "b59e5d3a9d9e333f67f9646c1a43a1edc70fccfa",
+  "checks": {
+    "all9_selected_actual_output_hashes": true,
+    "all28_reported_source_hashes_cross_manifest": true,
+    "all29_reported_legacy_hashes_cross_manifest": true,
+    "all8_selected_F16_raw_arrays_exact_live_source": true,
+    "selected_legacy_merged_matches_retained_old_hash": true,
+    "all297_authenticated_and_precision_policy_exact": true,
+    "pretransfer_metadata_and_original_text_limits": true
+  },
+  "selected_files": {
+    "legacy/vision.merged.f32": {
+      "bytes": 1433600,
+      "sha256": "056f887230abc6adc0837cefd6866b42c0a69c70f02906786409c5622e0683ea"
+    },
+    "f16/processor.patches.f32": {
+      "bytes": 3440640,
+      "sha256": "1d66249e7d176481cb037eea70a82c2944b772b3fdd1f3df2becc18bfbc2edb4"
+    },
+    "f16/vision.merged.f32": {
+      "bytes": 1433600,
+      "sha256": "b9a171d18d5698e5c897662ddedf6cf399448838e55350c3b206e7a24c240d1b"
+    },
+    "f16/vision.position.f32": {
+      "bytes": 2293760,
+      "sha256": "20446f9a20c7888f56795d86db5e3d1154515f0925b9b527c8b1839356d3f0e6"
+    },
+    "f16/vision.layer.0.f32": {
+      "bytes": 2293760,
+      "sha256": "b79d32eca03fe3590f0a9c24cefd75cac890dfc5368b2cc107863de7af16dcb8"
+    },
+    "f16/vision.patch.f32": {
+      "bytes": 2293760,
+      "sha256": "4dcf1ee0054b05a78f215484715d119db42b8e1cd8e87dd9dba189a32c76d076"
+    },
+    "f16/vision.layer.23.f32": {
+      "bytes": 2293760,
+      "sha256": "f1270b5da1bd21dc271463fb564d570232c2895ef5c3515433bbffa18044cb3e"
+    },
+    "f16/resized.rgb": {
+      "bytes": 430080,
+      "sha256": "b696ae06e5a1b1502830e1ba2d5c65df5fdb1a74550b69e67480794de5c4da98"
+    },
+    "f16/vision.embedded.f32": {
+      "bytes": 2293760,
+      "sha256": "606af11ff9326279b76c6427aa366d7bc2f240f72435eef2278c8dba12c716b1"
+    }
+  },
+  "scope": "Independent actual selected raw-byte verification plus full cross-receipt hash census. Full73-owned-file and28-source-file remote rehash is required in composed-form pre-model admission, avoiding local bulk arrays.",
+  "limits": [
+    "Observed form only; no decoded/heldout/general qualification.",
+    "Ordered component timings are not a balanced end-to-end speed benchmark."
+  ]
+}

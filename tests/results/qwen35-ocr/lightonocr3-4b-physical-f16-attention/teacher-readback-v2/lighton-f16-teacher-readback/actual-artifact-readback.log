@@ -1,0 +1,18 @@
+fatal: not a git repository (or any parent up to mount point /kaggle)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+Traceback (most recent call last):
+  File "/kaggle/working/lighton-f16-teacher-readback-source/tools/ci-heavy/lighton4b_f16_teacher_readback.py", line 47, in <module>
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--mount',required=True);p.add_argument('--output',required=True);a=p.parse_args();main(a.mount,a.output)
+                                                                                                                                                     ~~~~^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/lighton-f16-teacher-readback-source/tools/ci-heavy/lighton4b_f16_teacher_readback.py", line 37, in main
+    result.update(source_sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),original_receipt_sha256=ORIGINAL,native_receipt_sha256=NATIVE,golden_receipt_sha256=GOLD,native_source_sha=NATIVE_SOURCE,candidate_sha256=CANDIDATE,original_source_sha=original['source_sha'],teacher_ids=ids,teacher_contexts_authenticated=True,original_parameter_dtype_counts=original['parameter_dtype_counts'],decoded_comparisons=native['arms']['f16-full']['vs_original_bf16'],upstream_decoded_comparison=native['arms']['f16-full']['vs_retained_upstream'])
+                             ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/subprocess.py", line 473, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+               **kwargs).stdout
+               ^^^^^^^^^
+  File "/usr/lib/python3.13/subprocess.py", line 578, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['git', 'rev-parse', 'HEAD']' returned non-zero exit status 128.

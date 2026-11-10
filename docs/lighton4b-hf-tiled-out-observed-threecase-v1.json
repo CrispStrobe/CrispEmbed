@@ -1,0 +1,59 @@
+{
+  "accelerator_assessment": "Current owned runtime uses CPU backend and F32 dequantized projection tiles; CUDA/GPU would exercise a different unverified path. No accelerator requested.",
+  "anchors": {
+    "all699_protected_and24_expected_publisher_sha": true,
+    "every_greedy_full_vocab_row_finite_argmax_checked": true,
+    "new_candidate_full_sha_before_after": true,
+    "new_prefill_teacher0_greedy0_exact": true,
+    "old_model_table_full_score_and70_stages_exact": true,
+    "same_five_original_input_arrays_per_case": true
+  },
+  "base_sha256": "5d133ae02c12611572c02e2d43bd06f4fecc5e059f94709a13bdb36458fadb29",
+  "candidate_changed_tensors": 24,
+  "cases_order": [
+    "simple_form",
+    "simple_table",
+    "arabic_printed_line"
+  ],
+  "exact_control_bundle_required": true,
+  "fixed_precision": {
+    "BF16_LINEAR": "0",
+    "BF16_QUANT_WEIGHTS": "0",
+    "HEAD_BF16": "1",
+    "HF_TILED_OUT": "1",
+    "IMATRIX_Q4KM_Q6HEAD": "0",
+    "PARALLEL_DEQUANT": "1",
+    "PHYSICAL_NATIVE_OPS": "0",
+    "Q6_K": "1",
+    "STREAM_GRAPH_REUSE": "0",
+    "UPSTREAM_PHYSICAL": "0"
+  },
+  "hf_scalars_tokenizer_unchanged": true,
+  "native_controls_source": "c89aaa4cb0c33d73d121b83b33d42d4bfcb20204",
+  "partial_evidence": "generated-partial.ids/txt and progress preserved; elapsed and cumulative-child RSS written even on timeout; large arrays/model remain remote",
+  "per_case_token_cap": 256,
+  "protected_other_tensors": 699,
+  "quality_criteria": {
+    "both_raw_CER_and_WER_not_worse_than_pinned_llama_Q4KM_per_case": true,
+    "denominator": "genuine original BF16 per frozen references",
+    "new_candidate_EOS_required_all_three": true,
+    "no_general_quality_or_shipping_claim_even_if_observed_floors_pass": true
+  },
+  "recipe": "lighton4b-weighted-q4km-hf-tiled-out-v1",
+  "schema": "lighton4b-hf-tiled-out-observed-threecase/v1",
+  "scope": "post-selection observed/calibration diagnostic only; no heldout or release claim",
+  "source_and_both_runner_blobs_equal_controls_required": true,
+  "source_f16_proof_receipt_sha256": "e87e6b28936e1022b6207cb942ba5e1d468b309bf731c24bf44f136dbd20b215",
+  "unchanged_vision_gates": "exact immutable producer fixed_gates; old model platform anchor required before packing",
+  "worker_limits": {
+    "arabic_printed_line_seconds": 1200,
+    "bootstrap_seconds": 15600,
+    "controller_seconds": 14400,
+    "minimum_available_ram_bytes": 8589934592,
+    "minimum_free_disk_bytes": 15032385536,
+    "platform_anchor_seconds": 600,
+    "service_seconds": 16200,
+    "simple_form_seconds": 5400,
+    "simple_table_seconds": 5400
+  }
+}

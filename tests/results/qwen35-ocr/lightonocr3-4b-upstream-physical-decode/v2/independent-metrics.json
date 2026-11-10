@@ -1,0 +1,38 @@
+[
+  {
+    "case": "simple_form",
+    "ids": 174,
+    "eos": true,
+    "cap_hit": false,
+    "native_text_sha256": "d3a628950f5b6af17e37e5cb73280d36119cb7627d77268de1986c43207358ca",
+    "native_ids_sha256": "1c278da800465da8aa35494fc621ca2c07060e2be08c2e327aeff1c94784c1aa",
+    "bf16_char_edits": 202,
+    "bf16_word_edits": 38,
+    "upstream_char_edits": 216,
+    "upstream_word_edits": 44
+  },
+  {
+    "case": "simple_table",
+    "ids": 256,
+    "eos": false,
+    "cap_hit": true,
+    "native_text_sha256": "e6b7c03355d5f3c6c7d779c0223b651928c2f585c32f15427afb7691b1ea4f32",
+    "native_ids_sha256": "e32e841dbc2a148ac876529adafa75775c611f7ee654fcc1d187872e2f1e6bff",
+    "bf16_char_edits": 238,
+    "bf16_word_edits": 71,
+    "upstream_char_edits": 118,
+    "upstream_word_edits": 36
+  },
+  {
+    "case": "arabic_printed_line",
+    "ids": 6,
+    "eos": true,
+    "cap_hit": false,
+    "native_text_sha256": "24de6e789e4550dec9afdb7013d4e7d455b99f6a7ba75f2d166c0f20a896cc39",
+    "native_ids_sha256": "c619a15be2844fa72f35be1d86c09c04e28a1e58ff63bc96d68303d13616559b",
+    "bf16_char_edits": 0,
+    "bf16_word_edits": 0,
+    "upstream_char_edits": 0,
+    "upstream_word_edits": 0
+  }
+]

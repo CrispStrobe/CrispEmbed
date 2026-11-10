@@ -1,0 +1,11 @@
+[{"stream_name":"stdout","time":60.005367287,"data":"PHASE arabic_printed_line-preflight\n"}
+,{"stream_name":"stdout","time":60.74671093,"data":"PHASE arabic_printed_line-complete-greedy\n"}
+,{"stream_name":"stdout","time":271.563702769,"data":"PHASE simple_table-preflight\n"}
+,{"stream_name":"stdout","time":272.458125498,"data":"PHASE simple_table-complete-greedy\n"}
+,{"stream_name":"stderr","time":3956.102435819,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":3956.102813059,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":3956.655989391,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":3956.656112493,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":3958.288251296,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":3959.99430861,"data":"[NbConvertApp] Writing 300034 bytes to __results__.html\n"}
+]

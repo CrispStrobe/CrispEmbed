@@ -1,0 +1,26 @@
+{
+  "actual_original_output_ready": false,
+  "controls_log_sha256": "1891074c0d0bf4ef98404fa68448dd2132559762febfea185a0abe557524dab9",
+  "executable_sha256": "d6898491984110b0536dcd43ddb1091f6559495a79dfb23389baedb8dc4ae246",
+  "large_retention_qualified": false,
+  "model_payload_bytes": 0,
+  "native_execution_admitted": false,
+  "native_forward_executed": false,
+  "original_execution_admitted": false,
+  "original_forward_executed": false,
+  "real_provider_write_executed": false,
+  "schema": "lighton4b-bf16-quant-controls/v1",
+  "source_sha": "5eb0735c0448462032571c7ef6ea905c5f04890c",
+  "source_sha256": {
+    "docs/lighton4b-bf16-quant-admissions-v1.json": "705ef005a1196939fab17d47138cfbcaef1dff03d979ceda11be7db12526f3be",
+    "docs/lighton4b-bf16-quant-v1.json": "4d2a738a8df75947f5a8e269799c8b3a27af19bfafb82653802a7531b7c928bc",
+    "docs/lighton4b-document-parity-v1.json": "afee0e1fbebc73b9ded744343ee9e2ae467f3b214ab3682e9fb0e8fd733ad674",
+    "src/crispembed_diff.h": "6bef0b4e32b52af7fe6cd6702bfc937845dde85762477b08a82ff2a68388df94",
+    "tests/lighton4b_document_diff.cpp": "29b1ff32e5006f9b9c645416450a301be2433ca82ae98690323898d21c632b1c",
+    "tests/test_lighton4b_bf16_quant.py": "eeae3f2a471dc3112ef6eabd2f3aee33db88ffcdab19640f82ea92cc872e85a9",
+    "tools/ci-heavy/lighton4b_bf16_quant_controls.py": "b27bcc5e4bc19aa53d26cf3d61fc8ed7ba98ae9dbb06dcf81b77c7648832ec47",
+    "tools/lighton4b_bf16_quant.py": "07b96d184b034239aea1d15f27e734fd4d35b095253fd9c5ec06f6c430899244",
+    "tools/lighton4b_original_document.py": "241fa5f288ca3a2f48b9011edf5e89bfc477f9aec8803f0e9d05b3ef21eb3174"
+  },
+  "status": "passed"
+}

@@ -1,0 +1,70 @@
+{
+  "v2/composed-form-vision-bootstrap.json": {
+    "bytes": 2515,
+    "sha256": "cc8176d0de2eb4e57dafe1488db1694533c772ff3b169e69e598ecf55e703335"
+  },
+  "v2/CMakeCache.txt": {
+    "bytes": 29185,
+    "sha256": "25af3e7d2a0f5cf153926b6f6e2984e9806baa042d79ca9c1b28602dd9b0f5a5"
+  },
+  "v2/fixed.log": {
+    "bytes": 528,
+    "sha256": "84983a85256b4d482a6452202af47d161a1b01fbd1666fe34678644f944f8479"
+  },
+  "v2/independent-review.json": {
+    "bytes": 2266,
+    "sha256": "66f90219101e2e51e99ebb7ab5a3f534f901f566c3707eb3eeb93fd5e4c154d2"
+  },
+  "v2/old-fixed.diff": {
+    "bytes": 1386,
+    "sha256": "c195c9d174ef96fa835bb712d8be3b40d35203a81fc280dfb06c0a541d934a18"
+  },
+  "v2/protocol.json": {
+    "bytes": 2044,
+    "sha256": "bfc3fbb1d856c36525c7a11bddb68184d92114c5f1a051786fc7bf0988753d90"
+  },
+  "v2/bootstrap.py": {
+    "bytes": 7756,
+    "sha256": "e7ae9ddb4dff327d64e2c32cfc8bfae583ef2b5f9ed969599206b63f9559d79c"
+  },
+  "v2/composed-form-vision.json": {
+    "bytes": 107499,
+    "sha256": "aec0d0b10befb5b3498b55a87f9cda785998242c0d9f49a4a1b3f72a92ed160b"
+  },
+  "v2/old.log": {
+    "bytes": 612,
+    "sha256": "ef7da5284192f504706cb4ad6de64397a8bd1fe625359ecb67df82937212b565"
+  },
+  "v1-dependency-negative/bootstrap-receipt.json": {
+    "bytes": 2570,
+    "sha256": "df3110ca879e6044c89eeec8122a0ab2f6b24bf6fccc207117ac4d14fe1e0d62"
+  },
+  "v1-dependency-negative/review.json": {
+    "bytes": 506,
+    "sha256": "68ae8dac16ec37568b1c4ced633aa26f2e7dcc044021c47e621e59c80f280864"
+  },
+  "v2/fixed/generated.ids": {
+    "bytes": 774,
+    "sha256": "7b486f648aa28924ed517318ec42e4768cb4750ee35656a3a1ade902b4263049"
+  },
+  "v2/fixed/native-summary.json": {
+    "bytes": 328,
+    "sha256": "524174705b7e348abab616899d1a30c62d67683d1cb1a29055f76d5c10247522"
+  },
+  "v2/fixed/generated.txt": {
+    "bytes": 657,
+    "sha256": "dd76fa10d0f4e6d2e6450523a3fc9a2e7cc3ba6690675d01fe38833313469909"
+  },
+  "v2/old/generated.ids": {
+    "bytes": 906,
+    "sha256": "40db6e27b836e8959b03c57afe8199d8885da338a68696f085e4755da4b92f7f"
+  },
+  "v2/old/native-summary.json": {
+    "bytes": 328,
+    "sha256": "e671fd2e0d03e1e287df17b5a14a15438d3dac63109b71f6f2753eafe1028536"
+  },
+  "v2/old/generated.txt": {
+    "bytes": 718,
+    "sha256": "ea8d430acfd56011a369143b8b895bc99454b2e70b190821350d5d326108d74f"
+  }
+}

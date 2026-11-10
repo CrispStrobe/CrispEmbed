@@ -1,0 +1,28 @@
+{
+  "bootstrap_sha256": "1d00e6f2fb281c6b704aba0e838cc485e8841486ad8abac569f39601bb54464a",
+  "controller_returncode": 1,
+  "error": "bounded CPU-only bootstrap or controls failed",
+  "error_type": "AssertionError",
+  "github_dispatch_executed": false,
+  "gpu_enabled": false,
+  "model_forward_executed": false,
+  "preflight": {
+    "disk_free_bytes": 20940558336,
+    "load": [
+      1.4775390625,
+      0.3408203125,
+      0.1484375
+    ],
+    "memory_swap": {
+      "MemAvailable": "31899396 kB",
+      "SwapFree": "0 kB",
+      "SwapTotal": "0 kB"
+    }
+  },
+  "python": "3.13.18 (main, Oct 26 2026, 15:28:15) [GCC 13.3.0]",
+  "quantization_executed": false,
+  "schema": "lighton4b-imatrix-q4km-bootstrap/v1",
+  "seconds": 104.98066919899998,
+  "source_sha": "e0c60e0ed420754d839c10a6bfc7687cc2b54867",
+  "status": "failed"
+}

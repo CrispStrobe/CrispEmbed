@@ -8,6 +8,7 @@ name: Model-free controls
 # trigger (they take seconds), so no control is skipped that used to run.
 on:
   workflow_dispatch:
+  merge_group:
   push:
     branches: [main]
     paths:
@@ -50,6 +51,30 @@ on:
       - 'tools/ci-heavy/lighton3_pixtral_eps_ab.py'
       - 'docs/lighton3-pixtral-epsilon-ab-v1.json'
       - 'tests/fixtures/lightonocr3/**'
+      - 'tests/test_lightonocr3_4b_profile.py'
+      - 'tests/test_lightonocr3_4b_export.py'
+      # Bounded original-module/meta-schema reference, selected by full diff.
+      - 'CMakeLists.txt'
+      - 'VERSION'
+      - '.gitmodules'
+      - 'ggml'
+      - 'ggml/**'
+      - 'cmake/**'
+      - 'third_party/c2pa/**'
+      - 'src/qwen35_*.cpp'
+      - 'src/qwen35_*.h'
+      - 'src/crispembed_diff.h'
+      - 'src/core/**'
+      - 'include/**'
+      - 'tools/ci_selection.py'
+      - 'tools/lighton4b_ci.py'
+      - 'tests/test_lighton4b_ci.py'
+      - 'tools/ci-heavy/lighton4b_*.py'
+      - 'tools/lighton4b-gdn-requirements.txt'
+      - 'tests/test_lighton4b_gdn_reference.py'
+      - 'tests/test_lightonocr3_4b_export*.py'
+      - 'tests/test_qwen35_gdn_heads.cpp'
+      - 'tests/fixtures/lightonocr3-4b-source/**'
       - 'models/qwen35_xiaomi0_profile.py'
       - 'models/convert-qwen35-ocr-to-gguf.py'
       - 'tools/xiaomi0*.py'
@@ -162,6 +187,30 @@ on:
       - 'tools/ci-heavy/lighton3_pixtral_eps_ab.py'
       - 'docs/lighton3-pixtral-epsilon-ab-v1.json'
       - 'tests/fixtures/lightonocr3/**'
+      - 'tests/test_lightonocr3_4b_profile.py'
+      - 'tests/test_lightonocr3_4b_export.py'
+      # Bounded original-module/meta-schema reference, selected by full diff.
+      - 'CMakeLists.txt'
+      - 'VERSION'
+      - '.gitmodules'
+      - 'ggml'
+      - 'ggml/**'
+      - 'cmake/**'
+      - 'third_party/c2pa/**'
+      - 'src/qwen35_*.cpp'
+      - 'src/qwen35_*.h'
+      - 'src/crispembed_diff.h'
+      - 'src/core/**'
+      - 'include/**'
+      - 'tools/ci_selection.py'
+      - 'tools/lighton4b_ci.py'
+      - 'tests/test_lighton4b_ci.py'
+      - 'tools/ci-heavy/lighton4b_*.py'
+      - 'tools/lighton4b-gdn-requirements.txt'
+      - 'tests/test_lighton4b_gdn_reference.py'
+      - 'tests/test_lightonocr3_4b_export*.py'
+      - 'tests/test_qwen35_gdn_heads.cpp'
+      - 'tests/fixtures/lightonocr3-4b-source/**'
       - 'models/qwen35_xiaomi0_profile.py'
       - 'models/convert-qwen35-ocr-to-gguf.py'
       - 'tools/xiaomi0*.py'
@@ -245,11 +294,16 @@ jobs:
   controls:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    outputs:
+      lighton4b_reference: ${{ steps.lighton4b-scope.outputs.run_reference }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Select bounded LightOn4B reference from complete changes
+        id: lighton4b-scope
+        run: python tools/lighton4b_ci.py --github-output "$GITHUB_OUTPUT"
       - name: Validate manual OCR workflow contexts and routing
         run: |
           archive="$RUNNER_TEMP/actionlint_1.7.7_linux_amd64.tar.gz"
@@ -336,6 +390,18 @@ jobs:
           python tests/test_lighton3_kv_remaining.py -v
           python tests/test_validate_lighton3_eps_first.py -v
 
+      - name: LightOnOCR-3-4B source preflight controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_lightonocr3_4b_profile.py -v
+
+      - name: LightOnOCR-3-4B export and component protocol controls
+        if: ${{ !cancelled() }}
+        run: |
+          python tests/test_lightonocr3_4b_export.py -v
+          python tests/test_lightonocr3_4b_export_meta.py -v
+          python tests/test_lighton4b_gdn_reference.py -v
+          python tests/test_lighton4b_ci.py -v
+
       - name: Xiaomi OCR0 exact source, task and layout controls
         if: ${{ !cancelled() }}
         run: |
@@ -346,3 +412,53 @@ jobs:
       - name: Nemotron processor-reference receipt controls
         if: ${{ !cancelled() }}
         run: python tests/test_nemotron_parse_frontend.py -v
+
+  lighton4b-reference:
+    name: LightOn4B original meta schema and GDN components
+    needs: controls
+    if: needs.controls.outputs.lighton4b_reference == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare isolated pinned CPU reference environment
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/lighton4b-reference/environment"
+          python -m venv "$RUNNER_TEMP/lighton4b-reference-venv"
+          "$RUNNER_TEMP/lighton4b-reference-venv/bin/python" -m pip install \
+            --disable-pip-version-check --report "$RUNNER_TEMP/lighton4b-reference/environment/resolution.json" \
+            -r tools/lighton4b-gdn-requirements.txt
+          "$RUNNER_TEMP/lighton4b-reference-venv/bin/python" -m pip check | tee "$RUNNER_TEMP/lighton4b-reference/environment/pip-check.txt"
+          "$RUNNER_TEMP/lighton4b-reference-venv/bin/python" -m pip freeze > "$RUNNER_TEMP/lighton4b-reference/environment/installed.txt"
+      - name: Observe actual original 4B meta schema without checkpoint weights
+        env:
+          HF_HUB_OFFLINE: '1'
+          TRANSFORMERS_OFFLINE: '1'
+          HF_HUB_DISABLE_TELEMETRY: '1'
+        run: |
+          "$RUNNER_TEMP/lighton4b-reference-venv/bin/python" tools/ci-heavy/lighton4b_export_meta.py \
+            --output "$RUNNER_TEMP/lighton4b-reference/meta/export-meta.json"
+      - name: Freeze original components then compare native recurrence and caches
+        env:
+          HF_HUB_OFFLINE: '1'
+          TRANSFORMERS_OFFLINE: '1'
+          HF_HUB_DISABLE_TELEMETRY: '1'
+        run: |
+          "$RUNNER_TEMP/lighton4b-reference-venv/bin/python" tools/ci-heavy/lighton4b_gdn_reference.py \
+            --output "$RUNNER_TEMP/lighton4b-reference/gdn" \
+            --build-dir "$RUNNER_TEMP/lighton4b-gdn-build"
+      - name: Retain original and native component evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighton4b-components-${{ github.run_id }}
+          path: ${{ runner.temp }}/lighton4b-reference/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 6

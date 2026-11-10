@@ -1,0 +1,122 @@
+{
+  "CMakeCache.txt": {
+    "bytes": 29179,
+    "sha256": "be6dd9e7ef77b2aec720924ffd0d9dcf5abce139c6b0540b6d1657dd256f0296"
+  },
+  "build.log": {
+    "bytes": 9665,
+    "sha256": "635e3a5fc0e93b21f47d167b0f4c0075085decfbc16a8a1bd4a49c0cceceb2d7"
+  },
+  "configure.log": {
+    "bytes": 2059,
+    "sha256": "bfa45b50bb1bcf947b32e1438cee910362b7d1c20c19c402f2be924a1ffd81bf"
+  },
+  "dependencies.log": {
+    "bytes": 552,
+    "sha256": "b1ebe21f86873e65e63b35ede82bc6d909a65b50092facb5b9d5045b8f480da4"
+  },
+  "dependency-check.log": {
+    "bytes": 132,
+    "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+  },
+  "env-inventory.log": {
+    "bytes": 105,
+    "sha256": "346a48e14b38c99f137ac3add198715096e1b4f5b9119359d26c82beedec54ea"
+  },
+  "hf-weighted-profile.log": {
+    "bytes": 41,
+    "sha256": "b718a90496d487001c277195421800d1ace06518c39c469ad78d97fa1a3e9774"
+  },
+  "legacy-bf16-linear.log": {
+    "bytes": 66,
+    "sha256": "2ab392dbdee7b3d27202ecd5ee6d7b2dc93c694e99d2e7343605a5d19c93841e"
+  },
+  "legacy-bf16-weight.log": {
+    "bytes": 118,
+    "sha256": "0c3563c90baa096e69954d0645e416651150a4271a6c58c05e41a4901751af5f"
+  },
+  "legacy-mixed-policy.log": {
+    "bytes": 70,
+    "sha256": "f324aaf9f94c07ca5d5521ce2c471e7739054846fd3a6d1ab418bf460cd94510"
+  },
+  "legacy-native-context.log": {
+    "bytes": 140,
+    "sha256": "782a40c1dea3c3d2fe6908a24f7b66517a1de34d736f5f60fb7c6672e6ace881"
+  },
+  "legacy-q6-profile.log": {
+    "bytes": 169,
+    "sha256": "eb884a08b40464888fa1f2e00e58a73056f540f5116b50319ead4526f2a9179f"
+  },
+  "legacy-schema.tsv": {
+    "bytes": 21773,
+    "sha256": "e302197d9291bcbe19fd4e01a503361ae27998ec44ce1349236524def42f4b59"
+  },
+  "physical-controls-bootstrap.json": {
+    "bytes": 499,
+    "sha256": "5e59c84afb30f07c3f1cbe3e3c9b0efd9562b7982b724135d6838a8621d5cd13"
+  },
+  "physical-controls.json": {
+    "bytes": 4303,
+    "sha256": "cb960455eb66afb264a09c3c0b1c5a8d1347b3de6f2c102d7ab259fec17474da"
+  },
+  "physical-model-free-controls.log": {
+    "bytes": 445,
+    "sha256": "88465a40f82bf1f2e44d22960839080537082ce733b3f305e6a9427e0f8d72eb"
+  },
+  "physical-schema.tsv": {
+    "bytes": 21774,
+    "sha256": "9c741011b75623a621324d1819e45b715a0e3398a1f4cf386614ff4f1099222f"
+  },
+  "physical-semantics.log": {
+    "bytes": 82,
+    "sha256": "a3c11f515e2cc2e9c14770999b9b81c745bc863a474de31a79a2c341ef6121ee"
+  },
+  "pip-resolution.json": {
+    "bytes": 56667,
+    "sha256": "c213cce359b35d25be3fc771baf594546ae5228ea8938e948a853fb30951119e"
+  },
+  "public-release-fence.log": {
+    "bytes": 152,
+    "sha256": "ca59706d04d01d7cdab43a22aef465f7086edbd4ed87541e81564fa80ebbe887"
+  },
+  "python-physical-map.log": {
+    "bytes": 202,
+    "sha256": "8f0ff5a63c0dcb34559f15b7d012afdc92230e6bbf987eab92740047ae133246"
+  },
+  "python-physical-pack.log": {
+    "bytes": 204,
+    "sha256": "81af56a2b4e4d1d505769c0dae0e041bbd458e77d2c3394dacc2ae5f4d997280"
+  },
+  "q6-tied-head.log": {
+    "bytes": 171,
+    "sha256": "9481438a41c398f486457154426d6fd0656dc8b13ec6eb171cb3a1d9c8d885cd"
+  },
+  "source-checkout.log": {
+    "bytes": 87,
+    "sha256": "64f4351d7c1f248c8554e4b190d5fe4a6c09df9eb478b82450f832f7078423fd"
+  },
+  "source-fetch.log": {
+    "bytes": 123,
+    "sha256": "384a7da42c867fb70cb9f5f957c07870958d58636c2058f2b5ccb069e0770055"
+  },
+  "source-init.log": {
+    "bytes": 579,
+    "sha256": "602f09cbcaf18b93cd9ec25df98559187bb3c8124f2a85dcd7a3de74b1c29a14"
+  },
+  "source-remote.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "submodules.log": {
+    "bytes": 356,
+    "sha256": "932bc885c7e9821b985423746c5676baaf99008493fb564428c4a11169ed72a2"
+  },
+  "venv.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "weight-free-map-controls.log": {
+    "bytes": 202,
+    "sha256": "eb7777b69e8ff849f9aeb41b8dcd1e7737b365c111029cbc84684cb8a2419de1"
+  }
+}

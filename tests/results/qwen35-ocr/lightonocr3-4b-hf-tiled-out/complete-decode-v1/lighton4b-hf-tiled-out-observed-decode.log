@@ -1,0 +1,395 @@
+[{"stream_name":"stdout","time":7.363696942,"data":"PHASE init\n"}
+,{"stream_name":"stdout","time":7.480621816,"data":"PHASE remote\n"}
+,{"stream_name":"stdout","time":7.49718229,"data":"PHASE fetch\n"}
+,{"stream_name":"stdout","time":13.536194957,"data":"PHASE checkout\n"}
+,{"stream_name":"stdout","time":15.227310515,"data":"PHASE venv\n"}
+,{"stream_name":"stdout","time":15.392655512,"data":"PHASE venv-prefix\n"}
+,{"stream_name":"stdout","time":15.507863515,"data":"PHASE packages\n"}
+,{"stream_name":"stdout","time":27.064174442,"data":"PHASE package-preflight\n"}
+,{"stream_name":"stdout","time":27.918061363,"data":"PHASE candidate-and-three-observed-decodes\n"}
+,{"stream_name":"stdout","time":67.919999586,"data":"PHASE old-model-platform\n"}
+,{"stream_name":"stdout","time":87.921349271,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=60\n"}
+,{"stream_name":"stdout","time":147.922722997,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=120\n"}
+,{"stream_name":"stdout","time":207.924509216,"data":"PHASE pack-original-f16-proven24\n"}
+,{"stream_name":"stdout","time":207.924551912,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=180\n"}
+,{"stream_name":"stdout","time":267.925621768,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=240\n"}
+,{"stream_name":"stdout","time":307.926814317,"data":"PHASE valid-preflight-reaches-input\n"}
+,{"stream_name":"stdout","time":307.926898015,"data":"PHASE wrong-proof-preflight-rejects\n"}
+,{"stream_name":"stdout","time":307.926907398,"data":"PHASE gate-off-preflight-rejects\n"}
+,{"stream_name":"stdout","time":307.926913321,"data":"PHASE simple_form-preflight\n"}
+,{"stream_name":"stdout","time":307.926919495,"data":"PHASE simple_form-full-greedy\n"}
+,{"stream_name":"stdout","time":327.928873451,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=300\n"}
+,{"stream_name":"stdout","time":387.930162021,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=360\n"}
+,{"stream_name":"stdout","time":447.931855834,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=420\n"}
+,{"stream_name":"stdout","time":507.933403297,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=480\n"}
+,{"stream_name":"stdout","time":567.935959487,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=540\n"}
+,{"stream_name":"stdout","time":627.937413436,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=600\n"}
+,{"stream_name":"stdout","time":647.937825349,"data":"PROGRESS simple_form-full-greedy tokens=2 elapsed=330.0\n"}
+,{"stream_name":"stdout","time":667.938239653,"data":"PROGRESS simple_form-full-greedy tokens=4 elapsed=360.0\n"}
+,{"stream_name":"stdout","time":687.938870882,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=660\n"}
+,{"stream_name":"stdout","time":707.939339514,"data":"PROGRESS simple_form-full-greedy tokens=6 elapsed=390.0\n"}
+,{"stream_name":"stdout","time":727.939889841,"data":"PROGRESS simple_form-full-greedy tokens=8 elapsed=420.0\n"}
+,{"stream_name":"stdout","time":747.940555558,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=720\n"}
+,{"stream_name":"stdout","time":767.941057164,"data":"PROGRESS simple_form-full-greedy tokens=9 elapsed=450.0\n"}
+,{"stream_name":"stdout","time":787.941503116,"data":"PROGRESS simple_form-full-greedy tokens=11 elapsed=480.0\n"}
+,{"stream_name":"stdout","time":807.942996338,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=780\n"}
+,{"stream_name":"stdout","time":827.945422534,"data":"PROGRESS simple_form-full-greedy tokens=13 elapsed=510.0\n"}
+,{"stream_name":"stdout","time":847.944170143,"data":"PROGRESS simple_form-full-greedy tokens=15 elapsed=540.0\n"}
+,{"stream_name":"stdout","time":867.944841813,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=840\n"}
+,{"stream_name":"stdout","time":887.945320065,"data":"PROGRESS simple_form-full-greedy tokens=17 elapsed=570.0\n"}
+,{"stream_name":"stdout","time":907.949422241,"data":"PROGRESS simple_form-full-greedy tokens=19 elapsed=600.0\n"}
+,{"stream_name":"stdout","time":927.947752618,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=900\n"}
+,{"stream_name":"stdout","time":947.948338161,"data":"PROGRESS simple_form-full-greedy tokens=21 elapsed=630.0\n"}
+,{"stream_name":"stdout","time":967.950096098,"data":"PROGRESS simple_form-full-greedy tokens=22 elapsed=660.0\n"}
+,{"stream_name":"stdout","time":987.950470362,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=960\n"}
+,{"stream_name":"stdout","time":1007.952909811,"data":"PROGRESS simple_form-full-greedy tokens=23 elapsed=690.0\n"}
+,{"stream_name":"stdout","time":1027.954509542,"data":"PROGRESS simple_form-full-greedy tokens=25 elapsed=720.0\n"}
+,{"stream_name":"stdout","time":1047.955451507,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1020\n"}
+,{"stream_name":"stdout","time":1067.955960143,"data":"PROGRESS simple_form-full-greedy tokens=27 elapsed=750.0\n"}
+,{"stream_name":"stdout","time":1087.9568578,"data":"PROGRESS simple_form-full-greedy tokens=29 elapsed=780.0\n"}
+,{"stream_name":"stdout","time":1107.957426179,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1080\n"}
+,{"stream_name":"stdout","time":1127.95799528,"data":"PROGRESS simple_form-full-greedy tokens=31 elapsed=810.0\n"}
+,{"stream_name":"stdout","time":1147.95856122,"data":"PROGRESS simple_form-full-greedy tokens=33 elapsed=840.0\n"}
+,{"stream_name":"stdout","time":1167.959180418,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1140\n"}
+,{"stream_name":"stdout","time":1187.959801681,"data":"PROGRESS simple_form-full-greedy tokens=34 elapsed=870.0\n"}
+,{"stream_name":"stdout","time":1207.962088927,"data":"PROGRESS simple_form-full-greedy tokens=36 elapsed=900.0\n"}
+,{"stream_name":"stdout","time":1227.96271268,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1200\n"}
+,{"stream_name":"stdout","time":1247.963341686,"data":"PROGRESS simple_form-full-greedy tokens=38 elapsed=930.0\n"}
+,{"stream_name":"stdout","time":1267.963922186,"data":"PROGRESS simple_form-full-greedy tokens=40 elapsed=960.0\n"}
+,{"stream_name":"stdout","time":1287.964651172,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1260\n"}
+,{"stream_name":"stdout","time":1307.965287427,"data":"PROGRESS simple_form-full-greedy tokens=42 elapsed=990.0\n"}
+,{"stream_name":"stdout","time":1327.965811641,"data":"PROGRESS simple_form-full-greedy tokens=44 elapsed=1020.0\n"}
+,{"stream_name":"stdout","time":1347.966325746,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1320\n"}
+,{"stream_name":"stdout","time":1367.966901376,"data":"PROGRESS simple_form-full-greedy tokens=46 elapsed=1050.0\n"}
+,{"stream_name":"stdout","time":1387.96743709,"data":"PROGRESS simple_form-full-greedy tokens=47 elapsed=1080.0\n"}
+,{"stream_name":"stdout","time":1407.967905585,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1380\n"}
+,{"stream_name":"stdout","time":1427.968461718,"data":"PROGRESS simple_form-full-greedy tokens=49 elapsed=1110.0\n"}
+,{"stream_name":"stdout","time":1447.969196212,"data":"PROGRESS simple_form-full-greedy tokens=51 elapsed=1140.0\n"}
+,{"stream_name":"stdout","time":1467.96978577,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1440\n"}
+,{"stream_name":"stdout","time":1487.970276743,"data":"PROGRESS simple_form-full-greedy tokens=53 elapsed=1170.0\n"}
+,{"stream_name":"stdout","time":1507.970848425,"data":"PROGRESS simple_form-full-greedy tokens=55 elapsed=1200.0\n"}
+,{"stream_name":"stdout","time":1527.971483069,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1500\n"}
+,{"stream_name":"stdout","time":1547.971913241,"data":"PROGRESS simple_form-full-greedy tokens=57 elapsed=1230.0\n"}
+,{"stream_name":"stdout","time":1567.972687826,"data":"PROGRESS simple_form-full-greedy tokens=59 elapsed=1260.0\n"}
+,{"stream_name":"stdout","time":1587.973062519,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1560\n"}
+,{"stream_name":"stdout","time":1607.973640377,"data":"PROGRESS simple_form-full-greedy tokens=61 elapsed=1290.0\n"}
+,{"stream_name":"stdout","time":1627.97496039,"data":"PROGRESS simple_form-full-greedy tokens=63 elapsed=1320.0\n"}
+,{"stream_name":"stdout","time":1647.975503551,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1620\n"}
+,{"stream_name":"stdout","time":1667.97701497,"data":"PROGRESS simple_form-full-greedy tokens=64 elapsed=1350.0\n"}
+,{"stream_name":"stdout","time":1687.977578785,"data":"PROGRESS simple_form-full-greedy tokens=66 elapsed=1380.1\n"}
+,{"stream_name":"stdout","time":1707.978383877,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1680\n"}
+,{"stream_name":"stdout","time":1727.978813671,"data":"PROGRESS simple_form-full-greedy tokens=68 elapsed=1410.1\n"}
+,{"stream_name":"stdout","time":1747.979745369,"data":"PROGRESS simple_form-full-greedy tokens=70 elapsed=1440.1\n"}
+,{"stream_name":"stdout","time":1767.980133299,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1740\n"}
+,{"stream_name":"stdout","time":1787.980623459,"data":"PROGRESS simple_form-full-greedy tokens=72 elapsed=1470.1\n"}
+,{"stream_name":"stdout","time":1807.981415104,"data":"PROGRESS simple_form-full-greedy tokens=74 elapsed=1500.1\n"}
+,{"stream_name":"stdout","time":1827.981776217,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1800\n"}
+,{"stream_name":"stdout","time":1847.982514905,"data":"PROGRESS simple_form-full-greedy tokens=76 elapsed=1530.1\n"}
+,{"stream_name":"stdout","time":1867.983947905,"data":"PROGRESS simple_form-full-greedy tokens=78 elapsed=1560.1\n"}
+,{"stream_name":"stdout","time":1887.984689382,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1860\n"}
+,{"stream_name":"stdout","time":1907.985369931,"data":"PROGRESS simple_form-full-greedy tokens=79 elapsed=1590.1\n"}
+,{"stream_name":"stdout","time":1927.985929628,"data":"PROGRESS simple_form-full-greedy tokens=81 elapsed=1620.1\n"}
+,{"stream_name":"stdout","time":1947.986374804,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1920\n"}
+,{"stream_name":"stdout","time":1967.986899947,"data":"PROGRESS simple_form-full-greedy tokens=83 elapsed=1650.1\n"}
+,{"stream_name":"stdout","time":1987.987647395,"data":"PROGRESS simple_form-full-greedy tokens=85 elapsed=1680.1\n"}
+,{"stream_name":"stdout","time":2007.989363257,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=1980\n"}
+,{"stream_name":"stdout","time":2027.989806974,"data":"PROGRESS simple_form-full-greedy tokens=87 elapsed=1710.1\n"}
+,{"stream_name":"stdout","time":2047.990358667,"data":"PROGRESS simple_form-full-greedy tokens=88 elapsed=1740.1\n"}
+,{"stream_name":"stdout","time":2067.991021358,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2040\n"}
+,{"stream_name":"stdout","time":2087.991789595,"data":"PROGRESS simple_form-full-greedy tokens=90 elapsed=1770.1\n"}
+,{"stream_name":"stdout","time":2107.993347161,"data":"PROGRESS simple_form-full-greedy tokens=92 elapsed=1800.1\n"}
+,{"stream_name":"stdout","time":2127.993904379,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2100\n"}
+,{"stream_name":"stdout","time":2147.994709651,"data":"PROGRESS simple_form-full-greedy tokens=94 elapsed=1830.1\n"}
+,{"stream_name":"stdout","time":2167.995492241,"data":"PROGRESS simple_form-full-greedy tokens=96 elapsed=1860.1\n"}
+,{"stream_name":"stdout","time":2187.995816855,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2160\n"}
+,{"stream_name":"stdout","time":2207.99634255,"data":"PROGRESS simple_form-full-greedy tokens=98 elapsed=1890.1\n"}
+,{"stream_name":"stdout","time":2227.997040433,"data":"PROGRESS simple_form-full-greedy tokens=99 elapsed=1920.1\n"}
+,{"stream_name":"stdout","time":2247.997623311,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2220\n"}
+,{"stream_name":"stdout","time":2267.998414171,"data":"PROGRESS simple_form-full-greedy tokens=101 elapsed=1950.1\n"}
+,{"stream_name":"stdout","time":2287.999415553,"data":"PROGRESS simple_form-full-greedy tokens=103 elapsed=1980.1\n"}
+,{"stream_name":"stdout","time":2307.999508197,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2280\n"}
+,{"stream_name":"stdout","time":2328.002356171,"data":"PROGRESS simple_form-full-greedy tokens=105 elapsed=2010.1\n"}
+,{"stream_name":"stdout","time":2348.002394569,"data":"PROGRESS simple_form-full-greedy tokens=107 elapsed=2040.1\n"}
+,{"stream_name":"stdout","time":2368.003951604,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2340\n"}
+,{"stream_name":"stdout","time":2388.004499021,"data":"PROGRESS simple_form-full-greedy tokens=108 elapsed=2070.1\n"}
+,{"stream_name":"stdout","time":2408.005663854,"data":"PROGRESS simple_form-full-greedy tokens=110 elapsed=2100.1\n"}
+,{"stream_name":"stdout","time":2428.005746743,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2400\n"}
+,{"stream_name":"stdout","time":2448.006346909,"data":"PROGRESS simple_form-full-greedy tokens=112 elapsed=2130.1\n"}
+,{"stream_name":"stdout","time":2468.007211445,"data":"PROGRESS simple_form-full-greedy tokens=114 elapsed=2160.1\n"}
+,{"stream_name":"stdout","time":2488.00808923,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2460\n"}
+,{"stream_name":"stdout","time":2508.008793909,"data":"PROGRESS simple_form-full-greedy tokens=116 elapsed=2190.1\n"}
+,{"stream_name":"stdout","time":2528.009265244,"data":"PROGRESS simple_form-full-greedy tokens=118 elapsed=2220.1\n"}
+,{"stream_name":"stdout","time":2548.010036987,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2520\n"}
+,{"stream_name":"stdout","time":2568.010555193,"data":"PROGRESS simple_form-full-greedy tokens=120 elapsed=2250.1\n"}
+,{"stream_name":"stdout","time":2588.012111227,"data":"PROGRESS simple_form-full-greedy tokens=122 elapsed=2280.1\n"}
+,{"stream_name":"stdout","time":2608.012581337,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2580\n"}
+,{"stream_name":"stdout","time":2628.013189683,"data":"PROGRESS simple_form-full-greedy tokens=123 elapsed=2310.1\n"}
+,{"stream_name":"stdout","time":2648.013869795,"data":"PROGRESS simple_form-full-greedy tokens=125 elapsed=2340.1\n"}
+,{"stream_name":"stdout","time":2668.014585993,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2640\n"}
+,{"stream_name":"stdout","time":2688.016344878,"data":"PROGRESS simple_form-full-greedy tokens=127 elapsed=2370.1\n"}
+,{"stream_name":"stdout","time":2708.016653453,"data":"PROGRESS simple_form-full-greedy tokens=129 elapsed=2400.1\n"}
+,{"stream_name":"stdout","time":2728.019418427,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2700\n"}
+,{"stream_name":"stdout","time":2748.020061665,"data":"PROGRESS simple_form-full-greedy tokens=131 elapsed=2430.1\n"}
+,{"stream_name":"stdout","time":2768.021305516,"data":"PROGRESS simple_form-full-greedy tokens=133 elapsed=2460.1\n"}
+,{"stream_name":"stdout","time":2788.022415912,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2760\n"}
+,{"stream_name":"stdout","time":2808.022906364,"data":"PROGRESS simple_form-full-greedy tokens=135 elapsed=2490.1\n"}
+,{"stream_name":"stdout","time":2828.024359068,"data":"PROGRESS simple_form-full-greedy tokens=137 elapsed=2520.1\n"}
+,{"stream_name":"stdout","time":2848.024133875,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2820\n"}
+,{"stream_name":"stdout","time":2868.02471454,"data":"PROGRESS simple_form-full-greedy tokens=139 elapsed=2550.1\n"}
+,{"stream_name":"stdout","time":2888.02535295,"data":"PROGRESS simple_form-full-greedy tokens=141 elapsed=2580.1\n"}
+,{"stream_name":"stdout","time":2908.027336118,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2880\n"}
+,{"stream_name":"stdout","time":2928.028043071,"data":"PROGRESS simple_form-full-greedy tokens=143 elapsed=2610.1\n"}
+,{"stream_name":"stdout","time":2948.028597352,"data":"PROGRESS simple_form-full-greedy tokens=145 elapsed=2640.1\n"}
+,{"stream_name":"stdout","time":2968.0290607,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=2940\n"}
+,{"stream_name":"stdout","time":2988.02956817,"data":"PROGRESS simple_form-full-greedy tokens=146 elapsed=2670.1\n"}
+,{"stream_name":"stdout","time":3008.030054109,"data":"PROGRESS simple_form-full-greedy tokens=148 elapsed=2700.1\n"}
+,{"stream_name":"stdout","time":3028.030621993,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3000\n"}
+,{"stream_name":"stdout","time":3048.031320472,"data":"PROGRESS simple_form-full-greedy tokens=150 elapsed=2730.1\n"}
+,{"stream_name":"stdout","time":3068.032089622,"data":"PROGRESS simple_form-full-greedy tokens=152 elapsed=2760.1\n"}
+,{"stream_name":"stdout","time":3088.032489353,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3060\n"}
+,{"stream_name":"stdout","time":3108.03353124,"data":"PROGRESS simple_form-full-greedy tokens=154 elapsed=2790.1\n"}
+,{"stream_name":"stdout","time":3128.034106158,"data":"PROGRESS simple_form-full-greedy tokens=156 elapsed=2820.1\n"}
+,{"stream_name":"stdout","time":3148.035004513,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3120\n"}
+,{"stream_name":"stdout","time":3168.035484265,"data":"PROGRESS simple_form-full-greedy tokens=158 elapsed=2850.1\n"}
+,{"stream_name":"stdout","time":3188.035946103,"data":"PROGRESS simple_form-full-greedy tokens=160 elapsed=2880.1\n"}
+,{"stream_name":"stdout","time":3208.036909723,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3180\n"}
+,{"stream_name":"stdout","time":3228.037475788,"data":"PROGRESS simple_form-full-greedy tokens=162 elapsed=2910.1\n"}
+,{"stream_name":"stdout","time":3248.038076902,"data":"PROGRESS simple_form-full-greedy tokens=164 elapsed=2940.1\n"}
+,{"stream_name":"stdout","time":3268.04105956,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3240\n"}
+,{"stream_name":"stdout","time":3288.045369226,"data":"PROGRESS simple_form-full-greedy tokens=166 elapsed=2970.1\n"}
+,{"stream_name":"stdout","time":3308.042604131,"data":"PROGRESS simple_form-full-greedy tokens=167 elapsed=3000.1\n"}
+,{"stream_name":"stdout","time":3328.044093495,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3300\n"}
+,{"stream_name":"stdout","time":3348.043781903,"data":"PROGRESS simple_form-full-greedy tokens=169 elapsed=3030.1\n"}
+,{"stream_name":"stdout","time":3368.044292533,"data":"PROGRESS simple_form-full-greedy tokens=171 elapsed=3060.1\n"}
+,{"stream_name":"stdout","time":3388.044952735,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3360\n"}
+,{"stream_name":"stdout","time":3408.045698507,"data":"PROGRESS simple_form-full-greedy tokens=173 elapsed=3090.1\n"}
+,{"stream_name":"stdout","time":3428.04629506,"data":"PROGRESS simple_form-full-greedy tokens=175 elapsed=3120.1\n"}
+,{"stream_name":"stdout","time":3448.0467834,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3420\n"}
+,{"stream_name":"stdout","time":3468.047985862,"data":"PROGRESS simple_form-full-greedy tokens=177 elapsed=3150.1\n"}
+,{"stream_name":"stdout","time":3488.048912491,"data":"PROGRESS simple_form-full-greedy tokens=179 elapsed=3180.1\n"}
+,{"stream_name":"stdout","time":3508.04948743,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3480\n"}
+,{"stream_name":"stdout","time":3528.05052122,"data":"PROGRESS simple_form-full-greedy tokens=181 elapsed=3210.1\n"}
+,{"stream_name":"stdout","time":3548.050891307,"data":"MEASURED simple_form ids=182 eos=True cer_edits=217 wer_edits=43\n"}
+,{"stream_name":"stdout","time":3548.050932542,"data":"PHASE simple_table-preflight\n"}
+,{"stream_name":"stdout","time":3548.050940843,"data":"PHASE simple_table-full-greedy\n"}
+,{"stream_name":"stdout","time":3568.051447972,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3540\n"}
+,{"stream_name":"stdout","time":3628.055384243,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3600\n"}
+,{"stream_name":"stdout","time":3688.05778477,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3660\n"}
+,{"stream_name":"stdout","time":3708.058521336,"data":"PROGRESS simple_table-full-greedy tokens=2 elapsed=150.0\n"}
+,{"stream_name":"stdout","time":3728.059159966,"data":"PROGRESS simple_table-full-greedy tokens=4 elapsed=180.0\n"}
+,{"stream_name":"stdout","time":3748.059969412,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3720\n"}
+,{"stream_name":"stdout","time":3768.061438185,"data":"PROGRESS simple_table-full-greedy tokens=6 elapsed=210.0\n"}
+,{"stream_name":"stdout","time":3788.062155282,"data":"PROGRESS simple_table-full-greedy tokens=8 elapsed=240.0\n"}
+,{"stream_name":"stdout","time":3808.062664347,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3780\n"}
+,{"stream_name":"stdout","time":3828.063250197,"data":"PROGRESS simple_table-full-greedy tokens=9 elapsed=270.0\n"}
+,{"stream_name":"stdout","time":3848.063744661,"data":"PROGRESS simple_table-full-greedy tokens=11 elapsed=300.0\n"}
+,{"stream_name":"stdout","time":3868.064302133,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3840\n"}
+,{"stream_name":"stdout","time":3888.064957332,"data":"PROGRESS simple_table-full-greedy tokens=13 elapsed=330.0\n"}
+,{"stream_name":"stdout","time":3908.065329826,"data":"PROGRESS simple_table-full-greedy tokens=15 elapsed=360.0\n"}
+,{"stream_name":"stdout","time":3928.065925859,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3900\n"}
+,{"stream_name":"stdout","time":3948.066309428,"data":"PROGRESS simple_table-full-greedy tokens=17 elapsed=390.0\n"}
+,{"stream_name":"stdout","time":3968.066975919,"data":"PROGRESS simple_table-full-greedy tokens=19 elapsed=420.0\n"}
+,{"stream_name":"stdout","time":3988.068072612,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=3960\n"}
+,{"stream_name":"stdout","time":4008.070421736,"data":"PROGRESS simple_table-full-greedy tokens=20 elapsed=450.0\n"}
+,{"stream_name":"stdout","time":4028.070594024,"data":"PROGRESS simple_table-full-greedy tokens=22 elapsed=480.0\n"}
+,{"stream_name":"stdout","time":4048.071365501,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4020\n"}
+,{"stream_name":"stdout","time":4068.073423618,"data":"PROGRESS simple_table-full-greedy tokens=24 elapsed=510.0\n"}
+,{"stream_name":"stdout","time":4088.074827434,"data":"PROGRESS simple_table-full-greedy tokens=25 elapsed=540.0\n"}
+,{"stream_name":"stdout","time":4108.076316827,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4080\n"}
+,{"stream_name":"stdout","time":4128.07690072,"data":"PROGRESS simple_table-full-greedy tokens=27 elapsed=570.0\n"}
+,{"stream_name":"stdout","time":4148.078366942,"data":"PROGRESS simple_table-full-greedy tokens=29 elapsed=600.0\n"}
+,{"stream_name":"stdout","time":4168.078015759,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4140\n"}
+,{"stream_name":"stdout","time":4188.08135598,"data":"PROGRESS simple_table-full-greedy tokens=31 elapsed=630.0\n"}
+,{"stream_name":"stdout","time":4208.078995628,"data":"PROGRESS simple_table-full-greedy tokens=33 elapsed=660.0\n"}
+,{"stream_name":"stdout","time":4228.079763721,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4200\n"}
+,{"stream_name":"stdout","time":4248.080445125,"data":"PROGRESS simple_table-full-greedy tokens=35 elapsed=690.0\n"}
+,{"stream_name":"stdout","time":4268.080811077,"data":"PROGRESS simple_table-full-greedy tokens=37 elapsed=720.0\n"}
+,{"stream_name":"stdout","time":4288.081330799,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4260\n"}
+,{"stream_name":"stdout","time":4308.081861171,"data":"PROGRESS simple_table-full-greedy tokens=39 elapsed=750.0\n"}
+,{"stream_name":"stdout","time":4328.082426687,"data":"PROGRESS simple_table-full-greedy tokens=41 elapsed=780.0\n"}
+,{"stream_name":"stdout","time":4348.082961282,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4320\n"}
+,{"stream_name":"stdout","time":4368.083933533,"data":"PROGRESS simple_table-full-greedy tokens=43 elapsed=810.0\n"}
+,{"stream_name":"stdout","time":4388.08687902,"data":"PROGRESS simple_table-full-greedy tokens=45 elapsed=840.0\n"}
+,{"stream_name":"stdout","time":4408.087426072,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4380\n"}
+,{"stream_name":"stdout","time":4428.090351086,"data":"PROGRESS simple_table-full-greedy tokens=47 elapsed=870.0\n"}
+,{"stream_name":"stdout","time":4448.088466299,"data":"PROGRESS simple_table-full-greedy tokens=49 elapsed=900.0\n"}
+,{"stream_name":"stdout","time":4468.089082017,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4440\n"}
+,{"stream_name":"stdout","time":4488.090347075,"data":"PROGRESS simple_table-full-greedy tokens=51 elapsed=930.0\n"}
+,{"stream_name":"stdout","time":4508.090480906,"data":"PROGRESS simple_table-full-greedy tokens=53 elapsed=960.0\n"}
+,{"stream_name":"stdout","time":4528.090942978,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4500\n"}
+,{"stream_name":"stdout","time":4548.091621142,"data":"PROGRESS simple_table-full-greedy tokens=54 elapsed=990.0\n"}
+,{"stream_name":"stdout","time":4568.092195287,"data":"PROGRESS simple_table-full-greedy tokens=56 elapsed=1020.0\n"}
+,{"stream_name":"stdout","time":4588.092888008,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4560\n"}
+,{"stream_name":"stdout","time":4608.093358973,"data":"PROGRESS simple_table-full-greedy tokens=58 elapsed=1050.0\n"}
+,{"stream_name":"stdout","time":4628.093813839,"data":"PROGRESS simple_table-full-greedy tokens=60 elapsed=1080.0\n"}
+,{"stream_name":"stdout","time":4648.094327159,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4620\n"}
+,{"stream_name":"stdout","time":4668.094755502,"data":"PROGRESS simple_table-full-greedy tokens=62 elapsed=1110.0\n"}
+,{"stream_name":"stdout","time":4688.095332407,"data":"PROGRESS simple_table-full-greedy tokens=64 elapsed=1140.0\n"}
+,{"stream_name":"stdout","time":4708.09592704,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4680\n"}
+,{"stream_name":"stdout","time":4728.098345455,"data":"PROGRESS simple_table-full-greedy tokens=66 elapsed=1170.0\n"}
+,{"stream_name":"stdout","time":4748.097719713,"data":"PROGRESS simple_table-full-greedy tokens=68 elapsed=1200.0\n"}
+,{"stream_name":"stdout","time":4768.098433306,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4740\n"}
+,{"stream_name":"stdout","time":4788.098847801,"data":"PROGRESS simple_table-full-greedy tokens=70 elapsed=1230.0\n"}
+,{"stream_name":"stdout","time":4808.099477646,"data":"PROGRESS simple_table-full-greedy tokens=72 elapsed=1260.0\n"}
+,{"stream_name":"stdout","time":4828.101518714,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4800\n"}
+,{"stream_name":"stdout","time":4848.103514862,"data":"PROGRESS simple_table-full-greedy tokens=74 elapsed=1290.0\n"}
+,{"stream_name":"stdout","time":4868.103917698,"data":"PROGRESS simple_table-full-greedy tokens=76 elapsed=1320.0\n"}
+,{"stream_name":"stdout","time":4888.104370336,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4860\n"}
+,{"stream_name":"stdout","time":4908.104832957,"data":"PROGRESS simple_table-full-greedy tokens=77 elapsed=1350.0\n"}
+,{"stream_name":"stdout","time":4928.105365725,"data":"PROGRESS simple_table-full-greedy tokens=79 elapsed=1380.0\n"}
+,{"stream_name":"stdout","time":4948.106072987,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4920\n"}
+,{"stream_name":"stdout","time":4968.106575742,"data":"PROGRESS simple_table-full-greedy tokens=81 elapsed=1410.0\n"}
+,{"stream_name":"stdout","time":4988.108044071,"data":"PROGRESS simple_table-full-greedy tokens=83 elapsed=1440.0\n"}
+,{"stream_name":"stdout","time":5008.109266473,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=4980\n"}
+,{"stream_name":"stdout","time":5028.109875039,"data":"PROGRESS simple_table-full-greedy tokens=85 elapsed=1470.0\n"}
+,{"stream_name":"stdout","time":5048.110570476,"data":"PROGRESS simple_table-full-greedy tokens=87 elapsed=1500.0\n"}
+,{"stream_name":"stdout","time":5068.111339732,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5040\n"}
+,{"stream_name":"stdout","time":5088.112850123,"data":"PROGRESS simple_table-full-greedy tokens=89 elapsed=1530.0\n"}
+,{"stream_name":"stdout","time":5108.112522556,"data":"PROGRESS simple_table-full-greedy tokens=91 elapsed=1560.0\n"}
+,{"stream_name":"stdout","time":5128.114242442,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5100\n"}
+,{"stream_name":"stdout","time":5148.115531825,"data":"PROGRESS simple_table-full-greedy tokens=93 elapsed=1590.0\n"}
+,{"stream_name":"stdout","time":5168.115058342,"data":"PROGRESS simple_table-full-greedy tokens=95 elapsed=1620.0\n"}
+,{"stream_name":"stdout","time":5188.115654701,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5160\n"}
+,{"stream_name":"stdout","time":5208.116479373,"data":"PROGRESS simple_table-full-greedy tokens=96 elapsed=1650.0\n"}
+,{"stream_name":"stdout","time":5228.116821247,"data":"PROGRESS simple_table-full-greedy tokens=98 elapsed=1680.0\n"}
+,{"stream_name":"stdout","time":5248.119463545,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5220\n"}
+,{"stream_name":"stdout","time":5268.121413977,"data":"PROGRESS simple_table-full-greedy tokens=100 elapsed=1710.0\n"}
+,{"stream_name":"stdout","time":5288.120814293,"data":"PROGRESS simple_table-full-greedy tokens=102 elapsed=1740.0\n"}
+,{"stream_name":"stdout","time":5308.12133922,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5280\n"}
+,{"stream_name":"stdout","time":5328.121830885,"data":"PROGRESS simple_table-full-greedy tokens=104 elapsed=1770.0\n"}
+,{"stream_name":"stdout","time":5348.122388868,"data":"PROGRESS simple_table-full-greedy tokens=106 elapsed=1800.0\n"}
+,{"stream_name":"stdout","time":5368.124781732,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5340\n"}
+,{"stream_name":"stdout","time":5388.124465733,"data":"PROGRESS simple_table-full-greedy tokens=108 elapsed=1830.0\n"}
+,{"stream_name":"stdout","time":5408.124890679,"data":"PROGRESS simple_table-full-greedy tokens=110 elapsed=1860.0\n"}
+,{"stream_name":"stdout","time":5428.125561747,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5400\n"}
+,{"stream_name":"stdout","time":5448.126197489,"data":"PROGRESS simple_table-full-greedy tokens=112 elapsed=1890.0\n"}
+,{"stream_name":"stdout","time":5468.12665783,"data":"PROGRESS simple_table-full-greedy tokens=114 elapsed=1920.0\n"}
+,{"stream_name":"stdout","time":5488.12737266,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5460\n"}
+,{"stream_name":"stdout","time":5508.128903924,"data":"PROGRESS simple_table-full-greedy tokens=116 elapsed=1950.0\n"}
+,{"stream_name":"stdout","time":5528.129598823,"data":"PROGRESS simple_table-full-greedy tokens=117 elapsed=1980.0\n"}
+,{"stream_name":"stdout","time":5548.13053483,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5520\n"}
+,{"stream_name":"stdout","time":5568.131769773,"data":"PROGRESS simple_table-full-greedy tokens=119 elapsed=2010.0\n"}
+,{"stream_name":"stdout","time":5588.132934801,"data":"PROGRESS simple_table-full-greedy tokens=121 elapsed=2040.0\n"}
+,{"stream_name":"stdout","time":5608.133555862,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5580\n"}
+,{"stream_name":"stdout","time":5628.134049023,"data":"PROGRESS simple_table-full-greedy tokens=123 elapsed=2070.0\n"}
+,{"stream_name":"stdout","time":5648.134681756,"data":"PROGRESS simple_table-full-greedy tokens=125 elapsed=2100.0\n"}
+,{"stream_name":"stdout","time":5668.135155788,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5640\n"}
+,{"stream_name":"stdout","time":5688.135969115,"data":"PROGRESS simple_table-full-greedy tokens=127 elapsed=2130.1\n"}
+,{"stream_name":"stdout","time":5708.139474902,"data":"PROGRESS simple_table-full-greedy tokens=128 elapsed=2160.1\n"}
+,{"stream_name":"stdout","time":5728.137686983,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5700\n"}
+,{"stream_name":"stdout","time":5748.138251408,"data":"PROGRESS simple_table-full-greedy tokens=130 elapsed=2190.1\n"}
+,{"stream_name":"stdout","time":5768.138665868,"data":"PROGRESS simple_table-full-greedy tokens=132 elapsed=2220.1\n"}
+,{"stream_name":"stdout","time":5788.140468152,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5760\n"}
+,{"stream_name":"stdout","time":5808.140728609,"data":"PROGRESS simple_table-full-greedy tokens=134 elapsed=2250.1\n"}
+,{"stream_name":"stdout","time":5828.142214911,"data":"PROGRESS simple_table-full-greedy tokens=136 elapsed=2280.1\n"}
+,{"stream_name":"stdout","time":5848.141797583,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5820\n"}
+,{"stream_name":"stdout","time":5868.142902935,"data":"PROGRESS simple_table-full-greedy tokens=138 elapsed=2310.1\n"}
+,{"stream_name":"stdout","time":5888.143687189,"data":"PROGRESS simple_table-full-greedy tokens=140 elapsed=2340.1\n"}
+,{"stream_name":"stdout","time":5908.144353061,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5880\n"}
+,{"stream_name":"stdout","time":5928.144857382,"data":"PROGRESS simple_table-full-greedy tokens=142 elapsed=2370.1\n"}
+,{"stream_name":"stdout","time":5948.145582642,"data":"PROGRESS simple_table-full-greedy tokens=144 elapsed=2400.1\n"}
+,{"stream_name":"stdout","time":5968.146902048,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=5940\n"}
+,{"stream_name":"stdout","time":5988.147924083,"data":"PROGRESS simple_table-full-greedy tokens=146 elapsed=2430.1\n"}
+,{"stream_name":"stdout","time":6008.148505237,"data":"PROGRESS simple_table-full-greedy tokens=147 elapsed=2460.1\n"}
+,{"stream_name":"stdout","time":6028.149112209,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6000\n"}
+,{"stream_name":"stdout","time":6048.149863486,"data":"PROGRESS simple_table-full-greedy tokens=149 elapsed=2490.1\n"}
+,{"stream_name":"stdout","time":6068.150899757,"data":"PROGRESS simple_table-full-greedy tokens=151 elapsed=2520.1\n"}
+,{"stream_name":"stdout","time":6088.151464919,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6060\n"}
+,{"stream_name":"stdout","time":6108.152019757,"data":"PROGRESS simple_table-full-greedy tokens=153 elapsed=2550.1\n"}
+,{"stream_name":"stdout","time":6128.15267037,"data":"PROGRESS simple_table-full-greedy tokens=155 elapsed=2580.1\n"}
+,{"stream_name":"stdout","time":6148.15529508,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6120\n"}
+,{"stream_name":"stdout","time":6168.15483811,"data":"PROGRESS simple_table-full-greedy tokens=157 elapsed=2610.1\n"}
+,{"stream_name":"stdout","time":6188.155076463,"data":"PROGRESS simple_table-full-greedy tokens=159 elapsed=2640.1\n"}
+,{"stream_name":"stdout","time":6208.155549857,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6180\n"}
+,{"stream_name":"stdout","time":6228.156170187,"data":"PROGRESS simple_table-full-greedy tokens=161 elapsed=2670.1\n"}
+,{"stream_name":"stdout","time":6248.156681679,"data":"PROGRESS simple_table-full-greedy tokens=163 elapsed=2700.1\n"}
+,{"stream_name":"stdout","time":6268.157445768,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6240\n"}
+,{"stream_name":"stdout","time":6288.157942748,"data":"PROGRESS simple_table-full-greedy tokens=165 elapsed=2730.1\n"}
+,{"stream_name":"stdout","time":6308.159358459,"data":"PROGRESS simple_table-full-greedy tokens=167 elapsed=2760.1\n"}
+,{"stream_name":"stdout","time":6328.159271218,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6300\n"}
+,{"stream_name":"stdout","time":6348.16146572,"data":"PROGRESS simple_table-full-greedy tokens=168 elapsed=2790.1\n"}
+,{"stream_name":"stdout","time":6368.162125185,"data":"PROGRESS simple_table-full-greedy tokens=170 elapsed=2820.1\n"}
+,{"stream_name":"stdout","time":6388.162867224,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6360\n"}
+,{"stream_name":"stdout","time":6408.1637826,"data":"PROGRESS simple_table-full-greedy tokens=172 elapsed=2850.1\n"}
+,{"stream_name":"stdout","time":6428.164373614,"data":"PROGRESS simple_table-full-greedy tokens=174 elapsed=2880.1\n"}
+,{"stream_name":"stdout","time":6448.164766201,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6420\n"}
+,{"stream_name":"stdout","time":6468.165333758,"data":"PROGRESS simple_table-full-greedy tokens=176 elapsed=2910.1\n"}
+,{"stream_name":"stdout","time":6488.165781073,"data":"PROGRESS simple_table-full-greedy tokens=178 elapsed=2940.1\n"}
+,{"stream_name":"stdout","time":6508.166372232,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6480\n"}
+,{"stream_name":"stdout","time":6528.16711605,"data":"PROGRESS simple_table-full-greedy tokens=180 elapsed=2970.1\n"}
+,{"stream_name":"stdout","time":6548.167522812,"data":"PROGRESS simple_table-full-greedy tokens=182 elapsed=3000.1\n"}
+,{"stream_name":"stdout","time":6568.168015754,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6540\n"}
+,{"stream_name":"stdout","time":6588.168937211,"data":"PROGRESS simple_table-full-greedy tokens=184 elapsed=3030.1\n"}
+,{"stream_name":"stdout","time":6608.169493679,"data":"PROGRESS simple_table-full-greedy tokens=186 elapsed=3060.1\n"}
+,{"stream_name":"stdout","time":6628.170152854,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6600\n"}
+,{"stream_name":"stdout","time":6648.170930617,"data":"PROGRESS simple_table-full-greedy tokens=187 elapsed=3090.1\n"}
+,{"stream_name":"stdout","time":6668.171332092,"data":"PROGRESS simple_table-full-greedy tokens=189 elapsed=3120.1\n"}
+,{"stream_name":"stdout","time":6688.1731462,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6660\n"}
+,{"stream_name":"stdout","time":6708.172577457,"data":"PROGRESS simple_table-full-greedy tokens=191 elapsed=3150.1\n"}
+,{"stream_name":"stdout","time":6728.173091825,"data":"PROGRESS simple_table-full-greedy tokens=193 elapsed=3180.1\n"}
+,{"stream_name":"stdout","time":6748.173715091,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6720\n"}
+,{"stream_name":"stdout","time":6768.174317041,"data":"PROGRESS simple_table-full-greedy tokens=195 elapsed=3210.1\n"}
+,{"stream_name":"stdout","time":6788.174826416,"data":"PROGRESS simple_table-full-greedy tokens=197 elapsed=3240.1\n"}
+,{"stream_name":"stdout","time":6808.175349385,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6780\n"}
+,{"stream_name":"stdout","time":6828.175949026,"data":"PROGRESS simple_table-full-greedy tokens=199 elapsed=3270.1\n"}
+,{"stream_name":"stdout","time":6848.176213574,"data":"PROGRESS simple_table-full-greedy tokens=201 elapsed=3300.1\n"}
+,{"stream_name":"stdout","time":6868.177404032,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6840\n"}
+,{"stream_name":"stdout","time":6888.178040801,"data":"PROGRESS simple_table-full-greedy tokens=202 elapsed=3330.1\n"}
+,{"stream_name":"stdout","time":6908.178471133,"data":"PROGRESS simple_table-full-greedy tokens=204 elapsed=3360.1\n"}
+,{"stream_name":"stdout","time":6928.179307742,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6900\n"}
+,{"stream_name":"stdout","time":6948.179699976,"data":"PROGRESS simple_table-full-greedy tokens=206 elapsed=3390.1\n"}
+,{"stream_name":"stdout","time":6968.180340976,"data":"PROGRESS simple_table-full-greedy tokens=208 elapsed=3420.1\n"}
+,{"stream_name":"stdout","time":6988.180831648,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=6960\n"}
+,{"stream_name":"stdout","time":7008.181537659,"data":"PROGRESS simple_table-full-greedy tokens=210 elapsed=3450.1\n"}
+,{"stream_name":"stdout","time":7028.183071007,"data":"PROGRESS simple_table-full-greedy tokens=212 elapsed=3480.1\n"}
+,{"stream_name":"stdout","time":7048.183380821,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7020\n"}
+,{"stream_name":"stdout","time":7068.183884253,"data":"PROGRESS simple_table-full-greedy tokens=214 elapsed=3510.1\n"}
+,{"stream_name":"stdout","time":7088.18438997,"data":"PROGRESS simple_table-full-greedy tokens=216 elapsed=3540.1\n"}
+,{"stream_name":"stdout","time":7108.18530534,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7080\n"}
+,{"stream_name":"stdout","time":7128.185511948,"data":"PROGRESS simple_table-full-greedy tokens=218 elapsed=3570.1\n"}
+,{"stream_name":"stdout","time":7148.186056955,"data":"PROGRESS simple_table-full-greedy tokens=220 elapsed=3600.1\n"}
+,{"stream_name":"stdout","time":7168.186460825,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7140\n"}
+,{"stream_name":"stdout","time":7188.186968943,"data":"PROGRESS simple_table-full-greedy tokens=221 elapsed=3630.1\n"}
+,{"stream_name":"stdout","time":7208.187408686,"data":"PROGRESS simple_table-full-greedy tokens=223 elapsed=3660.1\n"}
+,{"stream_name":"stdout","time":7228.188084333,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7200\n"}
+,{"stream_name":"stdout","time":7248.188590647,"data":"PROGRESS simple_table-full-greedy tokens=225 elapsed=3690.1\n"}
+,{"stream_name":"stdout","time":7268.189320592,"data":"PROGRESS simple_table-full-greedy tokens=227 elapsed=3720.1\n"}
+,{"stream_name":"stdout","time":7288.189732782,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7260\n"}
+,{"stream_name":"stdout","time":7308.190408817,"data":"PROGRESS simple_table-full-greedy tokens=229 elapsed=3750.1\n"}
+,{"stream_name":"stdout","time":7328.190983774,"data":"PROGRESS simple_table-full-greedy tokens=231 elapsed=3780.1\n"}
+,{"stream_name":"stdout","time":7348.191691786,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7320\n"}
+,{"stream_name":"stdout","time":7368.192163326,"data":"PROGRESS simple_table-full-greedy tokens=233 elapsed=3810.1\n"}
+,{"stream_name":"stdout","time":7388.192820564,"data":"PROGRESS simple_table-full-greedy tokens=234 elapsed=3840.1\n"}
+,{"stream_name":"stdout","time":7408.193485663,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7380\n"}
+,{"stream_name":"stdout","time":7428.195372426,"data":"PROGRESS simple_table-full-greedy tokens=236 elapsed=3870.1\n"}
+,{"stream_name":"stdout","time":7448.19464606,"data":"PROGRESS simple_table-full-greedy tokens=238 elapsed=3900.1\n"}
+,{"stream_name":"stdout","time":7468.19516328,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7440\n"}
+,{"stream_name":"stdout","time":7488.198594034,"data":"PROGRESS simple_table-full-greedy tokens=240 elapsed=3930.1\n"}
+,{"stream_name":"stdout","time":7508.197966473,"data":"PROGRESS simple_table-full-greedy tokens=242 elapsed=3960.1\n"}
+,{"stream_name":"stdout","time":7528.200581094,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7500\n"}
+,{"stream_name":"stdout","time":7548.201126862,"data":"PROGRESS simple_table-full-greedy tokens=244 elapsed=3990.1\n"}
+,{"stream_name":"stdout","time":7568.20179483,"data":"PROGRESS simple_table-full-greedy tokens=246 elapsed=4020.1\n"}
+,{"stream_name":"stdout","time":7588.202385797,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7560\n"}
+,{"stream_name":"stdout","time":7608.203043528,"data":"PROGRESS simple_table-full-greedy tokens=248 elapsed=4050.1\n"}
+,{"stream_name":"stdout","time":7628.204339356,"data":"PROGRESS simple_table-full-greedy tokens=249 elapsed=4080.1\n"}
+,{"stream_name":"stdout","time":7648.20510224,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7620\n"}
+,{"stream_name":"stdout","time":7668.205322448,"data":"PROGRESS simple_table-full-greedy tokens=251 elapsed=4110.1\n"}
+,{"stream_name":"stdout","time":7688.205966772,"data":"PROGRESS simple_table-full-greedy tokens=253 elapsed=4140.1\n"}
+,{"stream_name":"stdout","time":7708.206924316,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7680\n"}
+,{"stream_name":"stdout","time":7728.207495121,"data":"PROGRESS simple_table-full-greedy tokens=255 elapsed=4170.1\n"}
+,{"stream_name":"stdout","time":7728.207561626,"data":"MEASURED simple_table ids=256 eos=False cer_edits=237 wer_edits=70\n"}
+,{"stream_name":"stdout","time":7728.207569884,"data":"PHASE arabic_printed_line-preflight\n"}
+,{"stream_name":"stdout","time":7728.207575441,"data":"PHASE arabic_printed_line-full-greedy\n"}
+,{"stream_name":"stdout","time":7768.208710669,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7740\n"}
+,{"stream_name":"stdout","time":7828.210082513,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7800\n"}
+,{"stream_name":"stdout","time":7888.211694081,"data":"PROGRESS arabic_printed_line-full-greedy tokens=2 elapsed=150.0\n"}
+,{"stream_name":"stdout","time":7888.211785501,"data":"HEARTBEAT candidate-and-three-observed-decodes elapsed=7860\n"}
+,{"stream_name":"stdout","time":7908.212178566,"data":"PROGRESS arabic_printed_line-full-greedy tokens=4 elapsed=180.0\n"}
+,{"stream_name":"stdout","time":7945.851025102,"data":"MEASURED arabic_printed_line ids=6 eos=True cer_edits=0 wer_edits=0\n"}
+,{"stream_name":"stderr","time":7950.71909074,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":7950.719177785,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":7951.365315336,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":7951.365370708,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":7954.119417911,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":7955.851483961,"data":"[NbConvertApp] Writing 322115 bytes to __results__.html\n"}
+]

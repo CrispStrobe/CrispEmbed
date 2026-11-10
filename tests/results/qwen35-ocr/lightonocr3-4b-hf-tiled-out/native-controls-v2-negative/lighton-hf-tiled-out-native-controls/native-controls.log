@@ -1,0 +1,13 @@
+PHASE hf-tiled-recipe
+PHASE hf-tiled-fullwidth-operator
+Traceback (most recent call last):
+  File "/kaggle/working/lighton-hf-tiled-out-native-controls-source/tools/ci-heavy/lighton4b_hf_tiled_out_native_controls.py", line 25, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/kaggle/working/lighton-hf-tiled-out-native-controls-source/tools/ci-heavy/lighton4b_hf_tiled_out_native_controls.py", line 22, in main
+    run('hf-tiled-recipe',[build/'test-lighton4b-hf-tiled-out-recipe',schema]);run('hf-tiled-fullwidth-operator',[build/'test-lighton4b-hf-tiled-out-operator'])
+                                                                               ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/lighton-hf-tiled-out-native-controls-source/tools/ci-heavy/lighton4b_hf_tiled_out_native_controls.py", line 13, in run
+    if child.returncode:raise ValueError('native layout control failed: '+label)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: native layout control failed: hf-tiled-fullwidth-operator

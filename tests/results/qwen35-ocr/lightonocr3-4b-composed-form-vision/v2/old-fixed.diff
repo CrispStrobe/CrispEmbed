@@ -1,0 +1,14 @@
+--- old
++++ fixed
+@@ -1,8 +1,8 @@
+ <figure>
+-### Figure – Interface de saisie
++### Figure – Interface de formulaire
+ *Type: autre*
+ 
+-L'image montre une interface de saisie avec plusieurs champs et options. Elle semble être une partie d'une application ou d'un formulaire en ligne.
++L'image montre une interface de formulaire avec divers champs et boutons. Elle semble être utilisée pour collecter des informations personnelles ou professionnelles.
+ 
+-Les éléments visibles incluent : "Input", "Texte", "Number", "Date", "Password", "a label", "ANOTHER LABEL", "Yet another label", "combo suggest", "Finland", "France", "checkbox1", "checkbox2", "checkbox3", "CodeLabel", "code fill", "code", "Button", "Rechercher...", "Modifier l'utilisateur", "TEXTAREA", "Texte", "Radio", "Drag and drop frames", "Fixe frames". Les champs "Date" et "Password" ont des icônes de verrouillage. Les boutons "Rechercher..." et "Modifier l'utilisateur" sont en bleu.
++Les éléments visibles incluent : "Input", "Texte", "Number", "Date", "Password", "a label", "ANOTHER LABEL", "Yet another label", "combo suggest", "Finland", "France", "checkbox1", "checkbox2", "checkbox3", "CodeLabel", "code fill", "code", "Button", "Rechercher", "Modifier l'utilisateur". Il y a également une section "TEXTAREA" avec "Texte" et des options "Radio" pour "Drag and drop frames" et "Fixe frames".
+ </figure>

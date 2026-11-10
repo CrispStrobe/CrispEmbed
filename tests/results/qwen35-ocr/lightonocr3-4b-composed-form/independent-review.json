@@ -1,0 +1,172 @@
+{
+  "schema": "lighton4b-composed-form-review/v1",
+  "receipt_sha256": "1458d07e6098b4b1b8fa078c18fe0b636f832a0d1219f789b035e1a033ef4ba0",
+  "source_sha": "8be08d1ff95da1447b2025295b4b46a7f529d22a",
+  "status": "independently_reviewed_negative",
+  "raw_text_ids_eos_checked": true,
+  "independent_levenshtein_character_word_edits_checked": true,
+  "upstream_vs_original_reference": {
+    "characters": 189,
+    "reference_characters": 656,
+    "words": 46,
+    "reference_words": 90
+  },
+  "full_model_files_downloaded_locally": false,
+  "raw_vectors_committed": false,
+  "quality_qualified": false,
+  "reference_scope": "Original BF16 capture and actual llama.cpp output, not human ground truth. Previously observed case, not heldout.",
+  "vector_hashes": {
+    "source-features/processor.patches.f32": {
+      "bytes": 3440640,
+      "sha256": "d623c64f184a10b6964aedeb3cd90f5a4e2e7aa39f7c480a9f474757776b8d8d"
+    },
+    "source-features/vision.merged.f32": {
+      "bytes": 1433600,
+      "sha256": "b9a171d18d5698e5c897662ddedf6cf399448838e55350c3b206e7a24c240d1b"
+    },
+    "source-features/prefill.input.f32": {
+      "bytes": 1576960,
+      "sha256": "44cdcd39c149c581910cff5938a0ffb3fe8a28a268d55479abec19ccb1f04b69"
+    },
+    "source-features/prefill.positions.f32": {
+      "bytes": 1848,
+      "sha256": "007b6bc39e71ffd2c3f6813808f4455a129e5aafd6fda1f186f084ac46573729"
+    },
+    "source-features/text.embedded.f32": {
+      "bytes": 1576960,
+      "sha256": "8b27dde2bf6f17d1d47136a56d778ce0794912aac53dfbded30c4c21d5ba7c54"
+    },
+    "source-features/prefill.logits.f32": {
+      "bytes": 993280,
+      "sha256": "ae1cff509396ff738987adf735c78f824d4586109e4ecca1eb85b4625a38cb77"
+    },
+    "composed/processor.patches.f32": {
+      "bytes": 3440640,
+      "sha256": "d623c64f184a10b6964aedeb3cd90f5a4e2e7aa39f7c480a9f474757776b8d8d"
+    },
+    "composed/vision.merged.f32": {
+      "bytes": 1433600,
+      "sha256": "056f887230abc6adc0837cefd6866b42c0a69c70f02906786409c5622e0683ea"
+    },
+    "composed/prefill.input.f32": {
+      "bytes": 1576960,
+      "sha256": "2b9f5e11e742cb6a176858e5274e2e696520a38a095d298ff008843aa401bd6a"
+    },
+    "composed/prefill.positions.f32": {
+      "bytes": 1848,
+      "sha256": "007b6bc39e71ffd2c3f6813808f4455a129e5aafd6fda1f186f084ac46573729"
+    },
+    "composed/text.embedded.f32": {
+      "bytes": 1576960,
+      "sha256": "8b27dde2bf6f17d1d47136a56d778ce0794912aac53dfbded30c4c21d5ba7c54"
+    },
+    "composed/prefill.logits.f32": {
+      "bytes": 993280,
+      "sha256": "abc97fcb1b308ae47ac3bdeb7fed22c17d32aa78d1e389ed270b7cf1a47f1ea7"
+    }
+  },
+  "paired_metrics": {
+    "vision.merged.f32": {
+      "rms_recomputed": 0.011237023839387116,
+      "max_abs_recomputed": 1.6814732551574707,
+      "bit_exact": false
+    },
+    "prefill.logits.f32": {
+      "rms_recomputed": 0.17175970933236526,
+      "max_abs_recomputed": 1.111790657043457,
+      "bit_exact": false
+    },
+    "prefill.input.f32": {
+      "rms_recomputed": 0.010714081845316484,
+      "max_abs_recomputed": 1.6814732551574707,
+      "bit_exact": false
+    },
+    "prefill.positions.f32": {
+      "rms_recomputed": 0.0,
+      "max_abs_recomputed": 0.0,
+      "bit_exact": true
+    },
+    "text.embedded.f32": {
+      "rms_recomputed": 0.0,
+      "max_abs_recomputed": 0.0,
+      "bit_exact": true
+    },
+    "processor.patches.f32": {
+      "rms_recomputed": 0.0,
+      "max_abs_recomputed": 0.0,
+      "bit_exact": true
+    }
+  },
+  "firstscore_metrics": {
+    "source-features": {
+      "rms_reported": 0.1058891609712035,
+      "rms_recomputed": 0.10588916097120353,
+      "rms_fp64_ulp_difference": 2.0,
+      "max_abs_recomputed": 0.5586700439453125,
+      "max_abs_exact": true
+    },
+    "composed": {
+      "rms_reported": 0.19254799961079483,
+      "rms_recomputed": 0.19254799961079486,
+      "rms_fp64_ulp_difference": 1.0,
+      "max_abs_recomputed": 1.0013847351074219,
+      "max_abs_exact": true
+    }
+  },
+  "actual_upstream_firstscore_sha256": "4cbf1fcfb2f356e7e484474240e4cecca110010116b55efd835cfdb3e891d415",
+  "metric_limit": "Independent FP64 summation differs by2 ULP for source-fed RMS,1 ULP for composed; maxima and all raw hashes exact. No runtime acceptance tolerance changed.",
+  "preserved_files": {
+    "composed-vision.json": {
+      "bytes": 126332,
+      "sha256": "1458d07e6098b4b1b8fa078c18fe0b636f832a0d1219f789b035e1a033ef4ba0"
+    },
+    "supported-host.log": {
+      "bytes": 35,
+      "sha256": "5892c49ef41bc582baf756071bcb35987aa815a18b8e88452d1cfa601f57cdef"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "a4f46c1ec55a219f4295a1127b31b7ac501db8be9fdcbc8d3567e0c440a78e57"
+    },
+    "source-features.log": {
+      "bytes": 528,
+      "sha256": "84983a85256b4d482a6452202af47d161a1b01fbd1666fe34678644f944f8479"
+    },
+    "composed.log": {
+      "bytes": 612,
+      "sha256": "ef7da5284192f504706cb4ad6de64397a8bd1fe625359ecb67df82937212b565"
+    },
+    "original.json": {
+      "bytes": 69011,
+      "sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a"
+    },
+    "upstream.json": {
+      "bytes": 218666,
+      "sha256": "ddf699b954ebbdb82fb8f56dbe7992bf682f602ecfb7798045aa3be23b9354fb"
+    },
+    "source-features/generated.ids": {
+      "bytes": 774,
+      "sha256": "7b486f648aa28924ed517318ec42e4768cb4750ee35656a3a1ade902b4263049"
+    },
+    "source-features/generated.txt": {
+      "bytes": 657,
+      "sha256": "dd76fa10d0f4e6d2e6450523a3fc9a2e7cc3ba6690675d01fe38833313469909"
+    },
+    "source-features/native-summary.json": {
+      "bytes": 157,
+      "sha256": "0f1ca11278f6dc7a26bd4d326fb35ad9ecfbc9d81b9d241f5eb7796e7b527426"
+    },
+    "composed/generated.ids": {
+      "bytes": 906,
+      "sha256": "40db6e27b836e8959b03c57afe8199d8885da338a68696f085e4755da4b92f7f"
+    },
+    "composed/generated.txt": {
+      "bytes": 718,
+      "sha256": "ea8d430acfd56011a369143b8b895bc99454b2e70b190821350d5d326108d74f"
+    },
+    "composed/native-summary.json": {
+      "bytes": 158,
+      "sha256": "c4e267c480bf9d76d2737fa1aa4df6d4857b8b92bcef2ea4f95c1322d2d459a2"
+    }
+  }
+}

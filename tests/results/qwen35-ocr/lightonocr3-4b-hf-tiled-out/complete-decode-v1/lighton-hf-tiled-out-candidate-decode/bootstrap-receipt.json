@@ -1,0 +1,58 @@
+{
+  "bootstrap_sha256": "2df41ecf3833dc7bcd644330e21dea5012b3221a4c2c4fee8512ef88d252af08",
+  "candidate": {
+    "all24_publisher_tiled_payloads_exact": true,
+    "all699_protected_payloads_exact": true,
+    "all_other_metadata_raw_exact": true,
+    "base_sha256": "5d133ae02c12611572c02e2d43bd06f4fecc5e059f94709a13bdb36458fadb29",
+    "candidate_bytes": 4041906080,
+    "candidate_sha256": "cc6ce27eded435b8ac278229a8c6ff553f1654d865ff14a1b67c597fa0ca5254",
+    "header_bytes": 10012576,
+    "model_inference_executed": false,
+    "original_forward_executed": false,
+    "paired_receipt_sha256": "e87e6b28936e1022b6207cb942ba5e1d468b309bf731c24bf44f136dbd20b215",
+    "physical_scalar_semantics_enabled": false,
+    "proof_protocol_sha256": "c21003e25e95509ecf71e386017b813d410490a696737eb31d45b3c08caa310f",
+    "protected_tensor_count": 699,
+    "quality_qualified": false,
+    "recipe": "lighton4b-weighted-q4km-hf-tiled-out-v1",
+    "replaced_out_tensor_count": 24,
+    "requantization_executed": false,
+    "schema": "lighton4b-hf-tiled-out-pack/v1",
+    "seconds": 84.02069246500002,
+    "status": "packed"
+  },
+  "checkpoint_downloaded_by_bootstrap": false,
+  "complete_decode_receipt_sha256": "63a586c07b0c2125e448e4f425bc9760ff9b5eb7c3123c7de0a60fde0a790361",
+  "controls_source_sha": "c89aaa4cb0c33d73d121b83b33d42d4bfcb20204",
+  "exact_control_source_objects": {
+    "src": "cd3211c9f92b9b502aa67d5e0620f2f44ca157ac",
+    "tests/lighton4b_native_case_preflight.cpp": "3ec1d1340b308febc62be0adc992ad6741076fbb",
+    "tests/lighton4b_native_document.cpp": "42f53518ce877cc084fc312295ac5d1c2fba49d7"
+  },
+  "gpu_enabled": false,
+  "model_inference_attempted": true,
+  "model_inference_executed": true,
+  "native_controls_receipt_sha256": "8e49c7f1ebb7bf62e47e8590a0ff70faf5cc74424d4c729cbfcf117fc16af87a",
+  "preflight": {
+    "available_ram_bytes": 32175628288,
+    "free_disk_bytes": 20940517376,
+    "load": [
+      0.45703125,
+      0.48388671875,
+      0.22998046875
+    ],
+    "logical_cpus": 4,
+    "memory_swap": {
+      "MemAvailable": 32616230912,
+      "SwapFree": 0,
+      "SwapTotal": 0
+    }
+  },
+  "runtime_manifest_sha256": "1278cf36f67f1cc6098d465e6c602c4bc2ffad702c185eede4f9deee662a96d0",
+  "schema": "lighton4b-hf-tiled-out-candidate-decode-bootstrap/v1",
+  "seconds": 7944.706445046999,
+  "source_sha": "b2a3778e424559b7216e1b11f21c7b38b71b02d8",
+  "status": "measured",
+  "uses_pinned_remote_model_mount": true
+}

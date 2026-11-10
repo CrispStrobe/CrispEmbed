@@ -1,0 +1,64 @@
+{
+  "models": [
+    {
+      "name": "/tmp/lighton4b-independent-llama-cpu-v1/independent-llama/LightOnOCR-3-4B-Q8_0.gguf",
+      "model": "/tmp/lighton4b-independent-llama-cpu-v1/independent-llama/LightOnOCR-3-4B-Q8_0.gguf",
+      "modified_at": "",
+      "size": "",
+      "digest": "",
+      "type": "model",
+      "description": "",
+      "tags": [
+        ""
+      ],
+      "capabilities": [
+        "completion",
+        "multimodal"
+      ],
+      "parameters": "",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "",
+        "families": [
+          ""
+        ],
+        "parameter_size": "",
+        "quantization_level": ""
+      }
+    }
+  ],
+  "object": "list",
+  "data": [
+    {
+      "id": "/tmp/lighton4b-independent-llama-cpu-v1/independent-llama/LightOnOCR-3-4B-Q8_0.gguf",
+      "aliases": [
+        "/tmp/lighton4b-independent-llama-cpu-v1/independent-llama/LightOnOCR-3-4B-Q8_0.gguf"
+      ],
+      "tags": [],
+      "object": "model",
+      "architecture": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      },
+      "created": 1793979273,
+      "owned_by": "llamacpp",
+      "meta": {
+        "vocab_type": 2,
+        "n_vocab": 248320,
+        "n_ctx": 2048,
+        "n_ctx_train": 262144,
+        "n_embd": 2560,
+        "n_params": 4205751296,
+        "size": 4471435264,
+        "ftype": "Q8_0"
+      }
+    }
+  ]
+}

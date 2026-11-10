@@ -1,0 +1,5 @@
+build_mode=portable
+commit=0dfb61534ca6c0b759406c925f0bd936b580d882
+runner=Linux/X64
+cpu=AMD EPYC 9V74 80-Core Processor
+cpu_avx512f=yes

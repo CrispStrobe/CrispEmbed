@@ -1,0 +1,95 @@
+{
+  "source_report_sha256": "427b38fd03a9d4aec47c9292f15f8771e99e263b2258f415149f0f20dd612f0c",
+  "scope": "Independent selected live raw capture hashes, arithmetic identities and full report dtype-policy aggregation; no local weights or forward.",
+  "checks": {
+    "all17_selected_raw_hashes": true,
+    "patch_position_add_exact": true,
+    "first_ffn_residual_add_exact": true,
+    "source_normalization_exact": true,
+    "HWC_to_CHW_exact": true,
+    "341_resize_channels_max2": true,
+    "off_on_merged_actual_hash": true,
+    "all32_callbacks_once": true,
+    "dtype_aware_all297_transforms_exact": true
+  },
+  "selected_artifacts": {
+    "source.patches.f32": {
+      "bytes": 3440640,
+      "sha256": "1d66249e7d176481cb037eea70a82c2944b772b3fdd1f3df2becc18bfbc2edb4"
+    },
+    "native.recovered-resized.rgb": {
+      "bytes": 430080,
+      "sha256": "90539781fd2d2e5e57f5fb60c4f2d695f43ebdee05cc486d4c0370e7d63aa1a1"
+    },
+    "on/source.merged.f32": {
+      "bytes": 1433600,
+      "sha256": "b9a171d18d5698e5c897662ddedf6cf399448838e55350c3b206e7a24c240d1b"
+    },
+    "on/inp_raw.f32": {
+      "bytes": 1720320,
+      "sha256": "e47e8001cdd504408d4b957586adecac35b6deb975a62fcab1b52a33168d4ec0"
+    },
+    "on/source.input.rgb": {
+      "bytes": 429852,
+      "sha256": "f29f48e94fd623b16bbe203f6c5918cdd5b08c9bc8926a1cc9659e5e67ff0a22"
+    },
+    "on/patch_bias.f32": {
+      "bytes": 2293760,
+      "sha256": "4dcf1ee0054b05a78f215484715d119db42b8e1cd8e87dd9dba189a32c76d076"
+    },
+    "on/layer_out-23.f32": {
+      "bytes": 2293760,
+      "sha256": "f1270b5da1bd21dc271463fb564d570232c2895ef5c3515433bbffa18044cb3e"
+    },
+    "on/ffn_inp-0.f32": {
+      "bytes": 2293760,
+      "sha256": "59de59edbc212845966ed521c4fe321f8e333c8d5de240e4fae45ec4d7be38e4"
+    },
+    "on/resized.rgb": {
+      "bytes": 430080,
+      "sha256": "b696ae06e5a1b1502830e1ba2d5c65df5fdb1a74550b69e67480794de5c4da98"
+    },
+    "on/source.pixels.f32": {
+      "bytes": 1720320,
+      "sha256": "c4c066f5df3decd147f6a50e94abc56034537e3dba55df17ce4f095a1e74adaa"
+    },
+    "on/inp_pos_emb.f32": {
+      "bytes": 2293760,
+      "sha256": "606af11ff9326279b76c6427aa366d7bc2f240f72435eef2278c8dba12c716b1"
+    },
+    "on/learned_pos.f32": {
+      "bytes": 2293760,
+      "sha256": "20446f9a20c7888f56795d86db5e3d1154515f0925b9b527c8b1839356d3f0e6"
+    },
+    "on/layer_out-0.f32": {
+      "bytes": 2293760,
+      "sha256": "b79d32eca03fe3590f0a9c24cefd75cac890dfc5368b2cc107863de7af16dcb8"
+    },
+    "on/ffn_out-0.f32": {
+      "bytes": 2293760,
+      "sha256": "80fd870e62e0f702c826c8e56a8f3578add7bd4036ea8cde6b3f0c3c2717e1dc"
+    },
+    "off/source.merged.f32": {
+      "bytes": 1433600,
+      "sha256": "b9a171d18d5698e5c897662ddedf6cf399448838e55350c3b206e7a24c240d1b"
+    },
+    "off/source.input.rgb": {
+      "bytes": 429852,
+      "sha256": "f29f48e94fd623b16bbe203f6c5918cdd5b08c9bc8926a1cc9659e5e67ff0a22"
+    },
+    "off/source.pixels.f32": {
+      "bytes": 1720320,
+      "sha256": "c4c066f5df3decd147f6a50e94abc56034537e3dba55df17ce4f095a1e74adaa"
+    }
+  },
+  "native_tensor_types": {
+    "0": 198,
+    "1": 99
+  },
+  "native_scalar_count": 333514240,
+  "limits": [
+    "Other source/native stage metric pairs remain report-derived; no bulk stage download.",
+    "F32 source parameters must not be judged after an unnecessary F16 cast.",
+    "No original checkpoint identity or decoded quality qualification."
+  ]
+}

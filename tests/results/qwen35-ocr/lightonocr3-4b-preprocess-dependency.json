@@ -1,0 +1,16 @@
+{
+  "decoded_parity_qualified": false,
+  "error": "retained input replay failed; inspect authenticated hosted logs privately",
+  "error_type": "ModuleNotFoundError",
+  "failure_scope": "Kaggle dependency import missing six, before retained provider input download/native execution",
+  "missing_module": "six",
+  "model_bytes_downloaded": 0,
+  "native_model_forward_executed": false,
+  "native_source": "0ec57c6d962c78bc59ae3e166d35a8b58d3108f5",
+  "original_capture_sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a",
+  "original_forward_executed": false,
+  "original_source": "07543dcc80ebcecad644815d9397be2570a51dd4",
+  "run_id": 41998761159,
+  "schema": "lighton4b-retained-preprocess/v1",
+  "status": "failed"
+}

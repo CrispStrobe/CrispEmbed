@@ -1,0 +1,24 @@
+{
+  "schema": "lighton4b-upstream-text-trace-v1-setup-audit/v1",
+  "status": "verified_setup_negative",
+  "source_sha": "9986aaa3c5dfb27e064d73a39546ca8f9db919f6",
+  "worker_seconds": 34.680936202,
+  "bootstrap_seconds": 56.51985577800002,
+  "failure": "Canonical PNG was incorrectly required to share the repository PNG container hash, despite frozen physical preprocessing recompressing identical RGB pixels.",
+  "source_clone_build_model_transfer_forward_executed": false,
+  "interpretation": "No numerical, callback-neutrality or quality result. All frozen receipt/artifact checks before PNG-container equality passed. Original reference and every score anchor remain unchanged.",
+  "artifacts": {
+    "text-trace.json": {
+      "bytes": 1866,
+      "sha256": "cc3add1492d2328b0bc1dbb9f700fdb5176c00ecacb0c2f55c07388c1005daef"
+    },
+    "upstream-text-trace-bootstrap.json": {
+      "bytes": 1812,
+      "sha256": "7adb62057818c0af001269d05f16ce2e3a94b1782cc7d85ce96311a0b53e67a8"
+    },
+    "upstream-text-trace.log": {
+      "bytes": 1652,
+      "sha256": "4230c4a0f73386760a301f65c6c87bd70612c3d899fb25ddae04dad72c683667"
+    }
+  }
+}

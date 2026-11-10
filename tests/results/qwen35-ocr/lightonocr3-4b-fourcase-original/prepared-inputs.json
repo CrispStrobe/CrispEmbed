@@ -1,0 +1,307 @@
+{
+  "all_inputs_verified_before_model_load": true,
+  "cases": {
+    "arabic_printed_line": {
+      "expected_grid": [
+        1,
+        8,
+        34
+      ],
+      "expected_input_tokens": 82,
+      "png_sha256": "b132a9516f83949f1a31058f24ce6292b84d5e0f44cf099f97888e4934e01a3b",
+      "prepared_inputs": {
+        "attention_mask": {
+          "dtype": "torch.int64",
+          "file": "input-attention_mask.npy",
+          "sha256": "55cc3e07d88d5a3476272f76c9822cc42104c0d9b84d8008edf3e98c3e65b2a6",
+          "shape": [
+            1,
+            82
+          ]
+        },
+        "image_grid_thw": {
+          "dtype": "torch.int64",
+          "file": "input-image_grid_thw.npy",
+          "sha256": "4aa790c95c348c31b5cf9072c217fc095d5074a9e68cd074b8b6121e312b688b",
+          "shape": [
+            1,
+            3
+          ]
+        },
+        "input_ids": {
+          "dtype": "torch.int64",
+          "file": "input-input_ids.npy",
+          "sha256": "59ce2cc26acdd1815f3b3f29a173c682eb9a89f3bc3d6ef07cc203ab1b197543",
+          "shape": [
+            1,
+            82
+          ]
+        },
+        "mm_token_type_ids": {
+          "dtype": "torch.int64",
+          "file": "input-mm_token_type_ids.npy",
+          "sha256": "d2cb7acacd59670091524795b69703ffaa84575978179afb50b64121a11601d0",
+          "shape": [
+            1,
+            82
+          ]
+        },
+        "pixel_values": {
+          "dtype": "torch.float32",
+          "file": "input-pixel_values.npy",
+          "sha256": "43cff75db3f5dbebb163376fcd785715928e4459e96fe667b1ee78f7a336d0ae",
+          "shape": [
+            272,
+            1536
+          ]
+        }
+      },
+      "rgb_sha256": "21b76e3ab8f3fdabe6bfbf029e6cfc8dc17b5d0166095acd4b789c55c20407da",
+      "split": "calibration",
+      "status": "prepared"
+    },
+    "handwritten_letter": {
+      "expected_grid": [
+        1,
+        20,
+        28
+      ],
+      "expected_input_tokens": 154,
+      "png_sha256": "82e1e234909ed296b5db6a425c9469a8c280b6565b47c7997f72a4e38162e5f6",
+      "prepared_inputs": {
+        "attention_mask": {
+          "dtype": "torch.int64",
+          "file": "input-attention_mask.npy",
+          "sha256": "bf86c53fad0078f2c0b8ae6ebcc0bc1fad1469287a5fd2ce76c45558c45defe2",
+          "shape": [
+            1,
+            154
+          ]
+        },
+        "image_grid_thw": {
+          "dtype": "torch.int64",
+          "file": "input-image_grid_thw.npy",
+          "sha256": "31db2f395670c65f1329ed36856025a4e28158dd158ffcae567a939151283278",
+          "shape": [
+            1,
+            3
+          ]
+        },
+        "input_ids": {
+          "dtype": "torch.int64",
+          "file": "input-input_ids.npy",
+          "sha256": "6f1b0a033c6d381c877956b6fbd215d8be4515d9a4ec733ad302b47a1743203d",
+          "shape": [
+            1,
+            154
+          ]
+        },
+        "mm_token_type_ids": {
+          "dtype": "torch.int64",
+          "file": "input-mm_token_type_ids.npy",
+          "sha256": "f5036a7310cca98c52e7846682523e02b245fbfb823ecf78fb59fe20832ae723",
+          "shape": [
+            1,
+            154
+          ]
+        },
+        "pixel_values": {
+          "dtype": "torch.float32",
+          "file": "input-pixel_values.npy",
+          "sha256": "1271fa7f08579f090f5301ea77dc17174ed5b61c5654237c656fd1b81113de32",
+          "shape": [
+            560,
+            1536
+          ]
+        }
+      },
+      "rgb_sha256": "8423549002bfc1de337f18e4b9edb6b25db5896ca5cc0d7aa297454d13c7c52c",
+      "split": "heldout",
+      "status": "prepared"
+    },
+    "receipt_example": {
+      "expected_grid": [
+        1,
+        28,
+        22
+      ],
+      "expected_input_tokens": 168,
+      "png_sha256": "8f7b96c28c1a96774bb088699dc5122c54df57f27029ed44113e443101a016c9",
+      "prepared_inputs": {
+        "attention_mask": {
+          "dtype": "torch.int64",
+          "file": "input-attention_mask.npy",
+          "sha256": "d61e1b5e4261f032d283a601a63a16622e7048a645b219c1bb509ff3915455b3",
+          "shape": [
+            1,
+            168
+          ]
+        },
+        "image_grid_thw": {
+          "dtype": "torch.int64",
+          "file": "input-image_grid_thw.npy",
+          "sha256": "235cc922305914dc35f063e7a0227b8c59697f5faa2352f86814dbec94100bca",
+          "shape": [
+            1,
+            3
+          ]
+        },
+        "input_ids": {
+          "dtype": "torch.int64",
+          "file": "input-input_ids.npy",
+          "sha256": "979090cbc8286f2c37e7032cf7e016b32fac6db36f8b1ad33b054a4d3deb3081",
+          "shape": [
+            1,
+            168
+          ]
+        },
+        "mm_token_type_ids": {
+          "dtype": "torch.int64",
+          "file": "input-mm_token_type_ids.npy",
+          "sha256": "69441cb1e58642a7b3d0325711acd007e4470bfdd4b533ccb89279e817f49cf1",
+          "shape": [
+            1,
+            168
+          ]
+        },
+        "pixel_values": {
+          "dtype": "torch.float32",
+          "file": "input-pixel_values.npy",
+          "sha256": "ad09e82e74782308636a30c920e7241ea1c7d50a29e1d4da4f36e9605a7a5341",
+          "shape": [
+            616,
+            1536
+          ]
+        }
+      },
+      "rgb_sha256": "eb4912c8f649a8740102ab7255845f22660bbeb5d1bcc9f684939697b34b9f26",
+      "split": "heldout",
+      "status": "prepared"
+    },
+    "simple_table": {
+      "expected_grid": [
+        1,
+        12,
+        24
+      ],
+      "expected_input_tokens": 86,
+      "png_sha256": "8dc41570c6544efb134d1fa798c75cc48dde821bc31f49d819279583f3467c2d",
+      "prepared_inputs": {
+        "attention_mask": {
+          "dtype": "torch.int64",
+          "file": "input-attention_mask.npy",
+          "sha256": "9496d4b013b58e907f0f1573278cdc3a85357fc8f74f4e7ee4321a52d22894ae",
+          "shape": [
+            1,
+            86
+          ]
+        },
+        "image_grid_thw": {
+          "dtype": "torch.int64",
+          "file": "input-image_grid_thw.npy",
+          "sha256": "33a63e3f8e76dc17cc10a23f1cf959b105b322ed4a9cea3874460706c045a2b5",
+          "shape": [
+            1,
+            3
+          ]
+        },
+        "input_ids": {
+          "dtype": "torch.int64",
+          "file": "input-input_ids.npy",
+          "sha256": "5b170bf4fff2a9f131cb6917bf1a4b41513df991bdafcca0fa3c0fe5489d8bd1",
+          "shape": [
+            1,
+            86
+          ]
+        },
+        "mm_token_type_ids": {
+          "dtype": "torch.int64",
+          "file": "input-mm_token_type_ids.npy",
+          "sha256": "044e2992e4aa15d4392a030cde616fe4fdae5cabbb1bcaa80bb455b98261a284",
+          "shape": [
+            1,
+            86
+          ]
+        },
+        "pixel_values": {
+          "dtype": "torch.float32",
+          "file": "input-pixel_values.npy",
+          "sha256": "13e55cf7a373c27428cd41b2d770f1b18642b6226858d1af40de9df6c7992554",
+          "shape": [
+            288,
+            1536
+          ]
+        }
+      },
+      "rgb_sha256": "69158b04ff5ffca79dc4fb2b8d731c19858f02e0427ef55c9d42a7beaa9d3514",
+      "split": "calibration",
+      "status": "prepared"
+    }
+  },
+  "driver_sha256": "ddcd75dc07d0d334be94d35c270283c89acda2705d724225fa2e2d40323a35a3",
+  "elapsed_seconds": 9.23212345600001,
+  "frozen_helper_sha256": "f19f63b832fdd91db61f4586fb5872333719411e1c30ee0f40d43433db7024fd",
+  "gpu_requested": false,
+  "initial_available_ram_bytes": 31271051264,
+  "input_manifest_sha256": "a07af76028a0d53c8bfc0ccafedac348eaeb725c8c8c55e3136906f202b8f65d",
+  "measured_memory_peaks": {
+    "cgroup_current_bytes": 3108929536,
+    "process_hwm_bytes": 769269760,
+    "process_rss_bytes": 714289152,
+    "process_ru_maxrss_bytes": 769269760,
+    "worker_cgroup_peak_bytes": 3108929536
+  },
+  "memory_latest": {
+    "available_bytes": 30635319296,
+    "cgroup_current_bytes": 3046629376,
+    "cgroup_hard_margin_bytes": 29165625344,
+    "cgroup_limit_bytes": 32212254720,
+    "cgroup_reclaimable_inactive_file_bytes": 1469693952,
+    "host_available_bytes": 31973146624,
+    "process_hwm_bytes": 769269760,
+    "process_rss_bytes": 714285056,
+    "process_ru_maxrss_bytes": 769269760,
+    "worker_cgroup_peak_bytes": 3108929536
+  },
+  "model_dtype": "bfloat16",
+  "model_loads": 0,
+  "model_qualified": false,
+  "native_forward_executed": false,
+  "original_forward_executed": false,
+  "packages": {
+    "gguf": "0.19.0",
+    "numpy": "2.3.5",
+    "pillow": "12.0.0",
+    "tokenizers": "0.22.2",
+    "torch": "2.13.0+cpu",
+    "torchvision": "0.28.0+cpu",
+    "transformers": "5.5.4"
+  },
+  "protocol_sha256": "3a1738c26cf5a34680fea1468bea07c06ee26659f7ddb7e249299677746ba36d",
+  "schema": "lighton4b-fourcase-bf16/v1",
+  "source": {
+    "model": "lightonai/LightOnOCR-3-4B",
+    "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+    "source_metadata_sha256": {
+      "chat_template.jinja": "d5ddb788d5f3df12e32244954037eb535409d24eeb48c2429d7588af4e7b69a7",
+      "config.json": "99b4c363a998c2d8c5ed5b3f3a40ec5cb97a156034df5002d0d789c74324f5f0",
+      "generation_config.json": "8ce51af0baac298c116b7db144efe1ebd78b0b792d084002634fd3ed63f4d515",
+      "preprocessor_config.json": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+      "processor_config.json": "d89ef49ce9cd37fbf510158e13c1ef063d9286411c1ec9049932dbe0487143b1",
+      "tokenizer_config.json": "e98f1901ac6f0adff67b1d540bfa0c36ac1a0cf59eb72ed78146ef89aafa1182"
+    },
+    "tokenizer_sha256": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4"
+  },
+  "source_sha": "42e5ce6f9bc6bd01865ac4f21d2157c98d3475f1",
+  "stage": "all-four-inputs-authenticated",
+  "status": "prepared",
+  "upstream": {
+    "loaded_source_sha256": {
+      "config": "cbea1f42a949edb6b9b001109df68cbf7cff04c96d3fe8a8e96602cb017b5a36",
+      "model": "aee59d55ee4e8ce0e50bf0e279796b85c2c66a28dfae55c3fcbb62fa9bcba048"
+    },
+    "scope": "meta-schema-only; no model forward",
+    "transformers_version": "5.5.4",
+    "upstream_revision": "75d3bdcd4b3ba70cee21287218d9764f33da41f0"
+  }
+}

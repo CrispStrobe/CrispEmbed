@@ -1,0 +1,204 @@
+# Captured-input attention primitive investigation
+
+Initial source `8f747ee2e` passed nine hosted setup tests, authenticated the frozen
+physical input and eleven layer3 source tensors, and compiled its native helper.
+It failed after 100.46 seconds at the first native-helper invocation: borrowed
+weights lacked the CPU backend buffer required by `tensor_floats`. No native
+hidden byte closure or numerical attention comparison occurred. This is a
+probe setup failure, not an attention/cache quality result.
+
+[The review](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/v1-setup-negative/review.json)
+and retained-byte index preserve the original receipt hashes and initial failure.
+Raw large arrays remain remote. The proposed tools-only fix `5f82c4d0a` attaches
+owned CPU buffers to eleven tensors (about67.24 MB extra transient storage),
+leaving production access checks unchanged. It is not yet measured.
+
+The probe must reproduce actual captured native first16 layer3 hidden and scalar
+gated context exactly before interpreting duplicate Q/K/V. Pinned upstream
+F16/F32-cache graphs then consume identical native post-RoPE Q/K/V; actual
+upstream hidden2 is not captured. Batched4/16 primitives cannot establish
+full-model parity, tokenwise cache correctness, decoded quality or shipping
+qualification. The experimental physical path and all arithmetic alternatives
+remain default-off; the prior six-arm RMS regression remains unchanged.
+
+## Corrected probe: actual native closure and conditional source graph
+
+Tools-only source `5f82c4d0abd7785d72f24e9b381930b1fe0ec683` completed in
+218.22 seconds. All nine setup tests, actual native layer3 first16 hidden, scalar
+gated-context byte closure and eight composed/observed graph pairs pass. The
+[exact report](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/v2/attention-primitives.json)
+has SHA256 `fa9ae86949ee15e475b41b35ae1ccc54b31f93957acf055e5a250d09302bdfe7`.
+Independent review rehashed37 needed stage files (9,699,328 bytes), recomputed
+all26 N16 metrics exactly and separately confirmed actual scalar pooled bytes.
+
+On identical native post-RoPE Q/K/V, F32-cache graph stages are byte-identical
+between the pinned backends. F16-cache graphs first differ at raw QK: N16
+RMS0.0018778863, max0.03656006 against reference magnitude330.2810. Context
+RMS is0.0000956899 and gated-context RMS0.00000818464. These are primitive
+results, not errors against an actual upstream layer3 hidden-state capture.
+
+The difference has a concrete source-level explanation. The native fork's
+[F16 CPU trait](https://github.com/CrispStrobe/ggml/blob/3a27b6c665b191cb230be367db5c52d81dd3e2ac/src/ggml-cpu/ggml-cpu.c)
+uses an F16-by-F32 dot to preserve F32 inputs, explicitly protecting other
+models from F16 overflow. The pinned upstream
+[trait](https://github.com/ggml-org/llama.cpp/blob/6c01da6278ab6c69ed67d9124806b50d2b299ba7/ggml/src/ggml-cpu/ggml-cpu.c)
+uses F16-by-F16, so Q and softmax P are converted before KQ/PV dots. This
+intentional global fork behavior must remain intact.
+
+Scalar F16 K/V alone differs from the source graph QK by RMS0.0018779544;
+additionally rounding Q reduces that to0.00000740503. Additionally rounding P
+reduces context RMS to0.0000126761 and gated RMS to0.000000739914; remaining
+dot/softmax/gating reduction differences are measured, not waived. Actual native
+scalar pooled versus conditional upstream F16 graph has RMS0.0000122786 and
+max0.000610024. A narrowly gated physical-only paired-F16 operator may now be
+tested without changing vendor traits or unrelated models. No such path is
+promoted, and decoded quality remains unproven.
+
+## Explicit paired-F16 dot experiment
+
+Source `0b76ce1365b57360616e5fce44784db1665bbf10` calls the existing original
+paired-F16 dot explicitly, without changing vendor dispatch. Both backends pass
+symbol/overflow controls, and all ten corresponding N4/N16 helper stage hashes
+are identical. The [report](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/paired-v1/paired-attention.json)
+SHA256 is `04b194e16e7243dbc22d3db74c9d86a0d42e8d4918b528064c0afdf50b369904`;
+elapsed118.65 seconds. Ten selected vectors were independently authenticated;
+ten N16 metrics reproduce exactly for max/byte equality and within one binary64
+ULP for RMS.
+
+The helper is still not byte-identical to the original source graph. N16 QK
+RMS is0.00000206412/max0.0000610352; context RMS0.0000118884/max0.000530243;
+gated context RMS0.000000691884/max0.0000839084. N4 gated RMS is
+0.000000000608240/max0.0000000149012. Exactly one N16 probability crosses an
+F16 rounding boundary (flatindex23300, delta0.000244140625), so the context
+residual cannot yet be attributed independently to PV. Next controlled checks
+feed exact retained source probabilities into PV and isolate actual QK graph
+dispatch. This is a private-backend-ABI operator experiment, not a production
+implementation or decoded-quality proof; no fallback or vendor mutation occurred.
+
+## Exact source-P PV and QK dispatch isolation
+
+The bounded follow-up at source `b46bd2b99` completed in164.22 seconds.
+Regenerated upstream ON reproduces all ten frozen source graph stages bytewise
+before interpreting other arms; all eight composed/observed pairs pass. The
+[report](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/dispatch-v1/attention-dispatch.json)
+SHA256 is `d5b7ad89bc6f175e3ef5162bb6ab5b036a3e8acec261c83b191928af05638677`.
+Independent readback authenticates ten selected vectors (2,621,440 bytes),
+recomputes eight metrics (exact maximum errors, RMS within one binary64 ULP),
+and checks the eight observer hash pairs.
+
+Feeding the exact retained source probabilities into paired-F16 PV reduces N16
+context RMS from0.0000118884 to0.0000000234302 (max0.000000476837), and gated
+RMS from0.000000691884 to0.00000000216636 (max0.000000119209). Most previous
+context error therefore propagated from QK/softmax through a probability rounding
+boundary; an independent large PV defect is not supported.
+
+Original paired-F16 raw QK is byte-identical to the upstream graph with LLAMAFILE
+disabled at both N4 and N16. Actual source LLAMAFILE ON retains QK RMS
+0.00000206412/max0.0000610352. The remaining small QK residual is attributable
+to that dispatch/reduction choice on these exact inputs. OFF is a diagnostic
+profile and must never replace the actual ON reference or its qualification
+settings. Native ON/OFF both retain the intentional F16-by-F32 operand behavior.
+
+This closes primitive attribution only. A physical-only implementation can now
+be investigated without changing global vendor traits, but must preserve
+measured residuals, fail closed on unsupported backends and pass decoded gates
+before any promotion. No model forward, production math or shipping policy
+changed in this experiment.
+
+## Explicit F16 SGEMM operator closes the actual ON-profile primitives
+
+Tools-only source `b4a1a8dcf6204a6e06902362af1628b59783f735` uses custom
+ggml nodes with the same public four-thread pool installed in the CPU backend.
+Callbacks compile against the exact private compute-params header and call the
+existing F16/F16 SGEMM with actual source strides. Global traits and vendor
+sources remain unchanged; an unsupported private call fails without substitution.
+
+All40 N4/N16 stage comparisons are byte-exact against the original ON-profile
+source graph, for both native/upstream backends and composed/exact-source-P
+arms. Twelve observer-neutrality pairs pass. The
+[report](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/sgemm-v1/attention-sgemm.json)
+has SHA256 `361259199df487c630465336c97619ea5eb801ac1c70a040e7ba78ca49b39928`;
+elapsed137.68 seconds. Independent review checks all40 stage hashes directly
+against the original source receipt, all12 observer pairs, and downloads only
+five needed native N16 stage vectors (1,310,720 bytes), each byte-identical to
+the previously authenticated source vector.
+
+This is safe-linkage and conditional operator proof for the exact pinned hosted
+CPU profile. It does not cover N1 decode, cache append/toggle behavior, other
+platforms, actual upstream hidden2 or decoded outputs. A separate experimental
+physical-only integration must fail closed where unsupported, preserve old
+paths and source pins, and pass same-feature full-score/decoded gates before
+any promotion. The public loader fence and unqualified-Q4 restriction remain.
+
+## Initial gated integration controls: retained harness failure
+
+The default-off physical-only integration at source `5a8e954a3` compiled and
+passes255,297 supported runtime checks,5 unsupported-build checks,5 simulated
+WASM-guard checks and142 old physical-native-operator controls. Its [initial
+receipt](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/integration-v1-setup-negative/physical-f16-controls.json)
+is preserved with the logs. At119.53 seconds the harness invoked the old
+physical-policy executable without its required426-row schema argument; exit2
+stopped the worker before any actual source-fed N1/N4/N16 comparison. This
+is a harness failure, not a numerical pass or runtime failure. Tools-only fix
+`6ed974440` admits the audited closed schema for both schema-consuming old
+controls and adds CLI regression checks, leaving all runtime blobs unchanged.
+Shared PR155 remains unchanged pending the complete hosted source-fed gates.
+
+The initial retry at `6ed974440` again passes255,297 supported runtime checks
+and now557,865 physical-policy controls, but stops at another omitted legacy
+CLI argument: the release-fence test requires an output fixture path. The
+[second setup-negative receipt](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/integration-v2-setup-negative/review.json)
+is retained, with zero source-fed cases claimed. Tools-only fix `4f243a180`
+checks invocation arity against all nine actual C++ test signatures, supplies
+the fixture path, and moves source-fed proof before unrelated compatibility
+controls. Runtime bytes remain unchanged and shared PR155 is still gated.
+
+The next control source `4f243a180` again passes255,297 runtime controls, but
+its shallow hosted checkout lacks an archived receipt commit needed by
+`--verify-git`. The
+[third setup-negative receipt](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/integration-v3-setup-negative/review.json)
+retains the history-verification failure without claiming source drift or a
+numerical result. Tools-only fix `bfb09595a` fetches the exact frozen receipt
+commits before verifying them, and moves history/environment admission before
+compilation. No actual source-fed cases or model forward occurred.
+
+Control source `bfb09595a` verifies15 archived pins and passes runtime guards,
+then produces both prefill exports and all16 N1 runtime steps with final cache
+memcmp equality. Independent receipt-hash comparison closes N4/N16 gated
+exports against the original source vectors. The
+[fourth partial receipt](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/integration-v4-profile-negative/review.json)
+stops before fresh reference comparison because the harness wrongly requires
+OpenMP OFF for upstream. Actual upstream/server and source-primitives caches
+use ON; actual native app uses OFF. Fix `02a2e507a` preserves these distinct
+actual profiles, explicitly sets reference ON and copies caches before checking
+them. V4's reference cache was not copied before failure; the retained configure
+log and earlier exact source caches support the correction. Fresh N1 oracle
+comparisons remain pending, with no model or quality claim.
+
+## Gated runtime integration: all component and cache gates complete
+
+Source `02a2e507ab5badf2608ee5716214803e9522266d` completes the bounded
+integration gate in192.48 seconds. The
+[exact receipt](../tests/results/qwen35-ocr/lightonocr3-4b-attention-primitives/integration-v5/physical-f16-controls.json)
+SHA256 is `4b667e02b8909670953ea561e49df96b11421235c011177b0e0cbf75a655fa61`.
+All18 actual-runtime output comparisons (N4/N16 prefill and16 N1 appends) are
+byte-exact with pinned upstream; all18 reference observer pairs pass. N4/N16
+also match the original frozen source anchors. Independent review verifies
+these hashes, downloads only seven needed vectors (557,056 bytes), compares
+actual N1/prefill bytes and canonical cache bytes, and retains all earlier
+setup negatives.
+
+The suite passes255,297 supported runtime checks, unsupported5/simulated-WASM5,
+physical operator142/policy557,865, public release fence39, HF recipe39/operator
+66,710, tied Q6 head84,15 historical source pins and the467-variable inventory.
+Native uses its actual OpenMP-OFF profile; upstream reference keeps its actual
+OpenMP-ON profile. The implementation is default-off, physical-owner-only,
+limits private ABI support to the exact pinned hosted CPU profile, rejects
+cache-mode toggles/noncanonical prior values, and preserves unrelated HF flags
+and global vendor traits. The exact tested tree is integrated in existing PR155
+with skip-CI commits; no release alias or promotion is created.
+
+Next is the bounded fixed-form same-feature full177-teacher-score and independent
+greedy-cap256 evaluation, with an unchanged38-stage baseline prefix anchor and
+actual full decoded receipts. Component success does not satisfy that model or
+quality gate.

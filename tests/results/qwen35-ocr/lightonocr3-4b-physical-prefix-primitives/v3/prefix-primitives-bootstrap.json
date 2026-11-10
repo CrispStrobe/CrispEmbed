@@ -1,0 +1,12 @@
+{
+  "schema": "lighton4b-reconstructed-prefix-bootstrap/v1",
+  "source_sha": "a3f4b87aac82662393548b46ec19215618cfc038",
+  "status": "failed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "operator-only-primitives",
+  "worker_sha256": "a839cbcb3b158bed2842547ba52c85cb4dea6e653ef3452ec249f5780fc7cbea",
+  "error_type": "RuntimeError",
+  "error": "operator-only-primitives nonzero"
+}

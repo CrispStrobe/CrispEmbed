@@ -1,0 +1,89 @@
+{
+  "schema": "lighton4b-bf16-mixed-freegen-review/v1",
+  "source_sha": "89eda20c6558b9439c2bc3bc78ea395a6c463a1c",
+  "original_source": "8d3b2331d1b57e285f7ba348fc1eacd689b79aa8",
+  "provider": {
+    "service": "Kaggle",
+    "kernel_slug": "lighton4b-bf16-mixed-free-generation-v1",
+    "version": "v1",
+    "bootstrap_sha256": "ee97b217a97d303391228c3e2c34b5fa1c74adfe5eeda4a93cd7d312429c03fe",
+    "remote_bootstrap_byte_exact": true
+  },
+  "receipt_sha256": {
+    "oracle.json": "ed4ef1b60c41d4d3b2a131d107c2563ee971c931873202f5f470683ebb9a1d58",
+    "original-audit.json": "2cee2238aebd2b973635248d6cdfc2e27634662b37be442cfe286471f6cf220c",
+    "bootstrap.json": "754a9261f0064f932a346588c252f365c7152ac3516f1b138ede5a1793f5681b"
+  },
+  "full_score_rows": 178,
+  "full_score_bytes": 176803840,
+  "native_vs_bf16_mixed_primary": {
+    "ids_exact": false,
+    "text_exact": false,
+    "matching_prefix_ids": 33,
+    "first_differing_id": 33,
+    "reference_tokens": 178,
+    "candidate_tokens": 156,
+    "cer": {
+      "edits": 134,
+      "reference_codepoints": 675,
+      "rate": 0.1985185185185185
+    },
+    "wer": {
+      "edits": 30,
+      "reference_words": 95,
+      "rate": 0.3157894736842105
+    },
+    "normalization": "none; Unicode codepoints; WER Unicode whitespace split, case/punctuation retained; agreement, not human OCR accuracy"
+  },
+  "bf16_mixed_vs_native_reverse": {
+    "candidate_tokens": 178,
+    "cer": {
+      "edits": 134,
+      "rate": 0.22408026755852842,
+      "reference_codepoints": 598
+    },
+    "first_differing_id": 33,
+    "ids_exact": false,
+    "matching_prefix_ids": 33,
+    "normalization": "none; Unicode codepoints; WER Unicode whitespace split, case/punctuation retained; agreement, not human OCR accuracy",
+    "reference_tokens": 156,
+    "text_exact": false,
+    "wer": {
+      "edits": 30,
+      "rate": 0.37037037037037035,
+      "reference_words": 81
+    }
+  },
+  "bf16_mixed_vs_official": {
+    "candidate_tokens": 178,
+    "cer": {
+      "edits": 180,
+      "rate": 0.27439024390243905,
+      "reference_codepoints": 656
+    },
+    "first_differing_id": 25,
+    "ids_exact": false,
+    "matching_prefix_ids": 25,
+    "normalization": "none; Unicode codepoints; WER Unicode whitespace split, case/punctuation retained; agreement, not human OCR accuracy",
+    "reference_tokens": 177,
+    "text_exact": false,
+    "wer": {
+      "edits": 40,
+      "rate": 0.4444444444444444,
+      "reference_words": 90
+    }
+  },
+  "all249_effective_parameter_hashes_match_previous_mixed": true,
+  "all723_original_parameter_hashes_match_previous": true,
+  "protected_original_tensors": 474,
+  "tied_head_preserved": true,
+  "baseline_score_anchor_bit_exact": true,
+  "mixed_first_score_anchor_bit_exact": true,
+  "hosted_control_count": 17,
+  "startup_warning_preserved": "sitecustomize ModuleNotFoundError wrapt; tests returned0 and all source/model/hash/call guards passed",
+  "historical_control_coverage_correction": "Previous mixed bootstrap ran mixed6 twice; original6 passed locally. Current bootstrap explicitly executes original6+mixed6+full5. Prior numerical evidence unchanged.",
+  "native_score_comparison": "Deferred; only same causal prefixes may be compared. Full score hashes/payloads retained remotely.",
+  "quality_qualified": false,
+  "held_out_calibration": false,
+  "limits": "Same quantized tensor provenance, but original parameters round dequantized values toBF16 while native retains F32; decoded residual proves precision/implementation sensitivity, not an isolated kernel defect. Official and all earlier negatives remain."
+}

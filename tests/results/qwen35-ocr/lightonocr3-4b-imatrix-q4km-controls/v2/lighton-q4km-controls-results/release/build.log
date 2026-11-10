@@ -1,0 +1,26 @@
+[ 20%] Built target ggml-base
+[ 60%] Built target ggml-cpu
+[ 60%] Built target ggml
+[ 60%] Built target crispembed-core
+[100%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-q6-tied-head.dir/tests/test_lighton4b_q6_tied_head.cpp.o
+[100%] Linking CXX executable test-lighton4b-q6-tied-head
+[100%] Built target test-lighton4b-q6-tied-head
+[ 16%] Built target ggml-base
+[ 50%] Built target ggml-cpu
+[ 50%] Built target ggml
+[ 50%] Built target crispembed-core
+[ 83%] Built target crispembed-qwen35-delta
+[100%] Building CXX object CMakeFiles/test-lighton4b-release-fence.dir/tests/test_lighton4b_release_fence.cpp.o
+[100%] Linking CXX executable test-lighton4b-release-fence
+/usr/bin/ld: libcrispembed-qwen35-delta.a(qwen35_ocr.cpp.o): in function `qwen35_ocr_recognize_file':
+qwen35_ocr.cpp:(.text+0x4889): undefined reference to `stbi_info'
+/usr/bin/ld: qwen35_ocr.cpp:(.text+0x4928): undefined reference to `stbi_load'
+/usr/bin/ld: qwen35_ocr.cpp:(.text+0x496f): undefined reference to `stbi_image_free'
+/usr/bin/ld: libcrispembed-qwen35-delta.a(qwen35_ocr.cpp.o): in function `qwen35_ocr_recognize_file.cold':
+qwen35_ocr.cpp:(.text.unlikely+0x2cb): undefined reference to `stbi_image_free'
+collect2: error: ld returned 1 exit status
+gmake[3]: *** [CMakeFiles/test-lighton4b-release-fence.dir/build.make:106: test-lighton4b-release-fence] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:11347: CMakeFiles/test-lighton4b-release-fence.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:11354: CMakeFiles/test-lighton4b-release-fence.dir/rule] Error 2
+gmake: *** [Makefile:3952: test-lighton4b-release-fence] Error 2

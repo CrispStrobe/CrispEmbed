@@ -1,0 +1,2 @@
+fatal: path 'src/qwen35_math.h' exists on disk, but not in 'cbd3852f5dd697f275d3094d101b50e9917350a4'
+Source pin check failed: Command '['git', '-C', '/tmp/lighton4b-physical-f16-integration-controls-v1/source', 'cat-file', 'blob', 'cbd3852f5dd697f275d3094d101b50e9917350a4:src/qwen35_math.h']' returned non-zero exit status 128.

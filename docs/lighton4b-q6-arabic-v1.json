@@ -1,0 +1,20 @@
+{
+  "schema": "lighton4b-q6-arabic/v1",
+  "case": "arabic_printed_line",
+  "producer_receipt": "f5d0077052b907e2d674caef9e7c4ae09b08456ff48a79f327cbdfd030b2dcc9",
+  "producer_source": "8fcdf1f739fedf9ef3a068ad8028bc108ad5bc8a",
+  "physical_receipt": "712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2",
+  "old_calibration_receipt": "f69d23ffe6d65d9abf6c7c5c660723613ce84cc901383c5151e17d8f8dc5fe64",
+  "candidate_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "cap": 512,
+  "threads": 4,
+  "context": 2048,
+  "worker_seconds": 3600,
+  "arm_seconds": 900,
+  "changed_gates": [
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED"
+  ],
+  "scope": "Observed Arabic; old baseline to corrected three-mechanism configuration. No tuning/qualification."
+}

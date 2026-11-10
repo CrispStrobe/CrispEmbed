@@ -1,0 +1,86 @@
+[  3%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml.c.o
+[  6%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml.cpp.o
+[  9%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o
+[ 12%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o
+[ 15%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o
+[ 18%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o
+[ 21%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o
+[ 24%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o
+[ 27%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/gguf.cpp.o
+[ 30%] Linking CXX shared library libggml-base.so
+[ 30%] Built target ggml-base
+[ 33%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o
+[ 36%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o
+[ 39%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o
+[ 42%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o
+[ 45%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o
+[ 48%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o
+[ 51%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o
+[ 54%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o
+[ 57%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled.cpp.o
+[ 60%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled-kernel.cpp.o
+[ 63%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o
+[ 66%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o
+[ 69%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o
+[ 72%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o
+[ 75%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile/sgemm.cpp.o
+[ 78%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o
+[ 81%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o
+[ 84%] Linking CXX shared library libggml-cpu.so
+[ 84%] Built target ggml-cpu
+[ 87%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o
+[ 90%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o
+[ 93%] Linking CXX shared library libggml.so
+[ 93%] Built target ggml
+[ 96%] Building CXX object CMakeFiles/gdn-source-probe.dir/main.cpp.o
+/tmp/lighton4b-gdn-source-primitives-v1/source/tools/gdn-primitive-probe/main.cpp: In function ‘std::map<std::__cxx11::basic_string<char>, std::vector<float> > project_pair(const V&, int, const std::filesystem::__cxx11::path&)’:
+/tmp/lighton4b-gdn-source-primitives-v1/source/tools/gdn-primitive-probe/main.cpp:67:90: warning: ‘void ggml_mul_mat_set_prec(ggml_tensor*, ggml_prec)’ is deprecated: use ggml_prec_set_acc() instead [-Wdeprecated-declarations]
+   67 |     auto * direct=ggml_mul_mat(c,w,x),*dequant=ggml_mul_mat(c,wf,x);ggml_mul_mat_set_prec(direct,GGML_PREC_F32);ggml_mul_mat_set_prec(dequant,GGML_PREC_F32);
+      |                                                                     ~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~
+In file included from /tmp/lighton4b-gdn-source-primitives-v1/source/tools/gdn-primitive-probe/main.cpp:2:
+/tmp/lighton4b-gdn-source-primitives-v1/gdn-primitives/upstream/ggml/src/../include/ggml.h:1505:35: note: declared here
+ 1505 |     GGML_DEPRECATED(GGML_API void ggml_mul_mat_set_prec(
+      |                                   ^~~~~~~~~~~~~~~~~~~~~
+/tmp/lighton4b-gdn-source-primitives-v1/gdn-primitives/upstream/ggml/src/../include/ggml.h:192:41: note: in definition of macro ‘GGML_DEPRECATED’
+  192 | #    define GGML_DEPRECATED(func, hint) func __attribute__((deprecated(hint)))
+      |                                         ^~~~
+/tmp/lighton4b-gdn-source-primitives-v1/source/tools/gdn-primitive-probe/main.cpp:67:134: warning: ‘void ggml_mul_mat_set_prec(ggml_tensor*, ggml_prec)’ is deprecated: use ggml_prec_set_acc() instead [-Wdeprecated-declarations]
+   67 |     auto * direct=ggml_mul_mat(c,w,x),*dequant=ggml_mul_mat(c,wf,x);ggml_mul_mat_set_prec(direct,GGML_PREC_F32);ggml_mul_mat_set_prec(dequant,GGML_PREC_F32);
+      |                                                                                                                 ~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~
+/tmp/lighton4b-gdn-source-primitives-v1/gdn-primitives/upstream/ggml/src/../include/ggml.h:1505:35: note: declared here
+ 1505 |     GGML_DEPRECATED(GGML_API void ggml_mul_mat_set_prec(
+      |                                   ^~~~~~~~~~~~~~~~~~~~~
+/tmp/lighton4b-gdn-source-primitives-v1/gdn-primitives/upstream/ggml/src/../include/ggml.h:192:41: note: in definition of macro ‘GGML_DEPRECATED’
+  192 | #    define GGML_DEPRECATED(func, hint) func __attribute__((deprecated(hint)))
+      |                                         ^~~~
+/tmp/lighton4b-gdn-source-primitives-v1/source/tools/gdn-primitive-probe/main.cpp: In lambda function:
+/tmp/lighton4b-gdn-source-primitives-v1/source/tools/gdn-primitive-probe/main.cpp:121:77: warning: ‘ggml_tensor* ggml_add1(ggml_context*, ggml_tensor*, ggml_tensor*)’ is deprecated: use ggml_add instead [-Wdeprecated-declarations]
+  121 |         auto normalize=[&](ggml_tensor * x){auto * den=ggml_sqrt(c,ggml_add1(c,ggml_sum_rows(c,ggml_sqr(c,x)),ggml_new_f32(c,1e-6f)));return ggml_div(c,x,den);};
+      |                                                                    ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/tmp/lighton4b-gdn-source-primitives-v1/gdn-primitives/upstream/ggml/src/../include/ggml.h:940:51: note: declared here
+  940 |     GGML_DEPRECATED(GGML_API struct ggml_tensor * ggml_add1(
+      |                                                   ^~~~~~~~~
+/tmp/lighton4b-gdn-source-primitives-v1/gdn-primitives/upstream/ggml/src/../include/ggml.h:192:41: note: in definition of macro ‘GGML_DEPRECATED’
+  192 | #    define GGML_DEPRECATED(func, hint) func __attribute__((deprecated(hint)))
+      |                                         ^~~~
+/tmp/lighton4b-gdn-source-primitives-v1/source/tools/gdn-primitive-probe/main.cpp: In function ‘std::map<std::__cxx11::basic_string<char>, std::vector<float> > compute(const Inputs&, int, bool, bool, const std::filesystem::__cxx11::path&)’:
+/tmp/lighton4b-gdn-source-primitives-v1/source/tools/gdn-primitive-probe/main.cpp:140:66: warning: ‘void ggml_mul_mat_set_prec(ggml_tensor*, ggml_prec)’ is deprecated: use ggml_prec_set_acc() instead [-Wdeprecated-declarations]
+  140 |         sourceDirect=ggml_mul_mat(c,w,flat);ggml_mul_mat_set_prec(sourceDirect,GGML_PREC_F32);
+      |                                             ~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/tmp/lighton4b-gdn-source-primitives-v1/gdn-primitives/upstream/ggml/src/../include/ggml.h:1505:35: note: declared here
+ 1505 |     GGML_DEPRECATED(GGML_API void ggml_mul_mat_set_prec(
+      |                                   ^~~~~~~~~~~~~~~~~~~~~
+/tmp/lighton4b-gdn-source-primitives-v1/gdn-primitives/upstream/ggml/src/../include/ggml.h:192:41: note: in definition of macro ‘GGML_DEPRECATED’
+  192 | #    define GGML_DEPRECATED(func, hint) func __attribute__((deprecated(hint)))
+      |                                         ^~~~
+/tmp/lighton4b-gdn-source-primitives-v1/source/tools/gdn-primitive-probe/main.cpp:141:241: warning: ‘void ggml_mul_mat_set_prec(ggml_tensor*, ggml_prec)’ is deprecated: use ggml_prec_set_acc() instead [-Wdeprecated-declarations]
+  141 |         if(observe){auto * wf=ggml_new_tensor_2d(c,GGML_TYPE_F32,4096,2560);ggml_get_type_traits(GGML_TYPE_Q4_K)->to_float(w->data,static_cast<float *>(wf->data),ggml_nelements(w));sourceDequant=ggml_mul_mat(c,wf,flat);ggml_mul_mat_set_prec(sourceDequant,GGML_PREC_F32);}
+      |                                                                                                                                                                                                                            ~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/tmp/lighton4b-gdn-source-primitives-v1/gdn-primitives/upstream/ggml/src/../include/ggml.h:1505:35: note: declared here
+ 1505 |     GGML_DEPRECATED(GGML_API void ggml_mul_mat_set_prec(
+      |                                   ^~~~~~~~~~~~~~~~~~~~~
+/tmp/lighton4b-gdn-source-primitives-v1/gdn-primitives/upstream/ggml/src/../include/ggml.h:192:41: note: in definition of macro ‘GGML_DEPRECATED’
+  192 | #    define GGML_DEPRECATED(func, hint) func __attribute__((deprecated(hint)))
+      |                                         ^~~~
+[100%] Linking CXX executable gdn-source-probe
+[100%] Built target gdn-source-probe

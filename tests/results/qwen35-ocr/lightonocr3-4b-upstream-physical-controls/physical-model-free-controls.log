@@ -1,0 +1,17 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+phase python-physical-pack
+phase python-physical-map
+phase env-inventory
+phase submodules
+phase configure
+phase build
+phase physical-semantics
+phase hf-weighted-profile
+phase legacy-q6-profile
+phase q6-tied-head
+phase public-release-fence
+phase legacy-native-context
+phase legacy-mixed-policy
+phase legacy-bf16-linear
+phase legacy-bf16-weight

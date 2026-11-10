@@ -1,0 +1,12 @@
+{
+  "schema": "lighton4b-physical-f16-bootstrap/v1",
+  "source_sha": "19b79effb657f73fc863586a32b33d5d153dbc62",
+  "status": "failed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "bounded-worker",
+  "worker_sha256": "9e85cc48b7aed80e5c5e63415a17ff70ebf5e52bfaa0beceee5ea8b2b0db203b",
+  "error_type": "RuntimeError",
+  "error": "bounded-worker nonzero"
+}

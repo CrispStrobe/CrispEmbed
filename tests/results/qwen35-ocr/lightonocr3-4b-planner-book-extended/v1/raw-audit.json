@@ -1,0 +1,23 @@
+{
+  "schema": "lighton4b-planner-book-extended-independent-audit/v1",
+  "status": "complete",
+  "receipt_sha256": "d2ea232376c2fa4697613d615d33b8b10a4dc0d5ab987fdac7d1ed3d99561760",
+  "owned_files": 98,
+  "owned_bytes": 1745200955,
+  "raw_rows": 1536,
+  "raw_archive": {
+    "rows": 1536,
+    "archive_bytes": 1525860202,
+    "archive_sha256": "bcfd52f7dec864fdf2db187f9dc4b586dca97f0c55a6016af9857802151ffc33",
+    "ordered_row_sha256": "ec22b25f5d8fdcd92aff979c7a57a81f020c1341451d8f9138f2ef97cf5e1401"
+  },
+  "reproduced_prefix_rows": 1054,
+  "prior_stages": 82,
+  "eos": false,
+  "all_owned_artifact_hashes": true,
+  "all_raw_finite_argmax_sha": true,
+  "model_forward_executed": false,
+  "qualified": false,
+  "scope": "Integrity only. No protected text or IDs published; provisional label limits and binding receipt failure remain unchanged.",
+  "elapsed_seconds": 26.738567329999995
+}

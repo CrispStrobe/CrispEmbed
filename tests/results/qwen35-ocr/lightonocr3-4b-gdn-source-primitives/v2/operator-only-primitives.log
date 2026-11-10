@@ -1,0 +1,22 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+phase authenticate-five-small-parameter-spans
+phase up-init
+phase up-remote
+phase up-fetch
+phase up-checkout
+phase native-submodule
+phase native-configure
+phase native-build
+phase source-configure
+phase source-build
+phase native-4
+phase source-native-ggml-4
+phase source-upstream-ggml-4
+phase same-native-values-upstream-projection-4
+phase measured-4
+phase native-16
+phase source-native-ggml-16
+phase source-upstream-ggml-16
+phase same-native-values-upstream-projection-16
+phase measured-16

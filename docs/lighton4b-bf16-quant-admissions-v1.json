@@ -1,0 +1,20 @@
+{
+  "schema": "lighton4b-bf16-quant-admissions/v1",
+  "protocol_sha256": "4d2a738a8df75947f5a8e269799c8b3a27af19bfafb82653802a7531b7c928bc",
+  "native_producers": [
+    {
+      "capture_sha256": "7d01e82a8ef9cbf0b895b102009d55e6111dfb3951b3f4c82eb60cf37b97f2cf",
+      "source_sha": "fd150b98f488a6884a6e8d8127e7dfb263cab237",
+      "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001333207",
+      "weights_sha256": "f873eb3d15229ec29c59124fc6340c195a19f697a233d3164489a54d26eccd91",
+      "precision": "q4_k"
+    },
+    {
+      "capture_sha256": "a0b9ed6cb7c55fa274993e42ee3f8f275b064bbcff09e2ce78542043f8be52b2",
+      "source_sha": "fd150b98f488a6884a6e8d8127e7dfb263cab237",
+      "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42001328483",
+      "weights_sha256": "5888532207f0d98590cc028cbf92366f8a41ec925568f0c308bd69d9af6342f1",
+      "precision": "q8_0"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "status": "failed",
+  "error_type": "NameError",
+  "private_outer_receipt_sha256": "855e38b948fd5662656d3bcad6e16f8e3a4cce4d8b4cb03d5bac6701bac814b2",
+  "child_status": "measured_provisional_planner_heldout",
+  "child_receipt_sha256": "fc3904a60a247d6f9393cc9060f4db780fe90d98b6a9deec0f87206a7be9ae80",
+  "scope": "Post-inference runtime retention NameError; no inference rerun and no binary bundle retained."
+}

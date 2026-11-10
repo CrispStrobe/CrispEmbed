@@ -1,0 +1,52 @@
+{
+  "schema": "lighton4b-head-bf16-review/v1",
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42168142185",
+  "source_sha": "b98883abeccd0cae39e0026571c150e444b71786",
+  "artifact_id": 13482930295,
+  "archive_bytes": 372877910,
+  "archive_service_sha256": "fdfd24ebcfa7b0167fb79deb747c423c904d205f30a7d968f47e77f3fe28f1dc",
+  "report_sha256": "6c5204d235212e4114bc45549d413a7a23a1e5445761c703c9fe7844f66c528c",
+  "transport_review": "Selected ZIP member CRC and independent SHA verified;78067 initialrange bytes plus469319 for actual row33. Fullarchive SHA service-declared, not locally rehashed. Large arrays remain remote.",
+  "decoded_mixed_reference_exact": {
+    "ids": 178,
+    "eos": true,
+    "text_bytes": 686,
+    "text_sha256": "c9075ce2be0b510cb812d929a5fef7bdc8144c99d39addaf7c1677556bbd1292",
+    "off_first_difference": 33,
+    "on_first_difference": null
+  },
+  "baseline_shared_stage_score_artifacts_exact": 229,
+  "unchanged_prefill_artifacts": 66,
+  "step33_off_on_trace_arrays_byte_exact": 47,
+  "source_mixed_all178_score_hash_matches": 0,
+  "head_on_row33_vs_bf16_mixed": {
+    "native_sha256": "f8adc42a9a53d1f6798e4c56457ea9c55446c4895e7b934776b449e37fe60b58",
+    "source_sha256": "50d0d71849e27db998d9014068af6d2ff27c39a49803f56c4f099476847fda9f",
+    "max_abs": 0.125,
+    "rms": 0.030296298519531376,
+    "cosine": 0.9999496976217747,
+    "different_elements": 216805,
+    "strict_pass": false,
+    "401": 18.5,
+    "1778": 18.5
+  },
+  "versus_original_unquantized_bf16": {
+    "first_id_difference_on": 25,
+    "off_character_edits": 197,
+    "on_character_edits": 180,
+    "reference_characters": 656,
+    "off_word_edits": 40,
+    "on_word_edits": 40,
+    "reference_words": 90,
+    "exact_decoded": false
+  },
+  "quality_qualified": false,
+  "limitations": [
+    "Observed form only; no heldout model qualification",
+    "Decoded equality is against original BF16 with the fixed mixed weight recipe, not unquantized BF16 original",
+    "Effective native dequantized F32 weights differ from BF16-rounded reference weights",
+    "Strict score parity remains false; full178 numeric budget comparison not executed here",
+    "Same-worker timing compares156 versus178 generated tokens and is not a speed A/B"
+  ],
+  "gate_default": "off"
+}

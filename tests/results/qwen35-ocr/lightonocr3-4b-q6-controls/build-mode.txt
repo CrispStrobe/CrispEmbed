@@ -1,0 +1,5 @@
+build_mode=portable
+commit=20199554a92e1aba04fc3c28593d717d53892693
+runner=Linux/X64
+cpu=INTEL(R) XEON(R) PLATINUM 8573C
+cpu_avx512f=yes

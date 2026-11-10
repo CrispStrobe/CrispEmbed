@@ -1,0 +1,753 @@
+GGUF general.file_type=14 (standard header, opt-in); tensor encoding unchanged
+Loading model from '/kaggle/working/lighton-weighted-q4-scratch/weighted-q4/original-f16.gguf'
+Writing quantized model to '/kaggle/working/lighton-weighted-q4-results/lighton4b-q4k-external-text-imatrix-v1.gguf.partial'
+[  1/723] l.embed_tokens.weight                         -    f16, quantizing to q8_0... 1212.5 MB -> 644.1 MB
+[  2/723] l.layers.0.input_layernorm.weight             -    f32, copy 0.0 MB
+[  3/723] l.layers.0.linear_attn.A_log                  -    f32, copy 0.0 MB
+[  4/723] l.layers.0.linear_attn.conv1d.weight          -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[  5/723] l.layers.0.linear_attn.dt_bias                -    f32, copy 0.0 MB
+[  6/723] l.layers.0.linear_attn.in_proj_a.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[  7/723] l.layers.0.linear_attn.in_proj_b.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[  8/723] l.layers.0.linear_attn.in_proj_qkv.weight     -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[  9/723] l.layers.0.linear_attn.in_proj_z.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[ 10/723] l.layers.0.linear_attn.norm.weight            -    f32, copy 0.0 MB
+[ 11/723] l.layers.0.linear_attn.out_proj.weight        -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[ 12/723] l.layers.0.mlp.down_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 13/723] l.layers.0.mlp.gate_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 14/723] l.layers.0.mlp.up_proj.weight                 -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 15/723] l.layers.0.post_attention_layernorm.weight    -    f32, copy 0.0 MB
+[ 16/723] l.layers.1.input_layernorm.weight             -    f32, copy 0.0 MB
+[ 17/723] l.layers.1.linear_attn.A_log                  -    f32, copy 0.0 MB
+[ 18/723] l.layers.1.linear_attn.conv1d.weight          -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[ 19/723] l.layers.1.linear_attn.dt_bias                -    f32, copy 0.0 MB
+[ 20/723] l.layers.1.linear_attn.in_proj_a.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[ 21/723] l.layers.1.linear_attn.in_proj_b.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[ 22/723] l.layers.1.linear_attn.in_proj_qkv.weight     -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[ 23/723] l.layers.1.linear_attn.in_proj_z.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[ 24/723] l.layers.1.linear_attn.norm.weight            -    f32, copy 0.0 MB
+[ 25/723] l.layers.1.linear_attn.out_proj.weight        -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[ 26/723] l.layers.1.mlp.down_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 27/723] l.layers.1.mlp.gate_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 28/723] l.layers.1.mlp.up_proj.weight                 -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 29/723] l.layers.1.post_attention_layernorm.weight    -    f32, copy 0.0 MB
+[ 30/723] l.layers.10.input_layernorm.weight            -    f32, copy 0.0 MB
+[ 31/723] l.layers.10.linear_attn.A_log                 -    f32, copy 0.0 MB
+[ 32/723] l.layers.10.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[ 33/723] l.layers.10.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[ 34/723] l.layers.10.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[ 35/723] l.layers.10.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[ 36/723] l.layers.10.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[ 37/723] l.layers.10.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[ 38/723] l.layers.10.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[ 39/723] l.layers.10.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[ 40/723] l.layers.10.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 41/723] l.layers.10.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 42/723] l.layers.10.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 43/723] l.layers.10.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[ 44/723] l.layers.11.input_layernorm.weight            -    f32, copy 0.0 MB
+[ 45/723] l.layers.11.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 46/723] l.layers.11.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 47/723] l.layers.11.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 48/723] l.layers.11.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[ 49/723] l.layers.11.self_attn.k_norm.weight           -    f32, copy 0.0 MB
+[ 50/723] l.layers.11.self_attn.k_proj.weight           -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[ 51/723] l.layers.11.self_attn.o_proj.weight           -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[ 52/723] l.layers.11.self_attn.q_norm.weight           -    f32, copy 0.0 MB
+[ 53/723] l.layers.11.self_attn.q_proj.weight           -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[ 54/723] l.layers.11.self_attn.v_proj.weight           -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[ 55/723] l.layers.12.input_layernorm.weight            -    f32, copy 0.0 MB
+[ 56/723] l.layers.12.linear_attn.A_log                 -    f32, copy 0.0 MB
+[ 57/723] l.layers.12.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[ 58/723] l.layers.12.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[ 59/723] l.layers.12.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[ 60/723] l.layers.12.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[ 61/723] l.layers.12.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[ 62/723] l.layers.12.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[ 63/723] l.layers.12.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[ 64/723] l.layers.12.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[ 65/723] l.layers.12.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 66/723] l.layers.12.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 67/723] l.layers.12.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 68/723] l.layers.12.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[ 69/723] l.layers.13.input_layernorm.weight            -    f32, copy 0.0 MB
+[ 70/723] l.layers.13.linear_attn.A_log                 -    f32, copy 0.0 MB
+[ 71/723] l.layers.13.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[ 72/723] l.layers.13.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[ 73/723] l.layers.13.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[ 74/723] l.layers.13.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[ 75/723] l.layers.13.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[ 76/723] l.layers.13.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[ 77/723] l.layers.13.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[ 78/723] l.layers.13.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[ 79/723] l.layers.13.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 80/723] l.layers.13.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 81/723] l.layers.13.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 82/723] l.layers.13.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[ 83/723] l.layers.14.input_layernorm.weight            -    f32, copy 0.0 MB
+[ 84/723] l.layers.14.linear_attn.A_log                 -    f32, copy 0.0 MB
+[ 85/723] l.layers.14.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[ 86/723] l.layers.14.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[ 87/723] l.layers.14.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[ 88/723] l.layers.14.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[ 89/723] l.layers.14.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[ 90/723] l.layers.14.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[ 91/723] l.layers.14.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[ 92/723] l.layers.14.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[ 93/723] l.layers.14.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 94/723] l.layers.14.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 95/723] l.layers.14.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 96/723] l.layers.14.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[ 97/723] l.layers.15.input_layernorm.weight            -    f32, copy 0.0 MB
+[ 98/723] l.layers.15.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[ 99/723] l.layers.15.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[100/723] l.layers.15.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[101/723] l.layers.15.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[102/723] l.layers.15.self_attn.k_norm.weight           -    f32, copy 0.0 MB
+[103/723] l.layers.15.self_attn.k_proj.weight           -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[104/723] l.layers.15.self_attn.o_proj.weight           -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[105/723] l.layers.15.self_attn.q_norm.weight           -    f32, copy 0.0 MB
+[106/723] l.layers.15.self_attn.q_proj.weight           -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[107/723] l.layers.15.self_attn.v_proj.weight           -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[108/723] l.layers.16.input_layernorm.weight            -    f32, copy 0.0 MB
+[109/723] l.layers.16.linear_attn.A_log                 -    f32, copy 0.0 MB
+[110/723] l.layers.16.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[111/723] l.layers.16.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[112/723] l.layers.16.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[113/723] l.layers.16.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[114/723] l.layers.16.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[115/723] l.layers.16.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[116/723] l.layers.16.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[117/723] l.layers.16.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[118/723] l.layers.16.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[119/723] l.layers.16.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[120/723] l.layers.16.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[121/723] l.layers.16.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[122/723] l.layers.17.input_layernorm.weight            -    f32, copy 0.0 MB
+[123/723] l.layers.17.linear_attn.A_log                 -    f32, copy 0.0 MB
+[124/723] l.layers.17.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[125/723] l.layers.17.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[126/723] l.layers.17.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[127/723] l.layers.17.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[128/723] l.layers.17.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[129/723] l.layers.17.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[130/723] l.layers.17.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[131/723] l.layers.17.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[132/723] l.layers.17.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[133/723] l.layers.17.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[134/723] l.layers.17.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[135/723] l.layers.17.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[136/723] l.layers.18.input_layernorm.weight            -    f32, copy 0.0 MB
+[137/723] l.layers.18.linear_attn.A_log                 -    f32, copy 0.0 MB
+[138/723] l.layers.18.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[139/723] l.layers.18.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[140/723] l.layers.18.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[141/723] l.layers.18.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[142/723] l.layers.18.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[143/723] l.layers.18.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[144/723] l.layers.18.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[145/723] l.layers.18.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[146/723] l.layers.18.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[147/723] l.layers.18.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[148/723] l.layers.18.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[149/723] l.layers.18.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[150/723] l.layers.19.input_layernorm.weight            -    f32, copy 0.0 MB
+[151/723] l.layers.19.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[152/723] l.layers.19.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[153/723] l.layers.19.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[154/723] l.layers.19.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[155/723] l.layers.19.self_attn.k_norm.weight           -    f32, copy 0.0 MB
+[156/723] l.layers.19.self_attn.k_proj.weight           -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[157/723] l.layers.19.self_attn.o_proj.weight           -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[158/723] l.layers.19.self_attn.q_norm.weight           -    f32, copy 0.0 MB
+[159/723] l.layers.19.self_attn.q_proj.weight           -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[160/723] l.layers.19.self_attn.v_proj.weight           -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[161/723] l.layers.2.input_layernorm.weight             -    f32, copy 0.0 MB
+[162/723] l.layers.2.linear_attn.A_log                  -    f32, copy 0.0 MB
+[163/723] l.layers.2.linear_attn.conv1d.weight          -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[164/723] l.layers.2.linear_attn.dt_bias                -    f32, copy 0.0 MB
+[165/723] l.layers.2.linear_attn.in_proj_a.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[166/723] l.layers.2.linear_attn.in_proj_b.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[167/723] l.layers.2.linear_attn.in_proj_qkv.weight     -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[168/723] l.layers.2.linear_attn.in_proj_z.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[169/723] l.layers.2.linear_attn.norm.weight            -    f32, copy 0.0 MB
+[170/723] l.layers.2.linear_attn.out_proj.weight        -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[171/723] l.layers.2.mlp.down_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[172/723] l.layers.2.mlp.gate_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[173/723] l.layers.2.mlp.up_proj.weight                 -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[174/723] l.layers.2.post_attention_layernorm.weight    -    f32, copy 0.0 MB
+[175/723] l.layers.20.input_layernorm.weight            -    f32, copy 0.0 MB
+[176/723] l.layers.20.linear_attn.A_log                 -    f32, copy 0.0 MB
+[177/723] l.layers.20.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[178/723] l.layers.20.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[179/723] l.layers.20.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[180/723] l.layers.20.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[181/723] l.layers.20.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[182/723] l.layers.20.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[183/723] l.layers.20.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[184/723] l.layers.20.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[185/723] l.layers.20.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[186/723] l.layers.20.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[187/723] l.layers.20.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[188/723] l.layers.20.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[189/723] l.layers.21.input_layernorm.weight            -    f32, copy 0.0 MB
+[190/723] l.layers.21.linear_attn.A_log                 -    f32, copy 0.0 MB
+[191/723] l.layers.21.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[192/723] l.layers.21.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[193/723] l.layers.21.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[194/723] l.layers.21.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[195/723] l.layers.21.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[196/723] l.layers.21.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[197/723] l.layers.21.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[198/723] l.layers.21.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[199/723] l.layers.21.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[200/723] l.layers.21.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[201/723] l.layers.21.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[202/723] l.layers.21.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[203/723] l.layers.22.input_layernorm.weight            -    f32, copy 0.0 MB
+[204/723] l.layers.22.linear_attn.A_log                 -    f32, copy 0.0 MB
+[205/723] l.layers.22.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[206/723] l.layers.22.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[207/723] l.layers.22.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[208/723] l.layers.22.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[209/723] l.layers.22.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[210/723] l.layers.22.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[211/723] l.layers.22.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[212/723] l.layers.22.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[213/723] l.layers.22.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[214/723] l.layers.22.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[215/723] l.layers.22.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[216/723] l.layers.22.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[217/723] l.layers.23.input_layernorm.weight            -    f32, copy 0.0 MB
+[218/723] l.layers.23.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[219/723] l.layers.23.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[220/723] l.layers.23.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[221/723] l.layers.23.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[222/723] l.layers.23.self_attn.k_norm.weight           -    f32, copy 0.0 MB
+[223/723] l.layers.23.self_attn.k_proj.weight           -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[224/723] l.layers.23.self_attn.o_proj.weight           -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[225/723] l.layers.23.self_attn.q_norm.weight           -    f32, copy 0.0 MB
+[226/723] l.layers.23.self_attn.q_proj.weight           -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[227/723] l.layers.23.self_attn.v_proj.weight           -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[228/723] l.layers.24.input_layernorm.weight            -    f32, copy 0.0 MB
+[229/723] l.layers.24.linear_attn.A_log                 -    f32, copy 0.0 MB
+[230/723] l.layers.24.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[231/723] l.layers.24.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[232/723] l.layers.24.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[233/723] l.layers.24.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[234/723] l.layers.24.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[235/723] l.layers.24.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[236/723] l.layers.24.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[237/723] l.layers.24.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[238/723] l.layers.24.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[239/723] l.layers.24.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[240/723] l.layers.24.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[241/723] l.layers.24.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[242/723] l.layers.25.input_layernorm.weight            -    f32, copy 0.0 MB
+[243/723] l.layers.25.linear_attn.A_log                 -    f32, copy 0.0 MB
+[244/723] l.layers.25.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[245/723] l.layers.25.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[246/723] l.layers.25.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[247/723] l.layers.25.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[248/723] l.layers.25.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[249/723] l.layers.25.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[250/723] l.layers.25.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[251/723] l.layers.25.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[252/723] l.layers.25.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[253/723] l.layers.25.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[254/723] l.layers.25.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[255/723] l.layers.25.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[256/723] l.layers.26.input_layernorm.weight            -    f32, copy 0.0 MB
+[257/723] l.layers.26.linear_attn.A_log                 -    f32, copy 0.0 MB
+[258/723] l.layers.26.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[259/723] l.layers.26.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[260/723] l.layers.26.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[261/723] l.layers.26.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[262/723] l.layers.26.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[263/723] l.layers.26.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[264/723] l.layers.26.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[265/723] l.layers.26.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[266/723] l.layers.26.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[267/723] l.layers.26.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[268/723] l.layers.26.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[269/723] l.layers.26.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[270/723] l.layers.27.input_layernorm.weight            -    f32, copy 0.0 MB
+[271/723] l.layers.27.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[272/723] l.layers.27.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[273/723] l.layers.27.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[274/723] l.layers.27.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[275/723] l.layers.27.self_attn.k_norm.weight           -    f32, copy 0.0 MB
+[276/723] l.layers.27.self_attn.k_proj.weight           -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[277/723] l.layers.27.self_attn.o_proj.weight           -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[278/723] l.layers.27.self_attn.q_norm.weight           -    f32, copy 0.0 MB
+[279/723] l.layers.27.self_attn.q_proj.weight           -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[280/723] l.layers.27.self_attn.v_proj.weight           -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[281/723] l.layers.28.input_layernorm.weight            -    f32, copy 0.0 MB
+[282/723] l.layers.28.linear_attn.A_log                 -    f32, copy 0.0 MB
+[283/723] l.layers.28.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[284/723] l.layers.28.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[285/723] l.layers.28.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[286/723] l.layers.28.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[287/723] l.layers.28.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[288/723] l.layers.28.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[289/723] l.layers.28.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[290/723] l.layers.28.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[291/723] l.layers.28.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[292/723] l.layers.28.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[293/723] l.layers.28.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[294/723] l.layers.28.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[295/723] l.layers.29.input_layernorm.weight            -    f32, copy 0.0 MB
+[296/723] l.layers.29.linear_attn.A_log                 -    f32, copy 0.0 MB
+[297/723] l.layers.29.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[298/723] l.layers.29.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[299/723] l.layers.29.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[300/723] l.layers.29.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[301/723] l.layers.29.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[302/723] l.layers.29.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[303/723] l.layers.29.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[304/723] l.layers.29.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[305/723] l.layers.29.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[306/723] l.layers.29.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[307/723] l.layers.29.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[308/723] l.layers.29.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[309/723] l.layers.3.input_layernorm.weight             -    f32, copy 0.0 MB
+[310/723] l.layers.3.mlp.down_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[311/723] l.layers.3.mlp.gate_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[312/723] l.layers.3.mlp.up_proj.weight                 -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[313/723] l.layers.3.post_attention_layernorm.weight    -    f32, copy 0.0 MB
+[314/723] l.layers.3.self_attn.k_norm.weight            -    f32, copy 0.0 MB
+[315/723] l.layers.3.self_attn.k_proj.weight            -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[316/723] l.layers.3.self_attn.o_proj.weight            -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[317/723] l.layers.3.self_attn.q_norm.weight            -    f32, copy 0.0 MB
+[318/723] l.layers.3.self_attn.q_proj.weight            -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[319/723] l.layers.3.self_attn.v_proj.weight            -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[320/723] l.layers.30.input_layernorm.weight            -    f32, copy 0.0 MB
+[321/723] l.layers.30.linear_attn.A_log                 -    f32, copy 0.0 MB
+[322/723] l.layers.30.linear_attn.conv1d.weight         -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[323/723] l.layers.30.linear_attn.dt_bias               -    f32, copy 0.0 MB
+[324/723] l.layers.30.linear_attn.in_proj_a.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[325/723] l.layers.30.linear_attn.in_proj_b.weight      -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[326/723] l.layers.30.linear_attn.in_proj_qkv.weight    -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[327/723] l.layers.30.linear_attn.in_proj_z.weight      -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[328/723] l.layers.30.linear_attn.norm.weight           -    f32, copy 0.0 MB
+[329/723] l.layers.30.linear_attn.out_proj.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[330/723] l.layers.30.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[331/723] l.layers.30.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[332/723] l.layers.30.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[333/723] l.layers.30.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[334/723] l.layers.31.input_layernorm.weight            -    f32, copy 0.0 MB
+[335/723] l.layers.31.mlp.down_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[336/723] l.layers.31.mlp.gate_proj.weight              -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[337/723] l.layers.31.mlp.up_proj.weight                -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[338/723] l.layers.31.post_attention_layernorm.weight   -    f32, copy 0.0 MB
+[339/723] l.layers.31.self_attn.k_norm.weight           -    f32, copy 0.0 MB
+[340/723] l.layers.31.self_attn.k_proj.weight           -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[341/723] l.layers.31.self_attn.o_proj.weight           -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[342/723] l.layers.31.self_attn.q_norm.weight           -    f32, copy 0.0 MB
+[343/723] l.layers.31.self_attn.q_proj.weight           -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[344/723] l.layers.31.self_attn.v_proj.weight           -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[345/723] l.layers.4.input_layernorm.weight             -    f32, copy 0.0 MB
+[346/723] l.layers.4.linear_attn.A_log                  -    f32, copy 0.0 MB
+[347/723] l.layers.4.linear_attn.conv1d.weight          -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[348/723] l.layers.4.linear_attn.dt_bias                -    f32, copy 0.0 MB
+[349/723] l.layers.4.linear_attn.in_proj_a.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[350/723] l.layers.4.linear_attn.in_proj_b.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[351/723] l.layers.4.linear_attn.in_proj_qkv.weight     -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[352/723] l.layers.4.linear_attn.in_proj_z.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[353/723] l.layers.4.linear_attn.norm.weight            -    f32, copy 0.0 MB
+[354/723] l.layers.4.linear_attn.out_proj.weight        -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[355/723] l.layers.4.mlp.down_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[356/723] l.layers.4.mlp.gate_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[357/723] l.layers.4.mlp.up_proj.weight                 -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[358/723] l.layers.4.post_attention_layernorm.weight    -    f32, copy 0.0 MB
+[359/723] l.layers.5.input_layernorm.weight             -    f32, copy 0.0 MB
+[360/723] l.layers.5.linear_attn.A_log                  -    f32, copy 0.0 MB
+[361/723] l.layers.5.linear_attn.conv1d.weight          -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[362/723] l.layers.5.linear_attn.dt_bias                -    f32, copy 0.0 MB
+[363/723] l.layers.5.linear_attn.in_proj_a.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[364/723] l.layers.5.linear_attn.in_proj_b.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[365/723] l.layers.5.linear_attn.in_proj_qkv.weight     -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[366/723] l.layers.5.linear_attn.in_proj_z.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[367/723] l.layers.5.linear_attn.norm.weight            -    f32, copy 0.0 MB
+[368/723] l.layers.5.linear_attn.out_proj.weight        -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[369/723] l.layers.5.mlp.down_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[370/723] l.layers.5.mlp.gate_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[371/723] l.layers.5.mlp.up_proj.weight                 -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[372/723] l.layers.5.post_attention_layernorm.weight    -    f32, copy 0.0 MB
+[373/723] l.layers.6.input_layernorm.weight             -    f32, copy 0.0 MB
+[374/723] l.layers.6.linear_attn.A_log                  -    f32, copy 0.0 MB
+[375/723] l.layers.6.linear_attn.conv1d.weight          -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[376/723] l.layers.6.linear_attn.dt_bias                -    f32, copy 0.0 MB
+[377/723] l.layers.6.linear_attn.in_proj_a.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[378/723] l.layers.6.linear_attn.in_proj_b.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[379/723] l.layers.6.linear_attn.in_proj_qkv.weight     -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[380/723] l.layers.6.linear_attn.in_proj_z.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[381/723] l.layers.6.linear_attn.norm.weight            -    f32, copy 0.0 MB
+[382/723] l.layers.6.linear_attn.out_proj.weight        -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[383/723] l.layers.6.mlp.down_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[384/723] l.layers.6.mlp.gate_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[385/723] l.layers.6.mlp.up_proj.weight                 -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[386/723] l.layers.6.post_attention_layernorm.weight    -    f32, copy 0.0 MB
+[387/723] l.layers.7.input_layernorm.weight             -    f32, copy 0.0 MB
+[388/723] l.layers.7.mlp.down_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[389/723] l.layers.7.mlp.gate_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[390/723] l.layers.7.mlp.up_proj.weight                 -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[391/723] l.layers.7.post_attention_layernorm.weight    -    f32, copy 0.0 MB
+[392/723] l.layers.7.self_attn.k_norm.weight            -    f32, copy 0.0 MB
+[393/723] l.layers.7.self_attn.k_proj.weight            -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[394/723] l.layers.7.self_attn.o_proj.weight            -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[395/723] l.layers.7.self_attn.q_norm.weight            -    f32, copy 0.0 MB
+[396/723] l.layers.7.self_attn.q_proj.weight            -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[397/723] l.layers.7.self_attn.v_proj.weight            -    f16, quantizing to q4_K... (imatrix) 5.0 MB -> 1.4 MB
+[398/723] l.layers.8.input_layernorm.weight             -    f32, copy 0.0 MB
+[399/723] l.layers.8.linear_attn.A_log                  -    f32, copy 0.0 MB
+[400/723] l.layers.8.linear_attn.conv1d.weight          -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[401/723] l.layers.8.linear_attn.dt_bias                -    f32, copy 0.0 MB
+[402/723] l.layers.8.linear_attn.in_proj_a.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[403/723] l.layers.8.linear_attn.in_proj_b.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[404/723] l.layers.8.linear_attn.in_proj_qkv.weight     -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[405/723] l.layers.8.linear_attn.in_proj_z.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[406/723] l.layers.8.linear_attn.norm.weight            -    f32, copy 0.0 MB
+[407/723] l.layers.8.linear_attn.out_proj.weight        -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[408/723] l.layers.8.mlp.down_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[409/723] l.layers.8.mlp.gate_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[410/723] l.layers.8.mlp.up_proj.weight                 -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[411/723] l.layers.8.post_attention_layernorm.weight    -    f32, copy 0.0 MB
+[412/723] l.layers.9.input_layernorm.weight             -    f32, copy 0.0 MB
+[413/723] l.layers.9.linear_attn.A_log                  -    f32, copy 0.0 MB
+[414/723] l.layers.9.linear_attn.conv1d.weight          -    f32, skip (ncols 4 not div by 256)
+copy 0.1 MB
+[415/723] l.layers.9.linear_attn.dt_bias                -    f32, copy 0.0 MB
+[416/723] l.layers.9.linear_attn.in_proj_a.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[417/723] l.layers.9.linear_attn.in_proj_b.weight       -    f16, quantizing to q4_K... (imatrix) 0.2 MB -> 0.0 MB
+[418/723] l.layers.9.linear_attn.in_proj_qkv.weight     -    f16, quantizing to q4_K... (imatrix) 40.0 MB -> 11.2 MB
+[419/723] l.layers.9.linear_attn.in_proj_z.weight       -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[420/723] l.layers.9.linear_attn.norm.weight            -    f32, copy 0.0 MB
+[421/723] l.layers.9.linear_attn.out_proj.weight        -    f16, quantizing to q4_K... (imatrix) 20.0 MB -> 5.6 MB
+[422/723] l.layers.9.mlp.down_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[423/723] l.layers.9.mlp.gate_proj.weight               -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[424/723] l.layers.9.mlp.up_proj.weight                 -    f16, quantizing to q4_K... (imatrix) 45.0 MB -> 12.7 MB
+[425/723] l.layers.9.post_attention_layernorm.weight    -    f32, copy 0.0 MB
+[426/723] l.norm.weight                                 -    f32, copy 0.0 MB
+[427/723] v.blocks.0.attn.proj.bias                     -    f32, copy 0.0 MB
+[428/723] v.blocks.0.attn.proj.weight                   -    f32, (vision→Q8_0) copy 4.0 MB
+[429/723] v.blocks.0.attn.qkv.bias                      -    f32, copy 0.0 MB
+[430/723] v.blocks.0.attn.qkv.weight                    -    f32, (vision→Q8_0) copy 12.0 MB
+[431/723] v.blocks.0.mlp.linear_fc1.bias                -    f32, copy 0.0 MB
+[432/723] v.blocks.0.mlp.linear_fc1.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[433/723] v.blocks.0.mlp.linear_fc2.bias                -    f32, copy 0.0 MB
+[434/723] v.blocks.0.mlp.linear_fc2.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[435/723] v.blocks.0.norm1.bias                         -    f32, copy 0.0 MB
+[436/723] v.blocks.0.norm1.weight                       -    f32, copy 0.0 MB
+[437/723] v.blocks.0.norm2.bias                         -    f32, copy 0.0 MB
+[438/723] v.blocks.0.norm2.weight                       -    f32, copy 0.0 MB
+[439/723] v.blocks.1.attn.proj.bias                     -    f32, copy 0.0 MB
+[440/723] v.blocks.1.attn.proj.weight                   -    f32, (vision→Q8_0) copy 4.0 MB
+[441/723] v.blocks.1.attn.qkv.bias                      -    f32, copy 0.0 MB
+[442/723] v.blocks.1.attn.qkv.weight                    -    f32, (vision→Q8_0) copy 12.0 MB
+[443/723] v.blocks.1.mlp.linear_fc1.bias                -    f32, copy 0.0 MB
+[444/723] v.blocks.1.mlp.linear_fc1.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[445/723] v.blocks.1.mlp.linear_fc2.bias                -    f32, copy 0.0 MB
+[446/723] v.blocks.1.mlp.linear_fc2.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[447/723] v.blocks.1.norm1.bias                         -    f32, copy 0.0 MB
+[448/723] v.blocks.1.norm1.weight                       -    f32, copy 0.0 MB
+[449/723] v.blocks.1.norm2.bias                         -    f32, copy 0.0 MB
+[450/723] v.blocks.1.norm2.weight                       -    f32, copy 0.0 MB
+[451/723] v.blocks.10.attn.proj.bias                    -    f32, copy 0.0 MB
+[452/723] v.blocks.10.attn.proj.weight                  -    f32, (vision→Q8_0) copy 4.0 MB
+[453/723] v.blocks.10.attn.qkv.bias                     -    f32, copy 0.0 MB
+[454/723] v.blocks.10.attn.qkv.weight                   -    f32, (vision→Q8_0) copy 12.0 MB
+[455/723] v.blocks.10.mlp.linear_fc1.bias               -    f32, copy 0.0 MB
+[456/723] v.blocks.10.mlp.linear_fc1.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[457/723] v.blocks.10.mlp.linear_fc2.bias               -    f32, copy 0.0 MB
+[458/723] v.blocks.10.mlp.linear_fc2.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[459/723] v.blocks.10.norm1.bias                        -    f32, copy 0.0 MB
+[460/723] v.blocks.10.norm1.weight                      -    f32, copy 0.0 MB
+[461/723] v.blocks.10.norm2.bias                        -    f32, copy 0.0 MB
+[462/723] v.blocks.10.norm2.weight                      -    f32, copy 0.0 MB
+[463/723] v.blocks.11.attn.proj.bias                    -    f32, copy 0.0 MB
+[464/723] v.blocks.11.attn.proj.weight                  -    f32, (vision→Q8_0) copy 4.0 MB
+[465/723] v.blocks.11.attn.qkv.bias                     -    f32, copy 0.0 MB
+[466/723] v.blocks.11.attn.qkv.weight                   -    f32, (vision→Q8_0) copy 12.0 MB
+[467/723] v.blocks.11.mlp.linear_fc1.bias               -    f32, copy 0.0 MB
+[468/723] v.blocks.11.mlp.linear_fc1.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[469/723] v.blocks.11.mlp.linear_fc2.bias               -    f32, copy 0.0 MB
+[470/723] v.blocks.11.mlp.linear_fc2.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[471/723] v.blocks.11.norm1.bias                        -    f32, copy 0.0 MB
+[472/723] v.blocks.11.norm1.weight                      -    f32, copy 0.0 MB
+[473/723] v.blocks.11.norm2.bias                        -    f32, copy 0.0 MB
+[474/723] v.blocks.11.norm2.weight                      -    f32, copy 0.0 MB
+[475/723] v.blocks.12.attn.proj.bias                    -    f32, copy 0.0 MB
+[476/723] v.blocks.12.attn.proj.weight                  -    f32, (vision→Q8_0) copy 4.0 MB
+[477/723] v.blocks.12.attn.qkv.bias                     -    f32, copy 0.0 MB
+[478/723] v.blocks.12.attn.qkv.weight                   -    f32, (vision→Q8_0) copy 12.0 MB
+[479/723] v.blocks.12.mlp.linear_fc1.bias               -    f32, copy 0.0 MB
+[480/723] v.blocks.12.mlp.linear_fc1.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[481/723] v.blocks.12.mlp.linear_fc2.bias               -    f32, copy 0.0 MB
+[482/723] v.blocks.12.mlp.linear_fc2.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[483/723] v.blocks.12.norm1.bias                        -    f32, copy 0.0 MB
+[484/723] v.blocks.12.norm1.weight                      -    f32, copy 0.0 MB
+[485/723] v.blocks.12.norm2.bias                        -    f32, copy 0.0 MB
+[486/723] v.blocks.12.norm2.weight                      -    f32, copy 0.0 MB
+[487/723] v.blocks.13.attn.proj.bias                    -    f32, copy 0.0 MB
+[488/723] v.blocks.13.attn.proj.weight                  -    f32, (vision→Q8_0) copy 4.0 MB
+[489/723] v.blocks.13.attn.qkv.bias                     -    f32, copy 0.0 MB
+[490/723] v.blocks.13.attn.qkv.weight                   -    f32, (vision→Q8_0) copy 12.0 MB
+[491/723] v.blocks.13.mlp.linear_fc1.bias               -    f32, copy 0.0 MB
+[492/723] v.blocks.13.mlp.linear_fc1.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[493/723] v.blocks.13.mlp.linear_fc2.bias               -    f32, copy 0.0 MB
+[494/723] v.blocks.13.mlp.linear_fc2.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[495/723] v.blocks.13.norm1.bias                        -    f32, copy 0.0 MB
+[496/723] v.blocks.13.norm1.weight                      -    f32, copy 0.0 MB
+[497/723] v.blocks.13.norm2.bias                        -    f32, copy 0.0 MB
+[498/723] v.blocks.13.norm2.weight                      -    f32, copy 0.0 MB
+[499/723] v.blocks.14.attn.proj.bias                    -    f32, copy 0.0 MB
+[500/723] v.blocks.14.attn.proj.weight                  -    f32, (vision→Q8_0) copy 4.0 MB
+[501/723] v.blocks.14.attn.qkv.bias                     -    f32, copy 0.0 MB
+[502/723] v.blocks.14.attn.qkv.weight                   -    f32, (vision→Q8_0) copy 12.0 MB
+[503/723] v.blocks.14.mlp.linear_fc1.bias               -    f32, copy 0.0 MB
+[504/723] v.blocks.14.mlp.linear_fc1.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[505/723] v.blocks.14.mlp.linear_fc2.bias               -    f32, copy 0.0 MB
+[506/723] v.blocks.14.mlp.linear_fc2.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[507/723] v.blocks.14.norm1.bias                        -    f32, copy 0.0 MB
+[508/723] v.blocks.14.norm1.weight                      -    f32, copy 0.0 MB
+[509/723] v.blocks.14.norm2.bias                        -    f32, copy 0.0 MB
+[510/723] v.blocks.14.norm2.weight                      -    f32, copy 0.0 MB
+[511/723] v.blocks.15.attn.proj.bias                    -    f32, copy 0.0 MB
+[512/723] v.blocks.15.attn.proj.weight                  -    f32, (vision→Q8_0) copy 4.0 MB
+[513/723] v.blocks.15.attn.qkv.bias                     -    f32, copy 0.0 MB
+[514/723] v.blocks.15.attn.qkv.weight                   -    f32, (vision→Q8_0) copy 12.0 MB
+[515/723] v.blocks.15.mlp.linear_fc1.bias               -    f32, copy 0.0 MB
+[516/723] v.blocks.15.mlp.linear_fc1.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[517/723] v.blocks.15.mlp.linear_fc2.bias               -    f32, copy 0.0 MB
+[518/723] v.blocks.15.mlp.linear_fc2.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[519/723] v.blocks.15.norm1.bias                        -    f32, copy 0.0 MB
+[520/723] v.blocks.15.norm1.weight                      -    f32, copy 0.0 MB
+[521/723] v.blocks.15.norm2.bias                        -    f32, copy 0.0 MB
+[522/723] v.blocks.15.norm2.weight                      -    f32, copy 0.0 MB
+[523/723] v.blocks.16.attn.proj.bias                    -    f32, copy 0.0 MB
+[524/723] v.blocks.16.attn.proj.weight                  -    f32, (vision→Q8_0) copy 4.0 MB
+[525/723] v.blocks.16.attn.qkv.bias                     -    f32, copy 0.0 MB
+[526/723] v.blocks.16.attn.qkv.weight                   -    f32, (vision→Q8_0) copy 12.0 MB
+[527/723] v.blocks.16.mlp.linear_fc1.bias               -    f32, copy 0.0 MB
+[528/723] v.blocks.16.mlp.linear_fc1.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[529/723] v.blocks.16.mlp.linear_fc2.bias               -    f32, copy 0.0 MB
+[530/723] v.blocks.16.mlp.linear_fc2.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[531/723] v.blocks.16.norm1.bias                        -    f32, copy 0.0 MB
+[532/723] v.blocks.16.norm1.weight                      -    f32, copy 0.0 MB
+[533/723] v.blocks.16.norm2.bias                        -    f32, copy 0.0 MB
+[534/723] v.blocks.16.norm2.weight                      -    f32, copy 0.0 MB
+[535/723] v.blocks.17.attn.proj.bias                    -    f32, copy 0.0 MB
+[536/723] v.blocks.17.attn.proj.weight                  -    f32, (vision→Q8_0) copy 4.0 MB
+[537/723] v.blocks.17.attn.qkv.bias                     -    f32, copy 0.0 MB
+[538/723] v.blocks.17.attn.qkv.weight                   -    f32, (vision→Q8_0) copy 12.0 MB
+[539/723] v.blocks.17.mlp.linear_fc1.bias               -    f32, copy 0.0 MB
+[540/723] v.blocks.17.mlp.linear_fc1.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[541/723] v.blocks.17.mlp.linear_fc2.bias               -    f32, copy 0.0 MB
+[542/723] v.blocks.17.mlp.linear_fc2.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[543/723] v.blocks.17.norm1.bias                        -    f32, copy 0.0 MB
+[544/723] v.blocks.17.norm1.weight                      -    f32, copy 0.0 MB
+[545/723] v.blocks.17.norm2.bias                        -    f32, copy 0.0 MB
+[546/723] v.blocks.17.norm2.weight                      -    f32, copy 0.0 MB
+[547/723] v.blocks.18.attn.proj.bias                    -    f32, copy 0.0 MB
+[548/723] v.blocks.18.attn.proj.weight                  -    f32, (vision→Q8_0) copy 4.0 MB
+[549/723] v.blocks.18.attn.qkv.bias                     -    f32, copy 0.0 MB
+[550/723] v.blocks.18.attn.qkv.weight                   -    f32, (vision→Q8_0) copy 12.0 MB
+[551/723] v.blocks.18.mlp.linear_fc1.bias               -    f32, copy 0.0 MB
+[552/723] v.blocks.18.mlp.linear_fc1.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[553/723] v.blocks.18.mlp.linear_fc2.bias               -    f32, copy 0.0 MB
+[554/723] v.blocks.18.mlp.linear_fc2.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[555/723] v.blocks.18.norm1.bias                        -    f32, copy 0.0 MB
+[556/723] v.blocks.18.norm1.weight                      -    f32, copy 0.0 MB
+[557/723] v.blocks.18.norm2.bias                        -    f32, copy 0.0 MB
+[558/723] v.blocks.18.norm2.weight                      -    f32, copy 0.0 MB
+[559/723] v.blocks.19.attn.proj.bias                    -    f32, copy 0.0 MB
+[560/723] v.blocks.19.attn.proj.weight                  -    f32, (vision→Q8_0) copy 4.0 MB
+[561/723] v.blocks.19.attn.qkv.bias                     -    f32, copy 0.0 MB
+[562/723] v.blocks.19.attn.qkv.weight                   -    f32, (vision→Q8_0) copy 12.0 MB
+[563/723] v.blocks.19.mlp.linear_fc1.bias               -    f32, copy 0.0 MB
+[564/723] v.blocks.19.mlp.linear_fc1.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[565/723] v.blocks.19.mlp.linear_fc2.bias               -    f32, copy 0.0 MB
+[566/723] v.blocks.19.mlp.linear_fc2.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[567/723] v.blocks.19.norm1.bias                        -    f32, copy 0.0 MB
+[568/723] v.blocks.19.norm1.weight                      -    f32, copy 0.0 MB
+[569/723] v.blocks.19.norm2.bias                        -    f32, copy 0.0 MB
+[570/723] v.blocks.19.norm2.weight                      -    f32, copy 0.0 MB
+[571/723] v.blocks.2.attn.proj.bias                     -    f32, copy 0.0 MB
+[572/723] v.blocks.2.attn.proj.weight                   -    f32, (vision→Q8_0) copy 4.0 MB
+[573/723] v.blocks.2.attn.qkv.bias                      -    f32, copy 0.0 MB
+[574/723] v.blocks.2.attn.qkv.weight                    -    f32, (vision→Q8_0) copy 12.0 MB
+[575/723] v.blocks.2.mlp.linear_fc1.bias                -    f32, copy 0.0 MB
+[576/723] v.blocks.2.mlp.linear_fc1.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[577/723] v.blocks.2.mlp.linear_fc2.bias                -    f32, copy 0.0 MB
+[578/723] v.blocks.2.mlp.linear_fc2.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[579/723] v.blocks.2.norm1.bias                         -    f32, copy 0.0 MB
+[580/723] v.blocks.2.norm1.weight                       -    f32, copy 0.0 MB
+[581/723] v.blocks.2.norm2.bias                         -    f32, copy 0.0 MB
+[582/723] v.blocks.2.norm2.weight                       -    f32, copy 0.0 MB
+[583/723] v.blocks.20.attn.proj.bias                    -    f32, copy 0.0 MB
+[584/723] v.blocks.20.attn.proj.weight                  -    f32, (vision→Q8_0) copy 4.0 MB
+[585/723] v.blocks.20.attn.qkv.bias                     -    f32, copy 0.0 MB
+[586/723] v.blocks.20.attn.qkv.weight                   -    f32, (vision→Q8_0) copy 12.0 MB
+[587/723] v.blocks.20.mlp.linear_fc1.bias               -    f32, copy 0.0 MB
+[588/723] v.blocks.20.mlp.linear_fc1.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[589/723] v.blocks.20.mlp.linear_fc2.bias               -    f32, copy 0.0 MB
+[590/723] v.blocks.20.mlp.linear_fc2.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[591/723] v.blocks.20.norm1.bias                        -    f32, copy 0.0 MB
+[592/723] v.blocks.20.norm1.weight                      -    f32, copy 0.0 MB
+[593/723] v.blocks.20.norm2.bias                        -    f32, copy 0.0 MB
+[594/723] v.blocks.20.norm2.weight                      -    f32, copy 0.0 MB
+[595/723] v.blocks.21.attn.proj.bias                    -    f32, copy 0.0 MB
+[596/723] v.blocks.21.attn.proj.weight                  -    f32, (vision→Q8_0) copy 4.0 MB
+[597/723] v.blocks.21.attn.qkv.bias                     -    f32, copy 0.0 MB
+[598/723] v.blocks.21.attn.qkv.weight                   -    f32, (vision→Q8_0) copy 12.0 MB
+[599/723] v.blocks.21.mlp.linear_fc1.bias               -    f32, copy 0.0 MB
+[600/723] v.blocks.21.mlp.linear_fc1.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[601/723] v.blocks.21.mlp.linear_fc2.bias               -    f32, copy 0.0 MB
+[602/723] v.blocks.21.mlp.linear_fc2.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[603/723] v.blocks.21.norm1.bias                        -    f32, copy 0.0 MB
+[604/723] v.blocks.21.norm1.weight                      -    f32, copy 0.0 MB
+[605/723] v.blocks.21.norm2.bias                        -    f32, copy 0.0 MB
+[606/723] v.blocks.21.norm2.weight                      -    f32, copy 0.0 MB
+[607/723] v.blocks.22.attn.proj.bias                    -    f32, copy 0.0 MB
+[608/723] v.blocks.22.attn.proj.weight                  -    f32, (vision→Q8_0) copy 4.0 MB
+[609/723] v.blocks.22.attn.qkv.bias                     -    f32, copy 0.0 MB
+[610/723] v.blocks.22.attn.qkv.weight                   -    f32, (vision→Q8_0) copy 12.0 MB
+[611/723] v.blocks.22.mlp.linear_fc1.bias               -    f32, copy 0.0 MB
+[612/723] v.blocks.22.mlp.linear_fc1.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[613/723] v.blocks.22.mlp.linear_fc2.bias               -    f32, copy 0.0 MB
+[614/723] v.blocks.22.mlp.linear_fc2.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[615/723] v.blocks.22.norm1.bias                        -    f32, copy 0.0 MB
+[616/723] v.blocks.22.norm1.weight                      -    f32, copy 0.0 MB
+[617/723] v.blocks.22.norm2.bias                        -    f32, copy 0.0 MB
+[618/723] v.blocks.22.norm2.weight                      -    f32, copy 0.0 MB
+[619/723] v.blocks.23.attn.proj.bias                    -    f32, copy 0.0 MB
+[620/723] v.blocks.23.attn.proj.weight                  -    f32, (vision→Q8_0) copy 4.0 MB
+[621/723] v.blocks.23.attn.qkv.bias                     -    f32, copy 0.0 MB
+[622/723] v.blocks.23.attn.qkv.weight                   -    f32, (vision→Q8_0) copy 12.0 MB
+[623/723] v.blocks.23.mlp.linear_fc1.bias               -    f32, copy 0.0 MB
+[624/723] v.blocks.23.mlp.linear_fc1.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[625/723] v.blocks.23.mlp.linear_fc2.bias               -    f32, copy 0.0 MB
+[626/723] v.blocks.23.mlp.linear_fc2.weight             -    f32, (vision→Q8_0) copy 16.0 MB
+[627/723] v.blocks.23.norm1.bias                        -    f32, copy 0.0 MB
+[628/723] v.blocks.23.norm1.weight                      -    f32, copy 0.0 MB
+[629/723] v.blocks.23.norm2.bias                        -    f32, copy 0.0 MB
+[630/723] v.blocks.23.norm2.weight                      -    f32, copy 0.0 MB
+[631/723] v.blocks.3.attn.proj.bias                     -    f32, copy 0.0 MB
+[632/723] v.blocks.3.attn.proj.weight                   -    f32, (vision→Q8_0) copy 4.0 MB
+[633/723] v.blocks.3.attn.qkv.bias                      -    f32, copy 0.0 MB
+[634/723] v.blocks.3.attn.qkv.weight                    -    f32, (vision→Q8_0) copy 12.0 MB
+[635/723] v.blocks.3.mlp.linear_fc1.bias                -    f32, copy 0.0 MB
+[636/723] v.blocks.3.mlp.linear_fc1.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[637/723] v.blocks.3.mlp.linear_fc2.bias                -    f32, copy 0.0 MB
+[638/723] v.blocks.3.mlp.linear_fc2.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[639/723] v.blocks.3.norm1.bias                         -    f32, copy 0.0 MB
+[640/723] v.blocks.3.norm1.weight                       -    f32, copy 0.0 MB
+[641/723] v.blocks.3.norm2.bias                         -    f32, copy 0.0 MB
+[642/723] v.blocks.3.norm2.weight                       -    f32, copy 0.0 MB
+[643/723] v.blocks.4.attn.proj.bias                     -    f32, copy 0.0 MB
+[644/723] v.blocks.4.attn.proj.weight                   -    f32, (vision→Q8_0) copy 4.0 MB
+[645/723] v.blocks.4.attn.qkv.bias                      -    f32, copy 0.0 MB
+[646/723] v.blocks.4.attn.qkv.weight                    -    f32, (vision→Q8_0) copy 12.0 MB
+[647/723] v.blocks.4.mlp.linear_fc1.bias                -    f32, copy 0.0 MB
+[648/723] v.blocks.4.mlp.linear_fc1.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[649/723] v.blocks.4.mlp.linear_fc2.bias                -    f32, copy 0.0 MB
+[650/723] v.blocks.4.mlp.linear_fc2.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[651/723] v.blocks.4.norm1.bias                         -    f32, copy 0.0 MB
+[652/723] v.blocks.4.norm1.weight                       -    f32, copy 0.0 MB
+[653/723] v.blocks.4.norm2.bias                         -    f32, copy 0.0 MB
+[654/723] v.blocks.4.norm2.weight                       -    f32, copy 0.0 MB
+[655/723] v.blocks.5.attn.proj.bias                     -    f32, copy 0.0 MB
+[656/723] v.blocks.5.attn.proj.weight                   -    f32, (vision→Q8_0) copy 4.0 MB
+[657/723] v.blocks.5.attn.qkv.bias                      -    f32, copy 0.0 MB
+[658/723] v.blocks.5.attn.qkv.weight                    -    f32, (vision→Q8_0) copy 12.0 MB
+[659/723] v.blocks.5.mlp.linear_fc1.bias                -    f32, copy 0.0 MB
+[660/723] v.blocks.5.mlp.linear_fc1.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[661/723] v.blocks.5.mlp.linear_fc2.bias                -    f32, copy 0.0 MB
+[662/723] v.blocks.5.mlp.linear_fc2.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[663/723] v.blocks.5.norm1.bias                         -    f32, copy 0.0 MB
+[664/723] v.blocks.5.norm1.weight                       -    f32, copy 0.0 MB
+[665/723] v.blocks.5.norm2.bias                         -    f32, copy 0.0 MB
+[666/723] v.blocks.5.norm2.weight                       -    f32, copy 0.0 MB
+[667/723] v.blocks.6.attn.proj.bias                     -    f32, copy 0.0 MB
+[668/723] v.blocks.6.attn.proj.weight                   -    f32, (vision→Q8_0) copy 4.0 MB
+[669/723] v.blocks.6.attn.qkv.bias                      -    f32, copy 0.0 MB
+[670/723] v.blocks.6.attn.qkv.weight                    -    f32, (vision→Q8_0) copy 12.0 MB
+[671/723] v.blocks.6.mlp.linear_fc1.bias                -    f32, copy 0.0 MB
+[672/723] v.blocks.6.mlp.linear_fc1.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[673/723] v.blocks.6.mlp.linear_fc2.bias                -    f32, copy 0.0 MB
+[674/723] v.blocks.6.mlp.linear_fc2.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[675/723] v.blocks.6.norm1.bias                         -    f32, copy 0.0 MB
+[676/723] v.blocks.6.norm1.weight                       -    f32, copy 0.0 MB
+[677/723] v.blocks.6.norm2.bias                         -    f32, copy 0.0 MB
+[678/723] v.blocks.6.norm2.weight                       -    f32, copy 0.0 MB
+[679/723] v.blocks.7.attn.proj.bias                     -    f32, copy 0.0 MB
+[680/723] v.blocks.7.attn.proj.weight                   -    f32, (vision→Q8_0) copy 4.0 MB
+[681/723] v.blocks.7.attn.qkv.bias                      -    f32, copy 0.0 MB
+[682/723] v.blocks.7.attn.qkv.weight                    -    f32, (vision→Q8_0) copy 12.0 MB
+[683/723] v.blocks.7.mlp.linear_fc1.bias                -    f32, copy 0.0 MB
+[684/723] v.blocks.7.mlp.linear_fc1.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[685/723] v.blocks.7.mlp.linear_fc2.bias                -    f32, copy 0.0 MB
+[686/723] v.blocks.7.mlp.linear_fc2.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[687/723] v.blocks.7.norm1.bias                         -    f32, copy 0.0 MB
+[688/723] v.blocks.7.norm1.weight                       -    f32, copy 0.0 MB
+[689/723] v.blocks.7.norm2.bias                         -    f32, copy 0.0 MB
+[690/723] v.blocks.7.norm2.weight                       -    f32, copy 0.0 MB
+[691/723] v.blocks.8.attn.proj.bias                     -    f32, copy 0.0 MB
+[692/723] v.blocks.8.attn.proj.weight                   -    f32, (vision→Q8_0) copy 4.0 MB
+[693/723] v.blocks.8.attn.qkv.bias                      -    f32, copy 0.0 MB
+[694/723] v.blocks.8.attn.qkv.weight                    -    f32, (vision→Q8_0) copy 12.0 MB
+[695/723] v.blocks.8.mlp.linear_fc1.bias                -    f32, copy 0.0 MB
+[696/723] v.blocks.8.mlp.linear_fc1.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[697/723] v.blocks.8.mlp.linear_fc2.bias                -    f32, copy 0.0 MB
+[698/723] v.blocks.8.mlp.linear_fc2.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[699/723] v.blocks.8.norm1.bias                         -    f32, copy 0.0 MB
+[700/723] v.blocks.8.norm1.weight                       -    f32, copy 0.0 MB
+[701/723] v.blocks.8.norm2.bias                         -    f32, copy 0.0 MB
+[702/723] v.blocks.8.norm2.weight                       -    f32, copy 0.0 MB
+[703/723] v.blocks.9.attn.proj.bias                     -    f32, copy 0.0 MB
+[704/723] v.blocks.9.attn.proj.weight                   -    f32, (vision→Q8_0) copy 4.0 MB
+[705/723] v.blocks.9.attn.qkv.bias                      -    f32, copy 0.0 MB
+[706/723] v.blocks.9.attn.qkv.weight                    -    f32, (vision→Q8_0) copy 12.0 MB
+[707/723] v.blocks.9.mlp.linear_fc1.bias                -    f32, copy 0.0 MB
+[708/723] v.blocks.9.mlp.linear_fc1.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[709/723] v.blocks.9.mlp.linear_fc2.bias                -    f32, copy 0.0 MB
+[710/723] v.blocks.9.mlp.linear_fc2.weight              -    f32, (vision→Q8_0) copy 16.0 MB
+[711/723] v.blocks.9.norm1.bias                         -    f32, copy 0.0 MB
+[712/723] v.blocks.9.norm1.weight                       -    f32, copy 0.0 MB
+[713/723] v.blocks.9.norm2.bias                         -    f32, copy 0.0 MB
+[714/723] v.blocks.9.norm2.weight                       -    f32, copy 0.0 MB
+[715/723] v.merger.linear_fc1.bias                      -    f32, note: v.merger.linear_fc1.bias — copying as-is (host-side computation)
+[716/723] v.merger.linear_fc1.weight                    -    f32, note: v.merger.linear_fc1.weight — copying as-is (host-side computation)
+[717/723] v.merger.linear_fc2.bias                      -    f32, note: v.merger.linear_fc2.bias — copying as-is (host-side computation)
+[718/723] v.merger.linear_fc2.weight                    -    f32, note: v.merger.linear_fc2.weight — copying as-is (host-side computation)
+[719/723] v.merger.norm.bias                            -    f32, note: v.merger.norm.bias — copying as-is (host-side computation)
+[720/723] v.merger.norm.weight                          -    f32, note: v.merger.norm.weight — copying as-is (host-side computation)
+[721/723] v.patch_embed.proj.bias                       -    f32, note: v.patch_embed.proj.bias — copying as-is (host-side computation)
+[722/723] v.patch_embed.proj.weight                     -    f32, note: v.patch_embed.proj.weight — copying as-is (host-side computation)
+[723/723] v.pos_embed.weight                            -    f32, (vision→Q8_0) copy 9.0 MB
+
+249 quantized, 474 kept, 248 with imatrix
+9296 MB -> 3835 MB (2.4x compression)

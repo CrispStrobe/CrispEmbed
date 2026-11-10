@@ -1,0 +1,52 @@
+{
+  "schema": "lighton4b-tested-native-runtime-bundle/v1",
+  "status": "tested-model-free-runtime-bundle",
+  "source_sha": "a6164205620c71427a39c97ab386591406c4ca73",
+  "producer_receipt_sha256": "fe81ad1d46bd519d0a46c01820af3355c29e81aa3f022d42fd068cc9ece1eab1",
+  "native_binary_sha256": "12a220611f0cfd93cbe88a1539cdd03ba3af44c995fbe899d33cc6327a66352c",
+  "cmake_cache_sha256": "aa137275771e2c079491c572c18cbcf00c6f12094b46adc841e1639bc346b20d",
+  "files": {
+    "bin/lighton4b-native-document": {
+      "bytes": 847408,
+      "sha256": "12a220611f0cfd93cbe88a1539cdd03ba3af44c995fbe899d33cc6327a66352c"
+    },
+    "lib/libggml.so": {
+      "bytes": 56376,
+      "sha256": "720e764bc23feb01a8cddfd341ed201cdc6c78c00cd75d8e1ae510a51febc76b"
+    },
+    "lib/libggml-cpu.so.0.17.0": {
+      "bytes": 1158056,
+      "sha256": "5975ccbb5637819ad6827790a31bca9169ea01d38ea338b35ff841fad9952fe0"
+    },
+    "lib/libggml-cpu.so.0": {
+      "bytes": 1158056,
+      "sha256": "5975ccbb5637819ad6827790a31bca9169ea01d38ea338b35ff841fad9952fe0"
+    },
+    "lib/libggml.so.0.17.0": {
+      "bytes": 56376,
+      "sha256": "720e764bc23feb01a8cddfd341ed201cdc6c78c00cd75d8e1ae510a51febc76b"
+    },
+    "lib/libggml-base.so": {
+      "bytes": 917880,
+      "sha256": "8aa4a5be9c783dbbff352396545d975cfab416c6d0ab49fefc1e628052cf3379"
+    },
+    "lib/libggml-base.so.0": {
+      "bytes": 917880,
+      "sha256": "8aa4a5be9c783dbbff352396545d975cfab416c6d0ab49fefc1e628052cf3379"
+    },
+    "lib/libggml-cpu.so": {
+      "bytes": 1158056,
+      "sha256": "5975ccbb5637819ad6827790a31bca9169ea01d38ea338b35ff841fad9952fe0"
+    },
+    "lib/libggml-base.so.0.17.0": {
+      "bytes": 917880,
+      "sha256": "8aa4a5be9c783dbbff352396545d975cfab416c6d0ab49fefc1e628052cf3379"
+    },
+    "lib/libggml.so.0": {
+      "bytes": 56376,
+      "sha256": "720e764bc23feb01a8cddfd341ed201cdc6c78c00cd75d8e1ae510a51febc76b"
+    }
+  },
+  "qualified": false,
+  "scope": "Post-worker closed runtime copy after actual model-free controls; explicitly outside finalized child artifact catalog. No model files or forwards."
+}

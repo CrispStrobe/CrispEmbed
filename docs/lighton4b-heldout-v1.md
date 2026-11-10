@@ -1,0 +1,23 @@
+# Frozen LightOnOCR3-4B held-out protocol v1
+
+Selection and resource limits are frozen in [the protocol](lighton4b-heldout-v1.json). No candidate output was inspected for selection and no inference was launched. This is a protocol, not a qualification result.
+
+| Case | Coverage | Frozen prepared input | Independent reference |
+| --- | --- | --- | --- |
+| historical-receipt | Real scanned dot-matrix receipt, numbers and prices | 352×704, complete page | 768 characters, 144 words |
+| two-column-page | English/French printed page, column reading order and accents | 448×576, complete page | 2,981 characters, 556 words |
+| inventory-table | Owned controlled grid, units and numbers | 448×448 | 5×3 table, 15 positional cells |
+
+Two real documents and one controlled supplement are the complete primary quota. There is one prepared rendering per case, no crops, replacements, augmentation search or output-driven prompt/precision selection. German1900 official print is a named reserve, not a substitute: its rendering and annotation review require a new protocol revision before outputs. This small panel does not cover handwriting, Arabic or broad document distributions. The low-resolution geometry is the admitted runtime scope, not a claim about full-resolution OCR.
+
+The prepared PNG archive is public and immutable, with per-image PNG/RGB hashes. All six local source and gold file hashes were independently checked at selection. References predate current LightOn4B tuning and were not generated from its outputs. Existing receipt/page annotations are prior assistant visual transcriptions, not expert-human adjudicated truth; the inventory is literal owned source content. Human adjudication is required for release qualification. These examples were used in other repository OCR lanes: “held out” means from current LightOn4B calibration, not globally unseen or absent from pretraining. Current form/table/Arabic, receipt aliases and the logo are excluded, including derivatives.
+
+The Commons receipt and test-page image declarations are CC0; inventory is repository MIT content. The CC0 image declaration does not independently settle embedded literary-text rights. Review that limitation before new distribution. The German reserve is a public-domain official-document source. Public source links and exact asset hashes are in the protocol; no model-license grant is inferred from fixture licenses.
+
+Primary evaluation compares independent greedy native **composed vision** with actual pinned llama.cpp Q4_K_M against independent gold. A separate native upstream-feature arm diagnoses decoder arithmetic and cannot rescue composed failure. Source observer OFF/ON must preserve complete IDs, probabilities, text and EOS. Freeze the exact existing candidate gate tuple, executable/library hashes and prompt/template identity before execution; no policy is selected using held-out results. No original BF16 or full F32 model is required or proposed.
+
+Every case must complete within the fixed1,536-token cap and2,048-token context. The actual prompt must be at most512 tokens, including image tokens; source admission must verify the prepared geometry and at most256 merged image tokens. Reject an over-budget case without resizing, cropping or silently extending limits. Existing native executors admit256 or table-only512 tokens, so a generic bounded test-only executor extension and old-byte/default-off controls are prerequisites, not assumed capabilities.
+
+Report raw UTF-8 and parsed-content CER/WER using the pinned existing scorer, with no winner-tuned normalization. Preserve accents, punctuation and order; whitespace-only content normalization follows the existing policy. Inventory additionally requires valid structure and positional cell errors. Every completed primary case must meet both CER and WER of upstream; inventory must also meet its cell-error count. No averaging hides a failed case. Capped or invalid outputs are retained and ineligible, even if their prefix scores well.
+
+Execution remains blocked pending annotation/license review, exact executable/gate/prompt admission, composed geometry support and the generic cap extension. Maximum future quota is three sequential hosted CPU case workers, four arms each, four compute/two build threads,1,200 seconds per arm,6,000 seconds per case (18,000 seconds total), at least10 GiB available RAM,25 GiB scratch and8 GiB output space. Whole-worker/process-group deadlines, cgroup checks and raw partial preservation are required. Large artifacts stay remote. Separate authorization and fresh capacity checks precede any submission; none is submitted by this change.

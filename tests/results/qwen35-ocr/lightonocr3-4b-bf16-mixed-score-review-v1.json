@@ -1,0 +1,122 @@
+{
+  "arms": {
+    "mixed": {
+      "primary_eos248046_probability": 0.005187542295109497,
+      "sha256": "bea1064566634615c955582808c75b0003dc8f24983cbd12cbb661a1b5c33ae9",
+      "source_text_eos248044_probability": 6.40193578330827e-07,
+      "top8": [
+        {
+          "id": 27,
+          "probability": 0.7698995399954311,
+          "score": 22.5
+        },
+        {
+          "id": 20353,
+          "probability": 0.11806791842992502,
+          "score": 20.625
+        },
+        {
+          "id": 2,
+          "probability": 0.026344513547660917,
+          "score": 19.125
+        },
+        {
+          "id": 2425,
+          "probability": 0.026344513547660917,
+          "score": 19.125
+        },
+        {
+          "id": 8909,
+          "probability": 0.018106301716270867,
+          "score": 18.75
+        },
+        {
+          "id": 550,
+          "probability": 0.00969160492184699,
+          "score": 18.125
+        },
+        {
+          "id": 6164,
+          "probability": 0.0058782555269220604,
+          "score": 17.625
+        },
+        {
+          "id": 1307,
+          "probability": 0.005187542295109497,
+          "score": 17.5
+        }
+      ]
+    },
+    "original": {
+      "primary_eos248046_probability": 0.004886942422354252,
+      "sha256": "a4bece2310050081b502a3910a19469e47016829d74abebb29861739f3205ffd",
+      "source_text_eos248044_probability": 6.030966069256215e-07,
+      "top8": [
+        {
+          "id": 27,
+          "probability": 0.8218573471814169,
+          "score": 22.875
+        },
+        {
+          "id": 20353,
+          "probability": 0.09815686246568853,
+          "score": 20.75
+        },
+        {
+          "id": 2,
+          "probability": 0.028122411941165708,
+          "score": 19.5
+        },
+        {
+          "id": 8909,
+          "probability": 0.015052842389027866,
+          "score": 18.875
+        },
+        {
+          "id": 2425,
+          "probability": 0.013284086783411194,
+          "score": 18.75
+        },
+        {
+          "id": 248046,
+          "probability": 0.004886942422354252,
+          "score": 17.75
+        },
+        {
+          "id": 550,
+          "probability": 0.003358743132952861,
+          "score": 17.375
+        },
+        {
+          "id": 6164,
+          "probability": 0.0029640804114081797,
+          "score": 17.25
+        }
+      ]
+    }
+  },
+  "exploratory_mechanism_only": true,
+  "held_out_calibration": false,
+  "max_new_tokens": 1,
+  "mixed_all249_final_hashes_match_corresponding_previous_quant_arms": true,
+  "mixed_pairwise_scores": {
+    "q4_k": {
+      "cosine": 0.9876619050300296,
+      "limit": "Existing-image exploratory mechanism comparison; no architecture-quality selection or native decode claim.",
+      "max_abs": 1.8125,
+      "rms": 0.43145332110726514
+    },
+    "q8_0": {
+      "cosine": 0.9912190459290283,
+      "limit": "Existing-image exploratory mechanism comparison; no architecture-quality selection or native decode claim.",
+      "max_abs": 1.75,
+      "rms": 0.3133927027602941
+    }
+  },
+  "native_inference_executed": false,
+  "original_all723_parameter_hashes_match_previous_worker": true,
+  "quality_qualified": false,
+  "report_sha256": "0e3139c884a82ee9f1e0c5c3cc9943911241ab6aeb6e17b8b5602c90563c07c0",
+  "schema": "lighton4b-bf16-mixed-first-score-review/v1",
+  "source_sha": "50307be7fdb5ec17f367b9b632f506f3d2307126"
+}

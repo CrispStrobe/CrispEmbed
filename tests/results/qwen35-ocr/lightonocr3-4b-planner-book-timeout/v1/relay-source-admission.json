@@ -1,0 +1,18 @@
+{
+  "bootstrap_sha256": "22d0b4bcc2a6948427765074d1e635a052c801c94314220bfe06b35c52e4fa49",
+  "copy_sha256": "1417c9db46bd406ca0e6386045a9d98d3f101626ac91a190f0912076de6ada55",
+  "audit_sha256": "1d8dfe414197df3e896fa6c475590aa7657e1bae3610da0c42b64bc81d2b73af",
+  "source_entries": 1457,
+  "source_bytes": 2735343103,
+  "source_hash_manifest_sha256": "9e1ed8b85d8409b64d5446f21399a766f5dd64882f239ca7a148f674bbc01a53",
+  "outer_seconds": 2100,
+  "copy_seconds": 900,
+  "copy_command_seconds": 920,
+  "audit_seconds": 600,
+  "audit_command_seconds": 620,
+  "kernel_sources": 3,
+  "credentials_copied": false,
+  "private_capabilities_only": true,
+  "capabilities_bytes": 1449041,
+  "private_dataset_count": 1
+}

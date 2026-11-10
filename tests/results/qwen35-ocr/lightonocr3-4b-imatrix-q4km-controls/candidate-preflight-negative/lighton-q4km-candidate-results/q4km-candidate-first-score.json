@@ -1,0 +1,46 @@
+{
+  "cases": {},
+  "cpu_profile": {
+    "affinity_cpus": 4,
+    "cpu_max": "400000 100000",
+    "flags": "",
+    "logical_count": 4,
+    "model name": "",
+    "vendor_id": ""
+  },
+  "error": "bounded child failed: post-merge-model-free",
+  "error_type": "ValueError",
+  "execution_host": "kaggle-cpu",
+  "f32_model_instantiated": false,
+  "heldout_read": false,
+  "limitations": [
+    "External published text statistics, not pretrained image/OCR statistics.",
+    "Statistics repo and source model repo declare Apache-2.0; underlying calibration text license/content remain unauthenticated.",
+    "Calibration-only, previously observed cases; no heldout, release, default or quality qualification.",
+    "Weighted Q4 path changes its optimizer as well as using column importance; cannot attribute all effects solely to calibration corpus."
+  ],
+  "preflight": {
+    "free_disk_bytes": 20407312384,
+    "load_average": [
+      0.619140625,
+      0.3388671875,
+      0.138671875
+    ],
+    "memory": {
+      "available_bytes": 31210352640,
+      "cgroup_current_bytes": 1001902080,
+      "cgroup_limit_bytes": 32212254720,
+      "host_available_bytes": 32522629120
+    }
+  },
+  "protocol_sha256": "9852e322a4e11a9b64906a2852c309d5090831f7195d2797d0e0c7b51d2a4f00",
+  "quality_qualified": false,
+  "quantization_attempted": false,
+  "reference_model_forward_executed": false,
+  "schema": "lighton4b-imatrix-q4km-candidate/v1",
+  "seconds": 92.28521359999999,
+  "source_sha": "11131b7fc9eac80d5d82db70070d74725f62dcac",
+  "stage": "post-merge-model-free",
+  "status": "failed",
+  "weight_quantization_executed": false
+}

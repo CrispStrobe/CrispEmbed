@@ -1,0 +1,24 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+phase source-pin
+phase fetch-tested-source
+phase tested-runtime-tree
+phase fetch-reviewed-main-link-fix
+phase reviewed-cmake-only
+phase host-cpu
+phase submodule
+phase configure
+phase build
+phase host-supported-guard
+phase baseline-prefix
+PHYSICAL_F16_HEARTBEAT {"arm": "baseline-prefix", "teacher_rows": 0, "generated_tokens": null, "last_id": null}
+phase f16-full
+PHYSICAL_F16_HEARTBEAT {"arm": "f16-full", "teacher_rows": 0, "generated_tokens": null, "last_id": null}
+PHYSICAL_F16_HEARTBEAT {"arm": "f16-full", "teacher_rows": 6, "generated_tokens": null, "last_id": null}
+PHYSICAL_F16_HEARTBEAT {"arm": "f16-full", "teacher_rows": 46, "generated_tokens": null, "last_id": null}
+PHYSICAL_F16_HEARTBEAT {"arm": "f16-full", "teacher_rows": 96, "generated_tokens": null, "last_id": null}
+PHYSICAL_F16_HEARTBEAT {"arm": "f16-full", "teacher_rows": 144, "generated_tokens": null, "last_id": null}
+PHYSICAL_F16_HEARTBEAT {"arm": "f16-full", "teacher_rows": 177, "generated_tokens": 16, "last_id": 9}
+PHYSICAL_F16_HEARTBEAT {"arm": "f16-full", "teacher_rows": 177, "generated_tokens": 67, "last_id": 487}
+PHYSICAL_F16_HEARTBEAT {"arm": "f16-full", "teacher_rows": 177, "generated_tokens": 117, "last_id": 1512}
+PHYSICAL_F16_HEARTBEAT {"arm": "f16-full", "teacher_rows": 177, "generated_tokens": 164, "last_id": 510}

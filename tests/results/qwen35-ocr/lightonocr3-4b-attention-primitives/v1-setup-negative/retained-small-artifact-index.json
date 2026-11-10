@@ -1,0 +1,106 @@
+{
+  "actual-native-closure.log": {
+    "sha256": "3247ada8bd7ae0aaa93f171713c811901f194248bdd1c75b4743d5b301fed55a",
+    "bytes": 1580
+  },
+  "attention-primitives-bootstrap.json": {
+    "sha256": "793a8c9c89f04573c801bb601c0bafb1c036e0b9420c488c037e99105f360701",
+    "bytes": 449
+  },
+  "attention-primitives.json": {
+    "sha256": "a001f09eff5db72eb1703d7bf4ba11c1f2ccecd93837f6e7594f3f391d68c255",
+    "bytes": 12386
+  },
+  "control-test_admission.py.log": {
+    "sha256": "7ad0c7f14e1c9ea2c48265e8d82467319bbfdbfde28db626f7edd0daa1eca147",
+    "bytes": 204
+  },
+  "control-test_runtime_guard.py.log": {
+    "sha256": "5177905b17505b239953205ef63e30a528e04751276212fb36c11e2ff46042d8",
+    "bytes": 204
+  },
+  "control-test_scalar.py.log": {
+    "sha256": "17e5dd3af2f5bd48819243005a5beba2c99c74f4e0c932d0880ca66a3a4f6fe6",
+    "bytes": 200
+  },
+  "dependencies.log": {
+    "sha256": "c60162c8ab6d5ab0b3f45ef880d5534e4d0d92e8e728bf1e4c3d1d09b7fd255d",
+    "bytes": 2561
+  },
+  "dependency-check.log": {
+    "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f",
+    "bytes": 132
+  },
+  "ggml-pin.log": {
+    "sha256": "e601323d793ee4e885b083f65101988246e42a4e9dd3aa1aec32f0124f3b45cc",
+    "bytes": 41
+  },
+  "lighton4b-attention-sourcefed-primitives-v1.log": {
+    "sha256": "8d7402de8deb8cf637f1c6d8dd5f446ed2e024d1b461bd0fe11086cbcef4f268",
+    "bytes": 2867
+  },
+  "native-submodule.log": {
+    "sha256": "a11a4475976f2d060d9f6265fa0d03fe0fc62264e9fb18f36bba39f959eb7ef0",
+    "bytes": 243
+  },
+  "operator-only-primitives.log": {
+    "sha256": "37e0347441bdbe43ddc242ad7b8190b3e521e43cbc9e34e935978c7e913cf6e4",
+    "bytes": 1507
+  },
+  "pip-resolution.json": {
+    "sha256": "182672f676b0fee31e2e2cba68c6296615ab0a90bc9ac93c4c61da17a66f3934",
+    "bytes": 205584
+  },
+  "runtime-CMakeCache.txt": {
+    "sha256": "325903425f5a34eac1b2c8a0d986afc0d51848a6b113189e2990362d5595ce22",
+    "bytes": 29282
+  },
+  "runtime-build.log": {
+    "sha256": "282e76f08a06645dd0db8b1b312ec3b3163dbf432a1011e39d2c3177adaa796f",
+    "bytes": 5587
+  },
+  "runtime-configure.log": {
+    "sha256": "0492eb47b8ce0e2906e9db63a071e2ede3378b4b4440babd644cee9ba8cd2f1a",
+    "bytes": 2091
+  },
+  "source-checkout.log": {
+    "sha256": "5c408997c18e3f19b316b1dacd8e42be9c6305013fabfcb9b5c1c70e7d69d18d",
+    "bytes": 97
+  },
+  "source-fetch.log": {
+    "sha256": "919bad450a229d5b57d920a4aa5c3c95576f08b75385a8c6be14e2f1d6f385c1",
+    "bytes": 123
+  },
+  "source-init.log": {
+    "sha256": "3f15069fbb17b15d3b65e21f4fc93d09ca95c93d31dcc44d4c3bb43761e30487",
+    "bytes": 583
+  },
+  "source-pin.log": {
+    "sha256": "62afce6985e7319ecfd23ebba29ea94a809c835f4ea5794eec18f009f060dfc3",
+    "bytes": 41
+  },
+  "source-remote.log": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "up-checkout.log": {
+    "sha256": "401b0f35047d9999135ce240162909f4d3b9be4cafce7c16c1eafb93d3b7bff7",
+    "bytes": 84
+  },
+  "up-fetch.log": {
+    "sha256": "5537e1fa1b4cf8d84bd910e3fed8a4a9e0803b4bddddf1cf9b9182e0f1b00983",
+    "bytes": 119
+  },
+  "up-init.log": {
+    "sha256": "701b97755c97245a7c861e7046c924871d79f3b06de5e85dc47c9808d26b7b6c",
+    "bytes": 603
+  },
+  "up-remote.log": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "venv.log": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  }
+}

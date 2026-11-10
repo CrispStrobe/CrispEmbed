@@ -1,0 +1,53 @@
+{
+  "schema": "lighton4b-planner-provisional-heldout/v1",
+  "selection_protocol_sha256": "1a5cf84d5d83c22a041e774aaa00e682a28d302a2542ef02606e5dfa0ef3cd4b",
+  "frozen_executor_sha256": "bdd80e7f7c3c7a578478bd9c16d94dc07c32e86220c6a337629e0c95498aaf5f",
+  "production_source": "87d39abfe89f925683ca4b586dcd79b025ae9e6d",
+  "observed_receipt_sha256": "393bfbd65f0f39c9d15e68110eb8174fb912797200cc68b1c8339e7a0797edcb",
+  "cases": [
+    "historical-receipt",
+    "two-column-page",
+    "inventory-table"
+  ],
+  "cap": 1536,
+  "context": 2048,
+  "maximum_prompt_tokens": 512,
+  "maximum_image_tokens": 256,
+  "threads": 4,
+  "build_threads": 2,
+  "worker_seconds": 6000,
+  "arm_seconds": 1200,
+  "qualified": false,
+  "references_expert_adjudicated": false,
+  "changed_gates": [
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL"
+  ],
+  "reference_forward_allowed": false,
+  "heldout_tuning_allowed": false,
+  "model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "old_case_receipts": {
+    "historical-receipt": "8bf1ebbdf12b9dd2b20603c11a9b7d4c990e97e7f37a2f5aca3fb3324b3c8dfc",
+    "two-column-page": "9b88195d5a8058dea4fab87472009d3826bc1fa3b5d0575aa2e33698316d5722",
+    "inventory-table": "d5b7f992249a3f6b553bd3e41f73cc5e590eeaae2d1380d9d34d81aaf3d316e8"
+  },
+  "source_scope": "Immutable historical complete upstream OFF/ON references and ON raw rows, no new reference forward. Source OFF raw vocabulary was not captured.",
+  "scope": "Only generic source-boundary prefill scheduler gate changes; previous corrected GDN/Q4-repack/Q6 gates remain ON. Frozen already-observed provisional regression cases, no tuning or qualification.",
+  "driver_sha256": "e8c8363d183465600d22ccc2419bd18103a0ca3596fdf9abf5077b2f802dc634",
+  "cmake_sha256": "e226d2764eb16e1904cd59bbda72064f0ff4e8e0e0629dc6913fdfb3db563b89",
+  "native_preflight_sha256": "af06ef417533a1eff2f6658782c8c267126ae7495b1d03ad6c3b839af706b957",
+  "observed_baseline_receipt_sha256": "f5d0077052b907e2d674caef9e7c4ae09b08456ff48a79f327cbdfd030b2dcc9",
+  "previous_case_receipts": {
+    "historical-receipt": "243bb2f8c9fbf8ed8f19d6b0df48bb8ecc42f4fa66744c02ee59609a419e96eb",
+    "two-column-page": "e3fb9b5b8dddcbed51678c27d203fbc2bfec645966e94f846fd31f956c84f9a3",
+    "inventory-table": "4fa06de38118bd5b007fda809ad4f8602e8653961816757de21d563592689db9"
+  },
+  "previous_raw_audit_sha256": {
+    "historical-receipt": "9895cd92a3c09953e06ea84ae617c75a1ac0c3628587ad3a0b0a34822bb02305",
+    "two-column-page": "783513b1689428c6e6ae7c316b121f7e1037d57edf7374a5dd9d260420cead48",
+    "inventory-table": "64987b2e350a645cb5289bfe51f7ea54afcacc3790bb4fea49f352bfad60a9fc"
+  },
+  "observed_control_tokens": {
+    "observed-old": 167,
+    "observed-corrected": 168
+  }
+}

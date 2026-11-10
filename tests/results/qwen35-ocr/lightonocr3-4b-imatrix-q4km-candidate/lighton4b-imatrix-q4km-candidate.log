@@ -1,0 +1,21 @@
+[{"stream_name":"stdout","time":23.995654766,"data":"PHASE post-merge-model-free\n"}
+,{"stream_name":"stdout","time":136.298237376,"data":"PHASE build-native-runners\n"}
+,{"stream_name":"stdout","time":147.362548074,"data":"PHASE download-unweighted-null-control.gguf\n"}
+,{"stream_name":"stdout","time":227.399674483,"data":"PHASE simple_table-plain_q4-preflight\n"}
+,{"stream_name":"stdout","time":228.079716855,"data":"PHASE simple_table-plain_q4-native\n"}
+,{"stream_name":"stdout","time":348.680894988,"data":"PHASE arabic_printed_line-plain_q4-preflight\n"}
+,{"stream_name":"stdout","time":349.309993343,"data":"PHASE arabic_printed_line-plain_q4-native\n"}
+,{"stream_name":"stdout","time":481.58143218,"data":"PHASE download-original-f16.gguf\n"}
+,{"stream_name":"stdout","time":645.218650944,"data":"PHASE actual248-source-header\n"}
+,{"stream_name":"stdout","time":645.437605171,"data":"PHASE one-pass-original-q4km-quantization\n"}
+,{"stream_name":"stdout","time":1542.994946314,"data":"PHASE simple_table-weighted_q4km-preflight\n"}
+,{"stream_name":"stdout","time":1543.690054469,"data":"PHASE simple_table-weighted_q4km-native\n"}
+,{"stream_name":"stdout","time":1690.503854133,"data":"PHASE arabic_printed_line-weighted_q4km-preflight\n"}
+,{"stream_name":"stdout","time":1691.190359312,"data":"PHASE arabic_printed_line-weighted_q4km-native\n"}
+,{"stream_name":"stderr","time":1824.40084573,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":1824.400909576,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":1824.939222397,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":1824.939274621,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":1826.580244238,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":1828.19687278,"data":"[NbConvertApp] Writing 297174 bytes to __results__.html\n"}
+]

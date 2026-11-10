@@ -1,0 +1,26 @@
+{
+  "bootstrap_sha256": "09ed62546fc96048f20e43e97636d5884ca57d2ab36800431c8c2234bc6e23f8",
+  "error": "bounded CPU-only weighted-Q4 bootstrap or controller failed",
+  "error_type": "CalledProcessError",
+  "github_dispatch_executed": false,
+  "gpu_enabled": false,
+  "model_forward_executed": false,
+  "preflight": {
+    "disk_free_bytes": 20940541952,
+    "load": [
+      0.76220703125,
+      0.412109375,
+      0.18212890625
+    ],
+    "memory_swap": {
+      "MemAvailable": "31859840 kB",
+      "SwapFree": "0 kB",
+      "SwapTotal": "0 kB"
+    }
+  },
+  "python": "3.13.18 (main, Oct 26 2026, 15:28:15) [GCC 13.3.0]",
+  "quantization_executed": false,
+  "schema": "lighton4b-weighted-q4-kaggle-bootstrap/v1",
+  "source_sha": "2058b11b51fa45ed733df9f5f6c0f2159671b4bf",
+  "status": "failed"
+}

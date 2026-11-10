@@ -1,0 +1,22 @@
+{
+  "ids_exact": false,
+  "text_exact": false,
+  "matching_prefix_ids": 171,
+  "first_differing_id": 171,
+  "reference_tokens": 256,
+  "candidate_tokens": 256,
+  "cer": {
+    "edits": 110,
+    "reference_codepoints": 583,
+    "rate": 0.18867924528301888
+  },
+  "wer": {
+    "edits": 17,
+    "reference_words": 48,
+    "rate": 0.3541666666666667
+  },
+  "normalization": "none; Unicode codepoints; WER Unicode whitespace split, case/punctuation retained; agreement, not human OCR accuracy",
+  "source_report_sha256": "1096b5f0f6ce26f0fa26ff9cc86dd606fbb3da24a3feca06768f2f8cd66d6d1b",
+  "native_report_sha256": "c726b09da906562a7f8cdd20a696d7e7d634745f7b329400f056fc4275e45d4e",
+  "source_profile": "frozen-Intel-AVX2"
+}

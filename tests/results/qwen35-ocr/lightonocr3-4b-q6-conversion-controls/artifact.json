@@ -1,0 +1,13 @@
+{
+  "run": 42210897150,
+  "source": "0dfb61534ca6c0b759406c925f0bd936b580d882",
+  "status": "passed",
+  "artifact": {
+    "id": 13497839615,
+    "bytes": 3443,
+    "sha256": "46e6ac57daffb6591de9b9e3a560dd990bd062441228226f566978a15fe63c6c",
+    "expires_at": "2027-02-04T11:31:35Z"
+  },
+  "model_payload_bytes": 0,
+  "model_inference_executed": false
+}

@@ -1,0 +1,43 @@
+{
+  "schema": "lighton4b-upstream-physical-controls/v1",
+  "status": "predeclared-before-execution",
+  "base_pr155_source": "69abebb7e8f0c9235067f76fd5769f8a46f75fb7",
+  "targets": [
+    "test-lighton4b-upstream-physical",
+    "test-lighton4b-imatrix-q4km-recipe",
+    "test-lighton4b-q6-policy",
+    "test-lighton4b-q6-tied-head",
+    "test-lighton4b-release-fence",
+    "test-lighton4b-native-context",
+    "test-lighton4b-mixed-policy",
+    "test-lighton4b-bf16-linear-controls",
+    "test-lighton4b-bf16-dequant-weights",
+    "lighton4b-native-document",
+    "lighton4b-native-case-preflight"
+  ],
+  "model_payload_bytes": 0,
+  "checkpoint_download_allowed": false,
+  "learned_model_inference_allowed": false,
+  "new_path_gate": "CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL",
+  "format": 6,
+  "recipe": "lighton4b-upstream-q4km-physical-v1",
+  "old_format5_behavior_retained": true,
+  "cpp_scope": [
+    "426 type/gate descriptors and every249 dtype mutation",
+    "all16 admitted token chunks and4096 V lanes, aliasing and negative controls",
+    "grouped directA versuslegacyexp0 bit identity and wrong-A negative",
+    "all typed format6 provenance fields and dual EOG metadata",
+    "legacy native/Q6/HFweighted/BF16/head and public release-fence controls"
+  ],
+  "python_scope": [
+    "raw whole Q4/Q6 row transport without requantization",
+    "malformed half-block/duplicate-row rejection",
+    "full723 target header/census and retained physical out columns",
+    "full426 native/upstream descriptor and quantblock-negative mapping"
+  ],
+  "minimum_effective_ram_bytes": 4294967296,
+  "minimum_scratch_bytes": 4294967296,
+  "minimum_output_bytes": 1073741824,
+  "total_timeout_seconds": 2700,
+  "build_threads": 4
+}

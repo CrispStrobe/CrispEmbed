@@ -1,0 +1,27 @@
+{
+  "schema": "lighton4b-physical-f16-table512-independent-review/v1",
+  "receipt_sha256": "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3",
+  "small_artifacts_rehashed": [
+    "native/generated.ids",
+    "native/generated.txt",
+    "native/native-summary.json",
+    "upstream-off/response.json",
+    "upstream-on/response.json",
+    "upstream-off/source.tensor-dispatch.tsv",
+    "upstream-on/source.tensor-dispatch.tsv"
+  ],
+  "source_full_observer_ids_probabilities_text_stop_equal": true,
+  "source_dispatch_tsv_equal": true,
+  "native_and_upstream_tokens": 282,
+  "eos_token": 248046,
+  "old256_raw_score_manifest_rows_exact": 256,
+  "old38_stage_manifest_rows_exact": 38,
+  "raw_arrays_independently_rehashed": false,
+  "original_reference_sha256": "6be5428f247b616e76d79513b62873cf0238842999be2fb0848997f8ced25763",
+  "native_vs_bf16_character_edits": 349,
+  "upstream_vs_bf16_character_edits": 348,
+  "reference_codepoints": 607,
+  "native_and_upstream_word_edits": 97,
+  "reference_words": 106,
+  "quality_qualified": false
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "lighton4b-gdn-independent-state-audit/v1",
+  "status": "verified_actual_source_next_state",
+  "elements": 524288,
+  "bit_exact": true,
+  "reference_source": "Actual live next image graph2 pre-delta state after4 text tokens",
+  "source_state_sha256": "89d8ee54e0687380efb249d843addcad14938fe2313aa178b05b9634c430561b",
+  "computed_canonical_state_sha256": "feee1fde98c76c64106ed48cee8145d24b68cc3187a5b9edcc8c6fcd193ec679",
+  "source_rms_magnitude": 0.03141374470091338,
+  "native16_actual_main_attention_sha256": "3957f3fb3eec8073af4b05d479ce8e4cbd63f717a52fe49af421136b6841ad75",
+  "gdn_receipt_sha256": "7ff684cf80e3f1d11368615c0aa54fbc6219404ce1a31f238bd152a6957981c7",
+  "inference_executed": false
+}

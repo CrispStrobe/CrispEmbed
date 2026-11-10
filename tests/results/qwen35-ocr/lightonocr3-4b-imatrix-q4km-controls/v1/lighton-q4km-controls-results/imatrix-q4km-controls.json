@@ -1,0 +1,13 @@
+{
+  "current_q4_shipping_approved": false,
+  "error": "control failed: build-policy-controls",
+  "error_type": "ValueError",
+  "model_forward_executed": false,
+  "model_payload_bytes": 0,
+  "quality_qualified": false,
+  "schema": "lighton4b-imatrix-q4km-controls/v1",
+  "source_sha": "f7331a799e936c809ecbba3d2da1f8efdabeff19",
+  "stage": "build-policy-controls",
+  "status": "failed",
+  "weight_quantization_executed": false
+}

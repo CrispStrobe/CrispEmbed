@@ -4644,6 +4644,7 @@ extern "C" int crispembed_colbert_score_batch(const float * query_vecs, int n_qu
 #include "transcoda_ocr.h"
 #include "ppocrv6_ocr.h"
 #include "core/gguf_loader.h"
+#include "core/lighton4b_release_fence.h"
 
 // Engine-local state accessors used to make request-scoped generation caps
 // reversible in the unified dispatcher.
@@ -4702,9 +4703,11 @@ struct ocr_model {
     bool default_captured = false;
 };
 
-static ocr_model_type detect_arch(const char * path) {
+static ocr_model_type detect_arch(const char * path, bool & unqualified_4b) {
+    unqualified_4b = false;
     gguf_context * g = core_gguf::open_metadata(path);
     if (!g) return OCR_MODEL_PIX2TEX;
+    unqualified_4b = core_lighton4b_release_fence::blocked(g);
     std::string arch = core_gguf::kv_str(g, "general.architecture", "pix2tex_mfr");
     core_gguf::free_metadata(g);
     if (arch == "oxr") return OCR_MODEL_OXR;
@@ -4747,7 +4750,12 @@ extern "C" void * crispembed_ocr_model_init(const char * path, int n_threads) {
                 path ? path : "(null)");
         return nullptr;
     }
-    auto type = detect_arch(path);
+    bool unqualified_4b = false;
+    auto type = detect_arch(path, unqualified_4b);
+    if (unqualified_4b) {
+        fprintf(stderr, "crispembed_ocr_model: unqualified qwen35/LightOn4B profile rejected before payload loading\n");
+        return nullptr;
+    }
     void * inner = nullptr;
     switch (type) {
     case OCR_MODEL_PIX2TEX:

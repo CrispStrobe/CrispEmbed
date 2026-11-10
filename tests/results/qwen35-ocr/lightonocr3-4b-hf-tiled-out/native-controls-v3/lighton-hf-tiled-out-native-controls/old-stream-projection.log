@@ -1,0 +1,1 @@
+STREAM_PROJECTION_CONTROLS pass=1 f32=1 f16=1 seams=1 independent_dot=1 legacy=1 gates=1 atomic_failure=1 observer=1

@@ -1,0 +1,28 @@
+{
+  "schema": "lighton4b-source-prefill-observed-ab-bootstrap/v1",
+  "source_sha": "eb2d04219f7a8567803e77b3ff5bbaa398b16629",
+  "bootstrap_sha256": "4d350141b0d9e66f99e61c1644ad45fd6bf692b25900c90314f2220b8bd8cd10",
+  "status": "completed",
+  "gpu_requested": false,
+  "model_forward_executed": true,
+  "model_quality_qualified": false,
+  "phase": "source-prefill-observed-ab",
+  "source_file_sha256": {
+    "tools/source-prefill-observed-ab/worker.py": "7cd98f28483f325e471b624c3505c2161660632faa726f16c4e7a3ad95c9f729",
+    "tools/source-prefill-observed-ab/test_controls.py": "ef2e41526d7814f69ef2c417e8ad59ef1d27dd95a110f0a839752364dcb9e391",
+    "docs/lighton4b-source-prefill-observed-ab-v1.json": "821fffc5b34117e6f644981b856d344293769b056b91e4104aed9e5a63cc3312",
+    "tools/kaggle/lighton4b_physical_f16_full_form.py": "fd417f272f522e63d103f091589952f43a14c36a8c7068edee33a19cc2202c86",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "tools/lighton4b_upstream_physical_pack.py": "0f86cd619b1b25c419bd643a549786cc35d0c546b0bcab382e2efb77e3b24910",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "docs/lighton4b-upstream-physical-decode-v1.json": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d",
+    "docs/lighton4b-composed-form-vision-v1.json": "bfc3fbb1d856c36525c7a11bddb68184d92114c5f1a051786fc7bf0988753d90",
+    "docs/lighton4b-physical-f16-full-form-v1.json": "da10739fba67295a43ad796c9a3c7b37dc89f9bfbcfcf821d9f2a25d7a753370",
+    "CMakeLists.txt": "e226d2764eb16e1904cd59bbda72064f0ff4e8e0e0629dc6913fdfb3db563b89",
+    "tools/q6-tiled-full-ab/worker.py": "5b5249fddaf60f0fe98828f16b6ae9b057095621a77fd3f3a67f315a4e4a9359",
+    "docs/lighton4b-q6-tiled-full-ab-v1.json": "2696c6b1aee915a839043ead76ffbd4dec616c575f90b8b99008d8f72f511283"
+  },
+  "worker_status": "measured_source_prefill_observed_ab",
+  "elapsed_seconds": 1084.0680757
+}

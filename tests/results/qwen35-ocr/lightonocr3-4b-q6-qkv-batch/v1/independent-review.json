@@ -1,0 +1,31 @@
+{
+  "status": "independently_verified_q6_batch_operators",
+  "report_sha256": "8fba7e5c71f9b825afabfd343158de29747792af1a94b1d332c74104f62df1b7",
+  "full_source140_vectors": {
+    "native": {
+      "bit_exact": false,
+      "rms": 2.171452935092471e-07,
+      "max_abs": 5.7220458984375e-06,
+      "different_bits": 991462
+    },
+    "upstream": {
+      "bit_exact": true,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "different_bits": 0
+    }
+  },
+  "all_thread_pairs_bit_exact": true,
+  "all_llamafile_pairs_bit_exact": true,
+  "cases": 136,
+  "primary_source": {
+    "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+    "native_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+    "upstream_tiled_batch_floor": 8,
+    "native_tiled_dispatch_present": false
+  },
+  "limits": [
+    "Standalone profiles differ in recorded OpenMP; no unmeasured universal backend equivalence claimed.",
+    "No decoded or runtime candidate evaluated."
+  ]
+}

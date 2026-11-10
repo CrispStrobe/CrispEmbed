@@ -1,0 +1,55 @@
+{
+  "source_model_url": "https://huggingface.co/richardyoung/LightOnOCR-3-4B-GGUF/resolve/8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01/LightOnOCR-3-4B-Q4_K_M.gguf",
+  "source_model_sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26",
+  "source_model_bytes": 2708804576,
+  "native_ggml_source": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "upstream_source": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "schema": "lighton4b-source-compatible-q6-tiled/v1",
+  "trace_sha256": "2723be06d2b1a4836d51b75d50a23f61a07972127c907e01d0505c778dcf7260",
+  "combined_sha256": "4428c4a2d8a877f64488847dfd7145fb0ccd1ba26810e6c0edf2229e6e40eac9",
+  "matrix": {
+    "name": "l.layers.0.linear_attn.in_proj_qkv.weight",
+    "physical_name": "blk.0.attn_qkv.weight",
+    "source_offset": 538358752,
+    "offset": 521705728,
+    "bytes": 17203200,
+    "type": 14,
+    "stored_shape": [
+      2560,
+      8192
+    ],
+    "source_shape": [
+      2560,
+      8192
+    ],
+    "data_offset": 531717984,
+    "source_packed_sha256": "8104e56008adb5aab2312f0097f46b02a32cb9c0da5e6c5a78e4d571c484a652",
+    "sha256": "a9e19cf26d94b1a37d3a22b995bb657841c44eaa027be108a52d5688c4affcd2",
+    "whole_rows_permuted": 8192,
+    "protected_vision": false,
+    "out_columns_retained": false,
+    "quant_blocks_unchanged": true,
+    "role": "qkv",
+    "input": "native/prefill.first_chunk.layer0.input_norm.f32",
+    "output": "native/prefill.first_chunk.layer0.qkv.f32"
+  },
+  "worker_seconds": 1800,
+  "source_tokens": 140,
+  "native_tokens": 16,
+  "batches": [
+    1,
+    4,
+    12,
+    16,
+    32,
+    64,
+    140,
+    144
+  ],
+  "threads": [
+    1,
+    4
+  ],
+  "model_forward_allowed": false,
+  "operator_receipt_sha256": "8fba7e5c71f9b825afabfd343158de29747792af1a94b1d332c74104f62df1b7"
+}

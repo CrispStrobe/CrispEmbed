@@ -1,0 +1,64 @@
+{
+  "schema": "lighton4b-release-q6-head-controls/v1",
+  "status": "passed",
+  "source_sha": "a4f2c908ffaf3f17eb770973017e3de8a08bb121",
+  "execution_host": "kaggle-cpu",
+  "model_payload_bytes": 0,
+  "model_forward_executed": false,
+  "quantization_executed": false,
+  "quality_qualified": false,
+  "current_q4_shipping_approved": false,
+  "gate_or_alias_promoted": false,
+  "preflight": {
+    "memory_swap": {
+      "MemAvailable": "31652788 kB",
+      "SwapTotal": "0 kB",
+      "SwapFree": "0 kB"
+    },
+    "available_bytes": 30576603136,
+    "cgroup_limit": "32212254720",
+    "cgroup_current_bytes": 1635651584,
+    "disk_free_bytes": 20326027264,
+    "load_average": [
+      1.58251953125,
+      1.00732421875,
+      0.44189453125
+    ]
+  },
+  "release_fence": {
+    "registry_no_4b_alias_or_payload": true,
+    "public_allowed_formats": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "explicit_release_binary_lists": [
+      "crispembed crispembed-server crispembed-quantize",
+      "crispembed crispembed-server crispembed-quantize",
+      "crispembed crispembed-server crispembed-quantize",
+      "crispembed.exe crispembed-server.exe crispembed-quantize.exe"
+    ],
+    "source_default_gates_not_forced_on": true,
+    "note": "Existing experimental remote GGUFs remain research artifacts; not release/default aliases. This is no shipping approval."
+  },
+  "q6_controls": "Q6_TIED_HEAD passed=1 checks=84 independent_scalar_values=65792 tied_alias=1 gathered_boundary_rows=1 streamed_odd_tiles=1 bf16_gate=1 storage_unchanged=1 model_payload=0\n",
+  "public_fence_controls": "LIGHTON4B_RELEASE_FENCE passed=1 checks=39 metadata_only_public_rejections=4 raw_qwen35_early_rejection=1 supported_formats_unchanged=1 model_payload=0\n",
+  "binary_sha256": {
+    "test-lighton4b-q6-tied-head": "2e3746da7e7011f7d453e9a83a1e8df93c7e228da32162435ea335fe5f6e46be",
+    "test-lighton4b-release-fence": "e5e0fd462ab074b2f6855709e1a089464c7fb48bb3bb2036f988f34f2dc47c82"
+  },
+  "source_sha256": {
+    "src/qwen35_decoder.cpp": "8ee4e48984923ebcc5b580151f9212b0ef50708b0048ef72cb6ad11623904f03",
+    "src/qwen35_linear.cpp": "360d023214d78e7dc5a3b76ccc33036bf655761222869ead87ab730ee743abac",
+    "src/qwen35_ocr.cpp": "d0e2029bee753a17f1b2f748dfa2ce378783b0ae72774815185096d99c56690e",
+    "src/crispembed.cpp": "a0c0c406440b62598a6786f4308d3f7b18c4079a76cd3b09d94f06cfd1d9693b",
+    "src/core/lighton4b_release_fence.h": "f1e17f5d340d3dd5028de01c0795ae11c135fbebbba1c0d086cb12f526309806",
+    "src/lighton4b_native_context.h": "73a97709c77167bba964bd46e54a721c63b33607c609dcc47206bacb0bcb3d47",
+    "src/lighton4b_bf16_dequant_weights.h": "2911381629814a2f3068e5d816951e7811ecb390d19efef8a7704d61461a7fd6",
+    "tests/test_lighton4b_q6_tied_head.cpp": "7eef6e655dcdbe4c4108c90c2a40bdc7bcaf7e94eb30aca01fcefe84f4f16b54",
+    "tests/test_lighton4b_release_fence.cpp": "af0d6d6aed1f6f7cf02ffb443d3b8252951be81eca63bc0878df6b2b2e57c77d",
+    "examples/cli/model_mgr.cpp": "59d128969a8134b8f8ae3a3fbbb5a4dd37af9fe219e30c2e4332a11cec513537",
+    ".github/workflows/release.yml": "0490f04db0c106cfa9da5ea9e8f7ab633e7dc72f57d9d05e3e7a1b81cf500b15"
+  }
+}

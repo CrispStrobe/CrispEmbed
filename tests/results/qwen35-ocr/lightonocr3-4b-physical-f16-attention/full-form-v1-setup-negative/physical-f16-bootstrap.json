@@ -1,0 +1,12 @@
+{
+  "schema": "lighton4b-physical-f16-bootstrap/v1",
+  "source_sha": "fb8a5ecf1338ade9336633ecb500b5d7393c7699",
+  "status": "failed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "control-test_runtime_guard.py",
+  "worker_sha256": "fd417f272f522e63d103f091589952f43a14c36a8c7068edee33a19cc2202c86",
+  "error_type": "RuntimeError",
+  "error": "control-test_runtime_guard.py nonzero"
+}

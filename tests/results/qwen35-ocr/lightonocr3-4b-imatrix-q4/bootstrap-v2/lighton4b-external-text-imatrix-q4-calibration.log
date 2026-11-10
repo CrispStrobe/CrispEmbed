@@ -1,0 +1,12 @@
+[{"stream_name":"stderr","time":5168.977875174,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":5168.982586754,"data":"  File \"/kaggle/src/script.py\", line 41, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":5168.982633315,"data":"    receipt=json.loads((out/'weighted-q4-calibration.json').read_text());assert code==0 and receipt['status']=='measured'and receipt['actual248_applied']and receipt['both_frozen_null_scores_exact']and receipt['execution_host']=='kaggle-cpu';report['status']='measured';report['candidate']=receipt['candidate'];report['quantization_executed']=True;report['model_forward_executed']=True\n"}
+,{"stream_name":"stderr","time":5168.982641812,"data":"                                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":5168.982646421,"data":"AssertionError\n"}
+,{"stream_name":"stderr","time":5172.016957936,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":5172.017011023,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":5172.412357127,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":5172.41240421,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":5173.679814474,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":5174.993764613,"data":"[NbConvertApp] Writing 297492 bytes to __results__.html\n"}
+]

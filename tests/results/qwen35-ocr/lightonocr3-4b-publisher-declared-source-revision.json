@@ -1,0 +1,20 @@
+{
+  "bounded_range_bytes": 12582912,
+  "bounded_range_sha256": "9fd0ffb1f9d8bf8ef4fe0e23a7157d5738764acb753b99ba9d53f44c6b9301ef",
+  "corpus_contents_or_license_verified": false,
+  "declared_source_revision_normalized": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+  "file": "LightOnOCR-3-4B-Q4_K_M.gguf",
+  "full_file_bytes": 2708804576,
+  "full_file_lfs_sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26",
+  "general_name": "B71010F095Dc3735De7Ee6B9969Bff8F8F50B39A",
+  "header_bytes": 10968032,
+  "header_sha256": "95d865c95703161726daedef09c031be4990517de36572072c1d0cd369a052c3",
+  "interpretation": "general.name declares official b710; it does not independently prove source tensor identity or producing conversion/calibration environment.",
+  "matches_official_reference_revision": true,
+  "prior_raw_receipts_rewritten": false,
+  "producer_converter_quantizer_commit_verified": false,
+  "publisher_repository": "richardyoung/LightOnOCR-3-4B-GGUF",
+  "publisher_revision": "8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01",
+  "schema": "lighton4b-publisher-declared-source-revision/v1",
+  "source_tensor_content_identity_independently_verified": false
+}

@@ -1,0 +1,15 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+PHASE source
+PHASE cpu
+Traceback (most recent call last):
+  File "/tmp/lighton4b-upstream-text-trace-v1/source/tools/text-trace-probe/worker.py", line 89, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/tmp/lighton4b-upstream-text-trace-v1/source/tools/text-trace-probe/worker.py", line 52, in main
+    protocol=json.loads((ROOT/'docs/lighton4b-upstream-physical-decode-v1.json').read_text());case=next(x for x in protocol['cases']if x['id']=='simple_table');prompt=[int(x)for x in(folder/'upstream_features/prompt.ids').read_text().split()];require(len(prompt)==86 and sha(ROOT/case['image'])==case['image_sha256']and sha(folder/'input.png')==case['image_sha256'],'same immutable PNG/prompt');require(protocol['upstream_commit']==source_patch.SOURCE==observer.SOURCE and protocol['model_revision']=='8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01','pinned source/checkpoint')
+                                                                                                                                                                                                                                                   ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-upstream-text-trace-v1/source/tools/kaggle/lighton4b_upstream_physical_decode.py", line 7, in require
+    if not ok:raise RuntimeError(msg)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: same immutable PNG/prompt

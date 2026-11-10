@@ -1,0 +1,17 @@
+{
+  "all248_actual_means_verified": true,
+  "closed_source_and_override_rejections": 5,
+  "current_q4_shipping_approved": false,
+  "model_forward_executed": false,
+  "model_payload_bytes": 0,
+  "new_recipe": "lighton4b-weighted-q4km-style-q6head-v1",
+  "old_recipes_preserved": true,
+  "q6_embedding_tied_head_and_public_fence_passed": true,
+  "q6_names_sha256": "0ebc0b6104238b46de946f940f61cdc90e04a0eb187553026714fc1270cdb44c",
+  "quality_qualified": false,
+  "schema": "lighton4b-imatrix-q4km-controls/v1",
+  "source_sha": "6d751828e61937fe816a04ab355e7305239d63ff",
+  "stage": "q6-tied-head-and-public-fence",
+  "status": "passed",
+  "weight_quantization_executed": false
+}

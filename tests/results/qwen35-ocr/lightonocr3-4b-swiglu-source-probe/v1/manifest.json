@@ -1,0 +1,34 @@
+{
+  "native-CMakeCache.txt": {
+    "bytes": 27670,
+    "sha256": "7d6839db8271987329f3d86115bb14a78f7dc96318b80b8f9b5140e52a00f024"
+  },
+  "swiglu-source-probe.json": {
+    "bytes": 225480,
+    "sha256": "d6372a51965f260a09437d9142ba80059a4c157f29f6a273220327908ed8a24d"
+  },
+  "native-controls.log": {
+    "bytes": 97,
+    "sha256": "15db084a3ec0d6c8eaea714c11c3a8442256c65e92ef452e6d4d37ad8b4a9d5d"
+  },
+  "protocol.json": {
+    "bytes": 6731,
+    "sha256": "98bf962d924edec74cc0ff72aebe0278716a7ecfbe8fcda211bf45e60e1b2cfa"
+  },
+  "independent-audit.json": {
+    "bytes": 2912,
+    "sha256": "0a0896eba22e684a61f0696dc0bf1c7fbded6d5bbf112e1f8d144194491466d2"
+  },
+  "swiglu-source-bootstrap.json": {
+    "bytes": 1874,
+    "sha256": "f25413c2e2c3c6f9d18e4bc085f094d6df33df3d62f4900100d680dc1ec92dbf"
+  },
+  "upstream-CMakeCache.txt": {
+    "bytes": 27962,
+    "sha256": "873d2ecf246f1dc439907e4470c39cf227836661af27891cf9c19ecb84d65233"
+  },
+  "upstream-controls.log": {
+    "bytes": 97,
+    "sha256": "15db084a3ec0d6c8eaea714c11c3a8442256c65e92ef452e6d4d37ad8b4a9d5d"
+  }
+}

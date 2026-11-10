@@ -1,0 +1,60 @@
+[  3%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml.c.o
+[  6%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml.cpp.o
+[  9%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o
+[ 12%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o
+[ 15%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o
+[ 18%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o
+[ 21%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o
+[ 24%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o
+[ 27%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/gguf.cpp.o
+[ 30%] Linking CXX shared library libggml-base.so
+[ 30%] Built target ggml-base
+[ 33%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o
+[ 36%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o
+[ 39%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o
+[ 42%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o
+[ 45%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o
+[ 48%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o
+[ 51%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o
+[ 54%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o
+[ 57%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o
+[ 60%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o
+[ 63%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o
+[ 66%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o
+[ 69%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile/sgemm.cpp.o
+[ 72%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o
+[ 75%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o
+[ 78%] Linking CXX shared library libggml-cpu.so
+[ 78%] Built target ggml-cpu
+[ 81%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o
+[ 84%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o
+[ 87%] Linking CXX shared library libggml.so
+[ 87%] Built target ggml
+[ 90%] Building CXX object CMakeFiles/gdn-hybrid-probe.dir/main.cpp.o
+[ 93%] Building CXX object CMakeFiles/gdn-hybrid-probe.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp.o
+/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp: In lambda function:
+/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp:227:41: warning: ‘ggml_tensor* ggml_add1(ggml_context*, ggml_tensor*, ggml_tensor*)’ is deprecated: use ggml_add instead [-Wdeprecated-declarations]
+  227 |             ggml_sqrt(context, ggml_add1(context, ggml_sum_rows(context, ggml_sqr(context, tensor)), epsilon));
+      |                                ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /tmp/lighton4b-physical-gdn-hybrid-v2/source/ggml/src/../include/ggml-backend.h:3,
+                 from /tmp/lighton4b-physical-gdn-hybrid-v2/source/src/qwen35_delta.cpp:5:
+/tmp/lighton4b-physical-gdn-hybrid-v2/source/ggml/src/../include/ggml.h:929:51: note: declared here
+  929 |     GGML_DEPRECATED(GGML_API struct ggml_tensor * ggml_add1(
+      |                                                   ^~~~~~~~~
+/tmp/lighton4b-physical-gdn-hybrid-v2/source/ggml/src/../include/ggml.h:192:41: note: in definition of macro ‘GGML_DEPRECATED’
+  192 | #    define GGML_DEPRECATED(func, hint) func __attribute__((deprecated(hint)))
+      |                                         ^~~~
+/tmp/lighton4b-physical-gdn-hybrid-v2/source/tools/gdn-hybrid-probe/main.cpp: In lambda function:
+/tmp/lighton4b-physical-gdn-hybrid-v2/source/tools/gdn-hybrid-probe/main.cpp:130:77: warning: ‘ggml_tensor* ggml_add1(ggml_context*, ggml_tensor*, ggml_tensor*)’ is deprecated: use ggml_add instead [-Wdeprecated-declarations]
+  130 |         auto normalize=[&](ggml_tensor * x){auto * den=ggml_sqrt(c,ggml_add1(c,ggml_sum_rows(c,ggml_sqr(c,x)),ggml_new_f32(c,1e-6f)));return ggml_div(c,x,den);};
+      |                                                                    ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /tmp/lighton4b-physical-gdn-hybrid-v2/source/tools/gdn-hybrid-probe/main.cpp:2:
+/tmp/lighton4b-physical-gdn-hybrid-v2/source/ggml/src/../include/ggml.h:929:51: note: declared here
+  929 |     GGML_DEPRECATED(GGML_API struct ggml_tensor * ggml_add1(
+      |                                                   ^~~~~~~~~
+/tmp/lighton4b-physical-gdn-hybrid-v2/source/ggml/src/../include/ggml.h:192:41: note: in definition of macro ‘GGML_DEPRECATED’
+  192 | #    define GGML_DEPRECATED(func, hint) func __attribute__((deprecated(hint)))
+      |                                         ^~~~
+[ 96%] Building CXX object CMakeFiles/gdn-hybrid-probe.dir/tmp/lighton4b-physical-gdn-hybrid-v2/source/src/lighton4b_physical_gdn_source_ops.cpp.o
+[100%] Linking CXX executable gdn-hybrid-probe
+[100%] Built target gdn-hybrid-probe

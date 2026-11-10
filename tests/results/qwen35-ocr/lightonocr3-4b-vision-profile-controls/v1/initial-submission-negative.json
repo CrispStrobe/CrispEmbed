@@ -1,0 +1,12 @@
+{
+  "status": "submission_rejected_before_accepted_worker",
+  "http_status": 400,
+  "reason": "Kernel title did not normalize to the requested service slug.",
+  "source_sha": "798be26f1",
+  "worker_accepted": false,
+  "checkpoint_acquired": false,
+  "build_or_forward_executed": false,
+  "raw_operator_binding_log_retained_privately": true,
+  "raw_log_sha256": "8f34371e07aaf68fdc332a365b46811932d44b6a2b6095b21bcca44aeb2187c6",
+  "correction": "Use title LightOn4B vision profile controls v1; accepted actual worker version1 uses corrected source0eca8d13f."
+}

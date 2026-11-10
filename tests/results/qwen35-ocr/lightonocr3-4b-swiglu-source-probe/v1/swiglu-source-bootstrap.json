@@ -1,0 +1,26 @@
+{
+  "schema": "lighton4b-swiglu-source-bootstrap/v1",
+  "source_sha": "38171f0d4a60d1eacb98b75461fb7f0e96815d22",
+  "bootstrap_sha256": "e234de791632d4888afd2a69f030a47f7a43aacbff728edd73e3340af8096d75",
+  "status": "completed",
+  "gpu_requested": false,
+  "model_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "swiglu-source-probe",
+  "source_file_sha256": {
+    "tools/swiglu-source-probe/main.cpp": "43cdcf727da8496a056d55979b9d013084da78475743ad925326c39bacea61cf",
+    "tools/swiglu-source-probe/CMakeLists.txt": "8e20f0ca65fe4a9dcd8172b9675780dc6e1bcb5dee60ec4348f4e74218458d43",
+    "tools/swiglu-source-probe/protocol.json": "98bf962d924edec74cc0ff72aebe0278716a7ecfbe8fcda211bf45e60e1b2cfa",
+    "tools/swiglu-source-probe/worker.py": "f1ee404c0560f2cd16aa67bce165023b12103f776e15687f07c1172c834099a6",
+    "tools/swiglu-source-probe/test_protocol.py": "e5ad8d8d69b04925d5c3d8e20c43095996d9d193282cdd8690c858d7d351a06d",
+    "tools/swiglu-source-probe/README.md": "94aecfc139067dc46a47defcad48488d1ddd903f74055cf7f17c0393599e1400",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "src/lighton4b_linear_block.h": "608f9ba483726da0630352ac5a942aa2248a6da1da59339f11d240ea2b89a8dc",
+    "src/lighton4b_attention_block.h": "b272fb56a09ffeacae226d0da613aa99d09ece4346cb4d25bbf616c368894a33",
+    "tests/lighton4b_native_document.cpp": "e162586bf5cc48684163967612f1cb7aba335421014d7ef8be2e55831bf85e2b"
+  },
+  "worker_status": "measured_same_input_swiglu_operators",
+  "elapsed_seconds": 157.928415222
+}

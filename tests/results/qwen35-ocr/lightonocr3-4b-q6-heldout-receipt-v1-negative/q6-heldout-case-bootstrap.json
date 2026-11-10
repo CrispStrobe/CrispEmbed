@@ -1,0 +1,13 @@
+{
+  "schema": "lighton4b-heldout-controls-bootstrap/v1",
+  "source_sha": "001a7cc958badfecf8fd2c4698f4bbe3d235bb4f",
+  "status": "failed",
+  "gpu_requested": false,
+  "reference_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "bounded-worker",
+  "worker_sha256": "7688e8d30b23cd758d452f453018f65135b781007cddf27d9ce6fe423725ca23",
+  "error_type": "RuntimeError",
+  "error": "bounded-worker nonzero",
+  "elapsed_seconds": 644.2180191150001
+}

@@ -1,0 +1,12 @@
+{
+  "schema": "lighton4b-physical-audit-kaggle-bootstrap/v1",
+  "source_sha": "5199609f4425b006bb78f488703b42ec4410f3ac",
+  "status": "completed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "physical-operator-audit",
+  "worker_sha256": "99e1457b32a47bf5b1e81a3d77e075881eeb7e227331a3ef64f81aaf00ae4712",
+  "protocol_sha256": "ce3759d3c382de5d0538547289859182fa8dcbc3f16e16821f135b99be12015d",
+  "worker_status": "completed"
+}

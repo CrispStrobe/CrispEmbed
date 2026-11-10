@@ -1,0 +1,8 @@
+<figure>
+### Figure – Interface de formulaire
+*Type: autre*
+
+L'image montre une interface de formulaire avec plusieurs champs et options. Elle inclut des champs de texte, de numéro, de date, et de mot de passe, ainsi qu'une zone de texte et des boutons.
+
+Les éléments visibles incluent : "Input", "Texte", "Number", "Date", "Password", "a label", "ANOTHER LABEL", "Yet another label", "combo suggest", "Finland", "France", "checkbox1", "checkbox2", "checkbox3", "CodeLabel", "code fill", "code", "Button", "Rechercher", "Modifier l'utilisateur". Les options "Drag and drop frames" et "Fixe frames" sont également présentes.
+</figure>

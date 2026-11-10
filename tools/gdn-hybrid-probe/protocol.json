@@ -1,0 +1,280 @@
+{
+  "schema": "lighton4b-physical-gdn-hybrid/v1",
+  "scope": "Observed table same-input GDN hybrid source-operator controls; no heldout, model decode or recipe selection",
+  "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "native_ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "prior_probe_source": "0bbe9d8769f13cacd8788194298bf8cb3c26f84e",
+  "source_url": "https://huggingface.co/richardyoung/LightOnOCR-3-4B-GGUF/resolve/8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01/LightOnOCR-3-4B-Q4_K_M.gguf",
+  "source_bytes": 2708804576,
+  "source_sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26",
+  "table_receipt_sha256": "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3",
+  "capture_receipt_sha256": "8df1604435314b09ea8cbb60f47833a04307a492349191901313ed9b39540186",
+  "reader_receipt_sha256": "5a8a1aaedb41aa4a485d1f9927c9e0ae5c19e02c69f9ba0d2c34fc319a4dc9b3",
+  "tokens": [
+    1,
+    4,
+    16
+  ],
+  "key_heads": 16,
+  "value_heads": 32,
+  "width": 128,
+  "conv_kernel": 4,
+  "eps": 1e-06,
+  "threads": 4,
+  "build_threads": 2,
+  "fused_gdn_ar": true,
+  "fused_gdn_ch": true,
+  "auto_fgdn": false,
+  "recurrent_snapshots": 1,
+  "model_forward_allowed": false,
+  "full_f32_model_allowed": false,
+  "total_timeout_seconds": 1800,
+  "minimum_available_memory_bytes": 4294967296,
+  "minimum_scratch_bytes": 6442450944,
+  "minimum_output_bytes": 1073741824,
+  "tensors": [
+    {
+      "physical_name": "blk.0.ssm_a",
+      "source_offset": 601467872,
+      "bytes": 128,
+      "source_packed_sha256": "58087ec9251767ad22ea349a3c5361e964be8ae277da1b4db9ce06d9800a5fdb",
+      "source_shape": [
+        32
+      ],
+      "type": 0,
+      "file": "A.f32"
+    },
+    {
+      "physical_name": "blk.0.ssm_conv1d.weight",
+      "source_offset": 601560160,
+      "bytes": 131072,
+      "source_packed_sha256": "3bc41a4142692d6d57be8b437cb4e58f1f5ae88eb918cac6a662df43ed3ee018",
+      "source_shape": [
+        4,
+        8192
+      ],
+      "type": 0,
+      "file": "conv.f32"
+    },
+    {
+      "physical_name": "blk.0.ssm_dt.bias",
+      "source_offset": 601691232,
+      "bytes": 128,
+      "source_packed_sha256": "54314db72054ddcf664d15dd95ac238b9fac69e07d593b2d2531267e9edadaee",
+      "source_shape": [
+        32
+      ],
+      "type": 0,
+      "file": "dt.f32"
+    },
+    {
+      "physical_name": "blk.0.ssm_norm.weight",
+      "source_offset": 601691360,
+      "bytes": 512,
+      "source_packed_sha256": "65461d766b7eac74f206daddeab6b1271ecdaed1999fe756b8f1eb4f9ead3f0c",
+      "source_shape": [
+        128
+      ],
+      "type": 0,
+      "file": "norm.f32"
+    },
+    {
+      "physical_name": "blk.0.ssm_out.weight",
+      "source_offset": 601691872,
+      "bytes": 5898240,
+      "source_packed_sha256": "2efc8ee58fb2e23f9053bc359fe39f62170fb28a99ebf3aa66da597cf89d6f67",
+      "source_shape": [
+        4096,
+        2560
+      ],
+      "type": 12,
+      "file": "out.q4k"
+    }
+  ],
+  "source_function_sha256": {
+    "src/models/qwen35.cpp": "3387cf23a95ca71d2a38fac4b32708d6424fc9888273148ff6b4db5e510c9406",
+    "src/models/models.h": "a18e20327512624d2add1ddbb4a94902dd3a79970fc3c16aba15ee675b3cd95f",
+    "src/models/delta-net-base.cpp": "9cd452f76d60df96a994a1ee545872896e32d0c0d1cb594afbc5fcea31a75a31",
+    "src/llama-context.cpp": "9502cb706594752543975730f0b769b043c430dda4b62b7a172e35b4150ff43c",
+    "common/common.h": "c3010a3c662a14556adb651b79bff00089564fde6b5e336959403e3db34e6073",
+    "common/common.cpp": "1b41b3613a10d579e2808bf5e1a73531980ca836d0f4d23dba22d7130d78985e"
+  },
+  "native_source_sha256": {
+    "src/qwen35_delta.cpp": "ddd1e2b48427553dc2377dbbe238de4707300a7d5511e45f6c9182c679fc3bb8",
+    "src/qwen35_delta.h": "95a47622a26c498fdab71630472bca2fd80e5c61a11a6e95ed250baa6577d75a",
+    "src/lighton4b_upstream_physical_semantics.h": "ceda0f3fc21d14a5edfe288858b339ccc82e1e629cb5ba2cb18e9bc73127cedc",
+    "src/core/env_gate.h": "2370e31636ea25bc1e5ca63e1e606f4cd3c07c65e0f4d1347b2ec6daf57eaa0e",
+    "src/lighton4b_physical_gdn_source_ops.cpp": "21ced9cceb3b989026d47be9cd9913dbf8cd8ebcf4c6cf514fef68bb64116492",
+    "src/lighton4b_physical_gdn_source_ops.h": "3521d513a0dde4423f7ef3f027b3f11bde259d0dbb8346ebe6a17eb34051597f",
+    "src/lighton4b_linear_block.h": "608f9ba483726da0630352ac5a942aa2248a6da1da59339f11d240ea2b89a8dc",
+    "src/lighton4b_decoder_compose.h": "a45e303578887058497cc4247997a2bb6dd7254674c5fd2b8613edef9903f647",
+    "tests/test_lighton4b_physical_gdn_source_ops.cpp": "07c76fa96177ac1166b704ad5038ea15a2783ac66c090f7b1704700f3767c76b"
+  },
+  "native_inputs": {
+    "prefill.first_chunk.layer0.qkv.f32": {
+      "bytes": 524288,
+      "sha256": "efed3325b76a1827f4d0ff397fad0b46951493b11ff1f91af71812160ba6468a"
+    },
+    "prefill.first_chunk.layer0.z.f32": {
+      "bytes": 262144,
+      "sha256": "65e0479873e0740c82e8c3c4a21681e58cb428149d1b8be605026974f369737b"
+    },
+    "prefill.first_chunk.layer0.a.f32": {
+      "bytes": 2048,
+      "sha256": "3f32a89600be6926fa56024633e9a944c931c1d1e51836c45ff4a9d841c13fd1"
+    },
+    "prefill.first_chunk.layer0.b.f32": {
+      "bytes": 2048,
+      "sha256": "985b5eb47b652c4033e199708242de5f069d6c42ac6400920bc1c7bfd8bbac48"
+    },
+    "prefill.first_chunk.layer0.attention.f32": {
+      "bytes": 163840,
+      "sha256": "3957f3fb3eec8073af4b05d479ce8e4cbd63f717a52fe49af421136b6841ad75"
+    }
+  },
+  "live_inputs": {
+    "qkv": {
+      "file": "on/graph-1.linear_attn_qkv_mixed-0.bin",
+      "width": 8192,
+      "bytes": 131072,
+      "sha256": "253e66a332f5bf4d5fb59828f2c077612c23246bf2c317916ee3b8930c63f243"
+    },
+    "z": {
+      "file": "on/graph-1.z-0.bin",
+      "width": 4096,
+      "bytes": 65536,
+      "sha256": "603e4e2a68780f046e25c222c424a06761c7c8cac65ac7d4c249227eea9e12a6"
+    },
+    "a": {
+      "file": "on/graph-1.alpha-0.bin",
+      "width": 32,
+      "bytes": 512,
+      "sha256": "1ba23904a0f53abe1bbc0114ff6d2f4fbab79d396e6bde8ad18b79532176be87"
+    },
+    "b": {
+      "file": "on/graph-1.beta-0.bin",
+      "width": 32,
+      "bytes": 512,
+      "sha256": "402553981ed70551decaf99b3f6bbcaddd2142c9746ebd89aacf44e69cde3f92"
+    }
+  },
+  "live_stages": {
+    "conv_output_raw": {
+      "file": "on/graph-1.conv_output_raw-0.bin",
+      "bytes": 131072,
+      "sha256": "9f33f9af4b7a0eabb1563a6e08bc8b05f30b0bf56fcbbac7ff00e4e9ec834f2a"
+    },
+    "conv_output_silu": {
+      "file": "on/graph-1.conv_output_silu-0.bin",
+      "bytes": 131072,
+      "sha256": "cc439bd968e5c437639955f2500ce0d28f4d9a5ab405a785e532b4b424c99a7e"
+    },
+    "state_predelta": {
+      "file": "on/graph-1.state_predelta-0.bin",
+      "bytes": 2097152,
+      "sha256": "5647f05ec18958947d32874eeb788fa396a05d0bab7c1b71f112ceb7e9b31eee"
+    },
+    "final_output": {
+      "file": "on/graph-1.final_output-0.bin",
+      "bytes": 65536,
+      "sha256": "01f3f2c5b950a52fd41fd5dc73bdebb267c5fae76809760c0025fdefe3aa1816"
+    },
+    "linear_attn_out": {
+      "file": "on/graph-1.linear_attn_out-0.bin",
+      "bytes": 40960,
+      "sha256": "1c0aeae6ab982cc26141b78b86f9e3435228260e54a4979353d4911558117266"
+    }
+  },
+  "cases": [
+    {
+      "variant": "native16",
+      "tokens": 16,
+      "input_tokens": 16,
+      "replaced_roles": [],
+      "runs": [
+        "native",
+        "hybrid",
+        "source-upstream"
+      ]
+    },
+    {
+      "variant": "native4",
+      "tokens": 4,
+      "input_tokens": 4,
+      "replaced_roles": [],
+      "runs": [
+        "native",
+        "hybrid",
+        "source-upstream",
+        "source-native"
+      ]
+    },
+    {
+      "variant": "zab4",
+      "tokens": 4,
+      "input_tokens": 4,
+      "replaced_roles": [
+        "z",
+        "a",
+        "b"
+      ],
+      "runs": [
+        "source-upstream",
+        "source-native",
+        "hybrid",
+        "native"
+      ]
+    },
+    {
+      "variant": "continuation1",
+      "tokens": 1,
+      "input_tokens": 1,
+      "replaced_roles": [
+        "qkv",
+        "z",
+        "a",
+        "b"
+      ],
+      "nonzero_state": true,
+      "runs": [
+        "source-upstream",
+        "hybrid",
+        "native"
+      ]
+    }
+  ],
+  "probe_cpp_sha256": "d820ead782fada74ad0e1eb769f27c3703cef9ac095b52e5ae7435bafb2a9063",
+  "probe_cmake_sha256": "16fd304db63d6f9e73f3ccf1870c0e3e8160dc7507e408c00e82557506b5b6ed",
+  "continuation_inputs": {
+    "qkv": {
+      "file": "on/graph-2.linear_attn_qkv_mixed-0.bin",
+      "width": 8192,
+      "bytes": 2359296,
+      "sha256": "04d3918d2cf228c87f985873b08c4213c22765ef22b9c2fb4992214fc5981b7d"
+    },
+    "z": {
+      "file": "on/graph-2.z-0.bin",
+      "width": 4096,
+      "bytes": 1179648,
+      "sha256": "119e8e42018edce0a50f5fb509f1df46cf9c874d7aa176f9c382ff0b2d53b58d"
+    },
+    "a": {
+      "file": "on/graph-2.alpha-0.bin",
+      "width": 32,
+      "bytes": 9216,
+      "sha256": "395e2708db964384ea44f9d5e2061616bc10b5560ab12cddaa1ef3e6253dfaad"
+    },
+    "b": {
+      "file": "on/graph-2.beta-0.bin",
+      "width": 32,
+      "bytes": 9216,
+      "sha256": "e9eb085bf41aeaf8eca891e5531e9aa0f8cdeaa0d00301c231e9b76f41efccd4"
+    },
+    "state": {
+      "file": "on/graph-2.state_predelta-0.bin",
+      "width": 524288,
+      "bytes": 2097152,
+      "sha256": "89d8ee54e0687380efb249d843addcad14938fe2313aa178b05b9634c430561b"
+    }
+  }
+}

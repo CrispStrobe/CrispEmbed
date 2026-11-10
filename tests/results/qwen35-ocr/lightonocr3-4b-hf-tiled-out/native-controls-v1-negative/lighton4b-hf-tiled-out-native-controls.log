@@ -1,0 +1,26 @@
+[{"stream_name":"stdout","time":1.177222373,"data":"PHASE init\n"}
+,{"stream_name":"stdout","time":1.293298147,"data":"PHASE remote\n"}
+,{"stream_name":"stdout","time":1.3098966380000001,"data":"PHASE fetch\n"}
+,{"stream_name":"stdout","time":7.096903064,"data":"PHASE checkout\n"}
+,{"stream_name":"stdout","time":8.9199581,"data":"PHASE submodule\n"}
+,{"stream_name":"stdout","time":12.256772209,"data":"PHASE venv\n"}
+,{"stream_name":"stdout","time":12.421623018,"data":"PHASE venv-prefix\n"}
+,{"stream_name":"stdout","time":12.536770259,"data":"PHASE packages\n"}
+,{"stream_name":"stdout","time":25.45077968,"data":"PHASE dependency-preflight\n"}
+,{"stream_name":"stdout","time":26.269501101,"data":"PHASE configure\n"}
+,{"stream_name":"stdout","time":29.396836525,"data":"PHASE build\n"}
+,{"stream_name":"stderr","time":97.64929421,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":97.650859484,"data":"  File \"/kaggle/src/script.py\", line 48, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":97.650898952,"data":"    env=dict(os.environ);env.update({k:'0'for k in env if k.startswith('CRISPEMBED_')});env.update(CRISPEMBED_BUILD_MODE='portable');build=scratch/'build';run('configure',['cmake','-S',source,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF','-DGGML_AVX2=ON','-DGGML_AVX512=OFF','-DGGML_CUDA=OFF','-DGGML_BLAS=OFF','-DGGML_LLAMAFILE=ON','-DCMAKE_C_FLAGS=-ffp-contract=off','-DCMAKE_CXX_FLAGS=-ffp-contract=off'],env=env);run('build',['cmake','--build',build,'--target','test-lighton4b-hf-tiled-out-recipe','test-lighton4b-hf-tiled-out-operator','test-lighton4b-imatrix-q4km-recipe','test-lighton4b-physical-native-ops','test-lighton4b-q6-tied-head','test-qwen35-stream-projection','test-lighton4b-release-fence','lighton4b-native-document','lighton4b-native-case-preflight','--parallel','2'],1000,env);shutil.copyfile(build/'CMakeCache.txt',out/'CMakeCache.txt')\n"}
+,{"stream_name":"stderr","time":97.650915017,"data":"                                                                                                                                                                                                                                                                                                                                                                                                                                               ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":97.65092402,"data":"  File \"/kaggle/src/script.py\", line 28, in run\n"}
+,{"stream_name":"stderr","time":97.650929919,"data":"    if code:raise RuntimeError('bounded controls stage failed: '+label)\n"}
+,{"stream_name":"stderr","time":97.650935171,"data":"            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":97.650940308,"data":"RuntimeError: bounded controls stage failed: build\n"}
+,{"stream_name":"stderr","time":100.498778891,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":100.49884404,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":100.991372787,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":100.991403252,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":102.263104742,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":103.826686714,"data":"[NbConvertApp] Writing 316701 bytes to __results__.html\n"}
+]

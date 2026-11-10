@@ -1,0 +1,10 @@
+{
+  "status": "failed",
+  "case": "two-column-page",
+  "model_forward_executed": false,
+  "model_acquisition": false,
+  "qualified": false,
+  "error_type": "RuntimeError",
+  "error": "one immutable completed receipt required",
+  "elapsed_seconds": 2.1463429100000155
+}

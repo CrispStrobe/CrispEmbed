@@ -49,6 +49,49 @@ class RoutingTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(self.lanes(path), set(ci.LANES))
 
+    def test_lightonocr3_4b_source_preflight_needs_no_native_build(self):
+        fixtures = sorted(
+            str(path.relative_to(ROOT))
+            for path in (ROOT / "tests/fixtures/lightonocr3-4b-source").rglob("*")
+            if path.is_file()
+        )
+        self.assertTrue(fixtures)
+        paths = ["models/lightonocr3_4b_profile.py", "tests/test_lightonocr3_4b_profile.py", *fixtures]
+        for path in paths:
+            for event_name in ("pull_request", "push"):
+                with self.subTest(path=path, event=event_name):
+                    report = ci.selection([path], event_name=event_name)
+                    self.assertFalse(report["full"])
+                    self.assertFalse(any(report["lanes"].values()))
+
+    def test_unreviewed_source_fixture_inputs_still_fail_closed(self):
+        for path in (
+            "tests/fixtures/lightonocr3-4b-source/new.json",
+            "tests/fixtures/lightonocr3-4b-source/nested/config.json",
+            "tests/fixtures/lightonocr3-4b-source/model.safetensors",
+            "tests/fixtures/lightonocr3-4b-source/model.gguf",
+            "tests/fixtures/lightonocr3-4b-source/tokenizer.json",
+            "tests/fixtures/lightonocr3-4b-source/LightOnOCR-3-4B-tokenizer.prefix.extra.txt",
+            "tests/fixtures/lightonocr3-4b-source/LICENSE.txt",
+            "tests/fixtures/lightonocr3-4b-source-next/config.json",
+        ):
+            for event_name in ("pull_request", "push"):
+                with self.subTest(path=path, event=event_name):
+                    report = ci.selection([path], event_name=event_name)
+                    self.assertTrue(report["full"])
+                    self.assertTrue(all(report["lanes"].values()))
+
+    def test_source_preflight_inputs_do_not_mask_runtime_dependencies(self):
+        fixture = "tests/fixtures/lightonocr3-4b-source/config.json"
+        for dependency in ("src/new-engine.cpp", "src/core/new-kernel.h", "tools/ci_selection.py"):
+            for event_name in ("pull_request", "push"):
+                expected = ci.selection([dependency], event_name=event_name)
+                for paths in ([fixture, dependency], [dependency, fixture]):
+                    with self.subTest(paths=paths, event=event_name):
+                        report = ci.selection(paths, event_name=event_name)
+                        self.assertEqual(report["full"], expected["full"])
+                        self.assertEqual(report["lanes"], expected["lanes"])
+
     def test_evidence_workflows_and_python_tooling_build_nothing(self):
         # Their consumers are path-filtered evidence workflows. The closure test
         # below proves that no ordinary-lane entry point reads them.
@@ -472,6 +515,32 @@ def workflow_paths(filename: str) -> dict:
 
 
 class WorkflowFilterTests(unittest.TestCase):
+    def test_controls_covers_lightonocr3_4b_source_dependencies(self):
+        dependencies = set()
+        for entry in ("tests/test_lightonocr3_4b_profile.py", "models/lightonocr3_4b_profile.py"):
+            self.assertTrue((ROOT / entry).is_file(), entry)
+            dependencies.update(python_closure(entry))
+        fixtures = {
+            str(path.relative_to(ROOT))
+            for path in (ROOT / "tests/fixtures/lightonocr3-4b-source").rglob("*")
+            if path.is_file()
+        }
+        self.assertTrue(fixtures)
+        dependencies.update(fixtures)
+        filters = workflow_paths("controls.yml")
+        self.assertEqual(set(filters), {"push", "pull_request"})
+        for event_name, patterns in filters.items():
+            for dependency in sorted(dependencies):
+                with self.subTest(dependency=dependency, event=event_name):
+                    self.assertTrue(workflow_filter_includes(patterns, dependency))
+
+    def test_controls_executes_lightonocr3_4b_source_preflight(self):
+        workflow = (ROOT / ".github/workflows/controls.yml").read_text()
+        self.assertRegex(
+            workflow,
+            r"(?m)^\s+run: python3? tests/test_lightonocr3_4b_profile\.py -v$",
+        )
+
     def test_ordinary_workflows_share_one_filter_for_push_and_pr(self):
         reference = workflow_paths("build.yml")["push"]
         self.assertEqual(reference[0], "**")
@@ -575,3 +644,4 @@ class WorkflowInvariantTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

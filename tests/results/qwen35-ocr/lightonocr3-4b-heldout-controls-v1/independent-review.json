@@ -1,0 +1,27 @@
+{
+  "schema": "lighton4b-heldout-controls-independent-review/v1",
+  "source_sha": "874728b71d113bb1a02f7a1fa97717ec2b6281b5",
+  "receipt_sha256": "7b090c04f11cd48e27e49dd290fef1b5405bfbd058d658b6ee13e44e5315bc07",
+  "owned_members_rehashed": 28,
+  "all_owned_members_exact": true,
+  "actual_cli_return_codes": {
+    "cli-native-composed": 4,
+    "cli-native-source-features": 4,
+    "cli-cap-low": 2,
+    "cli-cap-high": 2,
+    "cli-threads": 2,
+    "cli-mode": 2,
+    "cli-disabled": 2,
+    "cli-unflagged": 2,
+    "cli-old256": 4,
+    "cli-old512": 4
+  },
+  "model_acquisition": false,
+  "heldout_forward_executed": false,
+  "primary_api_peer_review": "Pinned6c01 vocabulary-only model / mtmd tokenize-only API and position mapping reviewed; no encode or decode calls.",
+  "limits": [
+    "No checkpoint or heldout inference.",
+    "Compilation/noargs validates linkage but actual source/native metadata equality requires real input preflight before any forward.",
+    "Provisional references require independent human adjudication and embedded-text rights review."
+  ]
+}

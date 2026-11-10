@@ -1,0 +1,24 @@
+{
+  "schema": "lighton4b-attention-dispatch-independent-review/v1",
+  "source_sha": "b46bd2b99",
+  "report_sha256": "d5b7ad89bc6f175e3ef5162bb6ab5b036a3e8acec261c83b191928af05638677",
+  "status": "measured_operator_only",
+  "fresh_upstream_on_frozen_stage_hashes_exact": 10,
+  "composed_observed_pairs_exact": 8,
+  "selected_stage_files_hashed": 10,
+  "selected_bytes_hashed": 2621440,
+  "selected_metrics_recomputed": 8,
+  "metric_readback": "maximum errors exact, RMS within one binary64 ULP",
+  "findings": [
+    "Original paired F16 raw QK equals upstream graph with LLAMAFILE OFF at N4 and N16.",
+    "Actual upstream ON dispatch has residual RMS2.0641197e-6/max6.103515625e-5 at N16.",
+    "Feeding exact source probabilities reduces isolated PV context RMS to2.3430168e-8/max4.76837158203125e-7 and gated RMS2.1663622e-9/max1.1920928955078125e-7.",
+    "Most prior downstream residual propagated QK/softmax through one probability F16 rounding boundary."
+  ],
+  "limits": [
+    "OFF is diagnostic, not the actual source profile.",
+    "The native global F16-by-F32 protection remains unchanged.",
+    "Actual upstream hidden2 not captured; conditional same-native-QKV primitives only.",
+    "No tokenwise cache replay, model forward, production integration, shipping or decoded-quality claim."
+  ]
+}

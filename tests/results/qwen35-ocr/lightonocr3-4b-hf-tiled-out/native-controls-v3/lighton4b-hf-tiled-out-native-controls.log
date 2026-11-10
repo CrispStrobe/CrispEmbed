@@ -1,0 +1,23 @@
+[{"stream_name":"stdout","time":1.373457663,"data":"PHASE init\n"}
+,{"stream_name":"stdout","time":1.5423133020000002,"data":"PHASE remote\n"}
+,{"stream_name":"stdout","time":1.559063735,"data":"PHASE fetch\n"}
+,{"stream_name":"stdout","time":7.595423345,"data":"PHASE checkout\n"}
+,{"stream_name":"stdout","time":9.166960238,"data":"PHASE submodule\n"}
+,{"stream_name":"stdout","time":13.204155908,"data":"PHASE venv\n"}
+,{"stream_name":"stdout","time":13.368905279,"data":"PHASE venv-prefix\n"}
+,{"stream_name":"stdout","time":13.533958766,"data":"PHASE packages\n"}
+,{"stream_name":"stdout","time":25.195426389,"data":"PHASE dependency-preflight\n"}
+,{"stream_name":"stdout","time":26.114800247,"data":"PHASE configure\n"}
+,{"stream_name":"stdout","time":29.292750259,"data":"PHASE build\n"}
+,{"stream_name":"stdout","time":128.388185297,"data":"PHASE python-controls\n"}
+,{"stream_name":"stdout","time":128.703842533,"data":"PHASE environment-inventory\n"}
+,{"stream_name":"stdout","time":129.659988929,"data":"PHASE fetch-frozen-receipts\n"}
+,{"stream_name":"stdout","time":133.08703147,"data":"PHASE source-pins\n"}
+,{"stream_name":"stdout","time":133.352761977,"data":"PHASE native-controls\n"}
+,{"stream_name":"stderr","time":139.616444697,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":139.616483851,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":140.032592457,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":140.032623754,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":141.231800423,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":142.69441585,"data":"[NbConvertApp] Writing 316701 bytes to __results__.html\n"}
+]

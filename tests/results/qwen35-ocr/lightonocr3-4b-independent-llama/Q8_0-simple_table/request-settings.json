@@ -1,0 +1,15 @@
+{
+  "n_predict": 256,
+  "temperature": 0,
+  "seed": 0,
+  "top_k": 1,
+  "top_p": 1,
+  "min_p": 0,
+  "repeat_penalty": 1,
+  "presence_penalty": 0,
+  "frequency_penalty": 0,
+  "cache_prompt": false,
+  "return_tokens": true,
+  "n_probs": 5,
+  "stream": false
+}

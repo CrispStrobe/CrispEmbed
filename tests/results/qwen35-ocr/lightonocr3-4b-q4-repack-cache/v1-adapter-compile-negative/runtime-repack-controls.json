@@ -1,0 +1,256 @@
+{
+  "schema": "lighton4b-physical-q4-repack-controls/v1",
+  "status": "failed",
+  "commands": {
+    "source": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 57,
+      "elapsed_seconds": 0.00443914599998152,
+      "child_user_seconds": 0.0,
+      "child_system_seconds": 0.002191,
+      "peak_rss_bytes_observed": 380928,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 41451520
+    },
+    "submodule": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 58,
+      "elapsed_seconds": 10.825404675000016,
+      "child_user_seconds": 16.507422,
+      "child_system_seconds": 1.0972089999999999,
+      "peak_rss_bytes_observed": 4173824,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 65728512
+    },
+    "fetch-pins": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 100,
+      "elapsed_seconds": 5.570337839000047,
+      "child_user_seconds": 2.1014030000000012,
+      "child_system_seconds": 0.626093,
+      "peak_rss_bytes_observed": 5926912,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 90808320
+    },
+    "source-pins": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 111,
+      "elapsed_seconds": 0.31687502899995934,
+      "child_user_seconds": 0.1917429999999989,
+      "child_system_seconds": 0.0766969999999998,
+      "peak_rss_bytes_observed": 520192,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 90808320
+    },
+    "environment": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 132,
+      "elapsed_seconds": 2.769990765999978,
+      "child_user_seconds": 2.515829,
+      "child_system_seconds": 0.156269,
+      "peak_rss_bytes_observed": 21504000,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 90808320
+    },
+    "configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 135,
+      "elapsed_seconds": 4.521984558999975,
+      "child_user_seconds": 1.6053169999999994,
+      "child_system_seconds": 0.9510990000000001,
+      "peak_rss_bytes_observed": 26959872,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 90808320
+    },
+    "build-test-lighton4b-physical-q4-repack": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 213,
+      "elapsed_seconds": 77.51080226900001,
+      "child_user_seconds": 131.147279,
+      "child_system_seconds": 7.622458,
+      "peak_rss_bytes_observed": 9834496,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434130944
+    },
+    "run-test-lighton4b-physical-q4-repack": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 556,
+      "elapsed_seconds": 2.0339676809999787,
+      "child_user_seconds": 5.710276000000022,
+      "child_system_seconds": 0.3702129999999997,
+      "peak_rss_bytes_observed": 222679040,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434130944
+    },
+    "build-test-lighton4b-physical-q4-repack-main-stub": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1931,
+      "elapsed_seconds": 338.35517652500005,
+      "child_user_seconds": 639.4922359999999,
+      "child_system_seconds": 28.667381000000006,
+      "peak_rss_bytes_observed": 9986048,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434130944
+    },
+    "run-test-lighton4b-physical-q4-repack-main-stub": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2672,
+      "elapsed_seconds": 0.004213552000010168,
+      "child_user_seconds": 0.002627000000074986,
+      "child_system_seconds": 0.0,
+      "peak_rss_bytes_observed": 241664,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434130944
+    },
+    "build-test-lighton4b-physical-q4-repack-sourcefed": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 2673,
+      "error_type": "CalledProcessError",
+      "error": "Command '['cmake', '--build', PosixPath('/tmp/lighton4b-runtime-q4-repack-controls-v1/runtime-repack/build'), '--target', 'test-lighton4b-physical-q4-repack-sourcefed', '--parallel', '2']' returned non-zero exit status 2.",
+      "elapsed_seconds": 1.3666240070000413,
+      "child_user_seconds": 1.0931620000000066,
+      "child_system_seconds": 0.23720399999999842,
+      "peak_rss_bytes_observed": 10039296,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 434130944
+    }
+  },
+  "sourcefed": {},
+  "model_forward_executed": false,
+  "quality_qualified": false,
+  "phase": "build-test-lighton4b-physical-q4-repack-sourcefed",
+  "source_sha": "26763167f70e2dce6cf187caacc5164e95d01432",
+  "preflight": {
+    "memory": {
+      "MemAvailable": 31423438848,
+      "SwapTotal": 0,
+      "SwapFree": 0,
+      "cgroup_observed": 1,
+      "finite_cgroup_bounds": 1
+    },
+    "disk_free": 1037741748224,
+    "load": [
+      0.35546875,
+      0.345703125,
+      0.17041015625
+    ]
+  },
+  "operator_receipt_sha256": "4dc28c17717082a36e9f2cad3729a31a83a97c3234b07d3c00002232744a66f5",
+  "actual_receipt_sha256": "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3",
+  "error_type": "CalledProcessError",
+  "error": "Command '['cmake', '--build', PosixPath('/tmp/lighton4b-runtime-q4-repack-controls-v1/runtime-repack/build'), '--target', 'test-lighton4b-physical-q4-repack-sourcefed', '--parallel', '2']' returned non-zero exit status 2.",
+  "elapsed_seconds": 443.39220222599994,
+  "artifacts": {
+    "source-init.log": {
+      "bytes": 579,
+      "sha256": "4df206fe95562988739338bd0b87260a50308e18867bdd44000ce1fbe357e32e"
+    },
+    "fetch-pins.log": {
+      "bytes": 275,
+      "sha256": "725df7c1a7fda21ba1fb7377d190662619b07760d9eb47a7bae5aeaee49f8b59"
+    },
+    "source-pins.log": {
+      "bytes": 45,
+      "sha256": "286d64b42ca5d0653f39f75075fbdf6a62f6e2b124cdefaf3181887f5469dfcd"
+    },
+    "submodule.log": {
+      "bytes": 239,
+      "sha256": "27c2c45c93ed3142faf6b7835d39d3ef58cc05b16152f1a6fadd5e6e09ad7b63"
+    },
+    "CMakeCache.txt": {
+      "bytes": 29227,
+      "sha256": "a5483c43954fae82d441117d88605a13329d5d1328570b08a63d77e016d32f54"
+    },
+    "build-test-lighton4b-physical-q4-repack-main-stub.log": {
+      "bytes": 264719,
+      "sha256": "82b199db324a3e861ceb0ac2654a5a71eb4e6ee159eaa5fc21ec2b3501e83112"
+    },
+    "configure.log": {
+      "bytes": 2057,
+      "sha256": "d602e38f328a5f4c13482850a5c2b416355e6bba9555f67fd8ed797f6f4f90ec"
+    },
+    "source-checkout.log": {
+      "bytes": 85,
+      "sha256": "0717ed8619a7c75f575751a079b32aa50d134fd72025ab03f2e0759fc90b3cdc"
+    },
+    "build-test-lighton4b-physical-q4-repack-sourcefed.log": {
+      "bytes": 1500,
+      "sha256": "ab4056fcfdfcebb55b99b66b53ccaa08aba1713c4502477d4b8acaae0737da1c"
+    },
+    "runtime-repack-controls.log": {
+      "bytes": 456,
+      "sha256": "85c3e067a7d68969a321324d9c56b981bd691bf0109535cdbb1a46fb13996347"
+    },
+    "pip-resolution.json": {
+      "bytes": 56667,
+      "sha256": "c213cce359b35d25be3fc771baf594546ae5228ea8938e948a853fb30951119e"
+    },
+    "run-test-lighton4b-physical-q4-repack.log": {
+      "bytes": 101,
+      "sha256": "3c9df6965787489db5717598b1e39e2d8ca31d7273e512cc53fbb587bf1b80dd"
+    },
+    "venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "environment.log": {
+      "bytes": 42,
+      "sha256": "1c533d30d01a0afd055334c931df000aaf0f5f18cbb2b069f52b10d2fe2d0b9b"
+    },
+    "source-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "build-test-lighton4b-physical-q4-repack.log": {
+      "bytes": 5676,
+      "sha256": "af6a762ace94023eb73cdc0f8cdcd5cf38c62fcbf142601dd22ee6fd76554c9e"
+    },
+    "run-test-lighton4b-physical-q4-repack-main-stub.log": {
+      "bytes": 45,
+      "sha256": "4b2cd3fcf2c0aa681952730fec44b0f3d59a4b287cc4c37507e071179b04f61c"
+    },
+    "dependencies.log": {
+      "bytes": 551,
+      "sha256": "88f5802a35c01fe8ad920c72a9accce8f70b73eed300dc8298fb10bb15217482"
+    },
+    "control-runtime-guard.log": {
+      "bytes": 205,
+      "sha256": "0a52a9ad1d68a2b84b3fa1132b5930d9cadee04ee5906ec9758126f9cb7d5afa"
+    },
+    "dependency-check.log": {
+      "bytes": 132,
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    "control-repack-admission.log": {
+      "bytes": 204,
+      "sha256": "5204294a50a6f265759e296440a1a05771c346d7f89067f784e08761131f965e"
+    },
+    "source-fetch.log": {
+      "bytes": 123,
+      "sha256": "40a9f4829d49fc173ccb878bfe45a8a3f0b32396adb3db688ec2b139921dc7d0"
+    },
+    "runtime-repack-bootstrap.json": {
+      "bytes": 1302,
+      "sha256": "d0d2528ee648982d34ecb54a1da216b0ff4d22da2be558e50042bc733e66571f"
+    },
+    "dependency-profile.log": {
+      "bytes": 102,
+      "sha256": "50e31b712644548df2ea205f2e49aed62d938a59070d48f36338db20c2753895"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "fb5efafc1dbf40e411d482a057dd4f28e3da6abab50df1fb22964253568698b6"
+    }
+  }
+}

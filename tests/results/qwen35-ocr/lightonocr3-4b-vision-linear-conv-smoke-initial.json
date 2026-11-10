@@ -1,0 +1,14 @@
+{
+  "schema": "lighton4b-vision-linear-conv-smoke-initial/v1",
+  "status": "failed-unused-historical-receipt-dependency",
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42040210848",
+  "source_sha": "80a553c7b",
+  "artifact_id": 13420203914,
+  "original_layer0_control_passed": true,
+  "source_fed_norm_linear_controls_passed": true,
+  "ordinary_baseline_executed": false,
+  "ordinary_candidate_executed": false,
+  "decoder_candidate_gate": "0",
+  "quality_qualified": false,
+  "diagnosis": "Driver loaded absent historical norm-off stages receipt before applying already-complete fixed norm-only 30-stage overrides. Use complete explicit overrides directly; preserve original fallback protocol and all existing stage hashes/budgets."
+}

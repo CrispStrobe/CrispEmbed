@@ -1,0 +1,2 @@
+gguf_init_from_file: failed to open GGUF file 'missing.gguf' (No such file or directory)
+native-context controls=9 passed=1 model_payload=0

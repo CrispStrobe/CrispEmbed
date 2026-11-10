@@ -1,0 +1,21 @@
+{
+  "schema": "lighton4b-attention-sgemm-independent-review/v1",
+  "status": "conditional_operator_byte_exact",
+  "source_sha": "b4a1a8dcf6204a6e06902362af1628b59783f735",
+  "report_sha256": "361259199df487c630465336c97619ea5eb801ac1c70a040e7ba78ca49b39928",
+  "original_source_stage_hash_pairs_independently_verified": 40,
+  "composed_observed_pairs_independently_verified": 12,
+  "selected_native_n16_vectors_hashed_and_byte_compared": 5,
+  "selected_bytes": 1310720,
+  "all_checks_pass": true,
+  "global_traits_changed": false,
+  "vendor_sources_changed": false,
+  "production_integration_executed": false,
+  "quality_qualified": false,
+  "limits": [
+    "Actual native QKV input; actual upstream hidden2 not captured.",
+    "N4/N16 only, no N1/tokenwise cache replay or full model result.",
+    "Private ABI and installed four-thread pool verified only for these exact pinned hosted CPU builds.",
+    "No default/gate promotion or shipping qualification."
+  ]
+}

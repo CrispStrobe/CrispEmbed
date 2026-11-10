@@ -1,0 +1,2 @@
+repack: repack tensor  with q4_K_8x8
+FFN_POSTNORM_CONTROLS PASS model=0 packed_rhs=1 synthetic_weights=1

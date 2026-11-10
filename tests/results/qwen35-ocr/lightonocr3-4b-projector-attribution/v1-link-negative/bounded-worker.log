@@ -1,0 +1,22 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+phase source-pin
+phase up-init
+phase up-remote
+phase up-fetch
+phase up-checkout
+phase configure
+phase build
+Traceback (most recent call last):
+  File "/tmp/lighton4b-projector-canonical-v1/source/tools/projector-probe/worker.py", line 106, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/tmp/lighton4b-projector-canonical-v1/source/tools/projector-probe/worker.py", line 79, in main
+    shutil.copy(build/'CMakeCache.txt',out/'CMakeCache.txt');run('build',['cmake','--build',build,'--target','crisp-projector-probe','--parallel','2']);program=build/'bin/crisp-projector-probe'
+                                                             ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-projector-canonical-v1/source/tools/projector-probe/worker.py", line 52, in run
+    try:command(args,out/(label+'.log'),min(timeout,3600-(time.monotonic()-started)),r['commands'][label],env=env,cwd=ROOT)
+        ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-projector-canonical-v1/source/tools/physical-f16-attention-probe/runtime_guard.py", line 71, in command
+    raise subprocess.CalledProcessError(code, args)
+subprocess.CalledProcessError: Command '['cmake', '--build', PosixPath('/tmp/lighton4b-projector-canonical-v1/projector/build'), '--target', 'crisp-projector-probe', '--parallel', '2']' returned non-zero exit status 2.

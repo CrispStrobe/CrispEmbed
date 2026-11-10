@@ -1,0 +1,25 @@
+[{"stream_name":"stdout","time":1.274368862,"data":"PHASE init\n"}
+,{"stream_name":"stdout","time":1.390763782,"data":"PHASE remote\n"}
+,{"stream_name":"stdout","time":1.399233277,"data":"PHASE fetch\n"}
+,{"stream_name":"stdout","time":7.285150203,"data":"PHASE checkout\n"}
+,{"stream_name":"stdout","time":8.858596334,"data":"PHASE venv\n"}
+,{"stream_name":"stdout","time":9.023614654,"data":"PHASE venv-prefix\n"}
+,{"stream_name":"stdout","time":9.139058836,"data":"PHASE numpy\n"}
+,{"stream_name":"stdout","time":19.589832893,"data":"PHASE dependency-preflight\n"}
+,{"stream_name":"stdout","time":19.85612502,"data":"PHASE causal-row-controls\n"}
+,{"stream_name":"stdout","time":20.122051404,"data":"PHASE actual-artifact-readback\n"}
+,{"stream_name":"stderr","time":34.694786113,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":34.695548707,"data":"  File \"/kaggle/src/script.py\", line 38, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":34.695580192,"data":"    run('actual-artifact-readback',[python,source/'tools/ci-heavy/lighton4b_f16_teacher_readback.py','--mount','/kaggle/input','--output',out/'results'],20*60,env)\n"}
+,{"stream_name":"stderr","time":34.695585139,"data":"    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":34.695589151,"data":"  File \"/kaggle/src/script.py\", line 22, in run\n"}
+,{"stream_name":"stderr","time":34.695593227,"data":"    if code:raise RuntimeError('bounded reader stage failed: '+label)\n"}
+,{"stream_name":"stderr","time":34.695596807,"data":"            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":34.695600229,"data":"RuntimeError: bounded reader stage failed: actual-artifact-readback\n"}
+,{"stream_name":"stderr","time":37.701122662,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":37.701166174,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":38.217184537,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":38.217216186,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":39.52568239,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":41.171039792,"data":"[NbConvertApp] Writing 299445 bytes to __results__.html\n"}
+]

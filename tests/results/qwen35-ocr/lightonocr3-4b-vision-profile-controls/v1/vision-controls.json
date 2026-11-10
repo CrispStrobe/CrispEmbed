@@ -1,0 +1,743 @@
+{
+  "schema": "lighton4b-physical-vision-controls/v1",
+  "status": "passed_model_free_vision_controls",
+  "commands": {
+    "source": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 62,
+      "elapsed_seconds": 0.004263571999956639,
+      "child_user_seconds": 0.0008179999999999999,
+      "child_system_seconds": 0.0016359999999999999,
+      "peak_rss_bytes_observed": 4096,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 39579648
+    },
+    "ggml-init": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 63,
+      "elapsed_seconds": 10.271873889999995,
+      "child_user_seconds": 15.907435,
+      "child_system_seconds": 0.915303,
+      "peak_rss_bytes_observed": 4173824,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 58327040
+    },
+    "native-configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 105,
+      "elapsed_seconds": 3.469960802999992,
+      "child_user_seconds": 1.3872780000000002,
+      "child_system_seconds": 0.8342510000000001,
+      "peak_rss_bytes_observed": 27582464,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 58327040
+    },
+    "build-test-lighton4b-pillow-resize": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 183,
+      "elapsed_seconds": 73.60789906200006,
+      "child_user_seconds": 124.036229,
+      "child_system_seconds": 7.651417,
+      "peak_rss_bytes_observed": 9854976,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433840128
+    },
+    "run-test-lighton4b-pillow-resize": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 536,
+      "elapsed_seconds": 0.01633535500002381,
+      "child_user_seconds": 0.0061099999999782995,
+      "child_system_seconds": 0.007127999999999801,
+      "peak_rss_bytes_observed": 208896,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433840128
+    },
+    "build-test-lighton4b-physical-f16-vision": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 537,
+      "elapsed_seconds": 2.1162389700000404,
+      "child_user_seconds": 1.7434379999999976,
+      "child_system_seconds": 0.3399979999999996,
+      "peak_rss_bytes_observed": 10014720,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433840128
+    },
+    "run-test-lighton4b-physical-f16-vision": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 592,
+      "elapsed_seconds": 7.020895867000036,
+      "child_user_seconds": 25.18071500000002,
+      "child_system_seconds": 1.8496450000000006,
+      "peak_rss_bytes_observed": 207319040,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433840128
+    },
+    "build-lighton4b-vision-profile-probe": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 596,
+      "elapsed_seconds": 2.31670128799999,
+      "child_user_seconds": 1.995223999999979,
+      "child_system_seconds": 0.2948360000000001,
+      "peak_rss_bytes_observed": 10137600,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433840128
+    },
+    "build-test-lighton4b-pillow-resize-main": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 651,
+      "elapsed_seconds": 339.705684852,
+      "child_user_seconds": 645.845413,
+      "child_system_seconds": 29.530554000000002,
+      "peak_rss_bytes_observed": 10076160,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433840128
+    },
+    "run-test-lighton4b-pillow-resize-main": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1402,
+      "elapsed_seconds": 0.016998631999967984,
+      "child_user_seconds": 0.007003000000054271,
+      "child_system_seconds": 0.007128999999999053,
+      "peak_rss_bytes_observed": 524288,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433840128
+    },
+    "build-test-lighton4b-physical-f16-vision-main-stub": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1403,
+      "elapsed_seconds": 2.267286426999931,
+      "child_user_seconds": 1.8521619999999075,
+      "child_system_seconds": 0.38611099999999965,
+      "peak_rss_bytes_observed": 10027008,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433840128
+    },
+    "run-test-lighton4b-physical-f16-vision-main-stub": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1458,
+      "elapsed_seconds": 0.004146634999983689,
+      "child_user_seconds": 0.002405000000067048,
+      "child_system_seconds": 0.0,
+      "peak_rss_bytes_observed": 208896,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433840128
+    },
+    "up-init": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1459,
+      "elapsed_seconds": 0.008433216000071297,
+      "child_user_seconds": 0.0017890000000306827,
+      "child_system_seconds": 0.0026829999999975485,
+      "peak_rss_bytes_observed": 385024,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433840128
+    },
+    "up-remote": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1460,
+      "elapsed_seconds": 0.004197556999997687,
+      "child_user_seconds": 0.0009469999999964784,
+      "child_system_seconds": 0.0018940000000000623,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433840128
+    },
+    "up-fetch": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1461,
+      "elapsed_seconds": 4.618775808999999,
+      "child_user_seconds": 2.3294599999999264,
+      "child_system_seconds": 0.5681110000000018,
+      "peak_rss_bytes_observed": 16883712,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433840128
+    },
+    "up-checkout": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1472,
+      "elapsed_seconds": 1.2159919389999914,
+      "child_user_seconds": 0.7901560000000245,
+      "child_system_seconds": 0.30335999999999785,
+      "peak_rss_bytes_observed": 65191936,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433840128
+    },
+    "up-configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1474,
+      "elapsed_seconds": 2.0017873479999935,
+      "child_user_seconds": 1.2054279999999835,
+      "child_system_seconds": 0.6443840000000023,
+      "peak_rss_bytes_observed": 18673664,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433840128
+    },
+    "up-build": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1651,
+      "elapsed_seconds": 241.44981599000005,
+      "child_user_seconds": 437.37922000000003,
+      "child_system_seconds": 20.063109999999995,
+      "peak_rss_bytes_observed": 10047488,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-0-native": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2286,
+      "elapsed_seconds": 0.004266125000185639,
+      "child_user_seconds": 0.0007900000000518048,
+      "child_system_seconds": 0.001581000000001609,
+      "peak_rss_bytes_observed": 200704,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-0-source": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2287,
+      "elapsed_seconds": 0.016504789000009623,
+      "child_user_seconds": 0.0045809999999164575,
+      "child_system_seconds": 0.0023320000000026653,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-1-native": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2288,
+      "elapsed_seconds": 0.004050031000133458,
+      "child_user_seconds": 0.0017450000000280852,
+      "child_system_seconds": 0.0008729999999985694,
+      "peak_rss_bytes_observed": 196608,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-1-source": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2289,
+      "elapsed_seconds": 0.008276410000007672,
+      "child_user_seconds": 0.005102999999962776,
+      "child_system_seconds": 0.0010199999999969123,
+      "peak_rss_bytes_observed": 184320,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-2-native": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2290,
+      "elapsed_seconds": 0.004142392000176187,
+      "child_user_seconds": 0.0008030000001326698,
+      "child_system_seconds": 0.001606999999999914,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-2-source": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2291,
+      "elapsed_seconds": 0.008332411000083084,
+      "child_user_seconds": 0.0028989999998429994,
+      "child_system_seconds": 0.002899000000006424,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-3-native": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2292,
+      "elapsed_seconds": 0.004129495000142924,
+      "child_user_seconds": 0.0012010000000373111,
+      "child_system_seconds": 0.0012009999999946785,
+      "peak_rss_bytes_observed": 188416,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-3-source": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2293,
+      "elapsed_seconds": 0.00832450300003984,
+      "child_user_seconds": 0.004922999999962485,
+      "child_system_seconds": 0.0009840000000025384,
+      "peak_rss_bytes_observed": 196608,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-4-native": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2294,
+      "elapsed_seconds": 0.004155325000056109,
+      "child_user_seconds": 0.0026410000000396394,
+      "child_system_seconds": 0.0,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-4-source": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2295,
+      "elapsed_seconds": 0.008452249999891137,
+      "child_user_seconds": 0.003016000000116037,
+      "child_system_seconds": 0.002985000000002458,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-5-native": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2296,
+      "elapsed_seconds": 0.004250532000014573,
+      "child_user_seconds": 0.0008249999998497515,
+      "child_system_seconds": 0.001649999999997931,
+      "peak_rss_bytes_observed": 262144,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-5-source": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2297,
+      "elapsed_seconds": 0.008525405000000319,
+      "child_user_seconds": 0.004124999999930878,
+      "child_system_seconds": 0.002071000000000822,
+      "peak_rss_bytes_observed": 188416,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-6-native": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2298,
+      "elapsed_seconds": 0.004366546000028393,
+      "child_user_seconds": 0.0013080000001082226,
+      "child_system_seconds": 0.0013069999999970605,
+      "peak_rss_bytes_observed": 176128,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-6-source": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2299,
+      "elapsed_seconds": 0.008297971000047255,
+      "child_user_seconds": 0.0040260000000671425,
+      "child_system_seconds": 0.0020239999999986935,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-7-native": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2300,
+      "elapsed_seconds": 0.0041935840001769975,
+      "child_user_seconds": 0.0018330000000332802,
+      "child_system_seconds": 0.0009170000000011669,
+      "peak_rss_bytes_observed": 208896,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "resize-7-source": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2301,
+      "elapsed_seconds": 0.008372317999828738,
+      "child_user_seconds": 0.0019889999998667918,
+      "child_system_seconds": 0.003976999999999009,
+      "peak_rss_bytes_observed": 188416,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    },
+    "actual-preprocess": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 2302,
+      "elapsed_seconds": 0.0651135499999782,
+      "child_user_seconds": 0.0445830000001024,
+      "child_system_seconds": 0.010138000000004865,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 558985216
+    }
+  },
+  "model_acquisition": false,
+  "checkpoint_vision_forward_executed": false,
+  "synthetic_vision_component_executed": true,
+  "quality_qualified": false,
+  "resize_cases": [
+    {
+      "shape": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "input_sha256": "e01c2588e3985d3cd8d5cfe8242adb8062ac544fcb363af90c20850edd69eff1",
+      "output_sha256": "e01c2588e3985d3cd8d5cfe8242adb8062ac544fcb363af90c20850edd69eff1",
+      "bit_exact": true
+    },
+    {
+      "shape": [
+        3,
+        7,
+        11,
+        13
+      ],
+      "input_sha256": "d242661714b033b37cddf0800c28929ac05928a484a0ecd597bf05dced083587",
+      "output_sha256": "ca77f5a4c37b746baf89c40d276e468d559e6f791b1baf18584e93f0b928ead3",
+      "bit_exact": true
+    },
+    {
+      "shape": [
+        19,
+        31,
+        7,
+        11
+      ],
+      "input_sha256": "3612fae34b9ae156c99e9aa5f27ad9fd7d0a71c13cc920d1d8d7dfce0604b680",
+      "output_sha256": "f5d162827c06578c9e41211c88304f51e330e369a33c5ab51db3cfa732c15883",
+      "bit_exact": true
+    },
+    {
+      "shape": [
+        1,
+        23,
+        9,
+        7
+      ],
+      "input_sha256": "346eb93df5fa7b0e65d55740410e58b1b13e98b15834477cdbf639a09ddd45ce",
+      "output_sha256": "a9069676360a01ec28e0a9e36f9f1f2631b330bae46e29c1b2ebae349c62e677",
+      "bit_exact": true
+    },
+    {
+      "shape": [
+        17,
+        1,
+        5,
+        13
+      ],
+      "input_sha256": "55837775ad6c1c43147d13fd813f126982f753afd0bd5bc31c2ac7f1bbec6f1d",
+      "output_sha256": "0ab5947781453cf2f5580e5a2655417a4e1ecdf714938d7909fdfb1a98c0b9ff",
+      "bit_exact": true
+    },
+    {
+      "shape": [
+        11,
+        17,
+        11,
+        7
+      ],
+      "input_sha256": "471ac02ad0c2d152f3168d150480159dca31691269b129becfbca10b65513542",
+      "output_sha256": "af1fcdc1cf9267bcbccd8b7111bec8e386f69b031a70648dedec5a4034d58c20",
+      "bit_exact": true
+    },
+    {
+      "shape": [
+        13,
+        19,
+        5,
+        19
+      ],
+      "input_sha256": "c84aaa7b162aa3f3e2fc3dc6d776f38622648edf7e303294c06880a80f843f38",
+      "output_sha256": "420bed80b92c2c2d7a14534c0b7709d0eb77b7f550d95f6f071ef750092c1004",
+      "bit_exact": true
+    },
+    {
+      "shape": [
+        37,
+        41,
+        64,
+        32
+      ],
+      "input_sha256": "1f823ddf936f7912ff5c5da557b390a7287a552fc50c73184415cf5110640155",
+      "output_sha256": "325f5e3372fa47231e749e8f2b23dbae75b9c8bfc7627de5fcb4905e52d82484",
+      "bit_exact": true
+    }
+  ],
+  "phase": "actual-preprocess",
+  "source_sha": "0eca8d13ff55169ad47efcb446fa32786bbf9d3e",
+  "capacity": {
+    "memory": {
+      "MemAvailable": 31486349312,
+      "SwapTotal": 0,
+      "SwapFree": 0,
+      "cgroup_observed": 1,
+      "finite_cgroup_bounds": 1
+    },
+    "scratch_free": 1037711257600,
+    "load": [
+      0.51171875,
+      0.3291015625,
+      0.17626953125
+    ]
+  },
+  "reference_bridge": {
+    "before_sha256": "9f752e7d26cd607f2f0ffafd164859d76180299969de9b3bb30fccb75639bc63",
+    "after_sha256": "aaee2a0a1a383c2bb9fd1fbee34ce67e6aa5eb2681405226bf1d69f172fc408b"
+  },
+  "actual_form_preprocessing_exact": true,
+  "elapsed_seconds": 690.7164733019999,
+  "artifacts": {
+    "resize-6-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "resize-4-native.rgb": {
+      "bytes": 195,
+      "sha256": "0ab5947781453cf2f5580e5a2655417a4e1ecdf714938d7909fdfb1a98c0b9ff"
+    },
+    "run-test-lighton4b-physical-f16-vision.log": {
+      "bytes": 101,
+      "sha256": "d58c15e1a57af3d53eada05f045b41d5fdb56580fc6854f8021f06a8bb03c7f2"
+    },
+    "resize-1-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "resize-2-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "actual-form.json": {
+      "bytes": 61,
+      "sha256": "44ce1e188a67d776726fae26256a9d50f946d35988e055c6f6ff041c71afaf0b"
+    },
+    "resize-7-source.rgb": {
+      "bytes": 6144,
+      "sha256": "325f5e3372fa47231e749e8f2b23dbae75b9c8bfc7627de5fcb4905e52d82484"
+    },
+    "run-test-lighton4b-pillow-resize-main.log": {
+      "bytes": 31,
+      "sha256": "3a887b49cd5e4840329e7d76a5e6bd333b20525eea3542aa8c69a4c9b0b2a0e4"
+    },
+    "resize-2-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "up-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "build-test-lighton4b-physical-f16-vision.log": {
+      "bytes": 408,
+      "sha256": "d8ed27ee1a69677111b9f82736d7d9707292c3cec2205dfc00aea351c223d6c5"
+    },
+    "resize-7-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "resize-3-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "resize-3-source.rgb": {
+      "bytes": 189,
+      "sha256": "a9069676360a01ec28e0a9e36f9f1f2631b330bae46e29c1b2ebae349c62e677"
+    },
+    "build-test-lighton4b-pillow-resize.log": {
+      "bytes": 5844,
+      "sha256": "40cc898b2cd162d88445a98025256e79adff6b75c0ba5f85b1f2ae0c975359f3"
+    },
+    "resize-1-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "resize-7-native.rgb": {
+      "bytes": 6144,
+      "sha256": "325f5e3372fa47231e749e8f2b23dbae75b9c8bfc7627de5fcb4905e52d82484"
+    },
+    "up-checkout.log": {
+      "bytes": 84,
+      "sha256": "401b0f35047d9999135ce240162909f4d3b9be4cafce7c16c1eafb93d3b7bff7"
+    },
+    "native-configure.log": {
+      "bytes": 2044,
+      "sha256": "7062829ea58d59fd2e0a1fe03810190ddf7498a60ee027234a6ecc9e96e69ed2"
+    },
+    "resize-1-source.rgb": {
+      "bytes": 429,
+      "sha256": "ca77f5a4c37b746baf89c40d276e468d559e6f791b1baf18584e93f0b928ead3"
+    },
+    "resize-5-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "build-lighton4b-vision-profile-probe.log": {
+      "bytes": 389,
+      "sha256": "3c16ffb49e093fc43992159b9872a46731b6b216efab576afd9e4132a85375d0"
+    },
+    "build-test-lighton4b-physical-f16-vision-main-stub.log": {
+      "bytes": 425,
+      "sha256": "3c7a7f3c7aede8f82783381d10c1ede8970e20a44490b0e87116000952922c9d"
+    },
+    "up-init.log": {
+      "bytes": 594,
+      "sha256": "174fbb17569bb00a7af5c370963a286b4f7d5f546a83db4a557da346637c67bc"
+    },
+    "build-test-lighton4b-pillow-resize-main.log": {
+      "bytes": 262431,
+      "sha256": "045268728485e09bd8f9ede45ee4f7949ad9fd69d9c5281d44cfb67e16716a75"
+    },
+    "resize-0-native.rgb": {
+      "bytes": 3,
+      "sha256": "e01c2588e3985d3cd8d5cfe8242adb8062ac544fcb363af90c20850edd69eff1"
+    },
+    "resize-5-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "run-test-lighton4b-pillow-resize.log": {
+      "bytes": 31,
+      "sha256": "3a887b49cd5e4840329e7d76a5e6bd333b20525eea3542aa8c69a4c9b0b2a0e4"
+    },
+    "resize-7-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "resize-0-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "ggml-init.log": {
+      "bytes": 236,
+      "sha256": "0e61f003e045163dae69e7c7ada6605469a0fd64c7747e87042d17f038bdc456"
+    },
+    "resize-5-source.rgb": {
+      "bytes": 231,
+      "sha256": "af1fcdc1cf9267bcbccd8b7111bec8e386f69b031a70648dedec5a4034d58c20"
+    },
+    "up-fetch.log": {
+      "bytes": 119,
+      "sha256": "5537e1fa1b4cf8d84bd910e3fed8a4a9e0803b4bddddf1cf9b9182e0f1b00983"
+    },
+    "resize-3-native.rgb": {
+      "bytes": 189,
+      "sha256": "a9069676360a01ec28e0a9e36f9f1f2631b330bae46e29c1b2ebae349c62e677"
+    },
+    "actual-preprocess.log": {
+      "bytes": 23,
+      "sha256": "cd5f1922741d95b0f7bfe8dc03ba02acdbb4ff46bff76c8e791a25644a57cce3"
+    },
+    "resize-0-source.rgb": {
+      "bytes": 3,
+      "sha256": "e01c2588e3985d3cd8d5cfe8242adb8062ac544fcb363af90c20850edd69eff1"
+    },
+    "up-build.log": {
+      "bytes": 8717,
+      "sha256": "53e17987c3eb1bc7b7f25c31290d25969198c1df6c6ce4999209166a6b1e3d00"
+    },
+    "actual-form.patches.f32": {
+      "bytes": 3440640,
+      "sha256": "1d66249e7d176481cb037eea70a82c2944b772b3fdd1f3df2becc18bfbc2edb4"
+    },
+    "resize-4-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "run-test-lighton4b-physical-f16-vision-main-stub.log": {
+      "bytes": 39,
+      "sha256": "cd38c609cedf097694e1762d8cc72f1cd52a197f07768ae80917b4fcd510674f"
+    },
+    "resize-2-native.rgb": {
+      "bytes": 231,
+      "sha256": "f5d162827c06578c9e41211c88304f51e330e369a33c5ab51db3cfa732c15883"
+    },
+    "native-CMakeCache.txt": {
+      "bytes": 29201,
+      "sha256": "5c3f0f06acc35dac57037a0b8567d59b4f67673d9355aab2e9d476c3377febf5"
+    },
+    "resize-4-source.rgb": {
+      "bytes": 195,
+      "sha256": "0ab5947781453cf2f5580e5a2655417a4e1ecdf714938d7909fdfb1a98c0b9ff"
+    },
+    "actual-form.rgb": {
+      "bytes": 430080,
+      "sha256": "b696ae06e5a1b1502830e1ba2d5c65df5fdb1a74550b69e67480794de5c4da98"
+    },
+    "resize-6-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "up-configure.log": {
+      "bytes": 1788,
+      "sha256": "86da03324ddfbf32c04d50ec7bac17da1c7d7aff2dabc7220b0a684e7a2048d8"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "0db8dc07976b6b19ff8c3bf8d0800b729e1b792020c834dc9676c4ec2b1c8f27"
+    },
+    "resize-1-native.rgb": {
+      "bytes": 429,
+      "sha256": "ca77f5a4c37b746baf89c40d276e468d559e6f791b1baf18584e93f0b928ead3"
+    },
+    "resize-6-source.rgb": {
+      "bytes": 285,
+      "sha256": "420bed80b92c2c2d7a14534c0b7709d0eb77b7f550d95f6f071ef750092c1004"
+    },
+    "actual-form.legacy.rgb": {
+      "bytes": 430080,
+      "sha256": "90539781fd2d2e5e57f5fb60c4f2d695f43ebdee05cc486d4c0370e7d63aa1a1"
+    },
+    "actual-form.legacy.patches.f32": {
+      "bytes": 3440640,
+      "sha256": "d623c64f184a10b6964aedeb3cd90f5a4e2e7aa39f7c480a9f474757776b8d8d"
+    },
+    "resize-5-native.rgb": {
+      "bytes": 231,
+      "sha256": "af1fcdc1cf9267bcbccd8b7111bec8e386f69b031a70648dedec5a4034d58c20"
+    },
+    "resize-0-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "source-CMakeCache.txt": {
+      "bytes": 34930,
+      "sha256": "e7bf1ab9bff8df3e235b07e60b6bc19885d115cb99022b865b476ce5376a6f64"
+    },
+    "resize-2-source.rgb": {
+      "bytes": 231,
+      "sha256": "f5d162827c06578c9e41211c88304f51e330e369a33c5ab51db3cfa732c15883"
+    },
+    "resize-6-native.rgb": {
+      "bytes": 285,
+      "sha256": "420bed80b92c2c2d7a14534c0b7709d0eb77b7f550d95f6f071ef750092c1004"
+    },
+    "resize-4-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "resize-3-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    }
+  },
+  "artifact_scope": "Only completed task-owned command logs, caches and result arrays; outer bootstrap/active worker log excluded."
+}

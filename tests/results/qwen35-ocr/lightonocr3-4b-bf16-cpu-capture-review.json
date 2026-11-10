@@ -1,0 +1,51 @@
+{
+  "cap_hit": false,
+  "capture_sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a",
+  "checkpoint_sha256": "6b0dab74a2dab02d5b10ca56322255024ed8dca35c02746b42e9f296aaeb4e67",
+  "driver_sha256": "f19f63b832fdd91db61f4586fb5872333719411e1c30ee0f40d43433db7024fd",
+  "environment_warning": "Python startup reported ModuleNotFoundError for wrapt in sitecustomize; the official processor and model executed and pip check reported no broken requirements.",
+  "eos_completed": true,
+  "full_vocabulary_scores": {
+    "bytes": 175810560,
+    "independent_local_sample_rows": [
+      0,
+      176
+    ],
+    "other_rows_independently_downloaded": false,
+    "remote_object_name_census_matches": true,
+    "rows": 177,
+    "sample_checks": [
+      "sha256",
+      "finite",
+      "argmax",
+      "selected_probability"
+    ],
+    "sample_sha256_verified": true,
+    "worker_sha256_per_row_recorded": true
+  },
+  "generation_seconds": 567.8896406050001,
+  "independent_review": "A second reviewer verified source blobs, metadata and first/last score values; the remaining score payloads were not locally downloaded.",
+  "memory_peaks": {
+    "cgroup_current_bytes": 19794493440,
+    "process_hwm_bytes": 9908559872,
+    "process_rss_bytes": 9908559872,
+    "process_ru_maxrss_bytes": 9908158464,
+    "worker_cgroup_peak_bytes": 19794493440
+  },
+  "model_revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+  "native_inference_observed": false,
+  "observer_off_replay_observed": false,
+  "original_forward_calls": 177,
+  "parameter_bytes": 9078531072,
+  "parameter_dtype_counts": {
+    "torch.bfloat16": 723
+  },
+  "protocol_sha256": "f1c94192e87435f219c30f2b9b4f0e7298a56f4236eb90533f94a4c1d324b163",
+  "quantized_quality_qualified": false,
+  "schema": "lighton4b-bf16-cpu-capture-review/v1",
+  "scope": "one original CPU BF16 free-generation diagnostic; no native inference, quantized inference, F32 equivalence or OCR-quality qualification",
+  "source_sha": "07543dcc80ebcecad644815d9397be2570a51dd4",
+  "status": "captured",
+  "tokenizer_sha256": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4",
+  "tokens": 177
+}

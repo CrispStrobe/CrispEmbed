@@ -1,0 +1,16 @@
+{
+  "checks": {
+    "hf-tiled-fullwidth-operator": 39,
+    "hf-tiled-recipe": 66710,
+    "old-hf-imatrix-recipe": 1147,
+    "old-physical-modes": 142,
+    "old-q6-tied-head": 84,
+    "old-stream-projection": null,
+    "public-release-fence": 39
+  },
+  "model_forward_executed": false,
+  "model_payload_bytes": 0,
+  "schema": "lighton4b-hf-tiled-out-native-controls/v1",
+  "seconds": 2.768981972000006,
+  "status": "passed"
+}

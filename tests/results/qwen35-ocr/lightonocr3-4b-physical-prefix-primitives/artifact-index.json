@@ -1,0 +1,173 @@
+{
+  "schema": "lighton4b-physical-prefix-artifact-index/v1",
+  "source_sha": "f155c591e3e8fa7e3cfb59f719a477a886976fc7",
+  "service": "Kaggle CPU",
+  "version": 2,
+  "reconstructed_operator_only": true,
+  "actual_native_trace_compared": false,
+  "model_forward_executed": false,
+  "files": {
+    "ssm_beta-upstream-norm-upstream-direct.f32": {
+      "bytes": 512,
+      "sha256": "fac1107c522adcabe85c4883ddd8b674afb54057874cfdc3efd608f267dacd21"
+    },
+    "ssm_beta-reconstructed-native-scalar-norm-upstream-dequant.f32": {
+      "bytes": 512,
+      "sha256": "246a03d014fd753a5e22117fad93a0a266b3d97f965f50291d6774475520d43a"
+    },
+    "ssm_alpha-upstream-norm-native-direct.f32": {
+      "bytes": 512,
+      "sha256": "93aef21727991a8f43ff341f28ff6c8497301a0679a0e303e5334263b4c3af0d"
+    },
+    "reconstructed-native-scalar-norm.f32": {
+      "bytes": 40960,
+      "sha256": "6a483ccb8ada19e78f2707edf8fda3c4ffb9ff2afc3922038a1c7f7d8c3ba773"
+    },
+    "prefix-primitives.json": {
+      "bytes": 10865,
+      "sha256": "0a66231504267f80f13e5e98b676273d55733fc79a627c8d91dffddbbf9bda57"
+    },
+    "attn_gate-reconstructed-native-scalar-norm-native-direct.f32": {
+      "bytes": 65536,
+      "sha256": "8f8c38543df8c9b1ae2956e17196f72581d84d7f6796c7301f2e9bd3dc2294e8"
+    },
+    "ssm_alpha-upstream-norm-upstream-dequant.f32": {
+      "bytes": 512,
+      "sha256": "ff582fb7316b389824d45b78b038486ca9c2b7224b981d5aefa95d0874e3a20f"
+    },
+    "ssm_alpha-reconstructed-native-scalar-norm-upstream-direct.f32": {
+      "bytes": 512,
+      "sha256": "b9f22f91cdf53c3e88fae459aa9777310fc2db8d6ef216a97d20f668a3d47832"
+    },
+    "ssm_beta-reconstructed-native-scalar-norm-native-dequant.f32": {
+      "bytes": 512,
+      "sha256": "246a03d014fd753a5e22117fad93a0a266b3d97f965f50291d6774475520d43a"
+    },
+    "ssm_alpha-upstream-norm-upstream-direct.f32": {
+      "bytes": 512,
+      "sha256": "93aef21727991a8f43ff341f28ff6c8497301a0679a0e303e5334263b4c3af0d"
+    },
+    "attn_gate-reconstructed-native-scalar-norm-upstream-dequant.f32": {
+      "bytes": 65536,
+      "sha256": "a818464bc0c357660e0777c05b4a98a3f93953cf69bc19898f0c47f3f7c8afe1"
+    },
+    "ssm_beta-upstream-norm-native-dequant.f32": {
+      "bytes": 512,
+      "sha256": "302a18963ff3a9bdbb1b1f4a4d7c16becdd3be03a7bb0f12ffe736fadf5aa701"
+    },
+    "ssm_alpha-reconstructed-native-scalar-norm-upstream-dequant.f32": {
+      "bytes": 512,
+      "sha256": "6385c7bb016fe170c6adbec21172eab6cbdd529ab50639eeabcc3399032b0e45"
+    },
+    "attn_qkv-upstream-norm-upstream-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "337394976500af2b425c1faf50e92c314f93ec006bdc72dbc3785891b199d4e9"
+    },
+    "attn_qkv-upstream-norm-native-direct.f32": {
+      "bytes": 131072,
+      "sha256": "253e66a332f5bf4d5fb59828f2c077612c23246bf2c317916ee3b8930c63f243"
+    },
+    "ssm_beta-reconstructed-native-scalar-norm-native-direct.f32": {
+      "bytes": 512,
+      "sha256": "72295df03038f750f03744c196f33941bc0de236f83483028625125e0921355b"
+    },
+    "attn_gate-upstream-norm-upstream-direct.f32": {
+      "bytes": 65536,
+      "sha256": "72bcbc9127a7734acf0f89da537d1d6bcdbe3ee3a07fda7485d9dc8daef1f169"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-native-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "c195cd691ba1d254ecd7d3d2fe9d5fd0fe0bcbedf137143de20ee5902e728b92"
+    },
+    "attn_gate-upstream-norm-native-dequant.f32": {
+      "bytes": 65536,
+      "sha256": "6a878ab93ba2dbed7a63d5406618711059732a23eabcaf26a2abbe071ee1277f"
+    },
+    "ssm_alpha-upstream-norm-native-dequant.f32": {
+      "bytes": 512,
+      "sha256": "ff582fb7316b389824d45b78b038486ca9c2b7224b981d5aefa95d0874e3a20f"
+    },
+    "attn_gate-upstream-norm-upstream-dequant.f32": {
+      "bytes": 65536,
+      "sha256": "6a878ab93ba2dbed7a63d5406618711059732a23eabcaf26a2abbe071ee1277f"
+    },
+    "upstream-norm.f32": {
+      "bytes": 40960,
+      "sha256": "7a3fafed50f68cfdf0e41c2dadb3310c0512d8296155ad95de45567560064a96"
+    },
+    "ssm_beta-reconstructed-native-scalar-norm-upstream-direct.f32": {
+      "bytes": 512,
+      "sha256": "72295df03038f750f03744c196f33941bc0de236f83483028625125e0921355b"
+    },
+    "ssm_alpha-reconstructed-native-scalar-norm-native-dequant.f32": {
+      "bytes": 512,
+      "sha256": "6385c7bb016fe170c6adbec21172eab6cbdd529ab50639eeabcc3399032b0e45"
+    },
+    "attn_gate-reconstructed-native-scalar-norm-upstream-direct.f32": {
+      "bytes": 65536,
+      "sha256": "8f8c38543df8c9b1ae2956e17196f72581d84d7f6796c7301f2e9bd3dc2294e8"
+    },
+    "reconstructed-prefix.f32": {
+      "bytes": 40960,
+      "sha256": "ca940b1a6f45bc487a4685205caca1e7fb64929c03b7c8d1b52769e26cc8b842"
+    },
+    "ssm_beta-upstream-norm-upstream-dequant.f32": {
+      "bytes": 512,
+      "sha256": "302a18963ff3a9bdbb1b1f4a4d7c16becdd3be03a7bb0f12ffe736fadf5aa701"
+    },
+    "ssm_alpha-reconstructed-native-scalar-norm-native-direct.f32": {
+      "bytes": 512,
+      "sha256": "b9f22f91cdf53c3e88fae459aa9777310fc2db8d6ef216a97d20f668a3d47832"
+    },
+    "pip-resolution.json": {
+      "bytes": 205584,
+      "sha256": "182672f676b0fee31e2e2cba68c6296615ab0a90bc9ac93c4c61da17a66f3934"
+    },
+    "attn_qkv-upstream-norm-upstream-direct.f32": {
+      "bytes": 131072,
+      "sha256": "253e66a332f5bf4d5fb59828f2c077612c23246bf2c317916ee3b8930c63f243"
+    },
+    "ssm_beta-upstream-norm-native-direct.f32": {
+      "bytes": 512,
+      "sha256": "fac1107c522adcabe85c4883ddd8b674afb54057874cfdc3efd608f267dacd21"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-upstream-direct.f32": {
+      "bytes": 131072,
+      "sha256": "aef9045166fc06f243ba0a98c7114ea07b3ed5c8e1da89c1cc6e303a0f811cd2"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-upstream-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "c195cd691ba1d254ecd7d3d2fe9d5fd0fe0bcbedf137143de20ee5902e728b92"
+    },
+    "attn_gate-upstream-norm-native-direct.f32": {
+      "bytes": 65536,
+      "sha256": "72bcbc9127a7734acf0f89da537d1d6bcdbe3ee3a07fda7485d9dc8daef1f169"
+    },
+    "native-norm.f32": {
+      "bytes": 40960,
+      "sha256": "7a3fafed50f68cfdf0e41c2dadb3310c0512d8296155ad95de45567560064a96"
+    },
+    "attn_qkv-reconstructed-native-scalar-norm-native-direct.f32": {
+      "bytes": 131072,
+      "sha256": "aef9045166fc06f243ba0a98c7114ea07b3ed5c8e1da89c1cc6e303a0f811cd2"
+    },
+    "prefix-primitives-bootstrap.json": {
+      "bytes": 418,
+      "sha256": "2f1147f90129c31abb93a9bbec1b8d6acf28b4a027152341ce385bf438d37d35"
+    },
+    "attn_gate-reconstructed-native-scalar-norm-native-dequant.f32": {
+      "bytes": 65536,
+      "sha256": "a818464bc0c357660e0777c05b4a98a3f93953cf69bc19898f0c47f3f7c8afe1"
+    },
+    "attn_qkv-upstream-norm-native-dequant.f32": {
+      "bytes": 131072,
+      "sha256": "337394976500af2b425c1faf50e92c314f93ec006bdc72dbc3785891b199d4e9"
+    }
+  },
+  "limitations": [
+    "Not actual source-graph intermediate capture.",
+    "Not actual native-main trace comparison.",
+    "No decode or quality claim.",
+    "Initial version failed in bootstrap after dependency check; old worker/renamed nonexistent protocol reference corrected before operator execution in version2."
+  ]
+}

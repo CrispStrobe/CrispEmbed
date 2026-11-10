@@ -1,0 +1,12 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+phase source
+phase fetch-tested
+phase runtime-byte-guard
+phase ggml-init
+phase configure
+phase build
+phase synthetic
+phase metadata-before-weights
+phase legacy
+phase f16

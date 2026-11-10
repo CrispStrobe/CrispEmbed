@@ -1,0 +1,3683 @@
+{
+  "cap_hit": true,
+  "case_id": "receipt_example",
+  "checkpoint": {
+    "bytes": 9078620536,
+    "file": "model.safetensors",
+    "header_sha256": "a1e36638b195f2d5943e000fcb069b275cb22ccc28b1b6184ddee7bdea7ef081",
+    "payload_verified": true,
+    "sha256": "6b0dab74a2dab02d5b10ca56322255024ed8dca35c02746b42e9f296aaeb4e67",
+    "tensor_count": 723
+  },
+  "decoded": "# Jackson-Washington\n\n6640 Ortiz Cove, Markmouth, PW 69940\n\nTransaction ID: 8F88C299  \nDate: 2025-02-16 11:25:12\n\n<table>\n  <thead>\n    <tr>\n      <th>Item</th>\n      <th>Qty</th>\n      <th>Price</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td>Strategy Accessory</td>\n      <td>1</td>\n      <td>$ 43.31 $</td>\n    </tr>\n    <tr>\n      <td>Conference Product</td>\n      <td>1</td>\n      <td>$ 48.40 $</td>\n    </tr>\n    <tr>\n      <td>Scientist Item</td>\n      <td>3</td>\n      <td>$ 48.07 $</td>\n    </tr>\n    <tr>\n      <td",
+  "eos_completed": false,
+  "generated_ids": [
+    2,
+    13265,
+    12630,
+    30660,
+    271,
+    21,
+    21,
+    19,
+    15,
+    75861,
+    62206,
+    11,
+    4246,
+    31595,
+    11,
+    56332,
+    220,
+    21,
+    24,
+    24,
+    19,
+    15,
+    271,
+    7817,
+    2937,
+    25,
+    220,
+    23,
+    37,
+    23,
+    23,
+    34,
+    17,
+    24,
+    24,
+    2228,
+    1851,
+    25,
+    220,
+    17,
+    15,
+    17,
+    20,
+    12,
+    15,
+    17,
+    12,
+    16,
+    21,
+    220,
+    16,
+    16,
+    25,
+    17,
+    20,
+    25,
+    16,
+    17,
+    271,
+    20353,
+    29,
+    198,
+    220,
+    361,
+    11089,
+    29,
+    198,
+    262,
+    361,
+    371,
+    29,
+    198,
+    406,
+    361,
+    337,
+    29,
+    1192,
+    510,
+    337,
+    29,
+    198,
+    406,
+    361,
+    337,
+    29,
+    39322,
+    510,
+    337,
+    29,
+    198,
+    406,
+    361,
+    337,
+    29,
+    6755,
+    510,
+    337,
+    29,
+    198,
+    262,
+    672,
+    371,
+    29,
+    198,
+    220,
+    672,
+    11089,
+    29,
+    198,
+    220,
+    361,
+    9795,
+    29,
+    198,
+    262,
+    361,
+    371,
+    29,
+    198,
+    406,
+    361,
+    1251,
+    29,
+    19211,
+    9266,
+    661,
+    510,
+    1251,
+    29,
+    198,
+    406,
+    361,
+    1251,
+    29,
+    16,
+    510,
+    1251,
+    29,
+    198,
+    406,
+    361,
+    1251,
+    22849,
+    220,
+    19,
+    18,
+    13,
+    18,
+    16,
+    393,
+    510,
+    1251,
+    29,
+    198,
+    262,
+    672,
+    371,
+    29,
+    198,
+    262,
+    361,
+    371,
+    29,
+    198,
+    406,
+    361,
+    1251,
+    29,
+    88106,
+    5466,
+    510,
+    1251,
+    29,
+    198,
+    406,
+    361,
+    1251,
+    29,
+    16,
+    510,
+    1251,
+    29,
+    198,
+    406,
+    361,
+    1251,
+    22849,
+    220,
+    19,
+    23,
+    13,
+    19,
+    15,
+    393,
+    510,
+    1251,
+    29,
+    198,
+    262,
+    672,
+    371,
+    29,
+    198,
+    262,
+    361,
+    371,
+    29,
+    198,
+    406,
+    361,
+    1251,
+    29,
+    48862,
+    375,
+    5561,
+    510,
+    1251,
+    29,
+    198,
+    406,
+    361,
+    1251,
+    29,
+    18,
+    510,
+    1251,
+    29,
+    198,
+    406,
+    361,
+    1251,
+    22849,
+    220,
+    19,
+    23,
+    13,
+    15,
+    22,
+    393,
+    510,
+    1251,
+    29,
+    198,
+    262,
+    672,
+    371,
+    29,
+    198,
+    262,
+    361,
+    371,
+    29,
+    198,
+    406,
+    361,
+    1251
+  ],
+  "generation_seconds": 885.7702055759999,
+  "input_manifest_sha256": "a07af76028a0d53c8bfc0ccafedac348eaeb725c8c8c55e3136906f202b8f65d",
+  "model_forward_calls": 256,
+  "native_forward_executed": false,
+  "original_forward_executed": true,
+  "packages": {
+    "gguf": "0.19.0",
+    "numpy": "2.3.5",
+    "pillow": "12.0.0",
+    "tokenizers": "0.22.2",
+    "torch": "2.13.0+cpu",
+    "torchvision": "0.28.0+cpu",
+    "transformers": "5.5.4"
+  },
+  "prepared_inputs": {
+    "attention_mask": {
+      "dtype": "torch.int64",
+      "file": "input-attention_mask.npy",
+      "sha256": "d61e1b5e4261f032d283a601a63a16622e7048a645b219c1bb509ff3915455b3",
+      "shape": [
+        1,
+        168
+      ]
+    },
+    "image_grid_thw": {
+      "dtype": "torch.int64",
+      "file": "input-image_grid_thw.npy",
+      "sha256": "235cc922305914dc35f063e7a0227b8c59697f5faa2352f86814dbec94100bca",
+      "shape": [
+        1,
+        3
+      ]
+    },
+    "input_ids": {
+      "dtype": "torch.int64",
+      "file": "input-input_ids.npy",
+      "sha256": "979090cbc8286f2c37e7032cf7e016b32fac6db36f8b1ad33b054a4d3deb3081",
+      "shape": [
+        1,
+        168
+      ]
+    },
+    "mm_token_type_ids": {
+      "dtype": "torch.int64",
+      "file": "input-mm_token_type_ids.npy",
+      "sha256": "69441cb1e58642a7b3d0325711acd007e4470bfdd4b533ccb89279e817f49cf1",
+      "shape": [
+        1,
+        168
+      ]
+    },
+    "pixel_values": {
+      "dtype": "torch.float32",
+      "file": "input-pixel_values.npy",
+      "sha256": "ad09e82e74782308636a30c920e7241ea1c7d50a29e1d4da4f36e9605a7a5341",
+      "shape": [
+        616,
+        1536
+      ]
+    }
+  },
+  "protocol_sha256": "3a1738c26cf5a34680fea1468bea07c06ee26659f7ddb7e249299677746ba36d",
+  "quality_qualified": false,
+  "schema": "lighton4b-fourcase-bf16-capture/v1",
+  "scores": [
+    {
+      "bytes": 993280,
+      "file": "scores-000.f32",
+      "position": 0,
+      "score_dtype": "float32",
+      "selected_id": 2,
+      "selected_probability": 0.8749113487104355,
+      "sha256": "76c4ce7502f6c0a4c5c013120019fd45175412133cec4bcccaeb155db46118ab",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-001.f32",
+      "position": 1,
+      "score_dtype": "float32",
+      "selected_id": 13265,
+      "selected_probability": 0.9988849983777708,
+      "sha256": "d8494f76f7cb8430b41cef7272739152f72a6ac0faa9bf1af4b5c72b18442e7b",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-002.f32",
+      "position": 2,
+      "score_dtype": "float32",
+      "selected_id": 12630,
+      "selected_probability": 0.9999258812061591,
+      "sha256": "63992ce911ead1085164fdbdc4c64e0d9e05ad4740f7267bb86ee66a41144079",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-003.f32",
+      "position": 3,
+      "score_dtype": "float32",
+      "selected_id": 30660,
+      "selected_probability": 0.999434941958665,
+      "sha256": "b98e79e2b89422be69bbe258a03e4286f05aade0625cf51634e4c4b831a115d2",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-004.f32",
+      "position": 4,
+      "score_dtype": "float32",
+      "selected_id": 271,
+      "selected_probability": 0.7705811576117189,
+      "sha256": "97b36dc8f7ac4d263010d13b622f027695a471b4bf34a10196745ead597b115b",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-005.f32",
+      "position": 5,
+      "score_dtype": "float32",
+      "selected_id": 21,
+      "selected_probability": 0.9988966406996395,
+      "sha256": "35b1c2cb7151d89434e0faa866a7fb65c947cbbcaea92f67e5926c4da638be12",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-006.f32",
+      "position": 6,
+      "score_dtype": "float32",
+      "selected_id": 21,
+      "selected_probability": 0.9999205586974275,
+      "sha256": "b5333a88b17220cf8a6db5f9a57a758addfe29f8e9026aa8e621995dbc618029",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-007.f32",
+      "position": 7,
+      "score_dtype": "float32",
+      "selected_id": 19,
+      "selected_probability": 0.880614988925521,
+      "sha256": "81f4452691c182fe60a8df62328e36f06444c35f8879a1d0dff910087c69103b",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-008.f32",
+      "position": 8,
+      "score_dtype": "float32",
+      "selected_id": 15,
+      "selected_probability": 0.9996236053452292,
+      "sha256": "d8a2f05669f3a896cde278a0eb3d2ae06dde29e0d1a8221241b4b018f5e47f2c",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-009.f32",
+      "position": 9,
+      "score_dtype": "float32",
+      "selected_id": 75861,
+      "selected_probability": 0.9999250876489326,
+      "sha256": "cc4d988b384f0b966878b54cb7df81e1d84e92d22d36a17ebec2f6337ac1da73",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-010.f32",
+      "position": 10,
+      "score_dtype": "float32",
+      "selected_id": 62206,
+      "selected_probability": 0.9999831578192918,
+      "sha256": "bd4a54b6e720662c510d1a852075f9a9d31f9566b2eca3e472cdd1c46f3dd866",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-011.f32",
+      "position": 11,
+      "score_dtype": "float32",
+      "selected_id": 11,
+      "selected_probability": 0.9999811794111434,
+      "sha256": "a7855ad99a5881d68e85e4b37797780a6c7ba531e598c8ba4d2eb64b82bddb27",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-012.f32",
+      "position": 12,
+      "score_dtype": "float32",
+      "selected_id": 4246,
+      "selected_probability": 0.999166044436096,
+      "sha256": "1de32ab0f3d82d5e9b3ace651de6ff6b77a4505c942822482a51b48da136b106",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-013.f32",
+      "position": 13,
+      "score_dtype": "float32",
+      "selected_id": 31595,
+      "selected_probability": 0.9816375162168419,
+      "sha256": "80e19bd1394a2f5cfb8d957836ea9b28a306feee04eed1ebea5e78e27b3764d9",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-014.f32",
+      "position": 14,
+      "score_dtype": "float32",
+      "selected_id": 11,
+      "selected_probability": 0.9999703836261143,
+      "sha256": "6b3ebe67519e7a4c63c97d54e9f77e2a2ecf0794f8ab5476d1d8efb1dda7dd9d",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-015.f32",
+      "position": 15,
+      "score_dtype": "float32",
+      "selected_id": 56332,
+      "selected_probability": 0.9713932787996991,
+      "sha256": "333c5cba2c5472930aa6f20b0f93abc9efe48f8f4262ec1aeec52cd95fb02fe4",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-016.f32",
+      "position": 16,
+      "score_dtype": "float32",
+      "selected_id": 220,
+      "selected_probability": 0.9147066951244034,
+      "sha256": "ab197b1279e9f62052db8e9229db5751f58e8a866a354be598b1a477dc58cd98",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-017.f32",
+      "position": 17,
+      "score_dtype": "float32",
+      "selected_id": 21,
+      "selected_probability": 0.9998733315273675,
+      "sha256": "8f1b1c75ee691fd127fbe497f3f32a554c48eae9cd977a1a8915a54be9add509",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-018.f32",
+      "position": 18,
+      "score_dtype": "float32",
+      "selected_id": 24,
+      "selected_probability": 0.9999830816775755,
+      "sha256": "2918f423432729d9c2b264239b7dd76640de198bef135f689c485a424c7cce5a",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-019.f32",
+      "position": 19,
+      "score_dtype": "float32",
+      "selected_id": 24,
+      "selected_probability": 0.9999191530890418,
+      "sha256": "71361a0eb5f4dd88f159d79c05b98337b2052d49ef590cbf3820b9357adaa631",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-020.f32",
+      "position": 20,
+      "score_dtype": "float32",
+      "selected_id": 19,
+      "selected_probability": 0.9999608219286308,
+      "sha256": "9df21b65c3d86aad078710af0723b178b71353a2adf7cfb3381ed6f4df209613",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-021.f32",
+      "position": 21,
+      "score_dtype": "float32",
+      "selected_id": 15,
+      "selected_probability": 0.9999931800316387,
+      "sha256": "cd397253b24ffd78bcfed580693e5ea2f9d2a5aee11c919f5120294049c1f36c",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-022.f32",
+      "position": 22,
+      "score_dtype": "float32",
+      "selected_id": 271,
+      "selected_probability": 0.999281126990235,
+      "sha256": "8bf06e93e7ec7baa3384ead9a18959c52719a506bdb74c49d43e8817c834bd8b",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-023.f32",
+      "position": 23,
+      "score_dtype": "float32",
+      "selected_id": 7817,
+      "selected_probability": 0.8661477418513104,
+      "sha256": "63256fb9ef352fa9cc901a518aa9ac404b747ecc1ead7aba2a718c1e94aa3183",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-024.f32",
+      "position": 24,
+      "score_dtype": "float32",
+      "selected_id": 2937,
+      "selected_probability": 0.9999883205355736,
+      "sha256": "955c079220a0be5f32754cc13df521ba8dec0dc7987cd1729f6249e9628585a7",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-025.f32",
+      "position": 25,
+      "score_dtype": "float32",
+      "selected_id": 25,
+      "selected_probability": 0.99996348149354,
+      "sha256": "851053cceb224799ac59f62513c8e18e6fa9f9b4140c914f362e86242eaf03b4",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-026.f32",
+      "position": 26,
+      "score_dtype": "float32",
+      "selected_id": 220,
+      "selected_probability": 0.8754884349801089,
+      "sha256": "c4d03e4029d89d6b913c4f8862114d1544acc6a24beae732daf38fb1aa6f678f",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-027.f32",
+      "position": 27,
+      "score_dtype": "float32",
+      "selected_id": 23,
+      "selected_probability": 0.9984398107139931,
+      "sha256": "631d5e61c7535191e52adcb90eb254ed29de6e79664464e34c993f391297b575",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-028.f32",
+      "position": 28,
+      "score_dtype": "float32",
+      "selected_id": 37,
+      "selected_probability": 0.9961254712836417,
+      "sha256": "201f646a6a2f90a8163433ab3cfb906982f54f9cda94933edf64e17c49d075f4",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-029.f32",
+      "position": 29,
+      "score_dtype": "float32",
+      "selected_id": 23,
+      "selected_probability": 0.999941579584911,
+      "sha256": "6a0d3453cd50afecada84196fb5cdc15ab6be29e2920f98d70e62226131aa741",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-030.f32",
+      "position": 30,
+      "score_dtype": "float32",
+      "selected_id": 23,
+      "selected_probability": 0.9984677016130521,
+      "sha256": "120f1c7856ce1eb4256a82c9296e1a03b623705d87fb6df474a063662348237e",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-031.f32",
+      "position": 31,
+      "score_dtype": "float32",
+      "selected_id": 34,
+      "selected_probability": 0.9999287972741957,
+      "sha256": "6f2917064f8d099f99172a096a2f8ce928807cea6b2a49b4446a1727cff64eda",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-032.f32",
+      "position": 32,
+      "score_dtype": "float32",
+      "selected_id": 17,
+      "selected_probability": 0.9999582768211865,
+      "sha256": "efaae2b691120bf8ae75aaecffb88aefe0d77d6bfb42432a68b84ce88b68eecc",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-033.f32",
+      "position": 33,
+      "score_dtype": "float32",
+      "selected_id": 24,
+      "selected_probability": 0.9999366255990735,
+      "sha256": "2bc0827882439dfd8fe54bb3de8b6aceab132b7d41307d3ff46141ac47326108",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-034.f32",
+      "position": 34,
+      "score_dtype": "float32",
+      "selected_id": 24,
+      "selected_probability": 0.9999854843183591,
+      "sha256": "8ff62fff0dd7f0d69880eaf85036877f39eee05856e5e188f18a0c41d41b3323",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-035.f32",
+      "position": 35,
+      "score_dtype": "float32",
+      "selected_id": 2228,
+      "selected_probability": 0.904494134814298,
+      "sha256": "4ce6ce6a9dbb404567bc6afa06dc3b253093a2426cf2eaed4b819bc961493100",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-036.f32",
+      "position": 36,
+      "score_dtype": "float32",
+      "selected_id": 1851,
+      "selected_probability": 0.9999732557877206,
+      "sha256": "5280e8853b558df4b502a2aeb4d7701bda5cfcbb6647751ac629da1700e8bd07",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-037.f32",
+      "position": 37,
+      "score_dtype": "float32",
+      "selected_id": 25,
+      "selected_probability": 0.9999990229458294,
+      "sha256": "c6ded93153a81f84d0a38fa9145d948deab61b91c9076f8d8b574ba65809c3bf",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-038.f32",
+      "position": 38,
+      "score_dtype": "float32",
+      "selected_id": 220,
+      "selected_probability": 0.9999964342910672,
+      "sha256": "48c7b618dc0197f1c590c2a2cb6420d70df62294cb3fd951860c30d4fb701d76",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-039.f32",
+      "position": 39,
+      "score_dtype": "float32",
+      "selected_id": 17,
+      "selected_probability": 0.9999988227435247,
+      "sha256": "d9e27d909ac566eea280471475df9b87e2c7b90617c95dceea0490c5d1ed2349",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-040.f32",
+      "position": 40,
+      "score_dtype": "float32",
+      "selected_id": 15,
+      "selected_probability": 0.9999949097066168,
+      "sha256": "f942fa444aea7441f56e1c3be52a97b5895296c87c9ae99d94da97e8f5ec4942",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-041.f32",
+      "position": 41,
+      "score_dtype": "float32",
+      "selected_id": 17,
+      "selected_probability": 0.9999992711656426,
+      "sha256": "e6843662379d77916504a181d2ffa38cc8441b0c8d0b2e3b01590ae94bef0e38",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-042.f32",
+      "position": 42,
+      "score_dtype": "float32",
+      "selected_id": 20,
+      "selected_probability": 0.9999800324559188,
+      "sha256": "7c5bbade13df61a964f53a68e781a5ccdde560e5bf81dd0f933b06239b4089c7",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-043.f32",
+      "position": 43,
+      "score_dtype": "float32",
+      "selected_id": 12,
+      "selected_probability": 0.9999954865137033,
+      "sha256": "0583e9e670588738dd6c1d0b4e0806676cb8cf4a58519d2a5c6d3e4d789f230c",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-044.f32",
+      "position": 44,
+      "score_dtype": "float32",
+      "selected_id": 15,
+      "selected_probability": 0.9999851104972813,
+      "sha256": "8a163a42d04de9140c01ecea7bb61580d11917d058252a2d51ce230ea67077ad",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-045.f32",
+      "position": 45,
+      "score_dtype": "float32",
+      "selected_id": 17,
+      "selected_probability": 0.9999923943634383,
+      "sha256": "e34da0ed1a70ddaeb5c00f463c0fd856c7efc0a638810666ad792c7d4eb5e08c",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-046.f32",
+      "position": 46,
+      "score_dtype": "float32",
+      "selected_id": 12,
+      "selected_probability": 0.9999986736300062,
+      "sha256": "2260ec263a957a77f95539cdfb22a96f85756cd5c08aae64663dafd31c29e61a",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-047.f32",
+      "position": 47,
+      "score_dtype": "float32",
+      "selected_id": 16,
+      "selected_probability": 0.9999603673755554,
+      "sha256": "94093a956765fbd38c39772c4690aa8022edf976af2fbcb75a63b286b5d584d5",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-048.f32",
+      "position": 48,
+      "score_dtype": "float32",
+      "selected_id": 21,
+      "selected_probability": 0.9996421263976061,
+      "sha256": "bf7f946ee7e378c71ca06f6d4d28fcdff51e34947095a9105636c17c4b0f3c00",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-049.f32",
+      "position": 49,
+      "score_dtype": "float32",
+      "selected_id": 220,
+      "selected_probability": 0.9999863959671791,
+      "sha256": "44cb46cd1e30e980a2c72bc2e83f741fa83ed630aa6d5035808473456b86da85",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-050.f32",
+      "position": 50,
+      "score_dtype": "float32",
+      "selected_id": 16,
+      "selected_probability": 0.9999856674815352,
+      "sha256": "a29531c021edb978a24c7a8b31aa5f828aea325ccded88134f598bf5e9953df9",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-051.f32",
+      "position": 51,
+      "score_dtype": "float32",
+      "selected_id": 16,
+      "selected_probability": 0.9998819708003506,
+      "sha256": "9ceb563552d71d9c29501bae2c85b62f3d637df02c526c1115ee4827d1e509be",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-052.f32",
+      "position": 52,
+      "score_dtype": "float32",
+      "selected_id": 25,
+      "selected_probability": 0.9999969737941584,
+      "sha256": "9609817ce9bb43443d13627be0341bc95b1349412b3a5872ac511a3babe229df",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-053.f32",
+      "position": 53,
+      "score_dtype": "float32",
+      "selected_id": 17,
+      "selected_probability": 0.9999658270731483,
+      "sha256": "e8e62f478e7634059cdad950fc6eec23f2c8c13656ee05b64abb394d204edb79",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-054.f32",
+      "position": 54,
+      "score_dtype": "float32",
+      "selected_id": 20,
+      "selected_probability": 0.9999912126212136,
+      "sha256": "0fecaa10f52c47ec5e64b7c4c543fbdf47d6cc521502e56f2a3b204911469b50",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-055.f32",
+      "position": 55,
+      "score_dtype": "float32",
+      "selected_id": 25,
+      "selected_probability": 0.9999985430149766,
+      "sha256": "98a04db42c59edb8cdadfdae2b55fa96b3fbc04e02a3e06e7a200d20522791e4",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-056.f32",
+      "position": 56,
+      "score_dtype": "float32",
+      "selected_id": 16,
+      "selected_probability": 0.9999878160981337,
+      "sha256": "c747293e895bfb43aed4594f7100a0fd28359c8295538b0eae61fd0f07affa41",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-057.f32",
+      "position": 57,
+      "score_dtype": "float32",
+      "selected_id": 17,
+      "selected_probability": 0.9999884207044281,
+      "sha256": "e67c61c3746728725d9e60bc5193658b844de207a99a7d17ea2bc00d3146ad33",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-058.f32",
+      "position": 58,
+      "score_dtype": "float32",
+      "selected_id": 271,
+      "selected_probability": 0.999914971346464,
+      "sha256": "51dfab5ce87980c4dd49a8d964de16328dd1d2a6daa27d1030b51a689e67f689",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-059.f32",
+      "position": 59,
+      "score_dtype": "float32",
+      "selected_id": 20353,
+      "selected_probability": 0.9727412915008916,
+      "sha256": "ba1f4630cf949383c295564bfba93c307b7f486794f71c717c55899d8d5ebb33",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-060.f32",
+      "position": 60,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9998544047534889,
+      "sha256": "806dbeb9a4d249df04d17953b159407d6e15a422628e463b03abe2d942496602",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-061.f32",
+      "position": 61,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.999997607404123,
+      "sha256": "c5afd3380835cbe3917455872657282d8e1635ba96359f908c4642d40c24f252",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-062.f32",
+      "position": 62,
+      "score_dtype": "float32",
+      "selected_id": 220,
+      "selected_probability": 0.9999991146122725,
+      "sha256": "da75d4d08676f39b6d5a29ff9a040f1e6901fd4c8b90a40bbfec7a7b7800fc69",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-063.f32",
+      "position": 63,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999677871353,
+      "sha256": "36ed8e6945c9c9d39af6d5c477e7fa4e96353de50845c313c91559d88b56dbd8",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-064.f32",
+      "position": 64,
+      "score_dtype": "float32",
+      "selected_id": 11089,
+      "selected_probability": 0.8517188117158099,
+      "sha256": "33d6563c054b390ba0e296ac3bfd6e0f004a52c63eecbabe14f1beb7d29ba40c",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-065.f32",
+      "position": 65,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999996455850629,
+      "sha256": "bf3fd177404d484944b303ff43e6501d9903104569853365228872556a52e1f9",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-066.f32",
+      "position": 66,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999831146087341,
+      "sha256": "f801b0a0cb392f381bd4c699860fe74caf235c0b7b85df47a5796a97deedea16",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-067.f32",
+      "position": 67,
+      "score_dtype": "float32",
+      "selected_id": 262,
+      "selected_probability": 0.9999999687553526,
+      "sha256": "cf5f1e7436dc62e63191e52ae637ecf937c003ce0957a953d2a6ae644f8a78f2",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-068.f32",
+      "position": 68,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999845625174,
+      "sha256": "a05b61e6a5e79161b632a2f1de54636d0ab42c90cbbeb96c0fc6d415534e3e45",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-069.f32",
+      "position": 69,
+      "score_dtype": "float32",
+      "selected_id": 371,
+      "selected_probability": 0.9999999857529662,
+      "sha256": "6357bb7543868c2333d56baa0499d2a615e77b6b3882cd5ed2e4b525bc766119",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-070.f32",
+      "position": 70,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999960210586687,
+      "sha256": "dcb6f5fa46db6e64954573222f4a86cc14e2d013ff1deb162e61b6256dfac243",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-071.f32",
+      "position": 71,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.999999574685355,
+      "sha256": "b5a31cc61820a77a1521be4bab30a5936cf4b11c07bb2b8851f1e673fe65c40d",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-072.f32",
+      "position": 72,
+      "score_dtype": "float32",
+      "selected_id": 406,
+      "selected_probability": 0.9999995091479379,
+      "sha256": "7992948ca825f75cfc581d258902e644d22b68aec65f13a55dec041355a69cd4",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-073.f32",
+      "position": 73,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999932995389,
+      "sha256": "025a81cd54d403ee37d9f861f358a7f1b90ee9e7d16c94a8acc05e3934ac72fa",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-074.f32",
+      "position": 74,
+      "score_dtype": "float32",
+      "selected_id": 337,
+      "selected_probability": 0.9999996325401281,
+      "sha256": "5bcb4d74086b2dbd551c136150c5eabd471bd5a1db57533326561c32a6c7900a",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-075.f32",
+      "position": 75,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999977863833913,
+      "sha256": "832842e2a3d05ddb20b160be530198e6f94ec8bf30a0200c7f74491dcc635d5e",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-076.f32",
+      "position": 76,
+      "score_dtype": "float32",
+      "selected_id": 1192,
+      "selected_probability": 0.9999917780759664,
+      "sha256": "4605c5df9a0071451d5745f2b4c42448a8a2299489f0da744aeb64ba9656c0c4",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-077.f32",
+      "position": 77,
+      "score_dtype": "float32",
+      "selected_id": 510,
+      "selected_probability": 0.9999976256662102,
+      "sha256": "d22ef756a78cf7ab8f916f188ed85214bdb78e79cdea8bba17a4b0f80c05f0ef",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-078.f32",
+      "position": 78,
+      "score_dtype": "float32",
+      "selected_id": 337,
+      "selected_probability": 0.9999989833237966,
+      "sha256": "9a755f9f356ce1f77fa187848765bbbe2570c11e74640867771a168f9be20838",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-079.f32",
+      "position": 79,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999999887698067,
+      "sha256": "daeaa875a15e6edc372423b234bdd636b040ad677eabf5556f0c87182142163a",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-080.f32",
+      "position": 80,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999999414004616,
+      "sha256": "19abf51380392b4b7eb7e6d655f214f9eaf00d0a6655a8dac05d40d57db8742a",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-081.f32",
+      "position": 81,
+      "score_dtype": "float32",
+      "selected_id": 406,
+      "selected_probability": 0.9999983450894596,
+      "sha256": "5fc7a8fad9c9f8cfb96d78e8d4c5124a20e41b8799e06253b82894b3adec3a8d",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-082.f32",
+      "position": 82,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999730034806,
+      "sha256": "4ede35bd32c73f8c22efb1ca1de29c3548987de861446bf838c9fd4820e91e4b",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-083.f32",
+      "position": 83,
+      "score_dtype": "float32",
+      "selected_id": 337,
+      "selected_probability": 0.9999998965953072,
+      "sha256": "a0a7f508986583502c3a4ba59d74757f9bfccb1c0a9309a4ea1f4fc39e92017c",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-084.f32",
+      "position": 84,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999949455897289,
+      "sha256": "857ce621da5b6e436e15dc2110ebf509af7c38fe66476e3e706a94ea181986ac",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-085.f32",
+      "position": 85,
+      "score_dtype": "float32",
+      "selected_id": 39322,
+      "selected_probability": 0.9998564002056453,
+      "sha256": "33c2304c2d962b39369dbd36983888fb571a82f838730785bb6db870f68b6ab7",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-086.f32",
+      "position": 86,
+      "score_dtype": "float32",
+      "selected_id": 510,
+      "selected_probability": 0.9999658674238243,
+      "sha256": "b4195500f9cf7b73699888a2782ed25a90f5097c962a07b3aafe94e7a5eb8668",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-087.f32",
+      "position": 87,
+      "score_dtype": "float32",
+      "selected_id": 337,
+      "selected_probability": 0.9999998572139255,
+      "sha256": "8a9794dc88b6547bb519f258d0c5ddda07d69eea00e8b3aa849eaae4749a10d4",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-088.f32",
+      "position": 88,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999999742405943,
+      "sha256": "188b36a3088a3fcdca7c751c5bff49bccf834318dc1bf1cf4bd6ea307f3d30be",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-089.f32",
+      "position": 89,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.999999945526893,
+      "sha256": "8fb2b0370cc6c256cc11e9321f97ae174e7db8d9eafa6bce8535dcb40228700c",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-090.f32",
+      "position": 90,
+      "score_dtype": "float32",
+      "selected_id": 406,
+      "selected_probability": 0.9999980221998334,
+      "sha256": "ad80d6a5042db201cd5b027ff677e7a2bdff2b67fa9c11e2244eae613b42cfc8",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-091.f32",
+      "position": 91,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999869600664,
+      "sha256": "d7eced38515959c0f3704d739f6a15c3d576eb9e19740b9baa3ed316542b2c1e",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-092.f32",
+      "position": 92,
+      "score_dtype": "float32",
+      "selected_id": 337,
+      "selected_probability": 0.9999999646401408,
+      "sha256": "e79f7786760900adca1fb726ce78ea1c0a56c80fcfba997d86794c97d2f70227",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-093.f32",
+      "position": 93,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999848909623501,
+      "sha256": "32f6f77814e296bfa1ad64ea073cb8ccca2730c4c5622ea9220a9bdd3a01affe",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-094.f32",
+      "position": 94,
+      "score_dtype": "float32",
+      "selected_id": 6755,
+      "selected_probability": 0.9999942990907366,
+      "sha256": "60a4e2193d5e2afa744c2e83c7f8c9532da46d93384fdb7b325bbe76eeaa272d",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-095.f32",
+      "position": 95,
+      "score_dtype": "float32",
+      "selected_id": 510,
+      "selected_probability": 0.9999585908425698,
+      "sha256": "603d93556816e30753c85a1cc90136e90c70a9cd83e947ea2fbc54f47d859c76",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-096.f32",
+      "position": 96,
+      "score_dtype": "float32",
+      "selected_id": 337,
+      "selected_probability": 0.9999999114917716,
+      "sha256": "80363d3b3eb2e8c6ada1147602e13dae9deb339e8ce92e75a1974163f107b81e",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-097.f32",
+      "position": 97,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999999984681018,
+      "sha256": "1ebfb9312a0017fd06d348f16642a8908aa16fd618ba0069d92f954e6d1c0a59",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-098.f32",
+      "position": 98,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999995827818569,
+      "sha256": "2cec2534c3304c6ee45ee9af77db738af965f65867c4e188a9dad61a153f0f02",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-099.f32",
+      "position": 99,
+      "score_dtype": "float32",
+      "selected_id": 262,
+      "selected_probability": 0.9995686162973951,
+      "sha256": "c531d97fd0647ae84627426d677088b52fa39bd8e696deff268a7fafa0a34567",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-100.f32",
+      "position": 100,
+      "score_dtype": "float32",
+      "selected_id": 672,
+      "selected_probability": 0.9999998915178665,
+      "sha256": "de250518a2c10ef2b33a46d56e3a4bf305e9212d2315d5ae95141291639cbfad",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-101.f32",
+      "position": 101,
+      "score_dtype": "float32",
+      "selected_id": 371,
+      "selected_probability": 0.999999963672044,
+      "sha256": "b53867c9a7d50132f848625a227a49a05e0dd837b2e7774b7169a45ddd5968f1",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-102.f32",
+      "position": 102,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999999796360037,
+      "sha256": "1af060e7aec78e732f711c05f83f7cf4a0456410cbbd63bab0de02d4597d71f5",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-103.f32",
+      "position": 103,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999999546775097,
+      "sha256": "9a3c79b92df628c4be4477e43725f8818859b59dd34bf0569652311ae790e781",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-104.f32",
+      "position": 104,
+      "score_dtype": "float32",
+      "selected_id": 220,
+      "selected_probability": 0.9999921010932304,
+      "sha256": "04ad961e0acedd05501d90569264880166cc17d229066b36ee7d7fc7d47fd112",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-105.f32",
+      "position": 105,
+      "score_dtype": "float32",
+      "selected_id": 672,
+      "selected_probability": 0.999999978700036,
+      "sha256": "b135df3521dfdd279f697a1e27a1c66fe9aeb60f8e56d7e0616e9168743490bc",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-106.f32",
+      "position": 106,
+      "score_dtype": "float32",
+      "selected_id": 11089,
+      "selected_probability": 0.9999998744529781,
+      "sha256": "3eb789084d62a282097272ddae08f5492a8d681e8415ca0fd79454da34e0cb01",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-107.f32",
+      "position": 107,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.999999462058094,
+      "sha256": "8edc23177aa605f9fca0cff30ab731ca1f696813dd222081c66e3aaa2d85226e",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-108.f32",
+      "position": 108,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999995294005625,
+      "sha256": "b916947e052f13de17902f31ddc32422657e5b46ee063615819b65b189e6ade4",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-109.f32",
+      "position": 109,
+      "score_dtype": "float32",
+      "selected_id": 220,
+      "selected_probability": 0.9999996718543642,
+      "sha256": "032d0ef77a757bd80a9f4ee982477f2f8e9d72318a47eed3c117f1e4e5bb2ee1",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-110.f32",
+      "position": 110,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999909431397,
+      "sha256": "706fb0c9c52bc60a2d1599f38285831c1c76160c6852b61f563881612ace0525",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-111.f32",
+      "position": 111,
+      "score_dtype": "float32",
+      "selected_id": 9795,
+      "selected_probability": 0.9999994344273299,
+      "sha256": "d756eff37888076f8bb437173ddbd4ecbae8219bb54c3bfbeb0f763fd3485635",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-112.f32",
+      "position": 112,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999998388763078,
+      "sha256": "e4d745d3939317821d849d1c76a41e7c9691198637d43c822e13a8fdb8b129b8",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-113.f32",
+      "position": 113,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.999999799678683,
+      "sha256": "ed6f1be98cd9661a17a5d0ff236161efa4dd6f90ada3f6f76a56022b8d5ed22c",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-114.f32",
+      "position": 114,
+      "score_dtype": "float32",
+      "selected_id": 262,
+      "selected_probability": 0.9999999758901713,
+      "sha256": "64457e3d315fd7406c4506dba0d81efe39784a9706daf5a58a369993f8319e4b",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-115.f32",
+      "position": 115,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999967794218,
+      "sha256": "02c6a0656db2b1057f65562a59d590bd6937bfff475803b27aacd5ffa0149be0",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-116.f32",
+      "position": 116,
+      "score_dtype": "float32",
+      "selected_id": 371,
+      "selected_probability": 0.9999993255871605,
+      "sha256": "395d35b1d7cc25252a20b8a6a9e521dfb76483c70f69a6382f87875f80e322a3",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-117.f32",
+      "position": 117,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999983865388358,
+      "sha256": "28e0182267908f5c95fa970c1223a9c09232c0b3a2881d9e7a3183a1fa87be8a",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-118.f32",
+      "position": 118,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999994917236784,
+      "sha256": "dd29fe983a1736c0b940e323c4ef5a3ded2d6a8dbc684b02be764fb82faa3795",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-119.f32",
+      "position": 119,
+      "score_dtype": "float32",
+      "selected_id": 406,
+      "selected_probability": 0.9999998688288151,
+      "sha256": "0c24dc96ea176eb81f645551f3b5517cb72a7b4127f6f62696b2e686d18f3d28",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-120.f32",
+      "position": 120,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.999999999105202,
+      "sha256": "d510afec2879e17944db446239767812758ed2f84e6a31814b5be426524e73e3",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-121.f32",
+      "position": 121,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999985749433336,
+      "sha256": "4cb3c395d21f9a1bf527872f720004e5bc5714eaf9cb421df4535953f701b60c",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-122.f32",
+      "position": 122,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.999636759074354,
+      "sha256": "5aef741b8e08419354505d8f15f80f6dcf166e5544eef046d01857b983881903",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-123.f32",
+      "position": 123,
+      "score_dtype": "float32",
+      "selected_id": 19211,
+      "selected_probability": 0.9997861302607612,
+      "sha256": "4a332932fdc0c415a53c2293705a22407d9772c96ac39b449ef5edf9221c828d",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-124.f32",
+      "position": 124,
+      "score_dtype": "float32",
+      "selected_id": 9266,
+      "selected_probability": 0.9932632831895886,
+      "sha256": "ebdc119da0619a44e5293037d9c7809680cfbe71157a5e59375ad736a7e42557",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-125.f32",
+      "position": 125,
+      "score_dtype": "float32",
+      "selected_id": 661,
+      "selected_probability": 0.9998929309102219,
+      "sha256": "50d6371318d8a4d4b0176f480c71191873f2e4a91bce0fb2dca9b23d9745c0b3",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-126.f32",
+      "position": 126,
+      "score_dtype": "float32",
+      "selected_id": 510,
+      "selected_probability": 0.9999616404777927,
+      "sha256": "944817b4bd6474b1ac822a65e4c898377e49e85b9ed88107d727d5a17bf38c05",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-127.f32",
+      "position": 127,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9998191805387003,
+      "sha256": "820599eada2b711691034d2c7c28e4d2c8975b63bd40310402e67bb5178c033c",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-128.f32",
+      "position": 128,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999999318590262,
+      "sha256": "7d1976cca219fbd118b51f62929120fe2861ffb025209d88f7e2d02fe892b1af",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-129.f32",
+      "position": 129,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999997249851093,
+      "sha256": "7b7d9ea9f65066fe104c3a9d2328f10ad88c7e7b00ef19ae4dbc204ff873d404",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-130.f32",
+      "position": 130,
+      "score_dtype": "float32",
+      "selected_id": 406,
+      "selected_probability": 0.9999994826094923,
+      "sha256": "c9926512dd03a28ed1601425b5b769ae78314f36ac8731e10e1525a14b13cc7a",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-131.f32",
+      "position": 131,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999988881925,
+      "sha256": "8f5c90d355eee139161035e509eb29a51bdd007a47a97ddfd3a46c6cf475a5f4",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-132.f32",
+      "position": 132,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999998735128603,
+      "sha256": "05f2fb34cc9a1189a434f03a100e35478cb608735fb4973fcd8fec40ef3f94be",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-133.f32",
+      "position": 133,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999721350664456,
+      "sha256": "218edd0fd9697c4dbf9e70850ced447e1829c6b47a5871b391fd5e7f7b3afe89",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-134.f32",
+      "position": 134,
+      "score_dtype": "float32",
+      "selected_id": 16,
+      "selected_probability": 0.9999801317178016,
+      "sha256": "65b39043e4ace37fad3fc89e23a9af87b209b01c1a494fa26fdcf673a802ef43",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-135.f32",
+      "position": 135,
+      "score_dtype": "float32",
+      "selected_id": 510,
+      "selected_probability": 0.9625526931883552,
+      "sha256": "2bc8388d3a1106b1286332724ec2989464d8213d2f7337bc8fe2738b88bbd553",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-136.f32",
+      "position": 136,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999983131928807,
+      "sha256": "c9bcd80d6b682ee2ca5861abbe348df12472907202ffa9284919dcdfb90b57fd",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-137.f32",
+      "position": 137,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999966670461318,
+      "sha256": "4b81a62996d64fa01bf4fbce021762d9f8c04a73b924505fd2a1a01f1ab0065a",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-138.f32",
+      "position": 138,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999994333689406,
+      "sha256": "ec09ede48a98b7dc40b8b0ad09f16e0274fdf272b4101d6e8421c9231e28e618",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-139.f32",
+      "position": 139,
+      "score_dtype": "float32",
+      "selected_id": 406,
+      "selected_probability": 0.9999957683109302,
+      "sha256": "fd1019b8dd1da2dce9006b8adbecb9dfd564bce9ecf989e40be18715ee6f781d",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-140.f32",
+      "position": 140,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999998331570085,
+      "sha256": "b8c7170fe7ee1185ba33691c0771c6209af1487478356d8931e05de408638fe7",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-141.f32",
+      "position": 141,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999996419567635,
+      "sha256": "933b02260f577e967618a93c1ada3a535bcc6b9a8dc0adc95e61aca5ff54b9df",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-142.f32",
+      "position": 142,
+      "score_dtype": "float32",
+      "selected_id": 22849,
+      "selected_probability": 0.9998612572308256,
+      "sha256": "3913f1436786a6b462a283206d57c390906ac436539313f57af6a01c81be2996",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-143.f32",
+      "position": 143,
+      "score_dtype": "float32",
+      "selected_id": 220,
+      "selected_probability": 0.9323528722859632,
+      "sha256": "5d7b33a6014311d62fddb4cec963595dbb982b29c8c3e0f12732e23389481749",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-144.f32",
+      "position": 144,
+      "score_dtype": "float32",
+      "selected_id": 19,
+      "selected_probability": 0.9958506108885657,
+      "sha256": "e8deb1dfed2c8666dd37c9a76e56e4ea10651cf954c7a9f7790d1fef800fdf67",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-145.f32",
+      "position": 145,
+      "score_dtype": "float32",
+      "selected_id": 18,
+      "selected_probability": 0.9999883518758532,
+      "sha256": "b1bd559c6f721fa93c2c14bdeedf5a9a6e7ec7e13300403ef15c8d4d0bcdc58b",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-146.f32",
+      "position": 146,
+      "score_dtype": "float32",
+      "selected_id": 13,
+      "selected_probability": 0.9999984914245627,
+      "sha256": "29f1f45b243e92138dda12be071254d9a168ab460ccfc266f58623b812c9a04a",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-147.f32",
+      "position": 147,
+      "score_dtype": "float32",
+      "selected_id": 18,
+      "selected_probability": 0.9999396260528163,
+      "sha256": "e3bab7a29c18057adafce4b837a8a71f05ac27aa0de31992eee120e42737a580",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-148.f32",
+      "position": 148,
+      "score_dtype": "float32",
+      "selected_id": 16,
+      "selected_probability": 0.9999904884014874,
+      "sha256": "ef801365835db79af92e462c6df5b82014ceb9fbd051de9e6e43d605ab2f9eac",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-149.f32",
+      "position": 149,
+      "score_dtype": "float32",
+      "selected_id": 393,
+      "selected_probability": 0.5258825721698133,
+      "sha256": "1785ebe24511480e1edbbde52a69f354518116438c7f0c9ccb1d681807b0e98d",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-150.f32",
+      "position": 150,
+      "score_dtype": "float32",
+      "selected_id": 510,
+      "selected_probability": 0.9997858224724641,
+      "sha256": "4c7a477438ddc86e7ac72372358e068e459cc5a80b95d61cb9c0daba40bf5c7f",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-151.f32",
+      "position": 151,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999992607766184,
+      "sha256": "ac8d7b50a1f7409dd5f8bd6fbad9e1c9cc27c159a555acbd6973bfcd7f44ac3d",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-152.f32",
+      "position": 152,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999999974601332,
+      "sha256": "1dbd2e0986fe63362586ae8e00b374e617dec06214ee75dab98ae73e08adfe11",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-153.f32",
+      "position": 153,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999999032972595,
+      "sha256": "3907cb71531935afaed8def758153c644f5bdd0a79e6b3de5bc5a22b33dc0355",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-154.f32",
+      "position": 154,
+      "score_dtype": "float32",
+      "selected_id": 262,
+      "selected_probability": 0.9999995471163584,
+      "sha256": "67a843885694a3b2e35f69da535bae52eb390e003e392b89e164cc15a1cabdaf",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-155.f32",
+      "position": 155,
+      "score_dtype": "float32",
+      "selected_id": 672,
+      "selected_probability": 0.9999999247411454,
+      "sha256": "a98d86d07bae290b1433e03554e7522e2d94a319323a6b283f7e7bbc1a90a8e7",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-156.f32",
+      "position": 156,
+      "score_dtype": "float32",
+      "selected_id": 371,
+      "selected_probability": 0.9999999966614606,
+      "sha256": "6b4d55a438b269079640f44a23d0d14cb1f8d2cbaa6ce176c07d66883e09df86",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-157.f32",
+      "position": 157,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999998543500094,
+      "sha256": "815dbd9744caca99eb932c98c66cd5ddbe5f6f1c4a2344f23e71dde9a8c8a010",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-158.f32",
+      "position": 158,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999997857505988,
+      "sha256": "83bd83de81a03fa0dff4fc088748ff481cf70cc8484a80932a4e3743b1868484",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-159.f32",
+      "position": 159,
+      "score_dtype": "float32",
+      "selected_id": 262,
+      "selected_probability": 0.9999987814489403,
+      "sha256": "c64eeb84f2c60be922aa83154de98305d6c8e8f3ee25322cc473e559012fdfa5",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-160.f32",
+      "position": 160,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999997280647961,
+      "sha256": "30710247d31693cbf8febc4cec5b51843b844558c3b686e70ead4b54329f78f6",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-161.f32",
+      "position": 161,
+      "score_dtype": "float32",
+      "selected_id": 371,
+      "selected_probability": 0.9999999987134729,
+      "sha256": "7f211d91612a65978db04d414f9bb1e4b215cedc0baec41693030e5a5e13b8ba",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-162.f32",
+      "position": 162,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999999543765609,
+      "sha256": "0f4e8a289991a3e0675f218e42e65f1faa6234a7bdd9c630c5e6d550058029f6",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-163.f32",
+      "position": 163,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999997081197597,
+      "sha256": "87ba36d44e5e24bb9868a0034887472adb8c128106a142f3a8682c10d879d781",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-164.f32",
+      "position": 164,
+      "score_dtype": "float32",
+      "selected_id": 406,
+      "selected_probability": 0.9999992038518154,
+      "sha256": "10aa47d0cec00315fa8dd0f789f5ff19048711a2e7d416b355fe70af8cfd4220",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-165.f32",
+      "position": 165,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999959787098,
+      "sha256": "05f51ceb64c78fbd80b64d3311024cf16e34f261a5302c782693e895c18f6dd7",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-166.f32",
+      "position": 166,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999999817690682,
+      "sha256": "13ceb2c37c086bd79508bc7bf8b4cecb43e687cab443a755d1b9ff33b4855230",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-167.f32",
+      "position": 167,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999970317049308,
+      "sha256": "7d63d76611fbe4c490f7cdcc79a5b0cf0eae09e31caef901f60d81d73c2a3592",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-168.f32",
+      "position": 168,
+      "score_dtype": "float32",
+      "selected_id": 88106,
+      "selected_probability": 0.9999644636356402,
+      "sha256": "1ede2f76629bbd92281cf540b2c6bed2e82d09a3b7a1088c1b70768f134854b0",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-169.f32",
+      "position": 169,
+      "score_dtype": "float32",
+      "selected_id": 5466,
+      "selected_probability": 0.9999779838506487,
+      "sha256": "2b867f4ad57b88c9548fd06f94dc75bf937638b3c12d618cb46abeef59d33aa9",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-170.f32",
+      "position": 170,
+      "score_dtype": "float32",
+      "selected_id": 510,
+      "selected_probability": 0.9999870211995308,
+      "sha256": "ee2a90500166a526edc0d1047462130488e7ee14e393b8fb9d8ce01be81e0aa9",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-171.f32",
+      "position": 171,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999999383307951,
+      "sha256": "87190ad4bfacc1558b0b6d509a31d00bb5a40c06c4c3984f5b39f83658cb0549",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-172.f32",
+      "position": 172,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999999937633548,
+      "sha256": "8df56fc7244d44eae921ac2595c30e4af649cecef9191403a81498871fbae744",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-173.f32",
+      "position": 173,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999999034455849,
+      "sha256": "066868a089a1b99fe2c2d5a720588aa648cc36767d6acf5f9f369322d5425272",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-174.f32",
+      "position": 174,
+      "score_dtype": "float32",
+      "selected_id": 406,
+      "selected_probability": 0.9999999069054886,
+      "sha256": "4dbd40d71d75f75e7a3fa56063ba917018d68df04e79becde17beb704031a786",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-175.f32",
+      "position": 175,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999975538538,
+      "sha256": "18f11e2c229e548eb14ebcd0ae2ae466f9b51e9656425cf508f35f80bd193bfa",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-176.f32",
+      "position": 176,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999999769113787,
+      "sha256": "90b6cda9587a1199d275a0cc8b606949f9be4b4cb7bfe756aa6c3ab32d21a590",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-177.f32",
+      "position": 177,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999846352867454,
+      "sha256": "d6ed32ae00e2caca7beaa2ed25b26203e5733d7f4d91332c43e6db24253e8285",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-178.f32",
+      "position": 178,
+      "score_dtype": "float32",
+      "selected_id": 16,
+      "selected_probability": 0.9997645052101612,
+      "sha256": "9ef00ae63f7c1eab62ac13d8b2fe0ed621a89739fc25ab142abf0b327d6428ad",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-179.f32",
+      "position": 179,
+      "score_dtype": "float32",
+      "selected_id": 510,
+      "selected_probability": 0.9998402167349305,
+      "sha256": "b3d04f7dea75883af4c2256d2d15cbde0713626f095e352b9f9293f5769b853e",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-180.f32",
+      "position": 180,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999999565930965,
+      "sha256": "e3805e1e7932ada855d5bd3927bd81ec9138c589a2185747e097e7ec1e66a80c",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-181.f32",
+      "position": 181,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.999999744353386,
+      "sha256": "473e022525f72f046658587887ce3fa4a9e713750d35af6eededb229780c3cc7",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-182.f32",
+      "position": 182,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999998972935061,
+      "sha256": "42cf44baaf6d6771b8d77912cdfb9d001bcbdf765e6503afb91a09fadb848295",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-183.f32",
+      "position": 183,
+      "score_dtype": "float32",
+      "selected_id": 406,
+      "selected_probability": 0.9999996244527534,
+      "sha256": "1471053977ace076c006dbd6c34b67f82d5fb44448fad56ed222bc00a3921f08",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-184.f32",
+      "position": 184,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999958979173,
+      "sha256": "dc756262d24c2862c642e29c0015235aa43a133b564f094592848aad2b96b8a6",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-185.f32",
+      "position": 185,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999999956957568,
+      "sha256": "68ed6d69e4833a1a477589c9b01f3f05fd5b239ee1bef2d5ea3bc7e5240ca8dd",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-186.f32",
+      "position": 186,
+      "score_dtype": "float32",
+      "selected_id": 22849,
+      "selected_probability": 0.9923827888475228,
+      "sha256": "db1d2081a7042bc5563f27aabee6038768684e84672cfd982943182196efbce9",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-187.f32",
+      "position": 187,
+      "score_dtype": "float32",
+      "selected_id": 220,
+      "selected_probability": 0.9998898572915411,
+      "sha256": "484b2cdad8c01d9ecc3e6757a084a863319fba856ca35fe4a6eba82a71df73b1",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-188.f32",
+      "position": 188,
+      "score_dtype": "float32",
+      "selected_id": 19,
+      "selected_probability": 0.9999860258797358,
+      "sha256": "9b5df2190df8dd75b35640ed15f62351b922736e2f720f14c26f892adbb9160f",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-189.f32",
+      "position": 189,
+      "score_dtype": "float32",
+      "selected_id": 23,
+      "selected_probability": 0.9999688385945258,
+      "sha256": "4b34e2499c8c9af692c198d689075de97f9ddb8cd3bf39f3058b8cd734063621",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-190.f32",
+      "position": 190,
+      "score_dtype": "float32",
+      "selected_id": 13,
+      "selected_probability": 0.9999973570571509,
+      "sha256": "332337313e9adca485c2b0e6bb5b0d867ac5476cd237c4ab30efa2c5d5080183",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-191.f32",
+      "position": 191,
+      "score_dtype": "float32",
+      "selected_id": 19,
+      "selected_probability": 0.9998543990460333,
+      "sha256": "3686369368d72f003bbd861b350c97bd00cec5c56b29a797744afb13cd4e04ef",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-192.f32",
+      "position": 192,
+      "score_dtype": "float32",
+      "selected_id": 15,
+      "selected_probability": 0.999998038548063,
+      "sha256": "3aa4212ba8ef2ffe6e09c79b9861d22a4e7428f115f3e9b0ec5057290c8c32b2",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-193.f32",
+      "position": 193,
+      "score_dtype": "float32",
+      "selected_id": 393,
+      "selected_probability": 0.9999831066770685,
+      "sha256": "705875609c42e31a830e7d3451be3965122cb03f08d1febcc3d209ef3df7c82e",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-194.f32",
+      "position": 194,
+      "score_dtype": "float32",
+      "selected_id": 510,
+      "selected_probability": 0.9999969167106518,
+      "sha256": "93086f4fb616b1b1e27109b17ec5e72b983d78bc1a23c864c3afd838b0e3422c",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-195.f32",
+      "position": 195,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999999716639628,
+      "sha256": "f91b8f7480022dd6bc4ea23c5df53ce3ad2b8a2603121d3ba59e3042829b70fb",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-196.f32",
+      "position": 196,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999999887029661,
+      "sha256": "ce9aef83cdcf1c4d328c340d2f0106946897f2fbb53826408e05486df186937a",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-197.f32",
+      "position": 197,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999999119109213,
+      "sha256": "1b3141c4c5aa07e294d53fe98f251aa281cd0448846a2ea4674461618e9c6722",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-198.f32",
+      "position": 198,
+      "score_dtype": "float32",
+      "selected_id": 262,
+      "selected_probability": 0.9999997575022601,
+      "sha256": "8aa0a6917e378d05892adf5cf9ee83cc01f45ead912705012127d2b4a58f109d",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-199.f32",
+      "position": 199,
+      "score_dtype": "float32",
+      "selected_id": 672,
+      "selected_probability": 0.9999999859910118,
+      "sha256": "0aacfdefb4876801e4468ab96c90011fbf706aa0dac890e00f61a1d69210851c",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-200.f32",
+      "position": 200,
+      "score_dtype": "float32",
+      "selected_id": 371,
+      "selected_probability": 0.9999999931923254,
+      "sha256": "3287d7f4fc7f1141d27eff0e31e1b57a600f76f9e8991055e6c596757043e482",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-201.f32",
+      "position": 201,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999999901715807,
+      "sha256": "ea56e8b7f75647ecf45402a01f5d444131239389b77f2f008502678e835c4eb4",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-202.f32",
+      "position": 202,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999998523843936,
+      "sha256": "d105c8bfe93bd24c0c16ce5ff6708c98b1d37c44a9785e7b3a443d3fb76a5fa3",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-203.f32",
+      "position": 203,
+      "score_dtype": "float32",
+      "selected_id": 262,
+      "selected_probability": 0.9999994952407537,
+      "sha256": "a49c390e572423a9eee59e0da0fb7373656c18e1400fecdaee543cfd250c28bb",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-204.f32",
+      "position": 204,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.999999861312001,
+      "sha256": "0941a9063e9b2c0031187e08c3f523e195ef2e54c51221b3c69bc2a939d088fb",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-205.f32",
+      "position": 205,
+      "score_dtype": "float32",
+      "selected_id": 371,
+      "selected_probability": 0.9999999989738972,
+      "sha256": "caff7ae9d9beb3d6d57fce709ddafcd3444d8c476f822388038634c8a5cde672",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-206.f32",
+      "position": 206,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999999835303071,
+      "sha256": "d54abf8d36576a72d1bfb11f1d079667954c6519bea0c5f799df26254965f78a",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-207.f32",
+      "position": 207,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999997130519569,
+      "sha256": "eede1a96e540cb67c345707c0662bf105698e6d2389c9317ffb5baac18d8355f",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-208.f32",
+      "position": 208,
+      "score_dtype": "float32",
+      "selected_id": 406,
+      "selected_probability": 0.9999996968794627,
+      "sha256": "30b046fb78233178dbd972ae988a0c7c5276253d2dbf438ae780ef5bd21fb7a5",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-209.f32",
+      "position": 209,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999659140062,
+      "sha256": "d430163c7adf43f24e71d5026661b957f185114797e15cdf4aca89200773a91d",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-210.f32",
+      "position": 210,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999999867089322,
+      "sha256": "3fd3c4c6343fd16c8266f3d21918e3ba6cdc86f50aaece537d7cebc7658667be",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-211.f32",
+      "position": 211,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999709854309904,
+      "sha256": "7fb5c888e5ba359dd6d904e355f4c7756e6d31e2a45c4a4d6cff9c40ac81470e",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-212.f32",
+      "position": 212,
+      "score_dtype": "float32",
+      "selected_id": 48862,
+      "selected_probability": 0.9993615348820576,
+      "sha256": "bf4b3457474f0975f9af14049d43c85d142801ddd0b7a1e183886fe701f3fcfd",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-213.f32",
+      "position": 213,
+      "score_dtype": "float32",
+      "selected_id": 375,
+      "selected_probability": 0.9999844506970827,
+      "sha256": "72ffeb0a3a06f24fdf1286a190e31fe28c5bcaf2cc2acc5c468589cbb8d7ccff",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-214.f32",
+      "position": 214,
+      "score_dtype": "float32",
+      "selected_id": 5561,
+      "selected_probability": 0.9999767495749573,
+      "sha256": "45a38ff58ba5694787b64608ebca8a920ad9b965acc8318ecb7893457d19b395",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-215.f32",
+      "position": 215,
+      "score_dtype": "float32",
+      "selected_id": 510,
+      "selected_probability": 0.9999953402336559,
+      "sha256": "41459a939c245e4f978c6bc0d1d4c74b2b15890b6c294a8fe74450728d346071",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-216.f32",
+      "position": 216,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.999999982633485,
+      "sha256": "20544340634189469c1f18c438465b92a25cb3e73e40f343b9c3f4f8d22ca105",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-217.f32",
+      "position": 217,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999999923439516,
+      "sha256": "7ff45c26271e760e45f7b7aa1238b167c2945b33210793c676488f710d114be3",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-218.f32",
+      "position": 218,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999998641965497,
+      "sha256": "c8cb7392d1d81ceae89c1abe77164470bddf7281626e1f2138883b1696492480",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-219.f32",
+      "position": 219,
+      "score_dtype": "float32",
+      "selected_id": 406,
+      "selected_probability": 0.9999999220151977,
+      "sha256": "9ab9b440ddda9ae2b9c902fcb4826c7909bbe23ec665a4ad6dd5f7e6bc323e43",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-220.f32",
+      "position": 220,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.999999888836869,
+      "sha256": "f1c11298e75748a770f3fa1ca79f02db4bf3775ec0dcec310b6abefee5683fab",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-221.f32",
+      "position": 221,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999999223443123,
+      "sha256": "09c897f24f4e7a48be5836768d3b415f07f9db2bf41dbc30538d48ff7f7d6fab",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-222.f32",
+      "position": 222,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999983623735778,
+      "sha256": "7af4819c6e6af8b7c5b94c7d58286837b584c4826d52e4d08d38112af7ac46b4",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-223.f32",
+      "position": 223,
+      "score_dtype": "float32",
+      "selected_id": 18,
+      "selected_probability": 0.9999946058427179,
+      "sha256": "7b1f5c30b13a19795ee0a497b646cc121494fb2d3ca64581bcde03074b7cbf56",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-224.f32",
+      "position": 224,
+      "score_dtype": "float32",
+      "selected_id": 510,
+      "selected_probability": 0.9999984873317151,
+      "sha256": "5f485ac74718053bb4009643254991e76e2f11b0f5f4a975bc02f7903468755b",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-225.f32",
+      "position": 225,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.999999969624598,
+      "sha256": "c58cf0e6c57f47e277d3e9d4e9ac360d598bff063a73478704b92e17c6249f50",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-226.f32",
+      "position": 226,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999998959390843,
+      "sha256": "80935998d8c7c86240eefdf37745c90000054df3c485482181450385c3cea114",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-227.f32",
+      "position": 227,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999999939462587,
+      "sha256": "15fbed2c000690da7a418950821a6a4a0cd0d3175cb782b02b9c07a1044efb23",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-228.f32",
+      "position": 228,
+      "score_dtype": "float32",
+      "selected_id": 406,
+      "selected_probability": 0.9999998415677953,
+      "sha256": "7671ce03f96c0d626f0b5a4560018259419090198c1643bb3f87b93a6d7ee5ba",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-229.f32",
+      "position": 229,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999977332652,
+      "sha256": "aaef4e813aa5d6abd32bb840abbd27129ec1c311e5dd1be3d00da951b027b321",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-230.f32",
+      "position": 230,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.999999987733326,
+      "sha256": "756a24b3bfa8180858fca6acc8017b98caf8f5d6ce89ae787bcef596d90dfa5b",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-231.f32",
+      "position": 231,
+      "score_dtype": "float32",
+      "selected_id": 22849,
+      "selected_probability": 0.9999964978943919,
+      "sha256": "e74cf7b9fd45bcc57b98ba2bab83d4dac9d9879e7923faca9b3d2c0275fff045",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-232.f32",
+      "position": 232,
+      "score_dtype": "float32",
+      "selected_id": 220,
+      "selected_probability": 0.9999982323454224,
+      "sha256": "de9d2fe3b3c8cc8c62ce79cd983a797fa7d183ed7f3321d761f6285bc004e43a",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-233.f32",
+      "position": 233,
+      "score_dtype": "float32",
+      "selected_id": 19,
+      "selected_probability": 0.9999818948323952,
+      "sha256": "0d780fa0471faa20a93dbe3e3c25fc01147fbee92ea8f00ba3be3d5b87c264d9",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-234.f32",
+      "position": 234,
+      "score_dtype": "float32",
+      "selected_id": 23,
+      "selected_probability": 0.9999719885702197,
+      "sha256": "9f8f6e539b4f21a33ac8c0ca74395eb90109b2c52689c0e07c1bfd8536e96c08",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-235.f32",
+      "position": 235,
+      "score_dtype": "float32",
+      "selected_id": 13,
+      "selected_probability": 0.9999976916466223,
+      "sha256": "de7642f8305bee485d2806c0f8064ad62fd2ffabf858b1883ee71fb05a860619",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-236.f32",
+      "position": 236,
+      "score_dtype": "float32",
+      "selected_id": 15,
+      "selected_probability": 0.9999586199603315,
+      "sha256": "5365176977455b3c3221b3868ad37baf1010070fd0f40f090166ba3716f08f74",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-237.f32",
+      "position": 237,
+      "score_dtype": "float32",
+      "selected_id": 22,
+      "selected_probability": 0.9999991718090009,
+      "sha256": "d58d0d1fb4364f40ffcdd1aa05427fe7543f04771cb4c20206c9e391e9d1fb35",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-238.f32",
+      "position": 238,
+      "score_dtype": "float32",
+      "selected_id": 393,
+      "selected_probability": 0.9999697851419038,
+      "sha256": "0f4a7d311aed9b3afde1781250f1186be8edcb3c254d8866af84b31db1ab8e3d",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-239.f32",
+      "position": 239,
+      "score_dtype": "float32",
+      "selected_id": 510,
+      "selected_probability": 0.9999889055122514,
+      "sha256": "168812cc5fe3af9cdf198758e6687daad2b2684af025d4c92caaf2a218dac6e4",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-240.f32",
+      "position": 240,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999999811519015,
+      "sha256": "34aaff0457a284cd7eadfa49e68382d9a3cabe9eafb42faf4d0c6f8a1666a003",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-241.f32",
+      "position": 241,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.99999998753107,
+      "sha256": "5d7077b3ed029958da2ae91b72c27804e457d536d23a59f1c2a45f738ae468b8",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-242.f32",
+      "position": 242,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999998473204585,
+      "sha256": "fad8b7706aef06bae344917666ab5c0deb472c7d136bd9448544dd514638b7a0",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-243.f32",
+      "position": 243,
+      "score_dtype": "float32",
+      "selected_id": 262,
+      "selected_probability": 0.9999997201853797,
+      "sha256": "5739a3d3ee97ab2ca38f62cd77b6af72e687d557af6949c2f26be3b52552b044",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-244.f32",
+      "position": 244,
+      "score_dtype": "float32",
+      "selected_id": 672,
+      "selected_probability": 0.9999999902816005,
+      "sha256": "703b39f726d75473a55cc7e5e8ec7a3f1d01114d8ab887a21f58c684f8579c4d",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-245.f32",
+      "position": 245,
+      "score_dtype": "float32",
+      "selected_id": 371,
+      "selected_probability": 0.9999999934274966,
+      "sha256": "d9f647be84aa45c6e0f4cb1b0b4174057798fefae5523bef832257d4d65dbbe6",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-246.f32",
+      "position": 246,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999999740003582,
+      "sha256": "528785ebdd5ebea008295fd1590fa77a4ab97417d5cfc31935c4c9b4c5f06927",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-247.f32",
+      "position": 247,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999997075047312,
+      "sha256": "3fbf13a57117d31d1b575f1094a13f2b40da6457d0c1688a9581a21131e1ace4",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-248.f32",
+      "position": 248,
+      "score_dtype": "float32",
+      "selected_id": 262,
+      "selected_probability": 0.9999994796431954,
+      "sha256": "5c0b49e3fc7ee3d13527d8d5789ab87bcf243c6c35e66650b3a4190c7cd9732d",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-249.f32",
+      "position": 249,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999774212353,
+      "sha256": "639744088ac4550fd7182b044e40b7def374806e2b972daa600f917c76e131c9",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-250.f32",
+      "position": 250,
+      "score_dtype": "float32",
+      "selected_id": 371,
+      "selected_probability": 0.9999999996883036,
+      "sha256": "3f32d77499a460a4578244fc893537c72adc893aae802e1243e8d87e7ae8c7f0",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-251.f32",
+      "position": 251,
+      "score_dtype": "float32",
+      "selected_id": 29,
+      "selected_probability": 0.9999999959945192,
+      "sha256": "776c30d06f0f5d5e90f1d7bdac380d65a7a1f83fef2fe23126f3881a58c5bcbd",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-252.f32",
+      "position": 252,
+      "score_dtype": "float32",
+      "selected_id": 198,
+      "selected_probability": 0.9999998686032718,
+      "sha256": "e49b67763a3d986d8dcce3c28f8340f57a9828365f5108cd9f508b846b8f640f",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-253.f32",
+      "position": 253,
+      "score_dtype": "float32",
+      "selected_id": 406,
+      "selected_probability": 0.9999998254005239,
+      "sha256": "f2a94b1f829f1f8ed3a560df0232b06240af3e25cc0c75763823cf4e14924f7a",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-254.f32",
+      "position": 254,
+      "score_dtype": "float32",
+      "selected_id": 361,
+      "selected_probability": 0.9999999985240096,
+      "sha256": "ca3167050e75675d28328fda3154427018c301e9945a2080d6c9ff9128ded6f6",
+      "shape": [
+        1,
+        248320
+      ]
+    },
+    {
+      "bytes": 993280,
+      "file": "scores-255.f32",
+      "position": 255,
+      "score_dtype": "float32",
+      "selected_id": 1251,
+      "selected_probability": 0.9999999978429199,
+      "sha256": "af10c0f57dc179ba01b9f05459c395cf073e5edecf5e9a47d6643b0bb444eb8b",
+      "shape": [
+        1,
+        248320
+      ]
+    }
+  ],
+  "source": {
+    "model": "lightonai/LightOnOCR-3-4B",
+    "revision": "b71010f095dc3735de7ee6b9969bff8f8f50b39a",
+    "source_metadata_sha256": {
+      "chat_template.jinja": "d5ddb788d5f3df12e32244954037eb535409d24eeb48c2429d7588af4e7b69a7",
+      "config.json": "99b4c363a998c2d8c5ed5b3f3a40ec5cb97a156034df5002d0d789c74324f5f0",
+      "generation_config.json": "8ce51af0baac298c116b7db144efe1ebd78b0b792d084002634fd3ed63f4d515",
+      "preprocessor_config.json": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+      "processor_config.json": "d89ef49ce9cd37fbf510158e13c1ef063d9286411c1ec9049932dbe0487143b1",
+      "tokenizer_config.json": "e98f1901ac6f0adff67b1d540bfa0c36ac1a0cf59eb72ed78146ef89aafa1182"
+    },
+    "tokenizer_sha256": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4"
+  },
+  "source_sha": "42e5ce6f9bc6bd01865ac4f21d2157c98d3475f1",
+  "split": "heldout",
+  "status": "captured",
+  "stop": "max_tokens"
+}

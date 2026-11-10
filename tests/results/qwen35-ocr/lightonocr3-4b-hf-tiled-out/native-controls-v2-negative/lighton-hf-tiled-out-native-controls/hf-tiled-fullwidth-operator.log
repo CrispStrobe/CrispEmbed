@@ -1,0 +1,13 @@
+/kaggle/working/lighton-hf-tiled-out-native-controls-source/ggml/src/ggml-backend.cpp:342: GGML_ASSERT(buf != NULL && "tensor buffer not set") failed
+/kaggle/working/lighton-hf-tiled-out-native-controls-scratch/build/ggml/src/libggml-base.so.0(+0x1c12b)[0x7c0876e0212b]
+/kaggle/working/lighton-hf-tiled-out-native-controls-scratch/build/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7c0876e025ac]
+/kaggle/working/lighton-hf-tiled-out-native-controls-scratch/build/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7c0876e0278b]
+/kaggle/working/lighton-hf-tiled-out-native-controls-scratch/build/ggml/src/libggml-base.so.0(ggml_backend_tensor_get+0xc7)[0x7c0876e1b2a7]
+/kaggle/working/lighton-hf-tiled-out-native-controls-scratch/build/test-lighton4b-hf-tiled-out-operator(+0x14899)[0x57718b4fe899]
+/kaggle/working/lighton-hf-tiled-out-native-controls-scratch/build/test-lighton4b-hf-tiled-out-operator(+0x165b6)[0x57718b5005b6]
+/kaggle/working/lighton-hf-tiled-out-native-controls-scratch/build/test-lighton4b-hf-tiled-out-operator(+0x18d95)[0x57718b502d95]
+/kaggle/working/lighton-hf-tiled-out-native-controls-scratch/build/test-lighton4b-hf-tiled-out-operator(+0x522d)[0x57718b4ef22d]
+/kaggle/working/lighton-hf-tiled-out-native-controls-scratch/build/test-lighton4b-hf-tiled-out-operator(+0x40aa)[0x57718b4ee0aa]
+/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca)[0x7c08768571ca]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b)[0x7c087685728b]
+/kaggle/working/lighton-hf-tiled-out-native-controls-scratch/build/test-lighton4b-hf-tiled-out-operator(+0x40f5)[0x57718b4ee0f5]

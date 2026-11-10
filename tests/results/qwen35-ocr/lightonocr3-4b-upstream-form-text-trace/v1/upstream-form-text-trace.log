@@ -1,0 +1,18 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+PHASE source
+PHASE cpu
+Traceback (most recent call last):
+  File "/tmp/lighton4b-upstream-form-text-trace-v1/source/tools/form-text-trace-probe/worker.py", line 115, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/tmp/lighton4b-upstream-form-text-trace-v1/source/tools/form-text-trace-probe/worker.py", line 57, in main
+    frozen=json.loads((folder/'retained-upstream-response.json').read_text());validate_response(frozen,frozen);native_ids=combined['cases']['simple_form']['arms']['on']['generated_ids'];require(len(native_ids)==167 and native_ids[:31]==frozen['tokens'][:31]and native_ids[31]!=frozen['tokens'][31],'predeclared first actual same-prefix flip31')
+                                                                              ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-upstream-form-text-trace-v1/source/tools/form-text-trace-probe/worker.py", line 21, in validate_response
+    require(len(response['tokens'])==174 and response['tokens_evaluated']==154 and response['stop']and response['stop_type']=='eos'and not response['truncated']and response['tokens'][-1]==248046,'independent complete source EOS/prompt')
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/lighton4b-upstream-form-text-trace-v1/source/tools/kaggle/lighton4b_upstream_physical_decode.py", line 7, in require
+    if not ok:raise RuntimeError(msg)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: independent complete source EOS/prompt

@@ -1,0 +1,39 @@
+{
+  "schema": "lighton4b-physical-ablation-controls-review/v1",
+  "source_sha": "4a8821e3e919a7be4ff71bcafe13e7a6d0881f08",
+  "report_sha256": "106be85f66de494c9bbde0abf9076526921d5b9332f1e8fb90abd78a105d32f8",
+  "selective_integration_sha": "ae2a61472a268af1fc4e9f4bc2ee0d94d403f57e",
+  "native_mode_cache_unknown_observer_checks": 142,
+  "physical_profile_geometry_checks": 557865,
+  "q6_scalar_values": 65792,
+  "q6_checks": 84,
+  "default_all_same_input_runtime_direct_dequant_exact": true,
+  "learned_model_forward_executed": false,
+  "quality_qualified": false,
+  "files": {
+    "prefix-primitives.json": {
+      "bytes": 11683,
+      "sha256": "106be85f66de494c9bbde0abf9076526921d5b9332f1e8fb90abd78a105d32f8"
+    },
+    "prefix-primitives-bootstrap.json": {
+      "bytes": 418,
+      "sha256": "409d7baa4900c2372a7577813e876cbc8cdf5f48184c33ddca0a9583f5896bf2"
+    },
+    "test-lighton4b-physical-native-ops.log": {
+      "bytes": 194,
+      "sha256": "55be879453faae1ad12ba240d135d6b094020c1bed1c23945f07eb0c373b1063"
+    },
+    "physical-policy-ablation-guards.log": {
+      "bytes": 82,
+      "sha256": "a78b2a1e94aafdee1a9cb5dcc91fd7ca1d87abe91e3dfcd9d0edbc2ac6f12988"
+    },
+    "test-qwen35-stream-projection.log": {
+      "bytes": 117,
+      "sha256": "f97cf909c059b4d9e12404a53a7cca90b33e9e04732621589fb8599dfc1748d6"
+    },
+    "test-lighton4b-q6-tied-head.log": {
+      "bytes": 171,
+      "sha256": "9481438a41c398f486457154426d6fd0656dc8b13ec6eb171cb3a1d9c8d885cd"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "status": "complete",
+  "case": "two-column-page",
+  "model_forward_executed": false,
+  "model_acquisition": false,
+  "qualified": false,
+  "capacity": {
+    "MemAvailable": 32173043712,
+    "SwapTotal": 0,
+    "SwapFree": 0,
+    "cgroup_observed": 1,
+    "finite_cgroup_bounds": 1
+  },
+  "auditor_sha256": "1d8dfe414197df3e896fa6c475590aa7657e1bae3610da0c42b64bc81d2b73af",
+  "copy_sha256": "1417c9db46bd406ca0e6386045a9d98d3f101626ac91a190f0912076de6ada55",
+  "source_manifest_entries": 1457,
+  "phase": "audit",
+  "retained_timeout_mirror": true,
+  "credentials_copied": false,
+  "temporary_urls_published": false,
+  "elapsed_seconds": 101.14103494299997
+}

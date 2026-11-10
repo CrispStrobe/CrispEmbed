@@ -1,0 +1,51 @@
+{
+  "schema": "lighton4b-planner-book-timeout-index/v1",
+  "qualified": false,
+  "status": "audited-incomplete-timeout",
+  "private_model_receipt_sha256": "f231ab48c9bff411a1f9c96cfb79eda084f2f0b7cee46f9ea747ccc734d5f8e6",
+  "audit_sha256": "4906aa6e171cb5f92816a7a9e98e177a7ccbfd5f5406f2f2b1e353acb852ef06",
+  "files": {
+    "relay-copy.json": {
+      "bytes": 238,
+      "sha256": "3f0438806e3ee3e4afb4dcdc58c0207aeb798184c6afc91dbaca78a197ddf6b2"
+    },
+    "relay-source-admission.json": {
+      "bytes": 710,
+      "sha256": "f48cc741410754e3480b8f430f93c3cea352e26e3072fba66334264518110e46"
+    },
+    "relay-copy.py": {
+      "bytes": 4508,
+      "sha256": "1417c9db46bd406ca0e6386045a9d98d3f101626ac91a190f0912076de6ada55"
+    },
+    "raw-audit.json": {
+      "bytes": 9787,
+      "sha256": "4906aa6e171cb5f92816a7a9e98e177a7ccbfd5f5406f2f2b1e353acb852ef06"
+    },
+    "protocol.json": {
+      "bytes": 2761,
+      "sha256": "869eea6c711497718b6d467e67f0e80eb3567d18c8ec3b66d5395fe83bca344e"
+    },
+    "audit.py": {
+      "bytes": 9945,
+      "sha256": "1d8dfe414197df3e896fa6c475590aa7657e1bae3610da0c42b64bc81d2b73af"
+    },
+    "initial-mount-setup-failure.json": {
+      "bytes": 269,
+      "sha256": "ff39a8282caa40d33050cf2a16c4b53a7c7beb54ef75e7c3b51f43ca8a99fdd7"
+    },
+    "inline-submission-rejection.json": {
+      "bytes": 302,
+      "sha256": "c0afe6b83f9a613226ae08bcfc4f4c0827b29b563bc8eee206f56d95563262b5"
+    },
+    "raw-audit-bootstrap.json": {
+      "bytes": 664,
+      "sha256": "cd881f63b4b2ddf65110b5a65b3c8811cbaf6782922e5afda53cb10a7bcaaabc"
+    },
+    "public-safe-timeout.json": {
+      "bytes": 242047,
+      "sha256": "04ad96ef4ffe5f1d28e87b76952b6f0e636c1c9392dbb7ea97f35fd1581a3e39"
+    }
+  },
+  "scope": "Timed-out frozen planner-only diagnostic. Historical complete reference remains unchanged; no completed planner CER/WER, floor or shipping claim.",
+  "rights": "No recognized book text, token-ID sequences or full model report published. Metrics/hashes only."
+}

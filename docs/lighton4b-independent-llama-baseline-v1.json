@@ -1,0 +1,93 @@
+{
+  "schema": "lighton4b-independent-llama-baseline/v1",
+  "selection": "fixed independent engine baseline; no calibration selection or heldout qualification",
+  "upstream_repo": "https://github.com/ggml-org/llama.cpp",
+  "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "model_repo": "richardyoung/LightOnOCR-3-4B-GGUF",
+  "model_revision": "8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01",
+  "models": {
+    "Q4_K_M": {
+      "file": "LightOnOCR-3-4B-Q4_K_M.gguf",
+      "bytes": 2708804576,
+      "sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26"
+    },
+    "Q6_K": {
+      "file": "LightOnOCR-3-4B-Q6_K.gguf",
+      "bytes": 3464055776,
+      "sha256": "290e2b46627c9d3f932c25ef6697fc71a37a9b226337d761a0190185eaa738b7"
+    },
+    "Q8_0": {
+      "file": "LightOnOCR-3-4B-Q8_0.gguf",
+      "bytes": 4482403296,
+      "sha256": "51e2913cad715f2516a7ab1a6f7677ebc6122361b80ba21bffc490198621ec0a"
+    }
+  },
+  "projector": {
+    "file": "mmproj-LightOnOCR-3-4B-F16.gguf",
+    "bytes": 672423200,
+    "sha256": "21eae623f60580f19ae4f04716292cd76ad36b420ee01e761254c8b1ec966321"
+  },
+  "publisher_readme_sha256": "e36445d7b467aff1f366b94459c2988e8733c5960c6fd268992258d094bbfbb3",
+  "cases": [
+    {
+      "id": "simple_form",
+      "image": "tests/regression/images/cc0/simple_form.png",
+      "image_sha256": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+      "image_tokens": 140,
+      "expected_prompt_tokens": 154,
+      "reference_path": null,
+      "reference_url": "https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/26fe41e35/tests/results/qwen35-ocr/lightonocr3-4b-bf16-cpu-capture.json",
+      "reference_sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a",
+      "expected_input_ids_npy_sha256": "6f1b0a033c6d381c877956b6fbd215d8be4515d9a4ec733ad302b47a1743203d",
+      "reference_generated_ids": 177,
+      "reference_eos": true,
+      "reference_cap": false
+    },
+    {
+      "id": "simple_table",
+      "image": "tests/regression/images/cc0/simple_table.jpg",
+      "image_sha256": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8",
+      "image_tokens": 72,
+      "expected_prompt_tokens": 86,
+      "reference_path": "tests/results/qwen35-ocr/lightonocr3-4b-fourcase-original/simple_table.json",
+      "reference_url": null,
+      "reference_sha256": "6be5428f247b616e76d79513b62873cf0238842999be2fb0848997f8ced25763",
+      "expected_input_ids_npy_sha256": "5b170bf4fff2a9f131cb6917bf1a4b41513df991bdafcca0fa3c0fe5489d8bd1",
+      "reference_generated_ids": 222,
+      "reference_eos": true,
+      "reference_cap": false
+    },
+    {
+      "id": "arabic_printed_line",
+      "image": "tests/regression/images/cc0/arabic_printed_line.png",
+      "image_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "image_tokens": 68,
+      "expected_prompt_tokens": 82,
+      "reference_path": "tests/results/qwen35-ocr/lightonocr3-4b-fourcase-original/arabic_printed_line.json",
+      "reference_url": null,
+      "reference_sha256": "ff1a390370b702fabf8b5a25f0feec76888bb1ad8197cf08c3efd44adec1de84",
+      "expected_input_ids_npy_sha256": "59ce2cc26acdd1815f3b3f29a173c682eb9a89f3bc3d6ef07cc203ab1b197543",
+      "reference_generated_ids": 6,
+      "reference_eos": true,
+      "reference_cap": false
+    }
+  ],
+  "cap": 256,
+  "threads": 4,
+  "context": 2048,
+  "image_min_tokens": 64,
+  "image_max_tokens": 256,
+  "minimum_available_memory_bytes": 9663676416,
+  "minimum_scratch_free_bytes": 26843545600,
+  "minimum_output_free_bytes": 1073741824,
+  "request_timeout_seconds": 1200,
+  "total_model_timeout_seconds": 10800,
+  "expected_media_prompt": "<|im_start|>user\n<__media__><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "limits": [
+    "Published upstream converted weights, not same-weight CrispEmbed container or arithmetic.",
+    "Q8 decoder control plus F16 vision projector, not original BF16/F16 decoder.",
+    "Publisher card lacks exact conversion/benchmark commit and raw evidence; same source checkpoint revision cannot be proven from card alone.",
+    "Actual upstream resize/interpolation/vision compute can differ; prompt IDs/length admitted separately, not vision-byte parity.",
+    "No original rerun, human ground-truth claim, model publication/default/release or new PR."
+  ]
+}

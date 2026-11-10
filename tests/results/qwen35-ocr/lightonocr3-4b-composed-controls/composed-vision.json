@@ -1,0 +1,288 @@
+{
+  "schema": "lighton4b-composed-vision/v1",
+  "case": "simple_form",
+  "status": "model_free_controls_pass",
+  "protocol_sha256": "d6f12d202cb56a2015acf9b2fb46b9a739c7abeb7cba22d1ce4d3dd7419d6483",
+  "quality_qualified": false,
+  "heldout": false,
+  "original_forward_executed": false,
+  "f32_model_instantiated": false,
+  "arms": {},
+  "commands": {
+    "source": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 62,
+      "elapsed_seconds": 0.004158387000018138,
+      "child_user_seconds": 0.0007549999999999999,
+      "child_system_seconds": 0.0015099999999999998,
+      "peak_rss_bytes_observed": 4096,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 42946560
+    },
+    "fetch-production": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 63,
+      "elapsed_seconds": 6.318258629000013,
+      "child_user_seconds": 5.043528,
+      "child_system_seconds": 0.8176399999999999,
+      "peak_rss_bytes_observed": 5738496,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 209408000
+    },
+    "production-tree": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 74,
+      "elapsed_seconds": 0.008119952000015473,
+      "child_user_seconds": 0.0013699999999996493,
+      "child_system_seconds": 0.001371000000000011,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 209408000
+    },
+    "submodule": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 75,
+      "elapsed_seconds": 10.069500033999986,
+      "child_user_seconds": 14.802576,
+      "child_system_seconds": 0.780671,
+      "peak_rss_bytes_observed": 4112384,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 209408000
+    },
+    "configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 116,
+      "elapsed_seconds": 2.7687693899999886,
+      "child_user_seconds": 1.265747000000001,
+      "child_system_seconds": 0.7409739999999998,
+      "peak_rss_bytes_observed": 22999040,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 209408000
+    },
+    "build": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 194,
+      "elapsed_seconds": 70.40308830200001,
+      "child_user_seconds": 122.22772799999998,
+      "child_system_seconds": 7.0347040000000005,
+      "peak_rss_bytes_observed": 9793536,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433946624
+    },
+    "supported-host": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 594,
+      "elapsed_seconds": 2.5171271290000163,
+      "child_user_seconds": 3.0266790000000015,
+      "child_system_seconds": 1.272157,
+      "peak_rss_bytes_observed": 144310272,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433946624
+    },
+    "cli-old256": {
+      "status": "failed",
+      "returncode": 4,
+      "pid": 748,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.gguf'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.rgb'), 10, 10, PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/one.ids'), PosixPath('/kaggle/working'), 256, 4, 'greedy-full']' returned non-zero exit status 4.",
+      "elapsed_seconds": 0.004171384000017042,
+      "child_user_seconds": 0.0013710000000060063,
+      "child_system_seconds": 0.0013709999999989009,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433946624
+    },
+    "cli-new-composed": {
+      "status": "failed",
+      "returncode": 4,
+      "pid": 749,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.gguf'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.rgb'), 10, 10, PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/one.ids'), PosixPath('/kaggle/working'), 512, 4, 'greedy-full', '--observed-composed-cap512']' returned non-zero exit status 4.",
+      "elapsed_seconds": 0.003942082999969898,
+      "child_user_seconds": 0.0009159999999894808,
+      "child_system_seconds": 0.0018150000000005662,
+      "peak_rss_bytes_observed": 8192,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433946624
+    },
+    "cli-new-fed": {
+      "status": "failed",
+      "returncode": 4,
+      "pid": 750,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.gguf'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.rgb'), 10, 10, PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/one.ids'), PosixPath('/kaggle/working'), 512, 4, 'greedy-full', '--upstream-vision', PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/observer-on/source.vision.0.f32'), '--observed-composed-cap512']' returned non-zero exit status 4.",
+      "elapsed_seconds": 0.004011738999963654,
+      "child_user_seconds": 0.0008170000000120581,
+      "child_system_seconds": 0.0016329999999999956,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433946624
+    },
+    "cli-table-legacy": {
+      "status": "failed",
+      "returncode": 4,
+      "pid": 751,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.gguf'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.rgb'), 10, 10, PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/one.ids'), PosixPath('/kaggle/working'), 512, 4, 'greedy-full', '--upstream-vision', PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.rgb'), '--extended-table-cap512']' returned non-zero exit status 4.",
+      "elapsed_seconds": 0.003938280999989274,
+      "child_user_seconds": 0.0011649999999860938,
+      "child_system_seconds": 0.0011659999999995563,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433946624
+    },
+    "cli-unflagged512": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 752,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.gguf'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.rgb'), 10, 10, PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/one.ids'), PosixPath('/kaggle/working'), 512, 4, 'greedy-full']' returned non-zero exit status 2.",
+      "elapsed_seconds": 0.003886848000036025,
+      "child_user_seconds": 0.0010390000000199962,
+      "child_system_seconds": 0.0010390000000004562,
+      "peak_rss_bytes_observed": 208896,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433946624
+    },
+    "cli-reject513": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 753,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.gguf'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.rgb'), 10, 10, PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/one.ids'), PosixPath('/kaggle/working'), 513, 4, 'greedy-full', '--observed-composed-cap512']' returned non-zero exit status 2.",
+      "elapsed_seconds": 0.004006043999993381,
+      "child_user_seconds": 0.001004999999992151,
+      "child_system_seconds": 0.0010050000000010328,
+      "peak_rss_bytes_observed": 184320,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433946624
+    },
+    "cli-reject-threads": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 754,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.gguf'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.rgb'), 10, 10, PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/one.ids'), PosixPath('/kaggle/working'), 512, 2, 'greedy-full', '--observed-composed-cap512']' returned non-zero exit status 2.",
+      "elapsed_seconds": 0.0038972600000306556,
+      "child_user_seconds": 0.0020820000000014716,
+      "child_system_seconds": 0.0,
+      "peak_rss_bytes_observed": 208896,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433946624
+    },
+    "cli-reject-mode": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 755,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.gguf'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.rgb'), 10, 10, PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/one.ids'), PosixPath('/kaggle/working'), 512, 4, 'full', '--observed-composed-cap512']' returned non-zero exit status 2.",
+      "elapsed_seconds": 0.003868911000040498,
+      "child_user_seconds": 0.0008689999999944575,
+      "child_system_seconds": 0.0017379999999995732,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433946624
+    },
+    "cli-reject-unknown": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 756,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/build/lighton4b-native-document'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.gguf'), PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/missing.rgb'), 10, 10, PosixPath('/tmp/lighton4b-composed-vision-controls-v1/composed-vision/one.ids'), PosixPath('/kaggle/working'), 512, 4, 'greedy-full', '--unknown']' returned non-zero exit status 2.",
+      "elapsed_seconds": 0.003949356000020998,
+      "child_user_seconds": 0.0010740000000168948,
+      "child_system_seconds": 0.0010739999999991312,
+      "peak_rss_bytes_observed": 204800,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "cumulative_child_peak_rss_bytes": 433946624
+    }
+  },
+  "projector_weight_equivalence": "unproven; deployed projectors, not pure arithmetic comparison",
+  "unsupported_upstream_stages": [
+    "preprocessing patches",
+    "patch/rotary",
+    "vision block intermediates"
+  ],
+  "reference_limits": "BF16 capture is a reference output, not human ground truth; upstream table256 is capped",
+  "phase": "cli-reject-unknown",
+  "source_sha": "91025dd4e588d5f550f6051454c584587dc15fb3",
+  "preflight": {
+    "memory": {
+      "MemAvailable": 31483334656,
+      "SwapTotal": 0,
+      "SwapFree": 0,
+      "cgroup_observed": 1,
+      "finite_cgroup_bounds": 1
+    },
+    "scratch_free": 1037711626240,
+    "output_free": 20940279808,
+    "load": [
+      1.67529296875,
+      0.5986328125,
+      0.26318359375
+    ]
+  },
+  "retained_upstream_reference": {
+    "ids": 170,
+    "eos": true,
+    "sha256": "ddf699b954ebbdb82fb8f56dbe7992bf682f602ecfb7798045aa3be23b9354fb",
+    "observer_neutrality_scope": "Actual source OFF/ON first two tokens/probabilities only; full retained decode is independently pinned."
+  },
+  "inputs_authenticated": true,
+  "receipts": {
+    "form": "0a0c2084baa4e46aa80f09f7ae94fd4b1c56ccae2bbf2f9ef6210e81e8cf1d01",
+    "physical": "712d4c86be0053a68dc82872b7323e3c8232ac6624d27463773ec71ddb7a61e2",
+    "calibration": "7639d6559da7cc58443ccfbe1dac518af0d70f3e7a83718d037a97bb147eb2b7",
+    "extended_table": "36a9b14be3ace197e3a30aeaec20454eb4ab58587b2566fcc859da87b08013b3"
+  },
+  "actual_input_hashes": {
+    "input.rgb": {
+      "bytes": 429852,
+      "sha256": "f29f48e94fd623b16bbe203f6c5918cdd5b08c9bc8926a1cc9659e5e67ff0a22"
+    },
+    "original.json": {
+      "bytes": 69011,
+      "sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a"
+    },
+    "retained-upstream-response.json": {
+      "bytes": 218666,
+      "sha256": "ddf699b954ebbdb82fb8f56dbe7992bf682f602ecfb7798045aa3be23b9354fb"
+    },
+    "upstream_features/prompt.ids": {
+      "bytes": 1059,
+      "sha256": "086d3459734320111e7ed988ebc483e19e4c2af0c1d7318320fd38a7013638b1"
+    },
+    "upstream_features/modalities.ids": {
+      "bytes": 308,
+      "sha256": "ed68ec322a4331c982d0ce9d4366049e6e6fce4792f461c665c757193d171f63"
+    },
+    "upstream_features/prefill.input.f32": {
+      "bytes": 1576960,
+      "sha256": "44cdcd39c149c581910cff5938a0ffb3fe8a28a268d55479abec19ccb1f04b69"
+    },
+    "upstream_features/prefill.positions.f32": {
+      "bytes": 1848,
+      "sha256": "007b6bc39e71ffd2c3f6813808f4455a129e5aafd6fda1f186f084ac46573729"
+    },
+    "observer-on/source.vision.0.f32": {
+      "bytes": 1433600,
+      "sha256": "b9a171d18d5698e5c897662ddedf6cf399448838e55350c3b206e7a24c240d1b"
+    },
+    "observer-on/source.logits.0.f32": {
+      "bytes": 993280,
+      "sha256": "4cbf1fcfb2f356e7e484474240e4cecca110010116b55efd835cfdb3e891d415"
+    }
+  },
+  "binary_sha256": "f8449f45066ac1ca8e126224dd87ed5cdcd7170ee504dc05d7bbe6f2137f882d",
+  "actual_cli_controls": 9,
+  "model_acquisition_performed": false,
+  "elapsed_seconds": 116.317577159,
+  "artifacts": {}
+}

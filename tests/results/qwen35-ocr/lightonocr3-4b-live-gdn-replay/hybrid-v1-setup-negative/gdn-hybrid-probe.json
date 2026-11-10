@@ -1,0 +1,155 @@
+{
+  "artifacts": {
+    "cpu.log": {
+      "bytes": 3127,
+      "sha256": "84c1d84ca48dc624bf987f455ba03dc2513a418542c3870f80e15da6061c4c75"
+    },
+    "native-CMakeCache.txt": {
+      "bytes": 29619,
+      "sha256": "57c3b84341299bef8b544c5bfb817be125699710eb23f984b0e0d0aadd30fc49"
+    },
+    "native-configure.log": {
+      "bytes": 1408,
+      "sha256": "b1b1dc4df3f3130686796b6dbd6720ff1063e5c12617deaf4d967b63eb8dd569"
+    },
+    "native-submodule.log": {
+      "bytes": 232,
+      "sha256": "b006c95ec467b08a1b9b50625721ff5d663b453c4be9bacac7b959a9adc6fad9"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "1fbf863381309e6ae2903891c1ddedcbfd4fdf1b724fc0e2b9c03753da0e904a"
+    },
+    "up-checkout.log": {
+      "bytes": 84,
+      "sha256": "401b0f35047d9999135ce240162909f4d3b9be4cafce7c16c1eafb93d3b7bff7"
+    },
+    "up-fetch.log": {
+      "bytes": 119,
+      "sha256": "5537e1fa1b4cf8d84bd910e3fed8a4a9e0803b4bddddf1cf9b9182e0f1b00983"
+    },
+    "up-init.log": {
+      "bytes": 584,
+      "sha256": "02c464b82e5e72234b2ddbb96c1f624fc8d357e45b80b45a76554bd2fcd8fad5"
+    },
+    "up-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "capacity": {
+    "memory": {
+      "MemAvailable": 31515328512,
+      "SwapFree": 0,
+      "SwapTotal": 0,
+      "cgroup_observed": 1,
+      "finite_cgroup_bounds": 1
+    },
+    "output_free": 20940427264,
+    "scratch_free": 1037739614208
+  },
+  "cases": {},
+  "commands": {
+    "cpu": {
+      "child_system_seconds": 0.0036370000000000005,
+      "child_user_seconds": 0.0012129999999999999,
+      "cumulative_child_peak_rss_bytes": 41709568,
+      "elapsed_seconds": 0.018292117999976654,
+      "peak_rss_bytes_observed": 4096,
+      "pid": 58,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "native-configure": {
+      "child_system_seconds": 0.5986820000000002,
+      "child_user_seconds": 1.103868000000002,
+      "cumulative_child_peak_rss_bytes": 71061504,
+      "elapsed_seconds": 4.57020813500003,
+      "peak_rss_bytes_observed": 17215488,
+      "pid": 116,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "native-submodule": {
+      "child_system_seconds": 0.7943969999999999,
+      "child_user_seconds": 15.572388999999998,
+      "cumulative_child_peak_rss_bytes": 71061504,
+      "elapsed_seconds": 10.571884244999978,
+      "peak_rss_bytes_observed": 3973120,
+      "pid": 74,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "source": {
+      "child_system_seconds": 0.0010299999999999999,
+      "child_user_seconds": 0.0010299999999999999,
+      "cumulative_child_peak_rss_bytes": 41709568,
+      "elapsed_seconds": 0.004570257000011679,
+      "peak_rss_bytes_observed": 208896,
+      "pid": 57,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "up-checkout": {
+      "child_system_seconds": 0.31831599999999993,
+      "child_user_seconds": 0.7542710000000001,
+      "cumulative_child_peak_rss_bytes": 71061504,
+      "elapsed_seconds": 1.1658208450000416,
+      "peak_rss_bytes_observed": 67330048,
+      "pid": 72,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "up-fetch": {
+      "child_system_seconds": 0.541772,
+      "child_user_seconds": 2.230848,
+      "cumulative_child_peak_rss_bytes": 51408896,
+      "elapsed_seconds": 5.268294265000009,
+      "peak_rss_bytes_observed": 16818176,
+      "pid": 61,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "up-init": {
+      "child_system_seconds": 0.004046,
+      "child_user_seconds": 0.0,
+      "cumulative_child_peak_rss_bytes": 51408896,
+      "elapsed_seconds": 0.008527178999997886,
+      "peak_rss_bytes_observed": 204800,
+      "pid": 59,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    },
+    "up-remote": {
+      "child_system_seconds": 0.002633999999999999,
+      "child_user_seconds": 0.0,
+      "cumulative_child_peak_rss_bytes": 51408896,
+      "elapsed_seconds": 0.0045144179999851985,
+      "peak_rss_bytes_observed": 454656,
+      "pid": 60,
+      "returncode": 0,
+      "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+      "status": "completed"
+    }
+  },
+  "decoded_generated": false,
+  "error": "actual native helper contraction rule",
+  "error_type": "RuntimeError",
+  "full_f32_model_created": false,
+  "heldout_used": false,
+  "model_forward_executed": false,
+  "operator_compute_executed": false,
+  "phase": "native-configure",
+  "quality_qualified": false,
+  "schema": "lighton4b-physical-gdn-hybrid/v1",
+  "seconds": 22.772237408000024,
+  "source_sha": "a6e5b3d3d2ec24ab7fc9efe240dbbf59acc01546",
+  "status": "failed"
+}

@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/kaggle/working/lighton-f16-teacher-readback-source/tools/ci-heavy/lighton4b_f16_teacher_readback.py", line 47, in <module>
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--mount',required=True);p.add_argument('--output',required=True);a=p.parse_args();main(a.mount,a.output)
+                                                                                                                                                     ~~~~^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/lighton-f16-teacher-readback-source/tools/ci-heavy/lighton4b_f16_teacher_readback.py", line 32, in main
+    art=native['artifacts'];gart=gold['artifacts'];verify(gbase/'original.json',gart['original.json']);require(sha(gbase/'original.json')==ORIGINAL,'actual original teacher sequence used by native producer');ids=original['generated_ids'];require(len(ids)==177 and ids[-1]==248046 and [x['selected_id']for x in original['scores']]==ids,'independent original sequence and rows/EOS')
+                                 ~~~~^^^^^^^^^^^^^
+KeyError: 'artifacts'

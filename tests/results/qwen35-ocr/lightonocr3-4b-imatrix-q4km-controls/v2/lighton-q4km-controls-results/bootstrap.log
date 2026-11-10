@@ -1,0 +1,19 @@
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: is subject to change. To configure the initial branch name to use in all
+hint: of your new repositories, which will suppress this warning, call:
+hint: 
+hint: 	git config --global init.defaultBranch <name>
+hint: 
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint: 
+hint: 	git branch -m <name>
+Initialized empty Git repository in /kaggle/working/lighton-q4km-controls-source/.git/
+From https://github.com/CrispStrobe/CrispEmbed
+ * branch            e0c60e0ed420754d839c10a6bfc7687cc2b54867 -> FETCH_HEAD
+HEAD is now at e0c60e0 Fix model-free recipe test clean-exit namespace [skip ci]
+Submodule 'ggml' (https://github.com/CrispStrobe/ggml.git) registered for path 'ggml'
+Cloning into '/kaggle/working/lighton-q4km-controls-source/ggml'...
+From https://github.com/CrispStrobe/ggml
+ * branch            3a27b6c665b191cb230be367db5c52d81dd3e2ac -> FETCH_HEAD
+Submodule path 'ggml': checked out '3a27b6c665b191cb230be367db5c52d81dd3e2ac'

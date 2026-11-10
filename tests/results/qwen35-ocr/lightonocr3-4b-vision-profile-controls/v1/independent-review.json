@@ -1,0 +1,18 @@
+{
+  "receipt_sha256": "31e6d6e54ec5a26c464e0e0f7a151e2408f04c4ec517b59648997a76a3f5ee09",
+  "checks": {
+    "all_owned_output_hashes": true,
+    "all8_pinned_reference_rgb_pairs_exact": true,
+    "actual_RGB_exact_live_source": true,
+    "actual_packed_patch_bytes_exact_live_source": true,
+    "no_checkpoint_acquisition": true,
+    "source_exact": true
+  },
+  "owned_file_count": 58,
+  "source": "0eca8d13ff55169ad47efcb446fa32786bbf9d3e",
+  "limits": [
+    "Synthetic24block execution is not actual-weight stage proof.",
+    "Source-declared precision and full observed-form stage comparison still require separate authenticated vision-only component worker.",
+    "No decoded quality or heldout qualification."
+  ]
+}

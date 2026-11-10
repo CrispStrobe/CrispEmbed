@@ -1,0 +1,42 @@
+{
+  "schema": "lighton4b-q6-two-column-rights-limited-index/v1",
+  "case": "two-column-page",
+  "qualified": false,
+  "receipt_sha256": "e3fb9b5b8dddcbed51678c27d203fbc2bfec645966e94f846fd31f956c84f9a3",
+  "raw_audit_sha256": "783513b1689428c6e6ae7c316b121f7e1037d57edf7374a5dd9d260420cead48",
+  "rights_limit": "Raw text, token IDs and complete original model report remain private; public counts/metrics/hashes only.",
+  "files": {
+    "independent-selected-review-code.py": {
+      "bytes": 6183,
+      "sha256": "e7308045890df0ddcf3c55de8c10beb021fe7ff590f79641e1d34c8fa61b33f7"
+    },
+    "public-safe-summary.json": {
+      "bytes": 16333,
+      "sha256": "2e4c247c2fef183b98678dc1d5c16dfe5677948430828c9df2b8075767bc2abb"
+    },
+    "protocol.json": {
+      "bytes": 1989,
+      "sha256": "4844e0e5e53a056ecf854ea577821ded0660147da1b7b6eb87d3127e39bb8148"
+    },
+    "independent-selected-review.json": {
+      "bytes": 5772,
+      "sha256": "4000c5d3fa979186a7009b57d8e41b60d941d477fa2d7b006cb148b070866006"
+    },
+    "raw-audit/raw-audit.json": {
+      "bytes": 2290,
+      "sha256": "783513b1689428c6e6ae7c316b121f7e1037d57edf7374a5dd9d260420cead48"
+    },
+    "raw-audit/bootstrap.py": {
+      "bytes": 15387,
+      "sha256": "e71d176c568351ff4c59f5ab4190660de2df83373e36e306caae99d35c616ae3"
+    },
+    "raw-audit/raw-audit-bootstrap.json": {
+      "bytes": 440,
+      "sha256": "e3d3d8cdc06a73909df4dcefe80139ee91bbdef56130558c2db0c9b17711cc50"
+    },
+    "raw-audit/auditor.py": {
+      "bytes": 9375,
+      "sha256": "cbd38cca098033b7354c464403be818b8f3f53eb1074ad94533e726af03edfd8"
+    }
+  }
+}

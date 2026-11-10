@@ -1,0 +1,11 @@
+{
+  "schema": "lighton4b-private-artifact-relay/v1",
+  "status": "completed_authenticated_artifact_analysis",
+  "inference_executed": false,
+  "model_downloaded": false,
+  "credential_values_logged": false,
+  "copied_bytes": 633351140,
+  "copied_files": 915,
+  "seconds_copy": 153.46675223199998,
+  "seconds": 159.97967763099996
+}

@@ -1,0 +1,23 @@
+{
+  "schema": "lighton4b-mixed-packing/v1",
+  "calibration_protocol_sha256": "3a1738c26cf5a34680fea1468bea07c06ee26659f7ddb7e249299677746ba36d",
+  "tensor_audit": {
+    "source": "eaa71f5cc7fd5cd7c54cb19f57b4949948837961",
+    "path": "tests/results/qwen35-ocr/lightonocr3-4b-conversion-tensor-audit.json",
+    "sha256": "1b52dd812e06b6905e9e1f99a35c482b964a0ad0a0b604442b3ca44aa582ce9d"
+  },
+  "recipe": "lighton4b-q4k-mixers-q8-v1",
+  "metadata_key": "qwen35_ocr.mixed_quant_recipe",
+  "upgrade_tensors": 152,
+  "ffn_q4_tensors": 96,
+  "expected_types": {
+    "F32": 474,
+    "Q8_0": 153,
+    "Q4_K": 96
+  },
+  "expected_payload_bytes": 4673030144,
+  "preserve_file_type": 14,
+  "file_type_scope": "Canonical MOSTLY_Q4_K_S base preset plus explicit custom mixed recipe; never Q4_K_M15.",
+  "runtime_qualified": false,
+  "quality_qualified": false
+}

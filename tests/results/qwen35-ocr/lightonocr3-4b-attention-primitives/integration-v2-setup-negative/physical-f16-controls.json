@@ -1,0 +1,279 @@
+{
+  "schema": "lighton4b-physical-f16-integration-controls/v1",
+  "status": "failed",
+  "commands": {
+    "source-pin": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 60,
+      "elapsed_seconds": 0.005152561999977934,
+      "child_user_seconds": 0.000837,
+      "child_system_seconds": 0.0016749999999999998,
+      "cumulative_child_peak_rss_bytes": 39411712
+    },
+    "up-init": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 61,
+      "elapsed_seconds": 0.008129500999984884,
+      "child_user_seconds": 0.002987,
+      "child_system_seconds": 0.003825,
+      "cumulative_child_peak_rss_bytes": 39542784
+    },
+    "up-remote": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 62,
+      "elapsed_seconds": 0.003951224999980241,
+      "child_user_seconds": 0.004256,
+      "child_system_seconds": 0.005094,
+      "cumulative_child_peak_rss_bytes": 39542784
+    },
+    "up-fetch": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 63,
+      "elapsed_seconds": 5.481895124000005,
+      "child_user_seconds": 2.66322,
+      "child_system_seconds": 0.508822,
+      "cumulative_child_peak_rss_bytes": 39542784
+    },
+    "up-checkout": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 74,
+      "elapsed_seconds": 1.2681101080000303,
+      "child_user_seconds": 3.6061449999999997,
+      "child_system_seconds": 0.767558,
+      "cumulative_child_peak_rss_bytes": 70955008
+    },
+    "native-submodule": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 75,
+      "elapsed_seconds": 12.855153352000002,
+      "child_user_seconds": 22.402102,
+      "child_system_seconds": 1.4798719999999999,
+      "cumulative_child_peak_rss_bytes": 70955008
+    },
+    "native-pin": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 116,
+      "elapsed_seconds": 0.003914651000002323,
+      "child_user_seconds": 22.403266,
+      "child_system_seconds": 1.4810349999999999,
+      "cumulative_child_peak_rss_bytes": 70955008
+    },
+    "runtime-configure": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 117,
+      "elapsed_seconds": 2.723118867999972,
+      "child_user_seconds": 23.783071,
+      "child_system_seconds": 2.134458,
+      "cumulative_child_peak_rss_bytes": 70955008
+    },
+    "runtime-build": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 195,
+      "elapsed_seconds": 94.93600584199999,
+      "child_user_seconds": 168.819441,
+      "child_system_seconds": 10.266216,
+      "cumulative_child_peak_rss_bytes": 433971200
+    },
+    "test-lighton4b-physical-f16-attention": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 956,
+      "elapsed_seconds": 2.475262095000005,
+      "child_user_seconds": 171.950873,
+      "child_system_seconds": 11.455524,
+      "cumulative_child_peak_rss_bytes": 433971200
+    },
+    "test-lighton4b-physical-f16-unsupported": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1110,
+      "elapsed_seconds": 0.0037849680000476837,
+      "child_user_seconds": 171.950873,
+      "child_system_seconds": 11.457604,
+      "cumulative_child_peak_rss_bytes": 433971200
+    },
+    "test-lighton4b-physical-f16-wasm-guard": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1111,
+      "elapsed_seconds": 0.0037907650000192916,
+      "child_user_seconds": 171.951862,
+      "child_system_seconds": 11.458593,
+      "cumulative_child_peak_rss_bytes": 433971200
+    },
+    "test-lighton4b-physical-native-ops": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1112,
+      "elapsed_seconds": 1.368175342000029,
+      "child_user_seconds": 172.69253,
+      "child_system_seconds": 12.138128,
+      "cumulative_child_peak_rss_bytes": 433971200
+    },
+    "test-lighton4b-upstream-physical": {
+      "status": "completed",
+      "returncode": 0,
+      "pid": 1232,
+      "elapsed_seconds": 0.06421433099995966,
+      "child_user_seconds": 172.730344,
+      "child_system_seconds": 12.15206,
+      "cumulative_child_peak_rss_bytes": 433971200
+    },
+    "test-lighton4b-release-fence": {
+      "status": "failed",
+      "returncode": 2,
+      "pid": 1233,
+      "error_type": "CalledProcessError",
+      "error": "Command '[PosixPath('/tmp/lighton4b-physical-f16-integration-controls-v1/physical-f16-integration/runtime-build/test-lighton4b-release-fence')]' returned non-zero exit status 2.",
+      "elapsed_seconds": 0.0037928259999944203,
+      "child_user_seconds": 172.731535,
+      "child_system_seconds": 12.153251,
+      "cumulative_child_peak_rss_bytes": 433971200
+    }
+  },
+  "sourcefed": {},
+  "model_forward_executed": false,
+  "quality_qualified": false,
+  "phase": "test-lighton4b-release-fence",
+  "source_sha": "6ed974440187cf6aa47e1b62b257ccff0d59bc26",
+  "preflight": {
+    "available_bytes": 31491538944,
+    "disk_free_bytes": 1037712101376,
+    "load": [
+      0.29150390625,
+      0.3056640625,
+      0.15234375
+    ]
+  },
+  "frozen_receipt_sha256": "fa9ae86949ee15e475b41b35ae1ccc54b31f93957acf055e5a250d09302bdfe7",
+  "error_type": "CalledProcessError",
+  "error": "Command '[PosixPath('/tmp/lighton4b-physical-f16-integration-controls-v1/physical-f16-integration/runtime-build/test-lighton4b-release-fence')]' returned non-zero exit status 2.",
+  "elapsed_seconds": 121.72263109100004,
+  "artifacts": {
+    "closed426.tsv": {
+      "bytes": 21774,
+      "sha256": "9c741011b75623a621324d1819e45b715a0e3398a1f4cf386614ff4f1099222f"
+    },
+    "control-test_admission.py.log": {
+      "bytes": 202,
+      "sha256": "5d7a1daf8fc3e202ee086ba4fc0b7e99a289f7e1dd7e41ec43ba0e5d66283ab4"
+    },
+    "control-test_runtime_guard.py.log": {
+      "bytes": 204,
+      "sha256": "e47c4f2669fa3fea6681cf8422dab3224915e140bd909b65bdaf61eadefde94d"
+    },
+    "dependencies.log": {
+      "bytes": 2563,
+      "sha256": "f2023625f47c617ce6527f41c48843f9063fc6badbd88c7d90056d858da07f7f"
+    },
+    "dependency-check.log": {
+      "bytes": 132,
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    "native-pin.log": {
+      "bytes": 41,
+      "sha256": "e601323d793ee4e885b083f65101988246e42a4e9dd3aa1aec32f0124f3b45cc"
+    },
+    "native-submodule.log": {
+      "bytes": 246,
+      "sha256": "714cbccffb7bbd1294c2dc85640d9dfc28f18874c5e647935b2564afbbca7b73"
+    },
+    "operator-only-primitives.log": {
+      "bytes": 102,
+      "sha256": "50e31b712644548df2ea205f2e49aed62d938a59070d48f36338db20c2753895"
+    },
+    "physical-f16-bootstrap.json": {
+      "bytes": 362,
+      "sha256": "c9bb444d02a4004fa02a7d64b503b2becf9769a6a79e2daba11cb426127551b0"
+    },
+    "pip-resolution.json": {
+      "bytes": 205584,
+      "sha256": "182672f676b0fee31e2e2cba68c6296615ab0a90bc9ac93c4c61da17a66f3934"
+    },
+    "runtime-CMakeCache.txt": {
+      "bytes": 29401,
+      "sha256": "08d6fd60a9e8661c30b1c82def0a40674728e779b00caaed6ee2071a26878b8a"
+    },
+    "runtime-build.log": {
+      "bytes": 9294,
+      "sha256": "52620582f1e671977973c3b23301047d0d60cc0e8760cf6d61c893e07fbdfa69"
+    },
+    "runtime-configure.log": {
+      "bytes": 2110,
+      "sha256": "f6517df03e7017dfb1a46520595354f5c298f60c9328fab725113c09edcc3b55"
+    },
+    "source-checkout.log": {
+      "bytes": 98,
+      "sha256": "03358e0dabc4ec4ad0cb3c3a7373d1d01436b6026af31a551f35ce27f43c8c56"
+    },
+    "source-fetch.log": {
+      "bytes": 123,
+      "sha256": "43eb7b8acbce7fd719da19b717eb6e01b5bf374afda6b93509560fe09f3fa36a"
+    },
+    "source-init.log": {
+      "bytes": 586,
+      "sha256": "8faef852fbbe67e1a519f1c5660287bd5db9f79c6a924f135c6d0fceda4cfd07"
+    },
+    "source-pin.log": {
+      "bytes": 41,
+      "sha256": "6bf9d809fb70680dc65ce47d569e46b3769d6ce89eb3eedd64ddd35637d0935c"
+    },
+    "source-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "test-lighton4b-physical-f16-attention.log": {
+      "bytes": 35,
+      "sha256": "5892c49ef41bc582baf756071bcb35987aa815a18b8e88452d1cfa601f57cdef"
+    },
+    "test-lighton4b-physical-f16-unsupported.log": {
+      "bytes": 41,
+      "sha256": "2765e6dc4cfc30d2c298728ea02a5c18f6efbb982436f8e66682fe1fd7e958ad"
+    },
+    "test-lighton4b-physical-f16-wasm-guard.log": {
+      "bytes": 41,
+      "sha256": "2765e6dc4cfc30d2c298728ea02a5c18f6efbb982436f8e66682fe1fd7e958ad"
+    },
+    "test-lighton4b-physical-native-ops.log": {
+      "bytes": 194,
+      "sha256": "55be879453faae1ad12ba240d135d6b094020c1bed1c23945f07eb0c373b1063"
+    },
+    "test-lighton4b-release-fence.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "test-lighton4b-upstream-physical.log": {
+      "bytes": 82,
+      "sha256": "a78b2a1e94aafdee1a9cb5dcc91fd7ca1d87abe91e3dfcd9d0edbc2ac6f12988"
+    },
+    "up-checkout.log": {
+      "bytes": 84,
+      "sha256": "401b0f35047d9999135ce240162909f4d3b9be4cafce7c16c1eafb93d3b7bff7"
+    },
+    "up-fetch.log": {
+      "bytes": 119,
+      "sha256": "5537e1fa1b4cf8d84bd910e3fed8a4a9e0803b4bddddf1cf9b9182e0f1b00983"
+    },
+    "up-init.log": {
+      "bytes": 610,
+      "sha256": "591737bc424f564b68d1c9dbd82b23143172522a842bb96b0eece07e2614641e"
+    },
+    "up-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  }
+}

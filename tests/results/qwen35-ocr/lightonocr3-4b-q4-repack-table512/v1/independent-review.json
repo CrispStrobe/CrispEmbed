@@ -1,0 +1,63 @@
+{
+  "receipt_sha256": "5acbdab91bf45752d06faf712856cb0eab82ab116657fc43e590166db4e03d48",
+  "source_sha": "f079dcec64a799a23d2bdcc25c0da0fee6c49d8c",
+  "closed_small_artifacts": {
+    "off/generated.txt": {
+      "bytes": 841,
+      "sha256": "4833712b9082c4c283907f5934f2f70e788deebad99922e4ce391906876f3f62"
+    },
+    "off/generated.ids": {
+      "bytes": 1190,
+      "sha256": "8f05d0b19147c735ab619f8953469b338549e3eab43c65a923f1f2694ec77de3"
+    },
+    "off/native-summary.json": {
+      "bytes": 325,
+      "sha256": "4d498479dae9574414e54298637d18affee8721b976d2663f45ea3e23da20cd9"
+    },
+    "on/generated.txt": {
+      "bytes": 858,
+      "sha256": "13a0c96ba2be290a29f7fdb93007890bed10e53792d232ce239ef1246a2bbb17"
+    },
+    "on/generated.ids": {
+      "bytes": 1216,
+      "sha256": "655062bd8134da8754418ada6449330d2760dcc9783ac7fe18f43e3e03f65bad"
+    },
+    "on/native-summary.json": {
+      "bytes": 339,
+      "sha256": "3e0ecd79cd8d627bff338da31b4d5028de2c8d9a0ecad8a2bc5719a4745fad93"
+    }
+  },
+  "metrics": {
+    "off": {
+      "bf16": {
+        "character_edits": 349,
+        "reference_codepoints": 607,
+        "word_edits": 97,
+        "reference_words": 106
+      },
+      "upstream": {
+        "character_edits": 9,
+        "reference_codepoints": 822,
+        "word_edits": 7,
+        "reference_words": 162
+      }
+    },
+    "on": {
+      "bf16": {
+        "character_edits": 365,
+        "reference_codepoints": 607,
+        "word_edits": 104,
+        "reference_words": 106
+      },
+      "upstream": {
+        "character_edits": 19,
+        "reference_codepoints": 822,
+        "word_edits": 17,
+        "reference_words": 162
+      }
+    }
+  },
+  "status": "independently_reviewed_decoded_negative",
+  "off_282_rows_38_stages_ids_exact": true,
+  "limits": "Raw score/stage arrays remain remote; producer hash/finite/argmax/anchor checks are source-bound. Native OFF/ON layer differences are not actual upstream hidden localization. One teacher row plus independent greedy, source-feature only, no heldout/composed or speed qualification."
+}

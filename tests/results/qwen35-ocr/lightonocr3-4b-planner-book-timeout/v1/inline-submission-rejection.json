@@ -1,0 +1,8 @@
+{
+  "status": "rejected-before-worker",
+  "http_status": 400,
+  "payload_bytes": 1471195,
+  "private_bootstrap_sha256": "a3d1efe3349b8a4edbf27d1b9a3394a7b52e7ea12d2ef10a82886bb710464d07",
+  "response_body_retained": false,
+  "cause": "Not established by retained response; no worker/model executed."
+}

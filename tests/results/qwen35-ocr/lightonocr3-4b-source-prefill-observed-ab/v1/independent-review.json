@@ -1,0 +1,206 @@
+{
+  "report_sha256": "393bfbd65f0f39c9d15e68110eb8174fb912797200cc68b1c8339e7a0797edcb",
+  "selected_owned_files": [
+    "CMakeCache.txt",
+    "physical-pack.json",
+    "simple_table/on/generated.ids",
+    "simple_table/on/native-summary.json",
+    "simple_table/on/prefill.chunk_sizes.ids",
+    "simple_table/on/generated.txt",
+    "simple_table/on/prefill.logits.f32",
+    "simple_table/off/generated.ids",
+    "simple_table/off/native-summary.json",
+    "simple_table/off/prefill.chunk_sizes.ids",
+    "simple_table/off/generated.txt",
+    "simple_table/off/prefill.logits.f32",
+    "simple_form/on/generated.ids",
+    "simple_form/on/native-summary.json",
+    "simple_form/on/prefill.chunk_sizes.ids",
+    "simple_form/on/generated.txt",
+    "simple_form/on/prefill.logits.f32",
+    "simple_form/off/generated.ids",
+    "simple_form/off/native-summary.json",
+    "simple_form/off/prefill.chunk_sizes.ids",
+    "simple_form/off/generated.txt",
+    "simple_form/off/prefill.logits.f32",
+    "arabic_printed_line/on/generated.ids",
+    "arabic_printed_line/on/native-summary.json",
+    "arabic_printed_line/on/prefill.chunk_sizes.ids",
+    "arabic_printed_line/on/generated.txt",
+    "arabic_printed_line/on/prefill.logits.f32",
+    "arabic_printed_line/off/generated.ids",
+    "arabic_printed_line/off/native-summary.json",
+    "arabic_printed_line/off/prefill.chunk_sizes.ids",
+    "arabic_printed_line/off/generated.txt",
+    "arabic_printed_line/off/prefill.logits.f32"
+  ],
+  "cases": {
+    "simple_table": {
+      "off": {
+        "tokens": 282,
+        "eos": true,
+        "character_edits": 337,
+        "reference_codepoints": 607,
+        "word_edits": 95,
+        "reference_words": 106,
+        "firstscore": {
+          "rms": 0.1789086974547289,
+          "max_abs": 1.0068469047546387,
+          "candidate_rms_magnitude": 1.7995854602045764,
+          "reference_rms_magnitude": 1.7855181153937745
+        },
+        "chunks": [
+          16,
+          16,
+          16,
+          16,
+          16,
+          6
+        ]
+      },
+      "on": {
+        "tokens": 309,
+        "eos": true,
+        "character_edits": 321,
+        "reference_codepoints": 607,
+        "word_edits": 92,
+        "reference_words": 106,
+        "firstscore": {
+          "rms": 0.1792801361734627,
+          "max_abs": 0.910927414894104,
+          "candidate_rms_magnitude": 1.7723315427257642,
+          "reference_rms_magnitude": 1.7855181153937745
+        },
+        "chunks": [
+          4,
+          16,
+          16,
+          16,
+          16,
+          8,
+          6,
+          4
+        ]
+      },
+      "upstream": {
+        "character_edits": 348,
+        "word_edits": 97
+      }
+    },
+    "simple_form": {
+      "off": {
+        "tokens": 167,
+        "eos": true,
+        "character_edits": 175,
+        "reference_codepoints": 656,
+        "word_edits": 45,
+        "reference_words": 90,
+        "firstscore": {
+          "rms": 0.15279862425119997,
+          "max_abs": 0.6966017484664917,
+          "candidate_rms_magnitude": 2.2762844966791587,
+          "reference_rms_magnitude": 2.334931211486845
+        },
+        "chunks": [
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          10
+        ]
+      },
+      "on": {
+        "tokens": 168,
+        "eos": true,
+        "character_edits": 165,
+        "reference_codepoints": 656,
+        "word_edits": 43,
+        "reference_words": 90,
+        "firstscore": {
+          "rms": 0.1295710349824105,
+          "max_abs": 0.5603466033935547,
+          "candidate_rms_magnitude": 2.287688006299887,
+          "reference_rms_magnitude": 2.334931211486845
+        },
+        "chunks": [
+          4,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          12,
+          6,
+          4
+        ]
+      },
+      "upstream": {
+        "character_edits": 189,
+        "word_edits": 46
+      }
+    },
+    "arabic_printed_line": {
+      "off": {
+        "tokens": 6,
+        "eos": true,
+        "character_edits": 0,
+        "reference_codepoints": 12,
+        "word_edits": 0,
+        "reference_words": 2,
+        "firstscore": {
+          "rms": 0.12773276000252465,
+          "max_abs": 0.7259259223937988,
+          "candidate_rms_magnitude": 2.073833707855288,
+          "reference_rms_magnitude": 2.0449446245200185
+        },
+        "chunks": [
+          16,
+          16,
+          16,
+          16,
+          16,
+          2
+        ]
+      },
+      "on": {
+        "tokens": 6,
+        "eos": true,
+        "character_edits": 0,
+        "reference_codepoints": 12,
+        "word_edits": 0,
+        "reference_words": 2,
+        "firstscore": {
+          "rms": 0.11837767683402864,
+          "max_abs": 0.8043982982635498,
+          "candidate_rms_magnitude": 2.05165519383135,
+          "reference_rms_magnitude": 2.0449446245200185
+        },
+        "chunks": [
+          4,
+          16,
+          16,
+          16,
+          12,
+          8,
+          6,
+          4
+        ]
+      },
+      "upstream": {
+        "character_edits": 0,
+        "word_edits": 0
+      }
+    }
+  },
+  "scope": "Observed only. Selected outputs/reference/firstscore bytes independently rehashed; full rows/stages remotely retained and producer-guarded, not independently replayed in full.",
+  "heldout_accessed": false,
+  "firstscore_arrays_bytes_rehashed": 8939520
+}

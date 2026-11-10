@@ -1,0 +1,122 @@
+{
+  "status": "passed_model_free_planner_heldout_controls",
+  "receipt_sha256": "fe81ad1d46bd519d0a46c01820af3355c29e81aa3f022d42fd068cc9ece1eab1",
+  "source_sha": "a6164205620c71427a39c97ab386591406c4ca73",
+  "native_binary_sha256": "12a220611f0cfd93cbe88a1539cdd03ba3af44c995fbe899d33cc6327a66352c",
+  "model_acquisition": false,
+  "heldout_forward_executed": false,
+  "actual_cli_controls": 10,
+  "position_export_control": true,
+  "artifact_hashes": {
+    "source.log": {
+      "bytes": 41,
+      "sha256": "c6b600c89014718b9acb45a97596d7cac06756a8d35c2476616d5964e695ab6d"
+    },
+    "production-bytes.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-old256.log": {
+      "bytes": 252,
+      "sha256": "b561488cb802373b7cbcf44fa6b13c30aeba2aa63181188ee3bac0f9118d792f"
+    },
+    "position-export-ocr-off.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "test-lighton4b-source-prefill-chunks.log": {
+      "bytes": 74,
+      "sha256": "4fe75532b6dc8266154352e1594d163316f52d9fd993a4bf299a4bb9ca889655"
+    },
+    "cli-old512.log": {
+      "bytes": 252,
+      "sha256": "b561488cb802373b7cbcf44fa6b13c30aeba2aa63181188ee3bac0f9118d792f"
+    },
+    "cli-native-composed.log": {
+      "bytes": 252,
+      "sha256": "b561488cb802373b7cbcf44fa6b13c30aeba2aa63181188ee3bac0f9118d792f"
+    },
+    "test-lighton4b-physical-q4-repack.log": {
+      "bytes": 101,
+      "sha256": "3c9df6965787489db5717598b1e39e2d8ca31d7273e512cc53fbb587bf1b80dd"
+    },
+    "cli-native-source-features.log": {
+      "bytes": 252,
+      "sha256": "b561488cb802373b7cbcf44fa6b13c30aeba2aa63181188ee3bac0f9118d792f"
+    },
+    "configure.log": {
+      "bytes": 2038,
+      "sha256": "5d73e12bbb5ff63df117a2e819d02a6dd207fd5150c859f4491db40428305411"
+    },
+    "cli-cap-high.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-mode.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "position-export-control.log": {
+      "bytes": 82,
+      "sha256": "192468d0c1a75479871cfc90325234277909d42cac22523ab11a4392a93f2544"
+    },
+    "test-lighton4b-physical-f16-vision.log": {
+      "bytes": 101,
+      "sha256": "d58c15e1a57af3d53eada05f045b41d5fdb56580fc6854f8021f06a8bb03c7f2"
+    },
+    "cli-disabled.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-cap-low.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cli-threads.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "test-lighton4b-physical-f16-attention.log": {
+      "bytes": 35,
+      "sha256": "5892c49ef41bc582baf756071bcb35987aa815a18b8e88452d1cfa601f57cdef"
+    },
+    "CMakeCache.txt": {
+      "bytes": 29184,
+      "sha256": "aa137275771e2c079491c572c18cbcf00c6f12094b46adc841e1639bc346b20d"
+    },
+    "fetch-production.log": {
+      "bytes": 125,
+      "sha256": "b3fde231b0b2936efd4d5ac353657d46edaa2fb1dbeb90113143c0590ade3873"
+    },
+    "ggml.log": {
+      "bytes": 235,
+      "sha256": "4771e3be016384291d4993318e5afc55f22b61d251664334f94cacd6f3c86115"
+    },
+    "build.log": {
+      "bytes": 9110,
+      "sha256": "d6f25f5246e7b5202a2a808f2beab39eff101405b93b8bdac1cac521ed36032e"
+    },
+    "test-lighton4b-physical-gdn-source-ops.log": {
+      "bytes": 74,
+      "sha256": "79542376e42103fed64742e365b7d0e5d0285c49763fe6006e1052f488e6d1d6"
+    },
+    "test-lighton4b-physical-q6-tiled.log": {
+      "bytes": 68,
+      "sha256": "406d8fc763654ed18ae54a066fa10e8eb857f95a2c6a39efe05b753fe10ee55e"
+    },
+    "cli-unflagged.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "position-export-owner-off.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "position-export-control/prefill.positions.f32": {
+      "bytes": 96,
+      "sha256": "6c0f0b2a6ddcd83edda7617971a452d53cf4f0458c1e5d41b485e5aea62b8dc9"
+    }
+  },
+  "runtime_manifest_sha256": "540aa9983faf570e46e9e6708f745dbd3cbd5f8354276f3fddb301e7fe9e65d7",
+  "qualified": false
+}

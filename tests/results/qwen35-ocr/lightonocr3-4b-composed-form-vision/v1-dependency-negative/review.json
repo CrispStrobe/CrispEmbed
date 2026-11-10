@@ -1,0 +1,9 @@
+{
+  "raw_receipt_sha256": "df3110ca879e6044c89eeec8122a0ab2f6b24bf6fccc207117ac4d14fe1e0d62",
+  "elapsed_seconds": 24.17967435,
+  "classification": "mandatory dependency admission failure",
+  "model_acquisition_performed": false,
+  "native_worker_started": false,
+  "native_forward_executed": false,
+  "explanation": "API omitted a stale requested dependency alias. Mandatory1458 admission stopped before worker/model. Corrected canonical dependency binding for v2, source and bootstrap code unchanged."
+}

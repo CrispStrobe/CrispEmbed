@@ -1,0 +1,30 @@
+# Physical F16 attention:177 original-prefix score rows
+
+The attention-corrected physical Q4_K_M native run agrees with the genuine unquantized original BF16 next-token argmax on169/177 original teacher positions. Across43,952,640 logits, RMS error is0.3864253375 and maximum absolute error8.829352617; original/native RMS magnitudes are2.281398406/2.266666090 and maximum magnitudes34.5/32.81241226. Mean directional KLD, original BF16 distribution to native distribution, is0.01232385167. Mean native probability of the original selected token is0.861789184.
+
+These are actual complete vocabulary rows on authenticated original token prefixes. They include quantized versus unquantized weights, upstream source vision features versus original vision computation, and runtime arithmetic differences. They do not isolate quantization loss or prove same-weight runtime parity. Teacher agreement does not replace independent decoded qualification.
+
+| Position | Original / native max magnitude | Original / native RMS magnitude | Error RMS | Max absolute error | Native probability of original token |
+| --- | --- | --- | --- | --- | --- |
+|0 |22.875 /23.0096703 |2.21382298 /2.31945300 |0.335973306 |1.60669041 |0.787237164 |
+|25 |20.125 /20.2215424 |2.45681579 /2.44251680 |0.241867821 |1.29938602 |0.304821388 |
+|33 |24.375 /23.6852875 |2.00145141 /1.99278237 |0.242222240 |1.56083822 |0.891328537 |
+|113 |24.75 /24.4796982 |1.82620060 /1.84338928 |0.364944859 |2.34977031 |0.999534491 |
+|171 |24.625 /24.3757210 |1.44088701 /1.47663902 |0.257191597 |1.35267329 |0.992897647 |
+|176 (EOS) |32.75 /29.8433418 |2.16300099 /1.96691299 |0.655250716 |3.33821344 |0.999842406 |
+
+Argmax disagreements occur at zero-based positions9,11,25,44,54,61,144,172. At the first disagreement, original60549 versus native91617, original-token probability changes from0.392841779 to0.337405391, with native rank2 and native top-two margin0.126230240. The worst RMS is position4 (1.479415166), worst absolute error is position5 (8.829352617), and worst KLD is position17 (0.2692217733). Full per-position reference/native magnitudes, cosine, error, bit-pattern and numerical inequality counts, probabilities, ranks, margins and hashes are retained.
+
+The pinned upstream quantized capture has only a comparable prompt score and independent greedy generation; it has no177 original-teacher score capture. Numerical upstream comparison is therefore restricted to position0. On byte-identical source-fed vision, input embeddings and positions, upstream/native RMS magnitudes are2.334931211/2.319452997, maximum magnitudes22.73378181/23.00967026; error RMS0.1058891610/max0.5586700439, KLD0.003551361939, and both choose27. Upstream/native probability of27 is0.756308801/0.787237164. These values exactly reproduce the sealed native producer's recorded source-first-score error. No later upstream greedy rows are substituted for original-prefix teacher rows.
+
+The independently generated native form remains a separate result: raw CER175/656 and WER45/90 versus original BF16, matching original prefixes for9 selected IDs. Its actual decoded evidence is preserved in the [full-form receipt](../tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/full-form-v2/physical-f16-full-form.json). The177-row teacher analysis cannot establish table/Arabic quality or a general release qualification.
+
+## Authentication and execution
+
+Kaggle artifact-only CPU consumer143200239/version3 completed in91.86s (actual reader73.69s), source `bcbd50b1894a465e0bc44c1f8b3ef54c879d6529`. It ran no model, compiler or quantizer, instantiated no F32 model and copied no large artifact. Four synthetic controls include metric direction, tie ordering, nonfinite rejection, and source revision lookup from outside the checkout. The sealed original BF16 receipt SHA256 is `170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a`, source `07543dcc80ebcecad644815d9397be2570a51dd4`, all723 parameters BF16. The native receipt is `0a0c2084baa4e46aa80f09f7ae94fd4b1c56ccae2bbf2f9ef6210e81e8cf1d01`, source `4a63d73bee7289deab41fb20f67765d3c6800182`, physical candidate `843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43`.
+
+The consumer checks the actual177 original score files against their immutable byte lengths, shapes, hashes, finite values and original selected IDs; all177 native teacher files are checked against the sealed native artifact manifest. The native producer constructs teacher prefixes from the exact authenticated original JSON. Original input-token arrays match native prompt IDs. Native prefill embeddings, positions and vision features match the separately authenticated pinned upstream capture. The original unquantized vision features are not asserted to equal upstream quantized vision features.
+
+Readback report SHA256 is `b8b6bdf1eea0030f707475c2bc0c98fbb59d828fb8025083eaecc2dddd6e4d24`. Independent local scalar aggregation verifies the177 row records, weighted RMS, mean KLD, source argmaxes and top-one counts without downloading score arrays. [Raw readback, source/bootstrap receipts, tests and independent aggregation](../tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/teacher-readback-v3/evidence.json) are preserved. Large score arrays remain remote; no independently guaranteed90-day Kaggle retention is claimed.
+
+Initial reader versions are preserved as setup negatives. [Version1](../tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/teacher-readback-v1/evidence.json), sourcebb0dc40d0, stopped after27.45s because the frozen gold manifest nests artifacts under its form case. [Version2](../tests/results/qwen35-ocr/lightonocr3-4b-physical-f16-attention/teacher-readback-v2/evidence.json), source68379ea15, passed all receipt and causal-input guards but stopped after33.13s because provenance lookup used the working directory rather than the source checkout. Neither compared score rows or executed inference. Version3 fixes only those setup paths and adds the external-directory control; no receipt, hash, numerical acceptance or comparison domain was weakened.

@@ -1,0 +1,14 @@
+{
+  "schema": "lighton4b-vision-norm-integration/v1",
+  "status": "failed",
+  "model_forward_executed": false,
+  "quality_qualified": false,
+  "default_off": true,
+  "source_sha": "b75e722a794bb7af7c860cc56ffc72d4aeefdaa4",
+  "error_type": "RuntimeError",
+  "error": "targeted assembled-source controls failed; inspect logs",
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42031440977",
+  "artifact_id": 13416657229,
+  "diagnosis": "Generic heavy job did not expose GH_TOKEN/read-only actions permission required for retained artifact lookup; failed before artifact transfer/build/model execution.",
+  "runtime_math_executed": false
+}

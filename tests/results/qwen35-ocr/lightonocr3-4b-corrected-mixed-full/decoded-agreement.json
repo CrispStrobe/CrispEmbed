@@ -1,0 +1,27 @@
+{
+  "schema": "lighton4b-corrected-mixed-decoded-agreement/v1",
+  "reference": "frozen BF16 original, not human ground truth",
+  "normalization": "none; Unicode code points including case, punctuation, accents and newlines retained",
+  "cer": {
+    "reference_codepoints": 656,
+    "native_codepoints": 598,
+    "levenshtein_edits": 197,
+    "rate": 0.3003048780487805
+  },
+  "wer": {
+    "tokenization": "Python str.split() Unicode whitespace, case and punctuation retained",
+    "reference_words": 90,
+    "native_words": 81,
+    "levenshtein_edits": 40,
+    "rate": 0.4444444444444444
+  },
+  "reference_utf8_sha256": "f6c56ad4da16752f2a4a2b92a3a48d11c34afd6ad69c818c99227ead66e0749f",
+  "native_utf8_sha256": "19768541a9a54dd67bb34108e9386a603af39f1f070eea16cd9bf68db12727ac",
+  "original_tokens": 177,
+  "native_tokens": 156,
+  "first_differing_id_zero_based": 25,
+  "native_eos_completed": true,
+  "decoded_and_ids_exact": false,
+  "quality_qualified": false,
+  "held_out_calibration": false
+}

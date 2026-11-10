@@ -1,0 +1,24 @@
+{
+  "schema": "lighton4b-composed-vision-calibration-bootstrap/v1",
+  "source_sha": "a03412aeb3b4df9c8a5a9f093d9ab699b9d41258",
+  "bootstrap_sha256": "9a8b7b36ada8a596a6cc83899e02ef789525a5f64121a10993b4a886a9e66290",
+  "status": "completed",
+  "gpu_requested": false,
+  "model_forward_executed": true,
+  "model_quality_qualified": false,
+  "phase": "composed-calibration",
+  "source_file_sha256": {
+    "tools/kaggle/lighton4b_composed_vision_calibration.py": "825d96d9ce997e5f8b2827f28a9a9ed2442e91674e47c2e39ea4b5d23c7281f1",
+    "tools/vision-profile-probe/test_composed_vision_calibration.py": "69f2169194d038ac77a12552587e3e09a5841bc70da2d7ace0050207ebe3b440",
+    "docs/lighton4b-composed-vision-calibration-v1.json": "eed049f3de65a97d069efccce9b1df39b823d6d4669f653372406a7ea5155ab4",
+    "docs/lighton4b-composed-form-vision-v1.json": "bfc3fbb1d856c36525c7a11bddb68184d92114c5f1a051786fc7bf0988753d90",
+    "docs/lighton4b-upstream-physical-decode-v1.json": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d",
+    "tools/kaggle/lighton4b_physical_f16_full_form.py": "fd417f272f522e63d103f091589952f43a14c36a8c7068edee33a19cc2202c86",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/physical-f16-attention-probe/test_runtime_guard.py": "8f870783148e074b5d8ac342f0524f3ee97b0bdc33e146e2f3128f0658dd11a4",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "tools/lighton4b_upstream_physical_pack.py": "0f86cd619b1b25c419bd643a549786cc35d0c546b0bcab382e2efb77e3b24910"
+  },
+  "worker_status": "measured_composed_vision_calibration",
+  "elapsed_seconds": 670.806817236
+}

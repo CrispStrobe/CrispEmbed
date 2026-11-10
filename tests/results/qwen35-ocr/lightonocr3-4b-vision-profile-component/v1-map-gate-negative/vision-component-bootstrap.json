@@ -1,0 +1,13 @@
+{
+  "schema": "lighton4b-vision-component-bootstrap/v1",
+  "source_sha": "d338c577c4454350da7feaa40f2f030b77271c34",
+  "status": "failed",
+  "gpu_requested": false,
+  "original_forward_executed": false,
+  "model_quality_qualified": false,
+  "phase": "bounded-worker",
+  "worker_sha256": "bff7e713a92b2686564b704c7ec211de85a272574956493e4a4a86192c8a8390",
+  "error_type": "RuntimeError",
+  "error": "bounded-worker nonzero",
+  "elapsed_seconds": 153.65442136299998
+}

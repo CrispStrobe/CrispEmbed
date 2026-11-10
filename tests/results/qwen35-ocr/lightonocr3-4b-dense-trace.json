@@ -1,0 +1,1203 @@
+{
+  "conclusion": "Actual F32 native projection uses llamafile with exact operands; eight-lane FMA/reduction reconstruction matches all18432 outputs. First fused-versus-separate same-before recurrence difference is product10,lane2 in both selected rows. This is not an observed original Torch GEMM internal partial trace; none of tested reduction hypotheses reproduces all original outputs.",
+  "exact_rational_trace_reviews": [
+    {
+      "exact_rational_updates_verified": 2560,
+      "first_fma_vs_separate": {
+        "absolute_difference": 5.820766091346741e-11,
+        "fused": 0.0007562490645796061,
+        "k": 10,
+        "lane": 2,
+        "separate": 0.000756249122787267
+      },
+      "output_index": 0,
+      "reconstructed_final": -2.466576099395752,
+      "standalone_products_bit_exact": true
+    },
+    {
+      "exact_rational_updates_verified": 2560,
+      "first_fma_vs_separate": {
+        "absolute_difference": 1.1641532182693481e-10,
+        "fused": -0.0011724951909855008,
+        "k": 10,
+        "lane": 2,
+        "separate": -0.0011724953074008226
+      },
+      "output_index": 234,
+      "reconstructed_final": 1.5401884317398071,
+      "standalone_products_bit_exact": true
+    }
+  ],
+  "ggml_source_records_verified": 4,
+  "initial_nonobserving_run": 41983685028,
+  "initial_receipt": {
+    "arithmetic_instruction_records": 0,
+    "build_options": [
+      "CRISPEMBED_NATIVE:BOOL=OFF",
+      "GGML_AVX:BOOL=ON",
+      "GGML_AVX2:BOOL=ON",
+      "GGML_AVX512:BOOL=OFF",
+      "GGML_BLAS:BOOL=OFF",
+      "GGML_FMA:BOOL=ON",
+      "GGML_LLAMAFILE:BOOL=ON",
+      "GGML_NATIVE:BOOL=OFF"
+    ],
+    "checkpoint_payload_bytes": 0,
+    "decoder_repeated": false,
+    "exact_regenerated_weight_records": 26,
+    "executable_sha256": "67b8a3061b828ac9691f56186560df2b6e96df5235d8881f6f0524cea01b6f79",
+    "ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+    "ggml_sources": {
+      "src/ggml-cpu/ggml-cpu.c": "9a85d2bf58f99e885106cac024d7585f079f16ba7df9a68ef0bb03d9bc860f14",
+      "src/ggml-cpu/llamafile/sgemm.cpp": "11b4860f7368015e69fbf4fe01f41756c72acb37b992d7dd549060811f6949b8",
+      "src/ggml-cpu/simd-mappings.h": "ea11dc9440293d440b7f3549ee2009711aa745a7382711bcf0851f7e96cf22f3",
+      "src/ggml-cpu/vec.cpp": "1fe783225503cca1b27e21c6b7b7b9d479cea2daf8d6e14ae854637a8657b7c4"
+    },
+    "hypotheses": [
+      {
+        "bit_exact_native_outputs": 18432,
+        "bit_exact_original_outputs": 1209,
+        "name": "lane8_fma",
+        "versus_native": {
+          "actual_l2": 102.77938454524062,
+          "actual_max_abs": 3.798306941986084,
+          "cos_global": 1.0,
+          "cos_min": 1.0,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 0.0,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.77938454524062,
+          "actual_max_abs": 3.798306941986084,
+          "cos_global": 0.9999999999998641,
+          "cos_min": 0.9999999999998617,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 2.1457672119140625e-06,
+          "mean_abs": 3.0316469848104236e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 3.9437696389390125e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      },
+      {
+        "bit_exact_native_outputs": 3457,
+        "bit_exact_original_outputs": 1206,
+        "name": "lane8_separate",
+        "versus_native": {
+          "actual_l2": 102.77938459073144,
+          "actual_max_abs": 3.798306941986084,
+          "cos_global": 0.9999999999999849,
+          "cos_min": 0.9999999999999847,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 5.960464477539062e-07,
+          "mean_abs": 1.0097927669347781e-07,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 1.3179684752116158e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.77938459073144,
+          "actual_max_abs": 3.798306941986084,
+          "cos_global": 0.9999999999998643,
+          "cos_min": 0.9999999999998626,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 2.0265579223632812e-06,
+          "mean_abs": 3.035825607690236e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 3.944075396254405e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      },
+      {
+        "bit_exact_native_outputs": 1542,
+        "bit_exact_original_outputs": 1227,
+        "name": "lane32_fma",
+        "versus_native": {
+          "actual_l2": 102.77938456544842,
+          "actual_max_abs": 3.7983081340789795,
+          "cos_global": 0.999999999999934,
+          "cos_min": 0.9999999999999326,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.2218952178955078e-06,
+          "mean_abs": 2.1461831541576734e-07,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 2.745559756241436e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.77938456544842,
+          "actual_max_abs": 3.7983081340789795,
+          "cos_global": 0.9999999999998769,
+          "cos_min": 0.9999999999998768,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.817941665649414e-06,
+          "mean_abs": 2.876145622899963e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 3.7570066837368113e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      },
+      {
+        "bit_exact_native_outputs": 563,
+        "bit_exact_original_outputs": 522,
+        "name": "sequential_fma",
+        "versus_native": {
+          "actual_l2": 102.77938538515525,
+          "actual_max_abs": 3.7983100414276123,
+          "cos_global": 0.9999999999995324,
+          "cos_min": 0.9999999999995319,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 5.125999450683594e-06,
+          "mean_abs": 5.230449673376825e-07,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 7.322863483978066e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.77938538515525,
+          "actual_max_abs": 3.7983100414276123,
+          "cos_global": 0.9999999999994955,
+          "cos_min": 0.9999999999994942,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 5.125999450683594e-06,
+          "mean_abs": 5.477672754889479e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 7.604648483527944e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      },
+      {
+        "bit_exact_native_outputs": 570,
+        "bit_exact_original_outputs": 578,
+        "name": "sequential_separate",
+        "versus_native": {
+          "actual_l2": 102.77938528832743,
+          "actual_max_abs": 3.7983107566833496,
+          "cos_global": 0.9999999999995249,
+          "cos_min": 0.9999999999995227,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 4.76837158203125e-06,
+          "mean_abs": 5.277146770923638e-07,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 7.378834032715423e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.77938528832743,
+          "actual_max_abs": 3.7983107566833496,
+          "cos_global": 0.9999999999994906,
+          "cos_min": 0.9999999999994904,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 5.0067901611328125e-06,
+          "mean_abs": 5.501988008897266e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 7.639698259892704e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      },
+      {
+        "bit_exact_native_outputs": 1563,
+        "bit_exact_original_outputs": 1116,
+        "name": "f64_products_sum",
+        "versus_native": {
+          "actual_l2": 102.7793845647697,
+          "actual_max_abs": 3.7983078956604004,
+          "cos_global": 0.9999999999999466,
+          "cos_min": 0.999999999999945,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.3113021850585938e-06,
+          "mean_abs": 1.9240335211476474e-07,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 2.474422921767086e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.7793845647697,
+          "actual_max_abs": 3.7983078956604004,
+          "cos_global": 0.9999999999998935,
+          "cos_min": 0.9999999999998935,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.7881393432617188e-06,
+          "mean_abs": 2.66724454868318e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 3.491674195714948e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      },
+      {
+        "bit_exact_native_outputs": 1558,
+        "bit_exact_original_outputs": 1146,
+        "name": "rounded_f32_products_f64_sum",
+        "versus_native": {
+          "actual_l2": 102.77938459683864,
+          "actual_max_abs": 3.7983078956604004,
+          "cos_global": 0.9999999999999462,
+          "cos_min": 0.9999999999999447,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.3113021850585938e-06,
+          "mean_abs": 1.9329246272705961e-07,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 2.488581680299051e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.77938459683864,
+          "actual_max_abs": 3.7983078956604004,
+          "cos_global": 0.9999999999998938,
+          "cos_min": 0.9999999999998938,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.7881393432617188e-06,
+          "mean_abs": 2.662773661812581e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 3.4874685485792205e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      },
+      {
+        "bit_exact_native_outputs": 1542,
+        "bit_exact_original_outputs": 1227,
+        "name": "direct_vecdot",
+        "versus_native": {
+          "actual_l2": 102.77938456544842,
+          "actual_max_abs": 3.7983081340789795,
+          "cos_global": 0.999999999999934,
+          "cos_min": 0.9999999999999326,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.2218952178955078e-06,
+          "mean_abs": 2.1461831541576734e-07,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 2.745559756241436e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.77938456544842,
+          "actual_max_abs": 3.7983081340789795,
+          "cos_global": 0.9999999999998769,
+          "cos_min": 0.9999999999998768,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.817941665649414e-06,
+          "mean_abs": 2.876145622899963e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 3.7570066837368113e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      }
+    ],
+    "native_projection_reproduced_bit_exact": true,
+    "native_stdout": "crispembed_diff: loaded 2 tensors from [scratch]/inputs.gguf\nDENSE_TRACE complete=1 project_vec_calls=0 project_llama_calls=0 project_llama_used=0 exact_operand_calls=0 decoder_repeated=0\n",
+    "native_vs_original": {
+      "actual_l2": 102.77938454524062,
+      "actual_max_abs": 3.798306941986084,
+      "cos_global": 0.9999999999998641,
+      "cos_min": 0.9999999999998617,
+      "elements": 18432,
+      "finite": true,
+      "max_abs": 2.1457672119140625e-06,
+      "mean_abs": 3.0316469848104236e-07,
+      "passed": true,
+      "reference_l2": 102.77938465603559,
+      "reference_max_abs": 3.798306941986084,
+      "rms": 3.9437696389390125e-07,
+      "shape": [
+        1,
+        2,
+        9216
+      ]
+    },
+    "original_decoder_repeated": false,
+    "original_projection_reproduced_bit_exact": true,
+    "original_runtime": {
+      "cache_class": "transformers.cache_utils.DynamicCache",
+      "commit": "75d3bdcd4b3ba70cee21287218d9764f33da41f0",
+      "deterministic_algorithms": true,
+      "device": "cpu",
+      "dtype": "float32",
+      "executed_function_sha256": {
+        "Qwen3_5GatedDeltaNet.forward": "7c437c5a9ee098edde2f984305f843ec927c5222448411487dd5155ed610f5e8",
+        "Qwen3_5RMSNormGated.forward": "9e4a919ddd7afcb4301dd2bdaab79f193dd5c0732482e8ac1dae510c3bf2ded9",
+        "l2norm": "6bfc53d1a491d0ae3856b85cb7fde1ea2198d5e3ed427953652cf2ede696e6fd",
+        "torch_causal_conv1d_update": "3e69946e91492dea1d3650f62d88566ba654c3f954894d6079e0ed0cb6ef106c",
+        "torch_chunk_gated_delta_rule": "3cf91cd1d7af6970672f5b78dd7889b54b24568c16326e73259e57bc32a4a361",
+        "torch_recurrent_gated_delta_rule": "0764d99b2091eb050b0d8009d97167a4b0f67f7452a3530b6c8cbc49f530e28e"
+      },
+      "float32_matmul_precision": "highest",
+      "installed_distributions": [
+        "Jinja2==3.1.6",
+        "MarkupSafe==3.0.4",
+        "PyYAML==6.0.3",
+        "Pygments==2.21.0",
+        "annotated-doc==0.0.5",
+        "anyio==4.16.0",
+        "certifi==2026.10.23",
+        "charset-normalizer==3.5.2",
+        "click==8.5.0",
+        "filelock==4.2.9",
+        "fsspec==2026.9.0",
+        "gguf==0.19.0",
+        "h11==0.16.0",
+        "hf-xet==1.8.0",
+        "httpcore==1.0.9",
+        "httpx==0.28.1",
+        "huggingface_hub==1.31.0",
+        "idna==3.20",
+        "markdown-it-py==4.2.0",
+        "mdurl==0.1.2",
+        "mpmath==1.3.0",
+        "networkx==3.7",
+        "numpy==2.3.5",
+        "packaging==26.3",
+        "pillow==12.0.0",
+        "pip==26.2.2",
+        "regex==2026.9.29",
+        "requests==2.34.2",
+        "rich==15.0.0",
+        "safetensors==0.8.0",
+        "setuptools==84.2.1",
+        "shellingham==1.5.4",
+        "sympy==1.14.0",
+        "tokenizers==0.22.2",
+        "torch==2.13.0+cpu",
+        "tqdm==4.70.1",
+        "transformers==5.5.4",
+        "typer==0.27.3",
+        "typing_extensions==4.16.0",
+        "urllib3==2.8.0"
+      ],
+      "interop_threads": 1,
+      "mkldnn_enabled": false,
+      "optional_fast_kernels": false,
+      "packages": {
+        "gguf": "0.19.0",
+        "huggingface-hub": "1.31.0",
+        "jinja2": "3.1.6",
+        "numpy": "2.3.5",
+        "pillow": "12.0.0",
+        "safetensors": "0.8.0",
+        "tokenizers": "0.22.2",
+        "torch": "2.13.0+cpu",
+        "transformers": "5.5.4"
+      },
+      "repository": "huggingface/transformers",
+      "source_files": {
+        "transformers/cache_utils.py": {
+          "bytes": 74556,
+          "sha256": "a51d2cd525f4458941a20cb5b3b8a8d989d8ca5bcd451855a27bb41743fed586"
+        },
+        "transformers/models/qwen3_5/configuration_qwen3_5.py": {
+          "bytes": 7542,
+          "sha256": "cbea1f42a949edb6b9b001109df68cbf7cff04c96d3fe8a8e96602cb017b5a36"
+        },
+        "transformers/models/qwen3_5/modeling_qwen3_5.py": {
+          "bytes": 96220,
+          "sha256": "aee59d55ee4e8ce0e50bf0e279796b85c2c66a28dfae55c3fcbb62fa9bcba048"
+        }
+      },
+      "threads": 2,
+      "version": "5.5.4"
+    },
+    "partial_traces": [
+      {
+        "first_fma_vs_separate_from_same_before": {
+          "before": "0x1.b16f7cp-14",
+          "fused_after": "0x1.8c7e08p-11",
+          "input": "-0x1.42a614p-2",
+          "k": "10",
+          "lane": "2",
+          "rounded_product": "0x1.56501ap-11",
+          "separate_from_same_before": "0x1.8c7e0ap-11",
+          "weight": "-0x1.0f9a28p-9"
+        },
+        "output_index": 0,
+        "scope": "Fixed2560-width native eight-lane recurrence reconstruction, not internal Torch GEMM partial sums.",
+        "standalone_products_bit_exact": true,
+        "updates": 2560
+      },
+      {
+        "first_fma_vs_separate_from_same_before": {
+          "before": "-0x1.0f8356p-11",
+          "fused_after": "-0x1.335cd2p-10",
+          "input": "-0x1.42a614p-2",
+          "k": "10",
+          "lane": "2",
+          "rounded_product": "-0x1.57365p-11",
+          "separate_from_same_before": "-0x1.335cd4p-10",
+          "weight": "0x1.1050dp-9"
+        },
+        "output_index": 234,
+        "scope": "Fixed2560-width native eight-lane recurrence reconstruction, not internal Torch GEMM partial sums.",
+        "standalone_products_bit_exact": true,
+        "updates": 2560
+      }
+    ],
+    "quality_qualified": false,
+    "retained_records": {
+      "native_source_postnorm_gate": {
+        "bytes": 73728,
+        "sha256": "7462c45c2e1351ac72f57abd52738e22c6844e82a125df43d74822aa48629f90"
+      },
+      "original_gate": {
+        "bytes": 73728,
+        "sha256": "e8a4c8c124a3abcbec15699aad5f6769cfcc7748954fa859e544639f057760f9"
+      },
+      "post_norm": {
+        "bytes": 20480,
+        "sha256": "c2b0f89bd7c83e45738d8898b071edb05894a9bd6c18a36c91a05f2747387a4e"
+      }
+    },
+    "schema": "lighton4b-dense-trace/v1",
+    "selected_indices": {
+      "first_row_major_difference": 0,
+      "worst_absolute_difference": 234
+    },
+    "selected_outputs": [
+      {
+        "f64_products_fsum": -2.4665764023448364,
+        "index": 0,
+        "native_project": -2.466576099395752,
+        "original_gemm": -2.4665756225585938,
+        "rounded_f32_products_fsum": -2.466576403417889,
+        "row": 0,
+        "token": 0,
+        "torch_dot": -2.46657657623291,
+        "torch_sum_rounded_products": -2.466576337814331
+      },
+      {
+        "f64_products_fsum": 1.540187706298514,
+        "index": 234,
+        "native_project": 1.5401884317398071,
+        "original_gemm": 1.5401862859725952,
+        "rounded_f32_products_fsum": 1.540187716027276,
+        "row": 234,
+        "token": 0,
+        "torch_dot": 1.5401874780654907,
+        "torch_sum_rounded_products": 1.5401878356933594
+      }
+    ],
+    "source_commit": "4139df53f72a84c2f167b9bbca4b89cf73cbff4d",
+    "source_sha256": {
+      "CMakeLists.txt": "2fe130e9809e8066e459eeabb0a05340fef8eaf97be5806cbeecac8564843337",
+      "src/qwen35_linear.cpp": "5a11b9f0ff8b8a823b198460706c9c414c6c80216f50c23605362317b01ed63a",
+      "src/qwen35_math.h": "0696f1781ce2cb49fc639dcc405262ffc1beb63bd1549aa571391f6b30e06d96",
+      "tests/test_lighton4b_dense_trace.cpp": "8f4fbd337296db5e9fd4ee107d194d24df3196026e6b8caca7939a28c54d1e3d",
+      "tools/ci-heavy/lighton4b_dense_trace.py": "2df008bc7d2a3cdea08420b39ad167e707f9b3edd3bdba709c936584b5ae6ed7",
+      "tools/ci-heavy/lighton4b_gdn_reference.py": "de650114fdb2fde4938a1b0a5fa1a14ff9e4016016c7d8fc2a2b1801895cf142"
+    },
+    "status": "operator_trace_complete",
+    "torch_build_config": "PyTorch built with:\n  - GCC 13.3\n  - C++ Version: 202002\n  - Intel(R) oneAPI Math Kernel Library Version 2024.2-Product Build 20240605 for Intel(R) 64 architecture applications\n  - Intel(R) MKL-DNN v3.12.0 (Git Hash 80afa71049cd69a3df32adcccb623b12cd7baa22)\n  - OpenMP 201511 (a.k.a. OpenMP 4.5)\n  - LAPACK is enabled (usually provided by MKL)\n  - NNPACK is enabled\n  - CPU capability usage: AVX512\n  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, COMMIT_SHA=cf30153c4c131c8164ee7798e5022d810682e2cb, CUDA_FLAGS= -DLIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS -Xfatbin -compress-all  -Wno-deprecated-gpu-targets --expt-extended-lambda -DCUB_WRAPPED_NAMESPACE=at_cuda_detail -DDISABLE_CUSPARSE_DEPRECATED -DCUDA_HAS_FP16=1 -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -DC10_NODEPRECATED, CXX_COMPILER=/opt/rh/gcc-toolset-13/root/usr/bin/c++, CXX_FLAGS= -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_PYTORCH_QNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -O2 -fPIC -DC10_NODEPRECATED -Wall -Wextra -Werror=return-type -Werror=non-virtual-dtor -Werror=range-loop-construct -Werror=bool-operation -Wnarrowing -Wno-missing-field-initializers -Wno-unknown-pragmas -Wno-unused-parameter -Wno-strict-overflow -Wno-strict-aliasing -Wno-stringop-overflow -Wsuggest-override -Wno-psabi -Wno-error=old-style-cast -faligned-new -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-dangling-reference -Wno-error=dangling-reference -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, TORCH_VERSION=2.13.0, USE_CUDA=0, USE_CUDNN=OFF, USE_CUSPARSELT=OFF, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_GLOO=ON, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=OFF, USE_NNPACK=ON, USE_OPENMP=ON, USE_ROCM=OFF, USE_ROCM_KERNEL_ASSERT=OFF, USE_XCCL=OFF, USE_XPU=OFF, \n",
+    "torch_cpu_capability": "AVX512",
+    "torch_parallel_info": "ATen/Parallel:\n\tat::get_num_threads() : 2\n\tat::get_num_interop_threads() : 1\nOpenMP 201511 (a.k.a. OpenMP 4.5)\n\tomp_get_max_threads() : 2\nIntel(R) oneAPI Math Kernel Library Version 2024.2-Product Build 20240605 for Intel(R) 64 architecture applications\n\tmkl_get_max_threads() : 2\nIntel(R) MKL-DNN v3.12.0 (Git Hash 80afa71049cd69a3df32adcccb623b12cd7baa22)\nstd::thread::hardware_concurrency() : 4\nEnvironment variables:\n\tOMP_NUM_THREADS : [not set]\n\tMKL_NUM_THREADS : [not set]\nATen parallel backend: OpenMP\n",
+    "upstream_run": 41981848201
+  },
+  "limits": "Synthetic retained CPU/F32 operator only. No decoder/block forward, production/tolerance/default change, complete Torch kernel-order identification, runtime correction or model qualification.",
+  "observed_route": {
+    "exact_operand_calls": 2,
+    "llama_calls": 2,
+    "llama_used": 2,
+    "vec_calls": 0
+  },
+  "operator_outputs_verified": 18432,
+  "partial_updates_verified": 5120,
+  "review_annotation": "The retained original-runtime field executed_function_sha256 is inherited GDN source verification, not execution coverage for this projection-only trace. Subsequent reporting-only driver labels it as verified_auxiliary_function_sha256; original receipts/arrays are preserved.",
+  "run_id": 41984176263,
+  "schema": "lighton4b-dense-trace-review/v1",
+  "source_commit": "10489019e84bd1d6919c412daeb3d56d42d052b2",
+  "source_receipt": {
+    "arithmetic_instruction_records": 285,
+    "build_options": [
+      "CRISPEMBED_NATIVE:BOOL=OFF",
+      "GGML_AVX:BOOL=ON",
+      "GGML_AVX2:BOOL=ON",
+      "GGML_AVX512:BOOL=OFF",
+      "GGML_BLAS:BOOL=OFF",
+      "GGML_FMA:BOOL=ON",
+      "GGML_LLAMAFILE:BOOL=ON",
+      "GGML_NATIVE:BOOL=OFF"
+    ],
+    "checkpoint_payload_bytes": 0,
+    "decoder_repeated": false,
+    "exact_regenerated_weight_records": 26,
+    "executable_sha256": "45d07ad9e21a277f703e880a4ae6099f7adcea9070416bd08356dc31c47f6a49",
+    "ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+    "ggml_sources": {
+      "src/ggml-cpu/ggml-cpu.c": "9a85d2bf58f99e885106cac024d7585f079f16ba7df9a68ef0bb03d9bc860f14",
+      "src/ggml-cpu/llamafile/sgemm.cpp": "11b4860f7368015e69fbf4fe01f41756c72acb37b992d7dd549060811f6949b8",
+      "src/ggml-cpu/simd-mappings.h": "ea11dc9440293d440b7f3549ee2009711aa745a7382711bcf0851f7e96cf22f3",
+      "src/ggml-cpu/vec.cpp": "1fe783225503cca1b27e21c6b7b7b9d479cea2daf8d6e14ae854637a8657b7c4"
+    },
+    "hypotheses": [
+      {
+        "bit_exact_native_outputs": 18432,
+        "bit_exact_original_outputs": 1209,
+        "name": "lane8_fma",
+        "versus_native": {
+          "actual_l2": 102.77938454524062,
+          "actual_max_abs": 3.798306941986084,
+          "cos_global": 1.0,
+          "cos_min": 1.0,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 0.0,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.77938454524062,
+          "actual_max_abs": 3.798306941986084,
+          "cos_global": 0.9999999999998641,
+          "cos_min": 0.9999999999998617,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 2.1457672119140625e-06,
+          "mean_abs": 3.0316469848104236e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 3.9437696389390125e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      },
+      {
+        "bit_exact_native_outputs": 3457,
+        "bit_exact_original_outputs": 1206,
+        "name": "lane8_separate",
+        "versus_native": {
+          "actual_l2": 102.77938459073144,
+          "actual_max_abs": 3.798306941986084,
+          "cos_global": 0.9999999999999849,
+          "cos_min": 0.9999999999999847,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 5.960464477539062e-07,
+          "mean_abs": 1.0097927669347781e-07,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 1.3179684752116158e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.77938459073144,
+          "actual_max_abs": 3.798306941986084,
+          "cos_global": 0.9999999999998643,
+          "cos_min": 0.9999999999998626,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 2.0265579223632812e-06,
+          "mean_abs": 3.035825607690236e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 3.944075396254405e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      },
+      {
+        "bit_exact_native_outputs": 1542,
+        "bit_exact_original_outputs": 1227,
+        "name": "lane32_fma",
+        "versus_native": {
+          "actual_l2": 102.77938456544842,
+          "actual_max_abs": 3.7983081340789795,
+          "cos_global": 0.999999999999934,
+          "cos_min": 0.9999999999999326,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.2218952178955078e-06,
+          "mean_abs": 2.1461831541576734e-07,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 2.745559756241436e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.77938456544842,
+          "actual_max_abs": 3.7983081340789795,
+          "cos_global": 0.9999999999998769,
+          "cos_min": 0.9999999999998768,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.817941665649414e-06,
+          "mean_abs": 2.876145622899963e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 3.7570066837368113e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      },
+      {
+        "bit_exact_native_outputs": 563,
+        "bit_exact_original_outputs": 522,
+        "name": "sequential_fma",
+        "versus_native": {
+          "actual_l2": 102.77938538515525,
+          "actual_max_abs": 3.7983100414276123,
+          "cos_global": 0.9999999999995324,
+          "cos_min": 0.9999999999995319,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 5.125999450683594e-06,
+          "mean_abs": 5.230449673376825e-07,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 7.322863483978066e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.77938538515525,
+          "actual_max_abs": 3.7983100414276123,
+          "cos_global": 0.9999999999994955,
+          "cos_min": 0.9999999999994942,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 5.125999450683594e-06,
+          "mean_abs": 5.477672754889479e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 7.604648483527944e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      },
+      {
+        "bit_exact_native_outputs": 570,
+        "bit_exact_original_outputs": 578,
+        "name": "sequential_separate",
+        "versus_native": {
+          "actual_l2": 102.77938528832743,
+          "actual_max_abs": 3.7983107566833496,
+          "cos_global": 0.9999999999995249,
+          "cos_min": 0.9999999999995227,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 4.76837158203125e-06,
+          "mean_abs": 5.277146770923638e-07,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 7.378834032715423e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.77938528832743,
+          "actual_max_abs": 3.7983107566833496,
+          "cos_global": 0.9999999999994906,
+          "cos_min": 0.9999999999994904,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 5.0067901611328125e-06,
+          "mean_abs": 5.501988008897266e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 7.639698259892704e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      },
+      {
+        "bit_exact_native_outputs": 1563,
+        "bit_exact_original_outputs": 1116,
+        "name": "f64_products_sum",
+        "versus_native": {
+          "actual_l2": 102.7793845647697,
+          "actual_max_abs": 3.7983078956604004,
+          "cos_global": 0.9999999999999466,
+          "cos_min": 0.999999999999945,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.3113021850585938e-06,
+          "mean_abs": 1.9240335211476474e-07,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 2.474422921767086e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.7793845647697,
+          "actual_max_abs": 3.7983078956604004,
+          "cos_global": 0.9999999999998935,
+          "cos_min": 0.9999999999998935,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.7881393432617188e-06,
+          "mean_abs": 2.66724454868318e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 3.491674195714948e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      },
+      {
+        "bit_exact_native_outputs": 1558,
+        "bit_exact_original_outputs": 1146,
+        "name": "rounded_f32_products_f64_sum",
+        "versus_native": {
+          "actual_l2": 102.77938459683864,
+          "actual_max_abs": 3.7983078956604004,
+          "cos_global": 0.9999999999999462,
+          "cos_min": 0.9999999999999447,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.3113021850585938e-06,
+          "mean_abs": 1.9329246272705961e-07,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 2.488581680299051e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.77938459683864,
+          "actual_max_abs": 3.7983078956604004,
+          "cos_global": 0.9999999999998938,
+          "cos_min": 0.9999999999998938,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.7881393432617188e-06,
+          "mean_abs": 2.662773661812581e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 3.4874685485792205e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      },
+      {
+        "bit_exact_native_outputs": 1542,
+        "bit_exact_original_outputs": 1227,
+        "name": "direct_vecdot",
+        "versus_native": {
+          "actual_l2": 102.77938456544842,
+          "actual_max_abs": 3.7983081340789795,
+          "cos_global": 0.999999999999934,
+          "cos_min": 0.9999999999999326,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.2218952178955078e-06,
+          "mean_abs": 2.1461831541576734e-07,
+          "passed": true,
+          "reference_l2": 102.77938454524062,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 2.745559756241436e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        },
+        "versus_original": {
+          "actual_l2": 102.77938456544842,
+          "actual_max_abs": 3.7983081340789795,
+          "cos_global": 0.9999999999998769,
+          "cos_min": 0.9999999999998768,
+          "elements": 18432,
+          "finite": true,
+          "max_abs": 1.817941665649414e-06,
+          "mean_abs": 2.876145622899963e-07,
+          "passed": true,
+          "reference_l2": 102.77938465603559,
+          "reference_max_abs": 3.798306941986084,
+          "rms": 3.7570066837368113e-07,
+          "shape": [
+            1,
+            2,
+            9216
+          ]
+        }
+      }
+    ],
+    "native_arithmetic_object_sha256": "e615a1116f83a70b323c3ede52cd0b254b3f071792b27d3fe8dfab6647bead7b",
+    "native_projection_reproduced_bit_exact": true,
+    "native_stdout": "crispembed_diff: loaded 2 tensors from [scratch]/inputs.gguf\nDENSE_TRACE complete=1 project_vec_calls=0 project_llama_calls=2 project_llama_used=2 exact_operand_calls=2 decoder_repeated=0\n",
+    "native_vs_original": {
+      "actual_l2": 102.77938454524062,
+      "actual_max_abs": 3.798306941986084,
+      "cos_global": 0.9999999999998641,
+      "cos_min": 0.9999999999998617,
+      "elements": 18432,
+      "finite": true,
+      "max_abs": 2.1457672119140625e-06,
+      "mean_abs": 3.0316469848104236e-07,
+      "passed": true,
+      "reference_l2": 102.77938465603559,
+      "reference_max_abs": 3.798306941986084,
+      "rms": 3.9437696389390125e-07,
+      "shape": [
+        1,
+        2,
+        9216
+      ]
+    },
+    "observed_route": {
+      "exact_operand_calls": 2,
+      "llama_calls": 2,
+      "llama_used": 2,
+      "vec_calls": 0
+    },
+    "original_decoder_repeated": false,
+    "original_projection_reproduced_bit_exact": true,
+    "original_runtime": {
+      "cache_class": "transformers.cache_utils.DynamicCache",
+      "commit": "75d3bdcd4b3ba70cee21287218d9764f33da41f0",
+      "deterministic_algorithms": true,
+      "device": "cpu",
+      "dtype": "float32",
+      "executed_function_sha256": {
+        "Qwen3_5GatedDeltaNet.forward": "7c437c5a9ee098edde2f984305f843ec927c5222448411487dd5155ed610f5e8",
+        "Qwen3_5RMSNormGated.forward": "9e4a919ddd7afcb4301dd2bdaab79f193dd5c0732482e8ac1dae510c3bf2ded9",
+        "l2norm": "6bfc53d1a491d0ae3856b85cb7fde1ea2198d5e3ed427953652cf2ede696e6fd",
+        "torch_causal_conv1d_update": "3e69946e91492dea1d3650f62d88566ba654c3f954894d6079e0ed0cb6ef106c",
+        "torch_chunk_gated_delta_rule": "3cf91cd1d7af6970672f5b78dd7889b54b24568c16326e73259e57bc32a4a361",
+        "torch_recurrent_gated_delta_rule": "0764d99b2091eb050b0d8009d97167a4b0f67f7452a3530b6c8cbc49f530e28e"
+      },
+      "float32_matmul_precision": "highest",
+      "installed_distributions": [
+        "Jinja2==3.1.6",
+        "MarkupSafe==3.0.4",
+        "PyYAML==6.0.3",
+        "Pygments==2.21.0",
+        "annotated-doc==0.0.5",
+        "anyio==4.16.0",
+        "certifi==2026.10.23",
+        "charset-normalizer==3.5.2",
+        "click==8.5.0",
+        "filelock==4.2.9",
+        "fsspec==2026.9.0",
+        "gguf==0.19.0",
+        "h11==0.16.0",
+        "hf-xet==1.8.0",
+        "httpcore==1.0.9",
+        "httpx==0.28.1",
+        "huggingface_hub==1.31.0",
+        "idna==3.20",
+        "markdown-it-py==4.2.0",
+        "mdurl==0.1.2",
+        "mpmath==1.3.0",
+        "networkx==3.7",
+        "numpy==2.3.5",
+        "packaging==26.3",
+        "pillow==12.0.0",
+        "pip==26.2.2",
+        "regex==2026.9.29",
+        "requests==2.34.2",
+        "rich==15.0.0",
+        "safetensors==0.8.0",
+        "setuptools==84.2.1",
+        "shellingham==1.5.4",
+        "sympy==1.14.0",
+        "tokenizers==0.22.2",
+        "torch==2.13.0+cpu",
+        "tqdm==4.70.1",
+        "transformers==5.5.4",
+        "typer==0.27.3",
+        "typing_extensions==4.16.0",
+        "urllib3==2.8.0"
+      ],
+      "interop_threads": 1,
+      "mkldnn_enabled": false,
+      "optional_fast_kernels": false,
+      "packages": {
+        "gguf": "0.19.0",
+        "huggingface-hub": "1.31.0",
+        "jinja2": "3.1.6",
+        "numpy": "2.3.5",
+        "pillow": "12.0.0",
+        "safetensors": "0.8.0",
+        "tokenizers": "0.22.2",
+        "torch": "2.13.0+cpu",
+        "transformers": "5.5.4"
+      },
+      "repository": "huggingface/transformers",
+      "source_files": {
+        "transformers/cache_utils.py": {
+          "bytes": 74556,
+          "sha256": "a51d2cd525f4458941a20cb5b3b8a8d989d8ca5bcd451855a27bb41743fed586"
+        },
+        "transformers/models/qwen3_5/configuration_qwen3_5.py": {
+          "bytes": 7542,
+          "sha256": "cbea1f42a949edb6b9b001109df68cbf7cff04c96d3fe8a8e96602cb017b5a36"
+        },
+        "transformers/models/qwen3_5/modeling_qwen3_5.py": {
+          "bytes": 96220,
+          "sha256": "aee59d55ee4e8ce0e50bf0e279796b85c2c66a28dfae55c3fcbb62fa9bcba048"
+        }
+      },
+      "threads": 2,
+      "version": "5.5.4"
+    },
+    "partial_traces": [
+      {
+        "first_fma_vs_separate_from_same_before": {
+          "before": "0x1.b16f7cp-14",
+          "fused_after": "0x1.8c7e08p-11",
+          "input": "-0x1.42a614p-2",
+          "k": "10",
+          "lane": "2",
+          "rounded_product": "0x1.56501ap-11",
+          "separate_from_same_before": "0x1.8c7e0ap-11",
+          "weight": "-0x1.0f9a28p-9"
+        },
+        "output_index": 0,
+        "scope": "Fixed2560-width native eight-lane recurrence reconstruction, not internal Torch GEMM partial sums.",
+        "standalone_products_bit_exact": true,
+        "updates": 2560
+      },
+      {
+        "first_fma_vs_separate_from_same_before": {
+          "before": "-0x1.0f8356p-11",
+          "fused_after": "-0x1.335cd2p-10",
+          "input": "-0x1.42a614p-2",
+          "k": "10",
+          "lane": "2",
+          "rounded_product": "-0x1.57365p-11",
+          "separate_from_same_before": "-0x1.335cd4p-10",
+          "weight": "0x1.1050dp-9"
+        },
+        "output_index": 234,
+        "scope": "Fixed2560-width native eight-lane recurrence reconstruction, not internal Torch GEMM partial sums.",
+        "standalone_products_bit_exact": true,
+        "updates": 2560
+      }
+    ],
+    "quality_qualified": false,
+    "retained_records": {
+      "native_source_postnorm_gate": {
+        "bytes": 73728,
+        "sha256": "7462c45c2e1351ac72f57abd52738e22c6844e82a125df43d74822aa48629f90"
+      },
+      "original_gate": {
+        "bytes": 73728,
+        "sha256": "e8a4c8c124a3abcbec15699aad5f6769cfcc7748954fa859e544639f057760f9"
+      },
+      "post_norm": {
+        "bytes": 20480,
+        "sha256": "c2b0f89bd7c83e45738d8898b071edb05894a9bd6c18a36c91a05f2747387a4e"
+      }
+    },
+    "schema": "lighton4b-dense-trace/v1",
+    "selected_indices": {
+      "first_row_major_difference": 0,
+      "worst_absolute_difference": 234
+    },
+    "selected_outputs": [
+      {
+        "f64_products_fsum": -2.4665764023448364,
+        "index": 0,
+        "native_project": -2.466576099395752,
+        "original_gemm": -2.4665756225585938,
+        "rounded_f32_products_fsum": -2.466576403417889,
+        "row": 0,
+        "token": 0,
+        "torch_dot": -2.46657657623291,
+        "torch_sum_rounded_products": -2.466576337814331
+      },
+      {
+        "f64_products_fsum": 1.540187706298514,
+        "index": 234,
+        "native_project": 1.5401884317398071,
+        "original_gemm": 1.5401862859725952,
+        "rounded_f32_products_fsum": 1.540187716027276,
+        "row": 234,
+        "token": 0,
+        "torch_dot": 1.5401874780654907,
+        "torch_sum_rounded_products": 1.5401878356933594
+      }
+    ],
+    "source_commit": "10489019e84bd1d6919c412daeb3d56d42d052b2",
+    "source_sha256": {
+      "CMakeLists.txt": "179775ff577387723717704ccb5a4bd03609f3989d4dd2015be743dd9a473715",
+      "src/qwen35_linear.cpp": "5a11b9f0ff8b8a823b198460706c9c414c6c80216f50c23605362317b01ed63a",
+      "src/qwen35_math.h": "0696f1781ce2cb49fc639dcc405262ffc1beb63bd1549aa571391f6b30e06d96",
+      "tests/test_lighton4b_dense_trace.cpp": "efdf1da0bc17b35e8fe9ccc6a22a84761a8adc01060a89c87124b27c2b217ba3",
+      "tools/ci-heavy/lighton4b_dense_trace.py": "cd6c078c01ffa1a0fb2cb83342e2f6bd2787695bc7adcfcb0e012644eaf4ced9",
+      "tools/ci-heavy/lighton4b_gdn_reference.py": "de650114fdb2fde4938a1b0a5fa1a14ff9e4016016c7d8fc2a2b1801895cf142"
+    },
+    "status": "operator_trace_complete",
+    "torch_build_config": "PyTorch built with:\n  - GCC 13.3\n  - C++ Version: 202002\n  - Intel(R) oneAPI Math Kernel Library Version 2024.2-Product Build 20240605 for Intel(R) 64 architecture applications\n  - Intel(R) MKL-DNN v3.12.0 (Git Hash 80afa71049cd69a3df32adcccb623b12cd7baa22)\n  - OpenMP 201511 (a.k.a. OpenMP 4.5)\n  - LAPACK is enabled (usually provided by MKL)\n  - NNPACK is enabled\n  - CPU capability usage: AVX512\n  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, COMMIT_SHA=cf30153c4c131c8164ee7798e5022d810682e2cb, CUDA_FLAGS= -DLIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS -Xfatbin -compress-all  -Wno-deprecated-gpu-targets --expt-extended-lambda -DCUB_WRAPPED_NAMESPACE=at_cuda_detail -DDISABLE_CUSPARSE_DEPRECATED -DCUDA_HAS_FP16=1 -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -DC10_NODEPRECATED, CXX_COMPILER=/opt/rh/gcc-toolset-13/root/usr/bin/c++, CXX_FLAGS= -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_PYTORCH_QNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -O2 -fPIC -DC10_NODEPRECATED -Wall -Wextra -Werror=return-type -Werror=non-virtual-dtor -Werror=range-loop-construct -Werror=bool-operation -Wnarrowing -Wno-missing-field-initializers -Wno-unknown-pragmas -Wno-unused-parameter -Wno-strict-overflow -Wno-strict-aliasing -Wno-stringop-overflow -Wsuggest-override -Wno-psabi -Wno-error=old-style-cast -faligned-new -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-dangling-reference -Wno-error=dangling-reference -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, TORCH_VERSION=2.13.0, USE_CUDA=0, USE_CUDNN=OFF, USE_CUSPARSELT=OFF, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_GLOO=ON, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=OFF, USE_NNPACK=ON, USE_OPENMP=ON, USE_ROCM=OFF, USE_ROCM_KERNEL_ASSERT=OFF, USE_XCCL=OFF, USE_XPU=OFF, \n",
+    "torch_cpu_capability": "AVX512",
+    "torch_parallel_info": "ATen/Parallel:\n\tat::get_num_threads() : 2\n\tat::get_num_interop_threads() : 1\nOpenMP 201511 (a.k.a. OpenMP 4.5)\n\tomp_get_max_threads() : 2\nIntel(R) oneAPI Math Kernel Library Version 2024.2-Product Build 20240605 for Intel(R) 64 architecture applications\n\tmkl_get_max_threads() : 2\nIntel(R) MKL-DNN v3.12.0 (Git Hash 80afa71049cd69a3df32adcccb623b12cd7baa22)\nstd::thread::hardware_concurrency() : 4\nEnvironment variables:\n\tOMP_NUM_THREADS : [not set]\n\tMKL_NUM_THREADS : [not set]\nATen parallel backend: OpenMP\n",
+    "upstream_run": 41981848201
+  },
+  "source_records_verified": 6,
+  "status": "bounded_native_arithmetic_observed_torch_internal_order_unproven"
+}

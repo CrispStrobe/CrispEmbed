@@ -1,0 +1,192 @@
+{
+  "status": "independent-selected-data-pass",
+  "case": "inventory-table",
+  "receipt_sha256": "4fa06de38118bd5b007fda809ad4f8602e8653961816757de21d563592689db9",
+  "old_receipt_sha256": "d5b7f992249a3f6b553bd3e41f73cc5e590eeaae2d1380d9d34d81aaf3d316e8",
+  "qualified": false,
+  "references_expert_adjudicated": false,
+  "selected_files": {
+    "baseline-old/generated.ids": {
+      "bytes": 966,
+      "sha256": "14c9b9b1ca58ffccc4e5949833a78a31e1785b6dbde31be442ccc413d3526d2f"
+    },
+    "baseline-old/generated.txt": {
+      "bytes": 460,
+      "sha256": "996768f6aeff43da152529483f2fe5cb0f05e2acfc0cf965705dad04c66ae0fa"
+    },
+    "baseline-old/native-summary.json": {
+      "bytes": 386,
+      "sha256": "bf98ca9414285551d10f89f79e5abe47cdf48500565556513449c12f8c7d1dc2"
+    },
+    "baseline-old/prefill.logits.f32": {
+      "bytes": 993280,
+      "sha256": "da99718e08095ac2438bf62f822664581d0c2ce2157688c8a75f29f47794f66d"
+    },
+    "baseline-old/vision.merged.f32": {
+      "bytes": 2007040,
+      "sha256": "c23e4fe75ccd5982d499fcd03b3a2d88d7f08f5d46f7db6d20534e090d133112"
+    },
+    "corrected-composed/generated.ids": {
+      "bytes": 966,
+      "sha256": "14c9b9b1ca58ffccc4e5949833a78a31e1785b6dbde31be442ccc413d3526d2f"
+    },
+    "corrected-composed/generated.txt": {
+      "bytes": 460,
+      "sha256": "996768f6aeff43da152529483f2fe5cb0f05e2acfc0cf965705dad04c66ae0fa"
+    },
+    "corrected-composed/native-summary.json": {
+      "bytes": 399,
+      "sha256": "f9da00c2e7f6ba8066a19f7013c81e2706320900f13065898100d32369eb9ba5"
+    },
+    "corrected-composed/prefill.logits.f32": {
+      "bytes": 993280,
+      "sha256": "598463dddae99f7ab0b60e68e04696671004a7b5380836941f896ea3c72696b0"
+    },
+    "corrected-composed/vision.merged.f32": {
+      "bytes": 2007040,
+      "sha256": "c23e4fe75ccd5982d499fcd03b3a2d88d7f08f5d46f7db6d20534e090d133112"
+    },
+    "corrected-source-features/generated.ids": {
+      "bytes": 966,
+      "sha256": "14c9b9b1ca58ffccc4e5949833a78a31e1785b6dbde31be442ccc413d3526d2f"
+    },
+    "corrected-source-features/generated.txt": {
+      "bytes": 460,
+      "sha256": "996768f6aeff43da152529483f2fe5cb0f05e2acfc0cf965705dad04c66ae0fa"
+    },
+    "corrected-source-features/native-summary.json": {
+      "bytes": 398,
+      "sha256": "9f317ad61fc94e6f921f1e21e98b9a3511e521c7aee8119cf7f7eeb8723a348d"
+    },
+    "corrected-source-features/prefill.logits.f32": {
+      "bytes": 993280,
+      "sha256": "598463dddae99f7ab0b60e68e04696671004a7b5380836941f896ea3c72696b0"
+    },
+    "corrected-source-features/vision.merged.f32": {
+      "bytes": 2007040,
+      "sha256": "c23e4fe75ccd5982d499fcd03b3a2d88d7f08f5d46f7db6d20534e090d133112"
+    }
+  },
+  "arms": {
+    "baseline-old": {
+      "tokens": 248,
+      "eos": true,
+      "text_sha256": "996768f6aeff43da152529483f2fe5cb0f05e2acfc0cf965705dad04c66ae0fa",
+      "ids_sha256": "14c9b9b1ca58ffccc4e5949833a78a31e1785b6dbde31be442ccc413d3526d2f",
+      "content": {
+        "char_edits": 0,
+        "char_count": 165,
+        "word_edits": 0,
+        "word_count": 32
+      },
+      "raw": {
+        "char_edits": 294,
+        "char_count": 165,
+        "word_edits": 33,
+        "word_count": 32
+      },
+      "literal_tables_exact": true,
+      "expected_cells": 15,
+      "firstscore": {
+        "rms": 0.21128732388491347,
+        "max_abs": 1.0026350021362305,
+        "rms_double_ulp_difference": 2.0
+      }
+    },
+    "corrected-composed": {
+      "tokens": 248,
+      "eos": true,
+      "text_sha256": "996768f6aeff43da152529483f2fe5cb0f05e2acfc0cf965705dad04c66ae0fa",
+      "ids_sha256": "14c9b9b1ca58ffccc4e5949833a78a31e1785b6dbde31be442ccc413d3526d2f",
+      "content": {
+        "char_edits": 0,
+        "char_count": 165,
+        "word_edits": 0,
+        "word_count": 32
+      },
+      "raw": {
+        "char_edits": 294,
+        "char_count": 165,
+        "word_edits": 33,
+        "word_count": 32
+      },
+      "literal_tables_exact": true,
+      "expected_cells": 15,
+      "firstscore": {
+        "rms": 0.2204562268715937,
+        "max_abs": 0.8028488159179688,
+        "rms_double_ulp_difference": 1.0
+      }
+    },
+    "corrected-source-features": {
+      "tokens": 248,
+      "eos": true,
+      "text_sha256": "996768f6aeff43da152529483f2fe5cb0f05e2acfc0cf965705dad04c66ae0fa",
+      "ids_sha256": "14c9b9b1ca58ffccc4e5949833a78a31e1785b6dbde31be442ccc413d3526d2f",
+      "content": {
+        "char_edits": 0,
+        "char_count": 165,
+        "word_edits": 0,
+        "word_count": 32
+      },
+      "raw": {
+        "char_edits": 294,
+        "char_count": 165,
+        "word_edits": 33,
+        "word_count": 32
+      },
+      "literal_tables_exact": true,
+      "expected_cells": 15,
+      "firstscore": {
+        "rms": 0.2204562268715937,
+        "max_abs": 0.8028488159179688,
+        "rms_double_ulp_difference": 1.0
+      }
+    }
+  },
+  "references": {
+    "upstream-off": {
+      "tokens": 248,
+      "eos": true,
+      "content": {
+        "char_edits": 0,
+        "char_count": 165,
+        "word_edits": 0,
+        "word_count": 32
+      },
+      "raw": {
+        "char_edits": 294,
+        "char_count": 165,
+        "word_edits": 33,
+        "word_count": 32
+      },
+      "literal_tables_exact": true,
+      "expected_cells": 15
+    },
+    "upstream-on": {
+      "tokens": 248,
+      "eos": true,
+      "content": {
+        "char_edits": 0,
+        "char_count": 165,
+        "word_edits": 0,
+        "word_count": 32
+      },
+      "raw": {
+        "char_edits": 294,
+        "char_count": 165,
+        "word_edits": 33,
+        "word_count": 32
+      },
+      "literal_tables_exact": true,
+      "expected_cells": 15
+    }
+  },
+  "local_numpy": "2.2.6",
+  "method": "Separate bit-parallel Levenshtein, frozen content parser; raw F32 byte hashes exact. RMS scalar reductions may differ by at most two double ULPs.",
+  "all_merged_upstream_bit_exact": true,
+  "corrected_ids_equal": true,
+  "corrected_text_equal": true,
+  "old_vs_corrected_content_char_edits": 0,
+  "source_floor_met": true
+}

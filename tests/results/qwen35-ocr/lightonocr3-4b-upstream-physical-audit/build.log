@@ -1,0 +1,35 @@
+[  0%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml.c.o
+[  0%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml.cpp.o
+[ 33%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o
+[ 33%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o
+[ 33%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/gguf.cpp.o
+[ 33%] Linking CXX shared library libggml-base.so
+[ 33%] Built target ggml-base
+[ 66%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o
+[ 66%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o
+[ 66%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o
+[ 66%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o
+[ 66%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o
+[ 66%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o
+[ 66%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o
+[ 66%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o
+[ 66%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o
+[ 66%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o
+[100%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o
+[100%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o
+[100%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile/sgemm.cpp.o
+[100%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o
+[100%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o
+[100%] Linking CXX shared library libggml-cpu.so
+[100%] Built target ggml-cpu
+[100%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o
+[100%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o
+[100%] Linking CXX shared library libggml.so
+[100%] Built target ggml
+[100%] Building CXX object CMakeFiles/lighton4b-upstream-dequant-audit.dir/tools/lighton4b_upstream_dequant_audit.cpp.o
+[100%] Linking CXX executable lighton4b-upstream-dequant-audit
+[100%] Built target lighton4b-upstream-dequant-audit

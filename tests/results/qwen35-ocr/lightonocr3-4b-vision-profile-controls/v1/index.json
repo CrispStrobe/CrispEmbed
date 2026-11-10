@@ -1,0 +1,213 @@
+{
+  "files": {
+    "resize-5-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "native-CMakeCache.txt": {
+      "bytes": 29201,
+      "sha256": "5c3f0f06acc35dac57037a0b8567d59b4f67673d9355aab2e9d476c3377febf5"
+    },
+    "build-test-lighton4b-pillow-resize.log": {
+      "bytes": 5844,
+      "sha256": "40cc898b2cd162d88445a98025256e79adff6b75c0ba5f85b1f2ae0c975359f3"
+    },
+    "dependency-check.log": {
+      "bytes": 132,
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    "resize-7-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "up-build.log": {
+      "bytes": 8717,
+      "sha256": "53e17987c3eb1bc7b7f25c31290d25969198c1df6c6ce4999209166a6b1e3d00"
+    },
+    "bounded-worker.log": {
+      "bytes": 1044,
+      "sha256": "3c380c28939a53201e0c9f29c6561309d2d4ae0ca8c3fb766d0e1c2272a0d79c"
+    },
+    "run-test-lighton4b-physical-f16-vision-main-stub.log": {
+      "bytes": 39,
+      "sha256": "cd38c609cedf097694e1762d8cc72f1cd52a197f07768ae80917b4fcd510674f"
+    },
+    "initial-submission-negative.json": {
+      "bytes": 561,
+      "sha256": "01e37820f258ad6e7bee3332bb4528e8d062f2396a59ec62b2492750dad72310"
+    },
+    "venv.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "run-test-lighton4b-pillow-resize-main.log": {
+      "bytes": 31,
+      "sha256": "3a887b49cd5e4840329e7d76a5e6bd333b20525eea3542aa8c69a4c9b0b2a0e4"
+    },
+    "run-test-lighton4b-pillow-resize.log": {
+      "bytes": 31,
+      "sha256": "3a887b49cd5e4840329e7d76a5e6bd333b20525eea3542aa8c69a4c9b0b2a0e4"
+    },
+    "source.log": {
+      "bytes": 41,
+      "sha256": "0db8dc07976b6b19ff8c3bf8d0800b729e1b792020c834dc9676c4ec2b1c8f27"
+    },
+    "control-test_projector_controls.py.log": {
+      "bytes": 216,
+      "sha256": "cf5fa2af254fffa60dd4e1e6ecb1423553d0205056000d78f4febf1eb9364193"
+    },
+    "resize-6-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "resize-1-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "resize-0-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "resize-4-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "independent-review.json": {
+      "bytes": 721,
+      "sha256": "a10c4df0a5739108d1e9416565f0982bf0205293ca538792fcc50f5d645980d1"
+    },
+    "resize-2-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "resize-6-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "resize-4-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "resize-2-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "up-configure.log": {
+      "bytes": 1788,
+      "sha256": "86da03324ddfbf32c04d50ec7bac17da1c7d7aff2dabc7220b0a684e7a2048d8"
+    },
+    "source-checkout.log": {
+      "bytes": 92,
+      "sha256": "61a6b9fc7d5b7560f7954cc3612080b4dba1f3db1e12388d496ce7398546e351"
+    },
+    "run-test-lighton4b-physical-f16-vision.log": {
+      "bytes": 101,
+      "sha256": "d58c15e1a57af3d53eada05f045b41d5fdb56580fc6854f8021f06a8bb03c7f2"
+    },
+    "up-checkout.log": {
+      "bytes": 84,
+      "sha256": "401b0f35047d9999135ce240162909f4d3b9be4cafce7c16c1eafb93d3b7bff7"
+    },
+    "build-test-lighton4b-physical-f16-vision-main-stub.log": {
+      "bytes": 425,
+      "sha256": "3c7a7f3c7aede8f82783381d10c1ede8970e20a44490b0e87116000952922c9d"
+    },
+    "build-test-lighton4b-pillow-resize-main.log": {
+      "bytes": 262431,
+      "sha256": "045268728485e09bd8f9ede45ee4f7949ad9fd69d9c5281d44cfb67e16716a75"
+    },
+    "dependencies.log": {
+      "bytes": 2564,
+      "sha256": "7df818306302d5d6583f72e6d6fa15c07dce9eb7f604df8ae120a8ef48387fdd"
+    },
+    "bootstrap.py": {
+      "bytes": 6232,
+      "sha256": "75c5ef0c7e8d5767ace131896681bdfaa634e60db8a7222396554ac5ca56320e"
+    },
+    "ggml-init.log": {
+      "bytes": 236,
+      "sha256": "0e61f003e045163dae69e7c7ada6605469a0fd64c7747e87042d17f038bdc456"
+    },
+    "actual-preprocess.log": {
+      "bytes": 23,
+      "sha256": "cd5f1922741d95b0f7bfe8dc03ba02acdbb4ff46bff76c8e791a25644a57cce3"
+    },
+    "native-configure.log": {
+      "bytes": 2044,
+      "sha256": "7062829ea58d59fd2e0a1fe03810190ddf7498a60ee027234a6ecc9e96e69ed2"
+    },
+    "build-test-lighton4b-physical-f16-vision.log": {
+      "bytes": 408,
+      "sha256": "d8ed27ee1a69677111b9f82736d7d9707292c3cec2205dfc00aea351c223d6c5"
+    },
+    "up-init.log": {
+      "bytes": 594,
+      "sha256": "174fbb17569bb00a7af5c370963a286b4f7d5f546a83db4a557da346637c67bc"
+    },
+    "resize-0-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "vision-controls.json": {
+      "bytes": 27551,
+      "sha256": "31e6d6e54ec5a26c464e0e0f7a151e2408f04c4ec517b59648997a76a3f5ee09"
+    },
+    "control-test_runtime_guard.py.log": {
+      "bytes": 205,
+      "sha256": "629d2915f189d1087d2c6d669f5ba5c02019fd6aaad4cc6b751d89086336194b"
+    },
+    "build-lighton4b-vision-profile-probe.log": {
+      "bytes": 389,
+      "sha256": "3c16ffb49e093fc43992159b9872a46731b6b216efab576afd9e4132a85375d0"
+    },
+    "resize-3-source.log": {
+      "bytes": 24,
+      "sha256": "d7c8fdb74d29ccafce68702b87261dfbeb5f938a4b5777ed11a46b58ea13d80d"
+    },
+    "source-CMakeCache.txt": {
+      "bytes": 34930,
+      "sha256": "e7bf1ab9bff8df3e235b07e60b6bc19885d115cb99022b865b476ce5376a6f64"
+    },
+    "resize-3-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "source-fetch.log": {
+      "bytes": 123,
+      "sha256": "abf8e9f56bcc4d0ce8f6237f3e7e3d975c506c1075fbb7efbc3c9caf294ab050"
+    },
+    "resize-7-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "up-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "vision-controls-bootstrap.json": {
+      "bytes": 450,
+      "sha256": "392ce1097bf69191c9f5b51a763d285a73fe75f5f06d8155470b24396ca1c5de"
+    },
+    "source-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "resize-1-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "resize-5-native.log": {
+      "bytes": 16,
+      "sha256": "8f501135c7b9afe2d2914e0c3fe7139b01aa1f1f904d52e5ac4c2882cfe00cb5"
+    },
+    "source-init.log": {
+      "bytes": 576,
+      "sha256": "d155a73e4cf3f7b84b19f5b17107005797efb4fe37b74a39e3aec2e6acd059d5"
+    },
+    "up-fetch.log": {
+      "bytes": 119,
+      "sha256": "5537e1fa1b4cf8d84bd910e3fed8a4a9e0803b4bddddf1cf9b9182e0f1b00983"
+    }
+  },
+  "large_vectors": "Resize pixels/patches remain remote; exact hashes and independent byte checks are in the raw receipt and review."
+}

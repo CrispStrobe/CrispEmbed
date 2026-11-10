@@ -1,0 +1,9 @@
+--- off
++++ on
+@@ -4,5 +4,5 @@
+ 
+ This image is a table showing the temperature of three substances over a period of time. It illustrates how the temperature changes as heat is applied.
+ 
+-The table includes columns for "Time (min)", "Sample 1", "Sample 2", "Sample 3", and "Sample 4". The rows correspond to time intervals from 0 to 20 minutes. The temperatures are as follows: at 0 minutes, all samples are at 20°; at 5 minutes, Sample 1 is at 50°, Sample 2 at 50°, Sample 3 at 50°, and Sample 4 at 1°; at 10 minutes, Sample 1 is at 70°, Sample 2 at 80°, Sample 3 at 80°, and Sample 4 at 40°; at 15 minutes, Sample 1 is at 70°, Sample 2 at 80°, Sample 3 at 90°, and Sample 4 at 70°; at 20 minutes, Sample 1 is at 90°, Sample 2 at 90°, Sample 3 at 110°, and Sample 4 at 70°.
++The table includes columns for "Time (min)", "Sample 1", "Sample 2", "Sample 3", and "Sample 4". The rows correspond to time intervals from 0 to 20 minutes. The temperatures are as follows: at 0 minutes, all samples are at 20°C; at 5 minutes, Sample 1 is at 30°C, Sample 2 at 50°C, Sample 3 at 50°C, and Sample 4 at 1°C; at 10 minutes, Sample 1 is at 50°C, Sample 2 at 70°C, Sample 3 at 90°C, and Sample 4 at 5°C; at 15 minutes, Sample 1 is at 70°C, Sample 2 at 80°C, Sample 3 at 100°C, and Sample 4 at 70°C; at 20 minutes, Sample 1 is at 90°C, Sample 2 at 90°C, Sample 3 at 110°C, and Sample 4 at 70°C.
+ </figure>

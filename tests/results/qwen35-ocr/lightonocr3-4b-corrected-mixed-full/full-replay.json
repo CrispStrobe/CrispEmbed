@@ -1,0 +1,58 @@
+{
+  "schema": "lighton4b-corrected-mixed-bf16-full-replay/v1",
+  "status": "compared",
+  "stage": "compare177-original-prefix-rows-and-independent-generation",
+  "native_forward_executed_by_comparer": false,
+  "original_forward_executed": false,
+  "quality_qualified": false,
+  "held_out_calibration": false,
+  "exploratory_observed_form_only": true,
+  "worker_timeout_seconds": 1200,
+  "comparer_source_sha": "957eb951387976fe8beef921eea83d812f89e607",
+  "requested_native": {
+    "run": "42109519607",
+    "source": "189fc91bb1cc3a49ec918c804c30d072135546af",
+    "artifact_id": "13457482504",
+    "artifact_sha256": "24aad9c72f67d645d705d2b45bf09b7260f144ff5d785a8856fb35046cb7b7aa",
+    "producer_report_sha256": "2853afb5518c283f6eea356208c7f034a3c7b2e1ed56bfe61b62eab757303ee8",
+    "normalized_receipt_sha256": "d61d995ae773e0b9ccf687a5343731ee1f99c701044bd5fd12ef3207f6195eab",
+    "weights_sha256": "d2eb57d1f98d5c455f46f95b6c6095f38521df19927d486848b668222e9fc474"
+  },
+  "preflight": {
+    "load_average": [
+      0.47119140625,
+      0.1123046875,
+      0.03662109375
+    ],
+    "available_memory_bytes": 15698399232,
+    "swap_total_bytes": 3221221376,
+    "swap_free_bytes": 3221221376,
+    "scratch_free_bytes": 91548831744,
+    "output_free_bytes": 91548831744
+  },
+  "actual_ref_equal_changed_tampered_controls_passed": true,
+  "comparison_returncode": 1,
+  "native_admission": {
+    "capture_sha256": "d61d995ae773e0b9ccf687a5343731ee1f99c701044bd5fd12ef3207f6195eab",
+    "source_sha": "189fc91bb1cc3a49ec918c804c30d072135546af",
+    "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42109519607",
+    "weights_sha256": "d2eb57d1f98d5c455f46f95b6c6095f38521df19927d486848b668222e9fc474",
+    "precision": "lighton4b-q4k-mixers-q8-v1"
+  },
+  "producer_report_sha256": "2853afb5518c283f6eea356208c7f034a3c7b2e1ed56bfe61b62eab757303ee8",
+  "normalized_receipt_sha256": "d61d995ae773e0b9ccf687a5343731ee1f99c701044bd5fd12ef3207f6195eab",
+  "normalized_receipt_origin": "comparer-derived, not producer-authored",
+  "native_artifact": {
+    "id": 13457482504,
+    "digest": "sha256:24aad9c72f67d645d705d2b45bf09b7260f144ff5d785a8856fb35046cb7b7aa",
+    "size_in_bytes": 437001835,
+    "expires_at": "2027-02-03T21:06:10Z"
+  },
+  "original_capture_sha256": "170bc06c8b5e929e45d334a5eadc284024f4265b2549f2feddb46607cb49251a",
+  "original_provider": {
+    "service": "Kaggle",
+    "kernel_slug": "lightonocr-4b-bf16-cpu-capture-v1",
+    "version_label": "v1"
+  },
+  "protocol_sha256": "4d2a738a8df75947f5a8e269799c8b3a27af19bfafb82653802a7531b7c928bc"
+}

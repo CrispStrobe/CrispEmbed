@@ -1,0 +1,3 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+INVENTORY_RAW_AUDIT PASS files=304 rows=911

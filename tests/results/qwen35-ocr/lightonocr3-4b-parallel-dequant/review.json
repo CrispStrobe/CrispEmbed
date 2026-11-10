@@ -1,0 +1,19 @@
+{
+  "schema": "lighton4b-parallel-dequant-review/v1",
+  "controls_run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42164147108",
+  "controls_source_sha": "35cf71ec1616c128f7079356a3b24d57521f52a6",
+  "native_run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42164504290",
+  "native_source_sha": "37beb2e4abd14bc855a9ed7e371d3cc676ca581c",
+  "artifact_id": 13478327948,
+  "archive_bytes": 157283663,
+  "archive_service_sha256": "c11a05c62bca38879685b994dff09915a22a245b5a93b6925b63f51c2ffea624",
+  "report_sha256": "6591c65984568f6509d7743539b43dd9d689b86454e4117ccebb2311122526e1",
+  "transport_review": "selected ZIP members CRC+SHA checked via19910 range bytes; full archive SHA service-declared",
+  "all76_emitted_artifacts_byte_exact": true,
+  "isolated_speed_effect_proven": false,
+  "reason": "serial-first ordering/cache warmth uncontrolled; one worker measurement",
+  "full_decoded_quality_tested": false,
+  "quality_qualified": false,
+  "gate_default": "off",
+  "portability_amendment": "Subsequent nonpthread WASM compile exclusion changes no Linux path; separately unbuilt on WASM."
+}

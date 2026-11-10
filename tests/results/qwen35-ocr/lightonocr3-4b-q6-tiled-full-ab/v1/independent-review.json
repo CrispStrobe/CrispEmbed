@@ -1,0 +1,99 @@
+{
+  "report_sha256": "f5d0077052b907e2d674caef9e7c4ae09b08456ff48a79f327cbdfd030b2dcc9",
+  "selected_owned_files": [
+    "CMakeCache.txt",
+    "test-lighton4b-physical-q6-tiled.log",
+    "physical-pack.json",
+    "simple_table/on/generated.ids",
+    "simple_table/on/native-summary.json",
+    "simple_table/on/generated.txt",
+    "simple_table/off/generated.ids",
+    "simple_table/off/native-summary.json",
+    "simple_table/off/generated.txt",
+    "simple_form/on/generated.ids",
+    "simple_form/on/native-summary.json",
+    "simple_form/on/generated.txt",
+    "simple_form/off/generated.ids",
+    "simple_form/off/native-summary.json",
+    "simple_form/off/generated.txt",
+    "simple_table/off/prefill.logits.f32",
+    "simple_table/on/prefill.logits.f32",
+    "simple_form/off/prefill.logits.f32",
+    "simple_form/on/prefill.logits.f32"
+  ],
+  "cases": {
+    "simple_table": {
+      "off": {
+        "character_edits": 348,
+        "reference_codepoints": 607,
+        "word_edits": 97,
+        "reference_words": 106,
+        "tokens": 282,
+        "eos": true,
+        "firstscore_independent": {
+          "rms": 0.1888632879931308,
+          "max_abs": 1.0049972534179688,
+          "candidate_rms_magnitude": 1.8174113575800857,
+          "reference_rms_magnitude": 1.7855181153937745
+        }
+      },
+      "on": {
+        "character_edits": 337,
+        "reference_codepoints": 607,
+        "word_edits": 95,
+        "reference_words": 106,
+        "tokens": 282,
+        "eos": true,
+        "firstscore_independent": {
+          "rms": 0.1789086974547289,
+          "max_abs": 1.0068469047546387,
+          "candidate_rms_magnitude": 1.7995854602045764,
+          "reference_rms_magnitude": 1.7855181153937745
+        }
+      },
+      "upstream": {
+        "character_edits": 348,
+        "word_edits": 97
+      },
+      "observed_upstream_floor": true
+    },
+    "simple_form": {
+      "off": {
+        "character_edits": 194,
+        "reference_codepoints": 656,
+        "word_edits": 40,
+        "reference_words": 90,
+        "tokens": 167,
+        "eos": true,
+        "firstscore_independent": {
+          "rms": 0.12310144411346934,
+          "max_abs": 0.6701843738555908,
+          "candidate_rms_magnitude": 2.308213864540597,
+          "reference_rms_magnitude": 2.334931211486845
+        }
+      },
+      "on": {
+        "character_edits": 175,
+        "reference_codepoints": 656,
+        "word_edits": 45,
+        "reference_words": 90,
+        "tokens": 167,
+        "eos": true,
+        "firstscore_independent": {
+          "rms": 0.15279862425119997,
+          "max_abs": 0.6966017484664917,
+          "candidate_rms_magnitude": 2.2762844966791587,
+          "reference_rms_magnitude": 2.334931211486845
+        }
+      },
+      "upstream": {
+        "character_edits": 189,
+        "word_edits": 46
+      },
+      "observed_upstream_floor": true
+    }
+  },
+  "scope": "19 selected owned files plus six immutable reference files independently rehashed; raw text/IDs/cache/EOS and all four firstscore metrics independently reproduced. Other score/stage rows are remote and producer-guarded, not independently fully replayed.",
+  "reference_reports_and_four_reference_texts_hash_verified": true,
+  "firstscore_arrays_bytes_rehashed": 5959680
+}

@@ -1,0 +1,40 @@
+{
+  "report_sha256": "5da65561b9aec475eb24c1481e4cad2cce27a60dd72fc386bacd26476bef50b3",
+  "source": "991fa04b0278c58919e3dc9c064fceca40b6db1e",
+  "selected_owned_files": [
+    "physical-pack.json",
+    "on/generated.ids",
+    "on/native-summary.json",
+    "on/generated.txt",
+    "on/prefill.logits.f32",
+    "off/generated.ids",
+    "off/native-summary.json",
+    "off/generated.txt",
+    "off/prefill.logits.f32"
+  ],
+  "all_selected_hashes_exact": true,
+  "ids_text_eos_reference_identity_exact": true,
+  "upstream_source_eos_probability_record_hash_verified": true,
+  "changed_gates": [
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED"
+  ],
+  "source_floor": "both six-ID EOS arms exactly match frozen BF16 and actual upstream text/IDs; 0/12 character edits,0/2 word edits",
+  "limits": "Selected files independently rehashed; complete score/stage arrays remain remote and producer-guarded.",
+  "firstscores": {
+    "off": {
+      "rms": 0.10923557955928694,
+      "max_abs": 0.6910920143127441,
+      "candidate_rms_magnitude": 2.050832326120342,
+      "reference_rms_magnitude": 2.0449446245200185
+    },
+    "on": {
+      "rms": 0.12773276000252465,
+      "max_abs": 0.7259259223937988,
+      "candidate_rms_magnitude": 2.073833707855288,
+      "reference_rms_magnitude": 2.0449446245200185
+    }
+  },
+  "three_firstscore_arrays_rehashed_bytes": 2979840
+}

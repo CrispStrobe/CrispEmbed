@@ -1,0 +1,24 @@
+{
+  "schema": "lighton4b-physical-f16-calibration-independent-review/v1",
+  "receipt_sha256": "7639d6559da7cc58443ccfbe1dac518af0d70f3e7a83718d037a97bb147eb2b7",
+  "same_actual_form_binary_bundle_and_gates": true,
+  "same_candidate_weights": true,
+  "small_artifacts_rehashed": [
+    "simple_table/generated.ids",
+    "simple_table/generated.txt",
+    "simple_table/native-summary.json",
+    "arabic_printed_line/generated.ids",
+    "arabic_printed_line/generated.txt",
+    "arabic_printed_line/native-summary.json"
+  ],
+  "raw_ids_and_utf8_exact_report_closure": true,
+  "teacher_manifest_counts": {
+    "simple_table": 222,
+    "arabic_printed_line": 6
+  },
+  "raw_teacher_rows_rehashed_independently": false,
+  "table_eos": false,
+  "table_cap_hit": true,
+  "arabic_eos": true,
+  "quality_qualified": false
+}

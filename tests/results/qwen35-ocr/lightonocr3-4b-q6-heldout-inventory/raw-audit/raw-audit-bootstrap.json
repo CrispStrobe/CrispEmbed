@@ -1,0 +1,17 @@
+{
+  "status": "complete",
+  "case": "inventory-table",
+  "model_forward_executed": false,
+  "model_acquisition": false,
+  "qualified": false,
+  "capacity": {
+    "MemAvailable": 32174247936,
+    "SwapTotal": 0,
+    "SwapFree": 0,
+    "cgroup_observed": 1,
+    "finite_cgroup_bounds": 1
+  },
+  "auditor_sha256": "cbd38cca098033b7354c464403be818b8f3f53eb1074ad94533e726af03edfd8",
+  "phase": "audit",
+  "elapsed_seconds": 56.584532257000035
+}

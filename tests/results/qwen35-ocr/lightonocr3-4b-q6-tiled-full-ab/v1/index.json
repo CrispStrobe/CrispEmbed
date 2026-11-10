@@ -1,0 +1,89 @@
+{
+  "raw_report_sha256": "f5d0077052b907e2d674caef9e7c4ae09b08456ff48a79f327cbdfd030b2dcc9",
+  "source": "8fcdf1f739fedf9ef3a068ad8028bc108ad5bc8a",
+  "service": "lighton4b-q6-tiled-full-ab-v1",
+  "service_version": 1,
+  "files": {
+    "q6-tiled-full-ab.json": {
+      "bytes": 272474,
+      "sha256": "f5d0077052b907e2d674caef9e7c4ae09b08456ff48a79f327cbdfd030b2dcc9"
+    },
+    "CMakeCache.txt": {
+      "bytes": 29117,
+      "sha256": "d42bb462b8037be4dd6e5652463aecdbe148d46993478f0a79300cc807573b1d"
+    },
+    "q6-tiled-full-ab-bootstrap.json": {
+      "bytes": 2121,
+      "sha256": "65f98acf2e09942fe5804becc06d452ded4d3053e8d41543a153cbdca64415e9"
+    },
+    "independent-review.json": {
+      "bytes": 3278,
+      "sha256": "cc7d03042976f646ee1af324740d2522a43306dbac20b8b30caae4477b2eac78"
+    },
+    "protocol.json": {
+      "bytes": 1063,
+      "sha256": "2696c6b1aee915a839043ead76ffbd4dec616c575f90b8b99008d8f72f511283"
+    },
+    "test-lighton4b-physical-q6-tiled.log": {
+      "bytes": 68,
+      "sha256": "406d8fc763654ed18ae54a066fa10e8eb857f95a2c6a39efe05b753fe10ee55e"
+    },
+    "physical-pack.json": {
+      "bytes": 483048,
+      "sha256": "920b4d5db276414bdd743fcc80a7ed1033ed1c0ca3b76859ef922aa667de9dee"
+    },
+    "simple_table/on/generated.ids": {
+      "bytes": 1190,
+      "sha256": "cd0958481dc624cf593aaf0587f498a142b794cee60f2db469d3e37f4bcd569a"
+    },
+    "simple_table/on/native-summary.json": {
+      "bytes": 365,
+      "sha256": "2d8232ac6350b1b9b3381a9570ac296c1c448bf7b5ff18a60f654dea07e1cc31"
+    },
+    "simple_table/on/generated.txt": {
+      "bytes": 844,
+      "sha256": "241c87cb147383595017e9756d9858b7138e31e5c042527df7664f09ae81921e"
+    },
+    "simple_table/off/generated.ids": {
+      "bytes": 1190,
+      "sha256": "0222b4da73df448eb0ca459d93ef4afbe1a30efbdfe74415e92c6ce693dac8e9"
+    },
+    "simple_table/off/native-summary.json": {
+      "bytes": 366,
+      "sha256": "c407df8aea6e5df9a913eb409ee174208ad9fb131a43a39a26912c0ac47b8e10"
+    },
+    "simple_table/off/generated.txt": {
+      "bytes": 841,
+      "sha256": "de2d84a59b6b02fc490ad00abb274f6614b94848587c527f24af20c1fe97a4cd"
+    },
+    "simple_form/on/generated.ids": {
+      "bytes": 774,
+      "sha256": "7b486f648aa28924ed517318ec42e4768cb4750ee35656a3a1ade902b4263049"
+    },
+    "simple_form/on/native-summary.json": {
+      "bytes": 367,
+      "sha256": "d9032801ac5298877ee9cbdd0c4fef61a20cb1380d7509966e535756f76aa97e"
+    },
+    "simple_form/on/generated.txt": {
+      "bytes": 657,
+      "sha256": "dd76fa10d0f4e6d2e6450523a3fc9a2e7cc3ba6690675d01fe38833313469909"
+    },
+    "simple_form/off/generated.ids": {
+      "bytes": 772,
+      "sha256": "913becba79db3d2541515ef9f06676db15e43540b4bbdfa13b70750236c91c82"
+    },
+    "simple_form/off/native-summary.json": {
+      "bytes": 368,
+      "sha256": "9c3716e3d88382f852d5a433ef10a30c25f39db76e853646a6cf8d94a1982e29"
+    },
+    "simple_form/off/generated.txt": {
+      "bytes": 640,
+      "sha256": "52ed7f960dd84ec4d86b146601bd962d08c6656413013a69361875a6f1fb905c"
+    }
+  },
+  "limits": [
+    "Large score and hidden arrays remain remotely retained.",
+    "Independent audit covers selected files and six first-score arrays, not every full greedy or hidden row.",
+    "Observed calibration cases only; no heldout qualification or shipping approval."
+  ]
+}

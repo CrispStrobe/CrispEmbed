@@ -1,0 +1,34 @@
+{
+  "schema": "lighton4b-attention-primitives-independent-review/v1",
+  "source_sha": "5f82c4d0abd7785d72f24e9b381930b1fe0ec683",
+  "report_sha256": "fa9ae86949ee15e475b41b35ae1ccc54b31f93957acf055e5a250d09302bdfe7",
+  "status": "measured_operator_only",
+  "actual_native_hidden_closed": true,
+  "actual_scalar_pooled_closed": true,
+  "observed_composed_exact_pairs": 8,
+  "independently_hashed_selected_stage_files": 37,
+  "independently_hashed_bytes": 9699328,
+  "independently_recomputed_n16_metrics": 26,
+  "all_hashes_and_metrics_exact": true,
+  "actual_native_pooled_vs_conditional_upstream_f16": {
+    "rms": 1.2278584221585953e-05,
+    "max_abs": 0.0006100237369537354
+  },
+  "native_f16_trait": {
+    "vec_dot": "ggml_vec_dot_f16_f32",
+    "vec_dot_type": "GGML_TYPE_F32",
+    "purpose": "CrispASR issue38 overflow protection; preserve globally"
+  },
+  "upstream_f16_trait": {
+    "vec_dot": "ggml_vec_dot_f16",
+    "vec_dot_type": "GGML_TYPE_F16",
+    "source_sha256": "a498026d9138c271de877e0f6b99805693c640e4c4c4c82f480e42578d3ab9b5"
+  },
+  "limits": [
+    "actual upstream hidden2 is not captured",
+    "same actual native Q/K/V conditional primitive comparison",
+    "batch4/16 only; tokenwise replay absent",
+    "no O projection/full model/decoded quality result",
+    "no production promotion or vendor changes"
+  ]
+}

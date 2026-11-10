@@ -1,0 +1,41 @@
+{
+  "schema": "lighton4b-native-smoke-review/v1",
+  "quality_qualified": false,
+  "original_internal_stages_available": false,
+  "source_sha": "fd150b98f488a6884a6e8d8127e7dfb263cab237",
+  "scope": "154 native prompt tokens,140 image tokens,one original-prefix vocabulary score,two independent greedy tokens; cap2/noEOS; no full document qualification",
+  "q8": {
+    "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999580781",
+    "artifact_id": 13401793576,
+    "archive_bytes": 109882190,
+    "github_declared_archive_sha256": "87fd8ff834a95de1971a4874a57b85141828b505198fe494b0a0c0d1c835ff42",
+    "receipt_sha256": "a949c71bc59b61d96778f2d324b7da104ea54f98004bf9e1100167dd7d16e3eb",
+    "range_read_bytes": 920414,
+    "generated_ids": [
+      27,
+      17251
+    ],
+    "decoded": "<figure",
+    "original_prefix_exact": true,
+    "peak_rss_bytes": 6316945408,
+    "wall_seconds": 127.69
+  },
+  "q4": {
+    "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41999584163",
+    "artifact_id": 13401573855,
+    "archive_bytes": 109858384,
+    "github_declared_archive_sha256": "e169ee5b88b035f3b1c768f35833670d23742b1492be56d3ca3766867ee4b942",
+    "receipt_sha256": "862f4be15fc64e9b14d4b26e5ee7862366435059fb0a828226bc351fae0607a1",
+    "range_read_bytes": 913076,
+    "generated_ids": [
+      20353,
+      29
+    ],
+    "decoded": "<table>",
+    "original_prefix_exact": false,
+    "first_decoded_difference_token": 0,
+    "peak_rss_bytes": 4516601856,
+    "wall_seconds": 133.35
+  },
+  "limits": "ZIP digests are GitHub API declarations; range-extracted members independently hashed and CRC-checked without downloading whole raw archives. Different hosted workers: timings diagnostic, no relative speed claim. Full score comparison and full independent generation pending; Q4 first-token failure retained."
+}
