@@ -21,7 +21,13 @@ import tempfile
 import unittest
 import xml.etree.ElementTree as ET
 
-import fitz
+try:
+    import fitz
+except ImportError:
+    if __name__ != "__main__":
+        import pytest
+        pytest.skip("requires python module: PyMuPDF (fitz)", allow_module_level=True)
+    raise
 from PIL import Image, ImageChops, ImageDraw, ImageStat
 from pypdf import PdfReader
 from pypdf.generic import ContentStream
