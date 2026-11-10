@@ -1,0 +1,440 @@
+{
+  "source_sha": "c2f71f7c28f838c3c0b5d2ae5461507e0503b606",
+  "branch": "feat/ocr-reviewed-pdf-readers",
+  "run_id": 42608270168,
+  "job_id": 129129705023,
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42608270168",
+  "conclusion": "failure",
+  "artifact": {
+    "id": 13670880404,
+    "name": "ocr-export-artifacts",
+    "sha256": "06af6291e68e4bbf044a1dd9d9460ff27e1cc16b68a1cdf1fa2f9bb2aa7a7b1e",
+    "bytes": 850798,
+    "retention_days": 7,
+    "download_digest_verified": true
+  },
+  "native_checks": {
+    "passed": 51,
+    "failed": 0
+  },
+  "verapdf": {
+    "validator": "veraPDF 1.30.2\nBuilt: Wed Jun 03 10:55:00 UTC 2026\nDeveloped and released by the veraPDF Consortium.\nFunded by the PREFORMA project.\nReleased under the GNU General Public License v3\nand the Mozilla Public License v2 or later.",
+    "profile": "2b",
+    "positive": [
+      {
+        "file": "archival-alpha.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "archival-gray.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "archival-jpeg.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "archival-rgb.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "archival-text.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-arabic.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-combining-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-hebrew.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-isolate.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-mapping-boundary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-marks.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-mixed-ltr.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-mixed-rtl.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-override.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      },
+      {
+        "file": "bidi-supplementary.pdf",
+        "exit_code": 0,
+        "compliant": true,
+        "failed_rules": []
+      }
+    ],
+    "negative": [
+      {
+        "file": "missing-output-intent.pdf",
+        "exit_code": 1,
+        "compliant": false,
+        "failed_rules": [
+          "<rule specification=\"ISO 19005-2:2011\" clause=\"6.2.4.3\" testNumber=\"2\" status=\"failed\" failedChecks=\"2\">\n            <description>DeviceRGB shall only be used if a device independent DefaultRGB colour space has been set when the DeviceRGB colour space is used, or if the file has a PDF/A OutputIntent that contains an RGB destination profile</description>\n            <object>PDDeviceRGB</object>\n            <test>gOutputCS != null &amp;&amp; gOutputCS == \"RGB \"</test>\n            <check status=\"failed\">\n              <context>root/document[0]/pages[0](11 0 obj PDPage)/contentStream[0](10 0 obj PDContentStream)/operators[4]/xObject[0](9 0 obj PDXImage)/imageCS[0]</context>\n              <errorMessage>DeviceRGB colour space is used without RGB output intent profile</errorMessage>\n            </check>\n            <check status=\"failed\">\n              <context>root/document[0]/pages[1](14 0 obj PDPage)/contentStream[0](13 0 obj PDContentStream)/operators[4]/xObject[0](12 0 obj PDXImage)/imageCS[0]</context>\n              <errorMessage>DeviceRGB colour space is used without RGB output intent profile</errorMessage>\n            </check>\n          </rule>\n        "
+        ]
+      },
+      {
+        "file": "missing-xmp.pdf",
+        "exit_code": 1,
+        "compliant": false,
+        "failed_rules": [
+          "<rule specification=\"ISO 19005-2:2011\" clause=\"6.6.2.1\" testNumber=\"1\" status=\"failed\" failedChecks=\"1\">\n            <description>The Catalog dictionary of a conforming file shall contain the Metadata key whose value is a metadata stream as defined in ISO 32000-1:2008, 14.3.2. The metadata stream dictionary shall contain entry Type with value /Metadata and entry Subtype with value /XML</description>\n            <object>PDDocument</object>\n            <test>containsMetadata == true</test>\n            <check status=\"failed\">\n              <context>root/document[0]</context>\n              <errorMessage>The document catalog dictionary doesn't contain metadata key or metadata stream dictionary does not contain either entry Type with value /Metadata or entry Subtype with value /XML</errorMessage>\n            </check>\n          </rule>\n        "
+        ]
+      }
+    ],
+    "missing_cases": [],
+    "errors": []
+  },
+  "extraction": [
+    {
+      "case": "arabic",
+      "source": "العربية",
+      "actual_text": "العربية",
+      "logical_actual_text_exact": true,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "العربية\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "Poppler": {
+          "extracted": "‫ةيبرعلا‬\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "pypdf": {
+          "extracted": "العربية",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        }
+      }
+    },
+    {
+      "case": "combining-boundary",
+      "source": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+      "actual_text": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+      "logical_actual_text_exact": true,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ \n123\n \nABC\n",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "Poppler": {
+          "extracted": "‫ַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַמ‬\nַַַַַַַַַַַַַַַ \n123\nABC\n\f",
+          "logical_text_exact": false,
+          "exit_code": 1,
+          "status": "failed",
+          "parsing_warnings": "Syntax Warning: Illegal entry in bfchar block in ToUnicode CMap\n"
+        },
+        "pypdf": {
+          "extracted": "מַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַַ 123 ABC",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        }
+      }
+    },
+    {
+      "case": "hebrew",
+      "source": "שלום",
+      "actual_text": "שלום",
+      "logical_actual_text_exact": true,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "שלום\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "Poppler": {
+          "extracted": "‫םולש‬\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "pypdf": {
+          "extracted": "שלום",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        }
+      }
+    },
+    {
+      "case": "isolate",
+      "source": "Report ⁧العربية 123⁩: ABC",
+      "actual_text": "Report ⁧العربية 123⁩: ABC",
+      "logical_actual_text_exact": true,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "Report ⁧العربية 123\n⁩: ABC\n",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "Poppler": {
+          "extracted": "Report ⁧ ‫ ةيبرعلا‬\n123 ⁩: ABC\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "pypdf": {
+          "extracted": "Report ⁧ العربية 123 ⁩: ABC",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        }
+      }
+    },
+    {
+      "case": "mapping-boundary",
+      "source": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+      "actual_text": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+      "logical_actual_text_exact": true,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "Poppler": {
+          "extracted": "‫𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀 אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא‬\n𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀\n\f",
+          "logical_text_exact": false,
+          "exit_code": 1,
+          "status": "failed",
+          "parsing_warnings": "Syntax Warning: Illegal entry in bfchar block in ToUnicode CMap\nSyntax Warning: Illegal entry in bfchar block in ToUnicode CMap\n"
+        },
+        "pypdf": {
+          "extracted": "אאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאאא 𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀𞤀",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        }
+      }
+    },
+    {
+      "case": "marks",
+      "source": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+      "actual_text": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+      "logical_actual_text_exact": true,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "مَرْحَبًا שָׁלוֹם ١٢٣ / \n42\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "Poppler": {
+          "extracted": "‫ םֹולָׁש اًبَحْرَم‬\n١٢٣\n / \n42\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "pypdf": {
+          "extracted": "مَرْحَبًا שָׁלוֹם ١٢٣ / 42",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        }
+      }
+    },
+    {
+      "case": "mixed-ltr",
+      "source": "Invoice 123: العربية / שלום (45) café é",
+      "actual_text": "Invoice 123: العربية / שלום (45) café é",
+      "logical_actual_text_exact": true,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "Invoice 123: العربية / שלום (45\n)\n café é\n",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "Poppler": {
+          "extracted": "Invoice 123:  ‫ ةيبرعلا‬/ ‫( םולש‬\n45\n)  café é\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "pypdf": {
+          "extracted": "Invoice 123: العربية / שלום (45)  café é",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        }
+      }
+    },
+    {
+      "case": "mixed-rtl",
+      "source": "العربية 123 ABC",
+      "actual_text": "العربية 123 ABC",
+      "logical_actual_text_exact": true,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "العربية 123\n \nABC\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "Poppler": {
+          "extracted": "‫ ةيبرعلا‬\n123\nABC\n\f",
+          "logical_text_exact": false,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "pypdf": {
+          "extracted": "العربية 123 ABC",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        }
+      }
+    },
+    {
+      "case": "override",
+      "source": "‮ABCD‬ 123",
+      "actual_text": "‮ABCD‬ 123",
+      "logical_actual_text_exact": true,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "‮\nABCD‬ \n123\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "Poppler": {
+          "extracted": "‫‮‬ ABCD‬ \n123\n\f",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "pypdf": {
+          "extracted": "‮ ABCD‬ 123",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        }
+      }
+    },
+    {
+      "case": "supplementary",
+      "source": "𞤀𞤢 123 ABC",
+      "actual_text": "𞤀𞤢 123 ABC",
+      "logical_actual_text_exact": true,
+      "readers": {
+        "PyMuPDF": {
+          "extracted": "𞤀𞤢 123\n \nABC\n",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "Poppler": {
+          "extracted": "𞤀𞤢 \n123\nABC\n\f",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        },
+        "pypdf": {
+          "extracted": "𞤀𞤢 123 ABC",
+          "logical_text_exact": true,
+          "exit_code": 0,
+          "status": "passed",
+          "parsing_warnings": ""
+        }
+      }
+    }
+  ],
+  "qualification": {
+    "archival": "All 15 positive PDF/A-2b cases passed independent validation; both damaged controls rejected.",
+    "reader_compatibility": "Failed. Logical text differs in 13 reader/case assertions. No broad bidirectional extraction acceptance.",
+    "limits": "This source predates the bounded document export patch. It is not mobile memory or large-job throughput proof."
+  },
+  "followup": [
+    "Match embedded glyph advances to uniform text matrices.",
+    "Keep nested bidirectional subtrees intact at neutral and numeric boundaries.",
+    "Limit ToUnicode tokens for legacy CMap parsers without reversing the logical Unicode.",
+    "Partition extreme combining clusters rather than overprint fragments.",
+    "Retain the strict Poppler CLI gate and add separate raw-word and PDFium diagnostics."
+  ]
+}

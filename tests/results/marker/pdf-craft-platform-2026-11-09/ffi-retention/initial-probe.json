@@ -1,0 +1,307 @@
+{
+  "schema_version": 1,
+  "kind": "bounded-local-apple-retention-compiler-control",
+  "source_commit_before": "9da573324e7fc15077bfa78daeecbed85f9fbebc",
+  "header_before_sha256": "caa6a791bbde03bf9c2a7b7fad4a3dc3a0b9fcd50c4fd0a1700b9c8bf8db1eec",
+  "header_after_sha256": "b179501794cc9092a8962ecae0c763ce016757f8ce66be5d0df727da6c9c4f93",
+  "compiler": [
+    "Debian clang version 19.1.7 (3+b1)",
+    "Target: x86_64-pc-linux-gnu",
+    "Thread model: posix"
+  ],
+  "checks": [
+    {
+      "name": "prior Apple declaration lacks no_dead_strip for unreferenced C ABI",
+      "passed": true
+    },
+    {
+      "name": "Apple used declaration emits no_dead_strip from the real header",
+      "passed": true
+    },
+    {
+      "name": "header preprocessor output identical: []",
+      "passed": false
+    },
+    {
+      "name": "header preprocessor output identical: ['-DCRISPEMBED_BUILD']",
+      "passed": false
+    },
+    {
+      "name": "header preprocessor output identical: ['-DCRISPEMBED_SHARED']",
+      "passed": false
+    },
+    {
+      "name": "header preprocessor output identical: ['-D_WIN32']",
+      "passed": false
+    },
+    {
+      "name": "header preprocessor output identical: ['-D_WIN32', '-DCRISPEMBED_BUILD']",
+      "passed": false
+    },
+    {
+      "name": "header preprocessor output identical: ['-D_WIN32', '-DCRISPEMBED_SHARED']",
+      "passed": false
+    },
+    {
+      "name": "generated FFI-only source inventories all 17 Marker APIs",
+      "passed": true
+    },
+    {
+      "name": "generated FFI-only source has no direct Marker function-call token",
+      "passed": false
+    },
+    {
+      "name": "generated idle JSON C literal retains correct escaping",
+      "passed": true
+    }
+  ],
+  "preprocessor_controls": [
+    {
+      "defines": [],
+      "before_sha256": "c265014529f3647762aee4873bc40e71072caf2ce899821d48db30301ea40c8b",
+      "after_sha256": "cb85a38ce774e5ad97375c3bba6e1efbc2bc7afd57c48d7cce00dd742f442ceb"
+    },
+    {
+      "defines": [
+        "-DCRISPEMBED_BUILD"
+      ],
+      "before_sha256": "744f5091853dd1fbf4c1862d5b1819b7bb9c765ce5f444686162eb2e367f2fc2",
+      "after_sha256": "ec36af424b3521dba805a5c6ae112100ec7891ca0788da71defdf77fbca98e5f"
+    },
+    {
+      "defines": [
+        "-DCRISPEMBED_SHARED"
+      ],
+      "before_sha256": "c265014529f3647762aee4873bc40e71072caf2ce899821d48db30301ea40c8b",
+      "after_sha256": "cb85a38ce774e5ad97375c3bba6e1efbc2bc7afd57c48d7cce00dd742f442ceb"
+    },
+    {
+      "defines": [
+        "-D_WIN32"
+      ],
+      "before_sha256": "c265014529f3647762aee4873bc40e71072caf2ce899821d48db30301ea40c8b",
+      "after_sha256": "cb85a38ce774e5ad97375c3bba6e1efbc2bc7afd57c48d7cce00dd742f442ceb"
+    },
+    {
+      "defines": [
+        "-D_WIN32",
+        "-DCRISPEMBED_BUILD"
+      ],
+      "before_sha256": "64a638e2aed04f7f75474d3d2ca0989750bcf1063d8502a7bd0aa0ee522f28ab",
+      "after_sha256": "ebe38df7b58e35c92140571d2f100e38e9fe3fc06d25cb8f23cb8d0b282da3c8"
+    },
+    {
+      "defines": [
+        "-D_WIN32",
+        "-DCRISPEMBED_SHARED"
+      ],
+      "before_sha256": "b912b94d40e2ae4af9a8bad01137e0f347378de48be7773d64b658f0735b6312",
+      "after_sha256": "8d052a6134f563c886f8e90cff84018e3a56c014e25dc62d004f8a47f65be89d"
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "show",
+        "HEAD:src/crispembed.h"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "--target=arm64-apple-ios15.0",
+        "-ffreestanding",
+        "-S",
+        "-O2",
+        "-x",
+        "c",
+        "<OUTPUT>/before/probe.c",
+        "-o",
+        "-"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "--target=arm64-apple-ios15.0",
+        "-ffreestanding",
+        "-S",
+        "-O2",
+        "-x",
+        "c",
+        "<OUTPUT>/after/probe.c",
+        "-o",
+        "-"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "<OUTPUT>/before/crispembed.h"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "<OUTPUT>/after/crispembed.h"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-DCRISPEMBED_BUILD",
+        "<OUTPUT>/before/crispembed.h"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-DCRISPEMBED_BUILD",
+        "<OUTPUT>/after/crispembed.h"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-DCRISPEMBED_SHARED",
+        "<OUTPUT>/before/crispembed.h"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-DCRISPEMBED_SHARED",
+        "<OUTPUT>/after/crispembed.h"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-D_WIN32",
+        "<OUTPUT>/before/crispembed.h"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-D_WIN32",
+        "<OUTPUT>/after/crispembed.h"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-D_WIN32",
+        "-DCRISPEMBED_BUILD",
+        "<OUTPUT>/before/crispembed.h"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-D_WIN32",
+        "-DCRISPEMBED_BUILD",
+        "<OUTPUT>/after/crispembed.h"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-D_WIN32",
+        "-DCRISPEMBED_SHARED",
+        "<OUTPUT>/before/crispembed.h"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "-E",
+        "-P",
+        "-x",
+        "c",
+        "-D_WIN32",
+        "-DCRISPEMBED_SHARED",
+        "<OUTPUT>/after/crispembed.h"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "<CLANG>",
+        "--version"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "passed": false,
+  "limits": "Clang Linux-hosted no-SDK Mach-O code generation and unchanged Linux/Windows preprocessing only. This is not actual Apple or Windows runtime execution. Actual Apple consumers must execute on hosted Apple jobs.",
+  "passed_count": 4,
+  "total_count": 11
+}

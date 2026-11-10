@@ -1,0 +1,235 @@
+{
+  "source_sha": "8021ca2603ba84f948057b30bb3adf88e1afd04a",
+  "runtime_source": "9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a",
+  "production_geometry_hashes_match_runtime": true,
+  "run_id": 42635475023,
+  "job_id": 129222355005,
+  "job_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42635475023/job/129222355005",
+  "conclusion": "success",
+  "scope": "Production public geometry on two retained photographs, independent pixel mapping and printed-page downstream Tesseract recognition. No newly observed capture, physical-device execution or native recognition-model qualification.",
+  "artifact": {
+    "id": 13684803885,
+    "bytes": 50148861,
+    "sha256": "b2566287c25d11745c55bdda2a46334a77a785e919a7d40b878a7a3b9f4de9fd",
+    "sha256_size_and_zip_crc_verified": true,
+    "expires_at": "2027-02-07T14:31:13Z"
+  },
+  "artifact_files": {
+    "geometry-controls.json": {
+      "bytes": 126,
+      "sha256": "4d4c31f9a98cd903c3c925b14e663b6ce34666c0d283891873a898e75dad79f1",
+      "retained_in_git": true
+    },
+    "phone-original.png": {
+      "bytes": 1419846,
+      "sha256": "0d279ba03a487f7df802e316805bbfeffd1fd9238a3e3251b16853c6b8acd8f6",
+      "retained_in_git": false
+    },
+    "phone-perspective-opencv.png": {
+      "bytes": 1207531,
+      "sha256": "dbb2e4b09a0e6b46dc3878019944e004484699fcc1af7248da514c78b5d98578",
+      "retained_in_git": false
+    },
+    "phone-perspective.png": {
+      "bytes": 1206233,
+      "sha256": "bfd82549f61e6fab320254387d9d48b0fdfc6047b7ad319d7593b91e14cca32f",
+      "retained_in_git": false
+    },
+    "phone_document-+0p0-prepared.png": {
+      "bytes": 1419846,
+      "sha256": "0d279ba03a487f7df802e316805bbfeffd1fd9238a3e3251b16853c6b8acd8f6",
+      "retained_in_git": false
+    },
+    "phone_document-+0p0.png": {
+      "bytes": 1419846,
+      "sha256": "0d279ba03a487f7df802e316805bbfeffd1fd9238a3e3251b16853c6b8acd8f6",
+      "retained_in_git": false
+    },
+    "phone_document-+6p7-prepared.png": {
+      "bytes": 1546733,
+      "sha256": "cabaa95d22b0d21f2e3575f35070aac3878b8eb7f87a0ea49b461f4d0c7e7cc2",
+      "retained_in_git": false
+    },
+    "phone_document-+6p7.png": {
+      "bytes": 1669539,
+      "sha256": "1b71aee65b12251c4da5596fde9634381c9c7d50d26952f29dca613e57fafc5f",
+      "retained_in_git": false
+    },
+    "phone_document--4p2-prepared.png": {
+      "bytes": 1523972,
+      "sha256": "86d93a06183af39d3a186c75c536acbec2ec32011b59ad31a114cecb68d03aa8",
+      "retained_in_git": false
+    },
+    "phone_document--4p2.png": {
+      "bytes": 1638599,
+      "sha256": "a512c112d28afeaff1b211d9ecd1eb29f6f5fdd2f42fddd2778dfa7189abe111",
+      "retained_in_git": false
+    },
+    "printed_page-+0p0-deskew-text.tsv": {
+      "bytes": 27001,
+      "sha256": "65046ea112a79b1b3e49be53eaa18668b471d4db97144e451a9425dada6a3095",
+      "retained_in_git": true
+    },
+    "printed_page-+0p0-deskew-text.txt": {
+      "bytes": 3028,
+      "sha256": "8090ee026c284df9ef9db724f7845e68549c6ab21b63b156c50a7637240fdeb0",
+      "retained_in_git": true
+    },
+    "printed_page-+0p0-prepared.png": {
+      "bytes": 4213080,
+      "sha256": "10fccfcd3146f0964a5008687b658a35ad35c74e00b59aa89bd93197f1b86257",
+      "retained_in_git": false
+    },
+    "printed_page-+0p0-raw-text.tsv": {
+      "bytes": 26976,
+      "sha256": "ed7ca17aff2092fe06de72357fbf992140bbda18d67df87e6041a07e9c497174",
+      "retained_in_git": true
+    },
+    "printed_page-+0p0-raw-text.txt": {
+      "bytes": 3038,
+      "sha256": "9deb34e73b81e031a49089adaebb97a1a9270c660cb2e961e60f345fe12a44c8",
+      "retained_in_git": true
+    },
+    "printed_page-+0p0-whitened-text.tsv": {
+      "bytes": 27012,
+      "sha256": "a200e1f9d45831700702f905486f095aaa26746edff75a40ff8d75a9286d483d",
+      "retained_in_git": true
+    },
+    "printed_page-+0p0-whitened-text.txt": {
+      "bytes": 3033,
+      "sha256": "0bcf76970342f789733989df32b8820d95b81b275802da19216c163f8f156664",
+      "retained_in_git": true
+    },
+    "printed_page-+0p0-whitened.png": {
+      "bytes": 2753273,
+      "sha256": "2625735a233aa846180fcf00692e13317cae0a22a2c4f9148540956e9e31a14d",
+      "retained_in_git": false
+    },
+    "printed_page-+0p0.png": {
+      "bytes": 4360828,
+      "sha256": "26d38c99f0b6c9b22d48bdcc938d64e8665f95491a48d259860bb07aa8add847",
+      "retained_in_git": false
+    },
+    "printed_page-+6p7-deskew-text.tsv": {
+      "bytes": 27111,
+      "sha256": "1a27908f441cca48b250533768748f1bd8f0c3e440434f0017d4a459d9f93d55",
+      "retained_in_git": true
+    },
+    "printed_page-+6p7-deskew-text.txt": {
+      "bytes": 3035,
+      "sha256": "4e367614b0a2df07b1508f69a6c744564ed28fb9b87eb3ac22eb7be7f641d3f8",
+      "retained_in_git": true
+    },
+    "printed_page-+6p7-prepared.png": {
+      "bytes": 4838055,
+      "sha256": "308f8ab0955ed071fbf4f8e38c35dfcad2e9292fe5f9fe926a19a6aafe34631b",
+      "retained_in_git": false
+    },
+    "printed_page-+6p7-raw-text.tsv": {
+      "bytes": 12300,
+      "sha256": "b267549b6c4ddf1600886a3311084bea0042238e64622fa349571b87ef16bb23",
+      "retained_in_git": true
+    },
+    "printed_page-+6p7-raw-text.txt": {
+      "bytes": 1224,
+      "sha256": "06dfb6a46933f0484a0b6fa595bdd863d88feb434da5f883aaeccbaa7332b0b6",
+      "retained_in_git": true
+    },
+    "printed_page-+6p7-whitened-text.tsv": {
+      "bytes": 27147,
+      "sha256": "c2a5352f23d9ad37a9037b8d939d437958ab8d399fec4e3ce38921e4935c6b54",
+      "retained_in_git": true
+    },
+    "printed_page-+6p7-whitened-text.txt": {
+      "bytes": 3033,
+      "sha256": "144f06dbf4240721cdcfffa214e7c5e1c7f59c746086fab28e1fe0c739191a04",
+      "retained_in_git": true
+    },
+    "printed_page-+6p7-whitened.png": {
+      "bytes": 3123496,
+      "sha256": "4a0f386d15548ad7040bdd36be6651b8f3858a40a95ec77d0477cf3088a61484",
+      "retained_in_git": false
+    },
+    "printed_page-+6p7.png": {
+      "bytes": 5116717,
+      "sha256": "82205eed2b664853cee5677b88f7b7d8845ab904b14006db3085cf9f5117bace",
+      "retained_in_git": false
+    },
+    "printed_page--4p2-deskew-text.tsv": {
+      "bytes": 27148,
+      "sha256": "32875fb2b43fc8c972d39f756e3350e8d615e48992f3688331dda1aa1c86ca02",
+      "retained_in_git": true
+    },
+    "printed_page--4p2-deskew-text.txt": {
+      "bytes": 3036,
+      "sha256": "0da968a94a51bf222ec12d6dfe2a216c9d52a2c7c51d1845899193361dbff513",
+      "retained_in_git": true
+    },
+    "printed_page--4p2-prepared.png": {
+      "bytes": 4701449,
+      "sha256": "bcde8f7196d67cd6be717ffff46c016ffa2000a284182a751f0e80e1ca69b324",
+      "retained_in_git": false
+    },
+    "printed_page--4p2-raw-text.tsv": {
+      "bytes": 24283,
+      "sha256": "d78381ee1701f65e5a8df3ab0af5ea0101fa439d306aa2b8f4006072aae0b287",
+      "retained_in_git": true
+    },
+    "printed_page--4p2-raw-text.txt": {
+      "bytes": 2701,
+      "sha256": "f4d06d688b778db755b65a6f738d5bf92938dc5d3a7ce25cf4ddafc4e6368504",
+      "retained_in_git": true
+    },
+    "printed_page--4p2-whitened-text.tsv": {
+      "bytes": 27089,
+      "sha256": "40179f65e0efd5fcfdad3018ef96e01805e676509da2921ad321cadc18486418",
+      "retained_in_git": true
+    },
+    "printed_page--4p2-whitened-text.txt": {
+      "bytes": 3036,
+      "sha256": "0377b08ab163a1a6da14a321dbd7675bd1a31253271d3aaa1646c3652163c8a2",
+      "retained_in_git": true
+    },
+    "printed_page--4p2-whitened.png": {
+      "bytes": 3031173,
+      "sha256": "9fc9f85868968a007dd53b78533a0e00ae824b8ff56ab4e2038a22094d8385ab",
+      "retained_in_git": false
+    },
+    "printed_page--4p2.png": {
+      "bytes": 4990503,
+      "sha256": "3e116ec465f0452fd31e53d55867067e08a0ebc47674d277d93b3dcfa449bdfd",
+      "retained_in_git": false
+    },
+    "reader-model-hashes.txt": {
+      "bytes": 236,
+      "sha256": "844121496cc3e4e8f7eb419c3d65deb8f72e063e8818f299345aeb34494fc6af",
+      "retained_in_git": true
+    },
+    "report.json": {
+      "bytes": 37234,
+      "sha256": "6a20cb7a17c569c8cb694e2bf546615560760068d0a2574f6006cab68937340c",
+      "retained_in_git": true
+    },
+    "source.txt": {
+      "bytes": 41,
+      "sha256": "a67c0809737663c6eb3717dbe5d01d831111f39660b5e2ede2f6e3f5d816e439",
+      "retained_in_git": true
+    }
+  },
+  "independent_download_audit": {
+    "source_commit_and_nine_source_hashes": true,
+    "all_nine_text_and_tsv_hashes": true,
+    "original_phone_png_matches_original_decoded_rgb": true,
+    "perspective_png_digest_and_reported_mae_p99_recomputed": true,
+    "original_fixture_hashes_and_ground_truth_retained": true,
+    "source_photograph_and_prepared_outputs_visually_inspected": true
+  },
+  "initial_artifact_limit": "This 8021 test asserted full-frame identity successfully but did not preserve its identity PNG. The later fe0 test retains identity geometry/PNG even on a failed identity assertion; that later execution remains separate.",
+  "interpretation": [
+    "Added rotation recovery does not establish the original physical camera angle.",
+    "The historical Fraktur/manuscript photo has no invented OCR text score.",
+    "Whitening was predeclared for the prepared arm; all raw and deskew-only output is retained.",
+    "Whitening slightly worsens this already readable printed page and is not promoted to an automatic always-on step.",
+    "All full-resolution image arms remain in the hashed hosted artifact; exact text/TSV/report evidence is also retained in git."
+  ]
+}

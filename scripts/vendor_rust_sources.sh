@@ -62,8 +62,10 @@ copy_tracked() {   # $1 = git dir, $2 = destination prefix, rest = pathspecs
         | tar -C "$vendor/$prefix" -xf -
 }
 
-copy_tracked "$repo_root" ""      CMakeLists.txt VERSION LICENSE NOTICE.marker NOTICE.teleocr \
+copy_tracked "$repo_root" ""      CMakeLists.txt VERSION LICENSE NOTICE.marker NOTICE.teleocr NOTICE.sheenbidi \
     models/licenses/apache-2.0/LICENSE licenses/oxr-LICENSE licenses/oxr-NOTICE cmake src examples
+# The OCR PDF Unicode engine is compiled directly into the native target.
+copy_tracked "$repo_root" ""      vendor/sheenbidi
 # Sources only from tests/ and tools/ — their fixtures/models are the 33 MB we
 # must not ship. `:(glob)` so nested directories are matched too.
 for ext in cpp cc c h hpp; do
@@ -79,6 +81,7 @@ for required in CMakeLists.txt VERSION LICENSE NOTICE.marker NOTICE.teleocr \
     models/licenses/apache-2.0/LICENSE licenses/oxr-LICENSE licenses/oxr-NOTICE \
     cmake/MarkerIdentity.cmake src/marker_artifact.h src/marker_artifact.cpp \
     tests/test-marker-artifact.cpp tests/test-marker-lifecycle.cpp tests/marker_pdfium_fixture.cpp \
+    vendor/sheenbidi/Source/SheenBidi.c vendor/sheenbidi/LICENSE NOTICE.sheenbidi \
     ggml/CMakeLists.txt; do
     if [ ! -f "$vendor/$required" ]; then
         echo "error: vendored tree is incomplete — missing $required" >&2

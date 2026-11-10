@@ -1,0 +1,296 @@
+{
+  "kind": "marker-installed-linux-wheel",
+  "source_sha256": {
+    "tests/test_marker_installed_wheel.py": "e5037c481b3a3e7ac85909a28690e51c17646d8bccaf9f73670c5be4430f2d17",
+    "tests/test_marker_real_pdf.py": "863072769c79191756e1979877e7a9a7dbfbd7b9ef90a5c5a9845c16100cbcb8",
+    "python/setup.py": "7d4f171378b8e55824a6a381fec2c2060e9012b2724862bb736812772b3cd607",
+    "python/pyproject.toml": "dba8c38142bf0e6209e33d9a7d94a2ebc36d5bc0a5b36614a2838500c6958077",
+    "python/MANIFEST.in": "3eadb6e9c822c42c936419f70163f98cd2dda28bfe457a7f5b6962778f14ea90",
+    "python/crispembed/_binding.py": "fae270e63eeccbb161396393314899a116dbd375534b463b6b42d2d4d977d7e8",
+    "python/crispembed/_marker.py": "dbba4c60926c931ffec8f9092ddb4a61a860e9cbfe1c4075d93ddb6a88756c9d"
+  },
+  "source_commit": "9c2ac509fbefa20a2069307daecf1ce678f9e69b",
+  "python_version": "3.12.14",
+  "checks": [
+    {
+      "name": "prefix contains CrispEmbed and all three GGML families",
+      "passed": true
+    },
+    {
+      "name": "build-wheel exits successfully",
+      "passed": true
+    },
+    {
+      "name": "one platform wheel produced",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: libcrispembed.so.0",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: libcrispembed.so",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: libcrispembed.so.0.17.16",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: libggml-cpu.so.0",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: libggml-cpu.so.0.17.0",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: libggml.so",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: libggml-base.so",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: libggml.so.0",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: libggml-cpu.so",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: libggml-base.so.0",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: libggml.so.0.17.0",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: libggml-base.so.0.17.0",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: NOTICE.marker",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: NOTICE.teleocr",
+      "passed": true
+    },
+    {
+      "name": "wheel exact bytes: Apache-2.0.txt",
+      "passed": true
+    },
+    {
+      "name": "create-venv exits successfully",
+      "passed": true
+    },
+    {
+      "name": "install-wheel exits successfully",
+      "passed": true
+    },
+    {
+      "name": "installed-location exits successfully",
+      "passed": true
+    },
+    {
+      "name": "binding actually installed in the consumer venv",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: libcrispembed.so.0",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: libcrispembed.so",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: libcrispembed.so.0.17.16",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: libggml-cpu.so.0",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: libggml-cpu.so.0.17.0",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: libggml.so",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: libggml-base.so",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: libggml.so.0",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: libggml-cpu.so",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: libggml-base.so.0",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: libggml.so.0.17.0",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: libggml-base.so.0.17.0",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: NOTICE.marker",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: NOTICE.teleocr",
+      "passed": true
+    },
+    {
+      "name": "installed exact bytes: Apache-2.0.txt",
+      "passed": true
+    },
+    {
+      "name": "installed-real-pdf exits successfully",
+      "passed": true
+    },
+    {
+      "name": "actual installed lifecycle and loaded dependency provenance pass",
+      "passed": true
+    },
+    {
+      "name": "packaging and probe sources unchanged during execution",
+      "passed": true
+    }
+  ],
+  "commands": [
+    {
+      "label": "build-wheel",
+      "command": [
+        "<PYTHON_RUNTIME>/bin/python3",
+        "setup.py",
+        "bdist_wheel",
+        "--dist-dir",
+        "<WORK>/wheelhouse"
+      ],
+      "returncode": 0
+    },
+    {
+      "label": "create-venv",
+      "command": [
+        "<PYTHON_RUNTIME>/bin/python3",
+        "-m",
+        "venv",
+        "--system-site-packages",
+        "--without-pip",
+        "<WORK>/consumer-venv"
+      ],
+      "returncode": 0
+    },
+    {
+      "label": "install-wheel",
+      "command": [
+        "<PYTHON_RUNTIME>/bin/python3",
+        "-m",
+        "pip",
+        "--python",
+        "<WORK>/consumer-venv/bin/python",
+        "install",
+        "--no-index",
+        "--no-deps",
+        "<WORK>/wheelhouse/crispembed-0.17.16-cp312-cp312-linux_x86_64.whl"
+      ],
+      "returncode": 0
+    },
+    {
+      "label": "installed-location",
+      "command": [
+        "<WORK>/consumer-venv/bin/python",
+        "-I",
+        "-c",
+        "from pathlib import Path; import crispembed; print(Path(crispembed.__file__).resolve().parent)"
+      ],
+      "returncode": 0
+    },
+    {
+      "label": "installed-real-pdf",
+      "command": [
+        "<WORK>/consumer-venv/bin/python",
+        "-I",
+        "-B",
+        "<REPOSITORY>/tests/test_marker_real_pdf.py",
+        "--installed-package",
+        "--lib",
+        "<WORK>/consumer-venv/lib/python3.12/site-packages/crispembed/libcrispembed.so",
+        "--pdfium",
+        "<PDFIUM>",
+        "--out",
+        "<OUTPUT>/real-pdf"
+      ],
+      "returncode": 0
+    }
+  ],
+  "packages": {
+    "setuptools": "84.2.1",
+    "wheel": "0.48.0",
+    "numpy": "2.3.5",
+    "pypdfium2": "5.14.0"
+  },
+  "scope": "Locally built Linux wheel and real PDF lifecycle; no manylinux, release, OCR or model qualification.",
+  "environment": {
+    "library_path_overrides_removed": true,
+    "isolated_consumer_python": true,
+    "venv_system_packages": true,
+    "network_or_publication_used": false
+  },
+  "pdfium_sha256": "fd4de9f91f183476d04b1bc3fd17dacd95aba349c55d2c376512d95e082b441e",
+  "native_files_sha256": {
+    "libcrispembed.so": "6d3a813e08862ce280265310e2d1d1b8c039dee02d42415c271d3b287838b32a",
+    "libcrispembed.so.0": "6d3a813e08862ce280265310e2d1d1b8c039dee02d42415c271d3b287838b32a",
+    "libcrispembed.so.0.17.16": "6d3a813e08862ce280265310e2d1d1b8c039dee02d42415c271d3b287838b32a",
+    "libggml-base.so": "b50feae95ae85003014be8eb59ac1049106859210aad3db79247dfc666a03464",
+    "libggml-base.so.0": "b50feae95ae85003014be8eb59ac1049106859210aad3db79247dfc666a03464",
+    "libggml-base.so.0.17.0": "b50feae95ae85003014be8eb59ac1049106859210aad3db79247dfc666a03464",
+    "libggml-cpu.so": "9e3525d8d69594a84ab53b4b86eb8e3cfd9bed523af9e5c5178bf7da86231ca4",
+    "libggml-cpu.so.0": "9e3525d8d69594a84ab53b4b86eb8e3cfd9bed523af9e5c5178bf7da86231ca4",
+    "libggml-cpu.so.0.17.0": "9e3525d8d69594a84ab53b4b86eb8e3cfd9bed523af9e5c5178bf7da86231ca4",
+    "libggml.so": "369de8090d3ee60b0aa84f223d4b6f53fc55a53b1a4f5d12495a4b5d132b54be",
+    "libggml.so.0": "369de8090d3ee60b0aa84f223d4b6f53fc55a53b1a4f5d12495a4b5d132b54be",
+    "libggml.so.0.17.0": "369de8090d3ee60b0aa84f223d4b6f53fc55a53b1a4f5d12495a4b5d132b54be"
+  },
+  "notices_sha256": {
+    "NOTICE.marker": "f4bb1277697be95bac2ded2126f1a89e13c9c1b12db71d9549f3f00fe9c05d50",
+    "NOTICE.teleocr": "839a413b743d1aa53e415774982065c1c195db1c96d82265f76dd5395970af1b",
+    "Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  "wheel": {
+    "filename": "crispembed-0.17.16-cp312-cp312-linux_x86_64.whl",
+    "bytes": 19404409,
+    "sha256": "ffc210022566e4f797d0674e7c7784076d6a599b6a5be6ddc19fa082795195d2"
+  },
+  "lifecycle": {
+    "passed": true,
+    "checks": 51,
+    "receipt_sha256": "48848f3102cabdfd92e3181ed424f9ceeeb52f49299201f81496b5edf9597290"
+  },
+  "passed": true,
+  "passed_count": 40,
+  "total_count": 40,
+  "logs_sha256": {
+    "install-wheel.log": "0913cc793c2af8a69a209308932e0aa933e3347937f36a50ace6b36aa95f7dbb",
+    "build-wheel.log": "30f11c395fd106776245cd5072da12d465492353cff93b48a74ebbe769756e2a",
+    "create-venv.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "installed-real-pdf.log": "316b95ed8e43bb2740ba9b2f206faa60c08e9e70ef5407f9fa69ecf030cd2404",
+    "installed-location.log": "39db278291657301ace7a122b405d1bf6f5fd30a7e36969437f5ab38c0b00421"
+  }
+}

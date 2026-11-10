@@ -1,0 +1,292 @@
+# Reviewed searchable and archival PDF exports
+
+The document renderer preserves the supplied page image, overlays invisible
+Unicode text, and scales both into the caller's physical page dimensions.
+Reviewed text is supplied in logical reading order. Existing C structures and
+legacy entry points keep their layouts and compatibility defaults.
+
+The immutable source `9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a` passes
+the [bounded writer, scalar Unicode and archival job](../tests/results/ocr-render/writer-9c44a69.json)
+and the [actual Windows Unicode path job](../tests/results/ocr-render/windows-9c44a69.json).
+This qualifies those native components for a matching application build.
+It does not qualify general bidirectional extraction, every reader's search,
+mobile performance, or the complete application. The
+[strict reader-limit job](../tests/results/ocr-render/reader-limits-9c44a69.json)
+finishes with its six unchanged strict failures and the independently reproduced
+full-scalar search failure; those results remain separate and visible.
+
+## Explicit options and capabilities
+
+`crispembed_ocr_render_capabilities()` advertises PDF `1`, Unicode mappings `2`,
+decoded raster images `4`, PDF/A-2b `8`, and a bounded synchronous writer `32`
+(mask `47`). Bit `16` is reserved for bidirectional export and is withheld
+while strict reader failures remain. Applications must keep that option
+unavailable until a qualified source advertises it. The experimental native
+option remains available to the independent qualification lane.
+
+Call `ocr_render_set_pdf_bidi(renderer, 1)` before `ocr_render_begin()` to exercise
+Unicode 17 paragraph analysis and visual run positioning. With that option
+disabled, the earlier explicit rejection of RTL text remains available as the
+compatibility control. This is a per-renderer setting, without process-wide
+environment changes or recognition-model loads.
+
+Rust callers use `ocr_render_pages_checked_with_options(pages, format, pdfa,
+sizes, bidi)`. Older checked functions keep `bidi=false`. A matching native
+library is required; mixing new Rust declarations with a released old binary
+is unsupported. The application should query capabilities before exposing
+these options and use the binary-safe length/byte APIs.
+
+Ordinary LTR text retains its original scalar encoding even when the
+experimental bidi option is enabled. Exact `ToUnicode` maps are sufficient
+for these scalars; redundant `ActualText` was removed because PDFium's
+replacement-text path can discard supplementary characters before extraction.
+The upstream [PDFium text-page implementation](https://pdfium.googlesource.com/pdfium/+/refs/heads/main/core/fpdftext/cpdf_textpage.cpp)
+contains that filter in `ProcessMarkedContent`; the 9 November source audit
+records blob `c048ba3a8bdce5aa5e018eb423913abe2b65cf37`.
+This distinction is checked with four independent readers, including actual
+character lists and search results rather than PDF metadata alone.
+
+The pinned [SheenBidi source](../vendor/sheenbidi/UPSTREAM.md) resolves Unicode
+paragraph levels before estimated wrapping, including embeddings, overrides,
+isolates, brackets, Arabic/Hebrew, mixed Latin text and numeric runs. Combining
+marks share their base's selection cell. Each run fragment has logical UTF-16
+`ActualText` and the same complete logical sequence in its `ToUnicode` mapping.
+It uses one invisible metric glyph per fragment, as PDF permits for ligatures,
+at the run's independently resolved visual rectangle. Nested directional
+subtrees retain their logical order. The embedded font contains an original
+geometric glyph with the required advance for each fragment, so its text
+matrix stays uniform; stretching a unit glyph can confuse readers' spacing
+heuristics. Mapping fragments contain at most 32 Unicode scalars and 63 UTF-16
+units, including supplementary pairs, to fit older readers' scalar arrays and
+256-character CMap token buffers as well as
+the 512-byte UTF-16BE limit in
+[ISO 32000-1 section 9.10.3](https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf),
+including supplementary pairs and combining clusters at that boundary. An
+extreme combining cluster split across mappings partitions its original cell
+without overprinting or discarding marks. A text object spans only a split
+base/mark cluster so its continuation inherits the base direction; unrelated
+fragments reset direction context, including space-prefixed Latin text.
+Paragraph separators remain in the
+logical text with zero selection width. The visible
+page is always the original supplied raster. Selection geometry remains an
+estimate within the supplied OCR region: the renderer does not recover fonts,
+typography or character boxes that were not supplied by recognition.
+
+## Archival declaration
+
+`ocr_render_set_pdfa(renderer, 1)` requests **PDF/A-2b**. The output includes
+embedded font resources, explicit Unicode mappings, an embedded generated
+sRGB ICC output intent, synchronized PDF/XMP producer and creator metadata,
+PDF/A part/conformance identification, and a document identifier. Images are
+decoded and flattened onto white before lossless RGB compression. The renderer
+does not make a PDF/UA or editable-document claim. Standard PDF output remains
+a separate option and does not carry an archival declaration.
+
+The sRGB profile is generated by `tools/generate_ocr_srgb.py` using LittleCMS
+through Pillow, with a fixed profile date and a calculated ICC profile ID.
+Neither LittleCMS, Pillow nor external system fonts are runtime dependencies.
+The original two-glyph font is generated by `tools/generate_ocr_font.py`;
+`src/ocr_pdf_metrics.h` builds its variable-advance counterpart for bidirectional
+runs. Both use original geometric outlines and contain no copied font program.
+The generated baseline resources are checked into native source.
+
+## Whole-document resource limits
+
+The byte-returning API assembles an in-memory PDF. Its hard ceilings are 5,000
+pages, 128 MiB of final output, 16 MiB of input text/geometry, 1 MiB per corrected
+text region, and 100,000 bidirectional run fragments. Each decoded image also
+retains the existing 256 MiB RGBA ceiling. `ocr_render_set_pdf_limits()` can
+lower the page/output ceilings after `begin()` and before the first page.
+`begin()` resets budgets for the next document. Exceeding any limit returns an
+explicit error and zero output; callers can export a smaller page selection or
+reduce image resolution. No partial PDF is returned.
+
+The serializer reserves the output once, releases object buffers as they are
+copied, and releases decoded RGB/compression buffers before storing each image
+stream. These limits prevent unbounded page accumulation; they are not a
+128 MiB peak-memory claim. One photo's decode/compression buffers, Unicode
+layout structures, the final PDF and the caller's copy still need working
+memory. These byte-API bounds do not establish a
+5,000-page native throughput qualification. The workspace history benchmark
+does not measure PDF export capacity. Hosted tests cover the configured page
+boundary, accumulated output/input rejection, region limits and successful
+recovery after a failed job.
+
+## Synchronous streaming writer
+
+`ocr_render_set_pdf_writer(renderer, callback, context, max_output_bytes)` is
+called after `begin()` and before the first page. The callback receives at
+most 64 KiB per call, synchronously during `end()`. Return zero only after
+consuming the complete slice; any nonzero value stops output. The renderer
+does not call the sink after a failure, access its context after `end()` returns, or
+populate the byte-returning output buffer. `begin()` clears the previous sink.
+The caller must not re-enter the renderer or throw through the C callback.
+
+The output ceiling is explicit and must be 4 KiB through 2 GiB. A caller with
+a 256 MiB mobile-provider limit selects 256 MiB. The renderer reserves object
+IDs, emits finalized bodies sequentially and records checked 64-bit xref
+offsets. It retains page/text/layout metadata plus the current page's
+decode/compression buffers; it does not accumulate the complete PDF. Existing
+page, input, per-region and image limits still apply. The final output cap is
+not a peak-memory guarantee.
+
+Rust uses `ocr_render_pdf_to_writer_checked(pages, pdfa, sizes, bidi,
+max_output_bytes, writer) -> std::io::Result<u64>`. It completes partial
+writes, returns the original I/O error unchanged (including `Interrupted` for
+cooperative cancellation), rejects zero progress with `WriteZero`, and catches
+callback panics before the C boundary. It flushes the writer before success.
+Any error can leave a partial destination: write to an atomic temporary file
+and publish only after successful rendering, flush and application durability
+checks. The application owns file close, synchronization and publication.
+
+The [writer qualification workflow](../.github/workflows/ocr-stream-writer.yml)
+tests the actual native renderer and the exact production Rust wrapper/FFI.
+It retains source-slice hashes and a real PDF larger than the legacy 128 MiB
+buffer ceiling under a 256 MiB limit. That larger PDF is a separate remote
+artifact; compact reports include its hash and measured resource use.
+Partial-output byte-limit rejection, callback errors, cancellation, short
+writes, zero progress, panic containment, flush errors and restart are explicit
+controls. The [complete-crate paired receipt](../tests/results/ocr-render/paired-crate-9c44a69.json)
+adds an actual application-linked observation at the same native source: all
+ten ordinary Rust writer contracts and all 70 native renderer checks pass.
+The separately retained short-write and two-page PDFs have exact logical text
+and physical dimensions in an independent MuPDF readback. That paired job
+later fails one application import fixture (54 of 55 workspace tests pass), so
+the complete desktop executable link and startup steps are skipped. This is
+complete-crate writer evidence, not a passing complete-application gate.
+
+## Independent acceptance gates
+
+The [OCR export artifact workflow](../.github/workflows/ocr-render.yml) compiles
+the model-free renderer on a hosted runner, retains actual PDFs and source
+images, and checks them with Poppler, MuPDF, pypdf and PDFium. Controls cover decoded
+image equality, page count and physical sizes, font subset boundaries, long
+corrections, supplementary Unicode, search geometry and mixed-direction text.
+fontTools independently decodes each embedded metric font and checks its
+whole-font checksum, CID advance widths and actual glyph bounds. Poppler's
+raw-word API is retained as a separate diagnostic; it does not replace the
+strict logical text comparison of its command-line extraction.
+Every bidi fixture retains its source, `ActualText`, all extracted strings and
+the complete PDF even when an assertion fails. Reader subprocesses also retain
+their last completed stage, exit code and stderr, so a native reader crash does
+not truncate later cases or the independent archival reports.
+
+The reader follow-up branch also retains an intermediate fix for redundant
+font selection: some extractors flush a directional text buffer on every `Tf`
+operator even when the font is unchanged. The final run-fragment encoding
+avoids per-character font selections entirely and tests the `ToUnicode`
+fallback with `ActualText` removed from marked/supplementary samples. Initial
+baseline and follow-up source refs remain separate for independent comparison;
+no pending reader result is described as a pass.
+
+The workflow installs **veraPDF 1.30.2** from the official release archive with
+a pinned SHA-256, then explicitly validates **2b**. The XML report is checked
+for the declared profile and actual compliance; process exit alone cannot
+pass the gate. Negative controls remove the output intent or XMP key without
+changing xref offsets and must fail independent validation. Reports retain
+every failed rule. The installer and report handling follow the official
+[installation](https://docs.verapdf.org/install/) and
+[validation](https://docs.verapdf.org/cli/validation/) documentation.
+
+The [initial baseline receipt](../tests/results/ocr-render/baseline-87357610.json)
+retains the failed source and artifact digest. Its 51 native checks and five
+archival image/text preservation cases passed, but all three readers reversed
+the first Arabic/Hebrew cases and an in-process reader crashed on mixed text.
+The original validator stopped at a missing-input gate before validating any
+PDF. The follow-up runs every available PDF through veraPDF and still fails on
+missing cases; missing evidence can no longer hide the reports that did run.
+
+The [first isolated reader receipt](../tests/results/ocr-render/readers-c2f71f7.json)
+records actual veraPDF success for all 15 positive files and rejection of both
+damaged controls at `c2f71f7`. All 51 native checks passed. Logical extraction
+still failed 13 reader/case assertions: MuPDF matched 6/10, pypdf 9/10, and
+Poppler 2/10. That source is therefore not a general reader-compatibility pass.
+Its source strings, outputs, parser warnings, validator rules and artifact
+digest remain available. The corrected combined font/geometry/resource-limit
+source requires a fresh hosted run, including the added multiline case.
+
+The [repaired PDFium harness receipt](../tests/results/ocr-render/readers-f06ea90.json)
+records native 59/59 and veraPDF 16/16 plus both negative controls, but actual
+logical extraction matches are MuPDF 9/11, pypdf 11/11, Poppler CLI 2/11 and
+PDFium 1/11. The [mapping-boundary receipt](../tests/results/ocr-render/readers-ef8ab9a.json)
+fixes both long MuPDF cases and exposes inherited direction in mixed-LTR text;
+MuPDF becomes 10/11, with the other counts unchanged. ActualText remains exact
+in all eleven cases; this alone does not qualify search/copy. The
+[older per-character experiment](../tests/results/ocr-render/character-593f827.json)
+preserves its negative results and the then-unexercised PDFium harness.
+
+The [writer receipt at `2111db64`](../tests/results/ocr-render/writer-2111db6.json)
+records 70 native checks, nine production Rust contracts, thirteen PDF/A-2b
+positives and both damaged controls. An actual 11-page, 138,448,604-byte file
+retains every page and its physical size; the original random RGB pixels and
+text survive independent decoding. This hosted export takes 7.84 seconds with
+59,312 KiB maximum resident memory. Those measurements describe this fixture,
+not a device or universal memory guarantee. The overall job still fails five
+supplementary-search assertions and one extreme page-density assertion.
+
+The [strict reader receipt at the same source](../tests/results/ocr-render/readers-2111db6.json)
+has exact logical extraction in MuPDF 11/11 and pypdf 11/11, while Poppler CLI
+remains 2/11 and PDFium 1/11. All 21 archival positives pass veraPDF and both
+damaged controls fail. Bidirectional capability 16 remains withheld.
+
+### Explicit reader limits
+
+PDFium copies supplementary scalar text correctly through `ToUnicode`, but
+its pinned Linux core cannot find the complete emoji search needle in the
+five ordinary streamed fixtures. A
+[separate local independent-producer control](../tests/results/ocr-render/pdfium-supplementary-local-control.json)
+reproduces the copy/search difference. That producer initially emitted invalid
+five-digit CMap destinations; the invalid original is retained, and the valid
+control changes only those destinations to UTF-16BE surrogate pairs. The
+hosted diagnostic at `9c44a69` repeats both producer paths with the exact reader
+binary hash, full-scalar searches and diagnostic raw UTF-16-unit queries.
+Both files copy the expected text in MuPDF and PDFium. MuPDF finds the emoji;
+PDFium core `159.0.8149.0` cannot find its full scalar with any tested flag, yet
+finds each diagnostic surrogate query. The valid independent control retains
+the original producer's font program, content stream and media box. Invalid
+query units never become PDF text or a production workaround.
+
+The [retained single-page density diagnosis](../tests/results/ocr-render/poppler-dense-local-2111db6.json)
+shows all 65,542 source characters in the PDF, while Poppler returns exactly
+the first 50,000. Its source has a tiny-character guard matching the threshold;
+the retrieved source snapshot predates the diagnosed binary, so this is a
+source-based inference rather than an instrumented build. The font transition
+occurs later, at character 63,486. The positive font-subset test therefore keeps
+the complete ground truth across two pages below that per-page count and
+requires both fonts within page 2. The original one-page test remains a strict,
+failing diagnostic; no text is deleted or relabeled as a pass.
+
+The final hosted job directly observes that same 50,000-character exact prefix
+with Poppler package `24.02.0-1ubuntu9.11`. MuPDF and pypdf retain all 65,542
+characters in the unchanged one-page file. All five streamed image/text
+variants also retain exact copied Unicode while failing PDFium emoji search.
+The [source-bound receipt](../tests/results/ocr-render/reader-limits-9c44a69.json)
+links the complete retained outputs and valid independent-producer control.
+
+The writer workflow reports separate jobs for writer/archive/exact-copy and
+BMP search, and for strict supplementary search and dense-page limits. A failed
+diagnostic stays red and keeps its complete PDFs and reader output. The full
+artifact workflow also retains all original strict assertions. The combined
+`9c44a69` source includes panic-payload containment, Windows Unicode image-path
+handling and the external clean-exit test updates. Its writer job passes 70 C
+controls, 11 scalar artifact methods, ten production Rust contracts and the
+separately executed large-file case. All thirteen actual PDF/A-2b positives
+pass veraPDF and both deliberately damaged files fail. The full 65,542-scalar
+subset fixture passes across two pages, with the font transition inside page 2.
+
+The retained 138,448,604-byte, eleven-page export takes 10.48 seconds and
+59,128 KiB maximum resident memory on this hosted run. Every page's text,
+count and physical size is checked; the first and last pages also have exact
+decoded/rendered image pixels and four-reader copied text. These measurements
+describe one fixture, without promising device memory or throughput. The
+Windows job passes 21 production, 18 standalone and nine historical-control
+checks, followed by independent pixels/text/geometry checks on four PDFs.
+
+The [reflected-axis reader experiment](../tests/results/ocr-render/strategies-9cc9e10.json)
+retains all 84 valid archival files and their complete reader outputs. Negative
+text advances and a document-wide reading-direction preference do not solve
+the mixed-script matrix. Selected PDFium cases improve while other readers
+reverse text or split characters; supplementary extraction can also fail its
+strict UTF-16 decoding. No strategy qualifies all twelve cases. General bidi
+and universal search compatibility remain unqualified, and no release asset
+changes as part of this lane.

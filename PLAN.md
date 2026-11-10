@@ -19,9 +19,9 @@ native contracts; public API/bindings and final integration belong to this lane.
 | Native OCR repetition diagnostics | Implemented, default-off `CRISPEMBED_MARKER_REPETITION_CHECK`; included in 185 passing native document checks | Unicode consecutive n-grams, bounded work, asset exclusions, unchanged text/raw/geometry and default behavior |
 | TeleOCR weight-license metadata | Qwen Research metadata corrected; 19 converter and 57 native loader controls pass locally | Actual synthetic GGUF license readback and disabled-value/direct-loader tests; existing published files and hashes unchanged |
 | Jina/noncommercial native admission | 106 actual native direct, local and cached controls pass locally | Acknowledgement before backend/weight allocation; false values rejected; permissive models preserved |
-| Versioned native extraction artifacts | 87 native artifact checks and actual public-client reopen controls pass locally | Exact roundtrips, malformed-source-map/corruption/limit controls and standalone reopen; Windows filesystem execution remains open |
+| Versioned native extraction artifacts | 87 native artifact checks on Linux/macOS, 82 applicable Windows checks and actual public-client reopen controls pass | Exact roundtrips, malformed-source-map/corruption/limit controls and standalone reopen; platform-specific counts are retained separately |
 | Source-linked chunks, whitespace and references | Three opt-in gates; covered by 185 passing document checks and actual client source-map checks | Exact immutable byte ranges, conservative joins, ambiguous links and page labels; disabled-output controls |
-| Bounded lifecycle and clients | 480 native, 33 actual Python and 111 Rust/Dart assertions pass locally on the corrected build | Durable page rollback, identity rejection, partial results and extraction provenance; six Rust/Dart gate scenarios all pass; cross-platform execution remains open |
+| Bounded lifecycle and clients | 480 native Linux/macOS, 471 Windows, 33 actual Python and 111 Rust/Dart assertions pass on source-equivalent corrected builds | Durable page rollback, identity rejection, partial results and extraction provenance; six Rust/Dart gate scenarios all pass |
 
 The bounded runtime change reports suspicious OCR repetition; it does not delete
 content, retry inference, introduce models or qualify document accuracy. The
@@ -71,9 +71,55 @@ hash-verified immutable v0.17.15: legacy conversion works, all six new symbols
 are absent, and each unavailable new method preserves the existing view and
 subsequent conversion. Initial probe-only renderer expectations are retained.
 
-Next: read Windows/macOS results when available, complete
-Flutter archive/app qualification in an equipped environment, and qualify
-representative OCR/retrieval quality separately before any default promotion.
+The continuation reads [completed Windows/macOS/iOS jobs](tests/results/marker/pdf-craft-platform-2026-11-09/README.md)
+whose entire checkout tree matches the tested feature head. Native platform
+checks pass. Actual development-artifact readback exposes missing notices and
+the iOS static dependency omission; those package findings require their own
+correction and consumer proof. A newly built, actually installed Linux wheel
+passes [40 package and 51 real-PDF checks](tests/results/marker/pdf-craft-local-2026-11-09/installed-wheel/README.md),
+including the origin of every loaded CrispEmbed/GGML library.
+
+The [57-page OCR and 17-query retrieval protocol](tests/regression/marker/pdf-craft-corpus-v1.json)
+was frozen upstream at `9c2ac509fbefa20a2069307daecf1ce678f9e69b` before candidate
+output or model/image downloads. Fresh Tesseract OCR and actual native MiniLM
+retrieval, full Flutter validation/archive/app checks and actual CocoaPods
+consumers now have separate owners and explicit acceptance criteria in the
+task checklist. Preserve absolute quality failures and provider limits; an
+unchanged result is not evidence of improved quality or a default-promotion gate.
+
+## Retained camera input — 9 November 2026
+
+Owner lane: `feat/ocr-camera-fixture-validation`, based on qualified native
+`9c44a69` plus its evidence checkpoint `b16df2c`; current main was fetched and
+already merged. The [bounded protocol](docs/ocr-retained-camera-fixtures.md)
+adds existing iPhone 7 photographic pixels, independent projective mapping,
+known added-tilt controls and English/French printed-page CER/WER. Production
+source and inference defaults remain unchanged. Hosted execution at `8021ca2`
+passes with [source-bound evidence](tests/results/ocr-phone-photo/camera-8021/artifact-identity.json):
+755×1259 perspective output agrees with independent pixels at 0.104874/255 mean
+error; both photographs recover the added rotations. Printed-page prepared CER
+is 0.3690%, 0.4025% and 0.5032% for original, −4.2° and +6.7° inputs. All raw,
+deskew-only and whitening text remains retained. Whitening slightly worsens the
+already readable original, so it remains an explicit reviewed operation. The
+later `fe0e279` run also passes with [separate retained evidence](tests/results/ocr-phone-photo/camera-fe0/artifact-identity.json).
+Its preserved full-frame identity PNG independently matches every decoded RGB
+byte of the original photograph, closing the original artifact-retention gap.
+This does not qualify a new physical capture workflow or historical recognition.
+
+## Windows document path boundary — 9 November 2026
+
+Owner lane: `feat/ocr-windows-unicode-paths`, based on frozen renderer candidate
+`2111db64d845b4ef6a374da2a2f69c202f1d1ce7`; main `e4ee7193` is already an ancestor.
+Enable the upstream Windows UTF-8 filename adapters in the actual production
+image loader/writer and their standalone OCR harness. This is a file-I/O boundary
+repair, preserving image math, inference defaults, releases and model aliases.
+The [Windows protocol](docs/ocr-windows-paths.md) executes production translation
+units, exact ASCII/Unicode pixel and patch comparisons, four independently read
+PDFs and a historical ANSI negative control. The combined immutable
+`9c44a69` source passes the [actual hosted Windows job](tests/results/ocr-render/windows-9c44a69.json):
+21 production, 18 standalone and nine historical checks, plus independent
+four-PDF text, geometry and exact-pixel checks. No full desktop/model claim
+follows from this file-I/O qualification.
 
 ## Phone-photo geometry — 9 November 2026
 
@@ -146,6 +192,82 @@ Correct the local-only test contract and propagate piped failures in all three
 focused workflows. Pending: corrected hosted C/sanitizer/wrapper results and the consumer's pinned streaming/atomic install,
 cancellation/recovery, mobile linking and device execution gates. No URL, pin,
 registry model, release or inference default is changed.
+
+## Reviewed PDF conformance — 9 November 2026
+
+Owner lane: `feat/ocr-reviewed-pdf-conformance`, based on `f2a0fec94` including
+the external metadata-test formatting correction. Add opt-in Unicode 17 bidi
+layout and genuine PDF/A-2b resources without changing legacy C structures or
+inference defaults. The explicit per-renderer bidi switch keeps the original
+rejecting path available; PDF/A remains an explicit export request.
+
+Implemented source: pinned Apache-2.0 SheenBidi, embedded generated sRGB output
+intent, synchronized XMP, PDF file IDs, native/Rust options, and independent
+artifact/negative-control gates. The original `87357610` run failed extraction
+and crashed before conformance validation; its [exact receipt](tests/results/ocr-render/baseline-87357610.json)
+is preserved. `feat/ocr-reviewed-pdf-readers` isolates the corrected reader
+checks; `feat/ocr-reviewed-pdf-limits` adds whole-document memory/page ceilings
+without moving the queued reader source. Final combined-source qualification
+is pending; limits are not a native scale-performance claim.
+
+Current writer lane: `feat/ocr-pdf-stream-writer` at `2111db64`. The source
+adds a checked synchronous C/Rust sink, 64 KiB slices, a caller-selected
+4 KiB..2 GiB ceiling and progressive object emission. Its public capability
+mask is `47`; bidi bit `16` stays withheld while exact extraction/search
+failures remain. LTR uses scalar ToUnicode without redundant replacement text.
+Source-bound writer qualification includes partial-output limits, original
+I/O errors, cancellation, short/zero writes, panic containment, real files,
+independent image/text/page checks and a >128 MiB export under a 256 MiB cap.
+The [source-bound receipt](tests/results/ocr-render/writer-2111db6.json) now
+records native 70/70, Rust 9/9, thirteen archival positives and both negative
+controls. The real 138,448,604-byte, 11-page file preserves text/pixels/pages;
+its measured time/RSS are fixture-specific. The overall gate fails five
+PDFium supplementary searches and the retained Poppler single-page density
+stress case. Strict bidi at the same source is MuPDF 11/11, pypdf 11/11,
+Poppler CLI 2/11 and PDFium 1/11, so bit16 remains withheld.
+
+Qualified native component source: `9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a`
+combines panic-payload containment, the Windows UTF-8 image-path fix and the
+external clean-exit test updates. Its [writer component job](tests/results/ocr-render/writer-9c44a69.json)
+passes 70 C checks, 11 artifact methods, ten production Rust contracts, the
+explicit large-file case, thirteen archival positives and both rejecting
+controls. All 65,542 scalars survive the two-page subset transition. Its
+separate strict supplementary-search/extreme-density job retains every
+original assertion and the independent producer control; this is not a
+whole-workflow or universal-reader pass. The app owns atomic publication and
+final paired native/mobile execution.
+
+The final [reader-limit diagnostic](tests/results/ocr-render/reader-limits-9c44a69.json)
+completes with six unchanged strict failures and the same full-scalar search
+failure in a valid independent-producer PDF. Exact copied Unicode survives
+both producers. Poppler's unchanged single-page control yields the exact first
+50,000 of 65,542 scalars. Preserve these failed controls alongside the passing
+writer/archive and two-page subset checks.
+
+The [84-output reflected-axis matrix](tests/results/ocr-render/strategies-9cc9e10.json)
+passes all pixel, text-bound and archival checks, but no representation passes
+every logical extraction/search case. Negative text advances and document-wide
+reading direction do not close mixed-script reader differences. Bidi bit16
+remains withheld. Preserve valid logical text and the exact failed reader
+outputs. The consumer uses capability preflight and reviewed text alternatives;
+further speculative native representations are paused.
+
+Preserved reader evidence: `f06ea90` exercises PDFium after repairing the
+harness; `ef8ab9a` fixes MuPDF's 32-scalar boundary but exposes inherited
+direction in a following LTR run. Both pass native 59/59, veraPDF 16/16 and
+two damaged controls while failing reader assertions. The separate
+`feat/ocr-pdf-reader-strategies` / `feat/ocr-pdf-reader-contiguous` diagnostics
+compare exact run/scalar Unicode, replacement text and visual paint order
+without reversing logical mappings or altering qualifying native sources.
+Their reports retain PDFium wrapper/core versions, flags, binary hashes,
+character lists and search results. See the precise
+[reader receipts](tests/results/ocr-render/readers-ef8ab9a.json).
+
+Acceptance requires unchanged page pixels/sizes, logical mixed-direction copy
+and search, combining marks, independent veraPDF 2b compliance and deliberately
+invalid controls rejected. Exact extracted strings and validator failures are
+retained, including failed attempts. See [the API and validation contract](docs/ocr-reviewed-pdf.md).
+No release asset or consumer production pin is changed by this lane.
 
 ## OCR review workspace integration — 8 November 2026
 

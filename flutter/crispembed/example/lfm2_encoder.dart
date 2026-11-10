@@ -16,11 +16,13 @@ void main(List<String> args) {
       throw StateError('Unexpected token IDs or feature dimensions');
     }
     final normalized = model.encodeTokens('The capital of France is <|mask|>.');
-    if (normalized.features.length != features.features.length)
+    if (normalized.features.length != features.features.length) {
       throw StateError('Wrong normalized shape');
+    }
     final logits = model.maskedLogits('The capital of France is <|mask|>.');
-    if (logits.positions.single != 7 || logits.logits.single.length != 65536)
+    if (logits.positions.single != 7 || logits.logits.single.length != 65536) {
       throw StateError('Wrong logit shape');
+    }
     final result = model.fillMask('The capital of France is [MASK].');
     final predictions =
         result.single['predictions'] as List<Map<String, Object>>;
@@ -28,11 +30,13 @@ void main(List<String> args) {
         predictions.first['token'] != ' Paris') {
       throw StateError('Unexpected masked prediction');
     }
-    if (predictions.first['logit'] != logits.logits.single[5242])
+    if (predictions.first['logit'] != logits.logits.single[5242]) {
       throw StateError('Changed logit');
+    }
     final padded = model.tokenBytes(65535);
-    if (padded.isNotEmpty)
+    if (padded.isNotEmpty) {
       throw StateError('Unused padded token must decode empty');
+    }
     print(predictions.first);
     print(
       'PASS: Dart raw/normalized features, token IDs, masked logits, decoded prediction and padding',

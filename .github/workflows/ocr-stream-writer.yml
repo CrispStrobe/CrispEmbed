@@ -1,0 +1,193 @@
+name: OCR bounded writer and archival qualification
+
+on:
+  push:
+    branches: [feat/ocr-pdf-stream-writer, feat/ocr-pdf-stream-hardening, feat/ocr-pdf-writer-qualified, feat/ocr-pdf-writer-final]
+    paths:
+      - 'src/ocr_render.*'
+      - 'src/ocr_pdf_*.h'
+      - 'crispembed/src/lib.rs'
+      - 'crispembed-sys/src/lib.rs'
+      - 'crispembed/tests/ocr_writer_contract.rs'
+      - 'tests/*ocr_render*'
+      - 'tests/check_ocr_stream_artifacts.py'
+      - 'tools/check_ocr_writer_rust.py'
+      - '.github/workflows/ocr-stream-writer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  writer-archival-unicode:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      RUSTUP_TOOLCHAIN: '1.90.0'
+      OCR_WRITER_ARTIFACTS: ${{ github.workspace }}/build-ocr-render/artifacts
+      OCR_WRITER_LARGE: ${{ github.workspace }}/build-ocr-render/large
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install independent readers and validator
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+          python -m pip install 'Pillow==13.0.0' 'pypdf==6.21.4' 'PyMuPDF==1.26.6' 'pypdfium2==5.15.1' 'fonttools==4.68.0'
+          rustup toolchain install 1.90.0 --profile minimal --component rustfmt
+          python tools/install_ocr_verapdf.py --prefix build-ocr-render/verapdf
+      - name: Build actual model-free native renderer
+        id: native
+        run: |
+          mkdir -p build-ocr-render/artifacts build-ocr-render/large
+          cc -std=c11 -O1 -fPIC -DSB_CONFIG_UNITY \
+            -Ivendor/sheenbidi/Headers -Ivendor/sheenbidi/Source \
+            -c vendor/sheenbidi/Source/SheenBidi.c -o build-ocr-render/sheenbidi.o
+          c++ -std=c++17 -O1 -fPIC -shared -DCRISPEMBED_BUILD \
+            '-DCRISPEMBED_VERSION_STR="0.17.16"' -Isrc -Ivendor/sheenbidi/Headers \
+            src/ocr_render.cpp tests/ocr_render_stb.cpp build-ocr-render/sheenbidi.o \
+            -o build-ocr-render/libocr_render_test.so
+          c++ -std=c++17 -Wall -Wextra -Werror -Isrc \
+            tests/test_ocr_render.cpp -Lbuild-ocr-render -locr_render_test \
+            -Wl,-rpath,'$ORIGIN' -o build-ocr-render/test-ocr-render
+          git rev-parse HEAD > build-ocr-render/artifacts/source.txt
+          sha256sum build-ocr-render/libocr_render_test.so > build-ocr-render/artifacts/native-sha256.txt
+      - name: Check native callbacks and qualified scalar Unicode artifacts
+        if: always() && steps.native.outcome == 'success'
+        run: |
+          ./build-ocr-render/test-ocr-render | tee build-ocr-render/artifacts/native-controls.txt
+          python tests/test_ocr_render_artifacts.py \
+            --library build-ocr-render/libocr_render_test.so --artifacts build-ocr-render/artifacts -v \
+            ArtifactTests.test_raster_images_and_physical_size \
+            ArtifactTests.test_unicode_multiline_and_long_corrections \
+            ArtifactTests.test_large_page_tree_and_per_page_sizes \
+            ArtifactTests.test_unicode_font_subset_boundary \
+            ArtifactTests.test_text_only_pdf_is_safe_for_legacy_string_callers \
+            ArtifactTests.test_long_xml_and_invalid_controls \
+            ArtifactTests.test_error_contract \
+            ArtifactTests.test_bidirectional_pdf_fails_without_corrupting_other_formats \
+            ArtifactTests.test_archival_resources_and_page_preservation \
+            ArtifactTests.test_streamed_output_preserves_pages_images_and_unicode \
+            ArtifactTests.test_ltr_opt_in_preserves_scalar_encoding
+      - name: Compile exact production Rust wrapper and test writer failures
+        id: rust
+        if: always() && steps.native.outcome == 'success'
+        run: |
+          python tools/check_ocr_writer_rust.py --build build-ocr-render
+          ./build-ocr-render/test-ocr-writer --test-threads=1 --nocapture | tee build-ocr-render/artifacts/rust-controls.txt
+          mkdir -p build-ocr-render/artifacts/formatting
+          rustfmt --edition 2021 --emit stdout crispembed/src/lib.rs > build-ocr-render/artifacts/formatting/crispembed-lib.rs
+          rustfmt --edition 2021 --emit stdout crispembed/tests/ocr_writer_contract.rs > build-ocr-render/artifacts/formatting/ocr-writer-contract.rs
+      - name: Export a bounded file above the old byte-buffer ceiling
+        if: always() && steps.rust.outcome == 'success'
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import random
+          pixels = random.Random(20261109).randbytes(2048 * 2048 * 3)
+          Image.frombytes('RGB', (2048, 2048), pixels).save(Path('build-ocr-render/large/source.png'))
+          PY
+          /usr/bin/time -v -o build-ocr-render/artifacts/large-export-resources.txt \
+            ./build-ocr-render/test-ocr-writer --ignored --exact writer_contracts::streams_above_the_legacy_buffer_limit --nocapture \
+            | tee build-ocr-render/artifacts/large-export.txt
+      - name: Independently validate streamed PDFs and damaged archival controls
+        if: always() && steps.native.outcome == 'success'
+        run: |
+          python tests/check_ocr_stream_artifacts.py --artifacts build-ocr-render/artifacts \
+            --large build-ocr-render/large --verapdf build-ocr-render/verapdf/verapdf
+      - name: Preserve compact receipts and small PDFs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-writer-qualification
+          path: build-ocr-render/artifacts
+          if-no-files-found: error
+          retention-days: 90
+      - name: Preserve large PDF separately
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-writer-large-file
+          path: build-ocr-render/large
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
+      - name: Preserve exact native diagnostic library
+        if: always() && steps.native.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-writer-diagnostic-native
+          path: build-ocr-render/libocr_render_test.so
+          if-no-files-found: error
+          retention-days: 90
+
+  reader-limit-diagnostics:
+    name: Strict supplementary search and dense-page reader diagnostics
+    needs: writer-archival-unicode
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install the exact readers and independent producer font
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils fonts-dejavu-core
+          python -m pip install 'Pillow==13.0.0' 'pypdf==6.21.4' 'PyMuPDF==1.26.6' 'pypdfium2==5.15.1' 'fonttools==4.68.0'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ocr-writer-qualification
+          path: build-ocr-render/artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          name: ocr-writer-diagnostic-native
+          path: build-ocr-render
+      - name: Verify source and native binary identity
+        id: identity
+        run: |
+          sha256sum -c build-ocr-render/artifacts/native-sha256.txt
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          expected = Path('build-ocr-render/artifacts/source.txt').read_text().strip()
+          actual = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert expected == actual, (expected, actual)
+          PY
+      - name: Retain all original reader-limit assertions
+        if: always() && steps.identity.outcome == 'success'
+        run: |
+          python tests/test_ocr_render_artifacts.py --reader-diagnostics \
+            --library build-ocr-render/libocr_render_test.so --artifacts build-ocr-render/reader-limits -v \
+            ArtifactTests.test_dense_single_page_reader_limit \
+            ArtifactTests.test_supplementary_reader_search
+      - name: Check raw search and a valid independent producer control
+        if: always() && steps.identity.outcome == 'success'
+        run: |
+          python tests/ocr_render_reader_limit_diagnostic.py \
+            --native-pdf build-ocr-render/artifacts/archival-streamed-rgb.pdf \
+            --font /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf \
+            --output build-ocr-render/reader-limits/independent
+      - name: Preserve failing diagnostics and independent originals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-reader-limit-diagnostics
+          path: build-ocr-render/reader-limits
+          if-no-files-found: error
+          retention-days: 90

@@ -85,6 +85,29 @@ check and retains its notice in `NOTICE.marker`. See the
 [source and license review](pdf-craft-adoption.md) for exclusions, the measured
 validation scope and subsequent work.
 
+### Optional glyphless OCR font correction
+
+`CRISPEMBED_MARKER_GLYPHLESS_TEXT=1` enables a narrow, default-off PDF text-layer
+correction. Some OCR-produced PDFs use the artificial fixed-pitch `GlyphLessFont`
+for searchable text. That metadata does not establish that the scanned text is
+source code. The opt-in path clears the derived monospace flag only for the exact
+case-sensitive font name or a standard six-uppercase-letter subset prefix such
+as `ABCDEF+GlyphLessFont`. A page warning explicitly records that the original
+font style is unknown. Other fonts, including genuine Courier/Mono code fonts,
+retain their existing classification.
+
+The correction preserves extracted character/line text, reconstructed spaces,
+coordinates, font size, bold and italic flags. Downstream grouping and prose
+classification may change. It neither repairs OCR characters nor establishes
+the original visual font or reading order. Unset, empty, `0`, `false`, `off` and
+`no` retain the old path. A raw checkpoint cannot resume under a changed gate;
+a processed extraction reopens with its original outputs regardless of the gate.
+
+The [frozen 57-PDF replay](../tests/regression/marker/pdf-craft-glyphless-followup-v1.json)
+separately measures the font effect and the additional existing prose processing
+gates. Its original corpus quality failures remain recorded; no default change
+or broad OCR qualification follows from the correction.
+
 ## Modes
 
 | Mode | PDF processing | Image processing | Model required |
