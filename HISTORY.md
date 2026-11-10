@@ -1,3 +1,17 @@
+## 10 November 2026 — Aggregate integration PR199 (LightOn4B stack)
+
+PR199 folds the LightOn4B qualification stack (PR155, PR157 and their stacked
+audit/evidence branches), the MoEdern consumer receipts and the 7 November
+publication review into main. It ships in v0.17.18, not v0.17.17. Defaults are
+unchanged and every new path stays env-gated. Superseded side branches were
+merged with the stack's evolved code kept and only their new files imported.
+`heavy-cpu.yml` was rebuilt from the stack tip, keeping 90-day retention for all
+LightOn4B evidence scripts. The dedicated `lighton4b_mixed_step33_compare.py`
+dispatch job was dropped because its run is complete; its receipts stay in
+`tests/results`. The script can still be run through the ordinary job. Style-only
+re-pins for `src/qwen35_linear.cpp` and `src/qwen35_math.h` are recorded in the
+source-pin amendments.
+
 ## 5 November 2026 — PR145 complete final-source CI
 
 ## 5 November 2026 — Actual original BF16 CPU generation
