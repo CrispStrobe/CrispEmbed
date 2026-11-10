@@ -29,6 +29,10 @@ sh([sys.executable, "-m", "uv", "venv", "-q", "--seed", "--python-preference", "
 py = str(venv / "bin" / "python")
 sh([sys.executable, "-m", "uv", "pip", "install", "-q", "--python", py,
     "pytest", "numpy", "pillow", "gguf", "sentencepiece", "tokenizers"])
+# The image's /usr/lib sitecustomize imports wrapt and otherwise prints an
+# error into every child's stderr, which output-exactness tests then see.
+# wrapt is not imported by any test; it only silences that host hook.
+sh([sys.executable, "-m", "uv", "pip", "install", "-q", "--python", py, "wrapt"])
 
 # Drop tokens/account vars and Kaggle's PYTHONPATH (its sitecustomize prints an
 # error inside a foreign venv, which pollutes every child's stderr).
