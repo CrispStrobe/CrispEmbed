@@ -1,3 +1,10 @@
+## 10 November 2026 — v0.17.18 released; remote branch cleanup
+
+v0.17.18 ([release](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.18), PR #204) ships the integrated
+LightOn4B stack from #199 (experimental, default-off) with the MoEdern/UltraBERT/Josev/GOT consumer tests; all 16
+assets published. 431 fully merged remote branches were deleted, listed in
+[the archive](docs/archive/deleted-branches-2026-11-10.md).
+
 ## 10 November 2026 — Plain-environment pytest lane
 
 `pytest tests` on a plain environment (pytest, numpy, pillow, gguf,
