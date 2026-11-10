@@ -25,7 +25,7 @@ venv = TMP / "venv"
 # outside its own environment (stderr noise in every child). Use a managed
 # standalone CPython instead, so the environment really is plain.
 sh([sys.executable, "-m", "pip", "install", "-q", "uv"])
-sh([sys.executable, "-m", "uv", "venv", "-q", "--managed-python", "--python", "3.13", str(venv)])
+sh([sys.executable, "-m", "uv", "venv", "-q", "--seed", "--managed-python", "--python", "3.13", str(venv)])
 py = str(venv / "bin" / "python")
 sh([sys.executable, "-m", "uv", "pip", "install", "-q", "--python", py,
     "pytest", "numpy", "pillow", "gguf", "sentencepiece", "tokenizers"])
@@ -35,7 +35,13 @@ sh([sys.executable, "-m", "uv", "pip", "install", "-q", "--python", py,
 env = {k: v for k, v in os.environ.items()
        if not k.startswith(("HF_", "HUGGING", "KAGGLE_", "CRISPEMBED_"))
        and k not in ("PYTHONPATH", "PYTHONSTARTUP", "PYTHONUSERBASE")}
-summary = {"sha": SHA}
+env["PATH"] = str(venv / "bin") + os.pathsep + env.get("PATH", "")
+diag = subprocess.run([py, "-c", "import sys,os;print(sys.version);print(sys.path);"
+                       "import importlib.util as u;s=u.find_spec('sitecustomize');print('sitecustomize',s and s.origin);"
+                       "print({k:v for k,v in os.environ.items() if k.startswith('PYTHON')})"],
+                      env=env, capture_output=True, text=True)
+print(diag.stdout, diag.stderr, flush=True)
+summary = {"sha": SHA, "diag": diag.stdout + diag.stderr}
 for mode in ("full", "shallow"):
     d = TMP / f"repo-{mode}"
     if mode == "full":
