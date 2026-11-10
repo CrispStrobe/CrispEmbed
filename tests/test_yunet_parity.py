@@ -15,7 +15,13 @@ import subprocess
 import sys
 import tempfile
 
-import cv2
+try:
+    import cv2
+except ImportError:
+    if __name__ != "__main__":
+        import pytest
+        pytest.skip("requires python module: opencv-python (cv2)", allow_module_level=True)
+    raise
 import numpy as np
 
 

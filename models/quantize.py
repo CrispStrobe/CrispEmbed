@@ -20,9 +20,8 @@ import numpy as np
 
 try:
     import gguf
-except ImportError:
-    print("pip install gguf", file=sys.stderr)
-    sys.exit(1)
+except ImportError:  # reported (and exit 1) only by the CLI path, see main()
+    gguf = None
 
 
 QUANT_MAP = {
@@ -31,7 +30,7 @@ QUANT_MAP = {
     "q5_1": gguf.GGMLQuantizationType.Q5_1,
     "q5_0": gguf.GGMLQuantizationType.Q5_0,
     "q4_0": gguf.GGMLQuantizationType.Q4_0,
-}
+} if gguf is not None else {}
 
 KEEP_F32_PATTERNS = ["norm", "bias", "embd_ln", "position_embd",
                       "token_type_embd", "pooler", "output_norm"]
@@ -262,6 +261,9 @@ def _copy_array_field(writer, field_name, field):
 
 
 def main():
+    if gguf is None:
+        print("pip install gguf", file=sys.stderr)
+        return 1
     parser = argparse.ArgumentParser(description="Quantize CrispEmbed GGUF models")
     parser.add_argument("input", nargs="?", help="Input GGUF file")
     parser.add_argument("--types", nargs="+", default=["q8_0"],

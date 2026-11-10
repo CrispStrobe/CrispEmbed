@@ -3,7 +3,13 @@
 from pathlib import Path
 import sys
 import unittest
-import torch
+try:
+    import torch
+except ImportError:
+    if __name__ != "__main__":
+        import pytest
+        pytest.skip("requires python module: torch", allow_module_level=True)
+    raise
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 from dump_ultrabert_reference import assert_masks, check_bos_negative
