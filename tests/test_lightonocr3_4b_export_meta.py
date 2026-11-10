@@ -223,8 +223,19 @@ class LightOnOCR3FourBMetaProbeTest(unittest.TestCase):
                 self.assertFalse(summary["native_supported"])
 
     def test_control_suite_imports_no_model_libraries(self):
-        for name in ("torch", "transformers", "safetensors", "numpy", "gguf", "huggingface_hub"):
-            self.assertNotIn(name, sys.modules)
+        # Check in a fresh interpreter: a shared pytest session may already hold
+        # libraries imported by unrelated tests, which says nothing about these controls.
+        import subprocess
+        probe = (
+            "import importlib.util, sys\n"
+            "spec = importlib.util.spec_from_file_location('controls_probe', sys.argv[1])\n"
+            "module = importlib.util.module_from_spec(spec)\n"
+            "spec.loader.exec_module(module)\n"
+            "names = ('torch', 'transformers', 'safetensors', 'numpy', 'gguf', 'huggingface_hub')\n"
+            "print(','.join(n for n in names if n in sys.modules))\n"
+        )
+        result = subprocess.run([sys.executable, "-c", probe, __file__], capture_output=True, text=True, check=True)
+        self.assertEqual(result.stdout.strip(), "")
 
 
 if __name__ == "__main__":

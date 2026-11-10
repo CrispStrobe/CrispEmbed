@@ -5,8 +5,11 @@ import sys
 import unittest
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tools'))
 import lighton4b_bf16_plain_q4_dual_profile as m
+# Tools set a shared base.PROTOCOL at import; capture this tool's own path
+# so later-collected sibling tools in one pytest session cannot redirect it.
+OWN_PROTOCOL=m.base.PROTOCOL
 class Controls(unittest.TestCase):
- def setUp(self):self.p=json.loads(m.base.PROTOCOL.read_text())
+ def setUp(self):self.p=json.loads(OWN_PROTOCOL.read_text())
  def test_intel_exact_profile(self):
   key,p=m.select_profile(self.p,{'vendor_id':'GenuineIntel','cpu family':'6','model':'79'});self.assertTrue(p['require_frozen_q4_anchor']);self.assertTrue(p['original_first_score_sha256'].startswith('a4bece'))
  def test_amd_distinct_profile(self):

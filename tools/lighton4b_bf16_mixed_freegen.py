@@ -12,10 +12,10 @@ import lighton4b_bf16_quant_first_score as base
 base.PROTOCOL=base.ROOT/'docs/lighton4b-bf16-mixed-freegen-v1.json'
 require=base.require
 
-def validate_generation(ids,scores,counts):
+def validate_generation(ids,scores,counts,cap=256):
     length=len(ids)
-    require(1<=length<=256 and scores==length and counts=={'root':length,'text':length,'vision':1},'bounded independent generation/cache forward counts differ')
-    require(all(type(i)is int and 0<=i<248320 for i in ids)and 248046 not in ids[:-1]and(ids[-1]==248046 or length==256),'actual effective EOS/cap closure differs')
+    require(cap in(34,256)and 1<=length<=cap and scores==length and counts=={'root':length,'text':length,'vision':1},'bounded independent generation/cache forward counts differ')
+    require(all(type(i)is int and 0<=i<248320 for i in ids)and 248046 not in ids[:-1]and(ids[-1]==248046 or length==cap),'actual effective EOS/cap closure differs')
 
 def edit_distance(a,b):
     row=list(range(len(b)+1))
@@ -44,9 +44,12 @@ class FullOracle(base.Oracle):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.report.pop('max_new_tokens_per_arm',None)
-        self.report.update(generation_caps={'original_anchor':1,'mixed':256},teacher_forced_replay=False,intermediate_capture=False)
+        cap=self.p['max_new_tokens']
+        self.report.update(generation_caps={'original_anchor':1,'mixed':cap},teacher_forced_replay=False,intermediate_capture=False)
         try:
-            require(self.p['full_free_generation']is True and self.p['max_new_tokens']==256 and self.p['maximum_score_bytes']==256*993280,'fixed full-generation bound differs')
+            full=self.p['full_free_generation']is True and cap==256
+            trace=self.p.get('activation_trace')is True and not self.p['full_free_generation']and cap==34 and self.p['trace_position']==33
+            require((full or trace)and self.p['maximum_score_bytes']==cap*993280,'fixed full-generation/closed trace bound differs')
             self.stage('authenticate-independent-source-evidence')
             self.previous=reference_asset(self.p,self.p['previous_mixed_path'],self.p['previous_mixed_sha256'],2**20)
             self.native=reference_asset(self.p,self.p['native_report_path'],self.p['native_report_sha256'],2**20)
@@ -67,18 +70,18 @@ class FullOracle(base.Oracle):
         for name,value in inputs.items():
             stream=io.BytesIO();np.save(stream,value.detach().cpu().numpy(),allow_pickle=False)
             require(hashlib.sha256(stream.getbuffer()).hexdigest()==self.p['input_sha256'][name],'prepared input changed before independent full generation')
-        self.stage('mixed-independent-full-greedy-cap256');counts={'root':0,'vision':0,'text':0}
+        cap=self.p['max_new_tokens'];self.stage('mixed-independent-greedy-cap'+str(cap));counts={'root':0,'vision':0,'text':0}
         def hook(key):
             def count(module,args):counts[key]+=1
             return count
         handles=[model.register_forward_pre_hook(hook('root')),model.model.visual.register_forward_pre_hook(hook('vision')),model.model.language_model.register_forward_pre_hook(hook('text'))]
         started=time.monotonic()
         try:
-            with torch.inference_mode():result=model.generate(**inputs,max_new_tokens=256,do_sample=False,use_cache=True,return_dict_in_generate=True,output_scores=True)
+            with torch.inference_mode():result=model.generate(**inputs,max_new_tokens=cap,do_sample=False,use_cache=True,return_dict_in_generate=True,output_scores=True)
         finally:
             for h in handles:h.remove()
         ids=result.sequences[:,inputs['input_ids'].shape[1]:].reshape(-1).tolist();length=len(ids)
-        validate_generation(ids,len(result.scores),counts)
+        validate_generation(ids,len(result.scores),counts,cap)
         text=processor.batch_decode(result.sequences[:,inputs['input_ids'].shape[1]:],skip_special_tokens=True)[0]
         records=[];first=None
         self.report['full_generation_partial']={'ids':ids,'forward_counts':counts,'score_records':records}
@@ -95,7 +98,7 @@ class FullOracle(base.Oracle):
         (self.out/(self.p.get('output_prefix','mixed')+'.ids')).write_bytes(id_bytes);(self.out/(self.p.get('output_prefix','mixed')+'.txt')).write_bytes(text_bytes)
         a=baseline.reshape(-1).astype(np.float64);b=first.reshape(-1).astype(np.float64);e=b-a;cos=float(a@b/(np.linalg.norm(a)*np.linalg.norm(b)))
         self.report['arms']['mixed']={'ids':ids,'decoded':text,'scores':records,'parameter_dtype':'bfloat16','all_scores_finite':True,
-            'forward_counts':counts,'seconds':time.monotonic()-started,'generation_cap':256,'eos_completed':ids[-1]==248046,'cap_hit':ids[-1]!=248046 and length==256,
+            'forward_counts':counts,'seconds':time.monotonic()-started,'generation_cap':cap,'eos_completed':ids[-1]==248046,'cap_hit':ids[-1]!=248046 and length==cap,
             'stop':'eos'if ids[-1]==248046 else'max_tokens','decoded_utf8_sha256':hashlib.sha256(text_bytes).hexdigest(),
             'decoded_file':{'file':self.p.get('output_prefix','mixed')+'.txt','bytes':len(text_bytes),'sha256':hashlib.sha256(text_bytes).hexdigest()},
             'ids_file':{'file':self.p.get('output_prefix','mixed')+'.ids','bytes':len(id_bytes),'sha256':hashlib.sha256(id_bytes).hexdigest()},

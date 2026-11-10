@@ -10,6 +10,9 @@ import unittest
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('bf16_quant_first',ROOT/'tools/lighton4b_bf16_quant_first_score.py')
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+# Tools set a shared base.PROTOCOL at import; capture this tool's own path
+# so later-collected sibling tools in one pytest session cannot redirect it.
+OWN_PROTOCOL=m.PROTOCOL
 class Contract(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -35,7 +38,7 @@ class Contract(unittest.TestCase):
             with self.assertRaises(ValueError):m.validate_inventory(data,self.plan,'q4_k')
         with self.assertRaises(ValueError):m.validate_inventory(self.inventory('q8_0'),self.plan,'mixed')
     def test_original_driver_binding_and_single_ast_substitution(self):
-        protocol=json.loads(m.PROTOCOL.read_text())
+        protocol=json.loads(OWN_PROTOCOL.read_text())
         data=subprocess.check_output(['git','show',protocol['original_source']+':tools/lighton4b_bf16_freegen.py'],cwd=ROOT)
         self.assertEqual(hashlib.sha256(data).hexdigest(),protocol['original_driver_sha256'])
         transform=m.ReplaceGenerate();tree=transform.visit(ast.parse(data));ast.fix_missing_locations(tree)

@@ -10,15 +10,16 @@ ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tools'))
 spec=importlib.util.spec_from_file_location('full_oracle',ROOT/'tools/lighton4b_bf16_mixed_freegen.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 class Controls(unittest.TestCase):
     def test_frozen_policy_and_bounds(self):
-        p=json.loads(m.base.PROTOCOL.read_text());plan=m.base.tensor_plan(json.loads((ROOT/'tests/fixtures/lightonocr3-4b-source/model.safetensors.header.json').read_text()))
+        p=json.loads((ROOT/'docs/lighton4b-bf16-mixed-freegen-v1.json').read_text());plan=m.base.tensor_plan(json.loads((ROOT/'tests/fixtures/lightonocr3-4b-source/model.safetensors.header.json').read_text()))
         self.assertEqual(len(m.base.mixed_selection(p,plan)),249)
         self.assertEqual((p['max_new_tokens'],p['maximum_score_bytes'],p['worker_timeout_seconds']),(256,256*993280,5400))
         self.assertTrue(p['full_free_generation']);self.assertFalse(p['teacher_forced_replay']);self.assertFalse(p['held_out_calibration'])
         self.assertEqual(hashlib.sha256((ROOT/'docs/lighton4b-bf16-quant-v1.json').read_bytes()).hexdigest(),p['original_full_protocol_sha256'])
     def test_genuine_generate_call(self):
         tree=ast.parse((ROOT/'tools/lighton4b_bf16_mixed_freegen.py').read_text());calls=[n for n in ast.walk(tree)if isinstance(n,ast.Call)and isinstance(n.func,ast.Attribute)and n.func.attr=='generate']
-        self.assertEqual(len(calls),1);kw={k.arg:ast.literal_eval(k.value)for k in calls[0].keywords if k.arg}
-        self.assertEqual(kw,{'max_new_tokens':256,'do_sample':False,'use_cache':True,'return_dict_in_generate':True,'output_scores':True})
+        self.assertEqual(len(calls),1);kw={k.arg:ast.literal_eval(k.value)for k in calls[0].keywords if k.arg and k.arg!='max_new_tokens'}
+        self.assertEqual(kw,{'do_sample':False,'use_cache':True,'return_dict_in_generate':True,'output_scores':True})
+        self.assertEqual(next(k.value.id for k in calls[0].keywords if k.arg=='max_new_tokens'),'cap')
     def test_eos_or_cap_without_eos_both_valid(self):
         m.validate_generation([27,248046],2,{'root':2,'text':2,'vision':1})
         m.validate_generation([27]*256,256,{'root':256,'text':256,'vision':1})

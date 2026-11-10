@@ -12,6 +12,28 @@ dispatch job was dropped because its run is complete; its receipts stay in
 re-pins for `src/qwen35_linear.cpp` and `src/qwen35_math.h` are recorded in the
 source-pin amendments.
 
+The integration's Python lane found 12 tests that fail with this combination of
+branches; each passed on its own branch:
+- **`lighton4b_bf16_mixed_freegen.py`:** the step33 `cap` extension and the
+  q4-freegen output-prefix extension are combined in one tool, matching the
+  q4-freegen branch's own tool and test.
+- **Shared protocol path:** sibling BF16 tools set a shared `base.PROTOCOL` at import.
+  Their tests now capture their own protocol path at load time, so a single pytest
+  session no longer leaks one tool's protocol into another tool's tests.
+- **Frozen hash pins:** the GDN-out Q6 protocols pin runtime file hashes at
+  `runtime_reference_commit`. These are now checked against that commit's blobs,
+  following the existing frozen-commit guard convention. Previously they were
+  checked against the current tree.
+- **MiniCPM graph-source guard:** it compares the default (non-physical) Qwen3.5
+  norm/cache/attention arithmetic. The default-off LightOn4B physical branches are
+  excluded from the byte comparison and gamma(false) = 1 + w is asserted
+  explicitly.
+- **LightOnOCR-3-4B no-model-library checks:** these now run in a fresh interpreter.
+  In a shared pytest session they were reading modules that unrelated tests had
+  imported.
+
+No guard was skipped or relaxed beyond these exact scopes.
+
 ## 5 November 2026 — PR145 complete final-source CI
 
 ## 5 November 2026 — Actual original BF16 CPU generation

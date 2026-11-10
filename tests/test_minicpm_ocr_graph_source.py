@@ -18,13 +18,34 @@ class Controls(unittest.TestCase):
         new = (ROOT/'src/qwen35_graph_decoder.cpp').read_text()
         # Exact helper bodies preserve source-level rounding/order, not just
         # a transcription of the mathematical formula.
-        for begin, end in [('static void norm_head(', 'static void rotate('),
-                           ('static void rotate(', 'bool attention_cpu(')]:
-            body = old[old.index(begin):old.index(end)]
-            self.assertIn(compact(body), compact(new))
+        body = old[old.index('static void rotate('):old.index('bool attention_cpu(')]
+        self.assertIn(compact(body), compact(new))
+        # The qwen35 head norm gained a default-off LightOn4B physical branch
+        # (lighton4b_physical_native_component / lighton4b_upstream_gamma). Its
+        # default path must stay the exact arithmetic MiniCPM's graph copy keeps.
+        norm = old[old.index('static bool norm_head('):old.index('static void rotate(')]
+        default = norm[norm.index('const float scale = rms_scale_cpu(x, width, eps);'):]
+        self.assertIn(compact('const float scale = rms_scale_cpu(x, width, eps);'
+                              'for (int i = 0; i < width; ++i) y[i] = (x[i] * scale) * '
+                              'lighton4b_upstream_gamma(weights[i], physical);'), compact(default))
+        gamma = (ROOT/'src/lighton4b_upstream_physical_semantics.h').read_text()
+        self.assertIn(compact('return physical ? value : (1.0f + value);'), compact(gamma))
+        self.assertIn(compact('static void norm_head(const float * x, const float * weights, int width, float eps, float * y) {'
+                              'const float scale = rms_scale_cpu(x, width, eps);'
+                              'for (int i = 0; i < width; ++i) y[i] = (x[i] * scale) * (1.0f + weights[i]);}'),
+                      compact(new))
         begin = '    auto & cache = output.cache;'
         end = '    projected.clear();'
-        self.assertIn(compact(old[old.index(begin):old.index(end)]), compact(new))
+        block = old[old.index(begin):old.index(end)]
+        # Drop only the default-off LightOn4B physical-profile cache fields.
+        # Default-off physical F16 attention wraps the original pooled loop as
+        # `if (physical_f16) {...} else {<original>}`; compare the else branch.
+        if '    if (physical_f16) {' in block:
+            head, rest = block.split('    if (physical_f16) {', 1)
+            original = rest.split('    } else {', 1)[1].rsplit('    }', 1)[0]
+            block = head + original
+        block = '\n'.join(l for l in block.splitlines() if 'physical' not in l and 'repack' not in l)
+        self.assertIn(compact(block), compact(new))
 
     def test_small_linear_core_called_without_reimplementation(self):
         s = (ROOT/'src/qwen35_graph_decoder.cpp').read_text()

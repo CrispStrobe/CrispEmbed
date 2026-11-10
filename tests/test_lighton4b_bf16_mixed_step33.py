@@ -7,9 +7,12 @@ import sys
 import unittest
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tools'))
 spec=importlib.util.spec_from_file_location('trace_contract',ROOT/'tools/lighton4b_bf16_mixed_step33.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+# Tools set a shared base.PROTOCOL at import; capture this tool's own path
+# so later-collected sibling tools in one pytest session cannot redirect it.
+OWN_PROTOCOL=m.base.PROTOCOL
 class Controls(unittest.TestCase):
     def test_closed_stages_and_bound(self):
-        p=json.loads(m.base.PROTOCOL.read_text());names=m.stage_names()
+        p=json.loads(OWN_PROTOCOL.read_text());names=m.stage_names()
         self.assertEqual(len(names),50);self.assertEqual(p['trace_position'],33);self.assertEqual(p['max_new_tokens'],34)
         self.assertFalse(p['full_free_generation']);self.assertTrue(p['activation_trace']);self.assertEqual(p['maximum_score_bytes'],34*993280)
         self.assertTrue(all(n.startswith('greedy.33.')for n in names));self.assertTrue({'greedy.33.layer0.qkv','greedy.33.head.input','greedy.33.head.output','greedy.33.layer.31'}<=names)

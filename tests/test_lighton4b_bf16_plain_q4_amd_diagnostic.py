@@ -5,9 +5,12 @@ import sys
 import unittest
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tools'))
 import lighton4b_bf16_plain_q4_amd_diagnostic as m
+# Tools set a shared base.PROTOCOL at import; capture this tool's own path
+# so later-collected sibling tools in one pytest session cannot redirect it.
+OWN_PROTOCOL=m.base.PROTOCOL
 class Controls(unittest.TestCase):
  def test_distinct_explicit_profile(self):
-  p=json.loads(m.base.PROTOCOL.read_text());self.assertTrue(p['distinct_backend_diagnostic']);self.assertFalse(p['generation_or_quality_qualified'])
+  p=json.loads(OWN_PROTOCOL.read_text());self.assertTrue(p['distinct_backend_diagnostic']);self.assertFalse(p['generation_or_quality_qualified'])
   self.assertNotEqual(p['original_first_score_sha256'],p['frozen_official_first_score_sha256']);self.assertEqual(p['candidate_order'],['q4_k'])
  def test_frozen_guard_rejects_changed_q4(self):
   o=object.__new__(m.plain.full.FullOracle);o.p={'mixed_first_score_sha256':'old'}

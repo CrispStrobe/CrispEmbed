@@ -9,6 +9,9 @@ import unittest
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('mixed_contract',ROOT/'tools/lighton4b_bf16_quant_first_score.py')
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+# Tools set a shared base.PROTOCOL at import; capture this tool's own path
+# so later-collected sibling tools in one pytest session cannot redirect it.
+OWN_PROTOCOL=m.PROTOCOL
 class MixedContract(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -37,7 +40,7 @@ class MixedContract(unittest.TestCase):
             p=copy.deepcopy(self.protocol);p[key]=value
             with self.assertRaises(ValueError):m.mixed_selection(p,self.plan)
     def test_old_three_arm_protocol_stays_unmixed(self):
-        self.assertIsNone(m.mixed_selection(json.loads(m.PROTOCOL.read_text()),self.plan))
+        self.assertIsNone(m.mixed_selection(json.loads(OWN_PROTOCOL.read_text()),self.plan))
     def test_bounded_cache_digest_exact(self):
         with tempfile.TemporaryDirectory()as directory:
             p=Path(directory)/'owned';p.write_bytes(b'bounded cache proof'*4096)
