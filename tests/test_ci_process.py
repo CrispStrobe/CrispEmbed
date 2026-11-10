@@ -23,14 +23,32 @@ class Controls(unittest.TestCase):
         return m.run([sys.executable,'-I','-c',code],self.root/(name+'.log'),timeout=timeout)
 
     def test_success_and_actual_per_child_rss_units(self):
-        high=self.child('x=bytearray(24*1024*1024); print("ok",flush=True)',name='high')
-        low=self.child('print("small",flush=True)',name='low')
+        # On Linux a child's ru_maxrss starts from the forking parent's resident
+        # set (the pre-exec high-water mark survives exec). Run both children
+        # from a minimal fresh interpreter so a large pytest parent cannot
+        # inflate the small child's peak; reaping is checked in that runner.
+        runner=(
+            'import importlib.util,json,sys\n'
+            'spec=importlib.util.spec_from_file_location("ci_process",sys.argv[1])\n'
+            'm=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)\n'
+            'rows={}\n'
+            'for name,code in (("high",\'x=bytearray(24*1024*1024); print("ok",flush=True)\'),("low",\'print("small",flush=True)\')):\n'
+            '    row=m.run([sys.executable,"-I","-c",code],sys.argv[2]+"/"+name+".log",timeout=3)\n'
+            '    try:\n'
+            '        m.os.wait4(row["direct_child_pid"],m.os.WNOHANG);row["unreaped"]=True\n'
+            '    except ChildProcessError:\n'
+            '        row["unreaped"]=False\n'
+            '    rows[name]=row\n'
+            'print(json.dumps(rows))\n')
+        out=m.subprocess.run([sys.executable,'-I','-c',runner,str(ROOT/'tools/ci_process.py'),str(self.root)],
+                             capture_output=True,text=True,timeout=30,check=True)
+        rows=__import__('json').loads(out.stdout.splitlines()[-1]);high,low=rows['high'],rows['low']
         self.assertEqual((high['exit'],low['exit']),(0,0));self.assertFalse(high['timed_out'])
         self.assertGreater(high['maximum_rss_bytes'],low['maximum_rss_bytes']+8*2**20)
         for row in (high,low):
             self.assertEqual(row['maximum_rss_bytes'],row['maximum_rss_kib']*1024)
             self.assertGreater(row['maximum_rss_bytes'],0);self.assertTrue(row['reaped']);self.assertGreater(row['seconds'],0)
-            with self.assertRaises(ChildProcessError):m.os.wait4(row['direct_child_pid'],m.os.WNOHANG)
+            self.assertFalse(row['unreaped'])
 
     def test_nonzero_and_signal_exit(self):
         normal=self.child('raise SystemExit(7)',name='exit7')
