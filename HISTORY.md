@@ -206,6 +206,7 @@ Historical running/queued statements below describe their recorded phase. Start
 with [the current executable continuation](docs/ocr-qualification-2026-11-04.md)
 for final verdicts, live jobs and remaining tasks.
 
+
 ## 9 November 2026 — DBNet text-mask fix approved by owner (issue 71)
 
 Owner re-reviewed the street/DBNet case after PR #197 (both subtitle lines covered in all five variants,
@@ -271,6 +272,122 @@ variant, including Q4_K: both exact-mask stills and all four video-pan frames. T
 (the 0.9019 Q4_K caveat case) leaves the first text line visible in **every** variant, F32 included, so the
 defect is DBNet mask coverage, not quantization. Q4_K stays published as experimental; the follow-up is
 detector mask coverage/dilation for the first line, not precision.
+## 9 November 2026 — independently retained camera identity pixels
+
+[Follow-up run 42637037175](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42637037175/job/129247819057)
+passes at unchanged-production source `fe0e279`. The 51,568,001-byte artifact,
+all 41 member identities, all nine text/TSV pairs and nine source-file hashes
+were verified. Its retained 960×1280 identity PNG matches the original decoded
+RGB pixels exactly; perspective metrics and all printed-page CER values match
+the preceding run. The [new receipt](tests/results/ocr-phone-photo/camera-fe0/artifact-identity.json)
+closes the earlier identity-PNG retention gap while preserving that historical
+omission. No new physical-device capture or native recognition qualification.
+
+## 9 November 2026 — retained phone-photo geometry and text evidence
+
+The [camera fixture job](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42635475023/job/129222355005)
+passes at `8021ca2` using production geometry byte-identical to the qualified
+`9c44a69` runtime. The retained iPhone 7 photograph rectifies to 755×1259 pixels,
+with mean difference 0.104874/255 and 99th-percentile difference 1/255 against
+independent OpenCV mapping. Both photographic inputs recover the separately
+added −4.2° and +6.7° rotations. The English/French printed page's raw CER is
+0.1677%, 12.2442% and 61.4894%; the predeclared deskew-plus-whitening arm yields
+0.3690%, 0.4025% and 0.5032%. These are normalized text scores for this page,
+not a broad model benchmark. The small original-page regression and all
+three processing arms are preserved. Whitening stays optional and reviewable.
+
+The [verified artifact receipt](tests/results/ocr-phone-photo/camera-8021/artifact-identity.json)
+retains archive/member hashes, all text/TSV/report evidence, ground-truth and
+source identities. Full image arms remain in the hashed hosted artifact. No
+physical capture, mobile memory behavior or historical-document transcription
+is inferred. The original identity assertion passed, but its PNG was omitted;
+`fe0e279` retains that output in a separate unchanged-geometry run.
+
+## 9 November 2026 — qualified bounded writer and Windows path components
+
+The final [strict reader-limit job](tests/results/ocr-render/reader-limits-9c44a69.json)
+has now finished: five PDFium supplementary-search assertions and the unchanged
+Poppler dense-page assertion fail. A valid independent producer control also
+copies exact text but cannot find the complete emoji in the same pinned
+PDFium binary; raw surrogate queries find each unit. The Poppler output is the
+exact first 50,000 of 65,542 characters. These are retained failures, separate
+from the passing native components below, without weakening any assertion.
+
+The immutable `9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a` source passes its
+[writer/archive/scalar-Unicode job](tests/results/ocr-render/writer-9c44a69.json)
+and [actual Windows file-I/O job](tests/results/ocr-render/windows-9c44a69.json).
+The writer job passes 70 native checks, 11 artifact methods, ten production
+Rust contracts and the explicitly executed >128 MiB file control. Thirteen
+actual PDFs pass veraPDF PDF/A-2b and both damaged controls are rejected.
+All 65,542 source scalars survive two pages and the font-subset transition.
+The 138,448,604-byte file retains eleven pages; the observed 10.48 seconds and
+59,128 KiB maximum RSS describe this hosted fixture only. The Windows source
+passes 21 production, 18 standalone and nine historical-negative checks, then
+independent exact pixels, physical sizes and copied text for four PDFs.
+
+Capability mask 47 advertises these components while withholding bidi bit16.
+The separate strict supplementary-search/dense-page diagnostic remains a
+distinct job, without weakening its assertions or claiming universal reader
+compatibility. The [reflected-axis experiment](tests/results/ocr-render/strategies-9cc9e10.json)
+produces 84 archival-valid, pixel-identical files with text bounds preserved;
+none of seven representations passes all twelve extraction/search cases.
+These reader failures remain outside production enablement. No runtime
+release, recognition-model default or release asset changes here.
+
+## 9 November 2026 — reviewed PDF export implementation checkpoint
+
+At [writer source `2111db64`](tests/results/ocr-render/writer-2111db6.json),
+70 C++ checks and nine production Rust writer contracts pass. Thirteen actual
+PDFs pass veraPDF PDF/A-2b and both damaged controls are rejected. A real
+138,448,604-byte streamed file preserves eleven pages, dimensions, text and
+source image pixels. The overall job remains failed on five PDFium
+supplementary searches and Poppler's 50,000-character exact prefix in the dense
+single-page test; both failures are retained separately. The
+[same-source strict reader run](tests/results/ocr-render/readers-2111db6.json)
+now has MuPDF 11/11 and pypdf 11/11 exact logical matches, but Poppler CLI 2/11
+and PDFium 1/11 keep bidi disabled. All 21 archival files pass and both damaged
+controls fail. These reports supersede the pending status below.
+
+The [first representation matrix](tests/results/ocr-render/strategies-3048ee7.json)
+retains 24 exercised native/run-fallback controls and 60 unexercised scalar
+controls that stopped in fontTools fixture construction. Those construction
+errors are not reader failures; the corrected source has its own hosted run.
+
+The [f06ea90 repaired-harness run](tests/results/ocr-render/readers-f06ea90.json)
+passes 59 native checks, all 16 veraPDF PDF/A-2b positives and two damaged
+controls. Its actual logical text matches are MuPDF 9/11, pypdf 11/11,
+Poppler CLI 2/11 and PDFium 1/11. At
+[ef8ab9a](tests/results/ocr-render/readers-ef8ab9a.json), both long MuPDF
+boundary cases recover, but inherited RTL context damages a following Latin
+fragment; MuPDF is 10/11 and the other counts remain unchanged. Exact
+ActualText and valid archival resources do not establish reader compatibility.
+The source, all extracted strings, raw word geometry and artifact hashes are
+retained. The older [scalar experiment](tests/results/ocr-render/character-593f827.json)
+also retains its failures and PDFium harness limitation.
+
+Writer checkpoint `2111db64` saves synchronous bounded object emission,
+original Rust I/O-error propagation and explicit cancellation/partial-write
+controls. It withholds bidi capability 16 and removes redundant ActualText
+from the ordinary scalar Unicode path. Its independent hosted writer/archive
+and unchanged strict bidi jobs remain pending; no pass follows from the
+implementation checkpoint alone.
+
+The initial [87357610 baseline](tests/results/ocr-render/baseline-87357610.json)
+passed 51 native checks and all five two-page archival pixel/text-preservation
+cases. Arabic and Hebrew extraction reversed in all three readers; a mixed-text
+reader crash stopped the remaining cases. The old validator's missing-input
+precondition prevented all conformance validation, so no PDF/A pass follows.
+The corrected reader branch preserves logical run mappings and isolates reader
+processes. A separate limits checkpoint adds whole-document ceilings and
+progressive buffer release without cancelling that pending reader run.
+
+The isolated `feat/ocr-reviewed-pdf-conformance` lane adds an explicit native
+and Rust Unicode bidi option and PDF/A-2b resources to reviewed exports. The
+existing image/text renderer and compatibility default remain available for
+comparison. The pinned Unicode engine compiles into the same native archive.
+Hosted independent extraction, image-preservation and veraPDF validation are
+pending at this checkpoint; no conformance pass or release is claimed. The
+[contract](docs/ocr-reviewed-pdf.md) documents resources, options and gates.
 
 ## 9 November 2026 — reviewed PDF export implementation checkpoint
 

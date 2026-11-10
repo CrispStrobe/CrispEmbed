@@ -404,7 +404,7 @@ jobs:
         run: |
           pdfium_library=$(python3 -c 'from pathlib import Path; import pypdfium2_raw; print(Path(pypdfium2_raw.__file__).with_name("libpdfium.so"))')
           python3 tests/test_marker_installed_wheel.py --native-prefix dist --pdfium "$pdfium_library" \
-            --work-dir build/marker-wheel-work --output build/marker-wheel
+            --work-dir "$RUNNER_TEMP/marker-wheel-work" --output build/marker-wheel
 
       - name: Retain installed Python wheel diagnostics
         if: always() && runner.os == 'Linux' && needs.guards.outputs.native_tests == 'true'

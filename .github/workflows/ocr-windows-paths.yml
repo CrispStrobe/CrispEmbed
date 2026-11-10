@@ -1,0 +1,58 @@
+name: OCR Windows Unicode file paths
+
+on:
+  push:
+    branches: [feat/ocr-windows-unicode-paths, feat/ocr-photo-preprocessing, feat/ocr-pdf-writer-qualified, feat/ocr-pdf-writer-final]
+    paths:
+      - 'src/image_preprocess.cpp'
+      - 'src/core/image_out.cpp'
+      - 'src/ocr_render.*'
+      - 'tests/ocr_render_stb.cpp'
+      - 'tests/test_ocr_windows_paths.cpp'
+      - 'tests/check_ocr_windows_paths.py'
+      - 'tests/windows_utf8_paths/**'
+      - '.github/workflows/ocr-windows-paths.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-native-paths:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install independent PDF and raster readers
+        run: python -m pip install 'Pillow==13.0.0' 'pypdf==6.21.4'
+      - name: Build real production translation units and historical control
+        shell: pwsh
+        run: |
+          cmake -S tests/windows_utf8_paths -B build-ocr-windows -A x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build-ocr-windows --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Execute production, standalone and historical Windows paths
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force build-ocr-windows/artifacts | Out-Null
+          foreach ($name in @('production', 'harness', 'legacy')) {
+            & "build-ocr-windows/Release/ocr-paths-$name.exe" "build-ocr-windows/artifacts/$name" 2>&1 |
+              Tee-Object -FilePath "build-ocr-windows/artifacts/$name.log"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: Independently verify pixels, PDF geometry and copied text
+        run: python tests/check_ocr_windows_paths.py --artifacts build-ocr-windows/artifacts --binaries build-ocr-windows/Release
+      - name: Retain exact Windows path qualification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-windows-unicode-paths
+          path: build-ocr-windows/artifacts
+          if-no-files-found: warn
+          retention-days: 90

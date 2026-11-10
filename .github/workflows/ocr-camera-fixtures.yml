@@ -1,0 +1,65 @@
+name: OCR retained camera fixtures
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['feat/ocr-camera-fixture-validation']
+    paths:
+      - 'tests/test_ocr_camera_fixtures.py'
+      - 'tests/test_ocr_photo.cpp'
+      - 'tests/test_ocr_photo_quality.py'
+      - 'src/ocr_photo.cpp'
+      - 'src/ocr_crop.cpp'
+      - 'src/scan_cleanup.cpp'
+      - '.github/workflows/ocr-camera-fixtures.yml'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ocr-camera-fixtures-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  geometry-and-text:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install independent pixel and text readers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra
+          python -m pip install 'Pillow==13.0.0' 'numpy==2.2.6' 'opencv-python-headless==4.12.0.88'
+      - name: Build actual production photo API with its retained fixture driver
+        run: |
+          mkdir -p build-camera/artifacts
+          c++ -std=c++17 -O2 -ffunction-sections -fdata-sections -Isrc -Iggml/include \
+            tests/test_ocr_photo.cpp src/ocr_crop.cpp src/scan_cleanup.cpp src/ocr_photo.cpp \
+            src/classical_preproc.cpp src/morph_fast.cpp -Wl,--gc-sections \
+            -o build-camera/test-ocr-photo
+          git rev-parse HEAD > build-camera/artifacts/source.txt
+          sha256sum /usr/share/tesseract-ocr/5/tessdata/eng.traineddata \
+            /usr/share/tesseract-ocr/5/tessdata/fra.traineddata > build-camera/artifacts/reader-model-hashes.txt
+          build-camera/test-ocr-photo self | tee build-camera/artifacts/geometry-controls.json
+      - name: Check real-camera pixels and paired printed-page text
+        run: |
+          python tests/test_ocr_camera_fixtures.py \
+            --binary build-camera/test-ocr-photo --artifacts build-camera/artifacts
+      - name: Preserve every arm, source identity, text and failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-retained-camera-fixtures
+          path: build-camera/artifacts
+          if-no-files-found: error
+          retention-days: 90

@@ -1,0 +1,372 @@
+{
+  "schema": "crispembed-retained-camera-fixtures-v1",
+  "source_sha": "fe0e2798d0489c2db3be1bcf5a6924705ef38416",
+  "binary_sha256": "7364491cfb5b720621703ce6fcacff6c7819a1cba419120c83fa933c07d6da35",
+  "physical_capture_workflow_tested": false,
+  "native_recognition_models_qualified": false,
+  "scope": "Public production photo geometry on existing photographs, with independent OpenCV pixels and Tesseract text checks.",
+  "thresholds": {
+    "angle_delta_max_degrees": 0.8,
+    "perspective_mae_max_255": 1.0,
+    "perspective_p99_error_max_255": 4.0,
+    "prepared_printed_page_cer_max": 0.08,
+    "prepared_printed_page_cer_regression_max": 0.015
+  },
+  "versions": {
+    "python": "3.11.18",
+    "pillow": "13.0.0",
+    "numpy": "2.2.6",
+    "opencv": "4.12.0",
+    "tesseract": "tesseract 5.3.4"
+  },
+  "inputs": {
+    "phone_document": {
+      "file": "german_official_document.jpg",
+      "sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "size": [
+        960,
+        1280
+      ],
+      "source_page": "https://commons.wikimedia.org/wiki/File:Bernhard_Freudenberg_(1823-1877)_citizenship_document_from_1848.jpg",
+      "license": "Public-Domain",
+      "exif": {
+        "make": "Apple",
+        "model": "iPhone 7",
+        "date_time": "2018:10:23 09:59:53"
+      },
+      "source_unchanged_after_checks": true
+    },
+    "printed_page": {
+      "file": "commons_test_ocr_document.jpg",
+      "sha256": "92d117d352ed2ebe86efc72e661407761f2747bf44fe7a292facd8d75735e4be",
+      "size": [
+        1920,
+        2485
+      ],
+      "source_page": "https://commons.wikimedia.org/wiki/File:Test_OCR_document.jpg",
+      "license": "CC0-1.0",
+      "exif": {
+        "make": null,
+        "model": null,
+        "date_time": null
+      },
+      "source_unchanged_after_checks": true
+    }
+  },
+  "perspective": {
+    "corners": [
+      [
+        135.0,
+        13.0
+      ],
+      [
+        889.0,
+        31.0
+      ],
+      [
+        862.0,
+        1264.0
+      ],
+      [
+        122.0,
+        1271.0
+      ]
+    ],
+    "geometry": {
+      "width": 755,
+      "height": 1259,
+      "seconds": 0.0407
+    },
+    "mae_255": 0.10487422128007266,
+    "p99_error_255": 1.0,
+    "max_error_255": 4,
+    "reference": "OpenCV getPerspectiveTransform + warpPerspective INTER_LINEAR",
+    "native_png_sha256": "bfd82549f61e6fab320254387d9d48b0fdfc6047b7ad319d7593b91e14cca32f",
+    "identity_geometry": {
+      "width": 960,
+      "height": 1280,
+      "seconds": 0.0507
+    },
+    "identity_png_sha256": "0d279ba03a487f7df802e316805bbfeffd1fd9238a3e3251b16853c6b8acd8f6",
+    "identity_byte_exact": true
+  },
+  "deskew": [
+    {
+      "input": "phone_document",
+      "added_rotation_ccw_degrees": 0.0,
+      "geometry": {
+        "angle": 0,
+        "correction_degrees": 0,
+        "width": 960,
+        "height": 1280,
+        "seconds": 0.1335
+      },
+      "baseline_correction_degrees": 0,
+      "correction_delta_error_degrees": 0.0,
+      "source_size": [
+        960,
+        1280
+      ],
+      "prepared_size": [
+        960,
+        1280
+      ]
+    },
+    {
+      "input": "phone_document",
+      "added_rotation_ccw_degrees": -4.2,
+      "geometry": {
+        "angle": 4.2,
+        "correction_degrees": -4.2,
+        "width": 1148,
+        "height": 1422,
+        "seconds": 0.1785
+      },
+      "baseline_correction_degrees": 0,
+      "correction_delta_error_degrees": 0.0,
+      "source_size": [
+        1052,
+        1348
+      ],
+      "prepared_size": [
+        1148,
+        1422
+      ]
+    },
+    {
+      "input": "phone_document",
+      "added_rotation_ccw_degrees": 6.7,
+      "geometry": {
+        "angle": -6.7,
+        "correction_degrees": 6.7,
+        "width": 1258,
+        "height": 1504,
+        "seconds": 0.1812
+      },
+      "baseline_correction_degrees": 0,
+      "correction_delta_error_degrees": 0.0,
+      "source_size": [
+        1104,
+        1384
+      ],
+      "prepared_size": [
+        1258,
+        1504
+      ]
+    },
+    {
+      "input": "printed_page",
+      "added_rotation_ccw_degrees": 0.0,
+      "geometry": {
+        "angle": -0.9,
+        "correction_degrees": 0.9,
+        "width": 1959,
+        "height": 2515,
+        "seconds": 0.2843
+      },
+      "baseline_correction_degrees": 0.9,
+      "correction_delta_error_degrees": 0.0,
+      "source_size": [
+        1920,
+        2485
+      ],
+      "prepared_size": [
+        1959,
+        2515
+      ],
+      "raw_ocr": {
+        "text": "Lorem Ipsum\n\nAlice was beginning to get very tired of\nsitting by her sister in the café, and of having\nnothing to do: once or twice she had peeped\ninto the book her sister was reading, but it\nhad no pictures or conversations in it, “and\nwhat is the use of a book,” thought Alice,\n“without pictures or conversations?”\n\nSo she was considering in her own mind, (as\nwell as she could, for the hot day made her\nfeel very sleepy and stupid,) whether the\npleasure of making a daisy-chain would be\nworth the trouble of getting up and picking\nthe daisies, when suddenly a white rabbit with\npink eyes ran close by her.\n\nThere was nothing so very remarkable in that;\nnor did Alice think it so very much out of the\nway to hear the Rabbit say to itself, “Oh\ndear! Oh dear! I shall be too late!” (when she\nthought it over afterwards, it occurred to her\nthat she ought to have wondered at this, but\nat the time it all seemed quite natural;) but\nwhen the Rabbit actually took a watch out of its\nwaistcoat-pocket, and looked at it, and then\nhurried on, Alice started to her feet, for it\nflashed across her mind that she had never\nbefore seen a rabbit with either a\nwaistcoat-pocket, or a watch to take out of it,\nand, burning with curiosity, she ran across the\nfield after it, and was just in time to see it pop\ndown a large rabbit-hole under the hedge.\n\nIn another moment down went Alice after it,\nnever once considering how in the world she\nwas to get out again.\n\nThe rabbit-hole went straight on like a\ntunnel for some way, and then dipped\n\nsuddenly down, so suddenly that Alice had\nnot a moment to think about stopping herself\nbefore she found herself falling down what\nseemed to be a very deep well.\n\nEither the well was very deep, or she fell very\nslowly, for she had plenty of time as she went\ndown to look about her, and to wonder what\nwas going to happen next. First, she tried to\nlook down and make out what she was\ncoming to, but it was too dark to see\nanything: then she looked at the sides of the\nwell, and noticed that they were filled with\ncupboards and book-shelves: here and there\nshe saw maps and pictures hung upon pegs.\nShe took down a jar from one of the shelves\nas she passed; it was labelled “ORANGE\nMARMALADE,” but to her great\ndisappointment it was empty: she did not like\nto drop the jar for fear of killing somebody\nunderneath, so managed to put it into one of\nthe cupboards as she fell past it.\n\nJ'ajoute que le fait d’avoir été, durant plus de\ndeux ans, le directeur de l’hôpital du camp et\nd’avoir, pendant toute la durée de mon\ninternement, donné régulièrement des cours\nde français, d’histoire de la littérature\nfrançaise et d’histoire de la philosophie, m’a\npermis d’avoir des relations suivies et intimes\navec presque tous mes compagnons de\nPaventure. Ces relations et cette intimité\nm'ont permis de les connaître, un par un, de\nvoir non seulement leur corps nu, lorsqu'ils se\nprésentaient à la visite médicale, mais aussi\nleur âme à nu aux heures de confidences.\n\nTHE END\n",
+        "characters": 2980,
+        "words": 556,
+        "cer": 0.0016772895001677288,
+        "wer": 0.007194244604316547,
+        "line_count": 71,
+        "mean_word_confidence": 95.42814796582745,
+        "seconds": 4.9766,
+        "stderr": "Estimating resolution as 260\n",
+        "text_sha256": "9deb34e73b81e031a49089adaebb97a1a9270c660cb2e961e60f345fe12a44c8",
+        "tsv_sha256": "ed7ca17aff2092fe06de72357fbf992140bbda18d67df87e6041a07e9c497174"
+      },
+      "deskew_ocr": {
+        "text": "Lorem Ipsum\n\nA was beginning to get very tired of\nsitting by her sister in the café, and of having\nnothing to do: once or twice she had peeped\ninto the book her sister was reading, but it\nhad no pictures or conversations in it, “and\nwhat is the use of a book,” thought Alice,\n“without pictures or conversations?”\n\nSo she was considering in her own mind, (as\nwell as she could, for the hot day made her\nfeel very sleepy and stupid,) whether the\npleasure of making a daisy-chain would be\nworth the trouble of getting up and picking\nthe daisies, when suddenly a white rabbit with\npink eyes ran close by her.\n\nThere was nothing so very remarkable in that;\nnor did Alice think it so very much out of the\nway to hear the Rabbit say to itself, “Oh\ndear! Oh dear! I shall be too late!” (when she\nthought it over afterwards, it occurred to her\nthat she ought to have wondered at this, but\nat the time it all seemed quite natural;) but\nwhen the Rabbit actually took a watch out of its\nwaistcoat-pocket, and looked at it, and then\nhurried on, Alice started to her feet, for it\nflashed across her mind that she had never\nbefore seen a rabbit with either a\n\nwaistcoat- pocket, or a watch to take out of it,\nand, burning with curiosity, she ran across the\nfield after it, and was just in time to see it pop\ndown a large rabbit-hole under the hedge.\n\nIn another moment down went Alice after it,\nnever once considering how in the world she\nwas to get out again.\n\nThe rabbit-hole went straight on like a\ntunnel for some way, and then dipped\n\nsuddenly down, so suddenly that Alice had\nnot a moment to think about stopping herself\nbefore she found herself falling down what\nseemed to be a very deep well.\n\nEither the well was very deep, or she fell very\nslowly, for she had plenty of time as she went\ndown to look about her, and to wonder what\nwas going to happen next. First, she tried to\nlook down and make out what she was\ncoming to, but it was too dark to see\nanything: then she looked at the sides of the\nwell, and noticed that they were filled with\ncupboards and book-shelves: here and there\nshe saw maps and pictures hung upon pegs.\nShe took down a jar from one of the shelves\nas she passed; it was labelled “ORANGE\nMARMALADE,” but to her great\ndisappointment it was empty: she did not like\nto drop the jar for fear of killing somebody\nunderneath, so managed to put it into one of\nthe cupboards as she fell past it.\n\nJajoute que le fait d’avoir été, durant plus de\ndeux ans, le directeur de ?hépital du camp et\ndavoir, pendant toute la durée de mon\ninternement, donné régulièrement des cours\nde français, d’histoire de la littérature\nfrançaise et d’histoire de la philosophie, m’a\npermis d’avoir des relations suivies et intimes\navec presque tous mes compagnons de\nPaventure. Ces relations et cette intimité\nmont permis de les connaître, un par un, de\nvoir non seulement leur corps nu, lorsqu'ils se\nprésentaient à la visite médicale, mais aussi\nleur âme à nu aux heures de confidences.\n\nTHE END\n",
+        "characters": 2973,
+        "words": 557,
+        "cer": 0.004696410600469641,
+        "wer": 0.01618705035971223,
+        "line_count": 71,
+        "mean_word_confidence": 95.22732956732499,
+        "seconds": 5.0053,
+        "stderr": "Estimating resolution as 261\n",
+        "text_sha256": "8090ee026c284df9ef9db724f7845e68549c6ab21b63b156c50a7637240fdeb0",
+        "tsv_sha256": "65046ea112a79b1b3e49be53eaa18668b471d4db97144e451a9425dada6a3095"
+      },
+      "cleanup_geometry": {
+        "width": 1959,
+        "height": 2515,
+        "seconds": 0.3596
+      },
+      "prepared_ocr": {
+        "text": "Lorem Ipsum\n\nAitice was beginning to get very tired of\nsitting by her sister in the café, and of having\nnothing to do: once or twice she had peeped\ninto the book her sister was reading, but it\nhad no pictures or conversations in it, “and\nwhat is the use of a book,” thought Alice,\n“without pictures or conversations?”\n\nSo she was considering in her own mind, (as\nwell as she could, for the hot day made her\nfeel very sleepy and stupid,) whether the\npleasure of making a daisy-chain would be\nworth the trouble of getting up and picking\nthe daisies, when suddenly a white rabbit with\npink eyes ran close by her.\n\nThere was nothing so very remarkable in that;\nnor did Alice think it so very much out of the\nway to hear the Rabbit say to itself, “Oh\ndear! Oh dear! I shall be too late!” (when she\nthought it over afterwards, it occurred to her\nthat she ought to have wondered at this, but\nat the time it all seemed quite natural;) but\nwhen the Rabbit actually took a watch out of its\nwaistcoat -pocket, and looked at it, and then\nhurried on, Alice started to her feet, for it\nflashed across her mind that she had never\nbefore seen a rabbit with either a\nwaistcoat-pocket, or a watch to take out of it,\nand, burning with curiosity, she ran across the\nfield after it, and was just in time to see it pop\ndown a large rabbit-hole under the hedge.\n\nIn another moment down went Alice after it,\nnever once considering how in the world she\nwas to get out again.\n\nThe rabbit-hole went straight on like a\ntunnel for some way, and then dipped\n\nsuddenly down, so suddenly that Alice had\nnot a moment to think about stopping herself\nbefore she found herself falling down what\nseemed to be a very deep well.\n\nEither the well was very deep, or she fell very\nslowly, for she had plenty of time as she went\ndown to look about her, and to wonder what\nwas going to happen next. First, she tried to\nlook down and make out what she was\ncoming to, but it was too dark to see\nanything: then she looked at the sides of the\nwell, and noticed that they were filled with\ncupboards and book-shelves: here and there\nshe saw maps and pictures hung upon pegs.\nShe took down a jar from one of the shelves\nas she passed; it was labelled “ORANGE\nMARMALADE,” but to her great\ndisappointment it was empty: she did not like\nto drop the jar for fear of killing somebody\nunderneath, so managed to put it into one of\nthe cupboards as she fell past it.\n\nJajoute que le fait d’avoir été, durant plus de\ndeux ans, le directeur de Phôpital du camp et\nd'avoir, pendant toute la durée de mon\ninternement, donné régulièrement des cours\nde français, d’histoire de la littérature\nfrançaise et d’histoire de la philosophie, m’a\npermis d’avoir des relations suivies et intimes\navec presque tous mes compagnons de\nPaventure. Ces relations et cette intimité\nmont permis de les connaître, un par un, de\nvoir non seulement leur corps nu, lorsqu'ils se\nprésentaient à la visite médicale, mais aussi\nleur âme à nu aux heures de confidences.\n\nTHE END\n",
+        "characters": 2979,
+        "words": 557,
+        "cer": 0.0036900369003690036,
+        "wer": 0.01618705035971223,
+        "line_count": 71,
+        "mean_word_confidence": 95.20504496409333,
+        "seconds": 4.9442,
+        "stderr": "Estimating resolution as 260\n",
+        "text_sha256": "0bcf76970342f789733989df32b8820d95b81b275802da19216c163f8f156664",
+        "tsv_sha256": "a200e1f9d45831700702f905486f095aaa26746edff75a40ff8d75a9286d483d"
+      }
+    },
+    {
+      "input": "printed_page",
+      "added_rotation_ccw_degrees": -4.2,
+      "geometry": {
+        "angle": 3.3,
+        "correction_degrees": -3.3,
+        "width": 2246,
+        "height": 2736,
+        "seconds": 0.3286
+      },
+      "baseline_correction_degrees": 0.9,
+      "correction_delta_error_degrees": 0.0,
+      "source_size": [
+        2098,
+        2619
+      ],
+      "prepared_size": [
+        2246,
+        2736
+      ],
+      "raw_ocr": {
+        "text": "Lorem Ipsum\n\nAce Was beginning to get very tired of\nsitting by her sister in the café, and of having\nnothing to do: once or twice she had peeped\ninto the book her sister was reading, but it\nhad no pictures or Conversations in it, “and\nwhat is the use ofa book,” thought Alice,\n“without pictures or Conversations?”\n\nSo she was Considering in her own mind, (as\nwell as she could, for the hot day made her\nfeel very sleepy and stupid,) whether the\npleasure of making a daisy-chain would be\nworth the trouble of getting up and picking\nthe daisies, when sudden ÿ a white rabbit with\npink eyes ran close by her.\nThere was nothing so very remarkable in that;\nnor did Alice think it so very much out of the\nRabbit say to itself, “Oh\n\nI shall be too late!” (when she\nthought it over afterwards, it occurred to her\nthat she ought to have wondered at this, but\n\nbefore seen a rabb\n\nWaistcoat- pocket, Or a watch to take out of i,\nand, burning with Curiosity, she ran across the\n#2 after it, and was ust in time to see it pop\ndown a large rabbit-hole under the hedge,\n\nIn another moment down went Alice after it,\nnever Once considering how in the world she\nWas to get out again.\n\nThe rabbit-hole went Straight on like a\ntunnel for some way, and then dipped\n\nsuddenly down, so suddenly that Alice had\nnot a moment to think about stopping herself\nbefore she found herself falling down what\nseemed to be a very deep well.\n\nEither the well was very deep, or she fel] very\nslowly, for she had plenty of time as she went\ndown to look about her, and to wonder what\nWas going to happen next, First, she tried to\nlook down and make out what she was\ncoming to, but it was too dark to see\nanything: then she looked at the sides of the\nwell, and noticed that they were filled with\ncupboards and book-shelves: here and there\n\nShe took down a jar from one of the shelves\nas she passed; it was labelled “ORANGE\nLADE,” but to her great\ndisappointment it Was empty: she did not like\nto drop the jar for fear of killing somebody\nunderneath, so managed to put it into one of\nthe cupboards as she fell past it.\nJajoute que le fait Pavoir été, durant plus de\ndeux ans, le directeur de Phôpital du camp et\nd'avoir, pendant toute la durée de mon\ninternement, donné régulièrement des cours\nde français, d’histoire de la littérature\nfrançaise et d’histoire de la philosophie, ma\npermis d’avoir des relations suivies et intimes\navec presque tous mes Compagnons de\nPaventure. Ces relations et cette intimité\nmont permis de les Connaître, un par un, de\nVoir non seulement leur Corps nu, lorsqu’ils se\nprésentaient à la visite médicale, mais aussi\nleur âme à nu aux heures de confidences.\n\nTHE END\n\n",
+        "characters": 2645,
+        "words": 496,
+        "cer": 0.12244213351224421,
+        "wer": 0.17446043165467626,
+        "line_count": 65,
+        "mean_word_confidence": 92.67319379637088,
+        "seconds": 5.184,
+        "stderr": "Estimating resolution as 364\n",
+        "text_sha256": "f4d06d688b778db755b65a6f738d5bf92938dc5d3a7ce25cf4ddafc4e6368504",
+        "tsv_sha256": "d78381ee1701f65e5a8df3ab0af5ea0101fa439d306aa2b8f4006072aae0b287"
+      },
+      "deskew_ocr": {
+        "text": "Lorem Ipsum\n\nAlice was beginning to get very tired of\n\nsitting by her sister in the café, and of having\nnothing to do: once or twice she had peeped\ninto the book her sister was reading, but it\nhad no pictures or conversations in it, “and\nwhat is the use of a book,” thought Alice,\n“without pictures or conversations?”\n\nSo she was considering in her own mind, (as\nwell as she could, for the hot day made her\nfeel very sleepy and stupid,) whether the\npleasure of making a daisy-chain would be\nworth the trouble of getting up and picking\nthe daisies, when suddenly a white rabbit with\npink eyes ran close by her.\n\nThere was nothing so very remarkable in that;\nnor did Alice think it so very much out of the\nway to hear the Rabbit say to itself, “Oh\ndear! Oh dear! I shall be too late!” (when she\nthought it over afterwards, it occurred to her\nthat she ought to have wondered at this, but\nat the time it all seemed quite natural;) but\nwhen the Rabbit actually took a watch out of its\nwaistcoat pocket, and looked at it, and then\nhurried on, Alice started to her feet, for it\nflashed across her mind that she had never\nbefore seen a rabbit with either a\nwaistcoat-pocket, or a watch to take out of it,\nand, burning with curiosity, she ran across the\nfield after it, and was just in time to see it pop\ndown a large rabbit-hole under the hedge.\n\nIn another moment down went Alice after it,\nnever once considering how in the world she\nwas to get out again.\n\nThe rabbit-hole went straight on like a\ntunnel for some way, and then dipped\n\nsuddenly down, so suddenly that Alice had\nnot a moment to think about stopping herself\nbefore she found herself falling down what\nseemed to be a very deep well.\n\nEither the well was very deep, or she fell very\nslowly, for she had plenty of time as she went\ndown to look about her, and to wonder what\nwas going to happen next. First, she tried to\nlook down and make out what she was\ncoming to, but it was too dark to see\nanything: then she looked at the sides of the\nwell, and noticed that they were filled with\ncupboards and book-shelves: here and there\nshe saw maps and pictures hung upon pegs.\nShe took down a jar from one of the shelves\nas she passed; it was labelled “ORANGE\nMARMALADE,” but to her great\ndisappointment it was empty: she did not like\nto drop the jar for fear of killing somebody\nunderneath, so managed to put it into one of\nthe cupboards as she fell past it.\n\nJajoute que le fait d’avoir été, durant plus de\ndeux ans, le directeur de l’hôpital du camp et\navoir, pendant toute la durée de mon\ninternement, donné régulièrement des cours\nde français, d’histoire de la littérature\nfrançaise et d’histoire de la philosophie, m’a\npermis d’avoir des relations suivies et intimes\navec presque tous mes compagnons de\nPaventure. Ces relations et cette intimité\nmont permis de les connaître, un par un, de\nvoir non seulement leur corps nu, lorsqu’ils se\nprésentaient à la visite médicale, mais aussi\nleur âme à nu aux heures de confidences.\n\nTHE END\n\n",
+        "characters": 2976,
+        "words": 557,
+        "cer": 0.0023482053002348204,
+        "wer": 0.01079136690647482,
+        "line_count": 71,
+        "mean_word_confidence": 95.24206181328543,
+        "seconds": 5.256,
+        "stderr": "Estimating resolution as 340\n",
+        "text_sha256": "0da968a94a51bf222ec12d6dfe2a216c9d52a2c7c51d1845899193361dbff513",
+        "tsv_sha256": "32875fb2b43fc8c972d39f756e3350e8d615e48992f3688331dda1aa1c86ca02"
+      },
+      "cleanup_geometry": {
+        "width": 2246,
+        "height": 2736,
+        "seconds": 0.4368
+      },
+      "prepared_ocr": {
+        "text": "Lorem Ipsum\n\nÂüice was beginning to get very tired of\nsitting by her sister in the café, and of having\nnothing to do: once or twice she had peeped\ninto the book her sister was reading, but it\nhad no pictures or conversations in it, “and\nwhat is the use of a book,” thought Alice,\n“without pictures or conversations?”\n\nSo she was considering in her own mind, (as\nwell as she could, for the hot day made her\nfeel very sleepy and stupid,) whether the\npleasure of making a daisy-chain would be\nworth the trouble of getting up and picking\nthe daisies, when suddenly a white rabbit with\npink eyes ran close by her.\n\nThere was nothing so very remarkable in that;\nnor did Alice think it so very much out of the\nway to hear the Rabbit say to itself, “Oh\ndear! Oh dear! I shall be too late!” (when she\nthought it over afterwards, it occurred to her\nthat she ought to have wondered at this, but\nat the time it all seemed quite natural;) but\nwhen the Rabbit actually took a watch out of its\nwaistcoat -pocket, and looked at it, and then\nhurried on, Alice started to her feet, for it\nflashed across her mind that she had never\nbefore seen a rabbit with either a\n\nwaistcoat- pocket, or a watch to take out of it,\nand, burning with curiosity, she ran across the\nfield after it, and was just in time to see it pop\ndown a large rabbit-hole under the hedge.\n\nIn another moment down went Alice after it,\nnever once considering how in the world she\nwas to get out again.\n\nThe rabbit-hole went straight on like a\ntunnel for some way, and then dipped\n\nsuddenly down, so suddenly that Alice had\nnot a moment to think about stopping herself\nbefore she found herself falling down what\nseemed to be a very deep well.\n\nEither the well was very deep, or she fell very\nslowly, for she had plenty of time as she went\ndown to look about her, and to wonder what\nwas going to happen next. First, she tried to\nlook down and make out what she was\ncoming to, but it was too dark to see\nanything: then she looked at the sides of the\nwell, and noticed that they were filled with\ncupboards and book-shelves: here and there\nshe saw maps and pictures hung upon pegs.\nShe took down a jar from one of the shelves\nas she passed; it was labelled “ORANGE\nMARMALADE,” but to her great\ndisappointment it was empty: she did not like\nto drop the jar for fear of killing somebody\nunderneath, so managed to put it into one of\nthe cupboards as she fell past it.\n\nJ'ajoute que le fait d’avoir été, durant plus de\ndeux ans, le directeur de Phôpital du camp et\nd’avoir, pendant toute la durée de mon\ninternement, donné régulièrement des cours\nde français, d’histoire de la littérature\nfrançaise et d’histoire de la philosophie, ma\npermis d’avoir des relations suivies et intimes\navec presque tous mes compagnons de\nPaventure. Ces relations et cette intimité\nmont permis de les connaître, un par un, de\nvoir non seulement leur corps nu, lorsqu'ils se\nprésentaient à la visite médicale, mais aussi\nleur âme à nu aux heures de confidences.\n\nTHE END\n",
+        "characters": 2979,
+        "words": 558,
+        "cer": 0.004025494800402549,
+        "wer": 0.019784172661870502,
+        "line_count": 71,
+        "mean_word_confidence": 94.85877503405027,
+        "seconds": 5.0604,
+        "stderr": "Estimating resolution as 260\n",
+        "text_sha256": "0377b08ab163a1a6da14a321dbd7675bd1a31253271d3aaa1646c3652163c8a2",
+        "tsv_sha256": "40179f65e0efd5fcfdad3018ef96e01805e676509da2921ad321cadc18486418"
+      }
+    },
+    {
+      "input": "printed_page",
+      "added_rotation_ccw_degrees": 6.7,
+      "geometry": {
+        "angle": -7.6,
+        "correction_degrees": 7.6,
+        "width": 2535,
+        "height": 2960,
+        "seconds": 0.3264
+      },
+      "baseline_correction_degrees": 0.9,
+      "correction_delta_error_degrees": 8.881784197001252e-16,
+      "source_size": [
+        2198,
+        2693
+      ],
+      "prepared_size": [
+        2535,
+        2960
+      ],
+      "raw_ocr": {
+        "text": "Lorem Ipsum\n\nhad no pictures or con\nwhat is the use ofa book”\n\n«without pictures or conve\n\nbefore seen à rabbit with\nwaistcoat-\n\nand, burning\n\nfield after it, and\n\ndown a large rabbit-\n\nJn another moment down W\nnever once considering how\n\nwas to get out again.\n\nThe rabbit-hole went strai\ntunnel for some\n\nguddenly down 8° suddenly that Alice had\npot a moment t think about stopping herself\nbefore she found herself falling down what\nseemed to be à very deep well.\n\nRither the well was Very\n\ndowly, for she had plenty\n\ndown to ook about her,\n\nwas going t©\n\nJook down and make out\n\ncoming tO» but it was tO dark to see\nanything: then she looked at the sides of the\nwell, and noticed that they were glled with\n\ncupboards and pook-shelves: here and there\nghe saw maps and pictures hung upon Pes\nshe took down ajar from one of the shelves\nas she passed; it was \\abelled «QRANGE\nR BE,” but to her great\nS . she did not like\nkilling somebody\nunderneath, 50 managed into one of\nthe cupboards a she fell past it:\nPajoute gue je fait d'avoir été, durant plus de\ndeux ans, le directeur de phôpital du camp et\navoir, pendant toute la durée de mon\ninternement, donné régulièrement des cours\n\n.\n\neures de confidences:\n\n",
+        "characters": 1185,
+        "words": 223,
+        "cer": 0.6148943307614895,
+        "wer": 0.6888489208633094,
+        "line_count": 41,
+        "mean_word_confidence": 85.06797972197312,
+        "seconds": 2.9496,
+        "stderr": "Estimating resolution as 364\n",
+        "text_sha256": "06dfb6a46933f0484a0b6fa595bdd863d88feb434da5f883aaeccbaa7332b0b6",
+        "tsv_sha256": "b267549b6c4ddf1600886a3311084bea0042238e64622fa349571b87ef16bb23"
+      },
+      "deskew_ocr": {
+        "text": "Lorem Ipsum\n\nAûice was beginning to get very tired of\nsitting by her sister in the café, and ofhaving\nnothing to do: once or twice she had peeped\ninto the book her sister was reading, but it\nhad no pictures or conversations in it, “and\nwhat is the use of a book,” thought Alice,\n“without pictures or conversations?”\n\nSo she was considering in her own mind, (as\nwell as she could, for the hot day made her\nfeel very sleepy and stupid,) whether the\npleasure of making a daisy-chain would be\nworth the trouble of getting up and picking\nthe daisies, when suddenly a white rabbit with\npink eyes ran close by her.\n\nThere was nothing so very remarkable in that;\nnor did Alice think it so very much out of the\nway to hear the Rabbit say to itself, “Oh\ndear! Oh dear! I shall be too late!” (when she\nthought it over afterwards, it occurred to her\nthat she ought to have wondered at this, but\nat the time it all seemed quite natural;) but\nwhen the Rabbit actually took a watch out of its\nwaistcoat-pocket, and looked at it, and then\nhurried on, Alice started to her feet, for it\nflashed across her mind that she had never\nbefore seen a rabbit with either a\n\nwaistcoat- pocket, or a watch to take out of it,\nand, burning with curiosity, she ran across the\nfield after it, and was just in time to see it pop\ndown a large rabbit-hole under the hedge.\n\nIn another moment down went Alice after it,\nnever once considering how in the world she\nwas to get out again.\n\nThe rabbit-hole went straight on like a\ntunnel for some way, and then dipped\n\nsuddenly down, so suddenly that Alice had\nnot a moment to think about stopping herself\nbefore she found herself falling down what\nseemed to be a very deep well.\n\nEither the well was very deep, or she fell very\nslowly, for she had plenty of time as she went\ndown to look about her, and to wonder what\nwas going to happen next. First, she tried to\nlook down and make out what she was\ncoming to, but it was too dark to see\nanything: then she looked at the sides of the\nwell, and noticed that they were filled with\ncupboards and book-shelves: here and there\nshe saw maps and pictures hung upon pegs.\nShe took down a jar from one of the shelves\nas she passed; it was labelled “ORANGE\nMARMALADE,” but to her great\ndisappointment it was empty: she did not like\nto drop the jar for fear of killing somebody\nunderneath, so managed to put it into one of\nthe cupboards as she fell past it.\n\nJajoute que le fait d’avoir été, durant plus de\ndeux ans, le directeur de Phôpital du camp et\nd’avoir, pendant toute la durée de mon\ninternement, donné régulièrement des cours\nde français, d’histoire de la littérature\nfrançaise et d’histoire de la philosophie, m’a\npermis d’avoir des relations suivies et intimes\navec presque tous mes compagnons de\nPaventure. Ces relations et cette intimité\nmont permis de les connaître, un par un, de\nvoir non seulement leur corps nu, lorsqu'ils se\nprésentaient à la visite médicale, mais aussi\nleur âme à nu aux heures de confidences.\n\nTHE END\n",
+        "characters": 2977,
+        "words": 556,
+        "cer": 0.0033545790003354577,
+        "wer": 0.017985611510791366,
+        "line_count": 71,
+        "mean_word_confidence": 95.04355385791366,
+        "seconds": 5.1753,
+        "stderr": "Estimating resolution as 262\n",
+        "text_sha256": "4e367614b0a2df07b1508f69a6c744564ed28fb9b87eb3ac22eb7be7f641d3f8",
+        "tsv_sha256": "1a27908f441cca48b250533768748f1bd8f0c3e440434f0017d4a459d9f93d55"
+      },
+      "cleanup_geometry": {
+        "width": 2535,
+        "height": 2960,
+        "seconds": 0.5244
+      },
+      "prepared_ocr": {
+        "text": "Lorem Ipsum\n\nAitice was beginning to get very tired of\nsitting by her sister in the café, and of having\nnothing to do: once or twice she had peeped\ninto the book her sister was reading, but it\nhad no pictures or conversations in it, “and\nwhat is the use of a book,” thought Alice,\n“without pictures or conversations?”\n\nSo she was considering in her own mind, (as\nwell as she could, for the hot day made her\nfeel very sleepy and stupid,) whether the\npleasure of making a daisy-chain would be\nworth the trouble of getting up and picking\nthe daisies, when suddenly a white rabbit with\npink eyes ran close by her.\n\nThere was nothing so very remarkable in that;\nnor did Alice think it so very much out of the\nway to hear the Rabbit say to itself, “Oh\ndear! Oh dear! I shall be too late!” (when she\nthought it over afterwards, it occurred to her\nthat she ought to have wondered at this, but\nat the time it all seemed quite natural;) but\nwhen the Rabbit actually took a watch out of its\nwarstcoat -pocket, and looked at it, and then\nhurried on, Alice started to her feet, for it\nflashed across her mind that she had never\nbefore seen a rabbit with either a\n\nwaistcoat- pocket, or a watch to take out of it,\nand, burning with curiosity, she ran across the\nfield after it, and was just in time to see it pop\ndown a large rabbit-hole under the hedge.\n\nIn another moment down went Alice after it,\nnever once considering how in the world she\nwas to get out again.\n\nThe rabbit-hole went straight on like a\ntunnel for some way, and then dipped\n\nsuddenly down, so suddenly that Alice had\nnot a moment to think about stopping herself\nbefore she found herself falling down what\nseemed to be a very deep well.\n\nEither the well was very deep, or she fell very\nslowly, for she had plenty of time as she went\ndown to look about her, and to wonder what\nwas going to happen next. First, she tried to\nlook down and make out what she was\ncoming to, but it was too dark to see\nanything: then she looked at the sides of the\nwell, and noticed that they were filled with\ncupboards and book-shelves: here and there\nshe saw maps and pictures hung upon pegs.\nShe took down a jar from one of the shelves\nas she passed; it was labelled “ORANGE\nMARMALADE,” but to her great\ndisappointment it was empty: she did not like\nto drop the jar for fear of killing somebody\nunderneath, so managed to put it into one of\nthe cupboards as she fell past it.\n\nJajoute que le fait d’avoir été, durant plus de\ndeux ans, le directeur de Phôpital du camp et\n@avoir, pendant toute la durée de mon\ninternement, donné régulièrement des cours\nde français, d’histoire de la littérature\nfrançaise et d’histoire de la philosophie, m’a\npermis d’avoir des relations suivies et intimes\navec presque tous mes compagnons de\nPaventure. Ces relations et cette intimité\nmont permis de les connaître, un par un, de\nvoir non seulement leur corps nu, lorsqu'ils se\nprésentaient à la visite médicale, mais aussi\nleur âme à nu aux heures de confidences.\n\nTHEEND\n",
+        "characters": 2978,
+        "words": 557,
+        "cer": 0.005031868500503187,
+        "wer": 0.023381294964028777,
+        "line_count": 71,
+        "mean_word_confidence": 95.3318877289049,
+        "seconds": 5.1411,
+        "stderr": "Estimating resolution as 260\n",
+        "text_sha256": "144f06dbf4240721cdcfffa214e7c5e1c7f59c746086fab28e1fe0c739191a04",
+        "tsv_sha256": "c2a5352f23d9ad37a9037b8d939d437958ab8d399fec4e3ce38921e4935c6b54"
+      }
+    }
+  ],
+  "failures": [],
+  "source_files": {
+    "src/ocr_photo.cpp": "d02dc3a776fdb1cfd617fe79f5cc951dea6951e168f99cc76923f0ae7aff2b5f",
+    "src/ocr_crop.cpp": "6888c26ff3c54042ca58811f5f60353b8b97d1e0da56a4a4df73816dbf334fc9",
+    "src/scan_cleanup.cpp": "a37bcae9f42b05afbffd5f103b2018f1be4f2c6ba738d8938d9b553f740386eb",
+    "src/classical_preproc.cpp": "eb7cc3bbe87fef7bd7693027ecccb422540dfe3693602fcb95771a09d1fce042",
+    "src/morph_fast.cpp": "05859c804dd5e2c1c43e32bec1d306e162bcc912b3f50124c80140843b604aa6",
+    "src/crispembed.h": "4ec8a8fb4d313c3a6ca482a7bb2418823cf9b657e361a160c52167cf532fcced",
+    "tests/test_ocr_photo.cpp": "77fc1f3acb6bcb2be9f054cc9472cfefbecfe9d89ace2ebf2837037b4a695aca",
+    "tests/test_ocr_photo_quality.py": "9106bd29cfb5599af4e066038909ca64e074593ac8fd44b0362159922fff0580",
+    "tests/test_ocr_camera_fixtures.py": "4db9516a60c1bb62a663f21a1bd961ad02576a6a45919a60e3997678cd900203"
+  },
+  "ground_truth": {
+    "path": "tests/regression/images/cc0/ground_truth.json",
+    "sha256": "dd4ba6eff5922febe81c6ec71b6c70d1b0117d392e4ff3d581564a61caa82b4d",
+    "record": "commons_test_ocr_document.jpg",
+    "normalization": "Unicode NFC and whitespace only; case, accents and punctuation retained"
+  },
+  "passed": true
+}

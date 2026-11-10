@@ -5,6 +5,11 @@
 #include "scan_cleanup.h"
 
 #define STB_IMAGE_IMPLEMENTATION
+#ifdef _WIN32
+// Public paths arrive as UTF-8 from Rust/Python. Use the wide Windows file API
+// so a user profile or document name does not depend on the ANSI code page.
+#define STBI_WINDOWS_UTF8
+#endif
 // NOT static — export symbols for use by ocr_detect, ocr_pipeline, math_ocr
 #include "../ggml/examples/stb_image.h"
 

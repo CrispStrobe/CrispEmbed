@@ -1,0 +1,115 @@
+{
+  "source_sha": "9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a",
+  "run_id": 42629559184,
+  "job_id": 129202017875,
+  "job_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/42629559184/job/129202017875",
+  "conclusion": "success",
+  "native_check_counts_including_final_receipt_write": {
+    "production": 21,
+    "standalone": 18,
+    "historical_negative": 9
+  },
+  "artifact": {
+    "id": 13680837891,
+    "name": "ocr-windows-unicode-paths",
+    "bytes": 12135,
+    "sha256": "9366b1aed6b3fe3806a6ce06f75a2a116d8d94e2bb60ca2e82eb02cfd7507f00",
+    "retention_days": 90,
+    "download_digest_verified": true
+  },
+  "source_hash_verification": "All fourteen root repository source-file hashes match this exact Git source after the Windows checkout LF-to-CRLF conversion. Submodule commit and Windows hashes remain in the raw receipt.",
+  "qualification": {
+    "schema": 1,
+    "passed": true,
+    "time_utc": "2026-11-09T14:14:06.201741+00:00",
+    "source_commit": "9c44a69cad0d949e26a200e2bda1ccd58e3f9b8a",
+    "ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+    "platform": "Windows-10-10.0.20348-SP0",
+    "python": "3.11.9",
+    "dependencies": {
+      "Pillow": "13.0.0",
+      "pypdf": "6.21.4"
+    },
+    "sources_sha256": {
+      "src/image_preprocess.cpp": "921fa56e04000a9cda3b76578d4b9d6e2568a98fc1592d60b595279e67524729",
+      "src/image_preprocess.h": "722d0688811312543d5cdf46ad295a9c97443b903bb6d07ba231729b8b853376",
+      "src/scan_cleanup.h": "89bd40ed8a2f2a6b4acd46788312360e8a187acc0b47a78ef46899ecd7a7c786",
+      "src/core/image_out.cpp": "8865bccf9b62deff3bd122253b2c5d8710988273c82bd9d7488100afc941bc91",
+      "src/core/image_out.h": "bc967260ada2611277089f2ab8af155b545ab692bec18f00cbfbcac0768c3f76",
+      "src/core/provenance.h": "7149cb87a2fb9bacbee45b51763eb09980adda88709b19b5749dcb34daa636c2",
+      "src/core/clean_exit.h": "a466049f740399d7c13ad4e4f3291b3d35042863ad4c0ddb72309f048c0775fc",
+      "src/ocr_render.cpp": "979c2a1f7859530e8aad30bc025116d9a774b8385954efb0a51be6a32d9c04c8",
+      "src/ocr_render.h": "770b382d970af0e51c82e4dddda24d4f430014493f24d714bdeaf206438c208a",
+      "tests/ocr_render_stb.cpp": "958f3bb70c2c985cd6d35ff7b3555c4c329dca8ae72503511eb30450b14067cf",
+      "tests/test_ocr_windows_paths.cpp": "04f13162047406666a217096bb68c1b5ae08bfed6469a0eaa4f6543d3e0cfab8",
+      "tests/windows_utf8_paths/CMakeLists.txt": "2e49159573a812174844af8b6d01aa6062b08ce7968f585cde36f2596e1226af",
+      "tests/check_ocr_windows_paths.py": "cca3ae1531a0e43d050e1830ce6c87e05dfb8127870b7115d0daa81ad9b745ec",
+      ".github/workflows/ocr-windows-paths.yml": "1c07ff4bc8b8e7961cd37d37015ad38debc31539a6d1143be50bed30b6795f4c",
+      "ggml/examples/stb_image.h": "2d264ec3e6ce404fc2d0cfff4476c982eb3edf5a61122b03884fdef7bacd9deb",
+      "ggml/examples/stb_image_write.h": "17f339e7582ff4d4d56e40b0e87d77eda8d8f8e62806278ddf8fcf0b8b3d9a84"
+    },
+    "binaries_sha256": {
+      "production": "4d5be52c8de297af31fb4adf33cb8b454ed7f4d79f662e8cc384a8e4587d8a38",
+      "harness": "8ef497414ff55b858165f08fa7b2905d2457f425a49b37b47b27213d1a819e46",
+      "legacy": "cfae21a1891079a55d17e0ef4bd6f5129edfc1e1348e852192b20d48c9cdd241"
+    },
+    "results": [
+      {
+        "path": "production",
+        "native": {
+          "passed": true,
+          "checks": 20,
+          "windows_ansi_codepage": 1252,
+          "historical_negative_control": false,
+          "actual_production_translation_units": true
+        },
+        "pdfs": [
+          {
+            "path": "production/ascii.pdf",
+            "sha256": "54a61b27d8075727b006541dd13e8952d856fc1770523350ac8ad3eda488bad6",
+            "text": "Reviewed Unicode path"
+          },
+          {
+            "path": "production/Prüfung-文件-📷/Geprüft-文-😀.pdf",
+            "sha256": "54a61b27d8075727b006541dd13e8952d856fc1770523350ac8ad3eda488bad6",
+            "text": "Reviewed Unicode path"
+          }
+        ]
+      },
+      {
+        "path": "harness",
+        "native": {
+          "passed": true,
+          "checks": 17,
+          "windows_ansi_codepage": 1252,
+          "historical_negative_control": false,
+          "actual_production_translation_units": false
+        },
+        "pdfs": [
+          {
+            "path": "harness/ascii.pdf",
+            "sha256": "54a61b27d8075727b006541dd13e8952d856fc1770523350ac8ad3eda488bad6",
+            "text": "Reviewed Unicode path"
+          },
+          {
+            "path": "harness/Prüfung-文件-📷/Geprüft-文-😀.pdf",
+            "sha256": "54a61b27d8075727b006541dd13e8952d856fc1770523350ac8ad3eda488bad6",
+            "text": "Reviewed Unicode path"
+          }
+        ]
+      },
+      {
+        "path": "legacy",
+        "native": {
+          "passed": true,
+          "checks": 8,
+          "windows_ansi_codepage": 1252,
+          "historical_negative_control": true,
+          "actual_production_translation_units": true
+        },
+        "pdfs": []
+      }
+    ],
+    "scope": "Actual Windows file I/O, original pixels, numeric image preprocessing and model-free PDF embedding; no OCR model or full desktop application qualification."
+  }
+}

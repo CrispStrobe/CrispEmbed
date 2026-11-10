@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 // DLL export/import (Windows) — without this the ocr_render_* symbols are not
@@ -77,10 +78,11 @@ typedef enum ocr_render_capability {
     OCR_RENDER_CAP_RASTER_IMAGES = 4,
     OCR_RENDER_CAP_ARCHIVAL = 8,
     OCR_RENDER_CAP_BIDI = 16,
+    OCR_RENDER_CAP_STREAM = 32,
 } ocr_render_capability;
 
-/// No model load required. ARCHIVAL declares PDF/A-2b; BIDI declares the
-/// explicit Unicode 17 bidirectional layout option below.
+/// No model load required. ARCHIVAL declares PDF/A-2b. BIDI is withheld while
+/// the explicit Unicode 17 layout option has unresolved reader failures.
 CRISPEMBED_API uint32_t crispembed_ocr_render_capabilities(void);
 
 /// Create a renderer for the given format.
@@ -95,7 +97,8 @@ CRISPEMBED_API void ocr_render_set_separator(ocr_renderer * r, const char * sep)
 /// Must be called before ocr_render_begin(). Only affects PDF format.
 CRISPEMBED_API void ocr_render_set_pdfa(ocr_renderer * r, int enabled);
 
-/// Opt into Unicode 17 bidirectional layout for the invisible PDF text layer.
+/// Experimental Unicode 17 layout for the invisible PDF text layer. It remains
+/// available for qualification, but BIDI is not advertised to applications yet.
 /// Text supplied by callers must be in logical reading order. Visual positions
 /// are estimated inside each OCR region; page images are never repainted.
 /// The legacy default rejects RTL scripts/directional controls. Set before begin.
@@ -103,6 +106,32 @@ CRISPEMBED_API void ocr_render_set_pdf_bidi(ocr_renderer * r, int enabled);
 
 /// Begin a document.
 CRISPEMBED_API void ocr_render_begin(ocr_renderer * r);
+
+/// Lower the per-document PDF ceilings after begin(), before the first page.
+/// Defaults/hard maxima: 5000 pages and 128 MiB output. Additional fixed limits
+/// are 16 MiB input text/geometry, 1 MiB per region and 100000 bidi fragments.
+/// Values must be 1..5000 pages and 4096..134217728 bytes. begin() resets limits.
+/// This bounds an in-memory export; large source images still require separate
+/// decode/compression working memory. Any breach returns an error, never a
+/// truncated document. Export a smaller page selection or downsample images.
+CRISPEMBED_API void ocr_render_set_pdf_limits(ocr_renderer * r, int max_pages, int max_bytes);
+
+/// Synchronous PDF byte sink. Return zero after consuming the complete slice,
+/// nonzero on failure. The data is valid only during this call; no exception
+/// may cross the C boundary. Do not re-enter this renderer from the callback.
+typedef int (*ocr_render_write_callback)(void * context, const unsigned char * data, size_t size);
+
+/// Stream the PDF to a caller-owned sink instead of accumulating output bytes.
+/// Set after begin(), before any page. The callback runs only during end(), in
+/// slices of at most 64 KiB, and is never called again after an error. The
+/// context must remain valid until end() returns. begin() clears the sink.
+/// max_output_bytes must be 4096..2147483648; callers may choose 256 MiB for a
+/// mobile destination. Page/text/image/layout limits remain in force.
+/// Any failure can leave a partial sink: write to a temporary destination and
+/// publish only after end() succeeds. output()/output_size() stay empty in
+/// this mode. The existing byte-returning API retains its 128 MiB ceiling.
+CRISPEMBED_API void ocr_render_set_pdf_writer(ocr_renderer * r, ocr_render_write_callback callback, void * context,
+                                              uint64_t max_output_bytes);
 
 /// Physical PDF dimensions for the NEXT added page (72 points = 1 inch).
 /// Set after begin(), before add_page(). Image and text coordinates scale

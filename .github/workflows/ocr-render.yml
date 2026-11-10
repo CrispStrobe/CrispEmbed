@@ -2,10 +2,11 @@ name: OCR export artifacts
 
 on:
   push:
-    branches: [main, feat/ocr-reviewed-pdf-conformance, feat/ocr-reviewed-pdf-readers]
+    branches: [main, feat/ocr-reviewed-pdf-conformance, feat/ocr-reviewed-pdf-readers, feat/ocr-reviewed-pdf-boundaries, feat/ocr-pdf-stream-writer]
     paths:
       - 'src/ocr_render.*'
       - 'src/ocr_pdf_font.h'
+      - 'src/ocr_pdf_metrics.h'
       - 'src/ocr_pdf_srgb.h'
       - 'vendor/sheenbidi/**'
       - 'tests/*ocr_render*'
@@ -19,6 +20,7 @@ on:
     paths:
       - 'src/ocr_render.*'
       - 'src/ocr_pdf_font.h'
+      - 'src/ocr_pdf_metrics.h'
       - 'src/ocr_pdf_srgb.h'
       - 'vendor/sheenbidi/**'
       - 'tests/*ocr_render*'
@@ -56,7 +58,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y poppler-utils
-          python -m pip install 'Pillow==13.0.0' 'pypdf==6.21.4' 'PyMuPDF==1.26.6'
+          python -m pip install 'Pillow==13.0.0' 'pypdf==6.21.4' 'PyMuPDF==1.26.6' 'pypdfium2==5.15.1' 'fonttools==4.68.0'
       - name: Install pinned independent PDF/A validator
         run: python tools/install_ocr_verapdf.py --prefix build-ocr-render/verapdf
       - name: Build model-free native renderer
@@ -78,6 +80,17 @@ jobs:
         run: |
           ./build-ocr-render/test-ocr-render
           python tests/test_ocr_render_artifacts.py \
+            --library build-ocr-render/libocr_render_test.so \
+            --artifacts build-ocr-render/artifacts -v
+      - name: Independent reader-limit diagnostics (non-blocking)
+        # Strict PDFium/Poppler extraction and search assertions, including the
+        # opt-in bidirectional path that capabilities do not advertise. Their
+        # failures stay visible here and in reader-diagnostics.json, and their
+        # PDFs still feed the PDF/A validation below.
+        if: always() && steps.native.outcome == 'success'
+        continue-on-error: true
+        run: |
+          python tests/test_ocr_render_artifacts.py --reader-diagnostics \
             --library build-ocr-render/libocr_render_test.so \
             --artifacts build-ocr-render/artifacts -v
       - name: Validate declared PDF/A-2b and reject damaged controls

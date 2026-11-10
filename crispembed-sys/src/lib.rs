@@ -1831,10 +1831,17 @@ extern "C" {
     pub fn crispembed_ocr_render_capabilities() -> u32;
     pub fn ocr_render_create(format: c_int) -> *mut c_void;
     pub fn ocr_render_set_separator(r: *mut c_void, sep: *const c_char);
-    /// Request archival mode before begin. Currently unsupported: rendering
-    /// fails explicitly rather than emitting unvalidated compliance metadata.
+    /// Request PDF/A-2b archival mode before begin.
     pub fn ocr_render_set_pdfa(r: *mut c_void, enabled: c_int);
     pub fn ocr_render_set_pdf_bidi(r: *mut c_void, enabled: c_int);
+    pub fn ocr_render_set_pdf_limits(r: *mut c_void, max_pages: c_int, max_bytes: c_int);
+    /// Synchronous bounded-slice sink; zero means success, nonzero stops output.
+    pub fn ocr_render_set_pdf_writer(
+        r: *mut c_void,
+        callback: Option<unsafe extern "C" fn(*mut c_void, *const u8, usize) -> c_int>,
+        context: *mut c_void,
+        max_output_bytes: u64,
+    );
     pub fn ocr_render_begin(r: *mut c_void);
     pub fn ocr_render_set_page_size_points(r: *mut c_void, width: f64, height: f64);
     pub fn ocr_render_add_page(r: *mut c_void, page: *const OcrRenderPage);

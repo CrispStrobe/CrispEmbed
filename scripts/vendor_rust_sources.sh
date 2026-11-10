@@ -81,7 +81,8 @@ for required in CMakeLists.txt VERSION LICENSE NOTICE.marker NOTICE.teleocr \
     models/licenses/apache-2.0/LICENSE licenses/oxr-LICENSE licenses/oxr-NOTICE \
     cmake/MarkerIdentity.cmake src/marker_artifact.h src/marker_artifact.cpp \
     tests/test-marker-artifact.cpp tests/test-marker-lifecycle.cpp tests/marker_pdfium_fixture.cpp \
-    ggml/CMakeLists.txt vendor/sheenbidi/Source/SheenBidi.c vendor/sheenbidi/LICENSE NOTICE.sheenbidi; do
+    vendor/sheenbidi/Source/SheenBidi.c vendor/sheenbidi/LICENSE NOTICE.sheenbidi \
+    ggml/CMakeLists.txt; do
     if [ ! -f "$vendor/$required" ]; then
         echo "error: vendored tree is incomplete — missing $required" >&2
         exit 1
