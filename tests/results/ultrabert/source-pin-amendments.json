@@ -49,6 +49,40 @@
           "reason": "PR #89 (62d62af3, fbd6ea7b, 0023fe16, 7d886594, 6781befb): validate() gains a defaulted quantized=false parameter; the quantized branch (F16/Q8_0/Q4_K non-critical tensors, standard or legacy Q4_K / Q8_0 header matched to actual payload) is reachable only from ultrabert_init behind CRISPEMBED_ULTRABERT_QUANT. load_tokenizer calls configure_tokenizer_mode, which keeps set_gpt2_regex_pretok(true) and adds the Unicode pre-tokenizer only under CRISPEMBED_ULTRABERT_UNICODE_PRETOKEN (default off). Default path unchanged: file_type must equal GGML_FTYPE_ALL_F32 (0) and every tensor F32, as frozen. Reviewed diff 6b5438ec..HEAD."
         }
       ]
+    },
+    {
+      "path": "src/ultrabert_profile.h",
+      "frozen_sha256": "1ad434a05dc2261dda652f0f1fca5905ba6ee80435d2f4b2184ee0b252004aa7",
+      "frozen_commit": "17b668c0d7f4d6bb3600aa002a12489a0c18bfc4",
+      "pinned_by": "tools/ci-heavy/ultrabert_rope.py PINS (RoPE attribution audit e5036d8b)",
+      "repins": [
+        {
+          "from_sha256": "1ad434a05dc2261dda652f0f1fca5905ba6ee80435d2f4b2184ee0b252004aa7",
+          "to_sha256": "fc5af20f91a6b2cb6fa9c07efa875a9d42d3e7e076038b833a908019a0affc31",
+          "to_blob": "73d7a2896c6e8191c818160863c9e0a46fa46e32",
+          "recorded_at_commit": "60d01d3cf50a8da9f0c241864db95825eebf8c3b",
+          "recorded": "2026-11-10",
+          "changed_by": [
+            "6b5438ec6e34b04bc5a9d19a0500b168de3bd3f1 Add original-first full SciFact audit and gated right truncation"
+          ],
+          "reason": "6b5438ec adds includes (core/env_gate.h, <algorithm>) and UltraBERT single-text right truncation behind CRISPEMBED_ULTRABERT_TRUNCATE (core_env::on, default off). Default path unchanged: with the gate off a text with >= max_tokens ids is still rejected, and otherwise count == encoded.ids.size(), so BOS + all ids are inserted exactly as frozen. The RoPE audit (e5036d8b) ran on a sibling branch without this commit."
+        },
+        {
+          "from_sha256": "fc5af20f91a6b2cb6fa9c07efa875a9d42d3e7e076038b833a908019a0affc31",
+          "to_sha256": "7b96f98959d2dc287a0a96ab217638ff55bc2ad1afe7cd31d60371c1f910471d",
+          "to_blob": "3f3973e719e5c5f424b3551217ba646bea0e90c6",
+          "recorded_at_commit": "60d01d3cf50a8da9f0c241864db95825eebf8c3b",
+          "recorded": "2026-11-10",
+          "changed_by": [
+            "6781befb66b5f65afd47c1b921ac9cd1cb8e568a Prepare hosted Q8 profile and actual quantizer stamp controls",
+            "7d886594d2f487cdaa9420712a8df39eda89e744 Prepare gated Q8 profile admission and quantizer string profile stamps",
+            "0023fe16632805c5da5de2e40e5df29114ebe20e Correct standard GGUF headers and prepare authenticated metadata bridge",
+            "fbd6ea7b9f268ccd343d52de3564924e365bc608 Integrate exact frozen UltraBERT Unicode tokenizer before quantized retrieval audit",
+            "62d62af383e369b5c3b6be8fc47723326f9a5198 Add separately gated UltraBERT Q4_K storage profile with protected critical weights"
+          ],
+          "reason": "Same reviewed change as the SciFact-pin chain for this file (recorded at 59ecb0b9): PR #89 (62d62af3, fbd6ea7b, 0023fe16, 7d886594, 6781befb): validate() gains a defaulted quantized=false parameter; the quantized branch (F16/Q8_0/Q4_K non-critical tensors, standard or legacy Q4_K / Q8_0 header matched to actual payload) is reachable only from ultrabert_init behind CRISPEMBED_ULTRABERT_QUANT. load_tokenizer calls configure_tokenizer_mode, which keeps set_gpt2_regex_pretok(true) and adds the Unicode pre-tokenizer only under CRISPEMBED_ULTRABERT_UNICODE_PRETOKEN (default off). Default path unchanged: file_type must equal GGML_FTYPE_ALL_F32 (0) and every tensor F32, as frozen. Reviewed diff 6b5438ec..HEAD."
+        }
+      ]
     }
   ]
 }

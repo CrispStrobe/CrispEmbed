@@ -83,7 +83,7 @@ class Contract(unittest.TestCase):
     def test_scoped_source_pins_and_ggml_guard(self):
         with patch.object(audit, 'git', side_effect=self.git):
             result = audit.preflight()
-        self.assertEqual(result['native_pins'], audit.PINS)
+        self.assertEqual(result['native_pins'], audit.current_pins())
         with patch.object(audit, 'git', return_value='dirty'):
             with self.assertRaises(ValueError):
                 audit.preflight()

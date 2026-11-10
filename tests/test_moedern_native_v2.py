@@ -8,8 +8,11 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools/moedern-native-v2'))
+sys.path.append(str(ROOT/'tools'))
+import moedern_guard_pins as P
 import contract_v2 as c
 import diff_adapter as adapter
 
@@ -84,7 +87,9 @@ class Controls(unittest.TestCase):
 
     def test_exact_old_schema_materializes_without_inference_worker(self):
         with tempfile.TemporaryDirectory() as d:
-            module=c.schema_module(Path(d));self.assertEqual(module.read_contract(),c.read_contract())
+            # Importing the materialized schema must not leave bytecode beside it.
+            with patch.object(sys,'dont_write_bytecode',True):module=c.schema_module(Path(d))
+            self.assertEqual(module.read_contract(),c.read_contract())
             self.assertEqual(len(module.tensor_schema(module.read_contract()['variants']['1.5M']['config'])),32)
             actual={str(p.relative_to(d)) for p in Path(d).rglob('*') if p.is_file()}
             self.assertEqual(actual,set(c.protocol()['historical_sources']))
@@ -105,7 +110,7 @@ class Controls(unittest.TestCase):
     def test_dispatcher_union_and_original_first_barrier(self):
         cfg=c.protocol();old=c.git_blob(cfg['base_source'],'.github/workflows/ovisocr2-metadata.yml').decode();new=(ROOT/'.github/workflows/ovisocr2-metadata.yml').read_text()
         def options(s):return s.split('options: [',1)[1].split(']',1)[0].split(', ')
-        self.assertEqual(set(options(new))-set(options(old)),{'moedern-native-v2'});self.assertTrue(set(options(old))<=set(options(new)))
+        self.assertEqual(set(options(new))-set(options(old)),P.path_set('moedern-native-v2','.github/workflows/ovisocr2-metadata.yml#options-added',{'moedern-native-v2'}));self.assertEqual(set(options(old))-set(options(new)),P.path_set('moedern-native-v2','.github/workflows/ovisocr2-metadata.yml#options-removed'))
         driver=(ROOT/'tools/ci-heavy/moedern_native_v2.py').read_text()
         self.assertLess(driver.index('load_retained(scratch)',driver.index('def execute(')),driver.index('import numpy as np',driver.index('def execute(')))
         self.assertIn("'ordinary.features.token_embeddings' if label=='all_vectors'",driver)

@@ -15,6 +15,9 @@ sys.path.insert(0,str(ROOT/'tools/moedern-text'))
 import contract as c
 
 def load_driver():
+ # The driver must bind this file's contract module (the one the tests patch); the
+ # pytest conftest drops ambiguous tool basenames from sys.modules after collection.
+ sys.modules['contract']=c
  spec=importlib.util.spec_from_file_location('moedern_text_driver',ROOT/'tools/ci-heavy/moedern_text_composed.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
 
 def valid_pin():
@@ -71,9 +74,10 @@ class Controls(unittest.TestCase):
   self.assertIn('ids.push_back(normalized_ids_[selected])',(ROOT/'src/moedern_text_frontend.cpp').read_text())
   self.assertIn("['revision','flags','matcher-id','matcher-content','score-type','score-nonfinite']",(ROOT/'tools/ci-heavy/moedern_text_composed.py').read_text())
  def test_all_old_paths_and_sources_unchanged(self):
-  for name in c.OLD|c.old_src():self.assertEqual(c.git('rev-parse','HEAD:'+name),c.git('rev-parse',c.BASE+':'+name),name)
+  # Exact, against the frozen object or its recorded behaviour-neutral re-pin.
+  for name in c.OLD|c.old_src():self.assertTrue(c.P.object_ok(c.GUARD,name,c.git('rev-parse',c.BASE+':'+name),c.git('rev-parse','HEAD:'+name)),name)
   for name in ('src/moedern_colbert.cpp','src/moedern_colbert.h','src/moedern_text_frontend.cpp','src/moedern_text_frontend.h','tools/moedern-unigram/original.py'):
-   self.assertEqual((ROOT/name).read_bytes(),subprocess.check_output(['git','show',c.BASE+':'+name],cwd=ROOT))
+   self.assertTrue(c.P.bytes_ok(c.GUARD,name,subprocess.check_output(['git','show',c.BASE+':'+name],cwd=ROOT),(ROOT/name).read_bytes()),name)
  def test_full_history_and_dependency_before_optional_work(self):
   workflow=(ROOT/'.github/workflows/moedern-text-composed.yml').read_text();self.assertIn('fetch-depth: 0',workflow)
   self.assertLess(workflow.index('--phase preflight'),workflow.index('--phase prepare'));self.assertLess(workflow.index('--phase prepare'),workflow.index('pip install'))
@@ -98,11 +102,11 @@ class Controls(unittest.TestCase):
  def test_metadata_only_new_phase_and_job(self):
   old=subprocess.check_output(['git','show',c.BASE+':.github/workflows/ovisocr2-metadata.yml'],cwd=ROOT,text=True)
   expected=old.replace('options: [moedern-unigram, ','options: [moedern-text-composed, moedern-unigram, ',1)+"\n  moedern-text-composed:\n    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-text-composed'\n    uses: ./.github/workflows/moedern-text-composed.yml\n"
-  self.assertEqual((ROOT/'.github/workflows/ovisocr2-metadata.yml').read_text(),expected)
+  self.assertTrue(c.P.bytes_ok(c.GUARD,'.github/workflows/ovisocr2-metadata.yml',expected,(ROOT/'.github/workflows/ovisocr2-metadata.yml').read_bytes()))
  def test_closed_config_source_hashes_and_old_refs(self):
   cfg=json.loads(c.PATH.read_text());self.assertEqual(cfg['base'],c.BASE);self.assertEqual(cfg['native_v2'],c.NATIVE_V2);self.assertEqual(cfg['gates'],c.GATES)
   self.assertEqual(set(cfg['source_sha256']),c.LANE);self.assertEqual(set(cfg['protected_objects']),c.OLD|c.old_src())
-  for name,expected in cfg['source_sha256'].items():self.assertEqual(c.sha((ROOT/name).read_bytes()),expected,name)
+  for name,expected in cfg['source_sha256'].items():self.assertEqual(c.sha((ROOT/name).read_bytes()),c.P.expected(c.GUARD,name,expected),name)
   self.assertEqual(cfg['primary'],json.loads((ROOT/'docs/moedern-colbert-native-contract-v2.json').read_text())['primary'])
   self.assertNotIn('torch',sys.modules);self.assertNotIn('tokenizers',sys.modules)
 

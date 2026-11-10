@@ -3,8 +3,12 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import sys
 ROOT=Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(ROOT/'tools'))
+import frozen_guard_amendments
 PATH=ROOT/'docs/ocr-rgb-input-v1.json'
+FROZEN_PREFIX='55c7878f690fe51fb544bddd76110c90cdb8ea49f8fa8593ff7813ce208d47e7'
 PROFILE=('-O3','-DNDEBUG','-fPIC','-mavx2','-mfma','-mf16c','-std=gnu++17')
 GGML='a06fc0bb46b73cc10011fc90ae4054aee8438aeb'
 MANIFEST=dict(path='docs/ocr-real-scans-v1.json',bytes=75543,sha256='0857bffc6f4a3616292db255d7f3f34c0b58a52a7286a2791cb00b77499c7700')
@@ -32,6 +36,10 @@ def prefix(source):
     marker=b'#include "../ggml/examples/stb_image.h"\n'
     require(source.count(marker)==1,'exact production STB include required')
     value=source[:source.index(marker)+len(marker)]
+    # A reviewed behaviour-neutral re-pin (tests/results/frozen-guards/misc.json) admits
+    # exactly one newer prefix by sha256; any other prefix keeps the strict macro rule.
+    amended=frozen_guard_amendments.expected('ocr-rgb-input','src/image_preprocess.cpp#production-prefix',FROZEN_PREFIX)
+    if amended!=FROZEN_PREFIX and hashlib.sha256(value).hexdigest()==amended:return value
     require(value.count(b'#define STB_IMAGE_IMPLEMENTATION')==1 and b'STB_IMAGE_STATIC'not in value and
             b'#define STBI_'not in value,'production decoder macros differ')
     return value
@@ -67,7 +75,7 @@ def source(header=False):
     manifest=ROOT/'docs/ocr-real-scans-v1.json'
     require(manifest.stat().st_size==cfg['manifest']['bytes']and sha(manifest)==cfg['manifest']['sha256'],'frozen manifest differs')
     rows=json.loads(manifest.read_text())['pages'];require(len(rows)==20 and len({r['id']for r in rows})==20,'full unique20-page scope required')
-    require(hashlib.sha256(prefix((ROOT/'src/image_preprocess.cpp').read_bytes())).hexdigest()==cfg['production_prefix_sha256'],'production prefix differs')
+    require(hashlib.sha256(prefix((ROOT/'src/image_preprocess.cpp').read_bytes())).hexdigest()==frozen_guard_amendments.expected('ocr-rgb-input','src/image_preprocess.cpp#production-prefix',cfg['production_prefix_sha256']),'production prefix differs')
     if header:
         p=ROOT/'ggml/examples/stb_image.h'
         require(p.is_file()and p.stat().st_size==cfg['stb_header']['bytes']and sha(p)==cfg['stb_header']['sha256'],'exact production STB header differs')

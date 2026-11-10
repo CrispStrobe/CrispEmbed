@@ -1,3 +1,42 @@
+## 10 November 2026 — Recorded re-pins of stale frozen guards
+
+After PR #206 the plain-environment lane still had 41 real failures on a full
+clone: 40 frozen-guard tests whose pinned files later commits changed, and one
+test defect. The owner chose recorded re-pins. Frozen values stay unchanged;
+`tools/frozen_guard_amendments.py` reads per-family records in
+`tests/results/frozen-guards/*.json` (guard, path, frozen value and every re-pin
+with its commits, classification and reason). Same chain rule as the qwen35 and
+UltraBERT source-pin amendments: a guard still matches exactly, against the
+frozen value or the newest recorded re-pin. UltraBERT RoPE reuses the existing
+UltraBERT amendment chain, and quant-profile extends its inline amendment list.
+
+Re-pinned as behaviour-neutral (additive default-off gates, formatting,
+includes, wiring, unrelated modules): the eight MoEdern guards, successor
+assets v2–v4 (a test-only change plus exact recorded later-added files),
+UltraBERT RoPE and quant-profile, LightOn3 Pixtral eps (gated F32 KV cache),
+Josev packed runtime (default-false quant argument) and OCR RGB input (a
+`_WIN32`-only STB macro). The MoEdern root/family guards and successor v2 now
+pin an exact recorded set of later-changed or added paths, so they break again
+on the next unrecorded change, as before.
+
+Not re-pinned, because default-path behaviour changed (these need a fresh
+replay, owner decision): OvisOCR2 final-integrated v1/v2 (the pinned `src`
+tree includes default flips such as MiniCPM graph decoding, Unlimited-OCR-2 F32
+vision and bge-m3 sparse specials; 1c95cfe1 drops the Qwen3.5 OCR sources from
+the WASM build), WASM q8-rounding A/B and q8-rounding source
+(`src/crispembed.cpp` gains default-on `CRISPEMBED_POS_EMBD_TRUNCATE` in
+0fb9e738; ggml moved a06fc0bb→3a27b6c6), and WASM layer3 F32, whose check that
+nothing outside nine owned files differs from its base fails on every later
+commit. These stay red.
+
+`test_ci_process` RSS units: on Linux a child's `ru_maxrss` starts from the
+forking parent's resident set, so a large pytest parent inflated the "small"
+child. Both children are now launched from a fresh minimal interpreter, which
+also checks reaping; the 8 MiB separation and KiB→byte units are unchanged.
+Two MoEdern tests also had harness defects (a `__pycache__` write into the
+materialized tree, and the conftest module purge bypassing a patched
+`contract`); both are fixed without loosening.
+
 ## 10 November 2026 — v0.17.18 released; remote branch cleanup
 
 v0.17.18 ([release](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.18), PR #204) ships the integrated

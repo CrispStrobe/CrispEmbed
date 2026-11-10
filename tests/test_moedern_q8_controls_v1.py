@@ -8,6 +8,9 @@ import subprocess
 import unittest
 
 ROOT=Path(__file__).resolve().parents[1]
+G='moedern-q8-controls-v1'
+ps=importlib.util.spec_from_file_location('moedern_guard_pins',ROOT/'tools/moedern_guard_pins.py')
+P=importlib.util.module_from_spec(ps);ps.loader.exec_module(P)
 s=importlib.util.spec_from_file_location('q8controls',ROOT/'tools/ci-heavy/moedern_q8_controls_v1.py')
 w=importlib.util.module_from_spec(s);s.loader.exec_module(w)
 
@@ -15,10 +18,11 @@ w=importlib.util.module_from_spec(s);s.loader.exec_module(w)
 class Controls(unittest.TestCase):
     def test_complete_runtime_fixture_closure(self):
         p=w.validate(w.read(w.PROFILE))
-        for path,h in p['owned_sha256'].items():self.assertEqual(w.sha(ROOT/path),h,path)
+        # Exact, against the frozen value or its recorded behaviour-neutral re-pin.
+        for path,h in p['owned_sha256'].items():self.assertEqual(w.sha(ROOT/path),P.expected(G,path,h),path)
         for path,obj in p['protected_git_objects'].items():
             self.assertEqual(subprocess.check_output(['git','rev-parse',w.FROZEN+':'+path],cwd=ROOT,text=True).strip(),obj,path)
-            self.assertEqual(subprocess.check_output(['git','rev-parse','HEAD:'+path],cwd=ROOT,text=True).strip(),obj,path)
+            self.assertEqual(subprocess.check_output(['git','rev-parse','HEAD:'+path],cwd=ROOT,text=True).strip(),P.expected(G,path,obj),path)
         for name in w.REQUIRED:
             bad=copy.deepcopy(p);bad['protected_git_objects'].pop(name)
             with self.assertRaisesRegex(ValueError,'complete runtime'):w.validate(bad)

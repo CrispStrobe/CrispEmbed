@@ -13,11 +13,23 @@ class Controls(unittest.TestCase):
         (b'#include <vector>\n\nbool BPETokenizer::load(',b'#include <vector>\n#include "core/env_gate.h"\n\nbool BPETokenizer::load('),
         (b'static const bool legacy_ws = (std::getenv("CRISPEMBED_BPE_LEGACY_WHITESPACE") != nullptr);',
          b'static const bool legacy_ws = core_env::on("CRISPEMBED_BPE_LEGACY_WHITESPACE");')]}
+    # Reviewed whole-commit re-pin (recorded in tests/results/frozen-guards/ultrabert-wasm.json):
+    # 0fb9e738 adds default-off tokenizer setters (set_max_length, set_pair_double_sep)
+    # and a pair_double_sep_ member (default false) used only by encode_pair. UltraBERT's
+    # own BPETokenizer never calls either setter or encode_pair, so encode() is unchanged.
+    # The parent of each re-pin commit must equal the proven (+amended) bytes exactly,
+    # and the checkout must equal the re-pin commit's bytes exactly.
+    REPINS={'src/tokenizer.h':'0fb9e738722c97fb5183373008f61f60bda62961',
+            'src/tokenizer_bpe.cpp':'0fb9e738722c97fb5183373008f61f60bda62961'}
     def test_exact_already_proven_tokenizer_sources(self):
         for name in ['src/tokenizer.h','src/tokenizer_bpe.cpp','src/ultrabert_tokenizer_mode.h']:
             expected=subprocess.check_output(['git','show',PROVEN+':'+name],cwd=ROOT)
             for old,new in self.AMENDMENTS.get(name,[]):
                 self.assertEqual(expected.count(old),1,name);expected=expected.replace(old,new)
+            if name in self.REPINS:
+                commit=self.REPINS[name]
+                self.assertEqual(subprocess.check_output(['git','show',commit+'^:'+name],cwd=ROOT),expected,name)
+                expected=subprocess.check_output(['git','show',commit+':'+name],cwd=ROOT)
             self.assertEqual((ROOT/name).read_bytes(),expected,name)
     def test_truncation_body_retained(self):
         old=subprocess.check_output(['git','show',PROVEN+':src/ultrabert_profile.h'],cwd=ROOT,text=True)

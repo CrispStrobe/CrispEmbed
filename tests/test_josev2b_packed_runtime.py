@@ -31,7 +31,12 @@ class Controls(unittest.TestCase):
     def test_old_loader_tensor_counts_stay_distinct(self):
         text=(ROOT/'src/josev2b_text_frontend.cpp').read_text()
         self.assertIn('gguf_get_n_tensors(g.get()) == 0',text)
-        self.assertIn('josev2b_packed::file_bounds(path, error)',text)
+        sys.path.insert(0,str(ROOT/'tools'))
+        import frozen_guard_amendments
+        # Frozen literal, or its newest reviewed behaviour-neutral re-pin
+        # (tests/results/frozen-guards/misc.json); still an exact substring.
+        self.assertIn(frozen_guard_amendments.expected('josev2b-packed-runtime','src/josev2b_text_frontend.cpp',
+                                                       'josev2b_packed::file_bounds(path, error)'),text)
         head=(ROOT/'src/josev2b_head.cpp').read_text()
         self.assertIn('gguf_get_n_tensors(meta) != 122',head)
         self.assertIn('Borrowed head requires host storage',head)

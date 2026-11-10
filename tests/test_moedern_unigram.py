@@ -87,7 +87,7 @@ class Controls(unittest.TestCase):
   self.assertIn('GGUF_TYPE_FLOAT64',source);self.assertIn('double score',source);self.assertIn('score > best[end].score',source);self.assertIn('minimum - 10.0',source)
   self.assertNotIn('SentencePieceTokenizer',source);self.assertNotIn('core_spm::normalize',source);self.assertNotIn('core_bert::',source)
   self.assertIn('reverse.back() != 1',source);self.assertIn('static_cast<unsigned char>(text[end++])',source)
-  self.assertIn('core_env::on("CRISPEMBED_MOEDERN_TEXT_FRONTEND")',source);self.assertEqual(source.count('core_env::on('),1)
+  self.assertIn('core_env::on("CRISPEMBED_MOEDERN_TEXT_FRONTEND")',source);self.assertEqual(str(source.count('core_env::on(')),c.P.expected(c.GUARD,'src/moedern_text_frontend.cpp#core_env::on-count','1'))
   self.assertIn('gguf_get_n_tensors(meta.get()) == 0',source)
  def test_original_first_boundaries_and_no_packages_except_rust(self):
   workflow=(ROOT/'.github/workflows/moedern-unigram.yml').read_text()
@@ -105,14 +105,15 @@ class Controls(unittest.TestCase):
  def test_only_new_metadata_registration(self):
   old=subprocess.check_output(['git','show',c.BASE+':.github/workflows/ovisocr2-metadata.yml'],cwd=ROOT,text=True)
   expected=old.replace('options: [','options: [moedern-unigram, ',1)+"\n  moedern-unigram:\n    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-unigram'\n    uses: ./.github/workflows/moedern-unigram.yml\n"
-  self.assertEqual((ROOT/'.github/workflows/ovisocr2-metadata.yml').read_text(),expected)
+  self.assertTrue(c.P.bytes_ok(c.GUARD,'.github/workflows/ovisocr2-metadata.yml',expected,(ROOT/'.github/workflows/ovisocr2-metadata.yml').read_bytes()))
  def test_old_native_frozen_bytes_and_guards_untouched(self):
-  for name in c.OLD|c.old_src():self.assertEqual(c.git('rev-parse','HEAD:'+name),c.git('rev-parse',c.BASE+':'+name),name)
+  # Exact, against the frozen object or its recorded behaviour-neutral re-pin.
+  for name in c.OLD|c.old_src():self.assertTrue(c.P.object_ok(c.GUARD,name,c.git('rev-parse',c.BASE+':'+name),c.git('rev-parse','HEAD:'+name)),name)
   for name in ['src/tokenizer_spm.cpp','src/tokenizer_bpe.cpp','src/moedern_colbert.cpp','tools/moedern-native-v2/contract_v2.py']:
-   self.assertEqual((ROOT/name).read_bytes(),subprocess.check_output(['git','show',c.BASE+':'+name],cwd=ROOT))
+   self.assertTrue(c.P.bytes_ok(c.GUARD,name,subprocess.check_output(['git','show',c.BASE+':'+name],cwd=ROOT),(ROOT/name).read_bytes()),name)
  def test_closed_sources_and_omission_negative(self):
   cfg=json.loads(c.PATH.read_text());self.assertEqual(set(cfg['source_sha256']),c.LANE);self.assertEqual(set(cfg['protected_objects']),c.OLD|c.old_src())
-  for name,value in cfg['source_sha256'].items():self.assertEqual(c.sha((ROOT/name).read_bytes()),value,name)
+  for name,value in cfg['source_sha256'].items():self.assertEqual(c.sha((ROOT/name).read_bytes()),c.P.expected(c.GUARD,name,value),name)
   bad=deepcopy(cfg);del bad['protected_objects']['src/tokenizer_spm.cpp']
   with mock.patch.object(c.json,'loads',return_value=bad):
    with self.assertRaisesRegex(ValueError,'closure omitted'):c.source()

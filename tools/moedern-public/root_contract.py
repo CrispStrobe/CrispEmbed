@@ -8,7 +8,11 @@ from pathlib import Path
 import hashlib
 import json
 import subprocess
+import sys
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.append(str(ROOT/'tools'))
+import moedern_guard_pins as P
+GUARD = 'moedern-public-root'
 PATH = ROOT/'docs/moedern-public-root.json'
 def require(ok, why):
     if not ok: raise ValueError(why)
@@ -21,12 +25,16 @@ def source():
     # Evidence receipts and hosted launcher scripts are not runtime source.
     changed = {f for f in git('diff', '--name-only', base, 'HEAD').decode().split()
                if not f.startswith(('tests/results/', 'tools/kaggle/'))} - {str(PATH.relative_to(ROOT))}
+    # Paths changed after the base by later reviewed work are an exact recorded set
+    # (tests/results/frozen-guards/moedern.json), not a wildcard.
+    changed -= P.path_set(GUARD, P.CHANGED)
     require(changed <= set(cfg['owned_sha256']) | {str(PATH.relative_to(ROOT))}, 'unpinned change: '+str(sorted(changed-set(cfg['owned_sha256']))))
     for name, value in cfg['owned_sha256'].items():
         data = (ROOT/name).read_bytes()
-        require(hashlib.sha256(data).hexdigest() == value and git('show', 'HEAD:'+name) == data, 'wired source differs: '+name)
+        require(P.digest_ok(GUARD, name, value, P.sha(data)) and git('show', 'HEAD:'+name) == data, 'wired source differs: '+name)
     for name in ('src', 'ggml'):
-        require(git('rev-parse', 'HEAD:'+name) == git('rev-parse', base+':'+name), 'protected tree differs: '+name)
+        frozen = git('rev-parse', base+':'+name).decode().strip()
+        require(P.object_ok(GUARD, name, frozen, git('rev-parse', 'HEAD:'+name).decode().strip()), 'protected tree differs: '+name)
     require(not git('status', '--porcelain', '--', 'src', 'ggml', 'CMakeLists.txt', *cfg['owned_sha256']), 'dirty wired source')
     return cfg
 if __name__ == '__main__':
