@@ -21,11 +21,14 @@ def sh(cmd, **kw):
 
 
 venv = TMP / "venv"
-# Kaggle's system python lacks ensurepip; virtualenv bootstraps pip itself.
-sh([sys.executable, "-m", "pip", "install", "-q", "virtualenv"])
-sh([sys.executable, "-m", "virtualenv", "-q", str(venv)])
+# Kaggle's system python lacks ensurepip and ships a sitecustomize that fails
+# outside its own environment (stderr noise in every child). Use a managed
+# standalone CPython instead, so the environment really is plain.
+sh([sys.executable, "-m", "pip", "install", "-q", "uv"])
+sh([sys.executable, "-m", "uv", "venv", "-q", "--managed-python", "--python", "3.13", str(venv)])
 py = str(venv / "bin" / "python")
-sh([py, "-m", "pip", "install", "-q", "pytest", "numpy", "pillow", "gguf", "sentencepiece", "tokenizers"])
+sh([sys.executable, "-m", "uv", "pip", "install", "-q", "--python", py,
+    "pytest", "numpy", "pillow", "gguf", "sentencepiece", "tokenizers"])
 
 # Drop tokens/account vars and Kaggle's PYTHONPATH (its sitecustomize prints an
 # error inside a foreign venv, which pollutes every child's stderr).
