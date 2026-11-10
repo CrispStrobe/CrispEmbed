@@ -1736,6 +1736,9 @@ if(CRISPEMBED_SYSTEMONE_AUDIT)
     add_subdirectory(tests/systemone)
 endif()
 
+# LightOn4B/Qwen3.5 validation executables link crispembed-qwen35-delta, which is not
+# built for iOS (see the NOT iOS block above).
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 add_executable(test-lighton4b-native-context tests/test_lighton4b_native_context.cpp)
 target_link_libraries(test-lighton4b-native-context PRIVATE crispembed-qwen35-delta crispembed-core)
 # Separate format5 tokenizer probe; historical frontend remains unchanged.
@@ -1967,3 +1970,4 @@ target_link_libraries(lighton4b-attention-native-probe PRIVATE crispembed-qwen35
 add_executable(test-lighton4b-physical-q6-tiled EXCLUDE_FROM_ALL tests/test_lighton4b_physical_q6_tiled.cpp)
 target_include_directories(test-lighton4b-physical-q6-tiled PRIVATE src ggml/include)
 target_link_libraries(test-lighton4b-physical-q6-tiled PRIVATE crispembed-qwen35-delta crispembed-core)
+endif() # NOT iOS: LightOn4B/Qwen3.5 validation executables

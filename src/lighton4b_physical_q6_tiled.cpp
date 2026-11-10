@@ -10,7 +10,8 @@
 #include <thread>
 namespace qwen35_ocr {
 bool lighton4b_physical_q6_tiled_available() {
-#if !defined(__EMSCRIPTEN__) && defined(__linux__) && defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
+#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__) && defined(__linux__) && defined(__x86_64__) &&                  \
+    (defined(__GNUC__) || defined(__clang__))
     __builtin_cpu_init();
     return __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma") && __builtin_cpu_supports("f16c");
 #else
@@ -32,7 +33,8 @@ struct q8_block {
 static_assert(sizeof(q6_block) == 210 && offsetof(q6_block, d) == 208, "Q6_K layout");
 static_assert(sizeof(q8_block) == 292 && offsetof(q8_block, qs) == 4 && offsetof(q8_block, bsums) == 260,
               "Q8_K layout");
-#if !defined(__EMSCRIPTEN__) && defined(__linux__) && defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
+#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__) && defined(__linux__) && defined(__x86_64__) &&                  \
+    (defined(__GNUC__) || defined(__clang__))
 __attribute__((target("avx2,fma,f16c")))
 #endif
 void compute_row(const uint8_t * packed, const q8_block * activations, int blocks, int rows, int tokens,
