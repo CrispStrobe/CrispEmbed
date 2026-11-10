@@ -1,3 +1,32 @@
+## 10 November 2026 — Plain-environment pytest lane
+
+`pytest tests` on a plain environment (pytest, numpy, pillow, gguf,
+sentencepiece, tokenizers; no models, token, native build or torch) gave
+172 failed / 27 errors on main 5a84ed29. It now gives 0 errors; every test
+passes, fails for a real reason, or skips with a specific reason.
+`tests/conftest.py` adds `requires_model`, `requires_network`,
+`requires_binary`, `requires_torch`/`requires_module` and
+`requires_git_commit`. It also ignores the retained `tests/results`
+source snapshots during collection. Repository modules with ambiguous names
+(`contract`, `reference`, ...) are evicted between test files, so each file
+imports its own tool's module. The import-purity controls (no numpy, gguf or
+torch imported) run in a fresh subprocess. A git failure that names a commit
+absent from the clone is reported as a skip. A git failure on a commit that
+is present still fails. Import-time side effects are fixed: the BidirLM lite
+check now runs only under `__main__`, and the `gguf` exit in
+`models/quantize.py` now happens only on the CLI path. The CLI behaviour is
+unchanged. Optional cv2, fitz and torch imports skip at module level.
+The new `tools/kaggle/crispembed-pytest-plain` kernel runs the full and the
+shallow clone and writes a summary JSON.
+
+Remaining failures are real and stay red. Most are frozen-source and
+frozen-hash guards whose pinned files have since changed on main (MoEdern
+text/unigram/public/q8, OvisOCR2 final-integrated v1/v2, successor assets
+v2–v4, UltraBERT RoPE/quant-profile, WASM layer3/q8-rounding, LightOn3
+Pixtral eps, Josev packed runtime, OCR RGB input). There is also one test
+defect: in `test_ci_process`, the RSS of the "small" child includes the
+pre-exec image inherited from a large pytest parent.
+
 ## 10 November 2026 — Aggregate integration PR199 (LightOn4B stack)
 
 PR199 folds the LightOn4B qualification stack (PR155, PR157 and their stacked
