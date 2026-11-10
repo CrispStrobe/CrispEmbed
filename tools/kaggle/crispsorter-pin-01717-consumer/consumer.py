@@ -8,6 +8,9 @@ crispembed + crispembed-license-api) resolves a restricted model with that
 model's own SPDX via resolve_model_accepting; 'all'/'*' are rejected; a
 restricted model is refused without explicit acceptance; a tag accepted for one
 model does not unlock another. CRISPEMBED_ACCEPT_LICENSE is never set.
+Quality: the consented posformer-crohme call must return the expected LaTeX for
+a legibly rendered formula, and a permissive printed-text recogniser (parseq)
+must read a printed line; both are scored by CER, not mere non-emptiness.
 Output: report.json plus one short probe log.
 """
 import hashlib, json, os, re, shutil, subprocess, sys, time, urllib.request
@@ -51,11 +54,17 @@ try:
     inst = ROOT / 'rustup.sh'; inst.write_bytes(urllib.request.urlopen('https://sh.rustup.rs', timeout=60).read())
     run(['sh', str(inst), '-y', '--profile', 'minimal', '--default-toolchain', '1.98.1', '--no-modify-path'], env=env0)
     env0['PATH'] = str(ROOT / 'cargo/bin') + ':' + env0['PATH']
-    from PIL import Image, ImageDraw, ImageFont
-    img = Image.new('RGB', (360, 96), 'white'); d = ImageDraw.Draw(img)
-    try: font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 48)
-    except Exception: font = ImageFont.load_default()
-    d.text((16, 18), 'x + y = 3', fill='black', font=font); fimg = ROOT / 'formula.png'; img.save(fimg)
+    from PIL import Image, ImageDraw, ImageFont, ImageOps
+    import matplotlib; from matplotlib import font_manager
+    # Font bundled with matplotlib: no silent fallback to Pillow's 10px default
+    # font, which renders an illegible 36x10 px formula (the earlier garbled run).
+    fpath = font_manager.findfont('DejaVu Sans', fallback_to_default=False)
+    def render(text, size, path, font_px):
+        img = Image.new('RGB', size, 'white'); ImageDraw.Draw(img).text((16, 10), text, fill='black', font=ImageFont.truetype(fpath, font_px))
+        img.save(path); bb = ImageOps.invert(img.convert('L')).getbbox(); return bb[3] - bb[1]
+    fimg, timg = ROOT / 'formula.png', ROOT / 'textline.png'
+    ink = (render('x + y = 3', (360, 96), fimg, 48), render('Invoice due 2026', (420, 64), timg, 40))
+    check('test images rendered legibly (ink height px)', min(ink) >= 25, ink)
     app, emb = ROOT / 'CrispSorter', ROOT / 'CrispEmbed'
     for name, rev, dst in [('CrispSorter', APP, app), ('CrispEmbed', EMBED, emb)]:
         run(['git', 'clone', '-q', '--filter=blob:none', '--no-checkout', f'https://github.com/CrispStrobe/{name}.git', str(dst)])
@@ -99,6 +108,7 @@ fn r(x: Result<String, String>) -> serde_json::Value { match x { Ok(p) => serde_
 fn present(n: &str) -> bool { std::fs::read_dir(C::cache_dir()).map(|d| d.flatten().any(|e| e.file_name().to_string_lossy().contains(n))).unwrap_or(false) }
 fn main() {
     let img = std::env::args().nth(1).unwrap();
+    let timg = std::env::args().nth(2).unwrap();
     let mut o = serde_json::Map::new();
     o.insert("env_accept_set".into(), std::env::var("CRISPEMBED_ACCEPT_LICENSE").is_ok().into());
     let path = C::resolve_model("all-MiniLM-L6-v2", Some(true)).expect("resolve embedder");
@@ -123,6 +133,11 @@ fn main() {
     o.insert("app_other_model".into(), r(license_consent::resolve_registry_model("texo-distill", Some(true)).map_err(|e| e.to_string())));
     let ok = recognize_formula_with_model(std::path::Path::new(&img), "posformer-crohme");
     o.insert("app_with_consent".into(), match &ok { Ok(x) => serde_json::json!({"ok": x}), Err(e) => serde_json::json!({"err": e.to_string()}) });
+    // Printed-text OCR with a permissive (apache-2.0) recogniser, no consent needed.
+    let tpath = C::resolve_model("parseq", Some(true)).expect("resolve parseq");
+    let t = image::open(&timg).expect("open text image").to_rgb8(); let (tw, th) = t.dimensions();
+    let mut tm = crispembed::OcrModel::new(&tpath, 0).expect("parseq init");
+    o.insert("text_ocr".into(), serde_json::json!(tm.recognize(&t.into_raw(), tw as i32, th as i32)));
     o.insert("env_accept_set_after".into(), std::env::var("CRISPEMBED_ACCEPT_LICENSE").is_ok().into());
     o.insert("other_downloaded".into(), (present("texo") || present("splade")).into());
     println!("PROBE {}", serde_json::Value::Object(o));
@@ -147,7 +162,7 @@ crispembed = {{ path = {json.dumps(str(emb / 'crispembed'))} }}
     env = dict(env0, CRISPEMBED_SYS_LIB_DIR=str(libs), LD_LIBRARY_PATH=str(libs), CRISPEMBED_CACHE_DIR=str(ROOT / 'cache'))
     run(['cargo', 'build', '--release', '--manifest-path', str(probe / 'Cargo.toml')], env=env, timeout=3600)
     check('library build+link (crispembed-license-api)', True)
-    p = subprocess.run([str(ROOT / 'target/release/probe'), str(fimg)], env=env, capture_output=True, text=True, timeout=1800)
+    p = subprocess.run([str(ROOT / 'target/release/probe'), str(fimg), str(timg)], env=env, capture_output=True, text=True, timeout=1800)
     (OUT / 'probe-tail.txt').write_text((p.stdout + p.stderr)[-4000:])
     line = next((l for l in p.stdout.splitlines() if l.startswith('PROBE ')), None)
     check('probe exit', p.returncode == 0 and line, f'rc={p.returncode}')
@@ -165,7 +180,18 @@ crispembed = {{ path = {json.dumps(str(emb / 'crispembed'))} }}
     check('app refuses OCR without consent', 'licen' in E('app_without_consent').lower(), E('app_without_consent'))
     check('consent is per model (texo-distill still refused)', 'err' in j['app_other_model'] and not j['other_downloaded'], E('app_other_model'))
     okv = j['app_with_consent'].get('ok')
-    check('consented model resolves via resolve_model_accepting and OCR runs', isinstance(okv, str) and okv.strip() != '', repr(okv))
+    def cer(got, ref):
+        a, b = re.sub(r'\s+', '', got or ''), re.sub(r'\s+', '', ref); d = list(range(len(b) + 1))
+        for i, x in enumerate(a, 1):
+            p, d[0] = d[0], i
+            for k, y in enumerate(b, 1): p, d[k] = d[k], min(d[k] + 1, d[k - 1] + 1, p + (x != y))
+        return d[len(b)] / len(b)
+    # POSFormer is a math recogniser: the input is a formula, expected LaTeX 'x + y = 3'
+    # (the released CLI and C API both return it exactly for this image).
+    c = cer(okv, 'x + y = 3') if isinstance(okv, str) else 1.0
+    check('consented posformer-crohme OCR: formula LaTeX matches (CER<=0.2)', c <= 0.2, f'{okv!r} cer={c:.2f}')
+    tv = j.get('text_ocr'); c = cer(tv, 'Invoice due 2026') if isinstance(tv, str) else 1.0
+    check('printed-text OCR (parseq, apache-2.0) matches (CER<=0.2, spaces ignored)', c <= 0.2, f'{tv!r} cer={c:.2f}')
     check('CRISPEMBED_ACCEPT_LICENSE never set', not j['env_accept_set'] and not j['env_accept_set_after'])
     report['completed'] = all(c['pass'] for c in report['checks'])
 except Exception as e:
