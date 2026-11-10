@@ -17,7 +17,11 @@ check now runs only under `__main__`, and the `gguf` exit in
 `models/quantize.py` now happens only on the CLI path. The CLI behaviour is
 unchanged. Optional cv2, fitz and torch imports skip at module level.
 The new `tools/kaggle/crispembed-pytest-plain` kernel runs the full and the
-shallow clone and writes a summary JSON.
+shallow clone and writes a summary JSON. Its run at 8e91c7e2 gave a full
+clone result of 41 failed / 2078 passed / 232 skipped / 0 errors and a
+`--depth 1` result of 18 failed / 2028 passed / 305 skipped / 0 errors. The
+kernel uses a separate venv; the Kaggle image's sitecustomize needs `wrapt`
+there, or it writes an error to the stderr of every child process.
 
 Remaining failures are real and stay red. Most are frozen-source and
 frozen-hash guards whose pinned files have since changed on main (MoEdern
