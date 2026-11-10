@@ -27,8 +27,11 @@ sh([sys.executable, "-m", "virtualenv", "-q", str(venv)])
 py = str(venv / "bin" / "python")
 sh([py, "-m", "pip", "install", "-q", "pytest", "numpy", "pillow", "gguf", "sentencepiece", "tokenizers"])
 
+# Drop tokens/account vars and Kaggle's PYTHONPATH (its sitecustomize prints an
+# error inside a foreign venv, which pollutes every child's stderr).
 env = {k: v for k, v in os.environ.items()
-       if not k.startswith(("HF_", "HUGGING", "KAGGLE_", "CRISPEMBED_"))}
+       if not k.startswith(("HF_", "HUGGING", "KAGGLE_", "CRISPEMBED_"))
+       and k not in ("PYTHONPATH", "PYTHONSTARTUP", "PYTHONUSERBASE")}
 summary = {"sha": SHA}
 for mode in ("full", "shallow"):
     d = TMP / f"repo-{mode}"
