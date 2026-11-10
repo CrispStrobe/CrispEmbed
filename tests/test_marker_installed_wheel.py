@@ -38,6 +38,10 @@ def main():
         parser.error("this installed-wheel probe is scoped to Linux")
     prefix, pdfium = args.native_prefix.resolve(strict=True), args.pdfium.resolve(strict=True)
     work, output = args.work_dir.resolve(), args.output.resolve()
+    if work.is_relative_to(ROOT):
+        # The consumer venv lives under the work dir; inside the checkout the
+        # installed package could not be told apart from the source tree.
+        parser.error("--work-dir must be outside the source checkout")
     for directory in (work, output):
         if directory.exists():
             parser.error("work/output must be new directories so every attempt is retained")
