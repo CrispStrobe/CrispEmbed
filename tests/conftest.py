@@ -290,6 +290,7 @@ def pytest_collection_modifyitems(config, items):
         reason = STANDALONE_SCRIPTS.get(rel)
         if reason:
             item.add_marker(pytest.mark.skip(reason=reason))
+        _apply_git_commit_markers(item, _rel_nodeid(item))
         if not os.environ.get(_FRESH_ENV) and _rel_nodeid(item) in FRESH_PROCESS_TESTS:
             _run_in_fresh_process(item)
 
@@ -321,3 +322,66 @@ def _cli_supplied_binaries(request):
         pytest.skip("requires built native binary: Cargo build-script test executable "
                     "(CRISPEMBED_BUILD_SCRIPT_TEST_BIN, built by rust-prebuilt-contract CI)")
     yield
+
+
+# ---------------------------------------------------------------------------
+# Git history prerequisites.
+#
+# Many frozen-source guards compare the tree against blobs at pinned commits
+# (``git show <sha>:path``, ``git ls-tree <sha>``, ``git worktree add <sha>``).
+# In a shallow clone those commits are absent. A test that fails *only*
+# because a git subprocess named a commit that is not in this clone is
+# reported as skipped (the requires_git_commit condition, detected at run
+# time because the pinned revs live in tool/contract data). Any other
+# failure, including a git failure on a commit that is present, still fails.
+# ---------------------------------------------------------------------------
+import re as _re
+
+_HEX_REV = _re.compile(r"^[0-9a-f]{7,40}$")
+
+# Tests that probe a pinned commit through a git return code instead of an
+# exception; mapped to the commit they need.
+GIT_COMMIT_TESTS = {
+    "tests/test_josev2b_task_quality_native_v1.py::Controls::test_actual_cmake_gitobject_exists_old_tools_cmake_does_not":
+        "9c475d0dac70264adc123a63b6c1827b4b7280d5",
+}
+
+
+def _missing_git_revs(exc) -> list[str]:
+    seen = set()
+    while exc is not None and id(exc) not in seen:
+        seen.add(id(exc))
+        if isinstance(exc, subprocess.CalledProcessError):
+            cmd = exc.cmd if isinstance(exc.cmd, (list, tuple)) else str(exc.cmd).split()
+            if cmd and Path(str(cmd[0])).name == "git":
+                revs = []
+                for arg in map(str, cmd[1:]):
+                    rev = arg.split(":", 1)[0]
+                    if _HEX_REV.match(rev):
+                        revs.append(rev)
+                missing = [r for r in revs if not git_commit_available(r)]
+                if missing:
+                    return missing
+        exc = exc.__cause__ or exc.__context__
+    return []
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(item, call):
+    report = yield
+    if report.failed and call.excinfo is not None:
+        missing = _missing_git_revs(call.excinfo.value)
+        if missing:
+            report.outcome = "skipped"
+            report.longrepr = (
+                str(item.path), (item.location[1] or 0) + 1,
+                "Skipped: requires git commit(s) not in this clone (shallow?): "
+                + ", ".join(m[:12] for m in missing),
+            )
+    return report
+
+
+def _apply_git_commit_markers(item, rel_nodeid: str) -> None:
+    rev = GIT_COMMIT_TESTS.get(rel_nodeid)
+    if rev:
+        item.add_marker(requires_git_commit(rev))
