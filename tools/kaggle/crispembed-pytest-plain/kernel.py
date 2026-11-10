@@ -25,7 +25,7 @@ venv = TMP / "venv"
 # outside its own environment (stderr noise in every child). Use a managed
 # standalone CPython instead, so the environment really is plain.
 sh([sys.executable, "-m", "pip", "install", "-q", "uv"])
-sh([sys.executable, "-m", "uv", "venv", "-q", "--seed", "--managed-python", "--python", "3.13", str(venv)])
+sh([sys.executable, "-m", "uv", "venv", "-q", "--seed", "--python-preference", "only-managed", "--python", "3.13", str(venv)])
 py = str(venv / "bin" / "python")
 sh([sys.executable, "-m", "uv", "pip", "install", "-q", "--python", py,
     "pytest", "numpy", "pillow", "gguf", "sentencepiece", "tokenizers"])
