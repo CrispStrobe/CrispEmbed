@@ -13,6 +13,13 @@ m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 # Tools set a shared base.PROTOCOL at import; capture this tool's own path
 # so later-collected sibling tools in one pytest session cannot redirect it.
 OWN_PROTOCOL=m.PROTOCOL
+
+def _require_commit(case, commit):
+    # Shallow clones (CI/Kaggle --depth 1) lack historical commits; only that
+    # genuinely-absent case is skipped. Any present blob must still match exactly.
+    if subprocess.run(['git', 'cat-file', '-e', commit + '^{commit}'], cwd=ROOT, capture_output=True).returncode:
+        case.skipTest('pinned commit ' + commit + ' absent from this (shallow) clone; hash pins need its history')
+
 class Contract(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -39,6 +46,7 @@ class Contract(unittest.TestCase):
         with self.assertRaises(ValueError):m.validate_inventory(self.inventory('q8_0'),self.plan,'mixed')
     def test_original_driver_binding_and_single_ast_substitution(self):
         protocol=json.loads(OWN_PROTOCOL.read_text())
+        _require_commit(self,protocol['original_source'])
         data=subprocess.check_output(['git','show',protocol['original_source']+':tools/lighton4b_bf16_freegen.py'],cwd=ROOT)
         self.assertEqual(hashlib.sha256(data).hexdigest(),protocol['original_driver_sha256'])
         transform=m.ReplaceGenerate();tree=transform.visit(ast.parse(data));ast.fix_missing_locations(tree)
