@@ -72,5 +72,58 @@
   "Before this change no crispembed-ccache or crispasr-ccache dataset existed on the account, so every CrispEmbed kernel built cold.",
   "Cold CPU build failed at its final link (graph_kv_decoder not yet in crispembed-qwen35-delta at that commit); 206 of 221 steps compiled and were cached.",
   "Warm run: different commit and different absolute clone path; CPU 205/207 and CUDA 327/328 direct hits."
- ]
+ ],
+ "automatic_refresh": {
+  "source_commit": "4dd99b33ad11f0e16571cfa404f7cf0139231037",
+  "command": "kpush.py tools/kaggle/crispembed-ccache-seed --sha <commit> --refresh-ccache",
+  "run1": {
+   "seed": "legacy (no crispembed-seed.json)",
+   "decision": {
+    "export": true,
+    "reasons": [
+     "no seed info (cold or legacy seed)"
+    ],
+    "hit_rate": 0.9779
+   },
+   "builds": {
+    "cpu": {
+     "total_s": 9.9,
+     "hits": 202,
+     "misses": 8,
+     "hit_rate": 0.9619
+    },
+    "cuda": {
+     "total_s": 15.7,
+     "hits": 328,
+     "misses": 4,
+     "hit_rate": 0.988
+    }
+   },
+   "result": "ccache.tar 74 MB exported; dataset versioned automatically"
+  },
+  "run2": {
+   "seed": "run1 export",
+   "decision": {
+    "export": false,
+    "reasons": [],
+    "hit_rate": 0.9982,
+    "age_commits": 0
+   },
+   "builds": {
+    "cpu": {
+     "total_s": 4.2,
+     "hits": 210,
+     "misses": 0,
+     "hit_rate": 1.0
+    },
+    "cuda": {
+     "total_s": 10.9,
+     "hits": 331,
+     "misses": 1,
+     "hit_rate": 0.997
+    }
+   },
+   "result": "seed current; dataset unchanged"
+  }
+ }
 }
