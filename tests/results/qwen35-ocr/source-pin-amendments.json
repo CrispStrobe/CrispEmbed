@@ -268,6 +268,18 @@
             "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
           ],
           "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt)."
+        },
+        {
+          "from_sha256": "8a13aa4c5460efe138502fb818ce9db436fd1d00f1681d182a38b7827228e61e",
+          "to_sha256": "369afe9e01613e60a26ae7a8f44e91e97f2c3993f3ecacf3ab813118db20fc79",
+          "to_blob": "ae7da11e048cc1f7c67f6ad85cd0c5f5ae2b78b1",
+          "recorded_at_commit": "9236cf202c36542bed3dbae2cbf1e31b703411bc",
+          "recorded": "2026-11-11",
+          "changed_by": [
+            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+          ],
+          "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
         }
       ]
     },
@@ -315,6 +327,18 @@
             "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
           ],
           "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt)."
+        },
+        {
+          "from_sha256": "2ad14f1a29042e005debbc7b7d6fc50b1a56d5a2d02cf6ac19012471c25b070a",
+          "to_sha256": "e8299172214c792beb253f4f939b95740782998e0b3cac842122b35177b0486c",
+          "to_blob": "62df6fb5d7a9b21c62749760129063c1d6033b12",
+          "recorded_at_commit": "9236cf202c36542bed3dbae2cbf1e31b703411bc",
+          "recorded": "2026-11-11",
+          "changed_by": [
+            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+          ],
+          "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
         }
       ]
     },
