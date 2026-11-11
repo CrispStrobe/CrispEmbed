@@ -288,6 +288,37 @@ static std::vector<float> attention(const std::vector<float> & qkv, const vision
     }
     return pooled;
 }
+// Host-side inputs of the ggml-op vision graph (src/qwen35_ocr_gpu.cpp): the same frame
+// offsets, interpolated position embeddings and rotary cos/sin tables vision_cpu forms
+// below (identical code), without running any layer.
+bool vision_host_inputs(const vision_weights & w, const vision_config & c, int tokens, const std::vector<int> & grid,
+                        std::vector<int> & offsets, std::vector<float> & position, std::vector<float> & rotary_cos,
+                        std::vector<float> & rotary_sin) {
+    offsets.clear();
+    if (tokens < 1 || tokens > 4096 || c.width < 1 || c.heads < 1 || c.width % c.heads || (c.width / c.heads) % 4 ||
+        c.position_side < 1 || c.position_side > 128 || !shape(w.position, c.width, c.position_side * c.position_side))
+        return false;
+    const int d = c.width / c.heads;
+    std::vector<int> rows, columns, heights, widths;
+    if (!geometry(c, tokens, grid, rows, columns, offsets, heights, widths)) return false;
+    std::vector<float> table(size_t(c.position_side) * c.position_side * c.width);
+    if (!tensor_floats(w.position, table.data())) return false;
+    if (!interpolate_position(table, c, rows, columns, heights, widths, position)) return false;
+    rotary_cos.resize(size_t(tokens) * d);
+    rotary_sin.resize(rotary_cos.size());
+    for (int t = 0; t < tokens; ++t)
+        for (int i = 0; i < d / 2; ++i) {
+            const int axis = i / (d / 4), frequency = i % (d / 4);
+            const float inv = 1.0f / std::pow(c.theta, float(2 * frequency) / float(d / 2));
+            const float angle = inv * (axis == 0 ? rows[t] : columns[t]);
+            for (int half = 0; half < 2; ++half) {
+                const size_t at = size_t(t) * d + i + half * (d / 2);
+                rotary_cos[at] = std::cos(angle);
+                rotary_sin[at] = std::sin(angle);
+            }
+        }
+    return true;
+}
 bool vision_cpu(const vision_weights & w, const vision_config & c, const float * patches, int tokens,
                 const std::vector<int> & grid, int threads, vision_outputs & output) {
     output = {};
