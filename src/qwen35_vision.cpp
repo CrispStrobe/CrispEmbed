@@ -173,8 +173,8 @@ static bool geometry(const vision_config & c, int tokens, const std::vector<int>
 // contiguous value rows. Every output float is computed by the same operation sequence,
 // so the result is bit-identical; only scheduling and memory order change.
 static void attention_rows(const std::vector<float> & q, const std::vector<float> & k,
-                           const std::vector<float> & values, const vision_config & c,
-                           const std::vector<int> & offsets, int t0, int t1, std::vector<float> & pooled) {
+                           const std::vector<float> & values, const vision_config & c, const std::vector<int> & offsets,
+                           int t0, int t1, std::vector<float> & pooled) {
     const int width = c.width, d = width / c.heads;
     const float scale = 1.0f / std::sqrt(float(d));
     std::vector<float> scores, accumulator(static_cast<size_t>(d));

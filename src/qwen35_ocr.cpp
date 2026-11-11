@@ -186,8 +186,7 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
         return true;
     };
     if (graph_kv) graph_kv->reset();
-    if (!run_decoder(hidden.data(), pos.axes.data(), int(ids.size()), nullptr))
-        return c.fail("decoder prefill failed");
+    if (!run_decoder(hidden.data(), pos.axes.data(), int(ids.size()), nullptr)) return c.fail("decoder prefill failed");
     if (c.stage_observer) {
         const auto emit = [&](const std::string & name, const std::vector<float> & values) {
             c.stage_observer(c.stage_observer_user, name.c_str(), values.data(), int(values.size()));
