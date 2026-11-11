@@ -9,7 +9,11 @@
   "enable_tpu": "false",
   "enable_internet": "true",
   "competition_sources": [],
-  "dataset_sources": [],
-  "kernel_sources": ["${KAGGLE_ACCOUNT}/crispembed-unlimited-ocr2-reference"],
+  "dataset_sources": [
+    "${KAGGLE_ACCOUNT}/crispembed-ccache"
+  ],
+  "kernel_sources": [
+    "${KAGGLE_ACCOUNT}/crispembed-unlimited-ocr2-reference"
+  ],
   "model_sources": []
 }

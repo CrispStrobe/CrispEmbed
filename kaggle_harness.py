@@ -345,6 +345,159 @@ def export_ccache_tar(dest: str | os.PathLike = "/kaggle/working/ccache.tar") ->
     return str(dest)
 
 
+# ── automatic seed refresh (docs/kaggle-ccache.md) ──────────────────────────
+# A build kernel writes /kaggle/working/ccache.tar only when its seed went
+# stale: hit rate below CE_CCACHE_MIN_HIT, or the seed older than
+# CE_CCACHE_MAX_AGE_COMMITS commits / CE_CCACHE_MAX_AGE_DAYS days.
+# tools/kaggle/ccache_refresh.py --from-kernel <ref> (or kpush.py
+# --refresh-ccache) then versions the dataset from that output.
+SEED_INFO = "crispembed-seed.json"
+_seed_info: dict = {}
+
+
+def _ccache_max_size() -> str:
+    return os.environ.get("CE_CCACHE_MAXSIZE", "3G")
+
+
+def _read_seed_info(ccache_dir: Path) -> None:
+    global _seed_info
+    try:
+        _seed_info = json.loads((ccache_dir / SEED_INFO).read_text())
+    except Exception:
+        _seed_info = {}
+    _seed_info["files_at_warm"] = sum(1 for p in ccache_dir.rglob("*") if p.is_file())
+    print(f"  ccache: seed info {json.dumps(_seed_info)}", flush=True)
+
+
+def ccache_counters() -> dict:
+    """Hits/misses since the last `ccache -z` (install_build_toolchain zeroes after warming)."""
+    try:
+        out = subprocess.run("ccache --print-stats", shell=True, capture_output=True, text=True).stdout
+        kv = dict(line.split("\t", 1) for line in out.splitlines() if "\t" in line)
+        hits = int(kv.get("direct_cache_hit", 0)) + int(kv.get("preprocessed_cache_hit", 0))
+        return {"hits": hits, "misses": int(kv.get("cache_miss", 0)),
+                "direct_hits": int(kv.get("direct_cache_hit", 0))}
+    except Exception:
+        return {"hits": 0, "misses": 0, "direct_hits": 0}
+
+
+def _clone_head(repo: Path) -> tuple[str | None, Path]:
+    r = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True)
+    return (r.stdout.strip() or None) if r.returncode == 0 else None, repo
+
+
+def seed_decision(hits: int | None = None, misses: int | None = None,
+                  repo: str | os.PathLike | None = None) -> dict:
+    """Decide whether this kernel should export a fresh seed (pure function of
+    counters, seed info and the clone; no side effects)."""
+    mode = os.environ.get("CE_CCACHE_EXPORT", "auto").strip().lower()
+    min_hit = float(os.environ.get("CE_CCACHE_MIN_HIT", "0.95"))
+    max_commits = int(os.environ.get("CE_CCACHE_MAX_AGE_COMMITS", "150"))
+    max_days = float(os.environ.get("CE_CCACHE_MAX_AGE_DAYS", "21"))
+    if hits is None or misses is None:
+        c = ccache_counters()
+        hits, misses = c["hits"], c["misses"]
+    head, repo = _clone_head(Path(repo) if repo else Path(__file__).resolve().parent)
+    d = {"mode": mode, "hits": hits, "misses": misses,
+         "hit_rate": round(hits / max(1, hits + misses), 4),
+         "min_hit": min_hit, "head": head, "seed_sha": _seed_info.get("sha"),
+         "seed_created": _seed_info.get("created"), "age_commits": None, "age_days": None}
+    if d["seed_sha"] and head:
+        r = subprocess.run(["git", "-C", str(repo), "rev-list", "--count", f"{d['seed_sha']}..{head}"],
+                           capture_output=True, text=True)
+        if r.returncode == 0 and r.stdout.strip().isdigit():
+            d["age_commits"] = int(r.stdout.strip())
+    if d["seed_created"]:
+        try:
+            created = datetime.fromisoformat(d["seed_created"])
+            d["age_days"] = round((datetime.now(timezone.utc) - created).total_seconds() / 86400, 2)
+        except Exception:
+            pass
+    reasons = []
+    if hits + misses < 20:
+        reasons = []  # nothing compiled: no evidence either way, keep the seed
+    elif not _seed_info.get("sha"):
+        reasons.append("no seed info (cold or legacy seed)")
+    else:
+        if d["hit_rate"] < min_hit:
+            reasons.append(f"hit rate {d['hit_rate']} < {min_hit}")
+        if d["age_commits"] is not None and d["age_commits"] > max_commits:
+            reasons.append(f"seed {d['age_commits']} commits old > {max_commits}")
+        if d["age_days"] is not None and d["age_days"] > max_days:
+            reasons.append(f"seed {d['age_days']} days old > {max_days}")
+    if mode in ("never", "0", "off", "false", "no"):
+        d["export"], reasons = False, ["disabled by CE_CCACHE_EXPORT"]
+    elif mode in ("always", "1", "on", "true", "yes"):
+        d["export"], reasons = True, reasons + ["forced by CE_CCACHE_EXPORT"]
+    else:
+        d["export"] = bool(reasons)
+    d["reasons"] = reasons
+    return d
+
+
+def maybe_export_ccache(hits: int | None = None, misses: int | None = None,
+                        repo: str | os.PathLike | None = None,
+                        out_dir: str | os.PathLike = "/kaggle/working") -> dict:
+    """Export ccache.tar (size-capped, with seed info) only when the seed is stale.
+    Always writes <out_dir>/ccache-export.json with the decision. Idempotent."""
+    out_dir = Path(out_dir)
+    d = seed_decision(hits, misses, repo)
+    if d["export"] and _HAS_CCACHE and os.environ.get("CCACHE_DIR"):
+        cdir = Path(os.environ["CCACHE_DIR"])
+        # Trim to the size cap so outputs and the dataset stay small.
+        subprocess.run(f"ccache -M {_ccache_max_size()} && ccache -c", shell=True, capture_output=True)
+        info = {"sha": d["head"], "created": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "hit_rate_before": d["hit_rate"], "reasons": d["reasons"],
+                "cuda_arch": os.environ.get("CE_CCACHE_CUDA_ARCH") or None,
+                "max_size": _ccache_max_size()}
+        try:
+            (cdir / SEED_INFO).write_text(json.dumps(info, indent=1))
+        except Exception as e:
+            print(f"  ccache: could not write seed info: {e}", flush=True)
+        d["tar"] = export_ccache_tar(out_dir / "ccache.tar")
+        d["export"] = bool(d["tar"])
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "ccache-export.json").write_text(json.dumps(d, indent=1))
+    except Exception:
+        pass
+    print(f"  ccache: seed decision {json.dumps(d)}", flush=True)
+    return d
+
+
+_auto_export_state = {"registered": False, "done": False}
+
+
+def _auto_export_at_exit() -> None:
+    if _auto_export_state["done"] or (Path("/kaggle/working") / "ccache-export.json").exists():
+        return
+    _auto_export_state["done"] = True
+    try:
+        maybe_export_ccache()
+    except Exception as e:
+        print(f"  ccache: auto export failed: {e}", flush=True)
+
+
+def _register_auto_export() -> None:
+    """Run maybe_export_ccache() at interpreter exit unless the kernel already did.
+    Only on Kaggle; CE_CCACHE_EXPORT=never disables the export, not the report."""
+    if _auto_export_state["registered"] or not Path("/kaggle/working").is_dir():
+        return
+    import atexit
+    atexit.register(_auto_export_at_exit)
+    _auto_export_state["registered"] = True
+
+
+def ensure_build_cache() -> dict | None:
+    """Idempotent entry point for kernels that do not otherwise use this harness:
+    toolchain + seed warm + env compiler launchers + automatic seed export."""
+    if os.environ.get("CE_CCACHE_READY") == "1":
+        return None
+    tool = install_build_toolchain()
+    os.environ["CE_CCACHE_READY"] = "1"
+    return tool
+
+
 def install_build_toolchain() -> dict:
     """apt-install ninja + ccache + mold (best effort) and prime the ccache.
 
@@ -377,7 +530,7 @@ def install_build_toolchain() -> dict:
     try:
         ccache_dir.mkdir(parents=True, exist_ok=True)
         os.environ["CCACHE_DIR"] = str(ccache_dir)
-        os.environ["CCACHE_MAXSIZE"] = "5G"
+        os.environ["CCACHE_MAXSIZE"] = _ccache_max_size()
         # Make the cache RELOCATABLE. ccache hashes the working directory by
         # default, so a build tree at a different path misses every object even
         # with a perfectly good cache — moving the sweep's build from
@@ -402,9 +555,16 @@ def install_build_toolchain() -> dict:
         # Warm ccache from attached dataset (${KAGGLE_ACCOUNT}/crispasr-ccache or
         # ${KAGGLE_ACCOUNT}/crispasr-ccache). Shaves ~15 min off incremental builds.
         _warm_ccache_from_dataset(ccache_dir)
+        _read_seed_info(ccache_dir)
         if _HAS_CCACHE:
-            subprocess.run("ccache -M 5G && ccache -z", shell=True,
+            subprocess.run(f"ccache -M {_ccache_max_size()} && ccache -z", shell=True,
                            capture_output=True)
+            # CMake >= 3.17 reads these as launcher defaults, so kernels whose
+            # own cmake lines carry no -D...LAUNCHER still go through ccache.
+            for lang in ("C", "CXX", "CUDA"):
+                os.environ.setdefault(f"CMAKE_{lang}_COMPILER_LAUNCHER", "ccache")
+            _register_auto_export()
+        os.environ["CE_CCACHE_READY"] = "1"
     except Exception:
         pass
     print(f"  toolchain: ninja={_HAS_NINJA} ccache={_HAS_CCACHE} "

@@ -8,9 +8,10 @@ from the attached dataset when present. Two builds, each measured with
 `ccache -z` / `ccache --print-stats`:
   cpu   portable CPU Release (frozen-replay flags), crispembed-cli + test-ovisocr2-quality-run
   cuda  GGML_CUDA at the detected arch, crispembed-cli
-Then export_ccache_tar() writes ONE /kaggle/working/ccache.tar; refresh the
-dataset with tools/kaggle/ccache_refresh.py. summary.json carries times and
-hit/miss counts (the cold-vs-warm evidence).
+Then maybe_export_ccache() writes ONE /kaggle/working/ccache.tar only when the
+seed is stale (combined hit rate below CE_CCACHE_MIN_HIT, or seed too old);
+`kpush.py <dir> --sha <sha> --refresh-ccache` then versions the dataset from it.
+summary.json carries times and hit/miss counts (the cold-vs-warm evidence).
 """
 import json
 import os
@@ -43,6 +44,7 @@ summary["ccache_env"] = {k: v for k, v in os.environ.items() if k.startswith("CC
 summary["seed_files"] = sum(1 for p in Path(os.environ.get("CCACHE_DIR", "/nonexistent")).rglob("*") if p.is_file())
 arch = kh.detect_cuda_arch()
 summary["cuda_arch"] = arch
+os.environ["CE_CCACHE_CUDA_ARCH"] = arch
 common = "-G Ninja -DCMAKE_BUILD_TYPE=Release " + " ".join(kh.cache_and_link_flags())
 builds = [("cpu", "-DCRISPEMBED_NATIVE=OFF -DGGML_NATIVE=OFF -DGGML_BLAS=OFF -DBUILD_SHARED_LIBS=OFF "
            "-DCRISPEMBED_BUILD_SHARED=OFF", "crispembed-cli test-ovisocr2-quality-run", "$(nproc)")]
@@ -68,6 +70,8 @@ for name, flags, targets, jobs in builds:
                                                           text=True).stdout[-1200:]}
     print(name, summary["builds"][name], flush=True)
     save()
-summary["export"] = kh.export_ccache_tar()
+tot_h = sum(b["hits"] for b in summary["builds"].values())
+tot_m = sum(b["misses"] for b in summary["builds"].values())
+summary["export"] = kh.maybe_export_ccache(tot_h, tot_m, repo=SRC)
 save()
 print("done", flush=True)

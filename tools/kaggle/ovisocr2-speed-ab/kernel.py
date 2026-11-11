@@ -64,6 +64,17 @@ try:
     import kaggle_harness as kh  # the pinned clone's harness (ccache settings under test)
     kh.install_build_toolchain()
     t = time.time()
+    try:  # ce-ccache-bootstrap: CrispEmbed harness from the pinned clone warms + auto-refreshes the seed (docs/kaggle-ccache.md)
+        import glob as _ccg, importlib.util as _ccu, os as _cco
+        for _cch in ["kaggle_harness.py"] + sorted(_ccg.glob("/kaggle/working/*/kaggle_harness.py")) + sorted(_ccg.glob("/kaggle/temp/*/kaggle_harness.py")):
+            if _cco.path.isfile(_cco.path.join(_cco.path.dirname(_cco.path.abspath(_cch)), "CMakeLists.txt")) and _cco.path.isfile(_cch):
+                _ccs = _ccu.spec_from_file_location("ce_kaggle_harness", _cch)
+                _ccm = _ccu.module_from_spec(_ccs)
+                _ccs.loader.exec_module(_ccm)
+                _ccm.ensure_build_cache()
+                break
+    except Exception as _cce:
+        print("ce-ccache: bootstrap skipped:", _cce, flush=True)
     sh(f"cmake -S {SRC} -B {BUILD} -G Ninja -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_NATIVE=OFF -DGGML_NATIVE=OFF "
        "-DGGML_BLAS=OFF -DGGML_METAL=OFF -DBUILD_SHARED_LIBS=OFF -DCRISPEMBED_BUILD_SHARED=OFF "
        + " ".join(kh.cache_and_link_flags()))
