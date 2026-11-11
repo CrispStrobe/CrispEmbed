@@ -45,6 +45,18 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to src",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "2877926e60a29225a5b800202453031dbd39c52c",
+          "reason": "Replay-backed: fresh replays of the final-integrated v2 lane on this exact runtime tree (Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1) with unchanged budgets; see receipt. Source change: additive default-off CRISPEMBED_QWEN35_OCR_GRAPH_DECODER / CRISPEMBED_QWEN35_VISION_THREADED_ATTN gates and graph_kv_decoder.cpp linked into crispembed-qwen35-delta; the default decoder_cpu/vision path is unchanged.",
+          "to": "e764865ded9739982eb89f5cd85c1f5412f5fcf4",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json"
         }
       ]
     },
@@ -105,6 +117,18 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to CMakeLists.txt",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "3f4477deb804339bc1633b7ae56c65c01394a751",
+          "reason": "Replay-backed: fresh replays of the final-integrated v2 lane on this exact runtime tree (Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1) with unchanged budgets; see receipt. Source change: additive default-off CRISPEMBED_QWEN35_OCR_GRAPH_DECODER / CRISPEMBED_QWEN35_VISION_THREADED_ATTN gates and graph_kv_decoder.cpp linked into crispembed-qwen35-delta; the default decoder_cpu/vision path is unchanged.",
+          "to": "98386958d6ca7fc72715b36556b32a617d1fbcaf",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json"
         }
       ]
     },
@@ -485,6 +509,18 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to src",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "2877926e60a29225a5b800202453031dbd39c52c",
+          "reason": "Replay-backed: fresh replays of the final-integrated v2 lane on this exact runtime tree (Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1) with unchanged budgets; see receipt. Source change: additive default-off CRISPEMBED_QWEN35_OCR_GRAPH_DECODER / CRISPEMBED_QWEN35_VISION_THREADED_ATTN gates and graph_kv_decoder.cpp linked into crispembed-qwen35-delta; the default decoder_cpu/vision path is unchanged.",
+          "to": "e764865ded9739982eb89f5cd85c1f5412f5fcf4",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json"
         }
       ]
     },
@@ -545,6 +581,18 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to CMakeLists.txt",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "3f4477deb804339bc1633b7ae56c65c01394a751",
+          "reason": "Replay-backed: fresh replays of the final-integrated v2 lane on this exact runtime tree (Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1) with unchanged budgets; see receipt. Source change: additive default-off CRISPEMBED_QWEN35_OCR_GRAPH_DECODER / CRISPEMBED_QWEN35_VISION_THREADED_ATTN gates and graph_kv_decoder.cpp linked into crispembed-qwen35-delta; the default decoder_cpu/vision path is unchanged.",
+          "to": "98386958d6ca7fc72715b36556b32a617d1fbcaf",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json"
         }
       ]
     },
@@ -1007,6 +1055,50 @@
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
         }
       ]
+    },
+    {
+      "frozen": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "guard": "ovisocr2-final-integrated-v1",
+      "kind": "sha256",
+      "path": "src/qwen35_vision.cpp",
+      "repins": [
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3",
+          "reason": "Replay-backed: additive default-off CRISPEMBED_QWEN35_OCR_GRAPH_DECODER / CRISPEMBED_QWEN35_VISION_THREADED_ATTN gates; the default path is unchanged. Fresh replays of the v2 frozen and quality lanes on this tree: see receipt.",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json",
+          "to": "0ee34341b80d577d5682d537ae48e29a2f9b515cccd895cde15c2d37d9ccb5a8"
+        }
+      ],
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes"
+    },
+    {
+      "frozen": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "guard": "ovisocr2-final-integrated-v2",
+      "kind": "sha256",
+      "path": "src/qwen35_vision.cpp",
+      "repins": [
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3",
+          "reason": "Replay-backed: additive default-off CRISPEMBED_QWEN35_OCR_GRAPH_DECODER / CRISPEMBED_QWEN35_VISION_THREADED_ATTN gates; the default path is unchanged. Fresh replays of the v2 frozen and quality lanes on this tree: see receipt.",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json",
+          "to": "0ee34341b80d577d5682d537ae48e29a2f9b515cccd895cde15c2d37d9ccb5a8"
+        }
+      ],
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout"
     }
   ]
 }
