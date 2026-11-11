@@ -1,0 +1,94 @@
+{
+  "schema": "crispembed-frozen-guard-replay-receipt/v1",
+  "lane": "WASM Q8 rounding A/B v1",
+  "frozen": {
+    "run": 40391544739,
+    "source": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+    "review_artifact": 12692262412,
+    "review_zip_sha256": "6185d3a2b0776a157ab0dc10f25ddcc22406ba847dbb70b0b2638d43483bb047"
+  },
+  "replay": {
+    "run": 42951893756,
+    "workflow": ".github/workflows/frozen-guard-replay-wasm-q8.yml",
+    "source": "1e11409a49b2376f641d938c00297e79dba50741",
+    "runtime_trees_equal_to": "136dddc9 (main after #209); 1e11409a adds only the replay workflow and wrapper",
+    "artifacts": {
+      "review": {
+        "id": 13828652392,
+        "bytes": 517890,
+        "digest": "sha256:6109d76c3ab406e29d55931c81e40dc87671e8baccec462b9c78f0a3dec30564"
+      },
+      "arrays": {
+        "id": 13828781575,
+        "bytes": 2359379,
+        "digest": "sha256:ad83b4706b21e89a14bd91f41048208175a6edf05e7d999ab7063ab15b76fae2"
+      },
+      "operator_controls": {
+        "id": 13827320572,
+        "bytes": 6195,
+        "digest": "sha256:c8ba57cdf8554627ddc6bb8c297f529feefbdf8130dbc8db5d2c1c7b5fd35e0c"
+      }
+    },
+    "replay_compare_sha256": "9f2d22f5fca2fda45d324de6a1fec1876692e46a8ae4552811feec036c518908"
+  },
+  "deviations": [
+    "Only the frozen encoder/ggml identity asserts were replaced by recorded identities (tools/ci-heavy/frozen_guard_replay_wasm_q8.py); panel, gates, immutable producer packages, trace, fixture, operator controls and every comparison ran unchanged on GitHub-hosted ubuntu-24.04."
+  ],
+  "result": {
+    "compared_hashes": 108,
+    "hash_diffs": [],
+    "token_diffs": [],
+    "metric_diffs": {},
+    "frozen_state": "completed-rejected",
+    "current_state": "completed-rejected",
+    "bit_identical": true
+  },
+  "failures_identical_to_frozen": true,
+  "failure_count": 16,
+  "source_identity": {
+    "replay": true,
+    "base": "973b200edd5d1d7429edecff1bd3ff42f0d80ca7",
+    "producer": "40a82158146faf0cd44de2a4ee7056e7b0c6a58c",
+    "frozen_encoder_sha256": "99bb8a2308021ce997e1570927322d749155c89155dd08af11fdcac6b99e7be1",
+    "encoder_sha256": "44371ef32a036e00a28dbd5781d2a2f836f646e4155f720942dc8606aa9f7107",
+    "frozen_ggml": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+    "ggml": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+    "ggml_files_changed_since_frozen_candidate": [],
+    "candidate_dependency_files": {
+      "include/ggml-cpu.h": {
+        "frozen_candidate_sha256": "1b1ca04306c854187e6d7cb1f5edaf804c63a29a3b9909d563380343ecc25bae",
+        "current_sha256": "1b1ca04306c854187e6d7cb1f5edaf804c63a29a3b9909d563380343ecc25bae"
+      },
+      "src/ggml-cpu/arch/wasm/quants.c": {
+        "frozen_candidate_sha256": "0f842b90c7fd3f83c7591454d85ac21985b3e572c21bc0f781f5159f751e0a42",
+        "current_sha256": "0f842b90c7fd3f83c7591454d85ac21985b3e572c21bc0f781f5159f751e0a42"
+      },
+      "src/ggml-cpu/ggml-cpu-impl.h": {
+        "frozen_candidate_sha256": "0a2fc96b34833c1a952d17b8232f3f714f8391e7b78f0be507c92e257fd525d0",
+        "current_sha256": "0a2fc96b34833c1a952d17b8232f3f714f8391e7b78f0be507c92e257fd525d0"
+      },
+      "src/ggml-cpu/ggml-cpu.c": {
+        "frozen_candidate_sha256": "b8c04a65c4ee295428501c0951c52b334920fef9101cb100061731b1b9fbee94",
+        "current_sha256": "9a85d2bf58f99e885106cac024d7585f079f16ba7df9a68ef0bb03d9bc860f14"
+      },
+      "src/ggml-cpu/ggml-cpu.cpp": {
+        "frozen_candidate_sha256": "898063fa671f65e5cee7b9a6520e7fedf2125765015f5c16eb3675be2c79af7e",
+        "current_sha256": "898063fa671f65e5cee7b9a6520e7fedf2125765015f5c16eb3675be2c79af7e"
+      },
+      "src/ggml-cpu/quants.h": {
+        "frozen_candidate_sha256": "02457a2e34ffb102ad046868f2087d1f07e744b36cbb6ffee9ad5295e78a6781",
+        "current_sha256": "02457a2e34ffb102ad046868f2087d1f07e744b36cbb6ffee9ad5295e78a6781"
+      },
+      "tests/test-wasm-q8-rounding.cpp": {
+        "frozen_candidate_sha256": "bc930d5da844df31e5868e1ad28bc8389952809d5f6b218a043421b9e276f960",
+        "current_sha256": "bc930d5da844df31e5868e1ad28bc8389952809d5f6b218a043421b9e276f960"
+      },
+      "tests/wasm-q8-rounding/CMakeLists.txt": {
+        "frozen_candidate_sha256": "e3cd46be12d5607b1e0aee31a6e118e06de64f6b4597fb4b97442670008353e6",
+        "current_sha256": "e3cd46be12d5607b1e0aee31a6e118e06de64f6b4597fb4b97442670008353e6"
+      }
+    }
+  },
+  "production_files_changed_since_base_count": 269,
+  "conclusion": "All 108 final/stage/interleaving vector hashes, every token stream and all metrics equal the frozen run; the same 16 controls reject. ggml a06fc0bb->3a27b6c6 (lazy NVFP4 UE4M3 LUT only on CPU) and the default-on CRISPEMBED_POS_EMBD_TRUNCATE (position table 512 rows, offset 0 for this BERT model: limit unchanged) do not change this lane."
+}

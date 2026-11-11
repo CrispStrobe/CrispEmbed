@@ -1,0 +1,192 @@
+{
+  "schema": "crispembed-frozen-guard-amendments/v1",
+  "scope": "WASM Q8 rounding A/B and source-preservation guards. Re-pins are backed by a fresh hosted replay of the full A/B that is bit-identical to the frozen run; budgets, panel, gates and the frozen candidate declaration are unchanged.",
+  "tool": "tools/frozen_guard_amendments.py",
+  "observed_at": "80d6d8c1",
+  "initial_failure": {
+    "lane": "tools/kaggle/crispembed-pytest-plain (full clone) at cd477abe",
+    "error": "q8_rounding_ab source guard and q8_rounding_source changed-file guard fail after default-on CRISPEMBED_POS_EMBD_TRUNCATE (0fb9e738) and ggml a06fc0bb->3a27b6c6"
+  },
+  "amendments": [
+    {
+      "guard": "wasm-q8-rounding-ab",
+      "test": "tests/test_wasm_q8_rounding_ab_v1.py::Contract::test_exact_candidate_source_guard_and_dirty_rejection",
+      "kind": "sha256",
+      "path": "src/crispembed.cpp",
+      "frozen": "99bb8a2308021ce997e1570927322d749155c89155dd08af11fdcac6b99e7be1",
+      "frozen_commit": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+      "repins": [
+        {
+          "from": "99bb8a2308021ce997e1570927322d749155c89155dd08af11fdcac6b99e7be1",
+          "to": "44371ef32a036e00a28dbd5781d2a2f836f646e4155f720942dc8606aa9f7107",
+          "changed_by": [
+            "973b200e..136dddc9 (269 later src/wasm commits (incl. default-on CRISPEMBED_POS_EMBD_TRUNCATE 0fb9e738).)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replay run 42951893756 of the full A/B on this exact runtime tree is bit-identical to frozen run 40391544739 (108 vector/stage hashes, all token streams and metrics, same 16 rejections). 269 later src/wasm commits (incl. default-on CRISPEMBED_POS_EMBD_TRUNCATE 0fb9e738).",
+          "replay_receipt": "tests/results/frozen-guards/replays/wasm-q8-rounding-ab.json"
+        }
+      ]
+    },
+    {
+      "guard": "wasm-q8-rounding-ab",
+      "test": "tests/test_wasm_q8_rounding_ab_v1.py::Contract::test_exact_candidate_source_guard_and_dirty_rejection",
+      "kind": "git-object",
+      "path": "ggml",
+      "frozen": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+      "frozen_commit": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+      "repins": [
+        {
+          "from": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+          "to": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+          "changed_by": [
+            "973b200e..136dddc9 (ggml a06fc0bb->3a27b6c6: CPU delta is the lazy UE4M3 table used only by NVFP4 dots; rest is Metal.)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replay run 42951893756 of the full A/B on this exact runtime tree is bit-identical to frozen run 40391544739 (108 vector/stage hashes, all token streams and metrics, same 16 rejections). ggml a06fc0bb->3a27b6c6: CPU delta is the lazy UE4M3 table used only by NVFP4 dots; rest is Metal.",
+          "replay_receipt": "tests/results/frozen-guards/replays/wasm-q8-rounding-ab.json"
+        }
+      ]
+    },
+    {
+      "guard": "wasm-q8-rounding-ab",
+      "test": "tests/test_wasm_q8_rounding_ab_v1.py::Contract::test_exact_candidate_source_guard_and_dirty_rejection",
+      "kind": "sha256",
+      "path": "ls-tree:973b200edd5d1d7429edecff1bd3ff42f0d80ca7:unchanged-runtime-paths",
+      "frozen": "ae37064178c5b5246acd2cbd4a0b7b4f6bce3b5b4e56e03c7a582e621352df45",
+      "frozen_commit": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+      "repins": [
+        {
+          "from": "ae37064178c5b5246acd2cbd4a0b7b4f6bce3b5b4e56e03c7a582e621352df45",
+          "to": "b84afbe3914b6ca4b0de7beb63d99fe017abec6c28a6d93f3ab30bac77fd0d64",
+          "changed_by": [
+            "973b200e..136dddc9 (later commits to src/ and the unchanged runtime paths; see replay receipt)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replay run 42951893756 of the full A/B on this exact runtime tree is bit-identical to frozen run 40391544739 (108 vector/stage hashes, all token streams and metrics, same 16 rejections). ",
+          "replay_receipt": "tests/results/frozen-guards/replays/wasm-q8-rounding-ab.json"
+        }
+      ]
+    },
+    {
+      "guard": "wasm-q8-rounding-ab",
+      "test": "tests/test_wasm_q8_rounding_ab_v1.py::Contract::test_exact_candidate_source_guard_and_dirty_rejection",
+      "kind": "sha256",
+      "path": "ls-tree:973b200edd5d1d7429edecff1bd3ff42f0d80ca7:src-except-crispembed.cpp",
+      "frozen": "8d9752e370b3a92399d6855d56e1168b2ce2da7abd911b5fb390636b6a5d20a4",
+      "frozen_commit": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+      "repins": [
+        {
+          "from": "8d9752e370b3a92399d6855d56e1168b2ce2da7abd911b5fb390636b6a5d20a4",
+          "to": "b73fe386d97dfd704f5c74bd38eedf36f170287849325c6adafd384d61f542f3",
+          "changed_by": [
+            "973b200e..136dddc9 (later commits to src/ and the unchanged runtime paths; see replay receipt)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replay run 42951893756 of the full A/B on this exact runtime tree is bit-identical to frozen run 40391544739 (108 vector/stage hashes, all token streams and metrics, same 16 rejections). ",
+          "replay_receipt": "tests/results/frozen-guards/replays/wasm-q8-rounding-ab.json"
+        }
+      ]
+    },
+    {
+      "guard": "wasm-q8-rounding-ab",
+      "test": "tests/test_wasm_q8_rounding_ab_v1.py::Contract::test_exact_candidate_source_guard_and_dirty_rejection",
+      "kind": "sha256",
+      "path": "ls-tree:40a82158146faf0cd44de2a4ee7056e7b0c6a58c:unchanged-runtime-paths",
+      "frozen": "ae37064178c5b5246acd2cbd4a0b7b4f6bce3b5b4e56e03c7a582e621352df45",
+      "frozen_commit": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+      "repins": [
+        {
+          "from": "ae37064178c5b5246acd2cbd4a0b7b4f6bce3b5b4e56e03c7a582e621352df45",
+          "to": "b84afbe3914b6ca4b0de7beb63d99fe017abec6c28a6d93f3ab30bac77fd0d64",
+          "changed_by": [
+            "973b200e..136dddc9 (later commits to src/ and the unchanged runtime paths; see replay receipt)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replay run 42951893756 of the full A/B on this exact runtime tree is bit-identical to frozen run 40391544739 (108 vector/stage hashes, all token streams and metrics, same 16 rejections). ",
+          "replay_receipt": "tests/results/frozen-guards/replays/wasm-q8-rounding-ab.json"
+        }
+      ]
+    },
+    {
+      "guard": "wasm-q8-rounding-ab",
+      "test": "tests/test_wasm_q8_rounding_ab_v1.py::Contract::test_exact_candidate_source_guard_and_dirty_rejection",
+      "kind": "sha256",
+      "path": "ls-tree:40a82158146faf0cd44de2a4ee7056e7b0c6a58c:src-except-crispembed.cpp",
+      "frozen": "8d9752e370b3a92399d6855d56e1168b2ce2da7abd911b5fb390636b6a5d20a4",
+      "frozen_commit": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+      "repins": [
+        {
+          "from": "8d9752e370b3a92399d6855d56e1168b2ce2da7abd911b5fb390636b6a5d20a4",
+          "to": "b73fe386d97dfd704f5c74bd38eedf36f170287849325c6adafd384d61f542f3",
+          "changed_by": [
+            "973b200e..136dddc9 (later commits to src/ and the unchanged runtime paths; see replay receipt)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replay run 42951893756 of the full A/B on this exact runtime tree is bit-identical to frozen run 40391544739 (108 vector/stage hashes, all token streams and metrics, same 16 rejections). ",
+          "replay_receipt": "tests/results/frozen-guards/replays/wasm-q8-rounding-ab.json"
+        }
+      ]
+    },
+    {
+      "guard": "wasm-q8-rounding-ab",
+      "test": "tests/test_wasm_q8_rounding_ab_v1.py::Contract::test_exact_candidate_source_guard_and_dirty_rejection",
+      "kind": "sha256",
+      "path": "ggml/src/ggml-cpu/ggml-cpu.c",
+      "frozen": "b8c04a65c4ee295428501c0951c52b334920fef9101cb100061731b1b9fbee94",
+      "frozen_commit": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+      "repins": [
+        {
+          "from": "b8c04a65c4ee295428501c0951c52b334920fef9101cb100061731b1b9fbee94",
+          "to": "9a85d2bf58f99e885106cac024d7585f079f16ba7df9a68ef0bb03d9bc860f14",
+          "changed_by": [
+            "973b200e..136dddc9 (Same ggml move: UE4M3 LUT initialized lazily on first NVFP4 use (GGML_CPU_EAGER_UE4M3_LUT restores eager); Q8_0 trait table byte-identical (test_global_type_traits_are_byte_identical).)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replay run 42951893756 of the full A/B on this exact runtime tree is bit-identical to frozen run 40391544739 (108 vector/stage hashes, all token streams and metrics, same 16 rejections). Same ggml move: UE4M3 LUT initialized lazily on first NVFP4 use (GGML_CPU_EAGER_UE4M3_LUT restores eager); Q8_0 trait table byte-identical (test_global_type_traits_are_byte_identical).",
+          "replay_receipt": "tests/results/frozen-guards/replays/wasm-q8-rounding-ab.json"
+        }
+      ]
+    },
+    {
+      "guard": "wasm-q8-rounding-source",
+      "test": "tests/test_wasm_q8_rounding_source.py::Preservation::test_no_production_probe_or_wrapper_change",
+      "kind": "sha256",
+      "path": "git-diff:973b200e:src,wasm",
+      "frozen": "f734f30b5c429aaa07af3d5b95248fad8777c4a8ffefeab54a6095165e652870",
+      "frozen_commit": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+      "repins": [
+        {
+          "from": "f734f30b5c429aaa07af3d5b95248fad8777c4a8ffefeab54a6095165e652870",
+          "to": "fb52b8e5a4f3d66c77d7005aca50173eef3a59b14c38a1e9d0ef332b697157d8",
+          "changed_by": [
+            "973b200e..136dddc9 (later commits to src/ and the unchanged runtime paths; see replay receipt)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replay run 42951893756 of the full A/B on this exact runtime tree is bit-identical to frozen run 40391544739 (108 vector/stage hashes, all token streams and metrics, same 16 rejections). ",
+          "replay_receipt": "tests/results/frozen-guards/replays/wasm-q8-rounding-ab.json"
+        }
+      ]
+    },
+    {
+      "guard": "wasm-q8-rounding-source",
+      "test": "tests/test_wasm_q8_rounding_source.py::Preservation::test_no_production_probe_or_wrapper_change",
+      "kind": "sha256",
+      "path": "src/crispembed.cpp:without-candidate-block",
+      "frozen": "9ee4e21e007d1ca3375008d3f5c45db283d8aa1ef5434992fdc895115de4b24a",
+      "frozen_commit": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+      "repins": [
+        {
+          "from": "9ee4e21e007d1ca3375008d3f5c45db283d8aa1ef5434992fdc895115de4b24a",
+          "to": "a7cd1727b6eb2394062dc42d093c85d04200c5d125af4cd01b475032faeefb34",
+          "changed_by": [
+            "973b200e..136dddc9 (later commits to src/ and the unchanged runtime paths; see replay receipt)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh replay run 42951893756 of the full A/B on this exact runtime tree is bit-identical to frozen run 40391544739 (108 vector/stage hashes, all token streams and metrics, same 16 rejections). ",
+          "replay_receipt": "tests/results/frozen-guards/replays/wasm-q8-rounding-ab.json"
+        }
+      ]
+    }
+  ]
+}

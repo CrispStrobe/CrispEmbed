@@ -7,6 +7,13 @@ import unittest
 ROOT=Path(__file__).resolve().parents[1]
 GGML=Path(os.environ.get('GGML_SOURCE',ROOT/'ggml'))
 BASE='890278a8342c620197c90e702e1188bcab94f510'
+import hashlib,sys
+sys.path.insert(0,str(ROOT/'tools'))
+from frozen_guard_amendments import expected
+
+def amended(path,frozen):return expected('wasm-q8-rounding-source',path,frozen)
+
+def listing(rows):return hashlib.sha256('\n'.join(rows).encode()).hexdigest()
 
 def original(path):
  return subprocess.check_output(['git','show',BASE+':'+path],cwd=GGML,text=True)
@@ -39,12 +46,14 @@ class Preservation(unittest.TestCase):
   self.assertEqual(table(original(path)),table((GGML/path).read_text()))
  def test_no_production_probe_or_wrapper_change(self):
   changed=subprocess.check_output(['git','diff','973b200edd5d1d7429edecff1bd3ff42f0d80ca7','--name-only','--','src','wasm'],cwd=ROOT,text=True).splitlines()
-  self.assertEqual(changed,['src/crispembed.cpp'])
+  # Exact match against the frozen list, or its newest recorded re-pin
+  # (tests/results/frozen-guards/wasm-q8-rounding.json, replay-backed).
+  self.assertEqual(listing(changed),amended('git-diff:973b200e:src,wasm',listing(['src/crispembed.cpp'])))
   before=subprocess.check_output(['git','show','973b200edd5d1d7429edecff1bd3ff42f0d80ca7:src/crispembed.cpp'],cwd=ROOT,text=True)
   after=(ROOT/'src/crispembed.cpp').read_text()
   start=after.index('#if defined(__EMSCRIPTEN__)\n    // Conditional encoder candidate:')
   end=after.index('#endif\n\n',start)+len('#endif\n\n')
   addition=after[start:end]
   self.assertIn('core_env::on("CRISPEMBED_WASM_Q8_0_ROUND")',addition)
-  self.assertEqual(after[:start]+after[end:],before)
+  self.assertEqual(listing([after[:start]+after[end:]]),amended('src/crispembed.cpp:without-candidate-block',listing([before])))
 if __name__=='__main__':unittest.main()

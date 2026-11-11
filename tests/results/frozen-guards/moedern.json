@@ -9613,6 +9613,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Guard contract edited by this re-pin to consult recorded amendments (still exact match)."
+        },
+        {
+          "from": "5302a8500db13ad0a1f3608a82336f856aa6b116279ea0b8e3dc075b4128cbb4",
+          "to": "545f90c22f7867ab81f19bcdf5dcf2b083d5b181e3515199fd69d1834f895a62",
+          "changed_by": [
+            "frozen-guard-replay PR (this change)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Guard-only redesign (owner-approved, same as the WASM layer3 guard): the undeclared-delta check diffs base..declaration commit instead of base..HEAD, so unrelated later commits no longer fail it. The recorded changed-path set, owned hashes, protected src/ggml objects, root pins and packer constants are unchanged and still exact on HEAD."
         }
       ]
     },
@@ -10347,6 +10356,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Guard contract edited by this re-pin to consult recorded amendments (still exact match)."
+        },
+        {
+          "from": "0f0f827e546b8a140420a459ddd91d2264042209fc73991ddaeb8e989f1a9d72",
+          "to": "e88f579b0e18c37b27caad5607ce673eed59ff831a13ec093ac0dc2d290f7047",
+          "changed_by": [
+            "frozen-guard-replay PR (this change)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Guard-only redesign (owner-approved, same as the WASM layer3 guard): the undeclared-delta check diffs base..declaration commit instead of base..HEAD, so unrelated later commits no longer fail it. The recorded changed-path set, owned hashes, protected src/ggml objects, root pins and packer constants are unchanged and still exact on HEAD."
         }
       ]
     },
@@ -10863,6 +10881,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Guard contract edited by this re-pin to consult recorded amendments (still exact match)."
+        },
+        {
+          "from": "5302a8500db13ad0a1f3608a82336f856aa6b116279ea0b8e3dc075b4128cbb4",
+          "to": "545f90c22f7867ab81f19bcdf5dcf2b083d5b181e3515199fd69d1834f895a62",
+          "changed_by": [
+            "frozen-guard-replay PR (this change)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Guard-only redesign (owner-approved, same as the WASM layer3 guard): the undeclared-delta check diffs base..declaration commit instead of base..HEAD, so unrelated later commits no longer fail it. The recorded changed-path set, owned hashes, protected src/ggml objects, root pins and packer constants are unchanged and still exact on HEAD."
         }
       ]
     },

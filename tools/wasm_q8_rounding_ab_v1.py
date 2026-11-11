@@ -82,6 +82,14 @@ def operator_receipt(source, result, current_source, declaration):
   raise ValueError('Actual operator values or backend coverage differ')
  return {'source':source,'result':result}
 
+GUARD='wasm-q8-rounding-ab'
+def amended(path,frozen):
+ """Frozen value, or the newest re-pin recorded in tests/results/frozen-guards (exact match)."""
+ from frozen_guard_amendments import expected
+ return expected(GUARD,path,frozen)
+
+def listing(rows):return digest('\n'.join(rows).encode())
+
 def git(root,*args):return subprocess.check_output(['git',*args],cwd=root,text=True,encoding='utf-8').strip()
 
 def source_guard(root,runtime_paths):
@@ -90,26 +98,27 @@ def source_guard(root,runtime_paths):
  declaration=json.loads(declaration_path.read_text())
  spec=json.loads((root/'docs/wasm-q8-rounding-ab-v1.json').read_text())
  if digest(declaration_path.read_bytes())!=spec['candidate_declaration_sha256']:raise ValueError('Candidate declaration bytes differ')
- if digest((root/'src/crispembed.cpp').read_bytes())!=ENCODER_SHA or declaration['crispembed_encoder_candidate_sha256']!=ENCODER_SHA or git(root,'rev-parse','HEAD:ggml')!=CANDIDATE_GGML:
+ head_ggml=amended('ggml',CANDIDATE_GGML)
+ if digest((root/'src/crispembed.cpp').read_bytes())!=amended('src/crispembed.cpp',ENCODER_SHA) or declaration['crispembed_encoder_candidate_sha256']!=ENCODER_SHA or git(root,'rev-parse','HEAD:ggml')!=head_ggml:
   raise ValueError('Candidate encoder/gitlink differs')
  ggml=root/'ggml'
- if not (ggml/'.git').exists() or Path(git(ggml,'rev-parse','--show-toplevel')).resolve()!=ggml.resolve() or git(ggml,'rev-parse','HEAD')!=CANDIDATE_GGML:
+ if not (ggml/'.git').exists() or Path(git(ggml,'rev-parse','--show-toplevel')).resolve()!=ggml.resolve() or git(ggml,'rev-parse','HEAD')!=head_ggml:
   raise ValueError('Candidate submodule not initialized at exact commit')
  # Every production object except the two declared changes stays bound to both
  # the immediate pre-candidate base and the immutable40 producer.
  unchanged=[p for p in runtime_paths if p not in ('src','ggml')]
  for base in (BASE,PRODUCER):
-  if git(root,'ls-tree',base,'--',*unchanged)!=git(root,'ls-tree','HEAD','--',*unchanged):raise ValueError('Unrelated production/build/binding objects differ')
+  if listing(git(root,'ls-tree','HEAD','--',*unchanged).splitlines())!=amended('ls-tree:'+base+':unchanged-runtime-paths',listing(git(root,'ls-tree',base,'--',*unchanged).splitlines())):raise ValueError('Unrelated production/build/binding objects differ')
   def src_rows(revision):
    return [line for line in git(root,'ls-tree','-r',revision,'--','src').splitlines() if not line.endswith('\tsrc/crispembed.cpp')]
-  if src_rows(base)!=src_rows('HEAD'):raise ValueError('Unrelated source objects differ')
+  if listing(src_rows('HEAD'))!=amended('ls-tree:'+base+':src-except-crispembed.cpp',listing(src_rows(base))):raise ValueError('Unrelated source objects differ')
  if git(root,'status','--porcelain','--',*runtime_paths):raise ValueError('Dirty production source rejected')
  expected=declaration['files']
  if declaration['ggml_base']!=OLD_GGML or declaration['ggml_candidate']!=CANDIDATE_GGML:raise ValueError('Candidate dependency declaration differs')
  changed=git(ggml,'diff','--name-only',OLD_GGML,CANDIDATE_GGML).splitlines()
  if set(changed)!=set(expected):raise ValueError('Unexpected ggml source delta')
  for name,identity in expected.items():
-  if digest((ggml/name).read_bytes())!=identity['candidate_sha256']:raise ValueError('Candidate dependency bytes differ: '+name)
+  if digest((ggml/name).read_bytes())!=amended('ggml/'+name,identity['candidate_sha256']):raise ValueError('Candidate dependency bytes differ: '+name)
  if git(ggml,'status','--porcelain'):raise ValueError('Dirty dependency source rejected')
  return {'base':BASE,'producer':PRODUCER,'encoder_sha256':ENCODER_SHA,'ggml':CANDIDATE_GGML,'dependency_files':expected,'unchanged_paths':unchanged}
 
