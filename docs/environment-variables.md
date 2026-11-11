@@ -140,6 +140,7 @@ bounded thresholds and output fields are in [the Marker guide](marker.md#optiona
 | `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` | on | F32 copies of the SAM/CLIP block matrices made once at init (variant 2 only); F32 x F32 vision products. Default since 2026-11-03: 4/4 trial pages exact, real scans 1.43x, 17/19 ids-identical to the F16 path, original-exact 12 -> 13/20. `=0` restores the F16 path. |
 | `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY` | auto | Skip those F32 copies (F16 vision path, the pre-2026-11-03 default) when available RAM < copies + 1 GiB, with one stderr notice. `=1` always, `=0` never checks. |
 | `CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH` | off | Gundam tiles run through SAM's layers and CLIP as one graph per layer (vision bytes identical to unbatched). About 2% faster only. |
+| `CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP` | off | FAST decoder, single-row decode: graph B of layer l and graph A of layer l+1 in one graph (L+1 graph computes per token instead of 2L); same ops in the same order, DASH routing stays on the host. Proposed for GPU builds; A/B in PERFORMANCE (OCR engine GPU readiness). |
 | `CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH_MAX` | 16 | Tiles per batched graph (1-64) when `..._TILE_BATCH=1`. |
 | `CRISPEMBED_UNLIMITED_OCR2_OUTPUT` | raw | `clean` (alias `markdown`) strips layout markup; `legacy` reproduces the earlier post-processing; anything else is raw model text. |
 | `CRISPEMBED_UNLIMITED_OCR_BENCH` | off | Stage timings on stderr. |
@@ -279,7 +280,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-489 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+490 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -1382,6 +1383,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_UNLIMITED_OCR2` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` | Unlimited-OCR-2 must not silently run v1 attention: its own gate is required. |
 | `CRISPEMBED_UNLIMITED_OCR2_FAST` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_FORCE_IDS` | value | unset | value | tuning / config | `src/unlimited_ocr.cpp` |  |
+| `CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` | and ops run in the same order; only graph boundaries move. DASH routing stays on the host between A(l) and B(l), exactly as in forward(). Prefill (T > 1) is ... |
 | `CRISPEMBED_UNLIMITED_OCR2_LOGITS_OUT` | value | unset | path | tuning / config | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY` | value | unset | value | tuning / config | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_OUTPUT` | value | unset | value | tuning / config | `src/unlimited_ocr.cpp` |  |

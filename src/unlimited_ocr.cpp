@@ -3035,6 +3035,105 @@ static bool run_llm_decoder_v2_fast(uocr_ctx & ctx, const float * prompt_embeds,
         return c;
     };
 
+    // Graph-A body: input norm, q/k/v + router q/k projections, Gemma norms, rope; K/V -> cache rows p0..p0+T-1.
+    struct a_out {
+        ggml_tensor *Q, *IQ, *IK;
+    };
+    auto build_a = [&](graph & G, int li, ggml_tensor * x, ggml_tensor * tc, ggml_tensor * ts, int T, int p0) {
+        auto * g = G.g;
+        auto & ly = ctx.m.llm_layers[li];
+        ggml_tensor * xn = ggml_mul(g, ggml_rms_norm(g, x, lhp.rms_eps), ensure_f32(g, ly.in_ln_w));
+        auto proj = [&](ggml_tensor * w, int heads) { return ggml_reshape_3d(g, ggml_mul_mat(g, w, xn), HDm, heads, T); };
+        ggml_tensor * Q = uocr2_fast::rope(g, proj(ly.q_w, NH), tc, ts);
+        ggml_tensor * K = uocr2_fast::rope(g, proj(ly.k_w, NKV), tc, ts);
+        ggml_tensor * Vv = proj(ly.v_w, NKV);
+        ggml_tensor * IQ = uocr2_fast::rope(g, uocr2_fast::gemma_rms(g, proj(ly.dash_q_w, 1), ly.dash_q_norm), tc, ts);
+        ggml_tensor * IK = uocr2_fast::rope(g, uocr2_fast::gemma_rms(g, proj(ly.dash_k_w, 1), ly.dash_k_norm), tc, ts);
+        const size_t row = kcache[li]->nb[1];
+        ggml_tensor * kdst = ggml_view_2d(g, kcache[li], KD, T, row, (size_t)p0 * row);
+        ggml_tensor * vdst = ggml_view_2d(g, vcache[li], KD, T, row, (size_t)p0 * row);
+        ggml_set_output(Q);
+        ggml_set_output(IQ);
+        ggml_set_output(IK);
+        ggml_build_forward_expand(G.gf, ggml_cpy(g, ggml_reshape_2d(g, K, KD, T), kdst));
+        ggml_build_forward_expand(G.gf, ggml_cpy(g, ggml_reshape_2d(g, ggml_cont(g, Vv), KD, T), vdst));
+        ggml_build_forward_expand(G.gf, Q);
+        ggml_build_forward_expand(G.gf, IQ);
+        ggml_build_forward_expand(G.gf, IK);
+        return a_out{ Q, IQ, IK };
+    };
+    // Graph-B body: masked attention, o_proj, residual, dense FFN / MoE for Tc query rows.
+    auto build_b = [&](graph & G, int li, ggml_tensor * hin, ggml_tensor * qin, ggml_tensor * msk, int Lk) {
+        auto * g = G.g;
+        auto & ly = ctx.m.llm_layers[li];
+        const int Tc = (int)hin->ne[1];
+        const size_t row = kcache[li]->nb[1], hb = (size_t)HDm * sizeof(float);
+        ggml_tensor * Kf = ggml_view_3d(g, kcache[li], HDm, NKV, Lk, hb, row, 0);
+        ggml_tensor * Vf = ggml_view_3d(g, vcache[li], HDm, NKV, Lk, hb, row, 0);
+        ggml_tensor * Qp = ggml_cont(g, ggml_permute(g, qin, 0, 2, 1, 3)); // [HD, Tc, NH]
+        ggml_tensor * Kp = ggml_cont(g, ggml_permute(g, Kf, 0, 2, 1, 3));  // [HD, Lk, NKV]
+        ggml_tensor * Vt = ggml_cont(g, ggml_permute(g, Vf, 1, 2, 0, 3));  // [Lk, HD, NKV]
+        ggml_tensor * kq = ggml_mul_mat(g, Kp, Qp); // [Lk, Tc, NH]; head h uses kv head h/(NH/NKV)
+        kq = ggml_soft_max_ext(g, kq, msk, attn_scale, 0.0f);
+        ggml_tensor * o = ggml_mul_mat(g, Vt, kq); // [HD, Tc, NH]
+        o = ggml_reshape_2d(g, ggml_cont(g, ggml_permute(g, o, 0, 2, 1, 3)), QD, Tc);
+        ggml_tensor * xo = ggml_add(g, hin, ggml_mul_mat(g, ly.o_w, o));
+        ggml_tensor * hn = ggml_mul(g, ggml_rms_norm(g, xo, lhp.rms_eps), ensure_f32(g, ly.post_ln_w));
+        ggml_tensor * ff;
+        if (li == 0) {
+            ggml_tensor * gt = ggml_silu(g, ggml_mul_mat(g, ly.ffn_gate_w, hn));
+            ff = ggml_mul_mat(g, ly.ffn_down_w, ggml_mul(g, gt, ggml_mul_mat(g, ly.ffn_up_w, hn)));
+        } else { // v1 MoE math: softmax gate, top-k, no renorm, routed scale, shared experts.
+            const int n_exp = lhp.n_experts, K = lhp.n_experts_top;
+            ggml_tensor * probs = ggml_soft_max(g, ggml_mul_mat(g, ly.router_w, hn));
+            ggml_tensor * ids = ggml_top_k(g, probs, K);
+            ggml_tensor * p3 = ggml_reshape_3d(g, probs, 1, n_exp, Tc);
+            ggml_tensor * top_w = ggml_reshape_2d(g, ggml_get_rows(g, p3, ids), K, Tc);
+            top_w = ggml_scale(g, top_w, lhp.routed_scaling_factor);
+            ggml_tensor * hn3 = ggml_reshape_3d(g, hn, D, 1, Tc);
+            ggml_tensor * hnK = ggml_repeat(g, hn3, ggml_new_tensor_3d(g, hn->type, D, K, Tc));
+            ggml_tensor * gt = ggml_silu(g, ggml_mul_mat_id(g, ly.gate_exps, hnK, ids));
+            ggml_tensor * up = ggml_mul_mat_id(g, ly.up_exps, hnK, ids);
+            ggml_tensor * dn = ggml_mul_mat_id(g, ly.down_exps, ggml_mul(g, gt, up), ids);
+            ggml_tensor * dn_p = ggml_cont(g, ggml_permute(g, dn, 1, 0, 2, 3));
+            ggml_tensor * w_col = ggml_reshape_3d(g, top_w, K, 1, Tc);
+            ggml_tensor * routed = ggml_reshape_2d(g, ggml_mul_mat(g, w_col, dn_p), D, Tc);
+            ggml_tensor * sg = ggml_silu(g, ggml_mul_mat(g, ly.shared_gate_w, hn));
+            ggml_tensor * su = ggml_mul_mat(g, ly.shared_up_w, hn);
+            ggml_tensor * shared = ggml_mul_mat(g, ly.shared_down_w, ggml_mul(g, sg, su));
+            ff = ggml_add(g, routed, shared);
+        }
+        ggml_tensor * out = ggml_add(g, xo, ff);
+        ggml_set_output(out);
+        ggml_build_forward_expand(G.gf, out);
+        return out;
+    };
+    // Host DASH mask for query rows r0..r0+Tc-1 (local window wins over a block bias, as uocr2::attend).
+    auto build_mask = [&](const std::vector<uocr2::selection> & sel, int r0, int Tc, int p0, int Lk) {
+        std::vector<float> mask((size_t)Lk * Tc, NEG);
+        for (int t = 0; t < Tc; t++) {
+            const int pos = p0 + r0 + t;
+            float * m = mask.data() + (size_t)t * Lk;
+            const auto & s = sel[r0 + t];
+            for (size_t i = 0; i < s.blocks.size(); i++) {
+                const int j0 = s.blocks[i] * uocr2::BLOCK, j1 = std::min(j0 + uocr2::BLOCK, pos + 1);
+                for (int j = j0; j < j1; j++) m[j] = s.bias[i];
+            }
+            for (int j = std::max(0, pos - uocr2::LOCAL_WINDOW + 1); j <= pos; j++) m[j] = 0.0f;
+        }
+        return mask;
+    };
+    // CPU DASH routing with the reference helpers: all T router keys first, then queries.
+    auto route_layer = [&](int li, int T, int p0, const float * iqp, const float * ikp,
+                           const std::function<std::vector<uint8_t>(int, int)> & cand) {
+        for (int t = 0; t < T; t++) rks[li].append(ikp + (size_t)t * HDm, head_cls[li].data());
+        const int nblk = (rks[li].rows() + uocr2::BLOCK - 1) / uocr2::BLOCK;
+        std::vector<uocr2::selection> sel(T);
+        for (int t = 0; t < T; t++)
+            sel[t] = uocr2::route(rks[li], iqp + (size_t)t * HDm, head_cls[li].data(), p0 + t, cand(t, nblk));
+        return sel;
+    };
+
     // One decoder pass over T new rows at absolute positions p0..p0+T-1 (as the reference).
     auto forward = [&](std::vector<float> & h, int T, int p0, const std::vector<int> & tok_c,
                        const std::vector<int> & page_c,
@@ -3044,110 +3143,31 @@ static bool run_llm_decoder_v2_fast(uocr_ctx & ctx, const float * prompt_embeds,
             uocr2::rope_table(tok_c[t], page_c[t], cs.data() + (size_t)t * HDm, sn.data() + (size_t)t * HDm);
         std::vector<float> q((size_t)T * QD), iq((size_t)T * HDm), ik((size_t)T * HDm);
         for (int li = 0; li < L; li++) {
-            auto & ly = ctx.m.llm_layers[li];
-            { // Graph A: input norm, q/k/v + router q/k projections, Gemma norms, rope; K/V -> cache.
+            {
                 graph G(256);
-                auto * g = G.g;
                 ggml_tensor * x = G.input(GGML_TYPE_F32, D, T);
                 ggml_tensor * tc = G.input(GGML_TYPE_F32, HDm, 1, T);
                 ggml_tensor * ts = G.input(GGML_TYPE_F32, HDm, 1, T);
-                ggml_tensor * xn = ggml_mul(g, ggml_rms_norm(g, x, lhp.rms_eps), ensure_f32(g, ly.in_ln_w));
-                auto proj = [&](ggml_tensor * w, int heads) {
-                    return ggml_reshape_3d(g, ggml_mul_mat(g, w, xn), HDm, heads, T);
-                };
-                ggml_tensor * Q = uocr2_fast::rope(g, proj(ly.q_w, NH), tc, ts);
-                ggml_tensor * K = uocr2_fast::rope(g, proj(ly.k_w, NKV), tc, ts);
-                ggml_tensor * Vv = proj(ly.v_w, NKV);
-                ggml_tensor * IQ =
-                    uocr2_fast::rope(g, uocr2_fast::gemma_rms(g, proj(ly.dash_q_w, 1), ly.dash_q_norm), tc, ts);
-                ggml_tensor * IK =
-                    uocr2_fast::rope(g, uocr2_fast::gemma_rms(g, proj(ly.dash_k_w, 1), ly.dash_k_norm), tc, ts);
-                const size_t row = kcache[li]->nb[1];
-                ggml_tensor * kdst = ggml_view_2d(g, kcache[li], KD, T, row, (size_t)p0 * row);
-                ggml_tensor * vdst = ggml_view_2d(g, vcache[li], KD, T, row, (size_t)p0 * row);
-                ggml_set_output(Q);
-                ggml_set_output(IQ);
-                ggml_set_output(IK);
-                ggml_build_forward_expand(G.gf, ggml_cpy(g, ggml_reshape_2d(g, K, KD, T), kdst));
-                ggml_build_forward_expand(G.gf, ggml_cpy(g, ggml_reshape_2d(g, ggml_cont(g, Vv), KD, T), vdst));
-                ggml_build_forward_expand(G.gf, Q);
-                ggml_build_forward_expand(G.gf, IQ);
-                ggml_build_forward_expand(G.gf, IK);
+                a_out A = build_a(G, li, x, tc, ts, T, p0);
                 if (!uocr2_fast::alloc(ctx, G.gf)) return false;
                 ggml_backend_tensor_set(x, h.data(), 0, (size_t)T * D * sizeof(float));
                 ggml_backend_tensor_set(tc, cs.data(), 0, cs.size() * sizeof(float));
                 ggml_backend_tensor_set(ts, sn.data(), 0, sn.size() * sizeof(float));
                 if (!uocr2_fast::run(ctx, G.gf)) return false;
-                ggml_backend_tensor_get(Q, q.data(), 0, q.size() * sizeof(float));
-                ggml_backend_tensor_get(IQ, iq.data(), 0, iq.size() * sizeof(float));
-                ggml_backend_tensor_get(IK, ik.data(), 0, ik.size() * sizeof(float));
+                ggml_backend_tensor_get(A.Q, q.data(), 0, q.size() * sizeof(float));
+                ggml_backend_tensor_get(A.IQ, iq.data(), 0, iq.size() * sizeof(float));
+                ggml_backend_tensor_get(A.IK, ik.data(), 0, ik.size() * sizeof(float));
             }
-            // CPU DASH routing with the reference helpers: all T router keys first, then queries.
-            for (int t = 0; t < T; t++) rks[li].append(ik.data() + (size_t)t * HDm, head_cls[li].data());
-            const int nblk = (rks[li].rows() + uocr2::BLOCK - 1) / uocr2::BLOCK;
-            std::vector<uocr2::selection> sel(T);
-            for (int t = 0; t < T; t++)
-                sel[t] = uocr2::route(rks[li], iq.data() + (size_t)t * HDm, head_cls[li].data(), p0 + t, cand(t, nblk));
+            std::vector<uocr2::selection> sel = route_layer(li, T, p0, iq.data(), ik.data(), cand);
             const int Lk = p0 + T;
-            // Graph B per query chunk: masked attention, o_proj, residual, dense FFN / MoE.
             for (int r0 = 0; r0 < T; r0 += chunk) {
                 const int Tc = std::min(chunk, T - r0);
-                std::vector<float> mask((size_t)Lk * Tc, NEG);
-                for (int t = 0; t < Tc; t++) {
-                    const int pos = p0 + r0 + t;
-                    float * m = mask.data() + (size_t)t * Lk;
-                    const auto & s = sel[r0 + t];
-                    for (size_t i = 0; i < s.blocks.size(); i++) {
-                        const int j0 = s.blocks[i] * uocr2::BLOCK, j1 = std::min(j0 + uocr2::BLOCK, pos + 1);
-                        for (int j = j0; j < j1; j++) m[j] = s.bias[i];
-                    }
-                    // Local window wins over a block bias (uocr2::attend: local -> bias 0).
-                    for (int j = std::max(0, pos - uocr2::LOCAL_WINDOW + 1); j <= pos; j++) m[j] = 0.0f;
-                }
+                std::vector<float> mask = build_mask(sel, r0, Tc, p0, Lk);
                 graph G(1024);
-                auto * g = G.g;
                 ggml_tensor * hin = G.input(GGML_TYPE_F32, D, Tc);
                 ggml_tensor * qin = G.input(GGML_TYPE_F32, HDm, NH, Tc);
                 ggml_tensor * msk = G.input(GGML_TYPE_F32, Lk, Tc);
-                const size_t row = kcache[li]->nb[1], hb = (size_t)HDm * sizeof(float);
-                ggml_tensor * Kf = ggml_view_3d(g, kcache[li], HDm, NKV, Lk, hb, row, 0);
-                ggml_tensor * Vf = ggml_view_3d(g, vcache[li], HDm, NKV, Lk, hb, row, 0);
-                ggml_tensor * Qp = ggml_cont(g, ggml_permute(g, qin, 0, 2, 1, 3)); // [HD, Tc, NH]
-                ggml_tensor * Kp = ggml_cont(g, ggml_permute(g, Kf, 0, 2, 1, 3));  // [HD, Lk, NKV]
-                ggml_tensor * Vt = ggml_cont(g, ggml_permute(g, Vf, 1, 2, 0, 3));  // [Lk, HD, NKV]
-                ggml_tensor * kq = ggml_mul_mat(g, Kp, Qp); // [Lk, Tc, NH]; head h uses kv head h/(NH/NKV)
-                kq = ggml_soft_max_ext(g, kq, msk, attn_scale, 0.0f);
-                ggml_tensor * o = ggml_mul_mat(g, Vt, kq); // [HD, Tc, NH]
-                o = ggml_reshape_2d(g, ggml_cont(g, ggml_permute(g, o, 0, 2, 1, 3)), QD, Tc);
-                ggml_tensor * xo = ggml_add(g, hin, ggml_mul_mat(g, ly.o_w, o));
-                ggml_tensor * hn = ggml_mul(g, ggml_rms_norm(g, xo, lhp.rms_eps), ensure_f32(g, ly.post_ln_w));
-                ggml_tensor * ff;
-                if (li == 0) {
-                    ggml_tensor * gt = ggml_silu(g, ggml_mul_mat(g, ly.ffn_gate_w, hn));
-                    ff = ggml_mul_mat(g, ly.ffn_down_w, ggml_mul(g, gt, ggml_mul_mat(g, ly.ffn_up_w, hn)));
-                } else { // v1 MoE math: softmax gate, top-k, no renorm, routed scale, shared experts.
-                    const int n_exp = lhp.n_experts, K = lhp.n_experts_top;
-                    ggml_tensor * probs = ggml_soft_max(g, ggml_mul_mat(g, ly.router_w, hn));
-                    ggml_tensor * ids = ggml_top_k(g, probs, K);
-                    ggml_tensor * p3 = ggml_reshape_3d(g, probs, 1, n_exp, Tc);
-                    ggml_tensor * top_w = ggml_reshape_2d(g, ggml_get_rows(g, p3, ids), K, Tc);
-                    top_w = ggml_scale(g, top_w, lhp.routed_scaling_factor);
-                    ggml_tensor * hn3 = ggml_reshape_3d(g, hn, D, 1, Tc);
-                    ggml_tensor * hnK = ggml_repeat(g, hn3, ggml_new_tensor_3d(g, hn->type, D, K, Tc));
-                    ggml_tensor * gt = ggml_silu(g, ggml_mul_mat_id(g, ly.gate_exps, hnK, ids));
-                    ggml_tensor * up = ggml_mul_mat_id(g, ly.up_exps, hnK, ids);
-                    ggml_tensor * dn = ggml_mul_mat_id(g, ly.down_exps, ggml_mul(g, gt, up), ids);
-                    ggml_tensor * dn_p = ggml_cont(g, ggml_permute(g, dn, 1, 0, 2, 3));
-                    ggml_tensor * w_col = ggml_reshape_3d(g, top_w, K, 1, Tc);
-                    ggml_tensor * routed = ggml_reshape_2d(g, ggml_mul_mat(g, w_col, dn_p), D, Tc);
-                    ggml_tensor * sg = ggml_silu(g, ggml_mul_mat(g, ly.shared_gate_w, hn));
-                    ggml_tensor * su = ggml_mul_mat(g, ly.shared_up_w, hn);
-                    ggml_tensor * shared = ggml_mul_mat(g, ly.shared_down_w, ggml_mul(g, sg, su));
-                    ff = ggml_add(g, routed, shared);
-                }
-                ggml_tensor * out = ggml_add(g, xo, ff);
-                ggml_set_output(out);
-                ggml_build_forward_expand(G.gf, out);
+                ggml_tensor * out = build_b(G, li, hin, qin, msk, Lk);
                 if (!uocr2_fast::alloc(ctx, G.gf)) return false;
                 ggml_backend_tensor_set(hin, h.data() + (size_t)r0 * D, 0, (size_t)Tc * D * sizeof(float));
                 ggml_backend_tensor_set(qin, q.data() + (size_t)r0 * QD, 0, (size_t)Tc * QD * sizeof(float));
@@ -3156,6 +3176,65 @@ static bool run_llm_decoder_v2_fast(uocr_ctx & ctx, const float * prompt_embeds,
                 ggml_backend_tensor_get(out, h.data() + (size_t)r0 * D, 0, (size_t)Tc * D * sizeof(float));
             }
             if (dbg && T > 1) fprintf(stderr, "  [uocr2-fast] prefill layer %d done\n", li);
+        }
+        return true;
+    };
+
+    // CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP (default off): single-row decode with graph B of layer l and
+    // graph A of layer l+1 in one graph (L+1 graph computes per token instead of 2L). The same builders
+    // and ops run in the same order; only graph boundaries move. DASH routing stays on the host between
+    // A(l) and B(l), exactly as in forward(). Prefill (T > 1) is unchanged.
+    const bool fused_step = core_env::on("CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP");
+    auto forward_step = [&](std::vector<float> & h, int p0, int tok_c, int page_c,
+                            const std::function<std::vector<uint8_t>(int, int)> & cand) -> bool {
+        std::vector<float> cs(HDm), sn(HDm), q(QD), iq(HDm), ik(HDm);
+        uocr2::rope_table(tok_c, page_c, cs.data(), sn.data());
+        { // A(0)
+            graph G(256);
+            ggml_tensor * x = G.input(GGML_TYPE_F32, D, 1);
+            ggml_tensor * tc = G.input(GGML_TYPE_F32, HDm, 1, 1);
+            ggml_tensor * ts = G.input(GGML_TYPE_F32, HDm, 1, 1);
+            a_out A = build_a(G, 0, x, tc, ts, 1, p0);
+            if (!uocr2_fast::alloc(ctx, G.gf)) return false;
+            ggml_backend_tensor_set(x, h.data(), 0, (size_t)D * sizeof(float));
+            ggml_backend_tensor_set(tc, cs.data(), 0, cs.size() * sizeof(float));
+            ggml_backend_tensor_set(ts, sn.data(), 0, sn.size() * sizeof(float));
+            if (!uocr2_fast::run(ctx, G.gf)) return false;
+            ggml_backend_tensor_get(A.Q, q.data(), 0, q.size() * sizeof(float));
+            ggml_backend_tensor_get(A.IQ, iq.data(), 0, iq.size() * sizeof(float));
+            ggml_backend_tensor_get(A.IK, ik.data(), 0, ik.size() * sizeof(float));
+        }
+        const int Lk = p0 + 1;
+        for (int li = 0; li < L; li++) {
+            std::vector<uocr2::selection> sel = route_layer(li, 1, p0, iq.data(), ik.data(), cand);
+            std::vector<float> mask = build_mask(sel, 0, 1, p0, Lk);
+            graph G(1280);
+            ggml_tensor * hin = G.input(GGML_TYPE_F32, D, 1);
+            ggml_tensor * qin = G.input(GGML_TYPE_F32, HDm, NH, 1);
+            ggml_tensor * msk = G.input(GGML_TYPE_F32, Lk, 1);
+            ggml_tensor * out = build_b(G, li, hin, qin, msk, Lk);
+            ggml_tensor *tc = nullptr, *ts = nullptr;
+            a_out A{};
+            if (li + 1 < L) {
+                tc = G.input(GGML_TYPE_F32, HDm, 1, 1);
+                ts = G.input(GGML_TYPE_F32, HDm, 1, 1);
+                A = build_a(G, li + 1, out, tc, ts, 1, p0);
+            }
+            if (!uocr2_fast::alloc(ctx, G.gf)) return false;
+            ggml_backend_tensor_set(hin, h.data(), 0, (size_t)D * sizeof(float));
+            ggml_backend_tensor_set(qin, q.data(), 0, q.size() * sizeof(float));
+            ggml_backend_tensor_set(msk, mask.data(), 0, mask.size() * sizeof(float));
+            if (tc) {
+                ggml_backend_tensor_set(tc, cs.data(), 0, cs.size() * sizeof(float));
+                ggml_backend_tensor_set(ts, sn.data(), 0, sn.size() * sizeof(float));
+            }
+            if (!uocr2_fast::run(ctx, G.gf)) return false;
+            ggml_backend_tensor_get(out, h.data(), 0, (size_t)D * sizeof(float));
+            if (tc) {
+                ggml_backend_tensor_get(A.Q, q.data(), 0, q.size() * sizeof(float));
+                ggml_backend_tensor_get(A.IQ, iq.data(), 0, iq.size() * sizeof(float));
+                ggml_backend_tensor_get(A.IK, ik.data(), 0, ik.size() * sizeof(float));
+            }
         }
         return true;
     };
@@ -3245,7 +3324,9 @@ static bool run_llm_decoder_v2_fast(uocr_ctx & ctx, const float * prompt_embeds,
             memcpy(e.data(), raw.data(), (size_t)D * sizeof(float));
         else
             ggml_get_type_traits(emb_t->type)->to_float(raw.data(), e.data(), D);
-        if (!forward(e, 1, pos, { co.cur_tok }, { co.cur_page }, [&](int, int nblk) { return cand_decode(nblk); }))
+        const auto dcand = [&](int, int nblk) { return cand_decode(nblk); };
+        if (fused_step ? !forward_step(e, pos, co.cur_tok, co.cur_page, dcand)
+                       : !forward(e, 1, pos, { co.cur_tok }, { co.cur_page }, dcand))
             return false;
         last = e;
     }
