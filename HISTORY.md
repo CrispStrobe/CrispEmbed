@@ -1,3 +1,30 @@
+## 11 November 2026 — OvisOCR2 graph decoder and threaded vision attention (opt-in); Kaggle ccache seed
+
+**OvisOCR2 speed.** Two default-off gates (PR #213):
+`CRISPEMBED_QWEN35_OCR_GRAPH_DECODER` runs `qwen35_ocr` prefill and decode on the existing
+`graph_kv_decoder`. `forward()` now takes the t/h/w position axes and applies the same
+interleaved mrope selection as `qwen35_attention.cpp` `rotate()`, the qualified reference
+rotation whose positions were audited against the original model
+(`tests/results/qwen35-ocr/ovisocr2-position-attribution.json`). No model behaviour is new. `CRISPEMBED_QWEN35_VISION_THREADED_ATTN`
+splits the vision attention over the context threads with the same per-element operation order.
+On Kaggle CPU (receipt `tests/results/qwen35-ocr/ovisocr2-graph-speed-ab.json`):
+decode 3,994 → 143 ms/token (`f32` matmul) or 84 ms/token (`native`); vision 25.5 → 8.3 s.
+Pages run 19-21x faster: historical receipt >3,600 s → 101-163 s, inventory 730 → 34-38 s.
+All 1,753 IDs and texts match the frozen first-F16 receipt. Threaded vision is bit-identical
+to the default path at 2 and 4 threads. The graph decoder's maximum confidence difference is
+2.49e-4. Defaults are unchanged; both flips need owner approval (see PLAN).
+The frozen OvisOCR2 final-integrated and MoEdern source guards carry recorded re-pins. The
+Ovis re-pin is backed by fresh replays of the v2 frozen and quality lanes on this tree.
+
+**Kaggle ccache.** No `crispembed-ccache`/`crispasr-ccache` dataset existed on the account,
+so every CrispEmbed kernel built cold. A side-file `kaggle_harness.py` never reached the kernels
+either, because Kaggle uploads only the code file. The harness now uses `CCACHE_BASEDIR=/kaggle`,
+`compiler_check=content` and mtime sloppiness. The seed kernel imports the harness from its
+pinned clone, and `tools/kaggle/ccache_refresh.py` publishes the seed dataset. Two consecutive
+GPU-worker runs from different commits and clone paths were measured
+(`tests/results/kaggle-ccache.json`). CPU: cold 331 s, warm 9.1 s (99.0% hits). CUDA: cold
+1,794 s, warm 14.9 s (99.7% hits). Workflow: [docs/kaggle-ccache.md](docs/kaggle-ccache.md).
+
 ## 11 November 2026 — Frozen guards re-pinned from fresh replays; delta checks anchored
 
 The 9 frozen-guard failures left after #209 are resolved. Two guards were re-pinned

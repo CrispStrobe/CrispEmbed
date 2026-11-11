@@ -1,0 +1,76 @@
+{
+ "schema": "crispembed-kaggle-ccache-v1",
+ "kernel": "${KAGGLE_ACCOUNT}/crispembed-ccache-seed (GPU T4 worker)",
+ "dataset": "${KAGGLE_ACCOUNT}/crispembed-ccache (private; created from the cold run, versioned from the warm run)",
+ "cold": {
+  "source_commit": "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2",
+  "clone_path_basename": "ce-8e1e89e82ac0",
+  "seed_files_found": 273,
+  "ccache_env": {
+   "CCACHE_MAXSIZE": "5G",
+   "CCACHE_NOHASHDIR": "1",
+   "CCACHE_BASEDIR": "/kaggle",
+   "CCACHE_COMPILERCHECK": "content",
+   "CCACHE_SLOPPINESS": "include_file_mtime,include_file_ctime,time_macros"
+  },
+  "cuda_arch": "75",
+  "builds": {
+   "cpu": {
+    "rc": 1,
+    "configure_s": 2.2,
+    "total_s": 331.3,
+    "hits": 0,
+    "misses": 206,
+    "hit_rate": 0.0,
+    "direct_hits": 0
+   },
+   "cuda": {
+    "rc": 0,
+    "configure_s": 5.3,
+    "total_s": 1793.5,
+    "hits": 3,
+    "misses": 325,
+    "hit_rate": 0.0091,
+    "direct_hits": 0
+   }
+  }
+ },
+ "warm": {
+  "source_commit": "b4adfb79d906b54f386e4d88393c774d394af795",
+  "clone_path_basename": "ce-b4adfb79d906",
+  "seed_files_found": 1354,
+  "ccache_env": {
+   "CCACHE_MAXSIZE": "5G",
+   "CCACHE_NOHASHDIR": "1",
+   "CCACHE_BASEDIR": "/kaggle",
+   "CCACHE_COMPILERCHECK": "content",
+   "CCACHE_SLOPPINESS": "include_file_mtime,include_file_ctime,time_macros"
+  },
+  "cuda_arch": "75",
+  "builds": {
+   "cpu": {
+    "rc": 0,
+    "configure_s": 2.2,
+    "total_s": 9.1,
+    "hits": 205,
+    "misses": 2,
+    "hit_rate": 0.9903,
+    "direct_hits": 205
+   },
+   "cuda": {
+    "rc": 0,
+    "configure_s": 5.5,
+    "total_s": 14.9,
+    "hits": 327,
+    "misses": 1,
+    "hit_rate": 0.997,
+    "direct_hits": 327
+   }
+  }
+ },
+ "notes": [
+  "Before this change no crispembed-ccache or crispasr-ccache dataset existed on the account, so every CrispEmbed kernel built cold.",
+  "Cold CPU build failed at its final link (graph_kv_decoder not yet in crispembed-qwen35-delta at that commit); 206 of 221 steps compiled and were cached.",
+  "Warm run: different commit and different absolute clone path; CPU 205/207 and CUDA 327/328 direct hits."
+ ]
+}
