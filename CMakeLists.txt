@@ -945,6 +945,8 @@ target_link_libraries(test-lfm2-shortconv PRIVATE crispembed)
 add_library(crispembed-qwen35-delta STATIC src/lighton4b_physical_gdn_source_ops.cpp src/lighton4b_physical_q6_tiled.cpp src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/lighton4b_vision_owner.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/lighton4b_pillow_resize.cpp src/lighton4b_physical_f16_vision.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
 target_sources(crispembed-qwen35-delta PRIVATE src/lighton4b_vision_bf16.cpp)
 target_sources(crispembed-qwen35-delta PRIVATE src/lighton4b_physical_f16_attention.cpp)
+# Opt-in CRISPEMBED_QWEN35_OCR_GRAPH_DECODER: qwen35_ocr.cpp binds the graph decoder.
+target_sources(crispembed-qwen35-delta PRIVATE src/qwen35_graph_kv_decoder.cpp)
 # Private ABI is deliberately closed to the exact hosted CPU profile first.
 # Other builds retain the old path and reject an explicitly enabled experiment.
 find_program(_lighton4b_f16_git git)
