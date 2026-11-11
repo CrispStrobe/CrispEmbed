@@ -197,8 +197,8 @@
           "from": "98386958d6ca7fc72715b36556b32a617d1fbcaf",
           "to": "cdbd83f7bdcf28dce913663994a7b4a589fc8d9b",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -2210,8 +2210,8 @@
           "from": "f2f8f51517ef09b454138733d49dfd059e2a4e5f",
           "to": "ae7da11e048cc1f7c67f6ad85cd0c5f5ae2b78b1",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -2300,8 +2300,8 @@
           "from": "cdd8396afc7fbe4ccec668d98f9f8ee69169a354",
           "to": "62df6fb5d7a9b21c62749760129063c1d6033b12",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -2329,8 +2329,8 @@
           "from": "e9581e11d6be8bbf930594d092c8fa912fa185cb",
           "to": "6a2ed0e3d8cb804b6dd37d1e3b5657b828721e3e",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -3239,8 +3239,8 @@
           "from": "98386958d6ca7fc72715b36556b32a617d1fbcaf",
           "to": "cdbd83f7bdcf28dce913663994a7b4a589fc8d9b",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -5207,8 +5207,8 @@
           "from": "f2f8f51517ef09b454138733d49dfd059e2a4e5f",
           "to": "ae7da11e048cc1f7c67f6ad85cd0c5f5ae2b78b1",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -5297,8 +5297,8 @@
           "from": "cdd8396afc7fbe4ccec668d98f9f8ee69169a354",
           "to": "62df6fb5d7a9b21c62749760129063c1d6033b12",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -5326,8 +5326,8 @@
           "from": "e9581e11d6be8bbf930594d092c8fa912fa185cb",
           "to": "6a2ed0e3d8cb804b6dd37d1e3b5657b828721e3e",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -6258,8 +6258,8 @@
           "from": "98386958d6ca7fc72715b36556b32a617d1fbcaf",
           "to": "cdbd83f7bdcf28dce913663994a7b4a589fc8d9b",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -8166,8 +8166,8 @@
           "from": "f2f8f51517ef09b454138733d49dfd059e2a4e5f",
           "to": "ae7da11e048cc1f7c67f6ad85cd0c5f5ae2b78b1",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -8256,8 +8256,8 @@
           "from": "cdd8396afc7fbe4ccec668d98f9f8ee69169a354",
           "to": "62df6fb5d7a9b21c62749760129063c1d6033b12",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -8285,8 +8285,8 @@
           "from": "e9581e11d6be8bbf930594d092c8fa912fa185cb",
           "to": "6a2ed0e3d8cb804b6dd37d1e3b5657b828721e3e",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -9149,8 +9149,8 @@
           "from": "5e8c1a3f1c409dd26db16e856b9fc286c0d9ce8d3ca148bc41a43e0fe6d634cf",
           "to": "39606ba8c1a92961cd9616d06fec57bb02f42d601f6df627dadd3c2662c89da9",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -9608,8 +9608,8 @@
           "from": "5e8c1a3f1c409dd26db16e856b9fc286c0d9ce8d3ca148bc41a43e0fe6d634cf",
           "to": "39606ba8c1a92961cd9616d06fec57bb02f42d601f6df627dadd3c2662c89da9",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -10358,8 +10358,8 @@
           "from": "38d40c6620dd0b92b1dca51e0f94d8a6c1ebe02f",
           "to": "61b2f0ae229ffbfe03c050c381c85b811021f767",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -10611,8 +10611,8 @@
           "from": "5e8c1a3f1c409dd26db16e856b9fc286c0d9ce8d3ca148bc41a43e0fe6d634cf",
           "to": "39606ba8c1a92961cd9616d06fec57bb02f42d601f6df627dadd3c2662c89da9",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -11672,8 +11672,8 @@
           "from": "98386958d6ca7fc72715b36556b32a617d1fbcaf",
           "to": "cdbd83f7bdcf28dce913663994a7b4a589fc8d9b",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
@@ -12021,8 +12021,8 @@
           "from": "38d40c6620dd0b92b1dca51e0f94d8a6c1ebe02f",
           "to": "61b2f0ae229ffbfe03c050c381c85b811021f767",
           "changed_by": [
-            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
-            "9236cf20 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
           ],
           "classification": "behaviour-neutral",
           "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
