@@ -288,6 +288,9 @@ static std::vector<float> attention(const std::vector<float> & qkv, const vision
     }
     return pooled;
 }
+// tests/qwen35_vision_operators_impl.h compiles a renamed copy of this file (vision_cpu is
+// then a macro) next to the library; the helper below stays in the library copy only.
+#if !defined(vision_cpu)
 // Host-side inputs of the ggml-op vision graph (src/qwen35_ocr_gpu.cpp): the same frame
 // offsets, interpolated position embeddings and rotary cos/sin tables vision_cpu forms
 // below (identical code), without running any layer.
@@ -319,6 +322,7 @@ bool vision_host_inputs(const vision_weights & w, const vision_config & c, int t
         }
     return true;
 }
+#endif
 bool vision_cpu(const vision_weights & w, const vision_config & c, const float * patches, int tokens,
                 const std::vector<int> & grid, int threads, vision_outputs & output) {
     output = {};
