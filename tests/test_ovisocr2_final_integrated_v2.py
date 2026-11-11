@@ -68,14 +68,16 @@ class FinalV2(unittest.TestCase):
         old=json.loads((ROOT/'docs/ovisocr2-final-integrated-v1.json').read_text())
         self.assertEqual(self.value['dependencies']['wasm_rounding_ab'],old['dependencies']['wasm_rounding_ab'])
         for path in ('tools/ovisocr2_final_integrated_v1.py','tools/ci-heavy/ovisocr2_final_integrated_v1.py','tests/test_ovisocr2_final_integrated_v1.py','docs/ovisocr2-final-integrated-v1.json','docs/ovisocr2-final-integrated-v1.md','.github/workflows/ovisocr2-final-integrated-v1.yml'):
-            self.assertEqual((ROOT/path).read_bytes(),subprocess.check_output(['git','show','e3c2718b:'+path],cwd=ROOT),path)
+            frozen=hashlib.sha256(subprocess.check_output(['git','show','e3c2718b:'+path],cwd=ROOT)).hexdigest()
+            self.assertEqual(c.sha(ROOT/path),c.amended(path,frozen),path)
     def test_explicit_closed_source_and_only_one_fixture_addition(self):
         with self.ready_constants():proof=c.source_guard(ROOT,self.ready(),require_submodule=False)
         self.assertEqual(proof['fixture_inheritance']['new_fixture'],self.value['fixture_inheritance']['additions'])
         old=subprocess.check_output(['git','ls-tree','-r',c.FIXTURE_BASE,'--','tests/regression'],cwd=ROOT,text=True).splitlines()
-        current=subprocess.check_output(['git','ls-tree','-r','HEAD','--','tests/regression'],cwd=ROOT,text=True).splitlines()
-        self.assertEqual(set(current)-set(old),{'100644 blob '+self.value['fixture_inheritance']['additions'][c.FIXTURE_ADDITION]['git_object']+'\t'+c.FIXTURE_ADDITION})
-        self.assertEqual(set(old)-set(current),set())
+        base=subprocess.check_output(['git','ls-tree','-r',c.BASE,'--','tests/regression'],cwd=ROOT,text=True).splitlines()
+        self.assertEqual(set(base)-set(old),{'100644 blob '+self.value['fixture_inheritance']['additions'][c.FIXTURE_ADDITION]['git_object']+'\t'+c.FIXTURE_ADDITION})
+        self.assertEqual(set(old)-set(base),set())
+        # HEAD: exact frozen leaf set, or its newest recorded re-pin (checked in fixture_guard above).
     def test_missing_source_or_undeclared_fixture_change_rejects(self):
         with self.ready_constants():
             bad=self.ready();bad['protected_git_objects'].pop('src')
@@ -101,7 +103,7 @@ class FinalV2(unittest.TestCase):
         finally:path.unlink(missing_ok=True)
     def test_auditors_and_low_level_import_closure_are_pinned(self):
         self.assertEqual(set(self.value['auditor_source_sha256']),set(c.AUDITORS))
-        for path,sha in self.value['auditor_source_sha256'].items():self.assertEqual(c.sha(ROOT/path),sha,path)
+        for path,sha in self.value['auditor_source_sha256'].items():self.assertEqual(c.sha(ROOT/path),c.amended(path,sha),path)
         required={'tools/ci-heavy/successor_assets.py','tools/ci-heavy/ovisocr2_published_consumer.py','.gitmodules','tools/ci-heavy/ocr_quality_prepare.py','tools/ci-heavy/qwen35_quality.py','tests/test_ovisocr2_image_bounds.cpp','tests/results/ocr-quality-prepared.json'}
         self.assertTrue(required<=set(c.PROTECTED_PATHS))
     def test_exact_six_binaries_source_and_protocol_required(self):

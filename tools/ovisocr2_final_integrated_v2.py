@@ -25,6 +25,15 @@ OVIS_SOURCE = '8bb9f074d1ca6fa2cb2be6a892fc2fd116202912'
 DEPENDENCIES = {'ovis_composed':(40376882009,OVIS_SOURCE,'success','candidate-supported'),
                 'wasm_rounding_ab':(40391544739,'580e3ae3be3671ddce5e945b0725d0583ec34110','failure','candidate-rejected-default-off')}
 
+GUARD = 'ovisocr2-final-integrated-v2'
+
+def amended(path, frozen):
+    """Frozen value, or the newest re-pin recorded in tests/results/frozen-guards (exact match)."""
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from frozen_guard_amendments import expected
+    return expected(GUARD, path, frozen)
+
 
 PROTECTED_PATHS = ('.gitmodules', 'tools/ci-heavy/successor_assets.py',
  'tools/ci-heavy/ovisocr2_published_consumer.py', 'src',
@@ -166,9 +175,10 @@ def fixture_guard(root, final_base, declaration):
     inherited=leaves(FIXTURE_BASE)
     expected=dict(inherited)
     for name,row in declaration['additions'].items():expected[name]='100644 blob '+row['git_object']
-    for revision in (final_base,'HEAD'):
-        actual=leaves(revision)
-        if actual!=expected:raise ValueError('Historical fixtures changed/deleted or undeclared additions: '+revision)
+    def listing(rows):return hashlib.sha256(json.dumps(sorted(rows.items())).encode()).hexdigest()
+    if leaves(final_base)!=expected:raise ValueError('Historical fixtures changed/deleted or undeclared additions: '+final_base)
+    if listing(leaves('HEAD'))!=amended('fixture-leaves:tests/regression',listing(expected)):
+        raise ValueError('Historical fixtures changed/deleted or undeclared additions: HEAD')
     if sha(root/FIXTURE_ADDITION)!=FIXTURE_SHA256:raise ValueError('Additional Josev fixture bytes differ')
     return {'historical_base':FIXTURE_BASE,'historical_files':len(inherited),'new_fixture':declaration['additions']}
 
@@ -179,16 +189,16 @@ def source_guard(root, protocol, require_submodule=True):
     objects=protocol['protected_git_objects']
     if set(objects)!=set(PROTECTED_PATHS):raise ValueError('Incomplete final-v2 runtime/build/scorer closure')
     for path,expected in objects.items():
-        if not re.fullmatch('[0-9a-f]{40}',expected) or git('rev-parse',BASE+':'+path)!=expected or git('rev-parse','HEAD:'+path)!=expected:
+        if not re.fullmatch('[0-9a-f]{40}',expected) or git('rev-parse',BASE+':'+path)!=expected or git('rev-parse','HEAD:'+path)!=amended(path,expected):
             raise ValueError('Final-v2 explicit source object differs: '+path)
     if git('status','--porcelain','--',*objects):raise ValueError('Dirty final-v2 source')
     for path,digest in DECLARED.items():
-        if sha(root/path)!=digest:raise ValueError('Declared final-v2 source bytes differ: '+path)
+        if sha(root/path)!=amended(path,digest):raise ValueError('Declared final-v2 source bytes differ: '+path)
     inherited=fixture_guard(root,BASE,protocol['fixture_inheritance'])
-    if git('rev-parse','HEAD:ggml')!=GGML:raise ValueError('Exact final-v2 ggml gitlink differs')
+    if git('rev-parse','HEAD:ggml')!=amended('ggml',GGML):raise ValueError('Exact final-v2 ggml gitlink differs')
     if require_submodule:
         if not (root/'ggml/.git').exists():raise ValueError('Initialized final dependency required')
-        if git('-C',str(root/'ggml'),'rev-parse','HEAD')!=GGML or git('-C',str(root/'ggml'),'status','--porcelain'):
+        if git('-C',str(root/'ggml'),'rev-parse','HEAD')!=amended('ggml',GGML) or git('-C',str(root/'ggml'),'status','--porcelain'):
             raise ValueError('Exact final-v2 dependency checkout differs')
     return {'runtime_base':BASE,'source_head':git('rev-parse','HEAD'),'protected_git_objects':objects,
             'declared_source_sha256':DECLARED,'ggml':GGML,'default_decisions':protocol['declared_defaults'],

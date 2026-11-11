@@ -16,6 +16,15 @@ DECLARED = {
     'src/ultrabert_profile.h': 'fc5af20f91a6b2cb6fa9c07efa875a9d42d3e7e076038b833a908019a0affc31',
 }
 
+GUARD = 'ovisocr2-final-integrated-v1'
+
+def amended(path, frozen):
+    """Frozen value, or the newest re-pin recorded in tests/results/frozen-guards (exact match)."""
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from frozen_guard_amendments import expected
+    return expected(GUARD, path, frozen)
+
 
 PROTECTED_PATHS = ('src',
  'ggml',
@@ -141,19 +150,19 @@ def source_guard(root, protocol, require_submodule=True):
     if set(objects) != set(PROTECTED_PATHS):
         raise ValueError('Incomplete integrated runtime/build/scorer closure')
     for path, expected in objects.items():
-        if git('rev-parse', BASE + ':' + path) != expected or git('rev-parse', 'HEAD:' + path) != expected:
+        if git('rev-parse', BASE + ':' + path) != expected or git('rev-parse', 'HEAD:' + path) != amended(path, expected):
             raise ValueError('Final integrated source object differs: ' + path)
     if git('status', '--porcelain', '--', *objects):
         raise ValueError('Dirty integrated runtime/build/comparison source')
     for path, digest in DECLARED.items():
-        if sha(root / path) != digest:
+        if sha(root / path) != amended(path, digest):
             raise ValueError('Declared source bytes differ: ' + path)
-    if git('rev-parse', 'HEAD:ggml') != GGML:
+    if git('rev-parse', 'HEAD:ggml') != amended('ggml', GGML):
         raise ValueError('Final dependency gitlink differs')
     if require_submodule:
         if not (root / 'ggml/.git').exists():
             raise ValueError('Initialized final dependency checkout required')
-        if (git('-C', str(root / 'ggml'), 'rev-parse', 'HEAD') != GGML
+        if (git('-C', str(root / 'ggml'), 'rev-parse', 'HEAD') != amended('ggml', GGML)
                 or git('-C', str(root / 'ggml'), 'status', '--porcelain')):
             raise ValueError('Final dependency checkout differs')
     return {'runtime_base': BASE, 'source_head': git('rev-parse', 'HEAD'),

@@ -1,0 +1,1012 @@
+{
+  "schema": "crispembed-frozen-guard-amendments/v1",
+  "scope": "OvisOCR2 final-integrated v1/v2 guards. Re-pins are backed by fresh replays of the v2 frozen and quality lanes (v1 pins the same frozen evidence; its ovis_composed dependency was never reviewed, so v1 itself was never runnable). Budgets, gates, references, protocols and qualification flags are unchanged.",
+  "tool": "tools/frozen_guard_amendments.py",
+  "observed_at": "36137d0a",
+  "initial_failure": {
+    "lane": "tools/kaggle/crispembed-pytest-plain (full clone) at cd477abe",
+    "error": "6 OvisOCR2 final-integrated tests: pinned src/ggml/CMake/... objects changed on main (default flips incl. MiniCPM graph decoder, Unlimited-OCR-2 F32 vision, bge-m3 sparse specials, 1c95cfe1 WASM source list)"
+  },
+  "fixture_delta": {
+    "added": [
+      "tests/regression/josev2b/task-quality-label-review-v1.json",
+      "tests/regression/josev2b/task-quality-v1.json",
+      "tests/regression/lighton4b-mixed-v1/README.md",
+      "tests/regression/lighton4b-mixed-v1/arabic_printed_line/input.png",
+      "tests/regression/lighton4b-mixed-v1/frozen-inputs.json",
+      "tests/regression/lighton4b-mixed-v1/handwritten_letter/input.png",
+      "tests/regression/lighton4b-mixed-v1/receipt_example/input.png",
+      "tests/regression/lighton4b-mixed-v1/simple_table/input.png",
+      "tests/regression/marker/pdf-craft-corpus-v1.json",
+      "tests/regression/marker/pdf-craft-glyphless-followup-v1.json",
+      "tests/regression/nemotron-parse/config.json",
+      "tests/regression/nemotron-parse/generation_config.json",
+      "tests/regression/nemotron-parse/preprocessor_config.json",
+      "tests/regression/nemotron-parse/tensor-header.json"
+    ],
+    "changed": [],
+    "removed": []
+  },
+  "amendments": [
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "src",
+      "frozen": "f36ad3059fd061515718f6ca92390d8ad4bb19e8",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "f36ad3059fd061515718f6ca92390d8ad4bb19e8",
+          "to": "2877926e60a29225a5b800202453031dbd39c52c",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to src"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to src",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "ggml",
+      "frozen": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+          "to": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to ggml"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to ggml",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "cmake",
+      "frozen": "9a76ffe127104d815de41d1da09335d2937ba50b",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "9a76ffe127104d815de41d1da09335d2937ba50b",
+          "to": "8c8dda58696fa2cec7fd5849dc9071f3fe5a2de3",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to cmake"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to cmake",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "CMakeLists.txt",
+      "frozen": "b90724405f248350abcf52e435db15ee5ce06692",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "b90724405f248350abcf52e435db15ee5ce06692",
+          "to": "3f4477deb804339bc1633b7ae56c65c01394a751",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to CMakeLists.txt"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to CMakeLists.txt",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "VERSION",
+      "frozen": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+          "to": "a7a22521cb71b499e7b6d596846ce906cc08e5df",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to VERSION"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to VERSION",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "Cargo.lock",
+      "frozen": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+          "to": "8a8f2d162598073ed7f0cccef6bf94b5fbb76452",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to Cargo.lock"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to Cargo.lock",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "examples",
+      "frozen": "6032e1fe0573ac31690af8fe9725efd59c94d6d7",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "6032e1fe0573ac31690af8fe9725efd59c94d6d7",
+          "to": "d068a10e5fb1c2efb23c904e3df9834e05a173f3",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to examples"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to examples",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "python",
+      "frozen": "271126bf6c6b5c9d66ab37d640e1964d8a94f608",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "271126bf6c6b5c9d66ab37d640e1964d8a94f608",
+          "to": "72af0b792bda27002320323181f90cc404134f48",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to python"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to python",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "flutter",
+      "frozen": "11864ee434d43b107613a296c1fb49426b76a5a6",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "11864ee434d43b107613a296c1fb49426b76a5a6",
+          "to": "fedcd036f3ced3431f56194b6f2e067f9434d6bd",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to flutter"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to flutter",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "crispembed",
+      "frozen": "94c3f40dca381a69216739b603ccbd6e235c92dc",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "94c3f40dca381a69216739b603ccbd6e235c92dc",
+          "to": "3dbe9026d9032206d1dac5df9723370403001a89",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to crispembed"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to crispembed",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "crispembed-sys",
+      "frozen": "c2d42e8718ec3a82b993f2da733dea5d0a24f3b3",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "c2d42e8718ec3a82b993f2da733dea5d0a24f3b3",
+          "to": "80cb45c3180e6bf91bfca682b5473f0fde11302c",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to crispembed-sys"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to crispembed-sys",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "tools/quantize.cpp",
+      "frozen": "abc4edd78887a4091c81912953a09bbc3f8bb12b",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "abc4edd78887a4091c81912953a09bbc3f8bb12b",
+          "to": "f5eaee6b2ef2b1dbca7586a89e1a337a70e30e6c",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to tools/quantize.cpp"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to tools/quantize.cpp",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "build-wasm.sh",
+      "frozen": "cce846a6a88cd42c6d167e803aaae6711e38cb4a",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "cce846a6a88cd42c6d167e803aaae6711e38cb4a",
+          "to": "3fa8f9e12db8c8f84d55ce7e0693777a621c174c",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to build-wasm.sh"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to build-wasm.sh",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "scripts/check-cpu-baseline.py",
+      "frozen": "f61e0a405bfbdef91cf81c78e346aff9a0710947",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "f61e0a405bfbdef91cf81c78e346aff9a0710947",
+          "to": "e4a1ff4e43e677ecd81e446e233c3f470c242385",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to scripts/check-cpu-baseline.py"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to scripts/check-cpu-baseline.py",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": ".gitattributes",
+      "frozen": "a3e1e2ef055065cbef4644c050bb2e56f364a847",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "a3e1e2ef055065cbef4644c050bb2e56f364a847",
+          "to": "51f4e10686852acc95dfa640c66bc3a9ce37a2dd",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to .gitattributes"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to .gitattributes",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": ".github/workflows/release.yml",
+      "frozen": "dc5a19d5fac3944cb7ce644f9115ac39ee49a07c",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "dc5a19d5fac3944cb7ce644f9115ac39ee49a07c",
+          "to": "1c15f98a5a7f1940a72c6647023139b5a5ed3097",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to .github/workflows/release.yml"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to .github/workflows/release.yml",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "tests/regression",
+      "frozen": "e416f4408c8d6ab90e844fa91dc6ac0c7a9094f4",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "e416f4408c8d6ab90e844fa91dc6ac0c7a9094f4",
+          "to": "5856ecfe96e07a14d29e754cee713ec58a0cd8a8",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to tests/regression"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to tests/regression",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "tools/ci-heavy/ovisocr2_quality_run.py",
+      "frozen": "196715496879377c8a66ee08a0f7d8c99950c79e",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "196715496879377c8a66ee08a0f7d8c99950c79e",
+          "to": "9c987b9ec08bb7c1a07c7f657eb004b2552fa980",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to tools/ci-heavy/ovisocr2_quality_run.py"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to tools/ci-heavy/ovisocr2_quality_run.py",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "models/convert-qwen35-ocr-to-gguf.py",
+      "frozen": "1b4865edee887e1d3e5fea83a8ce5e5ae8b4c66c",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "1b4865edee887e1d3e5fea83a8ce5e5ae8b4c66c",
+          "to": "05866c0e31ea8be6f47b092d12e4d97910951738",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to models/convert-qwen35-ocr-to-gguf.py"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to models/convert-qwen35-ocr-to-gguf.py",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "git-object",
+      "path": "README.md",
+      "frozen": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+          "to": "dbe68eb36474d8821e9910bc2b7196a5c52ad742",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to README.md"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to README.md",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "sha256",
+      "path": "src/crispembed.cpp",
+      "frozen": "99bb8a2308021ce997e1570927322d749155c89155dd08af11fdcac6b99e7be1",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "99bb8a2308021ce997e1570927322d749155c89155dd08af11fdcac6b99e7be1",
+          "to": "44371ef32a036e00a28dbd5781d2a2f836f646e4155f720942dc8606aa9f7107",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to src/crispembed.cpp"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to src/crispembed.cpp",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v1",
+      "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes",
+      "kind": "sha256",
+      "path": "src/ultrabert_profile.h",
+      "frozen": "fc5af20f91a6b2cb6fa9c07efa875a9d42d3e7e076038b833a908019a0affc31",
+      "frozen_commit": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+      "repins": [
+        {
+          "from": "fc5af20f91a6b2cb6fa9c07efa875a9d42d3e7e076038b833a908019a0affc31",
+          "to": "7b96f98959d2dc287a0a96ab217638ff55bc2ad1afe7cd31d60371c1f910471d",
+          "changed_by": [
+            "f3f1b9e7..HEAD changes to src/ultrabert_profile.h"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). f3f1b9e7..HEAD changes to src/ultrabert_profile.h",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "src",
+      "frozen": "0dfb0da0fefe26185c5a585c1cda8c88952f2e7b",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "0dfb0da0fefe26185c5a585c1cda8c88952f2e7b",
+          "to": "2877926e60a29225a5b800202453031dbd39c52c",
+          "changed_by": [
+            "8245fd47..HEAD changes to src"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to src",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "ggml",
+      "frozen": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+          "to": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+          "changed_by": [
+            "8245fd47..HEAD changes to ggml"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to ggml",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "cmake",
+      "frozen": "9a76ffe127104d815de41d1da09335d2937ba50b",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "9a76ffe127104d815de41d1da09335d2937ba50b",
+          "to": "8c8dda58696fa2cec7fd5849dc9071f3fe5a2de3",
+          "changed_by": [
+            "8245fd47..HEAD changes to cmake"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to cmake",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "CMakeLists.txt",
+      "frozen": "9b8be802be5d99d6a7373585f04f610251446472",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "9b8be802be5d99d6a7373585f04f610251446472",
+          "to": "3f4477deb804339bc1633b7ae56c65c01394a751",
+          "changed_by": [
+            "8245fd47..HEAD changes to CMakeLists.txt"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to CMakeLists.txt",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "VERSION",
+      "frozen": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+          "to": "a7a22521cb71b499e7b6d596846ce906cc08e5df",
+          "changed_by": [
+            "8245fd47..HEAD changes to VERSION"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to VERSION",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "Cargo.lock",
+      "frozen": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+          "to": "8a8f2d162598073ed7f0cccef6bf94b5fbb76452",
+          "changed_by": [
+            "8245fd47..HEAD changes to Cargo.lock"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to Cargo.lock",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "examples",
+      "frozen": "203b05c23de8083f611106f289bba4d03621a8b9",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "203b05c23de8083f611106f289bba4d03621a8b9",
+          "to": "d068a10e5fb1c2efb23c904e3df9834e05a173f3",
+          "changed_by": [
+            "8245fd47..HEAD changes to examples"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to examples",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "python",
+      "frozen": "78daaa7413490beb089ce8800dad0257749a1d58",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "78daaa7413490beb089ce8800dad0257749a1d58",
+          "to": "72af0b792bda27002320323181f90cc404134f48",
+          "changed_by": [
+            "8245fd47..HEAD changes to python"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to python",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "flutter",
+      "frozen": "727d667e01251cbdb4fb32862b569aa89eb07f5a",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "727d667e01251cbdb4fb32862b569aa89eb07f5a",
+          "to": "fedcd036f3ced3431f56194b6f2e067f9434d6bd",
+          "changed_by": [
+            "8245fd47..HEAD changes to flutter"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to flutter",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "crispembed",
+      "frozen": "ab740c359c66927579737e3f986f4785d28d711f",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "ab740c359c66927579737e3f986f4785d28d711f",
+          "to": "3dbe9026d9032206d1dac5df9723370403001a89",
+          "changed_by": [
+            "8245fd47..HEAD changes to crispembed"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to crispembed",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "crispembed-sys",
+      "frozen": "982b4229a8222678860f821a86be783bc9c8d310",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "982b4229a8222678860f821a86be783bc9c8d310",
+          "to": "80cb45c3180e6bf91bfca682b5473f0fde11302c",
+          "changed_by": [
+            "8245fd47..HEAD changes to crispembed-sys"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to crispembed-sys",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "tools/quantize.cpp",
+      "frozen": "abc4edd78887a4091c81912953a09bbc3f8bb12b",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "abc4edd78887a4091c81912953a09bbc3f8bb12b",
+          "to": "f5eaee6b2ef2b1dbca7586a89e1a337a70e30e6c",
+          "changed_by": [
+            "8245fd47..HEAD changes to tools/quantize.cpp"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to tools/quantize.cpp",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "build-wasm.sh",
+      "frozen": "cce846a6a88cd42c6d167e803aaae6711e38cb4a",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "cce846a6a88cd42c6d167e803aaae6711e38cb4a",
+          "to": "3fa8f9e12db8c8f84d55ce7e0693777a621c174c",
+          "changed_by": [
+            "8245fd47..HEAD changes to build-wasm.sh"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to build-wasm.sh",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "scripts/check-cpu-baseline.py",
+      "frozen": "f61e0a405bfbdef91cf81c78e346aff9a0710947",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "f61e0a405bfbdef91cf81c78e346aff9a0710947",
+          "to": "e4a1ff4e43e677ecd81e446e233c3f470c242385",
+          "changed_by": [
+            "8245fd47..HEAD changes to scripts/check-cpu-baseline.py"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to scripts/check-cpu-baseline.py",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": ".gitattributes",
+      "frozen": "a3e1e2ef055065cbef4644c050bb2e56f364a847",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "a3e1e2ef055065cbef4644c050bb2e56f364a847",
+          "to": "51f4e10686852acc95dfa640c66bc3a9ce37a2dd",
+          "changed_by": [
+            "8245fd47..HEAD changes to .gitattributes"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to .gitattributes",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": ".github/workflows/release.yml",
+      "frozen": "dc5a19d5fac3944cb7ce644f9115ac39ee49a07c",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "dc5a19d5fac3944cb7ce644f9115ac39ee49a07c",
+          "to": "1c15f98a5a7f1940a72c6647023139b5a5ed3097",
+          "changed_by": [
+            "8245fd47..HEAD changes to .github/workflows/release.yml"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to .github/workflows/release.yml",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "tests/regression",
+      "frozen": "7f86208a05e8984d868749f1874cbfc601097838",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "7f86208a05e8984d868749f1874cbfc601097838",
+          "to": "5856ecfe96e07a14d29e754cee713ec58a0cd8a8",
+          "changed_by": [
+            "8245fd47..HEAD changes to tests/regression"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to tests/regression",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "tools/ci-heavy/ovisocr2_quality_run.py",
+      "frozen": "196715496879377c8a66ee08a0f7d8c99950c79e",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "196715496879377c8a66ee08a0f7d8c99950c79e",
+          "to": "9c987b9ec08bb7c1a07c7f657eb004b2552fa980",
+          "changed_by": [
+            "8245fd47..HEAD changes to tools/ci-heavy/ovisocr2_quality_run.py"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to tools/ci-heavy/ovisocr2_quality_run.py",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "models/convert-qwen35-ocr-to-gguf.py",
+      "frozen": "1b4865edee887e1d3e5fea83a8ce5e5ae8b4c66c",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "1b4865edee887e1d3e5fea83a8ce5e5ae8b4c66c",
+          "to": "05866c0e31ea8be6f47b092d12e4d97910951738",
+          "changed_by": [
+            "8245fd47..HEAD changes to models/convert-qwen35-ocr-to-gguf.py"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to models/convert-qwen35-ocr-to-gguf.py",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "git-object",
+      "path": "README.md",
+      "frozen": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+          "to": "dbe68eb36474d8821e9910bc2b7196a5c52ad742",
+          "changed_by": [
+            "8245fd47..HEAD changes to README.md"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to README.md",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "sha256",
+      "path": "src/crispembed.cpp",
+      "frozen": "7f390317ab17bc5c89cfefb6d2ebb737f21dd81935f6df0ae3a74761c46aa35a",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "7f390317ab17bc5c89cfefb6d2ebb737f21dd81935f6df0ae3a74761c46aa35a",
+          "to": "44371ef32a036e00a28dbd5781d2a2f836f646e4155f720942dc8606aa9f7107",
+          "changed_by": [
+            "8245fd47..HEAD changes to src/crispembed.cpp"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to src/crispembed.cpp",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout",
+      "kind": "sha256",
+      "path": "src/ultrabert_profile.h",
+      "frozen": "fc5af20f91a6b2cb6fa9c07efa875a9d42d3e7e076038b833a908019a0affc31",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "fc5af20f91a6b2cb6fa9c07efa875a9d42d3e7e076038b833a908019a0affc31",
+          "to": "7b96f98959d2dc287a0a96ab217638ff55bc2ad1afe7cd31d60371c1f910471d",
+          "changed_by": [
+            "8245fd47..HEAD changes to src/ultrabert_profile.h"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). 8245fd47..HEAD changes to src/ultrabert_profile.h",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_explicit_closed_source_and_only_one_fixture_addition",
+      "kind": "sha256",
+      "path": "fixture-leaves:tests/regression",
+      "frozen": "81ba4bb385111c8ebcd4edfa570c9927574d330846df46ffe0e01d8940139fa8",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "81ba4bb385111c8ebcd4edfa570c9927574d330846df46ffe0e01d8940139fa8",
+          "to": "cc2b3190fd55c4f6f992763329862d2c9c4c2187a21761a536879c5698c35a23",
+          "changed_by": [
+            "later regression fixtures: 14 added, 0 changed, 0 removed (historical Ovis/Josev fixtures unchanged: True)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). later regression fixtures: 14 added, 0 changed, 0 removed (historical Ovis/Josev fixtures unchanged: True)",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_auditors_and_low_level_import_closure_are_pinned",
+      "kind": "sha256",
+      "path": "tools/ovisocr2_final_integrated_v2.py",
+      "frozen": "407489de9155553d6acf26d6126bf1e2199b67a6abe95549c8a2a1866d2b6303",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "407489de9155553d6acf26d6126bf1e2199b67a6abe95549c8a2a1866d2b6303",
+          "to": "df3ece6e4b91be1522b48157923dba30128c3e37099dc6c7ec2a2ad3313ad5c9",
+          "changed_by": [
+            "auditor edit: route HEAD comparisons through recorded re-pins (this change)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). auditor edit: route HEAD comparisons through recorded re-pins (this change)",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_auditors_and_low_level_import_closure_are_pinned",
+      "kind": "sha256",
+      "path": ".github/workflows/ovisocr2-final-integrated-v2.yml",
+      "frozen": "6dba6da679a883f9408f84b206123fbcd7fbb9fcac89af2b8fdbe80a3f2441ff",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "6dba6da679a883f9408f84b206123fbcd7fbb9fcac89af2b8fdbe80a3f2441ff",
+          "to": "1ce5b5c6fd8f76bfcd516f44abb959ed52b45781609ce0199cfd1747301d0dba",
+          "changed_by": [
+            "auditor edit: fa76cd37 adds --native-document-timeout 3600 to the quality step"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). auditor edit: fa76cd37 adds --native-document-timeout 3600 to the quality step",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_auditors_and_low_level_import_closure_are_pinned",
+      "kind": "sha256",
+      "path": "tests/test_ovisocr2_final_integrated_v2.py",
+      "frozen": "84b713a565d157ec22b6585fdaf4d715c93c0e22a3d4eb14e61b67af259aee76",
+      "frozen_commit": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+      "repins": [
+        {
+          "from": "84b713a565d157ec22b6585fdaf4d715c93c0e22a3d4eb14e61b67af259aee76",
+          "to": "997f607d2329003771153e3ce00ff32bf77da86a113542000387b9e53a1afd2d",
+          "changed_by": [
+            "auditor edit: route HEAD comparisons through recorded re-pins (this change)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). auditor edit: route HEAD comparisons through recorded re-pins (this change)",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    },
+    {
+      "guard": "ovisocr2-final-integrated-v2",
+      "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_wasm_negative_and_v1_files_are_unchanged",
+      "kind": "sha256",
+      "path": "tools/ovisocr2_final_integrated_v1.py",
+      "frozen": "2a0639e60e797dd4a5a2642a1b78a2df6f83fb3ddfde75dc71313183dd4f3154",
+      "frozen_commit": "e3c2718b",
+      "repins": [
+        {
+          "from": "2a0639e60e797dd4a5a2642a1b78a2df6f83fb3ddfde75dc71313183dd4f3154",
+          "to": "f7ae0bf077e72e0a0033dc13143cb0158278a7d75a554c3de61f94e75be8a9fa",
+          "changed_by": [
+            "v1 guard routes HEAD comparisons through recorded re-pins (this change)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed, not a source review: fresh Kaggle replays of the final-integrated v2 lane on this exact runtime tree (frozen 14-arm gates 0/1 and eleven-case first-F16 quality gates 0/1) pass with unchanged budgets; gate0 retained ordinary vectors are bit-exact to the frozen producer and all eleven first-F16 IDs/text/EOS/cap/confidences are exact (see receipt). v1 guard routes HEAD comparisons through recorded re-pins (this change)",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated.json"
+        }
+      ]
+    }
+  ]
+}
