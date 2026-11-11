@@ -2184,6 +2184,17 @@
           "from": "f8026bcaf5b39b119129c8069f2cfa9b5337dc5f",
           "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
           "to": "aacbc5a92f5c0e2cdb5e419656591cf0b3297726"
+        },
+        {
+          "from": "aacbc5a92f5c0e2cdb5e419656591cf0b3297726",
+          "to": "f2f8f51517ef09b454138733d49dfd059e2a4e5f",
+          "changed_by": [
+            "a783c4fe70093d80c4e887860abe0472c9388889 OvisOCR2: threaded vision attention default on; graph-decoder eleven-case quality lane",
+            "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
         }
       ]
     },
@@ -2253,6 +2264,17 @@
           "from": "b2004429fd9579074372fa4eef2923904b2784ed",
           "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
           "to": "b4c5b5058aa3c4541a0a25a97d95d840c059221e"
+        },
+        {
+          "from": "b4c5b5058aa3c4541a0a25a97d95d840c059221e",
+          "to": "cdd8396afc7fbe4ccec668d98f9f8ee69169a354",
+          "changed_by": [
+            "a783c4fe70093d80c4e887860abe0472c9388889 OvisOCR2: threaded vision attention default on; graph-decoder eleven-case quality lane",
+            "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
         }
       ]
     },
@@ -5119,6 +5141,17 @@
           "from": "f8026bcaf5b39b119129c8069f2cfa9b5337dc5f",
           "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
           "to": "aacbc5a92f5c0e2cdb5e419656591cf0b3297726"
+        },
+        {
+          "from": "aacbc5a92f5c0e2cdb5e419656591cf0b3297726",
+          "to": "f2f8f51517ef09b454138733d49dfd059e2a4e5f",
+          "changed_by": [
+            "a783c4fe70093d80c4e887860abe0472c9388889 OvisOCR2: threaded vision attention default on; graph-decoder eleven-case quality lane",
+            "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
         }
       ]
     },
@@ -5188,6 +5221,17 @@
           "from": "b2004429fd9579074372fa4eef2923904b2784ed",
           "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
           "to": "b4c5b5058aa3c4541a0a25a97d95d840c059221e"
+        },
+        {
+          "from": "b4c5b5058aa3c4541a0a25a97d95d840c059221e",
+          "to": "cdd8396afc7fbe4ccec668d98f9f8ee69169a354",
+          "changed_by": [
+            "a783c4fe70093d80c4e887860abe0472c9388889 OvisOCR2: threaded vision attention default on; graph-decoder eleven-case quality lane",
+            "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
         }
       ]
     },
@@ -8016,6 +8060,17 @@
           "from": "f8026bcaf5b39b119129c8069f2cfa9b5337dc5f",
           "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
           "to": "aacbc5a92f5c0e2cdb5e419656591cf0b3297726"
+        },
+        {
+          "from": "aacbc5a92f5c0e2cdb5e419656591cf0b3297726",
+          "to": "f2f8f51517ef09b454138733d49dfd059e2a4e5f",
+          "changed_by": [
+            "a783c4fe70093d80c4e887860abe0472c9388889 OvisOCR2: threaded vision attention default on; graph-decoder eleven-case quality lane",
+            "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
         }
       ]
     },
@@ -8085,6 +8140,17 @@
           "from": "b2004429fd9579074372fa4eef2923904b2784ed",
           "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
           "to": "b4c5b5058aa3c4541a0a25a97d95d840c059221e"
+        },
+        {
+          "from": "b4c5b5058aa3c4541a0a25a97d95d840c059221e",
+          "to": "cdd8396afc7fbe4ccec668d98f9f8ee69169a354",
+          "changed_by": [
+            "a783c4fe70093d80c4e887860abe0472c9388889 OvisOCR2: threaded vision attention default on; graph-decoder eleven-case quality lane",
+            "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
         }
       ]
     },
@@ -10136,6 +10202,17 @@
           "from": "2877926e60a29225a5b800202453031dbd39c52c",
           "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
           "to": "e764865ded9739982eb89f5cd85c1f5412f5fcf4"
+        },
+        {
+          "from": "e764865ded9739982eb89f5cd85c1f5412f5fcf4",
+          "to": "38d40c6620dd0b92b1dca51e0f94d8a6c1ebe02f",
+          "changed_by": [
+            "a783c4fe70093d80c4e887860abe0472c9388889 OvisOCR2: threaded vision attention default on; graph-decoder eleven-case quality lane",
+            "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
         }
       ]
     },
@@ -11758,6 +11835,17 @@
           "from": "2877926e60a29225a5b800202453031dbd39c52c",
           "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
           "to": "e764865ded9739982eb89f5cd85c1f5412f5fcf4"
+        },
+        {
+          "from": "e764865ded9739982eb89f5cd85c1f5412f5fcf4",
+          "to": "38d40c6620dd0b92b1dca51e0f94d8a6c1ebe02f",
+          "changed_by": [
+            "a783c4fe70093d80c4e887860abe0472c9388889 OvisOCR2: threaded vision attention default on; graph-decoder eleven-case quality lane",
+            "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
         }
       ]
     },
@@ -11905,6 +11993,44 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Guard test edited by this re-pin so it compares against tools/moedern_guard_pins.py expected values (still exact); no assertion removed or loosened. Any earlier commit listed is reviewed lineage of the same test."
+        }
+      ]
+    },
+    {
+      "guard": "moedern-family-public",
+      "test": "tests/test_moedern_family_public.py",
+      "kind": "sha256",
+      "path": "tools/kaggle/moedern-family-public/kernel-metadata.json",
+      "frozen": "b8648a8df5eedb8850be4ecbb0eaf0700b2945cd8218f0488c501bd8f936f3c3",
+      "frozen_commit": "c5ac623add5c92e5bfb946ac5bc2d31c115c5357",
+      "repins": [
+        {
+          "from": "b8648a8df5eedb8850be4ecbb0eaf0700b2945cd8218f0488c501bd8f936f3c3",
+          "to": "6623bccc6cc9cd3a06b3e9c7e2e6b2b520fae3af5c5aa46afe631ede29ab0bb0",
+          "changed_by": [
+            "c5ac623add5c92e5bfb946ac5bc2d31c115c5357 Kaggle ccache: automatic seed refresh (#214)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Kernel metadata only: the ccache seed dataset is attached as a second dataset source and the lists are reformatted. The worker, the model dataset, the kernel source and every model/quality input are unchanged; a compiler cache does not change compiled output."
+        }
+      ]
+    },
+    {
+      "guard": "moedern-family-public",
+      "test": "tests/test_moedern_family_public.py",
+      "kind": "sha256",
+      "path": "tools/kaggle/moedern-family-public/worker.py",
+      "frozen": "957109e185a873b23c6e83973589d45e1334d7c2dc58079f7bc9952472e22da2",
+      "frozen_commit": "0b7f709530fd298ca004f818e4ca5f2bf1b0b1a6",
+      "repins": [
+        {
+          "from": "957109e185a873b23c6e83973589d45e1334d7c2dc58079f7bc9952472e22da2",
+          "to": "55a9a422a340af55510b0065cf257fa708945be53e4153c73f4d8755f9adfaa5",
+          "changed_by": [
+            "c5ac623add5c92e5bfb946ac5bc2d31c115c5357 Kaggle ccache: automatic seed refresh (#214)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Adds only a guarded ccache bootstrap before the unchanged configure/build commands (imports the pinned clone harness and warms the compiler cache; any exception is printed and skipped). CMake flags, targets, inputs and comparisons are unchanged; a compiler cache does not change compiled output."
         }
       ]
     }

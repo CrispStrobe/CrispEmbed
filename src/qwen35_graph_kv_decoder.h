@@ -44,8 +44,10 @@ public:
     // `capacity` bounds prompt + generated tokens (KV cache rows).
     // `allow_f32_copies` = false turns the "f32" matmul mode into "exact" (F32 dot
     // products without the copies; MiniCPM-OCR's low-memory fallback).
+    // `default_matmul` ("f32", "exact" or "native") applies when CRISPEMBED_QWEN35_GRAPH_MATMUL
+    // is unset or empty; nullptr keeps "f32".
     bool init(const decoder_weights & weights, const attention_config & config, ggml_backend_t backend, int capacity,
-              bool allow_f32_copies = true);
+              bool allow_f32_copies = true, const char * default_matmul = nullptr);
     // Bytes the F32 copies would allocate under the current CRISPEMBED_QWEN35_GRAPH_MATMUL
     // (0 unless the mode resolves to "f32").
     static uint64_t f32_copy_bytes(const decoder_weights & weights);

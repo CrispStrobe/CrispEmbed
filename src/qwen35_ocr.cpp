@@ -27,7 +27,7 @@ struct qwen35_ocr_context {
     qwen35_ocr::decoder_weights decoder;
     qwen35_ocr::vision_weights vision;
     qwen35_ocr::converted_weight_cache weights_cache;
-    // Opt-in CRISPEMBED_QWEN35_OCR_GRAPH_DECODER (bound at init): one ggml graph per call
+    // Default-on CRISPEMBED_QWEN35_OCR_GRAPH_DECODER (bound at init; =0 off): one ggml graph per call
     // with persistent KV / delta-net state instead of decoder_cpu's per-step conversion.
     std::unique_ptr<qwen35_ocr::graph_kv_decoder> graph_kv;
     int threads = 1, max_tokens = 2048;
@@ -269,12 +269,14 @@ extern "C" qwen35_ocr_context * qwen35_ocr_init(const char * path, int threads) 
             !qwen35_ocr::map_small_vision(c->loaded.tensors, c->vision) || !valid_weights(*c))
             return nullptr;
         if (c->tokenizer.is_xiaomi0()) c->max_tokens = 4096;
-        // Default-off: the qualified path is decoder_cpu. Matmul precision follows
-        // CRISPEMBED_QWEN35_GRAPH_MATMUL (default "f32": one F32 copy of every decoder
-        // matrix at init). Capacity = the 4096-token context limit of the greedy loop.
-        if (core_env::on("CRISPEMBED_QWEN35_OCR_GRAPH_DECODER") && qwen35_ocr::graph_kv_decoder::enabled()) {
+        // Default-on since 2026-11-11 (owner-approved, IDs/text/EOS-exact contract on the
+        // eleven-case OvisOCR2 set); =0 restores decoder_cpu, the frozen reference path.
+        // Matmul precision: CRISPEMBED_QWEN35_GRAPH_MATMUL, "native" when unset (stored F16
+        // matrices, no F32 copies). Capacity = the 4096-token context limit of the greedy loop.
+        if (!core_env::explicitly_off("CRISPEMBED_QWEN35_OCR_GRAPH_DECODER") &&
+            qwen35_ocr::graph_kv_decoder::enabled()) {
             c->graph_kv = std::make_unique<qwen35_ocr::graph_kv_decoder>();
-            if (!c->graph_kv->init(c->decoder, {}, c->backend, 4096)) return nullptr;
+            if (!c->graph_kv->init(c->decoder, {}, c->backend, 4096, true, "native")) return nullptr;
         }
         return c.release();
     } catch (...) {

@@ -95,7 +95,9 @@ try:
     env.update(PATH=os.pathsep.join([str(SHIM), str(venv / "bin"), env.get("PATH", "")]),
                GITHUB_ACTIONS="true", GITHUB_SHA=SHA, HEAVY_OUT=str(OUT), HEAVY_SCRATCH=str(SCRATCH),
                AUDIT_BIN_DIR=str(BIN), HF_HOME=str(SCRATCH / "hf"),
-               OMP_NUM_THREADS="2", MKL_NUM_THREADS="2", OPENBLAS_NUM_THREADS="2")
+               OMP_NUM_THREADS="2", MKL_NUM_THREADS="2", OPENBLAS_NUM_THREADS="2",
+               # The frozen reference is decoder_cpu; the graph decoder is default-on since 11 Nov.
+               CRISPEMBED_QWEN35_OCR_GRAPH_DECODER="0")
     replay = [py, "tools/ci-heavy/frozen_guard_replay_ovis.py"]
     run = lambda c, check=True, e=None: sh(c, check=check, cwd=SRC, env=e or env)
     run(replay + ["--phase", "preflight"])

@@ -57,6 +57,17 @@
           "reason": "Replay-backed: fresh replays of the final-integrated v2 lane on this exact runtime tree (Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1) with unchanged budgets; see receipt. Source change: additive default-off CRISPEMBED_QWEN35_OCR_GRAPH_DECODER / CRISPEMBED_QWEN35_VISION_THREADED_ATTN gates and graph_kv_decoder.cpp linked into crispembed-qwen35-delta; the default decoder_cpu/vision path is unchanged.",
           "to": "e764865ded9739982eb89f5cd85c1f5412f5fcf4",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json"
+        },
+        {
+          "from": "e764865ded9739982eb89f5cd85c1f5412f5fcf4",
+          "to": "38d40c6620dd0b92b1dca51e0f94d8a6c1ebe02f",
+          "changed_by": [
+            "a783c4fe70093d80c4e887860abe0472c9388889 OvisOCR2: threaded vision attention default on; graph-decoder eleven-case quality lane",
+            "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
         }
       ]
     },
@@ -521,6 +532,17 @@
           "reason": "Replay-backed: fresh replays of the final-integrated v2 lane on this exact runtime tree (Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1) with unchanged budgets; see receipt. Source change: additive default-off CRISPEMBED_QWEN35_OCR_GRAPH_DECODER / CRISPEMBED_QWEN35_VISION_THREADED_ATTN gates and graph_kv_decoder.cpp linked into crispembed-qwen35-delta; the default decoder_cpu/vision path is unchanged.",
           "to": "e764865ded9739982eb89f5cd85c1f5412f5fcf4",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json"
+        },
+        {
+          "from": "e764865ded9739982eb89f5cd85c1f5412f5fcf4",
+          "to": "38d40c6620dd0b92b1dca51e0f94d8a6c1ebe02f",
+          "changed_by": [
+            "a783c4fe70093d80c4e887860abe0472c9388889 OvisOCR2: threaded vision attention default on; graph-decoder eleven-case quality lane",
+            "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
         }
       ]
     },
@@ -1074,6 +1096,17 @@
           "reason": "Replay-backed: additive default-off CRISPEMBED_QWEN35_OCR_GRAPH_DECODER / CRISPEMBED_QWEN35_VISION_THREADED_ATTN gates; the default path is unchanged. Fresh replays of the v2 frozen and quality lanes on this tree: see receipt.",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json",
           "to": "0ee34341b80d577d5682d537ae48e29a2f9b515cccd895cde15c2d37d9ccb5a8"
+        },
+        {
+          "from": "0ee34341b80d577d5682d537ae48e29a2f9b515cccd895cde15c2d37d9ccb5a8",
+          "to": "2ad14f1a29042e005debbc7b7d6fc50b1a56d5a2d02cf6ac19012471c25b070a",
+          "changed_by": [
+            "a783c4fe70093d80c4e887860abe0472c9388889 OvisOCR2: threaded vision attention default on; graph-decoder eleven-case quality lane",
+            "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
         }
       ],
       "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes"
@@ -1096,6 +1129,17 @@
           "reason": "Replay-backed: additive default-off CRISPEMBED_QWEN35_OCR_GRAPH_DECODER / CRISPEMBED_QWEN35_VISION_THREADED_ATTN gates; the default path is unchanged. Fresh replays of the v2 frozen and quality lanes on this tree: see receipt.",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json",
           "to": "0ee34341b80d577d5682d537ae48e29a2f9b515cccd895cde15c2d37d9ccb5a8"
+        },
+        {
+          "from": "0ee34341b80d577d5682d537ae48e29a2f9b515cccd895cde15c2d37d9ccb5a8",
+          "to": "2ad14f1a29042e005debbc7b7d6fc50b1a56d5a2d02cf6ac19012471c25b070a",
+          "changed_by": [
+            "a783c4fe70093d80c4e887860abe0472c9388889 OvisOCR2: threaded vision attention default on; graph-decoder eleven-case quality lane",
+            "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
+          "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
         }
       ],
       "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout"

@@ -1,0 +1,96 @@
+{
+  "schema": "crispembed-frozen-guard-replay-receipt/v1",
+  "lane": "OvisOCR2 final-integrated v2 (frozen 14-arm + eleven-case first-F16 quality) after the 11 November default flips (threaded vision attention on; graph decoder on, native). The frozen decoder_cpu reference is selected with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0.",
+  "source_commit": "338613836d8c313a9633252c495b05e29f4c67f4",
+  "runtime_tree": {
+    "src": "38d40c6620dd0b92b1dca51e0f94d8a6c1ebe02f",
+    "CMakeLists.txt": "98386958d6ca7fc72715b36556b32a617d1fbcaf"
+  },
+  "environment": {
+    "CRISPEMBED_QWEN35_OCR_GRAPH_DECODER": "0",
+    "CRISPEMBED_QWEN35_VISION_THREADED_ATTN": "unset (default on since this tree)"
+  },
+  "replays": {
+    "frozen": {
+      "where": "Kaggle CPU kernel tools/kaggle/crispembed-frozen-guard-replay-ovis (rendered as -g0/-g1, version 4)",
+      "gh_artifacts": "recorded gh api responses served by the replay-only shim",
+      "results": {
+        "gate0": {
+          "status": "completed",
+          "scope_passed": true,
+          "failures": [],
+          "arms_passed": 14,
+          "arms": 14,
+          "retained_ordinary_vectors_bit_exact": {
+            "f32-delta": true,
+            "f32-vision": true,
+            "f32-decoder-prepared": true,
+            "f32-decoder-native-vision": true,
+            "f32-decoder-native-positions": true,
+            "f32-decoder-native-frontend": true,
+            "f16-delta": true,
+            "f16-vision": true,
+            "f16-decoder-prepared": true,
+            "f16-decoder-native-vision": true,
+            "f16-decoder-native-positions": true,
+            "f16-decoder-native-frontend": true
+          },
+          "owning_cases": {
+            "f32": {
+              "original_ids_text_eos_exact": true
+            },
+            "f16": {
+              "original_ids_text_eos_exact": true
+            }
+          },
+          "frozen_result_sha256": "bcfdeb3b678c94cf17520fe63a911b6a19f3844f50a69282764993ee7ededb7d"
+        },
+        "gate1": {
+          "status": "completed",
+          "scope_passed": true,
+          "failures": [],
+          "arms_passed": 14,
+          "arms": 14,
+          "retained_ordinary_vectors_bit_exact": {},
+          "owning_cases": {
+            "f32": {
+              "original_ids_text_eos_exact": true
+            },
+            "f16": {
+              "original_ids_text_eos_exact": true
+            }
+          },
+          "frozen_result_sha256": "15f2c84651a1eeb407c737f289b28dd759efb73b25211a003c50b5df10b1e926"
+        }
+      }
+    },
+    "quality": {
+      "where": "GitHub-hosted ubuntu-24.04, .github/workflows/frozen-guard-replay-ovis-quality.yml",
+      "source": "417f328d (same src/CMake trees as 33861383)",
+      "results": {
+        "gate0": {
+          "run": 43083196525,
+          "scope_passed": true,
+          "token_count": 1841,
+          "cases": 11,
+          "cases_confidences_exact": 11,
+          "max_selected_confidence_abs_drift": 0.0,
+          "cabi_text_and_confidence_contract_passed": true,
+          "quality_comparison_sha256": "ebb51ec9368e86c0eeb2b5a18ab0327640932f660451897d5227ad474d6aafaa"
+        },
+        "gate1": {
+          "run": 43083196525,
+          "scope_passed": true,
+          "token_count": 1841,
+          "cases": 11,
+          "cases_confidences_exact": 5,
+          "max_selected_confidence_abs_drift": 2.4796000000049112e-05,
+          "cabi_text_and_confidence_contract_passed": true,
+          "quality_comparison_sha256": "5f7d797a35f86d444e8b23c80177ee844edec0c0c87f785ab909a28d8c1b6275"
+        }
+      },
+      "initial_failure": "Run 43083196525 attempt 1 gate0: all eleven cases completed, then the comparison step got HTTP 502 from the GitHub artifact API and the artifact upload failed (service error, no comparison result). Gate0 was re-run (attempt 2)."
+    }
+  },
+  "graph_path_reference": "tests/results/qwen35-ocr/ovisocr2-graph-quality.json"
+}
