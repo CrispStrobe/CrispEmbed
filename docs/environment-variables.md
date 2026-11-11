@@ -332,7 +332,7 @@ operator candidate has no decoded-quality or release qualification.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-514 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+515 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -1500,6 +1500,7 @@ operator candidate has no decoded-quality or release qualification.
 | `CRISPEMBED_UNLIMITED_OCR2` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` | Unlimited-OCR-2 must not silently run v1 attention: its own gate is required. |
 | `CRISPEMBED_UNLIMITED_OCR2_FAST` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_FORCE_IDS` | value | unset | value | tuning / config | `src/unlimited_ocr.cpp` |  |
+| `CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` | and ops run in the same order; only graph boundaries move. DASH routing stays on the host between A(l) and B(l), exactly as in forward(). Prefill (T > 1) is ... |
 | `CRISPEMBED_UNLIMITED_OCR2_LOGITS_OUT` | value | unset | path | tuning / config | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY` | value | unset | value | tuning / config | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_OUTPUT` | value | unset | value | tuning / config | `src/unlimited_ocr.cpp` |  |

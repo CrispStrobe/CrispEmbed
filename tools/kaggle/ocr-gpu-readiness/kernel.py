@@ -46,6 +46,9 @@ ENGINES = [  # name, (repo, revision, file) or None, env, prompt
     ("uocr2", ("cstr/Unlimited-OCR-2-GGUF", "e3af0c0c4bfa241c161db64ca36f3c63d3ca8378", "unlimited-ocr-2-f16.gguf"),
      {"CRISPEMBED_UNLIMITED_OCR2": "1", "CRISPEMBED_UNLIMITED_OCR2_FAST": "1", "CRISPEMBED_UNLIMITED_OCR2_TILES": "1",
       "UOCR_DBG": "1", "CRISPEMBED_UNLIMITED_OCR_BENCH": "1"}, ""),
+    ("uocr2-fused", ("cstr/Unlimited-OCR-2-GGUF", "e3af0c0c4bfa241c161db64ca36f3c63d3ca8378", "unlimited-ocr-2-f16.gguf"),
+     {"CRISPEMBED_UNLIMITED_OCR2": "1", "CRISPEMBED_UNLIMITED_OCR2_FAST": "1", "CRISPEMBED_UNLIMITED_OCR2_TILES": "1",
+      "UOCR_DBG": "1", "CRISPEMBED_UNLIMITED_OCR_BENCH": "1", "CRISPEMBED_UNLIMITED_OCR2_FUSED_STEP": "1"}, ""),
     ("minicpm-ocr", ("cstr/MiniCPM-OCR-1.0-GGUF", "6705b0652744a880e79c8ec856fac73ce56e1105", "minicpm-ocr-1.0-f16.gguf"),
      {"CRISPEMBED_MINICPM_OCR": "1", "CRISPEMBED_QWEN35_OCR": "1", "CRISPEMBED_MINICPM_OCR_TIMING": "1"},
      "Text Recognition:"),
@@ -282,7 +285,7 @@ try:
 
     models = {}
     for name, src, _, _ in ENGINES:
-        if ONLY and name not in ONLY:
+        if ONLY and name not in ONLY or name.endswith("-fused") and "-fused" not in ",".join(ONLY):
             continue
         t = time.time()
         try:
