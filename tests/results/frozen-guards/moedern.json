@@ -11995,6 +11995,44 @@
           "reason": "Guard test edited by this re-pin so it compares against tools/moedern_guard_pins.py expected values (still exact); no assertion removed or loosened. Any earlier commit listed is reviewed lineage of the same test."
         }
       ]
+    },
+    {
+      "guard": "moedern-family-public",
+      "test": "tests/test_moedern_family_public.py",
+      "kind": "sha256",
+      "path": "tools/kaggle/moedern-family-public/kernel-metadata.json",
+      "frozen": "b8648a8df5eedb8850be4ecbb0eaf0700b2945cd8218f0488c501bd8f936f3c3",
+      "frozen_commit": "c5ac623add5c92e5bfb946ac5bc2d31c115c5357",
+      "repins": [
+        {
+          "from": "b8648a8df5eedb8850be4ecbb0eaf0700b2945cd8218f0488c501bd8f936f3c3",
+          "to": "6623bccc6cc9cd3a06b3e9c7e2e6b2b520fae3af5c5aa46afe631ede29ab0bb0",
+          "changed_by": [
+            "c5ac623add5c92e5bfb946ac5bc2d31c115c5357 Kaggle ccache: automatic seed refresh (#214)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Kernel metadata only: the ccache seed dataset is attached as a second dataset source and the lists are reformatted. The worker, the model dataset, the kernel source and every model/quality input are unchanged; a compiler cache does not change compiled output."
+        }
+      ]
+    },
+    {
+      "guard": "moedern-family-public",
+      "test": "tests/test_moedern_family_public.py",
+      "kind": "sha256",
+      "path": "tools/kaggle/moedern-family-public/worker.py",
+      "frozen": "957109e185a873b23c6e83973589d45e1334d7c2dc58079f7bc9952472e22da2",
+      "frozen_commit": "0b7f709530fd298ca004f818e4ca5f2bf1b0b1a6",
+      "repins": [
+        {
+          "from": "957109e185a873b23c6e83973589d45e1334d7c2dc58079f7bc9952472e22da2",
+          "to": "55a9a422a340af55510b0065cf257fa708945be53e4153c73f4d8755f9adfaa5",
+          "changed_by": [
+            "c5ac623add5c92e5bfb946ac5bc2d31c115c5357 Kaggle ccache: automatic seed refresh (#214)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Adds only a guarded ccache bootstrap before the unchanged configure/build commands (imports the pinned clone harness and warms the compiler cache; any exception is printed and skipped). CMake flags, targets, inputs and comparisons are unchanged; a compiler cache does not change compiled output."
+        }
+      ]
     }
   ]
 }
