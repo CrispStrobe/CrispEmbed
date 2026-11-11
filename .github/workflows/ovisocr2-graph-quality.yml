@@ -4,7 +4,7 @@ name: OvisOCR2 graph-decoder eleven-case quality
 # once per matmul mode and once with the gates unset (the default). tools/ci-heavy/ovisocr2_graph_quality_check.py compares
 # IDs/text/EOS/stop/cap exactly with the frozen default-path receipt and records
 # the confidence drift. Inputs, model, prompts, caps and budgets are unchanged.
-# Trigger: push to the ovis-graph-quality branch.
+# Trigger: push to the ovis-graph-quality or ovis-gpu-quality branch.
 on:
   workflow_dispatch:
   push:
