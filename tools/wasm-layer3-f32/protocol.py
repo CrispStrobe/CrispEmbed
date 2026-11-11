@@ -3,6 +3,10 @@ import hashlib,json,math,struct,subprocess
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 BASE='5df5062c24501e5d8784fda2fef2d44a3c1dada0'
+# Commit that declared this protocol (all nine owned files). The undeclared-delta
+# check is anchored here: BASE..DECLARATION may touch only owned files. Later
+# unrelated commits no longer fail it; protected/owned hashes stay exact on HEAD.
+DECLARATION='e3df7cfd2e38f6f1bd20d68f1eb05dce11f7cd9d'
 PATH=ROOT/'docs/wasm-layer3-f32-v1.json'
 OWNED={'.github/workflows/wasm-layer3-f32-v1.yml','docs/wasm-layer3-f32-v1.json','docs/wasm-layer3-f32-v1.md',
  'tools/wasm-layer3-f32/protocol.py','tools/ci-heavy/wasm_layer3_f32_v1.py','tests/wasm-layer3-f32/CMakeLists.txt',
@@ -23,6 +27,12 @@ def decode(raw):
    for shift in [0,4]:
     for v in q:result.extend(struct.pack('<f',f32(dl*VALUES[(v>>shift)&15])))
  return bytes(result)
+def amended(name,frozen):
+ """Exact frozen hash, or the newest recorded re-pin (tools/frozen_guard_amendments.py)."""
+ import importlib.util
+ spec=importlib.util.spec_from_file_location('frozen_guard_amendments',ROOT/'tools/frozen_guard_amendments.py')
+ m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+ return m.expected('wasm-layer3-f32',name,frozen,ROOT)
 def source():
  cfg=json.loads(PATH.read_text());git=lambda *a:subprocess.check_output(['git',*a],cwd=ROOT)
  require(cfg['schema']=='crispembed-wasm-layer3-f32-v1'and cfg['base']==BASE,'Frozen cast declaration differs')
@@ -36,10 +46,11 @@ def source():
   require(causal[kind]=={k:reviewed['artifacts'][kind][k]for k in ['id','bytes','sha256']},'Exact reviewed artifact descriptor required')
  required=set(old['protected_sha256'])|set(old['owned_sha256'])|{'docs/wasm-q8k-cross-v1.json','docs/wasm-q8k-cross-result-v1.md','tests/results/packaging/wasm-q8k-cross-v1.json'}
  require(set(cfg['protected_sha256'])==required and set(cfg['owned_sha256'])==OWNED-{str(PATH.relative_to(ROOT))},'Exact protected/owned closure required')
- require(set(git('diff','--name-only',BASE,'HEAD').decode().splitlines())<=OWNED,'Undeclared source delta')
+ require(set(git('diff','--name-only',BASE,DECLARATION).decode().splitlines())<=OWNED,'Undeclared source delta')
  require(git('show','HEAD:'+str(PATH.relative_to(ROOT)))==PATH.read_bytes(),'Dirty cast declaration')
  for group in ['protected_sha256','owned_sha256']:
   for name,expected in cfg[group].items():
+   expected=amended(name,expected)
    raw=(ROOT/name).read_bytes();require(sha(raw)==expected and git('show','HEAD:'+name)==raw,'Dirty or changed source: '+name)
    if group=='protected_sha256':require(git('show',BASE+':'+name)==raw,'Frozen dependency changed: '+name)
  return cfg

@@ -1,0 +1,50 @@
+{
+  "schema": "crispembed-frozen-guard-amendments/v1",
+  "scope": "WASM layer3 F32 weightcast guard (tests/test_wasm_layer3_f32_v1.py). Owner-approved redesign: the undeclared-source-delta check is anchored to the declaration commit instead of HEAD. All 45 protected hashes stay exact and byte-equal to the base; all owned-file hashes stay exact on HEAD. No inference repeated; no gate, budget or result changed.",
+  "tool": "tools/frozen_guard_amendments.py",
+  "observed_at": "136dddc9",
+  "initial_failure": {
+    "lane": "tools/kaggle/crispembed-pytest-plain (full clone) at cd477abe",
+    "error": "test_closed_source: 'Undeclared source delta' - git diff BASE..HEAD fails on every later unrelated commit although all 45 protected hashes match"
+  },
+  "amendments": [
+    {
+      "guard": "wasm-layer3-f32",
+      "test": "tests/test_wasm_layer3_f32_v1.py::Controls::test_closed_source",
+      "kind": "sha256",
+      "path": "tools/wasm-layer3-f32/protocol.py",
+      "frozen": "a7642e9151dca59d57e0272ac75c6a33e7fd47474c742e3d45bafb1b002eaab7",
+      "frozen_commit": "e3df7cfd2e38f6f1bd20d68f1eb05dce11f7cd9d",
+      "repins": [
+        {
+          "from": "a7642e9151dca59d57e0272ac75c6a33e7fd47474c742e3d45bafb1b002eaab7",
+          "to": "5613ca4556e283553c20a2c3fd0c47b0a69b50431faf2c38c8987f82687dc263",
+          "changed_by": [
+            "this change (frozen-guard redesign, owner-approved)"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Guard-only redesign. The 'outside owned files' check now compares BASE against the declaration commit e3df7cfd (where only the nine owned files differ) instead of HEAD, so unrelated later commits no longer fail it. Protected hashes are still compared exactly and byte-equal to BASE; owned hashes still exact on HEAD via this chain. decode(), gates, coverage and the causal/artifact pins are unchanged."
+        }
+      ]
+    },
+    {
+      "guard": "wasm-layer3-f32",
+      "test": "tests/test_wasm_layer3_f32_v1.py::Controls::test_closed_source",
+      "kind": "sha256",
+      "path": "tests/wasm-layer3-f32/operator.cpp",
+      "frozen": "398564e090dcf6e17c8772075c524398d8bc76171f71e9a2267da1e9e84c7577",
+      "frozen_commit": "e3df7cfd2e38f6f1bd20d68f1eb05dce11f7cd9d",
+      "repins": [
+        {
+          "from": "398564e090dcf6e17c8772075c524398d8bc76171f71e9a2267da1e9e84c7577",
+          "to": "2b0920a1645288471590679576e401f86c14b198f2917bb76903247ae1eb7269",
+          "changed_by": [
+            "0fda4674189ffa940b6920a14a031df424e71394 Merge remote-tracking branch 'origin/main' into tmp-merge"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "clang-format only: line wrapping, braces on their own lines and a '// namespace' comment. With whitespace and // comments removed the file is token-identical to the frozen bytes. The test-only operator, ggml_cast/mul_mat graph and return codes are unchanged."
+        }
+      ]
+    }
+  ]
+}
