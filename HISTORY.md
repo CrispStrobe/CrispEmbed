@@ -22029,3 +22029,19 @@ activation-only error, without a particular CPU/reduction-cause claim. The froze
 32-layer progression first grows most in relative terms at layer0→1 (+29.84%);
 its full numerical gate remains negative. No full forward rerun or threshold/
 runtime/default change. [Scope and measurements](docs/lighton4b-upstream-drift.md).
+
+### 11 November2026 — `general.file_type` audit of304871c9 (finding only)
+
+The GGUF spec pinned in [docs/gguf-standard-file-type-v1.md](docs/gguf-standard-file-type-v1.md)
+(ggml `6af560d5` docs/gguf.md; llama.h `63412d87`) defines Q8_0=7, Q4_K_S=14,
+Q4_K_M=15; ggml's internal `GGML_FTYPE_MOSTLY_Q4_K` is12 (`ggml/include/ggml.h`),
+which in the file-type enum would read as Q3_K_M. `tools/quantize.cpp` writes a
+single uniform Q4_K, so its standard label is14 (`core_gguf_file_type::standard`),
+not15. 304871c9 did not move15→12: it made the standard14 an opt-in
+(`--standard-file-type` / `CRISPEMBED_QUANTIZE_STANDARD_FTYPE=1`) and restored the
+legacy12 default for byte-identical hash-pinned outputs; Q8_0 stays7 either way.
+That is the documented owner decision, so no code change. Consumers are consistent:
+MoEdern-Q4/Josev/UltraBERT accept14 or12 via `known_q4_k`; MoEdern-Q8/UltraBERT-Q8
+require7; MI-GAN/latent-inpaint only test0 (F32); the LightOn4B Q4_K_M/Q6 recipe
+gates require15, but those files come from the upstream llama.cpp mixed-M recipe,
+not this writer. Python bindings and CrispSorter do not read the key.
