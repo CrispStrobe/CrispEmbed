@@ -184,7 +184,7 @@ token-ID exact on all five Kaggle cases and IDs identical to the old default on 
 | `CRISPEMBED_QWEN35_WEIGHT_CACHE` | off | Per-context converted-weight cache (measured 2.7% cold / 0.8% warm gain with more RSS; kept off). |
 | `CRISPEMBED_QWEN35_WEIGHT_CACHE_BYTES` | 268435456 (256 MiB) | Cache budget in bytes; empty or invalid = 0. |
 | `CRISPEMBED_QWEN35_IMATRIX` | off | Importance-matrix collection (observer); `CRISPEMBED_IMATRIX_OUT` names the output. |
-| `CRISPEMBED_QWEN35_VISION_THREADED_ATTN` | off | qwen35 vision attention split over the context's threads with contiguous value accumulation; same per-element operation order as the scalar loop (designed bit-identical). Ignored when `..._VISION_PRECISE_ATTN` is on. |
+| `CRISPEMBED_QWEN35_VISION_THREADED_ATTN` | on | qwen35 vision attention split over the context's threads with contiguous value accumulation; same per-element operation order as the scalar loop, bit-identical to it at 2 and 4 threads (receipt `tests/results/qwen35-ocr/ovisocr2-graph-speed-ab.json`). Vision 25.5 → 8.3 s per OvisOCR2 page on Kaggle CPU. Default on since 2026-11-11 (owner-approved); `=0` restores the scalar loop. Ignored when `..._VISION_PRECISE_ATTN` is on. |
 | `CRISPEMBED_QWEN35_PRECISE_RMS`, `CRISPEMBED_QWEN35_VISION_PRECISE_ATTN`, `..._PRECISE_NORM`, `..._CASCADE_NORM`, `..._SOURCE_INTERPOLATION` | off | Precision experiments; kept default-off. |
 | `CRISPEMBED_QWEN35_TOKENIZER_MARKS`, `CRISPEMBED_QWEN35_PROFILE` | off | Tokenizer mark handling; profiling output. |
 | `CRISPEMBED_OVISOCR2_FRONTEND`, `_INFERENCE`, `_LARGE_IMAGES`, `CRISPEMBED_OVISOCR3_FRONTEND`, `_INFERENCE` | off | OvisOCR2/3 gates. |
@@ -1228,7 +1228,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_QWEN35_VISION_PRECISE_ATTN` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
 | `CRISPEMBED_QWEN35_VISION_PRECISE_NORM` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
 | `CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
-| `CRISPEMBED_QWEN35_VISION_THREADED_ATTN` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
+| `CRISPEMBED_QWEN35_VISION_THREADED_ATTN` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/qwen35_vision.cpp` |  |
 
 ### restormer
 

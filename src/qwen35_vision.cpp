@@ -166,7 +166,7 @@ static bool geometry(const vision_config & c, int tokens, const std::vector<int>
     }
     return total == tokens;
 }
-// Default-off CRISPEMBED_QWEN35_VISION_THREADED_ATTN: the same per-(token, head) arithmetic
+// Default-on CRISPEMBED_QWEN35_VISION_THREADED_ATTN (=0 restores the scalar loop): the same per-(token, head) arithmetic
 // as the scalar loop below (identical dot/max/exp/sum order; each output element still
 // accumulates (score / sum) * value over keys in key order), split over `threads` workers
 // by token, with the value accumulation reordered to key-outer/element-inner so it streams
@@ -230,7 +230,7 @@ static std::vector<float> attention(const std::vector<float> & qkv, const vision
         }
     const float scale = 1.0f / std::sqrt(float(d));
     const bool precise = core_env::on("CRISPEMBED_QWEN35_VISION_PRECISE_ATTN");
-    if (!precise && core_env::on("CRISPEMBED_QWEN35_VISION_THREADED_ATTN")) {
+    if (!precise && !core_env::explicitly_off("CRISPEMBED_QWEN35_VISION_THREADED_ATTN")) {
         const int workers = std::max(1, std::min(threads, tokens));
         std::vector<std::thread> pool;
         for (int w = 1; w < workers; ++w)
