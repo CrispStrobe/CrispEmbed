@@ -65,7 +65,8 @@ def replay_sha_factory(original, declared):
 
     def replay_sha(path):
         value = original(path)
-        rel = str(Path(path).resolve().relative_to(ROOT)) if Path(path).is_absolute() else str(path)
+        resolved = Path(path).resolve()
+        rel = str(resolved.relative_to(ROOT)) if resolved.is_relative_to(ROOT) else None
         if rel in declared and value != declared[rel]:
             drift[rel] = {'declared': declared[rel], 'current': value}
             out = Path(__import__('os').environ.get('HEAVY_OUT', '.'))
