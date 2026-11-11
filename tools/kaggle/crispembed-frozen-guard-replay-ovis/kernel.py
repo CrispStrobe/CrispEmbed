@@ -74,6 +74,9 @@ cache = find_cache()
 install_shim(cache)
 summary = {"sha": SHA, "mode": MODE, "gate": int(GATE), "cache_entries": sum(1 for _ in open(cache / "index.tsv"))}
 try:
+    # GNU time: the hosted runners ship /usr/bin/time; the drivers record RSS/wall through it.
+    if not Path("/usr/bin/time").exists():
+        sh("apt-get install -y -q time >/dev/null 2>&1 || (apt-get update -q >/dev/null && apt-get install -y -q time >/dev/null)")
     sh(["git", "clone", "-q", REPO, str(SRC)])
     sh(["git", "-C", str(SRC), "checkout", "-q", SHA])
     sh(["git", "-C", str(SRC), "submodule", "update", "--init", "--recursive", "-q"])
