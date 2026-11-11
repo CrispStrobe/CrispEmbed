@@ -50,7 +50,7 @@ ENGINES = [  # name, (repo, revision, file) or None, env, prompt
      {"CRISPEMBED_MINICPM_OCR": "1", "CRISPEMBED_QWEN35_OCR": "1", "CRISPEMBED_MINICPM_OCR_TIMING": "1"},
      "Text Recognition:"),
 ]
-ONLY = [e for e in os.environ.get("AB_ENGINES", "").split(",") if e]
+ONLY = [e for e in os.environ.get("AB_ENGINES", "__ENGINES__".strip("_") if "__ENGINES__"[0] != "_" else "").split(",") if e]
 summary = {"schema": "crispembed-ocr-gpu-readiness-run-v1", "sha": SHA, "device": DEVICE, "threads": THREADS,
            "max_new": MAX_NEW, "models": {}, "runs": [], "sched": {}, "steps": []}
 
@@ -288,7 +288,8 @@ try:
         try:
             if src is None:  # LightOnOCR-3-1B: convert the pinned original to F16 here (converter verifies pins).
                 venv = TMP / "lvenv"
-                sh(f"{sys.executable} -m venv {venv} && {venv}/bin/pip install -q -r "
+                sh(f"{sys.executable} -m pip install -q uv==0.8.17 && {sys.executable} -m uv venv -q --python 3.12 "
+                   f"--seed {venv} && {venv}/bin/python -m pip install -q -r "
                    f"{SRC}/models/requirements-lightonocr3-reference.txt")
                 path = str(TMP / "lightonocr3-1b-f16.gguf")
                 sh(f"cd {SRC} && HF_HOME={TMP}/hfl {venv}/bin/python models/convert-lightonocr-to-gguf.py --model "
