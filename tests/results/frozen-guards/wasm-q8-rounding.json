@@ -165,6 +165,15 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed, not a source review: fresh replay run 42951893756 of the full A/B on this exact runtime tree is bit-identical to frozen run 40391544739 (108 vector/stage hashes, all token streams and metrics, same 16 rejections). ",
           "replay_receipt": "tests/results/frozen-guards/replays/wasm-q8-rounding-ab.json"
+        },
+        {
+          "from": "fb52b8e5a4f3d66c77d7005aca50173eef3a59b14c38a1e9d0ef332b697157d8",
+          "to": "6ea2e052213a96a3498c134138d38283c7130d7d37bfd88efbdf3d9a45ba1346",
+          "changed_by": [
+            "7e9d6f35 qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Changed-file name list only: adds src/qwen35_ocr_gpu.cpp and src/qwen35_ocr_gpu.h (default-off CRISPEMBED_QWEN35_OCR_GPU pipeline). Both are in CRISPEMBED_WASM_EXCLUDED_SOURCES with the other qwen35_ocr sources, so the WASM build and its A/B runtime are unchanged; src/crispembed.cpp is untouched."
         }
       ]
     },
