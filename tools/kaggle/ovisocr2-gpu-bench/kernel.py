@@ -8,8 +8,9 @@ reviewed realistic documents (pinned prepared.zip), then runs:
   gpu        CRISPEMBED_QWEN35_OCR_GPU=1 on CUDA                       all three, twice (cold/warm)
   ggml-cpu   CRISPEMBED_QWEN35_OCR_GPU=1, CUDA_VISIBLE_DEVICES=""      all three (the same ggml-op
              graphs on the CPU backend; contract check of the new path on CPU)
-  cpu-graph  CPU default path (graph decoder; CRISPEMBED_QWEN35_OCR_GPU unset), CUDA hidden
+  cpu-default  CPU default path (CRISPEMBED_QWEN35_OCR_GPU unset), CUDA hidden
              inventory-table only (same-host CPU timing reference)
+  gpu-profile  test-qwen35-profile on CUDA (cap 512): vision / prefill / per-token decode times
 
 Each run is compared with tests/results/qwen35-ocr/ovisocr2-f16-quality.json
 (native_cases.f16), the CPU ground truth: token IDs, text and stop exact, confidence
@@ -107,7 +108,26 @@ try:
     gpu = {"CRISPEMBED_QWEN35_OCR_GPU": "1", "CRISPEMBED_QWEN35_OCR_GPU_LOG": "1"}
     hide = {"CUDA_VISIBLE_DEVICES": ""}
     arms = [("gpu", gpu, list(cases)), ("gpu-warm", gpu, list(cases)),
-            ("ggml-cpu", dict(gpu, **hide), list(cases)), ("cpu-graph", hide, ["inventory-table"])]
+            ("ggml-cpu", dict(gpu, **hide), list(cases)), ("cpu-default", hide, ["inventory-table"])]
+    # Stage profile (vision / prefill / per-token decode) on CUDA with the profiling runner
+    # (test-qwen35-profile, its maximum cap 512; same recognition call).
+    profiler = BUILD / "test-qwen35-profile"
+    for cid in cases:
+        r = subprocess.run([str(profiler), model, str(cases[cid]), "512", str(THREADS), "ovisocr2"],
+                           env=dict(base_env, **gpu), capture_output=True, text=True)
+        prof = {}
+        for l in r.stdout.splitlines():
+            m = re.match(r"PROFILE phase=(\S+) event=(\S+) calls=(\d+) nanoseconds=(\d+)", l)
+            if m and m.group(2) in ("vision", "prefill", "cached_decode", "selection", "embedding"):
+                prof[m.group(2)] = {"calls": int(m.group(3)), "s": int(m.group(4)) / 1e9}
+        row = {"arm": "gpu-profile", "case": cid, "rc": r.returncode, "profile": prof, "stderr_tail": r.stderr[-300:]}
+        dec = prof.get("cached_decode")
+        if dec and dec["calls"]:
+            row["decode_ms_per_token"] = round(1000 * dec["s"] / dec["calls"], 2)
+            row["decode_tok_s"] = round(dec["calls"] / dec["s"], 2)
+        summary["runs"].append(row)
+        print(json.dumps({k: v for k, v in row.items() if k != "stderr_tail"}), flush=True)
+        save()
     for arm, extra, ids in arms:
         for cid in ids:
             env = dict(base_env, **extra)
