@@ -239,7 +239,7 @@ def _warm_ccache_from_dataset(ccache_dir: Path) -> None:
     # bug already fixed in kaggle_token_from_dataset(): it silently missed any
     # account not named in the list, and a missing ccache reads as a slow build
     # rather than an error. Probe for the artifact, don't guess the path.
-    search_paths = [Path("/kaggle/input/crispasr-ccache")]
+    search_paths = [Path("/kaggle/input/crispembed-ccache"), Path("/kaggle/input/crispasr-ccache")]
     inp = Path("/kaggle/input")
     if inp.exists():
         for sub in inp.iterdir():
@@ -387,7 +387,18 @@ def install_build_toolchain() -> dict:
         # the command line do not bust the hash either. Same pairing that makes
         # the cache shared across local git worktrees.
         os.environ["CCACHE_NOHASHDIR"] = "1"
-        os.environ["CCACHE_BASEDIR"] = str(_scratch)
+        # BASEDIR = /kaggle (not the scratch dir): kernels build under
+        # /kaggle/temp or /kaggle/working, and a seed made under one must hit
+        # under the other. Relative paths stay equal as long as the build dir
+        # sits at the same place inside the clone (<clone>/build).
+        os.environ["CCACHE_BASEDIR"] = "/kaggle" if Path("/kaggle").is_dir() else str(_scratch)
+        # Kaggle image updates touch the compiler binaries: the default
+        # compiler_check=mtime then misses every object of an older seed even
+        # though the compiler is the same. Hash the compiler content instead.
+        os.environ.setdefault("CCACHE_COMPILERCHECK", "content")
+        # A fresh clone gives every header a just-now mtime; without this the
+        # direct mode drops to the slower preprocessor mode for those files.
+        os.environ.setdefault("CCACHE_SLOPPINESS", "include_file_mtime,include_file_ctime,time_macros")
         # Warm ccache from attached dataset (${KAGGLE_ACCOUNT}/crispasr-ccache or
         # ${KAGGLE_ACCOUNT}/crispasr-ccache). Shaves ~15 min off incremental builds.
         _warm_ccache_from_dataset(ccache_dir)

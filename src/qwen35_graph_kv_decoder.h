@@ -17,7 +17,8 @@
 //   * delta-net softplus/sigmoid and the gated RMSNorm use the reference scalar
 //     formulas (custom ops) and ggml_gated_delta_net, as linear_core_cpu does;
 //   * RoPE uses host cos/sin tables computed with the reference formula.
-// Only 1-D sequential positions (equal t/h/w axes, as MiniCPM-OCR) are supported.
+// 1-D sequential positions by default (equal t/h/w axes, as MiniCPM-OCR); forward() also
+// takes explicit t/h/w position axes for the multimodal qwen35_ocr engines.
 //
 // Gate: enabled() unless CRISPEMBED_QWEN35_GRAPH_DECODER=0 (core_env::explicitly_off). MiniCPM-OCR, the only
 // caller, turns it on by default (=0 opts out); decoder_cpu and every other engine are unchanged.
@@ -54,8 +55,12 @@ public:
     // Appends `tokens` rows of input embeddings ([tokens, width] row-major) at
     // positions tokens()..tokens()+tokens-1 and returns the last row's logits.
     // Optional captures: per-layer residual outputs and final-norm rows (prefill dumps).
+    // `positions` (optional, [3][tokens] t/h/w axes as qwen35_ocr::image_positions /
+    // cached_positions produce): multimodal RoPE with the reference interleaved sections
+    // (OvisOCR2/3 via CRISPEMBED_QWEN35_OCR_GRAPH_DECODER). nullptr = 1-D past + row.
     bool forward(const float * hidden, int tokens, int threads, std::vector<float> & logits,
-                 std::vector<std::vector<float>> * layers = nullptr, std::vector<float> * norm = nullptr);
+                 std::vector<std::vector<float>> * layers = nullptr, std::vector<float> * norm = nullptr,
+                 const float * positions = nullptr);
     const char * mode() const;
 
 private:

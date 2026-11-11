@@ -101,6 +101,11 @@ struct linear_param {
 struct rope_param {
     attention_config config;
     int past = 0;
+    // Optional multimodal positions ([3][count], qwen35_positions axes layout). When set,
+    // the interleaved mrope axis selection of qwen35_attention.cpp rotate() is used;
+    // nullptr keeps the 1-D sequential past + row positions (MiniCPM).
+    const float * axes = nullptr;
+    int count = 0;
 };
 
 // y = (x * rms_scale_cpu(x)) * (1 + w), per row of ne0 (= qwen35_decoder.cpp rms / attention norm_head).
@@ -129,9 +134,16 @@ void op_rope(ggml_tensor * dst, const ggml_tensor * a, int ith, int nth, void * 
         float * y = static_cast<float *>(dst->data) + r * d;
         std::memcpy(y, x, size_t(d) * sizeof(float));
         const float position = float(p->past + int(r / heads));
+        const int bt = int(r / heads);
         for (int i = 0; i < half; ++i) {
             const float frequency = 1.0f / std::pow(c.theta, float(2 * i) / c.rotary_dim);
-            const float angle = frequency * position;
+            float angle = frequency * position;
+            if (p->axes) { // = qwen35_attention.cpp rotate(): interleaved t/h/w sections
+                int axis = 0;
+                if (i % 3 == 1 && i < 3 * c.mrope_section[1]) axis = 1;
+                if (i % 3 == 2 && i < 3 * c.mrope_section[2]) axis = 2;
+                angle = frequency * p->axes[axis * p->count + bt];
+            }
             const float cosine = std::cos(angle), sine = std::sin(angle);
             const float left = y[i], right = y[i + half];
             y[i] = left * cosine - right * sine;
@@ -457,7 +469,8 @@ bool graph_kv_decoder::init(const decoder_weights & weights, const attention_con
 }
 
 bool graph_kv_decoder::forward(const float * hidden, int tokens, int threads, std::vector<float> & logits,
-                               std::vector<std::vector<float>> * layer_capture, std::vector<float> * norm_capture) {
+                               std::vector<std::vector<float>> * layer_capture, std::vector<float> * norm_capture,
+                               const float * positions) {
     logits.clear();
     auto & p = *p_;
     if (!enabled() || !p.allocr || !hidden || tokens < 1 || threads < 1 || threads > 256 ||
@@ -479,6 +492,8 @@ bool graph_kv_decoder::forward(const float * hidden, int tokens, int threads, st
     ggml_cgraph * gf = ggml_new_graph_custom(g, kNodes, false);
     p.rope.config = c;
     p.rope.past = p.past;
+    p.rope.axes = positions;
+    p.rope.count = tokens;
 
     ggml_tensor * input = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
     ggml_set_input(input);

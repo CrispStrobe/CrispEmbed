@@ -1,6 +1,7 @@
 #include "qwen35_ocr.h"
 #include "qwen35_frontend.h"
 #include "qwen35_decoder.h"
+#include "qwen35_graph_kv_decoder.h"
 #include "qwen35_positions.h"
 #include "qwen35_vision.h"
 #include "qwen35_math.h"
@@ -26,6 +27,9 @@ struct qwen35_ocr_context {
     qwen35_ocr::decoder_weights decoder;
     qwen35_ocr::vision_weights vision;
     qwen35_ocr::converted_weight_cache weights_cache;
+    // Opt-in CRISPEMBED_QWEN35_OCR_GRAPH_DECODER (bound at init): one ggml graph per call
+    // with persistent KV / delta-net state instead of decoder_cpu's per-step conversion.
+    std::unique_ptr<qwen35_ocr::graph_kv_decoder> graph_kv;
     int threads = 1, max_tokens = 2048;
     std::string text, error;
     std::vector<int> ids;
@@ -36,6 +40,7 @@ struct qwen35_ocr_context {
     qwen35_ocr_stage_observer stage_observer = nullptr;
     void * stage_observer_user = nullptr;
     ~qwen35_ocr_context() {
+        graph_kv.reset();
         weights_cache.clear();
         core_gguf::free_weights(loaded);
         if (backend) ggml_backend_free(backend);
@@ -168,8 +173,20 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
     // immutable converted weights can persist in the opt-in owning cache.
     stage.next(profile_event::prefill, profile_phase::prefill);
     qwen35_ocr::decoder_outputs current;
-    if (!qwen35_ocr::decoder_cpu(c.decoder, {}, hidden.data(), pos.axes.data(), 1, int(ids.size()), c.threads, nullptr,
-                                 current, weights_cache))
+    // The graph decoder takes the same t/h/w axes; observers need decoder_cpu's captures.
+    auto * graph_kv = c.stage_observer ? nullptr : c.graph_kv.get();
+    const auto run_decoder = [&](const float * input, const float * coords, int count,
+                                 const qwen35_ocr::decoder_cache * previous) {
+        if (!graph_kv)
+            return qwen35_ocr::decoder_cpu(c.decoder, {}, input, coords, 1, count, c.threads, previous, current,
+                                           weights_cache);
+        current = {};
+        if (!graph_kv->forward(input, count, c.threads, current.logits, nullptr, nullptr, coords)) return false;
+        current.cache.tokens = graph_kv->tokens();
+        return true;
+    };
+    if (graph_kv) graph_kv->reset();
+    if (!run_decoder(hidden.data(), pos.axes.data(), int(ids.size()), nullptr))
         return c.fail("decoder prefill failed");
     if (c.stage_observer) {
         const auto emit = [&](const std::string & name, const std::vector<float> & values) {
@@ -215,9 +232,7 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
             !qwen35_ocr::cached_positions(cache.tokens, 1, pos.rope_delta, coords))
             return c.fail("cached input preparation failed");
         stage.next(profile_event::cached_decode, profile_phase::decode);
-        if (!qwen35_ocr::decoder_cpu(c.decoder, {}, hidden.data(), coords.data(), 1, 1, c.threads, &cache, current,
-                                     weights_cache))
-            return c.fail("cached decoder failed");
+        if (!run_decoder(hidden.data(), coords.data(), 1, &cache)) return c.fail("cached decoder failed");
     }
     stage.next(profile_event::text_decode, profile_phase::other);
     if (!c.tokenizer.decode(c.ids, c.text)) return c.fail("output decoding failed");
@@ -255,6 +270,13 @@ extern "C" qwen35_ocr_context * qwen35_ocr_init(const char * path, int threads) 
             !qwen35_ocr::map_small_vision(c->loaded.tensors, c->vision) || !valid_weights(*c))
             return nullptr;
         if (c->tokenizer.is_xiaomi0()) c->max_tokens = 4096;
+        // Default-off: the qualified path is decoder_cpu. Matmul precision follows
+        // CRISPEMBED_QWEN35_GRAPH_MATMUL (default "f32": one F32 copy of every decoder
+        // matrix at init). Capacity = the 4096-token context limit of the greedy loop.
+        if (core_env::on("CRISPEMBED_QWEN35_OCR_GRAPH_DECODER") && qwen35_ocr::graph_kv_decoder::enabled()) {
+            c->graph_kv = std::make_unique<qwen35_ocr::graph_kv_decoder>();
+            if (!c->graph_kv->init(c->decoder, {}, c->backend, 4096)) return nullptr;
+        }
         return c.release();
     } catch (...) {
         return nullptr;
