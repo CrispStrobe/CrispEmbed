@@ -243,6 +243,19 @@
             "c6a9cbc44ef42954a835eb9bf45076b6cbdd1159 Merge pull request #137 from CrispStrobe/docs/handoff-dedupe"
           ],
           "reason": "Add exact Xiaomi-OCR-0 format-4 identity admission behind both new default-off Xiaomi gates and the existing Qwen35 gate; permit only F32/F16 for this profile and apply its 4096 generation cap only after Xiaomi identity is loaded. Add read-only actual-logit and prefill-stage callbacks that are null by default and can only attach to Xiaomi contexts. Existing LightOn/Ovis profile predicates, tensor math, prompt/stop policy, context bound and numerical defaults are unchanged. This source audit and lightweight controls do not claim native bit equivalence or new precision qualification; frozen LightOn/Ovis failure receipts are retained without rewriting. The new Xiaomi hosted bounded original/native experiment is still pending."
+        },
+        {
+          "from_sha256": "d0e2029bee753a17f1b2f748dfa2ce378783b0ae72774815185096d99c56690e",
+          "to_sha256": "a449fd407e963b4b92ad8a73e4a4bc4abbb70af62a56ac3389f31568d4931792",
+          "to_blob": "aacbc5a92f5c0e2cdb5e419656591cf0b3297726",
+          "recorded_at_commit": "5143c7494874be1b820db1e12895f24a83916ddb",
+          "recorded": "2026-11-11",
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed",
+            "fc2f450b7db74f05d17532f13a279dbe372968a7 feat(ocr): integrate exact checkpoint profiles, Nemotron frontend and structured evaluation"
+          ],
+          "reason": "Additive default-off gates CRISPEMBED_QWEN35_OCR_GRAPH_DECODER (graph_kv_decoder with t/h/w positions) and CRISPEMBED_QWEN35_VISION_THREADED_ATTN (bit-identical threaded vision attention); default decoder_cpu/vision path unchanged; OvisOCR2 frozen 14-arm gates 0/1 replay bit-exact (tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json)."
         }
       ]
     },
@@ -266,6 +279,18 @@
             "a8912d73f01eaaf28cbf4b057a9a0e0837f24700 Add gated OvisOCR3 diagnostics and complete bounded Ovis follow-up audits (#80)"
           ],
           "reason": "#80 (a8912d73) and 59603adf. Patch bound is ovisocr2_patch_limit(), which stays 1024 unless all four Ovis2 large-image gates are on; the position interpolation was factored into interpolation_taps/interpolate_position, whose default branch (CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION off) keeps the same linspace coordinates, the same (1-dr)(1-dc) weights and the same ((a+b)+e)+f order. Default numerics unchanged."
+        },
+        {
+          "from_sha256": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3",
+          "to_sha256": "0ee34341b80d577d5682d537ae48e29a2f9b515cccd895cde15c2d37d9ccb5a8",
+          "to_blob": "b4c5b5058aa3c4541a0a25a97d95d840c059221e",
+          "recorded_at_commit": "5143c7494874be1b820db1e12895f24a83916ddb",
+          "recorded": "2026-11-11",
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "reason": "Additive default-off gates CRISPEMBED_QWEN35_OCR_GRAPH_DECODER (graph_kv_decoder with t/h/w positions) and CRISPEMBED_QWEN35_VISION_THREADED_ATTN (bit-identical threaded vision attention); default decoder_cpu/vision path unchanged; OvisOCR2 frozen 14-arm gates 0/1 replay bit-exact (tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json)."
         }
       ]
     },
