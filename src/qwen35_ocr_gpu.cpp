@@ -115,8 +115,8 @@ struct ggml_pipeline::impl {
     bool place(ggml_cgraph * gf, const char * kind) {
         ggml_backend_sched_reset(sched);
         if (!ggml_backend_sched_alloc_graph(sched, gf)) return false;
-        if (!logged.count(kind) && (core_env::on("CRISPEMBED_QWEN35_OCR_GPU_LOG") ||
-                                    core_env::on("CRISPEMBED_QWEN35_OCR_GPU_STRICT"))) {
+        if (!logged.count(kind) &&
+            (core_env::on("CRISPEMBED_QWEN35_OCR_GPU_LOG") || core_env::on("CRISPEMBED_QWEN35_OCR_GPU_STRICT"))) {
             logged.insert(kind);
             const int n = ggml_graph_n_nodes(gf);
             int primary = 0, other = 0;
@@ -136,7 +136,8 @@ struct ggml_pipeline::impl {
             }
             std::string ops;
             for (const auto & e : fallback) ops += " " + e.first + "x" + std::to_string(e.second);
-            std::fprintf(stderr, "qwen35_ocr ggml-ops %s graph: backend=%s nodes=%d on_backend=%d other=%d splits=%d%s%s\n",
+            std::fprintf(stderr,
+                         "qwen35_ocr ggml-ops %s graph: backend=%s nodes=%d on_backend=%d other=%d splits=%d%s%s\n",
                          kind, ggml_backend_name(backend), n, primary, other, ggml_backend_sched_get_n_splits(sched),
                          ops.empty() ? "" : " fallback:", ops.c_str());
             if (other && gpu && core_env::on("CRISPEMBED_QWEN35_OCR_GPU_STRICT")) return false;
@@ -206,8 +207,7 @@ bool ggml_pipeline::init(const decoder_weights & dw, const vision_weights & vw, 
             if (!x.a_log || !x.norm || !x.conv) return false;
             const int64_t heads = x.a_log->ne[0], hw = x.norm->ne[0], kernel = x.conv->ne[0], group = heads * hw;
             if (heads < 1 || heads > 128 || hw < 1 || hw > 256 || kernel < 2 || kernel > 16 ||
-                !is_matrix(x.qkv, width, 3 * group) || !is_matrix(x.out, group, width) ||
-                x.conv->ne[2] != 3 * group)
+                !is_matrix(x.qkv, width, 3 * group) || !is_matrix(x.out, group, width) || x.conv->ne[2] != 3 * group)
                 return false;
             p.H = int(heads);
             p.W = int(hw);
@@ -267,8 +267,8 @@ bool ggml_pipeline::init(const decoder_weights & dw, const vision_weights & vw, 
         uploads.emplace_back(t, std::move(values));
         return t;
     };
-    auto one_plus = [](float w) { return 1.0f + w; };        // MQ:724 (1.0 + self.weight)
-    auto neg_exp = [](float a) { return -std::exp(a); };     // MQ:493 -A_log.exp()
+    auto one_plus = [](float w) { return 1.0f + w; };    // MQ:724 (1.0 + self.weight)
+    auto neg_exp = [](float a) { return -std::exp(a); }; // MQ:493 -A_log.exp()
     p.final_norm = vec(dw.norm, one_plus);
     p.l2_eps = ggml_new_tensor_1d(p.const_ctx, GGML_TYPE_F32, 1);
     uploads.emplace_back(p.l2_eps, std::vector<float>{ 1e-6f }); // MQ:228 l2norm eps
@@ -326,8 +326,8 @@ bool ggml_pipeline::init(const decoder_weights & dw, const vision_weights & vw, 
     p.sched = ggml_backend_sched_new(backends.data(), nullptr, int(backends.size()), kNodes, false, false);
     p.meta.resize(ggml_tensor_overhead() * kNodes + ggml_graph_overhead_custom(kNodes, false));
     if (core_env::on("CRISPEMBED_QWEN35_OCR_GPU_LOG"))
-        std::fprintf(stderr, "qwen35_ocr ggml-ops: backend=%s gpu=%d device_matrices=%zu\n", ggml_backend_name(p.backend),
-                     int(p.gpu), p.device.size());
+        std::fprintf(stderr, "qwen35_ocr ggml-ops: backend=%s gpu=%d device_matrices=%zu\n",
+                     ggml_backend_name(p.backend), int(p.gpu), p.device.size());
     return p.sched != nullptr;
 }
 
@@ -360,14 +360,17 @@ bool ggml_pipeline::vision(const float * patches, int tokens, const std::vector<
         mask = ggml_new_tensor_2d(g, GGML_TYPE_F32, N, N);
         ggml_set_input(mask);
     }
-    auto linear = [&](const ggml_tensor * w, ggml_tensor * b, ggml_tensor * x) { return ggml_add(g, p.mm(g, w, x), b); };
+    auto linear = [&](const ggml_tensor * w, ggml_tensor * b, ggml_tensor * x) {
+        return ggml_add(g, p.mm(g, w, x), b);
+    };
     auto layer_norm = [&](ggml_tensor * x, ggml_tensor * w, ggml_tensor * b) {
         return ggml_add(g, ggml_mul(g, ggml_norm(g, x, c.eps), w), b);
     };
     // q*cos + rotate_half(q)*sin; rotate_half(x) = cat(-x2, x1) (MQ:536-540, 864-875).
     auto rotate = [&](ggml_tensor * x) { // x [d, heads, N] contiguous
         ggml_tensor * x1 = ggml_cont(g, ggml_view_3d(g, x, d / 2, heads, N, x->nb[1], x->nb[2], 0));
-        ggml_tensor * x2 = ggml_cont(g, ggml_view_3d(g, x, d / 2, heads, N, x->nb[1], x->nb[2], (d / 2) * sizeof(float)));
+        ggml_tensor * x2 =
+            ggml_cont(g, ggml_view_3d(g, x, d / 2, heads, N, x->nb[1], x->nb[2], (d / 2) * sizeof(float)));
         ggml_tensor * half = ggml_concat(g, ggml_neg(g, x2), x1, 0);
         return ggml_add(g, ggml_mul(g, x, cos_t), ggml_mul(g, half, sin_t));
     };
@@ -383,8 +386,8 @@ bool ggml_pipeline::vision(const float * patches, int tokens, const std::vector<
         };
         ggml_tensor * q = ggml_cont(g, ggml_permute(g, rotate(part(0)), 0, 2, 1, 3)); // [d, N, heads]
         ggml_tensor * k = ggml_cont(g, ggml_permute(g, rotate(part(1)), 0, 2, 1, 3)); // [d, N, heads]
-        ggml_tensor * vt = ggml_cont(g, ggml_permute(g, part(2), 1, 2, 0, 3));         // [N, d, heads]
-        ggml_tensor * kq = ggml_mul_mat(g, k, q);                                       // [N, N, heads]
+        ggml_tensor * vt = ggml_cont(g, ggml_permute(g, part(2), 1, 2, 0, 3));        // [N, d, heads]
+        ggml_tensor * kq = ggml_mul_mat(g, k, q);                                     // [N, N, heads]
         ggml_mul_mat_set_prec(kq, GGML_PREC_F32);
         kq = ggml_soft_max_ext(g, kq, mask, scale, 0.0f);
         ggml_tensor * o = ggml_mul_mat(g, vt, kq); // [d, N, heads]
@@ -468,7 +471,7 @@ bool ggml_pipeline::forward(const float * hidden, int tokens, const float * posi
             const size_t fs = ggml_element_size(qfull);
             ggml_tensor * query = ggml_cont(g, ggml_view_3d(g, qfull, d, qh, T, 2 * d * fs, qfull->nb[1], 0));
             ggml_tensor * gate = ggml_cont(g, ggml_view_3d(g, qfull, d, qh, T, 2 * d * fs, qfull->nb[1], d * fs));
-            ggml_tensor * qr = rope(rms(query, s.q_norm));                                       // [d, qh, T]
+            ggml_tensor * qr = rope(rms(query, s.q_norm));                                          // [d, qh, T]
             ggml_tensor * kr = rope(rms(ggml_reshape_3d(g, p.mm(g, a.k, xn), d, kh, T), s.k_norm)); // [d, kh, T]
             ggml_tensor * v = ggml_reshape_3d(g, p.mm(g, a.v, xn), d, kh, T);
             const size_t row = s.keys->nb[1], plane = s.keys->nb[2];
@@ -485,7 +488,7 @@ bool ggml_pipeline::forward(const float * hidden, int tokens, const float * posi
             ggml_tensor * vt = ggml_cont(g, ggml_permute(g, vall, 1, 0, 2, 3)); // [Lk, d, kh]
             ggml_tensor * o = ggml_mul_mat(g, vt, kq);                          // [d, T, qh]
             ggml_mul_mat_set_prec(o, GGML_PREC_F32);
-            o = ggml_cont(g, ggml_permute(g, o, 0, 2, 1, 3)); // [d, qh, T]
+            o = ggml_cont(g, ggml_permute(g, o, 0, 2, 1, 3));             // [d, qh, T]
             ggml_tensor * pooled = ggml_mul(g, o, ggml_sigmoid(g, gate)); // MQ:689
             mixed = p.mm(g, a.out, ggml_reshape_2d(g, pooled, qh * d, T));
         } else { // Qwen3_5GatedDeltaNet (MQ:356-534)
@@ -540,7 +543,8 @@ bool ggml_pipeline::forward(const float * hidden, int tokens, const float * posi
     ggml_backend_tensor_set(input, hidden, 0, size_t(T) * D * sizeof(float));
     std::vector<int32_t> ids(size_t(4) * T);
     for (int t = 0; t < T; ++t) {
-        for (int axis = 0; axis < 3; ++axis) ids[size_t(axis) * T + t] = int32_t(std::lround(positions[size_t(axis) * T + t]));
+        for (int axis = 0; axis < 3; ++axis)
+            ids[size_t(axis) * T + t] = int32_t(std::lround(positions[size_t(axis) * T + t]));
         ids[size_t(3) * T + t] = ids[t]; // unused 4th section; t keeps rotate()'s default axis
     }
     ggml_backend_tensor_set(pos, ids.data(), 0, ids.size() * sizeof(int32_t));

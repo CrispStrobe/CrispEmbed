@@ -65,6 +65,33 @@ contribute to peak memory. Workspace history scaling does not qualify PDF
 export scaling. Selection geometry remains estimated within OCR regions rather
 than recovered typography. See [the protocol](docs/ocr-reviewed-pdf.md).
 
+## OvisOCR2 on GPU — `CRISPEMBED_QWEN35_OCR_GPU` (11 November 2026, Kaggle T4)
+
+Kaggle `ovisocr2-gpu-bench` at f30a567f, Tesla T4 (sm_75), F16 GGUF, the three reviewed realistic
+documents (1,753 frozen tokens), cap 1024
+([ovisocr2-gpu-bench.json](tests/results/qwen35-ocr/ovisocr2-gpu-bench.json)). Ground truth is the
+frozen CPU first-F16 receipt. With `CRISPEMBED_QWEN35_OCR_GPU_LOG=1` the scheduler places every node
+on CUDA0, with one split per graph: vision 732/732, prefill 1,324/1,324, decode 1,324/1,324. There
+are zero CPU fallbacks; 238 matrices are device-resident.
+
+| arm | inventory s (174 tok) | two-column s (697) | receipt s (882) | end-to-end tok/s | IDs/text/stop vs CPU | max confidence drift |
+|---|---|---|---|---|---|---|
+| GPU (T4) | **2.68** | **10.0** | **12.6** | 65-70 | exact 3/3 | 1.49e-3 |
+| GPU, second process (warm) | 2.78 | 10.2 | 12.9 | 62-68 | exact 3/3 | 1.49e-3 |
+| ggml-op graphs on CPU (same host, 4 threads) | 29.4 | 80.3 | 97.3 | 5.9-9.1 | exact 3/3 | 6.8e-5 |
+| CPU default (graph decoder, `native`) | 32.3 | | | 5.4 | exact | 6.6e-7 |
+| CPU before 11 November (`decoder_cpu`, first bench run) | 675 | | | 0.26 | exact | 5.7e-6 |
+
+The recognition call excludes the 2.3 s model init. Stage profile on T4 (`test-qwen35-profile`, cap 512):
+
+- vision 0.18-0.25 s and prefill 0.20-0.21 s per page;
+- decode **11.2 ms/token (89 tok/s)**;
+- host selection 2.5 ms/token, the softmax/argmax over 248,320 logits after their download.
+
+Per page the GPU is 12x the new CPU default on the same host and about 250x the old one. The GPU
+confidence drift (1.49e-3) is larger than on any CPU path, while IDs and text stay exact; see PLAN.
+The CUDA build had a cold ccache (0/193 hits, 1,473-1,563 s).
+
 ## OvisOCR2 / Qwen3.5-OCR CPU defaults after the 11 November flip
 
 The default is now the graph decoder with `native` matmul plus threaded vision attention
@@ -122,11 +149,7 @@ single-threaded scalar attention loop. The same decoder in MiniCPM-OCR already r
   ([bench-graph-v2](tests/results/minicpm-ocr/bench-graph-v2.json)); Unlimited-OCR-2 table
   page 174 s ([vision-speed](tests/results/unlimited-ocr2/vision-speed.json)). OvisOCR2 with
   the graph decoder (84-143 ms/token, 34-163 s/page) is now in the same range or faster.
-- GPU: the OvisOCR2/Qwen3.5-OCR context is CPU-only (`ggml_backend_cpu_init()` in
-  `src/qwen35_ocr.cpp`); the graph decoder uses nine CPU custom ops (`op_rms`, `op_rope`,
-  `op_gate`, `op_beta`, `op_decay`, `op_conv_silu`, `op_gated_norm`, `op_swiglu`,
-  `op_rowdot`) and the vision tower is hand-written C++. A CUDA build therefore runs Ovis
-  entirely on the CPU. See PLAN for the native-op port.
+- GPU: see the next section (`CRISPEMBED_QWEN35_OCR_GPU`, standard-ggml-op graphs).
 
 ## Explicit phone-photo API (9 November 2026, hosted synthetic CPU panel)
 

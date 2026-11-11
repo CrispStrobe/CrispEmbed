@@ -166,8 +166,8 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
     if (pipeline) {
         if (!pipeline->vision(image.patches.data(), int(image.patches.size() / 1536), image.grid, visual.merged))
             return c.fail("vision inference failed");
-    } else if (!qwen35_ocr::vision_cpu(c.vision, {}, image.patches.data(), int(image.patches.size() / 1536),
-                                       image.grid, c.threads, visual))
+    } else if (!qwen35_ocr::vision_cpu(c.vision, {}, image.patches.data(), int(image.patches.size() / 1536), image.grid,
+                                       c.threads, visual))
         return c.fail("vision inference failed");
     stage.next(profile_event::embedding, profile_phase::other);
     std::vector<float> hidden;
@@ -295,10 +295,10 @@ extern "C" qwen35_ocr_context * qwen35_ocr_init(const char * path, int threads) 
                 std::fprintf(stderr, "qwen35_ocr: CRISPEMBED_QWEN35_OCR_GPU pipeline init failed\n");
                 return nullptr;
             }
-        // Default-on since 2026-11-11 (owner-approved, IDs/text/EOS-exact contract on the
-        // eleven-case OvisOCR2 set); =0 restores decoder_cpu, the frozen reference path.
-        // Matmul precision: CRISPEMBED_QWEN35_GRAPH_MATMUL, "native" when unset (stored F16
-        // matrices, no F32 copies). Capacity = the 4096-token context limit of the greedy loop.
+            // Default-on since 2026-11-11 (owner-approved, IDs/text/EOS-exact contract on the
+            // eleven-case OvisOCR2 set); =0 restores decoder_cpu, the frozen reference path.
+            // Matmul precision: CRISPEMBED_QWEN35_GRAPH_MATMUL, "native" when unset (stored F16
+            // matrices, no F32 copies). Capacity = the 4096-token context limit of the greedy loop.
         } else if (!core_env::explicitly_off("CRISPEMBED_QWEN35_OCR_GRAPH_DECODER") &&
                    qwen35_ocr::graph_kv_decoder::enabled()) {
             c->graph_kv = std::make_unique<qwen35_ocr::graph_kv_decoder>();
