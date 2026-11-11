@@ -35,7 +35,13 @@ child. Both children are now launched from a fresh minimal interpreter, which
 also checks reaping; the 8 MiB separation and KiB→byte units are unchanged.
 Two MoEdern tests also had harness defects (a `__pycache__` write into the
 materialized tree, and the conftest module purge bypassing a patched
-`contract`); both are fixed without loosening.
+`contract`); both are fixed without loosening. The native-v2 schema purity
+control (no numpy imported) now runs in a fresh process like the other
+purity controls.
+
+Kaggle `crispembed-pytest-plain` at cd477abe: the full clone gives 9 failed /
+2110 passed / 232 skipped / 0 errors. All 9 failures are the replay-needed
+guards above. The `--depth 1` clone gives 1 failed / 2044 passed / 306 skipped.
 
 ## 10 November 2026 — v0.17.18 released; remote branch cleanup
 
