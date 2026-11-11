@@ -8,7 +8,7 @@ name: OvisOCR2 graph-decoder eleven-case quality
 on:
   workflow_dispatch:
   push:
-    branches: [ovis-graph-quality]
+    branches: [ovis-graph-quality, ovis-gpu-quality]
     paths: [.github/workflows/ovisocr2-graph-quality.yml]
 permissions:
   contents: read
@@ -24,6 +24,8 @@ jobs:
           - {arm: f32, graph: '1', matmul: f32}
           # Unset gates: the default since the 11 November flip (graph decoder, native).
           - {arm: default, graph: '', matmul: ''}
+          # Standard-ggml-op pipeline (CRISPEMBED_QWEN35_OCR_GPU) on the CPU backend of the runner.
+          - {arm: ggml-ops, graph: '', matmul: '', gpu: '1'}
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     env:
@@ -34,6 +36,7 @@ jobs:
       CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION: '0'
       CRISPEMBED_QWEN35_OCR_GRAPH_DECODER: ${{ matrix.graph }}
       CRISPEMBED_QWEN35_GRAPH_MATMUL: ${{ matrix.matmul }}
+      CRISPEMBED_QWEN35_OCR_GPU: ${{ matrix.gpu }}
       CRISPEMBED_QWEN35_WEIGHT_CACHE: '0'
       CRISPEMBED_QWEN35_PARALLEL_F16: '0'
       CRISPEMBED_QWEN35_PRECISE_RMS: '0'
