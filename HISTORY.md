@@ -1,3 +1,18 @@
+## 11 November 2026 — Kaggle ccache seed refreshes itself
+
+Build kernels now keep the `crispembed-ccache` seed warm without manual steps. At exit,
+`kaggle_harness` writes `ccache-export.json`. It also writes a size-capped `ccache.tar`
+when the seed is stale: hit rate below 0.95, more than 150 commits or 21 days old, or no
+seed info. `kpush.py <dir> --refresh-ccache` waits for the kernel, then
+`ccache_refresh.py --from-kernel` versions the private dataset only when a tar was
+exported. All CrispEmbed build kernels, except the hash-pinned frozen-guard replays,
+attach the seed. They load the harness from their clone through a `ce-ccache-bootstrap`
+block. Two consecutive T4 seed runs used the automated path
+(`tests/results/kaggle-ccache.json`). Run 1 replaced the legacy seed (74 MB). Run 2 was
+warm and left the dataset unchanged: CPU 210/210 hits (4.2 s), CUDA 331/332 (10.9 s),
+99.8% combined. The bootstrap block in the other kernels has not run on Kaggle yet.
+See [docs/kaggle-ccache.md](docs/kaggle-ccache.md).
+
 ## 11 November 2026 — OvisOCR2 graph decoder and threaded vision attention (opt-in); Kaggle ccache seed
 
 **OvisOCR2 speed.** Two default-off gates (PR #213):
