@@ -15,7 +15,7 @@ confidence guards are unchanged and remain testable with the gate set to 0.
 Unlike the frozen-guard check this does not stop at the first difference: every
 differing case is listed so a failed flip can be reported precisely.
 
-    HEAVY_OUT=... ovisocr2_graph_quality_check.py --matmul {native,f32}
+    HEAVY_OUT=... ovisocr2_graph_quality_check.py --matmul {native,f32,exact,default}
 Writes HEAVY_OUT/graph-quality-comparison.json; exits 1 if any case differs.
 """
 import argparse
@@ -88,7 +88,8 @@ def compare(current, frozen):
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
-    p.add_argument('--matmul', choices=('native', 'f32', 'exact'), required=True)
+    p.add_argument('--matmul', choices=('native', 'f32', 'exact', 'default'), required=True,
+                   help='arm label; default = gates unset (graph decoder, native since 11 November 2026)')
     args = p.parse_args()
     out = Path(os.environ['HEAVY_OUT'])
     current = json.loads((out / 'ovisocr2-quality.json').read_text())

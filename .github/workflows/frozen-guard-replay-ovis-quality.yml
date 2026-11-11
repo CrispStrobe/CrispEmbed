@@ -3,10 +3,12 @@ name: Frozen-guard replay - OvisOCR2 final-integrated quality
 # Same steps as ovisocr2-final-integrated-v2.yml (quality job); only the frozen
 # source-identity assert is replaced by a recorded identity
 # (tools/ci-heavy/frozen_guard_replay_ovis.py). Budgets and gates unchanged.
+# The frozen reference is the decoder_cpu path: since the 11 November default flip
+# CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 selects it explicitly.
 on:
   workflow_dispatch:
   push:
-    branches: [frozen-guard-replay]
+    branches: [frozen-guard-replay, ovis-graph-replay]
     paths: [.github/workflows/frozen-guard-replay-ovis-quality.yml]
 permissions:
   contents: read
@@ -26,6 +28,7 @@ jobs:
       MKL_NUM_THREADS: '2'
       OPENBLAS_NUM_THREADS: '2'
       CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION: ${{ matrix.gate }}
+      CRISPEMBED_QWEN35_OCR_GRAPH_DECODER: '0'
       CRISPEMBED_QWEN35_WEIGHT_CACHE: '0'
       CRISPEMBED_QWEN35_PARALLEL_F16: '0'
       CRISPEMBED_QWEN35_PRECISE_RMS: '0'

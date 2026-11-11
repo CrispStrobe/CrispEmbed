@@ -1,7 +1,7 @@
 name: OvisOCR2 graph-decoder eleven-case quality
 # The unchanged eleven-case first-F16 quality lane (same steps as
 # frozen-guard-replay-ovis-quality.yml) with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=1,
-# once per matmul mode. tools/ci-heavy/ovisocr2_graph_quality_check.py compares
+# once per matmul mode and once with the gates unset (the default). tools/ci-heavy/ovisocr2_graph_quality_check.py compares
 # IDs/text/EOS/stop/cap exactly with the frozen default-path receipt and records
 # the confidence drift. Inputs, model, prompts, caps and budgets are unchanged.
 # Trigger: push to the ovis-graph-quality branch.
@@ -19,7 +19,11 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        matmul: [native, f32]
+        include:
+          - {arm: native, graph: '1', matmul: native}
+          - {arm: f32, graph: '1', matmul: f32}
+          # Unset gates: the default since the 11 November flip (graph decoder, native).
+          - {arm: default, graph: '', matmul: ''}
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     env:
@@ -28,9 +32,8 @@ jobs:
       MKL_NUM_THREADS: '2'
       OPENBLAS_NUM_THREADS: '2'
       CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION: '0'
-      CRISPEMBED_QWEN35_OCR_GRAPH_DECODER: '1'
+      CRISPEMBED_QWEN35_OCR_GRAPH_DECODER: ${{ matrix.graph }}
       CRISPEMBED_QWEN35_GRAPH_MATMUL: ${{ matrix.matmul }}
-      CRISPEMBED_QWEN35_VISION_THREADED_ATTN: '1'
       CRISPEMBED_QWEN35_WEIGHT_CACHE: '0'
       CRISPEMBED_QWEN35_PARALLEL_F16: '0'
       CRISPEMBED_QWEN35_PRECISE_RMS: '0'
@@ -65,10 +68,10 @@ jobs:
       - run: python tools/ci-heavy/ovisocr2_quality_run.py --phase f16 --original-run 40054043629 --native-document-timeout 3600
       - name: Eleven cases IDs/text/EOS exact; confidence drift recorded
         if: always()
-        run: HEAVY_OUT="$RUNNER_TEMP/out" python tools/ci-heavy/ovisocr2_graph_quality_check.py --matmul "${{ matrix.matmul }}"
+        run: HEAVY_OUT="$RUNNER_TEMP/out" python tools/ci-heavy/ovisocr2_graph_quality_check.py --matmul "${{ matrix.arm }}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ovisocr2-graph-quality-${{ matrix.matmul }}-${{ github.run_id }}
+          name: ovisocr2-graph-quality-${{ matrix.arm }}-${{ github.run_id }}
           path: ${{ runner.temp }}/out/
           retention-days: 90

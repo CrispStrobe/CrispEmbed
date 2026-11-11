@@ -163,8 +163,8 @@ alias in both the CLI and the HTTP server; both gates below are still required.
 | `CRISPEMBED_MINICPM_OCR_VISION_FLASH` | on | Fused flash attention in the vision tower (performance only). `=0` opts out. |
 | `CRISPEMBED_MINICPM_OCR_GRAPH` | off | Older stateless graph-decoder candidate (`src/qwen35_graph_decoder.cpp`); disabled under `CRISPEMBED_QWEN35_IMATRIX`; exclusive with `CRISPEMBED_QWEN35_GRAPH_DECODER` (setting it to 1 turns the default graph decoder off unless that is forced with `=1`). |
 | `CRISPEMBED_QWEN35_GRAPH_DECODER` | on | qwen35 text decoder as one ggml graph with persistent KV and delta-net state (`src/qwen35_graph_kv_decoder.cpp`; MiniCPM is the only caller). `=0` restores the CPU reference decoder. |
-| `CRISPEMBED_QWEN35_GRAPH_MATMUL` | `f32` | Matmul precision of that graph decoder: `f32`, `exact` or `native` (`native` saves the F32 copies' RAM; also 5/5 exact). |
-| `CRISPEMBED_QWEN35_OCR_GRAPH_DECODER` | off | OvisOCR2/3 and the other `qwen35_ocr` engines: run prefill/decode on that graph decoder (t/h/w multimodal RoPE positions passed through) instead of `decoder_cpu`, which re-converts every F16 matrix each token. Precision follows `CRISPEMBED_QWEN35_GRAPH_MATMUL`; `f32` adds ~3 GB of F32 copies at init. Not used while a stage observer is attached. |
+| `CRISPEMBED_QWEN35_GRAPH_MATMUL` | `f32` (MiniCPM), `native` (`qwen35_ocr`) | Matmul precision of that graph decoder: `f32`, `exact` or `native` (`native` saves the F32 copies' RAM; also 5/5 exact). Unset or empty selects the engine default. |
+| `CRISPEMBED_QWEN35_OCR_GRAPH_DECODER` | on | OvisOCR2/3 and the other `qwen35_ocr` engines: run prefill/decode on that graph decoder (t/h/w multimodal RoPE positions passed through) instead of `decoder_cpu`, which re-converts every F16 matrix each token. Default on since 2026-11-11 (owner-approved): all eleven OvisOCR2 quality cases (1,841 tokens) have exact IDs/text/EOS with both `native` and `f32` matmul (max confidence drift 8.4e-6 / 7.3e-6; reference `tests/results/qwen35-ocr/ovisocr2-graph-quality.json`). Matmul precision follows `CRISPEMBED_QWEN35_GRAPH_MATMUL`, which defaults to `native` for this engine (no F32 copies); `f32` adds ~3 GB of F32 copies at init. `=0` restores `decoder_cpu`, the path of the frozen first-F16 reference. Not used while a stage observer is attached. |
 | `CRISPEMBED_MINICPM_OCR_VISION_F32` | on | Copy vision and projector matrices to F32 once at init (part of the ~3.3 GB higher peak RSS). `=0` opts out. |
 | `CRISPEMBED_MINICPM_OCR_LOW_MEMORY` | auto | Skip the default F32 copies (vision matrices and the `f32` graph-decoder matmul; F16 vision + `exact` matmul instead, token-exact on the measured panels) when available RAM < copies + 1 GiB, with one stderr notice. `=1` always, `=0` never checks. |
 | `CRISPEMBED_MINICPM_OCR_VISION_BATCH` | on | Run equally sized slices in one graph as independent sequences. `=0` opts out. |
@@ -1204,7 +1204,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_QWEN35_OCR_GRAPH_DECODER` | on | off | bool | default-off experimental / opt-in | `src/qwen35_ocr.cpp` | CRISPEMBED_QWEN35_GRAPH_MATMUL (default "f32": one F32 copy of every decoder matrix at init). Capacity = the 4096-token context limit of the greedy loop. |
+| `CRISPEMBED_QWEN35_OCR_GRAPH_DECODER` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/qwen35_ocr.cpp` | Matmul precision: CRISPEMBED_QWEN35_GRAPH_MATMUL, "native" when unset (stored F16 matrices, no F32 copies). Capacity = the 4096-token context limit of the gr... |
 | `CRISPEMBED_XIAOMI_OCR0_FRONTEND` | on | off | bool | default-off experimental / opt-in | `src/qwen35_ocr.cpp`, `src/qwen35_tokenizer.cpp` |  |
 | `CRISPEMBED_XIAOMI_OCR0_INFERENCE` | on | off | bool | default-off experimental / opt-in | `src/qwen35_ocr.cpp` |  |
 
