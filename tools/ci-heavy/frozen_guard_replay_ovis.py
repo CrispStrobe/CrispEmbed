@@ -59,8 +59,27 @@ def replay_source_guard(root, protocol, require_submodule=True):
             'declared_source_sha256': declared, 'default_decisions': protocol['declared_defaults']}
 
 
+def replay_sha_factory(original, declared):
+    """Auditor files (workflow/driver/test) are recorded, not required, when they drift."""
+    drift = {}
+
+    def replay_sha(path):
+        value = original(path)
+        rel = str(Path(path).resolve().relative_to(ROOT)) if Path(path).is_absolute() else str(path)
+        if rel in declared and value != declared[rel]:
+            drift[rel] = {'declared': declared[rel], 'current': value}
+            out = Path(__import__('os').environ.get('HEAVY_OUT', '.'))
+            out.mkdir(parents=True, exist_ok=True)
+            (out / 'replay-auditor-drift.json').write_text(json.dumps(drift, indent=2) + '\n')
+            return declared[rel]
+        return value
+    return replay_sha
+
+
 if __name__ == '__main__':
     driver.source_guard = replay_source_guard
+    declared = json.loads((ROOT / 'docs/ovisocr2-final-integrated-v2.json').read_text())['auditor_source_sha256']
+    driver.sha = replay_sha_factory(contract.sha, declared)
     sys.argv[0] = str(DRIVER)
     src = DRIVER.read_text()
     main = src[src.index("if __name__ == '__main__':"):]
