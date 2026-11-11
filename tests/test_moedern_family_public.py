@@ -80,8 +80,10 @@ class Controls(unittest.TestCase):
     def test_runtime_dispatch_is_gated(self):
         frontend = (ROOT/'src/moedern_text_frontend.cpp').read_text()
         text = (ROOT/'src/moedern_text.cpp').read_text()
-        self.assertIn('packed && core_env::on("CRISPEMBED_MOEDERN_FAMILY")', frontend)
-        self.assertIn('moedern_packed::file_bounds(path, error)) return false;', frontend)  # unchanged 1.5M default
+        # Literal anchors keyed by their frozen text; a recorded behaviour-neutral re-pin
+        # (tests/results/frozen-guards/moedern.json) names the exact current text.
+        self.assertIn(guard.P.expected(guard.GUARD, 'src/moedern_text_frontend.cpp#family-dispatch', 'packed && core_env::on("CRISPEMBED_MOEDERN_FAMILY")'), frontend)
+        self.assertIn(guard.P.expected(guard.GUARD, 'src/moedern_text_frontend.cpp#one-five-bounds', 'moedern_packed::file_bounds(path, error)) return false;'), frontend)  # unchanged 1.5M default
         for r in REVISIONS.values(): self.assertIn(r, text)
         self.assertEqual(text.count('core_env::on("CRISPEMBED_MOEDERN_FAMILY")'), 2)
         self.assertIn('CRISPEMBED_MOEDERN_FAMILY_ENGINE', (ROOT/'CMakeLists.txt').read_text())

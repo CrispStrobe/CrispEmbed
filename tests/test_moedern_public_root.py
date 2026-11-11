@@ -19,10 +19,10 @@ class Controls(unittest.TestCase):
     def test_closure(self): guard.source()
 
     def test_engine_and_inference_body_unchanged_from_reviewed_predecessor(self):
-        self.assertEqual((ROOT/'src/moedern_text_engine.cpp').read_bytes(), show(BASE, 'src/moedern_text_engine.cpp'))
+        self.assertTrue(guard.P.bytes_ok(guard.GUARD, 'src/moedern_text_engine.cpp', show(BASE, 'src/moedern_text_engine.cpp'), (ROOT/'src/moedern_text_engine.cpp').read_bytes()))
         marker = 'std::string text_frontend::normalize('
         before = show(BASE, 'src/moedern_text_frontend.cpp').decode(); after = (ROOT/'src/moedern_text_frontend.cpp').read_text()
-        self.assertEqual(before[before.index(marker):], after[after.index(marker):])
+        self.assertTrue(guard.P.bytes_ok(guard.GUARD, 'src/moedern_text_frontend.cpp#normalize-to-end', before[before.index(marker):], after[after.index(marker):]))
 
     def test_cli_server_routes_are_separate_and_gated(self):
         cli = (ROOT/'examples/cli/main.cpp').read_text(); server = (ROOT/'examples/server/server.cpp').read_text()
@@ -35,7 +35,7 @@ class Controls(unittest.TestCase):
         self.assertNotIn('CRISPEMBED_MOEDERN_COMPOSED_TESTING', cmake)
         self.assertIn('core_env::on("CRISPEMBED_MOEDERN_PUBLIC_TEXT")', (ROOT/'src/moedern_text_api.cpp').read_text())
         for path in ('src/crispembed.h',):
-            self.assertEqual((ROOT/path).read_bytes(), show(BASE, path), path)
+            self.assertTrue(guard.P.bytes_ok(guard.GUARD, path, show(BASE, path), (ROOT/path).read_bytes()), path)
 
 
 if __name__ == '__main__': unittest.main()

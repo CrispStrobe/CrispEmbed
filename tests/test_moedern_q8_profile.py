@@ -10,6 +10,9 @@ import unittest
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('q8recipe',ROOT/'tools/moedern-colbert/quantize_q8_critical.py')
 w=importlib.util.module_from_spec(spec);spec.loader.exec_module(w)
+G='moedern-q8-profile'
+ps=importlib.util.spec_from_file_location('moedern_guard_pins',ROOT/'tools/moedern_guard_pins.py')
+P=importlib.util.module_from_spec(ps);ps.loader.exec_module(P)
 
 
 class Controls(unittest.TestCase):
@@ -84,16 +87,17 @@ class Controls(unittest.TestCase):
 
     def test_exact_source_closure_and_preserved_old_paths(self):
         p=json.loads((ROOT/'docs/moedern-q8-f32-critical-v1.json').read_text())
-        for path,digest in p['owned_sha256'].items():self.assertEqual(w.sha(ROOT/path),digest,path)
+        # Exact, against the frozen value or its recorded behaviour-neutral re-pin.
+        for path,digest in p['owned_sha256'].items():self.assertEqual(w.sha(ROOT/path),P.expected(G,path,digest),path)
         for path,obj in p['protected_git_objects'].items():self.assertEqual(subprocess.check_output(['git','rev-parse',p['base']+':'+path],cwd=ROOT,text=True).strip(),obj,path)
         for path in ['src/moedern_text_engine.cpp','src/moedern_colbert.cpp','src/moedern_q4k_profile.h','src/moedern_packed_profile.h','tools/moedern-colbert/quantize_gguf.py','tools/moedern-colbert/quantize_q4k_padded.py']:
-            self.assertEqual((ROOT/path).read_bytes(),subprocess.check_output(['git','show',p['base']+':'+path],cwd=ROOT),path)
+            self.assertTrue(P.bytes_ok(G,path,subprocess.check_output(['git','show',p['base']+':'+path],cwd=ROOT),(ROOT/path).read_bytes()),path)
         before=subprocess.check_output(['git','show',p['base']+':src/moedern_family_engine.cpp'],cwd=ROOT,text=True)
         after=(ROOT/'src/moedern_family_engine.cpp').read_text()
         # Entire existing fast graph, including expert weighting/router math, is exact.
         a=before[before.index('floats encode_fast('):before.index('bool encode_tokens(')]
         b=after[after.index('floats encode_fast('):after.index('bool encode_tokens(')]
-        self.assertEqual(a,b)
+        self.assertTrue(P.bytes_ok(G,'src/moedern_family_engine.cpp#encode_fast',a,b))
         self.assertFalse(p['model_qualified']);self.assertFalse(p['dispatch_authorized'])
 
     def test_dedicated_1p5_route_and_no_legacy_gate_weakening(self):

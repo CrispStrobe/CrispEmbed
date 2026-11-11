@@ -11,7 +11,11 @@ import hashlib
 import importlib.util
 import json
 import subprocess
+import sys
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.append(str(ROOT/'tools'))
+import moedern_guard_pins as P
+GUARD = 'moedern-family-public'
 PATH = ROOT/'docs/moedern-family-public.json'
 def require(ok, why):
     if not ok: raise ValueError(why)
@@ -27,17 +31,21 @@ def source():
             and cfg['gate'] == 'CRISPEMBED_MOEDERN_FAMILY' and cfg['public_model_proof'] is False, 'family policy differs')
     base = cfg['base']
     changed = set(git('diff', '--name-only', base, 'HEAD').decode().split())
+    # Paths changed after the base by later reviewed work are an exact recorded set
+    # (tests/results/frozen-guards/moedern.json), not a wildcard.
+    changed -= P.path_set(GUARD, P.CHANGED)
     require(changed <= set(cfg['owned_sha256']) | {str(PATH.relative_to(ROOT))}, 'unpinned change: '+str(sorted(changed-set(cfg['owned_sha256']))))
     for name, value in cfg['owned_sha256'].items():
         data = (ROOT/name).read_bytes()
-        require(sha(data) == value and git('show', 'HEAD:'+name) == data, 'family source differs: '+name)
+        require(P.digest_ok(GUARD, name, value, P.sha(data)) and git('show', 'HEAD:'+name) == data, 'family source differs: '+name)
     for name in cfg['unchanged_from_base']:
-        require(git('rev-parse', 'HEAD:'+name) == git('rev-parse', base+':'+name), 'protected object differs: '+name)
+        frozen = git('rev-parse', base+':'+name).decode().strip()
+        require(P.object_ok(GUARD, name, frozen, git('rev-parse', 'HEAD:'+name).decode().strip()), 'protected object differs: '+name)
     root = json.loads((ROOT/'docs/moedern-public-root.json').read_text())
-    require(sha((ROOT/'docs/moedern-public-root.json').read_bytes()) == cfg['root_closure_sha256'], '1.5M root closure edited')
+    require(P.digest_ok(GUARD, 'docs/moedern-public-root.json', cfg['root_closure_sha256'], sha((ROOT/'docs/moedern-public-root.json').read_bytes())), '1.5M root closure edited')
     for name, value in root['owned_sha256'].items():
         if name in cfg['supersedes_root_pins'] or name in cfg['root_drift_before_base']: continue
-        require(sha((ROOT/name).read_bytes()) == value, '1.5M root pin differs: '+name)
+        require(P.digest_ok(GUARD, name, value, sha((ROOT/name).read_bytes())), '1.5M root pin differs: '+name)
     require(set(cfg['supersedes_root_pins']) <= set(cfg['owned_sha256']), 'superseded pin not re-pinned')
     require(packer_constants() == cfg['packer_one_five_constants'], '1.5M packer constants differ')
     require(not git('status', '--porcelain', '--', 'src', 'ggml', 'CMakeLists.txt', *cfg['owned_sha256']), 'dirty family source')

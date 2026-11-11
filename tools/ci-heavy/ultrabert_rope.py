@@ -45,9 +45,17 @@ def git(*args):
     return subprocess.check_output(['git', *args], cwd=ROOT, text=True, timeout=120).strip()
 
 
+def current_pins():
+    """Frozen PINS, or the newest reviewed re-pin recorded in the UltraBERT amendments."""
+    from ultrabert_source_pins import accepted, load
+    amendments = load(ROOT)
+    return {path: accepted(amendments[(path, digest)])[-1] if (path, digest) in amendments else digest
+            for path, digest in PINS.items()}
+
+
 def preflight():
     actual = {path: sha256(ROOT / path) for path in PINS}
-    if actual != PINS:
+    if actual != current_pins():
         raise ValueError('Frozen receipts or scoped native UltraBERT source changed')
     if (git('rev-parse', 'HEAD:ggml') != GGML or git('-C', str(ROOT / 'ggml'), 'rev-parse', 'HEAD') != GGML
             or git('-C', str(ROOT / 'ggml'), 'status', '--porcelain')

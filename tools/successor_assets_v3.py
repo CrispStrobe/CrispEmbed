@@ -36,6 +36,10 @@ V3_OWN = ('.github/workflows/successor-assets-v3.yml', '.github/workflows/succes
           '.github/workflows/successor-bindings-v3.yml', 'tools/ci-heavy/successor_bindings_v3.py')
 
 
+sys.path.insert(0, str(ROOT / 'tools'))
+import frozen_guard_amendments as _amend  # noqa: E402  (recorded re-pins, exact chain semantics)
+
+
 class ProtocolError(ValueError):
     pass
 
@@ -172,7 +176,7 @@ def check_pins(protocol, root=ROOT):
     pinned = protocol['read_only_blobs']
     missing = [p for p in pinned if not (root / p).is_file()]
     require(not missing, 'Pinned read-only files removed: ' + ', '.join(missing))
-    changed = [p for p, blob in pinned.items() if git_blob(root / p) != blob]
+    changed = [p for p, blob in pinned.items() if git_blob(root / p) != _amend.expected('successor-assets-v3', p, blob)]
     require(not changed, 'Pinned read-only files changed: ' + ', '.join(changed))
     for p in ('tools/successor_assets_v2.py', 'docs/successor-assets-v2.json', '.github/workflows/successor-assets.yml',
               'tools/ci-heavy/successor_review.py', 'tests/test_successor_wasm.cjs', 'tools/ci-heavy/successor_assets.py'):

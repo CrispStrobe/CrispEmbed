@@ -4,7 +4,11 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 ROOT=Path(__file__).resolve().parents[2]
+sys.path.append(str(ROOT/'tools'))
+import moedern_guard_pins as P
+GUARD='moedern-text-composed'
 BASE='3da7cf8e9a4fcd6342fc9a6ac00d07de42b7c324'
 PATH=ROOT/'docs/moedern-text-composed.json'
 MACRO='CRISPEMBED_MOEDERN_COMPOSED_TESTING'
@@ -74,9 +78,10 @@ def source(require_review=True):
  if require_review:pending_guard(cfg) # Deliberately BEFORE Git/dependency API/model access.
  require(set(cfg['source_sha256'])==LANE and set(cfg['protected_objects'])==OLD|old_src(),'source closure omitted')
  current={x.split('\t')[1] for x in git('ls-tree','-r','HEAD','--','src').splitlines()}
- new={p for p in LANE if p.startswith('src/')};require(current==old_src()|new,'unexpected runtime delta')
- for p,v in cfg['protected_objects'].items():require(git('rev-parse','HEAD:'+p)==v==git('rev-parse',BASE+':'+p),'historical source changed: '+p)
- for p,v in cfg['source_sha256'].items():require(sha((ROOT/p).read_bytes())==v==sha(subprocess.check_output(['git','show','HEAD:'+p],cwd=ROOT)),'source bytes differ: '+p)
+ new={p for p in LANE if p.startswith('src/')};require(current==old_src()|new|P.path_set(GUARD,P.ADDED),'unexpected runtime delta')
+ # Recorded behaviour-neutral re-pins (tests/results/frozen-guards/moedern.json); still exact.
+ for p,v in cfg['protected_objects'].items():require(v==git('rev-parse',BASE+':'+p) and P.object_ok(GUARD,p,v,git('rev-parse','HEAD:'+p)),'historical source changed: '+p)
+ for p,v in cfg['source_sha256'].items():require(P.digest_ok(GUARD,p,v,sha((ROOT/p).read_bytes())) and (ROOT/p).read_bytes()==subprocess.check_output(['git','show','HEAD:'+p],cwd=ROOT),'source bytes differ: '+p)
  require(not git('status','--porcelain','--',*sorted(LANE|OLD|old_src()|{'docs/moedern-text-composed.json'})),'dirty measured source')
  old=subprocess.check_output(['git','show',BASE+':src/moedern_colbert.cpp'],cwd=ROOT,text=True)
  require(tokens(adapt_engine(old))==tokens((ROOT/'src/moedern_text_engine.cpp').read_text()),'copied kernel arithmetic/declared adaptation differs')

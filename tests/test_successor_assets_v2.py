@@ -93,7 +93,9 @@ class SuccessorAssetsV2(unittest.TestCase):
             v2.check_matrix(p)
 
     def test_carried_evidence_complete(self):
-        self.assertEqual(v2.check_evidence(self.p), len(list((ROOT / 'tests/results/packaging').glob('*.json'))))
+        # Receipts recorded as later additions (tests/results/frozen-guards/successor.json) are not carried.
+        receipts = {str(p.relative_to(ROOT)) for p in (ROOT / 'tests/results/packaging').glob('*.json')}
+        self.assertEqual(v2.check_evidence(self.p), len(receipts - v2.later_additions()))
         p = copy.deepcopy(self.p); p['carried_evidence'].popitem()
         with self.assertRaises(v2.ProtocolError):
             v2.check_evidence(p)

@@ -17,6 +17,8 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'tools'))
+import frozen_guard_amendments as _amend  # noqa: E402  (recorded re-pins, exact chain semantics)
 PROTOCOL = ROOT / 'docs/successor-assets-v4.json'
 SCHEMA = 'crispembed-successor-assets-v4'
 _spec = importlib.util.spec_from_file_location('successor_assets_v3_frozen', ROOT / 'tools/successor_assets_v3.py')
@@ -116,7 +118,7 @@ def check_pins(protocol, root=ROOT):
     pinned = protocol['read_only_blobs']
     missing = [p for p in pinned if not (root / p).is_file()]
     require(not missing, 'Pinned read-only files removed: ' + ', '.join(missing))
-    changed = [p for p, b in pinned.items() if git_blob(root / p) != b]
+    changed = [p for p, b in pinned.items() if git_blob(root / p) != _amend.expected('successor-assets-v4', p, b)]
     require(not changed, 'Pinned read-only files changed: ' + ', '.join(changed))
     v3 = V3.load()
     require(set(v3['read_only_blobs']) <= set(pinned) and set(V3.V3_OWN) <= set(pinned), 'v4 must pin every v3 pin and every v3 file')

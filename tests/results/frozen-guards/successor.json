@@ -1,0 +1,383 @@
+{
+  "schema": "crispembed-frozen-guard-amendments/v1",
+  "scope": "Successor assets v2/v3/v4 read-only pins. Re-pins of file hashes, git objects and literal source text frozen by model-free guards. Frozen values, historical receipts and every quality/numerical result are unchanged; this file only lets each guard accept later reviewed, behaviour-neutral edits with the same exact-match semantics. No inference was repeated and no model, gold, budget or default changed. Changes to guarded default-path arithmetic or contracts are not recorded here; they need a fresh replay.",
+  "tool": "tools/frozen_guard_amendments.py",
+  "observed_at": "60d01d3c",
+  "initial_failure": {
+    "lane": "tools/kaggle/crispembed-pytest-plain (full clone) after PR #206 (ce9fa5ed)",
+    "error": "40 frozen-guard failures where later commits on main changed pinned files"
+  },
+  "amendments": [
+    {
+      "guard": "successor-assets-v2",
+      "test": "tests/test_successor_assets_v2.py",
+      "kind": "git-object",
+      "path": "tests/test_successor_apple_only.py",
+      "frozen": "0b082bafbc7301a174ef4d837486c9d2d5a4dc93",
+      "frozen_commit": "7d5611490fd6dfc3fb3349b361d52c3188ec8ed7",
+      "repins": [
+        {
+          "from": "0b082bafbc7301a174ef4d837486c9d2d5a4dc93",
+          "to": "2eb79c635801155e822ab3307b268b17cc0a9203",
+          "changed_by": [
+            "52b3cf35bd73dbe9a2c52425c543066aca1f7513 tests: compare Mac-only source controls against frozen commit blobs"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Pin of tests/test_successor_apple_only.py (test-only file, never part of any runtime closure, producer or consumer). 52b3cf35 compares the Mac-only source controls against the frozen reviewed commit 7d561149 instead of the moving working tree; it adds a FROZEN constant and changes two comparison targets. The guarded assertion (the diagnostic changed no production input) is unchanged and still holds. No production source, default path or evidence changes."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v3",
+      "test": "tests/test_successor_assets_v3.py",
+      "kind": "git-object",
+      "path": "tests/test_successor_apple_only.py",
+      "frozen": "0b082bafbc7301a174ef4d837486c9d2d5a4dc93",
+      "frozen_commit": "7d5611490fd6dfc3fb3349b361d52c3188ec8ed7",
+      "repins": [
+        {
+          "from": "0b082bafbc7301a174ef4d837486c9d2d5a4dc93",
+          "to": "2eb79c635801155e822ab3307b268b17cc0a9203",
+          "changed_by": [
+            "52b3cf35bd73dbe9a2c52425c543066aca1f7513 tests: compare Mac-only source controls against frozen commit blobs"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Pin of tests/test_successor_apple_only.py (test-only file, never part of any runtime closure, producer or consumer). 52b3cf35 compares the Mac-only source controls against the frozen reviewed commit 7d561149 instead of the moving working tree; it adds a FROZEN constant and changes two comparison targets. The guarded assertion (the diagnostic changed no production input) is unchanged and still holds. No production source, default path or evidence changes."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v4",
+      "test": "tests/test_successor_assets_v4.py",
+      "kind": "git-object",
+      "path": "tests/test_successor_apple_only.py",
+      "frozen": "0b082bafbc7301a174ef4d837486c9d2d5a4dc93",
+      "frozen_commit": "7d5611490fd6dfc3fb3349b361d52c3188ec8ed7",
+      "repins": [
+        {
+          "from": "0b082bafbc7301a174ef4d837486c9d2d5a4dc93",
+          "to": "2eb79c635801155e822ab3307b268b17cc0a9203",
+          "changed_by": [
+            "52b3cf35bd73dbe9a2c52425c543066aca1f7513 tests: compare Mac-only source controls against frozen commit blobs"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Pin of tests/test_successor_apple_only.py (test-only file, never part of any runtime closure, producer or consumer). 52b3cf35 compares the Mac-only source controls against the frozen reviewed commit 7d561149 instead of the moving working tree; it adds a FROZEN constant and changes two comparison targets. The guarded assertion (the diagnostic changed no production input) is unchanged and still holds. No production source, default path or evidence changes."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v3",
+      "test": "tests/test_successor_assets_v3.py",
+      "kind": "git-object",
+      "path": "tools/successor_assets_v2.py",
+      "frozen": "a603dcf32f3fee0f75401bfedd9cfaac4eae7fe3",
+      "frozen_commit": "60d01d3cf50a8da9f0c241864db95825eebf8c3b",
+      "repins": [
+        {
+          "from": "a603dcf32f3fee0f75401bfedd9cfaac4eae7fe3",
+          "to": "0845453a188ac38a4f1ab2decae34bde3938815a",
+          "changed_by": [
+            "f8549a81c8e2d28997134ac611e10379d4adc838 Re-pin stale frozen guards with recorded amendments; fix ci_process RSS test"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Guard-code change made by the frozen-guard re-pin PR itself: check_v1_unchanged/check_evidence now consult tools/frozen_guard_amendments.py (exact recorded blob re-pins and an exact-path list of later additions in tests/results/frozen-guards/successor.json). No producer/consumer matrix, closure, gate, tolerance or expectation changes; tool-only, no runtime source involved."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v4",
+      "test": "tests/test_successor_assets_v4.py",
+      "kind": "git-object",
+      "path": "tools/successor_assets_v2.py",
+      "frozen": "a603dcf32f3fee0f75401bfedd9cfaac4eae7fe3",
+      "frozen_commit": "60d01d3cf50a8da9f0c241864db95825eebf8c3b",
+      "repins": [
+        {
+          "from": "a603dcf32f3fee0f75401bfedd9cfaac4eae7fe3",
+          "to": "0845453a188ac38a4f1ab2decae34bde3938815a",
+          "changed_by": [
+            "f8549a81c8e2d28997134ac611e10379d4adc838 Re-pin stale frozen guards with recorded amendments; fix ci_process RSS test"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Guard-code change made by the frozen-guard re-pin PR itself: check_v1_unchanged/check_evidence now consult tools/frozen_guard_amendments.py (exact recorded blob re-pins and an exact-path list of later additions in tests/results/frozen-guards/successor.json). No producer/consumer matrix, closure, gate, tolerance or expectation changes; tool-only, no runtime source involved."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v4",
+      "test": "tests/test_successor_assets_v4.py",
+      "kind": "git-object",
+      "path": "tools/successor_assets_v3.py",
+      "frozen": "d135d092c8f60f4eff7bc68ba937d9e67b59f384",
+      "frozen_commit": "60d01d3cf50a8da9f0c241864db95825eebf8c3b",
+      "repins": [
+        {
+          "from": "d135d092c8f60f4eff7bc68ba937d9e67b59f384",
+          "to": "a5dec370f6f2e6493f7c1ce8e058c0f92951a4db",
+          "changed_by": [
+            "f8549a81c8e2d28997134ac611e10379d4adc838 Re-pin stale frozen guards with recorded amendments; fix ci_process RSS test"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Guard-code change made by the frozen-guard re-pin PR itself: check_pins compares against frozen_guard_amendments.expected() (frozen blob or newest recorded re-pin, exact match). No base, producer, gate, tolerance or expectation changes; tool-only."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v3",
+      "test": "tests/test_successor_assets_v3.py",
+      "kind": "git-object",
+      "path": "tests/test_successor_assets_v2.py",
+      "frozen": "6af39a788b19cfbd04b5c2cb686202e2ccc18203",
+      "frozen_commit": "60d01d3cf50a8da9f0c241864db95825eebf8c3b",
+      "repins": [
+        {
+          "from": "6af39a788b19cfbd04b5c2cb686202e2ccc18203",
+          "to": "478a554897479d4acaec011ccfb103fc0be13cfe",
+          "changed_by": [
+            "f8549a81c8e2d28997134ac611e10379d4adc838 Re-pin stale frozen guards with recorded amendments; fix ci_process RSS test"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Test change made by the frozen-guard re-pin PR itself: test_carried_evidence_complete expects the carried count to equal every packaging receipt minus the exact recorded later additions (previously every receipt). Same exact equality; test-only, no runtime source."
+        }
+      ]
+    },
+    {
+      "guard": "successor-assets-v4",
+      "test": "tests/test_successor_assets_v4.py",
+      "kind": "git-object",
+      "path": "tests/test_successor_assets_v2.py",
+      "frozen": "6af39a788b19cfbd04b5c2cb686202e2ccc18203",
+      "frozen_commit": "60d01d3cf50a8da9f0c241864db95825eebf8c3b",
+      "repins": [
+        {
+          "from": "6af39a788b19cfbd04b5c2cb686202e2ccc18203",
+          "to": "478a554897479d4acaec011ccfb103fc0be13cfe",
+          "changed_by": [
+            "f8549a81c8e2d28997134ac611e10379d4adc838 Re-pin stale frozen guards with recorded amendments; fix ci_process RSS test"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Test change made by the frozen-guard re-pin PR itself: test_carried_evidence_complete expects the carried count to equal every packaging receipt minus the exact recorded later additions (previously every receipt). Same exact equality; test-only, no runtime source."
+        }
+      ]
+    }
+  ],
+  "later_additions": [
+    {
+      "guard": "successor-assets-v2",
+      "path": ".github/workflows/successor-assets-consumers-v3.yml",
+      "added_by": "0a387aa6dc41ebd73ef594d06a6a0fd511bba415 Successor assets v3: explicit WASM-only platform tolerance for the quantized MiniLM",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": ".github/workflows/successor-assets-consumers-v4.yml",
+      "added_by": "290a055ed767f89e092fffa79512f4f59d4e8b65 Successor assets v4: measured macOS-arm64 desktop tolerance (unattributed), all else strict",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": ".github/workflows/successor-assets-v3.yml",
+      "added_by": "0a387aa6dc41ebd73ef594d06a6a0fd511bba415 Successor assets v3: explicit WASM-only platform tolerance for the quantized MiniLM",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": ".github/workflows/successor-assets-v4.yml",
+      "added_by": "290a055ed767f89e092fffa79512f4f59d4e8b65 Successor assets v4: measured macOS-arm64 desktop tolerance (unattributed), all else strict",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": ".github/workflows/successor-bindings-v3.yml",
+      "added_by": "25b46f1502801c8f74772b5ddbead0522fe829eb Successor assets v3: derived bindings consumer (caller allowlist only); record first run",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": ".github/workflows/successor-bindings-v4.yml",
+      "added_by": "290a055ed767f89e092fffa79512f4f59d4e8b65 Successor assets v4: measured macOS-arm64 desktop tolerance (unattributed), all else strict",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "docs/successor-assets-v3.md",
+      "added_by": "0a387aa6dc41ebd73ef594d06a6a0fd511bba415 Successor assets v3: explicit WASM-only platform tolerance for the quantized MiniLM",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "docs/successor-assets-v4.md",
+      "added_by": "290a055ed767f89e092fffa79512f4f59d4e8b65 Successor assets v4: measured macOS-arm64 desktop tolerance (unattributed), all else strict",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/macos-desktop-drift-attribution-v1.json",
+      "added_by": "267c83cc6dffd1a5f078c055ff71f4b63035f6b1 macOS arm64 desktop drift attributed to the Metal backend (run 41638730050)",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/pubdev-preflight-contract-v1.json",
+      "added_by": "6621caede3dc3287bdbc3bffe6b3a1691c84cc4e release: stage pub.dev preflight without enabling publication",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/pubdev-preflight-contract-v2.json",
+      "added_by": "6621caede3dc3287bdbc3bffe6b3a1691c84cc4e release: stage pub.dev preflight without enabling publication",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/successor-assets-v3-run.json",
+      "added_by": "67a14d4b09a2fc7b86f016251ca7b197b31c1514 Successor assets v3 runs: WASM consumer passes under tolerance; strict native cross-platform review fails",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/successor-assets-v4-run.json",
+      "added_by": "97678581735033d98513d90eb50ce38b29e8ccd8 Successor assets v4 run 41587063385 green: receipt, PLAN, HISTORY, current state",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-f32-operators-initial-build.json",
+      "added_by": "daf6a20177ab04402164f7de0d491998d104291b Restore frozen WASM processor selection and preserve initial linker rejection",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-f32-operators-initial-prepared.json",
+      "added_by": "daf6a20177ab04402164f7de0d491998d104291b Restore frozen WASM processor selection and preserve initial linker rejection",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-f32-operators-profile-guard.json",
+      "added_by": "2f864d4beb2f5213a323a21557415dc5e6fab9ad Match frozen WASM PIC profile and retain rejected compiler evidence",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-f32-operators-profile-prepared.json",
+      "added_by": "2f864d4beb2f5213a323a21557415dc5e6fab9ad Match frozen WASM PIC profile and retain rejected compiler evidence",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-f32-operators-profile-rejection.json",
+      "added_by": "2f864d4beb2f5213a323a21557415dc5e6fab9ad Match frozen WASM PIC profile and retain rejected compiler evidence",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-f32-operators-v1.json",
+      "added_by": "ce96da635fabede525daa534625a5723f3c7ebb5 Record successful bounded WASM operators and claim natural workspace causal audit",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-layer0-attention-v1.json",
+      "added_by": "ed5fc7e98e54e1b51b55df50ef41648fbe5cb204 WASM layer0 attention replay: receipt, PLAN lane 2, HISTORY",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-layer3-f32-reanalysis-report.json",
+      "added_by": "2301d3bb5bedf33884eca293ed258652d28197f8 Refresh executable portfolio handoff and preserve reviewed precision and form results",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-layer3-f32-reanalysis-review.json",
+      "added_by": "2301d3bb5bedf33884eca293ed258652d28197f8 Refresh executable portfolio handoff and preserve reviewed precision and form results",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-layer3-ffn-matmul-v1.json",
+      "added_by": "31c223891a92355ef6daf4b750b27b7d6473b5f4 WASM layer3 FFN mul_mat replay: receipt, PLAN lane 2, HISTORY",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-live-norm-initial-build-review.json",
+      "added_by": "15adb672f71f8470a23db1284dafa102515adae9 Wrap portfolio handoff and separate active tasks from archived execution history",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-live-norm-v2-component-admission.json",
+      "added_by": "4fb2131de70c25782af5c7a69495b1ac0be7395b WASM live norm v2/v3: receipts, PLAN lane 2 state, HISTORY",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-live-norm-v3-observer.json",
+      "added_by": "4fb2131de70c25782af5c7a69495b1ac0be7395b WASM live norm v2/v3: receipts, PLAN lane 2 state, HISTORY",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-live-norm-v4-attribution.json",
+      "added_by": "0e23f3cd6eae8f60de3e5468737f4392a4fb9cd0 WASM live norm v4: attribution receipt, PLAN lane 2 and HISTORY",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-native-order-norm-full-review.json",
+      "added_by": "7f0ed1462099796b225fde30aac7df320dcf017d Preserve complete rejected WASM norm A/B and scope live operand attribution",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/results/packaging/wasm-q8k-cross-v1.json",
+      "added_by": "7f2c0cb2e441aa93093777b4f1bc9c67391c483d docs: preserve retained Q8_K workspace causal replay",
+      "reason": "New packaging receipt added after the v2 pin by a later lane; it is new evidence, not a change to any carried v1 receipt, and is not carried by v2."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/test_successor_assets_v3.py",
+      "added_by": "0a387aa6dc41ebd73ef594d06a6a0fd511bba415 Successor assets v3: explicit WASM-only platform tolerance for the quantized MiniLM",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/test_successor_assets_v4.py",
+      "added_by": "290a055ed767f89e092fffa79512f4f59d4e8b65 Successor assets v4: measured macOS-arm64 desktop tolerance (unattributed), all else strict",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tests/test_successor_wasm_v3.cjs",
+      "added_by": "0a387aa6dc41ebd73ef594d06a6a0fd511bba415 Successor assets v3: explicit WASM-only platform tolerance for the quantized MiniLM",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tools/ci-heavy/successor_bindings_v3.py",
+      "added_by": "25b46f1502801c8f74772b5ddbead0522fe829eb Successor assets v3: derived bindings consumer (caller allowlist only); record first run",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tools/ci-heavy/successor_bindings_v4.py",
+      "added_by": "290a055ed767f89e092fffa79512f4f59d4e8b65 Successor assets v4: measured macOS-arm64 desktop tolerance (unattributed), all else strict",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tools/ci-heavy/successor_review_v3.py",
+      "added_by": "0a387aa6dc41ebd73ef594d06a6a0fd511bba415 Successor assets v3: explicit WASM-only platform tolerance for the quantized MiniLM",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    },
+    {
+      "guard": "successor-assets-v2",
+      "path": "tools/ci-heavy/successor_review_v4.py",
+      "added_by": "290a055ed767f89e092fffa79512f4f59d4e8b65 Successor assets v4: measured macOS-arm64 desktop tolerance (unattributed), all else strict",
+      "reason": "File of a later successor-assets lane (v3/v4) matched by the v1 globs; added after the v2 pin, changes no v1 file and no runtime closure."
+    }
+  ],
+  "later_additions_rule": "successor_assets_v2 check_v1_unchanged/check_evidence: a v1-glob file absent from v1_read_only_blobs is accepted only if its exact path is listed here; every pinned file must still exist and match its (amended) blob exactly; a listed receipt is not carried evidence."
+}

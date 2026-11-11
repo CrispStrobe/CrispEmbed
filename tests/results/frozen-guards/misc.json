@@ -1,0 +1,107 @@
+{
+  "schema": "crispembed-frozen-guard-amendments/v1",
+  "scope": "Re-pins of file hashes, git objects and literal source text frozen by model-free guards. Frozen values, historical receipts and every quality/numerical result are unchanged; this file only lets each guard accept later reviewed, behaviour-neutral edits with the same exact-match semantics. No inference was repeated and no model, gold, budget or default changed. Changes to guarded default-path arithmetic or contracts are not recorded here; they need a fresh replay.",
+  "tool": "tools/frozen_guard_amendments.py",
+  "observed_at": "60d01d3c",
+  "initial_failure": {
+    "lane": "tools/kaggle/crispembed-pytest-plain (full clone) after PR #206 (ce9fa5ed)",
+    "error": "40 frozen-guard failures where later commits on main changed pinned files"
+  },
+  "amendments": [
+    {
+      "guard": "lighton3-pixtral-eps-ab",
+      "test": "tests/test_lighton3_pixtral_eps_ab.py::Controls::test_owned_sources_are_exact_and_only_native_norm_files_differ",
+      "kind": "sha256",
+      "path": "src/lightonocr.cpp",
+      "frozen": "9f983c3884abda3976fdca13ec601f8b9f18458db5c37bbd7b9d506b01a7c97e",
+      "frozen_commit": "5a22375144f8688200299aa0fa5ebe3425d06840",
+      "repins": [
+        {
+          "from": "9f983c3884abda3976fdca13ec601f8b9f18458db5c37bbd7b9d506b01a7c97e",
+          "to": "f1099cac986d24b4befc390dd89ee3b97f2562285071cdb5b907b27d5f5435b1",
+          "changed_by": [
+            "3e82a12058cfca8869f4aa8ead250acf2b708934 Gate CPU F32 KV cache and add source-closed retained LightOn first-case A/B"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 3e82a120 adds lightonocr3::kv_f32_enabled(profile3, cpu, core_env::on(\"CRISPEMBED_LIGHTONOCR3_KV_F32\")) and selects GGML_TYPE_F32 for the KV cache only when that default-off gate is set; otherwise GGML_TYPE_F16 exactly as frozen. Remaining edits are comments and stderr log text (cache type name). Default-path arithmetic unchanged."
+        }
+      ]
+    },
+    {
+      "guard": "lighton3-pixtral-eps-ab",
+      "test": "tests/test_lighton3_pixtral_eps_ab.py::Controls::test_owned_sources_are_exact_and_only_native_norm_files_differ",
+      "kind": "sha256",
+      "path": "src/lightonocr3_profile.h",
+      "frozen": "24b96bf95ada840cf97476f170f03dda84131f1e3c366353997e2049dc35d1ef",
+      "frozen_commit": "5a22375144f8688200299aa0fa5ebe3425d06840",
+      "repins": [
+        {
+          "from": "24b96bf95ada840cf97476f170f03dda84131f1e3c366353997e2049dc35d1ef",
+          "to": "e5fe7d98faf15c471c12083f225484d7560248ba53f6fd5e5350da522c68395e",
+          "changed_by": [
+            "3e82a12058cfca8869f4aa8ead250acf2b708934 Gate CPU F32 KV cache and add source-closed retained LightOn first-case A/B"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 3e82a120 only adds the new inline kv_f32_enabled() predicate (default-off core_env::on gate); existing vision_rms_epsilon and other functions are byte-identical."
+        }
+      ]
+    },
+    {
+      "guard": "lighton3-pixtral-eps-ab",
+      "test": "tests/test_lighton3_pixtral_eps_ab.py::Controls::test_owned_sources_are_exact_and_only_native_norm_files_differ",
+      "kind": "sha256",
+      "path": "tests/test_lightonocr3_contract.cpp",
+      "frozen": "741a023a727b0be055b4ae04f8ea6df35c0a6e4c08375e6432445cc233d63136",
+      "frozen_commit": "5a22375144f8688200299aa0fa5ebe3425d06840",
+      "repins": [
+        {
+          "from": "741a023a727b0be055b4ae04f8ea6df35c0a6e4c08375e6432445cc233d63136",
+          "to": "0e60180a5698e1f8ed90ad5999cef74cdd7aefb6c2d49509a8e041c55937318a",
+          "changed_by": [
+            "3e82a12058cfca8869f4aa8ead250acf2b708934 Gate CPU F32 KV cache and add source-closed retained LightOn first-case A/B"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 3e82a120 only appends test cases for the new gated KV-F32 predicate (no deleted lines); test-only, no runtime code."
+        }
+      ]
+    },
+    {
+      "guard": "josev2b-packed-runtime",
+      "test": "tests/test_josev2b_packed_runtime.py::Controls::test_old_loader_tensor_counts_stay_distinct",
+      "kind": "text",
+      "path": "src/josev2b_text_frontend.cpp",
+      "frozen": "josev2b_packed::file_bounds(path, error)",
+      "frozen_commit": "8a10185dbbd08732990c098d0e3e98f546f6ce01",
+      "repins": [
+        {
+          "from": "josev2b_packed::file_bounds(path, error)",
+          "to": "josev2b_packed::file_bounds(path, error, core_env::on(\"CRISPEMBED_JOSEV_QUANT\"))",
+          "changed_by": [
+            "95db89b9b2d3b76a3dfeb11c5e1dd8679c3e4fcd Prepare separately gated mixed Q4_K Josev packed profile and protected backbone mapper"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 95db89b9 passes a third argument allow_quantized=core_env::on(\"CRISPEMBED_JOSEV_QUANT\") to file_bounds/metadata_valid; the parameter defaults to false, so with the gate unset (default) the call is identical to the frozen two-argument form. The 'gguf_get_n_tensors(g.get()) == 0' metadata-only check is unchanged."
+        }
+      ]
+    },
+    {
+      "guard": "ocr-rgb-input",
+      "test": "tests/test_ocr_rgb_input.py::Controls::test_exact_production_prefix_and_macro_overrides_reject",
+      "kind": "sha256",
+      "path": "src/image_preprocess.cpp#production-prefix",
+      "frozen": "55c7878f690fe51fb544bddd76110c90cdb8ea49f8fa8593ff7813ce208d47e7",
+      "frozen_commit": "813e1ec9b813ebf0dc72c8faf5841659a024fbce",
+      "repins": [
+        {
+          "from": "55c7878f690fe51fb544bddd76110c90cdb8ea49f8fa8593ff7813ce208d47e7",
+          "to": "ee2212087ee88408c08ca44b534ab62e8b3ec3c781d37a2f84fb91b61faeea3a",
+          "changed_by": [
+            "0f409622123a091c6a18e377244da90b35aff89b Use Windows Unicode image paths with production translation unit and historical controls"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Commit 0f409622 adds '#define STBI_WINDOWS_UTF8' inside '#ifdef _WIN32' (with comments) before the STB include, so Windows uses wide-char file APIs for UTF-8 paths. On the audited Linux x86-64 profile the preprocessed prefix is identical (no STBI_ macro, still exactly one STB_IMAGE_IMPLEMENTATION, not static); decoder arithmetic unaffected on any platform. The strict macro rule still applies to every other prefix."
+        }
+      ]
+    }
+  ]
+}

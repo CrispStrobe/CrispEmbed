@@ -1,0 +1,56 @@
+{
+  "schema": "crispembed-frozen-guard-amendments/v1",
+  "scope": "Re-pins of file hashes, git objects and literal source text frozen by model-free guards. Frozen values, historical receipts and every quality/numerical result are unchanged; this file only lets each guard accept later reviewed, behaviour-neutral edits with the same exact-match semantics. No inference was repeated and no model, gold, budget or default changed. Changes to guarded default-path arithmetic or contracts are not recorded here; they need a fresh replay.",
+  "tool": "tools/frozen_guard_amendments.py",
+  "observed_at": "60d01d3c",
+  "initial_failure": {
+    "lane": "tools/kaggle/crispembed-pytest-plain (full clone) after PR #206 (ce9fa5ed)",
+    "error": "40 frozen-guard failures where later commits on main changed pinned files"
+  },
+  "amendments": [
+    {
+      "guard": "ultrabert-quant-profile",
+      "test": "tests/test_ultrabert_quant_profile.py::Controls::test_exact_already_proven_tokenizer_sources",
+      "kind": "git-object",
+      "path": "src/tokenizer.h",
+      "frozen": "4dd7867f12ea228b3e047dce8d0175ffefc86005",
+      "frozen_commit": "02402a0d086a7335280d907392c4f4667e27ce28",
+      "frozen_note": "blob of the proven bytes after the inline 59ecb0b9 AMENDMENTS (equals the parent of 0fb9e738)",
+      "repins": [
+        {
+          "from": "4dd7867f12ea228b3e047dce8d0175ffefc86005",
+          "to": "3b191267898695d91e23623b56d022e08c12ce99",
+          "changed_by": [
+            "0fb9e738722c97fb5183373008f61f60bda62961 Encoders: truncate to the position table; RoBERTa cross-encoder pair layout"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "0fb9e738 adds position_table_token_limit() (free function), set_max_length()/set_pair_double_sep() setters and a pair_double_sep_ member defaulting to false. UltraBERT's own BPETokenizer (ultrabert_profile::load_tokenizer/tokenize) never calls either setter or encode_pair; the callers are crispembed.cpp contexts only. UltraBERT encode() bytes and default path unchanged."
+        }
+      ]
+    },
+    {
+      "guard": "ultrabert-quant-profile",
+      "test": "tests/test_ultrabert_quant_profile.py::Controls::test_exact_already_proven_tokenizer_sources",
+      "kind": "git-object",
+      "path": "src/tokenizer_bpe.cpp",
+      "frozen": "d388ff6e4d8e80e05b84b05b14fbf305521158fd",
+      "frozen_commit": "02402a0d086a7335280d907392c4f4667e27ce28",
+      "frozen_note": "blob of the proven bytes after the inline 59ecb0b9 AMENDMENTS (equals the parent of 0fb9e738)",
+      "repins": [
+        {
+          "from": "d388ff6e4d8e80e05b84b05b14fbf305521158fd",
+          "to": "740254f631aa13938eae8e50cb4e66e10fb7e342",
+          "changed_by": [
+            "0fb9e738722c97fb5183373008f61f60bda62961 Encoders: truncate to the position table; RoBERTa cross-encoder pair layout"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "0fb9e738 changes only BPETokenizer::encode_pair (budget and </s></s> layout keyed on pair_double_sep_, default false so budget stays max_length_-3 and type ids stay 1 for segment b). UltraBERT never calls encode_pair and encode() is byte-identical. The earlier 59ecb0b9 core_env substitution remains recorded inline as before."
+        }
+      ]
+    }
+  ],
+  "family": "UltraBERT and WASM",
+  "enforced_by": {
+    "ultrabert-quant-profile": "tests/test_ultrabert_quant_profile.py REPINS (parent blob must equal proven+inline amendments; checkout must equal the re-pin blob)"
+  }
+}

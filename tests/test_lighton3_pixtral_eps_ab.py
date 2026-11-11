@@ -12,12 +12,17 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools/ci-heavy'))
 spec=importlib.util.spec_from_file_location('eps_ab',ROOT/'tools/ci-heavy/lighton3_pixtral_eps_ab.py')
 worker=importlib.util.module_from_spec(spec);spec.loader.exec_module(worker)
+sys.path.insert(0,str(ROOT/'tools'))
+import frozen_guard_amendments as amendments
 
 
 class Controls(unittest.TestCase):
     def test_owned_sources_are_exact_and_only_native_norm_files_differ(self):
         p=json.loads(worker.PROTOCOL.read_text())
         for name,digest in p['owned_sha256'].items():
+            # Frozen digest, or the newest reviewed behaviour-neutral re-pin
+            # (tests/results/frozen-guards/misc.json); still an exact match.
+            digest=amendments.expected('lighton3-pixtral-eps-ab',name,digest)
             self.assertEqual(hashlib.sha256((ROOT/name).read_bytes()).hexdigest(),digest,name)
         self.assertEqual(p['first_phase_native_requests'],12)
         self.assertEqual(p['remaining_phase_new_native_requests'],60)

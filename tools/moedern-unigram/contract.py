@@ -4,8 +4,12 @@ import json
 from pathlib import Path
 import struct
 import subprocess
+import sys
 
 ROOT=Path(__file__).resolve().parents[2]
+sys.path.append(str(ROOT/'tools'))
+import moedern_guard_pins as P
+GUARD='moedern-unigram'
 BASE='cec6b7f0dd3ea78bfefb8587b3638c8ab23f462f'
 REV='9d360b8b88ae11bea5784bf9012ff509fdd5c2da'
 REPORT='b50ca1369f454d61b8c95583d8eb77a847c47ede29e52ed66b575784f4e4660f'
@@ -38,9 +42,10 @@ def source():
  cfg=json.loads(PATH.read_text());require(cfg['base']==BASE and cfg['schema']=='crispembed-moedern-unigram-v1' and cfg['default_enabled']is False and cfg['model_weights']is False and cfg['source_payloads']==PAYLOADS,'source policy differs')
  require(set(cfg['source_sha256'])==LANE and set(cfg['protected_objects'])==OLD|old_src(),'source closure omitted')
  current={x.split('\t')[1] for x in git('ls-tree','-r','HEAD','--','src').splitlines()}
- require(current==old_src()|{'src/moedern_text_frontend.cpp','src/moedern_text_frontend.h'},'unexpected native source delta')
- for p,v in cfg['protected_objects'].items():require(git('rev-parse','HEAD:'+p)==v==git('rev-parse',BASE+':'+p),'historical source changed: '+p)
- for p,v in cfg['source_sha256'].items():require(sha((ROOT/p).read_bytes())==v==sha(subprocess.check_output(['git','show','HEAD:'+p],cwd=ROOT)),'source bytes differ: '+p)
+ require(current==old_src()|{'src/moedern_text_frontend.cpp','src/moedern_text_frontend.h'}|P.path_set(GUARD,P.ADDED),'unexpected native source delta')
+ # Recorded behaviour-neutral re-pins (tests/results/frozen-guards/moedern.json); still exact.
+ for p,v in cfg['protected_objects'].items():require(v==git('rev-parse',BASE+':'+p) and P.object_ok(GUARD,p,v,git('rev-parse','HEAD:'+p)),'historical source changed: '+p)
+ for p,v in cfg['source_sha256'].items():require(P.digest_ok(GUARD,p,v,sha((ROOT/p).read_bytes())) and (ROOT/p).read_bytes()==subprocess.check_output(['git','show','HEAD:'+p],cwd=ROOT),'source bytes differ: '+p)
  require(not git('status','--porcelain','--',*sorted(LANE|OLD|old_src()|{'docs/moedern-unigram-frontend.json'})),'dirty measured source')
  return cfg
 

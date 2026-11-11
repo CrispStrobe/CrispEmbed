@@ -38,6 +38,19 @@ class ProtocolError(ValueError):
     pass
 
 
+sys.path.insert(0, str(ROOT / 'tools'))
+import frozen_guard_amendments as _amend  # noqa: E402  (recorded re-pins, exact chain semantics)
+GUARD = 'successor-assets-v2'
+
+
+def later_additions(guard=GUARD):
+    """Exact paths recorded as added after the pin (tests/results/frozen-guards/successor.json)."""
+    path = ROOT / _amend.AMENDMENTS / 'successor.json'
+    if not path.exists():
+        return set()
+    return {a['path'] for a in json.loads(path.read_text())['later_additions'] if a['guard'] == guard}
+
+
 def git_blob(path):
     data = Path(path).read_bytes()
     return hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()
@@ -82,10 +95,12 @@ def check_declared(protocol, final=None):
 
 def check_v1_unchanged(protocol, root=ROOT):
     pinned = protocol.get('v1_read_only_blobs', {})
-    current = v1_files(root)
+    found = set(v1_files(root))
+    # Recorded later additions (exact paths) are not v1 files; anything else unpinned fails.
+    current = sorted(found - later_additions())
     if sorted(pinned) != current:
         raise ProtocolError('v1 file set changed: ' + ', '.join(sorted(set(pinned) ^ set(current))))
-    changed = [p for p in current if git_blob(root / p) != pinned[p]]
+    changed = [p for p in current if git_blob(root / p) != _amend.expected(GUARD, p, pinned[p])]
     if changed:
         raise ProtocolError('v1 files changed: ' + ', '.join(changed))
     return len(current)
@@ -135,7 +150,7 @@ def check_matrix(protocol, root=ROOT):
 
 def check_evidence(protocol, root=ROOT):
     evidence = protocol['carried_evidence']
-    receipts = {str(p.relative_to(root)) for p in (root / 'tests/results/packaging').glob('*.json')}
+    receipts = {str(p.relative_to(root)) for p in (root / 'tests/results/packaging').glob('*.json')} - later_additions()
     if set(evidence) != receipts:
         raise ProtocolError('carried evidence must list every packaging receipt')
     for path, item in evidence.items():

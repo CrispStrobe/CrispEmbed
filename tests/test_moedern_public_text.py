@@ -72,14 +72,14 @@ class Controls(unittest.TestCase):
    p=Path(folder)/'bad.gguf';p.write_bytes(b'GGUF'+struct.pack('<IQQ',3,33,0))
    with self.assertRaisesRegex(ValueError,'count'):pack.parse(p)
  def test_old_engine_and_inference_math_body_unchanged(self):
-  self.assertEqual((ROOT/'src/moedern_text_engine.cpp').read_bytes(),subprocess.check_output(['git','show',guard.BASE+':src/moedern_text_engine.cpp'],cwd=ROOT))
+  self.assertTrue(guard.P.bytes_ok(guard.GUARD,'src/moedern_text_engine.cpp',subprocess.check_output(['git','show',guard.BASE+':src/moedern_text_engine.cpp'],cwd=ROOT),(ROOT/'src/moedern_text_engine.cpp').read_bytes()))
   before=subprocess.check_output(['git','show',guard.BASE+':src/moedern_text_frontend.cpp'],cwd=ROOT).decode();after=(ROOT/'src/moedern_text_frontend.cpp').read_text();marker='std::string text_frontend::normalize('
-  self.assertEqual(before[before.index(marker):],after[after.index(marker):])
+  self.assertTrue(guard.P.bytes_ok(guard.GUARD,'src/moedern_text_frontend.cpp#normalize-to-end',before[before.index(marker):],after[after.index(marker):]))
   for path in ['CMakeLists.txt','src/crispembed.h','examples/cli/main.cpp','examples/server/server.cpp','python/crispembed/__init__.py','crispembed/src/lib.rs','flutter/crispembed/lib/crispembed.dart']:
-   self.assertEqual((ROOT/path).read_bytes(),subprocess.check_output(['git','show',guard.BASE+':'+path],cwd=ROOT))
+   self.assertTrue(guard.P.bytes_ok(guard.GUARD,path,subprocess.check_output(['git','show',guard.BASE+':'+path],cwd=ROOT),(ROOT/path).read_bytes()),path)
  def test_source_declaration_and_honest_unfinished_status(self):
   cfg=json.loads(guard.PATH.read_text());self.assertFalse(cfg['compiled']);self.assertFalse(cfg['public_model_proof']);self.assertEqual(set(cfg['owned_sha256']),guard.NEW|guard.CHANGED)
-  for name,value in cfg['owned_sha256'].items():self.assertEqual(guard.sha((ROOT/name).read_bytes()),value,name)
+  for name,value in cfg['owned_sha256'].items():self.assertEqual(guard.sha((ROOT/name).read_bytes()),guard.P.expected(guard.GUARD,name,value),name)
   self.assertEqual(set(cfg['protected_objects']),(guard.old_src()-guard.CHANGED)|guard.ROOTS)
   source=(ROOT/'src/moedern_text_api.cpp').read_text();self.assertIn('core_env::on("CRISPEMBED_MOEDERN_PUBLIC_TEXT")',source);self.assertIn('ctx->clear();',source)
   self.assertNotIn('moedern_text_testing',(ROOT/'src/moedern_text_api.h').read_text())
