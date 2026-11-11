@@ -93,6 +93,26 @@ def replay_operator_barrier(out):
     return proof
 
 
+def local_operator_barrier(directory):
+    """Kaggle fallback: same operator_receipt checks on receipts produced earlier in the same session.
+
+    Deviation from the hosted lane (recorded in the proof): there is no GitHub run, so the
+    same-run job/artifact service identity cannot be checked; the receipts come from the
+    operator controls executed in this session on the same checkout before model access.
+    """
+    def barrier(out):
+        directory_path = Path(directory)
+        files = {p.name: p.read_bytes() for p in directory_path.iterdir() if p.is_file()}
+        declaration = json.loads((ROOT / 'docs/wasm-q8-rounding-candidate.json').read_text())
+        proof = contract.operator_receipt(json.loads(files['source.json']), json.loads(files['controls.json']),
+                                          os.environ['GITHUB_SHA'], declaration)
+        proof.update(barrier='local-session-receipts (no GitHub run; same-run artifact service identity not checked)',
+                     members={n: {'bytes': len(b), 'sha256': contract.digest(b)} for n, b in files.items()})
+        driver.save(out / 'operator-proof.json', proof)
+        return proof
+    return barrier
+
+
 def install():
     head = current_ggml()
     contract.CANDIDATE_GGML = head        # operator_receipt compares source.ggml to this
@@ -150,6 +170,10 @@ def replay_compare(out, frozen_path):
 
 if __name__ == '__main__':
     install()
+    if '--operator-receipts' in sys.argv:
+        i = sys.argv.index('--operator-receipts')
+        driver.operator_barrier = local_operator_barrier(sys.argv[i + 1])
+        del sys.argv[i:i + 2]
     if sys.argv[1:2] == ['replay-compare']:
         import argparse
         p = argparse.ArgumentParser(); p.add_argument('phase'); p.add_argument('--output', type=Path, required=True)
