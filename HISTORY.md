@@ -1,3 +1,35 @@
+## 11 November 2026 — OvisOCR2 / Qwen3.5-OCR: graph decoder and threaded vision attention on by default
+
+Owner-approved flips of the two PR #213 gates.
+
+- **`CRISPEMBED_QWEN35_VISION_THREADED_ATTN` is default on** (`=0` restores the scalar loop). It was
+  bit-identical to the scalar loop on the three OvisOCR2 documents at 2 and 4 threads (#213). It is
+  also bit-identical on LightOnOCR-3-0.8B (`tests/results/qwen35-ocr/lighton08-graph-ab.json`).
+- **`CRISPEMBED_QWEN35_OCR_GRAPH_DECODER` is default on with `native` matmul** (`=0` restores
+  `decoder_cpu`). `CRISPEMBED_QWEN35_GRAPH_MATMUL` now defaults to `native` for `qwen35_ocr`. MiniCPM
+  keeps `f32`. The full eleven-case OvisOCR2 quality set ran on the hosted lane
+  `ovisocr2-graph-quality.yml`, with unchanged inputs, model, prompts, caps and budgets. All eleven cases
+  (1,841 tokens) have exact IDs, raw/processed text, EOS, stop and cap in each arm:
+  - `native`: run [43077711176](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43077711176),
+    maximum selected-confidence drift 8.434e-6.
+  - `f32`: the same run, maximum drift 7.271e-6.
+  - Gates unset at the flip commit: run [43082880625](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43082880625).
+    Its confidences are bit-identical to the explicit `native` arm.
+
+  The paired screens, scores and C ABI text are also unchanged. `native` was chosen because both modes
+  are exact and `native` needs no F32 copies (about 3 GB less RAM).
+- **Qwen3.5-OCR (LightOnOCR-3-0.8B) shares the path.** Kaggle `qwen35-ocr-graph-ab` reconstructed the
+  qualified F16 GGUF byte-identically and ran the three realistic documents (cap 512, 1,233 tokens per
+  arm). Against the old default in the same kernel, IDs, text and stop are exact in both modes. The
+  maximum confidence drift is 5.6e-6 (`native`) and 7.5e-6 (`f32`). Decode is 3,665-4,111 → 112-116
+  ms/token, and the inventory page drops from 955 s to 47 s.
+- **New recorded reference.** The graph-path confidences are frozen as an additive reference in
+  `tests/results/qwen35-ocr/ovisocr2-graph-quality.json`. It holds the amendment record (old and new
+  reference, commits, reason, run and artifact receipts), checked by `tests/test_ovisocr2_graph_quality.py`.
+  The first-F16 receipt stays the frozen `decoder_cpu` reference and is not modified. The frozen-guard
+  replays now set `CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0`. The source re-pins for this tree are backed by
+  fresh replays of that lane (receipt `tests/results/frozen-guards/replays/ovisocr2-graph-default.json`).
+
 ## 11 November 2026 — OvisOCR2 graph decoder and threaded vision attention (opt-in); Kaggle ccache seed
 
 **OvisOCR2 speed.** Two default-off gates (PR #213):

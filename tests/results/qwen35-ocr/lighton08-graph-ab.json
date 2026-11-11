@@ -1,0 +1,346 @@
+{
+ "schema": "crispembed-qwen35-ocr-graph-ab-v1",
+ "model": "lightonai/LightOnOCR-3-0.8B (Qwen3.5-OCR, qwen35_ocr format 1) F16 GGUF reconstructed with the pinned frozen converter; byte-identical to tests/results/qwen35-ocr/receipt.json",
+ "kernel": "tools/kaggle/qwen35-ocr-graph-ab (Kaggle CPU, 4 threads, portable build)",
+ "source_commit": "93546aa0a2a2b15c7adfbe334796e72d3d262599",
+ "cap": 512,
+ "cpu": "CPU(s):                                  4\nModel name:                              Intel(R) Xeon(R) CPU @ 2.20GHz\n",
+ "gguf": {
+  "sha256": "41409fc871e76a6bc13e9988d0efd2706e06d0c7c77e2ffb8746c28348ba7bd4",
+  "bytes": 1918139328,
+  "convert_s": 75.7,
+  "receipt_identical": true
+ },
+ "inputs_png_sha256": {
+  "inventory-table": "1e7a3073bd158dc87613463e45eafc52cec0c48f3655a6937a583767e26f4b4f",
+  "two-column-page": "36a6ca6306a9f74ceee06b1a5268c8eae354b53212417d3eac0f2b70b2bada21",
+  "historical-receipt": "7aa766b0a5bd886e769cb1559d16a71312e9f9929669ac5d847c241bec10564b"
+ },
+ "ground_truth": "arm base = the old default in the same kernel (graph decoder off, threaded vision off)",
+ "result": "graph decoder (native and f32): IDs, text and stop exact on all three documents (1,233 tokens per arm; two-column-page reaches the 512 cap in every arm); max confidence drift 5.6e-6 (native) / 7.5e-6 (f32). Threaded vision attention: bit-identical (confidences exact).",
+ "runs": [
+  {
+   "rc": 0,
+   "wall_s": 47.27,
+   "stop": "1",
+   "profile": {
+    "vision": {
+     "calls": 1,
+     "s": 9.184177715
+    },
+    "prefill": {
+     "calls": 1,
+     "s": 6.78459934
+    },
+    "cached_decode": {
+     "calls": 247,
+     "s": 27.652477656
+    }
+   },
+   "decode_ms_per_token": 112.0,
+   "arm": "graph-nat",
+   "case": "inventory-table",
+   "tokens": 248,
+   "vs_base": {
+    "both_ran": true,
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_exact": true,
+    "first_id_divergence": null,
+    "conf_exact": false,
+    "conf_max_abs": 1.7279999999786355e-06
+   },
+   "ids_sha256": "2337ab20b60af91c04a8daa037b01955366f98d5a2be6edd5b3da98a26b13287",
+   "text_sha256": "996768f6aeff43da152529483f2fe5cb0f05e2acfc0cf965705dad04c66ae0fa",
+   "mean_confidence": 0.9982621424274193
+  },
+  {
+   "rc": 0,
+   "wall_s": 88.24,
+   "stop": "2",
+   "profile": {
+    "vision": {
+     "calls": 1,
+     "s": 14.454400084
+    },
+    "prefill": {
+     "calls": 1,
+     "s": 10.467864099
+    },
+    "cached_decode": {
+     "calls": 511,
+     "s": 59.065358543
+    }
+   },
+   "decode_ms_per_token": 115.6,
+   "arm": "graph-nat",
+   "case": "two-column-page",
+   "tokens": 512,
+   "vs_base": {
+    "both_ran": true,
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_exact": true,
+    "first_id_divergence": null,
+    "conf_exact": false,
+    "conf_max_abs": 5.185999999990365e-06
+   },
+   "ids_sha256": "76f46f31acc3c6813aec11624da2927871dddf65c82ff195c6a8ddae57d92e77",
+   "text_sha256": "3a05568b425f6345f33aff05e64df4d3148129e91f8d2eead17904f71c28cb37",
+   "mean_confidence": 0.8832668677304687
+  },
+  {
+   "rc": 0,
+   "wall_s": 84.14,
+   "stop": "1",
+   "profile": {
+    "vision": {
+     "calls": 1,
+     "s": 13.107961806
+    },
+    "prefill": {
+     "calls": 1,
+     "s": 8.091343796
+    },
+    "cached_decode": {
+     "calls": 472,
+     "s": 53.117867944
+    }
+   },
+   "decode_ms_per_token": 112.5,
+   "arm": "graph-nat",
+   "case": "historical-receipt",
+   "tokens": 473,
+   "vs_base": {
+    "both_ran": true,
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_exact": true,
+    "first_id_divergence": null,
+    "conf_exact": false,
+    "conf_max_abs": 5.603000000076186e-06
+   },
+   "ids_sha256": "9a3e4a3563313642a9df3eca14a13b815971db6110e0833704ccfdf77cbdf3ec",
+   "text_sha256": "9b73826d8b9d922ad26a89701839e636f3406f58242f8b3fbc1136d0029b05da",
+   "mean_confidence": 0.9374240174122622
+  },
+  {
+   "rc": 0,
+   "wall_s": 68.83,
+   "stop": "1",
+   "profile": {
+    "vision": {
+     "calls": 1,
+     "s": 8.811160249
+    },
+    "prefill": {
+     "calls": 1,
+     "s": 2.870843399
+    },
+    "cached_decode": {
+     "calls": 247,
+     "s": 48.130388809
+    }
+   },
+   "decode_ms_per_token": 194.9,
+   "arm": "graph-f32",
+   "case": "inventory-table",
+   "tokens": 248,
+   "vs_base": {
+    "both_ran": true,
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_exact": true,
+    "first_id_divergence": null,
+    "conf_exact": false,
+    "conf_max_abs": 1.7279999999786355e-06
+   },
+   "ids_sha256": "2337ab20b60af91c04a8daa037b01955366f98d5a2be6edd5b3da98a26b13287",
+   "text_sha256": "996768f6aeff43da152529483f2fe5cb0f05e2acfc0cf965705dad04c66ae0fa",
+   "mean_confidence": 0.9982621397741935
+  },
+  {
+   "rc": 0,
+   "wall_s": 125.37,
+   "stop": "2",
+   "profile": {
+    "vision": {
+     "calls": 1,
+     "s": 13.252661786
+    },
+    "prefill": {
+     "calls": 1,
+     "s": 3.733985311
+    },
+    "cached_decode": {
+     "calls": 511,
+     "s": 100.574487856
+    }
+   },
+   "decode_ms_per_token": 196.8,
+   "arm": "graph-f32",
+   "case": "two-column-page",
+   "tokens": 512,
+   "vs_base": {
+    "both_ran": true,
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_exact": true,
+    "first_id_divergence": null,
+    "conf_exact": false,
+    "conf_max_abs": 5.275000000026786e-06
+   },
+   "ids_sha256": "76f46f31acc3c6813aec11624da2927871dddf65c82ff195c6a8ddae57d92e77",
+   "text_sha256": "3a05568b425f6345f33aff05e64df4d3148129e91f8d2eead17904f71c28cb37",
+   "mean_confidence": 0.8832668724574219
+  },
+  {
+   "rc": 0,
+   "wall_s": 116.05,
+   "stop": "1",
+   "profile": {
+    "vision": {
+     "calls": 1,
+     "s": 12.665532975
+    },
+    "prefill": {
+     "calls": 1,
+     "s": 3.522085978
+    },
+    "cached_decode": {
+     "calls": 472,
+     "s": 91.936906825
+    }
+   },
+   "decode_ms_per_token": 194.8,
+   "arm": "graph-f32",
+   "case": "historical-receipt",
+   "tokens": 473,
+   "vs_base": {
+    "both_ran": true,
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_exact": true,
+    "first_id_divergence": null,
+    "conf_exact": false,
+    "conf_max_abs": 7.450999999991659e-06
+   },
+   "ids_sha256": "9a3e4a3563313642a9df3eca14a13b815971db6110e0833704ccfdf77cbdf3ec",
+   "text_sha256": "9b73826d8b9d922ad26a89701839e636f3406f58242f8b3fbc1136d0029b05da",
+   "mean_confidence": 0.937424030090909
+  },
+  {
+   "rc": 0,
+   "wall_s": 955.18,
+   "stop": "1",
+   "profile": {
+    "vision": {
+     "calls": 1,
+     "s": 32.619770809
+    },
+    "prefill": {
+     "calls": 1,
+     "s": 9.609207407
+    },
+    "cached_decode": {
+     "calls": 247,
+     "s": 909.306639241
+    }
+   },
+   "decode_ms_per_token": 3681.4,
+   "arm": "base",
+   "case": "inventory-table",
+   "tokens": 248,
+   "ids_sha256": "2337ab20b60af91c04a8daa037b01955366f98d5a2be6edd5b3da98a26b13287",
+   "text_sha256": "996768f6aeff43da152529483f2fe5cb0f05e2acfc0cf965705dad04c66ae0fa",
+   "mean_confidence": 0.9982621335282258
+  },
+  {
+   "rc": 0,
+   "wall_s": 2178.89,
+   "stop": "2",
+   "profile": {
+    "vision": {
+     "calls": 1,
+     "s": 61.00074772
+    },
+    "prefill": {
+     "calls": 1,
+     "s": 11.113854289
+    },
+    "cached_decode": {
+     "calls": 511,
+     "s": 2100.625114595
+    }
+   },
+   "decode_ms_per_token": 4110.8,
+   "arm": "base",
+   "case": "two-column-page",
+   "tokens": 512,
+   "ids_sha256": "76f46f31acc3c6813aec11624da2927871dddf65c82ff195c6a8ddae57d92e77",
+   "text_sha256": "3a05568b425f6345f33aff05e64df4d3148129e91f8d2eead17904f71c28cb37",
+   "mean_confidence": 0.8832668438904296
+  },
+  {
+   "rc": 0,
+   "wall_s": 1804.17,
+   "stop": "1",
+   "profile": {
+    "vision": {
+     "calls": 1,
+     "s": 56.616615685
+    },
+    "prefill": {
+     "calls": 1,
+     "s": 11.028287376
+    },
+    "cached_decode": {
+     "calls": 472,
+     "s": 1730.050327487
+    }
+   },
+   "decode_ms_per_token": 3665.4,
+   "arm": "base",
+   "case": "historical-receipt",
+   "tokens": 473,
+   "ids_sha256": "9a3e4a3563313642a9df3eca14a13b815971db6110e0833704ccfdf77cbdf3ec",
+   "text_sha256": "9b73826d8b9d922ad26a89701839e636f3406f58242f8b3fbc1136d0029b05da",
+   "mean_confidence": 0.9374240287610993
+  },
+  {
+   "rc": 0,
+   "wall_s": 935.87,
+   "stop": "1",
+   "profile": {
+    "vision": {
+     "calls": 1,
+     "s": 8.774406509
+    },
+    "prefill": {
+     "calls": 1,
+     "s": 9.584985465
+    },
+    "cached_decode": {
+     "calls": 247,
+     "s": 913.912970593
+    }
+   },
+   "decode_ms_per_token": 3700.1,
+   "arm": "vt",
+   "case": "inventory-table",
+   "tokens": 248,
+   "vs_base": {
+    "both_ran": true,
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_exact": true,
+    "first_id_divergence": null,
+    "conf_exact": true,
+    "conf_max_abs": 0.0
+   },
+   "ids_sha256": "2337ab20b60af91c04a8daa037b01955366f98d5a2be6edd5b3da98a26b13287",
+   "text_sha256": "996768f6aeff43da152529483f2fe5cb0f05e2acfc0cf965705dad04c66ae0fa",
+   "mean_confidence": 0.9982621335282258
+  }
+ ]
+}

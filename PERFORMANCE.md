@@ -65,6 +65,30 @@ contribute to peak memory. Workspace history scaling does not qualify PDF
 export scaling. Selection geometry remains estimated within OCR regions rather
 than recovered typography. See [the protocol](docs/ocr-reviewed-pdf.md).
 
+## OvisOCR2 / Qwen3.5-OCR CPU defaults after the 11 November flip
+
+The default is now the graph decoder with `native` matmul plus threaded vision attention
+(`=0` on either gate restores the old path). The measured speed is the `native` row of the table
+below: 34 s / 88-92 s / 101-108 s per page on Kaggle 4 vCPU, versus 730 s / >2,600 s / >3,600 s before.
+
+| check (hosted ubuntu-24.04, 2 threads) | cases | tokens | IDs/text/EOS | max confidence drift vs frozen `decoder_cpu` |
+|---|---|---|---|---|
+| graph `native` (default) | 11/11 | 1,841 | exact | 8.434e-6 |
+| graph `f32` | 11/11 | 1,841 | exact | 7.271e-6 |
+
+On hosted runners the eleven-case lane takes 125.7 s for the historical receipt (graph `native`).
+The frozen first-F16 run took 1,376 s.
+
+LightOnOCR-3-0.8B (Qwen3.5-OCR, same engine), Kaggle CPU, 4 threads, cap 512
+([lighton08-graph-ab.json](tests/results/qwen35-ocr/lighton08-graph-ab.json)):
+
+| arm | inventory s (248 tok) | two-column s (512, cap) | receipt s (473) | decode ms/token | vs old default |
+|---|---|---|---|---|---|
+| old default (`=0` both) | 955 | 2,179 | 1,804 | 3,665-4,111 | ground truth |
+| threaded vision only | 936 | | | 3,700 | bit-identical |
+| graph `f32` | 69 | 125 | 116 | 195-197 | IDs/text/stop exact; drift ≤ 7.5e-6 |
+| graph `native` (default) | **47** | **88** | **84** | **112-116** | IDs/text/stop exact; drift ≤ 5.6e-6 |
+
 ## OvisOCR2 CPU speed gates — 11 November 2026 (Kaggle CPU, Xeon 2.2 GHz x4, F16 GGUF)
 
 Kaggle `crispembed-ovisocr2-speed-ab` (version 4, receipt
