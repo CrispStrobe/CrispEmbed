@@ -1,0 +1,89 @@
+{
+  "schema": "crispembed-frozen-guard-replay-receipt/v1",
+  "lane": "OvisOCR2 final-integrated v2 (frozen 14-arm + eleven-case first-F16 quality) after the default-off graph-decoder / threaded-vision gates",
+  "source_commit": "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647",
+  "runtime_tree": {
+    "src": "e764865ded9739982eb89f5cd85c1f5412f5fcf4",
+    "CMakeLists.txt": "98386958d6ca7fc72715b36556b32a617d1fbcaf"
+  },
+  "replays": {
+    "frozen": {
+      "where": "Kaggle CPU kernel tools/kaggle/crispembed-frozen-guard-replay-ovis (rendered as -g0/-g1)",
+      "gh_artifacts": "recorded gh api responses served by the replay-only shim; 0 misses",
+      "results": {
+        "gate0": {
+          "status": "completed",
+          "scope_passed": true,
+          "failures": [],
+          "arms_passed": 14,
+          "arms": 14,
+          "retained_ordinary_vectors_bit_exact": {
+            "f32-delta": true,
+            "f32-vision": true,
+            "f32-decoder-prepared": true,
+            "f32-decoder-native-vision": true,
+            "f32-decoder-native-positions": true,
+            "f32-decoder-native-frontend": true,
+            "f16-delta": true,
+            "f16-vision": true,
+            "f16-decoder-prepared": true,
+            "f16-decoder-native-vision": true,
+            "f16-decoder-native-positions": true,
+            "f16-decoder-native-frontend": true
+          },
+          "owning_cases": {
+            "f32": {
+              "original_ids_text_eos_exact": true
+            },
+            "f16": {
+              "original_ids_text_eos_exact": true
+            }
+          },
+          "frozen_result_sha256": "335050ddd551219e2e7e0225938df7fc842788aabe2cedee1431455ef5a9542b"
+        },
+        "gate1": {
+          "status": "completed",
+          "scope_passed": true,
+          "failures": [],
+          "arms_passed": 14,
+          "arms": 14,
+          "retained_ordinary_vectors_bit_exact": {},
+          "owning_cases": {
+            "f32": {
+              "original_ids_text_eos_exact": true
+            },
+            "f16": {
+              "original_ids_text_eos_exact": true
+            }
+          },
+          "frozen_result_sha256": "dbc945e4947aea6489d90012a2ea9a53775354f06f98dddd668fc09aca62832e"
+        }
+      }
+    },
+    "quality": {
+      "where": "GitHub-hosted ubuntu-24.04, .github/workflows/frozen-guard-replay-ovis-quality.yml",
+      "run": 42991713530,
+      "source": "f2aaada2",
+      "results": {
+        "gate0": {
+          "scope_passed": true,
+          "token_count": 1841,
+          "cases": 11,
+          "cases_confidences_exact": 11,
+          "max_selected_confidence_abs_drift": 0.0,
+          "cabi_text_and_confidence_contract_passed": true,
+          "quality_comparison_sha256": "5df74ccef3e8f7a6670d2f94cf864ce150ef2124d933d3766afbba68cea92ec9"
+        },
+        "gate1": {
+          "scope_passed": true,
+          "token_count": 1841,
+          "cases": 11,
+          "cases_confidences_exact": 5,
+          "max_selected_confidence_abs_drift": 2.4796000000049112e-05,
+          "cabi_text_and_confidence_contract_passed": true,
+          "quality_comparison_sha256": "b0faab136418067037c512ea8977371dc1c23c9abb415db69121433c76fdc3d6"
+        }
+      }
+    }
+  }
+}

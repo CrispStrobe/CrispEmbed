@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cmath>
 #include <string>
+#include <thread>
+#include <vector>
 
 namespace qwen35_ocr {
 static bool shape(ggml_tensor * t, int columns, int rows) {
@@ -164,9 +166,50 @@ static bool geometry(const vision_config & c, int tokens, const std::vector<int>
     }
     return total == tokens;
 }
+// Default-off CRISPEMBED_QWEN35_VISION_THREADED_ATTN: the same per-(token, head) arithmetic
+// as the scalar loop below (identical dot/max/exp/sum order; each output element still
+// accumulates (score / sum) * value over keys in key order), split over `threads` workers
+// by token, with the value accumulation reordered to key-outer/element-inner so it streams
+// contiguous value rows. Every output float is computed by the same operation sequence,
+// so the result is bit-identical; only scheduling and memory order change.
+static void attention_rows(const std::vector<float> & q, const std::vector<float> & k,
+                           const std::vector<float> & values, const vision_config & c, const std::vector<int> & offsets,
+                           int t0, int t1, std::vector<float> & pooled) {
+    const int width = c.width, d = width / c.heads;
+    const float scale = 1.0f / std::sqrt(float(d));
+    std::vector<float> scores, accumulator(static_cast<size_t>(d));
+    size_t frame = 1;
+    for (int t = t0; t < t1; ++t) {
+        while (frame + 1 < offsets.size() && t >= offsets[frame]) ++frame;
+        const int first = offsets[frame - 1], end = offsets[frame];
+        scores.resize(size_t(end - first));
+        for (int head = 0; head < c.heads; ++head) {
+            const size_t base = size_t(t) * width + head * d;
+            float maximum = -INFINITY;
+            for (int s = first; s < end; ++s) {
+                float dot = 0;
+                for (int i = 0; i < d; ++i) dot += q[base + i] * k[size_t(s) * width + head * d + i];
+                scores[s - first] = dot * scale;
+                maximum = std::max(maximum, scores[s - first]);
+            }
+            float sum = 0;
+            for (float & score : scores) {
+                score = std::exp(score - maximum);
+                sum += score;
+            }
+            std::fill(accumulator.begin(), accumulator.end(), 0.0f);
+            for (int s = first; s < end; ++s) {
+                const float probability = scores[s - first] / sum;
+                const float * row = values.data() + size_t(s) * width + head * d;
+                for (int i = 0; i < d; ++i) accumulator[i] += probability * row[i];
+            }
+            std::copy(accumulator.begin(), accumulator.end(), pooled.begin() + base);
+        }
+    }
+}
 static std::vector<float> attention(const std::vector<float> & qkv, const vision_config & c, int tokens,
                                     const std::vector<int> & offsets, const std::vector<float> & cosine,
-                                    const std::vector<float> & sine) {
+                                    const std::vector<float> & sine, int threads = 1) {
     const int width = c.width, d = width / c.heads, half = d / 2;
     std::vector<float> q(size_t(tokens) * width), k(q.size()), values(q.size()), pooled(q.size());
     for (int t = 0; t < tokens; ++t)
@@ -187,6 +230,18 @@ static std::vector<float> attention(const std::vector<float> & qkv, const vision
         }
     const float scale = 1.0f / std::sqrt(float(d));
     const bool precise = core_env::on("CRISPEMBED_QWEN35_VISION_PRECISE_ATTN");
+    if (!precise && core_env::on("CRISPEMBED_QWEN35_VISION_THREADED_ATTN")) {
+        const int workers = std::max(1, std::min(threads, tokens));
+        std::vector<std::thread> pool;
+        for (int w = 1; w < workers; ++w)
+            pool.emplace_back([&, w] {
+                attention_rows(q, k, values, c, offsets, int(int64_t(tokens) * w / workers),
+                               int(int64_t(tokens) * (w + 1) / workers), pooled);
+            });
+        attention_rows(q, k, values, c, offsets, 0, int(int64_t(tokens) / workers), pooled);
+        for (auto & job : pool) job.join();
+        return pooled;
+    }
     for (size_t frame = 1; frame < offsets.size(); ++frame) {
         const int first = offsets[frame - 1], end = offsets[frame];
         std::vector<float> scores(size_t(end - first));
@@ -287,7 +342,7 @@ bool vision_cpu(const vision_weights & w, const vision_config & c, const float *
             probe.norm1 = normalized;
             probe.qkv = projected;
         }
-        const auto pooled = attention(projected, c, tokens, offsets, output.rotary_cos, output.rotary_sin);
+        const auto pooled = attention(projected, c, tokens, offsets, output.rotary_cos, output.rotary_sin, threads);
         if (!linear(layer.out, layer.out_bias, pooled, width, tokens, threads, mixed)) return false;
         if (capture) {
             probe.pooled = pooled;

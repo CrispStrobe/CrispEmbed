@@ -1,65 +1,73 @@
-"""Refresh seed for the ${KAGGLE_ACCOUNT}/crispembed-ccache dataset.
+"""Seed / probe for the ${KAGGLE_ACCOUNT}/crispembed-ccache dataset (CPU + CUDA builds).
 
-The dataset has been dead weight since 2026-06-21: it was uploaded rooted
-at the cache CONTENTS (raw `0/…` tree, no `.ccache/` prefix), a layout
-neither the harness warmer nor the script-local warmers probe — every
-CrispEmbed kernel since has printed `ccache: cold build` and paid the full
-compile (~19 min CUDA, ~10 min CPU per run, measured 2026-08-06).
-
-This kernel produces a CORRECT seed: standard CUDA build of the CLI on
-current main, then kh.export_ccache_tar() → ONE /kaggle/working/ccache.tar
-rooted at `.ccache/`. Kaggle auto-extracts dataset tars on upload, so
-versioning the dataset with that file mounts as `<slug>/.ccache/…`, which
-`kaggle_harness._warm_ccache_from_dataset` consumes with no code changes.
-
-After the run, locally:
-    kaggle kernels output ${KAGGLE_ACCOUNT}/crispembed-ccache-seed -p <dir>
-    kaggle datasets version -p <dir-with-only-ccache.tar> \
-        -m "seed from crispembed-ccache-seed <date>" --dir-mode tar
-(keep ONLY ccache.tar in the staging dir).
+Clones an exact SHA (pusher substitutes __SHA__) into a path that contains the
+SHA, so consecutive runs build from different absolute paths, then imports
+kaggle_harness from THAT clone (Kaggle uploads only this script, so a side-file
+harness never reaches the kernel). install_build_toolchain() warms the cache
+from the attached dataset when present. Two builds, each measured with
+`ccache -z` / `ccache --print-stats`:
+  cpu   portable CPU Release (frozen-replay flags), crispembed-cli + test-ovisocr2-quality-run
+  cuda  GGML_CUDA at the detected arch, crispembed-cli
+Then export_ccache_tar() writes ONE /kaggle/working/ccache.tar; refresh the
+dataset with tools/kaggle/ccache_refresh.py. summary.json carries times and
+hit/miss counts (the cold-vs-warm evidence).
 """
+import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
-WORK = Path("/kaggle/working")
-TEMP = Path("/kaggle/temp")
-TEMP.mkdir(parents=True, exist_ok=True)
-
+SHA = "__SHA__"
 REPO_URL = "https://github.com/CrispStrobe/CrispEmbed.git"
-CRISPASR_URL = "https://github.com/CrispStrobe/CrispASR.git"
-BRANCH = os.environ.get("CRISPEMBED_BRANCH", "main")
-EMBED_DIR = TEMP / "CrispEmbed"
-BUILD_DIR = EMBED_DIR / "build"
+WORK, TEMP = Path("/kaggle/working"), Path("/kaggle/temp")
+TEMP.mkdir(parents=True, exist_ok=True)
+SRC = TEMP / f"ce-{SHA[:12]}"
+summary = {"sha": SHA, "src": str(SRC), "builds": {}}
 
-_CRISPASR = TEMP / "CrispASR"
-if not _CRISPASR.exists():
-    try:
-        subprocess.check_call(["git", "clone", "--depth", "1", CRISPASR_URL, str(_CRISPASR)])
-        sys.path.insert(0, str(_CRISPASR / "tools" / "kaggle"))
-    except Exception:
-        pass
-if str(_CRISPASR / "tools" / "kaggle") not in sys.path:
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+def save():
+    (WORK / "summary.json").write_text(json.dumps(summary, indent=1))
+
+
+subprocess.check_call(f"git clone -q {REPO_URL} {SRC} && git -C {SRC} checkout -q {SHA} && "
+                      f"git -C {SRC} submodule update --init --recursive -q", shell=True)
+sys.path.insert(0, str(SRC))
 import kaggle_harness as kh  # noqa: E402
 
 kh.init_progress()
-kh.step("clone")
-if not EMBED_DIR.exists():
-    kh.sh(f"git clone --depth 1 --recursive -b {BRANCH} {REPO_URL} {EMBED_DIR}")
-kh.install_build_toolchain()
+tool = kh.install_build_toolchain()
+summary["toolchain"] = tool
+summary["ccache_env"] = {k: v for k, v in os.environ.items() if k.startswith("CCACHE_")}
+summary["seed_files"] = sum(1 for p in Path(os.environ.get("CCACHE_DIR", "/nonexistent")).rglob("*") if p.is_file())
 arch = kh.detect_cuda_arch()
-print(f"CUDA arch: {arch}", flush=True)
-kh.step("configure")
-BUILD_DIR.mkdir(exist_ok=True)
-kh.sh(f"cd {BUILD_DIR} && cmake -G Ninja -DCMAKE_BUILD_TYPE=Release "
-      + " ".join(kh.cuda_build_flags(arch) + kh.cache_and_link_flags()) + " ..", check=True)
-kh.step("build")
-with kh.build_heartbeat("ninja", 30):
-    kh.sh(f"cd {BUILD_DIR} && ninja -j{kh.safe_build_jobs(gpu=True)} crispembed-cli test-core-cpu-ops", check=True)
-kh.step("stats+export")
-subprocess.run("ccache -s | head -8", shell=True)
-tar = kh.export_ccache_tar()
-print(f"seed: {tar}", flush=True)
+summary["cuda_arch"] = arch
+common = "-G Ninja -DCMAKE_BUILD_TYPE=Release " + " ".join(kh.cache_and_link_flags())
+builds = [("cpu", "-DCRISPEMBED_NATIVE=OFF -DGGML_NATIVE=OFF -DGGML_BLAS=OFF -DBUILD_SHARED_LIBS=OFF "
+           "-DCRISPEMBED_BUILD_SHARED=OFF", "crispembed-cli test-ovisocr2-quality-run", "$(nproc)")]
+if Path("/usr/local/cuda/bin/nvcc").exists():
+    builds.append(("cuda", " ".join(kh.cuda_build_flags(arch)), "crispembed-cli", kh.safe_build_jobs(gpu=True)))
+for name, flags, targets, jobs in builds:
+    bdir = SRC / f"build-{name}"
+    subprocess.run("ccache -z", shell=True, capture_output=True)
+    t = time.time()
+    rc = subprocess.run(f"cmake -S {SRC} -B {bdir} {common} {flags}", shell=True).returncode
+    t_conf = time.time() - t
+    with kh.build_heartbeat(name, 60):
+        rc = rc or subprocess.run(f"cmake --build {bdir} --target {targets} -j{jobs}", shell=True).returncode
+    stats = subprocess.run("ccache --print-stats", shell=True, capture_output=True, text=True).stdout
+    kv = dict(l.split("\t", 1) for l in stats.splitlines() if "\t" in l)
+    hits = int(kv.get("direct_cache_hit", 0)) + int(kv.get("preprocessed_cache_hit", 0))
+    misses = int(kv.get("cache_miss", 0))
+    summary["builds"][name] = {"rc": rc, "configure_s": round(t_conf, 1), "total_s": round(time.time() - t, 1),
+                               "hits": hits, "misses": misses,
+                               "hit_rate": round(hits / max(1, hits + misses), 4),
+                               "direct_hits": int(kv.get("direct_cache_hit", 0)),
+                               "ccache_s": subprocess.run("ccache -s", shell=True, capture_output=True,
+                                                          text=True).stdout[-1200:]}
+    print(name, summary["builds"][name], flush=True)
+    save()
+summary["export"] = kh.export_ccache_tar()
+save()
 print("done", flush=True)

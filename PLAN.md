@@ -1,5 +1,14 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## OvisOCR2 speed follow-ups — 11 November 2026
+
+| Work | State | Acceptance |
+|---|---|---|
+| Default flip: `CRISPEMBED_QWEN35_VISION_THREADED_ATTN` | **Owner decision pending.** Bit-identical to the default on the three realistic documents at 2 and 4 threads; vision 3.1x | Owner approval; frozen replays are already green on the gated tree |
+| Default flip: `CRISPEMBED_QWEN35_OCR_GRAPH_DECODER` (+ matmul mode) | **Owner decision pending.** 1,753/1,753 IDs and texts exact; confidences differ by up to 2.49e-4, which the frozen gate-0 confidence contract does not allow | Owner accepts an ID/text contract for this path, or the eleven-case quality lane re-frozen on the graph path; low-memory fallback as MiniCPM (`f32` adds ~1.6 GB) |
+| OvisOCR2 on CUDA | Not started. The context is CPU-only and the graph uses nine custom ops | Replace the custom ops with native ggml ops behind a new gate (`rms_norm`+`mul`, `rope_multi`, `sigmoid`/`softplus`, `ssm_conv`+`silu`, `gated_delta_net`, `swiglu`); `ggml_backend_sched` over CUDA+CPU with device weights; sched logs show no CPU nodes; A/B IDs vs CPU on the three documents; then a GPU vision graph |
+| Eleven-case quality on the graph path | Not run (three realistic documents only) | `ovisocr2_quality_run.py` with the gates set, all eleven cases |
+
 ## PDF Craft adoption — 9 November 2026
 
 Owner lane: `feature/pdf-craft-document-quality-20261109`, based on

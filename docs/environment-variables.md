@@ -164,6 +164,7 @@ alias in both the CLI and the HTTP server; both gates below are still required.
 | `CRISPEMBED_MINICPM_OCR_GRAPH` | off | Older stateless graph-decoder candidate (`src/qwen35_graph_decoder.cpp`); disabled under `CRISPEMBED_QWEN35_IMATRIX`; exclusive with `CRISPEMBED_QWEN35_GRAPH_DECODER` (setting it to 1 turns the default graph decoder off unless that is forced with `=1`). |
 | `CRISPEMBED_QWEN35_GRAPH_DECODER` | on | qwen35 text decoder as one ggml graph with persistent KV and delta-net state (`src/qwen35_graph_kv_decoder.cpp`; MiniCPM is the only caller). `=0` restores the CPU reference decoder. |
 | `CRISPEMBED_QWEN35_GRAPH_MATMUL` | `f32` | Matmul precision of that graph decoder: `f32`, `exact` or `native` (`native` saves the F32 copies' RAM; also 5/5 exact). |
+| `CRISPEMBED_QWEN35_OCR_GRAPH_DECODER` | off | OvisOCR2/3 and the other `qwen35_ocr` engines: run prefill/decode on that graph decoder (t/h/w multimodal RoPE positions passed through) instead of `decoder_cpu`, which re-converts every F16 matrix each token. Precision follows `CRISPEMBED_QWEN35_GRAPH_MATMUL`; `f32` adds ~3 GB of F32 copies at init. Not used while a stage observer is attached. |
 | `CRISPEMBED_MINICPM_OCR_VISION_F32` | on | Copy vision and projector matrices to F32 once at init (part of the ~3.3 GB higher peak RSS). `=0` opts out. |
 | `CRISPEMBED_MINICPM_OCR_LOW_MEMORY` | auto | Skip the default F32 copies (vision matrices and the `f32` graph-decoder matmul; F16 vision + `exact` matmul instead, token-exact on the measured panels) when available RAM < copies + 1 GiB, with one stderr notice. `=1` always, `=0` never checks. |
 | `CRISPEMBED_MINICPM_OCR_VISION_BATCH` | on | Run equally sized slices in one graph as independent sequences. `=0` opts out. |
@@ -183,6 +184,7 @@ token-ID exact on all five Kaggle cases and IDs identical to the old default on 
 | `CRISPEMBED_QWEN35_WEIGHT_CACHE` | off | Per-context converted-weight cache (measured 2.7% cold / 0.8% warm gain with more RSS; kept off). |
 | `CRISPEMBED_QWEN35_WEIGHT_CACHE_BYTES` | 268435456 (256 MiB) | Cache budget in bytes; empty or invalid = 0. |
 | `CRISPEMBED_QWEN35_IMATRIX` | off | Importance-matrix collection (observer); `CRISPEMBED_IMATRIX_OUT` names the output. |
+| `CRISPEMBED_QWEN35_VISION_THREADED_ATTN` | off | qwen35 vision attention split over the context's threads with contiguous value accumulation; same per-element operation order as the scalar loop (designed bit-identical). Ignored when `..._VISION_PRECISE_ATTN` is on. |
 | `CRISPEMBED_QWEN35_PRECISE_RMS`, `CRISPEMBED_QWEN35_VISION_PRECISE_ATTN`, `..._PRECISE_NORM`, `..._CASCADE_NORM`, `..._SOURCE_INTERPOLATION` | off | Precision experiments; kept default-off. |
 | `CRISPEMBED_QWEN35_TOKENIZER_MARKS`, `CRISPEMBED_QWEN35_PROFILE` | off | Tokenizer mark handling; profiling output. |
 | `CRISPEMBED_OVISOCR2_FRONTEND`, `_INFERENCE`, `_LARGE_IMAGES`, `CRISPEMBED_OVISOCR3_FRONTEND`, `_INFERENCE` | off | OvisOCR2/3 gates. |
@@ -277,7 +279,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-487 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+489 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -1202,6 +1204,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
+| `CRISPEMBED_QWEN35_OCR_GRAPH_DECODER` | on | off | bool | default-off experimental / opt-in | `src/qwen35_ocr.cpp` | CRISPEMBED_QWEN35_GRAPH_MATMUL (default "f32": one F32 copy of every decoder matrix at init). Capacity = the 4096-token context limit of the greedy loop. |
 | `CRISPEMBED_XIAOMI_OCR0_FRONTEND` | on | off | bool | default-off experimental / opt-in | `src/qwen35_ocr.cpp`, `src/qwen35_tokenizer.cpp` |  |
 | `CRISPEMBED_XIAOMI_OCR0_INFERENCE` | on | off | bool | default-off experimental / opt-in | `src/qwen35_ocr.cpp` |  |
 
@@ -1225,6 +1228,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_QWEN35_VISION_PRECISE_ATTN` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
 | `CRISPEMBED_QWEN35_VISION_PRECISE_NORM` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
 | `CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
+| `CRISPEMBED_QWEN35_VISION_THREADED_ATTN` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
 
 ### restormer
 

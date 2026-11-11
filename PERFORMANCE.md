@@ -65,6 +65,45 @@ contribute to peak memory. Workspace history scaling does not qualify PDF
 export scaling. Selection geometry remains estimated within OCR regions rather
 than recovered typography. See [the protocol](docs/ocr-reviewed-pdf.md).
 
+## OvisOCR2 CPU speed gates — 11 November 2026 (Kaggle CPU, Xeon 2.2 GHz x4, F16 GGUF)
+
+Kaggle `crispembed-ovisocr2-speed-ab` (version 4, receipt
+[ovisocr2-graph-speed-ab.json](tests/results/qwen35-ocr/ovisocr2-graph-speed-ab.json)) on the
+three reviewed realistic documents (1,753 frozen tokens), 4 threads, portable build.
+Ground truth: the frozen first-F16 receipt.
+
+Profile of the default path (inventory-table, 174 tokens): vision 25.5 s, prefill 13.4 s,
+decode 691 s (**3,994 ms/token, 0.25 tok/s**). Decode was 95% weight materialization:
+`decoder_cpu` converts every F16 matrix to F32 on every token (the 25 October profile:
+11.1 of 11.7 s per 8 tokens in `project_materialize`). Vision was dominated by the
+single-threaded scalar attention loop. The same decoder in MiniCPM-OCR already ran on
+`graph_kv_decoder` (149-177 ms/token on this host class).
+
+| arm | inventory s (174 tok) | two-column s (697) | receipt s (882) | vision s | prefill s | decode ms/token (tok/s) | peak RSS | IDs/text vs frozen |
+|---|---|---|---|---|---|---|---|---|
+| default | 730 | (>2,600 est.) | (>3,600, frozen-guard replay) | 25.5 | 13.4 | 3,994 (0.25) | 3.47 GB | exact |
+| `VISION_THREADED_ATTN` | 716 | | | 8.3 | 13.4 | 4,012 | 3.47 GB | exact; confidences **bit-identical** to default (2 and 4 threads) |
+| + `QWEN35_OCR_GRAPH_DECODER`, matmul `f32` | **38** | 122-131 | 146-163 | 8.5 | 4.4 | 143 (7.0) | 5.0 GB | exact 3/3; max confidence diff 2.49e-4 |
+| + graph decoder, matmul `native` | **34** | 88-92 | 101-108 | 8.4 | 10.9 | 84 (11.9) | 3.42 GB | exact 3/3; max confidence diff 2.49e-4 |
+
+- Per page the graph decoder is 19-21x faster on this host; the historical receipt drops
+  from more than 3,600 s to 101-163 s. The hosted reference (frozen receipt, EPYC, 2 threads)
+  was 1,376 s for that page.
+- On Kaggle the default path is not bit-exact to the hosted frozen confidences either
+  (max 1.13e-6 at 2 and 4 threads, IDs exact), so cross-host confidence equality is not a
+  property of the default path. The graph decoder changes summation order (ggml matmul and
+  softmax), so its confidences differ by up to 2.49e-4 while all 1,753 IDs and texts match.
+- Comparison with other engines on the same Kaggle 4 vCPU class (existing receipts):
+  MiniCPM-OCR recommended config 149-177 ms/token, 28-222 s/page
+  ([bench-graph-v2](tests/results/minicpm-ocr/bench-graph-v2.json)); Unlimited-OCR-2 table
+  page 174 s ([vision-speed](tests/results/unlimited-ocr2/vision-speed.json)). OvisOCR2 with
+  the graph decoder (84-143 ms/token, 34-163 s/page) is now in the same range or faster.
+- GPU: the OvisOCR2/Qwen3.5-OCR context is CPU-only (`ggml_backend_cpu_init()` in
+  `src/qwen35_ocr.cpp`); the graph decoder uses nine CPU custom ops (`op_rms`, `op_rope`,
+  `op_gate`, `op_beta`, `op_decay`, `op_conv_silu`, `op_gated_norm`, `op_swiglu`,
+  `op_rowdot`) and the vision tower is hand-written C++. A CUDA build therefore runs Ovis
+  entirely on the CPU. See PLAN for the native-op port.
+
 ## Explicit phone-photo API (9 November 2026, hosted synthetic CPU panel)
 
 [Run 42590335637](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42590335637)

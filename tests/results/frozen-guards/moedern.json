@@ -181,6 +181,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Reviewed MoEdern-relevant history: the CRISPEMBED_MOEDERN_SOURCES list, -ffp-contract=off on them and the CRISPEMBED_MOEDERN_FAMILY_ENGINE definition are unchanged after their own lanes (ffdaca9d, 0b7f7095); 87357610 only adds ocr_render.h to PUBLIC_HEADER. Other commits add unrelated targets, tests and the opt-in CRISPEMBED_BUILD_MODE environment selector whose unset default keeps the historical native/portable choice. Behaviour-neutral for MoEdern."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "3f4477deb804339bc1633b7ae56c65c01394a751",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "98386958d6ca7fc72715b36556b32a617d1fbcaf"
         }
       ]
     },
@@ -2162,6 +2173,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Not part of the MoEdern compiled closure: the MoEdern evidence harnesses compile only ggml, src/core/gguf_loader.cpp and src/moedern_* sources. Changed by unrelated model work (repo-wide core_env audit 59ecb0b9/3deb1e7c, OCR/Qwen3.5/UltraBERT/MI-GAN/etc. lanes); cannot affect MoEdern arithmetic or contract."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "f8026bcaf5b39b119129c8069f2cfa9b5337dc5f",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "aacbc5a92f5c0e2cdb5e419656591cf0b3297726"
         }
       ]
     },
@@ -2220,6 +2242,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Not part of the MoEdern compiled closure: the MoEdern evidence harnesses compile only ggml, src/core/gguf_loader.cpp and src/moedern_* sources. Changed by unrelated model work (repo-wide core_env audit 59ecb0b9/3deb1e7c, OCR/Qwen3.5/UltraBERT/MI-GAN/etc. lanes); cannot affect MoEdern arithmetic or contract."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "b2004429fd9579074372fa4eef2923904b2784ed",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "b4c5b5058aa3c4541a0a25a97d95d840c059221e"
         }
       ]
     },
@@ -3128,6 +3161,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Reviewed MoEdern-relevant history: the CRISPEMBED_MOEDERN_SOURCES list, -ffp-contract=off on them and the CRISPEMBED_MOEDERN_FAMILY_ENGINE definition are unchanged after their own lanes (ffdaca9d, 0b7f7095); 87357610 only adds ocr_render.h to PUBLIC_HEADER. Other commits add unrelated targets, tests and the opt-in CRISPEMBED_BUILD_MODE environment selector whose unset default keeps the historical native/portable choice. Behaviour-neutral for MoEdern."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "3f4477deb804339bc1633b7ae56c65c01394a751",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "98386958d6ca7fc72715b36556b32a617d1fbcaf"
         }
       ]
     },
@@ -5064,6 +5108,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Not part of the MoEdern compiled closure: the MoEdern evidence harnesses compile only ggml, src/core/gguf_loader.cpp and src/moedern_* sources. Changed by unrelated model work (repo-wide core_env audit 59ecb0b9/3deb1e7c, OCR/Qwen3.5/UltraBERT/MI-GAN/etc. lanes); cannot affect MoEdern arithmetic or contract."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "f8026bcaf5b39b119129c8069f2cfa9b5337dc5f",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "aacbc5a92f5c0e2cdb5e419656591cf0b3297726"
         }
       ]
     },
@@ -5122,6 +5177,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Not part of the MoEdern compiled closure: the MoEdern evidence harnesses compile only ggml, src/core/gguf_loader.cpp and src/moedern_* sources. Changed by unrelated model work (repo-wide core_env audit 59ecb0b9/3deb1e7c, OCR/Qwen3.5/UltraBERT/MI-GAN/etc. lanes); cannot affect MoEdern arithmetic or contract."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "b2004429fd9579074372fa4eef2923904b2784ed",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "b4c5b5058aa3c4541a0a25a97d95d840c059221e"
         }
       ]
     },
@@ -6052,6 +6118,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Reviewed MoEdern-relevant history: the CRISPEMBED_MOEDERN_SOURCES list, -ffp-contract=off on them and the CRISPEMBED_MOEDERN_FAMILY_ENGINE definition are unchanged after their own lanes (ffdaca9d, 0b7f7095); 87357610 only adds ocr_render.h to PUBLIC_HEADER. Other commits add unrelated targets, tests and the opt-in CRISPEMBED_BUILD_MODE environment selector whose unset default keeps the historical native/portable choice. Behaviour-neutral for MoEdern."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "3f4477deb804339bc1633b7ae56c65c01394a751",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "98386958d6ca7fc72715b36556b32a617d1fbcaf"
         }
       ]
     },
@@ -7928,6 +8005,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Not part of the MoEdern compiled closure: the MoEdern evidence harnesses compile only ggml, src/core/gguf_loader.cpp and src/moedern_* sources. Changed by unrelated model work (repo-wide core_env audit 59ecb0b9/3deb1e7c, OCR/Qwen3.5/UltraBERT/MI-GAN/etc. lanes); cannot affect MoEdern arithmetic or contract."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "f8026bcaf5b39b119129c8069f2cfa9b5337dc5f",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "aacbc5a92f5c0e2cdb5e419656591cf0b3297726"
         }
       ]
     },
@@ -7986,6 +8074,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Not part of the MoEdern compiled closure: the MoEdern evidence harnesses compile only ggml, src/core/gguf_loader.cpp and src/moedern_* sources. Changed by unrelated model work (repo-wide core_env audit 59ecb0b9/3deb1e7c, OCR/Qwen3.5/UltraBERT/MI-GAN/etc. lanes); cannot affect MoEdern arithmetic or contract."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "b2004429fd9579074372fa4eef2923904b2784ed",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "b4c5b5058aa3c4541a0a25a97d95d840c059221e"
         }
       ]
     },
@@ -8848,6 +8947,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Reviewed MoEdern-relevant history: the CRISPEMBED_MOEDERN_SOURCES list, -ffp-contract=off on them and the CRISPEMBED_MOEDERN_FAMILY_ENGINE definition are unchanged after their own lanes (ffdaca9d, 0b7f7095); 87357610 only adds ocr_render.h to PUBLIC_HEADER. Other commits add unrelated targets, tests and the opt-in CRISPEMBED_BUILD_MODE environment selector whose unset default keeps the historical native/portable choice. Behaviour-neutral for MoEdern."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "deebaf0a6a7b3c6cc4cb99d24011220114d2333810264214b61abd7c211c5dfb",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "5e8c1a3f1c409dd26db16e856b9fc286c0d9ce8d3ca148bc41a43e0fe6d634cf"
         }
       ]
     },
@@ -9286,6 +9396,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Reviewed MoEdern-relevant history: the CRISPEMBED_MOEDERN_SOURCES list, -ffp-contract=off on them and the CRISPEMBED_MOEDERN_FAMILY_ENGINE definition are unchanged after their own lanes (ffdaca9d, 0b7f7095); 87357610 only adds ocr_render.h to PUBLIC_HEADER. Other commits add unrelated targets, tests and the opt-in CRISPEMBED_BUILD_MODE environment selector whose unset default keeps the historical native/portable choice. Behaviour-neutral for MoEdern."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "deebaf0a6a7b3c6cc4cb99d24011220114d2333810264214b61abd7c211c5dfb",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "5e8c1a3f1c409dd26db16e856b9fc286c0d9ce8d3ca148bc41a43e0fe6d634cf"
         }
       ]
     },
@@ -10004,6 +10125,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Tree object: every changed file under src/ is covered by this file's per-path review (MoEdern sources: additive default-off gates/formatting; shared core: core_env off-word sync, UTF-8 Windows paths, Metal detection; other models: outside the MoEdern compiled closure)."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "2877926e60a29225a5b800202453031dbd39c52c",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "e764865ded9739982eb89f5cd85c1f5412f5fcf4"
         }
       ]
     },
@@ -10236,6 +10368,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Reviewed MoEdern-relevant history: the CRISPEMBED_MOEDERN_SOURCES list, -ffp-contract=off on them and the CRISPEMBED_MOEDERN_FAMILY_ENGINE definition are unchanged after their own lanes (ffdaca9d, 0b7f7095); 87357610 only adds ocr_render.h to PUBLIC_HEADER. Other commits add unrelated targets, tests and the opt-in CRISPEMBED_BUILD_MODE environment selector whose unset default keeps the historical native/portable choice. Behaviour-neutral for MoEdern."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "deebaf0a6a7b3c6cc4cb99d24011220114d2333810264214b61abd7c211c5dfb",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "5e8c1a3f1c409dd26db16e856b9fc286c0d9ce8d3ca148bc41a43e0fe6d634cf"
         }
       ]
     },
@@ -11276,6 +11419,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Reviewed MoEdern-relevant history: the CRISPEMBED_MOEDERN_SOURCES list, -ffp-contract=off on them and the CRISPEMBED_MOEDERN_FAMILY_ENGINE definition are unchanged after their own lanes (ffdaca9d, 0b7f7095); 87357610 only adds ocr_render.h to PUBLIC_HEADER. Other commits add unrelated targets, tests and the opt-in CRISPEMBED_BUILD_MODE environment selector whose unset default keeps the historical native/portable choice. Behaviour-neutral for MoEdern."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "3f4477deb804339bc1633b7ae56c65c01394a751",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "98386958d6ca7fc72715b36556b32a617d1fbcaf"
         }
       ]
     },
@@ -11593,6 +11747,17 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Tree object: every changed file under src/ is covered by this file's per-path review (MoEdern sources: additive default-off gates/formatting; shared core: core_env off-word sync, UTF-8 Windows paths, Metal detection; other models: outside the MoEdern compiled closure)."
+        },
+        {
+          "changed_by": [
+            "f2aaada20d631dfd8ab2fe8ff3a22c5fefe94647 clang-format",
+            "7b1175d8e2d6a913f6ea72ea25767debfad25b08 Link graph_kv_decoder into crispembed-qwen35-delta (qwen35_ocr binds it)",
+            "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
+          ],
+          "classification": "behaviour-neutral",
+          "from": "2877926e60a29225a5b800202453031dbd39c52c",
+          "reason": "Additive default-off gates (CRISPEMBED_QWEN35_OCR_GRAPH_DECODER, CRISPEMBED_QWEN35_VISION_THREADED_ATTN) in the qwen35_ocr/vision sources, an optional positions argument of graph_kv_decoder::forward (default nullptr = previous behaviour) and graph_kv_decoder.cpp linked into crispembed-qwen35-delta. The MoEdern engines do not call any of these paths.",
+          "to": "e764865ded9739982eb89f5cd85c1f5412f5fcf4"
         }
       ]
     },
