@@ -37,6 +37,10 @@ The workflows are `frozen-guard-replay-{wasm-q8,ovis-quality}.yml`. The Kaggle k
 `crispembed-frozen-guard-replay-{ovis,wasm}` serve GitHub artifacts from a private dataset of
 recorded API responses through a replay-only `gh` shim, so no token is present in the kernel.
 
+Kaggle `crispembed-pytest-plain` at 050ffc1c gives 0 failed / 2118 passed / 233 skipped
+on the full clone, and 0 failed / 2044 passed / 307 skipped with `--depth 1`. The WASM Q8 source guard
+now skips without an initialized `ggml` submodule; it still runs unchanged wherever ggml is checked out.
+
 ## 10 November 2026 — Recorded re-pins of stale frozen guards
 
 After PR #206 the plain-environment lane still had 41 real failures on a full
