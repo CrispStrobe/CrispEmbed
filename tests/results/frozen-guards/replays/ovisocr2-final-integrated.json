@@ -1,0 +1,147 @@
+{
+  "schema": "crispembed-frozen-guard-replay-receipt/v1",
+  "lane": "OvisOCR2 final-integrated v2 (frozen 14-arm + eleven-case first-F16 quality); v1 pins the same frozen evidence",
+  "frozen_evidence": {
+    "native_14_arm": "tests/results/qwen35-ocr/ovisocr2-larger-inputs.json (frozen-control producer)",
+    "first_f16_quality": "tests/results/qwen35-ocr/ovisocr2-f16-quality.json (run 40056641800)"
+  },
+  "replays": {
+    "frozen": {
+      "where": "Kaggle CPU kernel tools/kaggle/crispembed-frozen-guard-replay-ovis (frozen-g0/frozen-g1)",
+      "source": "16dacbdc",
+      "gh_artifacts": "recorded gh api responses served by a replay-only shim (no token in kernel); 0 misses",
+      "results": {
+        "gate0": {
+          "status": "completed",
+          "scope_passed": true,
+          "failures": [],
+          "arms_passed": 14,
+          "arms": 14,
+          "retained_ordinary_vectors_bit_exact": {
+            "f32-delta": true,
+            "f32-vision": true,
+            "f32-decoder-prepared": true,
+            "f32-decoder-native-vision": true,
+            "f32-decoder-native-positions": true,
+            "f32-decoder-native-frontend": true,
+            "f16-delta": true,
+            "f16-vision": true,
+            "f16-decoder-prepared": true,
+            "f16-decoder-native-vision": true,
+            "f16-decoder-native-positions": true,
+            "f16-decoder-native-frontend": true
+          },
+          "owning_cases_original_ids_text_eos_exact": {
+            "f32": true,
+            "f16": true
+          },
+          "binary_sha256": {
+            "test-qwen35-decoder": "95bb032a67d4aba1957c0f10493bbe379b43d37fd4ce703e9e80462faaeec339",
+            "test-qwen35-vision": "956d726543a3092caa40658c6c570a398cc5065ade355395e26ccae1e620506a",
+            "test-qwen35-delta": "fe60d9f0352d88c39b79fb88a479b1b5cf2249f2efdd64508909c2ae66e3cfa6",
+            "test-ovisocr2-context": "fc56d56cf2916fae0afb88c24a29335d70e031c7ee046d0b7b55dab6c5ba94ed",
+            "test-ovisocr2-quality-run": "ed570172d8a90b84d9fd9b748b7b80faeecd467ccec389d6ef3355028179f8de",
+            "test-ovisocr2-image-bounds": "133b84ca691112da74e558655b2698cb2bccddd009876fbc5263fcb6004e6a89"
+          },
+          "frozen_result_sha256": "bb0ab182922c76814c086a4b4c33f406e93fbd6f77fa0376f6aa2630ee533bc7"
+        },
+        "gate1": {
+          "status": "completed",
+          "scope_passed": true,
+          "failures": [],
+          "arms_passed": 14,
+          "arms": 14,
+          "retained_ordinary_vectors_bit_exact": {},
+          "owning_cases_original_ids_text_eos_exact": {
+            "f32": true,
+            "f16": true
+          },
+          "binary_sha256": {
+            "test-qwen35-decoder": "95bb032a67d4aba1957c0f10493bbe379b43d37fd4ce703e9e80462faaeec339",
+            "test-qwen35-vision": "956d726543a3092caa40658c6c570a398cc5065ade355395e26ccae1e620506a",
+            "test-qwen35-delta": "fe60d9f0352d88c39b79fb88a479b1b5cf2249f2efdd64508909c2ae66e3cfa6",
+            "test-ovisocr2-context": "fc56d56cf2916fae0afb88c24a29335d70e031c7ee046d0b7b55dab6c5ba94ed",
+            "test-ovisocr2-quality-run": "ed570172d8a90b84d9fd9b748b7b80faeecd467ccec389d6ef3355028179f8de",
+            "test-ovisocr2-image-bounds": "133b84ca691112da74e558655b2698cb2bccddd009876fbc5263fcb6004e6a89"
+          },
+          "frozen_result_sha256": "a09d9d14bb6d4a2f76f6f02b653ae81af59b8c204675cc03bbb1906eb5e43484"
+        }
+      }
+    },
+    "quality": {
+      "where": "GitHub-hosted ubuntu-24.04, .github/workflows/frozen-guard-replay-ovis-quality.yml",
+      "run": 42965732626,
+      "source": "e6ab4dd7",
+      "results": {
+        "gate0": {
+          "artifact": 13834011381,
+          "zip_sha256": "d4979e29e4c31f59fddfadd377e17083b696a540718f0bf00b9414e47518b9d3",
+          "scope_passed": true,
+          "token_count": 1841,
+          "cases": 11,
+          "cases_confidences_exact": 11,
+          "max_selected_confidence_abs_drift": 0.0,
+          "cabi_text_and_confidence_contract_passed": true,
+          "quality_comparison_sha256": "15f5092891af1a4384a6e66015e1f905010e63302ac94a73f19af12740a5d918"
+        },
+        "gate1": {
+          "artifact": 13835750253,
+          "zip_sha256": "d6d689b9018e4a0cbc85f754d97ecae860aaa09ff1bdea3e1aca93cc7d7bcc0d",
+          "scope_passed": true,
+          "token_count": 1841,
+          "cases": 11,
+          "cases_confidences_exact": 5,
+          "max_selected_confidence_abs_drift": 2.4796000000049112e-05,
+          "cabi_text_and_confidence_contract_passed": true,
+          "quality_comparison_sha256": "b1cdcc91a45cdb852ea9d6c562d40829ef7b842fb0360b09abc60684f6da1191"
+        }
+      },
+      "note": "Kaggle CPUs are ~2.5x slower; its f16-historical-receipt hit the unchanged 3600 s budget, so quality was replayed on the hosted runner class. The 8 Kaggle cases that completed matched as well (gate0 exact)."
+    }
+  },
+  "deviations": [
+    "Only the frozen source-identity assert (and recorded auditor-file drift: the v2 workflow gained --native-document-timeout 3600 in fa76cd37) was replaced by a recorded identity (tools/ci-heavy/frozen_guard_replay_ovis.py). Budgets, gates, references, binaries build and every comparison ran unchanged."
+  ],
+  "source_identity": {
+    "ggml": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+    "frozen_ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "protected_objects_changed": [
+      ".gitattributes",
+      ".github/workflows/release.yml",
+      "CMakeLists.txt",
+      "Cargo.lock",
+      "README.md",
+      "VERSION",
+      "build-wasm.sh",
+      "cmake",
+      "crispembed",
+      "crispembed-sys",
+      "examples",
+      "flutter",
+      "ggml",
+      "models/convert-qwen35-ocr-to-gguf.py",
+      "python",
+      "scripts/check-cpu-baseline.py",
+      "src",
+      "tests/regression",
+      "tools/ci-heavy/ovisocr2_quality_run.py",
+      "tools/quantize.cpp"
+    ],
+    "declared_source_sha256": {
+      "src/qwen35_vision.cpp": {
+        "frozen": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3",
+        "current": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3"
+      },
+      "src/crispembed.cpp": {
+        "frozen": "7f390317ab17bc5c89cfefb6d2ebb737f21dd81935f6df0ae3a74761c46aa35a",
+        "current": "44371ef32a036e00a28dbd5781d2a2f836f646e4155f720942dc8606aa9f7107"
+      },
+      "src/ultrabert_profile.h": {
+        "frozen": "fc5af20f91a6b2cb6fa9c07efa875a9d42d3e7e076038b833a908019a0affc31",
+        "current": "7b96f98959d2dc287a0a96ab217638ff55bc2ad1afe7cd31d60371c1f910471d"
+      }
+    }
+  },
+  "runtime_trees_equal_to": "136dddc9 (main after #209) plus tests/tools-only commits",
+  "conclusion": "All 14 frozen arms pass at both gates; gate0 retained ordinary vectors bit-exact (12/12) and both owning OCR cases exact; all eleven first-F16 cases keep IDs/text/EOS/cap, 1,841 tokens, gate0 confidences exact (11/11), gate1 max drift 2.4796e-05 (same as the original gate1 run), C ABI smoke passes. The default flips on the pinned src tree (MiniCPM graph decoder, Unlimited-OCR-2 F32 vision, bge-m3 sparse specials, 1c95cfe1) do not reach this Ovis path."
+}

@@ -91,6 +91,7 @@ class Contract(unittest.TestCase):
    for name in paths:self.assertEqual(changes[name]['before'],c.digest(originals[name]))
    with self.assertRaises(ValueError):c.overlay_ab(root)
   for name,b in originals.items():self.assertEqual((ROOT/name).read_bytes(),b)
+ @unittest.skipUnless((ROOT/'ggml/.git').exists(),'requires the initialized ggml submodule (git submodule update --init ggml)')
  def test_exact_candidate_source_guard_and_dirty_rejection(self):
   proof=c.source_guard(ROOT,driver.RUNTIME_PATHS)
   self.assertEqual(proof['ggml'],c.CANDIDATE_GGML)

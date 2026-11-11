@@ -1,3 +1,46 @@
+## 11 November 2026 — Frozen guards re-pinned from fresh replays; delta checks anchored
+
+The 9 frozen-guard failures left after #209 are resolved. Two guards were re-pinned
+from fresh replays of their ground-truth runs. Three guards with a delta check now
+anchor it to their declaration commit (owner-approved). No budget, gate, reference
+or default changed.
+
+- **WASM Q8 rounding A/B and source guards.** Hosted replay
+  [42951893756](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42951893756)
+  of the full A/B on the current runtime tree is bit-identical to frozen run 40391544739:
+  108 vector/stage/interleaving hashes, every token stream and all metrics match, and
+  the same 16 controls reject. ggml a06fc0bb→3a27b6c6 changes only lazy NVFP4 lookup-table
+  init on CPU. The default-on `CRISPEMBED_POS_EMBD_TRUNCATE` keeps the 512-token limit for
+  this BERT model (offset 0). The encoder bytes, ggml gitlink, runtime tree digests,
+  `ggml-cpu.c` and the changed-file list are re-pinned (`tests/results/frozen-guards/wasm-q8-rounding.json`,
+  receipt `tests/results/frozen-guards/replays/wasm-q8-rounding-ab.json`).
+- **OvisOCR2 final-integrated v1/v2.** The frozen 14-arm lane was replayed on Kaggle at gates 0/1.
+  All arms pass; at gate 0, all 12 retained ordinary vectors are bit-exact to the frozen producer,
+  and both owning OCR cases are exact. The eleven-case first-F16 quality lane was replayed on hosted
+  run [42965732626](https://github.com/CrispStrobe/CrispEmbed/actions/runs/42965732626).
+  All IDs, text, EOS and caps match, with 1,841 tokens. Gate 0 confidences are exact; the gate 1
+  maximum drift is 2.4796e-5, the same as the original run. The C ABI smoke passes. The default flips
+  in the pinned `src` tree do not reach the Ovis path. 49 re-pins
+  (`tests/results/frozen-guards/ovisocr2-final-integrated.json`, receipt under
+  `replays/`). v1 pins the same frozen evidence; its `ovis_composed` dependency was
+  never reviewed, so only the v2 lane is replayable. Kaggle CPUs are about 2.5x slower than the
+  hosted runners, and the quality lane's `historical-receipt` document exceeded its unchanged
+  3600 s budget there. Quality was therefore replayed on the hosted runner class.
+- **Delta checks anchored to the declaration commit.** WASM layer3 F32 (#211) and the MoEdern
+  public root/family closures previously diffed base..HEAD, so every unrelated new file broke
+  them (#211 itself did). They now diff base..declaration (`e3df7cfd`, `5f710ade`, `0b7f7095`).
+  All protected and owned hashes stay exact on HEAD through recorded re-pins.
+
+Replay tooling: `tools/ci-heavy/frozen_guard_replay_{wasm_q8,ovis}.py` run the unchanged
+drivers with only the frozen source-identity asserts replaced by recorded identities.
+The workflows are `frozen-guard-replay-{wasm-q8,ovis-quality}.yml`. The Kaggle kernels
+`crispembed-frozen-guard-replay-{ovis,wasm}` serve GitHub artifacts from a private dataset of
+recorded API responses through a replay-only `gh` shim, so no token is present in the kernel.
+
+Kaggle `crispembed-pytest-plain` at 050ffc1c gives 0 failed / 2118 passed / 233 skipped
+on the full clone, and 0 failed / 2044 passed / 307 skipped with `--depth 1`. The WASM Q8 source guard
+now skips without an initialized `ggml` submodule; it still runs unchanged wherever ggml is checked out.
+
 ## 10 November 2026 — Recorded re-pins of stale frozen guards
 
 After PR #206 the plain-environment lane still had 41 real failures on a full

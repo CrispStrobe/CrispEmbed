@@ -14,6 +14,7 @@ sys.path.append(str(ROOT/'tools'))
 import moedern_guard_pins as P
 GUARD = 'moedern-public-root'
 PATH = ROOT/'docs/moedern-public-root.json'
+DECLARATION = '5f710aded027bde225482626b2b7a16f2e4ee12d'
 def require(ok, why):
     if not ok: raise ValueError(why)
 def git(*args): return subprocess.check_output(['git', *args], cwd=ROOT)
@@ -23,7 +24,10 @@ def source():
             and cfg['public_model_proof'] is False, 'root wiring policy differs')
     base = cfg['base']
     # Evidence receipts and hosted launcher scripts are not runtime source.
-    changed = {f for f in git('diff', '--name-only', base, 'HEAD').decode().split()
+    # Undeclared-delta check anchored to the declaration commit: only owned files may
+    # differ between base and the declaration. Later unrelated commits no longer fail
+    # it; owned hashes and protected objects below stay exact on HEAD.
+    changed = {f for f in git('diff', '--name-only', base, DECLARATION).decode().split()
                if not f.startswith(('tests/results/', 'tools/kaggle/'))} - {str(PATH.relative_to(ROOT))}
     # Paths changed after the base by later reviewed work are an exact recorded set
     # (tests/results/frozen-guards/moedern.json), not a wildcard.

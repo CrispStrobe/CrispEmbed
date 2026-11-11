@@ -1,0 +1,164 @@
+name: Frozen-guard replay - WASM Q8 rounding A/B v1
+# Fresh replay of run 40391544739 on a later source. Same panel, gates, producer
+# packages, trace and fixture; only the frozen encoder/ggml identity asserts are
+# replaced by recorded identities (tools/ci-heavy/frozen_guard_replay_wasm_q8.py).
+on:
+  workflow_dispatch:
+  push:
+    branches: [frozen-guard-replay]
+    paths: [.github/workflows/frozen-guard-replay-wasm-q8.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  operators:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      OMP_NUM_THREADS: '2'
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact candidate declaration and legacy preservation
+        run: |
+          mkdir -p "$RUNNER_TEMP/rounding-controls"
+          # Replay: the frozen source tests are expected to fail on later sources; keep their output.
+          python tests/test_wasm_q8_rounding_source.py -v > "$RUNNER_TEMP/rounding-controls/frozen-source-test.log" 2>&1 || echo "frozen source test failed (recorded)"
+          python - <<'PYCODE'
+          import hashlib,json,os,subprocess
+          from pathlib import Path
+          spec=json.loads(Path('docs/wasm-q8-rounding-candidate.json').read_text())
+          actual=subprocess.check_output(['git','-C','ggml','rev-parse','HEAD'],text=True).strip()
+          assert actual==subprocess.check_output(['git','rev-parse','HEAD:ggml'],text=True).strip()
+          files={n:{'frozen':i['candidate_sha256'],'current':hashlib.sha256((Path('ggml')/n).read_bytes()).hexdigest()} for n,i in spec['files'].items()}
+          receipt={'schema':'crispembed-wasm-rounding-operator-source-v1','source':os.environ['GITHUB_SHA'],'ggml':actual,'declaration':spec,'model_access':False,'qualification':False,
+                   'replay':{'frozen_ggml':spec['ggml_candidate'],'dependency_files':files,
+                             'encoder_sha256':hashlib.sha256(Path('src/crispembed.cpp').read_bytes()).hexdigest(),
+                             'frozen_encoder_sha256':spec['crispembed_encoder_candidate_sha256']}}
+          (Path(os.environ['RUNNER_TEMP'])/'rounding-controls/source.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          PYCODE
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.2'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Configure isolated weight-free operator executable
+        run: |
+          emcmake cmake -S ggml/tests/wasm-q8-rounding -B "$RUNNER_TEMP/rounding-build" \
+            -DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DGGML_BLAS=OFF -DGGML_LLAMAFILE=OFF \
+            -DGGML_CUDA=OFF -DGGML_METAL=OFF -DGGML_VULKAN=OFF \
+            -DCMAKE_C_FLAGS="-msimd128 -pthread" -DCMAKE_CXX_FLAGS="-msimd128 -pthread" \
+            -DCMAKE_EXE_LINKER_FLAGS="-msimd128 -pthread -sPTHREAD_POOL_SIZE=2 -sENVIRONMENT=node -sALLOW_MEMORY_GROWTH=1 -sEXIT_RUNTIME=1" \
+            > "$RUNNER_TEMP/rounding-controls/configure.log" 2>&1
+      - name: Build only the candidate controls with two workers
+        run: cmake --build "$RUNNER_TEMP/rounding-build" --target test-wasm-q8-rounding -j2 > "$RUNNER_TEMP/rounding-controls/build.log" 2>&1
+      - name: Execute actual WASM converter, matmul, expert and context controls
+        run: |
+          timeout 120s node "$RUNNER_TEMP/rounding-build/test-wasm-q8-rounding.js" > "$RUNNER_TEMP/rounding-controls/runtime.log" 2>&1
+          python - <<'PYCODE'
+          import json,os
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'rounding-controls'
+          rows=[json.loads(line) for line in (root/'runtime.log').read_text().splitlines() if line.startswith('{')]
+          assert len(rows)==5 and all(row['passed'] for row in rows)
+          assert rows[0]['control']=='converter'
+          assert {(r['type'],r['indirect']) for r in rows[1:]}=={(8,False),(8,True),(20,False),(20,True)}
+          assert all(r['legacy']==158 and r['nearest']==189 for r in rows[1:])
+          receipt={'schema':'crispembed-wasm-rounding-operator-result-v1','passed':True,'controls':rows,'qualification':False,'limits':['Weight-free operator and backend-isolation controls only; no model inference, source-cause or default promotion.']}
+          (root/'controls.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          PYCODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-rounding-operator-controls-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/rounding-controls/
+            ${{ runner.temp }}/rounding-build/compile_commands.json
+          if-no-files-found: error
+          retention-days: 90
+  ab:
+    needs: operators
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen protocol controls (expected to fail on later sources; recorded)
+        run: python tests/test_wasm_q8_rounding_ab_v1.py -v > "$RUNNER_TEMP/frozen-ab-test.log" 2>&1 || echo "frozen A/B test failed (recorded)"
+      - name: Fail closed until actual first trace is independently reviewed and pinned
+        run: python tools/ci-heavy/frozen_guard_replay_wasm_q8.py preflight --output "$RUNNER_TEMP/rounding-ab"
+      - name: Reviewed first trace, exact immutable producer members and initial model fixture
+        run: python tools/ci-heavy/frozen_guard_replay_wasm_q8.py prepare --output "$RUNNER_TEMP/rounding-ab"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pinned browser engine
+        run: |
+          npm install --prefix "$RUNNER_TEMP/rounding-ab-browser-tools" --no-save playwright@1.56.0
+          "$RUNNER_TEMP/rounding-ab-browser-tools/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Actual old native1/2 outputs and token IDs for all predeclared texts
+        run: python tools/ci-heavy/frozen_guard_replay_wasm_q8.py native-reference --output "$RUNNER_TEMP/rounding-ab"
+      - name: Actual old packaged-browser outputs and neutral retained diagnostic token IDs
+        run: NODE_PATH="$RUNNER_TEMP/rounding-ab-browser-tools/node_modules" node tests/test_wasm_q8_rounding_ab_v1.cjs "$RUNNER_TEMP/rounding-ab/browser" reference
+      - name: Freeze supplementary old panel before any candidate inference
+        run: python tools/ci-heavy/frozen_guard_replay_wasm_q8.py freeze-old --output "$RUNNER_TEMP/rounding-ab"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.2'
+      - name: Candidate test-only diagnostic overlay, two build workers
+        run: python tools/ci-heavy/frozen_guard_replay_wasm_q8.py build --output "$RUNNER_TEMP/rounding-ab"
+      - name: Fresh unset, empty, literal0 and literal1 ordinary/dump modules plus context isolation
+        run: NODE_PATH="$RUNNER_TEMP/rounding-ab-browser-tools/node_modules" node tests/test_wasm_q8_rounding_ab_v1.cjs "$RUNNER_TEMP/rounding-ab/browser" candidate
+      - name: Preserve every result and apply unchanged output and original full-stage gates
+        run: python tools/ci-heavy/frozen_guard_replay_wasm_q8.py compare --output "$RUNNER_TEMP/rounding-ab"
+      - name: Frozen producer report of run 40391544739
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/frozen-ab"
+          gh api repos/${{ github.repository }}/actions/artifacts/12692262412/zip > "$RUNNER_TEMP/frozen-ab/review.zip"
+          echo "6185d3a2b0776a157ab0dc10f25ddcc22406ba847dbb70b0b2638d43483bb047  $RUNNER_TEMP/frozen-ab/review.zip" | sha256sum -c
+          unzip -q "$RUNNER_TEMP/frozen-ab/review.zip" ab.json old-panel-freeze.json -d "$RUNNER_TEMP/frozen-ab"
+      - name: Every vector, stage and token stream must equal the frozen run
+        if: always()
+        run: python tools/ci-heavy/frozen_guard_replay_wasm_q8.py replay-compare --output "$RUNNER_TEMP/rounding-ab" --frozen "$RUNNER_TEMP/frozen-ab/ab.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-guard-replay-wasm-q8-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/rounding-ab/*.json
+            ${{ runner.temp }}/frozen-ab-test.log
+            ${{ runner.temp }}/rounding-ab/*.log
+            ${{ runner.temp }}/rounding-ab/browser/panel.json
+            ${{ runner.temp }}/rounding-ab/browser/*-browser.json
+            ${{ runner.temp }}/rounding-ab/native-vectors/*.json
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-guard-replay-wasm-q8-arrays-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/rounding-ab/trusted-trace/
+            ${{ runner.temp }}/rounding-ab/browser/arrays/
+            ${{ runner.temp }}/rounding-ab/browser/candidate/crispembed_embed.*
+            ${{ runner.temp }}/rounding-ab/native-vectors/*.f32
+          retention-days: 90

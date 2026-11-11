@@ -17,6 +17,7 @@ sys.path.append(str(ROOT/'tools'))
 import moedern_guard_pins as P
 GUARD = 'moedern-family-public'
 PATH = ROOT/'docs/moedern-family-public.json'
+DECLARATION = '0b7f709530fd298ca004f818e4ca5f2bf1b0b1a6'
 def require(ok, why):
     if not ok: raise ValueError(why)
 def git(*args): return subprocess.check_output(['git', *args], cwd=ROOT)
@@ -30,7 +31,10 @@ def source():
     require(cfg['schema'] == 'crispembed-moedern-family-public-v1' and cfg['default_enabled'] is False
             and cfg['gate'] == 'CRISPEMBED_MOEDERN_FAMILY' and cfg['public_model_proof'] is False, 'family policy differs')
     base = cfg['base']
-    changed = set(git('diff', '--name-only', base, 'HEAD').decode().split())
+    # Undeclared-delta check anchored to the declaration commit: only owned files may
+    # differ between base and the declaration. Later unrelated commits no longer fail
+    # it; owned hashes and protected objects below stay exact on HEAD.
+    changed = set(git('diff', '--name-only', base, DECLARATION).decode().split())
     # Paths changed after the base by later reviewed work are an exact recorded set
     # (tests/results/frozen-guards/moedern.json), not a wildcard.
     changed -= P.path_set(GUARD, P.CHANGED)
