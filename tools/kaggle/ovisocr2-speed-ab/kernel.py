@@ -106,12 +106,14 @@ try:
         for cid in ids:
             env = dict(base_env, **extra)
             t = time.time()
-            r = subprocess.run(["/usr/bin/time", "-f", "MAXRSS_KIB=%M", str(binary), model, str(cases[cid]), "1024",
-                                str(THREADS)], env=env, capture_output=True, text=True, timeout=6 * 3600)
+            with open(TMP / "o.txt", "w") as fo, open(TMP / "e.txt", "w") as fe:
+                proc = subprocess.Popen([str(binary), model, str(cases[cid]), "1024", str(THREADS)], env=env,
+                                        stdout=fo, stderr=fe)
+                _, status, usage = os.wait4(proc.pid, 0)
+            r = subprocess.CompletedProcess(proc.args, os.waitstatus_to_exitcode(status),
+                                            (TMP / "o.txt").read_text(), (TMP / "e.txt").read_text())
             row = {"arm": arm, "case": cid, "rc": r.returncode, "wall_s": round(time.time() - t, 2),
-                   "stderr_tail": r.stderr[-600:]}
-            m = re.search(r"MAXRSS_KIB=(\d+)", r.stderr)
-            row["max_rss_kib"] = int(m.group(1)) if m else None
+                   "stderr_tail": r.stderr[-600:], "max_rss_kib": usage.ru_maxrss}
             line = next((l for l in r.stdout.splitlines() if l.startswith("OVIS_QUALITY_RESULT ")), None)
             prof = {}
             for l in r.stdout.splitlines():
