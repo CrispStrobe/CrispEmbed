@@ -67,10 +67,11 @@ try:
     sh(f"cmake -S {SRC} -B {BUILD} -G Ninja -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_NATIVE=OFF -DGGML_NATIVE=OFF "
        "-DGGML_BLAS=OFF -DGGML_METAL=OFF -DBUILD_SHARED_LIBS=OFF -DCRISPEMBED_BUILD_SHARED=OFF "
        + " ".join(kh.cache_and_link_flags()))
-    sh(f"cmake --build {BUILD} --target test-ovisocr2-quality-run -j4")
+    sh(f"cmake --build {BUILD} --target test-ovisocr2-quality-run test-qwen35-profile -j4")
     summary["build_s"] = round(time.time() - t, 1)
     summary["ccache"] = subprocess.run("ccache -s 2>&1 | head -20", shell=True, capture_output=True, text=True).stdout
     binary = BUILD / "test-ovisocr2-quality-run"
+    profiler = BUILD / "test-qwen35-profile"
 
     sh(f"{sys.executable} -m pip install -q huggingface_hub")
     from huggingface_hub import hf_hub_download
@@ -95,24 +96,31 @@ try:
                     CRISPEMBED_QWEN35_PROFILE="1", OMP_NUM_THREADS=str(THREADS))
     vt = {"CRISPEMBED_QWEN35_VISION_THREADED_ATTN": "1"}
     graph = dict(vt, CRISPEMBED_QWEN35_OCR_GRAPH_DECODER="1")
-    arms = [("graph-f32", dict(graph, CRISPEMBED_QWEN35_GRAPH_MATMUL="f32"), list(cases)),
-            ("vt", vt, ["inventory-table"]),
-            ("base", {}, ["inventory-table"]),
-            ("graph-nat", dict(graph, CRISPEMBED_QWEN35_GRAPH_MATMUL="native"), list(cases))]
+    inv = ["inventory-table"]
+    # (arm, env, cases, threads, runner): "q" = quality runner (cap 1024, frozen comparison),
+    # "p" = profiling runner (cap 512, per-stage PROFILE lines; same recognition call).
+    arms = [("graph-f32", dict(graph, CRISPEMBED_QWEN35_GRAPH_MATMUL="f32"), list(cases), THREADS, "q"),
+            ("graph-nat", dict(graph, CRISPEMBED_QWEN35_GRAPH_MATMUL="native"), list(cases), THREADS, "q"),
+            ("graph-f32", dict(graph, CRISPEMBED_QWEN35_GRAPH_MATMUL="f32"), inv, THREADS, "p"),
+            ("graph-nat", dict(graph, CRISPEMBED_QWEN35_GRAPH_MATMUL="native"), inv, THREADS, "p"),
+            ("vt", vt, inv, THREADS, "p"), ("base", {}, inv, THREADS, "p"),
+            ("vt", vt, inv, 2, "q"), ("base", {}, inv, 2, "q")]
     only = os.environ.get("AB_ARMS")
-    for arm, extra, ids in arms:
+    for arm, extra, ids, nthreads, runner in arms:
         if only and arm not in only.split(","):
             continue
         for cid in ids:
             env = dict(base_env, **extra)
             t = time.time()
             with open(TMP / "o.txt", "w") as fo, open(TMP / "e.txt", "w") as fe:
-                proc = subprocess.Popen([str(binary), model, str(cases[cid]), "1024", str(THREADS)], env=env,
+                cmd = ([str(binary), model, str(cases[cid]), "1024", str(nthreads)] if runner == "q" else
+                       [str(profiler), model, str(cases[cid]), "512", str(nthreads), "ovisocr2"])
+                proc = subprocess.Popen(cmd, env=env,
                                         stdout=fo, stderr=fe)
                 _, status, usage = os.wait4(proc.pid, 0)
             r = subprocess.CompletedProcess(proc.args, os.waitstatus_to_exitcode(status),
                                             (TMP / "o.txt").read_text(), (TMP / "e.txt").read_text())
-            row = {"arm": arm, "case": cid, "rc": r.returncode, "wall_s": round(time.time() - t, 2),
+            row = {"arm": arm, "case": cid, "threads": nthreads, "runner": runner, "rc": r.returncode, "wall_s": round(time.time() - t, 2),
                    "stderr_tail": r.stderr[-600:], "max_rss_kib": usage.ru_maxrss}
             line = next((l for l in r.stdout.splitlines() if l.startswith("OVIS_QUALITY_RESULT ")), None)
             prof = {}
@@ -121,12 +129,24 @@ try:
                 if m and m.group(2) in ("vision", "prefill", "cached_decode", "selection", "request_file"):
                     prof[m.group(2)] = {"calls": int(m.group(3)), "s": int(m.group(4)) / 1e9}
             row["profile"] = prof
+            if runner == "p":
+                bench = {l.split(":", 1)[0][6:]: l.split(":", 1)[1].split() for l in r.stdout.splitlines()
+                         if l.startswith(("BENCH ids:", "BENCH confidences:"))}
+                if bench:
+                    line = "OVIS_QUALITY_RESULT " + json.dumps({
+                        "token_ids": [int(x) for x in bench.get("ids", [])],
+                        "confidences": [float(x) for x in bench.get("confidences", [])],
+                        "raw_text_utf8_hex": next((l.split(":", 1)[1] for l in r.stdout.splitlines()
+                                                   if l.startswith("BENCH utf8_hex:")), ""),
+                        "stop_kind": None, "wall_seconds": row["wall_s"], "init_seconds": None})
+                    row["confidence_strings"] = bench.get("confidences")
             if line:
                 res = json.loads(line.split(" ", 1)[1])
                 ref = frozen[cid]
                 fids = json.loads(ref["token_ids"]) if isinstance(ref["token_ids"], str) else ref["token_ids"]
                 fconf = json.loads(ref["confidences"]) if isinstance(ref["confidences"], str) else ref["confidences"]
                 ids_out, conf = res["token_ids"], res["confidences"]
+                row["confidences"] = conf
                 row.update(tokens=len(ids_out), ids_exact=ids_out == fids, text_exact=
                            bytes.fromhex(res["raw_text_utf8_hex"]).decode("utf-8", "replace") == ref["raw_text"],
                            stop_kind=res["stop_kind"], recognize_s=res["wall_seconds"], init_s=res["init_seconds"])
