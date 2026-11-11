@@ -167,6 +167,17 @@ def main(args):
         env={k:v for k,v in os.environ.items()if not k.startswith('CRISPEMBED_')}
         env.update(OMP_NUM_THREADS='2',OPENBLAS_NUM_THREADS='2',MKL_NUM_THREADS='2')
         build=args.scratch/'build'
+        try:  # ce-ccache-bootstrap: CrispEmbed harness from the pinned clone warms + auto-refreshes the seed (docs/kaggle-ccache.md)
+            import glob as _ccg, importlib.util as _ccu, os as _cco
+            for _cch in ["kaggle_harness.py"] + sorted(_ccg.glob("/kaggle/working/*/kaggle_harness.py")) + sorted(_ccg.glob("/kaggle/temp/*/kaggle_harness.py")):
+                if _cco.path.isfile(_cco.path.join(_cco.path.dirname(_cco.path.abspath(_cch)), "CMakeLists.txt")) and _cco.path.isfile(_cch):
+                    _ccs = _ccu.spec_from_file_location("ce_kaggle_harness", _cch)
+                    _ccm = _ccu.module_from_spec(_ccs)
+                    _ccs.loader.exec_module(_ccm)
+                    _ccm.ensure_build_cache()
+                    break
+        except Exception as _cce:
+            print("ce-ccache: bootstrap skipped:", _cce, flush=True)
         for name,cmd in [('configure',['cmake','-S',ROOT/'tests/josev-q4k','-B',build,'-DCMAKE_BUILD_TYPE=Release']),
                          ('build',['cmake','--build',build,'--parallel','2']),
                          ('profile-controls',[build/'josev-q4k-profile-controls']),

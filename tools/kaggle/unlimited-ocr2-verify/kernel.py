@@ -43,6 +43,17 @@ save = lambda: json.dump(report, open(OUT + '/verify.json', 'w'), indent=2, ensu
 
 def build(bdir, native):
     t0 = time.time()
+    try:  # ce-ccache-bootstrap: CrispEmbed harness from the pinned clone warms + auto-refreshes the seed (docs/kaggle-ccache.md)
+        import glob as _ccg, importlib.util as _ccu, os as _cco
+        for _cch in ["kaggle_harness.py"] + sorted(_ccg.glob("/kaggle/working/*/kaggle_harness.py")) + sorted(_ccg.glob("/kaggle/temp/*/kaggle_harness.py")):
+            if _cco.path.isfile(_cco.path.join(_cco.path.dirname(_cco.path.abspath(_cch)), "CMakeLists.txt")) and _cco.path.isfile(_cch):
+                _ccs = _ccu.spec_from_file_location("ce_kaggle_harness", _cch)
+                _ccm = _ccu.module_from_spec(_ccs)
+                _ccs.loader.exec_module(_ccm)
+                _ccm.ensure_build_cache()
+                break
+    except Exception as _cce:
+        print("ce-ccache: bootstrap skipped:", _cce, flush=True)
     sh('cmake', '-S', '.', '-B', bdir, '-DCMAKE_BUILD_TYPE=Release', f'-DGGML_NATIVE={"ON" if native else "OFF"}', '-DGGML_CUDA=OFF')
     sh('cmake', '--build', bdir, '--target', 'crispembed-cli', 'test-unlimited-ocr2-text', 'test-unlimited-ocr2-tiles',
        '--parallel', NT)
