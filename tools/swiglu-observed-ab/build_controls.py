@@ -36,7 +36,7 @@ def main():
   for target in TARGETS:
    text=run(target,[build/target],seconds=120);require('skip'not in text.lower()and 'pass'in text.lower(),'actual supported control marker');r['unit_control_outputs'][target]=text.strip()
   require(NEW_MARKER in r['unit_control_outputs']['test-lighton4b-physical-swiglu'],'six exact fused arms');native=build/'lighton4b-native-document';run('cli-observed512',[native,work/'missing.gguf',work/'missing.rgb',1,1,work/'missing.ids',out,512,4,'greedy-full','--observed-composed-cap512'],seconds=30,expected=4)
-  shutil.copyfile(cache,out/'CMakeCache.txt');r['cmake_cache']=dict(bytes=cache.stat().st_size,sha256=sha(cache));bundle=out/'runtime';(bundle/'bin').mkdir(parents=True);(bundle/'lib').mkdir();shutil.copy2(native,bundle/'bin/lighton4b-native-document');libs=[f for f in(build/'bin').glob('*.so*')if f.is_file()];require(1<=len(libs)<=19,'runtime library census')
+  shutil.copyfile(cache,out/'CMakeCache.txt');r['cmake_cache']=dict(bytes=cache.stat().st_size,sha256=sha(cache));bundle=out/'runtime';(bundle/'bin').mkdir(parents=True);(bundle/'lib').mkdir();shutil.copy2(native,bundle/'bin/lighton4b-native-document');libs=[f for f in build.rglob('libggml*.so*')if f.is_file()];require(1<=len(libs)<=19,'runtime library census')
   for f in libs:shutil.copyfile(f,bundle/'lib'/f.name)
   files=[f for f in bundle.rglob('*')if f.is_file()];require(sum(f.stat().st_size for f in files)<=256<<20,'bounded runtime bundle');r['runtime_bundle']={str(f.relative_to(bundle)):dict(bytes=f.stat().st_size,sha256=sha(f))for f in files};r['native_binary_sha256']=sha(native);r['passed']=True
  except BaseException as e:r.update(error_type=type(e).__name__,error=str(e));raise
