@@ -4813,3 +4813,18 @@ three-region/read/render controls await one combined-source hosted batch. Dart
 32-bit and other native platforms remain unqualified. No release, version, app
 immutable pin, size gate or model-quality policy changes; retained native bundles
 remain remote, and private configuration remains outside Git.
+
+### OCR HTTP reported-failure follow-up — 12 November 2026
+
+Independent combined-source review at `5839a35ef` found that `/ocr/pipeline`
+and `/ocr/document` still converted the new NULL-text failure sentinel into a
+successful empty response. The bounded server correction returns HTTP 500 JSON
+with the copied native diagnostic, preserves non-NULL blank success, and frees
+request-owned rendering/image/temporary resources on document failure. Existing
+context locks and response formats on success remain unchanged. The
+[model-free production-server control](tests/ocr_server_failure_status.py)
+checks repeated real lazy unified load failure, ordinary/review/document errors,
+and legacy non-NULL blank success without models or inference. Python syntax and
+changed-line clang-format 18 checks pass; compiled server execution remains a
+hosted combined-source gate. Browser serialization and legacy engines without
+explicit outcomes remain separately unqualified. No release/default/app pin change.

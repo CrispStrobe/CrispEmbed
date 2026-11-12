@@ -2693,6 +2693,14 @@ int main(int argc, char ** argv) {
         float mean_conf = 0.0f;
         const crispembed_ocr_result * results =
             crispembed_ocr_pipeline_run(ocr_orch_ctx, image_path.c_str(), &n_results, &full_text, &mean_conf);
+        if (!full_text) {
+            const char * detail = crispembed_ocr_pipeline_last_error(ocr_orch_ctx);
+            res.status = 500;
+            res.set_content("{\"error\":\"" +
+                                json_escape(detail && *detail ? detail : "OCR pipeline recognition failed") + "\"}",
+                            "application/json");
+            return;
+        }
 
         // Explicit response shape opt-in, serialized under the same context
         // lock as recognition so concurrent requests cannot mix page results.
@@ -4493,11 +4501,16 @@ int main(int argc, char ** argv) {
             const char * full_text = nullptr;
             float mean_conf = 0;
             const crispembed_ocr_result * results = nullptr;
+            std::string ocr_error;
 
             if (ocr_orch_ctx) {
                 std::lock_guard<server_load::counted_mutex> lock(ocr_orch_mutex);
                 results =
                     crispembed_ocr_pipeline_run(ocr_orch_ctx, page_source.c_str(), &n_results, &full_text, &mean_conf);
+                if (!full_text) {
+                    const char * detail = crispembed_ocr_pipeline_last_error(ocr_orch_ctx);
+                    ocr_error = detail && *detail ? detail : "OCR pipeline recognition failed";
+                }
             } else if (ocr_model_ctx) {
                 std::lock_guard<server_load::counted_mutex> lock(ocr_model_mutex);
                 int out_len = 0;
@@ -4513,6 +4526,13 @@ int main(int argc, char ** argv) {
             }
 
             stbi_image_free(img);
+            if (!ocr_error.empty()) {
+                ocr_render_free(renderer);
+                for (const auto & tf : temp_files) std::remove(tf.c_str());
+                res.status = 500;
+                res.set_content("{\"error\":\"" + json_escape(ocr_error) + "\"}", "application/json");
+                return;
+            }
 
             // Build render page from results
             if (n_results > 0 && results) {
