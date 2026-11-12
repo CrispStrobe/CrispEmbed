@@ -154,17 +154,19 @@ of inference. These results do not qualify Ovis real-page decoded quality or spe
 the input gate remains unchanged. A separately declared image preparation protocol
 and correct native error propagation are required before repeating the panel.
 
-A bounded [error propagation candidate](docs/ovisocr2-error-propagation.md) preserves
-native failure separately from valid blank/EOS text through the pipeline C API
-and consumer wrappers, with additive diagnostics and unchanged C layouts. Explicit
-stage outcomes prevent unknown legacy emptiness from masking a reported failure,
-while retaining standalone unknown blank and prior-error-free permissive gates.
-A positively recognized blank retains its actual fallback provenance. Four
-stdlib-only Python controls pass; native outcome/ownership and actual mixed-chain
-versus standalone-unknown controls are added but not compiled locally. Hosted compilation, Rust/Dart checks, fallback/blank ownership
-controls and the same two-input candidate replay remain pending. No push,
-release/version change, image resizing or patch-gate waiver is authorized by the
-preparation result. The original consumer needs a separately qualified rebuild.
+The bounded [error propagation candidate](docs/ovisocr2-error-propagation.md) now
+passes [hosted CPU controls](tests/results/qwen35-ocr/ovisocr2-error-propagation.json)
+at `458458b2a308a1e6e7d3e55f7276a47761d487fa`: 27 commands, 107 native
+orchestrator checks, review tests, Rust semantic/build and actual Rust/Python
+mixed/standalone-blank/fallback/recovery controls; old immutable-runtime link also
+passes. Explicit stage outcomes preserve known blank/fallback provenance and
+prevent unknown legacy emptiness from masking a reported failure, while retaining
+prior-error-free permissive blank behavior. The raw initial CPU receipt remains
+separate. One bounded T4/SM75 CUDA compile/replay is running, with no result claimed.
+CLI and other native/platform checks, browser error propagation and final merged
+runtime/release/immutable-consumer qualification remain open. No source push,
+release/version change, image resize or patch-bound waiver follows from this
+bounded result. The application pin remains unchanged.
 
 ## CrispSorter model-manager current source control — 12 November 2026
 
@@ -4797,3 +4799,17 @@ The individually negative global repack and physical GDN alternatives remain off
 - Scoped Q6 tiled integration: preserve source00c5 arithmetic and hosted8fc structural/decoded harness bytes, current main, old gates and public no-ship fences. Source-fed68-case/full140 proof and38 structural checks pass; observed table/form floors pass with opposing form WER/score changes documented in [runtime scope](docs/lighton4b-q6-tiled-runtime.md). Arabic now preserves exact six-ID/text/EOS output, but the corrected frozen receipt still fails: 25/768 content character edits and 19/144 word edits versus source 24/768 and 18/144. The unchanged frozen panel is complete with two of three provisional case floors met: two-column 297/2981 character edits and 87/556 word edits versus source 526/146; authored inventory zero edits and 15 cells exact. Preserve the receipt failure and all three independent raw audits (1398 files, 7,439,126,325 bytes, 5168 rows); default off, no aggregate waiver or alias/release promotion. Reference tools remain excluded from production installation.
 
 - Final scheduler-only frozen panel: receipt468EOS retains25/768 character and19/144 word edits versus source24/18; inventory248EOS remains exact. The separately budgeted two-column replay reproduces all1054 retained rows and82 stages, then hits cap1536 without EOS (capped3716/2981 characters,955/556 words versus complete source526/146). Artifact-only audit closes98 files/1,745,200,955 bytes/1536 rows; the scheduler panel meets only1/3 provisional completion/content floors, distinct from prior no-planner2/3. Preserve timeout and cap negatives, provisional labels and private book outputs. [Immutable evidence](https://github.com/CrispStrobe/CrispEmbed/blob/b80c4c7824e11cf4a8d3cc24d8f6a53e675e74c3/docs/lighton4b-planner-heldout-provisional-results.md); all experimental gates default-off, no ship, no tuning/aggregate waiver or code/default/release changes.
+
+### OCR reported-failure and result-layout candidate — 12 November 2026
+
+The [bounded API evidence](docs/ovisocr2-error-propagation.md) preserves the
+unchanged native patch bound and distinguishes reported failure, proven blank
+success and legacy unknown emptiness. Source `458458b2a` passed hosted CPU
+27/27 commands (107 native controls) and T4/SM75 CUDA 29/29 commands, with the
+same synthetic nine IDs/EOS and real-page rejection before vision. This repairs
+false successful blank reporting; it does not establish large-page model quality.
+Subsequent Python/Dart complete-result mirrors and model-free production
+three-region/read/render controls await one combined-source hosted batch. Dart
+32-bit and other native platforms remain unqualified. No release, version, app
+immutable pin, size gate or model-quality policy changes; retained native bundles
+remain remote, and private configuration remains outside Git.

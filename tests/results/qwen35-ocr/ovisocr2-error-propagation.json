@@ -1,0 +1,92 @@
+{
+  "schema": "ovisocr2-error-propagation-evidence-v1",
+  "source_commit": "458458b2a308a1e6e7d3e55f7276a47761d487fa",
+  "base_commit": "97592ff9943f0ac98f0831195cdcb864de322bcc",
+  "source_tree": "03cce54001ccfeb79c7c2f558150d48881fe305a",
+  "ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "initial_comparison": "tests/results/crispsorter-ovis-comparison-20261112.json",
+  "initial_diagnostic": "tests/results/crispsorter-ovis-diagnostic-20261112.json",
+  "cpu_receipts": [
+    {
+      "file": "ovisocr2-error-propagation-cpu-v1.json",
+      "source_commit": "baf62eacbfb28c957567db1ef6981660fc751aad",
+      "report_sha256": "48f90ac78c6372b3f1cfcedee8a917143ebf7c5155177670b912165aee1d45db",
+      "log_sha256": "d19feafdc5cc77d443e5cd314a2aa2fbefd6d132c53d140f5953aad6e7998151",
+      "log_bytes": 224864,
+      "commands": 26,
+      "all_commands_pass": true,
+      "elapsed_seconds": 661.457,
+      "scope": "bounded Linux CPU native build and selected controls; not release or model qualification"
+    },
+    {
+      "file": "ovisocr2-error-propagation-cpu-v2.json",
+      "source_commit": "458458b2a308a1e6e7d3e55f7276a47761d487fa",
+      "report_sha256": "d57969d6ce44220bcde3c84c8a56b7fbf4b0112eeda2d1f59a17743a0ea078f4",
+      "log_sha256": "7424db35b30d325ee2ba4ddd1635f89ba437cf4e597efe9bac208e7294686bf9",
+      "log_bytes": 228211,
+      "commands": 27,
+      "all_commands_pass": true,
+      "elapsed_seconds": 472.89,
+      "scope": "bounded Linux CPU native build and selected controls; not release or model qualification"
+    }
+  ],
+  "public_control_sha256": {
+    "tests/ovisocr2_error_bindings.rs": "94c934d7589ac814d5c96f88d4e169779121985907d3b2e7bdcad13ee2af11ae",
+    "tests/ovisocr2_error_bindings.py": "f7d68138615b0cf3862faa35fdcbc68d2c58a5322d6df5574c914c02b1a6ece5",
+    "tests/ovisocr2_error_native.py": "0a42a966be1bed61782a09e8688ff0e1b34fb76cf750212daa7fc6b774e5f3c4"
+  },
+  "validated_git_objects": {
+    "src": "2211e3f7e9e5e6e7274ff3f27c6de427609cc926",
+    "CMakeLists.txt": "cdbd83f7bdcf28dce913663994a7b4a589fc8d9b",
+    "VERSION": "530ec3d024054b0385ef0dd25a0df1d87da91813",
+    "ggml": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+    "crispembed": "5310d5d84d764256a877064c9df0b6a1121ec1bb",
+    "crispembed-sys": "4dd992731e3f0ec7cb6106a1f6a4b0d1739bb27f",
+    "python": "7f6d880483471cc5b435fe6a00498ad222fff6a4",
+    "flutter": "6f25f2422b05fa5294ab0a7945841ad073e9c3df",
+    "examples/cli": "ce021d4ea0495cc4445f412a80b47d2f8d505309",
+    "tests/test_ocr_orchestrator.cpp": "eb0741505b54afac4d621f2e0a4babc4bf164c11",
+    "tests/test_ocr_review.cpp": "8b3e38cd4b83e9dde6588f832d8920b13c8648da",
+    "tests/test_ocr_pipeline_failure_binding.py": "4e23d7ebdc331bdf677f308ff5d9ec84b033a7c1"
+  },
+  "native_controls": {
+    "revised_orchestrator_pass": 107,
+    "revised_orchestrator_fail": 0,
+    "review_test": "passed",
+    "rust_semantics": "passed",
+    "actual_rust_python_mixed_unknown_and_legacy_blank": "passed",
+    "old_immutable_runtime_link": "passed"
+  },
+  "cuda_validation": {
+    "file": "ovisocr2-error-propagation-cuda-v1.json",
+    "source_commit": "458458b2a308a1e6e7d3e55f7276a47761d487fa",
+    "commands": 29,
+    "all_commands_pass": true,
+    "elapsed_seconds": 1842.736,
+    "build_seconds": 1739.317,
+    "report_sha256": "7579c207e27977036bdfbc01a233a92161d0ad20c472912920a48f6571e0471d",
+    "log_sha256": "116af3559faa4b035ea152628b14ec95a4522b50caa035c107421df4d4bf7379",
+    "log_bytes": 246670,
+    "scope": "bounded Linux T4 SM75 build and same two-input replay; not model quality or release qualification"
+  },
+  "bounds_unchanged": true,
+  "input_preparation_changed": false,
+  "prompt_cap_model_scorer_changed": false,
+  "model_quality_qualified_by_this_work": false,
+  "release_qualified": false,
+  "immutable_consumer_upgrade_qualified": false,
+  "limits": [
+    "Bounded Linux CPU source and two-input controls only until separate CUDA evidence closes.",
+    "Unknown-only legacy emptiness remains ambiguous; numeric permissive behavior is retained without prior reported failure.",
+    "Unknown legacy emptiness that fails its gate cannot establish a successful blank over a later reported failure.",
+    "Multi-model unified cache ownership and browser shim error propagation remain separate.",
+    "Shipping requires separately qualified merged sources, release assets and immutable consumer rebuild."
+  ],
+  "later_binding_changes": {
+    "python_commit": "052b6e2a97be39febdebc22a1be575b21c48a1b2",
+    "dart_commit": "59b358364",
+    "native_memory_control_commit": "c9d213980",
+    "hosted_production_binding_qualification": "pending combined-source control batch",
+    "other_platforms_qualified": false
+  }
+}

@@ -41,17 +41,38 @@ for details. The standalone CLI returns a failure exit code. An already compiled
 consumer using the old Rust wrapper still needs a binding rebuild; swapping its
 native library alone does not repair its false-success handling.
 
-Four stdlib-only controls execute the actual Python wrapper method against native
-failure, valid blank, older-library and failure-then-success outputs. Added native
-model-free controls exercise real lazy unified initialization failure, cleared C
-outputs, diagnostic lifetime and unavailable failed-run review data. Selection
-controls cover failure plus unknown empty, known blank followed by failure with
-provenance, successful fallback, nonempty legacy fallback and owned error/text.
-Actual C-API controls contrast a mixed reported failure plus unknown zero-threshold
-stage (failure) with a standalone unknown zero-threshold stage (the existing
-accepted empty result). Existing no-text controls remain. Native compilation and execution,
-Rust/Dart checks, real successful/failed fallback, valid EOS-only output, and the
-same frozen synthetic/real-page candidate replay remain hosted acceptance gates.
+The [bounded CPU evidence](../tests/results/qwen35-ocr/ovisocr2-error-propagation.json)
+records source `458458b2a308a1e6e7d3e55f7276a47761d487fa`: all 27 hosted
+commands pass, including 107 native orchestrator controls (zero failures), review
+compilation/execution, Rust semantic/build controls and the actual two-input
+Rust/Python consumers. The frozen synthetic retains all nine IDs/raw text/EOS;
+the real page remains rejected before vision with zero IDs and error stop 4.
+The new Rust consumer also links/runs with the old immutable runtime, retaining
+that old runtime's prior empty-result behavior. This is link compatibility, not
+a repair of an already compiled old consumer.
+
+Four stdlib-only controls execute the actual Python wrapper method against failure,
+blank, older-library and failure-then-success outputs. Native controls contrast an
+actual mixed reported failure plus unknown zero-threshold stage (failure) with a
+standalone unknown zero-threshold stage (its existing accepted empty result).
+Selection controls cover known blank followed by failure with provenance,
+successful/legacy-text fallback and owned diagnostics/results. An unknown legacy
+blank that fails its gate cannot prove success over a later reported failure;
+this ambiguity requires a richer engine status contract to resolve.
+
+Public reference-only [Rust](../tests/ovisocr2_error_bindings.rs),
+[Python pipeline](../tests/ovisocr2_error_bindings.py) and
+[native diagnostic](../tests/ovisocr2_error_native.py) programs match the hosted
+program bytes recorded in the evidence. They are test controls, outside production
+source and binary assets. The initial bounded CPU receipt predates the additional
+mixed-chain coverage and remains retained separately. One source-sealed T4/SM75
+CUDA build/replay completed: all 29 commands pass, including the same two-input
+replay and strict CUDA dispatch. The shared CUDA build took 1739.317 seconds; the
+bounded worker took 1842.736 seconds. Synthetic raw output, all nine IDs and EOS
+remain exact; the real page still fails the unchanged native patch bound before
+vision. Native bundles remain remotely retained; these are unpublished prototypes. Standalone CLI,
+Rust/Dart semantics on other native platforms, browser error reporting and final
+merged-source/release/consumer qualification remain separate gates.
 
 No resizing, patch-bound extension, prompt/cap/model/scorer change, default flip,
 new model qualification or release follows from this preparation. The version
@@ -59,3 +80,15 @@ remains unchanged until a fully qualified runtime release follows `VERSION`,
 `scripts/sync-version.py` and the release gates. Shipping also requires a separately
 qualified immutable consumer rebuild. Private execution configuration and raw
 service/account identifiers remain outside Git.
+
+The subsequent Python result-mirror correction adds the native record's existing
+`orientation_angle` and `orientation_confidence` fields: native 64-bit stride 48
+versus the old Python stride 40. Dart now uses a complete typed FFI record for
+reading and rendering, replacing manual offsets/strides; rendering counts UTF-8
+bytes. Four Python ABI/array controls, four Python failure controls and one Dart
+header-declaration control pass locally. These controls are not hosted production
+binding qualification. The [model-free native-memory control](../tests/ocr_binding_native_memory.py)
+loads the full production Python module and production Dart sources, exercises
+three native regions, failure/recovery and native render packing. Its hosted
+combined-source execution remains pending. No 32-bit or other-platform Dart
+execution has been performed; those platforms remain explicitly unqualified.
