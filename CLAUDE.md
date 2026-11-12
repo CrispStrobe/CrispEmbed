@@ -312,3 +312,23 @@ continuity and unchanged strict budgets. Historical guards remain strict when
 an explicit new source protocol is added.
 App stays on immutable0.17.12; no tag or qualified model alias follows from
 preparation, queued execution, or a component cosine.
+
+## Merge procedure (every agent, every repository)
+
+Never merge on a single poll or on `gh pr checks` output alone. Merge only the
+exact commit whose checks you watched:
+
+```bash
+python3 tools/ci/wait_required_checks.py --pr <N> [--repo owner/name] [--sha <reviewed head>]
+gh pr merge <N> --merge --match-head-commit <that sha>
+```
+
+The helper pins the head SHA, re-reads the PR head on every poll and before it
+exits (exit 3 if it moved), reads check runs, statuses and Actions workflow runs
+for that SHA only (a queued workflow may not have created any check run yet),
+treats queued/pending/cancelled/neutral as not green, waits a settle period for
+late workflows, and exits 0 only when every check is success or skipped.
+`--allow-stalled "<name>"` ignores a named check only while it is still pending,
+and only when the owner has accepted that job as stalled; say so in the PR.
+For a repository without the script, fetch it from this repository's
+`tools/ci/` and run it with `--repo`.

@@ -1,5 +1,35 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## PR219 review corrections — 12 November 2026
+
+Review source: `5f3864fcb4a1bb48e1cb47aa1f270a9ae5aa88b7`. Local corrections
+order workflow runs before their attempt numbers, recheck the PR head/state
+immediately before reporting green, and limit explicit stalled exceptions to
+queued/pending jobs. Model-free regression tests cover the initial failures.
+The twelve corrected controls pass locally and run in the static CI guards;
+explicit stalled exceptions alone cannot produce a zero-check green result.
+Optional protection lookup permits only unavailable 403/404 responses; throttled
+403, 429, service and network errors fail closed without changing other API
+endpoints' RuntimeError handling.
+Kernel configuration stays ignored and outside the public tree. A temporary
+metadata fixture exercises seed attachment, image selection, exact source
+substitution and string booleans without storing a real configuration.
+The reviewed corrections do not change runtime defaults or claim new GPU execution.
+Merge remains subject to checks on the updated PR head.
+
+## PR218 consumer audit and metadata correction — 12 November 2026
+
+PR218 is merged at `66492f7c48fdcce9f5aa17bb8fdb66213c1f9bf4`; its original
+head was `2ee15cda00e3d0901cc73c6d844215595be8ef49`. Independent review of the
+actual Kaggle `consumer/report.json` confirms `completed=true`, all 21 checks
+passing, app `b45dde889edb24bb2feabf80bbfbc24d510df328` and runtime
+`c364feb974b91e14cbf328c6949f3df36e89ce81`. The report SHA-256 is
+`a4c1f266f6e4ee783278c1dde4dcea18f8dee899c648a8b7e89277dba1b08a80`.
+Both OCR fixtures have CER 0; native/app licence refusal and per-model consent
+controls pass. This is bounded Linux CPU consumer evidence, not broad OCR quality.
+Kernel configuration remains ignored; no private execution configuration is
+required for reviewing the CPU consumer source and retained evidence.
+
 ## OvisOCR2 speed follow-ups — 11 November 2026
 
 Both CPU default flips and the standard-ggml-op GPU port are done (HISTORY 11 November).
