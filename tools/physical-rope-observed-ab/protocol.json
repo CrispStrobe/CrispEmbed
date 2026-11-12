@@ -1,0 +1,40 @@
+{
+  "schema": "lighton4b-physical-rope-observed-ab/v1",
+  "controller_source": "eb2d04219f7a8567803e77b3ff5bbaa398b16629",
+  "cases": [
+    "simple_table",
+    "simple_form",
+    "arabic_printed_line"
+  ],
+  "historical_off_tokens": [
+    218,
+    167,
+    6
+  ],
+  "gate": "CRISPEMBED_LIGHTON4B_PHYSICAL_ROPE",
+  "fixed_scheduler": "1",
+  "cap": 512,
+  "threads": 4,
+  "arm_seconds": 900,
+  "worker_seconds": 7200,
+  "model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "model_f32_text_allowed": false,
+  "heldout_data_allowed": false,
+  "source_reference_forward_allowed": false,
+  "runtime_rebuild_allowed": false,
+  "quality_qualified": false,
+  "candidate_source": "a8a22749ab0b757ae1f317b6fa5b84ffd148b939",
+  "source_form_probe_receipt_sha256": "2723be06d2b1a4836d51b75d50a23f61a07972127c907e01d0505c778dcf7260",
+  "historical_fused_receipt_sha256": "67ff19db0230ddc329300cc3f6a0256eb85b3cdbbcf06a578b23eb93c2688ba1",
+  "fixed_swiglu": "1",
+  "baseline_scope": "Frozen complete fusedON producer report and raw-array identity manifests authenticated before weights. Fresh OFF must reproduce every retained raw vocabulary row and stage SHA; original raw files are not reread.",
+  "acceptance": [
+    "Actual source-bound supported/unsupported/WASM/cache controls and full source-fed layer3 equality must pass before model acquisition.",
+    "One exact tested candidate executable/libs/physical quantized checkpoint; only new physical RoPE changes0\u21921, SwiGLU stays1.",
+    "All3 original observed inputs, original/BF16 scoring and pinned actual upstream responses/firstscores remain unchanged.",
+    "Six actual fresh independent greedy arms at cap512/threads4/900s perarm; OFF complete IDs/text/EOS, all old summary fields and raw-stage hashes must equal frozen fusedON218/167/6 before ON interpreted.",
+    "ON vision/embeddings/positions/schedule and layers0\u20132 exact to OFF; source form first4 fused activation/down exact in both arms.",
+    "Record all raw vocabulary rows, decoded scores/EOS/cap and later-layer magnitudes; component equality never substitutes for decoded quality.",
+    "No heldout images/golds/IDs or full F32/BF16 text model; no source reference or runtime rebuild."
+  ]
+}
