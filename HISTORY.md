@@ -1,3 +1,60 @@
+## 12 November 2026 — Kaggle ccache: image pinning, warm OvisOCR2 GPU bench, merge guard
+
+**Why the #216 OvisOCR2 GPU bench built cold.** The seed was attached and warmed (1,385 files), yet the
+build had 0/193 hits and took 1,556 s. The cause was the Kaggle image, not the seed. An existing kernel keeps
+the image of its first push. The seed kernel was still on GCC 11.4 / CUDA 12.8, while the newly created
+bench got GCC 13.3 / CUDA 13.0. `CCACHE_COMPILERCHECK=content` keys every object on the compiler binaries,
+so nothing could hit. The bench also had no committed `kernel-metadata.json`.
+
+- `kpush.py` now sets `docker_image_pinning_type: "latest"` unless the metadata pins an image, so the seed
+  and its consumers share one toolchain. It also fails when the Kaggle CLI refuses a push but exits 0 (for
+  example at the GPU session limit). Before this, `--refresh-ccache` waited on the previous version.
+- The seed records `toolchain` (the `c++` and `nvcc` version lines). At warm-up the harness warns when the
+  image differs and marks the seed stale.
+- The seed's CUDA tree also builds `test-ovisocr2-quality-run` and `test-qwen35-profile`. It adds trees for
+  `CE_CCACHE_SEED_ARCHS` (default `75,60`) that this nvcc can target. CUDA 13.0 has no sm_60, so P100 is
+  skipped on the current image. Both P100 requests made today (this bench and another agent's precision
+  kernel) were served on a Tesla T4.
+- `tools/kaggle/ovisocr2-gpu-bench` gained its metadata (seed attached) and uses `ensure_build_cache()`.
+- Results (`tests/results/kaggle-ccache.json`): the seed on the new image ran cold first (CPU 0/212, CUDA
+  9/355, 31.6 min), then warm (CPU 212/212 in 4.0 s, CUDA 355/355 in 11.5 s, no export). The bench was run
+  twice: 197/197 hits with a 14.6 s build, then 197/197 hits with a 9.9 s build. All ten OCR runs had exact
+  IDs and text against the frozen CPU receipt.
+- The `ce-ccache-bootstrap` block in all 59 kernels now also finds clones under `/tmp` and two levels deep.
+  Before this, kernels that cloned into `/tmp/<x>/CrispEmbed` or `/kaggle/temp/<x>/CrispEmbed` skipped the
+  cache. The harness also warms from `crispembed-ccache` before `crispasr-ccache` when both are attached.
+- Smoke runs of the bootstrap block. The bootstrap ran and warmed in every kernel whose log could be
+  read: `moedern-quant` and `unlimited-ocr2-native` (CPU), the seed and the OvisOCR2 bench (GPU).
+  `crispembed-cuda-diag` (GPU) completed, but its log cannot be fetched: the kernel leaves a full CrispASR
+  tree in its output, which pushes the log past the CLI's 500-file page.
+  `minicpm-ocr-graph` failed at link time in its own `tests/minicpm-graph` project, which lacks the
+  `lighton4b_physical_*` sources. That failure is independent of ccache. These CPU kernels build their own
+  CMake projects with other flags, and on Kaggle's CPU image they had 0-7% hits.
+- `tools/kaggle/kv-cache-test/kv_cache_test.py` compiles again (stray indentation).
+- **Merge guard.** `tools/ci/wait_required_checks.py` waits on every check run, status and Actions
+  workflow run for one pinned PR head SHA. It fails if the head moves and treats queued, pending, cancelled and neutral as not green. It exits 0 only
+  when every check is success or skipped, and only after a settle period. CLAUDE.md now requires it, followed
+  by `gh pr merge --match-head-commit`. This follows CrispSorter #49, which was merged on a stale poll. The
+  same script went to CrispSorter.
+
+## 12 November 2026 — v0.17.19 released; CrispSorter pinned
+
+- **Release.** PR #217 bumped the versions in the same files as v0.17.18 and added
+  `RELEASE_NOTES_v0.17.19.md`. Tag `v0.17.19` is on merge commit `c364feb9`. `release.yml` succeeded
+  with all 16 assets attached (pub.dev publish skipped as before). The release covers #205-#216. Two
+  OvisOCR2 / Qwen3.5-OCR defaults changed: the graph decoder with `native` matmul and the threaded
+  vision attention are now on. `CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0` and
+  `CRISPEMBED_QWEN35_VISION_THREADED_ATTN=0` restore the old paths. `CRISPEMBED_QWEN35_OCR_GPU` is
+  opt-in. ggml is unchanged (`3a27b6c6`).
+- **CrispSorter pin** (CrispSorter #49). The pin covers every place #40 pinned v0.17.18, plus the later
+  `smb-source.yml` and `docs/ocr-engine-options.md` pins. All seven locked archives were re-downloaded,
+  and their sha256 and sizes match the release asset digests. The runtime-lock digests are updated.
+- **Consumer kernel** `tools/kaggle/crispsorter-pin-01719-consumer` is retargeted from the 0.17.18 kernel.
+  CrispSorter now wraps formula OCR in operation logging, so the probe also compiles the app's own
+  `logged_formula` and `operation_log.rs`, with a no-op `app_log` and a `uuid` dependency. Kaggle CPU run:
+  21/21 checks pass. The checks are tag/lock identity, hash-verified install, build and link, licence
+  consent gates, posformer formula OCR (CER 0.00) and parseq text OCR (CER 0.00).
+
 ## 11 November 2026 — OvisOCR2 / Qwen3.5-OCR on GPU: standard-ggml-op pipeline (default off)
 
 `CRISPEMBED_QWEN35_OCR_GPU` (`src/qwen35_ocr_gpu.cpp`, default off) builds the `qwen35_ocr` vision

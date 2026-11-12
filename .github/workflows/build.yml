@@ -133,6 +133,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: CI selection and aggregate-gate controls
         run: python3 tests/test_ci_selection.py -v
+      - name: Pinned-head merge polling controls (model-free)
+        run: python3 tests/test_wait_required_checks.py -v
+      - name: Kaggle submission metadata controls (model-free)
+        run: python3 tests/test_kpush.py -v
       - id: select
         uses: ./.github/actions/ci-select
       # Desktop legs: Linux for every compiled change; Windows (MSVC) for PR

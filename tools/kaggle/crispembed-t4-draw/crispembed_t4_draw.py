@@ -111,7 +111,7 @@ print(f"CUDA arch: {arch}", flush=True)
 kh.step("cmake.configure")
 try:  # ce-ccache-bootstrap: CrispEmbed harness from the pinned clone warms + auto-refreshes the seed (docs/kaggle-ccache.md)
     import glob as _ccg, importlib.util as _ccu, os as _cco
-    for _cch in ["kaggle_harness.py"] + sorted(_ccg.glob("/kaggle/working/*/kaggle_harness.py")) + sorted(_ccg.glob("/kaggle/temp/*/kaggle_harness.py")):
+    for _cch in ["kaggle_harness.py"] + [_p for _g in ("/kaggle/working/*/", "/kaggle/temp/*/", "/tmp/*/", "/kaggle/working/*/*/", "/kaggle/temp/*/*/", "/tmp/*/*/") for _p in sorted(_ccg.glob(_g + "kaggle_harness.py"))]:
         if _cco.path.isfile(_cco.path.join(_cco.path.dirname(_cco.path.abspath(_cch)), "CMakeLists.txt")) and _cco.path.isfile(_cch):
             _ccs = _ccu.spec_from_file_location("ce_kaggle_harness", _cch)
             _ccm = _ccu.module_from_spec(_ccs)

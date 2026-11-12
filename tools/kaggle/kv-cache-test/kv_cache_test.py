@@ -84,7 +84,7 @@ print(f"  cache_flags: {cache_flags}")
 os.chdir(str(EMBED_DIR))
 try:  # ce-ccache-bootstrap: CrispEmbed harness from the pinned clone warms + auto-refreshes the seed (docs/kaggle-ccache.md)
     import glob as _ccg, importlib.util as _ccu, os as _cco
-    for _cch in ["kaggle_harness.py"] + sorted(_ccg.glob("/kaggle/working/*/kaggle_harness.py")) + sorted(_ccg.glob("/kaggle/temp/*/kaggle_harness.py")):
+    for _cch in ["kaggle_harness.py"] + [_p for _g in ("/kaggle/working/*/", "/kaggle/temp/*/", "/tmp/*/", "/kaggle/working/*/*/", "/kaggle/temp/*/*/", "/tmp/*/*/") for _p in sorted(_ccg.glob(_g + "kaggle_harness.py"))]:
         if _cco.path.isfile(_cco.path.join(_cco.path.dirname(_cco.path.abspath(_cch)), "CMakeLists.txt")) and _cco.path.isfile(_cch):
             _ccs = _ccu.spec_from_file_location("ce_kaggle_harness", _cch)
             _ccm = _ccu.module_from_spec(_ccs)
@@ -127,7 +127,7 @@ def dl(repo, fname):
 # Small models for quick tests
 pix2tex = dl("cstr/pix2tex-mfr-gguf", "pix2tex-mfr-q4_k.gguf")
 dbnet = dl("cstr/dbnet-ic15-GGUF", "dbnet-ic15-q4_k.gguf")
- trocr = dl("cstr/trocr-small-printed-GGUF", "trocr-small-printed-q8_0.gguf")
+trocr = dl("cstr/trocr-small-printed-GGUF", "trocr-small-printed-q8_0.gguf")
 
 # Larger models (persistent KV is critical for these)
 deepseek = dl("cstr/deepseek-ocr2-crispembed-GGUF", "deepseek-ocr2-q4_k.gguf")
