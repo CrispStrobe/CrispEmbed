@@ -1,7 +1,9 @@
 # Book same-prefix trace preparation
 
-This is a test-only source observer and Kaggle CPU worker preparation, **not a
-completed capture**. The existing form live-evaluation callback is reused with
+This is a test-only source observer and Kaggle CPU worker. The
+[source capture receipt](../../tests/results/qwen35-ocr/lightonocr3-4b-book-source405/v1/receipt.json)
+records an observer-neutral run; comparison with native states remains pending.
+The existing form live-evaluation callback is reused with
 separate environment variables. Capture sample count0 (all actual prefill
 graphs) and405 (the first differing source/native plannerON greedy prediction).
 The sampling bound is1536 so the unchanged654-token source can reach EOS.

@@ -1,0 +1,31 @@
+{
+  "schema": "lighton4b-book-text-trace/v1",
+  "status": "measured_neutral_book_text_trace",
+  "source_sha": "e3164d09de4578370082e42c5954a77a6cd643e3",
+  "historical_reference_sha256": "9b88195d5a8058dea4fab87472009d3826bc1fa3b5d0575aa2e33698316d5722",
+  "source_binary_sha256": "17b4e42c3c93f4c8e8bac20cfc1c94df82034fa1bd36f6e37700784325ba8131",
+  "all654_scores_observer_neutral": true,
+  "seconds": 879.9464338529999,
+  "f32_model_instantiated": false,
+  "original_bf16_forward_executed": false,
+  "native_forward_executed": false,
+  "quality_qualified": false,
+  "graph_count": 6,
+  "raw_report_sha256": "4a9776508758866dbdcf02f41dfec94844230c7e215f72ef1061142834992dc4",
+  "arms": {
+    "off": {
+      "status": "source-frozen-exact",
+      "all_historical_raw_scores_exact": true,
+      "all654_ids_text_probability_records_exact": true,
+      "source_features_positions_exact": true,
+      "seconds": 168.75616147899996
+    },
+    "on": {
+      "status": "source-frozen-exact",
+      "all_historical_raw_scores_exact": true,
+      "all654_ids_text_probability_records_exact": true,
+      "source_features_positions_exact": true,
+      "seconds": 169.30641679500002
+    }
+  }
+}
