@@ -74,8 +74,36 @@ result reader is a probe-only workaround, not production Python evidence.
 Each case preserves progress, raw native JSON and crash traces before later
 checks; failures are collected across all arms and final failed comparisons
 exit nonzero. The candidate native library is retained remotely for follow-up
-without repeating the build. The corrected run remains pending; no candidate
-quality/default/app-pin promotion follows from either submission.
+without repeating the build. The corrected run completed successfully; its scope remains bounded and does
+not by itself authorize a default, release or app-pin promotion.
+
+[Final source-bound decoded A/B](tests/results/dbnet-line-gutters/2026-11-12/hosted-decoded-ab.json)
+reproduced the Android failure exactly on released Linux v0.17.19 and candidate
+explicit-off: five regions, CER `0.5028571428571429`. Across all three controls,
+released baseline versus candidate-off decoded text and region counts matched,
+with maximum box absolute error `0.0`. Candidate-on produced nine crops. The
+first body row's legacy width `1346.9008` became separate `387.5813`/`386.0809`
+recognition crops; the spanning heading stayed identical. Final text after the
+exact existing application reading-order module matched all 175 reference
+characters, CER `0.0`, with four left/four right body regions and ALPHA/OMEGA
+preserved. The unchanged application `assessQualityFixture` passed directly on
+those retained native regions and the exact permutation; its `0.25` threshold,
+gutter, per-column order and token checks were not modified.
+
+The native raw region sequence remains row-major (candidate CER `0.48` before
+application ordering); do not claim generic native plain-text reading-order
+qualification. Single-column recognition remains exact at CER `0.0`, including
+identical crop hashes/geometry, and blank remains empty. Candidate-on versus
+released control box absolute errors are also `0.0`. All nine child runs passed.
+The source-built library hash is
+`ff5a8332710378ebf36ea7939bafafa5dce9b55b7259e92655689094ba110bab`;
+the 6,423,447-byte native bundle remains remotely retained under SHA-256
+`97a9c88b7849586c627da38d0efdd2dde4def21b5ae7a3d3eb4b7c9f457628fc`.
+Only reports and needed crop images were downloaded. The earlier invalid batch
+and the independent production Python ABI defect remain separately recorded.
+Next: review integration with the qualified comparison/error-propagation repairs,
+validate the exact combined source, then rebuild and test actual Android before
+version/release/app-pin changes. The experimental gutter gate remains off.
 
 Android integration after review and successful decoded evidence:
 

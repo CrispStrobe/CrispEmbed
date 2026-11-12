@@ -1,0 +1,650 @@
+{
+  "schema": "dbnet-decoded-ab-curated-v1",
+  "source_commit": "8a40b7b0b7950dab636d4ad9b70f08837884d376",
+  "base_commit": "c364feb974b91e14cbf328c6949f3df36e89ce81",
+  "tree": "6935dcdee9ed4fad928e1754c71ace9ad922da19",
+  "ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "patch_sha256": "b7b685817ac592dadc68f652dc809e539bf184c195859a8a007b7e06f7a8b2f6",
+  "threshold": 0.25,
+  "app_config_proof": {
+    "application_source": "81ef8036dc913d600458d59fc0b034143a19c468",
+    "harness_source": "bfb6bbf935ca42baf7384b62e0721ce0df3660b0",
+    "requested_stage": {
+      "cleanup": {
+        "auto_crop": false,
+        "binarize": false,
+        "binarize_method": 0,
+        "blackfilter": false,
+        "border_threshold": 0.15000000596046448,
+        "crop_borders": true,
+        "denoise": false,
+        "deskew": true,
+        "deskew_max_angle": 15,
+        "despeckle": false,
+        "enabled": false,
+        "morph_kernel": 51,
+        "page_split": false,
+        "sauvola_k": 0.20000000298023224,
+        "sauvola_window": 25,
+        "whiten_background": true
+      },
+      "det_box_threshold": 0.5,
+      "det_model": "dbnet-det",
+      "det_prob_threshold": 0.30000001192092896,
+      "det_target_short": 736,
+      "engine": "tesseract",
+      "min_chars": 1,
+      "min_confidence": 0,
+      "rec_model": "tesseract-eng",
+      "source_type": "auto",
+      "vlm_max_tokens": 0,
+      "vlm_prompt": ""
+    },
+    "thread_parameter": 0,
+    "thread_resolution": "min(4, hardware_concurrency)",
+    "field_provenance": {
+      "source_type_and_detector_defaults": "CrispSorter/src-tauri/src/extractors/mod.rs OcrStageSpec/default_source_type/default_det_prob/default_det_box/default_det_short",
+      "stage_construction_and_thread_zero": "CrispSorter/src-tauri/src/extractors/ocr_crispembed.rs build_pipeline",
+      "C_ABI_defaults_and_cleanup": "CrispEmbed/crispembed/src/lib.rs CrispOcrPipeline::from_stages",
+      "thread_resolution": "CrispEmbed/src/crispembed.cpp ce_resolve_threads",
+      "result_layout": "CrispEmbed/src/crispembed.h crispembed_ocr_result"
+    }
+  },
+  "admission": {
+    "available_ram_bytes": 32646635520,
+    "scratch_free_bytes": 1038218964992,
+    "compile_jobs": 2,
+    "overall_seconds": 4500
+  },
+  "candidate_library_sha256": "ff5a8332710378ebf36ea7939bafafa5dce9b55b7259e92655689094ba110bab",
+  "ffi_native_abi": {
+    "result_size": 48,
+    "result_text_offset": 24,
+    "result_orientation_angle_offset": 40,
+    "result_orientation_confidence_offset": 44,
+    "stage_size": 168,
+    "stage_cleanup_offset": 40,
+    "stage_detprob_offset": 100,
+    "cleanup_size": 60
+  },
+  "retained_candidate_native_bundle": {
+    "name": "candidate-native-bundle.tar.gz",
+    "sha256": "97a9c88b7849586c627da38d0efdd2dde4def21b5ae7a3d3eb4b7c9f457628fc",
+    "bytes": 6423447
+  },
+  "baseline_library_sha256": "4f184bda22ec3f75d0d013571bea712d3cc15e8f3e9a6c8624c2c3e637702a1a",
+  "models": [
+    {
+      "name": "dbnet-det",
+      "sha256": "163c3b3d1211fd47b4ea323e2e684287bdc75ae68f0ffea397ccfcdc29a74de2",
+      "bytes": 12960448
+    },
+    {
+      "name": "tesseract-eng",
+      "sha256": "dffd3f05d23d3eed979d1c4dd3b7555192c2b0e16c494e6146a9a232e9fe7e74",
+      "bytes": 1617408
+    }
+  ],
+  "reading_order_source_sha256": "8211eb540cd34f6e76242aebedebd39d06956d08a5d83bdaf49d4b6405947496",
+  "observations": {
+    "released-baseline-english-two-columns": {
+      "n_regions": 5,
+      "raw_region_text": "TECHNICAL INSPECTION RECORD\nALPHAREPORT @  OMEGA NOTES\nInspection complete.  Second floor ready.\nThree valves checked. ©= Four seals replaced.\nTotal 125.00 EUR Next visit 2026-12-01",
+      "app_ordered_text": "TECHNICAL INSPECTION RECORD\nALPHAREPORT @  OMEGA NOTES\nInspection complete.  Second floor ready.\nThree valves checked. ©= Four seals replaced.\nTotal 125.00 EUR Next visit 2026-12-01",
+      "native_unicode_cer": 0.5028571428571429,
+      "app_ordered_unicode_cer": 0.5028571428571429,
+      "geometry_valid": true,
+      "column_geometry_pass": false,
+      "image_sha256": "f404697c7cd511545be60b64a66e62687b281078661d0c6387fa79f0acbb4be4",
+      "required_tokens_preserved": true,
+      "crops": [
+        {
+          "name": "crop-00.png",
+          "sha256": "b06eae6775691c3ef54df4893807df020a1a93296b2b80dc618ec11ba6dd2f69",
+          "bytes": 6640
+        },
+        {
+          "name": "crop-01.png",
+          "sha256": "66c30d3977f0ce227fbe4a10535f883f11bc23618d66dea76e0d55be7038e907",
+          "bytes": 4790
+        },
+        {
+          "name": "crop-02.png",
+          "sha256": "03b9b83152cad98b808eb558bd13876e09e4eb3643ebd56fc7c721ff531664bd",
+          "bytes": 6117
+        },
+        {
+          "name": "crop-03.png",
+          "sha256": "1c9bd9d66e62306493134862eeb84eab082e6642a5de2400b392deb6d8bd4b20",
+          "bytes": 5906
+        },
+        {
+          "name": "crop-04.png",
+          "sha256": "25e15aea58c4e08951253b2408de64e1f4578b3a072aabcb45c2056f1bc72600",
+          "bytes": 6808
+        }
+      ]
+    },
+    "released-baseline-single-column": {
+      "n_regions": 3,
+      "raw_region_text": "CRISP MOBILE OCR\nDocument 2048\nTotal 125.00",
+      "app_ordered_text": "CRISP MOBILE OCR\nDocument 2048\nTotal 125.00",
+      "native_unicode_cer": 0.0,
+      "app_ordered_unicode_cer": 0.0,
+      "geometry_valid": true,
+      "column_geometry_pass": null,
+      "image_sha256": "279881db58bbf42a01683ecdc552f774bea20e03cd38cac9c601aa81cad03b96",
+      "required_tokens_preserved": true,
+      "crops": [
+        {
+          "name": "crop-00.png",
+          "sha256": "3c26a2e6d0295287dcedbbd80f6799c196080bec0c622a71a240c1e9689fb5ae",
+          "bytes": 4304
+        },
+        {
+          "name": "crop-01.png",
+          "sha256": "09a668074f056fd52e577850ec7ca9754b7701ddc61a3a964e507f4108250d12",
+          "bytes": 5011
+        },
+        {
+          "name": "crop-02.png",
+          "sha256": "2d8e208644db211b9d8216a597f62989793a8e1173be8dcca20897fb92aeeda8",
+          "bytes": 3078
+        }
+      ]
+    },
+    "released-baseline-blank": {
+      "n_regions": 0,
+      "raw_region_text": "",
+      "app_ordered_text": "",
+      "native_unicode_cer": 0.0,
+      "app_ordered_unicode_cer": 0.0,
+      "geometry_valid": true,
+      "column_geometry_pass": null,
+      "image_sha256": "b35a7b46e8f915b0b477895aca6d7e1269b665756b9cf1b94d82ca7faa1439a7",
+      "required_tokens_preserved": true,
+      "crops": []
+    },
+    "candidate-off-english-two-columns": {
+      "n_regions": 5,
+      "raw_region_text": "TECHNICAL INSPECTION RECORD\nALPHAREPORT @  OMEGA NOTES\nInspection complete.  Second floor ready.\nThree valves checked. ©= Four seals replaced.\nTotal 125.00 EUR Next visit 2026-12-01",
+      "app_ordered_text": "TECHNICAL INSPECTION RECORD\nALPHAREPORT @  OMEGA NOTES\nInspection complete.  Second floor ready.\nThree valves checked. ©= Four seals replaced.\nTotal 125.00 EUR Next visit 2026-12-01",
+      "native_unicode_cer": 0.5028571428571429,
+      "app_ordered_unicode_cer": 0.5028571428571429,
+      "geometry_valid": true,
+      "column_geometry_pass": false,
+      "image_sha256": "f404697c7cd511545be60b64a66e62687b281078661d0c6387fa79f0acbb4be4",
+      "required_tokens_preserved": true,
+      "crops": [
+        {
+          "name": "crop-00.png",
+          "sha256": "b06eae6775691c3ef54df4893807df020a1a93296b2b80dc618ec11ba6dd2f69",
+          "bytes": 6640
+        },
+        {
+          "name": "crop-01.png",
+          "sha256": "66c30d3977f0ce227fbe4a10535f883f11bc23618d66dea76e0d55be7038e907",
+          "bytes": 4790
+        },
+        {
+          "name": "crop-02.png",
+          "sha256": "03b9b83152cad98b808eb558bd13876e09e4eb3643ebd56fc7c721ff531664bd",
+          "bytes": 6117
+        },
+        {
+          "name": "crop-03.png",
+          "sha256": "1c9bd9d66e62306493134862eeb84eab082e6642a5de2400b392deb6d8bd4b20",
+          "bytes": 5906
+        },
+        {
+          "name": "crop-04.png",
+          "sha256": "25e15aea58c4e08951253b2408de64e1f4578b3a072aabcb45c2056f1bc72600",
+          "bytes": 6808
+        }
+      ]
+    },
+    "candidate-off-single-column": {
+      "n_regions": 3,
+      "raw_region_text": "CRISP MOBILE OCR\nDocument 2048\nTotal 125.00",
+      "app_ordered_text": "CRISP MOBILE OCR\nDocument 2048\nTotal 125.00",
+      "native_unicode_cer": 0.0,
+      "app_ordered_unicode_cer": 0.0,
+      "geometry_valid": true,
+      "column_geometry_pass": null,
+      "image_sha256": "279881db58bbf42a01683ecdc552f774bea20e03cd38cac9c601aa81cad03b96",
+      "required_tokens_preserved": true,
+      "crops": [
+        {
+          "name": "crop-00.png",
+          "sha256": "3c26a2e6d0295287dcedbbd80f6799c196080bec0c622a71a240c1e9689fb5ae",
+          "bytes": 4304
+        },
+        {
+          "name": "crop-01.png",
+          "sha256": "09a668074f056fd52e577850ec7ca9754b7701ddc61a3a964e507f4108250d12",
+          "bytes": 5011
+        },
+        {
+          "name": "crop-02.png",
+          "sha256": "2d8e208644db211b9d8216a597f62989793a8e1173be8dcca20897fb92aeeda8",
+          "bytes": 3078
+        }
+      ]
+    },
+    "candidate-off-blank": {
+      "n_regions": 0,
+      "raw_region_text": "",
+      "app_ordered_text": "",
+      "native_unicode_cer": 0.0,
+      "app_ordered_unicode_cer": 0.0,
+      "geometry_valid": true,
+      "column_geometry_pass": null,
+      "image_sha256": "b35a7b46e8f915b0b477895aca6d7e1269b665756b9cf1b94d82ca7faa1439a7",
+      "required_tokens_preserved": true,
+      "crops": []
+    },
+    "candidate-on-english-two-columns": {
+      "n_regions": 9,
+      "raw_region_text": "TECHNICAL INSPECTION RECORD\nALPHA REPORT\nOMEGA NOTES\nInspection complete.\nSecond floor ready.\nThree valves checked.\nFour seals replaced.\nTotal 125.00 EUR\nNext visit 2026-12-01",
+      "app_ordered_text": "TECHNICAL INSPECTION RECORD\nALPHA REPORT\nInspection complete.\nThree valves checked.\nTotal 125.00 EUR\nOMEGA NOTES\nSecond floor ready.\nFour seals replaced.\nNext visit 2026-12-01",
+      "native_unicode_cer": 0.48,
+      "app_ordered_unicode_cer": 0.0,
+      "geometry_valid": true,
+      "column_geometry_pass": true,
+      "image_sha256": "f404697c7cd511545be60b64a66e62687b281078661d0c6387fa79f0acbb4be4",
+      "required_tokens_preserved": true,
+      "crops": [
+        {
+          "name": "crop-00.png",
+          "sha256": "b06eae6775691c3ef54df4893807df020a1a93296b2b80dc618ec11ba6dd2f69",
+          "bytes": 6640
+        },
+        {
+          "name": "crop-01.png",
+          "sha256": "0f55f2acf1182c66774d497a1f071a48c3240b99d8f90321579f9f6f480dee2c",
+          "bytes": 2281
+        },
+        {
+          "name": "crop-02.png",
+          "sha256": "6c6961769b9a4c664f770cd2e9e6925d4078153ec6164f3c7feacc06afc9caed",
+          "bytes": 3008
+        },
+        {
+          "name": "crop-03.png",
+          "sha256": "1a7ae3212323353f67858f07f1daaedbe39739eb812a309534f20d7cdc869bda",
+          "bytes": 3292
+        },
+        {
+          "name": "crop-04.png",
+          "sha256": "531bca119d6efe5e82926ffa7fdeee9dfb4025ff6aeade32307894771b157410",
+          "bytes": 3660
+        },
+        {
+          "name": "crop-05.png",
+          "sha256": "b7984f8a4ab18db26d1474b34482b91eb28de5ddda544a227a7197f7b42b92c4",
+          "bytes": 3565
+        },
+        {
+          "name": "crop-06.png",
+          "sha256": "8a03c4dea9891d73279891b0a4ad51e83766173f5f3603c11ba59a0e81b23b69",
+          "bytes": 3458
+        },
+        {
+          "name": "crop-07.png",
+          "sha256": "812c10f58eeb6375752b0d967d5c845ebc75a72b6092af4d04b464e323ac814c",
+          "bytes": 3150
+        },
+        {
+          "name": "crop-08.png",
+          "sha256": "d48cc55502bfca6309258678446ebb37db2bf027ff1cd9ea6456cbf98f2cee41",
+          "bytes": 4144
+        }
+      ]
+    },
+    "candidate-on-single-column": {
+      "n_regions": 3,
+      "raw_region_text": "CRISP MOBILE OCR\nDocument 2048\nTotal 125.00",
+      "app_ordered_text": "CRISP MOBILE OCR\nDocument 2048\nTotal 125.00",
+      "native_unicode_cer": 0.0,
+      "app_ordered_unicode_cer": 0.0,
+      "geometry_valid": true,
+      "column_geometry_pass": null,
+      "image_sha256": "279881db58bbf42a01683ecdc552f774bea20e03cd38cac9c601aa81cad03b96",
+      "required_tokens_preserved": true,
+      "crops": [
+        {
+          "name": "crop-00.png",
+          "sha256": "3c26a2e6d0295287dcedbbd80f6799c196080bec0c622a71a240c1e9689fb5ae",
+          "bytes": 4304
+        },
+        {
+          "name": "crop-01.png",
+          "sha256": "09a668074f056fd52e577850ec7ca9754b7701ddc61a3a964e507f4108250d12",
+          "bytes": 5011
+        },
+        {
+          "name": "crop-02.png",
+          "sha256": "2d8e208644db211b9d8216a597f62989793a8e1173be8dcca20897fb92aeeda8",
+          "bytes": 3078
+        }
+      ]
+    },
+    "candidate-on-blank": {
+      "n_regions": 0,
+      "raw_region_text": "",
+      "app_ordered_text": "",
+      "native_unicode_cer": 0.0,
+      "app_ordered_unicode_cer": 0.0,
+      "geometry_valid": true,
+      "column_geometry_pass": null,
+      "image_sha256": "b35a7b46e8f915b0b477895aca6d7e1269b665756b9cf1b94d82ca7faa1439a7",
+      "required_tokens_preserved": true,
+      "crops": []
+    }
+  },
+  "single_column_preserved": true,
+  "source_control_comparisons": {
+    "english-two-columns": {
+      "same_region_count": true,
+      "maximum_box_absolute_error": 0.0,
+      "decoded_text_equal": true
+    },
+    "single-column": {
+      "same_region_count": true,
+      "maximum_box_absolute_error": 0.0,
+      "decoded_text_equal": true
+    },
+    "blank": {
+      "same_region_count": true,
+      "maximum_box_absolute_error": 0.0,
+      "decoded_text_equal": true
+    }
+  },
+  "candidate_off_matches_release": true,
+  "blank_preserved": true,
+  "candidate_two_column_pass": true,
+  "completed": true,
+  "status": "bounded_linux_native_and_app_order_replay_passed",
+  "kernel_sha256": "4f9346e5531c1fa58e69269a35281ea1bcf10aeebfb1f4eba67396d272614f48",
+  "raw_report_sha256": "cae131fe2ddacd9cad55700620351d9685a1a0fb3836a2521972f6fa960c0c55",
+  "app_config_proof_sha256": "f75d556fff93ca3f611091d066929fdfc33fb430db082b5502aac6a5793f9787",
+  "exact_unchanged_app_quality_assessment": {
+    "text": "TECHNICAL INSPECTION RECORD\nALPHA REPORT\nInspection complete.\nThree valves checked.\nTotal 125.00 EUR\nOMEGA NOTES\nSecond floor ready.\nFour seals replaced.\nNext visit 2026-12-01",
+    "unicode_cer": 0,
+    "required_tokens_preserved": [
+      "ALPHA",
+      "OMEGA"
+    ],
+    "columns": {
+      "counts": {
+        "left": 4,
+        "right": 4
+      },
+      "observed_sequence": [
+        {
+          "index": 1,
+          "side": "left",
+          "x": 72.3691177368164,
+          "y": 249.28872680664062,
+          "w": 387.5812683105469,
+          "h": 55.770355224609375
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "x": 76.23025512695312,
+          "y": 401.282958984375,
+          "w": 519.7694091796875,
+          "h": 55.095458984375
+        },
+        {
+          "index": 3,
+          "side": "left",
+          "x": 76.20018005371094,
+          "y": 547.9322509765625,
+          "w": 556.5740966796875,
+          "h": 57.66815185546875
+        },
+        {
+          "index": 4,
+          "side": "left",
+          "x": 72.55873107910156,
+          "y": 697.9666748046875,
+          "w": 440.0723876953125,
+          "h": 60.50299072265625
+        },
+        {
+          "index": 5,
+          "side": "right",
+          "x": 1033.18896484375,
+          "y": 249.22157287597656,
+          "w": 386.0809326171875,
+          "h": 57.26335144042969
+        },
+        {
+          "index": 6,
+          "side": "right",
+          "x": 1035.8282470703125,
+          "y": 401.7889404296875,
+          "w": 483.1302490234375,
+          "h": 58.7457275390625
+        },
+        {
+          "index": 7,
+          "side": "right",
+          "x": 1036.1533203125,
+          "y": 550.5732421875,
+          "w": 497.5125732421875,
+          "h": 55.10357666015625
+        },
+        {
+          "index": 8,
+          "side": "right",
+          "x": 1034.5238037109375,
+          "y": 696.6978149414062,
+          "w": 548.6697998046875,
+          "h": 60.8978271484375
+        }
+      ],
+      "left_before_right": true
+    }
+  },
+  "released-baseline_native_regions": [
+    {
+      "x": 297.9245910644531,
+      "y": 66.31793212890625,
+      "w": 1203.692138671875,
+      "h": 67.09237670898438,
+      "confidence": 0.9134964942932129,
+      "text": "TECHNICAL INSPECTION RECORD",
+      "orientation_corrected": 0,
+      "orientation_angle": 0,
+      "orientation_confidence": 0.03247446194291115
+    },
+    {
+      "x": 72.3691177368164,
+      "y": 249.22157287597656,
+      "w": 1346.9007568359375,
+      "h": 57.26335144042969,
+      "confidence": 0.8766607046127319,
+      "text": "ALPHAREPORT @  OMEGA NOTES",
+      "orientation_corrected": 0,
+      "orientation_angle": 0,
+      "orientation_confidence": 0.02969386801123619
+    },
+    {
+      "x": 76.23025512695312,
+      "y": 401.282958984375,
+      "w": 1442.728271484375,
+      "h": 59.251708984375,
+      "confidence": 0.873676061630249,
+      "text": "Inspection complete.  Second floor ready.",
+      "orientation_corrected": 0,
+      "orientation_angle": 180,
+      "orientation_confidence": 0.01774199865758419
+    },
+    {
+      "x": 76.20018005371094,
+      "y": 547.9322509765625,
+      "w": 1457.4656982421875,
+      "h": 57.74456787109375,
+      "confidence": 0.8618413805961609,
+      "text": "Three valves checked. ©= Four seals replaced.",
+      "orientation_corrected": 0,
+      "orientation_angle": 180,
+      "orientation_confidence": 0.06092258170247078
+    },
+    {
+      "x": 72.55873107910156,
+      "y": 696.6978149414062,
+      "w": 1510.6348876953125,
+      "h": 61.7718505859375,
+      "confidence": 0.9142265319824219,
+      "text": "Total 125.00 EUR Next visit 2026-12-01",
+      "orientation_corrected": 0,
+      "orientation_angle": 180,
+      "orientation_confidence": 0.1109335720539093
+    }
+  ],
+  "released-baseline_app_reading_order": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "candidate-on_native_regions": [
+    {
+      "x": 297.9245910644531,
+      "y": 66.31793212890625,
+      "w": 1203.692138671875,
+      "h": 67.09237670898438,
+      "confidence": 0.9134964942932129,
+      "text": "TECHNICAL INSPECTION RECORD",
+      "orientation_corrected": 0,
+      "orientation_angle": 0,
+      "orientation_confidence": 0.03247446194291115
+    },
+    {
+      "x": 72.3691177368164,
+      "y": 249.28872680664062,
+      "w": 387.5812683105469,
+      "h": 55.770355224609375,
+      "confidence": 0.9306470155715942,
+      "text": "ALPHA REPORT",
+      "orientation_corrected": 0,
+      "orientation_angle": 0,
+      "orientation_confidence": 0.029273640364408493
+    },
+    {
+      "x": 1033.18896484375,
+      "y": 249.22157287597656,
+      "w": 386.0809326171875,
+      "h": 57.26335144042969,
+      "confidence": 0.7971171140670776,
+      "text": "OMEGA NOTES",
+      "orientation_corrected": 0,
+      "orientation_angle": 0,
+      "orientation_confidence": 0.01547211967408657
+    },
+    {
+      "x": 76.23025512695312,
+      "y": 401.282958984375,
+      "w": 519.7694091796875,
+      "h": 55.095458984375,
+      "confidence": 0.8927284479141235,
+      "text": "Inspection complete.",
+      "orientation_corrected": 0,
+      "orientation_angle": 180,
+      "orientation_confidence": 0.032027289271354675
+    },
+    {
+      "x": 1035.8282470703125,
+      "y": 401.7889404296875,
+      "w": 483.1302490234375,
+      "h": 58.7457275390625,
+      "confidence": 0.8557409644126892,
+      "text": "Second floor ready.",
+      "orientation_corrected": 0,
+      "orientation_angle": 180,
+      "orientation_confidence": 0.016637276858091354
+    },
+    {
+      "x": 76.20018005371094,
+      "y": 547.9322509765625,
+      "w": 556.5740966796875,
+      "h": 57.66815185546875,
+      "confidence": 0.8664554953575134,
+      "text": "Three valves checked.",
+      "orientation_corrected": 0,
+      "orientation_angle": 180,
+      "orientation_confidence": 0.03744348883628845
+    },
+    {
+      "x": 1036.1533203125,
+      "y": 550.5732421875,
+      "w": 497.5125732421875,
+      "h": 55.10357666015625,
+      "confidence": 0.8939986824989319,
+      "text": "Four seals replaced.",
+      "orientation_corrected": 0,
+      "orientation_angle": 180,
+      "orientation_confidence": 0.07301252335309982
+    },
+    {
+      "x": 72.55873107910156,
+      "y": 697.9666748046875,
+      "w": 440.0723876953125,
+      "h": 60.50299072265625,
+      "confidence": 0.8175742626190186,
+      "text": "Total 125.00 EUR",
+      "orientation_corrected": 0,
+      "orientation_angle": 180,
+      "orientation_confidence": 0.05643787980079651
+    },
+    {
+      "x": 1034.5238037109375,
+      "y": 696.6978149414062,
+      "w": 548.6697998046875,
+      "h": 60.8978271484375,
+      "confidence": 0.8895965218544006,
+      "text": "Next visit 2026-12-01",
+      "orientation_corrected": 0,
+      "orientation_angle": 180,
+      "orientation_confidence": 0.15724733471870422
+    }
+  ],
+  "candidate-on_app_reading_order": [
+    0,
+    1,
+    3,
+    5,
+    7,
+    2,
+    4,
+    6,
+    8
+  ],
+  "candidate_on_control_comparisons": {
+    "single-column": {
+      "decoded_text_equal": true,
+      "same_region_count": true,
+      "maximum_box_absolute_error": 0.0,
+      "crop_hashes_equal": true
+    },
+    "blank": {
+      "decoded_text_equal": true,
+      "same_region_count": true,
+      "maximum_box_absolute_error": 0.0,
+      "crop_hashes_equal": true
+    }
+  },
+  "limits": [
+    "Nine Linux CPU native runs; exact application reading-order module and unchanged JavaScript quality assessment, not the complete app recognition/save/export flow.",
+    "Native region order remains row-major: candidate raw region concatenation CER0.48. Existing application reading-order replay is required for final CER0.0.",
+    "Probe-only header-verified ctypes reader bypassed an independently proven production Python result mirror defect; this run is not production Python binding evidence.",
+    "Android rebuilt-app execution, physical devices, providers, sustained memory/performance and diverse corpus quality remain unqualified.",
+    "Candidate gate remains default-off; no runtime version/release or app pin change.",
+    "Private service/kernel identifiers and access configuration are retained outside Git."
+  ]
+}
