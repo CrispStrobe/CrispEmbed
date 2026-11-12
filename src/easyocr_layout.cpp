@@ -38,8 +38,33 @@ std::vector<region> group_lines(const std::vector<region> & input) {
     return lines;
 }
 
-std::vector<region> group_dbnet_lines(const std::vector<region> & input) {
-    return group_lines(input);
+std::vector<region> group_dbnet_lines(const std::vector<region> & input, float max_gap_height_ratio) {
+    if (!(max_gap_height_ratio > 0.0f) || !std::isfinite(max_gap_height_ratio)) return group_lines(input);
+    // Keep the original vertical-band policy, but inspect the individual boxes
+    // before forming a crop. Once a y-band has become one wide rectangle, a
+    // downstream layout sorter cannot recover either column's recognition.
+    const auto words = order_words(input);
+    std::vector<region> lines;
+    int band = -1;
+    for (const auto & box : words) {
+        const bool same_band = !lines.empty() && box.line == band;
+        const float gap = same_band ? box.x - (lines.back().x + lines.back().w) : 0.0f;
+        if (!same_band || gap > max_gap_height_ratio * std::max(lines.back().h, box.h)) {
+            lines.push_back(box);
+        } else {
+            auto & line = lines.back();
+            const float right = std::max(line.x + line.w, box.x + box.w);
+            const float bottom = std::max(line.y + line.h, box.y + box.h);
+            line.x = std::min(line.x, box.x);
+            line.y = std::min(line.y, box.y);
+            line.w = right - line.x;
+            line.h = bottom - line.y;
+            line.score = 0.5f * (line.score + box.score);
+        }
+        band = box.line;
+    }
+    for (int i = 0; i < (int)lines.size(); ++i) lines[i].line = i;
+    return lines;
 }
 
 std::vector<region> order_words(const std::vector<region> & input) {

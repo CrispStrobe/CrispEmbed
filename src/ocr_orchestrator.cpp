@@ -1407,9 +1407,14 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         std::vector<easyocr_layout::region> detected_regions;
         detected_regions.reserve(boxes.size());
         for (const auto & box : boxes) detected_regions.push_back({ box.x, box.y, box.w, box.h, box.score });
+        // Default-off candidate: only split DBNet row crops when the router
+        // independently established multiple columns. Preserve the historical
+        // CRNN/single-column path until decoded-output A/B qualifies this gate.
+        const float max_dbnet_gap =
+            router_columns > 1 && core_env::on("CRISPEMBED_TESSERACT_DBNET_GUTTERS") ? 2.5f : 0.0f;
         const auto line_regions = (classical_pageseg || ppdet_line_boxes)
                                       ? detected_regions
-                                      : easyocr_layout::group_dbnet_lines(detected_regions);
+                                      : easyocr_layout::group_dbnet_lines(detected_regions, max_dbnet_gap);
         const bool pageseg_debug = classical_pageseg && std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG");
         // Opt-in recognition-confidence floor (pageseg round 5): ornament,
         // seal, and noise-band crops decode as garbage at mean char

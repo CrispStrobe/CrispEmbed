@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "status": "candidate_not_decoded_quality_qualified",
+  "source": {
+    "runtime": "c364feb974b91e14cbf328c6949f3df36e89ce81",
+    "application": "81ef8036dc913d600458d59fc0b034143a19c468",
+    "harness": "bfb6bbf935ca42baf7384b62e0721ce0df3660b0",
+    "run": "https://github.com/CrispStrobe/CrispSorter/actions/runs/43275466921",
+    "fixture": "https://github.com/CrispStrobe/CrispSorter/blob/bfb6bbf935ca42baf7384b62e0721ce0df3660b0/tools/mobile-ocr-probe/quality.json"
+  },
+  "retained_native_observation": {
+    "case": "english-two-columns",
+    "detected_columns": 2,
+    "ink_coverage": 1.0,
+    "detector_boxes": 24,
+    "segmentation_path": "dbnet(fallback)",
+    "final_review_regions": 5,
+    "reference_characters": 175,
+    "column_major_unicode_cer": 0.5028571428571429,
+    "maximum_unicode_cer": 0.25,
+    "decoded_text": "TECHNICAL INSPECTION RECORD\nALPHAREPORT @  OMEGA NOTES\nInspection complete.  Second floor ready.\nThree valves checked. ©=  Four seals replaced.\nTotal 125.00 EUR Next visit 2026-12-01",
+    "limits": "Raw failed quality response and individual detector coordinates were not retained by this harness revision."
+  },
+  "synthetic_model_free_reproduction": {
+    "detector_fragments": 24,
+    "legacy_crops": 5,
+    "candidate_crops": 9,
+    "legacy_body_crop_width": 1440,
+    "candidate_left_crop_width": 500,
+    "candidate_right_crop_width": 480,
+    "heading_preserved": true,
+    "connected_fragments_and_ordinary_spaces_preserved": true,
+    "legacy_default_preserved": true,
+    "limits": "Synthetic fixture-like geometry, not recovered device detector boxes. No models or decoded candidate inference executed."
+  },
+  "candidate": {
+    "gate": "CRISPEMBED_TESSERACT_DBNET_GUTTERS",
+    "default": "off",
+    "scope": "Tesseract DBNet path only when the existing segmentation router detects more than one column",
+    "maximum_gap_to_height_ratio": 2.5,
+    "runtime_default_changed": false,
+    "application_pin_changed": false
+  },
+  "pending": [
+    "Exact baseline/candidate detector boxes and recognition crop A/B",
+    "Actual candidate decoded text and unchanged CER/column-geometry gates",
+    "Single-column and connected-text decoded regression controls",
+    "Qualified immutable minimal release and rebuilt Android flow"
+  ]
+}

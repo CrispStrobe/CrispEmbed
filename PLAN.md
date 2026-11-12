@@ -1,5 +1,41 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Active work in flight — Tesseract DBNet column gutters, 12 November 2026
+
+| Bounded lane | State | Acceptance |
+| --- | --- | --- |
+| `fix/dbnet-line-gutters-20261112`, exact app runtime `c364feb974b91e14cbf328c6949f3df36e89ce81` | Default-off native candidate; model-free geometry reproduction passed | Exact crop/box and decoded-text A/B; retain single-column controls; immutable minimal release before app repin |
+
+The [retained Android flow](https://github.com/CrispStrobe/CrispSorter/actions/runs/43275466921)
+used app `81ef8036` and harness `bfb6bbf9`. It passed sandbox identity/import and
+German accents but failed the English two-column fixture at Unicode CER
+`0.5028571428571429` (88 edits / 175 reference characters; unchanged limit `0.25`).
+Native logs show the structural column detector correctly chose two columns,
+ink coverage `1.0000` and DBNet fallback with 24 boxes; only five review regions
+reached the app. In this exact native source, `group_dbnet_lines` delegates to
+vertical-band grouping without a horizontal-gap check. It combines both body
+columns into four recognition crops. The final decoded rows contain both columns
+and spurious gutter characters, so a later reading-order permutation cannot
+restore the intended strings. The column-major fixture gold remains correct.
+
+The default-off `CRISPEMBED_TESSERACT_DBNET_GUTTERS` candidate splits same-baseline
+DBNet fragments at gaps above 2.5 region heights only when the existing router
+independently reports multiple columns. Existing CRNN callers, single-column
+routing and the explicit-off path retain historical grouping. A focused standalone
+model-free C++ control reproduced 24 synthetic fixture-like fragments becoming
+five legacy crops versus nine candidate crops. A body crop shrank from 1440 pixels
+wide to separate 500/480-pixel crops, preserving the spanning heading, connected
+fragments and normal spaces. This is geometry evidence, not decoded-quality proof.
+
+[Source-bound observations and limits](tests/results/dbnet-line-gutters/2026-11-12/reproduction.json)
+preserve the failed decoded output separately from synthetic geometry. The old
+harness did not retain raw failed quality JSON, so individual real detector boxes
+remain unavailable. Next: hosted baseline/candidate boxes, crops, IDs and decoded
+output against unchanged CER/reading-order gates plus single-column controls.
+Coordinate the eventual minimal release with the independent GPU comparison
+repair; no release/version promotion, app repin or publication is part of this
+candidate checkpoint. Unrelated vendor and backend work remains untouched.
+
 ## CrispSorter Ovis application-path control — 12 November 2026
 
 The [comparison receipt](tests/results/crispsorter-ovis-comparison-20261112.json)
