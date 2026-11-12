@@ -1,5 +1,44 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
+## Current portfolio checkpoint — 12 November 2026
+
+This dated checkpoint supersedes conflicting status claims in the older sections
+below. Recheck live PR heads and hosted jobs before dispatching work.
+
+- **CrispEmbed:** [v0.17.19](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.19)
+  is published from `c364feb974b91e14cbf328c6949f3df36e89ce81`. The 0.17.18
+  integration included the formerly stacked LightOn4B research and retained
+  negatives; the experimental paths remain gated and the observed table/held-out
+  gaps do not establish general quality. PDF Craft work is included in the
+  integrated release history. Refer to current PLAN and HISTORY rather than the
+  earlier queued or draft snapshots below.
+- **OvisOCR2:** the CPU graph decoder and threaded vision attention are defaults
+  with opt-out gates. The GPU ggml path is default-off. The T4 receipt covers
+  three decoded-exact documents; the CPU ggml path covers eleven decoded-exact
+  cases. Confidence drift and independent second-architecture, Metal and Vulkan
+  evidence remain open before any broader default decision.
+- **CrispSorter:** main `02d372b0` pins CrispEmbed 0.17.19 and includes OCR
+  document review, consolidated PDF editing and search/storage work. CPU consumer
+  [PR 218](https://github.com/CrispStrobe/CrispEmbed/pull/218) reports 21 checks
+  at the exact release/app pin; this does not establish other platform parity.
+  [Model manager PR 55](https://github.com/CrispStrobe/CrispSorter/pull/55) and
+  [provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52) have failing
+  checks; [provider follow-up 56](https://github.com/CrispStrobe/CrispSorter/pull/56)
+  depends on 52 and upstream changes. Do not infer qualification from PR status.
+- **CrispMath:** source `2b9d0982a3fd780deb2ffd67835da3ce658dce27` sets
+  `1.2.1+28` and retains its immutable CrispEmbed 0.17.15 pin. The
+  [10 November inspection](https://github.com/CrispStrobe/CrispMath/actions/runs/42870085016)
+  recorded build 28 as valid and awaiting external beta review; it did not claim
+  App Store submission. A later read-only inspection is
+  [run 43229069857](https://github.com/CrispStrobe/CrispMath/actions/runs/43229069857);
+  use its actual result when available. Physical-device coverage remains separate.
+- **Test hygiene:** the last recorded plain full-clone audit at `cd477abe` had
+  2,110 passed, 232 skipped and nine failures requiring frozen-guard replay;
+  shallow had one failure. The [current-source audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43228796357)
+  was dispatched against `c364feb97`; preserve its actual failures and source rather
+  than assuming the historical count still applies.
+
+
 ## PDF Craft adoption — 9 November 2026, feature branch
 
 The user authorized the full [implementation checklist](pdf-craft-tasks.md).
