@@ -45,6 +45,58 @@ class ArchiveTests(unittest.TestCase):
  def test_incomplete_asset_set(self):
   with tempfile.TemporaryDirectory() as d:
    with self.assertRaises(ValueError):m.build(Path(d),'native',Path(__file__).resolve().parents[1])
+ def candidate_archives(self,root,names):
+  for name in names:
+   if name.endswith('.zip'):
+    with zipfile.ZipFile(root/name,'w') as archive:archive.writestr('fixture.txt','fixture')
+   else:self.archive(root,[('fixture.txt','file','fixture')]).rename(root/name)
+ def test_desktop_scope_accepts_four_archives_and_hashes_optional_gpu(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);self.candidate_archives(root,m.DESKTOP_REQUIRED|m.NATIVE_OPTIONAL)
+   report=m.build(root,'native',consumer.ROOT,scope='desktop')
+   self.assertEqual(report['scope'],'desktop')
+   self.assertEqual(set(report['required_archives']),m.DESKTOP_REQUIRED)
+   self.assertEqual(set(report['optional_archives_present']),m.NATIVE_OPTIONAL)
+   self.assertEqual(len(report['files']),8)
+   self.assertTrue(all(row['sha256'] and row['members'] for row in report['files']))
+   self.assertFalse(report['runtime_or_model_qualification'])
+   with self.assertRaises(ValueError):m.build(root,'native',consumer.ROOT)
+ def test_default_and_explicit_full_manifest_remain_identical(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);self.candidate_archives(root,m.NATIVE_REQUIRED)
+   report=m.build(root,'native',consumer.ROOT)
+   self.assertEqual(report,m.build(root,'native',consumer.ROOT,scope='full'))
+   self.assertEqual(set(report['required_archives']),m.NATIVE_REQUIRED)
+   self.assertNotIn('scope',report)
+ def test_desktop_scope_rejects_incomplete_or_mobile_inventory(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);self.candidate_archives(root,m.DESKTOP_REQUIRED-{'crispembed-linux-arm64.tar.gz'})
+   with self.assertRaises(ValueError):m.build(root,'native',consumer.ROOT,scope='desktop')
+   self.candidate_archives(root,{'crispembed-linux-arm64.tar.gz','crispembed-ios-arm64.tar.gz'})
+   with self.assertRaises(ValueError):m.build(root,'native',consumer.ROOT,scope='desktop')
+ def test_desktop_scope_cannot_relax_wasm_or_accept_unknown_scope(self):
+  for kind,scope in [('wasm','desktop'),('native','anything')]:
+   with self.assertRaises(ValueError):m.build(Path('.'),kind,consumer.ROOT,scope=scope)
+ def test_desktop_manifest_distinguishes_workflow_from_runtime_source(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);payload=root/'payload';payload.mkdir()
+   self.candidate_archives(payload,m.DESKTOP_REQUIRED)
+   sources=[]
+   for label in ('runtime','workflow'):
+    repo=root/label;repo.mkdir()
+    subprocess.run(['git','init','-q',str(repo)],check=True)
+    (repo/'VERSION').write_text('fixture-'+label+'\n')
+    (repo/'ggml').write_text('fixture ggml')
+    subprocess.run(['git','-C',str(repo),'add','.'],check=True)
+    subprocess.run(['git','-C',str(repo),'-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-qm',label],check=True)
+    sources.append(repo)
+   runtime,workflow=sources
+   report=m.build(payload,'native',runtime,scope='desktop',workflow_source_root=workflow)
+   def head(repo):return subprocess.check_output(['git','-C',str(repo),'rev-parse','HEAD'],text=True).strip()
+   self.assertEqual(report['source_commit'],head(runtime))
+   self.assertEqual(report['workflow_source_commit'],head(workflow))
+   self.assertNotEqual(report['source_commit'],report['workflow_source_commit'])
+   self.assertEqual(report['version'],'fixture-runtime')
 class ConsumerLayoutTests(unittest.TestCase):
  def test_wasm_named_roots_roundtrip(self):
   with tempfile.TemporaryDirectory() as d:
@@ -63,7 +115,10 @@ class ConsumerLayoutTests(unittest.TestCase):
     return {'id':1,'name':name,'digest':'sha256:'+m.sha(destination),'size_in_bytes':destination.stat().st_size}
    service={'head_sha':manifest['source_commit'],'path':'.github/workflows/release-wasm.yml','status':'completed','conclusion':'success','event':'workflow_dispatch'}
    with mock.patch.dict(os.environ,{'GITHUB_ACTIONS':'true','GITHUB_SHA':manifest['source_commit']}),mock.patch.object(consumer,'api',return_value=service),mock.patch.object(consumer,'artifact',side_effect=artifact):
-    consumer.prepare(1,'wasm','crispembed-wasm-release',root/'out')
+    receipt=consumer.prepare(1,'wasm','crispembed-wasm-release',root/'out')
+    self.assertEqual(receipt['source_commit'],service['head_sha'])
+    self.assertNotIn('workflow_source_commit',receipt)
+    self.assertNotIn('workflow_objects',receipt['runtime_source_closure'])
    for kind in ('ocr','embed'):
     self.assertTrue((root/'out'/('crispembed-'+kind+'-wasm')/('crispembed_'+kind+'.js')).is_file())
  def test_windows_drive_path_rejected(self):
@@ -100,6 +155,17 @@ class HeaderEncodingTests(unittest.TestCase):
    self.assertEqual(command[-1],str(package/'crispembed.lib'))
    unix=consumer.c_consumer_command(package,source,binary,False)
    self.assertEqual(unix[0],'cc');self.assertNotIn('/utf-8',unix)
+ def test_msvc_object_output_stays_with_external_executable(self):
+  with tempfile.TemporaryDirectory() as d:
+   output=Path(d)/'external-output';source=consumer.ROOT/'tests/successor_capi_consumer.c'
+   executable=output/'capi-consumer.exe'
+   command=consumer.c_consumer_command(output/'package',source,executable,True)
+   option='/Fo'+str(output/'capi-consumer.obj')
+   self.assertIn(option,command)
+   self.assertLess(command.index(option),command.index('/link'))
+   self.assertNotEqual(executable.parent,source.parent)
+   unix=consumer.c_consumer_command(output/'package',source,output/'capi-consumer',False)
+   self.assertFalse(any(arg.startswith('/Fo') for arg in unix))
 
 class RuntimeClosureTests(unittest.TestCase):
  def fixture(self,root):

@@ -14,6 +14,7 @@ NATIVE_REQUIRED={
  'crispembed-windows-x86_64.zip','crispembed-android-arm64-v8a.tar.gz',
  'crispembed-android-armeabi-v7a.tar.gz','crispembed-ios-arm64.tar.gz'}
 NATIVE_OPTIONAL={'crispembed-linux-x86_64-cuda-bundled.tar.gz','crispembed-linux-x86_64-cuda.tar.gz','crispembed-windows-x86_64-cuda.zip','crispembed-windows-x86_64-vulkan.zip'}
+DESKTOP_REQUIRED={name for name in NATIVE_REQUIRED if not name.startswith(('crispembed-android-','crispembed-ios-'))}
 WASM_REQUIRED={'crispembed-ocr-wasm.tar.gz','crispembed-embed-wasm.tar.gz'}
 
 def digest(stream):
@@ -73,21 +74,29 @@ def archive_members(path):
  if not rows or sum(r['bytes'] for r in rows)>4*1024**3:raise ValueError('Empty/oversize archive')
  return sorted(rows,key=lambda r:r['path'])
 
-def build(root,kind,source_root):
+def build(root,kind,source_root,scope='full',workflow_source_root=None):
  root=Path(root);source_root=Path(source_root)
+ if scope not in ('full','desktop') or (scope=='desktop' and kind!='native'):
+  raise ValueError('Desktop scope requires a native candidate')
  required=NATIVE_REQUIRED if kind=='native' else WASM_REQUIRED
+ if scope=='desktop':required=DESKTOP_REQUIRED
  allowed=required|(NATIVE_OPTIONAL if kind=='native' else set())
  files=sorted(p for p in root.rglob('*') if p.is_file() and (p.name.endswith('.tar.gz') or p.name.endswith('.zip')))
  if len({p.name for p in files})!=len(files):raise ValueError('Duplicate archive basename')
  names={p.name for p in files}
  if not required<=names or names-allowed:raise ValueError('Candidate archive coverage differs: '+repr(sorted(required-names)))
  def git(*args):return subprocess.check_output(['git','-C',str(source_root),*args],text=True).strip()
- return {'schema':'crispembed-successor-archive-manifest-v1','kind':kind,'source_commit':git('rev-parse','HEAD'),
+ report={'schema':'crispembed-successor-archive-manifest-v1','kind':kind,'source_commit':git('rev-parse','HEAD'),
   'ggml_gitlink':git('rev-parse','HEAD:ggml'),'version':(source_root/'VERSION').read_text().strip(),
   'generator_sha256':sha(__file__),'required_archives':sorted(required),'optional_archives_present':sorted(names-required),
   'runtime_or_model_qualification':False,'application_pin_changed':False,
   'files':[{'path':str(p.relative_to(root)),'name':p.name,'bytes':p.stat().st_size,'sha256':sha(p),'members':archive_members(p)} for p in files]}
+ if scope!='full':
+  report['scope']=scope
+  workflow_root=Path(workflow_source_root) if workflow_source_root is not None else Path(__file__).resolve().parents[1]
+  report['workflow_source_commit']=subprocess.check_output(['git','-C',str(workflow_root),'rev-parse','HEAD'],text=True).strip()
+ return report
 
 if __name__=='__main__':
- p=argparse.ArgumentParser();p.add_argument('--root',type=Path,required=True);p.add_argument('--source-root',type=Path,default=Path(__file__).resolve().parents[1]);p.add_argument('--kind',choices=('native','wasm'),required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
- a.output.write_text(json.dumps(build(a.root,a.kind,a.source_root),indent=2,allow_nan=False)+'\n')
+ p=argparse.ArgumentParser();p.add_argument('--root',type=Path,required=True);p.add_argument('--source-root',type=Path,default=Path(__file__).resolve().parents[1]);p.add_argument('--workflow-source-root',type=Path,default=Path(__file__).resolve().parents[1]);p.add_argument('--kind',choices=('native','wasm'),required=True);p.add_argument('--scope',choices=('full','desktop'),default='full');p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+ a.output.write_text(json.dumps(build(a.root,a.kind,a.source_root,a.scope,a.workflow_source_root),indent=2,allow_nan=False)+'\n')

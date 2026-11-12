@@ -1,5 +1,58 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Desktop candidate archive preparation — 12 November 2026
+
+The release workflow has an explicit default-off `desktop_only` dispatch option
+to avoid duplicating independent mobile build qualification. With `cpu_only=true`
+it produces the four Linux x86_64/arm64, macOS arm64 Metal and Windows x86_64
+archives; `cpu_only=false` additionally attempts the existing Linux/Windows
+CUDA and Windows Vulkan variants. A scoped manifest hashes the actual archives
+and members, requires all four desktop archives, records optional GPU coverage,
+and rejects mobile archives. Every release upload is disabled for this dispatch
+mode, including dispatch on a tag ref. Default dispatch and tag-push behavior,
+full manifest coverage and concurrency configuration remain unchanged.
+
+Desktop-only dispatch additionally requires a full `runtime_source_commit`.
+Every desktop producer checks out and verifies that exact commit and its ggml
+gitlink, allowing reuse of the mobile candidate source
+`2d2ab3275022e095f4a8f580e276bb2e3aa3f59c` without rebuilding mobile assets.
+The manifest generator remains on the workflow revision: `source_commit` names
+the actual runtime checkout, while `workflow_source_commit` names the workflow
+and manifest tooling checkout. Ordinary release modes ignore this input.
+
+Fresh archive validation supports these two identities only through explicit
+`tools/ci-heavy/successor_assets.py --desktop-candidate` together with the
+reviewed `--runtime-source-commit` and a separate `--runtime-source-root` checkout.
+Both runtime and workflow checkouts must have their exact expected HEAD and
+complete clean Git trees, including initialized, exact, recursively clean
+submodules, untracked files and ignored files. There is no desktop source path
+allowlist: vendored sources and future build inputs are covered automatically.
+The consumer reads its public header, Python bindings and C test source from the
+exact runtime checkout, then revalidates both complete trees before execution.
+The release recipe, manifest generator and validator remain in the separate
+exact workflow checkout. The expected runtime
+pin, run identity, generator hash, full four-archive desktop inventory and
+selected archive/member hashes are checked before extraction. The consumer
+receipt retains both sources. Full native/WASM validation keeps its original
+single-source contract and rejects desktop manifests without this opt-in.
+
+The historical successor orchestration workflows still require their original
+full native/WASM producer identities and are not desktop-candidate workflows.
+For a separately authorized hosted desktop consumer, first invoke the validator
+with `--run`, `--kind native`, a desktop `--artifact`, a fresh `--output`,
+`--desktop-candidate`, `--runtime-source-commit` and `--runtime-source-root`, then
+invoke its existing `--desktop` control against that output with the same
+`--runtime-source-root`. Initialize both checkouts recursively, keep output
+outside both trees, and set `PYTHONDONTWRITEBYTECODE=1` to preserve fresh sources.
+These controls have not been executed
+against new producer assets; artifact validation is not OCR/app qualification.
+
+This is artifact preparation, not runtime, backend or consumer qualification.
+No build or publication has been launched and no version/application pin changes.
+After review, retain the run's exact source/ggml identity, archive hashes and
+packaged load/dependency checks before any consumer adoption. Independent GPU
+execution and app error/blank/fallback/recovery controls remain acceptance gates.
+
 ## Combined OCR candidate qualification — 12 November 2026
 
 Reviewed native integration `9d2c876d0bf694c95174cb9e87950c3362399ed6` now has

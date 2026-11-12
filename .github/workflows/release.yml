@@ -16,6 +16,14 @@ on:
         type: boolean
         default: false
         description: 'Bounded unpublished CPU/mobile candidate; skip optional CUDA/Vulkan variants'
+      desktop_only:
+        type: boolean
+        default: false
+        description: 'Unpublished desktop archives only; skip separate Android/iOS build qualification'
+      runtime_source_commit:
+        type: string
+        default: ''
+        description: 'Required full immutable runtime commit for desktop_only; ignored in ordinary release modes'
 
 permissions:
   contents: write
@@ -159,9 +167,36 @@ jobs:
         if: matrix.container != ''
         run: git config --global --add safe.directory '*'
 
+      - name: Validate immutable desktop runtime source
+        if: github.event_name == 'workflow_dispatch' && inputs.desktop_only
+        shell: bash
+        env:
+          RUNTIME_SOURCE_COMMIT: ${{ inputs.runtime_source_commit }}
+        run: |
+          [[ "$RUNTIME_SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
+            echo 'desktop_only requires a full lowercase 40-hex runtime_source_commit' >&2
+            exit 1
+          }
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.desktop_only && inputs.runtime_source_commit || github.sha }}
           submodules: recursive
+      - name: Verify desktop runtime identity
+        if: github.event_name == 'workflow_dispatch' && inputs.desktop_only
+        shell: bash
+        env:
+          RUNTIME_SOURCE_COMMIT: ${{ inputs.runtime_source_commit }}
+        run: |
+          python3 - <<'PYIDENTITY'
+          import json, os, subprocess
+          def git(*args): return subprocess.check_output(['git', *args], text=True).strip()
+          source = git('rev-parse', 'HEAD')
+          ggml = git('rev-parse', 'HEAD:ggml')
+          assert source == os.environ['RUNTIME_SOURCE_COMMIT'], 'Runtime checkout identity differs'
+          assert git('-C', 'ggml', 'rev-parse', 'HEAD') == ggml, 'ggml checkout identity differs'
+          print(json.dumps({'workflow_source_commit': os.environ['GITHUB_SHA'],
+                            'runtime_source_commit': source, 'ggml_commit': ggml}))
+          PYIDENTITY
 
       - name: Install build deps (Linux)
         # patchelf only — used at package time to rewrite RUNPATH to $ORIGIN.
@@ -408,7 +443,7 @@ jobs:
           path: ${{ matrix.archive }}
 
       - name: Upload to release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && !(github.event_name == 'workflow_dispatch' && inputs.desktop_only)
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
@@ -430,9 +465,36 @@ jobs:
     env:
       CUDA_VERSION: "12.8.0"
     steps:
+      - name: Validate immutable desktop runtime source
+        if: github.event_name == 'workflow_dispatch' && inputs.desktop_only
+        shell: bash
+        env:
+          RUNTIME_SOURCE_COMMIT: ${{ inputs.runtime_source_commit }}
+        run: |
+          [[ "$RUNTIME_SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
+            echo 'desktop_only requires a full lowercase 40-hex runtime_source_commit' >&2
+            exit 1
+          }
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.desktop_only && inputs.runtime_source_commit || github.sha }}
           submodules: recursive
+      - name: Verify desktop runtime identity
+        if: github.event_name == 'workflow_dispatch' && inputs.desktop_only
+        shell: bash
+        env:
+          RUNTIME_SOURCE_COMMIT: ${{ inputs.runtime_source_commit }}
+        run: |
+          python3 - <<'PYIDENTITY'
+          import json, os, subprocess
+          def git(*args): return subprocess.check_output(['git', *args], text=True).strip()
+          source = git('rev-parse', 'HEAD')
+          ggml = git('rev-parse', 'HEAD:ggml')
+          assert source == os.environ['RUNTIME_SOURCE_COMMIT'], 'Runtime checkout identity differs'
+          assert git('-C', 'ggml', 'rev-parse', 'HEAD') == ggml, 'ggml checkout identity differs'
+          print(json.dumps({'workflow_source_commit': os.environ['GITHUB_SHA'],
+                            'runtime_source_commit': source, 'ggml_commit': ggml}))
+          PYIDENTITY
 
       - name: Install patchelf
         run: sudo apt-get update && sudo apt-get install -y patchelf
@@ -654,7 +716,7 @@ jobs:
             crispembed-linux-x86_64-cuda-bundled.tar.gz
 
       - name: Upload to release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && !(github.event_name == 'workflow_dispatch' && inputs.desktop_only)
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
@@ -682,9 +744,36 @@ jobs:
     env:
       CUDA_VERSION: "12.8.0"
     steps:
+      - name: Validate immutable desktop runtime source
+        if: github.event_name == 'workflow_dispatch' && inputs.desktop_only
+        shell: bash
+        env:
+          RUNTIME_SOURCE_COMMIT: ${{ inputs.runtime_source_commit }}
+        run: |
+          [[ "$RUNTIME_SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
+            echo 'desktop_only requires a full lowercase 40-hex runtime_source_commit' >&2
+            exit 1
+          }
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.desktop_only && inputs.runtime_source_commit || github.sha }}
           submodules: recursive
+      - name: Verify desktop runtime identity
+        if: github.event_name == 'workflow_dispatch' && inputs.desktop_only
+        shell: bash
+        env:
+          RUNTIME_SOURCE_COMMIT: ${{ inputs.runtime_source_commit }}
+        run: |
+          python3 - <<'PYIDENTITY'
+          import json, os, subprocess
+          def git(*args): return subprocess.check_output(['git', *args], text=True).strip()
+          source = git('rev-parse', 'HEAD')
+          ggml = git('rev-parse', 'HEAD:ggml')
+          assert source == os.environ['RUNTIME_SOURCE_COMMIT'], 'Runtime checkout identity differs'
+          assert git('-C', 'ggml', 'rev-parse', 'HEAD') == ggml, 'ggml checkout identity differs'
+          print(json.dumps({'workflow_source_commit': os.environ['GITHUB_SHA'],
+                            'runtime_source_commit': source, 'ggml_commit': ggml}))
+          PYIDENTITY
 
       - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
         uses: Jimver/cuda-toolkit@v0.2.35
@@ -806,7 +895,7 @@ jobs:
           path: crispembed-windows-x86_64-cuda.zip
 
       - name: Upload to release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && !(github.event_name == 'workflow_dispatch' && inputs.desktop_only)
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
@@ -823,9 +912,36 @@ jobs:
     name: Build windows-x86_64-vulkan
     runs-on: windows-latest
     steps:
+      - name: Validate immutable desktop runtime source
+        if: github.event_name == 'workflow_dispatch' && inputs.desktop_only
+        shell: bash
+        env:
+          RUNTIME_SOURCE_COMMIT: ${{ inputs.runtime_source_commit }}
+        run: |
+          [[ "$RUNTIME_SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
+            echo 'desktop_only requires a full lowercase 40-hex runtime_source_commit' >&2
+            exit 1
+          }
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.desktop_only && inputs.runtime_source_commit || github.sha }}
           submodules: recursive
+      - name: Verify desktop runtime identity
+        if: github.event_name == 'workflow_dispatch' && inputs.desktop_only
+        shell: bash
+        env:
+          RUNTIME_SOURCE_COMMIT: ${{ inputs.runtime_source_commit }}
+        run: |
+          python3 - <<'PYIDENTITY'
+          import json, os, subprocess
+          def git(*args): return subprocess.check_output(['git', *args], text=True).strip()
+          source = git('rev-parse', 'HEAD')
+          ggml = git('rev-parse', 'HEAD:ggml')
+          assert source == os.environ['RUNTIME_SOURCE_COMMIT'], 'Runtime checkout identity differs'
+          assert git('-C', 'ggml', 'rev-parse', 'HEAD') == ggml, 'ggml checkout identity differs'
+          print(json.dumps({'workflow_source_commit': os.environ['GITHUB_SHA'],
+                            'runtime_source_commit': source, 'ggml_commit': ggml}))
+          PYIDENTITY
 
       - name: Install Vulkan SDK
         shell: pwsh
@@ -891,7 +1007,7 @@ jobs:
           path: crispembed-windows-x86_64-vulkan.zip
 
       - name: Upload to release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && !(github.event_name == 'workflow_dispatch' && inputs.desktop_only)
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
@@ -901,6 +1017,7 @@ jobs:
           files: crispembed-windows-x86_64-vulkan.zip
 
   build-android:
+    if: github.event_name != 'workflow_dispatch' || !inputs.desktop_only
     name: Build android-${{ matrix.abi }}
     runs-on: ubuntu-latest
     strategy:
@@ -937,7 +1054,7 @@ jobs:
           path: crispembed-android-${{ matrix.abi }}.tar.gz
 
       - name: Upload to release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && !(github.event_name == 'workflow_dispatch' && inputs.desktop_only)
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
@@ -947,6 +1064,7 @@ jobs:
           files: crispembed-android-${{ matrix.abi }}.tar.gz
 
   build-ios:
+    if: github.event_name != 'workflow_dispatch' || !inputs.desktop_only
     name: Build ios-arm64
     runs-on: macos-latest
     steps:
@@ -993,7 +1111,7 @@ jobs:
           path: crispembed-ios-arm64.tar.gz
 
       - name: Upload to release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && !(github.event_name == 'workflow_dispatch' && inputs.desktop_only)
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
@@ -1022,6 +1140,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate immutable desktop runtime source
+        if: github.event_name == 'workflow_dispatch' && inputs.desktop_only
+        shell: bash
+        env:
+          RUNTIME_SOURCE_COMMIT: ${{ inputs.runtime_source_commit }}
+        run: |
+          [[ "$RUNTIME_SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
+            echo 'desktop_only requires a full lowercase 40-hex runtime_source_commit' >&2
+            exit 1
+          }
+      - name: Check out immutable desktop runtime for manifest provenance
+        if: github.event_name == 'workflow_dispatch' && inputs.desktop_only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.runtime_source_commit }}
+          path: runtime-source
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -1029,7 +1164,21 @@ jobs:
 
       - name: Hash complete dry-run candidate archives and members
         if: github.event_name == 'workflow_dispatch'
-        run: python3 tools/successor_asset_manifest.py --root dist --kind native --output successor-native-manifest.json
+        env:
+          DESKTOP_ONLY: ${{ inputs.desktop_only }}
+          RUNTIME_SOURCE_COMMIT: ${{ inputs.runtime_source_commit }}
+        shell: bash
+        run: |
+          scope=full
+          source_root=.
+          if [[ "$DESKTOP_ONLY" == true ]]; then
+            scope=desktop
+            source_root=runtime-source
+            [[ "$(git -C runtime-source rev-parse HEAD)" == "$RUNTIME_SOURCE_COMMIT" ]]
+            [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
+          fi
+          python3 tools/successor_asset_manifest.py --root dist --kind native --scope "$scope" \
+            --source-root "$source_root" --workflow-source-root . --output successor-native-manifest.json
 
       - uses: actions/upload-artifact@v4
         if: github.event_name == 'workflow_dispatch'
@@ -1042,7 +1191,7 @@ jobs:
         # Tag pushes only. A workflow_dispatch dry run must never publish —
         # github.ref_name is the BRANCH there, so without this it would cut a
         # release named after the branch.
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && !(github.event_name == 'workflow_dispatch' && inputs.desktop_only)
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
