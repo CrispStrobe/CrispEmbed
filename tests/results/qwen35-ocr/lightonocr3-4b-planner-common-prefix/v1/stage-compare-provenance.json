@@ -1,0 +1,15 @@
+{
+  "schema": "lighton4b-book-stage-compare-provenance/v1",
+  "source_commit": "4b7dab897ae0ba70fde2c462ecf0533a71df950e",
+  "reader_sha256": "62433e6e09ef195865ccbfce62236415f965b8c638f9d68ad198751a8e83cd16",
+  "raw_report_sha256": "eae0230319ce7d959805b185ffa452f00e13d9a6807a153be51bf315751104fa",
+  "comparisons": 185,
+  "bootstrap_seconds": 48.59927426499999,
+  "controls": 4,
+  "inference_executed": false,
+  "gpu_model_inference_executed": false,
+  "hosted_profile": "Accelerator-backed Kaggle allocation; NumPy CPU artifact analysis only.",
+  "initial_attempt": "CPU allocation rejected because all five batchCPU slots were occupied; no CPU worker accepted.",
+  "scope": "Every consumed stage file and exact graph index rehashed; native raw405 row and whole raw archive rehashed; source654 OFF/ON neutrality checked through admitted producer manifests, not independent reread of every source row.",
+  "qualified": false
+}
