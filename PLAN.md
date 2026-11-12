@@ -6,7 +6,7 @@ Both CPU default flips and the standard-ggml-op GPU port are done (HISTORY 11 No
 
 | Work | State | Acceptance |
 |---|---|---|
-| OvisOCR2 GPU default (proposal) | `CRISPEMBED_QWEN35_OCR_GPU` port done (HISTORY 11 November): no CPU fallbacks on CUDA, T4 3/3 documents exact, 89 tok/s decode | Owner decision. Proposal: default on when a GPU backend is present (`explicitly_off`, CPU unchanged), after a P100/second-arch run and the hosted eleven-case CPU arm |
+| OvisOCR2 GPU default (proposal) | `CRISPEMBED_QWEN35_OCR_GPU` port done (HISTORY 11 November): no CPU fallbacks on CUDA, T4 3/3 documents exact, 89 tok/s decode | Owner decision. Proposal: default on when a GPU backend is present (`explicitly_off`, CPU unchanged), after a P100/second-arch run (the hosted eleven-case CPU arm is exact, 9.09e-5 drift). On the CPU backend the same graphs are exact and faster than the default on the hosted receipt (77.6 vs 125.7 s), which makes them a separate CPU-default candidate |
 | OvisOCR2 GPU follow-ups | GPU confidence drift up to 1.49e-3 (CPU paths ≤ 8.4e-6); selection on the host is ~14% of decode | Attribute the drift (F16 GEMM inputs vs reductions; try F32 device matrices); argmax/softmax on device; Metal/Vulkan runs |
 
 ## PDF Craft adoption — 9 November 2026

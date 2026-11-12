@@ -88,6 +88,11 @@ The recognition call excludes the 2.3 s model init. Stage profile on T4 (`test-q
 - decode **11.2 ms/token (89 tok/s)**;
 - host selection 2.5 ms/token, the softmax/argmax over 248,320 logits after their download.
 
+Hosted eleven-case check of the same graphs on the CPU backend (ubuntu-24.04, 2 threads, run
+43119710108): 11/11 cases and 1,841 tokens have exact IDs/text/EOS, with maximum drift 9.09e-5. The
+historical receipt takes 77.6 s, versus 125.7 s for the graph-decoder default
+([ovisocr2-ggml-ops-quality.json](tests/results/qwen35-ocr/ovisocr2-ggml-ops-quality.json)).
+
 Per page the GPU is 12x the new CPU default on the same host and about 250x the old one. The GPU
 confidence drift (1.49e-3) is larger than on any CPU path, while IDs and text stay exact; see PLAN.
 The CUDA build had a cold ccache (0/193 hits, 1,473-1,563 s).

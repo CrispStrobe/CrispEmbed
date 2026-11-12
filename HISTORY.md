@@ -18,7 +18,12 @@ runs the same code as `vision_cpu`. `CRISPEMBED_QWEN35_OCR_GPU_LOG` prints the p
   have exact IDs, text and stop against the frozen CPU receipt. They take 2.7 / 10.0 / 12.6 s per page,
   at 65-70 tok/s end to end and 89 tok/s decode (11.2 ms/token). The maximum confidence drift is 1.49e-3.
 - **Same graphs on the CPU backend**: exact on the three documents, with maximum drift 6.8e-5. On the
-  same host this is about as fast as the CPU default (29 vs 32 s for the inventory page).
+  same host this is about as fast as the CPU default (29 vs 32 s for the inventory page). The full
+  eleven-case set ran on the hosted lane (`ggml-ops` arm, run
+  [43119710108](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43119710108), receipt
+  `tests/results/qwen35-ocr/ovisocr2-ggml-ops-quality.json`): all 11 cases (1,841 tokens) have exact
+  IDs, text and EOS, with maximum drift 9.09e-5. The historical receipt takes 77.6 s there, versus
+  125.7 s for the CPU default.
 - **Proposed, not flipped**: make the gate default on when a GPU backend is present (see PLAN).
 
 ## 11 November 2026 — OvisOCR2 / Qwen3.5-OCR: graph decoder and threaded vision attention on by default
