@@ -27,18 +27,28 @@ def main():
   try:command(args,out/(label+'.log'),min(limit,6000-(time.monotonic()-started)),r['commands'][label],env=env,cwd=ROOT,on_tick=on_tick)
   finally:save()
  def locate(name,digest):
-  if name=='swiglu-controls.json':
-   path=out/name;require(path.is_file()and sha(path)==digest,'same-session candidate controls');return path,json.loads(path.read_text())
-  found=[p for p in Path('/kaggle/input').rglob(name)if p.is_file()and p.stat().st_size<4<<20 and sha(p)==digest];require(len(found)==1,'one frozen '+name);return found[0],json.loads(found[0].read_text())
+  if name=='swiglu-controls.json'and(out/name).is_file():
+   path=out/name;require(sha(path)==digest,'same-session candidate controls');return path,json.loads(path.read_text())
+  roots=[Path('/kaggle/input')];relay=os.environ.get('LIGHTON4B_RESUME_ROOT','')
+  if relay:require(relay=='/tmp/lighton4b-swiglu-resume/retained-initial','owned resume mirror');roots.append(Path(relay))
+  found=[p for root in roots for p in root.rglob(name)if p.is_file()and p.stat().st_size<4<<20 and sha(p)==digest];require(len(found)==1,'one frozen '+name);return found[0],json.loads(found[0].read_text())
  def verify(p,row):require(p.stat().st_size==row['bytes']and sha(p)==row['sha256'],'immutable '+p.name)
  try:
   run('source',['git','rev-parse','HEAD']);r['source_sha']=(out/'source.log').read_text().strip();require(r['source_sha']==os.environ['LIGHTON4B_EXPECTED_SOURCE'],'exact controller source');candidate_source=os.environ['LIGHTON4B_CANDIDATE_SOURCE'];control_sha=os.environ['LIGHTON4B_CANDIDATE_CONTROLS_SHA256'];require(candidate_source=='519c3d9765c234cd93e9069d5efdc239e3cad3f2'and len(control_sha)==64 and all(c in'0123456789abcdef'for c in control_sha),'immutable candidate/control bindings')
   flags=next(v.split(':',1)[1].split()for v in Path('/proc/cpuinfo').read_text().splitlines()if v.startswith('flags'));require(platform.system()=='Linux'and platform.machine().lower()in['x86_64','amd64']and {'avx2','fma','f16c'}<=set(flags),'actual admitted CPU')
   r['capacity']=dict(memory=base.memory(),scratch=shutil.disk_usage(work).free,output=shutil.disk_usage(out).free);require(r['capacity']['memory']['MemAvailable']>=10<<30 and r['capacity']['scratch']>=25<<30 and r['capacity']['output']>=6<<30,'pre-model resources')
+  reuse={};previous_root=None;previous=None;resume_sha=os.environ.get('LIGHTON4B_RESUME_RECEIPT_SHA256','')
+  if resume_sha:
+   require(resume_sha=='b85f3df503be35c4427cd160adf9fd78eeb0733e1cdd98c6c5767e7ab696ae52','one frozen postprocessor-negative producer');previous_path,previous=locate('swiglu-observed-ab.json',resume_sha);previous_root=previous_path.parent;require(previous['status']=='failed'and previous['error_type']=='KeyError'and previous['error']=="'down'"and previous['phase']=='simple_form-off'and previous['candidate_controls_sha256']==control_sha and previous['runtime_producer_source']==candidate_source,'exact retained negative boundary');require(set(previous['cases']['simple_table']['arms'])=={'off','on'}and previous['cases']['simple_table']['off_all_rows_stages_exact']and previous['cases']['simple_form']['off_all_rows_stages_exact'],'completed three-arm preservation')
+   for name,row in previous['artifacts'].items():verify(previous_root/name,row)
+   reuse={('simple_table','off'),('simple_table','on'),('simple_form','off')};r['resume_prior_receipt_sha256']=resume_sha;r['reused_without_forward']=[case+'/'+arm for case,arm in sorted(reuse)];r['reused_owned_artifacts']=previous['artifacts']
+  arm_paths={}
   cp,controls=locate('swiglu-controls.json',control_sha);require(controls['passed']and controls['source_sha']==candidate_source and controls['checkpoint_loaded']is False,'completed exact candidate controls');require(all('pass'in v.lower()and 'skip'not in v.lower()for v in controls['unit_control_outputs'].values())and set(controls['unit_control_outputs'])=={'test-lighton4b-source-prefill-chunks','test-lighton4b-physical-swiglu','test-lighton4b-physical-gdn-source-ops','test-lighton4b-physical-native-ops','test-lighton4b-physical-f16-attention'},'actual supported old/new controls')
   cache=(cp.parent/'CMakeCache.txt').read_text().splitlines();verify(cp.parent/'CMakeCache.txt',controls['cmake_cache'])
   for k,v in PROFILE.items():require(f'{k}:BOOL={v}'in cache,'actual candidate profile '+k)
-  require(cp.parent==out,'same-session control owner');bundle=work/'runtime';require(2<=len(controls['runtime_bundle'])<=20,'bounded candidate bundle')
+  require(cp.parent==out or(previous_root is not None and cp.parent==previous_root),'tested control owner');
+  if cp.parent!=out:shutil.copyfile(cp.parent/'CMakeCache.txt',out/'CMakeCache.txt')
+  bundle=work/'runtime';require(2<=len(controls['runtime_bundle'])<=20,'bounded candidate bundle')
   for name,row in controls['runtime_bundle'].items():
    n=Path(name);require(not n.is_absolute()and '..'not in n.parts and n.parts[0]in['bin','lib'],'owned candidate bundle path');src=cp.parent/'runtime'/n;verify(src,row);dest=bundle/n;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(src,dest);verify(dest,row)
   r['candidate_controls_sha256']=sha(cp);r['runtime_bundle']=controls['runtime_bundle'];r['runtime_producer_source']=candidate_source;native=bundle/'bin/lighton4b-native-document';stage(native)
@@ -75,14 +85,18 @@ def main():
   for case,count,receiptp,receipt,prefix,gold,folder,original,up,reference,visual,anchors,image in prepared:
    teacher=work/(case+'.ids');teacher.write_text(str(original['generated_ids'][0])+'\n');r['cases'][case]=dict(arms={},actual_upstream_vs_original=f.metric(base,up['tokens'],up['content'],original['generated_ids'],original['decoded']))
    for arm,child in [('off',off),('on',on)]:
-    require(base.memory()['MemAvailable']>=10<<30 and shutil.disk_usage(out).free>=2<<30,'per-arm resources');dest=out/case/arm;dest.mkdir(parents=True);checked=[0]
+    require(base.memory()['MemAvailable']>=10<<30 and shutil.disk_usage(out).free>=2<<30,'per-arm resources');reused=(case,arm)in reuse;dest=previous_root/case/arm if reused else out/case/arm;arm_paths[(case,arm)]=dest
+    if not reused:dest.mkdir(parents=True)
+    checked=[0]
     def tick():
      if arm!='off':return
      n=shared.progress_count(dest)
      if n is None:return
      while checked[0]<min(count,n-1):
       j=checked[0];require(sha(dest/f'greedy.{j}.logits.f32')==receipt['artifacts'][prefix+f'greedy.{j}.logits.f32']['sha256'],'early OFF closed row');checked[0]+=1
-    label=case+'-'+arm;run(label,[native,candidate,folder/'input.rgb',image.height,image.width,teacher,dest,512,4,'greedy-full','--observed-composed-cap512'],child,900,tick)
+    label=case+'-'+arm
+    if reused:r['commands'][label]={**previous['commands'][label],'reused_without_forward':True}
+    else:run(label,[native,candidate,folder/'input.rgb',image.height,image.width,teacher,dest,512,4,'greedy-full','--observed-composed-cap512'],child,900,tick)
     summary=json.loads((dest/'native-summary.json').read_text());ids=list(map(int,(dest/'generated.ids').read_text().split()));text=(dest/'generated.txt').read_bytes().decode();require(summary['generated_tokens']==len(ids)and ids and len(ids)<=512 and summary['eos']==(ids[-1]in[248044,248046])and(summary['eos']or len(ids)==512)and not summary['source_fed_vision']and summary['teacher_positions']==1,'independent mode/count/EOS');shared.rows(dest,ids,np)
     require(summary['physical_source_prefill_chunks']and summary['physical_q6_tiled']and summary['physical_q4_repack']and summary['physical_repack_entries']==216 and 0<summary['physical_repack_bytes']<=2<<30 and summary['converted_f32_weight_entries']==summary['converted_f32_weight_bytes']==0,'actual mode/bounded quantized cache')
     sizes=list(map(int,(dest/'prefill.chunk_sizes.ids').read_text().split()));require(sizes and all(1<=n<=16 for n in sizes)and sum(sizes)==summary['prompt_tokens'],'actual bounded complete chunk plan')
@@ -91,7 +105,7 @@ def main():
      for name in anchors:require(sha(dest/name)==receipt['artifacts'][prefix+name]['sha256'],'all OFF frozen rows/stages')
      r['cases'][case]['off_all_rows_stages_exact']=True
     else:
-     for name in visual+['prompt.ids','modalities.ids','text.embedded.f32','prefill.input.f32','prefill.positions.f32']:require(sha(dest/name)==sha(out/case/'off'/name),'unchanged vision and decoder input')
+     for name in visual+['prompt.ids','modalities.ids','text.embedded.f32','prefill.input.f32','prefill.positions.f32']:require(sha(dest/name)==sha(arm_paths[(case,'off')]/name),'unchanged vision and decoder input')
     if case=='simple_form':
      probe={};input_values=np.fromfile(dest/'prefill.input.f32',dtype='<f4')[:4*2560];require(input_values.tobytes()==source_form['input'].tobytes(),'same real source first4 form input')
      actual_positions=np.fromfile(dest/'prefill.positions.f32',dtype='<f4').reshape(3,-1)[:,:4];require(actual_positions.tobytes()==source_form['positions'].tobytes(),'same source first4 positions')
@@ -101,7 +115,7 @@ def main():
     x=np.fromfile(dest/'prefill.logits.f32',dtype='<f4').astype('f8');d=x-reference;vs=f.metric(base,ids,text,original['generated_ids'],original['decoded']);floor=r['cases'][case]['actual_upstream_vs_original'];r['cases'][case]['arms'][arm]=dict(summary=summary,gates={k:v for k,v in child.items()if k.startswith('CRISPEMBED_')},chunk_sizes=sizes,generated_ids=ids,decoded=text,vs_original=vs,vs_upstream=f.metric(base,ids,text,up['tokens'],up['content']),meets_observed_upstream_floor=bool(summary['eos']and vs['character_edits']<=floor['character_edits']and vs['word_edits']<=floor['word_edits']),firstscore_vs_upstream=dict(rms=float(np.sqrt(np.mean(d*d))),max_abs=float(abs(d).max()),candidate_rms_magnitude=float(np.sqrt(np.mean(x*x))),reference_rms_magnitude=float(np.sqrt(np.mean(reference.astype('f8')**2)))),resources=r['commands'][label]);save()
    paired=[]
    for layer in range(32):
-    x=np.fromfile(out/case/'on'/f'prefill.layer.{layer}.f32',dtype='<f4');y=np.fromfile(out/case/'off'/f'prefill.layer.{layer}.f32',dtype='<f4');require(x.size and x.shape==y.shape and np.isfinite(x).all()and np.isfinite(y).all(),'paired finite hidden');d=x.astype('f8')-y;paired.append(dict(layer=layer,bit_exact=x.tobytes()==y.tobytes(),rms=float(np.sqrt(np.mean(d*d))),max_abs=float(abs(d).max()),off_rms_magnitude=float(np.sqrt(np.mean(y.astype('f8')**2))),on_rms_magnitude=float(np.sqrt(np.mean(x.astype('f8')**2)))))
+    x=np.fromfile(arm_paths[(case,'on')]/f'prefill.layer.{layer}.f32',dtype='<f4');y=np.fromfile(arm_paths[(case,'off')]/f'prefill.layer.{layer}.f32',dtype='<f4');require(x.size and x.shape==y.shape and np.isfinite(x).all()and np.isfinite(y).all(),'paired finite hidden');d=x.astype('f8')-y;paired.append(dict(layer=layer,bit_exact=x.tobytes()==y.tobytes(),rms=float(np.sqrt(np.mean(d*d))),max_abs=float(abs(d).max()),off_rms_magnitude=float(np.sqrt(np.mean(y.astype('f8')**2))),on_rms_magnitude=float(np.sqrt(np.mean(x.astype('f8')**2)))))
    r['cases'][case]['paired_native_layers']=dict(scope='Native OFF/ON, not actual source hidden',first_different_layer=next((v['layer']for v in paired if not v['bit_exact']),None),layers=paired);save()
   require(sha(candidate)==cfg['model_sha256'],'weights unchanged');r['status']='measured_swiglu_observed_ab';r['limits']=['Observed calibration only; no heldout data accessed or qualification.','One teacher row plus full independent greedy; Native tiles remain at most16; full upstream graph equivalence is not assumed.','Fused component equality is not decoded quality or speed evidence.']
  except BaseException as e:r.update(error_type=type(e).__name__,error=str(e));raise
