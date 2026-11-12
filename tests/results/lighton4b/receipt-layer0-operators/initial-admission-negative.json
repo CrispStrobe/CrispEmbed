@@ -1,0 +1,20 @@
+{
+  "schema": "lighton4b-receipt-layer0-initial-admission-negative/v1",
+  "status": "setup_negative",
+  "candidate_source": "a8a22749ab0b757ae1f317b6fa5b84ffd148b939",
+  "tools_source": "d81783b4f1b98d7f09c6bd61c932b64a65ee114d",
+  "bootstrap_sha256": "ab5b454fa24f297eedfca663a57e9400bcfa5030859515839d2b96c18b56fa30",
+  "submitted_source_sha256": "8de98142c05affc06d1de9e023c342748ba93766fa6d07b2c8776b0baf592f15",
+  "failure": "one exact immutable physical-rope-fixed-panel.json",
+  "report_admission_maximum_bytes": 1048576,
+  "actual_fixed_report_bytes": 1071524,
+  "checkout_executed": false,
+  "build_executed": false,
+  "parameter_ranges_acquired": false,
+  "operator_execution_attempted": false,
+  "model_forward_executed": false,
+  "source_capture_repeated": false,
+  "full_f32_model_instantiated": false,
+  "qualified": false,
+  "correction_scope": "Bootstrap-only bounded small-report admission raised to4MiB, matching the unchanged child worker. Exact report SHA remains mandatory. No numerical gate or operator source changes."
+}
