@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Only unrun inventory OFF/ON; reuse verified prior controls and completed arms."""
-import hashlib,importlib.util,json,os,shutil,signal,stat,subprocess,sys,time,zipfile
+import hashlib,importlib.util,json,os,platform,shutil,signal,stat,subprocess,sys,time,zipfile
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 def load(name,path):
@@ -57,7 +57,7 @@ def main():
  def admit_arm(label,seal,expected):
   memory=base.memory();free=shutil.disk_usage(out).free;actual=sha(seal);checks=admission_flags(memory['MemAvailable'],free,actual==expected);failed=[name for name,ok in checks.items()if not ok];r.setdefault('admissions',{})[label]=dict(memory=memory,output_free_bytes=free,seal_sha256=actual,expected_seal_sha256=expected,checks=checks,failed_predicates=failed);save();require(not failed,'inventory admission failed: '+','.join(failed))
  try:
-  run('source',['git','rev-parse','HEAD']);r['controller_source']=(out/'source.log').read_text().strip();require(r['controller_source']==cfg['controller_source']==os.environ['LIGHTON4B_EXPECTED_SOURCE'],'fixed controller');r['capacity']=dict(memory=base.memory(),scratch=shutil.disk_usage(work).free,output=shutil.disk_usage(out).free);require(r['capacity']['memory']['MemAvailable']>=10<<30 and r['capacity']['scratch']>=25<<30 and r['capacity']['output']>=12<<30,'resources before model acquisition')
+  run('source',['git','rev-parse','HEAD']);r['controller_source']=(out/'source.log').read_text().strip();require(r['controller_source']==cfg['controller_source']==os.environ['LIGHTON4B_EXPECTED_SOURCE'],'fixed controller');flags=next(v.split(':',1)[1].split()for v in Path('/proc/cpuinfo').read_text().splitlines()if v.startswith('flags'));require(platform.system()=='Linux'and platform.machine().lower()in['x86_64','amd64']and {'avx2','fma','f16c'}<=set(flags),'actual supported CPU for retained bundle');r['required_cpu_features_admitted']=True;r['capacity']=dict(memory=base.memory(),scratch=shutil.disk_usage(work).free,output=shutil.disk_usage(out).free);require(r['capacity']['memory']['MemAvailable']>=10<<30 and r['capacity']['scratch']>=25<<30 and r['capacity']['output']>=12<<30,'resources before model acquisition')
   priorp,previous=locate('swiglu-fixed-panel.json',cfg['prior_partial_receipt_sha256']);ap,partial=locate('partial-raw-audit.json',cfg['prior_partial_audit_sha256']);rp,transport=locate('relay-copy.json',cfg['prior_relay_sha256']);require(previous['status']=='failed'and previous['phase']=='inventory-table-preflight'and previous['error']=='per-arm resources/seal'and not previous['cases']['inventory-table']['arms'],'exact preserved unclassified failure before inventory');require(partial['status']=='partial_audit_complete'and partial['receipt_sha256']==sha(priorp)and partial['raw_rows']==4340 and partial['owned_artifacts']==590 and partial['owned_artifact_bytes']==5443427617 and partial['all_raw_finite_argmax_sha']and partial['all_owned_artifact_hashes'],'completed independent prior artifact proof');require(transport['status']=='mirrored-all-authenticated'and transport['files']==616 and transport['bytes']==5444674895,'one verified complete mirror');r['prior_partial_receipt_sha256']=sha(priorp);r['prior_partial_audit_sha256']=sha(ap);r['prior_relay_sha256']=sha(rp);r['reused_without_forward']=cfg['reused_completed_arms'];r['original_failure_predicate_telemetry_available']=False;r['prior_book_capped_negative']=True;save()
   cp,control=locate('swiglu-fixed-controls.json',cfg['candidate_controls_sha256']);require(cp.parent==priorp.parent and control['passed']and not control['checkpoint_loaded']and control['source_sha']==cfg['candidate_source'],'same tested prior candidate controls, no rebuild');require(all(control['source_files'][name]['sha256']==digest for name,digest in cfg['source_files'].items()),'exact source/CLI/preflight bytes');require(len(control['unit_control_outputs'])==8 and all('pass'in v.lower()and 'skip'not in v.lower()for v in control['unit_control_outputs'].values()),'all supported actual units');r['candidate_source']=control['source_sha'];r['controls_sha256']=sha(cp);r['runtime_bundle']=control['runtime_bundle'];verify(cp.parent/'CMakeCache.txt',control['cmake_cache']);shutil.copyfile(cp.parent/'CMakeCache.txt',out/'CMakeCache.txt');bundle=work/'runtime'
   for name,row in control['runtime_bundle'].items():
@@ -75,7 +75,11 @@ def main():
   r['inventory_inputs_baseline_audit_authenticated_before_models']=True;save();off_gates,on_gates=gates(previous['gates']['off'])
   def environment(values):
    env=dict(os.environ);env.update({k:'0'for k in env if k.startswith('CRISPEMBED_')});env.update(values);env['LD_LIBRARY_PATH']=str(bundle/'lib');return env
-  envs={'off':environment(off_gates),'on':environment(on_gates)};r['gates']={'off':off_gates,'on':on_gates};teacher=work/'one.ids';teacher.write_text('248046\n');original_cfg=json.loads((ROOT/'docs/lighton4b-heldout-executor-v1.json').read_text());sys.path.insert(0,str(ROOT/'tools'));import lighton4b_upstream_physical_pack as pack
+  envs={'off':environment(off_gates),'on':environment(on_gates)};r['gates']={'off':off_gates,'on':on_gates};teacher=work/'one.ids';teacher.write_text('248046\n')
+  try:run('cli-fixed1536',ex.native_args(native,work/'missing.gguf',work/'missing.rgb',1,1,teacher,out,'native-composed'),envs['off'],30)
+  except subprocess.CalledProcessError as error:require(error.returncode==4,'actual retained 1536 CLI before models')
+  else:raise RuntimeError('missing model admitted')
+  original_cfg=json.loads((ROOT/'docs/lighton4b-heldout-executor-v1.json').read_text());sys.path.insert(0,str(ROOT/'tools'));import lighton4b_upstream_physical_pack as pack
   def download(url,path,size,digest):
    r['phase']='download-'+Path(path).name;records=r.setdefault('downloads',{}).setdefault(Path(path).name,[]);save()
    try:shared.transfer(base.download,url,path,size,digest,records)
