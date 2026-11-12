@@ -16,7 +16,9 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   with opt-out gates. The GPU ggml path is default-off. The T4 receipt covers
   three decoded-exact documents; the CPU ggml path covers eleven decoded-exact
   cases. Confidence drift and independent second-architecture, Metal and Vulkan
-  evidence remain open before any broader default decision.
+  evidence remain open before any broader default decision. A second-architecture
+  [admission attempt](https://github.com/CrispStrobe/CrispEmbed/pull/222) allocated
+  no GPU and stopped before model work; it is not a quality result.
 - **CrispSorter:** main `02d372b0` pins CrispEmbed 0.17.19 and includes OCR
   document review, consolidated PDF editing and search/storage work. CPU consumer
   [PR 218](https://github.com/CrispStrobe/CrispEmbed/pull/218) merged after its
