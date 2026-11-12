@@ -80,7 +80,7 @@ def main():
     if not root.is_dir():
         raise RuntimeError('artifact-only worker requires mounted Kaggle artifacts')
     output = Path('/kaggle/working/book-repetition-eos.json')
-    report = dict(schema='lighton4b-book-repetition-eos/v1', model_forward_executed=False,
+    report = dict(schema='lighton4b-book-repetition-eos/v1', numpy_version=np.__version__, model_forward_executed=False,
                   text_or_token_ids_emitted=False, qualified=False, status='failed', arms={})
     ids_by_role, rows_by_role = {}, {}
     try:
