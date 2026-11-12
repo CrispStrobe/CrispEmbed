@@ -54,6 +54,8 @@ on:
       - '.github/workflows/build-wasm-embed.yml'
       - '.github/workflows/rust-crates.yml'
       - '.github/workflows/inpaint-cli.yml'
+      # Re-included contract globs must not re-enable Markdown-only runs.
+      - '!**.md'
   pull_request:
     branches: [main]
     # Pure documentation/evidence changes start no run at all. Everything
@@ -100,6 +102,8 @@ on:
       - '.github/workflows/build-wasm-embed.yml'
       - '.github/workflows/rust-crates.yml'
       - '.github/workflows/inpaint-cli.yml'
+      # Re-included contract globs must not re-enable Markdown-only runs.
+      - '!**.md'
   workflow_dispatch:
 
 permissions:

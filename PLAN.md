@@ -1,5 +1,16 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Main queue filtering — 12 November 2026
+
+The five ordinary build workflows already ignore general documentation and
+retain explicit machine-readable contract paths. Their later inpaint/MIGAN
+reinclusions inadvertently selected matching Markdown, even though the CI
+selector routes Markdown to no build lane. Apply the Markdown exclusion after
+the reinclusions on push and pull request; contract JSON and code still select
+checks, mixed changes still run, and the separate secret scan remains unchanged.
+Focused filter-parity, contract-preservation and tracked-file selection controls
+pass; no runtime or release behavior changes.
+
 ## Second-architecture admission — 12 November 2026
 
 Second-architecture admission at executor `33ec2e250` did not allocate the requested L4: the device query returned no GPU, so the worker stopped before cloning, building or model acquisition. The [admission receipt](tests/results/qwen35-ocr/ovisocr2-l4-admission-20261112.json) has SHA-256 `256ad51c7a7de71cf2513cd04945b6de7fa24afdd2147d1da876422d73487ba3`. This is a resource-availability result, not an inference or quality result. Retain the GPU gate default-off; a second-architecture backend with actual device placement and complete decoded comparisons remains open.

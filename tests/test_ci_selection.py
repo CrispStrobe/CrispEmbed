@@ -579,7 +579,7 @@ class WorkflowFilterTests(unittest.TestCase):
                      "tests/results/ultrabert/source-audit.json", "tests/results/x/src/y.cpp", ".github/workflows/rust-crates.yml"):
             with self.subTest(path=path):
                 self.assertTrue(workflow_filter_includes(patterns, path))
-        for path in ("README.md", "docs/a/b.md", "PLAN.md", "docs/x.json", "tests/results/x/RUN.txt", ".github/workflows/ocr-quality.yml", "tools/ci-heavy/x.py", "tools/kaggle/k/run.sh", "models/convert-x-to-gguf.py"):
+        for path in ("README.md", "docs/a/b.md", "docs/inpainting-cli.md", "docs/migan-reference.md", "PLAN.md", "docs/x.json", "tests/results/x/RUN.txt", ".github/workflows/ocr-quality.yml", "tools/ci-heavy/x.py", "tools/kaggle/k/run.sh", "models/convert-x-to-gguf.py"):
             with self.subTest(path=path):
                 self.assertFalse(workflow_filter_includes(patterns, path))
 
