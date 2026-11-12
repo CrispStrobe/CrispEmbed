@@ -66,3 +66,27 @@ Source-stage controls and frozen decoded panels remain acceptance gates.
 [observed BF16 regressions](lighton4b-physical-rope-observed-audit.md) remain
 binding. All experimental gates stay default-off; no release, alias, application
 pin or qualification changes.
+
+The [separate aligned candidate controls](../tests/results/lighton4b/receipt-layer0-operators/aligned-source-controls.json)
+now pass on runtime `f8bffd1217fa41a958047d88dafb782a4b1cd989`, tools
+`c8eec8b4cd117ddfdf4853f52c58022599e24844`, producer receipt
+`2d0d4131b12c6392bb92e494644e9f7d4900b17ba6c7389beaa96baae2a91305` and
+outer receipt `5e11a778b52cb1b58b600f847c2ac19b41c86a5fb3bfc67e507588f2f013b8ad`.
+All22 original native OFF stage/cache arrays and all56 actual source ON stage
+comparisons are byte-exact, including all256 hidden0 rows; image-end recurrent
+state and FIFO are also exact. The five supported C++ units pass, including
+8295 source-planner/cache checks, and all four actual512/1536 CLI missing-model
+admissions return4. The exact retained native-document hash is
+`046a34d094dff2334e474da7d4a8db9ba98bc8bc437fdc570e1d6d4ca8233d0a`.
+The69 producer-owned artifacts total144,904,408bytes and remain remote.
+Independent review is small-report/source scoped, with no fresh full raw/binary
+rehash claimed. The155.37-second worker time is not model-performance evidence.
+
+The candidate preserves the legacy planner by default. Its separately gated
+rule only moves a misaligned nonfinal balancing tile after an eight-row tile;
+all4096 frozen legacy plans remain unchanged. Hosted controls verify4096
+aligned classifications, actual linear/attention caches and a32-layer decoder
+using shared synthetic quantized weights, including mode-toggle recovery and
+active/inactive nested cache contamination. These are model-free controls.
+Fresh frozen observed/fixed decoded A/B remains pending; component equality
+does not waive either earlier decoded negative or provisional-label limits.
