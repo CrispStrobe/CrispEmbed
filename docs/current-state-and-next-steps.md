@@ -39,7 +39,10 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   at `a113b4d1` independently reproduced the same access-denied error during
   Tantivy commit. Subsequent [paired stress controls](https://github.com/CrispStrobe/CrispSorter/actions/runs/43253065385)
   at `01b27b0e` completed 120 independent indexes per arm with no real-index
-  failures. This is bounded nonreproduction, not a repair; the cause remains open.
+  failures. A separate [injected commit-denial test](https://github.com/CrispStrobe/CrispSorter/actions/runs/43262281694)
+  at `03cc4004` exposed a recovery defect: after reopening, replay collided with
+  a stale deletion file. The original denial's trigger remains unproven; the
+  recovery fix is under review.
 - **CrispMath:** source `2b9d0982a3fd780deb2ffd67835da3ce658dce27` sets
   `1.2.1+28` and retains its immutable CrispEmbed 0.17.15 pin. The
   [10 November inspection](https://github.com/CrispStrobe/CrispMath/actions/runs/42870085016)

@@ -23,7 +23,12 @@ at `01b27b0e2a3183e915ac52fb0bc17f3ab17a82d1` preserved the production control
 and used a single-buffer tracing arm: each completed 120 independent indexes
 with zero real-index failures, and the tracing-equivalence checks passed. The
 labeled injected errors in the trace are synthetic controls. The original
-failure remains unexplained; no production fix or Windows-wide quality claim.
+failure's initial trigger remains unexplained. A separate [injected-denial run](https://github.com/CrispStrobe/CrispSorter/actions/runs/43262281694)
+at `03cc4004ff9cc20f5c16a0992a0ed626931bc7bd` forced an OS error 5 during
+atomic metadata publication after writer acquisition. Both control and traced
+arms then failed after reopening: replay encountered an existing deletion file.
+This demonstrates a recovery defect under that injected failure, without proving
+what caused the original denial. No production fix or Windows-wide quality claim.
 
 ## Local kernel configuration privacy — 12 November 2026
 
