@@ -1,5 +1,20 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## CrispSorter Ovis application-path control — 12 November 2026
+
+The [comparison receipt](tests/results/crispsorter-ovis-comparison-20261112.json)
+records app `82c5da3240431cd658c8cfc8a54a60796a71284a` with immutable runtime
+`c364feb974b91e14cbf328c6949f3df36e89ce81`. Seven of eight selected real pages
+were admitted; one was skipped for an image hash mismatch. The three Ovis arms
+returned empty text for all seven pages, although the application marked them
+successful. The [direct diagnostic](tests/results/crispsorter-ovis-diagnostic-20261112.json)
+confirmed that a frozen small fixture decoded identically on CPU and GPU, while
+the real page hit the native image patch bound before vision on both. The app
+conflates this error with a blank result. GPU initialization alone is not proof
+of inference. These results do not qualify Ovis real-page decoded quality or speed;
+the input gate remains unchanged. A separately declared image preparation protocol
+and correct native error propagation are required before repeating the panel.
+
 ## CrispSorter model-manager live control — 12 November 2026
 
 The [hosted Linux receipt](tests/results/crispsorter-model-manager-live-20261112.json)

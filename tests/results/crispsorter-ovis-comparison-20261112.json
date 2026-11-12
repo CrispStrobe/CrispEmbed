@@ -1,0 +1,1239 @@
+{
+  "schema": "crispsorter-bounded-ocr-review-v1",
+  "source_commit": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+  "source_url": "https://github.com/CrispStrobe/CrispSorter/commit/82c5da3240431cd658c8cfc8a54a60796a71284a",
+  "corpus": {
+    "name": "real-scans-v2",
+    "upstream_path": "docs/ocr-real-scans-v2.json",
+    "sha256": "df8681e3835d7cc5905ee50c8ace18fcb4f97230b2219ce208d4a5dd325c70e3",
+    "crispembed_commit": "c364feb974b91e14cbf328c6949f3df36e89ce81",
+    "pages": 20
+  },
+  "scorer": {
+    "path": "bench/ocr/vendor/crispembed_score.py",
+    "upstream_path": "tools/kaggle/ocr-real-scans/score.py",
+    "sha256": "9cc12f95544131cfe50e1ad7d91498e6c8560cd4ce2fce1fa63a25dd92edf7bc",
+    "crispembed_commit": "c364feb974b91e14cbf328c6949f3df36e89ce81",
+    "levenshtein": "rapidfuzz"
+  },
+  "artifact_preservation": {
+    "small_files": 49,
+    "total_bytes": 247359,
+    "scope": "downloaded small remote JSON and summary receipts only; retained originals outside Git; no model/image downloads"
+  },
+  "summary_rows": [
+    {
+      "device": "cpu",
+      "engine_id": "ovisocr2_cpu",
+      "engine": "unified",
+      "units": "7",
+      "ok": "7",
+      "failed": "0",
+      "failures": "",
+      "skipped_pending": "0",
+      "mean_cer": "1.0",
+      "penalised_cer": "1.0",
+      "mean_cer_nospace": "1.0",
+      "penalised_cer_nospace": "1.0",
+      "mean_wer": "1.0",
+      "penalised_wer": "1.0",
+      "mean_word_recall": "0.0",
+      "penalised_word_recall": "0.0",
+      "mean_primary": "0.8571",
+      "receipt_word_recall": "0.0",
+      "nonreceipt_cer_nospace": "1.0",
+      "median_s_per_page": "3.13",
+      "mean_s_per_page": "3.1326",
+      "peak_rss_mb": "3406.5",
+      "median_rss_mb": "3303.4",
+      "peak_gpu_process_mb": "",
+      "peak_gpu_delta_mb": "",
+      "gpu_unused_units": "",
+      "pull_seconds": "",
+      "warmup_seconds": "33.23",
+      "model_mb": "1637.7",
+      "binary_git_sha": "82c5da324043"
+    },
+    {
+      "device": "cpu",
+      "engine_id": "ovisocr2_cpu_legacy",
+      "engine": "unified",
+      "units": "7",
+      "ok": "7",
+      "failed": "0",
+      "failures": "",
+      "skipped_pending": "0",
+      "mean_cer": "1.0",
+      "penalised_cer": "1.0",
+      "mean_cer_nospace": "1.0",
+      "penalised_cer_nospace": "1.0",
+      "mean_wer": "1.0",
+      "penalised_wer": "1.0",
+      "mean_word_recall": "0.0",
+      "penalised_word_recall": "0.0",
+      "mean_primary": "0.8571",
+      "receipt_word_recall": "0.0",
+      "nonreceipt_cer_nospace": "1.0",
+      "median_s_per_page": "3.13",
+      "mean_s_per_page": "3.618",
+      "peak_rss_mb": "3369.4",
+      "median_rss_mb": "3255.5",
+      "peak_gpu_process_mb": "",
+      "peak_gpu_delta_mb": "",
+      "gpu_unused_units": "",
+      "pull_seconds": "",
+      "warmup_seconds": "45.37",
+      "model_mb": "1637.7",
+      "binary_git_sha": "82c5da324043"
+    },
+    {
+      "device": "cpu",
+      "engine_id": "ppocrv6",
+      "engine": "ppocrv6",
+      "units": "7",
+      "ok": "7",
+      "failed": "0",
+      "failures": "",
+      "skipped_pending": "0",
+      "mean_cer": "0.7576",
+      "penalised_cer": "0.7576",
+      "mean_cer_nospace": "0.7819",
+      "penalised_cer_nospace": "0.7819",
+      "mean_wer": "0.9788",
+      "penalised_wer": "0.9788",
+      "mean_word_recall": "0.0279",
+      "penalised_word_recall": "0.0279",
+      "mean_primary": "0.6931",
+      "receipt_word_recall": "0.0702",
+      "nonreceipt_cer_nospace": "0.7969",
+      "median_s_per_page": "4.01",
+      "mean_s_per_page": "5.0401",
+      "peak_rss_mb": "496.1",
+      "median_rss_mb": "437.1",
+      "peak_gpu_process_mb": "",
+      "peak_gpu_delta_mb": "",
+      "gpu_unused_units": "",
+      "pull_seconds": "",
+      "warmup_seconds": "6.3",
+      "model_mb": "5.2",
+      "binary_git_sha": "82c5da324043"
+    },
+    {
+      "device": "cpu",
+      "engine_id": "system_tesseract",
+      "engine": "system_tesseract",
+      "units": "7",
+      "ok": "6",
+      "failed": "1",
+      "failures": "error=1",
+      "skipped_pending": "0",
+      "mean_cer": "0.2135",
+      "penalised_cer": "0.3259",
+      "mean_cer_nospace": "0.2205",
+      "penalised_cer_nospace": "0.3319",
+      "mean_wer": "0.317",
+      "penalised_wer": "0.4146",
+      "mean_word_recall": "0.7157",
+      "penalised_word_recall": "0.6134",
+      "mean_primary": "0.1657",
+      "receipt_word_recall": "0.2632",
+      "nonreceipt_cer_nospace": "0.1462",
+      "median_s_per_page": "2.26",
+      "mean_s_per_page": "2.6722",
+      "peak_rss_mb": "138.1",
+      "median_rss_mb": "126.6",
+      "peak_gpu_process_mb": "",
+      "peak_gpu_delta_mb": "",
+      "gpu_unused_units": "",
+      "pull_seconds": "",
+      "warmup_seconds": "2.05",
+      "model_mb": "0.0",
+      "binary_git_sha": "82c5da324043"
+    },
+    {
+      "device": "gpu",
+      "engine_id": "ovisocr2_gpu",
+      "engine": "unified",
+      "units": "7",
+      "ok": "7",
+      "failed": "0",
+      "failures": "",
+      "skipped_pending": "0",
+      "mean_cer": "1.0",
+      "penalised_cer": "1.0",
+      "mean_cer_nospace": "1.0",
+      "penalised_cer_nospace": "1.0",
+      "mean_wer": "1.0",
+      "penalised_wer": "1.0",
+      "mean_word_recall": "0.0",
+      "penalised_word_recall": "0.0",
+      "mean_primary": "0.8571",
+      "receipt_word_recall": "0.0",
+      "nonreceipt_cer_nospace": "1.0",
+      "median_s_per_page": "3.09",
+      "mean_s_per_page": "3.0906",
+      "peak_rss_mb": "3552.2",
+      "median_rss_mb": "3416.2",
+      "peak_gpu_process_mb": "1726.0",
+      "peak_gpu_delta_mb": "1732.0",
+      "gpu_unused_units": "0",
+      "pull_seconds": "",
+      "warmup_seconds": "29.54",
+      "model_mb": "1637.7",
+      "binary_git_sha": "82c5da324043"
+    }
+  ],
+  "quality_result": "negative; all 21 Ovis CPU/default CPU/legacy GPU units returned valid JSON with zero chars and text; no decoded quality or useful speed claim",
+  "aggregate_validation": "all five summary rows independently rederived from unit records for CER/CER-no-space/WER/recall and failure penalties",
+  "skipped_page": {
+    "id": "en-form-economic-journal-67",
+    "reason": "image SHA mismatch; same page skipped in all five engine arms",
+    "expected_sha256": "4d6e0d71fe7efdbce4947ccadc4dac2b15743026ea3bac9d84a45ef959a7051a",
+    "observed_sha256": "b09f8c1cdc37d5851649424f57125bbdad8a8140d873d584d03821d48f28fa75"
+  },
+  "failure": {
+    "engine": "system_tesseract",
+    "page": "de-degraded-freiligrath-46",
+    "status": "error",
+    "reason": "Tesseract TSV and TXT disagree; exact word alignment could not be verified"
+  },
+  "sessions": [
+    {
+      "device": "gpu",
+      "stop_reason": "complete",
+      "elapsed_seconds": 123.8,
+      "status_counts": {
+        "already_done": 0,
+        "ok": 7,
+        "skipped_image": 1
+      }
+    },
+    {
+      "device": "cpu",
+      "stop_reason": "complete",
+      "elapsed_seconds": 456.5,
+      "status_counts": {
+        "already_done": 0,
+        "ok": 27,
+        "skipped_image": 4,
+        "error": 1
+      }
+    }
+  ],
+  "units": [
+    {
+      "device": "cpu",
+      "engine": "system_tesseract",
+      "page": "de-antiqua-kafka-schloss-211",
+      "status": "ok",
+      "metrics": {
+        "cer": 0.0105,
+        "cer_nospace": 0.0115,
+        "wer": 0.0328,
+        "word_recall": 0.9781,
+        "len_ratio": 0.998
+      },
+      "output_chars": 1147,
+      "text_sha256": "1aecef2f96353c37463c8604d1557a7ed6deafee59f67b814a71b27bff9d60c4",
+      "stdout_sha256": "757d79d76cbf8f57540a965655a2aea36b2bf114275a502792d69644b3f5641e",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": false
+      },
+      "input_sha256": "4758ee30dc4d6fa9766e05c81efbbc57a490f4ba0b11b8fa875ba67dfcbad593",
+      "ground_truth_sha256": "491294b7340812acdd0b8541f863adb2a436d14772b75535cd75b6e8733c2616"
+    },
+    {
+      "device": "cpu",
+      "engine": "system_tesseract",
+      "page": "receipt-cord-test-29",
+      "status": "ok",
+      "metrics": {
+        "cer": 0.5853,
+        "cer_nospace": 0.5924,
+        "wer": 0.7368,
+        "word_recall": 0.2632,
+        "len_ratio": 0.473
+      },
+      "output_chars": 124,
+      "text_sha256": "0de3eab20bc883cab627b453dc3d522af996bac01f2ea93a1fcc93b69d455453",
+      "stdout_sha256": "6a93bb479b058e1084ed9d8f1803282012cd000ec339b22792555adb8e7d77f6",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": false
+      },
+      "input_sha256": "1f065c268473d727282005e57441c55c3249afe0da54f3bc08823d0cbe730610",
+      "ground_truth_sha256": "c93f40e7e20a131c1d3e13f4632e557e16bc497d9d79a08e33a49af542ec8bf6"
+    },
+    {
+      "device": "cpu",
+      "engine": "system_tesseract",
+      "page": "de-degraded-freiligrath-46",
+      "status": "error",
+      "metrics": null,
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": false
+      },
+      "input_sha256": "1673be87eec8e4dac9d5d2f7a0341e88e6e0498b8044e10dd282220773603bfd",
+      "ground_truth_sha256": "9012215853af8989a2542e0afd9b97fa07992eec9c71d0c5c8ec0005b6cefeb5"
+    },
+    {
+      "device": "cpu",
+      "engine": "system_tesseract",
+      "page": "de-fraktur-grimm-319",
+      "status": "ok",
+      "metrics": {
+        "cer": 0.0689,
+        "cer_nospace": 0.0799,
+        "wer": 0.2282,
+        "word_recall": 0.7718,
+        "len_ratio": 0.982
+      },
+      "output_chars": 799,
+      "text_sha256": "7dddb9945d8019f80101470d15281421c591ba83c694c95c28c7e4bdf454044b",
+      "stdout_sha256": "173b90092d36b6d1823ee89e3cdcb1d660f8c36a0bdc6402212941aa4113971a",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": false
+      },
+      "input_sha256": "83e1cabd6fd70576dc3351c1c5655d40a7056fd49ca6e0e3192dd14abc9d42b5",
+      "ground_truth_sha256": "acbc9daa6c7ed9bd70e75c2c4716d9b5310abb91d46978930d20d4a0ebfb9cb1"
+    },
+    {
+      "device": "cpu",
+      "engine": "system_tesseract",
+      "page": "de-2col-meyers-b13-103",
+      "status": "ok",
+      "metrics": {
+        "cer": 0.5734,
+        "cer_nospace": 0.5965,
+        "wer": 0.8594,
+        "word_recall": 0.3217,
+        "len_ratio": 0.72
+      },
+      "output_chars": 4783,
+      "text_sha256": "3d84d4b7ad02071dbac29ddd91b8518013264869e108d8a784227a93dc351e8f",
+      "stdout_sha256": "c364aa292ad4d7a2c0227f32ac96c6f18931559bf0d2905b02ba741570274c7b",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": false
+      },
+      "input_sha256": "65adda61b339c48c5b8992e63ac3069bf0deae467fcfa07518a39fb33e080dad",
+      "ground_truth_sha256": "97419439a7d0201b39d4fa9c19214697975b1bcee49a2e29fbfa472ebe6a9ba5"
+    },
+    {
+      "device": "cpu",
+      "engine": "system_tesseract",
+      "page": "en-prose-constitution-13",
+      "status": "ok",
+      "metrics": {
+        "cer": 0.0096,
+        "cer_nospace": 0.0092,
+        "wer": 0.0,
+        "word_recall": 1.0,
+        "len_ratio": 1.005
+      },
+      "output_chars": 945,
+      "text_sha256": "ccba5c6bc5557774bf4017a3514a0b9cc6365712d5e48bddc6d9a9cf4e22fcb6",
+      "stdout_sha256": "aa5f43115b7f850e14f570e109aa55c8648aa3bc3ec5aff1572e5b1f0d0715f7",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": false
+      },
+      "input_sha256": "36c1b61692719239b011442ad4670655374d8c219b333b054fbcb05a46a38a86",
+      "ground_truth_sha256": "0f2941807f6d7cfd468f12f05418ecfbf9c0f7b5857612b8c8ea3ae3c479608e"
+    },
+    {
+      "device": "cpu",
+      "engine": "system_tesseract",
+      "page": "en-table-climatic-26",
+      "status": "ok",
+      "metrics": {
+        "cer": 0.0334,
+        "cer_nospace": 0.0337,
+        "wer": 0.0447,
+        "word_recall": 0.9592,
+        "len_ratio": 0.976
+      },
+      "output_chars": 2826,
+      "text_sha256": "7edf3a239704f2c031e238df64bc24049a6dfcdbb4031891cc778f85e0892dba",
+      "stdout_sha256": "09ee86f486f104fff9db74a437840ce72e68ca169db5d0c324128d34b258bc6a",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": false
+      },
+      "input_sha256": "1e72426a797315540ad1b06f52eaac948fe109c80301738b5c69aa114bda3635",
+      "ground_truth_sha256": "693563fe382e7615649008c28b21580af4bd4aaa387d3e70a9f765b0754c9f26"
+    },
+    {
+      "device": "cpu",
+      "engine": "ppocrv6",
+      "page": "de-antiqua-kafka-schloss-211",
+      "status": "ok",
+      "metrics": {
+        "cer": 0.7544,
+        "cer_nospace": 0.8038,
+        "wer": 0.9945,
+        "word_recall": 0.0164,
+        "len_ratio": 0.354
+      },
+      "output_chars": 405,
+      "text_sha256": "5cd9a12e492154dfeed99ce3686a175e63a4cb107ef500c93aa7052b27ca95fd",
+      "stdout_sha256": "a99f63355700806023e7270ec26079b2d0c4409b60c61c6badbbfb67e54842c5",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": false
+      },
+      "input_sha256": "4758ee30dc4d6fa9766e05c81efbbc57a490f4ba0b11b8fa875ba67dfcbad593",
+      "ground_truth_sha256": "491294b7340812acdd0b8541f863adb2a436d14772b75535cd75b6e8733c2616"
+    },
+    {
+      "device": "cpu",
+      "engine": "ppocrv6",
+      "page": "receipt-cord-test-29",
+      "status": "ok",
+      "metrics": {
+        "cer": 0.6628,
+        "cer_nospace": 0.6919,
+        "wer": 0.9474,
+        "word_recall": 0.0702,
+        "len_ratio": 0.442
+      },
+      "output_chars": 113,
+      "text_sha256": "f0c704df3193da89dc537e027edf09ac2e35219ecac1e51654ad454db7910deb",
+      "stdout_sha256": "88b3536b36ab014436e73cc2fd08d673f88e28e0b4354792918fce7042db2858",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": false
+      },
+      "input_sha256": "1f065c268473d727282005e57441c55c3249afe0da54f3bc08823d0cbe730610",
+      "ground_truth_sha256": "c93f40e7e20a131c1d3e13f4632e557e16bc497d9d79a08e33a49af542ec8bf6"
+    },
+    {
+      "device": "cpu",
+      "engine": "ppocrv6",
+      "page": "de-degraded-freiligrath-46",
+      "status": "ok",
+      "metrics": {
+        "cer": 0.7918,
+        "cer_nospace": 0.8211,
+        "wer": 0.9873,
+        "word_recall": 0.0127,
+        "len_ratio": 0.305
+      },
+      "output_chars": 149,
+      "text_sha256": "a7297053a17c39e7871810ef2809480adff8b184a32f58967b9d7b3cbf384a2e",
+      "stdout_sha256": "b675c9ceb470e72a28685b8b03aacd768871197f879c149eee034a281205725e",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": false
+      },
+      "input_sha256": "1673be87eec8e4dac9d5d2f7a0341e88e6e0498b8044e10dd282220773603bfd",
+      "ground_truth_sha256": "9012215853af8989a2542e0afd9b97fa07992eec9c71d0c5c8ec0005b6cefeb5"
+    },
+    {
+      "device": "cpu",
+      "engine": "ppocrv6",
+      "page": "de-fraktur-grimm-319",
+      "status": "ok",
+      "metrics": {
+        "cer": 0.8106,
+        "cer_nospace": 0.825,
+        "wer": 0.9933,
+        "word_recall": 0.0067,
+        "len_ratio": 0.273
+      },
+      "output_chars": 222,
+      "text_sha256": "d03d5b97fddb282a62ffef2c40b6d7d3cf942d45eb79c1898c4ed62be352ece1",
+      "stdout_sha256": "48899afe40dda706a426f753c41e16ffdf106649ae14d1187a8933eb92e59da3",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": false
+      },
+      "input_sha256": "83e1cabd6fd70576dc3351c1c5655d40a7056fd49ca6e0e3192dd14abc9d42b5",
+      "ground_truth_sha256": "acbc9daa6c7ed9bd70e75c2c4716d9b5310abb91d46978930d20d4a0ebfb9cb1"
+    },
+    {
+      "device": "cpu",
+      "engine": "ppocrv6",
+      "page": "de-2col-meyers-b13-103",
+      "status": "ok",
+      "metrics": {
+        "cer": 0.8128,
+        "cer_nospace": 0.8357,
+        "wer": 0.9854,
+        "word_recall": 0.0236,
+        "len_ratio": 0.286
+      },
+      "output_chars": 1881,
+      "text_sha256": "b29c1cb3c9c7c45c4f64630de1bc2a8d20068b2dffb221eb847394e3abe5bfd0",
+      "stdout_sha256": "071996535b20112534f6daab09f881b3547eb050072a51d21838e94560c014c6",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": false
+      },
+      "input_sha256": "65adda61b339c48c5b8992e63ac3069bf0deae467fcfa07518a39fb33e080dad",
+      "ground_truth_sha256": "97419439a7d0201b39d4fa9c19214697975b1bcee49a2e29fbfa472ebe6a9ba5"
+    },
+    {
+      "device": "cpu",
+      "engine": "ppocrv6",
+      "page": "en-prose-constitution-13",
+      "status": "ok",
+      "metrics": {
+        "cer": 0.7409,
+        "cer_nospace": 0.7474,
+        "wer": 0.9651,
+        "word_recall": 0.0349,
+        "len_ratio": 0.363
+      },
+      "output_chars": 339,
+      "text_sha256": "667aa3226002e81275caa47a35ec5dfa4aba4ee862b9af3675d3d9bfe7de6d1c",
+      "stdout_sha256": "f743769ee2250e5f4fbb96b72449b8e28a59978cfc8bb0f40f803bd868b2c5cd",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": false
+      },
+      "input_sha256": "36c1b61692719239b011442ad4670655374d8c219b333b054fbcb05a46a38a86",
+      "ground_truth_sha256": "0f2941807f6d7cfd468f12f05418ecfbf9c0f7b5857612b8c8ea3ae3c479608e"
+    },
+    {
+      "device": "cpu",
+      "engine": "ppocrv6",
+      "page": "en-table-climatic-26",
+      "status": "ok",
+      "metrics": {
+        "cer": 0.73,
+        "cer_nospace": 0.7482,
+        "wer": 0.9786,
+        "word_recall": 0.0311,
+        "len_ratio": 0.359
+      },
+      "output_chars": 1035,
+      "text_sha256": "d10d1ba05cb45a62bf99ef7ddf147ca49888707be734fcb92c4109747ff37139",
+      "stdout_sha256": "d97fb52e960c37770ba58d68f33640bbabb681f8d1a446f222ca646f1eb8fd42",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": false
+      },
+      "input_sha256": "1e72426a797315540ad1b06f52eaac948fe109c80301738b5c69aa114bda3635",
+      "ground_truth_sha256": "693563fe382e7615649008c28b21580af4bd4aaa387d3e70a9f765b0754c9f26"
+    },
+    {
+      "device": "cpu",
+      "engine": "ovisocr2_cpu",
+      "page": "de-antiqua-kafka-schloss-211",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "d6cc745068b0f4c3b64df782e3aac80d7fb312e5a5ac4480a18713ffb0bf08c1",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "4758ee30dc4d6fa9766e05c81efbbc57a490f4ba0b11b8fa875ba67dfcbad593",
+      "ground_truth_sha256": "491294b7340812acdd0b8541f863adb2a436d14772b75535cd75b6e8733c2616"
+    },
+    {
+      "device": "cpu",
+      "engine": "ovisocr2_cpu",
+      "page": "receipt-cord-test-29",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e221bd3cb856d168ceec2dac8155ffb659f7d2f7a58fabbfa36761949b743ada",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "1f065c268473d727282005e57441c55c3249afe0da54f3bc08823d0cbe730610",
+      "ground_truth_sha256": "c93f40e7e20a131c1d3e13f4632e557e16bc497d9d79a08e33a49af542ec8bf6"
+    },
+    {
+      "device": "cpu",
+      "engine": "ovisocr2_cpu",
+      "page": "de-degraded-freiligrath-46",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "19533af817bf28814f68aac8e4b954aa77c744514c15ae646d5f9595c314a10a",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "1673be87eec8e4dac9d5d2f7a0341e88e6e0498b8044e10dd282220773603bfd",
+      "ground_truth_sha256": "9012215853af8989a2542e0afd9b97fa07992eec9c71d0c5c8ec0005b6cefeb5"
+    },
+    {
+      "device": "cpu",
+      "engine": "ovisocr2_cpu",
+      "page": "de-fraktur-grimm-319",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "2d9080adf487be065ba7d4183ca15fd5eee39fa31ef69488285f958da778f4d2",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "83e1cabd6fd70576dc3351c1c5655d40a7056fd49ca6e0e3192dd14abc9d42b5",
+      "ground_truth_sha256": "acbc9daa6c7ed9bd70e75c2c4716d9b5310abb91d46978930d20d4a0ebfb9cb1"
+    },
+    {
+      "device": "cpu",
+      "engine": "ovisocr2_cpu",
+      "page": "de-2col-meyers-b13-103",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "29467130f5f4f3480e7ba02a5190249cafb16f54bbc7612fa63d57e8d7fff112",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "65adda61b339c48c5b8992e63ac3069bf0deae467fcfa07518a39fb33e080dad",
+      "ground_truth_sha256": "97419439a7d0201b39d4fa9c19214697975b1bcee49a2e29fbfa472ebe6a9ba5"
+    },
+    {
+      "device": "cpu",
+      "engine": "ovisocr2_cpu",
+      "page": "en-prose-constitution-13",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "4ecbe90a8c2dbb9c5bc219a4d7dee5627fdea71ce908ac15b273fed5d5e01fa9",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "36c1b61692719239b011442ad4670655374d8c219b333b054fbcb05a46a38a86",
+      "ground_truth_sha256": "0f2941807f6d7cfd468f12f05418ecfbf9c0f7b5857612b8c8ea3ae3c479608e"
+    },
+    {
+      "device": "cpu",
+      "engine": "ovisocr2_cpu",
+      "page": "en-table-climatic-26",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "fd4c29d63d7bd09d21d9f9eaa2cfc0f12302dfa2117c9434c27012bf77917d73",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "1e72426a797315540ad1b06f52eaac948fe109c80301738b5c69aa114bda3635",
+      "ground_truth_sha256": "693563fe382e7615649008c28b21580af4bd4aaa387d3e70a9f765b0754c9f26"
+    },
+    {
+      "device": "cpu",
+      "engine": "ovisocr2_cpu_legacy",
+      "page": "de-antiqua-kafka-schloss-211",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "d6cc745068b0f4c3b64df782e3aac80d7fb312e5a5ac4480a18713ffb0bf08c1",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "4758ee30dc4d6fa9766e05c81efbbc57a490f4ba0b11b8fa875ba67dfcbad593",
+      "ground_truth_sha256": "491294b7340812acdd0b8541f863adb2a436d14772b75535cd75b6e8733c2616"
+    },
+    {
+      "device": "cpu",
+      "engine": "ovisocr2_cpu_legacy",
+      "page": "receipt-cord-test-29",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e221bd3cb856d168ceec2dac8155ffb659f7d2f7a58fabbfa36761949b743ada",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "1f065c268473d727282005e57441c55c3249afe0da54f3bc08823d0cbe730610",
+      "ground_truth_sha256": "c93f40e7e20a131c1d3e13f4632e557e16bc497d9d79a08e33a49af542ec8bf6"
+    },
+    {
+      "device": "cpu",
+      "engine": "ovisocr2_cpu_legacy",
+      "page": "de-degraded-freiligrath-46",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "19533af817bf28814f68aac8e4b954aa77c744514c15ae646d5f9595c314a10a",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "1673be87eec8e4dac9d5d2f7a0341e88e6e0498b8044e10dd282220773603bfd",
+      "ground_truth_sha256": "9012215853af8989a2542e0afd9b97fa07992eec9c71d0c5c8ec0005b6cefeb5"
+    },
+    {
+      "device": "cpu",
+      "engine": "ovisocr2_cpu_legacy",
+      "page": "de-fraktur-grimm-319",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "2d9080adf487be065ba7d4183ca15fd5eee39fa31ef69488285f958da778f4d2",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "83e1cabd6fd70576dc3351c1c5655d40a7056fd49ca6e0e3192dd14abc9d42b5",
+      "ground_truth_sha256": "acbc9daa6c7ed9bd70e75c2c4716d9b5310abb91d46978930d20d4a0ebfb9cb1"
+    },
+    {
+      "device": "cpu",
+      "engine": "ovisocr2_cpu_legacy",
+      "page": "de-2col-meyers-b13-103",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "29467130f5f4f3480e7ba02a5190249cafb16f54bbc7612fa63d57e8d7fff112",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "65adda61b339c48c5b8992e63ac3069bf0deae467fcfa07518a39fb33e080dad",
+      "ground_truth_sha256": "97419439a7d0201b39d4fa9c19214697975b1bcee49a2e29fbfa472ebe6a9ba5"
+    },
+    {
+      "device": "cpu",
+      "engine": "ovisocr2_cpu_legacy",
+      "page": "en-prose-constitution-13",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "4ecbe90a8c2dbb9c5bc219a4d7dee5627fdea71ce908ac15b273fed5d5e01fa9",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "36c1b61692719239b011442ad4670655374d8c219b333b054fbcb05a46a38a86",
+      "ground_truth_sha256": "0f2941807f6d7cfd468f12f05418ecfbf9c0f7b5857612b8c8ea3ae3c479608e"
+    },
+    {
+      "device": "cpu",
+      "engine": "ovisocr2_cpu_legacy",
+      "page": "en-table-climatic-26",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "fd4c29d63d7bd09d21d9f9eaa2cfc0f12302dfa2117c9434c27012bf77917d73",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cpu"
+      },
+      "stderr_markers": {
+        "cuda": false,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "1e72426a797315540ad1b06f52eaac948fe109c80301738b5c69aa114bda3635",
+      "ground_truth_sha256": "693563fe382e7615649008c28b21580af4bd4aaa387d3e70a9f765b0754c9f26"
+    },
+    {
+      "device": "gpu",
+      "engine": "ovisocr2_gpu",
+      "page": "de-antiqua-kafka-schloss-211",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "d6cc745068b0f4c3b64df782e3aac80d7fb312e5a5ac4480a18713ffb0bf08c1",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cuda"
+      },
+      "stderr_markers": {
+        "cuda": true,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "4758ee30dc4d6fa9766e05c81efbbc57a490f4ba0b11b8fa875ba67dfcbad593",
+      "ground_truth_sha256": "491294b7340812acdd0b8541f863adb2a436d14772b75535cd75b6e8733c2616"
+    },
+    {
+      "device": "gpu",
+      "engine": "ovisocr2_gpu",
+      "page": "receipt-cord-test-29",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "e221bd3cb856d168ceec2dac8155ffb659f7d2f7a58fabbfa36761949b743ada",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cuda"
+      },
+      "stderr_markers": {
+        "cuda": true,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "1f065c268473d727282005e57441c55c3249afe0da54f3bc08823d0cbe730610",
+      "ground_truth_sha256": "c93f40e7e20a131c1d3e13f4632e557e16bc497d9d79a08e33a49af542ec8bf6"
+    },
+    {
+      "device": "gpu",
+      "engine": "ovisocr2_gpu",
+      "page": "de-degraded-freiligrath-46",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "19533af817bf28814f68aac8e4b954aa77c744514c15ae646d5f9595c314a10a",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cuda"
+      },
+      "stderr_markers": {
+        "cuda": true,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "1673be87eec8e4dac9d5d2f7a0341e88e6e0498b8044e10dd282220773603bfd",
+      "ground_truth_sha256": "9012215853af8989a2542e0afd9b97fa07992eec9c71d0c5c8ec0005b6cefeb5"
+    },
+    {
+      "device": "gpu",
+      "engine": "ovisocr2_gpu",
+      "page": "de-fraktur-grimm-319",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "2d9080adf487be065ba7d4183ca15fd5eee39fa31ef69488285f958da778f4d2",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cuda"
+      },
+      "stderr_markers": {
+        "cuda": true,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "83e1cabd6fd70576dc3351c1c5655d40a7056fd49ca6e0e3192dd14abc9d42b5",
+      "ground_truth_sha256": "acbc9daa6c7ed9bd70e75c2c4716d9b5310abb91d46978930d20d4a0ebfb9cb1"
+    },
+    {
+      "device": "gpu",
+      "engine": "ovisocr2_gpu",
+      "page": "de-2col-meyers-b13-103",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "29467130f5f4f3480e7ba02a5190249cafb16f54bbc7612fa63d57e8d7fff112",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cuda"
+      },
+      "stderr_markers": {
+        "cuda": true,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "65adda61b339c48c5b8992e63ac3069bf0deae467fcfa07518a39fb33e080dad",
+      "ground_truth_sha256": "97419439a7d0201b39d4fa9c19214697975b1bcee49a2e29fbfa472ebe6a9ba5"
+    },
+    {
+      "device": "gpu",
+      "engine": "ovisocr2_gpu",
+      "page": "en-prose-constitution-13",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "4ecbe90a8c2dbb9c5bc219a4d7dee5627fdea71ce908ac15b273fed5d5e01fa9",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cuda"
+      },
+      "stderr_markers": {
+        "cuda": true,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "36c1b61692719239b011442ad4670655374d8c219b333b054fbcb05a46a38a86",
+      "ground_truth_sha256": "0f2941807f6d7cfd468f12f05418ecfbf9c0f7b5857612b8c8ea3ae3c479608e"
+    },
+    {
+      "device": "gpu",
+      "engine": "ovisocr2_gpu",
+      "page": "en-table-climatic-26",
+      "status": "ok",
+      "metrics": {
+        "cer": 1.0,
+        "cer_nospace": 1.0,
+        "wer": 1.0,
+        "word_recall": 0.0,
+        "len_ratio": 0.0
+      },
+      "output_chars": 0,
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "fd4c29d63d7bd09d21d9f9eaa2cfc0f12302dfa2117c9434c27012bf77917d73",
+      "binary": {
+        "sha256": "0bb3432ef29e8efaa04ced4748dea839a128c2bb5c9a51e4cf55705220220b39",
+        "git_sha": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+        "variant": "cuda"
+      },
+      "stderr_markers": {
+        "cuda": true,
+        "cpu_fallback": false,
+        "empty_output": true
+      },
+      "input_sha256": "1e72426a797315540ad1b06f52eaac948fe109c80301738b5c69aa114bda3635",
+      "ground_truth_sha256": "693563fe382e7615649008c28b21580af4bd4aaa387d3e70a9f765b0754c9f26"
+    }
+  ],
+  "runtime": {
+    "tag": "v0.17.19",
+    "commit": "c364feb974b91e14cbf328c6949f3df36e89ce81",
+    "source_sha256": {
+      "src/qwen35_image.cpp": "573e425d3d9127fbd5f1cf45189276580351bed7fe41be3b0f72e02841fdceed",
+      "src/qwen35_frontend.h": "90b15926d78515ddca526c4165e894ef68914dc75980f8253795512eb98afb7b",
+      "src/qwen35_ocr.cpp": "369afe9e01613e60a26ae7a8f44e91e97f2c3993f3ecacf3ab813118db20fc79",
+      "src/ocr_orchestrator.cpp": "8a6f396cf7757325512d8ffeed59da6b2d4a3f466e84355cebd557a48f4e6045",
+      "src/crispembed.cpp": "44371ef32a036e00a28dbd5781d2a2f836f646e4155f720942dc8606aa9f7107"
+    },
+    "cpu_archive_sha256": "66073c14e446ea87dc1c4652b2decaff32cf2bf79c8a83d2b5102e07b93749c6",
+    "cuda_archive_sha256": "f403153964b5f4f2b7bf2f7396d16727a169d0ff1139e122d1776ff5ba4fe7f6"
+  },
+  "interpretation": "Confirmed preprocessing admission failure, before vision and decoder: direct CPU/GPU real page NULL, ERROR stop4, zeroIDs, image exceeds native patch bound; app incorrectly exits0 with empty text. Exact frozen synthetic succeeds through app and both direct paths with identical nine IDs/rawtext/EOS. Original panel is not valid Ovis model quality evidence.",
+  "diagnostic": {
+    "sha256": "4a2dcbb2d0ec3b99550bca38ebfe1d6bd3e9542cef9c5556c614d2e81e9c79a7",
+    "bytes": 9183,
+    "arms": 6,
+    "source_commit": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+    "runtime_release": "v0.17.19",
+    "known_good_ids": [
+      9419,
+      77796,
+      271,
+      16,
+      17,
+      18,
+      19,
+      20,
+      248046
+    ],
+    "known_good_text": "Hello OCR\n\n12345",
+    "real_decoded_dimensions": [
+      1280,
+      2077
+    ],
+    "first_failure_stage": "image preprocessing, unchanged 1024-patch gate",
+    "native_last_error": "image exceeds native patch bound",
+    "changes": "reference-only diagnostic; original 2048 cap/source/model/image gates unchanged; no production changes"
+  }
+}

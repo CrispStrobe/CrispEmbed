@@ -1,0 +1,57 @@
+{
+  "source_commit": "82c5da3240431cd658c8cfc8a54a60796a71284a",
+  "runtime_release": "v0.17.19",
+  "model_sha256": "d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db",
+  "synthetic_png_sha256": "fba91697e616a1308653ec37c9e0d56bbec20f0c202a4d6098c31c25c92b9d0a",
+  "real_input_sha256": "36c1b61692719239b011442ad4670655374d8c219b333b054fbcb05a46a38a86",
+  "arms": [
+    {
+      "input": "dev-hello",
+      "mode": "app-gpu",
+      "exit_code": 0,
+      "seconds": 23.859,
+      "stdout": "{\n  \"file\": \"[path]\",\n  \"engine\": \"unified\",\n  \"render\": \"text\",\n  \"chars\": 16,\n  \"text\": \"Hello OCR\\n\\n12345\"\n}\n",
+      "stderr": "[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"cli.command\",\"phase\":\"started\",\"elapsed_ms\":0,\"context\":{\"surface\":\"cli\",\"mode\":\"ocr\"}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.settings\",\"phase\":\"started\",\"elapsed_ms\":0,\"context\":{\"surface\":\"cli\",\"mode\":\"read\",\"saved\":true}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.settings\",\"phase\":\"completed\",\"elapsed_ms\":0,\"context\":{\"surface\":\"cli\",\"mode\":\"read\",\"saved\":true,\"stages\":0}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"extract.file\",\"phase\":\"started\",\"elapsed_ms\":0,\"context\":{\"engine\":\"unified\",\"forced\":true}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.image\",\"phase\":\"started\",\"elapsed_ms\":0,\"context\":{\"engine\":\"unified\",\"kind\":\"image\"}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.prepare\",\"phase\":\"started\",\"elapsed_ms\":0,\"context\":{\"pipeline\":true}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.prepare\",\"phase\":\"completed\",\"elapsed_ms\":0,\"context\":{\"pipeline\":true,\"width\":448,\"height\":448}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.pipeline\",\"phase\":\"started\",\"elapsed_ms\":0,\"context\":{\"engine\":\"unified\",\"stages\":1}}\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: yes, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: yes, VRAM: 14911 MiB\nqwen35_ocr ggml-ops vision graph: backend=CUDA0 nodes=732 on_backend=732 other=0 splits=1\nqwen35_ocr ggml-ops prefill graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1\nqwen35_ocr ggml-ops decode graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.pipeline\",\"phase\":\"completed\",\"elapsed_ms\":23285,\"context\":{\"engine\":\"unified\",\"stages\":1}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.image\",\"phase\":\"completed\",\"elapsed_ms\":23285,\"context\":{\"engine\":\"unified\",\"kind\":\"image\",\"characters\":16}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"extract.file\",\"phase\":\"completed\",\"elapsed_ms\":23285,\"context\":{\"engine\":\"unified\",\"forced\":true,\"characters\":16,\"items\":0}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"cli.command\",\"phase\":\"completed\",\"elapsed_ms\":23286,\"context\":{\"surface\":\"cli\",\"mode\":\"ocr\"}}\n"
+    },
+    {
+      "input": "dev-hello",
+      "mode": "native-cpu",
+      "exit_code": 0,
+      "seconds": 29.81,
+      "stdout": "{\"kind\": \"native-cpu\", \"init_ok\": true, \"init_s\": 1.8675277460000075, \"default_max_tokens\": 2048, \"output_pointer_nonnull\": true, \"text\": \"Hello OCR\\n\\n12345\", \"bytes\": 16, \"ids\": [9419, 77796, 271, 16, 17, 18, 19, 20, 248046], \"stop\": 1, \"last_error\": \"\", \"recognize_s\": 27.45477044400002, \"rgb_sha256\": \"e0a4678c944c538986c7ad68367cacded7abf72c8f4a133ac52e57cd058cdb27\", \"width\": 448, \"height\": 448}\n",
+      "stderr": ""
+    },
+    {
+      "input": "dev-hello",
+      "mode": "native-gpu",
+      "exit_code": 0,
+      "seconds": 3.835,
+      "stdout": "{\"kind\": \"native-gpu\", \"init_ok\": true, \"init_s\": 2.6410623210000495, \"default_max_tokens\": 2048, \"output_pointer_nonnull\": true, \"text\": \"Hello OCR\\n\\n12345\", \"bytes\": 16, \"ids\": [9419, 77796, 271, 16, 17, 18, 19, 20, 248046], \"stop\": 1, \"last_error\": \"\", \"recognize_s\": 0.5450624400000379, \"rgb_sha256\": \"e0a4678c944c538986c7ad68367cacded7abf72c8f4a133ac52e57cd058cdb27\", \"width\": 448, \"height\": 448}\n",
+      "stderr": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: yes, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: yes, VRAM: 14911 MiB\nqwen35_ocr ggml-ops vision graph: backend=CUDA0 nodes=732 on_backend=732 other=0 splits=1\nqwen35_ocr ggml-ops prefill graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1\nqwen35_ocr ggml-ops decode graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1\n"
+    },
+    {
+      "input": "en-prose-constitution-13",
+      "mode": "app-gpu",
+      "exit_code": 0,
+      "seconds": 3.341,
+      "stdout": "{\n  \"file\": \"[path]\",\n  \"engine\": \"unified\",\n  \"render\": \"text\",\n  \"chars\": 0,\n  \"text\": \"\"\n}\n",
+      "stderr": "[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"cli.command\",\"phase\":\"started\",\"elapsed_ms\":0,\"context\":{\"surface\":\"cli\",\"mode\":\"ocr\"}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.settings\",\"phase\":\"started\",\"elapsed_ms\":0,\"context\":{\"surface\":\"cli\",\"mode\":\"read\",\"saved\":true}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.settings\",\"phase\":\"completed\",\"elapsed_ms\":0,\"context\":{\"surface\":\"cli\",\"mode\":\"read\",\"saved\":true,\"stages\":0}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"extract.file\",\"phase\":\"started\",\"elapsed_ms\":0,\"context\":{\"engine\":\"unified\",\"forced\":true}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.image\",\"phase\":\"started\",\"elapsed_ms\":0,\"context\":{\"engine\":\"unified\",\"kind\":\"image\"}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.prepare\",\"phase\":\"started\",\"elapsed_ms\":0,\"context\":{\"pipeline\":true}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.prepare\",\"phase\":\"completed\",\"elapsed_ms\":0,\"context\":{\"pipeline\":true,\"width\":1280,\"height\":2077}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.pipeline\",\"phase\":\"started\",\"elapsed_ms\":0,\"context\":{\"engine\":\"unified\",\"stages\":1}}\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: yes, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: yes, VRAM: 14911 MiB\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.pipeline\",\"phase\":\"completed\",\"elapsed_ms\":2843,\"context\":{\"engine\":\"unified\",\"stages\":1}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"ocr.image\",\"phase\":\"completed\",\"elapsed_ms\":2845,\"context\":{\"engine\":\"unified\",\"kind\":\"image\",\"characters\":0}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"extract.file\",\"phase\":\"completed\",\"elapsed_ms\":2846,\"context\":{\"engine\":\"unified\",\"forced\":true,\"characters\":0,\"items\":0}}\n[info] operation {\"operation_id\":\"[operation-id]\",\"operation\":\"cli.command\",\"phase\":\"completed\",\"elapsed_ms\":2847,\"context\":{\"surface\":\"cli\",\"mode\":\"ocr\"}}\n"
+    },
+    {
+      "input": "en-prose-constitution-13",
+      "mode": "native-cpu",
+      "exit_code": 0,
+      "seconds": 2.381,
+      "stdout": "{\"kind\": \"native-cpu\", \"init_ok\": true, \"init_s\": 1.8630673860000115, \"default_max_tokens\": 2048, \"output_pointer_nonnull\": false, \"text\": null, \"bytes\": 0, \"ids\": [], \"stop\": 4, \"last_error\": \"image exceeds native patch bound\", \"recognize_s\": 7.32190000007904e-05, \"rgb_sha256\": \"517e949048e7eba7e228d1e42973d6212670c5b03bf0b7a0cdc4b0ab3a77e7b3\", \"width\": 1280, \"height\": 2077}\n",
+      "stderr": ""
+    },
+    {
+      "input": "en-prose-constitution-13",
+      "mode": "native-gpu",
+      "exit_code": 0,
+      "seconds": 3.363,
+      "stdout": "{\"kind\": \"native-gpu\", \"init_ok\": true, \"init_s\": 2.604288490999977, \"default_max_tokens\": 2048, \"output_pointer_nonnull\": false, \"text\": null, \"bytes\": 0, \"ids\": [], \"stop\": 4, \"last_error\": \"image exceeds native patch bound\", \"recognize_s\": 7.614700001568053e-05, \"rgb_sha256\": \"517e949048e7eba7e228d1e42973d6212670c5b03bf0b7a0cdc4b0ab3a77e7b3\", \"width\": 1280, \"height\": 2077}\n",
+      "stderr": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: yes, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: yes, VRAM: 14911 MiB\n"
+    }
+  ]
+}
