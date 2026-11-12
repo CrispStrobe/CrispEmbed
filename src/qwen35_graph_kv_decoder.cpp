@@ -62,10 +62,11 @@ std::vector<ggml_tensor *> f32_copy_sources(const decoder_weights & weights) {
     return sources;
 }
 
-matmul_mode mode_from_env() {
+matmul_mode mode_from_env(const char * fallback = nullptr) {
     const char * v = std::getenv("CRISPEMBED_QWEN35_GRAPH_MATMUL");
-    // Default "f32" since the 2026-11-02 MiniCPM default flip (the only caller); "exact"
-    // and "native" stay selectable.
+    // Unset/empty: the caller's default (qwen35_ocr passes "native"), else "f32" (the
+    // 2026-11-02 MiniCPM default). "exact" and "native" stay selectable.
+    if ((!v || !*v) && fallback) v = fallback;
     if (v && std::strcmp(v, "native") == 0) return matmul_mode::native;
     if (v && std::strcmp(v, "exact") == 0) return matmul_mode::exact;
     return matmul_mode::f32;
@@ -346,7 +347,7 @@ void graph_kv_decoder::reset() {
 }
 
 bool graph_kv_decoder::init(const decoder_weights & weights, const attention_config & config, ggml_backend_t backend,
-                            int capacity, bool allow_f32_copies) {
+                            int capacity, bool allow_f32_copies, const char * default_matmul) {
     if (!enabled() || !backend || !ggml_backend_is_cpu(backend) || !weights.embedding || !weights.head ||
         !weights.norm || weights.layers.empty() || weights.layers.size() > 64 || capacity < 1 || capacity > 32768)
         return false;
@@ -356,7 +357,7 @@ bool graph_kv_decoder::init(const decoder_weights & weights, const attention_con
     p.c = config;
     p.backend = backend;
     p.capacity = capacity;
-    p.mode = mode_from_env();
+    p.mode = mode_from_env(default_matmul);
     if (p.mode == matmul_mode::f32 && !allow_f32_copies) p.mode = matmul_mode::exact;
     p.width = int(weights.embedding->ne[0]);
     const auto & c = config;

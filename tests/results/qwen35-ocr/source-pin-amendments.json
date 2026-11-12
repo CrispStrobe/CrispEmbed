@@ -256,6 +256,30 @@
             "fc2f450b7db74f05d17532f13a279dbe372968a7 feat(ocr): integrate exact checkpoint profiles, Nemotron frontend and structured evaluation"
           ],
           "reason": "Additive default-off gates CRISPEMBED_QWEN35_OCR_GRAPH_DECODER (graph_kv_decoder with t/h/w positions) and CRISPEMBED_QWEN35_VISION_THREADED_ATTN (bit-identical threaded vision attention); default decoder_cpu/vision path unchanged; OvisOCR2 frozen 14-arm gates 0/1 replay bit-exact (tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json)."
+        },
+        {
+          "from_sha256": "a449fd407e963b4b92ad8a73e4a4bc4abbb70af62a56ac3389f31568d4931792",
+          "to_sha256": "8a13aa4c5460efe138502fb818ce9db436fd1d00f1681d182a38b7827228e61e",
+          "to_blob": "f2f8f51517ef09b454138733d49dfd059e2a4e5f",
+          "recorded_at_commit": "8d4722d659072d071877b9d5e0abeb550f85c1bb",
+          "recorded": "2026-11-11",
+          "changed_by": [
+            "a783c4fe70093d80c4e887860abe0472c9388889 OvisOCR2: threaded vision attention default on; graph-decoder eleven-case quality lane",
+            "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
+          ],
+          "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt)."
+        },
+        {
+          "from_sha256": "8a13aa4c5460efe138502fb818ce9db436fd1d00f1681d182a38b7827228e61e",
+          "to_sha256": "369afe9e01613e60a26ae7a8f44e91e97f2c3993f3ecacf3ab813118db20fc79",
+          "to_blob": "ae7da11e048cc1f7c67f6ad85cd0c5f5ae2b78b1",
+          "recorded_at_commit": "9236cf202c36542bed3dbae2cbf1e31b703411bc",
+          "recorded": "2026-11-11",
+          "changed_by": [
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+          ],
+          "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
         }
       ]
     },
@@ -291,6 +315,31 @@
             "8e1e89e82ac0486c78a295ce1cc8cb6ef3d1a1a2 OvisOCR2: opt-in graph decoder with mrope positions and threaded vision attention; relocatable Kaggle ccache seed"
           ],
           "reason": "Additive default-off gates CRISPEMBED_QWEN35_OCR_GRAPH_DECODER (graph_kv_decoder with t/h/w positions) and CRISPEMBED_QWEN35_VISION_THREADED_ATTN (bit-identical threaded vision attention); default decoder_cpu/vision path unchanged; OvisOCR2 frozen 14-arm gates 0/1 replay bit-exact (tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json)."
+        },
+        {
+          "from_sha256": "0ee34341b80d577d5682d537ae48e29a2f9b515cccd895cde15c2d37d9ccb5a8",
+          "to_sha256": "2ad14f1a29042e005debbc7b7d6fc50b1a56d5a2d02cf6ac19012471c25b070a",
+          "to_blob": "cdd8396afc7fbe4ccec668d98f9f8ee69169a354",
+          "recorded_at_commit": "8d4722d659072d071877b9d5e0abeb550f85c1bb",
+          "recorded": "2026-11-11",
+          "changed_by": [
+            "a783c4fe70093d80c4e887860abe0472c9388889 OvisOCR2: threaded vision attention default on; graph-decoder eleven-case quality lane",
+            "19b8873f37e2df2996ec1ec197c2d43df571b9c2 qwen35_ocr: graph decoder default on (native matmul); =0 keeps decoder_cpu"
+          ],
+          "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt)."
+        },
+        {
+          "from_sha256": "2ad14f1a29042e005debbc7b7d6fc50b1a56d5a2d02cf6ac19012471c25b070a",
+          "to_sha256": "2ca5622c4cac51d1d92cb033c760f135508aee0d034b8e0780fc08f07ed49875",
+          "to_blob": "f99561d46d6b2fb0ea1099062fe82f5d22a85228",
+          "recorded_at_commit": "9236cf202c36542bed3dbae2cbf1e31b703411bc",
+          "recorded": "2026-11-11",
+          "changed_by": [
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format",
+            "92fad739 qwen35_vision: keep vision_host_inputs out of the test-only renamed copies"
+          ],
+          "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
         }
       ]
     },

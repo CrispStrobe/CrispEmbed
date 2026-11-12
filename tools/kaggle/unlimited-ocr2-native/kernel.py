@@ -27,6 +27,17 @@ for n,p in c['files'].items():
 """)
 env = dict(os.environ, OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1', TMPDIR='/kaggle/temp')
 sh(PY, 'models/convert-unlimited-ocr-to-gguf.py', '--model-dir', src, '--output', '/kaggle/temp/uocr2-f32.gguf', env=env)
+try:  # ce-ccache-bootstrap: CrispEmbed harness from the pinned clone warms + auto-refreshes the seed (docs/kaggle-ccache.md)
+    import glob as _ccg, importlib.util as _ccu, os as _cco
+    for _cch in ["kaggle_harness.py"] + sorted(_ccg.glob("/kaggle/working/*/kaggle_harness.py")) + sorted(_ccg.glob("/kaggle/temp/*/kaggle_harness.py")):
+        if _cco.path.isfile(_cco.path.join(_cco.path.dirname(_cco.path.abspath(_cch)), "CMakeLists.txt")) and _cco.path.isfile(_cch):
+            _ccs = _ccu.spec_from_file_location("ce_kaggle_harness", _cch)
+            _ccm = _ccu.module_from_spec(_ccs)
+            _ccs.loader.exec_module(_ccm)
+            _ccm.ensure_build_cache()
+            break
+except Exception as _cce:
+    print("ce-ccache: bootstrap skipped:", _cce, flush=True)
 sh('cmake', '-S', '.', '-B', '/kaggle/temp/b', '-DCMAKE_BUILD_TYPE=Release', '-DGGML_NATIVE=OFF', '-DGGML_CUDA=OFF')
 sh('cmake', '--build', '/kaggle/temp/b', '--target', 'crispembed-cli', '--parallel', '4')
 ref_json = glob.glob('/kaggle/input/**/uocr2/reference.json', recursive=True)[0]

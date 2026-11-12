@@ -1,0 +1,383 @@
+{
+ "sha": "f30a567ff8170bf904714fccfa9dca299c350249",
+ "threads": 4,
+ "runs": [
+  {
+   "arm": "gpu-profile",
+   "case": "inventory-table",
+   "rc": 0,
+   "profile": {
+    "embedding": {
+     "calls": 1,
+     "s": 0.001235358
+    },
+    "selection": {
+     "calls": 174,
+     "s": 0.440097353
+    },
+    "vision": {
+     "calls": 1,
+     "s": 0.252872483
+    },
+    "prefill": {
+     "calls": 1,
+     "s": 0.207214401
+    },
+    "cached_decode": {
+     "calls": 173,
+     "s": 1.945521489
+    }
+   },
+   "decode_ms_per_token": 11.25,
+   "decode_tok_s": 88.92
+  },
+  {
+   "arm": "gpu-profile",
+   "case": "two-column-page",
+   "rc": 0,
+   "profile": {
+    "embedding": {
+     "calls": 1,
+     "s": 0.001502095
+    },
+    "selection": {
+     "calls": 512,
+     "s": 1.275370642
+    },
+    "vision": {
+     "calls": 1,
+     "s": 0.176636627
+    },
+    "prefill": {
+     "calls": 1,
+     "s": 0.198401492
+    },
+    "cached_decode": {
+     "calls": 511,
+     "s": 5.70759592
+    }
+   },
+   "decode_ms_per_token": 11.17,
+   "decode_tok_s": 89.53
+  },
+  {
+   "arm": "gpu-profile",
+   "case": "historical-receipt",
+   "rc": 0,
+   "profile": {
+    "embedding": {
+     "calls": 1,
+     "s": 0.001434029
+    },
+    "selection": {
+     "calls": 512,
+     "s": 1.26605912
+    },
+    "vision": {
+     "calls": 1,
+     "s": 0.182415414
+    },
+    "prefill": {
+     "calls": 1,
+     "s": 0.205747251
+    },
+    "cached_decode": {
+     "calls": 511,
+     "s": 5.713976631
+    }
+   },
+   "decode_ms_per_token": 11.18,
+   "decode_tok_s": 89.43
+  },
+  {
+   "arm": "gpu",
+   "case": "inventory-table",
+   "rc": 0,
+   "wall_s": 5.54,
+   "placement": [
+    "qwen35_ocr ggml-ops: backend=CUDA0 gpu=1 device_matrices=238",
+    "qwen35_ocr ggml-ops vision graph: backend=CUDA0 nodes=732 on_backend=732 other=0 splits=1",
+    "qwen35_ocr ggml-ops prefill graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1",
+    "qwen35_ocr ggml-ops decode graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1"
+   ],
+   "profile": {},
+   "tokens": 174,
+   "frozen_tokens": 174,
+   "ids_exact": true,
+   "text_exact": true,
+   "stop_kind": 1,
+   "stop_exact": true,
+   "recognize_s": 2.67852742,
+   "init_s": 2.42003523,
+   "conf_max_abs": 4.8398999999976766e-05,
+   "mean_conf": 0.9986338478390805,
+   "frozen_mean_conf": 0.998633742,
+   "first_id_divergence": null,
+   "end_to_end_tok_s": 64.96
+  },
+  {
+   "arm": "gpu",
+   "case": "two-column-page",
+   "rc": 0,
+   "wall_s": 12.84,
+   "placement": [
+    "qwen35_ocr ggml-ops: backend=CUDA0 gpu=1 device_matrices=238",
+    "qwen35_ocr ggml-ops vision graph: backend=CUDA0 nodes=732 on_backend=732 other=0 splits=1",
+    "qwen35_ocr ggml-ops prefill graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1",
+    "qwen35_ocr ggml-ops decode graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1"
+   ],
+   "profile": {},
+   "tokens": 697,
+   "frozen_tokens": 697,
+   "ids_exact": true,
+   "text_exact": true,
+   "stop_kind": 1,
+   "stop_exact": true,
+   "recognize_s": 9.99830892,
+   "init_s": 2.38239909,
+   "conf_max_abs": 0.0014910100000000703,
+   "mean_conf": 0.8346716720830702,
+   "frozen_mean_conf": 0.834676027,
+   "first_id_divergence": null,
+   "end_to_end_tok_s": 69.71
+  },
+  {
+   "arm": "gpu",
+   "case": "historical-receipt",
+   "rc": 0,
+   "wall_s": 15.46,
+   "placement": [
+    "qwen35_ocr ggml-ops: backend=CUDA0 gpu=1 device_matrices=238",
+    "qwen35_ocr ggml-ops vision graph: backend=CUDA0 nodes=732 on_backend=732 other=0 splits=1",
+    "qwen35_ocr ggml-ops prefill graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1",
+    "qwen35_ocr ggml-ops decode graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1"
+   ],
+   "profile": {},
+   "tokens": 882,
+   "frozen_tokens": 882,
+   "ids_exact": true,
+   "text_exact": true,
+   "stop_kind": 1,
+   "stop_exact": true,
+   "recognize_s": 12.6381952,
+   "init_s": 2.38796401,
+   "conf_max_abs": 0.0011507570000000023,
+   "mean_conf": 0.9626158605861678,
+   "frozen_mean_conf": 0.962619007,
+   "first_id_divergence": null,
+   "end_to_end_tok_s": 69.79
+  },
+  {
+   "arm": "gpu-warm",
+   "case": "inventory-table",
+   "rc": 0,
+   "wall_s": 5.65,
+   "placement": [
+    "qwen35_ocr ggml-ops: backend=CUDA0 gpu=1 device_matrices=238",
+    "qwen35_ocr ggml-ops vision graph: backend=CUDA0 nodes=732 on_backend=732 other=0 splits=1",
+    "qwen35_ocr ggml-ops prefill graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1",
+    "qwen35_ocr ggml-ops decode graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1"
+   ],
+   "profile": {},
+   "tokens": 174,
+   "frozen_tokens": 174,
+   "ids_exact": true,
+   "text_exact": true,
+   "stop_kind": 1,
+   "stop_exact": true,
+   "recognize_s": 2.78336504,
+   "init_s": 2.41889885,
+   "conf_max_abs": 4.8398999999976766e-05,
+   "mean_conf": 0.9986338478390805,
+   "frozen_mean_conf": 0.998633742,
+   "first_id_divergence": null,
+   "end_to_end_tok_s": 62.51
+  },
+  {
+   "arm": "gpu-warm",
+   "case": "two-column-page",
+   "rc": 0,
+   "wall_s": 13.01,
+   "placement": [
+    "qwen35_ocr ggml-ops: backend=CUDA0 gpu=1 device_matrices=238",
+    "qwen35_ocr ggml-ops vision graph: backend=CUDA0 nodes=732 on_backend=732 other=0 splits=1",
+    "qwen35_ocr ggml-ops prefill graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1",
+    "qwen35_ocr ggml-ops decode graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1"
+   ],
+   "profile": {},
+   "tokens": 697,
+   "frozen_tokens": 697,
+   "ids_exact": true,
+   "text_exact": true,
+   "stop_kind": 1,
+   "stop_exact": true,
+   "recognize_s": 10.1814792,
+   "init_s": 2.38786475,
+   "conf_max_abs": 0.0014910100000000703,
+   "mean_conf": 0.8346716720830702,
+   "frozen_mean_conf": 0.834676027,
+   "first_id_divergence": null,
+   "end_to_end_tok_s": 68.46
+  },
+  {
+   "arm": "gpu-warm",
+   "case": "historical-receipt",
+   "rc": 0,
+   "wall_s": 15.75,
+   "placement": [
+    "qwen35_ocr ggml-ops: backend=CUDA0 gpu=1 device_matrices=238",
+    "qwen35_ocr ggml-ops vision graph: backend=CUDA0 nodes=732 on_backend=732 other=0 splits=1",
+    "qwen35_ocr ggml-ops prefill graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1",
+    "qwen35_ocr ggml-ops decode graph: backend=CUDA0 nodes=1324 on_backend=1324 other=0 splits=1"
+   ],
+   "profile": {},
+   "tokens": 882,
+   "frozen_tokens": 882,
+   "ids_exact": true,
+   "text_exact": true,
+   "stop_kind": 1,
+   "stop_exact": true,
+   "recognize_s": 12.9008945,
+   "init_s": 2.40138137,
+   "conf_max_abs": 0.0011507570000000023,
+   "mean_conf": 0.9626158605861678,
+   "frozen_mean_conf": 0.962619007,
+   "first_id_divergence": null,
+   "end_to_end_tok_s": 68.37
+  },
+  {
+   "arm": "ggml-cpu",
+   "case": "inventory-table",
+   "rc": 0,
+   "wall_s": 31.58,
+   "placement": [
+    "qwen35_ocr ggml-ops: backend=CPU gpu=0 device_matrices=0",
+    "qwen35_ocr ggml-ops vision graph: backend=CPU nodes=732 on_backend=732 other=0 splits=1",
+    "qwen35_ocr ggml-ops prefill graph: backend=CPU nodes=1324 on_backend=1324 other=0 splits=1",
+    "qwen35_ocr ggml-ops decode graph: backend=CPU nodes=1324 on_backend=1324 other=0 splits=1"
+   ],
+   "profile": {},
+   "tokens": 174,
+   "frozen_tokens": 174,
+   "ids_exact": true,
+   "text_exact": true,
+   "stop_kind": 1,
+   "stop_exact": true,
+   "recognize_s": 29.4281002,
+   "init_s": 1.82822074,
+   "conf_max_abs": 8.349999999213154e-07,
+   "mean_conf": 0.9986337286436783,
+   "frozen_mean_conf": 0.998633742,
+   "first_id_divergence": null,
+   "end_to_end_tok_s": 5.91
+  },
+  {
+   "arm": "ggml-cpu",
+   "case": "two-column-page",
+   "rc": 0,
+   "wall_s": 82.49,
+   "placement": [
+    "qwen35_ocr ggml-ops: backend=CPU gpu=0 device_matrices=0",
+    "qwen35_ocr ggml-ops vision graph: backend=CPU nodes=732 on_backend=732 other=0 splits=1",
+    "qwen35_ocr ggml-ops prefill graph: backend=CPU nodes=1324 on_backend=1324 other=0 splits=1",
+    "qwen35_ocr ggml-ops decode graph: backend=CPU nodes=1324 on_backend=1324 other=0 splits=1"
+   ],
+   "profile": {},
+   "tokens": 697,
+   "frozen_tokens": 697,
+   "ids_exact": true,
+   "text_exact": true,
+   "stop_kind": 1,
+   "stop_exact": true,
+   "recognize_s": 80.2771074,
+   "init_s": 1.88330531,
+   "conf_max_abs": 6.783099999996267e-05,
+   "mean_conf": 0.8346758013822094,
+   "frozen_mean_conf": 0.834676027,
+   "first_id_divergence": null,
+   "end_to_end_tok_s": 8.68
+  },
+  {
+   "arm": "ggml-cpu",
+   "case": "historical-receipt",
+   "rc": 0,
+   "wall_s": 99.54,
+   "placement": [
+    "qwen35_ocr ggml-ops: backend=CPU gpu=0 device_matrices=0",
+    "qwen35_ocr ggml-ops vision graph: backend=CPU nodes=732 on_backend=732 other=0 splits=1",
+    "qwen35_ocr ggml-ops prefill graph: backend=CPU nodes=1324 on_backend=1324 other=0 splits=1",
+    "qwen35_ocr ggml-ops decode graph: backend=CPU nodes=1324 on_backend=1324 other=0 splits=1"
+   ],
+   "profile": {},
+   "tokens": 882,
+   "frozen_tokens": 882,
+   "ids_exact": true,
+   "text_exact": true,
+   "stop_kind": 1,
+   "stop_exact": true,
+   "recognize_s": 97.3305005,
+   "init_s": 1.87875786,
+   "conf_max_abs": 1.1743000000064008e-05,
+   "mean_conf": 0.9626190001190477,
+   "frozen_mean_conf": 0.962619007,
+   "first_id_divergence": null,
+   "end_to_end_tok_s": 9.06
+  },
+  {
+   "arm": "cpu-default",
+   "case": "inventory-table",
+   "rc": 0,
+   "wall_s": 34.48,
+   "placement": [],
+   "profile": {},
+   "tokens": 174,
+   "frozen_tokens": 174,
+   "ids_exact": true,
+   "text_exact": true,
+   "stop_kind": 1,
+   "stop_exact": true,
+   "recognize_s": 32.334773,
+   "init_s": 1.80946456,
+   "conf_max_abs": 6.559999999877775e-07,
+   "mean_conf": 0.9986337296666667,
+   "frozen_mean_conf": 0.998633742,
+   "first_id_divergence": null,
+   "end_to_end_tok_s": 5.38
+  }
+ ],
+ "steps": [
+  {
+   "cmd": "git clone -q https://github.com/CrispStrobe/CrispEmbed.git /kaggle/temp/ce-f30a567ff817 && git -C /kaggle/temp/ce-f30a567ff817 checkout -q f30a567ff8170bf904714fccfa9dca299c350249 && git -C /kaggle/temp/ce-f30a567ff817 submodule update --in",
+   "rc": 0,
+   "s": 34.2
+  },
+  {
+   "cmd": "cmake -S /kaggle/temp/ce-f30a567ff817 -B /kaggle/temp/ce-f30a567ff817/build-cuda -G Ninja -DCMAKE_BUILD_TYPE=Release -DCRISPASR_NO_C2PA_NATIVE=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_CUDA_COMPILER_",
+   "rc": 0,
+   "s": 7.1
+  },
+  {
+   "cmd": "cmake --build /kaggle/temp/ce-f30a567ff817/build-cuda --target test-ovisocr2-quality-run test-qwen35-profile -j2",
+   "rc": 0,
+   "s": 1556.0
+  },
+  {
+   "cmd": "/usr/bin/python3 -m pip install -q huggingface_hub",
+   "rc": 0,
+   "s": 4.5
+  },
+  {
+   "cmd": "curl -sSL -o /kaggle/temp/prepared.zip https://huggingface.co/datasets/cstr/crispembed-regression-fixtures/resolve/057e12668bf8109ec83c65929c9b8d6cb99ca566/ocr-quality-v1/prepared-38879605915/prepared.zip",
+   "rc": 0,
+   "s": 0.6
+  }
+ ],
+ "gpu": "Tesla T4, 15360 MiB, 580.178.04\nTesla T4, 15360 MiB, 580.178.04",
+ "cpu": "CPU(s):                                  4\nModel name:                              Intel(R) Xeon(R) CPU @ 2.00GHz\n",
+ "elapsed_s": 2106.0,
+ "cuda_arch": "75",
+ "build_s": 1563.1,
+ "ccache": "Cacheable calls:   193 / 193 (100.0%)\n  Hits:              0 / 193 ( 0.00%)\n    Direct:          0\n    Preprocessed:    0\n  Misses:          193 / 193 (100.0%)\nLocal storage:\n  Cache size (GB): 0.1 / 5.0 ( 2.43%)\n  Hits:              0 / 193 ( 0.00%)\n  Misses:          193 / 193 (100.0%)\n",
+ "note": "CRISPEMBED_QWEN35_OCR_GPU on Kaggle T4 (CUDA, sm_75) vs the frozen CPU ground truth tests/results/qwen35-ocr/ovisocr2-f16-quality.json. cpu-default = the CPU default after the 11 November flip (graph decoder, native) on the same host with CUDA hidden. ggml-cpu = the same standard-op graphs on the CPU backend. Cold ccache (0 hits) build.",
+ "kernel": "tools/kaggle/ovisocr2-gpu-bench"
+}

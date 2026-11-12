@@ -2,6 +2,7 @@
 #include "qwen35_frontend.h"
 #include "qwen35_decoder.h"
 #include "qwen35_graph_kv_decoder.h"
+#include "qwen35_ocr_gpu.h"
 #include "qwen35_positions.h"
 #include "qwen35_vision.h"
 #include "qwen35_math.h"
@@ -10,6 +11,7 @@
 #include "core/env_gate.h"
 #include "ggml-cpu.h"
 #include <algorithm>
+#include <cstdio>
 #include <cmath>
 #include <memory>
 #include <string>
@@ -27,9 +29,12 @@ struct qwen35_ocr_context {
     qwen35_ocr::decoder_weights decoder;
     qwen35_ocr::vision_weights vision;
     qwen35_ocr::converted_weight_cache weights_cache;
-    // Opt-in CRISPEMBED_QWEN35_OCR_GRAPH_DECODER (bound at init): one ggml graph per call
+    // Default-on CRISPEMBED_QWEN35_OCR_GRAPH_DECODER (bound at init; =0 off): one ggml graph per call
     // with persistent KV / delta-net state instead of decoder_cpu's per-step conversion.
     std::unique_ptr<qwen35_ocr::graph_kv_decoder> graph_kv;
+    // Opt-in CRISPEMBED_QWEN35_OCR_GPU (bound at init): vision and decoder as standard-ggml-op
+    // graphs on the preferred backend (GPU when available). Takes precedence over graph_kv.
+    std::unique_ptr<qwen35_ocr::ggml_pipeline> pipeline;
     int threads = 1, max_tokens = 2048;
     std::string text, error;
     std::vector<int> ids;
@@ -40,6 +45,7 @@ struct qwen35_ocr_context {
     qwen35_ocr_stage_observer stage_observer = nullptr;
     void * stage_observer_user = nullptr;
     ~qwen35_ocr_context() {
+        pipeline.reset();
         graph_kv.reset();
         weights_cache.clear();
         core_gguf::free_weights(loaded);
@@ -155,8 +161,13 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
     if (!qwen35_ocr::image_positions(modalities, image.grid, 2, pos)) return c.fail("invalid multimodal positions");
     stage.next(profile_event::vision, profile_phase::vision);
     qwen35_ocr::vision_outputs visual;
-    if (!qwen35_ocr::vision_cpu(c.vision, {}, image.patches.data(), int(image.patches.size() / 1536), image.grid,
-                                c.threads, visual))
+    // The ggml-op pipeline has no stage captures; observers keep the CPU reference.
+    auto * pipeline = c.stage_observer ? nullptr : c.pipeline.get();
+    if (pipeline) {
+        if (!pipeline->vision(image.patches.data(), int(image.patches.size() / 1536), image.grid, visual.merged))
+            return c.fail("vision inference failed");
+    } else if (!qwen35_ocr::vision_cpu(c.vision, {}, image.patches.data(), int(image.patches.size() / 1536), image.grid,
+                                       c.threads, visual))
         return c.fail("vision inference failed");
     stage.next(profile_event::embedding, profile_phase::other);
     std::vector<float> hidden;
@@ -177,6 +188,12 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
     auto * graph_kv = c.stage_observer ? nullptr : c.graph_kv.get();
     const auto run_decoder = [&](const float * input, const float * coords, int count,
                                  const qwen35_ocr::decoder_cache * previous) {
+        if (pipeline) {
+            current = {};
+            if (!pipeline->forward(input, count, coords, current.logits)) return false;
+            current.cache.tokens = pipeline->tokens();
+            return true;
+        }
         if (!graph_kv)
             return qwen35_ocr::decoder_cpu(c.decoder, {}, input, coords, 1, count, c.threads, previous, current,
                                            weights_cache);
@@ -186,6 +203,7 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
         return true;
     };
     if (graph_kv) graph_kv->reset();
+    if (pipeline) pipeline->reset();
     if (!run_decoder(hidden.data(), pos.axes.data(), int(ids.size()), nullptr)) return c.fail("decoder prefill failed");
     if (c.stage_observer) {
         const auto emit = [&](const std::string & name, const std::vector<float> & values) {
@@ -269,12 +287,22 @@ extern "C" qwen35_ocr_context * qwen35_ocr_init(const char * path, int threads) 
             !qwen35_ocr::map_small_vision(c->loaded.tensors, c->vision) || !valid_weights(*c))
             return nullptr;
         if (c->tokenizer.is_xiaomi0()) c->max_tokens = 4096;
-        // Default-off: the qualified path is decoder_cpu. Matmul precision follows
-        // CRISPEMBED_QWEN35_GRAPH_MATMUL (default "f32": one F32 copy of every decoder
-        // matrix at init). Capacity = the 4096-token context limit of the greedy loop.
-        if (core_env::on("CRISPEMBED_QWEN35_OCR_GRAPH_DECODER") && qwen35_ocr::graph_kv_decoder::enabled()) {
+        // Opt-in CRISPEMBED_QWEN35_OCR_GPU: standard-ggml-op vision + decoder graphs on the
+        // preferred backend; takes precedence over the CPU graph decoder below.
+        if (qwen35_ocr::ggml_pipeline::enabled()) {
+            c->pipeline = std::make_unique<qwen35_ocr::ggml_pipeline>();
+            if (!c->pipeline->init(c->decoder, c->vision, {}, {}, 4096, threads)) {
+                std::fprintf(stderr, "qwen35_ocr: CRISPEMBED_QWEN35_OCR_GPU pipeline init failed\n");
+                return nullptr;
+            }
+            // Default-on since 2026-11-11 (owner-approved, IDs/text/EOS-exact contract on the
+            // eleven-case OvisOCR2 set); =0 restores decoder_cpu, the frozen reference path.
+            // Matmul precision: CRISPEMBED_QWEN35_GRAPH_MATMUL, "native" when unset (stored F16
+            // matrices, no F32 copies). Capacity = the 4096-token context limit of the greedy loop.
+        } else if (!core_env::explicitly_off("CRISPEMBED_QWEN35_OCR_GRAPH_DECODER") &&
+                   qwen35_ocr::graph_kv_decoder::enabled()) {
             c->graph_kv = std::make_unique<qwen35_ocr::graph_kv_decoder>();
-            if (!c->graph_kv->init(c->decoder, {}, c->backend, 4096)) return nullptr;
+            if (!c->graph_kv->init(c->decoder, {}, c->backend, 4096, true, "native")) return nullptr;
         }
         return c.release();
     } catch (...) {

@@ -8,7 +8,13 @@ account from the environment and pushes that, authenticated with the token
 from the environment - nothing account- or token-specific is ever committed.
 
     KAGGLE_ACCOUNT=<username> KAGGLE_TOKEN=<api token> \\
-        python3 tools/kaggle/kpush.py tools/kaggle/<kernel-dir> [extra kaggle push args]
+        python3 tools/kaggle/kpush.py tools/kaggle/<kernel-dir> [--sha <commit>] \\
+            [--refresh-ccache] [extra kaggle push args]
+
+--sha replaces the __SHA__ placeholder in the code file (exact clone pin).
+--refresh-ccache waits for the pushed kernel to finish, then runs
+tools/kaggle/ccache_refresh.py --from-kernel <its id>, which versions the
+private crispembed-ccache seed only if the kernel exported one (stale seed).
 
 In GitHub Actions both come from the repository secrets of the same names.
 Locally, export them from a private env file (never from a command line).
@@ -17,10 +23,12 @@ second account to get around quotas or session limits.
 """
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 PLACEHOLDER = "${KAGGLE_ACCOUNT}"
@@ -33,6 +41,17 @@ def render(text: str, account: str) -> str:
 def main(argv):
     if len(argv) < 2:
         sys.exit(__doc__)
+    argv = list(argv)
+    refresh = "--refresh-ccache" in argv
+    if refresh:
+        argv.remove("--refresh-ccache")
+    sha = None
+    if "--sha" in argv:
+        i = argv.index("--sha")
+        sha = argv[i + 1]
+        del argv[i:i + 2]
+        if not re.fullmatch(r"[0-9a-f]{40}", sha):
+            sys.exit("kpush: --sha needs a full 40-hex commit")
     src = Path(argv[1]).resolve()
     account = os.environ.get("KAGGLE_ACCOUNT", "").strip()
     token = os.environ.get("KAGGLE_TOKEN", "").strip()
@@ -47,13 +66,21 @@ def main(argv):
         meta = json.loads(render(meta_path.read_text(), account))
         code = meta.get("code_file")
         if code and (dst / code).is_file():
-            (dst / code).write_text(render((dst / code).read_text(), account))
+            text = render((dst / code).read_text(), account)
+            if sha:
+                text = text.replace("__SHA__", sha)
+            (dst / code).write_text(text)
         (dst / "kernel-metadata.json").write_text(json.dumps(meta, indent=2) + "\n")
         leftover = [p.name for p in (dst / "kernel-metadata.json", dst / (code or "")) if p.is_file() and PLACEHOLDER in p.read_text()]
         if leftover:
             sys.exit(f"kpush: unrendered placeholder in {leftover}")
         env = dict(os.environ, KAGGLE_API_TOKEN=token)
-        return subprocess.call([sys.executable, "-m", "kaggle", "kernels", "push", "-p", str(dst)] + argv[2:], env=env)
+        rc = subprocess.call([sys.executable, "-m", "kaggle", "kernels", "push", "-p", str(dst)] + argv[2:], env=env)
+    if rc or not refresh:
+        return rc
+    time.sleep(30)  # let the new version register before polling its status
+    return subprocess.call([sys.executable, str(Path(__file__).with_name("ccache_refresh.py")),
+                            "--from-kernel", meta["id"], "--wait"], env=env)
 
 
 if __name__ == "__main__":

@@ -15,6 +15,17 @@ def sh(*a, **k): print('+', *a, flush=True); return subprocess.run(list(map(str,
 sh('git', 'clone', '-q', '--filter=blob:none', 'https://github.com/CrispStrobe/CrispEmbed.git', TMP + '/ce', check=True)
 os.chdir(TMP + '/ce'); sh('git', 'checkout', '-q', COMMIT, check=True)
 sh('git', 'submodule', 'update', '-q', '--init', '--depth', '1', 'ggml', check=True)
+try:  # ce-ccache-bootstrap: CrispEmbed harness from the pinned clone warms + auto-refreshes the seed (docs/kaggle-ccache.md)
+    import glob as _ccg, importlib.util as _ccu, os as _cco
+    for _cch in ["kaggle_harness.py"] + sorted(_ccg.glob("/kaggle/working/*/kaggle_harness.py")) + sorted(_ccg.glob("/kaggle/temp/*/kaggle_harness.py")):
+        if _cco.path.isfile(_cco.path.join(_cco.path.dirname(_cco.path.abspath(_cch)), "CMakeLists.txt")) and _cco.path.isfile(_cch):
+            _ccs = _ccu.spec_from_file_location("ce_kaggle_harness", _cch)
+            _ccm = _ccu.module_from_spec(_ccs)
+            _ccs.loader.exec_module(_ccm)
+            _ccm.ensure_build_cache()
+            break
+except Exception as _cce:
+    print("ce-ccache: bootstrap skipped:", _cce, flush=True)
 sh('cmake', '-S', '.', '-B', TMP + '/b', '-DCMAKE_BUILD_TYPE=Release', '-DGGML_NATIVE=OFF', '-DGGML_CUDA=OFF', check=True)
 sh('cmake', '--build', TMP + '/b', '--target', 'crispembed-cli', '--parallel', str(os.cpu_count()), check=True)
 CLI = TMP + '/b/crispembed'

@@ -24,20 +24,65 @@ depth), the same compiler flags and the same CUDA arch (`detect_cuda_arch()`).
 `cache_and_link_flags()` adds the C, C++ and CUDA compiler launchers.
 
 Kaggle uploads only the kernel's `code_file`; a `kaggle_harness.py` placed next
-to it never reaches the kernel. Kernels should import the harness from their
-pinned clone (`sys.path.insert(0, <clone>)`), as `crispembed-ccache-seed` and
-`ovisocr2-speed-ab` do, so the settings above apply.
+to it never reaches the kernel. Every CrispEmbed build kernel under
+`tools/kaggle/` therefore carries a small `# ce-ccache-bootstrap` block just
+before its first CMake configure. It loads `kaggle_harness.py` from the
+CrispEmbed clone it just made (current directory, `/kaggle/working/*/` or
+`/kaggle/temp/*/`) and calls `ensure_build_cache()`. That function is idempotent.
+It installs the toolchain, warms from the seed and exports
+`CMAKE_{C,CXX,CUDA}_COMPILER_LAUNCHER=ccache`, so kernels whose own CMake lines
+carry no launcher flags also use the cache. It also registers the automatic
+export described below. Each build kernel's metadata attaches
+`${KAGGLE_ACCOUNT}/crispembed-ccache`. Kernels pinned to a commit older than this
+mechanism print `ce-ccache: bootstrap skipped` and build as before. The frozen
+guard replay kernels are excluded, because their sources are hash-pinned.
+`crispembed-ccache-seed` imports the harness directly.
 
-## Producing and refreshing the seed
+## Automatic refresh
 
-1. Render and push `tools/kaggle/crispembed-ccache-seed` with `__SHA__` set to a
-   full commit SHA (GPU kernel: it builds a portable CPU tree and a CUDA tree).
-   Drop the dataset from `dataset_sources` for the very first (cold) run.
-2. When it completes: `python3 tools/kaggle/ccache_refresh.py`. It downloads only
-   `ccache.tar` + `summary.json`, refuses a near-empty tar, and creates
-   `${KAGGLE_ACCOUNT}/crispembed-ccache` (private) or adds a version.
-3. Attach `${KAGGLE_ACCOUNT}/crispembed-ccache` in other kernels' metadata.
+At interpreter exit (or when a kernel calls `kh.maybe_export_ccache()` itself),
+the harness decides whether the seed is stale. It writes the decision to
+`/kaggle/working/ccache-export.json`. Only when the seed is stale does it also
+write one `ccache.tar`, trimmed with `ccache -c` to the size cap. Stale means:
 
-`summary.json` records per-build wall time and ccache hits/misses, so a seed run
-on an attached dataset doubles as the warm-cache measurement. Refresh after
-large `ggml` or CMake flag changes; stale entries only cost misses.
+| condition | default | override |
+|---|---|---|
+| hit rate since warm-up below | 0.95 | `CE_CCACHE_MIN_HIT` |
+| seed older than (commits, via `git rev-list` in the clone) | 150 | `CE_CCACHE_MAX_AGE_COMMITS` |
+| seed older than (days) | 21 | `CE_CCACHE_MAX_AGE_DAYS` |
+| seed has no `crispembed-seed.json` (cold or legacy seed) | always stale | - |
+
+Fewer than 20 compilations count as no evidence, and the seed is kept.
+`CE_CCACHE_EXPORT=always|never` forces the decision. `CE_CCACHE_MAXSIZE`
+(default `3G`) caps the cache. The tar holds `.ccache/crispembed-seed.json`
+(source SHA, time, reasons, CUDA arch), which the next warm-up reads.
+CPU and CUDA objects share one cache and one tar. The seed is copied in whole
+before a build, so a CPU-only kernel that refreshes it keeps the CUDA entries.
+CUDA entries hit only for the same arch: the seed kernel builds for a T4 (75).
+
+Versioning the dataset happens on the pushing machine (no GitHub workflow):
+
+```bash
+set -a; . <private env file>; set +a        # KAGGLE_TOKEN
+export KAGGLE_ACCOUNT=<account>
+python3 tools/kaggle/kpush.py tools/kaggle/<kernel> --refresh-ccache [--sha <40-hex>]
+# or, for a kernel pushed earlier:
+python3 tools/kaggle/ccache_refresh.py --from-kernel <slug or owner/slug> [--wait]
+```
+
+`--refresh-ccache` waits for the pushed kernel to finish. It then runs
+`ccache_refresh.py --from-kernel <id>`, which downloads only
+`ccache-export.json`, `ccache.tar` and `summary.json`. A warm kernel exits 0 and
+leaves the dataset unchanged. If the kernel exported a tar, the script refuses a
+tar under 50 MB. Otherwise it creates the private dataset or adds a version.
+`--sha` fills the `__SHA__` placeholder (the seed kernel's clone pin).
+
+## Seed kernel
+
+`tools/kaggle/crispembed-ccache-seed` (GPU worker) builds a portable CPU tree and
+a CUDA tree from an exact SHA. It passes their combined hit counts to
+`maybe_export_ccache()`, and `summary.json` records per-build wall time and
+hits/misses. For a first cold run, remove the dataset from `dataset_sources`.
+Push it with `--sha <commit> --refresh-ccache` after large `ggml` or CMake flag
+changes. Any other build kernel pushed with `--refresh-ccache` keeps the seed
+current as well. Stale entries only cost misses.

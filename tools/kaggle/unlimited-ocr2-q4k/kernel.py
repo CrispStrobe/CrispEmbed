@@ -76,6 +76,17 @@ try:
     run([py, '-m', 'pip', 'install', '-q', 'numpy==2.2.6', 'gguf==0.17.1', 'pillow==11.3.0'])
     run([py, '-m', 'pip', 'freeze'])
     build = '/kaggle/temp/build'
+    try:  # ce-ccache-bootstrap: CrispEmbed harness from the pinned clone warms + auto-refreshes the seed (docs/kaggle-ccache.md)
+        import glob as _ccg, importlib.util as _ccu, os as _cco
+        for _cch in ["kaggle_harness.py"] + sorted(_ccg.glob("/kaggle/working/*/kaggle_harness.py")) + sorted(_ccg.glob("/kaggle/temp/*/kaggle_harness.py")):
+            if _cco.path.isfile(_cco.path.join(_cco.path.dirname(_cco.path.abspath(_cch)), "CMakeLists.txt")) and _cco.path.isfile(_cch):
+                _ccs = _ccu.spec_from_file_location("ce_kaggle_harness", _cch)
+                _ccm = _ccu.module_from_spec(_ccs)
+                _ccs.loader.exec_module(_ccm)
+                _ccm.ensure_build_cache()
+                break
+    except Exception as _cce:
+        print("ce-ccache: bootstrap skipped:", _cce, flush=True)
     run(['cmake', '-S', 'tests/unlimited-q4k', '-B', build, '-DCMAKE_BUILD_TYPE=Release', '-DGGML_METAL=OFF', '-DGGML_VULKAN=OFF'])
     run(['cmake', '--build', build, '--target', 'crispembed-cli', 'crispembed-quantize',
          'unlimited-q4-diff', 'unlimited-q4-projection', '--parallel', '2'], 5400)

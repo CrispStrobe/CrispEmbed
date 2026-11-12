@@ -28,7 +28,9 @@ class Controls(unittest.TestCase):
         # MiniCPM-only graph decoders (#89 qwen35_graph_decoder.*, #109 qwen35_graph_kv_decoder.*).
         later={'src/qwen35_weight_cache.h','src/qwen35_graph_decoder.cpp','src/qwen35_graph_decoder.h',
                'src/qwen35_graph_kv_decoder.cpp','src/qwen35_graph_kv_decoder.h','src/qwen35_xiaomi0.h',
-               'src/qwen35_lighton4b_text.h'}  # Separate metadata-only text owner, never an Ovis include.
+               'src/qwen35_lighton4b_text.h',  # Separate metadata-only text owner, never an Ovis include.
+               # Default-off CRISPEMBED_QWEN35_OCR_GPU standard-ggml-op pipeline (11 November 2026).
+               'src/qwen35_ocr_gpu.cpp','src/qwen35_ocr_gpu.h'}
         sources=tuple(name for name in driver.SOURCES if name not in later)
         with mock.patch.object(driver.audit,'sha',side_effect=historical_sha),mock.patch.object(driver,'SOURCES',sources):
             yield

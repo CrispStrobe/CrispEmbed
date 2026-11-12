@@ -1,0 +1,80 @@
+name: OvisOCR2 graph-decoder eleven-case quality
+# The unchanged eleven-case first-F16 quality lane (same steps as
+# frozen-guard-replay-ovis-quality.yml) with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=1,
+# once per matmul mode and once with the gates unset (the default). tools/ci-heavy/ovisocr2_graph_quality_check.py compares
+# IDs/text/EOS/stop/cap exactly with the frozen default-path receipt and records
+# the confidence drift. Inputs, model, prompts, caps and budgets are unchanged.
+# Trigger: push to the ovis-graph-quality branch.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ovis-graph-quality, ovis-gpu-quality]
+    paths: [.github/workflows/ovisocr2-graph-quality.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  quality:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - {arm: native, graph: '1', matmul: native}
+          - {arm: f32, graph: '1', matmul: f32}
+          # Unset gates: the default since the 11 November flip (graph decoder, native).
+          - {arm: default, graph: '', matmul: ''}
+          # Standard-ggml-op pipeline (CRISPEMBED_QWEN35_OCR_GPU) on the CPU backend of the runner.
+          - {arm: ggml-ops, graph: '', matmul: '', gpu: '1'}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION: '0'
+      CRISPEMBED_QWEN35_OCR_GRAPH_DECODER: ${{ matrix.graph }}
+      CRISPEMBED_QWEN35_GRAPH_MATMUL: ${{ matrix.matmul }}
+      CRISPEMBED_QWEN35_OCR_GPU: ${{ matrix.gpu }}
+      CRISPEMBED_QWEN35_WEIGHT_CACHE: '0'
+      CRISPEMBED_QWEN35_PARALLEL_F16: '0'
+      CRISPEMBED_QWEN35_PRECISE_RMS: '0'
+      CRISPEMBED_QWEN35_IMATRIX: '0'
+      CRISPEMBED_QWEN35_PROFILE: '0'
+      CRISPEMBED_WASM_Q8_0_ROUND: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Explicit final contract before document/model access
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          {
+            echo "HEAVY_OUT=$RUNNER_TEMP/out"
+            echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch"
+            echo "HF_HOME=$RUNNER_TEMP/scratch/hf"
+          } >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" python tools/ci-heavy/frozen_guard_replay_ovis.py --phase preflight --no-submodule-check
+          git submodule update --init --recursive
+          HEAVY_OUT="$RUNNER_TEMP/out" python tools/ci-heavy/frozen_guard_replay_ovis.py --phase preflight
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_quality_run.py --phase f16 --original-run 40054043629 --prepare-documents
+      - name: Unchanged full first-F16 quality stack
+        run: |
+          python -m pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1 tokenizers==0.23.3 numpy==2.2.6 pillow==12.1.0 huggingface-hub==1.33.0 gguf==0.19.0 safetensors==0.8.0
+          python -m pip freeze > "$HEAVY_OUT/environment.txt"
+      - run: python tools/ci-heavy/ovisocr2_quality_run.py --phase f16 --original-run 40054043629 --native-document-timeout 3600
+      - name: Eleven cases IDs/text/EOS exact; confidence drift recorded
+        if: always()
+        run: HEAVY_OUT="$RUNNER_TEMP/out" python tools/ci-heavy/ovisocr2_graph_quality_check.py --matmul "${{ matrix.arm }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-graph-quality-${{ matrix.arm }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          retention-days: 90

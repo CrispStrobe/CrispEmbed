@@ -2,12 +2,12 @@
 
 ## OvisOCR2 speed follow-ups — 11 November 2026
 
+Both CPU default flips and the standard-ggml-op GPU port are done (HISTORY 11 November).
+
 | Work | State | Acceptance |
 |---|---|---|
-| Default flip: `CRISPEMBED_QWEN35_VISION_THREADED_ATTN` | **Owner decision pending.** Bit-identical to the default on the three realistic documents at 2 and 4 threads; vision 3.1x | Owner approval; frozen replays are already green on the gated tree |
-| Default flip: `CRISPEMBED_QWEN35_OCR_GRAPH_DECODER` (+ matmul mode) | **Owner decision pending.** 1,753/1,753 IDs and texts exact; confidences differ by up to 2.49e-4, which the frozen gate-0 confidence contract does not allow | Owner accepts an ID/text contract for this path, or the eleven-case quality lane re-frozen on the graph path; low-memory fallback as MiniCPM (`f32` adds ~1.6 GB) |
-| OvisOCR2 on CUDA | Not started. The context is CPU-only and the graph uses nine custom ops | Replace the custom ops with native ggml ops behind a new gate (`rms_norm`+`mul`, `rope_multi`, `sigmoid`/`softplus`, `ssm_conv`+`silu`, `gated_delta_net`, `swiglu`); `ggml_backend_sched` over CUDA+CPU with device weights; sched logs show no CPU nodes; A/B IDs vs CPU on the three documents; then a GPU vision graph |
-| Eleven-case quality on the graph path | Not run (three realistic documents only) | `ovisocr2_quality_run.py` with the gates set, all eleven cases |
+| OvisOCR2 GPU default (proposal) | `CRISPEMBED_QWEN35_OCR_GPU` port done (HISTORY 11 November): no CPU fallbacks on CUDA, T4 3/3 documents exact, 89 tok/s decode | Owner decision. Proposal: default on when a GPU backend is present (`explicitly_off`, CPU unchanged), after a P100/second-arch run (the hosted eleven-case CPU arm is exact, 9.09e-5 drift). On the CPU backend the same graphs are exact and faster than the default on the hosted receipt (77.6 vs 125.7 s), which makes them a separate CPU-default candidate |
+| OvisOCR2 GPU follow-ups | GPU confidence drift up to 1.49e-3 (CPU paths ≤ 8.4e-6); selection on the host is ~14% of decode | Attribute the drift (F16 GEMM inputs vs reductions; try F32 device matrices); argmax/softmax on device; Metal/Vulkan runs |
 
 ## PDF Craft adoption — 9 November 2026
 

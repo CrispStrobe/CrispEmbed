@@ -1,0 +1,115 @@
+{
+ "schema": "crispembed-ovisocr2-ggml-ops-quality-v1",
+ "scope": "CRISPEMBED_QWEN35_OCR_GPU=1 on the CPU backend of the hosted ubuntu-24.04 runner (2 threads), eleven-case OvisOCR2 F16 quality set, unchanged inputs/model/prompts/caps/budgets; compared with the frozen first-F16 receipt (IDs/text/EOS/stop/cap exact contract).",
+ "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/43119710108",
+ "artifact": "ovisocr2-graph-quality-ggml-ops-43119710108",
+ "source_commit": "fc3a8af4ed767706f291007c185c4cd9ad21bbd8",
+ "environment": {
+  "CRISPEMBED_QWEN35_OCR_GRAPH_DECODER": "",
+  "CRISPEMBED_QWEN35_GRAPH_MATMUL": "",
+  "CRISPEMBED_QWEN35_OCR_GPU": "1",
+  "CRISPEMBED_QWEN35_VISION_THREADED_ATTN": null,
+  "CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION": "0"
+ },
+ "comparison_sha256": "8e3efb58feee809738b44865c44b402d81677901781915accad5625ff7e0a56d",
+ "passed": true,
+ "token_count": 1841,
+ "differing_cases": [],
+ "screens_equal": {
+  "f16_paired_synthetic": true,
+  "f16_paired_documents": true
+ },
+ "scores_equal": true,
+ "cabi_text_matches_native": true,
+ "max_selected_confidence_abs_drift": 9.089699999997869e-05,
+ "cases": {
+  "dev-hello": {
+   "token_count": 9,
+   "ids_text_eos_exact": true,
+   "max_selected_confidence_abs_drift": 0.0,
+   "mean_confidence": 0.995388269,
+   "frozen_mean_confidence": 0.995388269,
+   "wall_seconds": 16.3256923
+  },
+  "dev-invoice": {
+   "token_count": 14,
+   "ids_text_eos_exact": true,
+   "max_selected_confidence_abs_drift": 0.0,
+   "mean_confidence": 0.999945164,
+   "frozen_mean_confidence": 0.999945164,
+   "wall_seconds": 16.6382863
+  },
+  "dev-menu": {
+   "token_count": 10,
+   "ids_text_eos_exact": true,
+   "max_selected_confidence_abs_drift": 5.899999999670058e-08,
+   "mean_confidence": 0.999750018,
+   "frozen_mean_confidence": 0.999750018,
+   "wall_seconds": 16.3492885
+  },
+  "dev-section": {
+   "token_count": 6,
+   "ids_text_eos_exact": true,
+   "max_selected_confidence_abs_drift": 0.0,
+   "mean_confidence": 0.999245405,
+   "frozen_mean_confidence": 0.999245405,
+   "wall_seconds": 16.1006758
+  },
+  "historical-receipt": {
+   "token_count": 882,
+   "ids_text_eos_exact": true,
+   "max_selected_confidence_abs_drift": 1.3888000000017442e-05,
+   "mean_confidence": 0.962619007,
+   "frozen_mean_confidence": 0.962619007,
+   "wall_seconds": 77.5583699
+  },
+  "hold-batch": {
+   "token_count": 9,
+   "ids_text_eos_exact": true,
+   "max_selected_confidence_abs_drift": 5.370000000226582e-07,
+   "mean_confidence": 0.995981991,
+   "frozen_mean_confidence": 0.995981932,
+   "wall_seconds": 16.3262964
+  },
+  "hold-code": {
+   "token_count": 13,
+   "ids_text_eos_exact": true,
+   "max_selected_confidence_abs_drift": 0.0,
+   "mean_confidence": 0.99991852,
+   "frozen_mean_confidence": 0.99991852,
+   "wall_seconds": 16.5313836
+  },
+  "hold-date": {
+   "token_count": 17,
+   "ids_text_eos_exact": true,
+   "max_selected_confidence_abs_drift": 0.0,
+   "mean_confidence": 0.999928594,
+   "frozen_mean_confidence": 0.999928594,
+   "wall_seconds": 16.8399334
+  },
+  "hold-paid": {
+   "token_count": 10,
+   "ids_text_eos_exact": true,
+   "max_selected_confidence_abs_drift": 0.0,
+   "mean_confidence": 0.999944806,
+   "frozen_mean_confidence": 0.999944806,
+   "wall_seconds": 16.4106768
+  },
+  "inventory-table": {
+   "token_count": 174,
+   "ids_text_eos_exact": true,
+   "max_selected_confidence_abs_drift": 3.3979999999322885e-06,
+   "mean_confidence": 0.998633742,
+   "frozen_mean_confidence": 0.998633742,
+   "wall_seconds": 26.8980944
+  },
+  "two-column-page": {
+   "token_count": 697,
+   "ids_text_eos_exact": true,
+   "max_selected_confidence_abs_drift": 9.089699999997869e-05,
+   "mean_confidence": 0.834676206,
+   "frozen_mean_confidence": 0.834676027,
+   "wall_seconds": 65.0227831
+  }
+ }
+}
