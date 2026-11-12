@@ -81,9 +81,13 @@ def checks_for(repo: str, sha: str) -> dict[str, str]:
         for run in page.get("check_runs", []):
             key = run.get("started_at") or "", run.get("id") or 0
             state = run.get("conclusion") if run.get("status") == "completed" else run.get("status")
+            # Several workflows may each have a job with the same name; keep them apart
+            # by check suite, and keep only the newest run (re-runs) within a suite.
             name = run["name"]
-            if name not in out or key > out[name][0]:
-                out[name] = (key, state)
+            suite = (run.get("check_suite") or {}).get("id")
+            ident = name if suite is None else f"{name} [suite {suite}]"
+            if ident not in out or key > out[ident][0]:
+                out[ident] = (key, state)
     status = gh_api(f"repos/{repo}/commits/{sha}/status?per_page=100")
     for st in status.get("statuses", []):  # newest first per the API
         name = st["context"]
@@ -125,11 +129,15 @@ def main(argv=None) -> int:
         except RuntimeError as e:
             print(e, file=sys.stderr)
             return 4
+        present = {k.split(" [suite ")[0] for k in states}
         for name in required:
-            states.setdefault(name, "expected")
+            if name not in present:
+                states[name] = "expected"
         bad = {n: s for n, s in states.items() if s not in GREEN and s not in PENDING}
-        pending = {n: s for n, s in states.items() if s in PENDING and n not in a.allow_stalled}
-        stalled = sorted(n for n, s in states.items() if s in PENDING and n in a.allow_stalled)
+        def allowed(n):
+            return n.split(" [suite ")[0] in a.allow_stalled
+        pending = {n: s for n, s in states.items() if s in PENDING and not allowed(n)}
+        stalled = sorted(n for n, s in states.items() if s in PENDING and allowed(n))
         el = time.time() - t0
         if bad:
             print("NOT GREEN:", json.dumps(bad, sort_keys=True))
