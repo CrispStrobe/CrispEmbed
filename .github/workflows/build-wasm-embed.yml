@@ -112,9 +112,8 @@ permissions:
 # A docs-only main push selects no build and must not cancel the previous
 # code-bearing push. PR diffs are cumulative, so superseded PR runs can cancel.
 concurrency:
-  group: build-wasm-embed-${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') && github.run_id || github.ref }}
-  cancel-in-progress: true
-
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' && (github.event_name == 'push' || github.event_name == 'pull_request') }}
 jobs:
   changes:
     name: Select necessary CI

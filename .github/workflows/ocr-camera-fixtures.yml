@@ -21,9 +21,8 @@ defaults:
     shell: bash
 
 concurrency:
-  group: ocr-camera-fixtures-${{ github.ref }}
-  cancel-in-progress: false
-
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' && (github.event_name == 'push' || github.event_name == 'pull_request') }}
 jobs:
   geometry-and-text:
     runs-on: ubuntu-24.04

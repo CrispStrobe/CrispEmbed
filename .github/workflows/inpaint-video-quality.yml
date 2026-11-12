@@ -24,9 +24,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: inpaint-video-quality-${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') && github.run_id || github.ref }}
-  cancel-in-progress: true
-
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' && (github.event_name == 'push' || github.event_name == 'pull_request') }}
 jobs:
   quality:
     name: Reviewed MI-GAN256 CPU video panel

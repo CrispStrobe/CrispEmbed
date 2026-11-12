@@ -42,8 +42,8 @@ permissions:
   contents: read
   actions: read
 concurrency:
-  group: ultrabert-frozen-native-${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' && (github.event_name == 'push' || github.event_name == 'pull_request') }}
 jobs:
   native:
     if: github.event_name == 'workflow_dispatch'

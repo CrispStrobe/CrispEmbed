@@ -93,8 +93,8 @@ permissions:
 # Superseded pushes/PR updates on a branch cancel its older runs. Main pushes and
 # manual dispatches get one group per run, so they are never cancelled or dropped.
 concurrency:
-  group: ocr-quality-${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') && github.run_id || github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' && (github.event_name == 'push' || github.event_name == 'pull_request') }}
 jobs:
   contract:
     runs-on: ubuntu-24.04

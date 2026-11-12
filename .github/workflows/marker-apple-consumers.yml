@@ -42,9 +42,8 @@ defaults:
 # Preserve an executing source-pinned consumer when another feature checkpoint
 # arrives. A queued successor still carries its own exact source and receipts.
 concurrency:
-  group: marker-apple-consumers-${{ github.ref }}
-  cancel-in-progress: false
-
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' && (github.event_name == 'push' || github.event_name == 'pull_request') }}
 jobs:
   consumer:
     name: Marker ${{ matrix.platform }} consumer
