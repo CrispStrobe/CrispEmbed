@@ -37,6 +37,24 @@ so nothing could hit. The bench also had no committed `kernel-metadata.json`.
   by `gh pr merge --match-head-commit`. This follows CrispSorter #49, which was merged on a stale poll. The
   same script went to CrispSorter.
 
+## 12 November 2026 — v0.17.19 released; CrispSorter pinned
+
+- **Release.** PR #217 bumped the versions in the same files as v0.17.18 and added
+  `RELEASE_NOTES_v0.17.19.md`. Tag `v0.17.19` is on merge commit `c364feb9`. `release.yml` succeeded
+  with all 16 assets attached (pub.dev publish skipped as before). The release covers #205-#216. Two
+  OvisOCR2 / Qwen3.5-OCR defaults changed: the graph decoder with `native` matmul and the threaded
+  vision attention are now on. `CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0` and
+  `CRISPEMBED_QWEN35_VISION_THREADED_ATTN=0` restore the old paths. `CRISPEMBED_QWEN35_OCR_GPU` is
+  opt-in. ggml is unchanged (`3a27b6c6`).
+- **CrispSorter pin** (CrispSorter #49). The pin covers every place #40 pinned v0.17.18, plus the later
+  `smb-source.yml` and `docs/ocr-engine-options.md` pins. All seven locked archives were re-downloaded,
+  and their sha256 and sizes match the release asset digests. The runtime-lock digests are updated.
+- **Consumer kernel** `tools/kaggle/crispsorter-pin-01719-consumer` is retargeted from the 0.17.18 kernel.
+  CrispSorter now wraps formula OCR in operation logging, so the probe also compiles the app's own
+  `logged_formula` and `operation_log.rs`, with a no-op `app_log` and a `uuid` dependency. Kaggle CPU run:
+  21/21 checks pass. The checks are tag/lock identity, hash-verified install, build and link, licence
+  consent gates, posformer formula OCR (CER 0.00) and parseq text OCR (CER 0.00).
+
 ## 11 November 2026 — OvisOCR2 / Qwen3.5-OCR on GPU: standard-ggml-op pipeline (default off)
 
 `CRISPEMBED_QWEN35_OCR_GPU` (`src/qwen35_ocr_gpu.cpp`, default off) builds the `qwen35_ocr` vision
