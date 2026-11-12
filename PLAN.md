@@ -4,7 +4,7 @@
 
 | Bounded lane | State | Acceptance |
 | --- | --- | --- |
-| `fix/dbnet-line-gutters-20261112`, exact app runtime `c364feb974b91e14cbf328c6949f3df36e89ce81` | Default-off native candidate; model-free geometry reproduction passed | Exact crop/box and decoded-text A/B; retain single-column controls; immutable minimal release before app repin |
+| `fix/dbnet-line-gutters-20261112`, exact app runtime `c364feb974b91e14cbf328c6949f3df36e89ce81` | Default-off candidate; pinned-source decoded A/B passed; current-main integration pending review | Exact crop/box and decoded-text A/B; retain single-column controls; immutable minimal release before app repin |
 
 The [retained Android flow](https://github.com/CrispStrobe/CrispSorter/actions/runs/43275466921)
 used app `81ef8036` and harness `bfb6bbf9`. It passed sandbox identity/import and
@@ -107,23 +107,37 @@ version/release/app-pin changes. The experimental gutter gate remains off.
 
 Android integration after review and successful decoded evidence:
 
-1. Review exact detector/crop geometry and final decoded text/CER on both arms;
-   require unchanged single-column/blank controls, and retain the failed arm if
-   the new path still misses the existing column/quality gates.
-2. Build a minimal release candidate from the immutable app runtime base plus
-   only reviewed, independently qualified fixes. Coordinate the GPU comparison
-   repair separately; do not absorb unrelated vendor main. Promote the gutter
-   default only after decoded A/B passes, preserving an explicit-off legacy arm.
-3. Apply the repository version/release procedure and required native/platform
-   checks, then publish an immutable qualified runtime after owner review.
-4. Repin CrispSorter to that exact release with source/artifact hashes; rebuild
-   the Android APK and obtain a new source-bound build receipt. Existing APKs
-   contain the old native implementation and cannot qualify the fix.
-5. Replay the retained full WebView flow with preserved pre-assertion quality
-   JSON and unchanged CER `0.25`, geometry, model-hash, export, recovery and
-   memory gates. Record actual Android results separately from Linux evidence.
-   Physical-device/provider/camera and diverse-corpus claims remain open.
-
+1. Integrate only the reviewed gutter, native status/error propagation and
+   production Python ABI repairs onto current public main in an isolated source
+   candidate. Preserve both evidence sets, the gated alternatives, and the
+   unchanged runtime version/app pin.
+2. Independently review the exact combined tree, then propose one bounded hosted
+   CPU shared build with the repaired production Python ABI/multi-region/status
+   controls, linked native controls and the same gate-off/on three-fixture decoded
+   replay. Use the retained immutable baseline to avoid repeating a broader panel.
+   No next dispatch is implied by this plan.
+3. Build a source-bound experimental Android x86_64 debug APK against the exact
+   combined candidate runtime without repinning production. To exercise the
+   default-off gate before publication, Android supports a debug-only process
+   startup [wrap script](https://developer.android.com/ndk/guides/wrap-script)
+   on API 27 and later. A test-only `resources/lib/x86_64/wrap.sh` can enable
+   `CRISPEMBED_TESSERACT_DBNET_GUTTERS=1` while preserving the native default;
+   packaging requires legacy native-library extraction. Record the wrapper,
+   native libraries, source tree and APK hashes. Keep the wrapper out of release
+   artifacts and leave app permissions/security unchanged.
+4. Execute the complete existing WebView flow against that rebuilt debug APK,
+   preserving pre-assertion quality JSON and unchanged CER `0.25`, geometry,
+   model-hash, save/export, recovery and memory gates. Record actual Android
+   observations separately from Linux native/reading-order replay. The old
+   retained APK contains the old native implementation and cannot qualify this fix.
+5. After all required source/platform gates and independent review, decide any
+   default promotion while retaining explicit-off legacy behavior, follow the
+   repository version/release procedure, publish the qualified immutable minimal
+   runtime, then repin/rebuild the app with source/artifact receipts. Any default
+   or version change advances the source identity and needs its declared final
+   acceptance checks. No release, version bump or app pin change is authorized
+   by this candidate checkpoint. Physical-device/provider/camera and diverse
+   corpus qualification remain open.
 
 ## CrispSorter Ovis application-path control — 12 November 2026
 
