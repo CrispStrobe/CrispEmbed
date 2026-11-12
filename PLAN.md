@@ -458,6 +458,18 @@ The launcher captures service output and reports generic failure categories; cac
 version messages are fixed text, and only an explicit missing-dataset response
 permits creation. This does not migrate the legacy templates below or test a live
 cache upload.
+## LightOn4B fixed-panel partial negative — 12 November 2026
+
+The source-pinned SwiGLU panel completed receipt OFF/ON and book OFF/ON, then
+stopped before inventory inference on a combined memory, free-space and seal
+guard. The individual readings were not recorded, so the failing predicate is
+unknown. The receipt ON met its frozen source floor (24 character and 18 word
+edits); book ON reached 1,536 tokens without EOS and failed the completion floor.
+The book's capped CER improved but WER worsened, and its source-matching token
+prefix fell from 405 to 85. These are producer-reported results pending the
+independent partial raw audit; no default, release or quality promotion follows.
+Recover only the two unrun inventory arms with the same source and thresholds,
+preserving the original failure and all completed arms.
 
 ## Local kernel configuration privacy — 12 November 2026
 
