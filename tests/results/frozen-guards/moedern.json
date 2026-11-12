@@ -225,6 +225,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version bumps and unrelated dependency/package updates."
+        },
+        {
+          "from": "8a8f2d162598073ed7f0cccef6bf94b5fbb76452",
+          "to": "587fafad614a656273aa7a602acc7f6ec19277e2",
+          "changed_by": [
+            "17775160484f24978020da136e7e0eb1f19fa05f release: prepare v0.17.19"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
         }
       ]
     },
@@ -248,6 +257,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version bumps (0.17.x)."
+        },
+        {
+          "from": "a7a22521cb71b499e7b6d596846ce906cc08e5df",
+          "to": "530ec3d024054b0385ef0dd25a0df1d87da91813",
+          "changed_by": [
+            "17775160484f24978020da136e7e0eb1f19fa05f release: prepare v0.17.19"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
         }
       ]
     },
@@ -327,6 +345,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Rust crate tree: version bumps and additive unrelated APIs; MoEdern module unchanged in behaviour."
+        },
+        {
+          "from": "3dbe9026d9032206d1dac5df9723370403001a89",
+          "to": "d6136553e2b6e808b50b622644b745387a9f492f",
+          "changed_by": [
+            "17775160484f24978020da136e7e0eb1f19fa05f release: prepare v0.17.19"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
         }
       ]
     },
@@ -379,6 +406,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Rust sys crate tree: version bumps and additive unrelated FFI."
+        },
+        {
+          "from": "80cb45c3180e6bf91bfca682b5473f0fde11302c",
+          "to": "295c5c82c4e146beae4565162ce413910cb82c34",
+          "changed_by": [
+            "17775160484f24978020da136e7e0eb1f19fa05f release: prepare v0.17.19"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
         }
       ]
     },
@@ -543,6 +579,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Flutter package tree: version bumps and additive unrelated APIs."
+        },
+        {
+          "from": "fedcd036f3ced3431f56194b6f2e067f9434d6bd",
+          "to": "d2392bab1fe8c7937744ee8834dfb3a13ad6e7cf",
+          "changed_by": [
+            "17775160484f24978020da136e7e0eb1f19fa05f release: prepare v0.17.19"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
         }
       ]
     },
@@ -618,6 +663,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Python package tree: version bumps and additive unrelated APIs (MoEdern binding reviewed separately)."
+        },
+        {
+          "from": "72af0b792bda27002320323181f90cc404134f48",
+          "to": "b9c2accf811e06dc7a0363f43584006693aad92b",
+          "changed_by": [
+            "17775160484f24978020da136e7e0eb1f19fa05f release: prepare v0.17.19"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
         }
       ]
     },
@@ -3268,6 +3322,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version bumps and unrelated dependency/package updates."
+        },
+        {
+          "from": "8a8f2d162598073ed7f0cccef6bf94b5fbb76452",
+          "to": "587fafad614a656273aa7a602acc7f6ec19277e2",
+          "changed_by": [
+            "17775160484f24978020da136e7e0eb1f19fa05f release: prepare v0.17.19"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
         }
       ]
     },
@@ -3291,6 +3354,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Release version bumps (0.17.x)."
+        },
+        {
+          "from": "a7a22521cb71b499e7b6d596846ce906cc08e5df",
+          "to": "530ec3d024054b0385ef0dd25a0df1d87da91813",
+          "changed_by": [
+            "17775160484f24978020da136e7e0eb1f19fa05f release: prepare v0.17.19"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
         }
       ]
     },
@@ -3370,6 +3442,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Rust crate tree: version bumps and additive unrelated APIs; MoEdern module unchanged in behaviour."
+        },
+        {
+          "from": "3dbe9026d9032206d1dac5df9723370403001a89",
+          "to": "d6136553e2b6e808b50b622644b745387a9f492f",
+          "changed_by": [
+            "17775160484f24978020da136e7e0eb1f19fa05f release: prepare v0.17.19"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
         }
       ]
     },
@@ -3422,6 +3503,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Rust sys crate tree: version bumps and additive unrelated FFI."
+        },
+        {
+          "from": "80cb45c3180e6bf91bfca682b5473f0fde11302c",
+          "to": "295c5c82c4e146beae4565162ce413910cb82c34",
+          "changed_by": [
+            "17775160484f24978020da136e7e0eb1f19fa05f release: prepare v0.17.19"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
         }
       ]
     },
@@ -3586,6 +3676,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Flutter package tree: version bumps and additive unrelated APIs."
+        },
+        {
+          "from": "fedcd036f3ced3431f56194b6f2e067f9434d6bd",
+          "to": "d2392bab1fe8c7937744ee8834dfb3a13ad6e7cf",
+          "changed_by": [
+            "17775160484f24978020da136e7e0eb1f19fa05f release: prepare v0.17.19"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
         }
       ]
     },
@@ -3661,6 +3760,15 @@
           ],
           "classification": "behaviour-neutral",
           "reason": "Python package tree: version bumps and additive unrelated APIs (MoEdern binding reviewed separately)."
+        },
+        {
+          "from": "72af0b792bda27002320323181f90cc404134f48",
+          "to": "b9c2accf811e06dc7a0363f43584006693aad92b",
+          "changed_by": [
+            "17775160484f24978020da136e7e0eb1f19fa05f release: prepare v0.17.19"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Release version metadata and Flutter changelog only; guarded code and numerical budgets unchanged."
         }
       ]
     },
