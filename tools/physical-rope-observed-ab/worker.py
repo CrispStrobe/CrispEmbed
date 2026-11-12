@@ -9,7 +9,7 @@ shared=load('q6_ab',ROOT/'tools/q6-tiled-full-ab/worker.py');base=shared.base;f=
 Deadline=shared.Deadline;command=shared.command
 GATE='CRISPEMBED_LIGHTON4B_PHYSICAL_ROPE'
 PROFILE={'CRISPEMBED_NATIVE':'OFF','GGML_NATIVE':'OFF','GGML_AVX2':'ON','GGML_FMA':'ON','GGML_F16C':'ON','GGML_LLAMAFILE':'ON','GGML_CPU_REPACK':'ON','GGML_AVX512':'OFF','GGML_BLAS':'OFF','GGML_BACKEND_DL':'OFF','GGML_OPENMP':'OFF','GGML_CUDA':'OFF','GGML_VULKAN':'OFF'}
-CFG_SHA='69b8fdb438404dc9beef6582ae8ccf2af8da009a1d8a04e5c6a4ce363116d10a'
+CFG_SHA='c0927e8607ed1bbe0ed69080a75b8f11f29e510e15ac02a54897434532117674'
 HISTORICAL='67ff19db0230ddc329300cc3f6a0256eb85b3cdbbcf06a578b23eb93c2688ba1'
 def admit(path):require(sha(path)==CFG_SHA,'immutable observed protocol');return json.loads(Path(path).read_text())
 def gates(env):
@@ -34,6 +34,9 @@ def main():
   found=[p for p in Path('/kaggle/input').rglob(name)if p.is_file()and p.stat().st_size<4<<20 and sha(p)==digest];require(len(found)==1,'one frozen '+name);return found[0],json.loads(found[0].read_text())
  def verify(p,row):require(p.stat().st_size==row['bytes']and sha(p)==row['sha256'],'immutable '+p.name)
  try:
+  r['controller_files']={}
+  for name,digest in cfg['controller_dependencies'].items():require(sha(ROOT/name)==digest,'frozen controller helper/input source');r['controller_files'][name]=digest
+  r['harness_files']={str(p.relative_to(ROOT)):dict(bytes=p.stat().st_size,sha256=sha(p))for p in Path(__file__).parent.iterdir()if p.is_file()}
   run('source',['git','rev-parse','HEAD']);r['source_sha']=(out/'source.log').read_text().strip();require(r['source_sha']==os.environ['LIGHTON4B_EXPECTED_SOURCE']==cfg['controller_source'],'exact controller source');candidate_source=os.environ['LIGHTON4B_CANDIDATE_SOURCE'];control_sha=os.environ['LIGHTON4B_CANDIDATE_CONTROLS_SHA256'];require(candidate_source==cfg['candidate_source']and len(control_sha)==64 and all(c in'0123456789abcdef'for c in control_sha),'immutable candidate/control bindings')
   flags=next(v.split(':',1)[1].split()for v in Path('/proc/cpuinfo').read_text().splitlines()if v.startswith('flags'));require(platform.system()=='Linux'and platform.machine().lower()in['x86_64','amd64']and {'avx2','fma','f16c'}<=set(flags),'actual admitted CPU')
   r['capacity']=dict(memory=base.memory(),scratch=shutil.disk_usage(work).free,output=shutil.disk_usage(out).free);require(r['capacity']['memory']['MemAvailable']>=10<<30 and r['capacity']['scratch']>=25<<30 and r['capacity']['output']>=6<<30,'pre-model resources')
@@ -44,7 +47,7 @@ def main():
   shutil.copyfile(cp.parent/'CMakeCache.txt',out/'CMakeCache.txt');bundle=work/'runtime';require(2<=len(controls['runtime_bundle'])<=20,'bounded tested bundle')
   for name,row in controls['runtime_bundle'].items():
    n=Path(name);require(not n.is_absolute()and '..'not in n.parts and n.parts[0]in['bin','lib'],'closed tested bundle path');src=cp.parent/'runtime'/n;verify(src,row);dest=bundle/n;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(src,dest);verify(dest,row)
-  r['candidate_controls_sha256']=sha(cp);r['runtime_bundle']=controls['runtime_bundle'];r['runtime_producer_source']=candidate_source;native=bundle/'bin/lighton4b-native-document';stage(native)
+  r['candidate_controls_sha256']=sha(cp);r['runtime_bundle']=controls['runtime_bundle'];r['runtime_producer_source']=candidate_source;native=bundle/'bin/lighton4b-native-document';stage(native);r['native_binary_sha256']=sha(native)
   bp,baseline=locate('swiglu-observed-ab.json',HISTORICAL);ph,physical=locate('physical-decode.json',shared.PHYSICAL);tp,table=locate('physical-f16-table512.json',shared.TABLE)
   require(baseline['status']=='measured_swiglu_observed_ab'and baseline['runtime_producer_source']=='519c3d9765c234cd93e9069d5efdc239e3cad3f2'and baseline['all_inputs_authenticated_before_weights']and physical['status']=='measured'and table['status']=='measured_extended_table'and table['source_observer_full_neutral'],'complete frozen fusedON baseline');baseline['artifacts']={**baseline['reused_owned_artifacts'],**baseline['artifacts']};r['historical_fused_receipt_sha256']=sha(bp);r['historical_raw_scope']=cfg['baseline_scope']
   env=dict(os.environ);env.update({k:'0'for k in env if k.startswith('CRISPEMBED_')});env.update(baseline['cases']['simple_form']['arms']['on']['gates']);env['LD_LIBRARY_PATH']=str(bundle/'lib');off,on=gates(env)
