@@ -563,6 +563,17 @@ qualify their historical sources only. Diff/format review passes; current-source
 compilation, synthetic controls and model replay are pending on Kaggle while
 local Python startup is blocked on filesystem I/O. No default/release/parity claim.
 
+Private retained-result metadata for the two-column case shows the planner-off
+and planner-on greedy choices first diverge at zero-based output row 92, after
+92 matching choices; rows 0–92 therefore have the same input prefix. Planner-off
+completes at 660 tokens/EOS, while planner-on reaches 1,536 without EOS. The
+existing [audited prefill comparison](docs/lighton4b-planner-heldout-provisional-results.md)
+already records the first layer difference; the new metadata-only comparison
+does not inspect raw logits or establish a cause. A prepared artifact-only
+Kaggle audit must authenticate and compare those 93 score rows and aligned
+prefill stages before choosing a numerical fix. Preserve private document text
+and IDs; compare source and native at the same prefix before claiming parity.
+
 ## LightOn4B newer graph applicability — 12 November 2026
 
 The [source assessment](docs/lighton4b-qwen35-graph-applicability.md) at
