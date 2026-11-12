@@ -46,6 +46,11 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: Preserve committed source bytes on Windows
+        if: runner.os == 'Windows'
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
       - name: Check out this consumer controller
         uses: actions/checkout@v4
         with:

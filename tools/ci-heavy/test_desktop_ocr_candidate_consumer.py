@@ -1,12 +1,16 @@
 """Source-only checks for the bounded manual consumer; no compiler or model use."""
 import importlib.util
+import hashlib
 import json
 import os
 from pathlib import Path
 import struct
+import subprocess
+import shutil
 import tempfile
 import tomllib
 import unittest
+import zipfile
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -103,6 +107,44 @@ class CandidateConsumerTests(unittest.TestCase):
         self.assertEqual(workflow.count('submodules: recursive'), 2)
         self.assertIn("PYTHONDONTWRITEBYTECODE: '1'", workflow)
 
+    def test_windows_checkout_preserves_raw_git_bytes_without_weakening_validation(self):
+        workflow = (ROOT / '.github/workflows/desktop-ocr-candidate-consumer.yml').read_text()
+        step = workflow.split('      - name: Preserve committed source bytes on Windows\n', 1)[1].split('      - name:', 1)[0]
+        self.assertIn("if: runner.os == 'Windows'", step)
+        self.assertLess(workflow.index('Preserve committed source bytes on Windows'), workflow.index('Check out this consumer controller'))
+        script = '\n'.join(line[10:] for line in step.split('        run: |\n', 1)[1].splitlines())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo = root / 'repo'
+            repo.mkdir()
+            env = dict(os.environ, GIT_CONFIG_GLOBAL=str(root / 'gitconfig'))
+            def git(*args):
+                return subprocess.check_output(['git', '-C', str(repo), *args], env=env, stderr=subprocess.DEVNULL)
+            git('init', '-q')
+            git('config', '--global', 'core.autocrlf', 'true')
+            source = repo / 'control.py'
+            source.write_bytes(b'print("source identity")\n')
+            (repo / '.gitattributes').write_text('*.raw -text\n')
+            retained = repo / 'capture.raw'
+            retained.write_bytes(b'retained\r\nbytes\r\n')
+            git('add', '.')
+            git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'fixture')
+            committed = git('show', 'HEAD:control.py')
+            source.unlink()
+            git('checkout', '--', 'control.py')
+            self.assertIn(b'\r\n', source.read_bytes())
+            self.assertNotEqual(source.read_bytes(), committed)
+            self.assertEqual(git('status', '--porcelain'), b'')
+            subprocess.run(['bash', '-c', script], env=env, check=True)
+            source.unlink()
+            retained.unlink()
+            git('checkout', '--', 'control.py', 'capture.raw')
+            self.assertEqual(source.read_bytes(), committed)
+            self.assertEqual(retained.read_bytes(), b'retained\r\nbytes\r\n')
+            self.assertEqual(git('status', '--porcelain'), b'')
+            source.write_bytes(committed + b'# changed\n')
+            self.assertNotEqual(source.read_bytes(), committed)
+
     def test_harness_keeps_inputs_fixed_and_limits_unexecuted_qualification(self):
         source = Path(consumer.__file__).read_text()
         self.assertIn('validator_env = dict(env, GITHUB_SHA=WORKFLOW_SOURCE)', source)
@@ -118,6 +160,108 @@ class CandidateConsumerTests(unittest.TestCase):
     def test_local_execution_rejected_before_any_job_or_build(self):
         with patch.dict(os.environ, {'GITHUB_ACTIONS': 'false'}), self.assertRaisesRegex(ValueError, 'Hosted'):
             consumer.consume('linux-x86_64', ROOT, ROOT, ROOT)
+
+    def test_windows_cargo_linker_bypasses_git_link_executable_on_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            git_bin, msvc_bin = root / 'Git/usr/bin', root / 'MSVC/bin/Hostx64/x64'
+            git_bin.mkdir(parents=True)
+            msvc_bin.mkdir(parents=True)
+            for path in (git_bin / 'link.exe', msvc_bin / 'cl.exe', msvc_bin / 'link.exe'):
+                path.write_text('tool selection fixture')
+                path.chmod(0o755)
+            search = str(git_bin) + os.pathsep + str(msvc_bin)
+            self.assertEqual(Path(shutil.which('link.exe', path=search)), git_bin / 'link.exe')
+            self.assertEqual(consumer.windows_msvc_linker({'PATH': search}), msvc_bin / 'link.exe')
+
+    def test_windows_cargo_linker_requires_the_configured_msvc_pair(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            decoy = root / 'link.exe'
+            decoy.write_text('Unix link fixture')
+            decoy.chmod(0o755)
+            with self.assertRaisesRegex(ValueError, 'Configured MSVC cl.exe'):
+                consumer.windows_msvc_linker({'PATH': str(root)})
+            compiler_bin = root / 'MSVC'
+            compiler_bin.mkdir()
+            compiler = compiler_bin / 'cl.exe'
+            compiler.write_text('MSVC compiler fixture')
+            compiler.chmod(0o755)
+            with self.assertRaisesRegex(ValueError, 'adjacent to the configured cl.exe'):
+                consumer.windows_msvc_linker({'PATH': str(root) + os.pathsep + str(compiler_bin)})
+
+    def test_windows_linker_override_is_scoped_before_cargo_and_records_no_host_path(self):
+        source = Path(consumer.__file__).read_text()
+        block = source.split('    if windows:\n        linker = windows_msvc_linker(env)', 1)[1].split('    rust_stdout = execute(', 1)[0]
+        self.assertIn("env['CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER'] = str(linker)", block)
+        self.assertIn("'linker_sha256': digest(linker)", block)
+        self.assertNotIn("'path':", block)
+
+    def header_member(self, data):
+        return {'kind': 'file', 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+
+    def test_header_binding_accepts_only_exact_bytes_or_windows_whole_file_transform(self):
+        source = b'// UTF-8: \xe2\x96\x81\nint fixture(void);\n'
+        exact = consumer.header_binding(source, source, self.header_member(source), False)
+        self.assertEqual(exact['transformation'], 'exact-bytes')
+        windows = source.replace(b'\n', b'\r\n')
+        proof = consumer.header_binding(windows, source, self.header_member(windows), True)
+        self.assertEqual(proof['transformation'], 'windows-git-whole-file-lf-to-crlf')
+        self.assertEqual(proof['packaged_sha256'], self.header_member(windows)['sha256'])
+        self.assertEqual(proof['committed_source_sha256'], self.header_member(source)['sha256'])
+        self.assertNotEqual(proof['packaged_sha256'], proof['committed_source_sha256'])
+        with self.assertRaisesRegex(ValueError, 'exact runtime source'):
+            consumer.header_binding(windows, source, self.header_member(windows), False)
+
+    def test_header_binding_rejects_mixed_endings_lone_cr_and_every_other_edit(self):
+        source = b'// source\nint fixture(void);\n'
+        windows = source.replace(b'\n', b'\r\n')
+        for altered in [windows.replace(b'\r\n', b'\n', 1), windows.replace(b'\r\n', b'\r', 1),
+                        windows.replace(b'int', b'long'), windows + b'\r\n', windows[:-1],
+                        windows.replace(b'\r\n', b'\r\r\n'), b'\xef\xbb\xbf' + windows]:
+            # Even a raw member hash matching these bytes cannot waive source binding.
+            with self.assertRaisesRegex(ValueError, 'exact runtime source'):
+                consumer.header_binding(altered, source, self.header_member(altered), True)
+        mixed_source = b'// source\r\nint fixture(void);\n'
+        with self.assertRaisesRegex(ValueError, 'exact runtime source'):
+            consumer.header_binding(windows, mixed_source, self.header_member(windows), True)
+
+    def test_header_binding_keeps_raw_manifest_hash_and_size_checks_strict(self):
+        source = b'int fixture(void);\n'
+        windows = source.replace(b'\n', b'\r\n')
+        for member in [self.header_member(source), {**self.header_member(windows), 'kind': 'symlink'},
+                       {**self.header_member(windows), 'bytes': len(windows) + 1}]:
+            with self.assertRaisesRegex(ValueError, 'verified raw manifest member'):
+                consumer.header_binding(windows, source, member, True)
+
+    def test_header_verifier_preserves_downloaded_manifest_and_extracted_member_binding(self):
+        source = b'int fixture(void);\n'
+        windows = source.replace(b'\n', b'\r\n')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runtime, package, output = (root / name for name in ('runtime', 'package', 'output'))
+            (runtime / 'src').mkdir(parents=True)
+            (runtime / 'src/crispembed.h').write_bytes(source)
+            (package / 'include').mkdir(parents=True)
+            header = package / 'include/crispembed.h'
+            header.write_bytes(windows)
+            output.mkdir()
+            archive = 'crispembed-windows-x86_64.zip'
+            manifest = {'files': [{'name': archive, 'members': [dict(self.header_member(windows), path='include/crispembed.h')]}]}
+            path = output / 'manifest.zip'
+            with zipfile.ZipFile(path, 'w') as bundle:
+                bundle.writestr('successor-native-manifest.json', json.dumps(manifest))
+            receipt = {'manifest_artifact': {'digest': 'sha256:' + consumer.digest(path)}, 'archives': [{'name': archive}]}
+            with patch.object(consumer.subprocess, 'check_output', return_value=source):
+                proof = consumer.verify_header(package, runtime, output, receipt, True)
+                self.assertEqual(proof['transformation'], 'windows-git-whole-file-lf-to-crlf')
+                header.write_bytes(source)
+                with self.assertRaisesRegex(ValueError, 'verified raw manifest member'):
+                    consumer.verify_header(package, runtime, output, receipt, True)
+                header.write_bytes(windows)
+                path.write_bytes(path.read_bytes() + b'altered')
+                with self.assertRaisesRegex(ValueError, 'manifest artifact bytes changed'):
+                    consumer.verify_header(package, runtime, output, receipt, True)
 
 
 if __name__ == '__main__':

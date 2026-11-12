@@ -2,6 +2,40 @@
 
 ## Existing desktop candidate consumers — 13 November 2026
 
+The [first packaged-consumer run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43309558037)
+passed both Linux targets and macOS. Windows stopped before artifact download or
+compilation because the controller's worktree byte hash differed from its Git
+blob. A focused Git fixture reproduces this with `core.autocrlf=true`: the
+checkout is clean but Python source becomes CRLF. The Windows job now configures
+`core.autocrlf=false` and `core.eol=lf` before all three source checkouts. Raw-byte
+identity and complete-tree cleanliness checks remain strict. The regression
+restores exact source bytes while preserving explicitly byte-pinned CRLF fixture
+data. The subsequent Windows-only retry below exercises this correction.
+
+The [Windows-only retry](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43311042289)
+passed that controller check and cryptographic archive validation, then stopped
+at the header/source raw-byte comparison. Inspection of the original producer
+archive proves its header is the entire Git LF-to-CRLF transformation: committed
+header 110852 bytes/1813 LF/no CR; package 112665 bytes/1813 CRLF/no bare LF or CR.
+The raw archive and header-member SHA-256 values match the producer manifest.
+The consumer now permits only this whole-file transform for the Windows header,
+after rechecking the raw manifest/member hashes and exact committed source bytes.
+It records both raw header hashes and the transformation without modifying the
+header, archive, manifest or hashes. Mixed endings, lone CR, other byte changes
+and non-Windows mismatches remain failures. A hosted retry remains pending;
+the already passed Linux/macOS targets do not need repetition for this change.
+
+The [next Windows-only consumer](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43313165931)
+passes archive/source/header validation and all four actual native C controls.
+Rust then exits 101 while linking libc's build script: the tool selected from
+Git's shell PATH is the Unix `link.exe`, which rejects MSVC arguments. No Rust
+semantic control or application qualification ran. The Windows consumer now
+selects `link.exe` adjacent to the configured MSVC `cl.exe` and passes its exact
+path through `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER`. Its hash and selection
+rule are retained without host paths. Decoy-PATH and missing-tool regressions
+pass; a hosted Windows retry remains pending. Source/archive checks and the
+already passed Linux/macOS targets are unaffected.
+
 The manual-only `desktop-ocr-candidate-consumer.yml` adopts the existing
 [desktop producer 43302121233](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43302121233),
 workflow/tooling `841179b848f8d3aa15e44dd2d5aea65070c82f71` and runtime

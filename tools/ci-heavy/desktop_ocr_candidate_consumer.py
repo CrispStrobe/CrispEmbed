@@ -10,10 +10,12 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import struct
 import subprocess
 import sys
 import tomllib
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 PRODUCER_RUN = 43302121233
@@ -90,6 +92,47 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def header_binding(packaged, committed, member, windows):
+    """Bind raw archive bytes, then permit only the observed Windows Git edit.
+
+    Do not normalize files or their recorded hashes. The entire packaged header
+    must be exact, or equal a whole-file LF-to-CRLF transform of a CR-free blob.
+    """
+    raw_sha = hashlib.sha256(packaged).hexdigest()
+    if member.get('kind') != 'file' or member.get('bytes') != len(packaged) or member.get('sha256') != raw_sha:
+        raise ValueError('Packaged header differs from its verified raw manifest member')
+    mode = 'exact-bytes'
+    if packaged != committed:
+        if not (windows and b'\r' not in committed and b'\n' in committed
+                and packaged == committed.replace(b'\n', b'\r\n')):
+            raise ValueError('Packaged header differs from exact runtime source')
+        mode = 'windows-git-whole-file-lf-to-crlf'
+    return {'transformation': mode, 'packaged_sha256': raw_sha,
+            'committed_source_sha256': hashlib.sha256(committed).hexdigest(),
+            'raw_manifest_member_sha256': member['sha256']}
+
+
+def verify_header(package, runtime, output, receipt, windows):
+    manifest_zip = output / 'manifest.zip'
+    if receipt['manifest_artifact']['digest'] != 'sha256:' + digest(manifest_zip):
+        raise ValueError('Verified manifest artifact bytes changed')
+    with zipfile.ZipFile(manifest_zip) as archive:
+        manifest = json.loads(archive.read('successor-native-manifest.json'))
+    archive_names = [row['name'] for row in receipt['archives']]
+    if len(archive_names) != 1:
+        raise ValueError('One verified archive required for header binding')
+    archives = [row for row in manifest['files'] if row['name'] == archive_names[0]]
+    if len(archives) != 1:
+        raise ValueError('Header archive is not bound by verified manifest')
+    members = [row for row in archives[0]['members'] if row['path'] == 'include/crispembed.h']
+    if len(members) != 1:
+        raise ValueError('Exactly one verified public header member required')
+    committed = subprocess.check_output(['git', '-C', str(runtime), 'show', RUNTIME_SOURCE + ':src/crispembed.h'])
+    if (runtime / 'src/crispembed.h').read_bytes() != committed:
+        raise ValueError('Runtime header checkout differs from its exact committed bytes')
+    return header_binding((package / 'include/crispembed.h').read_bytes(), committed, members[0], windows)
+
+
 def api_run():
     return json.loads(subprocess.check_output(['gh', 'api', f'repos/CrispStrobe/CrispEmbed/actions/runs/{PRODUCER_RUN}'], text=True))
 
@@ -155,6 +198,17 @@ def prebuilt_metadata(target, package):
     return outputs[0]
 
 
+def windows_msvc_linker(env):
+    """Use the configured MSVC compiler's linker, never PATH's Unix link.exe."""
+    compiler = shutil.which('cl.exe', path=env.get('PATH', ''))
+    if compiler is None:
+        raise ValueError('Configured MSVC cl.exe is required for the Windows Rust consumer')
+    linker = Path(compiler).resolve().with_name('link.exe')
+    if not linker.is_file():
+        raise ValueError('MSVC link.exe must be adjacent to the configured cl.exe')
+    return linker
+
+
 def consume(target, workflow, runtime, output):
     if os.environ.get('GITHUB_ACTIONS') != 'true':
         raise ValueError('Hosted execution only')
@@ -191,8 +245,7 @@ def consume(target, workflow, runtime, output):
     library = package / ('crispembed.dll' if windows else 'libcrispembed.dylib' if target == 'macos-arm64' else 'libcrispembed.so')
     if not library.is_file() or not (package / ('crispembed.lib' if windows else library.name)).is_file():
         raise ValueError('Verified packaged link library is missing; source builds are forbidden')
-    if digest(package / 'include/crispembed.h') != digest(runtime / 'src/crispembed.h'):
-        raise ValueError('Packaged header differs from exact runtime source')
+    header = verify_header(package, runtime, output, receipt, windows)
     logs = output / 'logs'
     logs.mkdir()
     env.update(CRISPEMBED_OFFLINE='1', HF_HUB_OFFLINE='1', CRISPEMBED_SYS_LIB_DIR=str(package),
@@ -215,6 +268,12 @@ def consume(target, workflow, runtime, output):
     native = parse_control(execute([native_binary, image, missing], env, logs, 'native-run'), NATIVE_KEYS)
     rust = output / 'rust'
     rust_project(runtime, rust)
+    if windows:
+        linker = windows_msvc_linker(env)
+        env['CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER'] = str(linker)
+        linker_proof = {'selection': 'link.exe adjacent to configured MSVC cl.exe',
+                        'linker_sha256': digest(linker)}
+        (logs / 'rust-linker.json').write_text(json.dumps(linker_proof, indent=2) + '\n')
     rust_stdout = execute(['cargo', 'run', '--quiet', '--locked', '--manifest-path', rust / 'Cargo.toml', '--', image, missing],
                           env, logs, 'rust-run', timeout=600)
     rust_result = parse_control(rust_stdout, RUST_KEYS)
@@ -226,6 +285,7 @@ def consume(target, workflow, runtime, output):
                   controller_sha256=digest(__file__),
                   runtime_source_commit=RUNTIME_SOURCE, target=target, native=native, rust=rust_result,
                   library_sha256=digest(library), image_sha256=digest(image),
+                  header_binding=header,
                   native_control_sha256=digest(source), rust_control_sha256=digest(rust / 'src/main.rs'),
                   rust_lock_sha256=digest(rust / 'Cargo.lock'), prebuilt_link_metadata_verified=True,
                   app_boundary_executed=False, positive_blank_model_executed=False,
@@ -233,6 +293,8 @@ def consume(target, workflow, runtime, output):
                   limits=['Actual model-free native/Rust boundary only; legacy empty is not positively recognized blank output.',
                           'CrispSorter application rebuild/error/export paths and decoded OCR remain unexecuted.',
                           'No runtime assets rebuilt; no model download, mobile, WASM or GPU qualification.'])
+    if windows:
+        report['rust_linker'] = linker_proof
     (output / 'boundary.json').write_text(json.dumps(report, indent=2) + '\n')
 
 
