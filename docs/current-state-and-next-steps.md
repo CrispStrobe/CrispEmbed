@@ -38,7 +38,10 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   was incorporated, addressing build and installer-integrity failures. At the
   earlier source `8138f0b8`, hosted Linux [controls](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/crispsorter-model-manager-live-20261112.json)
   passed 29 model-manager and eight Paddle tests, plus a separate live install,
-  resume and recognition test. Later app revisions still need their own gate.
+  resume and recognition test. A second [hosted Linux control](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/crispsorter-model-manager-head-20261112.json)
+  passed the same 29 manager, eight Paddle and one live test at `b34c6f83`;
+  the next PR commit changes Android smoke utilities and documentation only.
+  Merged-base integration and other platforms still need their own gates.
   [Provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52)
   merged after a targeted vendored-source conformance run. [Follow-up 56](https://github.com/CrispStrobe/CrispSorter/pull/56)
   merged as `7d6032bd15aded92bebb5c59b5f83f441d68ad64` using the reviewed
