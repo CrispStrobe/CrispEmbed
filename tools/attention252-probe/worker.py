@@ -93,8 +93,8 @@ def main():
     if name in sr['artifacts']:
      require(name in new['artifacts']and new['artifacts'][name]==sr['artifacts'][name],'frozen source hidden observer closure')
   r['source_retained_hidden_stages_exact']=True
-  widths={'input_norm':2560,'q_full':8192,'v_raw':1024,'q_norm':4096,'k_norm':1024,'q_rope':4096,'k_rope':1024,'attn_gate':4096,'pooled':4096,'attention':2560,'attention_residual':2560,'post_norm':2560,'ffn_gate':9216,'ffn_up':9216,'activation':9216,'down':2560,'hidden':2560}
-  pairs=[('attn_norm','input_norm'),('Qcur_full','q_full'),('Vcur','v_raw'),('Qcur_normed','q_norm'),('Kcur_normed','k_norm'),('Qcur','q_rope'),('Kcur','k_rope'),('gate_reshaped','attn_gate'),('attn_gated','pooled'),('attn_output','attention'),('attn_residual','attention_residual'),('attn_post_norm','post_norm'),('ffn_gate','ffn_gate'),('ffn_up','ffn_up'),('ffn_swiglu','activation'),('ffn_out','down'),('l_out','hidden')];comparisons=[];offset=0
+  widths={'input_norm':2560,'q_full':8192,'k_raw':1024,'v_raw':1024,'q_norm':4096,'k_norm':1024,'q_rope':4096,'k_rope':1024,'attn_gate':4096,'pooled':4096,'attention':2560,'attention_residual':2560,'post_norm':2560,'ffn_gate':9216,'ffn_up':9216,'activation':9216,'down':2560,'hidden':2560}
+  pairs=[('attn_norm','input_norm'),('Qcur_full','q_full'),('Kcur_raw','k_raw'),('Vcur_raw','v_raw'),('Qcur_normed','q_norm'),('Kcur_normed','k_norm'),('Qcur','q_rope'),('Kcur','k_rope'),('gate_reshaped','attn_gate'),('attn_gated','pooled'),('attn_output','attention'),('attn_residual','attention_residual'),('attn_post_norm','post_norm'),('ffn_gate','ffn_gate'),('ffn_up','ffn_up'),('ffn_swiglu','activation'),('ffn_out','down'),('l_out','hidden')];comparisons=[];offset=0
   for g,count in zip(range(1,5),[4,252,6,4]):
    index=new['graph_indexes'][g]
    for stage,role in pairs:
@@ -110,6 +110,12 @@ def main():
     candidate=np.fromfile(native/(tag+'.'+role+'.f32'),dtype='<f4').reshape(4,count,256)
     row=dict(scope=tag,stage=role,**delta(candidate,reference));cache_checks.append(row)
     if g==1:require(row['bit_exact'],'actual equal four-token attention context/cache')
+  q_operand=[]
+  for g,count,offset in [(1,4,0),(2,252,4)]:
+   reference=source_array(source_out/'on',new['graph_indexes'][g],'operand-kq-3-1').reshape(16,count,256).transpose(1,0,2).reshape(count,4096)
+   candidate=np.fromfile(native/'q_rope.f32',dtype='<f4').reshape(266,4096)[offset:offset+count]
+   q_operand.append(dict(graph=g,stage='actual_QK_Q_operand_vs_reconstructed_native_RoPE',**delta(candidate,reference)))
+  r['actual_q_operand_comparisons']=q_operand
   r['cache_comparisons']=cache_checks;r['actual_four_token_cache_bits']=True
   r['comparisons']=comparisons;r['first_image_stage_difference']=next((x for x in comparisons if x['graph']==2 and not x['bit_exact']),None)
   r['source_graph_indexes']=new['graph_indexes'];r['status']='measured_actual_layer3_stages';r['limits']=['Native RoPE vectors are reconstructed from actual normalized Q/K using the same production scalar arithmetic; actual pooled/full block byte closure is separately required.','Earliest differing stage isolates a boundary only; direct same-input interventions precede any unique operator/dispatch claim.','Source runs only prefill plus one sample; source654 EOS/native1536 cap remain the unchanged frozen decoded evidence.','No production source change, default promotion, F32 model or full decoded rerun.']

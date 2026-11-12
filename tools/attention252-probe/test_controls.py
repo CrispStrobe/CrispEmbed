@@ -21,6 +21,12 @@ class Controls(unittest.TestCase):
   self.assertNotIn('unsupported-strides',m.HELPER);self.assertIn('GGML_TYPE_F16',m.HELPER)
   self.assertIn('n==0)',m.HELPER);self.assertNotIn('n==31',m.HELPER)
   self.assertIn('kq_soft_max-3',m.STAGES);self.assertIn('Qcur_normed-3',m.STAGES)
+ def test_duplicate_source_labels_only_disambiguate_raw_callbacks(self):
+  before='    cb(Qcur_full, "Qcur_full", il);\n    cb(Kcur, "Kcur", il);\n    cb(Vcur, "Vcur", il);\nCALL_COMPUTATION();\n    cb(Kcur, "Kcur", il);\n    cb(Vcur, "Vcur", il);'
+  after=patch.disambiguate(before)
+  self.assertEqual(after.replace('"Kcur_raw"','"Kcur"').replace('"Vcur_raw"','"Vcur"'),before)
+  self.assertEqual(after.count('cb(Kcur, "Kcur", il)'),1);self.assertEqual(after.count('cb(Vcur, "Vcur", il)'),1)
+  with self.assertRaises(ValueError):patch.disambiguate(before+'\ncb(Kcur, "Kcur", il)')
  def test_stride_aware_f16_reader(self):
   with tempfile.TemporaryDirectory()as d:
    p=Path(d);(p/'stage.bin').write_bytes(struct.pack('<6e',1,2,99,3,4,99))
