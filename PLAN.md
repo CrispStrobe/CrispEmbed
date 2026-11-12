@@ -582,8 +582,10 @@ observer both off and on. It captures one auxiliary two-token graph, four actual
 prompt graphs and one row-405 graph; the auxiliary graph is not prompt data.
 The [native trace](tests/results/qwen35-ocr/lightonocr3-4b-book-native405/v1/receipt.json)
 also reproduced all 1,536 previous planner-on rows and outputs with its observer
-enabled. A shape-checked stage comparison remains pending; neither capture
-qualifies the model.
+enabled. The [aligned 185-stage comparison](docs/lighton4b-planner-common-prefix-audit.md)
+finds the first recorded difference in SwiGLU at both first-chunk prefill and
+row 405, but no matching native image-chunk operators or persistent caches were
+captured. Neither capture nor this comparison qualifies the model.
 
 The [artifact-only repetition/EOS audit](docs/lighton4b-book-repetition-eos.md)
 finds repeated longer windows in the capped planner-on trajectory, with no EOS
