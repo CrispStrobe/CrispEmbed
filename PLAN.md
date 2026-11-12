@@ -1,5 +1,16 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## LightOn4B source-prefill integration repair — 12 November 2026
+
+Current `c364feb97` retains historical planner helper/tests but lacks the runtime
+modality schedule, cache-policy identity and CMake targets present at `a61642056`.
+The isolated repair restores those exact hooks, preserving subsequent Ovis GPU
+sources and the current iOS build guard. The probe now exits through
+`core_util::clean_exit`. Gate remains default-off; historical decoded receipts
+qualify their historical sources only. Diff/format review passes; current-source
+compilation, synthetic controls and model replay are pending on Kaggle while
+its authenticated API is unresponsive. No default/release/parity claim.
+
 ## LightOn4B newer graph applicability — 12 November 2026
 
 The [source assessment](docs/lighton4b-qwen35-graph-applicability.md) at
