@@ -238,11 +238,42 @@ bool ggml_pipeline::init(const decoder_weights & dw, const vision_weights & vw, 
         matrices.erase(std::unique(matrices.begin(), matrices.end()), matrices.end());
         p.weight_ctx = ggml_init({ (matrices.size() + 1) * ggml_tensor_overhead(), nullptr, true });
         if (!p.weight_ctx) return false;
-        for (auto * t : matrices) p.device[t] = ggml_dup_tensor(p.weight_ctx, t);
+        // Precision gates (default off): F32 device copies of the vision and/or decoder matrices, so the
+        // backend multiplies in F32 instead of rounding the activations to the weight type (cuBLAS F16
+        // GEMM). Same values as the stored weights, widened exactly; the CPU backend path is unchanged.
+        std::set<const ggml_tensor *> widen;
+        if (core_env::on("CRISPEMBED_QWEN35_OCR_GPU_F32_VISION")) {
+            for (auto * t : { vw.patch, vw.merger_up, vw.merger_down }) widen.insert(t);
+            for (const auto & l : vw.layers)
+                for (auto * t : { l.qkv, l.out, l.up, l.down }) widen.insert(t);
+        }
+        if (core_env::on("CRISPEMBED_QWEN35_OCR_GPU_F32_DECODER"))
+            for (auto * t : matrices)
+                if (!widen.count(t)) {
+                    bool vision = t == vw.patch || t == vw.merger_up || t == vw.merger_down;
+                    for (const auto & l : vw.layers) vision |= t == l.qkv || t == l.out || t == l.up || t == l.down;
+                    if (!vision) widen.insert(t);
+                }
+        for (auto * t : matrices) {
+            const bool wide = widen.count(t) && t->type != GGML_TYPE_F32 && ggml_get_type_traits(t->type)->to_float;
+            p.device[t] = wide ? ggml_new_tensor(p.weight_ctx, GGML_TYPE_F32, GGML_MAX_DIMS, t->ne)
+                               : ggml_dup_tensor(p.weight_ctx, t);
+        }
         p.weight_buf = ggml_backend_alloc_ctx_tensors(p.weight_ctx, p.backend);
         if (!p.weight_buf) return false;
         ggml_backend_buffer_set_usage(p.weight_buf, GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
-        for (auto & e : p.device) ggml_backend_tensor_set(e.second, e.first->data, 0, ggml_nbytes(e.first));
+        for (auto & e : p.device) {
+            if (e.second->type == e.first->type) {
+                ggml_backend_tensor_set(e.second, e.first->data, 0, ggml_nbytes(e.first));
+                continue;
+            }
+            std::vector<float> wide(size_t(ggml_nelements(e.first)));
+            const int64_t row = e.first->ne[0], rows = ggml_nelements(e.first) / row;
+            for (int64_t r = 0; r < rows; ++r)
+                ggml_get_type_traits(e.first->type)
+                    ->to_float(static_cast<const char *>(e.first->data) + r * e.first->nb[1], wide.data() + r * row, row);
+            ggml_backend_tensor_set(e.second, wide.data(), 0, wide.size() * sizeof(float));
+        }
     }
 
     // Small F32 constants (norm weights, biases, decay factors, conv taps) and the states.

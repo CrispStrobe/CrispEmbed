@@ -168,6 +168,8 @@ alias in both the CLI and the HTTP server; both gates below are still required.
 | `CRISPEMBED_QWEN35_OCR_GPU` | off | OvisOCR2/3 and the other `qwen35_ocr` engines: run vision and decoder as standard-ggml-op graphs (`src/qwen35_ocr_gpu.cpp`; no CPU-only custom ops) on the preferred backend, with the matrices copied once to that backend. GPU (CUDA/Metal/Vulkan) when built and present, otherwise the CPU backend. Takes precedence over `CRISPEMBED_QWEN35_OCR_GRAPH_DECODER`. Not used while a stage observer is attached. |
 | `CRISPEMBED_QWEN35_OCR_GPU_LOG` | off | Print, once per graph kind (vision/prefill/decode), the scheduler placement: nodes on the backend, nodes elsewhere (by op) and split count. |
 | `CRISPEMBED_QWEN35_OCR_GPU_STRICT` | off | With a GPU backend, fail the call if any graph node is placed off the GPU (implies the placement log). |
+| `CRISPEMBED_QWEN35_OCR_GPU_F32_VISION` | off | With `CRISPEMBED_QWEN35_OCR_GPU` on a GPU backend: upload the vision matrices (patch, blocks, merger) as F32 so they multiply in F32 instead of rounding activations to F16. About +0.4 GB device memory. Precision bisect gate; see PERFORMANCE. |
+| `CRISPEMBED_QWEN35_OCR_GPU_F32_DECODER` | off | Same for the decoder matrices and LM head (about +1.5 GB device memory). |
 | `CRISPEMBED_MINICPM_OCR_VISION_F32` | on | Copy vision and projector matrices to F32 once at init (part of the ~3.3 GB higher peak RSS). `=0` opts out. |
 | `CRISPEMBED_MINICPM_OCR_LOW_MEMORY` | auto | Skip the default F32 copies (vision matrices and the `f32` graph-decoder matmul; F16 vision + `exact` matmul instead, token-exact on the measured panels) when available RAM < copies + 1 GiB, with one stderr notice. `=1` always, `=0` never checks. |
 | `CRISPEMBED_MINICPM_OCR_VISION_BATCH` | on | Run equally sized slices in one graph as independent sequences. `=0` opts out. |
@@ -282,7 +284,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-492 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+494 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -1216,6 +1218,8 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_QWEN35_OCR_GPU` | on | off | bool | default-off experimental / opt-in | `src/qwen35_ocr_gpu.cpp`, `src/qwen35_ocr_gpu.h` | core_env::on("CRISPEMBED_QWEN35_OCR_GPU"). |
+| `CRISPEMBED_QWEN35_OCR_GPU_F32_DECODER` | on | off | bool | default-off experimental / opt-in | `src/qwen35_ocr_gpu.cpp` |  |
+| `CRISPEMBED_QWEN35_OCR_GPU_F32_VISION` | on | off | bool | default-off experimental / opt-in | `src/qwen35_ocr_gpu.cpp` |  |
 | `CRISPEMBED_QWEN35_OCR_GPU_LOG` | on | off | bool | debug | `src/qwen35_ocr_gpu.cpp` |  |
 | `CRISPEMBED_QWEN35_OCR_GPU_STRICT` | on | off | bool | default-off experimental / opt-in | `src/qwen35_ocr_gpu.cpp` |  |
 
