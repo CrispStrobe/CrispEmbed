@@ -36,6 +36,43 @@ Coordinate the eventual minimal release with the independent GPU comparison
 repair; no release/version promotion, app repin or publication is part of this
 candidate checkpoint. Unrelated vendor and backend work remains untouched.
 
+One bounded private hosted Linux CPU job was submitted from a sealed patch over
+public base `c364feb974b91e14cbf328c6949f3df36e89ce81`, candidate
+`8a40b7b0b7950dab636d4ad9b70f08837884d376`. Remote source readback matches kernel
+SHA-256 `7c7e38894127499ae96f4d7acd419e99ce4d1d297bd6211747015dea68a4abbb`;
+CPU-only/private settings were verified. Source patch SHA-256 is
+`b7b685817ac592dadc68f652dc809e539bf184c195859a8a007b7e06f7a8b2f6`.
+The exact retained two-column PNG hash is
+`f404697c7cd511545be60b64a66e62687b281078661d0c6387fa79f0acbb4be4`.
+The batch runs immutable Linux v0.17.19, candidate-off and candidate-on against
+that PNG, the exact retained single-column PNG and a blank control (nine native
+runs maximum). It retains native review JSON/crops, decoded text, CER and
+geometry plus the exact application reading-order module replay. Baseline/off
+box absolute errors and decoded equality are separate controls. Admission requires
+8 GiB available RAM/12 GiB scratch; compilation uses two jobs with a 2700-second
+bound, and the entire batch is capped at 4500 seconds. Results are pending;
+this submission itself does not qualify the candidate.
+
+Android integration after review and successful decoded evidence:
+
+1. Review exact detector/crop geometry and final decoded text/CER on both arms;
+   require unchanged single-column/blank controls, and retain the failed arm if
+   the new path still misses the existing column/quality gates.
+2. Build a minimal release candidate from the immutable app runtime base plus
+   only reviewed, independently qualified fixes. Coordinate the GPU comparison
+   repair separately; do not absorb unrelated vendor main. Promote the gutter
+   default only after decoded A/B passes, preserving an explicit-off legacy arm.
+3. Apply the repository version/release procedure and required native/platform
+   checks, then publish an immutable qualified runtime after owner review.
+4. Repin CrispSorter to that exact release with source/artifact hashes; rebuild
+   the Android APK and obtain a new source-bound build receipt. Existing APKs
+   contain the old native implementation and cannot qualify the fix.
+5. Replay the retained full WebView flow with preserved pre-assertion quality
+   JSON and unchanged CER `0.25`, geometry, model-hash, export, recovery and
+   memory gates. Record actual Android results separately from Linux evidence.
+   Physical-device/provider/camera and diverse-corpus claims remain open.
+
+
 ## CrispSorter Ovis application-path control — 12 November 2026
 
 The [comparison receipt](tests/results/crispsorter-ovis-comparison-20261112.json)
