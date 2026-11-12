@@ -1,5 +1,21 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Plain release-source guard audit — 12 November 2026
+
+The [full/plain receipt](tests/results/plain-pytest-v01719-20261112.json) at
+`c364feb974b91e14cbf328c6949f3df36e89ce81` recorded 2,099 passes, 168 skips
+and seven guard failures; the shallow clone passed 2,032 with 242 skips. The
+first differing objects are release version metadata. Exactly six protected
+trees changed in `17775160484f24978020da136e7e0eb1f19fa05f`: `VERSION`,
+`Cargo.lock`, Rust package version manifests, Python package version and the
+Flutter version/changelog. The pre-release object of every amendment was checked
+against the previous exact pin; each successor is chained, not substituted.
+The [focused replay](tests/results/release-version-guard-controls-20261112.json)
+at `8174d03916994ad765f2daade6d9da9c6a485bae` passes 54/54 full-clone controls
+and 32 controls with 22 skips in a shallow clone. This is model-free test evidence;
+no runtime, decoded quality, frozen numerical budget or release status changes.
+
+
 ## OvisOCR2 speed follow-ups — 11 November 2026
 
 Both CPU default flips and the standard-ggml-op GPU port are done (HISTORY 11 November).

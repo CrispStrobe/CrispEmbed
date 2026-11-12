@@ -25,25 +25,28 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   retained 21/21 CPU consumer report was reviewed against the exact release/app
   pin ([receipt](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/releases/crispsorter-01719-consumer.json));
   this does not establish other platform parity.
-  [Model manager PR 55](https://github.com/CrispStrobe/CrispSorter/pull/55) and
-  [provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52) have failing
-  checks; [provider follow-up 56](https://github.com/CrispStrobe/CrispSorter/pull/56)
-  depends on 52 and upstream changes. Do not infer qualification from PR status.
+  [Model manager PR 55](https://github.com/CrispStrobe/CrispSorter/pull/55) remains
+  open; its [focused follow-up 58](https://github.com/CrispStrobe/CrispSorter/pull/58)
+  addresses build and installer-integrity failures. [Provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52)
+  merged after a targeted vendored-source conformance run; [follow-up 56](https://github.com/CrispStrobe/CrispSorter/pull/56)
+  remains open with Windows application test failures and a narrow retry queued.
 - **CrispMath:** source `2b9d0982a3fd780deb2ffd67835da3ce658dce27` sets
   `1.2.1+28` and retains its immutable CrispEmbed 0.17.15 pin. The
   [10 November inspection](https://github.com/CrispStrobe/CrispMath/actions/runs/42870085016)
   recorded build 28 as valid and awaiting external beta review; it did not claim
-  App Store submission. A later read-only inspection [run 43229069857](https://github.com/CrispStrobe/CrispMath/actions/runs/43229069857)
-  failed before any jobs started (workflow-file problem), so it provides no newer
-  store state. Physical-device coverage remains separate.
-- **Test hygiene:** the last recorded plain full-clone audit at `cd477abe` had
-  2,110 passed, 232 skipped and nine failures requiring frozen-guard replay;
-  shallow had one failure. The [initial current-source dispatch](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43228796357)
-  stopped before tests because its harness assumed a non-shallow checkout. The
-  [GitHub retry](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43230390891)
-  was cancelled while queued after the existing remote CPU audit was dispatched
-  at `c364feb97`. Its result is pending; retain actual failures and source rather
-  than assuming the historical count still applies.
+  App Store submission. A later [inspection](https://github.com/CrispStrobe/CrispMath/actions/runs/43229069857)
+  failed before any jobs started; the read-only [retry](https://github.com/CrispStrobe/CrispMath/actions/runs/43232521219)
+  is queued, so no newer store state is established. Physical-device coverage remains separate.
+- **Test hygiene:** the [release-source audit](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/plain-pytest-v01719-20261112.json)
+  at `c364feb97` recorded 2,099 passes, 168 skips and seven source-guard failures;
+  the shallow clone passed 2,032 with 242 skips. The first differences trace to
+  release-version metadata. Explicit chained amendments preserve the original
+  values and budgets; [focused controls](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/release-version-guard-controls-20261112.json)
+  passed 54/54 on a full clone and 32 with 22 skips on a shallow clone at
+  `8174d039`. This is model-free evidence, not runtime quality qualification.
+  The [initial GitHub dispatch](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43228796357)
+  failed before collection because its checkout was shallow; its queued retry
+  was cancelled in favor of the bounded remote CPU audit.
 
 
 ## PDF Craft adoption — 9 November 2026, feature branch
