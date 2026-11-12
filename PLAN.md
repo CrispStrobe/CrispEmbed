@@ -1,5 +1,14 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## LightOn4B newer graph applicability — 12 November 2026
+
+The [source assessment](docs/lighton4b-qwen35-graph-applicability.md) at
+`c364feb97` finds incompatible grouped heads, physical norms/decay and tiled
+output layout. Existing rejection/defaults remain. Next bounded lane: separately
+gated grouped-GDN standard-op component with original-module stage/cache replay
+on Kaggle before full decoder integration or decoded-quality claims. No inference
+or runtime release follows from this documentation review.
+
 ## OvisOCR2 speed follow-ups — 11 November 2026
 
 Both CPU default flips and the standard-ggml-op GPU port are done (HISTORY 11 November).
