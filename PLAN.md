@@ -18,6 +18,20 @@ rendered identity, seed, image, exact source substitution and string booleans.
 The reviewed corrections do not change runtime defaults or claim new GPU execution.
 Merge remains subject to checks on the updated PR head.
 
+## PR218 consumer audit and metadata correction — 12 November 2026
+
+PR218 is merged at `66492f7c48fdcce9f5aa17bb8fdb66213c1f9bf4`; its original
+head was `2ee15cda00e3d0901cc73c6d844215595be8ef49`. Independent review of the
+actual Kaggle `consumer/report.json` confirms `completed=true`, all 21 checks
+passing, app `b45dde889edb24bb2feabf80bbfbc24d510df328` and runtime
+`c364feb974b91e14cbf328c6949f3df36e89ce81`. The report SHA-256 is
+`a4c1f266f6e4ee783278c1dde4dcea18f8dee899c648a8b7e89277dba1b08a80`.
+Both OCR fixtures have CER 0; native/app licence refusal and per-model consent
+controls pass. This is bounded Linux CPU consumer evidence, not broad OCR quality.
+The separately restored metadata follows the tracked 0.17.18 account-placeholder
+template, uses string boolean settings and keeps CPU-only execution with no
+private dataset attachments. Mocked rendering/privacy checks require no new job.
+
 ## OvisOCR2 speed follow-ups — 11 November 2026
 
 Both CPU default flips and the standard-ggml-op GPU port are done (HISTORY 11 November).
