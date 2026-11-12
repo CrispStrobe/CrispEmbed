@@ -91,7 +91,11 @@ static int run(int argc, char ** argv) try {
         require(linear_grouped_cpu(w.linear, 16, b.input_norm.data(), 1, n, 4, offset ? previous.conv.data() : nullptr,
                                    offset ? previous.recurrent.data() : nullptr, l, &cache_owner),
                 "same-input production projected GDN replay");
-        require(l.attention == b.attention && l.core.state == b.cache.recurrent && l.core.conv_history == b.cache.conv,
+        auto bits = [](const std::vector<float> & a, const std::vector<float> & b) {
+            return a.size() == b.size() && !std::memcmp(a.data(), b.data(), a.size() * sizeof(float));
+        };
+        require(bits(l.attention, b.attention) && bits(l.core.state, b.cache.recurrent) &&
+                    bits(l.core.conv_history, b.cache.conv),
                 "duplicate GDN actual block/cache exact");
         auto append = [&](const char * name, const std::vector<float> & x) {
             auto & v = whole[name];
