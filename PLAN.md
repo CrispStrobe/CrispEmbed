@@ -1,5 +1,17 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## CrispSorter model-manager live control — 12 November 2026
+
+The [hosted Linux receipt](tests/results/crispsorter-model-manager-live-20261112.json)
+records exact app source `8138f0b887ee566e87d7e1552135f921d04f3ccb`, the immutable
+CrispEmbed source and sibling pins, executor and raw-report hashes. Model-manager
+controls passed 29 tests (one ignored); Paddle controls passed eight (one ignored).
+The separately invoked live control downloaded the pinned small models, resumed a
+partial HTTP download, checked hashes and recognized the fixture: one passed.
+An earlier worker stopped before app compilation because protobuf standard includes
+were missing; its later corrected worker produced this receipt. This does not
+qualify subsequent app commits or other platforms.
+
 ## Windows full-text repair follow-up — 12 November 2026
 
 CrispSorter run [43235808370](https://github.com/CrispStrobe/CrispSorter/actions/runs/43235808370)

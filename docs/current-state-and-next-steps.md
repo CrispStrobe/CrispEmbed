@@ -27,7 +27,11 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   this does not establish other platform parity.
   [Model manager PR 55](https://github.com/CrispStrobe/CrispSorter/pull/55) remains
   open; its [focused follow-up 58](https://github.com/CrispStrobe/CrispSorter/pull/58)
-  was incorporated, addressing build and installer-integrity failures. [Provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52)
+  was incorporated, addressing build and installer-integrity failures. At the
+  earlier source `8138f0b8`, hosted Linux [controls](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/crispsorter-model-manager-live-20261112.json)
+  passed 29 model-manager and eight Paddle tests, plus a separate live install,
+  resume and recognition test. Later app revisions still need their own gate.
+  [Provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52)
   merged after a targeted vendored-source conformance run. [Follow-up 56](https://github.com/CrispStrobe/CrispSorter/pull/56)
   merged as `7d6032bd15aded92bebb5c59b5f83f441d68ad64` using the reviewed
   upstream provider source. The earlier Windows application suite had two

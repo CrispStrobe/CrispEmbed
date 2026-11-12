@@ -1,0 +1,32 @@
+{
+  "schema": "crispsorter-model-manager-live-v1",
+  "tested_source": "8138f0b887ee566e87d7e1552135f921d04f3ccb",
+  "crispembed_source": "c364feb974b91e14cbf328c6949f3df36e89ce81",
+  "crispasr_ref": "v0.8.32",
+  "docx_source": "ddf7830d8d92e6b59b10874d144a59f163a256e1",
+  "rustc": "1.99.1",
+  "features": [
+    "desktop",
+    "crispembed",
+    "pdf-zpdf",
+    "paddle-ocr"
+  ],
+  "executor_sha256": "4f9076cee61cae8c6b205de142ebb776ae706ce7c75f7a79d13d18ca4521df27",
+  "raw_report_sha256": "6c82cfd8768214dce93f98c226265d7006e67ed8ee8fc60687d1ccdf01fef59d",
+  "raw_log_sha256": "8980a060cbe2e5d221004bfd12a4e4c40dabaa4a297e06a264185fffb7d2d785",
+  "manager_controls": {
+    "passed": 29,
+    "failed": 0,
+    "ignored": 1
+  },
+  "paddle_controls": {
+    "passed": 8,
+    "failed": 0,
+    "ignored": 1
+  },
+  "live_install_resume_recognition": {
+    "passed": 1,
+    "failed": 0
+  },
+  "scope": "Hosted Linux only, pinned app source; not a qualification of a later app revision or other platforms."
+}
