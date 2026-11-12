@@ -4,6 +4,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -12,34 +13,43 @@
 #include <memory>
 #include <new>
 #include <stdexcept>
+#include <thread>
 // Fail exactly the next C++ allocation to exercise helper exception containment.
-static bool fail_next_allocation = false;
+static std::atomic_bool fail_next_allocation{ false };
 void * operator new(std::size_t bytes) {
-    if (fail_next_allocation) { fail_next_allocation = false; throw std::bad_alloc(); }
+    if (fail_next_allocation.exchange(false)) throw std::bad_alloc();
     if (void * p = std::malloc(bytes ? bytes : 1)) return p;
     throw std::bad_alloc();
 }
 void operator delete(void * p) noexcept { std::free(p); }
 void operator delete(void * p, std::size_t) noexcept { std::free(p); }
 using namespace qwen35_ocr;
+static void gate(const char * name, const char * value) {
+#ifdef _WIN32
+    _putenv_s(name, value ? value : "");
+#else
+    if (value) setenv(name, value, 1);
+    else unsetenv(name);
+#endif
+}
 static void need(bool ok, const char * why) { if (!ok) throw std::runtime_error(why); }
 static bool bits(const std::vector<float> & a, const std::vector<float> & b) {
     return a.size() == b.size() && !std::memcmp(a.data(), b.data(), a.size() * sizeof(float));
 }
 static int run() try {
     const char * flag = "CRISPEMBED_LIGHTON4B_PHYSICAL_ROPE";
-    unsetenv(flag);
+    gate(flag, nullptr);
     need(!lighton4b_physical_rope_mode(true), "default off");
     for (const char * value : { "", "0", "false", "FaLsE", "off", "OFF", "no" }) {
-        setenv(flag, value, 1);
+        gate(flag, value);
         need(!lighton4b_physical_rope_mode(true), "false aliases");
     }
-    setenv(flag, "1", 1);
+    gate(flag, "1");
     need(!lighton4b_physical_rope_mode(false), "nonphysical isolation");
-    setenv("CRISPEMBED_QWEN35_OCR", "1", 1);
-    setenv("CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL", "1", 1);
+    gate("CRISPEMBED_QWEN35_OCR", "1");
+    gate("CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL", "1");
     for (const char * key : { "CRISPEMBED_LIGHTON4B_BF16_LINEAR", "CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS",
-                              "CRISPEMBED_LIGHTON4B_HEAD_BF16" }) setenv(key, "0", 1);
+                              "CRISPEMBED_LIGHTON4B_HEAD_BF16" }) gate(key, "0");
     if (!lighton4b_physical_f16_attention_available()) {
         need(!lighton4b_physical_rope_valid(true), "unsupported rejects");
         std::puts("PHYSICAL_ROPE_UNSUPPORTED_GUARD PASS"); return 0;
@@ -92,6 +102,16 @@ static int run() try {
             joined.insert(joined.end(), result.begin(), result.end()); start += count;
         }
         need(bits(actual, joined), "chunk exact explicit positions");
+        // Separate invocations own their graph/backend/axes; no mutable shared cache.
+        std::vector<float> parallel_a, parallel_b;
+        bool accepted_a = false, accepted_b = false;
+        std::thread worker_a([&] { accepted_a = lighton4b_physical_rope_cpu(
+            input, c, positions.data(), n, heads, threads, parallel_a); });
+        std::thread worker_b([&] { accepted_b = lighton4b_physical_rope_cpu(
+            input, c, positions.data(), n, heads, threads, parallel_b); });
+        worker_a.join(); worker_b.join();
+        need(accepted_a && accepted_b && bits(actual, parallel_a) && bits(actual, parallel_b),
+             "concurrent independent calls exact");
         for (int t = 0; t < n; ++t) for (int h = 0; h < heads; ++h)
             need(!std::memcmp(input.data() + (t * heads + h) * 256 + 64,
                               actual.data() + (t * heads + h) * 256 + 64, 192 * 4), "unrotated tail exact");
@@ -105,9 +125,9 @@ static int run() try {
         input[0] = std::numeric_limits<float>::quiet_NaN(); rejected(); input[0] = 0;
         for (const char * key : { "CRISPEMBED_LIGHTON4B_BF16_LINEAR", "CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS",
                                   "CRISPEMBED_LIGHTON4B_HEAD_BF16" }) {
-            setenv(key, "1", 1); rejected(); setenv(key, "0", 1);
+            gate(key, "1"); rejected(); gate(key, "0");
         }
-        setenv(flag, "off", 1); rejected(); setenv(flag, "1", 1);
+        gate(flag, "off"); rejected(); gate(flag, "1");
     }
     std::puts("PHYSICAL_ROPE source-node/chunk/tail/position/profile controls PASS"); return 0;
 } catch (const std::exception & e) { std::fprintf(stderr, "%s\n", e.what()); return 1; }
