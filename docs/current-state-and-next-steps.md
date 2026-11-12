@@ -24,9 +24,13 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   [direct diagnostic](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/crispsorter-ovis-diagnostic-20261112.json)
   confirmed the native image patch limit rejected a real page before vision,
   while a small control decoded identically on CPU and GPU. The app treated the
-  native error as an empty success. This does not qualify real-page quality or
-  justify relaxing the input gate; error propagation requires a qualified runtime
-  and a rebuilt consumer.
+  native error as an empty success. [Runtime PR 227](https://github.com/CrispStrobe/CrispEmbed/pull/227)
+  merged as `2d2ab3275022e095f4a8f580e276bb2e3aa3f59c`: Linux CPU tests
+  cover HTTP and production Python/Dart bindings, and an earlier native source
+  passed strict T4 controls. A default-off Tesseract gutter candidate reached
+  CER 0 on the tested two-column fixture after the historical reading order;
+  single-column and blank controls were unchanged. This is not broad quality or
+  Android qualification. No runtime release or consumer repin has been made.
 - **CrispSorter:** main `02d372b0` pins CrispEmbed 0.17.19 and includes OCR
   document review, consolidated PDF editing and search/storage work. CPU consumer
   [PR 218](https://github.com/CrispStrobe/CrispEmbed/pull/218) merged after its
@@ -41,7 +45,8 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   resume and recognition test. A second [hosted Linux control](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/crispsorter-model-manager-head-20261112.json)
   passed the same 29 manager, eight Paddle and one live test at `b34c6f83`;
   the next PR commit changes Android smoke utilities and documentation only.
-  Merged-base integration and other platforms still need their own gates.
+  [App typecheck](https://github.com/CrispStrobe/CrispSorter/actions/runs/43295346396)
+  passed at `98331a43`; later Android and merged-base evidence remain separate.
   [Provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52)
   merged after a targeted vendored-source conformance run. [Follow-up 56](https://github.com/CrispStrobe/CrispSorter/pull/56)
   merged as `7d6032bd15aded92bebb5c59b5f83f441d68ad64` using the reviewed
