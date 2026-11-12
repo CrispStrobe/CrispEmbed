@@ -552,6 +552,17 @@ required for reviewing the CPU consumer source and retained evidence.
 
 The current cross-repository release and LightOn4B provisional failure evidence, exact sources and preservation constraints are summarized in [the current state](docs/current-state-and-next-steps.md). The Q6 corrected and planner-only panels remain negative; neither warrants default, alias or release promotion. Current main retains the planner helper and historical test but omits their runtime hooks and cache fields; a separate restoration is in progress and unvalidated. Historical planner evidence remains bound to its original source. This documentation checkpoint changes no runtime version.
 
+## LightOn4B source-prefill integration repair — 12 November 2026
+
+Current `c364feb97` retains historical planner helper/tests but lacks the runtime
+modality schedule, cache-policy identity and CMake targets present at `a61642056`.
+The isolated repair restores those exact hooks, preserving subsequent Ovis GPU
+sources and the current iOS build guard. The probe now exits through
+`core_util::clean_exit`. Gate remains default-off; historical decoded receipts
+qualify their historical sources only. Diff/format review passes; current-source
+compilation, synthetic controls and model replay are pending on Kaggle while
+local Python startup is blocked on filesystem I/O. No default/release/parity claim.
+
 ## LightOn4B newer graph applicability — 12 November 2026
 
 The [source assessment](docs/lighton4b-qwen35-graph-applicability.md) at
