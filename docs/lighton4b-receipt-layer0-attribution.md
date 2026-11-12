@@ -90,3 +90,23 @@ using shared synthetic quantized weights, including mode-toggle recovery and
 active/inactive nested cache contamination. These are model-free controls.
 Fresh frozen observed/fixed decoded A/B remains pending; component equality
 does not waive either earlier decoded negative or provisional-label limits.
+
+The [fresh observed decoded panel](../tests/results/lighton4b/receipt-layer0-operators/aligned-observed.json)
+completes all six arms at producer receipt
+`68c94b15b247527685108ce3871714cc08b8e29ccb4253a60885ac1c8cbc5435` and
+outer receipt `27797fe2a5bc80b053184c015ad1f86ec740d82f930a59be54c23d1a1cdccad5`.
+All historical RoPEON OFF rows/stages/summary/actual chunk plans close; ON keeps
+table282/form170/Arabic6 IDs, text and EOS unchanged. All96 paired prefill layers
+are byte-exact, and all458 paired greedy-row hashes match. All three original
+quantized-source floors pass. The original BF16 table348-character/97-word and
+form189-character/46-word regressions remain unchanged; Arabic stays exact.
+These cases already had aligned source row groups, so this panel supplies a
+regression control rather than evidence of receipt improvement.
+
+The1467 recorded artifacts total5,467,412,904bytes, including the unchanged
+4,041,905,760-byte physical quantized model at `843e66c3…`, retained privately for
+the fixed continuation. Independent review is small-report/manifest scoped;
+no new full raw/model inventory audit is claimed. The1239.34-second worker is
+not inference-performance evidence. The next fixed panel is declared receipt
+OFF/ON first, then book OFF/ON and inventory OFF/ON, with original references,
+seals, scorer, caps and floors. Only its exact observed receipt binding is new.

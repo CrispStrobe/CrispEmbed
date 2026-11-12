@@ -8,7 +8,7 @@ def load(name,path):
 shared=load('fixed_shared',ROOT/'tools/q6-tiled-full-ab/worker.py');base=shared.base;require=shared.require;sha=shared.sha
 sys.path.insert(0,str(ROOT/'tools/heldout'));import execution as ex
 GATE='CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL_ALIGNED'
-CFG_SHA='396e2c2c740f015c3603315eaadf17f443ec87508895583e2e3c425b5fab2803'
+CFG_SHA='96e7b520ae5b7b14982a0db24470aeefa08a17b02111df2bbd68ce122de11038'
 def admit(path):
  require(sha(path)==CFG_SHA,'immutable fixed regression protocol');cfg=json.loads(Path(path).read_text());require(isinstance(cfg['observed_receipt_sha256'],str)and len(cfg['observed_receipt_sha256'])==64,'freeze observed receipt before fixed execution');require([case['id']for case in cfg['cases']]==cfg['case_order']==['historical-receipt','two-column-page','inventory-table']and cfg['arm_order']==[name+'/'+arm for name in cfg['case_order']for arm in ['off','on']]and cfg['continue_after_decoded_negative'],'predeclared receipt-first six-arm order');selection=ROOT/'docs/lighton4b-heldout-v1.json';require(sha(selection)==cfg['selection_protocol_sha256'],'unchanged selection');selected=json.loads(selection.read_text());ex.prepare.admit(selected)
  require(sha(ROOT/'docs/lighton4b-heldout-executor-v1.json')==cfg['frozen_executor_sha256'],'unchanged original model/reference protocol')

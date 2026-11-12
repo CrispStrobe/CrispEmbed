@@ -94,7 +94,7 @@
   "continue_after_decoded_negative": true,
   "observed_tradeoff": "Predeclared source floors/EOS pass and source IDs are exact on all3 observed cases, but table/form character/word edits worsen against the frozen BF16/original baseline. Fixed panel is diagnostic; no promotion.",
   "prior_rope_candidate_source": "a8a22749ab0b757ae1f317b6fa5b84ffd148b939",
-  "observed_receipt_sha256": null,
+  "observed_receipt_sha256": "68c94b15b247527685108ce3871714cc08b8e29ccb4253a60885ac1c8cbc5435",
   "native_binary_sha256": "046a34d094dff2334e474da7d4a8db9ba98bc8bc437fdc570e1d6d4ca8233d0a",
   "retained_model_reuse_required": true,
   "model_acquisition_allowed": false,
