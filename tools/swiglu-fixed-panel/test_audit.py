@@ -38,6 +38,14 @@ class AuditControls(unittest.TestCase):
   with self.assertRaises(ValueError):audit.compare_derived(actual,expected)
   actual=dict(expected);actual['max_abs']+=math.ulp(2.)
   with self.assertRaises(ValueError):audit.compare_derived(actual,expected)
+ def test_partial_inventory_is_exact_and_fail_closed(self):
+  def fixture():
+   return dict(status='failed',phase='inventory-table-preflight',error_type='RuntimeError',error='per-arm resources/seal',cases={'historical-receipt':{'arms':{'off':{},'on':{}}},'two-column-page':{'arms':{'off':{},'on':{}}},'inventory-table':{'arms':{}}},commands={name+'-'+arm:{'status':'completed','returncode':0}for name in ['historical-receipt','two-column-page']for arm in ['off','on']},artifacts={str(i):{'bytes':5443427617 if i==0 else 0}for i in range(590)})
+  expected={'historical-receipt','two-column-page'};self.assertEqual(audit.partial_inventory(fixture(),audit.PARTIAL_RECEIPT_SHA),expected)
+  with self.assertRaises(ValueError):audit.partial_inventory(fixture(),'0'*64)
+  for mutate in [lambda r:r.update(status='measured_swiglu_fixed_regression_panel'),lambda r:r.update(phase='other'),lambda r:r['cases']['inventory-table']['arms'].update(off={}),lambda r:r['commands'].update({'inventory-table-off':{'status':'completed','returncode':0}}),lambda r:r['commands']['two-column-page-on'].update(returncode=1),lambda r:r['cases']['historical-receipt']['arms'].pop('on'),lambda r:r['artifacts'].pop('589')]:
+   r=fixture();mutate(r)
+   with self.assertRaises(ValueError):audit.partial_inventory(r,audit.PARTIAL_RECEIPT_SHA)
  def test_no_ignored_earlier_eos(self):
   s=dict(generated_tokens=2,cap=1536,eos=True,upstream_physical=True,source_fed_vision=False,teacher_positions=1,physical_source_prefill_chunks=True,physical_q6_tiled=True,physical_q4_repack=True,physical_repack_entries=216,physical_repack_bytes=1662861312,converted_f32_weight_entries=0,converted_f32_weight_bytes=0,prompt_tokens=86,image_tokens=72)
   audit.actual_summary(s,[7,248046],1536)
