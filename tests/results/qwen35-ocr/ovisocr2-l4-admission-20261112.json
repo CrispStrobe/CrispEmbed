@@ -1,0 +1,11 @@
+{
+ "sha": "33ec2e2505b4fb7bc4169162c07d2f83996fb1ae",
+ "threads": 4,
+ "runs": [],
+ "steps": [],
+ "gpu": "",
+ "device_admitted": false,
+ "skip_reason": "requested second-architecture GPU was not allocated",
+ "elapsed_s": 0.0,
+ "error": "SystemExit('L4 required; device allocation did not match')"
+}

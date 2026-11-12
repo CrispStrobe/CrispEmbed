@@ -1,0 +1,31 @@
+{
+  "schema": "release-frozen-guard-controls-v1",
+  "tested_source": "8174d03916994ad765f2daade6d9da9c6a485bae",
+  "raw_report_sha256": "b3ccce458a80c08b3e458b98861b823148ef4427f46eda6a8455ce772da9071b",
+  "rendered_worker_sha256": "539ed1d454c04f1742b07d5ad9944f3598fe685c4bff9f37f0e08e9ccdad9dd1",
+  "worker_source": "tools/kaggle/crispembed-pytest-plain/kernel.py",
+  "scope": "Four model-free guard suites; no model inference, runtime quality or release qualification.",
+  "full": {
+    "exit": 0,
+    "line": "54 passed, 9 subtests passed in 8.12s",
+    "failed": [],
+    "errors": [],
+    "skip_reasons": {},
+    "counts": {
+      "passed": 54
+    }
+  },
+  "shallow": {
+    "exit": 0,
+    "line": "32 passed, 22 skipped in 3.33s",
+    "failed": [],
+    "errors": [],
+    "skip_reasons": {
+      "requires git commit(s) not in this clone (shallow?): <sha>": 22
+    },
+    "counts": {
+      "passed": 32,
+      "skipped": 22
+    }
+  }
+}
