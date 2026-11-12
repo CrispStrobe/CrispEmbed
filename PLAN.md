@@ -458,6 +458,13 @@ The launcher captures service output and reports generic failure categories; cac
 version messages are fixed text, and only an explicit missing-dataset response
 permits creation. This does not migrate the legacy templates below or test a live
 cache upload.
+## LightOn4B physical RoPE and receipt trace — 12 November 2026
+
+The [independently raw-audited fixed panel](docs/lighton4b-physical-rope-fixed-audit.md) completes all ON arms and meets two of three provisional source floors: book now reaches EOS in 654 tokens and matches the pinned source IDs, inventory passes, and receipt regresses to 25 character/19 word edits versus the source floor of 24/18. The observed panel also retains BF16-relative table and form regressions. Both experimental arithmetic gates remain default-off; this is not decoded-quality or release qualification.
+
+The [neutral receipt prefill trace](tests/results/lighton4b/receipt-prefill-trace/README.md) reproduces the frozen source first score, sample, vision output, positions and dispatch, with source/native input embeddings and positions exact. Its first compared hidden difference is image-prefill layer 0, row 232, before the layer 3 RoPE operation (RMS 9.7245843916e-7, maximum 7.8201293945e-5). The first differing operator has not yet been established. Next compare the actual source/native layer-0 operations and authenticated inputs, including the different chunk boundaries, before changing arithmetic; preserve observer limits, the initial capture-budget failure and all decoded negatives.
+
+
 ## LightOn4B fixed-panel negative — 12 November 2026
 
 The source-pinned SwiGLU panel completed receipt OFF/ON and book OFF/ON, then
