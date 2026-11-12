@@ -15,6 +15,15 @@ of inference. These results do not qualify Ovis real-page decoded quality or spe
 the input gate remains unchanged. A separately declared image preparation protocol
 and correct native error propagation are required before repeating the panel.
 
+## CrispSorter model-manager current source control — 12 November 2026
+
+The [hosted Linux receipt](tests/results/crispsorter-model-manager-head-20261112.json)
+records app `b34c6f8383e0dc1495f3a0bd4104520dbc0231a6`: 29 manager tests
+passed (one ignored), eight Paddle tests passed (one ignored), and the separately
+invoked live model install, HTTP resume and recognition test passed. The next PR
+commit changes Android smoke utilities and documentation only. This evidence does
+not qualify the later merged-base integration, Android or other platforms.
+
 ## CrispSorter model-manager live control — 12 November 2026
 
 The [hosted Linux receipt](tests/results/crispsorter-model-manager-live-20261112.json)

@@ -1,0 +1,32 @@
+{
+  "schema": "crispsorter-model-manager-live-v1",
+  "tested_source": "b34c6f8383e0dc1495f3a0bd4104520dbc0231a6",
+  "crispembed_source": "c364feb974b91e14cbf328c6949f3df36e89ce81",
+  "crispasr_ref": "v0.8.32",
+  "docx_source": "ddf7830d8d92e6b59b10874d144a59f163a256e1",
+  "rustc": "1.99.1",
+  "features": [
+    "desktop",
+    "crispembed",
+    "pdf-zpdf",
+    "paddle-ocr"
+  ],
+  "executor_sha256": "86150c7106341f8edb8420bf6c754feed0450b1d96d8268a267113a7e0213982",
+  "raw_report_sha256": "2d966f06b1c7542e6434d91428312f7cebef9322ae4c1e38f733db32d24fe701",
+  "raw_log_sha256": "b711cd8937b287aa6147319d44f734d44867b171f0e452aec6459a2bb76119dc",
+  "manager_controls": {
+    "passed": 29,
+    "failed": 0,
+    "ignored": 1
+  },
+  "paddle_controls": {
+    "passed": 8,
+    "failed": 0,
+    "ignored": 1
+  },
+  "live_install_resume_recognition": {
+    "passed": 1,
+    "failed": 0
+  },
+  "scope": "Hosted Linux at the pinned source. Later PR change modifies Android smoke utilities and documentation only; merged-base integration and other platforms remain separate gates."
+}
