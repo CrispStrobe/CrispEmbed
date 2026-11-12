@@ -575,6 +575,12 @@ for planner-off; neither observation alone explains the capped completion.
 Preserve private document text and IDs; compare source and native at the same
 prefix before claiming parity.
 
+The [artifact-only repetition/EOS audit](docs/lighton4b-book-repetition-eos.md)
+finds repeated longer windows in the capped planner-on trajectory, with no EOS
+decision in 1,536 rows. At shared-prefix row 405 the source and native EOS
+probabilities are both small; later divergent-prefix differences do not prove an
+EOS defect. Trace the actual shared-prefix hidden states before selecting a fix.
+
 ## LightOn4B newer graph applicability — 12 November 2026
 
 The [source assessment](docs/lighton4b-qwen35-graph-applicability.md) at
