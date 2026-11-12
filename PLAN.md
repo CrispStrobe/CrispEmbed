@@ -15,8 +15,8 @@ The missing OvisOCR2 bench metadata uses the existing account placeholder and
 attaches the ccache seed. Its ID and title preserve the existing
 `crispembed-ovisocr2-gpu-bench` slug; a mocked submission control checks the
 rendered identity, seed, image, exact source substitution and string booleans.
-These changes remain local for review; no push, merge,
-GPU execution, release or default change is authorized by this checkpoint.
+The reviewed corrections do not change runtime defaults or claim new GPU execution.
+Merge remains subject to checks on the updated PR head.
 
 ## OvisOCR2 speed follow-ups — 11 November 2026
 
