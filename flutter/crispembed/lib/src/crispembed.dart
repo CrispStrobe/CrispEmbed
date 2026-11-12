@@ -4321,6 +4321,16 @@ class CrispOcrOrchestrator {
 
     _runFn(_ctx, pathPtr, outN, outText, outConf);
 
+    final failed = outText.value == nullptr;
+    var error = 'OCR pipeline recognition failed';
+    if (failed && _lib.providesSymbol('crispembed_ocr_pipeline_last_error')) {
+      final lastError = _lib.lookupFunction<Pointer<Utf8> Function(Pointer<Void>),
+          Pointer<Utf8> Function(Pointer<Void>)>('crispembed_ocr_pipeline_last_error');
+      final detail = lastError(_ctx);
+      if (detail != nullptr && detail.toDartString().isNotEmpty) {
+        error = detail.toDartString();
+      }
+    }
     final n = outN.value;
     final text = outText.value != nullptr ? outText.value.toDartString() : '';
     final conf = outConf.value;
@@ -4330,6 +4340,7 @@ class CrispOcrOrchestrator {
     calloc.free(outText);
     calloc.free(outConf);
 
+    if (failed) throw StateError(error);
     return (text: text, nRegions: n, meanConfidence: conf);
   }
 

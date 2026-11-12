@@ -154,6 +154,15 @@ of inference. These results do not qualify Ovis real-page decoded quality or spe
 the input gate remains unchanged. A separately declared image preparation protocol
 and correct native error propagation are required before repeating the panel.
 
+A bounded [error propagation candidate](docs/ovisocr2-error-propagation.md) preserves
+native failure separately from valid blank/EOS text through the pipeline C API
+and consumer wrappers, with additive diagnostics and unchanged C layouts. Four
+stdlib-only Python controls pass; native model-free controls are added but not
+compiled locally. Hosted compilation, Rust/Dart checks, fallback/blank ownership
+controls and the same two-input candidate replay remain pending. No push,
+release/version change, image resizing or patch-gate waiver is authorized by the
+preparation result. The original consumer needs a separately qualified rebuild.
+
 ## CrispSorter model-manager current source control — 12 November 2026
 
 The [hosted Linux receipt](tests/results/crispsorter-model-manager-head-20261112.json)

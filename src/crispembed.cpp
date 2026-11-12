@@ -4934,6 +4934,13 @@ extern "C" void crispembed_ocr_model_free(void * ctx) {
     delete u;
 }
 
+extern "C" const char * crispembed_ocr_model_last_error(const void * ctx) {
+    if (!ctx) return "";
+    const auto * u = (const ocr_model *)ctx;
+    if (u->type == OCR_MODEL_QWEN35_OCR) return qwen35_ocr_last_error((const qwen35_ocr_context *)u->ctx);
+    return "";
+}
+
 extern "C" const char * crispembed_ocr_model_recognize(void * ctx, const uint8_t * px, int w, int h, int ch, int * ol) {
     if (!ctx) return nullptr;
     auto * u = (ocr_model *)ctx;
@@ -5831,8 +5838,16 @@ extern "C" const crispembed_ocr_result * crispembed_ocr_pipeline_run(void * ctx,
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;
     w->review_json.clear();
     w->has_run = false;
-    if (!image_path) return nullptr;
+    w->last = {};
+    w->full_text.clear();
+    w->markdown.clear();
+    w->c_results.clear();
+    if (!image_path) {
+        w->last.error = "OCR image path is NULL";
+        return nullptr;
+    }
     w->last = ocr_orchestrator::run_file(w->ctx, image_path);
+    if (!w->last.error.empty()) return nullptr;
     w->has_run = true;
     w->full_text = w->last.full_text;
     w->markdown = w->last.markdown;
@@ -5860,6 +5875,11 @@ extern "C" const crispembed_ocr_result * crispembed_ocr_pipeline_run(void * ctx,
     if (out_full_text) *out_full_text = w->full_text.c_str();
     if (out_mean_conf) *out_mean_conf = w->last.mean_confidence;
     return w->c_results.empty() ? nullptr : w->c_results.data();
+}
+
+extern "C" const char * crispembed_ocr_pipeline_last_error(void * ctx) {
+    if (!ctx) return "";
+    return ((ocr_pipeline_orch_wrapper *)ctx)->last.error.c_str();
 }
 
 extern "C" const int * crispembed_ocr_pipeline_reading_order(void * ctx, int * out_n) {

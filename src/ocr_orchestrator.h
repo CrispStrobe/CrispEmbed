@@ -162,6 +162,8 @@ config default_config();
 stage tesseract_fraktur_stage();
 
 struct result {
+    // Native recognition failure, distinct from a successful blank/EOS-only page.
+    std::string error;
     int page_width = 0;
     int page_height = 0;
     std::vector<ocr_pipeline::ocr_result> regions; // reading-order regions

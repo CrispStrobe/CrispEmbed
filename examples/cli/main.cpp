@@ -1714,6 +1714,12 @@ static int cli_main(int argc, char ** argv) {
         const crispembed_ocr_result * res =
             crispembed_ocr_pipeline_run(pctx, ocr_pipeline_path.c_str(), &n_res, &full_text, &mean_conf);
 
+        if (!full_text) {
+            fprintf(stderr, "error: OCR pipeline failed: %s\n", crispembed_ocr_pipeline_last_error(pctx));
+            crispembed_ocr_pipeline_free(pctx);
+            return 1;
+        }
+
         // An explicit review request emits one JSON object, without mixed
         // Markdown/status output. Existing text/JSON/render modes stay stable.
         if (output_format == "review-json") {

@@ -834,6 +834,9 @@ CRISPEMBED_API const float * crispembed_ocr_model_confidences(const void * ctx, 
 
 /// Mean confidence across all tokens from the last recognition.
 CRISPEMBED_API float crispembed_ocr_model_mean_confidence(const void * ctx);
+/// Last Qwen3.5/Ovis recognition error; empty when unavailable or no error.
+/// Owned by ctx, valid until the next recognition/free.
+CRISPEMBED_API const char * crispembed_ocr_model_last_error(const void * ctx);
 
 /// Override the maximum number of tokens the VLM engine will generate.
 /// No-op for formula OCR engines (pix2tex, HMER, BTTR, etc.) that use fixed
@@ -966,10 +969,16 @@ CRISPEMBED_API void * crispembed_ocr_pipeline_init(const crispembed_ocr_pipeline
 /// Run the full pipeline on an image. Returns the per-region results array
 /// (owned by ctx, valid until the next run/free) and, via out-params, the
 /// joined reading-order `full_text` (owned by ctx) and mean confidence.
+/// A NULL regions array with non-NULL empty full_text is a successful blank page.
+/// On a reported native failure, full_text remains NULL; see pipeline_last_error.
 CRISPEMBED_API const crispembed_ocr_result * crispembed_ocr_pipeline_run(void * ctx, const char * image_path,
                                                                          int * out_n_results,
                                                                          const char ** out_full_text,
                                                                          float * out_mean_confidence);
+
+/// Most recent reported native failure, or empty on success/before a run.
+/// Owned by ctx, valid until the next run/free. Does not change image-size gates.
+CRISPEMBED_API const char * crispembed_ocr_pipeline_last_error(void * ctx);
 
 /// Reading-order region indices from the most recent pipeline run.
 CRISPEMBED_API const int * crispembed_ocr_pipeline_reading_order(void * ctx, int * out_n);

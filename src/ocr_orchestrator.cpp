@@ -329,6 +329,7 @@ namespace ocr_orchestrator {
 
 struct context {
     config cfg;
+    std::string stage_error;
     int n_threads = 1;
     // Lazily-loaded engine + cleanup handles (loaded on first use).
     ocr_pipeline::context * dbnet = nullptr;        // DBNet detection + TrOCR recognition
@@ -1829,6 +1830,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         int len = 0;
         const char * t = qwen35_ocr_recognize_raw(
             selected, img, w, h, 3, st.params.vlm_prompt.empty() ? nullptr : st.params.vlm_prompt.c_str(), &len);
+        if (!t) {
+            const char * error = qwen35_ocr_last_error(selected);
+            ctx->stage_error = error && *error ? error : "qwen35 OCR recognition failed";
+        }
         int nconf = 0;
         const float * conf = qwen35_ocr_confidences(selected, &nconf);
         auto out = wrap_fulltext(t, w, h, conf, nconf, qwen35_ocr_mean_confidence(selected));
@@ -1887,6 +1892,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         int len = 0;
         const char * t = qwen35_ocr_recognize_raw(
             selected, img, w, h, 3, st.params.vlm_prompt.empty() ? nullptr : st.params.vlm_prompt.c_str(), &len);
+        if (!t) {
+            const char * error = qwen35_ocr_last_error(selected);
+            ctx->stage_error = error && *error ? error : "qwen35 OCR recognition failed";
+        }
         int nconf = 0;
         const float * conf = qwen35_ocr_confidences(selected, &nconf);
         auto out = wrap_fulltext(t, w, h, conf, nconf, qwen35_ocr_mean_confidence(selected));
@@ -1990,11 +1999,13 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
     case engine::unified: {
         if (!ctx->unified) {
             if (st.model_a.empty()) {
+                ctx->stage_error = "unified OCR stage missing model_a";
                 fprintf(stderr, "ocr_orchestrator: unified OCR stage missing model_a\n");
                 return {};
             }
             ctx->unified = crispembed_ocr_model_init(st.model_a.c_str(), ctx->n_threads);
             if (!ctx->unified) {
+                ctx->stage_error = "unified OCR model initialization failed";
                 fprintf(stderr, "ocr_orchestrator: unified OCR model load failed: %s\n", st.model_a.c_str());
                 return {};
             }
@@ -2014,6 +2025,11 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (!img) return {};
         int len = 0;
         const char * t = crispembed_ocr_model_recognize(ctx->unified, img, w, h, 3, &len);
+        if (!t) {
+            const char * error = crispembed_ocr_model_last_error(ctx->unified);
+            ctx->stage_error = error && *error ? error : "unified OCR recognition failed";
+            fprintf(stderr, "ocr_orchestrator: %s\n", ctx->stage_error.c_str());
+        }
         int nconf = 0;
         const float * conf = crispembed_ocr_model_confidences(ctx->unified, &nconf);
         auto out = wrap_fulltext(t, w, h, conf, nconf, crispembed_ocr_model_mean_confidence(ctx->unified));
@@ -2215,6 +2231,7 @@ static void build_markdown(result & r) {
 }
 
 static bool passes_gate(const result & r, const accept_gate & g) {
+    if (!r.error.empty()) return false;
     if ((int)r.full_text.size() < g.min_chars) return false;
     if (g.min_confidence > 0.0f && r.mean_confidence < g.min_confidence) return false;
     return true;
@@ -2500,6 +2517,8 @@ static void postprocess(context * ctx, result & r) {
 
 result run_file(context * ctx, const char * image_path) {
     result best;
+    bool any_success = false;
+    std::string last_error;
     if (!ctx || !image_path) return best;
     int input_width = 0, input_height = 0, input_channels = 0;
     stbi_info(image_path, &input_width, &input_height, &input_channels);
@@ -2641,7 +2660,13 @@ result run_file(context * ctx, const char * image_path) {
             loaded_px = stbi_load(ocr_path, &img_w, &img_h, &img_c, 3);
             img_px = loaded_px;
         }
+        ctx->stage_error.clear();
         result r = assemble(run_engine(ctx, s, ocr_path, img_px, img_w, img_h), s.eng, st);
+        r.error = ctx->stage_error;
+        if (r.error.empty())
+            any_success = true;
+        else
+            last_error = r.error;
         r.page_width = page_width;
         r.page_height = page_height;
         r.input_width = input_width;
@@ -2723,6 +2748,8 @@ result run_file(context * ctx, const char * image_path) {
     }
     if (!sr_path.empty()) std::remove(sr_path.c_str());
     best.stage_metrics = std::move(stage_metrics);
+    // A failed fallback must not discard an earlier valid result, including blank.
+    if (!any_success) best.error = std::move(last_error);
 
     if (verbose)
         fprintf(stderr, "ocr_orchestrator: all %d stages failed gate, returning best (%d chars)\n", tried,

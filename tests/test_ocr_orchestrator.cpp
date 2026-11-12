@@ -566,8 +566,9 @@ static void test_c_api() {
         const crispembed_ocr_result * res =
             crispembed_ocr_pipeline_run(ctx, path.c_str(), &n_res, &full_text, &mean_conf);
         CHECK(n_res == 0, "C API run with no models → 0 regions");
-        // full_text may be NULL or empty
-        CHECK(!full_text || full_text[0] == '\0' || n_res == 0, "C API run → empty text");
+        CHECK(full_text && full_text[0] == '\0', "valid no-text result retains non-NULL empty text");
+        CHECK(std::strcmp(crispembed_ocr_pipeline_last_error(ctx), "") == 0,
+              "no-text result is distinct from a reported native failure");
         int n_metrics = -1;
         const crispembed_ocr_stage_metric * metrics = crispembed_ocr_pipeline_stage_metrics(ctx, &n_metrics);
         CHECK(n_metrics >= 0, "C API stage metrics query succeeds");
@@ -918,6 +919,41 @@ static void test_punctuation() {
     crispembed_punct_free(pctx);
 }
 
+// Actual lazy-load failure must not pass a permissive accept gate or become a
+// successful blank result at the C boundary. No model or inference is needed.
+static void test_unified_failure_status() {
+    printf("── unified native failure status ──\n");
+    CHECK(std::strcmp(crispembed_ocr_pipeline_last_error(nullptr), "") == 0, "NULL diagnostic context is safe");
+    crispembed_ocr_stage stage{};
+    stage.engine = 14;
+    stage.model_a = "missing-ocr-status-fixture.gguf";
+    stage.min_chars = 0;
+    stage.min_confidence = 0;
+    void * ctx =
+        crispembed_ocr_pipeline_init_stages(0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, &stage, 1, 1);
+    CHECK(ctx != nullptr, "unified failure fixture initializes lazily");
+    if (!ctx) return;
+    CHECK(std::strcmp(crispembed_ocr_pipeline_last_error(ctx), "") == 0, "error is empty before recognition");
+    std::vector<uint8_t> pixels(32 * 32 * 3, 255);
+    const std::string path = write_temp(pixels, 32, 32, 3, "unified_status");
+    int count = 99;
+    const char * text = "stale";
+    float confidence = 1;
+    CHECK(crispembed_ocr_pipeline_run(ctx, path.c_str(), &count, &text, &confidence) == nullptr,
+          "missing unified model returns NULL results");
+    CHECK(count == 0 && text == nullptr && confidence == 0, "failure clears outputs and preserves NULL text sentinel");
+    CHECK(std::strstr(crispembed_ocr_pipeline_last_error(ctx), "initialization failed") != nullptr,
+          "native failure reason survives the C boundary");
+    int length = 99;
+    CHECK(crispembed_ocr_pipeline_review_json(ctx, &length) == nullptr && length == 0,
+          "failed recognition cannot expose a successful review snapshot");
+    crispembed_ocr_pipeline_run(ctx, nullptr, &count, &text, &confidence);
+    CHECK(std::strcmp(crispembed_ocr_pipeline_last_error(ctx), "OCR image path is NULL") == 0,
+          "next invalid request replaces the previous failure");
+    crispembed_ocr_pipeline_free(ctx);
+    std::remove(path.c_str());
+}
+
 static int crispembed_test_main() {
     test_default_config();
     test_fraktur_stage_profile();
@@ -929,6 +965,7 @@ static int crispembed_test_main() {
     test_per_stage_config();
     test_chain_selection();
     test_c_api();
+    test_unified_failure_status();
     test_edge_cases();
     test_tesseract_regression();
     test_tesseract_fraktur_regression();

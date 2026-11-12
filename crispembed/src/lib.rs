@@ -2957,13 +2957,12 @@ impl CrispOcrPipeline {
                 &mut mean_conf,
             )
         };
-        let full_text = if full_text_ptr.is_null() {
-            String::new()
-        } else {
-            unsafe { CStr::from_ptr(full_text_ptr) }
-                .to_string_lossy()
-                .into_owned()
-        };
+        if full_text_ptr.is_null() {
+            return Err("OCR pipeline recognition failed; see native diagnostics".into());
+        }
+        let full_text = unsafe { CStr::from_ptr(full_text_ptr) }
+            .to_string_lossy()
+            .into_owned();
         let mut order_n: std::os::raw::c_int = 0;
         let order_ptr = unsafe {
             crispembed_sys::crispembed_ocr_pipeline_reading_order(self.ctx, &mut order_n)
