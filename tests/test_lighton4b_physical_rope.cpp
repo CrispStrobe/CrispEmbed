@@ -69,6 +69,12 @@ static int run() try {
         const auto original_input = input;
         need(!lighton4b_physical_rope_cpu(input, c, positions.data(), n, heads, threads, input) &&
              bits(input, original_input), "alias rejects without mutation");
+        std::vector<float> overlapping_positions(positions.size() + 1, 123);
+        std::copy(positions.begin(), positions.end(), overlapping_positions.begin() + 1);
+        const auto original_positions = overlapping_positions;
+        need(!lighton4b_physical_rope_cpu(input, c, overlapping_positions.data() + 1,
+             n, heads, threads, overlapping_positions) && bits(overlapping_positions, original_positions) &&
+             bits(input, original_input), "positions/output overlap rejects without mutation");
         std::vector<float> failure_output{ 123 };
         fail_next_allocation = true;
         need(!lighton4b_physical_rope_cpu(input, c, positions.data(), n, heads, threads, failure_output) &&

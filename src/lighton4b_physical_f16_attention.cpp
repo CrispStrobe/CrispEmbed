@@ -1,6 +1,7 @@
 #include "lighton4b_physical_f16_attention.h"
 #include "lighton4b_physical_rope.h"
 #include <cstring>
+#include <cstdint>
 #include "qwen35_attention.h"
 #include <algorithm>
 #include <cmath>
@@ -172,8 +173,18 @@ bool lighton4b_physical_f16_attention_cpu(const std::vector<float> & queries, co
 bool lighton4b_physical_rope_cpu(const std::vector<float> & normalized, const attention_config & config,
                                   const float * positions, int tokens, int heads, int threads,
                                   std::vector<float> & rotated) {
-    // A rejected aliased call must preserve its input; ordinary failures clear output.
+    // Reject overlapping live source/output storage before clear can invalidate it.
+    // Invalid token counts cannot cause any position reads below.
     if (&normalized == &rotated) return false;
+    if (positions && tokens >= 1 && tokens <= 16 && !rotated.empty()) {
+        const uintptr_t source = reinterpret_cast<uintptr_t>(positions);
+        const uintptr_t destination = reinterpret_cast<uintptr_t>(rotated.data());
+        const size_t source_bytes = size_t(tokens) * 3 * sizeof(float);
+        const size_t destination_bytes = rotated.size() * sizeof(float);
+        const bool overlap = source <= destination ? destination - source < source_bytes
+                                                    : source - destination < destination_bytes;
+        if (overlap) return false;
+    }
     rotated.clear();
     try {
 #if defined(CRISPEMBED_LIGHTON4B_F16_SGEMM_ABI) && !defined(__EMSCRIPTEN__)

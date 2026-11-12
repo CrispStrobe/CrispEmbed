@@ -15,7 +15,8 @@ inline bool lighton4b_physical_rope_valid(bool physical) {
 // Source IMROPE, partial64/256 with sections11/11/10. Positions are explicit
 // axis-major [3][tokens]; the reserved fourth source axis is zero. No weights.
 // Supports physical caller chunks1..16. Outputs clear on failure and commit only
-// after a complete finite CPU result; aliased input/output rejects without mutation.
+// after a complete finite CPU result. Identical normalized/output objects or
+// overlapping live positions/output storage reject before mutation.
 bool lighton4b_physical_rope_cpu(const std::vector<float> & normalized, const attention_config & config,
                                   const float * positions, int tokens, int heads, int threads,
                                   std::vector<float> & rotated);
