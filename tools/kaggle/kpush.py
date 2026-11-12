@@ -2,7 +2,7 @@
 """Push a Kaggle kernel directory without hardcoding the Kaggle account.
 
 Kernel dirs under tools/kaggle/ carry the placeholder ${KAGGLE_ACCOUNT} in
-kernel-metadata.json (id, dataset_sources, kernel_sources, model_sources) and
+kernel-metadata.example.json (legacy templates use kernel-metadata.json) and
 may use it in the kernel's code file. This renders a temporary copy with the
 account from the environment and pushes that, authenticated with the token
 from the environment - nothing account- or token-specific is ever committed.
@@ -36,8 +36,44 @@ from pathlib import Path
 PLACEHOLDER = "${KAGGLE_ACCOUNT}"
 
 
+def metadata_path(source: Path) -> Path:
+    """An ignored local configuration overrides the immutable public example."""
+    local = source / "kernel-metadata.json"
+    if local.exists() or local.is_symlink():
+        if not local.is_file() or local.is_symlink():
+            sys.exit("kpush: local metadata must be a regular file")
+        return local
+    example = source / "kernel-metadata.example.json"
+    if not example.is_file() or example.is_symlink():
+        sys.exit("kpush: no regular metadata example or local configuration")
+    return example
+
+
 def render(text: str, account: str) -> str:
     return text.replace(PLACEHOLDER, account)
+
+
+def service_result(result, action, force_failure=False):
+    """Classify captured CLI output without echoing private service references."""
+    output = result.stdout + result.stderr
+    rc = result.returncode or (1 if force_failure else 0)
+    if not rc and re.search(r"push error|error:", output, re.I):
+        rc = 1
+    if rc:
+        if re.search(r"quota|maximum.*session|session.*limit|session.*count", output, re.I):
+            category = "resource limit"
+        elif re.search(r"unauthori|forbidden|credential|authenticat|permission|\b40[13]\b", output, re.I):
+            category = "authentication or permission"
+        elif re.search(r"not found|does not exist|\b404\b", output, re.I):
+            category = "missing resource"
+        elif re.search(r"timeout|timed out|connection|network|rate limit|\b429\b", output, re.I):
+            category = "network or rate limit"
+        else:
+            category = "service error"
+        print(f"{action} failed ({category}; exit {rc}).", file=sys.stderr, flush=True)
+    else:
+        print(f"{action} accepted.", flush=True)
+    return rc
 
 
 def main(argv):
@@ -59,9 +95,7 @@ def main(argv):
     token = os.environ.get("KAGGLE_TOKEN", "").strip()
     if not account or not token:
         sys.exit("kpush: set KAGGLE_ACCOUNT and KAGGLE_TOKEN (GitHub secrets / private env file)")
-    meta_path = src / "kernel-metadata.json"
-    if not meta_path.is_file():
-        sys.exit(f"kpush: no kernel-metadata.json in {src}")
+    meta_path = metadata_path(src)
     with tempfile.TemporaryDirectory(prefix="kpush-") as tmp:
         dst = Path(tmp) / src.name
         shutil.copytree(src, dst)
@@ -85,20 +119,17 @@ def main(argv):
         env = dict(os.environ, KAGGLE_API_TOKEN=token)
         r = subprocess.run([sys.executable, "-m", "kaggle", "kernels", "push", "-p", str(dst)] + argv[2:],
                            env=env, text=True, capture_output=True)
-        sys.stdout.write(r.stdout)
-        sys.stderr.write(r.stderr)
-        sys.stdout.flush()
-        rc = r.returncode
         # The kaggle CLI exits 0 on a refused push ("Kernel push error: Maximum
         # batch GPU session count ..."); without this --refresh-ccache would wait
         # on, and report, the previous version's output.
-        if not rc and re.search(r"push error|error:", r.stdout + r.stderr, re.I):
-            rc = 1
+        rc = service_result(r, "kpush: submission")
     if rc or not refresh:
         return rc
     time.sleep(30)  # let the new version register before polling its status
-    return subprocess.call([sys.executable, str(Path(__file__).with_name("ccache_refresh.py")),
-                            "--from-kernel", meta["id"], "--wait"], env=env)
+    refreshed = subprocess.run([sys.executable, str(Path(__file__).with_name("ccache_refresh.py")),
+                               "--from-kernel", meta["id"], "--wait"], env=env,
+                              text=True, capture_output=True)
+    return service_result(refreshed, "kpush: cache refresh")
 
 
 if __name__ == "__main__":

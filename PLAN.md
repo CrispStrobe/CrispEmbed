@@ -30,6 +30,17 @@ arms then failed after reopening: replay encountered an existing deletion file.
 This demonstrates a recovery defect under that injected failure, without proving
 what caused the original denial. No production fix or Windows-wide quality claim.
 
+## Launcher privacy controls — 12 November 2026
+
+A focused hosted CPU check of candidate `2c84b83c9e4e93729e2f1be82c50bac186eb206f`
+passed 12 launcher and cache-refresh tests (zero failures or errors). The runner
+verified the source and all four changed file hashes; its report SHA-256 is
+`f5e5a811e92490b017213ceb326a635b54ca8c180f4cc6cf9cc55f45569de321`.
+The launcher captures service output and reports generic failure categories; cache
+version messages are fixed text, and only an explicit missing-dataset response
+permits creation. This does not migrate the legacy templates below or test a live
+cache upload.
+
 ## Local kernel configuration privacy — 12 November 2026
 
 At source `4914f2df1`, all 77 tracked legacy metadata templates use account
