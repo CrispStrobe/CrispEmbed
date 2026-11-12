@@ -56,6 +56,7 @@ def analyze(source_path, native_path):
     require(s['source_sha'] == 'e3164d09de4578370082e42c5954a77a6cd643e3' and s['all654_scores_observer_neutral'], 'source neutrality')
     require(n['status'] == 'failed' and n['phase'] == 'inventory-table-preflight' and n['error'] == 'per-arm resources/seal', 'immutable partial negative')
     require(n['candidate_source'] == '519c3d9765c234cd93e9069d5efdc239e3cad3f2', 'fixed native source')
+    require(n['gates']['on']['CRISPEMBED_LIGHTON4B_PHYSICAL_SWIGLU'] == '1' and n['gates']['on']['CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL'] == '1', 'declared fused planner gates')
     sr, nr = Path(source_path).parent, Path(native_path).parent
     def source(g, name):
         rows = [x for x in s['graph_indexes'][g]['records'] if x['name'] == name]
@@ -125,7 +126,9 @@ def analyze(source_path, native_path):
             require(ci == nid[pos] and ri == sid[pos], 'actual greedy argmax closure')
             # Export margins only; private vocabulary IDs never enter the report.
             logits.append(dict(position=pos, same_input_prefix=True, argmax_same=ci==ri,
-                source_margin=float(r[ri]-r[ci]), candidate_margin=float(c[ci]-c[ri]), **delta(c,r)))
+                source_margin=float(r[ri]-r[ci]), candidate_margin=float(c[ci]-c[ri]),
+                source_top2_margin=float(np.partition(r,-2)[-1]-np.partition(r,-2)[-2]),
+                candidate_top2_margin=float(np.partition(c,-2)[-1]-np.partition(c,-2)[-2]), **delta(c,r)))
             if pos == 0:
                 require(raw == native('prefill.logits.f32').tobytes() == native('teacher.0.logits.f32').tobytes(), 'firstscore triple closure')
     return dict(schema='lighton4b-post-fused-source-trace/v1', status='measured-artifact-only',
