@@ -1,0 +1,50 @@
+{
+  "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "native_ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "source_url": "https://huggingface.co/richardyoung/LightOnOCR-3-4B-GGUF/resolve/8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01/LightOnOCR-3-4B-Q4_K_M.gguf",
+  "source_bytes": 2708804576,
+  "source_sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26",
+  "weights": [
+    {
+      "physical_name": "blk.0.ffn_down.weight",
+      "source_offset": 555561952,
+      "bytes": 19353600,
+      "source_packed_sha256": "ecaa1f50a85afde1ccc0bba5aefe5afd8de851698a02430ed770265941a9c11f",
+      "source_shape": [
+        9216,
+        2560
+      ],
+      "type": 14,
+      "sha256": "ecaa1f50a85afde1ccc0bba5aefe5afd8de851698a02430ed770265941a9c11f",
+      "whole_rows_permuted": 0,
+      "quant_blocks_unchanged": true,
+      "role": "down",
+      "file": "down.quant"
+    }
+  ],
+  "pack_receipt": {
+    "bytes": 483048,
+    "sha256": "920b4d5db276414bdd743fcc80a7ed1033ed1c0ca3b76859ef922aa667de9dee"
+  },
+  "schema": "lighton4b-book-second-swiglu-quant/v1",
+  "native_receipt_sha256": "d6501901252b1297b8f0293bf844cee4d1e477f320c99f8a926d3fc1c7736dbc",
+  "source_receipt_sha256": "4a9776508758866dbdcf02f41dfec94844230c7e215f72ef1061142834992dc4",
+  "historical_source": "a6164205620c71427a39c97ab386591406c4ca73",
+  "tokens": 16,
+  "image_rows": [
+    16,
+    32
+  ],
+  "total_timeout_seconds": 1800,
+  "model_forward_allowed": false,
+  "decoded_generation_allowed": false,
+  "adapter_hashes": {
+    "main.cpp": "3939f2f5fbc6bb0023541d463905448a0dfe2e92166cf44626ac7fba1ade0a4f",
+    "CMakeLists.txt": "00b6e5a201404bbba9d3a17db081b81b61d6659540b2f515cef2fe623c0be08d"
+  },
+  "helper_hashes": {
+    "lighton4b_physical_q6_tiled.cpp": "097955fe71ef054741bd946c7c94129b71ad820d6a18902d4db8034edc29b898",
+    "lighton4b_physical_q6_tiled.h": "bf965a7ddbf92a94ceb74a01d5f9c63ed26566e5507fd85e456f78198e2f2951",
+    "core/env_gate.h": "2370e31636ea25bc1e5ca63e1e606f4cd3c07c65e0f4d1347b2ec6daf57eaa0e"
+  }
+}

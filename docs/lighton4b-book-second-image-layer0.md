@@ -22,8 +22,6 @@ resulting layer0 hidden differs4.217493e-6 with the same maximum, reproducing th
 independently localized window spike. Source down RMS magnitude is0.0526088.
 
 This localizes the first large residual to the activation→quantized-down boundary,
-with earlier captured GDN/projection/normalization inputs exact. It does not yet
-prove which Q8_K converter scales/integer codes change or whether source-fed fused
-activation closes down output exactly. A bounded same-input operator/weight-range
-replay tests those causal interventions separately; no further full-model forward
-is needed. All prior numerical/decoded negatives and default-off gates remain.
+with earlier captured GDN/projection/normalization inputs exact. The subsequent [same-input operator replay](lighton4b-book-second-swiglu-quant.md)
+closes source-fed fused down output exactly and identifies 98 scale changes plus
+one integer-code change at image23; it requires no further full-model forward. All prior numerical/decoded negatives and default-off gates remain.

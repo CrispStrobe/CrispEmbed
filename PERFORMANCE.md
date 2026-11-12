@@ -8386,3 +8386,12 @@ max1.09219897/2.61007118, RMS0.200536951/0.545669734 and
 cosine0.996400595/0.978054762. All fail unchanged strict gates and retain
 Q8 `<figure`/Q4 `<table>` two-token prefixes. These source-pinned smoke paths
 are not full decoded parity or model qualification; both gates remain off.
+
+### 12 November 2026 — second-image FFN operator attribution
+
+The [closed replay](docs/lighton4b-book-second-swiglu-quant.md) measures scalar/fused
+activation RMS2.67390736e-9/max1.19209290e-7, amplified through public Q8_K rounding
+to actual Q6 down RMS4.21739905e-6/max8.72015953e-5 (source RMS0.05260878).
+Image23 down RMS is1.68695903e-5, source RMS0.05555850. Hosted157.733 seconds
+include two builds and bounded transport; no inference-speed or decoded-quality
+claim follows. All actual activation/down and12 forced-output closures pass.

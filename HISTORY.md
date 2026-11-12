@@ -22247,3 +22247,12 @@ MoEdern-Q4/Josev/UltraBERT accept14 or12 via `known_q4_k`; MoEdern-Q8/UltraBERT-
 require7; MI-GAN/latent-inpaint only test0 (F32); the LightOn4B Q4_K_M/Q6 recipe
 gates require15, but those files come from the upstream llama.cpp mixed-M recipe,
 not this writer. Python bindings and CrispSorter do not read the key.
+
+### 12 November 2026 — closed second-image SwiGLU/Q8 attribution
+
+The [bounded operator replay](docs/lighton4b-book-second-swiglu-quant.md) reproduces
+actual native scalar/source fused activations and both corresponding Q6 down
+outputs exactly. One integer rounding change at image23 accompanies98 Q8 scale
+changes;12 forced-output closures pass and57 selected artifacts are rehashed.
+Initial pre-build orchestration failure is preserved. No runtime or decoded
+quality change; all prior negatives remain binding.

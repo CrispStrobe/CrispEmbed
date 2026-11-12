@@ -575,6 +575,18 @@ decoded-quality claim follows from preparing this candidate.
 
 The current cross-repository release and LightOn4B provisional failure evidence, exact sources and preservation constraints are summarized in [the current state](docs/current-state-and-next-steps.md). The Q6 corrected and planner-only panels remain negative; neither warrants default, alias or release promotion. Main retains the planner helper and historical test but omits their runtime hooks and cache fields; an isolated restoration passed model-free controls, with model replay pending. Historical planner evidence remains bound to its original source. This documentation checkpoint changes no runtime version.
 
+## LightOn4B second-image FFN continuation — 12 November 2026
+
+The [closed operator replay](docs/lighton4b-book-second-swiglu-quant.md) reproduces
+actual native/source activation and down outputs exactly on identical gate/up.
+Scalar→fused SwiGLU changes98 Q8_K scale words and one integer code (image23,
+feature2703,10→11), reproducing down RMS4.217399e-6/max8.720160e-5. All12
+forced-code closures pass;57 selected small artifacts are independently rehashed.
+The initial controller-directory failure is preserved, before any operator work.
+No runtime change or full-model/decode forward. Any separate default-off fused
+candidate still needs disabled-path identity, exact source-fed stage/cache gates
+and unchanged decoded completion/content floors; existing negative evidence binds.
+
 ## LightOn4B source-prefill integration repair — 12 November 2026
 
 Current `c364feb97` retains historical planner helper/tests but lacks the runtime
