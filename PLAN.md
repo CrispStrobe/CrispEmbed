@@ -43,6 +43,27 @@ then execute corrected live HTTP, production Python/Dart memory controls and all
 six previously unreached model arms. Preserve both runtime and harness source
 identities. No publication or Android dispatch follows from this partial run.
 
+The first reuse continuation passed source/tree/ggml and all ten unchanged-code
+object checks, then stopped at [retained-input admission](tests/results/dbnet-line-gutters/2026-11-12/combined-retained-input-initial.json).
+The service readback contained zero kernel inputs despite one requested input;
+the failed build session's committed-output list was empty, while its separate
+latest-session output list contained 25 files including the bundle. A bounded
+range read confirmed the gzip header and exact 6,424,694-byte object size without
+downloading the runtime locally. No corrected HTTP/binding/model controls ran.
+
+A reviewed direct-transfer retry is now submitted with the same harness source
+`c08b9c0dd660217dc40a19285dfc113e7fd3a784` and compiled runtime source `9d2c876d0`.
+Its executor SHA-256 is
+`eed8611455b849a5f60836c2c990f2886d0ea12b39ebe220c2004e53780d2090`.
+It retrieves the one private session artifact remotely, requires exact size and
+SHA-256 before extraction/loading, and checks the native binary and build-report
+hashes plus unchanged source objects. The temporary transfer reference remains
+only in private staging. There is no native engine rebuild or platform input
+attachment. Admission is 4 GiB RAM/8 GiB scratch with an 1800-second total bound
+and six model calls maximum. Independent HTTP/binding failures preserve their
+evidence and still allow the model arms to finish; final failed comparisons exit
+nonzero. Results remain pending, without default/version/release/pin changes.
+
 Latest app source `ecb5a802` contains the separate `87f5181f` CC-before-recognition
 crop path. It can preempt the native DBNet grouping stage, so neither the earlier
 native/reading-order A/B nor this native integration job qualifies that new app

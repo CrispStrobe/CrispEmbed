@@ -1,0 +1,116 @@
+{
+  "schema": "combined-ocr-retained-input-admission-v1",
+  "source_commit": "c08b9c0dd660217dc40a19285dfc113e7fd3a784",
+  "base_commit": "97592ff9943f0ac98f0831195cdcb864de322bcc",
+  "tree": "d14b9d6c859a7eb1f870d76e48c79759c7ae58ab",
+  "ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "patch_sha256": "d275a7f11678d5c7ea5175423a0c08dcb7b7607848f6930cab794477b14174ce",
+  "checks": [
+    {
+      "label": "python-deps",
+      "returncode": 0
+    },
+    {
+      "label": "source-init",
+      "returncode": 0
+    },
+    {
+      "label": "source-fetch",
+      "returncode": 0
+    },
+    {
+      "label": "source-checkout",
+      "returncode": 0
+    },
+    {
+      "label": "source-patch",
+      "returncode": 0
+    },
+    {
+      "label": "source-tree",
+      "returncode": 0
+    },
+    {
+      "label": "submodule",
+      "returncode": 0
+    },
+    {
+      "label": "ggml-pin",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-src",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-examples",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-python",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-flutter",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-crispembed",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-crispembed-sys",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-cmake",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-CMakeLists.txt",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-ggml",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-VERSION",
+      "returncode": 0
+    }
+  ],
+  "candidate_qualified": false,
+  "threshold": 0.25,
+  "admission": {
+    "available_ram_bytes": 32710688768,
+    "scratch_free_bytes": 1038218964992,
+    "compile_jobs": 2,
+    "overall_seconds": 1800
+  },
+  "compiled_runtime_source_commit": "9d2c876d0bf694c95174cb9e87950c3362399ed6",
+  "error_type": "AssertionError",
+  "completed": false,
+  "status": "incomplete_artifact_admission_failure",
+  "kernel_sha256": "53b3915a031bf3859a6a394587ee3463083ad4a0247f2cae8aef8219b4e6a007",
+  "raw_report_sha256": "c9a6406524402734a4e5abcbb1156e6da036caf637075d42b4c2e8da94e0be72",
+  "service_observations": {
+    "requested_kernel_inputs": 1,
+    "readback_kernel_inputs": 0,
+    "committed_output_files": 0,
+    "latest_session_output_files": 25,
+    "bundle_listed": true,
+    "verified_range_status": 206,
+    "verified_range": "bytes 0-1/6424694",
+    "gzip_header_valid": true,
+    "only_two_binary_bytes_read_locally": true
+  },
+  "runtime_bundle_expected_sha256": "c7563984bf590b4fa6746b330aff7986f36fbc511a6733b1d001f21b439e118c",
+  "compiled_code_changed": false,
+  "native_model_inference_executed": false,
+  "corrective_transport": "Private latest-session artifact transfer, bounded size and SHA256 checked remotely before loading; private URL is never public evidence.",
+  "limits": [
+    "All 10 runtime code/header/wrapper/build object checks passed before input admission stopped.",
+    "No corrected HTTP, production binding native-memory or model calls ran in this attempt.",
+    "A separate direct-transfer retry requires its own source/readback/artifact proof and outcomes."
+  ]
+}
