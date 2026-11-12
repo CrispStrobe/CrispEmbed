@@ -255,6 +255,7 @@ static int run(int argc, char ** argv) {
     if (model.text.decoder.upstream_physical) {
         const auto * cache = model.text.decoder.physical_weights_cache.get();
         summary << ",\"physical_q6_tiled\":" << (greedy_cache.physical_q6_tiled ? "true" : "false");
+        summary << ",\"physical_rope\":" << (greedy_cache.physical_rope ? "true" : "false");
         summary << ",\"physical_source_prefill_chunks\":"
                 << (greedy_cache.physical_source_prefill_chunks ? "true" : "false");
         summary << ",\"physical_q4_repack\":" << (model.text.decoder.physical_q4_repack ? "true" : "false")
