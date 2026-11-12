@@ -19,6 +19,14 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   evidence remain open before any broader default decision. A second-architecture
   [admission attempt](https://github.com/CrispStrobe/CrispEmbed/pull/222) allocated
   no GPU and stopped before model work; it is not a quality result.
+- **Ovis application path:** the [bounded comparison](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/crispsorter-ovis-comparison-20261112.json)
+  returned blank Ovis output on seven admitted real pages. A
+  [direct diagnostic](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/crispsorter-ovis-diagnostic-20261112.json)
+  confirmed the native image patch limit rejected a real page before vision,
+  while a small control decoded identically on CPU and GPU. The app treated the
+  native error as an empty success. This does not qualify real-page quality or
+  justify relaxing the input gate; error propagation requires a qualified runtime
+  and a rebuilt consumer.
 - **CrispSorter:** main `02d372b0` pins CrispEmbed 0.17.19 and includes OCR
   document review, consolidated PDF editing and search/storage work. CPU consumer
   [PR 218](https://github.com/CrispStrobe/CrispEmbed/pull/218) merged after its
@@ -41,8 +49,11 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   at `01b27b0e` completed 120 independent indexes per arm with no real-index
   failures. A separate [injected commit-denial test](https://github.com/CrispStrobe/CrispSorter/actions/runs/43262281694)
   at `03cc4004` exposed a recovery defect: after reopening, replay collided with
-  a stale deletion file. The original denial's trigger remains unproven; the
-  recovery fix is under review.
+  a stale deletion file. [Recovery PR 61](https://github.com/CrispStrobe/CrispSorter/pull/61)
+  merged as `b35ecb26caa121e8607225c086122402bf485d2c`; its
+  [targeted Windows run](https://github.com/CrispStrobe/CrispSorter/actions/runs/43269603178)
+  passed both tests in both control and tracing arms. The original denial's
+  trigger remains unproven, and a mapped obsolete file can delay recovery.
 - **CrispMath:** source `2b9d0982a3fd780deb2ffd67835da3ce658dce27` sets
   `1.2.1+28` and retains its immutable CrispEmbed 0.17.15 pin. The
   [10 November inspection](https://github.com/CrispStrobe/CrispMath/actions/runs/42870085016)
