@@ -110,6 +110,10 @@ def analyze(source_path, native_path):
                 require(indices.size == ref.shape[0] and np.all((0 <= indices)&(indices < count)), 'output crop contract')
                 comparisons.append(dict(scope='prefill_layers', layer=layer, graph=g, **delta(candidate[offset+indices], ref)))
             offset += count
+    comparisons.append(dict(scope='final_last_prompt_row', stage='result_norm',
+        **delta(native('prefill.norm.f32', (266,2560))[-1:], source(4,'result_norm').reshape(1,2560))))
+    graph_score=source(4,'result_output')
+    require(graph_score.tobytes() == owned(sr,'on/source.logits.0.f32',s['artifacts']).read_bytes(), 'source live firstscore closure')
     sid = s['arms']['on']['generated_ids'];nid = arm['ids']
     first = next((i for i, (a,b) in enumerate(zip(sid,nid)) if a != b), min(len(sid),len(nid)))
     require(first == 85, 'frozen first difference')
