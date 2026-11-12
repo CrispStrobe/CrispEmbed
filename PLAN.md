@@ -5226,3 +5226,6 @@ position/cache controls, then separately frozen observed table/form/Arabic A/B
 with legacy score/stage closure before independent full greedy ON decoding.
 Preserve all source negatives, floor failures, EOS/caps and component magnitude
 errors. No held-out tuning, release/default change, qualification or promotion.
+## Physical RoPE observed audit limits — 12 November 2026
+
+The [independent small-artifact audit](docs/lighton4b-physical-rope-observed-audit.md) binds runtime `a8a22749ab0b757ae1f317b6fa5b84ffd148b939`, controls `855471a734c3188fcf6e83b93eeaac7ba6f101a51728ff838b5b04e6babf8d2e` and observed producer `aaf5298b944cea3d53d7e6e4ce88da78c58c3cec6a651733c5aff993fa4c6ffc`. Exact ON quantized-source outputs do not resolve table/form regressions against original BF16 outputs. Any adoption remains dependent on separately authorized actual decoded-quality/platform/cache gates; no held-out or default promotion is justified. Complete raw-inventory rehash is outside this17-vector audit. Preserve the immutable producer, prior controls/build-only decoder-compose limit and all historical negatives; do not repeat model forwards for report-only verification.
