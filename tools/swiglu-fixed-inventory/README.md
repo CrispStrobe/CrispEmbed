@@ -7,3 +7,6 @@ This explicit continuation consumes the successful verified 616-file mirror and 
 Fresh allocation guards retain10GiB available RAM,25GiB scratch and12GiB initial output; each arm retains the exact10GiB RAM/2GiB output/unchanged-seal predicates. Every predicate and its actual reading is saved before enforcement, with separate failed-predicate names. No threshold is waived or adjusted. The continuation model worker is capped at4200s within4500s wrapper/4800s allocation; the original6153s worker plus this entire model allowance remains below the original12600s model budget.
 
 All old negatives, source-log provenance limitations and actual reports remain preserved remotely. A new inventory result cannot qualify the failed book or make provisional labels expert ground truth. No default, release, alias, application or publication change follows.
+
+
+The first independent inventory reader reaches final aggregation and then fails with `KeyError` because it requests the full-panel floor-count field from the explicitly scoped partial report. That reader failure is preserved separately from successful inventory inference. A reader-only correction uses `completed_cases_on_source_floors_passed`, rejects the unscoped field in a regression control, and repeats only artifact verification against unchanged producer bytes. No model, input, scorer, gate or budget changes.

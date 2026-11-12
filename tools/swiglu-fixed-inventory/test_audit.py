@@ -43,4 +43,8 @@ class AuditControls(unittest.TestCase):
   audit.actual_summary(s,[7,248046],1536)
   s['generated_tokens']=3
   with self.assertRaises(ValueError):audit.actual_summary(s,[248046,7,248046],1536)
+ def test_scoped_partial_floor_field(self):
+  p=dict(status='partial_audit_complete',panel_complete=False,unaudited_missing_cases=['inventory-table'],completed_cases_on_source_floors_passed=1);self.assertEqual(audit.prior_floor_count(p),1)
+  p['on_source_floors_passed']=p.pop('completed_cases_on_source_floors_passed')
+  with self.assertRaises(ValueError):audit.prior_floor_count(p)
 if __name__=='__main__':unittest.main()
