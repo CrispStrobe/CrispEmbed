@@ -3,9 +3,11 @@
 `prepare.py` admits the exact historical `a61642056` native driver and CMake
 bytes, generates a separate observer executable and adds only its explicit
 `EXCLUDE_FROM_ALL` target in a disposable hosted checkout. No production source,
-existing executable, cache algorithm or numerical path is edited. Two model-free
+existing executable, cache algorithm or numerical path is edited. Four model-free
 controls verify source-drift rejection and exact removal of the observer additions.
-No local native build has run. Hosted worker/build/capture remains pending review.
+No local native build has run. Hosted worker/build/capture remains pending review; `worker.py` acquires only
+the immutable original physical quantized transport, builds the separate target
+and runs one ordinary prefill with the observer.
 
 The executable first executes ordinary266-row prefill and emits existing stages.
 It then replays **layer0 only** across every actual planner chunk. Each tile's
