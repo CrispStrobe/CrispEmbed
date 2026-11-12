@@ -580,8 +580,10 @@ at `e3164d09de4578370082e42c5954a77a6cd643e3` has completed on Kaggle: all
 654 historical source score rows, outputs and vision artifacts match with the
 observer both off and on. It captures one auxiliary two-token graph, four actual
 prompt graphs and one row-405 graph; the auxiliary graph is not prompt data.
-The corresponding native trace and shape-checked stage comparison remain pending;
-this source-only result does not qualify the model.
+The [native trace](tests/results/qwen35-ocr/lightonocr3-4b-book-native405/v1/receipt.json)
+also reproduced all 1,536 previous planner-on rows and outputs with its observer
+enabled. A shape-checked stage comparison remains pending; neither capture
+qualifies the model.
 
 The [artifact-only repetition/EOS audit](docs/lighton4b-book-repetition-eos.md)
 finds repeated longer windows in the capped planner-on trajectory, with no EOS
