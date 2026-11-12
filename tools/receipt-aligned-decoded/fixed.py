@@ -117,5 +117,9 @@ def main():
  finally:
   deadline.close()
   for sig,handler in prior.items():signal.signal(sig,handler)
-  r['elapsed_seconds']=time.monotonic()-start;r['artifacts']=shared.artifacts(out,r['commands']);save()
+  r['elapsed_seconds']=time.monotonic()-start;r['artifacts']=shared.artifacts(out,r['commands'])
+  for name in ['preflight-CMakeCache.txt','preflight-build-provenance.json']:
+   p=out/name
+   if p.is_file():r['artifacts'][name]=dict(bytes=p.stat().st_size,sha256=sha(p))
+  save()
 if __name__=='__main__':main()
