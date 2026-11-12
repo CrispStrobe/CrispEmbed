@@ -28,8 +28,10 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   [Model manager PR 55](https://github.com/CrispStrobe/CrispSorter/pull/55) remains
   open; its [focused follow-up 58](https://github.com/CrispStrobe/CrispSorter/pull/58)
   was incorporated, addressing build and installer-integrity failures. [Provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52)
-  merged after a targeted vendored-source conformance run; [follow-up 56](https://github.com/CrispStrobe/CrispSorter/pull/56)
-  remains open after Windows application test failures; the Windows-only retry is running.
+  merged after a targeted vendored-source conformance run. [Follow-up 56](https://github.com/CrispStrobe/CrispSorter/pull/56)
+  merged as `7d6032bd15aded92bebb5c59b5f83f441d68ad64` using the reviewed
+  upstream provider source. The earlier Windows application suite had two
+  full-text repair I/O failures; a separate narrow reproduction is running.
 - **CrispMath:** source `2b9d0982a3fd780deb2ffd67835da3ce658dce27` sets
   `1.2.1+28` and retains its immutable CrispEmbed 0.17.15 pin. The
   [10 November inspection](https://github.com/CrispStrobe/CrispMath/actions/runs/42870085016)
