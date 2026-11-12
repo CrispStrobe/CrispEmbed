@@ -8395,3 +8395,7 @@ to actual Q6 down RMS4.21739905e-6/max8.72015953e-5 (source RMS0.05260878).
 Image23 down RMS is1.68695903e-5, source RMS0.05555850. Hosted157.733 seconds
 include two builds and bounded transport; no inference-speed or decoded-quality
 claim follows. All actual activation/down and12 forced-output closures pass.
+
+## Fixed SwiGLU partial diagnostic (12 November 2026)
+
+The [preserved partial audit](docs/lighton4b-swiglu-fixed-partial.md) checks4,340 rows without model execution in119.609 seconds; this is artifact-audit time, not inference performance. Receipt content CER/WER changes .0325520833/.1319444444→.03125/.125 with468→465 EOS tokens and source-floor false→true. Book CER/WER changes1.2465615565/1.7176258993→1.2089902717/1.75; both arms remain1536/noEOS and fail their source floor. Inventory is unmeasured. No panel completion, speed or broad decoded-quality claim is supported.

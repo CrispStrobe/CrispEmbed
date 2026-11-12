@@ -22256,3 +22256,7 @@ outputs exactly. One integer rounding change at image23 accompanies98 Q8 scale
 changes;12 forced-output closures pass and57 selected artifacts are rehashed.
 Initial pre-build orchestration failure is preserved. No runtime or decoded
 quality change; all prior negatives remain binding.
+
+### 12 November 2026 — fixed SwiGLU producer preserved and partially audited
+
+The [artifact-only partial audit](docs/lighton4b-swiglu-fixed-partial.md) rehashed all590 declared artifacts (5,443,427,617 bytes) and all4,340 raw vocabulary rows from the immutable failed producer. Both observed controls and receipt/book pairs close their historical and unchanged scoring contracts. Receipt ON465/EOS meets its provisional source floor; book OFF/ON1536/noEOS remains negative. Inventory has no model arm: the original resource/seal preflight failure is retained. No forward, build, qualification, default or release change; original candidate source.log bytes remain unavailable as explicitly recorded.
