@@ -1,3 +1,11 @@
+## 0.17.19
+
+- Native library update: the OvisOCR2 / Qwen3.5-OCR graph decoder (`native`
+  matmul) and threaded vision attention are now on by default. Set
+  `CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0` or
+  `CRISPEMBED_QWEN35_VISION_THREADED_ATTN=0` to restore the previous paths.
+- Opt-in GPU path for Qwen3.5-OCR (`CRISPEMBED_QWEN35_OCR_GPU=1`), default off.
+
 ## 0.17.18
 
 - Native library update: experimental LightOn4B OCR code, default-off and

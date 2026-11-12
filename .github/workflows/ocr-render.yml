@@ -69,7 +69,7 @@ jobs:
             -Ivendor/sheenbidi/Headers -Ivendor/sheenbidi/Source \
             -c vendor/sheenbidi/Source/SheenBidi.c -o build-ocr-render/sheenbidi.o
           c++ -std=c++17 -O1 -fPIC -shared -DCRISPEMBED_BUILD \
-            '-DCRISPEMBED_VERSION_STR="0.17.18"' -Isrc -Ivendor/sheenbidi/Headers \
+            '-DCRISPEMBED_VERSION_STR="0.17.19"' -Isrc -Ivendor/sheenbidi/Headers \
             src/ocr_render.cpp tests/ocr_render_stb.cpp build-ocr-render/sheenbidi.o \
             -o build-ocr-render/libocr_render_test.so
           c++ -std=c++17 -Wall -Wextra -Werror -Isrc \
