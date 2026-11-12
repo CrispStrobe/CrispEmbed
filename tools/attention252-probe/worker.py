@@ -45,6 +45,7 @@ def main():
  def locate(name,digest):
   candidates=[p for p in Path('/kaggle/input').rglob(name)if p.is_file()and p.stat().st_size<4<<20 and sha(p)==digest];require(len(candidates)==1,'one frozen report');return candidates[0]
  try:
+  r['diagnostic_source_commit']=os.environ['LIGHTON4B_TOOLS_SOURCE'];require(len(r['diagnostic_source_commit'])==40 and all(c in '0123456789abcdef'for c in r['diagnostic_source_commit']),'exact diagnostic source identity');r['diagnostic_tool_files']={str(p.relative_to(ROOT)):dict(bytes=p.stat().st_size,sha256=sha(p))for p in HERE.iterdir()if p.is_file()}
   r['source_sha']=subprocess.check_output(['git','-C',ROOT,'rev-parse','HEAD'],text=True).strip();require(r['source_sha']==os.environ['LIGHTON4B_EXPECTED_SOURCE'],'exact worker source');require(subprocess.check_output(['git','-C',ROOT,'rev-parse','HEAD:src'],text=True).strip()==CFG['candidate_src_tree'],'production sources unchanged')
   mem=int(next(x.split()[1]for x in Path('/proc/meminfo').read_text().splitlines()if x.startswith('MemAvailable:')))*1024;limit=Path('/sys/fs/cgroup/memory.max').read_text().strip()
   if limit!='max':mem=min(mem,int(limit)-int(Path('/sys/fs/cgroup/memory.current').read_text()))
