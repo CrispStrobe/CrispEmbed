@@ -1,0 +1,13 @@
+# Physical fused SwiGLU: observed-only paired replay
+
+The [protocol](protocol.json) freezes candidate `519c3d9765c234cd93e9069d5efdc239e3cad3f2`, physical weights and three already observed form/table/Arabic cases. This is a new default-off arithmetic candidate; neither controls nor component equality qualify decoded quality.
+
+A single hosted session first runs [build_controls.py](build_controls.py) against that immutable candidate. Five supported model-free units, the CPU baseline/physical ABI and the actual cap512 CLI must pass. It retains the exact executable/libraries, CMake profile, hashes and separate `swiglu-controls.json`. No checkpoint is acquired during that phase.
+
+Only after positive controls does a versioned bootstrap place [worker.py](worker.py), its protocol and controls under the frozen `eb2d04219f7a8567803e77b3ff5bbaa398b16629` controller's tools directory. That controller supplies unchanged historical reference, packing, input and scoring helpers. The model worker consumes the same-session candidate bundle using the actual completed control-receipt hash. It does not rebuild runtime. Private service bindings remain outside Git.
+
+All old gates, schedulerON, cap512, threads4 and weights stay fixed. Only `CRISPEMBED_LIGHTON4B_PHYSICAL_SWIGLU` changes0→1. OFF must reproduce the complete historical plannerON309/168/6 rows, text/IDs, EOS and retained stages before its paired ON is interpreted. Both arms independently generate; full rows, decoded differences, upstream/original distances, numerical magnitudes and per-layer changes remain evidence even when negative.
+
+An authenticated observed-form original source probe additionally requires equal first-four embeddings/positions/gate/up and exact ON fused activation. That is a local operator check, never a substitute for full decoded output. No heldout/book source, labels, model results or full F32/BF16 text model are admitted. The worker can run CPU arithmetic in an accelerator-backed allocation when authorized; its compiled CUDA/Vulkan paths remain OFF and the service profile must be reported honestly.
+
+Four standard-library admission controls reject protocol mutation and check the isolated new gate/frozen source bindings. Actual native tests, model replay and independent small-report review remain hosted acceptance gates. No source, reference, cap, EOS, default, alias or release is changed to make a result pass.

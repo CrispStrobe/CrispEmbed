@@ -1,0 +1,39 @@
+{
+  "schema": "lighton4b-physical-swiglu-observed-ab/v1",
+  "controller_source": "eb2d04219f7a8567803e77b3ff5bbaa398b16629",
+  "historical_planner_receipt_sha256": "393bfbd65f0f39c9d15e68110eb8174fb912797200cc68b1c8339e7a0797edcb",
+  "cases": [
+    "simple_table",
+    "simple_form",
+    "arabic_printed_line"
+  ],
+  "historical_off_tokens": [
+    309,
+    168,
+    6
+  ],
+  "gate": "CRISPEMBED_LIGHTON4B_PHYSICAL_SWIGLU",
+  "fixed_scheduler": "1",
+  "cap": 512,
+  "threads": 4,
+  "arm_seconds": 900,
+  "worker_seconds": 6000,
+  "model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "model_f32_text_allowed": false,
+  "heldout_data_allowed": false,
+  "source_reference_forward_allowed": false,
+  "runtime_rebuild_allowed": false,
+  "quality_qualified": false,
+  "acceptance": [
+    "Same candidate executable/libs/physical quantized weights and exact existing gates in OFF and ON, only physical SwiGLU0\u21921.",
+    "Before model acquisition authenticate all3 frozen inputs, pinned actual llama responses/firstscores and complete historical plannerON baseline rows/stages.",
+    "Candidate control receipt must bind immutable source, supported full unitPASS and hashed executable/libs/profile bundle.",
+    "Complete OFF greedy rows/IDs/text/EOS and retained stages match historical plannerON309/168/6 percase before interpreting ON.",
+    "ON independently generates toEOS or explicit cap512, preserves identical vision/inputs/positions/chunk schedule, records all vocabulary rows and decoded quality.",
+    "Use unchanged original/BF16 reference scoring and pinned actual llama; no budget, prompt, cap, EOS or reference changes.",
+    "No heldout/book artifacts mounted or inspected; no fullF32/BF16 text model.",
+    "Observed form actual source first4 embeddings/gate/up exact; ONactivation bit-exact original quantized fused source. This component closure never substitutes for full decoded output."
+  ],
+  "candidate_source": "519c3d9765c234cd93e9069d5efdc239e3cad3f2",
+  "source_form_probe_receipt_sha256": "2723be06d2b1a4836d51b75d50a23f61a07972127c907e01d0505c778dcf7260"
+}
