@@ -48,7 +48,12 @@ summary["seed_files"] = sum(1 for p in Path(os.environ.get("CCACHE_DIR", "/nonex
 arch = kh.detect_cuda_arch()
 summary["cuda_arch"] = arch
 seed_archs = [a.strip() for a in os.environ.get("CE_CCACHE_SEED_ARCHS", "75,60").split(",") if a.strip()]
-extra_archs = [a for a in seed_archs if a != arch]
+# CUDA 13 dropped offline compilation for sm_50..sm_72 (P100 is sm_60); keep only
+# arches this nvcc can target, and record the ones skipped.
+_nvcc_archs = subprocess.run("/usr/local/cuda/bin/nvcc --list-gpu-arch", shell=True, capture_output=True,
+                             text=True).stdout.split()
+extra_archs = [a for a in seed_archs if a != arch and (not _nvcc_archs or f"compute_{a}" in _nvcc_archs)]
+summary["cuda_archs_skipped"] = [a for a in seed_archs if a != arch and a not in extra_archs]
 os.environ["CE_CCACHE_CUDA_ARCH"] = ",".join([arch] + extra_archs)
 summary["toolchain_fingerprint"] = kh.toolchain_fingerprint() if hasattr(kh, "toolchain_fingerprint") else None
 common = "-G Ninja -DCMAKE_BUILD_TYPE=Release " + " ".join(kh.cache_and_link_flags())

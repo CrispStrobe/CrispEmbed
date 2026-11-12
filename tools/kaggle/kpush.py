@@ -87,6 +87,7 @@ def main(argv):
                            env=env, text=True, capture_output=True)
         sys.stdout.write(r.stdout)
         sys.stderr.write(r.stderr)
+        sys.stdout.flush()
         rc = r.returncode
         # The kaggle CLI exits 0 on a refused push ("Kernel push error: Maximum
         # batch GPU session count ..."); without this --refresh-ccache would wait
