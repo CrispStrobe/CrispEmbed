@@ -25,6 +25,7 @@ def gates(before):
  require(off.get('CRISPEMBED_LIGHTON4B_PHYSICAL_SWIGLU')=='1','fused SwiGLU remainsON');return off,on
 
 def stop_state(summary,ids,expected_tokens=None,expected_eos=None,cap=1536,prompt_tokens=None,image_tokens=None):
+ require(not any(token in [248044,248046]for token in ids[:-1]),'no ignored earlier EOS')
  require(summary['generated_tokens']==len(ids)and 1<=len(ids)<=cap and summary['eos']==(ids[-1]in[248044,248046])and(summary['eos']or len(ids)==cap),'actual EOS/cap')
  require(summary['cap']==cap and summary['upstream_physical']and 1<=summary['prompt_tokens']<=512 and 0<summary['image_tokens']<=256 and summary['prompt_tokens']+cap<=2048,'actual physical admission/cap')
  if prompt_tokens is not None:require(summary['prompt_tokens']==prompt_tokens and summary['image_tokens']==image_tokens,'actual sealed token/image counts')

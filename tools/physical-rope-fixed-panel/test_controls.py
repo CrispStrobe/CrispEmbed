@@ -14,6 +14,7 @@ class Controls(unittest.TestCase):
  def test_stop_and_observed_admission_fail_closed(self):
   summary=dict(generated_tokens=1536,eos=False,cap=1536,upstream_physical=True,prompt_tokens=266,image_tokens=252,physical_source_prefill_chunks=True,physical_q6_tiled=True,physical_q4_repack=True,physical_repack_entries=216,physical_repack_bytes=1,converted_f32_weight_entries=0,converted_f32_weight_bytes=0,teacher_positions=1,source_fed_vision=False);worker.stop_state(summary,[7]*1536,1536,False)
   with self.assertRaises(RuntimeError):worker.stop_state(summary,[7]*1535,1536,False)
+  with self.assertRaises(RuntimeError):worker.stop_state(summary,[248044]+[7]*1535,1536,False)
   cfg=json.loads((HERE/'protocol.json').read_text());good=dict(status='measured_physical_rope_observed_ab',runtime_producer_source=cfg['candidate_source'],candidate_controls_sha256='x',runtime_bundle={},cases={name:dict(off_all_rows_stages_exact=True,arms={'off':{},'on':dict(summary={'eos':True},meets_observed_upstream_floor=True)})for name in ['simple_table','simple_form','arabic_printed_line']});worker.admit_observed(good,cfg,'x',{})
   bad=copy.deepcopy(good);bad['cases']['simple_table']['arms']['on']['meets_observed_upstream_floor']=False
   with self.assertRaises(RuntimeError):worker.admit_observed(bad,cfg,'x',{})
