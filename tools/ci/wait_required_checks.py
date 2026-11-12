@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+"""Wait until every check on ONE pull-request head commit is green; exit nonzero otherwise.
+
+    python3 tools/ci/wait_required_checks.py --pr 123 [--repo owner/name] [--sha <40-hex>]
+        [--timeout 7200] [--interval 30] [--settle 60] [--allow-stalled "<check name>"]...
+    # then merge only that commit:
+    gh pr merge 123 --merge --match-head-commit <sha>
+
+Why: a merge was once made on a stale poll that returned before the new head's
+checks had even been created. This helper pins the head SHA (the --sha you
+reviewed, or the PR head at start), re-reads the PR head on every poll and right
+before exiting, and fails if it moved. It reads both check runs and commit
+statuses for exactly that SHA, keeps the newest run per check name, and
+requires the branch-protection required contexts to be present when the API
+exposes them.
+
+Green means: at least one check exists, and every check is success or skipped.
+queued / in_progress / pending / waiting keep it waiting. cancelled, failure,
+timed_out, action_required, neutral, stale and startup_failure fail at once.
+Once everything is green it waits --settle seconds and checks again, so late
+workflows (path-filtered, chained) are not missed.
+
+--allow-stalled NAME ignores a check with exactly that name ONLY while it is
+still queued/pending (a known-stalled runner queue). It never turns a failed or
+cancelled check green. Use it only when the owner has accepted that job as
+stalled, and say so in the PR.
+
+Exit codes: 0 green, 1 a check failed / none exist, 2 timeout, 3 head moved,
+4 gh/API error.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+import time
+
+GREEN = {"success", "skipped"}
+PENDING = {"queued", "in_progress", "pending", "waiting", "requested", "expected", None, ""}
+
+
+def gh_api(path: str, paginate: bool = False):
+    cmd = ["gh", "api", "-H", "Accept: application/vnd.github+json", path]
+    if paginate:
+        cmd[2:2] = ["--paginate", "--slurp"]
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode:
+        raise RuntimeError(f"gh api {path}: {(r.stderr or r.stdout).strip()[:300]}")
+    return json.loads(r.stdout or "null")
+
+
+def current_repo() -> str:
+    r = subprocess.run(["gh", "repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"],
+                       capture_output=True, text=True)
+    if r.returncode or not r.stdout.strip():
+        sys.exit("wait_required_checks: pass --repo owner/name (gh repo view failed)")
+    return r.stdout.strip()
+
+
+def pr_info(repo: str, pr: int) -> dict:
+    p = gh_api(f"repos/{repo}/pulls/{pr}")
+    return {"head": p["head"]["sha"], "base": p["base"]["ref"], "state": p["state"], "merged": p.get("merged")}
+
+
+def required_contexts(repo: str, base: str) -> list[str] | None:
+    try:
+        r = gh_api(f"repos/{repo}/branches/{base}/protection/required_status_checks")
+    except RuntimeError:
+        return None  # no protection, or not visible with this token
+    names = set(r.get("contexts") or [])
+    names.update(c.get("context") for c in r.get("checks") or [] if c.get("context"))
+    return sorted(names)
+
+
+def checks_for(repo: str, sha: str) -> dict[str, str]:
+    """name -> state word for the newest check run / status per name."""
+    out: dict[str, tuple] = {}
+    pages = gh_api(f"repos/{repo}/commits/{sha}/check-runs?per_page=100", paginate=True)
+    for page in pages:
+        for run in page.get("check_runs", []):
+            key = run.get("started_at") or "", run.get("id") or 0
+            state = run.get("conclusion") if run.get("status") == "completed" else run.get("status")
+            name = run["name"]
+            if name not in out or key > out[name][0]:
+                out[name] = (key, state)
+    status = gh_api(f"repos/{repo}/commits/{sha}/status?per_page=100")
+    for st in status.get("statuses", []):  # newest first per the API
+        name = st["context"]
+        if name not in out:
+            out[name] = (("", 0), st["state"])
+    return {k: v[1] for k, v in out.items()}
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--pr", type=int, required=True)
+    ap.add_argument("--repo")
+    ap.add_argument("--sha", help="head commit you reviewed; default: the PR head at start")
+    ap.add_argument("--timeout", type=int, default=7200)
+    ap.add_argument("--interval", type=int, default=30)
+    ap.add_argument("--settle", type=int, default=60, help="re-check delay after first all-green")
+    ap.add_argument("--allow-stalled", action="append", default=[], metavar="NAME")
+    a = ap.parse_args(argv)
+    repo = a.repo or current_repo()
+    try:
+        info = pr_info(repo, a.pr)
+    except RuntimeError as e:
+        print(e, file=sys.stderr)
+        return 4
+    sha = a.sha or info["head"]
+    if info["merged"] or info["state"] != "open":
+        print(f"PR #{a.pr} is {('merged' if info['merged'] else info['state'])}")
+        return 1
+    print(f"waiting on {repo}#{a.pr} head {sha}", flush=True)
+    t0, green_since = time.time(), None
+    while True:
+        try:
+            info = pr_info(repo, a.pr)
+            if info["head"] != sha:
+                print(f"HEAD MOVED: PR head is now {info['head']}, expected {sha}; re-review and rerun")
+                return 3
+            states = checks_for(repo, sha)
+            required = required_contexts(repo, info["base"]) or []
+        except RuntimeError as e:
+            print(e, file=sys.stderr)
+            return 4
+        for name in required:
+            states.setdefault(name, "expected")
+        bad = {n: s for n, s in states.items() if s not in GREEN and s not in PENDING}
+        pending = {n: s for n, s in states.items() if s in PENDING and n not in a.allow_stalled}
+        stalled = sorted(n for n, s in states.items() if s in PENDING and n in a.allow_stalled)
+        el = time.time() - t0
+        if bad:
+            print("NOT GREEN:", json.dumps(bad, sort_keys=True))
+            return 1
+        if not states:
+            print(f"no checks yet on {sha[:12]} ({el:.0f}s)", flush=True)
+            green_since = None
+        elif pending:
+            print(f"pending {len(pending)}/{len(states)}: {', '.join(sorted(pending)[:8])} ({el:.0f}s)", flush=True)
+            green_since = None
+        elif green_since is None:
+            green_since = time.time()
+            print(f"all {len(states)} green; settling {a.settle}s", flush=True)
+        elif time.time() - green_since >= a.settle:
+            if stalled:
+                print("IGNORED (explicit --allow-stalled, still pending):", ", ".join(stalled))
+            print(f"GREEN: {len(states) - len(stalled)} checks on {sha}")
+            print(f"merge with: gh pr merge {a.pr} --repo {repo} --match-head-commit {sha} --merge")
+            return 0
+        if el > a.timeout:
+            print(f"TIMEOUT after {el:.0f}s; pending: {json.dumps(pending, sort_keys=True)}")
+            return 2
+        time.sleep(min(a.interval, a.settle) if green_since else a.interval)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

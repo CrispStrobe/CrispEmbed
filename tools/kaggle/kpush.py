@@ -83,7 +83,16 @@ def main(argv):
         if leftover:
             sys.exit(f"kpush: unrendered placeholder in {leftover}")
         env = dict(os.environ, KAGGLE_API_TOKEN=token)
-        rc = subprocess.call([sys.executable, "-m", "kaggle", "kernels", "push", "-p", str(dst)] + argv[2:], env=env)
+        r = subprocess.run([sys.executable, "-m", "kaggle", "kernels", "push", "-p", str(dst)] + argv[2:],
+                           env=env, text=True, capture_output=True)
+        sys.stdout.write(r.stdout)
+        sys.stderr.write(r.stderr)
+        rc = r.returncode
+        # The kaggle CLI exits 0 on a refused push ("Kernel push error: Maximum
+        # batch GPU session count ..."); without this --refresh-ccache would wait
+        # on, and report, the previous version's output.
+        if not rc and re.search(r"push error|error:", r.stdout + r.stderr, re.I):
+            rc = 1
     if rc or not refresh:
         return rc
     time.sleep(30)  # let the new version register before polling its status
