@@ -1,5 +1,32 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Local kernel configuration privacy — 12 November 2026
+
+At source `4914f2df1`, all 77 tracked legacy metadata templates use account
+placeholders and match the existing ignore rule. They remain unchanged:
+`tools/moedern-scifact/contract_native_v1.py` freezes the original metadata path,
+the MoEdern public contract owns a metadata SHA-256, four recipe/packing controls
+read the legacy names, and six staging tools copy them directly. Renaming these
+templates requires a separately reviewed compatibility migration and exact source
+amendments; historical evidence and closures must not be rewritten to pass it.
+
+The credential guard previously globbed ignored local configuration and could
+print private references on failure. It now inspects only tracked metadata and
+reports the filename and field, with no reference value. Every newly tracked
+metadata file still receives the same placeholder validation. Focused controls
+cover ignored unreadable-as-JSON private configuration, a tracked public template,
+and redacted rejection in all four reference fields. The existing temporary
+launcher fixture still covers exact source substitution, seed attachment, image
+selection and string booleans. Focused local checks pass four secret/privacy
+controls (one account-secret-dependent skip) and both launcher controls; the
+tracked-template audit finds zero non-placeholder or non-ignored fields across
+all 77 templates. No launcher, runtime, release or quality evidence
+changes. New private configuration remains ignored and untracked.
+The tracked-secret scanner also omits token prefixes from diagnostics. A focused
+temporary-repository control preserves the exact filename, line and token type
+while rejecting any token text in the message; it and both metadata/privacy
+controls pass (three tests), without repeating the repository-wide scan.
+
 ## Main queue filtering — 12 November 2026
 
 The five ordinary build workflows already ignore general documentation and
