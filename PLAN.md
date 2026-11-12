@@ -11,10 +11,9 @@ explicit stalled exceptions alone cannot produce a zero-check green result.
 Optional protection lookup permits only unavailable 403/404 responses; throttled
 403, 429, service and network errors fail closed without changing other API
 endpoints' RuntimeError handling.
-The missing OvisOCR2 bench metadata uses the existing account placeholder and
-attaches the ccache seed. Its ID and title preserve the existing
-`crispembed-ovisocr2-gpu-bench` slug; a mocked submission control checks the
-rendered identity, seed, image, exact source substitution and string booleans.
+Kernel configuration stays ignored and outside the public tree. A temporary
+metadata fixture exercises seed attachment, image selection, exact source
+substitution and string booleans without storing a real configuration.
 The reviewed corrections do not change runtime defaults or claim new GPU execution.
 Merge remains subject to checks on the updated PR head.
 
@@ -28,9 +27,8 @@ passing, app `b45dde889edb24bb2feabf80bbfbc24d510df328` and runtime
 `a4c1f266f6e4ee783278c1dde4dcea18f8dee899c648a8b7e89277dba1b08a80`.
 Both OCR fixtures have CER 0; native/app licence refusal and per-model consent
 controls pass. This is bounded Linux CPU consumer evidence, not broad OCR quality.
-The separately restored metadata follows the tracked 0.17.18 account-placeholder
-template, uses string boolean settings and keeps CPU-only execution with no
-private dataset attachments. Mocked rendering/privacy checks require no new job.
+Kernel configuration remains ignored; no private execution configuration is
+required for reviewing the CPU consumer source and retained evidence.
 
 ## OvisOCR2 speed follow-ups — 11 November 2026
 
