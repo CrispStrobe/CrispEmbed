@@ -61,8 +61,12 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   crops reached 0.022857 but omitted characters. Relevant OCR app files match
   merged main, while other app files and the test harness differ. The option
   remains default-off; full-page coverage and physical devices are unqualified.
-  [Draft PR 62](https://github.com/CrispStrobe/CrispSorter/pull/62) explores
-  bounded Ovis sizing and still needs actual app/runtime quality qualification.
+  [PR 62](https://github.com/CrispStrobe/CrispSorter/pull/62) merged as
+  `8a630606bd099cf75702b9ad210b0f43f2188fcd`. Bounded Ovis sizing remains
+  opt-in and still needs actual app/runtime and representative decoded-quality
+  qualification. Its security and release controls retain documented filesystem
+  race, provider CAS, TLS integration and signed-device limits. The replacement
+  SMB fixture compilation check was queued at merge, not yet confirmed passing.
   [Provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52)
   merged after a targeted vendored-source conformance run. [Follow-up 56](https://github.com/CrispStrobe/CrispSorter/pull/56)
   merged as `7d6032bd15aded92bebb5c59b5f83f441d68ad64` using the reviewed
