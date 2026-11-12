@@ -30,11 +30,12 @@ explicit stalled exceptions alone cannot produce a zero-check green result.
 Optional protection lookup permits only unavailable 403/404 responses; throttled
 403, 429, service and network errors fail closed without changing other API
 endpoints' RuntimeError handling.
-Kernel configuration stays ignored and outside the public tree. A temporary
-metadata fixture exercises seed attachment, image selection, exact source
+New local kernel configuration stays ignored and outside the public tree. The
+repository also has 77 pre-existing tracked, account-neutral placeholder metadata
+templates; these are not private configurations. A temporary metadata fixture exercises seed attachment, image selection, exact source
 substitution and string booleans without storing a real configuration.
 The reviewed corrections do not change runtime defaults or claim new GPU execution.
-Merge remains subject to checks on the updated PR head.
+PR219 merged as `8f9b1bb7f889665ac5acc61932579192dd88c14a`. Its final head `f24a634661c7b8d0e04fe8c8e95718dd4ad5af02` passed the [hosted focused controls](tests/results/tooling-controls-20261112.json) in both full and shallow clones: 67 tests and 544 subtests each, with no failures.
 
 ## PR218 consumer audit and metadata correction — 12 November 2026
 
@@ -46,7 +47,7 @@ passing, app `b45dde889edb24bb2feabf80bbfbc24d510df328` and runtime
 `a4c1f266f6e4ee783278c1dde4dcea18f8dee899c648a8b7e89277dba1b08a80`.
 Both OCR fixtures have CER 0; native/app licence refusal and per-model consent
 controls pass. This is bounded Linux CPU consumer evidence, not broad OCR quality.
-Kernel configuration remains ignored; no private execution configuration is
+New private kernel configuration remains ignored; no private execution configuration is
 required for reviewing the CPU consumer source and retained evidence.
 
 ## OvisOCR2 speed follow-ups — 11 November 2026

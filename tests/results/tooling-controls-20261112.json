@@ -1,0 +1,26 @@
+{
+  "schema": "tooling-controls-v1",
+  "tested_source": "f24a634661c7b8d0e04fe8c8e95718dd4ad5af02",
+  "raw_report_sha256": "514088aa7af73494de3aeab0463210f9165a9db41c9ba5dd85516a02ac914366",
+  "scope": "Focused model-free tooling and CI selection controls in full and shallow clones.",
+  "full": {
+    "exit": 0,
+    "line": "67 passed, 544 subtests passed in 8.94s",
+    "failed": [],
+    "errors": [],
+    "skip_reasons": {},
+    "counts": {
+      "passed": 67
+    }
+  },
+  "shallow": {
+    "exit": 0,
+    "line": "67 passed, 544 subtests passed in 8.68s",
+    "failed": [],
+    "errors": [],
+    "skip_reasons": {},
+    "counts": {
+      "passed": 67
+    }
+  }
+}
