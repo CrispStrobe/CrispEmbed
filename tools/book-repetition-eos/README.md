@@ -16,8 +16,8 @@ periodic runs of at least3 cycles and12 tokens, testing periods1..64. These are
 fixed descriptive screens, not repetition penalties or output-quality gates.
 Every raw score row reports EOS rank (strictly-greater count plus1, ties separate),
 EOS softmax probabilities, summed EOS probability, top-two score gap and entropy.
-The two EOS entries correspond to the existing end-of-generation/end-of-turn
-slots, in that order; vocabulary IDs and sampled top tokens are omitted.
+The two EOS entries follow the existing stop-slot order declared in the audit;
+vocabulary IDs and sampled top tokens are omitted.
 
 If source/native generated IDs first disagree at position K, score rows0..K have
 identical consumed prefixes. Rows after K describe different trajectories and
