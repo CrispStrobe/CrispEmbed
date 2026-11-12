@@ -172,10 +172,13 @@ bool lighton4b_physical_f16_attention_cpu(const std::vector<float> & queries, co
 bool lighton4b_physical_rope_cpu(const std::vector<float> & normalized, const attention_config & config,
                                   const float * positions, int tokens, int heads, int threads,
                                   std::vector<float> & rotated) {
+    // A rejected aliased call must preserve its input; ordinary failures clear output.
+    if (&normalized == &rotated) return false;
     rotated.clear();
+    try {
 #if defined(CRISPEMBED_LIGHTON4B_F16_SGEMM_ABI) && !defined(__EMSCRIPTEN__)
     if (!lighton4b_physical_rope_mode(true) || !lighton4b_physical_rope_valid(true) || !positions ||
-        tokens < 1 || tokens > 4096 || (heads != 4 && heads != 16) || threads < 1 || threads > 256 ||
+        tokens < 1 || tokens > 16 || (heads != 4 && heads != 16) || threads < 1 || threads > 256 ||
         config.head_dim != 256 || config.query_heads != 16 || config.kv_heads != 4 || config.rotary_dim != 64 ||
         config.theta != 10000000.f || config.mrope_section[0] != 11 || config.mrope_section[1] != 11 ||
         config.mrope_section[2] != 10 || normalized.size() != size_t(tokens) * heads * 256 ||
@@ -186,7 +189,7 @@ bool lighton4b_physical_rope_cpu(const std::vector<float> & normalized, const at
         if (!std::isfinite(v) || v < 0 || v >= 262144 || std::trunc(v) != v) return false;
         axes[size_t(i)] = int32_t(v);
     }
-    // Two activation tensors only, bounded by tokens4096; no persistent cache.
+    // Two activation tensors only, bounded by the physical caller's16-token chunk; no persistent cache.
     const size_t bytes = normalized.size() * sizeof(float);
     std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(
         ggml_init({ 2 * bytes + axes.size() * sizeof(int32_t) + (1ull << 20), nullptr, false }), ggml_free);
@@ -212,5 +215,9 @@ bool lighton4b_physical_rope_cpu(const std::vector<float> & normalized, const at
     (void)normalized; (void)config; (void)positions; (void)tokens; (void)heads; (void)threads;
     return false;
 #endif
+    } catch (...) {
+        rotated.clear();
+        return false;
+    }
 }
 } // namespace qwen35_ocr

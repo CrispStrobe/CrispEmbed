@@ -10,7 +10,17 @@
 #include <cstring>
 #include <limits>
 #include <memory>
+#include <new>
 #include <stdexcept>
+// Fail exactly the next C++ allocation to exercise helper exception containment.
+static bool fail_next_allocation = false;
+void * operator new(std::size_t bytes) {
+    if (fail_next_allocation) { fail_next_allocation = false; throw std::bad_alloc(); }
+    if (void * p = std::malloc(bytes ? bytes : 1)) return p;
+    throw std::bad_alloc();
+}
+void operator delete(void * p) noexcept { std::free(p); }
+void operator delete(void * p, std::size_t) noexcept { std::free(p); }
 using namespace qwen35_ocr;
 static void need(bool ok, const char * why) { if (!ok) throw std::runtime_error(why); }
 static bool bits(const std::vector<float> & a, const std::vector<float> & b) {
@@ -36,7 +46,7 @@ static int run() try {
     }
     attention_config c; c.query_heads = 16; c.kv_heads = 4;
     for (int heads : { 4, 16 }) for (int threads : { 1, 4 }) {
-        const int n = 21; // 4-token prefill, 16-token image chunk, single-token continuation
+        const int n = 16; // admitted maximum; explicit4+11+1 chunk continuation
         std::vector<float> input(size_t(n) * heads * 256), positions(3 * n), actual;
         for (size_t i = 0; i < input.size(); ++i) input[i] = std::sin(float(i) * .013f) * 3;
         for (int t = 0; t < n; ++t) {
@@ -46,6 +56,17 @@ static int run() try {
         }
         positions[0] = 0; positions[n] = 262143; // admitted coordinate boundaries
         need(lighton4b_physical_rope_cpu(input, c, positions.data(), n, heads, threads, actual), "operator");
+        const auto original_input = input;
+        need(!lighton4b_physical_rope_cpu(input, c, positions.data(), n, heads, threads, input) &&
+             bits(input, original_input), "alias rejects without mutation");
+        std::vector<float> failure_output{ 123 };
+        fail_next_allocation = true;
+        need(!lighton4b_physical_rope_cpu(input, c, positions.data(), n, heads, threads, failure_output) &&
+             !fail_next_allocation && failure_output.empty() && bits(input, original_input),
+             "allocation exception contained and input preserved");
+        failure_output = { 123 };
+        need(!lighton4b_physical_rope_cpu(input, c, positions.data(), 17, heads, threads, failure_output) &&
+             failure_output.empty(), "oversized chunk rejected before access");
         std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(ggml_init({ 4ull << 20, nullptr, false }), ggml_free);
         std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)> backend(ggml_backend_cpu_init(), ggml_backend_free);
         need(ctx && backend, "independent backend"); ggml_backend_cpu_set_n_threads(backend.get(), threads);
@@ -62,7 +83,7 @@ static int run() try {
         need(!std::memcmp(actual.data(), y->data, actual.size() * 4), "source node exact");
         std::vector<float> joined;
         int start = 0;
-        for (int count : { 4, 16, 1 }) {
+        for (int count : { 4, 11, 1 }) {
             std::vector<float> part(input.begin() + size_t(start) * heads * 256,
                                     input.begin() + size_t(start + count) * heads * 256), pos(3 * count), result;
             for (int axis = 0; axis < 3; ++axis)
