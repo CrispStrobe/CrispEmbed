@@ -2180,6 +2180,8 @@ class _CrispOcrResult(ctypes.Structure):
         ("text", ctypes.c_char_p),
         ("text_len", ctypes.c_int),
         ("orientation_corrected", ctypes.c_int),
+        ("orientation_angle", ctypes.c_int),
+        ("orientation_confidence", ctypes.c_float),
     ]
 
 
