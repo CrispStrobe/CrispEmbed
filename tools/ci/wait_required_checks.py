@@ -98,7 +98,9 @@ def checks_for(repo: str, sha: str) -> dict[str, str]:
     newest: dict[str, tuple] = {}
     for page in runs:
         for wr in page.get("workflow_runs", []):
-            key = wr.get("run_attempt") or 0, wr.get("created_at") or "", wr.get("id") or 0
+            # Attempts belong to a particular run. An older run's second attempt
+            # must not hide a newer run that is still queued or has failed.
+            key = wr.get("created_at") or "", wr.get("id") or 0, wr.get("run_attempt") or 0
             wf = f"workflow {wr.get('name') or wr.get('workflow_id')} [{wr.get('event')}]"
             if wf not in newest or key > newest[wf][0]:
                 state = wr.get("conclusion") if wr.get("status") == "completed" else wr.get("status")
