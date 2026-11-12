@@ -1,0 +1,54 @@
+{
+  "schema": "lighton4b-direct-native-rope-and-lookup-negative/v1",
+  "status": "direct-native-capture-pass-operator-input-lookup-failed",
+  "diagnostic_source": "daca4e17f426474dc12579700d758991b55db691",
+  "runtime_source": "519c3d9765c234cd93e9069d5efdc239e3cad3f2",
+  "capture_receipt_sha256": "f26070189c1fe71074a149814d6e90607d7fb31c7bbea03e79eb3447edb576ba",
+  "retained_report_sha256": "c6669e6c2eb7f3f3d57f95ee9f21d37556731e8a281eea37997498d25e89498d",
+  "observer_patch": {
+    "before_sha256": "8fdee0ef5a36d5b9270ef9608cc47cbf5695a15ae79b3080d437df1d1de7cd7a",
+    "after_sha256": "43d2c0bff36c472e9d4b10ea56f9e075e75a95dc362ddf2a2bece0ea7385889e",
+    "scope": "Append-only actual Q/K read after rotation; no arithmetic or production-file change."
+  },
+  "actual_native_observer_pairs_exact": 22,
+  "native_rope_direct_capture_matches_reconstruction": true,
+  "direct_native_rope_files": {
+    "direct/k_rope.f32": {
+      "bytes": 1089536,
+      "sha256": "4038892e336413d5be69f488839af1853d9d8639b0a2b5aa333419c05e9f7906"
+    },
+    "direct/q_rope.f32": {
+      "bytes": 4358144,
+      "sha256": "b8f26b8594e0b10aa6391045c0ae6498cea6b47c1a0cac017f4e0f650fadaaf7"
+    },
+    "direct/keys.actual.f32": {
+      "bytes": 1089536,
+      "sha256": "4038892e336413d5be69f488839af1853d9d8639b0a2b5aa333419c05e9f7906"
+    },
+    "direct/queries.actual.f32": {
+      "bytes": 4358144,
+      "sha256": "b8f26b8594e0b10aa6391045c0ae6498cea6b47c1a0cac017f4e0f650fadaaf7"
+    }
+  },
+  "error_type": "ValueError",
+  "error": "closed owned path",
+  "failure_boundary": "Lookup of source normalized Q/K omitted the actual layer suffix -3, before any ggml RoPE primitive invocation.",
+  "ggml_rope_operator_invocations": 0,
+  "model_forward_executed": false,
+  "source_capture_repeated": false,
+  "whole_f32_model_instantiated": false,
+  "qualified": false,
+  "elapsed_seconds": 79.98997713100016,
+  "fix_source": "a23715ab8",
+  "fix": "Bind normalized and rotated names through closed Q/K role mappings and check every name against actual captured graph indexes; reuse all successful direct native arrays.",
+  "outer_worker_log": {
+    "final_bytes": 1381,
+    "final_sha256": "f8713a5c859c0a4c1616370c7686b623b90c259c6208e8b28da7e774ea55c0ca",
+    "inner_receipt_snapshot": {
+      "bytes": 211,
+      "sha256": "c0cfd900809e52b7b31ebfd3586b30db4beb0ec7f564e30189f8d4cc4c106b2b"
+    },
+    "original_inner_snapshot_bytes_retained": false,
+    "scope": "Exception traceback appended after the inner failure receipt; final outer bytes and inner snapshot remain distinct."
+  }
+}
