@@ -466,8 +466,9 @@ guard. The individual readings were not recorded, so the failing predicate is
 unknown. The receipt ON met its frozen source floor (24 character and 18 word
 edits); book ON reached 1,536 tokens without EOS and failed the completion floor.
 The book's capped CER improved but WER worsened, and its source-matching token
-prefix fell from 405 to 85. These are producer-reported results pending the
-independent partial raw audit; no default, release or quality promotion follows.
+prefix fell from 405 to 85. An [independent partial raw audit](docs/lighton4b-swiglu-fixed-partial.md)
+verified all 4,340 recorded rows and preserved the incomplete scope; no default,
+release or quality promotion follows.
 Recover only the two unrun inventory arms with the same source and thresholds,
 preserving the original failure and all completed arms.
 
