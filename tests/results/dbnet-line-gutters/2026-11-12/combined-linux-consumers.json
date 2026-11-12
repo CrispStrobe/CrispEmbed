@@ -1,0 +1,699 @@
+{
+  "schema": "combined-ocr-linux-consumers-qualified-v1",
+  "source_commit": "c08b9c0dd660217dc40a19285dfc113e7fd3a784",
+  "base_commit": "97592ff9943f0ac98f0831195cdcb864de322bcc",
+  "tree": "d14b9d6c859a7eb1f870d76e48c79759c7ae58ab",
+  "ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "patch_sha256": "d275a7f11678d5c7ea5175423a0c08dcb7b7607848f6930cab794477b14174ce",
+  "checks": [
+    {
+      "label": "python-deps",
+      "returncode": 0
+    },
+    {
+      "label": "source-init",
+      "returncode": 0
+    },
+    {
+      "label": "source-fetch",
+      "returncode": 0
+    },
+    {
+      "label": "source-checkout",
+      "returncode": 0
+    },
+    {
+      "label": "source-patch",
+      "returncode": 0
+    },
+    {
+      "label": "source-tree",
+      "returncode": 0
+    },
+    {
+      "label": "submodule",
+      "returncode": 0
+    },
+    {
+      "label": "ggml-pin",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-src",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-examples",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-python",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-flutter",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-crispembed",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-crispembed-sys",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-cmake",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-CMakeLists.txt",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-ggml",
+      "returncode": 0
+    },
+    {
+      "label": "runtime-code-VERSION",
+      "returncode": 0
+    },
+    {
+      "label": "ffi-abi-build",
+      "returncode": 0
+    },
+    {
+      "label": "ffi-native-abi",
+      "returncode": 0
+    },
+    {
+      "label": "compile-production-server",
+      "returncode": 0
+    },
+    {
+      "label": "live-http-failure-control",
+      "returncode": 0
+    },
+    {
+      "label": "dart-version",
+      "returncode": 0
+    },
+    {
+      "label": "production-python-dart-native-memory",
+      "returncode": 0
+    },
+    {
+      "label": "rustup-download",
+      "returncode": 0
+    },
+    {
+      "label": "rustup-install",
+      "returncode": 0
+    },
+    {
+      "label": "reading-order-build",
+      "returncode": 0
+    },
+    {
+      "label": "candidate-off-english-two-columns",
+      "returncode": 0
+    },
+    {
+      "label": "candidate-off-single-column",
+      "returncode": 0
+    },
+    {
+      "label": "candidate-off-blank",
+      "returncode": 0
+    },
+    {
+      "label": "candidate-on-english-two-columns",
+      "returncode": 0
+    },
+    {
+      "label": "candidate-on-single-column",
+      "returncode": 0
+    },
+    {
+      "label": "candidate-on-blank",
+      "returncode": 0
+    }
+  ],
+  "threshold": 0.25,
+  "app_config_proof": {
+    "application_source": "81ef8036dc913d600458d59fc0b034143a19c468",
+    "harness_source": "bfb6bbf935ca42baf7384b62e0721ce0df3660b0",
+    "requested_stage": {
+      "cleanup": {
+        "auto_crop": false,
+        "binarize": false,
+        "binarize_method": 0,
+        "blackfilter": false,
+        "border_threshold": 0.15000000596046448,
+        "crop_borders": true,
+        "denoise": false,
+        "deskew": true,
+        "deskew_max_angle": 15,
+        "despeckle": false,
+        "enabled": false,
+        "morph_kernel": 51,
+        "page_split": false,
+        "sauvola_k": 0.20000000298023224,
+        "sauvola_window": 25,
+        "whiten_background": true
+      },
+      "det_box_threshold": 0.5,
+      "det_model": "dbnet-det",
+      "det_prob_threshold": 0.30000001192092896,
+      "det_target_short": 736,
+      "engine": "tesseract",
+      "min_chars": 1,
+      "min_confidence": 0,
+      "rec_model": "tesseract-eng",
+      "source_type": "auto",
+      "vlm_max_tokens": 0,
+      "vlm_prompt": ""
+    },
+    "thread_parameter": 0,
+    "thread_resolution": "min(4, hardware_concurrency)",
+    "field_provenance": {
+      "source_type_and_detector_defaults": "CrispSorter/src-tauri/src/extractors/mod.rs OcrStageSpec/default_source_type/default_det_prob/default_det_box/default_det_short",
+      "stage_construction_and_thread_zero": "CrispSorter/src-tauri/src/extractors/ocr_crispembed.rs build_pipeline",
+      "C_ABI_defaults_and_cleanup": "CrispEmbed/crispembed/src/lib.rs CrispOcrPipeline::from_stages",
+      "thread_resolution": "CrispEmbed/src/crispembed.cpp ce_resolve_threads",
+      "result_layout": "CrispEmbed/src/crispembed.h crispembed_ocr_result"
+    }
+  },
+  "admission": {
+    "available_ram_bytes": 32653434880,
+    "scratch_free_bytes": 1038218964992,
+    "compile_jobs": 2,
+    "overall_seconds": 1800
+  },
+  "compiled_runtime_source_commit": "9d2c876d0bf694c95174cb9e87950c3362399ed6",
+  "runtime_code_objects": {
+    "src": "c91c0a73de2aef242e99014b5a35ceb7dbc026dc",
+    "examples": "6c306457113ced9f4a7c3b6bb11b57e9cd5de353",
+    "python": "3695a09edda2087058ab09ad21041b9ad65e7b55",
+    "flutter": "b5c8074e33651bb073af168c64ef520dbdc2aec7",
+    "crispembed": "5310d5d84d764256a877064c9df0b6a1121ec1bb",
+    "crispembed-sys": "4dd992731e3f0ec7cb6106a1f6a4b0d1739bb27f",
+    "cmake": "8c8dda58696fa2cec7fd5849dc9071f3fe5a2de3",
+    "CMakeLists.txt": "cdbd83f7bdcf28dce913663994a7b4a589fc8d9b",
+    "ggml": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+    "VERSION": "530ec3d024054b0385ef0dd25a0df1d87da91813"
+  },
+  "private_artifact_transfer": {
+    "bytes": 6424694,
+    "sha256": "c7563984bf590b4fa6746b330aff7986f36fbc511a6733b1d001f21b439e118c",
+    "source_build_report_sha256": "6d823c29f3a779e6ea02c666fb21a4dc35941f8f439cd68aad9d655285d34064",
+    "verified_before_loading": true
+  },
+  "candidate_library_sha256": "335a9ceee44494dca7747f76b83da5a3e27db3f0b07ccbed10a498dce71acec8",
+  "native_recompiled": false,
+  "reused_native_controls": {
+    "orchestrator_passed": 107,
+    "orchestrator_failed": 0,
+    "layout_passed": true,
+    "review_failures": 0,
+    "build_report_sha256": "6d823c29f3a779e6ea02c666fb21a4dc35941f8f439cd68aad9d655285d34064"
+  },
+  "retained_candidate_native_bundle": {
+    "name": "candidate-native-bundle.tar.gz",
+    "sha256": "c7563984bf590b4fa6746b330aff7986f36fbc511a6733b1d001f21b439e118c",
+    "bytes": 6424694,
+    "reused": true
+  },
+  "ffi_native_abi": {
+    "result_size": 48,
+    "result_text_offset": 24,
+    "result_orientation_angle_offset": 40,
+    "result_orientation_confidence_offset": 44,
+    "stage_size": 168,
+    "stage_cleanup_offset": 40,
+    "stage_detprob_offset": 100,
+    "cleanup_size": 60
+  },
+  "retained_baseline_source": {
+    "source": "c364feb974b91e14cbf328c6949f3df36e89ce81",
+    "kernel_sha256": "4f9346e5531c1fa58e69269a35281ea1bcf10aeebfb1f4eba67396d272614f48",
+    "report_sha256": "cae131fe2ddacd9cad55700620351d9685a1a0fb3836a2521972f6fa960c0c55"
+  },
+  "baseline_library_sha256": "4f184bda22ec3f75d0d013571bea712d3cc15e8f3e9a6c8624c2c3e637702a1a",
+  "reused_wrapper_declaration_status_controls": {
+    "passed": 9,
+    "failed": 0
+  },
+  "server_link_profile": "production server translation unit linked retained source-verified native library",
+  "server_binary_sha256": "37b5733c1e9a71cf473eca23818ae3efba7bf3a229d4132440ac9438e2a0c466",
+  "live_http_status_control": {
+    "document_failure_http_500": true,
+    "lazy_failure_http_500": true,
+    "legacy_blank_http_200": true,
+    "model_inference_executed": false,
+    "review_failure_http_500": true
+  },
+  "dart_version": "Dart SDK version: 3.9.4 (stable) (Tue Sep 30 12:08:50 2025 -0700) on \"linux_x64\"",
+  "production_binding_native_memory": {
+    "dart_executed": true,
+    "failure_recovery_owned_output": true,
+    "native_result_bytes": 48,
+    "other_platforms_qualified": false,
+    "production_python_three_region_read": true
+  },
+  "models": [
+    {
+      "name": "dbnet-det",
+      "sha256": "163c3b3d1211fd47b4ea323e2e684287bdc75ae68f0ffea397ccfcdc29a74de2",
+      "bytes": 12960448
+    },
+    {
+      "name": "tesseract-eng",
+      "sha256": "dffd3f05d23d3eed979d1c4dd3b7555192c2b0e16c494e6146a9a232e9fe7e74",
+      "bytes": 1617408
+    }
+  ],
+  "reading_order_source_sha256": "8211eb540cd34f6e76242aebedebd39d06956d08a5d83bdaf49d4b6405947496",
+  "observations": {
+    "released-baseline-english-two-columns": {
+      "n_regions": 5,
+      "raw_region_text": "TECHNICAL INSPECTION RECORD\nALPHAREPORT @  OMEGA NOTES\nInspection complete.  Second floor ready.\nThree valves checked. ©= Four seals replaced.\nTotal 125.00 EUR Next visit 2026-12-01",
+      "app_ordered_text": "TECHNICAL INSPECTION RECORD\nALPHAREPORT @  OMEGA NOTES\nInspection complete.  Second floor ready.\nThree valves checked. ©= Four seals replaced.\nTotal 125.00 EUR Next visit 2026-12-01",
+      "native_unicode_cer": 0.5028571428571429,
+      "app_ordered_unicode_cer": 0.5028571428571429,
+      "geometry_valid": true,
+      "column_geometry_pass": false,
+      "image_sha256": "f404697c7cd511545be60b64a66e62687b281078661d0c6387fa79f0acbb4be4",
+      "required_tokens_preserved": true,
+      "crops": [
+        {
+          "name": "crop-00.png",
+          "sha256": "b06eae6775691c3ef54df4893807df020a1a93296b2b80dc618ec11ba6dd2f69",
+          "bytes": 6640
+        },
+        {
+          "name": "crop-01.png",
+          "sha256": "66c30d3977f0ce227fbe4a10535f883f11bc23618d66dea76e0d55be7038e907",
+          "bytes": 4790
+        },
+        {
+          "name": "crop-02.png",
+          "sha256": "03b9b83152cad98b808eb558bd13876e09e4eb3643ebd56fc7c721ff531664bd",
+          "bytes": 6117
+        },
+        {
+          "name": "crop-03.png",
+          "sha256": "1c9bd9d66e62306493134862eeb84eab082e6642a5de2400b392deb6d8bd4b20",
+          "bytes": 5906
+        },
+        {
+          "name": "crop-04.png",
+          "sha256": "25e15aea58c4e08951253b2408de64e1f4578b3a072aabcb45c2056f1bc72600",
+          "bytes": 6808
+        }
+      ]
+    },
+    "released-baseline-single-column": {
+      "n_regions": 3,
+      "raw_region_text": "CRISP MOBILE OCR\nDocument 2048\nTotal 125.00",
+      "app_ordered_text": "CRISP MOBILE OCR\nDocument 2048\nTotal 125.00",
+      "native_unicode_cer": 0.0,
+      "app_ordered_unicode_cer": 0.0,
+      "geometry_valid": true,
+      "column_geometry_pass": null,
+      "image_sha256": "279881db58bbf42a01683ecdc552f774bea20e03cd38cac9c601aa81cad03b96",
+      "required_tokens_preserved": true,
+      "crops": [
+        {
+          "name": "crop-00.png",
+          "sha256": "3c26a2e6d0295287dcedbbd80f6799c196080bec0c622a71a240c1e9689fb5ae",
+          "bytes": 4304
+        },
+        {
+          "name": "crop-01.png",
+          "sha256": "09a668074f056fd52e577850ec7ca9754b7701ddc61a3a964e507f4108250d12",
+          "bytes": 5011
+        },
+        {
+          "name": "crop-02.png",
+          "sha256": "2d8e208644db211b9d8216a597f62989793a8e1173be8dcca20897fb92aeeda8",
+          "bytes": 3078
+        }
+      ]
+    },
+    "released-baseline-blank": {
+      "n_regions": 0,
+      "raw_region_text": "",
+      "app_ordered_text": "",
+      "native_unicode_cer": 0.0,
+      "app_ordered_unicode_cer": 0.0,
+      "geometry_valid": true,
+      "column_geometry_pass": null,
+      "image_sha256": "b35a7b46e8f915b0b477895aca6d7e1269b665756b9cf1b94d82ca7faa1439a7",
+      "required_tokens_preserved": true,
+      "crops": []
+    },
+    "candidate-off-english-two-columns": {
+      "n_regions": 5,
+      "raw_region_text": "TECHNICAL INSPECTION RECORD\nALPHAREPORT @  OMEGA NOTES\nInspection complete.  Second floor ready.\nThree valves checked. ©= Four seals replaced.\nTotal 125.00 EUR Next visit 2026-12-01",
+      "app_ordered_text": "TECHNICAL INSPECTION RECORD\nALPHAREPORT @  OMEGA NOTES\nInspection complete.  Second floor ready.\nThree valves checked. ©= Four seals replaced.\nTotal 125.00 EUR Next visit 2026-12-01",
+      "native_unicode_cer": 0.5028571428571429,
+      "app_ordered_unicode_cer": 0.5028571428571429,
+      "geometry_valid": true,
+      "column_geometry_pass": false,
+      "image_sha256": "f404697c7cd511545be60b64a66e62687b281078661d0c6387fa79f0acbb4be4",
+      "required_tokens_preserved": true,
+      "crops": [
+        {
+          "name": "crop-00.png",
+          "sha256": "b06eae6775691c3ef54df4893807df020a1a93296b2b80dc618ec11ba6dd2f69",
+          "bytes": 6640
+        },
+        {
+          "name": "crop-01.png",
+          "sha256": "66c30d3977f0ce227fbe4a10535f883f11bc23618d66dea76e0d55be7038e907",
+          "bytes": 4790
+        },
+        {
+          "name": "crop-02.png",
+          "sha256": "03b9b83152cad98b808eb558bd13876e09e4eb3643ebd56fc7c721ff531664bd",
+          "bytes": 6117
+        },
+        {
+          "name": "crop-03.png",
+          "sha256": "1c9bd9d66e62306493134862eeb84eab082e6642a5de2400b392deb6d8bd4b20",
+          "bytes": 5906
+        },
+        {
+          "name": "crop-04.png",
+          "sha256": "25e15aea58c4e08951253b2408de64e1f4578b3a072aabcb45c2056f1bc72600",
+          "bytes": 6808
+        }
+      ]
+    },
+    "candidate-off-single-column": {
+      "n_regions": 3,
+      "raw_region_text": "CRISP MOBILE OCR\nDocument 2048\nTotal 125.00",
+      "app_ordered_text": "CRISP MOBILE OCR\nDocument 2048\nTotal 125.00",
+      "native_unicode_cer": 0.0,
+      "app_ordered_unicode_cer": 0.0,
+      "geometry_valid": true,
+      "column_geometry_pass": null,
+      "image_sha256": "279881db58bbf42a01683ecdc552f774bea20e03cd38cac9c601aa81cad03b96",
+      "required_tokens_preserved": true,
+      "crops": [
+        {
+          "name": "crop-00.png",
+          "sha256": "3c26a2e6d0295287dcedbbd80f6799c196080bec0c622a71a240c1e9689fb5ae",
+          "bytes": 4304
+        },
+        {
+          "name": "crop-01.png",
+          "sha256": "09a668074f056fd52e577850ec7ca9754b7701ddc61a3a964e507f4108250d12",
+          "bytes": 5011
+        },
+        {
+          "name": "crop-02.png",
+          "sha256": "2d8e208644db211b9d8216a597f62989793a8e1173be8dcca20897fb92aeeda8",
+          "bytes": 3078
+        }
+      ]
+    },
+    "candidate-off-blank": {
+      "n_regions": 0,
+      "raw_region_text": "",
+      "app_ordered_text": "",
+      "native_unicode_cer": 0.0,
+      "app_ordered_unicode_cer": 0.0,
+      "geometry_valid": true,
+      "column_geometry_pass": null,
+      "image_sha256": "b35a7b46e8f915b0b477895aca6d7e1269b665756b9cf1b94d82ca7faa1439a7",
+      "required_tokens_preserved": true,
+      "crops": []
+    },
+    "candidate-on-english-two-columns": {
+      "n_regions": 9,
+      "raw_region_text": "TECHNICAL INSPECTION RECORD\nALPHA REPORT\nOMEGA NOTES\nInspection complete.\nSecond floor ready.\nThree valves checked.\nFour seals replaced.\nTotal 125.00 EUR\nNext visit 2026-12-01",
+      "app_ordered_text": "TECHNICAL INSPECTION RECORD\nALPHA REPORT\nInspection complete.\nThree valves checked.\nTotal 125.00 EUR\nOMEGA NOTES\nSecond floor ready.\nFour seals replaced.\nNext visit 2026-12-01",
+      "native_unicode_cer": 0.48,
+      "app_ordered_unicode_cer": 0.0,
+      "geometry_valid": true,
+      "column_geometry_pass": true,
+      "image_sha256": "f404697c7cd511545be60b64a66e62687b281078661d0c6387fa79f0acbb4be4",
+      "required_tokens_preserved": true,
+      "crops": [
+        {
+          "name": "crop-00.png",
+          "sha256": "b06eae6775691c3ef54df4893807df020a1a93296b2b80dc618ec11ba6dd2f69",
+          "bytes": 6640
+        },
+        {
+          "name": "crop-01.png",
+          "sha256": "0f55f2acf1182c66774d497a1f071a48c3240b99d8f90321579f9f6f480dee2c",
+          "bytes": 2281
+        },
+        {
+          "name": "crop-02.png",
+          "sha256": "6c6961769b9a4c664f770cd2e9e6925d4078153ec6164f3c7feacc06afc9caed",
+          "bytes": 3008
+        },
+        {
+          "name": "crop-03.png",
+          "sha256": "1a7ae3212323353f67858f07f1daaedbe39739eb812a309534f20d7cdc869bda",
+          "bytes": 3292
+        },
+        {
+          "name": "crop-04.png",
+          "sha256": "531bca119d6efe5e82926ffa7fdeee9dfb4025ff6aeade32307894771b157410",
+          "bytes": 3660
+        },
+        {
+          "name": "crop-05.png",
+          "sha256": "b7984f8a4ab18db26d1474b34482b91eb28de5ddda544a227a7197f7b42b92c4",
+          "bytes": 3565
+        },
+        {
+          "name": "crop-06.png",
+          "sha256": "8a03c4dea9891d73279891b0a4ad51e83766173f5f3603c11ba59a0e81b23b69",
+          "bytes": 3458
+        },
+        {
+          "name": "crop-07.png",
+          "sha256": "812c10f58eeb6375752b0d967d5c845ebc75a72b6092af4d04b464e323ac814c",
+          "bytes": 3150
+        },
+        {
+          "name": "crop-08.png",
+          "sha256": "d48cc55502bfca6309258678446ebb37db2bf027ff1cd9ea6456cbf98f2cee41",
+          "bytes": 4144
+        }
+      ]
+    },
+    "candidate-on-single-column": {
+      "n_regions": 3,
+      "raw_region_text": "CRISP MOBILE OCR\nDocument 2048\nTotal 125.00",
+      "app_ordered_text": "CRISP MOBILE OCR\nDocument 2048\nTotal 125.00",
+      "native_unicode_cer": 0.0,
+      "app_ordered_unicode_cer": 0.0,
+      "geometry_valid": true,
+      "column_geometry_pass": null,
+      "image_sha256": "279881db58bbf42a01683ecdc552f774bea20e03cd38cac9c601aa81cad03b96",
+      "required_tokens_preserved": true,
+      "crops": [
+        {
+          "name": "crop-00.png",
+          "sha256": "3c26a2e6d0295287dcedbbd80f6799c196080bec0c622a71a240c1e9689fb5ae",
+          "bytes": 4304
+        },
+        {
+          "name": "crop-01.png",
+          "sha256": "09a668074f056fd52e577850ec7ca9754b7701ddc61a3a964e507f4108250d12",
+          "bytes": 5011
+        },
+        {
+          "name": "crop-02.png",
+          "sha256": "2d8e208644db211b9d8216a597f62989793a8e1173be8dcca20897fb92aeeda8",
+          "bytes": 3078
+        }
+      ]
+    },
+    "candidate-on-blank": {
+      "n_regions": 0,
+      "raw_region_text": "",
+      "app_ordered_text": "",
+      "native_unicode_cer": 0.0,
+      "app_ordered_unicode_cer": 0.0,
+      "geometry_valid": true,
+      "column_geometry_pass": null,
+      "image_sha256": "b35a7b46e8f915b0b477895aca6d7e1269b665756b9cf1b94d82ca7faa1439a7",
+      "required_tokens_preserved": true,
+      "crops": []
+    }
+  },
+  "single_column_preserved": true,
+  "source_control_comparisons": {
+    "english-two-columns": {
+      "same_region_count": true,
+      "maximum_box_absolute_error": 0.0,
+      "decoded_text_equal": true
+    },
+    "single-column": {
+      "same_region_count": true,
+      "maximum_box_absolute_error": 0.0,
+      "decoded_text_equal": true
+    },
+    "blank": {
+      "same_region_count": true,
+      "maximum_box_absolute_error": 0.0,
+      "decoded_text_equal": true
+    }
+  },
+  "candidate_off_matches_release": true,
+  "blank_preserved": true,
+  "candidate_two_column_pass": true,
+  "completed": true,
+  "status": "bounded_linux_cpu_consumers_and_gated_decode_passed",
+  "kernel_sha256": "eed8611455b849a5f60836c2c990f2886d0ea12b39ebe220c2004e53780d2090",
+  "raw_report_sha256": "62abde2a474014e528972fc9b90d8d649e2db81307fff1277a7abd86715f4548",
+  "scope": "Runtime source 9d2c876d0 and byte-identical compiled code used by harness source c08b9c0dd. Linux CPU native/production Python/Dart/HTTP controls; historical app reading-order replay only, not latest app crop behavior.",
+  "exact_unchanged_app_quality_assessment": {
+    "text": "TECHNICAL INSPECTION RECORD\nALPHA REPORT\nInspection complete.\nThree valves checked.\nTotal 125.00 EUR\nOMEGA NOTES\nSecond floor ready.\nFour seals replaced.\nNext visit 2026-12-01",
+    "unicode_cer": 0,
+    "required_tokens_preserved": [
+      "ALPHA",
+      "OMEGA"
+    ],
+    "columns": {
+      "counts": {
+        "left": 4,
+        "right": 4
+      },
+      "observed_sequence": [
+        {
+          "index": 1,
+          "side": "left",
+          "x": 72.3691177368164,
+          "y": 249.28872680664062,
+          "w": 387.5812683105469,
+          "h": 55.770355224609375
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "x": 76.23025512695312,
+          "y": 401.282958984375,
+          "w": 519.7694091796875,
+          "h": 55.095458984375
+        },
+        {
+          "index": 3,
+          "side": "left",
+          "x": 76.20018005371094,
+          "y": 547.9322509765625,
+          "w": 556.5740966796875,
+          "h": 57.66815185546875
+        },
+        {
+          "index": 4,
+          "side": "left",
+          "x": 72.55873107910156,
+          "y": 697.9666748046875,
+          "w": 440.0723876953125,
+          "h": 60.50299072265625
+        },
+        {
+          "index": 5,
+          "side": "right",
+          "x": 1033.18896484375,
+          "y": 249.22157287597656,
+          "w": 386.0809326171875,
+          "h": 57.26335144042969
+        },
+        {
+          "index": 6,
+          "side": "right",
+          "x": 1035.8282470703125,
+          "y": 401.7889404296875,
+          "w": 483.1302490234375,
+          "h": 58.7457275390625
+        },
+        {
+          "index": 7,
+          "side": "right",
+          "x": 1036.1533203125,
+          "y": 550.5732421875,
+          "w": 497.5125732421875,
+          "h": 55.10357666015625
+        },
+        {
+          "index": 8,
+          "side": "right",
+          "x": 1034.5238037109375,
+          "y": 696.6978149414062,
+          "w": 548.6697998046875,
+          "h": 60.8978271484375
+        }
+      ],
+      "left_before_right": true
+    }
+  },
+  "downloaded_crop_hashes_verified": 20,
+  "large_native_bundle_downloaded": false,
+  "failed_harness_history": [
+    "combined-http-fixture-initial.json",
+    "combined-retained-input-initial.json"
+  ],
+  "runtime_default_changed": false,
+  "version_or_release_changed": false,
+  "application_pin_changed": false,
+  "tested_source_file_sha256": {
+    "src/crispembed.h": "a98a49149c7a7ec577ff66ab70f33b05c038558418f4f7b922f26974e70cb5f3",
+    "src/ocr_orchestrator.cpp": "103be4a3f03a0ba494b132fa33428b65809f764c43067fa148ee79d643afbdbc",
+    "src/easyocr_layout.cpp": "1b8bfe9360cefd0e6ee62595a928ebc11efca62cc636fb2e96cdc0e39865043a",
+    "examples/server/server.cpp": "547f3a0bc93f658c5d3ddf5d869afd12e0d4a78665fc896f27b474260866275b",
+    "python/crispembed/_binding.py": "03cf1df7f951d7607d7c69c218655083d3cfcdc5da820bcb9574c31f52898784",
+    "flutter/crispembed/lib/src/crispembed.dart": "2d34adf220bffb69674ad70ee4dc3c65a212fa22f7182795a4111579e062aa9b",
+    "flutter/crispembed/lib/src/crispembed_bindings.dart": "6477394476f506c3c49cbca15fdf3fef39ecedaa87fd8b27ad103edb4b3dab18",
+    "tests/ocr_binding_native_memory.py": "4d4a389e6e30b9aa361687aafce60ce99e8f7c27d5a554cd6c9ec01d87b00832",
+    "tests/ocr_server_failure_status.py": "366ab8e06e2e77680885c447f3db370b6b4006798db4cb0ea81ac4beed20a3c2"
+  },
+  "executed_response_sha256": {
+    "candidate-off-english-two-columns": "1de9a98ef70392580ffde09b20f69f32dd5005da141f4f9da2ae568e9a309f03",
+    "candidate-off-single-column": "62d8de9e96adc0456626c0fa91e24c9188d17626f4a82c2b9dde37786e417d66",
+    "candidate-off-blank": "e19da90cfaafada641ed26479d833b2eda01aee14c07aacc14ec2736b163e9e9",
+    "candidate-on-english-two-columns": "1574bcebd871919a9637712218816d9e939101dd55504e74276a988545ca6c75",
+    "candidate-on-single-column": "8582a24b80a66e43675a8923a4377c3fdbc64d06d00e15f3adf4e912a7ec85ee",
+    "candidate-on-blank": "71f3c163de1adec87c0b8c56b9184553408b4508a099a9b0e47a287c50ba83e4"
+  },
+  "executed_control_log_sha256": {
+    "live-http-failure-control": "172fa263bd0e483dd9f6f1b200f8b8b5dde821f556ed536a175d71d040ad5c12",
+    "production-python-dart-native-memory": "3cbae42c6615278e5dac31e926ace6e7031a7b13801de08ad8170aa84fa82632",
+    "compile-production-server": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  },
+  "candidate_on_vs_pinned_candidate_regression": {
+    "english-two-columns": {
+      "decoded_text_equal": true,
+      "same_region_count": true,
+      "maximum_box_absolute_error": 0.0
+    },
+    "single-column": {
+      "decoded_text_equal": true,
+      "same_region_count": true,
+      "maximum_box_absolute_error": 0.0
+    },
+    "blank": {
+      "decoded_text_equal": true,
+      "same_region_count": true,
+      "maximum_box_absolute_error": 0.0
+    }
+  },
+  "limits": [
+    "All new runtime inference in this continuation used actual complete production Python binding code; the native-memory fixture separately exercised complete production Python/Dart modules and actual native hOCR rendering.",
+    "The Tesseract native raw sequence remains row-major: candidate-on raw CER0.48, existing historical application reading-order replay CER0.0.",
+    "The latest application CC crop path and its later default-off/CLI fixes require independent exact-source contract and actual APK execution.",
+    "Actual Android/iOS/macOS/Windows consumers, 32-bit Dart, physical devices, camera/providers and diverse corpus quality are not qualified by these Linux checks.",
+    "Earlier CUDA evidence remains bound to source458458b2a; no combined-source GPU accuracy or speed promotion.",
+    "Gutter gate remains default-off; no runtime version, release or application pin change.",
+    "Private transfer URL, account/operator references and kernel configuration are excluded from public evidence."
+  ]
+}

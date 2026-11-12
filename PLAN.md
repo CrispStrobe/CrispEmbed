@@ -2,7 +2,8 @@
 
 ## Combined OCR candidate qualification — 12 November 2026
 
-Reviewed native integration `9d2c876d0bf694c95174cb9e87950c3362399ed6` is based on
+Reviewed native integration `9d2c876d0bf694c95174cb9e87950c3362399ed6` now has
+bounded Linux consumer evidence and is based on
 public main `97592ff9943f0ac98f0831195cdcb864de322bcc`. It combines the gated
 DBNet gutter fix, OCR failure/unknown-state propagation, complete Python/Dart
 result ABI mirrors, the real production binding native-memory harness, and
@@ -62,7 +63,29 @@ only in private staging. There is no native engine rebuild or platform input
 attachment. Admission is 4 GiB RAM/8 GiB scratch with an 1800-second total bound
 and six model calls maximum. Independent HTTP/binding failures preserve their
 evidence and still allow the model arms to finish; final failed comparisons exit
-nonzero. Results remain pending, without default/version/release/pin changes.
+nonzero. The [corrected continuation completed successfully](tests/results/dbnet-line-gutters/2026-11-12/combined-linux-consumers.json):
+full remote transfer size/hash matched before loading; ten compiled-code objects
+matched runtime source `9d2c876d0`. Corrected live HTTP controls returned 500 for
+reported lazy/review/document failure and retained 200 for legacy unknown blank.
+Actual complete production Python three-record reads, owned-output/error-recovery,
+and complete production Dart three-record reads/native hOCR packing passed on
+Linux x64 (Dart 3.9.4; native record 48 bytes). This supersedes the earlier
+unexecuted binding scope without erasing the failed harness evidence.
+
+All six actual production-Python model calls passed. Candidate-off matches the
+immutable baseline decoded strings/counts with maximum box absolute error `0.0`.
+Candidate-on retains nine crops and, after the exact historical app order replay,
+CER `0.0` with four regions per column; the unchanged app quality assessment
+passed. Single-column CER `0.0`/blank-empty and crop geometry are unchanged.
+The composition also matches the earlier pinned-source candidate's decoded
+strings and boxes exactly. Twenty newly retrieved crop hashes were verified;
+large native binaries stayed remote. The initial build's 107 native controls and
+nine declaration/status controls were reused via verified unchanged bytes,
+rather than repeating their engines. Runtime source is `9d2c876d0`, harness source
+`c08b9c0dd`; the receipt seals source/blob/binary/log hashes. Native raw sequence
+remains row-major (CER `0.48` before the historical app ordering). These results
+do not qualify the newer app-side crop path or a combined-source GPU run.
+Versions, default gates, releases and application pins remain unchanged.
 
 Latest app source `ecb5a802` contains the separate `87f5181f` CC-before-recognition
 crop path. It can preempt the native DBNet grouping stage, so neither the earlier
