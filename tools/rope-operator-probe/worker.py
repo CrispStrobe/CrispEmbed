@@ -6,6 +6,7 @@ ROOT=Path(__file__).resolve().parents[2];HERE=Path(__file__).parent
 sys.path.insert(0,str(ROOT/'tools/physical-f16-attention-probe'))
 from runtime_guard import Deadline,command
 from observe import generate,ENV,HOOK,ANCHOR
+from anchors import stage_names
 spec=importlib.util.spec_from_file_location('stages',ROOT/'tools/attention252-probe/worker.py');stages=importlib.util.module_from_spec(spec);spec.loader.exec_module(stages)
 require,sha,owned,delta,source_array=stages.require,stages.sha,stages.owned,stages.delta,stages.source_array
 CFG=json.loads((HERE/'protocol.json').read_text())
@@ -62,9 +63,10 @@ def main():
   inputs=scratch/'inputs';inputs.mkdir();anchors={}
   for g,n in zip(range(1,5),CFG['positions']):
    index=prior['source_graph_indexes'][g]
-   for role,stage,heads in [('q','Qcur_normed',16),('k','Kcur_normed',4)]:
-    for name in [stage, 'Qcur'if role=='q'else'Kcur','inp_pos']:owned(capture.parent,'source/on/graph-%d.%s.bin'%(g,name),prior['artifacts'])
-    dest=inputs/str(g)/role;dest.mkdir(parents=True);source_array(capture.parent/'source/on',index,stage).reshape(n,heads*256).astype('<f4').tofile(dest/'normalized.f32');source_array(capture.parent/'source/on',index,'inp_pos').reshape(4,n).astype('<i4').tofile(dest/'positions.i32');anchors[g,role]=source_array(capture.parent/'source/on',index,'Qcur'if role=='q'else'Kcur').reshape(n,heads*256)
+   for role in ['q','k']:
+    stage,rotated,heads=stage_names(role)
+    for name in [stage,rotated,'inp_pos']:owned(capture.parent,'source/on/graph-%d.%s.bin'%(g,name),prior['artifacts'])
+    dest=inputs/str(g)/role;dest.mkdir(parents=True);source_array(capture.parent/'source/on',index,stage).reshape(n,heads*256).astype('<f4').tofile(dest/'normalized.f32');source_array(capture.parent/'source/on',index,'inp_pos').reshape(4,n).astype('<i4').tofile(dest/'positions.i32');anchors[g,role]=source_array(capture.parent/'source/on',index,rotated).reshape(n,heads*256)
   up=scratch/'upstream'
   for label,args in [('up-init',['git','init',up]),('up-remote',['git','-C',up,'remote','add','origin','https://github.com/ggml-org/llama.cpp.git']),('up-fetch',['git','-C',up,'fetch','--depth','1','origin',CFG['upstream_commit']]),('up-checkout',['git','-C',up,'checkout','--detach','FETCH_HEAD'])]:run(label,args)
   results=[]

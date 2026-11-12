@@ -214,5 +214,6 @@
   "model_forward_allowed": false,
   "source_capture_repeat_allowed": false,
   "whole_f32_model_allowed": false,
-  "total_timeout_seconds": 3000
+  "total_timeout_seconds": 3000,
+  "retained_native_receipt_sha256": "c6669e6c2eb7f3f3d57f95ee9f21d37556731e8a281eea37997498d25e89498d"
 }
