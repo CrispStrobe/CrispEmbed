@@ -19,8 +19,10 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   evidence remain open before any broader default decision.
 - **CrispSorter:** main `02d372b0` pins CrispEmbed 0.17.19 and includes OCR
   document review, consolidated PDF editing and search/storage work. CPU consumer
-  [PR 218](https://github.com/CrispStrobe/CrispEmbed/pull/218) reports 21 checks
-  at the exact release/app pin; this does not establish other platform parity.
+  [PR 218](https://github.com/CrispStrobe/CrispEmbed/pull/218) merged after its
+  retained 21/21 CPU consumer report was reviewed against the exact release/app
+  pin ([receipt](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/releases/crispsorter-01719-consumer.json));
+  this does not establish other platform parity.
   [Model manager PR 55](https://github.com/CrispStrobe/CrispSorter/pull/55) and
   [provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52) have failing
   checks; [provider follow-up 56](https://github.com/CrispStrobe/CrispSorter/pull/56)

@@ -1,0 +1,154 @@
+{
+ "app": "b45dde889edb24bb2feabf80bbfbc24d510df328",
+ "embed": "c364feb974b91e14cbf328c6949f3df36e89ce81",
+ "checks": [
+  {
+   "name": "test images rendered legibly (ink height px)",
+   "pass": true,
+   "detail": "(46, 30)"
+  },
+  {
+   "name": "tag v0.17.19 is the pinned commit",
+   "pass": true,
+   "detail": "c364feb974b91e14cbf328c6949f3df36e89ce81"
+  },
+  {
+   "name": "app runtime lock",
+   "pass": true,
+   "detail": "0.17.19"
+  },
+  {
+   "name": "app mobile lock",
+   "pass": true,
+   "detail": "c364feb974b9"
+  },
+  {
+   "name": "fresh install hash-verified",
+   "pass": true,
+   "detail": "inux-x86_64.tar.gz\", \"version\": \"0.17.19\", \"source_commit\": \"c364feb974b91e14cbf328c6949f3df36e89ce81\", \"sha256\": \"66073c14e446ea87dc1c4652b2decaff32cf2bf79c8a83d2b5102e07b93749c6\", \"bytes\": 19040985}"
+  },
+  {
+   "name": "desktop provisioning branch unchanged",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "library build+link (crispembed-license-api)",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "probe exit",
+   "pass": true,
+   "detail": "rc=0"
+  },
+  {
+   "name": "library load + embedding",
+   "pass": true,
+   "detail": "384"
+  },
+  {
+   "name": "model_license_info: restricted, own SPDX",
+   "pass": true,
+   "detail": "['posformer-crohme', 'cc-by-nc-sa-3.0', True]"
+  },
+  {
+   "name": "app licence info matches native SPDX",
+   "pass": true,
+   "detail": "{'label': 'CC-BY-NC-SA-3.0', 'requires_consent': True, 'spdx': 'cc-by-nc-sa-3.0'}"
+  },
+  {
+   "name": "'all' rejected",
+   "pass": true,
+   "detail": "resolve_model_accepting needs one exact licence tag, got 'all'"
+  },
+  {
+   "name": "'*' rejected",
+   "pass": true,
+   "detail": "resolve_model_accepting needs one exact licence tag, got '*'"
+  },
+  {
+   "name": "native gate refuses without acceptance",
+   "pass": true,
+   "detail": "could not resolve model 'posformer-crohme'"
+  },
+  {
+   "name": "one model's SPDX does not unlock another",
+   "pass": true,
+   "detail": "could not resolve model 'splade-v3'"
+  },
+  {
+   "name": "nothing downloaded before consent",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "app refuses OCR without consent",
+   "pass": true,
+   "detail": "Model \"posformer-crohme\" carries a CC-BY-NC-SA-3.0 license that must be accepted before download/use. Accept it by setting CRISPSORTER_ACCEPT_MODEL_LICENSE=1 (or CRISPSORTER_ACCEPT_MODEL_LICENSE=\"posformer-crohme\"), passing --accept-license"
+  },
+  {
+   "name": "consent is per model (texo-distill still refused)",
+   "pass": true,
+   "detail": "Model \"texo-distill\" carries a AGPL-3.0 license that must be accepted before download/use. Accept it by setting CRISPSORTER_ACCEPT_MODEL_LICENSE=1 (or CRISPSORTER_ACCEPT_MODEL_LICENSE=\"texo-distill\"), passing --accept-license on the CLI, or"
+  },
+  {
+   "name": "consented posformer-crohme OCR: formula LaTeX matches (CER<=0.2)",
+   "pass": true,
+   "detail": "'x + y = 3' cer=0.00"
+  },
+  {
+   "name": "printed-text OCR (parseq, apache-2.0) matches (CER<=0.2, spaces ignored)",
+   "pass": true,
+   "detail": "'Invoicedue2026' cer=0.00"
+  },
+  {
+   "name": "CRISPEMBED_ACCEPT_LICENSE never set",
+   "pass": true,
+   "detail": ""
+  }
+ ],
+ "completed": true,
+ "math_fn_sha": "b2c5757e45668b58b7f649b59bc1ade6ef5abc19c590cc829c2e83475629ad35",
+ "probe": {
+  "accepting_all": {
+   "err": "resolve_model_accepting needs one exact licence tag, got 'all'"
+  },
+  "accepting_star": {
+   "err": "resolve_model_accepting needs one exact licence tag, got '*'"
+  },
+  "app_info": {
+   "label": "CC-BY-NC-SA-3.0",
+   "requires_consent": true,
+   "spdx": "cc-by-nc-sa-3.0"
+  },
+  "app_other_model": {
+   "err": "Model \"texo-distill\" carries a AGPL-3.0 license that must be accepted before download/use. Accept it by setting CRISPSORTER_ACCEPT_MODEL_LICENSE=1 (or CRISPSORTER_ACCEPT_MODEL_LICENSE=\"texo-distill\"), passing --accept-license on the CLI, or confirming the prompt in the GUI."
+  },
+  "app_with_consent": {
+   "ok": "x + y = 3"
+  },
+  "app_without_consent": {
+   "err": "Model \"posformer-crohme\" carries a CC-BY-NC-SA-3.0 license that must be accepted before download/use. Accept it by setting CRISPSORTER_ACCEPT_MODEL_LICENSE=1 (or CRISPSORTER_ACCEPT_MODEL_LICENSE=\"posformer-crohme\"), passing --accept-license on the CLI, or confirming the prompt in the GUI."
+  },
+  "dim": 384,
+  "downloaded_after_refusal": false,
+  "downloaded_before_consent": false,
+  "emb_ok": true,
+  "env_accept_set": false,
+  "env_accept_set_after": false,
+  "native_info": [
+   "posformer-crohme",
+   "cc-by-nc-sa-3.0",
+   true
+  ],
+  "native_plain": {
+   "err": "could not resolve model 'posformer-crohme'"
+  },
+  "native_wrong_model": {
+   "err": "could not resolve model 'splade-v3'"
+  },
+  "other_downloaded": false,
+  "text_ocr": "Invoicedue2026"
+ }
+}
