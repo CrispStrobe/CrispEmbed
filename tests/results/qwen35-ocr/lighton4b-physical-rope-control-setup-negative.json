@@ -1,0 +1,16 @@
+{
+  "schema": "lighton4b-physical-rope-control-setup-negative/v1",
+  "status": "failed-before-build",
+  "candidate_source": "a8a22749ab0b757ae1f317b6fa5b84ffd148b939",
+  "diagnostic_source": "3e8a87f8cc78742294c501f46f7475d29bf69b19",
+  "retained_bootstrap_sha256": "381c2d1cbc74fdcc5edc477850d4bcdcd4c6ac70bfec47f45f10f6513450ad39",
+  "failure_phase": "fetch-candidate",
+  "error": "fetch-candidate nonzero",
+  "elapsed_seconds": 13.04557117600001,
+  "build_executed": false,
+  "model_forward_executed": false,
+  "component_executed": false,
+  "qualified": false,
+  "fix": "Fetch every exact public prerequisite declared in the bounded candidate git bundle; configure component Q/K heads16/4 and authenticate each source-stage file before comparison.",
+  "fixed_harness_source": "2ffa681dafa89cc5091715b74d15d6f937eda08f"
+}
