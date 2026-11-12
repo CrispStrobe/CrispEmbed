@@ -1,0 +1,15 @@
+{
+  "id": "${KAGGLE_ACCOUNT}/crispsorter-pin-01719-consumer",
+  "title": "crispsorter-pin-01719-consumer",
+  "code_file": "consumer.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "false",
+  "enable_tpu": "false",
+  "enable_internet": "true",
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": []
+}
