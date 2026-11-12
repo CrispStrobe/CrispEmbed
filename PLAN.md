@@ -471,6 +471,13 @@ independent partial raw audit; no default, release or quality promotion follows.
 Recover only the two unrun inventory arms with the same source and thresholds,
 preserving the original failure and all completed arms.
 
+The [post-fused source trace](tools/post-fused-source-trace/README.md) checks
+identical full prompt embeddings and positions and finds the first recorded
+hidden-state difference at the first full-attention block, layer 3, on the
+252-row image chunk. Earlier layer outputs match on all captured chunks. This
+is a boundary for further stage attribution, not proof of the responsible
+attention operator or cache behavior.
+
 ## Local kernel configuration privacy — 12 November 2026
 
 At source `4914f2df1`, all 77 tracked legacy metadata templates use account
