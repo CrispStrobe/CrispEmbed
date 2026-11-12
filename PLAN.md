@@ -610,6 +610,11 @@ finds the first recorded difference in SwiGLU at both first-chunk prefill and
 row 405, but no matching native image-chunk operators or persistent caches were
 captured. Neither capture nor this comparison qualifies the model.
 
+The [cache-closed first-image capture](docs/lighton4b-book-image-layer0.md)
+reproduces all historical prefill/vision hashes and matches upstream through
+FFN gate/up on the first sixteen image rows. SwiGLU is the first recorded
+difference there as well; later image-chunk drift remains unattributed.
+
 The [artifact-only repetition/EOS audit](docs/lighton4b-book-repetition-eos.md)
 finds repeated longer windows in the capped planner-on trajectory, with no EOS
 decision in 1,536 rows. At shared-prefix row 405 the source and native EOS
