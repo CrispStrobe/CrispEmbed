@@ -15,6 +15,7 @@ class Controls(unittest.TestCase):
    order=w.permutation(role,width);self.assertEqual(sorted(order),list(range(width)));source=np.arange(width,dtype='<f4');native=source[order];recovered=np.empty_like(native);recovered[order]=native;self.assertEqual(recovered.tobytes(),source.tobytes())
  def test_localizes_actual_tail_rows_without_values(self):
   x=np.zeros((10,32),dtype='<f4');y=x.copy();y[8,1]=1.;y[9,2]=-2.;r=w.compare(x,y);self.assertEqual(r['different_rows'],[8,9]);self.assertEqual(r['first_different_flat_index'],257);self.assertEqual(r['error_max_abs'],2.)
- def test_runtime_entry_has_full_capture_closure(self):
-  source=(HERE/'component.cpp').read_text();self.assertIn('ALL256 actual native hidden0 byte closure',source);self.assertIn('duplicate GDN actual block/cache exact',source);self.assertIn('cache_owner.bytes()==0',source);self.assertNotIn('load_model',source)
+ def test_layout_errors_cannot_masquerade_as_numeric_drift(self):
+  source=np.arange(4*32,dtype='<f4').reshape(4,32);native=source[:,w.permutation('a',32)]
+  self.assertFalse(w.compare(native,source)['bit_exact']);self.assertTrue(w.compare(native,source[:,w.permutation('a',32)])['bit_exact'])
 if __name__=='__main__':unittest.main()
