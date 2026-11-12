@@ -5,6 +5,14 @@ import audit
 
 
 class Controls(unittest.TestCase):
+    def test_native_status_admission(self):
+        source = dict(source_sha='e3164d09de4578370082e42c5954a77a6cd643e3',
+                      status='measured_neutral_book_text_trace', all654_scores_observer_neutral=True,
+                      historical_reference_sha256='9b88195d5a8058dea4fab87472009d3826bc1fa3b5d0575aa2e33698316d5722')
+        for status in ['failed', 'measured_extended_planner_book']:
+            with self.assertRaisesRegex(ValueError, 'native neutrality admission'):
+                audit.analyze(None, source, None, dict(status=status))
+
     def test_head_mapping(self):
         self.assertEqual(audit.permutation('a', 32)[:4], [0, 16, 1, 17])
         for role, width in [('qkv', 8192), ('z', 4096), ('a', 32), ('b', 32)]:

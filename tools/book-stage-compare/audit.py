@@ -125,7 +125,7 @@ def source_rows(graph, name, width, expected_tokens, role=None):
 def analyze(source_root, source, native_root, native):
     import numpy as np
     require(source['source_sha'] == 'e3164d09de4578370082e42c5954a77a6cd643e3' and source['status'] == 'measured_neutral_book_text_trace' and source['all654_scores_observer_neutral'] and source['historical_reference_sha256'] == '9b88195d5a8058dea4fab87472009d3826bc1fa3b5d0575aa2e33698316d5722', 'source neutrality admission')
-    require(native['status'] == 'measured_extended_planner_book' and native['all1536_rows_ids_text_observer_neutral'] and native['trace_position'] == 405 and native['native_trace_layers'] == 32 and native['neutrality_reference_sha256'] == HISTORICAL and native['strict_1054_prefix_and_stages_reproduced'], 'native neutrality admission')
+    require(native['status'] == 'measured_neutral_native405_book_trace' and native['all1536_rows_ids_text_observer_neutral'] and native['trace_position'] == 405 and native['native_trace_layers'] == 32 and native['neutrality_reference_sha256'] == HISTORICAL and native['strict_1054_prefix_and_stages_reproduced'], 'native neutrality admission')
     for i in range(654):
         require(source['artifacts']['off/source.logits.%d.f32' % i] == source['artifacts']['on/source.logits.%d.f32' % i], 'source score neutrality manifest')
     source_ids, native_ids = source['arms']['on']['generated_ids'], native['arm']['ids']
