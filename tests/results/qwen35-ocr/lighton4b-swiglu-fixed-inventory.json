@@ -1,0 +1,582 @@
+{
+  "schema": "lighton4b-swiglu-fixed-inventory-result/v1",
+  "status": "audited-inventory-completion-book-still-negative",
+  "qualified": false,
+  "references_expert_adjudicated": false,
+  "candidate_source": "519c3d9765c234cd93e9069d5efdc239e3cad3f2",
+  "controller_source": "a6164205620c71427a39c97ab386591406c4ca73",
+  "ggml_source": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "protocol_sha256": "97bf2ed0b35b83d8b03461e9c59ac8817431311b43316796c67fdb27ad6e1a64",
+  "producer_receipt_sha256": "a88b5341afabe2c685f1037dfe40bf8dce0345e7fa5cea5b2bb942b4e595afe1",
+  "candidate_controls_sha256": "6c1fc8ea188d39e49ccc37b2ac7a6d6d7a6fe210e84e198630a6fb1c37ec5938",
+  "runtime_rebuilt": false,
+  "earlier_completed_forwards_repeated": false,
+  "reused_without_forward": [
+    "observed-off",
+    "observed-on",
+    "historical-receipt/off",
+    "historical-receipt/on",
+    "two-column-page/off",
+    "two-column-page/on"
+  ],
+  "inventory_off_all_historical_rows_stages_stop_exact": true,
+  "inventory_off_on_ids_equal": true,
+  "inventory_off_on_decoded_equal": true,
+  "arms": {
+    "off": {
+      "tokens": 248,
+      "eos": true,
+      "score": {
+        "policy": "crispembed-ocr-quality-v1",
+        "complete": true,
+        "raw": {
+          "cer": 1.7818181818181817,
+          "wer": 1.03125
+        },
+        "characters": 459,
+        "lines": 34,
+        "parse_ok": true,
+        "content": {
+          "cer": 0.0,
+          "wer": 0.0
+        },
+        "table_gold_available": true,
+        "content_exact": true,
+        "table": {
+          "expected": 1,
+          "actual": 1,
+          "expected_cells": 15,
+          "cell_errors": 0,
+          "exact": true
+        },
+        "exact_quality": true,
+        "expected_table_shape": [
+          [
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        ],
+        "table_shape_valid": true
+      },
+      "independent_edits": {
+        "raw": {
+          "character_edits": 294,
+          "reference_codepoints": 165,
+          "word_edits": 33,
+          "reference_words": 32
+        },
+        "content": {
+          "character_edits": 0,
+          "reference_codepoints": 165,
+          "word_edits": 0,
+          "reference_words": 32
+        }
+      },
+      "source_floor": true,
+      "raw": {
+        "rows": 248,
+        "archive_sha256": "48e36986fa203daf089b5acb0d6469a5ee5a7076d6c34b61322025a154e7d8b5",
+        "ordered_row_sha256": "279026a26b2a639336bf68f58c4e1289895cea526ed7b7e2f82043169f320ad5"
+      },
+      "firstscore": {
+        "rms": 0.17542362596857944,
+        "max_abs": 0.801771879196167,
+        "candidate_rms_magnitude": 2.2984116286325333,
+        "source_rms_magnitude": 2.246865113972659
+      },
+      "derived_rms_max_ulps_from_producer": 0.0,
+      "summary": {
+        "prompt_tokens": 210,
+        "image_tokens": 196,
+        "source_fed_vision": false,
+        "upstream_physical": true,
+        "provisional_heldout_cap": 1536,
+        "physical_q6_tiled": true,
+        "physical_source_prefill_chunks": true,
+        "physical_q4_repack": true,
+        "physical_repack_entries": 216,
+        "physical_repack_bytes": 1662861312,
+        "physical_repack_hits": 56601,
+        "converted_f32_weight_entries": 0,
+        "converted_f32_weight_bytes": 0,
+        "teacher_positions": 1,
+        "generated_tokens": 248,
+        "eos": true,
+        "cap": 1536
+      },
+      "resources": {
+        "status": "completed",
+        "returncode": 0,
+        "elapsed_seconds": 258.469741023,
+        "child_user_seconds": 629.1009220000001,
+        "child_system_seconds": 68.36407000000001,
+        "peak_rss_bytes_observed": 5993627648,
+        "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+        "cumulative_child_peak_rss_bytes": 5993627648
+      }
+    },
+    "on": {
+      "tokens": 248,
+      "eos": true,
+      "score": {
+        "policy": "crispembed-ocr-quality-v1",
+        "complete": true,
+        "raw": {
+          "cer": 1.7818181818181817,
+          "wer": 1.03125
+        },
+        "characters": 459,
+        "lines": 34,
+        "parse_ok": true,
+        "content": {
+          "cer": 0.0,
+          "wer": 0.0
+        },
+        "table_gold_available": true,
+        "content_exact": true,
+        "table": {
+          "expected": 1,
+          "actual": 1,
+          "expected_cells": 15,
+          "cell_errors": 0,
+          "exact": true
+        },
+        "exact_quality": true,
+        "expected_table_shape": [
+          [
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        ],
+        "table_shape_valid": true
+      },
+      "independent_edits": {
+        "raw": {
+          "character_edits": 294,
+          "reference_codepoints": 165,
+          "word_edits": 33,
+          "reference_words": 32
+        },
+        "content": {
+          "character_edits": 0,
+          "reference_codepoints": 165,
+          "word_edits": 0,
+          "reference_words": 32
+        }
+      },
+      "source_floor": true,
+      "raw": {
+        "rows": 248,
+        "archive_sha256": "255a8a875d20ec2a917013dd296fd4e3217a46685714355525ed5bb298c9fa2e",
+        "ordered_row_sha256": "accf7b2a7b258e59d62b3a0b6a076d76b84996ef600da55bf98a46f1d33c0c0a"
+      },
+      "firstscore": {
+        "rms": 0.11457099769921551,
+        "max_abs": 0.9309492111206055,
+        "candidate_rms_magnitude": 2.2445456681166465,
+        "source_rms_magnitude": 2.246865113972659
+      },
+      "derived_rms_max_ulps_from_producer": 0.0,
+      "summary": {
+        "prompt_tokens": 210,
+        "image_tokens": 196,
+        "source_fed_vision": false,
+        "upstream_physical": true,
+        "provisional_heldout_cap": 1536,
+        "physical_q6_tiled": true,
+        "physical_source_prefill_chunks": true,
+        "physical_q4_repack": true,
+        "physical_repack_entries": 216,
+        "physical_repack_bytes": 1662861312,
+        "physical_repack_hits": 56601,
+        "converted_f32_weight_entries": 0,
+        "converted_f32_weight_bytes": 0,
+        "teacher_positions": 1,
+        "generated_tokens": 248,
+        "eos": true,
+        "cap": 1536
+      },
+      "resources": {
+        "status": "completed",
+        "returncode": 0,
+        "elapsed_seconds": 254.24962815100002,
+        "child_user_seconds": 619.7099089999999,
+        "child_system_seconds": 65.94236999999998,
+        "peak_rss_bytes_observed": 6004269056,
+        "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+        "cumulative_child_peak_rss_bytes": 6004269056
+      }
+    }
+  },
+  "admissions": {
+    "inventory-table-off": {
+      "memory": {
+        "MemAvailable": 17971757056,
+        "SwapTotal": 0,
+        "SwapFree": 0,
+        "cgroup_observed": 1,
+        "finite_cgroup_bounds": 1
+      },
+      "output_free_bytes": 20927254528,
+      "seal_sha256": "2b684e94fbd978ce8212e3c57e8e8db001e9b11f39dcd01a6e836df6e1e001d0",
+      "expected_seal_sha256": "2b684e94fbd978ce8212e3c57e8e8db001e9b11f39dcd01a6e836df6e1e001d0",
+      "checks": {
+        "memory": true,
+        "output": true,
+        "seal": true
+      },
+      "failed_predicates": []
+    },
+    "inventory-table-on": {
+      "memory": {
+        "MemAvailable": 22733180928,
+        "SwapTotal": 0,
+        "SwapFree": 0,
+        "cgroup_observed": 1,
+        "finite_cgroup_bounds": 1
+      },
+      "output_free_bytes": 20509097984,
+      "seal_sha256": "2b684e94fbd978ce8212e3c57e8e8db001e9b11f39dcd01a6e836df6e1e001d0",
+      "expected_seal_sha256": "2b684e94fbd978ce8212e3c57e8e8db001e9b11f39dcd01a6e836df6e1e001d0",
+      "checks": {
+        "memory": true,
+        "output": true,
+        "seal": true
+      },
+      "failed_predicates": []
+    }
+  },
+  "prior_partial": {
+    "producer_receipt_sha256": "c723dd349d5e3bdce449d2c0fa5bf8daffb34ab1be24eb2a58a6eaa9a21250f1",
+    "audit_sha256": "199e7791eaee20b8aa2d71f1c803cd4e06293b10599536c1c05f59ccea291dfa",
+    "owned_files": 590,
+    "owned_bytes": 5443427617,
+    "raw_rows": 4340,
+    "original_status": "failed",
+    "original_phase": "inventory-table-preflight",
+    "original_error": "per-arm resources/seal",
+    "original_failure_cause": "Unclassified; individual predicate telemetry was not retained.",
+    "original_final_model_hash_check_reached": false,
+    "book_remains_capped_negative": true
+  },
+  "initial_inventory_artifact_reader": {
+    "status": "failed",
+    "error_type": "KeyError",
+    "missing_field": "on_source_floors_passed",
+    "receipt_sha256": "4dfa2aa6deeb80891e8d4a740a1a5c1b2c56b8a77ff6c90d0be5972ae2906396",
+    "correction": "Read completed_cases_on_source_floors_passed from the explicitly scoped partial report; no data, model, scorer, gate or budget change."
+  },
+  "independent_raw_audit": {
+    "status": "inventory_continuation_audit_complete",
+    "receipt_sha256": "80c59b633a4b2e623d1bb0566bf99031c1b267d1d96287787c1bf01c780237f8",
+    "owned_files": 207,
+    "owned_bytes": 849114811,
+    "new_raw_rows": 496,
+    "linked_prior_raw_rows": 4340,
+    "closed_raw_row_total": 4836,
+    "all_raw_finite_argmax_sha": true,
+    "all_owned_artifact_hashes": true,
+    "elapsed_seconds": 48.86073552300002,
+    "actual_derived_rms_max_ulps": 0.0,
+    "predeclared_rms_ulp_bound": 8
+  },
+  "combined_fixed_panel": {
+    "planned_cases": 3,
+    "on_source_floors_passed": 2,
+    "all_on_complete": false,
+    "qualification": false,
+    "scope": "All six fixed forwards are now executed across the preserved original producer and inventory-only continuation. Receipt and inventory meet provisional source floors; book remains capped without EOS. No aggregate waiver."
+  },
+  "source_log_provenance": {
+    "retained_log_hashes_verified": 20,
+    "overwritten_logs": [
+      {
+        "file": "source.log",
+        "original_candidate_log_sha256": "251693a7135dc2e207bb2133012c71f87f1ed56c2971bfad8889a36cbacd29a9",
+        "retained_controller_log_sha256": "c6b600c89014718b9acb45a97596d7cac06756a8d35c2476616d5964e695ab6d"
+      }
+    ],
+    "original_candidate_git_rev_log_bytes_available": false,
+    "original_candidate_git_rev_log_independently_rehashed": false,
+    "pinned_source_file_hashes_and_tested_runtime_bundle_verified": true,
+    "scope": "The model worker overwrote root source.log with the controller revision. Original candidate git-rev log bytes were not retained or independently rehashed. Its recorded hash remains in the immutable control receipt; pinned source files, tested bundle and other retained command logs are checked. No claim that all original control logs were rehashed."
+  },
+  "paired_native_layers": {
+    "derived_rms_max_ulps_from_producer": 0.0,
+    "scope": "Same-source native OFF/ON, not actual source hidden states.",
+    "first_different_layer": 0,
+    "layers": [
+      {
+        "layer": 0,
+        "bit_exact": false,
+        "rms": 8.326279589997488e-07,
+        "max_abs": 3.8661062717437744e-05,
+        "off_rms_magnitude": 0.15261163259817095,
+        "on_rms_magnitude": 0.1526116299540366
+      },
+      {
+        "layer": 1,
+        "bit_exact": false,
+        "rms": 0.00020296156717559738,
+        "max_abs": 0.004947662353515625,
+        "off_rms_magnitude": 0.16473077243250794,
+        "on_rms_magnitude": 0.16472957679220768
+      },
+      {
+        "layer": 2,
+        "bit_exact": false,
+        "rms": 0.0007761063066001074,
+        "max_abs": 0.03010249137878418,
+        "off_rms_magnitude": 0.1647312357652389,
+        "on_rms_magnitude": 0.16473545294768185
+      },
+      {
+        "layer": 3,
+        "bit_exact": false,
+        "rms": 0.001303728646733503,
+        "max_abs": 0.03357672691345215,
+        "off_rms_magnitude": 0.18647474430637437,
+        "on_rms_magnitude": 0.18647466719615605
+      },
+      {
+        "layer": 4,
+        "bit_exact": false,
+        "rms": 0.0018177255736690182,
+        "max_abs": 0.03592061996459961,
+        "off_rms_magnitude": 0.18928527497198855,
+        "on_rms_magnitude": 0.18930287715765656
+      },
+      {
+        "layer": 5,
+        "bit_exact": false,
+        "rms": 0.002457480148374727,
+        "max_abs": 0.04100298881530762,
+        "off_rms_magnitude": 0.1976230760114231,
+        "on_rms_magnitude": 0.19764595628565076
+      },
+      {
+        "layer": 6,
+        "bit_exact": false,
+        "rms": 0.003481906632892583,
+        "max_abs": 0.06243753433227539,
+        "off_rms_magnitude": 0.2346760560885189,
+        "on_rms_magnitude": 0.2347306578372242
+      },
+      {
+        "layer": 7,
+        "bit_exact": false,
+        "rms": 0.004170054678295863,
+        "max_abs": 0.07249331474304199,
+        "off_rms_magnitude": 0.23397903762917616,
+        "on_rms_magnitude": 0.2340341421954434
+      },
+      {
+        "layer": 8,
+        "bit_exact": false,
+        "rms": 0.004386146091243257,
+        "max_abs": 0.07327938079833984,
+        "off_rms_magnitude": 0.22455329147808406,
+        "on_rms_magnitude": 0.2246276687566136
+      },
+      {
+        "layer": 9,
+        "bit_exact": false,
+        "rms": 0.004737461347258271,
+        "max_abs": 0.08110713958740234,
+        "off_rms_magnitude": 0.22575330079252226,
+        "on_rms_magnitude": 0.22579995598202007
+      },
+      {
+        "layer": 10,
+        "bit_exact": false,
+        "rms": 0.005238952330079418,
+        "max_abs": 0.08801031112670898,
+        "off_rms_magnitude": 0.23029056224452793,
+        "on_rms_magnitude": 0.23034751693947797
+      },
+      {
+        "layer": 11,
+        "bit_exact": false,
+        "rms": 0.00578706389297351,
+        "max_abs": 0.0830531120300293,
+        "off_rms_magnitude": 0.22911821303615446,
+        "on_rms_magnitude": 0.2291369320081753
+      },
+      {
+        "layer": 12,
+        "bit_exact": false,
+        "rms": 0.005821082299872539,
+        "max_abs": 0.10950899124145508,
+        "off_rms_magnitude": 0.22204543365721346,
+        "on_rms_magnitude": 0.22200958060263906
+      },
+      {
+        "layer": 13,
+        "bit_exact": false,
+        "rms": 0.006056247983346351,
+        "max_abs": 0.08983850479125977,
+        "off_rms_magnitude": 0.22566869013035712,
+        "on_rms_magnitude": 0.22564869307919908
+      },
+      {
+        "layer": 14,
+        "bit_exact": false,
+        "rms": 0.006491748338873959,
+        "max_abs": 0.14977741241455078,
+        "off_rms_magnitude": 0.23880239558381214,
+        "on_rms_magnitude": 0.23876597947995176
+      },
+      {
+        "layer": 15,
+        "bit_exact": false,
+        "rms": 0.0074542042670268744,
+        "max_abs": 0.3000030517578125,
+        "off_rms_magnitude": 0.29029066661678543,
+        "on_rms_magnitude": 0.29032795396040184
+      },
+      {
+        "layer": 16,
+        "bit_exact": false,
+        "rms": 0.007759190701902881,
+        "max_abs": 0.215911865234375,
+        "off_rms_magnitude": 0.2919174775656135,
+        "on_rms_magnitude": 0.29201051131673283
+      },
+      {
+        "layer": 17,
+        "bit_exact": false,
+        "rms": 0.008557656689771886,
+        "max_abs": 0.18687057495117188,
+        "off_rms_magnitude": 0.28476712427626016,
+        "on_rms_magnitude": 0.2848513115136316
+      },
+      {
+        "layer": 18,
+        "bit_exact": false,
+        "rms": 0.009894569292103887,
+        "max_abs": 0.6895351409912109,
+        "off_rms_magnitude": 0.28811193235242344,
+        "on_rms_magnitude": 0.2882794190855431
+      },
+      {
+        "layer": 19,
+        "bit_exact": false,
+        "rms": 0.013897819161348248,
+        "max_abs": 0.33650970458984375,
+        "off_rms_magnitude": 0.3460701382933894,
+        "on_rms_magnitude": 0.3457967510230621
+      },
+      {
+        "layer": 20,
+        "bit_exact": false,
+        "rms": 0.015436970942012542,
+        "max_abs": 0.6041722297668457,
+        "off_rms_magnitude": 0.36716132155307624,
+        "on_rms_magnitude": 0.3667455873950956
+      },
+      {
+        "layer": 21,
+        "bit_exact": false,
+        "rms": 0.017172646223062957,
+        "max_abs": 0.663510799407959,
+        "off_rms_magnitude": 0.40212465357231303,
+        "on_rms_magnitude": 0.4017448078698605
+      },
+      {
+        "layer": 22,
+        "bit_exact": false,
+        "rms": 0.019323821523713904,
+        "max_abs": 1.4027099609375,
+        "off_rms_magnitude": 0.44689283193426765,
+        "on_rms_magnitude": 0.4462945794574845
+      },
+      {
+        "layer": 23,
+        "bit_exact": false,
+        "rms": 0.02181660940690989,
+        "max_abs": 1.3616175651550293,
+        "off_rms_magnitude": 0.4805783468360067,
+        "on_rms_magnitude": 0.48011730717848533
+      },
+      {
+        "layer": 24,
+        "bit_exact": false,
+        "rms": 0.023256705789346743,
+        "max_abs": 1.7138586044311523,
+        "off_rms_magnitude": 0.5057663242441961,
+        "on_rms_magnitude": 0.5052732464930569
+      },
+      {
+        "layer": 25,
+        "bit_exact": false,
+        "rms": 0.025181988831936845,
+        "max_abs": 1.6426901817321777,
+        "off_rms_magnitude": 0.5336219357139989,
+        "on_rms_magnitude": 0.5331078317943876
+      },
+      {
+        "layer": 26,
+        "bit_exact": false,
+        "rms": 0.02881060418421918,
+        "max_abs": 2.7086944580078125,
+        "off_rms_magnitude": 0.5908265322112017,
+        "on_rms_magnitude": 0.5901512915437561
+      },
+      {
+        "layer": 27,
+        "bit_exact": false,
+        "rms": 0.0337787393416108,
+        "max_abs": 1.8221569061279297,
+        "off_rms_magnitude": 0.6647501319059604,
+        "on_rms_magnitude": 0.6646757607533895
+      },
+      {
+        "layer": 28,
+        "bit_exact": false,
+        "rms": 0.038332019731536056,
+        "max_abs": 1.9336013793945312,
+        "off_rms_magnitude": 0.7339075216363683,
+        "on_rms_magnitude": 0.7339535270282711
+      },
+      {
+        "layer": 29,
+        "bit_exact": false,
+        "rms": 0.04563958609042901,
+        "max_abs": 2.085643768310547,
+        "off_rms_magnitude": 0.8193766000377778,
+        "on_rms_magnitude": 0.8193578021490547
+      },
+      {
+        "layer": 30,
+        "bit_exact": false,
+        "rms": 0.05478914909716658,
+        "max_abs": 1.268643856048584,
+        "off_rms_magnitude": 0.8577135922400886,
+        "on_rms_magnitude": 0.8576106884394619
+      },
+      {
+        "layer": 31,
+        "bit_exact": false,
+        "rms": 0.06927129605001084,
+        "max_abs": 2.5261452198028564,
+        "off_rms_magnitude": 0.9553468991510261,
+        "on_rms_magnitude": 0.9545782816592646
+      }
+    ]
+  },
+  "limits": [
+    "Provisional labels, not expert-adjudicated ground truth; no tuning or representative/blind quality claim.",
+    "Initial resource/seal failure remains unclassified; fresh predicate readings do not establish its cause.",
+    "Original candidate git-rev log bytes were overwritten and cannot be independently rehashed; source-file pins, tested bundle and 20 other retained logs are verified.",
+    "Original stopped worker did not reach its final model rehash; inventory continuation validates the same immutable physical pack and reaches its final rehash.",
+    "One sequential timing pair is diagnostic, not speed qualification.",
+    "All experimental gates remain default-off; no release, alias or app change."
+  ]
+}

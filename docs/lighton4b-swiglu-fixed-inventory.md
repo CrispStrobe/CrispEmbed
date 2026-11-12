@@ -1,0 +1,27 @@
+# Audited fixed SwiGLU panel: two provisional floors pass
+
+All six planned fixed forwards have now executed across the preserved original run and its inventory-only continuation. The combined ON panel meets **2/3 provisional source floors**. Receipt improves to its frozen floor, inventory stays exact, and the book remains capped without EOS. The candidate stays unqualified and default-off.
+
+| Fixed case | OFF → ON tokens | Content character / word edits OFF → ON | Complete source floor |
+| --- | --- | --- | --- |
+| Receipt | 468 → 465, both EOS | 25/19 → 24/18 | 24/18 |
+| Two-column book | 1536 → 1536, neither EOS | 3716/955 → 3604/973 | 526/146, source654EOS |
+| Inventory | 248 → 248, both EOS | 0/0 → 0/0; all15 cells exact | 0/0; all15 cells exact |
+
+Receipt content denominators are768 codepoints/144 words; book denominators are2981/556. Book capped scores are diagnostic prefixes, not completed transcription quality. All labels and scorer remain the original provisional, non-expert references. No case, cap, prompt, label, scorer or gate was tuned.
+
+The original producer SHA `c723dd349d5e3bdce449d2c0fa5bf8daffb34ab1be24eb2a58a6eaa9a21250f1` stops before inventory inference at its combined resource/seal admission. Individual predicate readings were not retained, so its cause remains **unclassified**. Its receipt/book pairs and both observed controls are independently verified:590 declared files/5,443,427,617 bytes/all4340 raw rows. One private artifact transport preserves616 task-owned files/5,444,674,895 bytes remotely. No completed native arm was repeated.
+
+The [inventory-only protocol](../tools/swiglu-fixed-inventory/protocol.json) reuses immutable candidate `519c3d9765c234cd93e9069d5efdc239e3cad3f2`, helper controller `a6164205620c71427a39c97ab386591406c4ca73`, the actual tested executable/backend bundle and unchanged physical model `843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43`. Only SwiGLU changes0→1; planner/GDN/Q4 repack/Q6/Pillow/F16 gates stay enabled, text/head BF16 stay disabled. There is no C++ rebuild or repeated observed/receipt/book/source/source-feature forward. Inventory OFF reproduces every historical248 row, stage, text/ID and EOS anchor before ON. ON preserves identical decoded text and IDs and all15 literal cells.
+
+Fresh admission keeps the exact10GiB RAM/2GiB output/unchanged-seal predicates, recording every reading before enforcement. OFF/ON available RAM is17,971,757,056/22,733,180,928 bytes; output free space is20,927,254,528/20,509,097,984 bytes. Both seal hashes equal the frozen `2b684e94fbd978ce8212e3c57e8e8db001e9b11f39dcd01a6e836df6e1e001d0`. These readings describe the fresh allocation and do not establish the earlier failure's cause. Both1200-second arm bounds are unchanged. Original6153 seconds plus the entire4200-second continuation allowance remain below the original12600-second model budget.
+
+[The final safe inventory result](../tests/results/qwen35-ocr/lighton4b-swiglu-fixed-inventory.json) binds producer SHA `a88b5341afabe2c685f1037dfe40bf8dce0345e7fa5cea5b2bb942b4e595afe1`. [Independent raw audit](../tests/results/qwen35-ocr/lighton4b-swiglu-inventory-raw-audit.json), SHA `80c59b633a4b2e623d1bb0566bf99031c1b267d1d96287787c1bf01c780237f8`, checks207 files/849,114,811 bytes/all496 new rows in48.86 seconds and links prior audit SHA `199e7791eaee20b8aa2d71f1c803cd4e06293b10599536c1c05f59ccea291dfa`: **4836 raw rows closed in total**. It independently checks actual inputs/positions/source features, first scores, all32 paired native layers, decoded metrics, literal cells, stop states and admission telemetry. Derived RMS statistics agree at0 ULP; the predeclared portability bound of8 ULP changes no raw SHA, argmax, maximum-error or quality criterion.
+
+Inventory first-score RMS versus source improves `0.175423626→0.114570998`, while maximum error worsens `0.801771879→0.930949211`. Its first paired native difference is layer0: RMS `8.32627959e-7`, max `3.86610627e-5`, versus OFF/ON RMS magnitudes `0.152611633/0.152611630`. These compare native OFF/ON, not unavailable source hidden states. Wall times258.47/254.25 seconds form one diagnostic pair, not a speed qualification.
+
+[The initial inventory artifact-reader failure](../tests/results/qwen35-ocr/lighton4b-swiglu-inventory-audit-initial.json) remains preserved. It reaches final aggregation and requests the full-panel count field from a scoped partial report, producing `KeyError`. The correction reads `completed_cases_on_source_floors_passed` and repeats only artifact verification against unchanged producer bytes. No model inference was repeated to repair that reporting error.
+
+The original candidate git-rev `source.log` bytes were overwritten by the helper-controller revision. The controls receipt preserves their hash, but those original bytes cannot be independently rehashed. Source-file pins, the tested bundle and20 other retained command logs are verified; no claim that all original logs were retained is made. The original failed worker also does not reach its final model rehash; the continuation validates the same immutable pack and reaches its final rehash.
+
+Protected book text, token IDs and complete model reports remain private; public evidence contains counts, metrics and hashes. The book cap, initial admission failure, reader failure, observed-form regression and opposing numerical changes are not waived. No default, runtime release, alias or application pin changes.
