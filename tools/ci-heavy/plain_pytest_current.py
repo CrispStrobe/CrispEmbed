@@ -9,6 +9,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
+SUBJECT = 'c364feb974b91e14cbf328c6949f3df36e89ce81'
 OUT = Path(os.environ['HEAVY_OUT'])
 SCRATCH = Path(os.environ['HEAVY_SCRATCH']) / 'plain-pytest-current'
 
@@ -20,12 +21,9 @@ def run(args, **kwargs):
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     SCRATCH.mkdir(parents=True, exist_ok=True)
-    # Bind the subject to the actual ancestor before any test; no working tree files
-    # from this harness branch are substituted into the tested checkout.
-    subject = subprocess.check_output(['git', 'rev-parse', 'HEAD^'], cwd=ROOT, text=True).strip()
-    expected = subprocess.check_output(['git', 'rev-parse', 'c364feb97'], cwd=ROOT, text=True).strip()
-    if subject != expected:
-        raise RuntimeError('harness parent is not the declared main commit')
+    # The workflow checkout is shallow; use the explicit release SHA and check
+    # each independent clone after checkout rather than assuming HEAD^ exists.
+    subject = SUBJECT
     venv = SCRATCH / 'venv'
     run([sys.executable, '-m', 'venv', venv])
     py = venv / 'bin/python'
