@@ -1,0 +1,474 @@
+{
+  "schema": "lighton4b-book-repetition-eos-selected-review/v1",
+  "service": "Kaggle",
+  "kernel_id": 144605485,
+  "version": 1,
+  "status": "complete-artifact-only",
+  "raw_report_sha256": "7b573a002c20ff8b63c58fe74a9ff2e2cbc3bb95f3349ac852952d8ac152ccfd",
+  "raw_report_bytes": 1722279,
+  "numpy_version": "2.1.3",
+  "model_forward_executed": false,
+  "text_or_token_ids_emitted": false,
+  "qualified": false,
+  "prefix_comparison_scope": {
+    "planner_on": {
+      "shared_output_prefix_tokens": 405,
+      "last_same_input_score_row": 405,
+      "later_rows": "independent trajectory diagnostics only; differing consumed prefixes exclude parity"
+    },
+    "planner_off": {
+      "shared_output_prefix_tokens": 92,
+      "last_same_input_score_row": 92,
+      "later_rows": "independent trajectory diagnostics only; differing consumed prefixes exclude parity"
+    }
+  },
+  "arms": {
+    "source": {
+      "receipt_sha256": "9b88195d5a8058dea4fab87472009d3826bc1fa3b5d0575aa2e33698316d5722",
+      "archive_sha256": "789b2e468f0065e5d4a879a6ae6baf5f497bf2708d3f4199023483600e3c5d47",
+      "stop_is_eos": true,
+      "repetition": {
+        "tokens": 654,
+        "duplicate_ngrams": {
+          "4": {
+            "repeated_windows": 1,
+            "first_repeated_start": 569
+          },
+          "8": {
+            "repeated_windows": 0,
+            "first_repeated_start": null
+          },
+          "16": {
+            "repeated_windows": 0,
+            "first_repeated_start": null
+          }
+        },
+        "first_periodic_run": null,
+        "longest_periodic_run": null
+      },
+      "max_either_eos_probability": 0.9217992463558681,
+      "max_either_eos_position": 653,
+      "eos_top_rank_rows": 1,
+      "selected_rows": [
+        {
+          "position": 0,
+          "top_two_gap": 0.4727325439453125,
+          "entropy": 1.1242936914155055,
+          "eos": [
+            {
+              "rank_strict": 2624,
+              "ties": 1,
+              "probability": 1.1455072807261654e-07,
+              "gap_from_top": 15.361597061157227
+            },
+            {
+              "rank_strict": 11,
+              "ties": 1,
+              "probability": 0.0002584908139507679,
+              "gap_from_top": 7.6399993896484375
+            }
+          ],
+          "either_eos_probability": 0.00025860536467884053
+        },
+        {
+          "position": 92,
+          "top_two_gap": 0.4743938446044922,
+          "entropy": 0.8726235081095128,
+          "eos": [
+            {
+              "rank_strict": 2744,
+              "ties": 1,
+              "probability": 1.5567225445116613e-08,
+              "gap_from_top": 17.454113960266113
+            },
+            {
+              "rank_strict": 2140,
+              "ties": 1,
+              "probability": 2.358232441480247e-08,
+              "gap_from_top": 17.03878426551819
+            }
+          ],
+          "either_eos_probability": 3.914954985991908e-08
+        },
+        {
+          "position": 405,
+          "top_two_gap": 0.3747291564941406,
+          "entropy": 2.812066589082802,
+          "eos": [
+            {
+              "rank_strict": 9728,
+              "ties": 1,
+              "probability": 1.8165273949455207e-08,
+              "gap_from_top": 16.160200357437134
+            },
+            {
+              "rank_strict": 1264,
+              "ties": 1,
+              "probability": 3.933308168229876e-07,
+              "gap_from_top": 13.085061073303223
+            }
+          ],
+          "either_eos_probability": 4.114960907724428e-07
+        },
+        {
+          "position": 527,
+          "top_two_gap": 1.6168212890625,
+          "entropy": 1.1198282803480595,
+          "eos": [
+            {
+              "rank_strict": 3259,
+              "ties": 1,
+              "probability": 1.4064622876728573e-07,
+              "gap_from_top": 15.428021430969238
+            },
+            {
+              "rank_strict": 7235,
+              "ties": 1,
+              "probability": 4.6568569416661366e-08,
+              "gap_from_top": 16.53334331512451
+            }
+          ],
+          "either_eos_probability": 1.872147981839471e-07
+        },
+        {
+          "position": 607,
+          "top_two_gap": 0.5459766387939453,
+          "entropy": 2.362083124004376,
+          "eos": [
+            {
+              "rank_strict": 17754,
+              "ties": 1,
+              "probability": 4.610300434907296e-08,
+              "gap_from_top": 15.780924797058105
+            },
+            {
+              "rank_strict": 5765,
+              "ties": 1,
+              "probability": 2.1366284746745636e-07,
+              "gap_from_top": 14.247403621673584
+            }
+          ],
+          "either_eos_probability": 2.597658518165293e-07
+        },
+        {
+          "position": 653,
+          "top_two_gap": 2.630861282348633,
+          "entropy": 0.31700606108672075,
+          "eos": [
+            {
+              "rank_strict": 1420,
+              "ties": 1,
+              "probability": 8.089990918029252e-09,
+              "gap_from_top": 18.551210403442383
+            },
+            {
+              "rank_strict": 1,
+              "ties": 1,
+              "probability": 0.9217992382658772,
+              "gap_from_top": -0.0
+            }
+          ],
+          "either_eos_probability": 0.9217992463558681
+        }
+      ]
+    },
+    "planner_on": {
+      "receipt_sha256": "d2ea232376c2fa4697613d615d33b8b10a4dc0d5ab987fdac7d1ed3d99561760",
+      "archive_sha256": "bcfd52f7dec864fdf2db187f9dc4b586dca97f0c55a6016af9857802151ffc33",
+      "stop_is_eos": false,
+      "repetition": {
+        "tokens": 1536,
+        "duplicate_ngrams": {
+          "4": {
+            "repeated_windows": 938,
+            "first_repeated_start": 527
+          },
+          "8": {
+            "repeated_windows": 907,
+            "first_repeated_start": 527
+          },
+          "16": {
+            "repeated_windows": 869,
+            "first_repeated_start": 607
+          }
+        },
+        "first_periodic_run": null,
+        "longest_periodic_run": null
+      },
+      "max_either_eos_probability": 0.028731534777874365,
+      "max_either_eos_position": 903,
+      "eos_top_rank_rows": 0,
+      "selected_rows": [
+        {
+          "position": 0,
+          "top_two_gap": 0.9182186126708984,
+          "entropy": 1.0303163673094393,
+          "eos": [
+            {
+              "rank_strict": 2214,
+              "ties": 1,
+              "probability": 1.4865529908902552e-07,
+              "gap_from_top": 15.271327018737793
+            },
+            {
+              "rank_strict": 11,
+              "ties": 1,
+              "probability": 0.00025673885761951496,
+              "gap_from_top": 7.817142486572266
+            }
+          ],
+          "either_eos_probability": 0.000256887512918604
+        },
+        {
+          "position": 92,
+          "top_two_gap": 0.05911827087402344,
+          "entropy": 0.8854395372090279,
+          "eos": [
+            {
+              "rank_strict": 2665,
+              "ties": 1,
+              "probability": 1.6370791924452514e-08,
+              "gap_from_top": 17.2263126373291
+            },
+            {
+              "rank_strict": 2010,
+              "ties": 1,
+              "probability": 2.6518483055211095e-08,
+              "gap_from_top": 16.743969440460205
+            }
+          ],
+          "either_eos_probability": 4.288927497966361e-08
+        },
+        {
+          "position": 405,
+          "top_two_gap": 0.011495590209960938,
+          "entropy": 2.7140032552004216,
+          "eos": [
+            {
+              "rank_strict": 9084,
+              "ties": 1,
+              "probability": 1.9186913992729795e-08,
+              "gap_from_top": 16.238327741622925
+            },
+            {
+              "rank_strict": 1437,
+              "ties": 1,
+              "probability": 3.078316574525685e-07,
+              "gap_from_top": 13.463003158569336
+            }
+          ],
+          "either_eos_probability": 3.270185714452983e-07
+        },
+        {
+          "position": 527,
+          "top_two_gap": 1.6307868957519531,
+          "entropy": 1.6080934934679316,
+          "eos": [
+            {
+              "rank_strict": 919,
+              "ties": 1,
+              "probability": 3.3799156871835e-06,
+              "gap_from_top": 12.179720401763916
+            },
+            {
+              "rank_strict": 62,
+              "ties": 1,
+              "probability": 0.00018954141093717182,
+              "gap_from_top": 8.152963638305664
+            }
+          ],
+          "either_eos_probability": 0.0001929213266243553
+        },
+        {
+          "position": 607,
+          "top_two_gap": 5.445095062255859,
+          "entropy": 0.12752323212385325,
+          "eos": [
+            {
+              "rank_strict": 2980,
+              "ties": 1,
+              "probability": 7.207551479807042e-09,
+              "gap_from_top": 18.731379985809326
+            },
+            {
+              "rank_strict": 5,
+              "ties": 1,
+              "probability": 0.002316786812927174,
+              "gap_from_top": 6.050817489624023
+            }
+          ],
+          "either_eos_probability": 0.0023167940204786536
+        },
+        {
+          "position": 1535,
+          "top_two_gap": 15.360258102416992,
+          "entropy": 1.113001121185824e-05,
+          "eos": [
+            {
+              "rank_strict": 418,
+              "ties": 1,
+              "probability": 2.0643547059879153e-12,
+              "gap_from_top": 26.906202793121338
+            },
+            {
+              "rank_strict": 4,
+              "ties": 1,
+              "probability": 7.039500344490832e-08,
+              "gap_from_top": 16.46914291381836
+            }
+          ],
+          "either_eos_probability": 7.03970677996143e-08
+        }
+      ]
+    },
+    "planner_off": {
+      "receipt_sha256": "f231ab48c9bff411a1f9c96cfb79eda084f2f0b7cee46f9ea747ccc734d5f8e6",
+      "archive_sha256": "f22df9875a5a31a7722c1392d39a0daea6343c9cd42732271d4dd4941e77835a",
+      "stop_is_eos": true,
+      "repetition": {
+        "tokens": 660,
+        "duplicate_ngrams": {
+          "4": {
+            "repeated_windows": 1,
+            "first_repeated_start": 573
+          },
+          "8": {
+            "repeated_windows": 0,
+            "first_repeated_start": null
+          },
+          "16": {
+            "repeated_windows": 0,
+            "first_repeated_start": null
+          }
+        },
+        "first_periodic_run": null,
+        "longest_periodic_run": null
+      },
+      "max_either_eos_probability": 0.9536275693648847,
+      "max_either_eos_position": 659,
+      "eos_top_rank_rows": 1,
+      "selected_rows": [
+        {
+          "position": 0,
+          "top_two_gap": 0.7933425903320312,
+          "entropy": 1.0656898026393948,
+          "eos": [
+            {
+              "rank_strict": 2616,
+              "ties": 1,
+              "probability": 1.3088947542519604e-07,
+              "gap_from_top": 15.35742473602295
+            },
+            {
+              "rank_strict": 11,
+              "ties": 1,
+              "probability": 0.00032554663614485,
+              "gap_from_top": 7.538516998291016
+            }
+          ],
+          "either_eos_probability": 0.0003256775256202752
+        },
+        {
+          "position": 92,
+          "top_two_gap": 0.5187454223632812,
+          "entropy": 0.8341096832992327,
+          "eos": [
+            {
+              "rank_strict": 2721,
+              "ties": 1,
+              "probability": 1.3560742787850076e-08,
+              "gap_from_top": 17.616910457611084
+            },
+            {
+              "rank_strict": 1881,
+              "ties": 1,
+              "probability": 2.4941511774623567e-08,
+              "gap_from_top": 17.007555961608887
+            }
+          ],
+          "either_eos_probability": 3.850225456247364e-08
+        },
+        {
+          "position": 405,
+          "top_two_gap": 9.442575454711914,
+          "entropy": 0.003299652324639202,
+          "eos": [
+            {
+              "rank_strict": 7989,
+              "ties": 1,
+              "probability": 7.49048070828076e-11,
+              "gap_from_top": 23.314520835876465
+            },
+            {
+              "rank_strict": 120,
+              "ties": 1,
+              "probability": 2.633543304513595e-08,
+              "gap_from_top": 17.452068328857422
+            }
+          ],
+          "either_eos_probability": 2.641033785221876e-08
+        },
+        {
+          "position": 527,
+          "top_two_gap": 0.3384437561035156,
+          "entropy": 1.3442184061673796,
+          "eos": [
+            {
+              "rank_strict": 2314,
+              "ties": 1,
+              "probability": 6.748205109725225e-08,
+              "gap_from_top": 15.809596538543701
+            },
+            {
+              "rank_strict": 770,
+              "ties": 1,
+              "probability": 3.3272754605817076e-07,
+              "gap_from_top": 14.214134216308594
+            }
+          ],
+          "either_eos_probability": 4.00209597155423e-07
+        },
+        {
+          "position": 607,
+          "top_two_gap": 0.6592597961425781,
+          "entropy": 4.436077811709089,
+          "eos": [
+            {
+              "rank_strict": 5862,
+              "ties": 1,
+              "probability": 1.3704077041433578e-06,
+              "gap_from_top": 11.950122833251953
+            },
+            {
+              "rank_strict": 4436,
+              "ties": 1,
+              "probability": 1.985216673698248e-06,
+              "gap_from_top": 11.579503059387207
+            }
+          ],
+          "either_eos_probability": 3.355624377841606e-06
+        },
+        {
+          "position": 659,
+          "top_two_gap": 3.5234603881835938,
+          "entropy": 0.23444327374193946,
+          "eos": [
+            {
+              "rank_strict": 2494,
+              "ties": 1,
+              "probability": 7.650496985976642e-09,
+              "gap_from_top": 18.641013145446777
+            },
+            {
+              "rank_strict": 1,
+              "ties": 1,
+              "probability": 0.9536275617143877,
+              "gap_from_top": -0.0
+            }
+          ],
+          "either_eos_probability": 0.9536275693648847
+        }
+      ]
+    }
+  }
+}
