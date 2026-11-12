@@ -19,5 +19,6 @@
     "Capture32 native405 layer outputs, norm/input/positions and layer0 operator arrays; missing source state is not inferred.",
     "Native/source first405 prior IDs must match before new stage comparison; all protected outputs remain private."
   ],
-  "status": "submitted-not-yet-reviewed-complete"
+  "status": "measured-neutral-capture-small-report-reviewed",
+  "producer_receipt_sha256": "0a6830da47d49062af62df3ff882a3c895acb36a2fb7c4f75856dbf7bb4d0dc2"
 }

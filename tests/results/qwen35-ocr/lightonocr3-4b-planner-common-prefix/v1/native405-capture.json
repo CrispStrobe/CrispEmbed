@@ -1,0 +1,250 @@
+{
+  "status": "measured_neutral_native405_book_trace",
+  "source_sha": "4a32434e822ac6c8fd69ad77252a59a2cd4d5950",
+  "qualified": false,
+  "runtime_rebuilt": false,
+  "reference_forward_executed": false,
+  "old_baseline_decode_executed": false,
+  "source_feature_decode_executed": false,
+  "model_forward_executed": true,
+  "runtime_manifest_sha256": "540aa9983faf570e46e9e6708f745dbd3cbd5f8354276f3fddb301e7fe9e65d7",
+  "native_binary_sha256": "12a220611f0cfd93cbe88a1539cdd03ba3af44c995fbe899d33cc6327a66352c",
+  "neutrality_reference_sha256": "d2ea232376c2fa4697613d615d33b8b10a4dc0d5ab987fdac7d1ed3d99561760",
+  "strict_1054_prefix_and_stages_reproduced": true,
+  "all1536_rows_ids_text_observer_neutral": true,
+  "trace_position": 405,
+  "native_trace_layers": 32,
+  "elapsed_seconds": 2335.166110441,
+  "schema": "lighton4b-native405-neutral-capture-review/v1",
+  "producer_receipt_sha256": "0a6830da47d49062af62df3ff882a3c895acb36a2fb7c4f75856dbf7bb4d0dc2",
+  "derived_worker_sha256": "743048ee9a93137a16aece6ad42db958fc4b9b36083a73863735b3e02f4aa072",
+  "summary": {
+    "prompt_tokens": 266,
+    "image_tokens": 252,
+    "source_fed_vision": false,
+    "upstream_physical": true,
+    "provisional_heldout_cap": 1536,
+    "physical_q6_tiled": true,
+    "physical_source_prefill_chunks": true,
+    "physical_q4_repack": true,
+    "physical_repack_entries": 216,
+    "physical_repack_bytes": 1662861312,
+    "physical_repack_hits": 335466,
+    "converted_f32_weight_entries": 0,
+    "converted_f32_weight_bytes": 0,
+    "teacher_positions": 1,
+    "generated_tokens": 1536,
+    "eos": false,
+    "cap": 1536
+  },
+  "trace_gates": {
+    "CRISPEMBED_LIGHTON4B_GREEDY_TRACE": "1",
+    "CRISPEMBED_LIGHTON4B_GREEDY_TRACE_POSITION": "405"
+  },
+  "native_arm_resources": {
+    "status": "completed",
+    "returncode": 0,
+    "elapsed_seconds": 2064.0984771649996,
+    "child_user_seconds": 5399.420847,
+    "child_system_seconds": 439.56194700000003,
+    "peak_rss_bytes_observed": 6234710016,
+    "rss_sampling_scope": "spawned process VmHWM at up to 1s intervals; short-lived peaks may be missed",
+    "cumulative_child_peak_rss_bytes": 6234710016
+  },
+  "trace_artifacts": {
+    "planner-on/greedy.405.layer.21.f32": {
+      "bytes": 10240,
+      "sha256": "f9b7cab2f32ef570edbb200ebfb6efcc66135b848827226b940352379437d012"
+    },
+    "planner-on/greedy.405.layer.16.f32": {
+      "bytes": 10240,
+      "sha256": "2b13253a5f8e77a106515f00e18eb90f58c5e84462e48807116d1a87bdafe553"
+    },
+    "planner-on/greedy.405.layer.11.f32": {
+      "bytes": 10240,
+      "sha256": "0096ca06fac25d11e2a2fa29cda3f339f0e6d0ddd436c69113a04074551fab4d"
+    },
+    "planner-on/greedy.405.layer0.up.f32": {
+      "bytes": 36864,
+      "sha256": "be845861180e78c96e944a2fefcbdf7a39f7c382c5945fa32f6e8390715faa28"
+    },
+    "planner-on/greedy.405.layer.4.f32": {
+      "bytes": 10240,
+      "sha256": "bb8be2d7fec5e69ebd3b66be8d54d101802d038df596f33ad988c8f7c24b3176"
+    },
+    "planner-on/greedy.405.norm.f32": {
+      "bytes": 10240,
+      "sha256": "e340de399545d331b9e34da55e7e9de367d4dcf1a029266dc2f9d528793cef0a"
+    },
+    "planner-on/greedy.405.layer.17.f32": {
+      "bytes": 10240,
+      "sha256": "22ceb42138da0806fba7ae4fffde2feccd095e1a12829259d0db300a5e541b89"
+    },
+    "planner-on/greedy.405.input.f32": {
+      "bytes": 10240,
+      "sha256": "ec5225c1f834c30834c0d76ce7cd38da29802277533a27209a0e60cb6166caed"
+    },
+    "planner-on/greedy.405.layer.31.f32": {
+      "bytes": 10240,
+      "sha256": "190c8e3975435f187c80a97427f4d2455f4fee36e64cfdac5f246e684a4e3d28"
+    },
+    "planner-on/greedy.405.layer0.attention.f32": {
+      "bytes": 10240,
+      "sha256": "891cc51d6568b41a50335989fb221d7f9e5d6d7c8203c9b3cac5cea4eb428a05"
+    },
+    "planner-on/greedy.405.layer.10.f32": {
+      "bytes": 10240,
+      "sha256": "edac0a34d9024027910df4fd4475ce180b2bc3a73432465eba5e33fe0db79e55"
+    },
+    "planner-on/greedy.405.layer0.z.f32": {
+      "bytes": 16384,
+      "sha256": "dc0c2a6366a9f5f8a04681e9554f1313006064079c3ffd74f884f6d6c6d537d9"
+    },
+    "planner-on/greedy.405.layer.9.f32": {
+      "bytes": 10240,
+      "sha256": "3128c81c5bb14424fd21275b50174e73cb805c1acea0f0aa1777028e5104aea8"
+    },
+    "planner-on/greedy.405.layer0.qkv.f32": {
+      "bytes": 32768,
+      "sha256": "9f96aa54b294a39820b284cab77e8bfe25ea4eb78c7b85b4f60b30c5ad3e383c"
+    },
+    "planner-on/greedy.405.layer0.b.f32": {
+      "bytes": 128,
+      "sha256": "0a5b4a17fdf90dba19658c28b4e8f5351acbbfca396e828809bd4217067005b3"
+    },
+    "planner-on/greedy.405.layer.15.f32": {
+      "bytes": 10240,
+      "sha256": "b7df5ecb45b43ca3756647081d51ecd42aba76b1a3ed9d5f19e45c578f83493d"
+    },
+    "planner-on/greedy.405.layer.26.f32": {
+      "bytes": 10240,
+      "sha256": "9bc7fdbbe1de9cd333d39bb91a7d480d7d0806da47c5810acbca959f101bb585"
+    },
+    "planner-on/greedy.405.layer.24.f32": {
+      "bytes": 10240,
+      "sha256": "08cf8265269219f04ffdcd2a12242228603c3a2ebdc0d1744be2731827dcc99f"
+    },
+    "planner-on/greedy.405.layer.22.f32": {
+      "bytes": 10240,
+      "sha256": "8a9e2a7b3a2defb9cb4da788e5daa4fa0228a6024ca5a470200134352250c8c5"
+    },
+    "planner-on/greedy.405.layer.30.f32": {
+      "bytes": 10240,
+      "sha256": "a87f54f55ce00b27ba3d3e8325ea0334340f2b8ee57499c1775c40f6aff613b3"
+    },
+    "planner-on/greedy.405.layer.12.f32": {
+      "bytes": 10240,
+      "sha256": "a24af72f9fbbbe8aa5966fc76bef0b1228980f22865f6ca12d3811284da6d763"
+    },
+    "planner-on/greedy.405.layer.1.f32": {
+      "bytes": 10240,
+      "sha256": "aa3016faac6be04e863afe39021d8f177ccafe05243feee3fd325fbcb0686395"
+    },
+    "planner-on/greedy.405.layer0.post_norm.f32": {
+      "bytes": 10240,
+      "sha256": "e2ce3a0ada05f5766778eb6d4ead624e63ecbdeb6d21c76e27194f976802f691"
+    },
+    "planner-on/greedy.405.layer.18.f32": {
+      "bytes": 10240,
+      "sha256": "a35a68509c6d7e2b03c3e3d34b3d473b9d1dde4b9384c43c457c6b8f6059c370"
+    },
+    "planner-on/greedy.405.layer.14.f32": {
+      "bytes": 10240,
+      "sha256": "e11adbdd8a6bd18096a41842b0ae45663750a4bc8fa2b45b211136285dd1e5af"
+    },
+    "planner-on/greedy.405.layer.7.f32": {
+      "bytes": 10240,
+      "sha256": "f5abc20cbe35428fe03455e1e0df161a3ea2b2c70c27e77421095f60e7c19bf1"
+    },
+    "planner-on/greedy.405.layer0.input_norm.f32": {
+      "bytes": 10240,
+      "sha256": "925f59db58ae488b235fbf017c54ec0e8b8ed235733408ff94cd2730637e64bc"
+    },
+    "planner-on/greedy.405.positions.f32": {
+      "bytes": 12,
+      "sha256": "79eef57ae3e901494d8f344aaf60e4a87c9c934bec869d4903b1abd6f3a9b13b"
+    },
+    "planner-on/greedy.405.layer.6.f32": {
+      "bytes": 10240,
+      "sha256": "998f47c78782db42919786dbbc36c83e29453dda4c3ba2e64caebdac7249f9b9"
+    },
+    "planner-on/greedy.405.layer.23.f32": {
+      "bytes": 10240,
+      "sha256": "7e65505d57de9cb87a7bebc5f1fe2f6f13010bf242abd330dfb4bedc31ec47b5"
+    },
+    "planner-on/greedy.405.layer.3.f32": {
+      "bytes": 10240,
+      "sha256": "1e286f9a15439bbd7736cb13ef039a72448b809daf4c17594ae94b4ee8c04713"
+    },
+    "planner-on/greedy.405.layer.5.f32": {
+      "bytes": 10240,
+      "sha256": "effa664f14d8697d235208439fb13a328723ec2b2642866b1986f18a24b59bef"
+    },
+    "planner-on/greedy.405.layer.27.f32": {
+      "bytes": 10240,
+      "sha256": "d52da7f21982c79a0f684c47cefded49360fef4d8ce9e6f10479ef24dffe062c"
+    },
+    "planner-on/greedy.405.layer.28.f32": {
+      "bytes": 10240,
+      "sha256": "e1bce0f17975d26221454977025a191193476bf5f450c9dcc8c9f3f360e4fd7e"
+    },
+    "planner-on/greedy.405.layer.20.f32": {
+      "bytes": 10240,
+      "sha256": "1844dc80cff286a9b869b2951d490b4e7c3bfc7f5284f03337fa131cd3cb00c4"
+    },
+    "planner-on/greedy.405.layer0.a.f32": {
+      "bytes": 128,
+      "sha256": "6faa3853aa63bbb54f35781bde20521e36079d9942601f02a523aba6e6aea9c9"
+    },
+    "planner-on/greedy.405.layer.8.f32": {
+      "bytes": 10240,
+      "sha256": "b669fdbb97dd73a79ddf012dfa41a05558af2b7012bae4fe02c8c0ac1bcb5a5a"
+    },
+    "planner-on/greedy.405.layer.25.f32": {
+      "bytes": 10240,
+      "sha256": "3f34fc18d087a39698dc5269a15e26e1ac1ac7e74f8c18d90aabd0e5e1e55bc7"
+    },
+    "planner-on/greedy.405.layer0.down.f32": {
+      "bytes": 10240,
+      "sha256": "35879420a1d8653a1327813f7bbaca7047a7f09da7d304bde126ef65621319a1"
+    },
+    "planner-on/greedy.405.layer.13.f32": {
+      "bytes": 10240,
+      "sha256": "8170b72c5429882ccc05b6ebbbbf502019870a95b805544cfe2db218ff2b5d21"
+    },
+    "planner-on/greedy.405.layer0.attention_residual.f32": {
+      "bytes": 10240,
+      "sha256": "bef202e3833fdfd98d1e93071cbf2001bbea92ada5a53abd3890b10ff90936e4"
+    },
+    "planner-on/greedy.405.layer.19.f32": {
+      "bytes": 10240,
+      "sha256": "9bba2670a352f6d15cdda9e170b6fd7defbc22e6d46f48c71827f51aac313bc1"
+    },
+    "planner-on/greedy.405.layer.29.f32": {
+      "bytes": 10240,
+      "sha256": "7b45b752860e771b93263401bcdfb280ead7b528195bbeface84eceb0729d6ec"
+    },
+    "planner-on/greedy.405.layer.0.f32": {
+      "bytes": 10240,
+      "sha256": "5a2fa3ad4e3edc9854c1a73ed79220b2aafdc644d761b06143c947018eafd6dc"
+    },
+    "planner-on/greedy.405.layer0.activation.f32": {
+      "bytes": 36864,
+      "sha256": "d5e64a29afaa5e5b9e0a0e2292022d5fdd326e5e722e8243702b9306793ef578"
+    },
+    "planner-on/greedy.405.layer.2.f32": {
+      "bytes": 10240,
+      "sha256": "57f9a119f16db00d4aca91b349a11941dab01bb070cb04cbe5687ad248aac268"
+    },
+    "planner-on/greedy.405.layer0.gate.f32": {
+      "bytes": 36864,
+      "sha256": "83e95c2f1e3cca1d377e1c7e28eaa996e442778d22a93009c590a3bcd685165f"
+    }
+  },
+  "scope": "Producer checks complete1536-row/ID/text neutrality and retained prefill/vision stages. Independent small report/manifest review only; raw numerical stage comparison follows separately. Full capped output remains completion-negative.",
+  "limits": [
+    "No EOS at cap1536; observer success does not improve quality.",
+    "Native persistent-cache arrays were not captured; equal consumed prefix does not imply equal cache state.",
+    "Protected recognized text and token sequences remain private."
+  ]
+}
