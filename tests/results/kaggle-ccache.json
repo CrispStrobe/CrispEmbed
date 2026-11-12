@@ -125,5 +125,67 @@
    },
    "result": "seed current; dataset unchanged"
   }
+ },
+ "image_change_2026_11_12": {
+  "finding": "the #216 OvisOCR2 GPU bench had 0/193 hits with the seed attached and warmed (1385 files): the seed kernel was pinned to the Kaggle image of its first push (GCC 11.4 / CUDA 12.8), the new bench kernel got the current image (GCC 13.3 / CUDA 13.0), and CCACHE_COMPILERCHECK=content keys every object on the compiler binaries",
+  "fix": [
+   "kpush.py defaults docker_image_pinning_type to latest",
+   "seed records toolchain (c++/nvcc version lines); a mismatch is reported at warm-up and marks the seed stale",
+   "seed builds test-ovisocr2-quality-run and test-qwen35-profile in the CUDA tree, plus extra arches from CE_CCACHE_SEED_ARCHS that nvcc can target"
+  ],
+  "seed_cold_on_new_image": {
+   "source_commit": "972493b236c47c9bd9a208bdfa9f783ff0aa9433",
+   "cpu": {
+    "hits": 0,
+    "misses": 212,
+    "total_s": 346.1
+   },
+   "cuda_75": {
+    "hits": 9,
+    "misses": 346,
+    "total_s": 1895.4
+   },
+   "cuda_60": "configure failed: CUDA 13.0 cannot target sm_60",
+   "tar_mb": 148
+  },
+  "seed_warm": {
+   "source_commit": "9d95457c563d47260bbd59aa5f3d3ca97a2c8c04",
+   "cpu": {
+    "hits": 212,
+    "misses": 0,
+    "total_s": 4.0
+   },
+   "cuda_75": {
+    "hits": 355,
+    "misses": 0,
+    "total_s": 11.5
+   },
+   "cuda_archs_skipped": [
+    "60"
+   ],
+   "export": false
+  },
+  "ovisocr2_gpu_bench_warm": [
+   {
+    "requested_accelerator": "NvidiaTeslaT4",
+    "gpu": "Tesla T4",
+    "cuda_arch": "75",
+    "hits": 197,
+    "misses": 0,
+    "build_s": 14.6,
+    "all_ids_text_exact": true
+   },
+   {
+    "requested_accelerator": "NvidiaTeslaP100",
+    "gpu": "Tesla T4",
+    "cuda_arch": "75",
+    "hits": 197,
+    "misses": 0,
+    "build_s": 9.9,
+    "all_ids_text_exact": true
+   }
+  ],
+  "p100": "two P100 requests (this one and another agent's precision kernel the same day) were served on a Tesla T4; the current image's CUDA 13.0 has no sm_60 target, so no P100 seed can be built there",
+  "cold_reference_s": 1556.0
  }
 }

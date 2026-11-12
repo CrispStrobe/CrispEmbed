@@ -1,3 +1,40 @@
+## 12 November 2026 — Kaggle ccache: image pinning, warm OvisOCR2 GPU bench, merge guard
+
+**Why the #216 OvisOCR2 GPU bench built cold.** The seed was attached and warmed (1,385 files), yet the
+build had 0/193 hits and took 1,556 s. The cause was the Kaggle image, not the seed. An existing kernel keeps
+the image of its first push. The seed kernel was still on GCC 11.4 / CUDA 12.8, while the newly created
+bench got GCC 13.3 / CUDA 13.0. `CCACHE_COMPILERCHECK=content` keys every object on the compiler binaries,
+so nothing could hit. The bench also had no committed `kernel-metadata.json`.
+
+- `kpush.py` now sets `docker_image_pinning_type: "latest"` unless the metadata pins an image, so the seed
+  and its consumers share one toolchain. It also fails when the Kaggle CLI refuses a push but exits 0 (for
+  example at the GPU session limit). Before this, `--refresh-ccache` waited on the previous version.
+- The seed records `toolchain` (the `c++` and `nvcc` version lines). At warm-up the harness warns when the
+  image differs and marks the seed stale.
+- The seed's CUDA tree also builds `test-ovisocr2-quality-run` and `test-qwen35-profile`. It adds trees for
+  `CE_CCACHE_SEED_ARCHS` (default `75,60`) that this nvcc can target. CUDA 13.0 has no sm_60, so P100 is
+  skipped on the current image. Both P100 requests made today (this bench and another agent's precision
+  kernel) were served on a Tesla T4.
+- `tools/kaggle/ovisocr2-gpu-bench` gained its metadata (seed attached) and uses `ensure_build_cache()`.
+- Results (`tests/results/kaggle-ccache.json`): the seed on the new image ran cold first (CPU 0/212, CUDA
+  9/355, 31.6 min), then warm (CPU 212/212 in 4.0 s, CUDA 355/355 in 11.5 s, no export). The bench was run
+  twice: 197/197 hits with a 14.6 s build, then 197/197 hits with a 9.9 s build. All ten OCR runs had exact
+  IDs and text against the frozen CPU receipt.
+- The `ce-ccache-bootstrap` block in all 59 kernels now also finds clones under `/tmp` and two levels deep.
+  Before this, kernels that cloned into `/tmp/<x>/CrispEmbed` or `/kaggle/temp/<x>/CrispEmbed` skipped the
+  cache. The harness also warms from `crispembed-ccache` before `crispasr-ccache` when both are attached.
+- Smoke runs of the bootstrap block. The bootstrap ran and warmed in every kernel that reached it:
+  `moedern-quant` and `unlimited-ocr2-native` (CPU) completed, and so did `crispembed-cuda-diag` (GPU).
+  `minicpm-ocr-graph` failed at link time in its own `tests/minicpm-graph` project, which lacks the
+  `lighton4b_physical_*` sources. That failure is independent of ccache. These CPU kernels build their own
+  CMake projects with other flags, and on Kaggle's CPU image they had 0-7% hits.
+- `tools/kaggle/kv-cache-test/kv_cache_test.py` compiles again (stray indentation).
+- **Merge guard.** `tools/ci/wait_required_checks.py` waits on every check for one pinned PR head SHA. It
+  fails if the head moves and treats queued, pending, cancelled and neutral as not green. It exits 0 only
+  when every check is success or skipped, and only after a settle period. CLAUDE.md now requires it, followed
+  by `gh pr merge --match-head-commit`. This follows CrispSorter #49, which was merged on a stale poll. The
+  same script went to CrispSorter.
+
 ## 11 November 2026 — OvisOCR2 / Qwen3.5-OCR on GPU: standard-ggml-op pipeline (default off)
 
 `CRISPEMBED_QWEN35_OCR_GPU` (`src/qwen35_ocr_gpu.cpp`, default off) builds the `qwen35_ocr` vision
