@@ -27,8 +27,8 @@ Kaggle uploads only the kernel's `code_file`; a `kaggle_harness.py` placed next
 to it never reaches the kernel. Every CrispEmbed build kernel under
 `tools/kaggle/` therefore carries a small `# ce-ccache-bootstrap` block just
 before its first CMake configure. It loads `kaggle_harness.py` from the
-CrispEmbed clone it just made (current directory, `/kaggle/working/*/` or
-`/kaggle/temp/*/`) and calls `ensure_build_cache()`. That function is idempotent.
+CrispEmbed clone it just made (current directory, or one or two levels below
+`/kaggle/working`, `/kaggle/temp` or `/tmp`) and calls `ensure_build_cache()`. That function is idempotent.
 It installs the toolchain, warms from the seed and exports
 `CMAKE_{C,CXX,CUDA}_COMPILER_LAUNCHER=ccache`, so kernels whose own CMake lines
 carry no launcher flags also use the cache. It also registers the automatic
