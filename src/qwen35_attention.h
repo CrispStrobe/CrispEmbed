@@ -30,6 +30,7 @@ struct attention_cache {
     bool physical_q6_tiled = false;
     bool physical_source_prefill_chunks = false;
     bool physical_swiglu = false;
+    bool physical_rope = false;
 };
 struct attention_outputs {
     std::vector<float> q, k, v, q_norm, k_norm, pooled, attention;

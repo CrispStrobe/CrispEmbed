@@ -1987,3 +1987,7 @@ endif() # NOT iOS: LightOn4B/Qwen3.5 validation executables
 add_executable(test-lighton4b-physical-swiglu EXCLUDE_FROM_ALL tests/test_lighton4b_physical_swiglu.cpp)
 target_include_directories(test-lighton4b-physical-swiglu PRIVATE src ggml/include)
 target_link_libraries(test-lighton4b-physical-swiglu PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(test-lighton4b-physical-rope EXCLUDE_FROM_ALL tests/test_lighton4b_physical_rope.cpp)
+target_include_directories(test-lighton4b-physical-rope PRIVATE src ggml/include)
+target_link_libraries(test-lighton4b-physical-rope PRIVATE crispembed-qwen35-delta crispembed-core)

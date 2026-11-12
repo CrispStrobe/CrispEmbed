@@ -1,3 +1,4 @@
+#include "lighton4b_physical_rope.h"
 #include "lighton4b_physical_native_ops.h"
 #include "lighton4b_physical_f16_attention.h"
 #include "lighton4b_upstream_physical_semantics.h"
@@ -61,6 +62,9 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
     if (!lighton4b_physical_native_ops_valid(w.upstream_physical) ||
         !lighton4b_physical_f16_attention_valid(w.upstream_physical))
         return false;
+    const bool physical_rope = lighton4b_physical_rope_mode(w.upstream_physical);
+    if (!lighton4b_physical_rope_valid(w.upstream_physical) ||
+        (previous && previous->physical_rope != physical_rope)) return false;
     const bool physical_f16 = lighton4b_physical_f16_attention_mode(w.upstream_physical);
     const bool source_chunks = lighton4b_source_prefill_chunks_mode(w.upstream_physical);
     if (!lighton4b_source_prefill_chunks_valid(w.upstream_physical) ||
@@ -116,11 +120,17 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
                 return false;
     }
     auto queries = output.q_norm, keys = output.k_norm;
-    for (int bt = 0; bt < count; ++bt) {
-        for (int h = 0; h < qh; ++h) rotate(queries.data() + (size_t(bt) * qh + h) * d, c, positions, bt, count);
-        for (int h = 0; h < kh; ++h) rotate(keys.data() + (size_t(bt) * kh + h) * d, c, positions, bt, count);
+    if (physical_rope) {
+        if (!lighton4b_physical_rope_cpu(output.q_norm, c, positions, tokens, qh, threads, queries) ||
+            !lighton4b_physical_rope_cpu(output.k_norm, c, positions, tokens, kh, threads, keys)) return false;
+    } else {
+        for (int bt = 0; bt < count; ++bt) {
+            for (int h = 0; h < qh; ++h) rotate(queries.data() + (size_t(bt) * qh + h) * d, c, positions, bt, count);
+            for (int h = 0; h < kh; ++h) rotate(keys.data() + (size_t(bt) * kh + h) * d, c, positions, bt, count);
+        }
     }
     auto & cache = output.cache;
+    cache.physical_rope = physical_rope;
     cache.upstream_physical = w.upstream_physical;
     cache.physical_native_ops = lighton4b_physical_native_ops_mode(w.upstream_physical);
     cache.physical_f16_attention = physical_f16;

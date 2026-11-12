@@ -133,6 +133,16 @@ static int run(int argc, char ** argv) {
     gate("CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS", "0");
     check(reject(1, &rounded_cache));
     check(invoke(1, &cache));
+    // New arithmetic identity must be rejected at outer/full/inactive layers.
+    auto wrong_rope = cache;
+    wrong_rope.physical_rope = true;
+    check(reject(1, &wrong_rope));
+    wrong_rope = cache;
+    wrong_rope.layers[3].attention.physical_rope = true;
+    check(reject(1, &wrong_rope));
+    wrong_rope = cache;
+    wrong_rope.layers[0].attention.physical_rope = true;
+    check(reject(1, &wrong_rope));
     auto bad = cache;
     bad.tokens = 0;
     check(reject(1, &bad));

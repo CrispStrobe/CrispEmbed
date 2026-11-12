@@ -149,6 +149,16 @@ static int run() {
         check(bits(next.pooled, off.pooled) && bits(next.cache.keys, off.cache.keys) &&
               !next.cache.physical_f16_attention);
     }
+    // RoPE mode is part of the real KV identity in both toggle directions.
+    gate("CRISPEMBED_LIGHTON4B_PHYSICAL_ROPE", "0");
+    check(attention_cpu(w, cfg, input.data(), positions, 1, 1, 4, nullptr, off));
+    gate("CRISPEMBED_LIGHTON4B_PHYSICAL_ROPE", "1");
+    check(!attention_cpu(w, cfg, input.data(), positions, 1, 1, 4, &off.cache, next));
+    check(attention_cpu(w, cfg, input.data(), positions, 1, 1, 4, nullptr, on) && on.cache.physical_rope);
+    check(attention_cpu(w, cfg, input.data(), positions, 1, 1, 4, &on.cache, next) && next.cache.physical_rope);
+    gate("CRISPEMBED_LIGHTON4B_PHYSICAL_ROPE", "0");
+    check(!attention_cpu(w, cfg, input.data(), positions, 1, 1, 4, &on.cache, next));
+    check(attention_cpu(w, cfg, input.data(), positions, 1, 1, 4, &off.cache, next) && !next.cache.physical_rope);
     w.upstream_physical = false;
     gate("CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION", "0");
     check(attention_cpu(w, cfg, input.data(), positions, 1, 1, 4, nullptr, off));

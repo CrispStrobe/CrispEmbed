@@ -280,6 +280,14 @@ and [Jina admission](jina-ocr-license-gate.md).
 
 Regenerate with `python tools/list_env_vars.py --write`.
 
+`CRISPEMBED_LIGHTON4B_PHYSICAL_ROPE=1` opts authenticated physical LightOn4B
+attention into the pinned source CPU IMROPE operator (partial64/256,
+sections11/11/10). It requires the physical master and OCR gates, the exact
+supported Linux CPU build profile, and BF16 alternatives off. Positions must be
+finite nonnegative integers below262144 on all three explicit axes. Attention
+and outer decoder caches reject mode changes. Legacy rotations remain default;
+operator equality is not decoded-quality qualification. No weights are cached.
+
 `CRISPEMBED_LIGHTON4B_PHYSICAL_SWIGLU=1` opts authenticated physical LightOn4B
 FFNs into native GGML `ggml_swiglu_split(gate, up)` arithmetic. It is off by
 default, unsupported on WASM, and incompatible with physical-profile BF16
@@ -290,7 +298,7 @@ observed-document A/B and unchanged same-weight OFF controls remain required.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-493 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+494 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -623,7 +631,7 @@ observed-document A/B and unchanged same-weight OFF controls remain required.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_JOSEV_BACKBONE` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/qwen35_decoder.cpp` |  |
 | `CRISPEMBED_JOSEV_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/josev2b_text_frontend.cpp` |  |
-| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +25 | else |
+| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +26 | else |
 | `CRISPEMBED_QWEN35_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_native_context.h` +3 |  |
 
 ### josev2b_composed
@@ -706,7 +714,7 @@ observed-document A/B and unchanged same-weight OFF controls remain required.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_physical_f16_attention.h`, `src/lighton4b_upstream_physical_semantics.h` | else |
+| `CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_physical_f16_attention.h`, `src/lighton4b_physical_rope.h` +1 | else |
 | `CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_native_context.h`, `src/lighton4b_physical_native_ops.h` +1 |  |
 | `CRISPEMBED_LIGHTON4B_QUANT` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_dequant_weights.h`, `src/lighton4b_model_owner.h`, `src/lighton4b_native_context.h` +3 | Converter stores all norms/biases in F32 in both F16 recipes. Frozen Q8/Q4 candidates protect every vision tensor as F32. |
 
@@ -714,7 +722,7 @@ observed-document A/B and unchanged same-weight OFF controls remain required.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_BF16_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_linear.h`, `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_physical_f16_attention.h` +2 |  |
+| `CRISPEMBED_LIGHTON4B_BF16_LINEAR` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_bf16_linear.h`, `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_physical_f16_attention.h` +3 |  |
 
 ### lighton4b_decoder_compose
 
@@ -743,7 +751,7 @@ observed-document A/B and unchanged same-weight OFF controls remain required.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_HEAD_BF16` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_head_bf16.h`, `src/lighton4b_physical_f16_attention.h`, `src/lighton4b_upstream_physical_semantics.h` |  |
+| `CRISPEMBED_LIGHTON4B_HEAD_BF16` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_head_bf16.h`, `src/lighton4b_physical_f16_attention.h`, `src/lighton4b_physical_rope.h` +1 |  |
 
 ### lighton4b_hf_tiled_out
 
@@ -754,7 +762,7 @@ observed-document A/B and unchanged same-weight OFF controls remain required.
 | `CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_native_context.h` |  |
 | `CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q8` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_native_context.h` |  |
 | `CRISPEMBED_LIGHTON4B_Q6_K` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_physical_native_ops.h`, `src/lighton4b_q6_policy.h` | else |
-| `CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_physical_f16_attention.h`, `src/lighton4b_physical_f16_vision.cpp` +2 | else |
+| `CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_hf_tiled_out.h`, `src/lighton4b_physical_f16_attention.h`, `src/lighton4b_physical_f16_vision.cpp` +3 | else |
 
 ### lighton4b_image_compose
 
@@ -801,6 +809,12 @@ observed-document A/B and unchanged same-weight OFF controls remain required.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_q6_tiled.h` | else |
+
+### lighton4b_physical_rope
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_PHYSICAL_ROPE` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_rope.h` |  |
 
 ### lighton4b_physical_swiglu
 

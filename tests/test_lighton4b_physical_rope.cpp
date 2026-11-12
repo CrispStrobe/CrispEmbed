@@ -1,0 +1,93 @@
+// Model-free source-node, explicit-position and chunk controls. No weights.
+#include "lighton4b_physical_rope.h"
+#include "core/clean_exit.h"
+#include "ggml-backend.h"
+#include "ggml-cpu.h"
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <limits>
+#include <memory>
+#include <stdexcept>
+using namespace qwen35_ocr;
+static void need(bool ok, const char * why) { if (!ok) throw std::runtime_error(why); }
+static bool bits(const std::vector<float> & a, const std::vector<float> & b) {
+    return a.size() == b.size() && !std::memcmp(a.data(), b.data(), a.size() * sizeof(float));
+}
+static int run() try {
+    const char * flag = "CRISPEMBED_LIGHTON4B_PHYSICAL_ROPE";
+    unsetenv(flag);
+    need(!lighton4b_physical_rope_mode(true), "default off");
+    for (const char * value : { "", "0", "false", "FaLsE", "off", "OFF", "no" }) {
+        setenv(flag, value, 1);
+        need(!lighton4b_physical_rope_mode(true), "false aliases");
+    }
+    setenv(flag, "1", 1);
+    need(!lighton4b_physical_rope_mode(false), "nonphysical isolation");
+    setenv("CRISPEMBED_QWEN35_OCR", "1", 1);
+    setenv("CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL", "1", 1);
+    for (const char * key : { "CRISPEMBED_LIGHTON4B_BF16_LINEAR", "CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS",
+                              "CRISPEMBED_LIGHTON4B_HEAD_BF16" }) setenv(key, "0", 1);
+    if (!lighton4b_physical_f16_attention_available()) {
+        need(!lighton4b_physical_rope_valid(true), "unsupported rejects");
+        std::puts("PHYSICAL_ROPE_UNSUPPORTED_GUARD PASS"); return 0;
+    }
+    attention_config c; c.query_heads = 16; c.kv_heads = 4;
+    for (int heads : { 4, 16 }) for (int threads : { 1, 4 }) {
+        const int n = 21; // 4-token prefill, 16-token image chunk, single-token continuation
+        std::vector<float> input(size_t(n) * heads * 256), positions(3 * n), actual;
+        for (size_t i = 0; i < input.size(); ++i) input[i] = std::sin(float(i) * .013f) * 3;
+        for (int t = 0; t < n; ++t) {
+            positions[t] = float(t + 130);
+            positions[n + t] = float(300 + t / 3);
+            positions[2 * n + t] = float(42 + t % 3);
+        }
+        positions[0] = 0; positions[n] = 262143; // admitted coordinate boundaries
+        need(lighton4b_physical_rope_cpu(input, c, positions.data(), n, heads, threads, actual), "operator");
+        std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(ggml_init({ 4ull << 20, nullptr, false }), ggml_free);
+        std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)> backend(ggml_backend_cpu_init(), ggml_backend_free);
+        need(ctx && backend, "independent backend"); ggml_backend_cpu_set_n_threads(backend.get(), threads);
+        auto * x = ggml_new_tensor_3d(ctx.get(), GGML_TYPE_F32, 256, heads, n);
+        auto * p = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_I32, 4 * n);
+        std::memcpy(x->data, input.data(), input.size() * 4);
+        std::fill_n(static_cast<int32_t *>(p->data), 4 * n, 0);
+        for (int i = 0; i < 3 * n; ++i) static_cast<int32_t *>(p->data)[i] = int32_t(positions[i]);
+        int sections[4] = { 11, 11, 10, 0 };
+        auto * y = ggml_rope_multi(ctx.get(), x, p, nullptr, 64, sections, GGML_ROPE_TYPE_IMROPE,
+                                  262144, 10000000.f, 1.f, 0.f, 1.f, 32.f, 1.f);
+        auto * graph = ggml_new_graph(ctx.get()); ggml_build_forward_expand(graph, y);
+        need(ggml_backend_graph_compute(backend.get(), graph) == GGML_STATUS_SUCCESS, "independent node");
+        need(!std::memcmp(actual.data(), y->data, actual.size() * 4), "source node exact");
+        std::vector<float> joined;
+        int start = 0;
+        for (int count : { 4, 16, 1 }) {
+            std::vector<float> part(input.begin() + size_t(start) * heads * 256,
+                                    input.begin() + size_t(start + count) * heads * 256), pos(3 * count), result;
+            for (int axis = 0; axis < 3; ++axis)
+                std::copy_n(positions.data() + axis * n + start, count, pos.data() + axis * count);
+            need(lighton4b_physical_rope_cpu(part, c, pos.data(), count, heads, threads, result), "chunk");
+            joined.insert(joined.end(), result.begin(), result.end()); start += count;
+        }
+        need(bits(actual, joined), "chunk exact explicit positions");
+        for (int t = 0; t < n; ++t) for (int h = 0; h < heads; ++h)
+            need(!std::memcmp(input.data() + (t * heads + h) * 256 + 64,
+                              actual.data() + (t * heads + h) * 256 + 64, 192 * 4), "unrotated tail exact");
+        auto rejected = [&] { std::vector<float> out{ 1 }; need(!lighton4b_physical_rope_cpu(
+            input, c, positions.data(), n, heads, threads, out) && out.empty(), "invalid clears"); };
+        for (float value : { -.5f, .5f, 262144.f, std::numeric_limits<float>::infinity(),
+                              std::numeric_limits<float>::quiet_NaN() }) { positions[0] = value; rejected(); }
+        positions[0] = 0;
+        c.theta = 10000; rejected(); c.theta = 10000000;
+        c.mrope_section[1] = 10; rejected(); c.mrope_section[1] = 11;
+        input[0] = std::numeric_limits<float>::quiet_NaN(); rejected(); input[0] = 0;
+        for (const char * key : { "CRISPEMBED_LIGHTON4B_BF16_LINEAR", "CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS",
+                                  "CRISPEMBED_LIGHTON4B_HEAD_BF16" }) {
+            setenv(key, "1", 1); rejected(); setenv(key, "0", 1);
+        }
+        setenv(flag, "off", 1); rejected(); setenv(flag, "1", 1);
+    }
+    std::puts("PHYSICAL_ROPE source-node/chunk/tail/position/profile controls PASS"); return 0;
+} catch (const std::exception & e) { std::fprintf(stderr, "%s\n", e.what()); return 1; }
+int main() { core_util::clean_exit(run()); }

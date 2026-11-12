@@ -5208,3 +5208,19 @@ The [complete observed A/B](docs/lighton4b-swiglu-observed-results.md) preserves
 [Final inventory continuation and complete ledger](docs/lighton4b-swiglu-fixed-inventory.md) close all six planned fixed forwards across the preserved original producer and only the two previously unrun inventory arms. Candidate519c/controllera616/model843e66, original provisional labels/scorer, cap1536/context2048/threads4 and1200-second inventory arms remain unchanged; tested bundle reused, no C++ rebuild or completed-arm/source-feature/source-model repeats. All historical OFF rows/stages/stops close. Receipt improves25/19→24/18 edits and meets source floor; inventory remains248EOS/zero edits/all15 cells exact; book remains1536/noEOS with3716/955→3604/973 capped content edits versus complete source526/146. Combined ON passes2/3 provisional floors, remains unqualified/default-off.
 
 Original sourcec723 stops before inventory at an unclassified joint resource/seal guard with individual readings unavailable. Successful private relay preserves616files/5,444,674,895bytes once; independent partial audit199e7791 closes590declaredfiles/5,443,427,617bytes/all4340rows. Fresh unchanged inventory guards record RAM17.97/22.73GB, output20.93/20.51GB and exact seal, without explaining the earlier cause. New modela88b5341 and corrected inventory audit80c59b63 close207files/849,114,811bytes/496newrows, linking4836rows total. Initial reader KeyError is retained; scoped-field correction repeats only artifacts, no inference/data/scorer/gate/budget changes. Original candidate git-rev log bytes are unavailable/never independently rehashed; pinned source files, tested bundle and20other logs verify. First-score RMS improves while max error worsens; timing remains diagnostic. Preserve book failure, observed-form regression, source-trace limits and every initial negative. No qualification, aggregate waiver, tuning, default/release/alias/app change; no CI, push or PR from this lane.
+### Physical LightOn4B source RoPE candidate (prepared; unqualified)
+
+A separate `CRISPEMBED_LIGHTON4B_PHYSICAL_ROPE` default-off path preserves the
+legacy scalar rotations and all existing experimental gates. The source-fed
+operator proof at `ca50e78dc` establishes native/upstream GGML IMROPE byte equality
+on actual normalized Q/K and positions; it does not establish decoded quality.
+The candidate uses the pinned source partial64/256 IMROPE with sections11/11/10,
+three explicit integer position axes and a reserved zero fourth axis. Exact
+physical CPU/profile admission and attention/outer decoder cache identities
+reject mixed-mode continuation. No model weights or F32 weight cache are added.
+
+Pending acceptance: authorized Kaggle builds and model-free source-node/chunk/
+position/cache controls, then separately frozen observed table/form/Arabic A/B
+with legacy score/stage closure before independent full greedy ON decoding.
+Preserve all source negatives, floor failures, EOS/caps and component magnitude
+errors. No held-out tuning, release/default change, qualification or promotion.

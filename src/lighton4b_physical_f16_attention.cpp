@@ -1,4 +1,6 @@
 #include "lighton4b_physical_f16_attention.h"
+#include "lighton4b_physical_rope.h"
+#include <cstring>
 #include "qwen35_attention.h"
 #include <algorithm>
 #include <cmath>
@@ -163,6 +165,51 @@ bool lighton4b_physical_f16_attention_cpu(const std::vector<float> & queries, co
     (void)past;
     (void)tokens;
     (void)threads;
+    return false;
+#endif
+}
+// Pinned source6c01da627 IMROPE parameters. YARN is inactive (ext0/scale1).
+bool lighton4b_physical_rope_cpu(const std::vector<float> & normalized, const attention_config & config,
+                                  const float * positions, int tokens, int heads, int threads,
+                                  std::vector<float> & rotated) {
+    rotated.clear();
+#if defined(CRISPEMBED_LIGHTON4B_F16_SGEMM_ABI) && !defined(__EMSCRIPTEN__)
+    if (!lighton4b_physical_rope_mode(true) || !lighton4b_physical_rope_valid(true) || !positions ||
+        tokens < 1 || tokens > 4096 || (heads != 4 && heads != 16) || threads < 1 || threads > 256 ||
+        config.head_dim != 256 || config.query_heads != 16 || config.kv_heads != 4 || config.rotary_dim != 64 ||
+        config.theta != 10000000.f || config.mrope_section[0] != 11 || config.mrope_section[1] != 11 ||
+        config.mrope_section[2] != 10 || normalized.size() != size_t(tokens) * heads * 256 ||
+        !std::all_of(normalized.begin(), normalized.end(), [](float v) { return std::isfinite(v); })) return false;
+    std::vector<int32_t> axes(size_t(tokens) * 4, 0);
+    for (int i = 0; i < 3 * tokens; ++i) {
+        const float v = positions[i];
+        if (!std::isfinite(v) || v < 0 || v >= 262144 || std::trunc(v) != v) return false;
+        axes[size_t(i)] = int32_t(v);
+    }
+    // Two activation tensors only, bounded by tokens4096; no persistent cache.
+    const size_t bytes = normalized.size() * sizeof(float);
+    std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(
+        ggml_init({ 2 * bytes + axes.size() * sizeof(int32_t) + (1ull << 20), nullptr, false }), ggml_free);
+    std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)> backend(ggml_backend_cpu_init(), ggml_backend_free);
+    if (!ctx || !backend) return false;
+    ggml_backend_cpu_set_n_threads(backend.get(), threads);
+    auto * x = ggml_new_tensor_3d(ctx.get(), GGML_TYPE_F32, 256, heads, tokens);
+    auto * pos = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_I32, 4 * tokens);
+    std::memcpy(x->data, normalized.data(), bytes);
+    std::memcpy(pos->data, axes.data(), axes.size() * sizeof(int32_t));
+    int sections[4] = { 11, 11, 10, 0 };
+    auto * y = ggml_rope_multi(ctx.get(), x, pos, nullptr, 64, sections, GGML_ROPE_TYPE_IMROPE,
+                              262144, 10000000.f, 1.f, 0.f, 1.f, 32.f, 1.f);
+    auto * graph = ggml_new_graph(ctx.get());
+    ggml_build_forward_expand(graph, y);
+    if (ggml_backend_graph_compute(backend.get(), graph) != GGML_STATUS_SUCCESS) return false;
+    const auto * data = static_cast<const float *>(y->data);
+    std::vector<float> result(data, data + normalized.size());
+    if (!std::all_of(result.begin(), result.end(), [](float v) { return std::isfinite(v); })) return false;
+    rotated = std::move(result);
+    return true;
+#else
+    (void)normalized; (void)config; (void)positions; (void)tokens; (void)heads; (void)threads;
     return false;
 #endif
 }
