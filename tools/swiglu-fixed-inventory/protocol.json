@@ -1,0 +1,76 @@
+{
+  "schema": "lighton4b-swiglu-inventory-continuation/v1",
+  "candidate_source": "519c3d9765c234cd93e9069d5efdc239e3cad3f2",
+  "controller_source": "a6164205620c71427a39c97ab386591406c4ca73",
+  "ggml_source": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "selection_protocol_sha256": "1a5cf84d5d83c22a041e774aaa00e682a28d302a2542ef02606e5dfa0ef3cd4b",
+  "frozen_executor_sha256": "bdd80e7f7c3c7a578478bd9c16d94dc07c32e86220c6a337629e0c95498aaf5f",
+  "observed_off_receipt_sha256": "393bfbd65f0f39c9d15e68110eb8174fb912797200cc68b1c8339e7a0797edcb",
+  "observed_on_receipt_sha256": "67ff19db0230ddc329300cc3f6a0256eb85b3cdbbcf06a578b23eb93c2688ba1",
+  "source_files": {
+    "CMakeLists.txt": "1d4038d89b2fff4f1b8525109c34bf109f61be752a6a74ef46aebf86be03ade2",
+    "tests/lighton4b_native_document.cpp": "637a097d47ca8e97380bc21fdb411c44d42639a46e36296fa536b837622910a7",
+    "tests/lighton4b_native_case_preflight.cpp": "2cf633f776a5627512ae557bd1cb7a9e7bc684d80096ae017e15f43e5c2a9ddd"
+  },
+  "cases": [
+    {
+      "id": "inventory-table",
+      "baseline_receipt": "planner-heldout.json",
+      "baseline_sha256": "fc3904a60a247d6f9393cc9060f4db780fe90d98b6a9deec0f87206a7be9ae80",
+      "baseline_prefix": "corrected-composed",
+      "baseline_tokens": 248,
+      "baseline_eos": true,
+      "audit_sha256": "36456a67426621655c3896ef321dc686e9cdec4fc1debac1a3c5c04830dfe362",
+      "reference_sha256": "d5b7f992249a3f6b553bd3e41f73cc5e590eeaae2d1380d9d34d81aaf3d316e8",
+      "seal_sha256": "2b684e94fbd978ce8212e3c57e8e8db001e9b11f39dcd01a6e836df6e1e001d0",
+      "arm_seconds": 1200,
+      "private_text": false
+    }
+  ],
+  "cap": 1536,
+  "context": 2048,
+  "maximum_prompt_tokens": 512,
+  "maximum_image_tokens": 256,
+  "threads": 4,
+  "build_threads": 2,
+  "worker_seconds": 4200,
+  "controls_seconds": 0,
+  "wrapper_seconds": 4500,
+  "service_seconds": 4800,
+  "minimum_available_ram_gib": 10,
+  "minimum_scratch_gib": 25,
+  "minimum_output_gib": 12,
+  "changed_gates": [
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_SWIGLU"
+  ],
+  "observed_controls": {
+    "off": 168,
+    "on": 167
+  },
+  "source_feature_forward_allowed": false,
+  "reference_forward_allowed": false,
+  "tuning_allowed": false,
+  "qualified": false,
+  "references_expert_adjudicated": false,
+  "rights": "Two-column recognized text, token IDs and full raw/model reports remain private; publish only metrics and hashes.",
+  "source_scope": "Only two unrun inventory arms execute. Original failed producer and capped book negative remain preserved; no qualification or budget/gate/cap/scorer changes.",
+  "prior_partial_receipt_sha256": "c723dd349d5e3bdce449d2c0fa5bf8daffb34ab1be24eb2a58a6eaa9a21250f1",
+  "prior_partial_audit_sha256": "199e7791eaee20b8aa2d71f1c803cd4e06293b10599536c1c05f59ccea291dfa",
+  "prior_relay_sha256": "c46ed6995167b5a28dfa88c872aa48e69c64a2dbc98e0a87c644d73da709332f",
+  "candidate_controls_sha256": "6c1fc8ea188d39e49ccc37b2ac7a6d6d7a6fe210e84e198630a6fb1c37ec5938",
+  "reused_completed_arms": [
+    "observed-off",
+    "observed-on",
+    "historical-receipt/off",
+    "historical-receipt/on",
+    "two-column-page/off",
+    "two-column-page/on"
+  ],
+  "runtime_rebuild_allowed": false,
+  "observed_forward_allowed": false,
+  "receipt_forward_allowed": false,
+  "book_forward_allowed": false,
+  "resource_thresholds_changed": false,
+  "prior_failure_classification": "Unclassified conjunction; individual predicate readings were not retained."
+}
