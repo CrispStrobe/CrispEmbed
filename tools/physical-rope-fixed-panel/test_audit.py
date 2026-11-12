@@ -38,6 +38,18 @@ class AuditControls(unittest.TestCase):
   with self.assertRaises(ValueError):audit.compare_derived(actual,expected)
   actual=dict(expected);actual['max_abs']+=math.ulp(2.)
   with self.assertRaises(ValueError):audit.compare_derived(actual,expected)
+ def test_only_exact_outer_bootstrap_finalization_collision(self):
+  final={'status':'complete','candidate_source':'a8a22749ab0b757ae1f317b6fa5b84ffd148b939','diagnostic_source':'2ffa681dafa89cc5091715b74d15d6f937eda08f','model_forward_executed':False,'source_capture_repeated':False,'full_f32_model_instantiated':False,'qualified':False,'phase':'worker','elapsed_seconds':169.47456825699993}
+  with tempfile.TemporaryDirectory()as d:
+   root=Path(d);p=root/'physical-rope-bootstrap.json';p.write_text(json.dumps(final,indent=2)+'\n');other=root/'retained.log';other.write_bytes(b'retained')
+   rows={'physical-rope-bootstrap.json':{'bytes':312,'sha256':'db1fa9c9a743752a988b2f9b5f8aaa7f79c8f6caac15232698570bc6bb8d0829'},'retained.log':{'bytes':8,'sha256':audit.sha(other)}}
+   known,journal=audit.control_manifest(root,rows,final['candidate_source']);self.assertEqual(len(known),1);self.assertTrue(journal['retained_final_independently_rehashed']);self.assertFalse(journal['recorded_intermediate_independently_rehashed'])
+   other.write_bytes(b'corrupt!')
+   with self.assertRaises(ValueError):audit.control_manifest(root,rows,final['candidate_source'])
+   other.write_bytes(b'retained');rows['physical-rope-bootstrap.json']['bytes']=313
+   with self.assertRaises(ValueError):audit.control_manifest(root,rows,final['candidate_source'])
+   rows['physical-rope-bootstrap.json']['bytes']=312;p.write_text('{}')
+   with self.assertRaises(ValueError):audit.control_manifest(root,rows,final['candidate_source'])
  def test_complete_admission_rejects_missing_or_failed_arms(self):
   cfg=json.loads(Path(__file__).with_name('protocol.json').read_text())
   def fixture():
