@@ -476,8 +476,10 @@ The [post-fused source trace](tools/post-fused-source-trace/README.md) checks
 identical full prompt embeddings and positions and finds the first recorded
 hidden-state difference at the first full-attention block, layer 3, on the
 252-row image chunk. Earlier layer outputs match on all captured chunks. This
-is a boundary for further stage attribution, not proof of the responsible
-attention operator or cache behavior.
+is a boundary for further stage attribution. The [layer-3 probe](tools/attention252-probe/README.md)
+finds exact Q/K normalization and preceding cache, with the first measured
+difference at source RoPE versus reconstructed native RoPE; a direct native
+observer and same-input operator replay remain necessary before assigning cause.
 
 ## Local kernel configuration privacy — 12 November 2026
 
