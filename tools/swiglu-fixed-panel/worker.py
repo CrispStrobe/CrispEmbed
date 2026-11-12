@@ -8,7 +8,7 @@ def load(name,path):
 shared=load('fixed_shared',ROOT/'tools/q6-tiled-full-ab/worker.py');base=shared.base;require=shared.require;sha=shared.sha
 sys.path.insert(0,str(ROOT/'tools/heldout'));import execution as ex
 GATE='CRISPEMBED_LIGHTON4B_PHYSICAL_SWIGLU'
-CFG_SHA='d029af771bbdb54362ac73e7abb1bfa06c026c080ed22ad41fff3db8965679a1'
+CFG_SHA='0d3c75097b78fa477e460d6d137dac6bafd9e283c7da93f35fa2ae9cd20cb419'
 def admit(path):
  require(sha(path)==CFG_SHA,'immutable fixed regression protocol');cfg=json.loads(Path(path).read_text());selection=ROOT/'docs/lighton4b-heldout-v1.json';require(sha(selection)==cfg['selection_protocol_sha256'],'unchanged selection');selected=json.loads(selection.read_text());ex.prepare.admit(selected)
  require(sha(ROOT/'docs/lighton4b-heldout-executor-v1.json')==cfg['frozen_executor_sha256'],'unchanged original model/reference protocol')

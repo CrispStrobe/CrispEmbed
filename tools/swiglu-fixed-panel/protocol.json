@@ -1,7 +1,7 @@
 {
   "schema": "lighton4b-swiglu-fixed-regression-panel/v1",
   "candidate_source": "519c3d9765c234cd93e9069d5efdc239e3cad3f2",
-  "controller_source": "eb2d04219f7a8567803e77b3ff5bbaa398b16629",
+  "controller_source": "a6164205620c71427a39c97ab386591406c4ca73",
   "ggml_source": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
   "model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
   "selection_protocol_sha256": "1a5cf84d5d83c22a041e774aaa00e682a28d302a2542ef02606e5dfa0ef3cd4b",
