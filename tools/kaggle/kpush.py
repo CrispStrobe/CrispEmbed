@@ -12,6 +12,8 @@ from the environment - nothing account- or token-specific is ever committed.
             [--refresh-ccache] [extra kaggle push args]
 
 --sha replaces the __SHA__ placeholder in the code file (exact clone pin).
+Unless kernel-metadata.json sets docker_image_pinning_type, the push uses
+"latest", so every kernel (and the ccache seed) runs on the same Kaggle image.
 --refresh-ccache waits for the pushed kernel to finish, then runs
 tools/kaggle/ccache_refresh.py --from-kernel <its id>, which versions the
 private crispembed-ccache seed only if the kernel exported one (stale seed).
@@ -64,6 +66,12 @@ def main(argv):
         dst = Path(tmp) / src.name
         shutil.copytree(src, dst)
         meta = json.loads(render(meta_path.read_text(), account))
+        # Run on the current Kaggle image unless the metadata pins one. An existing
+        # kernel otherwise stays on the image of its first push, and ccache
+        # (CCACHE_COMPILERCHECK=content) misses every object across images: the
+        # seed on GCC 11.4 / CUDA 12.8 gave a new kernel on GCC 13.3 / CUDA 13.0
+        # zero hits (#216). Seed and consumers on "latest" share one toolchain.
+        meta.setdefault("docker_image_pinning_type", "latest")
         code = meta.get("code_file")
         if code and (dst / code).is_file():
             text = render((dst / code).read_text(), account)

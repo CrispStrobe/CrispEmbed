@@ -359,6 +359,28 @@ def _ccache_max_size() -> str:
     return os.environ.get("CE_CCACHE_MAXSIZE", "3G")
 
 
+def toolchain_fingerprint() -> dict:
+    """First version line of the host C++ compiler and of nvcc (when present).
+
+    CCACHE_COMPILERCHECK=content hashes the compiler binaries, so a seed made on
+    one Kaggle image misses every object on another (GCC 11.4 / CUDA 12.8 vs
+    GCC 13.3 / CUDA 13.0 cost the #216 OvisOCR2 GPU bench a fully cold build).
+    The seed records this; a mismatch is reported at warm-up and marks the seed
+    stale."""
+    fp = {}
+    for key, cmd in (("cxx", "c++ --version"), ("nvcc", "/usr/local/cuda/bin/nvcc --version")):
+        try:
+            out = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=60).stdout
+        except Exception:
+            continue
+        lines = [l.strip() for l in out.splitlines() if l.strip()]
+        if key == "nvcc":
+            lines = [l for l in lines if "release" in l]
+        if lines:
+            fp[key] = lines[0]
+    return fp
+
+
 def _read_seed_info(ccache_dir: Path) -> None:
     global _seed_info
     try:
@@ -367,6 +389,14 @@ def _read_seed_info(ccache_dir: Path) -> None:
         _seed_info = {}
     _seed_info["files_at_warm"] = sum(1 for p in ccache_dir.rglob("*") if p.is_file())
     print(f"  ccache: seed info {json.dumps(_seed_info)}", flush=True)
+    seed_tc = _seed_info.get("toolchain")
+    if seed_tc:
+        here = toolchain_fingerprint()
+        diff = {k: (seed_tc.get(k), here.get(k)) for k in set(seed_tc) | set(here) if seed_tc.get(k) != here.get(k)}
+        _seed_info["toolchain_mismatch"] = diff or None
+        if diff:
+            print(f"  ccache: WARNING seed toolchain differs from this image, expect misses: {json.dumps(diff)}",
+                  flush=True)
 
 
 def ccache_counters() -> dict:
@@ -398,7 +428,7 @@ def seed_decision(hits: int | None = None, misses: int | None = None,
         c = ccache_counters()
         hits, misses = c["hits"], c["misses"]
     head, repo = _clone_head(Path(repo) if repo else Path(__file__).resolve().parent)
-    d = {"mode": mode, "hits": hits, "misses": misses,
+    d = {"toolchain_mismatch": _seed_info.get("toolchain_mismatch"), "mode": mode, "hits": hits, "misses": misses,
          "hit_rate": round(hits / max(1, hits + misses), 4),
          "min_hit": min_hit, "head": head, "seed_sha": _seed_info.get("sha"),
          "seed_created": _seed_info.get("created"), "age_commits": None, "age_days": None}
@@ -425,6 +455,8 @@ def seed_decision(hits: int | None = None, misses: int | None = None,
             reasons.append(f"seed {d['age_commits']} commits old > {max_commits}")
         if d["age_days"] is not None and d["age_days"] > max_days:
             reasons.append(f"seed {d['age_days']} days old > {max_days}")
+        if _seed_info.get("toolchain_mismatch"):
+            reasons.append("seed built with a different compiler toolchain (Kaggle image)")
     if mode in ("never", "0", "off", "false", "no"):
         d["export"], reasons = False, ["disabled by CE_CCACHE_EXPORT"]
     elif mode in ("always", "1", "on", "true", "yes"):
@@ -449,6 +481,7 @@ def maybe_export_ccache(hits: int | None = None, misses: int | None = None,
         info = {"sha": d["head"], "created": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                 "hit_rate_before": d["hit_rate"], "reasons": d["reasons"],
                 "cuda_arch": os.environ.get("CE_CCACHE_CUDA_ARCH") or None,
+                "toolchain": toolchain_fingerprint(),
                 "max_size": _ccache_max_size()}
         try:
             (cdir / SEED_INFO).write_text(json.dumps(info, indent=1))

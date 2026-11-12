@@ -1,4 +1,5 @@
-"""OvisOCR2 GPU bench: CRISPEMBED_QWEN35_OCR_GPU (standard-ggml-op vision + decoder) on Kaggle T4.
+"""OvisOCR2 GPU bench: CRISPEMBED_QWEN35_OCR_GPU (standard-ggml-op vision + decoder) on Kaggle T4 or P100
+(kpush --accelerator NvidiaTeslaP100).
 
 Builds a CUDA tree at an exact full SHA (same clone/build layout and flags as the
 crispembed-ccache-seed kernel, so the attached crispembed-ccache dataset hits),
@@ -72,15 +73,23 @@ try:
        f"git -C {SRC} submodule update --init --recursive -q")
     sys.path.insert(0, str(SRC))
     import kaggle_harness as kh
-    kh.install_build_toolchain()
+    # ensure_build_cache(): toolchain + seed warm-up + automatic seed refresh at exit
+    # (docs/kaggle-ccache.md); older pinned clones only have install_build_toolchain().
+    (getattr(kh, "ensure_build_cache", None) or kh.install_build_toolchain)()
     arch = kh.detect_cuda_arch()
     summary["cuda_arch"] = arch
+    os.environ["CE_CCACHE_CUDA_ARCH"] = arch
+    if hasattr(kh, "toolchain_fingerprint"):
+        summary["toolchain"] = kh.toolchain_fingerprint()
     t = time.time()
     sh(f"cmake -S {SRC} -B {BUILD} -G Ninja -DCMAKE_BUILD_TYPE=Release " + " ".join(kh.cache_and_link_flags()) + " "
        + " ".join(kh.cuda_build_flags(arch)))
     sh(f"cmake --build {BUILD} --target test-ovisocr2-quality-run test-qwen35-profile -j{kh.safe_build_jobs(gpu=True)}")
     summary["build_s"] = round(time.time() - t, 1)
     summary["ccache"] = subprocess.run("ccache -s 2>&1 | head -12", shell=True, capture_output=True, text=True).stdout
+    if hasattr(kh, "ccache_counters"):
+        c = kh.ccache_counters()
+        summary["ccache_counters"] = dict(c, hit_rate=round(c["hits"] / max(1, c["hits"] + c["misses"]), 4))
     save()
     binary = BUILD / "test-ovisocr2-quality-run"
 
