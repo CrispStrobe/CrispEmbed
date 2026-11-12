@@ -5103,3 +5103,8 @@ and legacy non-NULL blank success without models or inference. Python syntax and
 changed-line clang-format 18 checks pass; compiled server execution remains a
 hosted combined-source gate. Browser serialization and legacy engines without
 explicit outcomes remain separately unqualified. No release/default/app pin change.
+### Planner retained common-prefix attribution —12 November2026
+
+Artifact-only [93-row audit](docs/lighton4b-planner-common-prefix-audit.md) finds first different decision row92 after identical prior tokens. Input/inputnorm exact; first retained difference is layer0 Q6 QKV RMS2.23094e-7/max3.81470e-6, with batch16 versus4. Drift grows to layer31 RMS0.0575813; row92 winner changes with ON margin0.0591183. Complete OFF660EOS versus ON1536/noEOS remains negative. No model forward, tuning or default/release change. Next, if authorized, use a separately frozen source-fed operator/state intervention before attributing unique causality or proposing arithmetic changes; keep later different-prefix logits out of same-input claims. Reusable consumer is an unexecuted CLI adapter of the exact executed worker, with original source/report SHA retained.
+
+The subsequent artifact-only actual-source comparison places first source/OFF divergence92 and source/ON405. ON's92 decision follows source; firstscore numerical RMS nevertheless worsens0.128943635→0.143885652. At405 source/native RMS0.193178752/max1.027262449 and native winner margin0.011495590. No source hidden book stages exist in the retained capture. Next bounded neutral original/native same-prefix405 trace must reproduce admitted outputs before interpreting new stages; no heldout tuning or completion waiver follows.
