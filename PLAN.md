@@ -548,6 +548,9 @@ Both OCR fixtures have CER 0; native/app licence refusal and per-model consent
 controls pass. This is bounded Linux CPU consumer evidence, not broad OCR quality.
 New private kernel configuration remains ignored; no private execution configuration is
 required for reviewing the CPU consumer source and retained evidence.
+## Documentation checkpoint — 12 November 2026
+
+The current cross-repository release and LightOn4B provisional failure evidence, exact sources and preservation constraints are summarized in [the current state](docs/current-state-and-next-steps.md). The Q6 corrected and planner-only panels remain negative; neither warrants default, alias or release promotion. This documentation checkpoint changes no runtime version.
 
 ## OvisOCR2 speed follow-ups — 11 November 2026
 
