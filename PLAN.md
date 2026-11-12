@@ -2,6 +2,8 @@
 
 ## OvisOCR2 speed follow-ups — 11 November 2026
 
+Second-architecture admission at executor `33ec2e250` did not allocate the requested L4: the device query returned no GPU, so the worker stopped before cloning, building or model acquisition. The [admission receipt](tests/results/qwen35-ocr/ovisocr2-l4-admission-20261112.json) has SHA-256 `256ad51c7a7de71cf2513cd04945b6de7fa24afdd2147d1da876422d73487ba3`. This is a resource-availability result, not an inference or quality result. Retain the GPU gate default-off; a second-architecture backend with actual device placement and complete decoded comparisons remains open.
+
 Both CPU default flips and the standard-ggml-op GPU port are done (HISTORY 11 November).
 
 | Work | State | Acceptance |
