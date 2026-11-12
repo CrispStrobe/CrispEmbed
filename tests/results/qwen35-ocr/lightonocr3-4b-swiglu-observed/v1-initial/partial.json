@@ -1,0 +1,441 @@
+{
+  "schema": "lighton4b-swiglu-observed-partial/v1",
+  "status": "incomplete-postprocessor-negative",
+  "producer_receipt_sha256": "b85f3df503be35c4427cd160adf9fd78eeb0733e1cdd98c6c5767e7ab696ae52",
+  "candidate_source": "519c3d9765c234cd93e9069d5efdc239e3cad3f2",
+  "controller_source": "eb2d04219f7a8567803e77b3ff5bbaa398b16629",
+  "candidate_controls_sha256": "97721fed18de359d08d633e017c51b261950e7fb788952d67607e48a3ea7f0f4",
+  "model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "quality_qualified": false,
+  "runtime_rebuilt_in_model_phase": false,
+  "reference_forward_executed": false,
+  "heldout_data_accessed": false,
+  "failure": {
+    "type": "KeyError",
+    "message": "'down'",
+    "phase": "simple_form-off",
+    "cause": "Diagnostic source-probe loop shadowed the command label used for resources lookup; runtime and weights unchanged."
+  },
+  "simple_table": {
+    "off_all_rows_stages_exact": true,
+    "actual_upstream_vs_original": {
+      "raw_ids_exact": false,
+      "decoded_exact": false,
+      "matching_prefix_ids": 37,
+      "character_edits": 348,
+      "reference_codepoints": 607,
+      "word_edits": 97,
+      "reference_words": 106
+    },
+    "arms": {
+      "off": {
+        "summary": {
+          "prompt_tokens": 86,
+          "image_tokens": 72,
+          "source_fed_vision": false,
+          "upstream_physical": true,
+          "physical_q6_tiled": true,
+          "physical_source_prefill_chunks": true,
+          "physical_q4_repack": true,
+          "physical_repack_entries": 216,
+          "physical_repack_bytes": 1662861312,
+          "physical_repack_hits": 68049,
+          "converted_f32_weight_entries": 0,
+          "converted_f32_weight_bytes": 0,
+          "teacher_positions": 1,
+          "generated_tokens": 309,
+          "eos": true,
+          "cap": 512
+        },
+        "chunk_sizes": [
+          4,
+          16,
+          16,
+          16,
+          16,
+          8,
+          6,
+          4
+        ],
+        "vs_original": {
+          "raw_ids_exact": false,
+          "decoded_exact": false,
+          "matching_prefix_ids": 39,
+          "character_edits": 321,
+          "reference_codepoints": 607,
+          "word_edits": 92,
+          "reference_words": 106
+        },
+        "vs_upstream": {
+          "raw_ids_exact": false,
+          "decoded_exact": false,
+          "matching_prefix_ids": 37,
+          "character_edits": 73,
+          "reference_codepoints": 822,
+          "word_edits": 29,
+          "reference_words": 162
+        },
+        "meets_observed_upstream_floor": true,
+        "firstscore_vs_upstream": {
+          "rms": 0.1792801361734627,
+          "max_abs": 0.910927414894104,
+          "candidate_rms_magnitude": 1.7723315427257642,
+          "reference_rms_magnitude": 1.7855181153937745
+        }
+      },
+      "on": {
+        "summary": {
+          "prompt_tokens": 86,
+          "image_tokens": 72,
+          "source_fed_vision": false,
+          "upstream_physical": true,
+          "physical_q6_tiled": true,
+          "physical_source_prefill_chunks": true,
+          "physical_q4_repack": true,
+          "physical_repack_entries": 216,
+          "physical_repack_bytes": 1662861312,
+          "physical_repack_hits": 48393,
+          "converted_f32_weight_entries": 0,
+          "converted_f32_weight_bytes": 0,
+          "teacher_positions": 1,
+          "generated_tokens": 218,
+          "eos": true,
+          "cap": 512
+        },
+        "chunk_sizes": [
+          4,
+          16,
+          16,
+          16,
+          16,
+          8,
+          6,
+          4
+        ],
+        "vs_original": {
+          "raw_ids_exact": false,
+          "decoded_exact": false,
+          "matching_prefix_ids": 37,
+          "character_edits": 20,
+          "reference_codepoints": 607,
+          "word_edits": 6,
+          "reference_words": 106
+        },
+        "vs_upstream": {
+          "raw_ids_exact": false,
+          "decoded_exact": false,
+          "matching_prefix_ids": 82,
+          "character_edits": 328,
+          "reference_codepoints": 822,
+          "word_edits": 91,
+          "reference_words": 162
+        },
+        "meets_observed_upstream_floor": true,
+        "firstscore_vs_upstream": {
+          "rms": 0.16597653367628573,
+          "max_abs": 1.0867557525634766,
+          "candidate_rms_magnitude": 1.7718900626175067,
+          "reference_rms_magnitude": 1.7855181153937745
+        }
+      }
+    },
+    "paired_native_layers": {
+      "scope": "Native OFF/ON, not actual source hidden",
+      "first_different_layer": 0,
+      "layers": [
+        {
+          "layer": 0,
+          "bit_exact": false,
+          "rms": 1.4786932964877738e-07,
+          "max_abs": 5.469657480716705e-06,
+          "off_rms_magnitude": 0.20189871304817772,
+          "on_rms_magnitude": 0.2018987130435928
+        },
+        {
+          "layer": 1,
+          "bit_exact": false,
+          "rms": 0.0001515560664176118,
+          "max_abs": 0.0031585693359375,
+          "off_rms_magnitude": 0.2061779493062654,
+          "on_rms_magnitude": 0.2061779463007188
+        },
+        {
+          "layer": 2,
+          "bit_exact": false,
+          "rms": 0.0006638776746886533,
+          "max_abs": 0.023343563079833984,
+          "off_rms_magnitude": 0.18776799186087412,
+          "on_rms_magnitude": 0.1877586819204833
+        },
+        {
+          "layer": 3,
+          "bit_exact": false,
+          "rms": 0.0012705174134669272,
+          "max_abs": 0.032210350036621094,
+          "off_rms_magnitude": 0.20764113199884512,
+          "on_rms_magnitude": 0.2076369746011622
+        },
+        {
+          "layer": 4,
+          "bit_exact": false,
+          "rms": 0.0018149739824107388,
+          "max_abs": 0.04472064971923828,
+          "off_rms_magnitude": 0.2107071501948763,
+          "on_rms_magnitude": 0.21070166279545735
+        },
+        {
+          "layer": 5,
+          "bit_exact": false,
+          "rms": 0.002622919457274154,
+          "max_abs": 0.043222904205322266,
+          "off_rms_magnitude": 0.21613341467638858,
+          "on_rms_magnitude": 0.21611751578070432
+        },
+        {
+          "layer": 6,
+          "bit_exact": false,
+          "rms": 0.003868645557691955,
+          "max_abs": 0.05273008346557617,
+          "off_rms_magnitude": 0.25931257075105585,
+          "on_rms_magnitude": 0.2593280416218477
+        },
+        {
+          "layer": 7,
+          "bit_exact": false,
+          "rms": 0.004429838543417156,
+          "max_abs": 0.07093667984008789,
+          "off_rms_magnitude": 0.2507590148213502,
+          "on_rms_magnitude": 0.250717090245707
+        },
+        {
+          "layer": 8,
+          "bit_exact": false,
+          "rms": 0.004560513498470525,
+          "max_abs": 0.07396984100341797,
+          "off_rms_magnitude": 0.24094127262248038,
+          "on_rms_magnitude": 0.24096183374563343
+        },
+        {
+          "layer": 9,
+          "bit_exact": false,
+          "rms": 0.004814114781371823,
+          "max_abs": 0.09858179092407227,
+          "off_rms_magnitude": 0.23849999760407997,
+          "on_rms_magnitude": 0.23847165637611004
+        },
+        {
+          "layer": 10,
+          "bit_exact": false,
+          "rms": 0.005196386414775004,
+          "max_abs": 0.0796051025390625,
+          "off_rms_magnitude": 0.24243414162104204,
+          "on_rms_magnitude": 0.2423999742247723
+        },
+        {
+          "layer": 11,
+          "bit_exact": false,
+          "rms": 0.005751141957570057,
+          "max_abs": 0.10829877853393555,
+          "off_rms_magnitude": 0.2432145352749683,
+          "on_rms_magnitude": 0.24315657749624062
+        },
+        {
+          "layer": 12,
+          "bit_exact": false,
+          "rms": 0.005801920666839027,
+          "max_abs": 0.11344242095947266,
+          "off_rms_magnitude": 0.23880092691208524,
+          "on_rms_magnitude": 0.2386933833368158
+        },
+        {
+          "layer": 13,
+          "bit_exact": false,
+          "rms": 0.006128365052679172,
+          "max_abs": 0.11542797088623047,
+          "off_rms_magnitude": 0.2412777722392888,
+          "on_rms_magnitude": 0.2412596419708136
+        },
+        {
+          "layer": 14,
+          "bit_exact": false,
+          "rms": 0.006510266968005658,
+          "max_abs": 0.08680319786071777,
+          "off_rms_magnitude": 0.2550622196116332,
+          "on_rms_magnitude": 0.2550610556286881
+        },
+        {
+          "layer": 15,
+          "bit_exact": false,
+          "rms": 0.007135469576178166,
+          "max_abs": 0.14090728759765625,
+          "off_rms_magnitude": 0.27634407508677455,
+          "on_rms_magnitude": 0.2762408490271484
+        },
+        {
+          "layer": 16,
+          "bit_exact": false,
+          "rms": 0.0080044952957024,
+          "max_abs": 0.11921167373657227,
+          "off_rms_magnitude": 0.29324575917224266,
+          "on_rms_magnitude": 0.29317884491265195
+        },
+        {
+          "layer": 17,
+          "bit_exact": false,
+          "rms": 0.008740561146221579,
+          "max_abs": 0.13536453247070312,
+          "off_rms_magnitude": 0.3034549167407088,
+          "on_rms_magnitude": 0.30342107703490173
+        },
+        {
+          "layer": 18,
+          "bit_exact": false,
+          "rms": 0.009826155833424284,
+          "max_abs": 0.18886327743530273,
+          "off_rms_magnitude": 0.3105404498849469,
+          "on_rms_magnitude": 0.3105479921600816
+        },
+        {
+          "layer": 19,
+          "bit_exact": false,
+          "rms": 0.012597284906350556,
+          "max_abs": 0.20858192443847656,
+          "off_rms_magnitude": 0.3836318145711731,
+          "on_rms_magnitude": 0.3837406960814602
+        },
+        {
+          "layer": 20,
+          "bit_exact": false,
+          "rms": 0.013746893621246335,
+          "max_abs": 0.2900576591491699,
+          "off_rms_magnitude": 0.41007727602426297,
+          "on_rms_magnitude": 0.41015321270250266
+        },
+        {
+          "layer": 21,
+          "bit_exact": false,
+          "rms": 0.015308875151409015,
+          "max_abs": 0.2900705337524414,
+          "off_rms_magnitude": 0.45126641640109094,
+          "on_rms_magnitude": 0.45124522871241346
+        },
+        {
+          "layer": 22,
+          "bit_exact": false,
+          "rms": 0.017006935918774335,
+          "max_abs": 0.4242382049560547,
+          "off_rms_magnitude": 0.46995916266266696,
+          "on_rms_magnitude": 0.4698689968919641
+        },
+        {
+          "layer": 23,
+          "bit_exact": false,
+          "rms": 0.019280942097394265,
+          "max_abs": 0.5718040466308594,
+          "off_rms_magnitude": 0.5038893747626626,
+          "on_rms_magnitude": 0.5038301789146447
+        },
+        {
+          "layer": 24,
+          "bit_exact": false,
+          "rms": 0.020695848984512096,
+          "max_abs": 0.65997314453125,
+          "off_rms_magnitude": 0.530573120066655,
+          "on_rms_magnitude": 0.5304750959191777
+        },
+        {
+          "layer": 25,
+          "bit_exact": false,
+          "rms": 0.022352619671575272,
+          "max_abs": 0.6860189437866211,
+          "off_rms_magnitude": 0.5495544168081019,
+          "on_rms_magnitude": 0.5494862174448777
+        },
+        {
+          "layer": 26,
+          "bit_exact": false,
+          "rms": 0.025106262127153077,
+          "max_abs": 1.2600955963134766,
+          "off_rms_magnitude": 0.5756962097552645,
+          "on_rms_magnitude": 0.5750115353873604
+        },
+        {
+          "layer": 27,
+          "bit_exact": false,
+          "rms": 0.029880371429071916,
+          "max_abs": 0.7908668518066406,
+          "off_rms_magnitude": 0.6108061852295235,
+          "on_rms_magnitude": 0.611028276178439
+        },
+        {
+          "layer": 28,
+          "bit_exact": false,
+          "rms": 0.03439587356925629,
+          "max_abs": 0.7259674072265625,
+          "off_rms_magnitude": 0.6777090698102146,
+          "on_rms_magnitude": 0.678327370871241
+        },
+        {
+          "layer": 29,
+          "bit_exact": false,
+          "rms": 0.04135644845831483,
+          "max_abs": 0.7331619262695312,
+          "off_rms_magnitude": 0.752861878521884,
+          "on_rms_magnitude": 0.7535283616837053
+        },
+        {
+          "layer": 30,
+          "bit_exact": false,
+          "rms": 0.051172005490866125,
+          "max_abs": 1.100137710571289,
+          "off_rms_magnitude": 0.8006154030336733,
+          "on_rms_magnitude": 0.8016010573167254
+        },
+        {
+          "layer": 31,
+          "bit_exact": false,
+          "rms": 0.06839830959974447,
+          "max_abs": 2.3470916748046875,
+          "off_rms_magnitude": 0.9449731701266362,
+          "on_rms_magnitude": 0.9466309967011658
+        }
+      ]
+    }
+  },
+  "simple_form_off": {
+    "off_all_rows_stages_exact": true,
+    "source_form_first4": {
+      "off": {
+        "gate": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "candidate_rms_magnitude": 0.22776664960285287,
+          "source_rms_magnitude": 0.22776664960285287
+        },
+        "up": {
+          "bit_exact": true,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "candidate_rms_magnitude": 0.19947203393320811,
+          "source_rms_magnitude": 0.19947203393320811
+        },
+        "activation": {
+          "bit_exact": false,
+          "rms": 1.3992145639446467e-09,
+          "max_abs": 5.960464477539063e-08,
+          "candidate_rms_magnitude": 0.038185283616242446,
+          "source_rms_magnitude": 0.038185283706966784
+        },
+        "down": {
+          "bit_exact": false,
+          "rms": 6.3716824157754365e-09,
+          "max_abs": 3.725290298461914e-08,
+          "candidate_rms_magnitude": 0.046577817714590165,
+          "source_rms_magnitude": 0.04657781773616732
+        }
+      }
+    }
+  },
+  "scope": "Table OFF/ON complete; formOFF native run and historical row/stage guard complete before diagnostic postprocessor error. FormON and Arabic pair not executed. No complete panel claim; resume must reuse completed arms without inference."
+}

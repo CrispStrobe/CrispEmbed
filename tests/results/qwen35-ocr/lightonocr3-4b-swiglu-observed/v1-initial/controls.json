@@ -1,0 +1,162 @@
+{
+  "source_sha": "519c3d9765c234cd93e9069d5efdc239e3cad3f2",
+  "passed": true,
+  "checkpoint_loaded": false,
+  "gpu_model_inference_executed": false,
+  "unit_control_outputs": {
+    "test-lighton4b-source-prefill-chunks": "SOURCE_PREFILL_CHUNKS_CONTROLS PASS checks=4165 model_payload=0 decoded=0",
+    "test-lighton4b-physical-swiglu": "physical SwiGLU: gate aliases, physical/BF16 scope, six GGML exact arms, finite/geometry controls pass",
+    "test-lighton4b-physical-gdn-source-ops": "PHYSICAL_GDN_SOURCE_OPS_CONTROLS PASS checks=26 model_payload=0 decoded=0",
+    "test-lighton4b-physical-native-ops": "PHYSICAL_NATIVE_OPS pass=1 checks=142 gate_off_legacy_exact=1 nonphysical_unchanged=1 streamed_head_exact=1 physical_cache_toggle=1 closed_ablations=1 unknown_rejected=1 learned_model_forward=0",
+    "test-lighton4b-physical-f16-attention": "PHYSICAL_F16_ATTENTION PASS 255297"
+  },
+  "cmake_cache": {
+    "bytes": 28985,
+    "sha256": "1eebb53b5b599a52062a6b4ba7656bf6c6dcf3628d8f556a90b316a055de2c18"
+  },
+  "runtime_bundle": {
+    "lib/libggml.so": {
+      "bytes": 56376,
+      "sha256": "b236af3ded60f1d1f5519916e4ff45fa307a5475350ddee94b2c20c7efb32536"
+    },
+    "lib/libggml-cpu.so.0": {
+      "bytes": 1158056,
+      "sha256": "321d478987a5a115eeff1b3c728508c652e8c7b90e06245f973edf2afb12fbac"
+    },
+    "lib/libggml-base.so.0": {
+      "bytes": 917880,
+      "sha256": "37154830b20bdbb420494676bac64da4c10f1cbe6dc3c08735c027fdffb00b73"
+    },
+    "lib/libggml.so.0.17.0": {
+      "bytes": 56376,
+      "sha256": "b236af3ded60f1d1f5519916e4ff45fa307a5475350ddee94b2c20c7efb32536"
+    },
+    "lib/libggml-base.so": {
+      "bytes": 917880,
+      "sha256": "37154830b20bdbb420494676bac64da4c10f1cbe6dc3c08735c027fdffb00b73"
+    },
+    "lib/libggml-base.so.0.17.0": {
+      "bytes": 917880,
+      "sha256": "37154830b20bdbb420494676bac64da4c10f1cbe6dc3c08735c027fdffb00b73"
+    },
+    "lib/libggml-cpu.so.0.17.0": {
+      "bytes": 1158056,
+      "sha256": "321d478987a5a115eeff1b3c728508c652e8c7b90e06245f973edf2afb12fbac"
+    },
+    "lib/libggml-cpu.so": {
+      "bytes": 1158056,
+      "sha256": "321d478987a5a115eeff1b3c728508c652e8c7b90e06245f973edf2afb12fbac"
+    },
+    "lib/libggml.so.0": {
+      "bytes": 56376,
+      "sha256": "b236af3ded60f1d1f5519916e4ff45fa307a5475350ddee94b2c20c7efb32536"
+    },
+    "bin/lighton4b-native-document": {
+      "bytes": 857776,
+      "sha256": "3d66d1a515a26ffd75405441610a6de3ede2c221b5ff476b4e4626ab632f1691"
+    }
+  },
+  "native_binary_sha256": "3d66d1a515a26ffd75405441610a6de3ede2c221b5ff476b4e4626ab632f1691",
+  "seconds": 103.45083189799999,
+  "schema": "lighton4b-swiglu-controls-small-review/v1",
+  "producer_receipt_sha256": "97721fed18de359d08d633e017c51b261950e7fb788952d67607e48a3ea7f0f4",
+  "commands": [
+    {
+      "label": "init",
+      "returncode": 0,
+      "seconds": 0.06641902600000549,
+      "sha256": "b33f9feebaf62881c632970cc26102ee91f3e1fc263ecf6d1df2d2c321e9f840"
+    },
+    {
+      "label": "remote",
+      "returncode": 0,
+      "seconds": 0.017262286999994103,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "fetch",
+      "returncode": 0,
+      "seconds": 5.48182329399998,
+      "sha256": "1e345d01ee766512b7559cf704ed55c2ff1184f43953e3c9d7f2cef16d1fd321"
+    },
+    {
+      "label": "checkout",
+      "returncode": 0,
+      "seconds": 2.1707701409999913,
+      "sha256": "62c23cb183de5a4687cc9919aeb1e66c67976e154cbdcabcad14daeaed681ab1"
+    },
+    {
+      "label": "source",
+      "returncode": 0,
+      "seconds": 0.003901462000015954,
+      "sha256": "251693a7135dc2e207bb2133012c71f87f1ed56c2971bfad8889a36cbacd29a9"
+    },
+    {
+      "label": "ggml",
+      "returncode": 0,
+      "seconds": 2.9225500500000123,
+      "sha256": "440b6b3ce5ed7f571e91c37aeecc3cb9e4a711c139d8ca5271fe79bcb096e808"
+    },
+    {
+      "label": "ggml-source",
+      "returncode": 0,
+      "seconds": 0.003998628000005056,
+      "sha256": "e601323d793ee4e885b083f65101988246e42a4e9dd3aa1aec32f0124f3b45cc"
+    },
+    {
+      "label": "configure",
+      "returncode": 0,
+      "seconds": 2.8727822710000055,
+      "sha256": "755cdb0f68e384a90c13570900f4bea1b7a7651549ec990962860b9a8f606b79"
+    },
+    {
+      "label": "baseline",
+      "returncode": 0,
+      "seconds": 0.21473394900002063,
+      "sha256": "4787439f4d28beff772ab34af5c6bb98120fc8ea5f68946f1fedd7fae5fd427b"
+    },
+    {
+      "label": "build",
+      "returncode": 0,
+      "seconds": 85.53604838200002,
+      "sha256": "4e3e94d1aaeeff1af3a84267baf51e922a814a63506b7f3d792e6899405c6216"
+    },
+    {
+      "label": "test-lighton4b-source-prefill-chunks",
+      "returncode": 0,
+      "seconds": 0.21456119000004037,
+      "sha256": "4fe75532b6dc8266154352e1594d163316f52d9fd993a4bf299a4bb9ca889655"
+    },
+    {
+      "label": "test-lighton4b-physical-swiglu",
+      "returncode": 0,
+      "seconds": 0.01603813600002013,
+      "sha256": "ab36cca7bf3d2017f6b39fb03251936e23a990e21c13dcc6def9a43923117df8"
+    },
+    {
+      "label": "test-lighton4b-physical-gdn-source-ops",
+      "returncode": 0,
+      "seconds": 0.11489153299999089,
+      "sha256": "39fb75ab17b3ca2e9ff8a22df5cfab07777ea8578f04d5be60c8cb879070cd53"
+    },
+    {
+      "label": "test-lighton4b-physical-native-ops",
+      "returncode": 0,
+      "seconds": 1.3176772659999756,
+      "sha256": "55be879453faae1ad12ba240d135d6b094020c1bed1c23945f07eb0c373b1063"
+    },
+    {
+      "label": "test-lighton4b-physical-f16-attention",
+      "returncode": 0,
+      "seconds": 2.4230605330000117,
+      "sha256": "5892c49ef41bc582baf756071bcb35987aa815a18b8e88452d1cfa601f57cdef"
+    },
+    {
+      "label": "cli-observed512",
+      "returncode": 4,
+      "seconds": 0.003879362000020592,
+      "sha256": "0693d5e659927dc80bbf10f1edb0e5bb58e6b7bd993e47c1a641a882a3737939"
+    }
+  ],
+  "scope": "Actual hosted controls PASS; small report reviewed independently. No checkpoint during build/control phase."
+}
