@@ -10,7 +10,20 @@ checkout is clean but Python source becomes CRLF. The Windows job now configures
 `core.autocrlf=false` and `core.eol=lf` before all three source checkouts. Raw-byte
 identity and complete-tree cleanliness checks remain strict. The regression
 restores exact source bytes while preserving explicitly byte-pinned CRLF fixture
-data. This correction has not been rerun on a hosted Windows worker.
+data. The subsequent Windows-only retry below exercises this correction.
+
+The [Windows-only retry](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43311042289)
+passed that controller check and cryptographic archive validation, then stopped
+at the header/source raw-byte comparison. Inspection of the original producer
+archive proves its header is the entire Git LF-to-CRLF transformation: committed
+header 110852 bytes/1813 LF/no CR; package 112665 bytes/1813 CRLF/no bare LF or CR.
+The raw archive and header-member SHA-256 values match the producer manifest.
+The consumer now permits only this whole-file transform for the Windows header,
+after rechecking the raw manifest/member hashes and exact committed source bytes.
+It records both raw header hashes and the transformation without modifying the
+header, archive, manifest or hashes. Mixed endings, lone CR, other byte changes
+and non-Windows mismatches remain failures. A hosted retry remains pending;
+the already passed Linux/macOS targets do not need repetition for this change.
 
 The manual-only `desktop-ocr-candidate-consumer.yml` adopts the existing
 [desktop producer 43302121233](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43302121233),

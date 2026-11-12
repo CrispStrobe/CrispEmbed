@@ -1,5 +1,6 @@
 """Source-only checks for the bounded manual consumer; no compiler or model use."""
 import importlib.util
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -8,6 +9,7 @@ import subprocess
 import tempfile
 import tomllib
 import unittest
+import zipfile
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -157,6 +159,72 @@ class CandidateConsumerTests(unittest.TestCase):
     def test_local_execution_rejected_before_any_job_or_build(self):
         with patch.dict(os.environ, {'GITHUB_ACTIONS': 'false'}), self.assertRaisesRegex(ValueError, 'Hosted'):
             consumer.consume('linux-x86_64', ROOT, ROOT, ROOT)
+
+    def header_member(self, data):
+        return {'kind': 'file', 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+
+    def test_header_binding_accepts_only_exact_bytes_or_windows_whole_file_transform(self):
+        source = b'// UTF-8: \xe2\x96\x81\nint fixture(void);\n'
+        exact = consumer.header_binding(source, source, self.header_member(source), False)
+        self.assertEqual(exact['transformation'], 'exact-bytes')
+        windows = source.replace(b'\n', b'\r\n')
+        proof = consumer.header_binding(windows, source, self.header_member(windows), True)
+        self.assertEqual(proof['transformation'], 'windows-git-whole-file-lf-to-crlf')
+        self.assertEqual(proof['packaged_sha256'], self.header_member(windows)['sha256'])
+        self.assertEqual(proof['committed_source_sha256'], self.header_member(source)['sha256'])
+        self.assertNotEqual(proof['packaged_sha256'], proof['committed_source_sha256'])
+        with self.assertRaisesRegex(ValueError, 'exact runtime source'):
+            consumer.header_binding(windows, source, self.header_member(windows), False)
+
+    def test_header_binding_rejects_mixed_endings_lone_cr_and_every_other_edit(self):
+        source = b'// source\nint fixture(void);\n'
+        windows = source.replace(b'\n', b'\r\n')
+        for altered in [windows.replace(b'\r\n', b'\n', 1), windows.replace(b'\r\n', b'\r', 1),
+                        windows.replace(b'int', b'long'), windows + b'\r\n', windows[:-1],
+                        windows.replace(b'\r\n', b'\r\r\n'), b'\xef\xbb\xbf' + windows]:
+            # Even a raw member hash matching these bytes cannot waive source binding.
+            with self.assertRaisesRegex(ValueError, 'exact runtime source'):
+                consumer.header_binding(altered, source, self.header_member(altered), True)
+        mixed_source = b'// source\r\nint fixture(void);\n'
+        with self.assertRaisesRegex(ValueError, 'exact runtime source'):
+            consumer.header_binding(windows, mixed_source, self.header_member(windows), True)
+
+    def test_header_binding_keeps_raw_manifest_hash_and_size_checks_strict(self):
+        source = b'int fixture(void);\n'
+        windows = source.replace(b'\n', b'\r\n')
+        for member in [self.header_member(source), {**self.header_member(windows), 'kind': 'symlink'},
+                       {**self.header_member(windows), 'bytes': len(windows) + 1}]:
+            with self.assertRaisesRegex(ValueError, 'verified raw manifest member'):
+                consumer.header_binding(windows, source, member, True)
+
+    def test_header_verifier_preserves_downloaded_manifest_and_extracted_member_binding(self):
+        source = b'int fixture(void);\n'
+        windows = source.replace(b'\n', b'\r\n')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runtime, package, output = (root / name for name in ('runtime', 'package', 'output'))
+            (runtime / 'src').mkdir(parents=True)
+            (runtime / 'src/crispembed.h').write_bytes(source)
+            (package / 'include').mkdir(parents=True)
+            header = package / 'include/crispembed.h'
+            header.write_bytes(windows)
+            output.mkdir()
+            archive = 'crispembed-windows-x86_64.zip'
+            manifest = {'files': [{'name': archive, 'members': [dict(self.header_member(windows), path='include/crispembed.h')]}]}
+            path = output / 'manifest.zip'
+            with zipfile.ZipFile(path, 'w') as bundle:
+                bundle.writestr('successor-native-manifest.json', json.dumps(manifest))
+            receipt = {'manifest_artifact': {'digest': 'sha256:' + consumer.digest(path)}, 'archives': [{'name': archive}]}
+            with patch.object(consumer.subprocess, 'check_output', return_value=source):
+                proof = consumer.verify_header(package, runtime, output, receipt, True)
+                self.assertEqual(proof['transformation'], 'windows-git-whole-file-lf-to-crlf')
+                header.write_bytes(source)
+                with self.assertRaisesRegex(ValueError, 'verified raw manifest member'):
+                    consumer.verify_header(package, runtime, output, receipt, True)
+                header.write_bytes(windows)
+                path.write_bytes(path.read_bytes() + b'altered')
+                with self.assertRaisesRegex(ValueError, 'manifest artifact bytes changed'):
+                    consumer.verify_header(package, runtime, output, receipt, True)
 
 
 if __name__ == '__main__':
