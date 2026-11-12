@@ -29,9 +29,9 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   `1.2.1+28` and retains its immutable CrispEmbed 0.17.15 pin. The
   [10 November inspection](https://github.com/CrispStrobe/CrispMath/actions/runs/42870085016)
   recorded build 28 as valid and awaiting external beta review; it did not claim
-  App Store submission. A later read-only inspection is
-  [run 43229069857](https://github.com/CrispStrobe/CrispMath/actions/runs/43229069857);
-  use its actual result when available. Physical-device coverage remains separate.
+  App Store submission. A later read-only inspection [run 43229069857](https://github.com/CrispStrobe/CrispMath/actions/runs/43229069857)
+  failed before any jobs started (workflow-file problem), so it provides no newer
+  store state. Physical-device coverage remains separate.
 - **Test hygiene:** the last recorded plain full-clone audit at `cd477abe` had
   2,110 passed, 232 skipped and nine failures requiring frozen-guard replay;
   shallow had one failure. The [current-source audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43228796357)
