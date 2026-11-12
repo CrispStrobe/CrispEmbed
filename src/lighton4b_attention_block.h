@@ -1,3 +1,4 @@
+#include "lighton4b_physical_swiglu.h"
 #include "lighton4b_physical_native_ops.h"
 #include "lighton4b_physical_f16_attention.h"
 #include "lighton4b_upstream_physical_semantics.h"
@@ -51,6 +52,8 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
         !lighton4b_physical_native_ops_valid(w.upstream_physical) ||
         w.attention.upstream_physical != w.upstream_physical)
         return false;
+    const bool fused_swiglu = lighton4b_physical_swiglu_mode(w.upstream_physical);
+    if (previous && previous->physical_swiglu != fused_swiglu) return false;
     const bool q6_tiled = lighton4b_physical_q6_tiled_mode(w.upstream_physical);
     if (!lighton4b_physical_q6_tiled_valid(w.upstream_physical) ||
         (previous && previous->physical_q6_tiled != q6_tiled))
@@ -96,6 +99,7 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
     candidate.pooled = std::move(attention.pooled);
     candidate.attention = std::move(attention.attention);
     candidate.cache = std::move(attention.cache);
+    candidate.cache.physical_swiglu = fused_swiglu;
     if (candidate.attention.size() != candidate.hidden.size() || !finite(candidate.attention)) return false;
     for (size_t i = 0; i < candidate.hidden.size(); ++i) candidate.hidden[i] += candidate.attention[i];
     candidate.attention_residual = candidate.hidden;
@@ -106,10 +110,15 @@ inline bool lighton4b_attention_block_cpu(const decoder_layer_weights & w, const
         return false;
     candidate.gate = std::move(projections[0]);
     candidate.up = std::move(projections[1]);
-    candidate.activation.resize(candidate.gate.size());
-    for (size_t i = 0; i < candidate.gate.size(); ++i) {
-        const float gate = candidate.gate[i];
-        candidate.activation[i] = (gate / (1.0f + std::exp(-gate))) * candidate.up[i];
+    if (fused_swiglu) {
+        if (!lighton4b_physical_swiglu_cpu(candidate.gate, candidate.up, tokens, threads, candidate.activation))
+            return false;
+    } else {
+        candidate.activation.resize(candidate.gate.size());
+        for (size_t i = 0; i < candidate.gate.size(); ++i) {
+            const float gate = candidate.gate[i];
+            candidate.activation[i] = (gate / (1.0f + std::exp(-gate))) * candidate.up[i];
+        }
     }
     projections.clear();
     if (!project_cpu({ w.down }, candidate.activation.data(), 9216, tokens, threads, projections,

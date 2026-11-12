@@ -280,6 +280,14 @@ and [Jina admission](jina-ocr-license-gate.md).
 
 Regenerate with `python tools/list_env_vars.py --write`.
 
+`CRISPEMBED_LIGHTON4B_PHYSICAL_SWIGLU=1` opts authenticated physical LightOn4B
+FFNs into native GGML `ggml_swiglu_split(gate, up)` arithmetic. It is off by
+default, unsupported on WASM, and incompatible with physical-profile BF16
+alternatives. Linear, attention and decoder caches bind this mode and reject a
+mid-stream toggle. The scalar/BF16 alternatives and quantized weights stay
+intact. Same-input component agreement does not establish decoded quality;
+observed-document A/B and unchanged same-weight OFF controls remain required.
+
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
 493 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
@@ -793,6 +801,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_q6_tiled.h` | else |
+
+### lighton4b_physical_swiglu
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_PHYSICAL_SWIGLU` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_physical_swiglu.h` | else |
 
 ### lighton4b_rotary_table
 

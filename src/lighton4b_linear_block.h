@@ -1,3 +1,4 @@
+#include "lighton4b_physical_swiglu.h"
 #pragma once
 #include "lighton4b_hf_tiled_out.h"
 #include "lighton4b_physical_native_ops.h"
@@ -22,6 +23,7 @@ struct lighton4b_linear_cache {
     bool physical_gdn_source_ops = false;
     bool physical_q6_tiled = false;
     bool physical_source_prefill_chunks = false;
+    bool physical_swiglu = false;
 };
 struct lighton4b_linear_block_outputs {
     std::vector<float> input_norm, attention, attention_residual, post_norm, gate, up, activation, down, hidden;
@@ -47,6 +49,8 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     if (!lighton4b_source_prefill_chunks_valid(w.upstream_physical) ||
         (previous && previous->physical_source_prefill_chunks != source_chunks))
         return false;
+    const bool fused_swiglu = lighton4b_physical_swiglu_mode(w.upstream_physical);
+    if (previous && previous->physical_swiglu != fused_swiglu) return false;
     const bool q6_tiled = lighton4b_physical_q6_tiled_mode(w.upstream_physical);
     if (!lighton4b_physical_q6_tiled_valid(w.upstream_physical) ||
         (previous && previous->physical_q6_tiled != q6_tiled))
@@ -130,12 +134,17 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
         lighton4b_bf16_round(candidate.gate);
         lighton4b_bf16_round(candidate.up);
     }
-    candidate.activation.resize(candidate.gate.size());
-    for (size_t i = 0; i < candidate.gate.size(); ++i) {
-        const float gate = candidate.gate[i];
-        const float activated = gate / (1.0f + std::exp(-gate));
-        candidate.activation[i] = bf16 ? lighton4b_bf16_round(lighton4b_bf16_round(activated) * candidate.up[i])
-                                       : activated * candidate.up[i];
+    if (fused_swiglu) {
+        if (!lighton4b_physical_swiglu_cpu(candidate.gate, candidate.up, tokens, threads, candidate.activation))
+            return false;
+    } else {
+        candidate.activation.resize(candidate.gate.size());
+        for (size_t i = 0; i < candidate.gate.size(); ++i) {
+            const float gate = candidate.gate[i];
+            const float activated = gate / (1.0f + std::exp(-gate));
+            candidate.activation[i] = bf16 ? lighton4b_bf16_round(lighton4b_bf16_round(activated) * candidate.up[i])
+                                           : activated * candidate.up[i];
+        }
     }
     projections.clear();
     if (!project_cpu({ w.down }, candidate.activation.data(), 9216, tokens, threads, projections,
@@ -146,6 +155,7 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     for (size_t i = 0; i < candidate.hidden.size(); ++i) candidate.hidden[i] += candidate.down[i];
     if (bf16) lighton4b_bf16_round(candidate.hidden);
     if (!finite(candidate.hidden)) return false;
+    candidate.cache.physical_swiglu = fused_swiglu;
     candidate.cache.tokens = past + tokens;
     candidate.cache.hf_tiled_out = w.linear.hf_tiled_out;
     candidate.cache.bf16_activations = bf16;

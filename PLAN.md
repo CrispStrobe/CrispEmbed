@@ -548,6 +548,29 @@ Both OCR fixtures have CER 0; native/app licence refusal and per-model consent
 controls pass. This is bounded Linux CPU consumer evidence, not broad OCR quality.
 New private kernel configuration remains ignored; no private execution configuration is
 required for reviewing the CPU consumer source and retained evidence.
+## LightOn4B fused SwiGLU candidate — 12 November 2026
+
+The source-bound [operator attribution](docs/lighton4b-swiglu-source-probe-results.md)
+finds fused native GGML exact against upstream, while scalar activation differs
+by at most 1.19209e-7 on its frozen cases; changed Q8 integer codes remain zero.
+The [shared-prefix book comparison](docs/lighton4b-book-prefill-stage-compare.md)
+identifies a tiny first SwiGLU difference, without decoded causality. The
+separate default-off `CRISPEMBED_LIGHTON4B_PHYSICAL_SWIGLU` candidate replaces only
+physical FFN activation arithmetic with `ggml_swiglu_split`; scalar/BF16 paths,
+quantized projections, source-prefill policy and existing caches remain. New
+cache identity rejects toggles across linear/attention/whole-decoder streams.
+No F32 model is involved.
+
+Pending acceptance: hosted Kaggle compile and model-free
+`test-lighton4b-physical-swiglu` (six independent GGML same-input arms plus gate,
+scope, malformed/finite controls), existing source-prefill/cache controls, then
+source-matched OFF reproduction and full observed form/table/Arabic OFF/ON
+outputs against the unchanged same-weight upstream baselines. Preserve all
+negative 3x3/held-out evidence, do not fit the held-out book, and retain large
+artifacts remotely. No GitHub CI, PR, default flip, runtime release, alias or
+decoded-quality claim follows from preparing this candidate.
+
+
 ## Documentation checkpoint — 12 November 2026
 
 The current cross-repository release and LightOn4B provisional failure evidence, exact sources and preservation constraints are summarized in [the current state](docs/current-state-and-next-steps.md). The Q6 corrected and planner-only panels remain negative; neither warrants default, alias or release promotion. Main retains the planner helper and historical test but omits their runtime hooks and cache fields; an isolated restoration passed model-free controls, with model replay pending. Historical planner evidence remains bound to its original source. This documentation checkpoint changes no runtime version.

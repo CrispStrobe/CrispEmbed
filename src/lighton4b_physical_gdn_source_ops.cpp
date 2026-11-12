@@ -1,4 +1,5 @@
 #include "lighton4b_physical_gdn_source_ops.h"
+#include "lighton4b_physical_swiglu.h"
 #include "lighton4b_upstream_physical_semantics.h"
 #include "qwen35_delta.h"
 #include "ggml.h"
@@ -130,6 +131,39 @@ bool lighton4b_physical_gdn_source_ops_cpu(const linear_inputs & in, int key_hea
         return true;
     } catch (...) {
         out = {};
+        return false;
+    }
+}
+bool lighton4b_physical_swiglu_cpu(const std::vector<float> & gate, const std::vector<float> & up, int tokens,
+                                   int threads, std::vector<float> & output) {
+    output.clear();
+    if (!lighton4b_physical_swiglu_mode(true) || !lighton4b_upstream_physical_mode_valid(true) || tokens < 1 ||
+        tokens > 16 || threads < 1 || threads > 256 || gate.size() != size_t(tokens) * 9216 ||
+        up.size() != gate.size() || !finite(gate.data(), gate.size()) || !finite(up.data(), up.size()))
+        return false;
+    try {
+        std::unique_ptr<ggml_context, decltype(&ggml_free)> context(ggml_init({ 4ull * 1024 * 1024, nullptr, false }),
+                                                                    ggml_free);
+        std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)> backend(ggml_backend_cpu_init(), ggml_backend_free);
+        if (!context || !backend) return false;
+        ggml_backend_cpu_set_n_threads(backend.get(), threads);
+        auto * ctx = context.get();
+        auto * g = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 9216, tokens);
+        auto * u = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 9216, tokens);
+        const size_t bytes = gate.size() * sizeof(float);
+        std::memcpy(g->data, gate.data(), bytes);
+        std::memcpy(u->data, up.data(), bytes);
+        auto * activated = ggml_swiglu_split(ctx, g, u);
+        auto * graph = ggml_new_graph(ctx);
+        ggml_build_forward_expand(graph, activated);
+        if (ggml_backend_graph_compute(backend.get(), graph) != GGML_STATUS_SUCCESS ||
+            !finite(static_cast<const float *>(activated->data), gate.size()))
+            return false;
+        const auto * values = static_cast<const float *>(activated->data);
+        output.assign(values, values + gate.size());
+        return true;
+    } catch (...) {
+        output.clear();
         return false;
     }
 }
