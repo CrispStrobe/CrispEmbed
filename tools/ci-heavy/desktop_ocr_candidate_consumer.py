@@ -10,6 +10,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import struct
 import subprocess
 import sys
@@ -197,6 +198,17 @@ def prebuilt_metadata(target, package):
     return outputs[0]
 
 
+def windows_msvc_linker(env):
+    """Use the configured MSVC compiler's linker, never PATH's Unix link.exe."""
+    compiler = shutil.which('cl.exe', path=env.get('PATH', ''))
+    if compiler is None:
+        raise ValueError('Configured MSVC cl.exe is required for the Windows Rust consumer')
+    linker = Path(compiler).resolve().with_name('link.exe')
+    if not linker.is_file():
+        raise ValueError('MSVC link.exe must be adjacent to the configured cl.exe')
+    return linker
+
+
 def consume(target, workflow, runtime, output):
     if os.environ.get('GITHUB_ACTIONS') != 'true':
         raise ValueError('Hosted execution only')
@@ -256,6 +268,12 @@ def consume(target, workflow, runtime, output):
     native = parse_control(execute([native_binary, image, missing], env, logs, 'native-run'), NATIVE_KEYS)
     rust = output / 'rust'
     rust_project(runtime, rust)
+    if windows:
+        linker = windows_msvc_linker(env)
+        env['CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER'] = str(linker)
+        linker_proof = {'selection': 'link.exe adjacent to configured MSVC cl.exe',
+                        'linker_sha256': digest(linker)}
+        (logs / 'rust-linker.json').write_text(json.dumps(linker_proof, indent=2) + '\n')
     rust_stdout = execute(['cargo', 'run', '--quiet', '--locked', '--manifest-path', rust / 'Cargo.toml', '--', image, missing],
                           env, logs, 'rust-run', timeout=600)
     rust_result = parse_control(rust_stdout, RUST_KEYS)
@@ -275,6 +293,8 @@ def consume(target, workflow, runtime, output):
                   limits=['Actual model-free native/Rust boundary only; legacy empty is not positively recognized blank output.',
                           'CrispSorter application rebuild/error/export paths and decoded OCR remain unexecuted.',
                           'No runtime assets rebuilt; no model download, mobile, WASM or GPU qualification.'])
+    if windows:
+        report['rust_linker'] = linker_proof
     (output / 'boundary.json').write_text(json.dumps(report, indent=2) + '\n')
 
 

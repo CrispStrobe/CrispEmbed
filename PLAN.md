@@ -25,6 +25,17 @@ header, archive, manifest or hashes. Mixed endings, lone CR, other byte changes
 and non-Windows mismatches remain failures. A hosted retry remains pending;
 the already passed Linux/macOS targets do not need repetition for this change.
 
+The [next Windows-only consumer](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43313165931)
+passes archive/source/header validation and all four actual native C controls.
+Rust then exits 101 while linking libc's build script: the tool selected from
+Git's shell PATH is the Unix `link.exe`, which rejects MSVC arguments. No Rust
+semantic control or application qualification ran. The Windows consumer now
+selects `link.exe` adjacent to the configured MSVC `cl.exe` and passes its exact
+path through `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER`. Its hash and selection
+rule are retained without host paths. Decoy-PATH and missing-tool regressions
+pass; a hosted Windows retry remains pending. Source/archive checks and the
+already passed Linux/macOS targets are unaffected.
+
 The manual-only `desktop-ocr-candidate-consumer.yml` adopts the existing
 [desktop producer 43302121233](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43302121233),
 workflow/tooling `841179b848f8d3aa15e44dd2d5aea65070c82f71` and runtime

@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import struct
 import subprocess
+import shutil
 import tempfile
 import tomllib
 import unittest
@@ -159,6 +160,42 @@ class CandidateConsumerTests(unittest.TestCase):
     def test_local_execution_rejected_before_any_job_or_build(self):
         with patch.dict(os.environ, {'GITHUB_ACTIONS': 'false'}), self.assertRaisesRegex(ValueError, 'Hosted'):
             consumer.consume('linux-x86_64', ROOT, ROOT, ROOT)
+
+    def test_windows_cargo_linker_bypasses_git_link_executable_on_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            git_bin, msvc_bin = root / 'Git/usr/bin', root / 'MSVC/bin/Hostx64/x64'
+            git_bin.mkdir(parents=True)
+            msvc_bin.mkdir(parents=True)
+            for path in (git_bin / 'link.exe', msvc_bin / 'cl.exe', msvc_bin / 'link.exe'):
+                path.write_text('tool selection fixture')
+                path.chmod(0o755)
+            search = str(git_bin) + os.pathsep + str(msvc_bin)
+            self.assertEqual(Path(shutil.which('link.exe', path=search)), git_bin / 'link.exe')
+            self.assertEqual(consumer.windows_msvc_linker({'PATH': search}), msvc_bin / 'link.exe')
+
+    def test_windows_cargo_linker_requires_the_configured_msvc_pair(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            decoy = root / 'link.exe'
+            decoy.write_text('Unix link fixture')
+            decoy.chmod(0o755)
+            with self.assertRaisesRegex(ValueError, 'Configured MSVC cl.exe'):
+                consumer.windows_msvc_linker({'PATH': str(root)})
+            compiler_bin = root / 'MSVC'
+            compiler_bin.mkdir()
+            compiler = compiler_bin / 'cl.exe'
+            compiler.write_text('MSVC compiler fixture')
+            compiler.chmod(0o755)
+            with self.assertRaisesRegex(ValueError, 'adjacent to the configured cl.exe'):
+                consumer.windows_msvc_linker({'PATH': str(root) + os.pathsep + str(compiler_bin)})
+
+    def test_windows_linker_override_is_scoped_before_cargo_and_records_no_host_path(self):
+        source = Path(consumer.__file__).read_text()
+        block = source.split('    if windows:\n        linker = windows_msvc_linker(env)', 1)[1].split('    rust_stdout = execute(', 1)[0]
+        self.assertIn("env['CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER'] = str(linker)", block)
+        self.assertIn("'linker_sha256': digest(linker)", block)
+        self.assertNotIn("'path':", block)
 
     def header_member(self, data):
         return {'kind': 'file', 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
