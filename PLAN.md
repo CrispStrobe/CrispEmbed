@@ -552,6 +552,15 @@ required for reviewing the CPU consumer source and retained evidence.
 
 The current cross-repository release and LightOn4B provisional failure evidence, exact sources and preservation constraints are summarized in [the current state](docs/current-state-and-next-steps.md). The Q6 corrected and planner-only panels remain negative; neither warrants default, alias or release promotion. Current main retains the planner helper and historical test but omits their runtime hooks and cache fields; a separate restoration is in progress and unvalidated. Historical planner evidence remains bound to its original source. This documentation checkpoint changes no runtime version.
 
+## LightOn4B newer graph applicability — 12 November 2026
+
+The [source assessment](docs/lighton4b-qwen35-graph-applicability.md) at
+`c364feb97` finds incompatible grouped heads, physical norms/decay and tiled
+output layout. Existing rejection/defaults remain. Next bounded lane: separately
+gated grouped-GDN standard-op component with original-module stage/cache replay
+on Kaggle before full decoder integration or decoded-quality claims. No inference
+or runtime release follows from this documentation review.
+
 ## OvisOCR2 speed follow-ups — 11 November 2026
 
 Both CPU default flips and the standard-ggml-op GPU port are done (HISTORY 11 November).
