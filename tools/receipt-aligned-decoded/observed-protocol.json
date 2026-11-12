@@ -1,0 +1,60 @@
+{
+  "schema": "lighton4b-source-aligned-observed-ab/v1",
+  "controller_source": "f8bffd1217fa41a958047d88dafb782a4b1cd989",
+  "cases": [
+    "simple_table",
+    "simple_form",
+    "arabic_printed_line"
+  ],
+  "historical_off_tokens": [
+    282,
+    170,
+    6
+  ],
+  "gate": "CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL_ALIGNED",
+  "fixed_scheduler": "1",
+  "cap": 512,
+  "threads": 4,
+  "arm_seconds": 900,
+  "worker_seconds": 7200,
+  "model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "model_f32_text_allowed": false,
+  "heldout_data_allowed": false,
+  "source_reference_forward_allowed": false,
+  "runtime_rebuild_allowed": false,
+  "quality_qualified": false,
+  "candidate_source": "f8bffd1217fa41a958047d88dafb782a4b1cd989",
+  "source_form_probe_receipt_sha256": "2723be06d2b1a4836d51b75d50a23f61a07972127c907e01d0505c778dcf7260",
+  "fixed_swiglu": "1",
+  "baseline_scope": "All old RoPEON IDs/text/EOS/summary and actual raw rows/stages rehashed before model acquisition, then every fresh alignedOFF output must close them. Only new aligned telemetry false may be added.",
+  "acceptance": [
+    "Exact source-bound aligned controls22OFF/56sourceON/endstate/FIFO and actual cache/CLI checks pass before model acquisition.",
+    "Reuse exact retained native-document046a34d0 and GGML bundle; only PHYSICAL_SOURCE_PREFILL_ALIGNED changesOFF\u2192ON, RoPE/SwiGLU remainON.",
+    "All3 immutable original/BF16/source refs and all old RoPEON282/170/6 rows/stages/IDs/text/stops close under freshOFF before ON.",
+    "Cap512/context2048/threads4/900-second arms; keep original upstream floors and BF16 regression metrics, continue all arms after decoded negatives.",
+    "Vision/embeddings/positions/prompt remain exact; new plan and hidden layers may differ and must be measured.",
+    "No source/model-reference forward, full F32 model, native runtime rebuild, default/release/quality promotion. Retain exact quantized model remotely for fixed continuation."
+  ],
+  "controller_dependencies": {
+    "tools/q6-tiled-full-ab/worker.py": "5b5249fddaf60f0fe98828f16b6ae9b057095621a77fd3f3a67f315a4e4a9359",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "tools/kaggle/lighton4b_physical_f16_full_form.py": "fd417f272f522e63d103f091589952f43a14c36a8c7068edee33a19cc2202c86",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/lighton4b_upstream_physical_pack.py": "0f86cd619b1b25c419bd643a549786cc35d0c546b0bcab382e2efb77e3b24910",
+    "tools/lighton4b_q6_convert.py": "eb5f8bae51a808cfcd589d534a36da13106369e0c3b8da36bba8a68b04a8d4d1",
+    "tools/gguf_file_type_canonicalize.py": "838a90879879ce6cbb6262cedac159abda5579e32e66ac13c11a751d2b75d9d7",
+    "tools/ci-heavy/lighton4b_upstream_physical_audit.py": "99e1457b32a47bf5b1e81a3d77e075881eeb7e227331a3ef64f81aaf00ae4712",
+    "docs/lighton4b-upstream-physical-decode-v1.json": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d",
+    "docs/lighton4b-composed-form-vision-v1.json": "bfc3fbb1d856c36525c7a11bddb68184d92114c5f1a051786fc7bf0988753d90",
+    "tests/regression/images/cc0/simple_form.png": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+    "tests/regression/images/cc0/simple_table.jpg": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8",
+    "tests/regression/images/cc0/arabic_printed_line.png": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789"
+  },
+  "candidate_controls_sha256": "2d0d4131b12c6392bb92e494644e9f7d4900b17ba6c7389beaa96baae2a91305",
+  "historical_rope_on_receipt_sha256": "aaf5298b944cea3d53d7e6e4ce88da78c58c3cec6a651733c5aff993fa4c6ffc",
+  "historical_candidate_source": "a8a22749ab0b757ae1f317b6fa5b84ffd148b939",
+  "retain_quantized_model": true,
+  "continue_after_decoded_negative": true,
+  "native_binary_sha256": "046a34d094dff2334e474da7d4a8db9ba98bc8bc437fdc570e1d6d4ca8233d0a",
+  "minimum_output_gib": 12
+}
