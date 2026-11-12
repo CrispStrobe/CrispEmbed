@@ -20,7 +20,7 @@ def main():
   try:command(args,out/(label+'.log'),min(left,limit),r['commands'][label],env=env,cwd=ROOT)
   finally:save()
  try:
-  r['runtime_source']=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip();require(r['runtime_source']==CFG['candidate_source']==os.environ['LIGHTON4B_EXPECTED_SOURCE'],'exact runtime source');require(subprocess.check_output(['git','rev-parse','HEAD:src'],text=True).strip()==CFG['candidate_src_tree'],'production tree unchanged');r['diagnostic_source_commit']=os.environ['LIGHTON4B_TOOLS_SOURCE']
+  r['runtime_source']=subprocess.check_output(['git','-C',ROOT,'rev-parse','HEAD'],text=True).strip();require(r['runtime_source']==CFG['candidate_source']==os.environ['LIGHTON4B_EXPECTED_SOURCE'],'exact runtime source');require(subprocess.check_output(['git','-C',ROOT,'rev-parse','HEAD:src'],text=True).strip()==CFG['candidate_src_tree'],'production tree unchanged');r['diagnostic_source_commit']=os.environ['LIGHTON4B_TOOLS_SOURCE']
   mem=int(next(x.split()[1]for x in Path('/proc/meminfo').read_text().splitlines()if x.startswith('MemAvailable:')))*1024;cap=Path('/sys/fs/cgroup/memory.max').read_text().strip()
   if cap!='max':mem=min(mem,int(cap)-int(Path('/sys/fs/cgroup/memory.current').read_text()))
   r['capacity']=dict(available_bytes=mem,scratch_free=shutil.disk_usage(scratch).free,output_free=shutil.disk_usage(out).free);require(mem>=4<<30 and r['capacity']['scratch_free']>=5<<30 and r['capacity']['output_free']>=1<<30,'bounded operator resources')

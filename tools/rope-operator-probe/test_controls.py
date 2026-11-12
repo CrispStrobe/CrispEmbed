@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import hashlib,importlib.util,json,sys,unittest
+import ast,hashlib,importlib.util,json,sys,unittest
 from pathlib import Path
 HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];sys.path.insert(0,str(HERE))
 import observe
@@ -19,6 +19,14 @@ class Controls(unittest.TestCase):
   self.assertEqual(cfg['rope']['mode'],40);self.assertEqual(cfg['rope']['n_dims'],64);self.assertEqual(cfg['rope']['sections'],[11,11,10,0]);self.assertEqual(cfg['rope']['ext_factor'],0)
   text=(HERE/'CMakeLists.txt').read_text();self.assertIn('target_compile_options(rope-native-capture PRIVATE -ffp-contract=off)',text)
   self.assertNotIn('add_library(crispembed-core',text)
+ def test_identity_commands_are_independent_of_caller_working_directory(self):
+  tree=ast.parse((HERE/'worker.py').read_text());seen=[]
+  for node in ast.walk(tree):
+   if isinstance(node,ast.List)and node.elts and isinstance(node.elts[0],ast.Constant)and node.elts[0].value=='git':
+    values=[x.value if isinstance(x,ast.Constant)else getattr(x,'id',None)for x in node.elts]
+    if 'rev-parse'in values:
+     self.assertEqual(values[1],'-C');self.assertIn(values[2],['ROOT',None]);seen.append(values)
+  self.assertEqual(len(seen),3)
  def test_all22_native_stage_pairs_are_required(self):
   code=(HERE/'worker.py').read_text();self.assertIn('len(neutral)==22',code);self.assertIn("a.read_bytes()==b.read_bytes()",code);self.assertIn("require(row['bit_exact'],'actual source RoPE byte closure')",code)
   self.assertNotIn('n_predict',code)
