@@ -156,9 +156,12 @@ and correct native error propagation are required before repeating the panel.
 
 A bounded [error propagation candidate](docs/ovisocr2-error-propagation.md) preserves
 native failure separately from valid blank/EOS text through the pipeline C API
-and consumer wrappers, with additive diagnostics and unchanged C layouts. Four
-stdlib-only Python controls pass; native model-free controls are added but not
-compiled locally. Hosted compilation, Rust/Dart checks, fallback/blank ownership
+and consumer wrappers, with additive diagnostics and unchanged C layouts. Explicit
+stage outcomes prevent unknown legacy emptiness from masking a reported failure,
+while retaining standalone unknown blank and prior-error-free permissive gates.
+A positively recognized blank retains its actual fallback provenance. Four
+stdlib-only Python controls pass; native outcome/ownership and actual mixed-chain
+versus standalone-unknown controls are added but not compiled locally. Hosted compilation, Rust/Dart checks, fallback/blank ownership
 controls and the same two-input candidate replay remain pending. No push,
 release/version change, image resizing or patch-gate waiver is authorized by the
 preparation result. The original consumer needs a separately qualified rebuild.

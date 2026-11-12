@@ -11,11 +11,20 @@ errors cannot explain this failure. The failed real-page panel is not Ovis model
 quality evidence.
 
 The candidate preserves reported recognition failures through the unified stage
-and explicit Qwen3.5/Ovis recognition calls. A reported failed stage cannot pass a
-permissive acceptance gate. Other stages retain their existing fallback behavior;
-an earlier valid result, including a valid blank page, survives a later reported
-failure. This is not a complete error audit of every legacy OCR engine or of
-existing gated profile refusals.
+and explicit Qwen3.5/Ovis recognition calls. Stage outcomes distinguish positive
+success (including a non-NULL blank/EOS string), reported failure, and unknown
+legacy emptiness. Nonempty legacy text is positive output evidence. A reported
+failed stage cannot pass an acceptance gate. An unknown empty stage retains its
+existing numeric permissive-gate behavior when no earlier stage reported failure;
+it cannot erase an actual earlier failure. Unknown-only blank results do not
+become new errors. This is not a complete error audit of legacy engines or existing
+gated profile refusals, and unknown emptiness remains unqualified as recognition.
+
+The shared fallback selector retains earlier positive output, including a valid
+blank page and its engine/stage/geometry provenance, after a later reported
+failure. It copies owned diagnostics before temporary stage storage expires.
+The existing unified model handle does not reload when a later stage changes its
+model path; multi-model unified cache ownership is a separate unresolved limit.
 
 The C pipeline distinguishes a valid blank result (NULL region array, non-NULL
 empty `full_text`) from a reported native failure (NULL `full_text`, zero regions
@@ -34,9 +43,13 @@ native library alone does not repair its false-success handling.
 
 Four stdlib-only controls execute the actual Python wrapper method against native
 failure, valid blank, older-library and failure-then-success outputs. Added native
-model-free controls exercise real lazy unified initialization failure, permissive
-gate rejection, cleared C outputs, diagnostic lifetime and unavailable failed-run
-review data. Existing no-text controls remain. Native compilation and execution,
+model-free controls exercise real lazy unified initialization failure, cleared C
+outputs, diagnostic lifetime and unavailable failed-run review data. Selection
+controls cover failure plus unknown empty, known blank followed by failure with
+provenance, successful fallback, nonempty legacy fallback and owned error/text.
+Actual C-API controls contrast a mixed reported failure plus unknown zero-threshold
+stage (failure) with a standalone unknown zero-threshold stage (the existing
+accepted empty result). Existing no-text controls remain. Native compilation and execution,
 Rust/Dart checks, real successful/failed fallback, valid EOS-only output, and the
 same frozen synthetic/real-page candidate replay remain hosted acceptance gates.
 
