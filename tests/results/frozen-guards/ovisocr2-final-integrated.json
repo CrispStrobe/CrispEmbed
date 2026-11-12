@@ -68,6 +68,17 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
+        },
+        {
+          "from": "38d40c6620dd0b92b1dca51e0f94d8a6c1ebe02f",
+          "to": "de7de39410bd539281b76309e52e9b9e2b5d9079",
+          "changed_by": [
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format",
+            "92fad739 qwen35_vision: keep vision_host_inputs out of the test-only renamed copies"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
         }
       ]
     },
@@ -140,6 +151,16 @@
           "reason": "Replay-backed: fresh replays of the final-integrated v2 lane on this exact runtime tree (Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1) with unchanged budgets; see receipt. Source change: additive default-off CRISPEMBED_QWEN35_OCR_GRAPH_DECODER / CRISPEMBED_QWEN35_VISION_THREADED_ATTN gates and graph_kv_decoder.cpp linked into crispembed-qwen35-delta; the default decoder_cpu/vision path is unchanged.",
           "to": "98386958d6ca7fc72715b36556b32a617d1fbcaf",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json"
+        },
+        {
+          "from": "98386958d6ca7fc72715b36556b32a617d1fbcaf",
+          "to": "cdbd83f7bdcf28dce913663994a7b4a589fc8d9b",
+          "changed_by": [
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
         }
       ]
     },
@@ -543,6 +564,17 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
+        },
+        {
+          "from": "38d40c6620dd0b92b1dca51e0f94d8a6c1ebe02f",
+          "to": "de7de39410bd539281b76309e52e9b9e2b5d9079",
+          "changed_by": [
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format",
+            "92fad739 qwen35_vision: keep vision_host_inputs out of the test-only renamed copies"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
         }
       ]
     },
@@ -615,6 +647,16 @@
           "reason": "Replay-backed: fresh replays of the final-integrated v2 lane on this exact runtime tree (Kaggle frozen 14-arm gates 0/1 and hosted eleven-case first-F16 quality gates 0/1) with unchanged budgets; see receipt. Source change: additive default-off CRISPEMBED_QWEN35_OCR_GRAPH_DECODER / CRISPEMBED_QWEN35_VISION_THREADED_ATTN gates and graph_kv_decoder.cpp linked into crispembed-qwen35-delta; the default decoder_cpu/vision path is unchanged.",
           "to": "98386958d6ca7fc72715b36556b32a617d1fbcaf",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-final-integrated-graph-gates.json"
+        },
+        {
+          "from": "98386958d6ca7fc72715b36556b32a617d1fbcaf",
+          "to": "cdbd83f7bdcf28dce913663994a7b4a589fc8d9b",
+          "changed_by": [
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
         }
       ]
     },
@@ -1107,6 +1149,17 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
+        },
+        {
+          "from": "2ad14f1a29042e005debbc7b7d6fc50b1a56d5a2d02cf6ac19012471c25b070a",
+          "to": "2ca5622c4cac51d1d92cb033c760f135508aee0d034b8e0780fc08f07ed49875",
+          "changed_by": [
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format",
+            "92fad739 qwen35_vision: keep vision_host_inputs out of the test-only renamed copies"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
         }
       ],
       "test": "tests/test_ovisocr2_final_integrated_v1.py::FinalContract::test_exact_final_objects_and_known_three_source_changes"
@@ -1140,6 +1193,17 @@
           "classification": "behaviour-neutral",
           "reason": "Replay-backed owner-approved default flips (11 November 2026). CRISPEMBED_QWEN35_VISION_THREADED_ATTN default on: bit-identical to the scalar loop. CRISPEMBED_QWEN35_OCR_GRAPH_DECODER default on (native matmul): a default-path change under the owner-approved IDs/text/EOS contract, recorded as the new graph-path reference tests/results/qwen35-ocr/ovisocr2-graph-quality.json (all eleven cases exact). The frozen evidence path stays selectable with CRISPEMBED_QWEN35_OCR_GRAPH_DECODER=0 and was replayed on this exact runtime tree with unchanged budgets: Kaggle frozen 14-arm gates 0/1 pass 14/14 with gate0 retained ordinary vectors bit-exact; hosted eleven-case first-F16 quality gate0 has all 1,841 IDs/text/EOS/confidences exact and gate1 drift 2.4796e-5 as originally (see receipt).",
           "replay_receipt": "tests/results/frozen-guards/replays/ovisocr2-graph-default.json"
+        },
+        {
+          "from": "2ad14f1a29042e005debbc7b7d6fc50b1a56d5a2d02cf6ac19012471c25b070a",
+          "to": "2ca5622c4cac51d1d92cb033c760f135508aee0d034b8e0780fc08f07ed49875",
+          "changed_by": [
+            "01df17fa qwen35_ocr: standard-ggml-op vision/decoder pipeline (CRISPEMBED_QWEN35_OCR_GPU, default off) + T4 bench kernel",
+            "bca15bc7 OvisOCR2 GPU: T4 receipt, HISTORY/PERFORMANCE/PLAN; clang-format",
+            "92fad739 qwen35_vision: keep vision_host_inputs out of the test-only renamed copies"
+          ],
+          "classification": "behaviour-neutral",
+          "reason": "Additive default-off gate CRISPEMBED_QWEN35_OCR_GPU: new file src/qwen35_ocr_gpu.cpp (standard-ggml-op vision/decoder pipeline), linked into the same targets; qwen35_ocr.cpp only creates it when the gate is on (otherwise the graph decoder / decoder_cpu selection is unchanged); qwen35_vision.cpp gains vision_host_inputs(), a new function that vision_cpu does not call. Default and =0 paths unchanged."
         }
       ],
       "test": "tests/test_ovisocr2_final_integrated_v2.py::FinalV2::test_committed_declaration_is_reviewed_and_matches_checkout"

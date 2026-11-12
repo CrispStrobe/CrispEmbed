@@ -88,14 +88,16 @@ def compare(current, frozen):
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
-    p.add_argument('--matmul', choices=('native', 'f32', 'exact', 'default'), required=True,
-                   help='arm label; default = gates unset (graph decoder, native since 11 November 2026)')
+    p.add_argument('--matmul', choices=('native', 'f32', 'exact', 'default', 'ggml-ops'), required=True,
+                   help='arm label; default = gates unset (graph decoder, native since 11 November 2026); '
+                        'ggml-ops = CRISPEMBED_QWEN35_OCR_GPU on the CPU backend')
     args = p.parse_args()
     out = Path(os.environ['HEAVY_OUT'])
     current = json.loads((out / 'ovisocr2-quality.json').read_text())
     frozen = json.loads(FROZEN.read_text())['producer']
     result = compare(current, frozen)
     env = {k: os.environ.get(k) for k in ('CRISPEMBED_QWEN35_OCR_GRAPH_DECODER', 'CRISPEMBED_QWEN35_GRAPH_MATMUL',
+                                         'CRISPEMBED_QWEN35_OCR_GPU',
                                          'CRISPEMBED_QWEN35_VISION_THREADED_ATTN',
                                          'CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION')}
     result.update(schema='crispembed-ovisocr2-graph-quality-v1', matmul=args.matmul, environment=env,

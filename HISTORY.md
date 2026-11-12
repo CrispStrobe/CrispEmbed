@@ -1,3 +1,31 @@
+## 11 November 2026 — OvisOCR2 / Qwen3.5-OCR on GPU: standard-ggml-op pipeline (default off)
+
+`CRISPEMBED_QWEN35_OCR_GPU` (`src/qwen35_ocr_gpu.cpp`, default off) builds the `qwen35_ocr` vision
+encoder and decoder from standard ggml ops only. It replaces the nine CPU-only custom ops of the graph
+decoder (`op_rms`, `op_rope`, `op_gate`, `op_swiglu`, `op_conv_silu`, `op_decay`, `op_beta`,
+`op_gated_norm`, `op_rowdot`) and the hand-written C++ vision tower. The replacements are
+`rms_norm`+`mul`, `rope_multi` IMROPE, `sigmoid`, `swiglu_split`, `ssm_conv`+`silu`,
+`softplus`, `gated_delta_net`, `norm`, `tanh`, `gelu_erf` and `soft_max_ext`. The code is derived from
+transformers 5.5.4 `modeling_qwen3_5.py`, with line citations in the source. The matrices are copied
+once to the preferred backend. `ggml_backend_sched` places each graph, and the CPU backend is used
+when no GPU is present. The host position and rotary tables come from `vision_host_inputs`, which
+runs the same code as `vision_cpu`. `CRISPEMBED_QWEN35_OCR_GPU_LOG` prints the placement and
+`CRISPEMBED_QWEN35_OCR_GPU_STRICT` rejects any fallback.
+
+- **Kaggle T4** (`tools/kaggle/ovisocr2-gpu-bench`, receipt
+  `tests/results/qwen35-ocr/ovisocr2-gpu-bench.json`): every node runs on CUDA0 and no node falls back
+  to the CPU (vision 732, prefill/decode 1,324 nodes, one split each). The three realistic documents
+  have exact IDs, text and stop against the frozen CPU receipt. They take 2.7 / 10.0 / 12.6 s per page,
+  at 65-70 tok/s end to end and 89 tok/s decode (11.2 ms/token). The maximum confidence drift is 1.49e-3.
+- **Same graphs on the CPU backend**: exact on the three documents, with maximum drift 6.8e-5. On the
+  same host this is about as fast as the CPU default (29 vs 32 s for the inventory page). The full
+  eleven-case set ran on the hosted lane (`ggml-ops` arm, run
+  [43119710108](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43119710108), receipt
+  `tests/results/qwen35-ocr/ovisocr2-ggml-ops-quality.json`): all 11 cases (1,841 tokens) have exact
+  IDs, text and EOS, with maximum drift 9.09e-5. The historical receipt takes 77.6 s there, versus
+  125.7 s for the CPU default.
+- **Proposed, not flipped**: make the gate default on when a GPU backend is present (see PLAN).
+
 ## 11 November 2026 — OvisOCR2 / Qwen3.5-OCR: graph decoder and threaded vision attention on by default
 
 Owner-approved flips of the two PR #213 gates.

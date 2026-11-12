@@ -420,7 +420,7 @@ list(APPEND CRISPEMBED_SOURCES src/lighton4b_physical_gdn_source_ops.cpp src/lig
 list(APPEND CRISPEMBED_SOURCES src/lighton4b_physical_f16_attention.cpp)
 # Experimental MiniCPM-OCR-1.0 (default-off: CRISPEMBED_MINICPM_OCR); reuses the qwen35 decoder.
 list(APPEND CRISPEMBED_SOURCES src/minicpm_ocr_vision.cpp src/minicpm_ocr.cpp src/qwen35_graph_decoder.cpp
-     src/qwen35_graph_kv_decoder.cpp)
+     src/qwen35_graph_kv_decoder.cpp src/qwen35_ocr_gpu.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tesseract_lstm.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tesseract_recoder.cpp src/tesseract_dawg_score.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tesseract_dawg.cpp src/tesseract_dawg_legacy.cpp)
@@ -485,7 +485,7 @@ if(EMSCRIPTEN)
         src/oxr_document.cpp src/oxr_document_text.cpp src/oxr_document_api.cpp
         src/marker.cpp src/marker_document.cpp src/marker_backend.cpp src/marker_artifact.cpp
         src/qwen35_ocr.cpp src/qwen35_vision.cpp src/qwen35_image.cpp src/lighton4b_pillow_resize.cpp src/lighton4b_physical_f16_vision.cpp src/qwen35_tokenizer.cpp  # Ovis/Qwen3.5-OCR
-        src/minicpm_ocr_vision.cpp src/minicpm_ocr.cpp src/qwen35_graph_decoder.cpp src/qwen35_graph_kv_decoder.cpp
+        src/minicpm_ocr_vision.cpp src/minicpm_ocr.cpp src/qwen35_graph_decoder.cpp src/qwen35_graph_kv_decoder.cpp src/qwen35_ocr_gpu.cpp
         src/unlimited_ocr.cpp src/unlimited_ocr2_dash.cpp
         src/got_ocr.cpp src/glm_ocr.cpp src/internvl2_ocr.cpp src/granite_vision_ocr.cpp
         src/lightonocr.cpp src/deepseek_ocr2.cpp src/smoldocling_ocr.cpp src/lfm2_vl_ocr.cpp
@@ -947,6 +947,8 @@ target_sources(crispembed-qwen35-delta PRIVATE src/lighton4b_vision_bf16.cpp)
 target_sources(crispembed-qwen35-delta PRIVATE src/lighton4b_physical_f16_attention.cpp)
 # Opt-in CRISPEMBED_QWEN35_OCR_GRAPH_DECODER: qwen35_ocr.cpp binds the graph decoder.
 target_sources(crispembed-qwen35-delta PRIVATE src/qwen35_graph_kv_decoder.cpp)
+# Opt-in CRISPEMBED_QWEN35_OCR_GPU: standard-ggml-op vision/decoder graphs (GPU-capable).
+target_sources(crispembed-qwen35-delta PRIVATE src/qwen35_ocr_gpu.cpp)
 # Private ABI is deliberately closed to the exact hosted CPU profile first.
 # Other builds retain the old path and reject an explicitly enabled experiment.
 find_program(_lighton4b_f16_git git)

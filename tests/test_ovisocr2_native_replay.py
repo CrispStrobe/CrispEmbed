@@ -40,11 +40,12 @@ class ReplayControls(unittest.TestCase):
         # The graph decoders are MiniCPM-only translation units; no Ovis file includes them.
         #   qwen35_xiaomi0.h (format-4 Xiaomi profile, separate default-off gates).
         #   qwen35_lighton4b_text.h (metadata-only owner; no Ovis code includes it).
+        #   qwen35_ocr_gpu.* (CRISPEMBED_QWEN35_OCR_GPU standard-ggml-op pipeline, default off).
         # This controlled fixture tests the original 29-file contract; the actual
         # historical replay below still rejects the expanded current source tree.
         opt_in = ('qwen35_image_bounds.h', 'qwen35_weight_cache.h', 'qwen35_graph_decoder.cpp',
                   'qwen35_graph_decoder.h', 'qwen35_graph_kv_decoder.cpp', 'qwen35_graph_kv_decoder.h',
-                  'qwen35_xiaomi0.h', 'qwen35_lighton4b_text.h')
+                  'qwen35_xiaomi0.h', 'qwen35_lighton4b_text.h', 'qwen35_ocr_gpu.cpp', 'qwen35_ocr_gpu.h')
         paths = [p for p in sorted((ROOT / 'src').glob('qwen35*')) if p.name not in opt_in]
         paths += [ROOT / name for name in (
             'src/crispembed_diff.h', 'tests/qwen35_parity.h',

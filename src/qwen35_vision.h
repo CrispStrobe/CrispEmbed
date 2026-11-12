@@ -51,4 +51,9 @@ bool map_small_vision(const core_gguf::tensor_map & tensors, vision_weights & we
 // non-causal per frame, never across images or frames. CPU reference path.
 bool vision_cpu(const vision_weights & weights, const vision_config & config, const float * patches, int tokens,
                 const std::vector<int> & grid_thw, int threads, vision_outputs & output);
+// Offsets, position embeddings [tokens, width] and rotary cos/sin [tokens, head_dim]
+// exactly as vision_cpu forms them; used by the ggml-op vision graph.
+bool vision_host_inputs(const vision_weights & weights, const vision_config & config, int tokens,
+                        const std::vector<int> & grid_thw, std::vector<int> & offsets, std::vector<float> & position,
+                        std::vector<float> & rotary_cos, std::vector<float> & rotary_sin);
 } // namespace qwen35_ocr
