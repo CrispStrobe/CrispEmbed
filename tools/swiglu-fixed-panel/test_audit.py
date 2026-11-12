@@ -1,5 +1,5 @@
 """Small independent raw-audit corruption and privacy controls; no model data."""
-import hashlib,json,tempfile,unittest,zipfile
+import hashlib,importlib.util,json,random,tempfile,unittest,zipfile
 from pathlib import Path
 import numpy as np
 import audit
@@ -28,4 +28,8 @@ class AuditControls(unittest.TestCase):
  def test_independent_edit_distance(self):
   self.assertEqual(audit.edit_count('kitten','sitting'),3);self.assertEqual(audit.edit_count('',[1,2]),2);self.assertEqual(audit.edit_count(['one','two'],['one','three','two']),1)
   score=dict(raw={'cer':1/3,'wer':1.},parsed_text='abd',content={'cer':1/3,'wer':1.});v=audit.independent_edits({'text':'abc'},'abd',score);self.assertEqual(v['raw']['character_edits'],1)
+ def test_bit_parallel_matches_separate_frozen_dp(self):
+  path=Path(__file__).resolve().parents[1]/'ci-heavy/qwen35_quant_calibration.py';spec=importlib.util.spec_from_file_location('frozen_distance',path);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);rng=random.Random(0)
+  for _ in range(100):
+   left=''.join(rng.choices('abcأعé',k=rng.randrange(65)));right=''.join(rng.choices('abcأعé',k=rng.randrange(65)));self.assertEqual(audit.edit_count(left,right),module.distance(left,right))
 if __name__=='__main__':unittest.main()
