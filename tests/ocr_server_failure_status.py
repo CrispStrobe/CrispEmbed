@@ -36,7 +36,7 @@ def server(binary, directory, engine):
     missing = directory / 'deliberately-missing.gguf'
     with (directory / (engine + '.log')).open('wb') as log:
         process = subprocess.Popen([str(binary), '--host', '127.0.0.1', '--port', str(port),
-                                    '--image-root', str(directory), '--ocr-engine', engine,
+                                    '--image-root', str(directory), '--ocr-pipeline', '--ocr-engine', engine,
                                     '--ocr-rec', str(missing), '-t', '1'],
                                    stdout=log, stderr=subprocess.STDOUT)
         try:
