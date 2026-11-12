@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
@@ -43,13 +44,24 @@ GREEN = {"success", "skipped"}
 PENDING = {"queued", "in_progress", "pending", "waiting", "requested", "expected", None, ""}
 
 
+class GitHubAPIError(RuntimeError):
+    """Keep gh's error contract while exposing status for optional API reads."""
+
+    def __init__(self, path: str, detail: str):
+        detail = detail.strip()
+        status = re.search(r"\bHTTP (\d{3})\b", detail, re.I)
+        self.status_code = int(status.group(1)) if status else None
+        self.rate_limited = bool(re.search(r"rate[\s_-]*limit|retry[\s_-]*after|abuse", detail, re.I))
+        super().__init__(f"gh api {path}: {detail[:300]}")
+
+
 def gh_api(path: str, paginate: bool = False):
     cmd = ["gh", "api", "-H", "Accept: application/vnd.github+json", path]
     if paginate:
         cmd[2:2] = ["--paginate", "--slurp"]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode:
-        raise RuntimeError(f"gh api {path}: {(r.stderr or r.stdout).strip()[:300]}")
+        raise GitHubAPIError(path, r.stderr or r.stdout)
     return json.loads(r.stdout or "null")
 
 
@@ -69,8 +81,10 @@ def pr_info(repo: str, pr: int) -> dict:
 def required_contexts(repo: str, base: str) -> list[str] | None:
     try:
         r = gh_api(f"repos/{repo}/branches/{base}/protection/required_status_checks")
-    except RuntimeError:
-        return None  # no protection, or not visible with this token
+    except GitHubAPIError as e:
+        if e.status_code in {403, 404} and not e.rate_limited:
+            return None  # no protection, or not visible with this token
+        raise  # throttling, service and network errors must not erase requirements
     names = set(r.get("contexts") or [])
     names.update(c.get("context") for c in r.get("checks") or [] if c.get("context"))
     return sorted(names)
@@ -98,7 +112,9 @@ def checks_for(repo: str, sha: str) -> dict[str, str]:
     newest: dict[str, tuple] = {}
     for page in runs:
         for wr in page.get("workflow_runs", []):
-            key = wr.get("run_attempt") or 0, wr.get("created_at") or "", wr.get("id") or 0
+            # Attempts belong to one run: an old run's attempt 2 must never
+            # supersede a newer run's queued/failed attempt 1 at the same SHA.
+            key = wr.get("created_at") or "", wr.get("id") or 0, wr.get("run_attempt") or 0
             wf = f"workflow {wr.get('name') or wr.get('workflow_id')} [{wr.get('event')}]"
             if wf not in newest or key > newest[wf][0]:
                 state = wr.get("conclusion") if wr.get("status") == "completed" else wr.get("status")
@@ -151,16 +167,19 @@ def main(argv=None) -> int:
             if name not in present:
                 states[name] = "expected"
         bad = {n: s for n, s in states.items() if s not in GREEN and s not in PENDING}
-        def allowed(n):
-            return n.split(" [suite ")[0] in a.allow_stalled
-        pending = {n: s for n, s in states.items() if s in PENDING and not allowed(n)}
-        stalled = sorted(n for n, s in states.items() if s in PENDING and allowed(n))
+        def allowed(n, s):
+            return s in {"queued", "pending"} and n.split(" [suite ")[0] in a.allow_stalled
+        pending = {n: s for n, s in states.items() if s in PENDING and not allowed(n, s)}
+        stalled = sorted(n for n, s in states.items() if allowed(n, s))
         el = time.time() - t0
         if bad:
             print("NOT GREEN:", json.dumps(bad, sort_keys=True))
             return 1
         if not states:
             print(f"no checks yet on {sha[:12]} ({el:.0f}s)", flush=True)
+            green_since = None
+        elif len(stalled) == len(states):
+            print(f"no non-stalled green checks yet on {sha[:12]} ({el:.0f}s)", flush=True)
             green_since = None
         elif pending:
             print(f"pending {len(pending)}/{len(states)}: {', '.join(sorted(pending)[:8])} ({el:.0f}s)", flush=True)
@@ -169,6 +188,20 @@ def main(argv=None) -> int:
             green_since = time.time()
             print(f"all {len(states)} green; settling {a.settle}s", flush=True)
         elif time.time() - green_since >= a.settle:
+            # The head may have moved while the check/status APIs were read.
+            # Fail closed on this last read; --match-head-commit also protects
+            # the later merge from changes after this helper exits.
+            try:
+                final_info = pr_info(repo, a.pr)
+            except RuntimeError as e:
+                print(e, file=sys.stderr)
+                return 4
+            if final_info["head"] != sha:
+                print(f"HEAD MOVED: PR head is now {final_info['head']}, expected {sha}; re-review and rerun")
+                return 3
+            if final_info["merged"] or final_info["state"] != "open":
+                print(f"PR #{a.pr} is {('merged' if final_info['merged'] else final_info['state'])}")
+                return 1
             if stalled:
                 print("IGNORED (explicit --allow-stalled, still pending):", ", ".join(stalled))
             print(f"GREEN: {len(states) - len(stalled)} checks on {sha}")

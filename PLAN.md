@@ -1,5 +1,23 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## PR219 review corrections — 12 November 2026
+
+Review source: `5f3864fcb4a1bb48e1cb47aa1f270a9ae5aa88b7`. Local corrections
+order workflow runs before their attempt numbers, recheck the PR head/state
+immediately before reporting green, and limit explicit stalled exceptions to
+queued/pending jobs. Model-free regression tests cover the initial failures.
+The twelve corrected controls pass locally and run in the static CI guards;
+explicit stalled exceptions alone cannot produce a zero-check green result.
+Optional protection lookup permits only unavailable 403/404 responses; throttled
+403, 429, service and network errors fail closed without changing other API
+endpoints' RuntimeError handling.
+The missing OvisOCR2 bench metadata uses the existing account placeholder and
+attaches the ccache seed. Its ID and title preserve the existing
+`crispembed-ovisocr2-gpu-bench` slug; a mocked submission control checks the
+rendered identity, seed, image, exact source substitution and string booleans.
+These changes remain local for review; no push, merge,
+GPU execution, release or default change is authorized by this checkpoint.
+
 ## OvisOCR2 speed follow-ups — 11 November 2026
 
 Both CPU default flips and the standard-ggml-op GPU port are done (HISTORY 11 November).
