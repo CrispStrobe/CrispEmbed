@@ -23,7 +23,7 @@ The source-identical metadata preflight is separately built and retained;
 inference uses the tested bundle without rebuild. The retained quantized model
 is rehashed and reused, with no second model acquisition or conversion.
 
-Decoded negatives do not skip later declared arms or change acceptance floors.
+The original positive observed-source EOS/floor screen remains fixed-panel admission. Within each admitted panel, decoded negatives do not skip later declared arms or change acceptance floors.
 Artifact, input, resource and arithmetic admission failures stop execution and
 retain partial evidence. No source/BF16 forward, full F32 model, default,
 release, alias, application pin or quality qualification follows. Large vectors,

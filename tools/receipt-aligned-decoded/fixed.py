@@ -36,8 +36,10 @@ def stop_state(summary,ids,expected_tokens=None,expected_eos=None,cap=1536,promp
 def admit_observed(observed,cfg,control_sha,bundle):
  require(observed['status']=='measured_source_aligned_observed_ab'and observed['runtime_producer_source']==cfg['candidate_source']and observed['candidate_controls_sha256']==control_sha and observed['runtime_bundle']==bundle and set(observed['cases'])=={'simple_table','simple_form','arabic_printed_line'},'same candidate completed observed screen')
  require(all(case['off_all_rows_stages_exact']and set(case['arms'])=={'off','on'}for case in observed['cases'].values()),'all6 observed arms and exact old RoPEON OFF closure')
- # Decoded floors remain binding results; they do not skip declared cases.
+ # Preserve the original positive observed-source screen as fixed admission.
+ # Negative decoded results within an admitted fixed panel still run all cases.
  for case in observed['cases'].values():
+  require(case['arms']['on']['summary']['eos']and case['arms']['on']['meets_observed_upstream_floor'],'positive unchanged observed source screen before fixed admission')
   for arm in case['arms'].values():
    summary=arm['summary'];require(1<=summary['generated_tokens']<=512 and(summary['eos']or summary['generated_tokens']==512),'observed EOS or explicit cap-negative')
 
@@ -81,11 +83,7 @@ def main():
   r['all_three_historical_inputs_baselines_audits_authenticated_before_models']=True;save();off_gates,on_gates=gates(baseline['gates']['on'])
   def environment(values):
    env=dict(os.environ);env.update({k:'0'for k in env if k.startswith('CRISPEMBED_')});env.update(values);env['LD_LIBRARY_PATH']=str(bundle/'lib');return env
-  envs={'off':environment(off_gates),'on':environment(on_gates)};r['gates']={'off':off_gates,'on':on_gates};teacher=work/'one.ids';teacher.write_text('248046\n');original_cfg=json.loads((ROOT/'docs/lighton4b-heldout-executor-v1.json').read_text());sys.path.insert(0,str(ROOT/'tools'));import lighton4b_upstream_physical_pack as pack
-  def download(url,path,size,digest):
-   r['phase']='download-'+Path(path).name;records=r.setdefault('downloads',{}).setdefault(Path(path).name,[]);save()
-   try:shared.transfer(base.download,url,path,size,digest,records)
-   finally:save()
+  envs={'off':environment(off_gates),'on':environment(on_gates)};r['gates']={'off':off_gates,'on':on_gates};teacher=work/'one.ids';teacher.write_text('248046\n');original_cfg=json.loads((ROOT/'docs/lighton4b-heldout-executor-v1.json').read_text())
   retained=observed['retained_quantized_model'];require(retained['file']=='physical-model.gguf'and retained['sha256']==cfg['model_sha256'],'exact retained quantized model');candidate=observedp.parent/retained['file'];verify(candidate,retained);require(observed['artifacts'][retained['file']]=={key:retained[key]for key in ['bytes','sha256']},'same retained model manifest');r['retained_model_reused']=True;r['model_acquisition']=False
   pack_source=observedp.parent/'physical-pack.json';verify(pack_source,observed['artifacts']['physical-pack.json']);shutil.copy2(pack_source,out/'physical-pack.json');packed=json.loads(pack_source.read_text());require(packed['candidate_sha256']==cfg['model_sha256']and not packed['requantization_executed']and not packed['full_f32_model_created'],'unchanged physical weights')
   for case_cfg,bp,baseline,oldarm,op,original,stages,selected,image,response in prepared:
