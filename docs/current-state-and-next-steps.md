@@ -36,8 +36,10 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   store state. Physical-device coverage remains separate.
 - **Test hygiene:** the last recorded plain full-clone audit at `cd477abe` had
   2,110 passed, 232 skipped and nine failures requiring frozen-guard replay;
-  shallow had one failure. The [current-source audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43228796357)
-  was dispatched against `c364feb97`; preserve its actual failures and source rather
+  shallow had one failure. The [initial current-source dispatch](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43228796357)
+  stopped before tests because its harness assumed a non-shallow checkout. The
+  [corrected retry](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43230390891)
+  pins `c364feb97` explicitly. Preserve its actual failures and source rather
   than assuming the historical count still applies.
 
 
