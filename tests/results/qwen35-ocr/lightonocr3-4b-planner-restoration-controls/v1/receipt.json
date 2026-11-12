@@ -1,0 +1,81 @@
+{
+  "schema": "lighton4b-planner-restoration-controls/v1",
+  "source": "7340a6366b57c64c39b746ef53f2a2cb550ded64",
+  "expected_ggml": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "actual_ggml": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "targets": [
+    "test-lighton4b-source-prefill-chunks",
+    "lighton4b-source-prefill-probe",
+    "lighton4b-native-document"
+  ],
+  "flags": [
+    "GGML_NATIVE=OFF",
+    "CRISPEMBED_NATIVE=OFF",
+    "GGML_CUDA=OFF",
+    "GGML_METAL=OFF",
+    "GGML_VULKAN=OFF",
+    "GGML_AVX2=ON",
+    "GGML_F16C=ON",
+    "GGML_FMA=ON",
+    "GGML_LLAMAFILE=ON",
+    "GGML_OPENMP=OFF",
+    "GGML_AVX512=OFF",
+    "GGML_BLAS=OFF",
+    "GGML_BACKEND_DL=OFF",
+    "CRISPEMBED_BUILD_SHARED=OFF",
+    "CMAKE_BUILD_TYPE=Release"
+  ],
+  "checkpoint_loaded": false,
+  "decoded_quality_qualified": false,
+  "gpu_qualified": false,
+  "passed": true,
+  "control_output": "SOURCE_PREFILL_CHUNKS_CONTROLS PASS checks=4165 model_payload=0 decoded=0",
+  "raw_receipt_sha256": "7bc19b90175ac251a5fd999fc5b5eedb4866cf7a2b1158846b145fa99a0b37df",
+  "commands": [
+    {
+      "returncode": 0,
+      "seconds": 1.9759952499999827,
+      "sha256": "0e1a5623349f314fa7b450eec182526ba5127914ab4251b27b3229fc5fbae751"
+    },
+    {
+      "returncode": 0,
+      "seconds": 8.096193091000032,
+      "sha256": "2a8f8cf81c4d7c9c8254ff2f1381ee8d512e90f2e5c27e07b7cd9434684f991b"
+    },
+    {
+      "returncode": 0,
+      "seconds": 0.0043265409999548865,
+      "sha256": "79d3ef558840f1b08f516e2147477898203e5e98ed718af06c2e359e1a75a5a9"
+    },
+    {
+      "returncode": 0,
+      "seconds": 3.1257819530000006,
+      "sha256": "71de1ac841893a87367bc6033328a349476ca0c53c35eba0224ba98ec3b66805"
+    },
+    {
+      "returncode": 0,
+      "seconds": 0.004153489999964677,
+      "sha256": "e601323d793ee4e885b083f65101988246e42a4e9dd3aa1aec32f0124f3b45cc"
+    },
+    {
+      "returncode": 0,
+      "seconds": 3.8298130250000213,
+      "sha256": "d3c20c3142fa751bb7d4f86c6c4f3d14930fbb0224a7169baacd022b2eacc97d"
+    },
+    {
+      "returncode": 0,
+      "seconds": 0.21536696300000813,
+      "sha256": "b4514fa4c0a3c6859da45363d75739d00df3df3e0ee74b59443c56ea82a8328f"
+    },
+    {
+      "returncode": 0,
+      "seconds": 99.409392604,
+      "sha256": "ef4b56fe1dcc016850d0a3f5b5fa9e86a3cf9f3afbdab1608a74a3039a19edac"
+    },
+    {
+      "returncode": 0,
+      "seconds": 0.2666011829999775,
+      "sha256": "4fe75532b6dc8266154352e1594d163316f52d9fd993a4bf299a4bb9ca889655"
+    }
+  ]
+}

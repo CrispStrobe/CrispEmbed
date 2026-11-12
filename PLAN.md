@@ -550,7 +550,7 @@ New private kernel configuration remains ignored; no private execution configura
 required for reviewing the CPU consumer source and retained evidence.
 ## Documentation checkpoint — 12 November 2026
 
-The current cross-repository release and LightOn4B provisional failure evidence, exact sources and preservation constraints are summarized in [the current state](docs/current-state-and-next-steps.md). The Q6 corrected and planner-only panels remain negative; neither warrants default, alias or release promotion. Current main retains the planner helper and historical test but omits their runtime hooks and cache fields; a separate restoration is in progress and unvalidated. Historical planner evidence remains bound to its original source. This documentation checkpoint changes no runtime version.
+The current cross-repository release and LightOn4B provisional failure evidence, exact sources and preservation constraints are summarized in [the current state](docs/current-state-and-next-steps.md). The Q6 corrected and planner-only panels remain negative; neither warrants default, alias or release promotion. Main retains the planner helper and historical test but omits their runtime hooks and cache fields; an isolated restoration passed model-free controls, with model replay pending. Historical planner evidence remains bound to its original source. This documentation checkpoint changes no runtime version.
 
 ## LightOn4B source-prefill integration repair — 12 November 2026
 
@@ -558,21 +558,22 @@ Current `c364feb97` retains historical planner helper/tests but lacks the runtim
 modality schedule, cache-policy identity and CMake targets present at `a61642056`.
 The isolated repair restores those exact hooks, preserving subsequent Ovis GPU
 sources and the current iOS build guard. The probe now exits through
-`core_util::clean_exit`. Gate remains default-off; historical decoded receipts
-qualify their historical sources only. Diff/format review passes; current-source
-compilation, synthetic controls and model replay are pending on Kaggle while
-local Python startup is blocked on filesystem I/O. No default/release/parity claim.
+`core_util::clean_exit`. At source `7340a6366b57c64c39b746ef53f2a2cb550ded64`,
+Kaggle built all three targeted executables and passed 4,165 source-prefill
+synthetic controls, with the required F16 ABI; the [sanitized receipt](tests/results/qwen35-ocr/lightonocr3-4b-planner-restoration-controls/v1/receipt.json) retains the original receipt hash and command log hashes. Gate remains default-off;
+historical decoded receipts qualify their historical sources only. No model
+replay, default, release or decoded-parity claim follows from these controls.
 
 Private retained-result metadata for the two-column case shows the planner-off
 and planner-on greedy choices first diverge at zero-based output row 92, after
 92 matching choices; rows 0–92 therefore have the same input prefix. Planner-off
 completes at 660 tokens/EOS, while planner-on reaches 1,536 without EOS. The
-existing [audited prefill comparison](docs/lighton4b-planner-heldout-provisional-results.md)
-already records the first layer difference; the new metadata-only comparison
-does not inspect raw logits or establish a cause. A prepared artifact-only
-Kaggle audit must authenticate and compare those 93 score rows and aligned
-prefill stages before choosing a numerical fix. Preserve private document text
-and IDs; compare source and native at the same prefix before claiming parity.
+subsequent [artifact-only audit](docs/lighton4b-planner-common-prefix-audit.md)
+authenticated and compared the 93 same-prefix score rows and aligned prefill
+stages. Planner-on follows the upstream choices through 405 tokens, versus 92
+for planner-off; neither observation alone explains the capped completion.
+Preserve private document text and IDs; compare source and native at the same
+prefix before claiming parity.
 
 ## LightOn4B newer graph applicability — 12 November 2026
 
