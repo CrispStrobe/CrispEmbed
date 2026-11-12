@@ -55,8 +55,14 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   passed at `98331a43`; a later [typecheck](https://github.com/CrispStrobe/CrispSorter/actions/runs/43303387596)
   passed its app job at `a7fc4e75`. [Receipt contracts](https://github.com/CrispStrobe/CrispSorter/actions/runs/43305456011)
   passed 15 Linux and two Windows controls at `a63a9676`, with non-Unix receipt
-  operations failing closed. The separately dispatched current-source Android
-  gate check remains pending; no physical-device coverage is claimed.
+  operations failing closed. An [Android gate check](https://github.com/CrispStrobe/CrispSorter/actions/runs/43298111978)
+  passed 11 steps at dedicated app source `0dbb1e69` with immutable runtime
+  `c364feb9`. Default whole-page CER was 0.502857; explicit experimental CC
+  crops reached 0.022857 but omitted characters. Relevant OCR app files match
+  merged main, while other app files and the test harness differ. The option
+  remains default-off; full-page coverage and physical devices are unqualified.
+  [Draft PR 62](https://github.com/CrispStrobe/CrispSorter/pull/62) explores
+  bounded Ovis sizing and still needs actual app/runtime quality qualification.
   [Provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52)
   merged after a targeted vendored-source conformance run. [Follow-up 56](https://github.com/CrispStrobe/CrispSorter/pull/56)
   merged as `7d6032bd15aded92bebb5c59b5f83f441d68ad64` using the reviewed
