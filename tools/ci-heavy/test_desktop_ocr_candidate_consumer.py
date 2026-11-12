@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import struct
+import subprocess
 import tempfile
 import tomllib
 import unittest
@@ -102,6 +103,44 @@ class CandidateConsumerTests(unittest.TestCase):
         self.assertIn('ref: ' + consumer.RUNTIME_SOURCE, workflow)
         self.assertEqual(workflow.count('submodules: recursive'), 2)
         self.assertIn("PYTHONDONTWRITEBYTECODE: '1'", workflow)
+
+    def test_windows_checkout_preserves_raw_git_bytes_without_weakening_validation(self):
+        workflow = (ROOT / '.github/workflows/desktop-ocr-candidate-consumer.yml').read_text()
+        step = workflow.split('      - name: Preserve committed source bytes on Windows\n', 1)[1].split('      - name:', 1)[0]
+        self.assertIn("if: runner.os == 'Windows'", step)
+        self.assertLess(workflow.index('Preserve committed source bytes on Windows'), workflow.index('Check out this consumer controller'))
+        script = '\n'.join(line[10:] for line in step.split('        run: |\n', 1)[1].splitlines())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo = root / 'repo'
+            repo.mkdir()
+            env = dict(os.environ, GIT_CONFIG_GLOBAL=str(root / 'gitconfig'))
+            def git(*args):
+                return subprocess.check_output(['git', '-C', str(repo), *args], env=env, stderr=subprocess.DEVNULL)
+            git('init', '-q')
+            git('config', '--global', 'core.autocrlf', 'true')
+            source = repo / 'control.py'
+            source.write_bytes(b'print("source identity")\n')
+            (repo / '.gitattributes').write_text('*.raw -text\n')
+            retained = repo / 'capture.raw'
+            retained.write_bytes(b'retained\r\nbytes\r\n')
+            git('add', '.')
+            git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'fixture')
+            committed = git('show', 'HEAD:control.py')
+            source.unlink()
+            git('checkout', '--', 'control.py')
+            self.assertIn(b'\r\n', source.read_bytes())
+            self.assertNotEqual(source.read_bytes(), committed)
+            self.assertEqual(git('status', '--porcelain'), b'')
+            subprocess.run(['bash', '-c', script], env=env, check=True)
+            source.unlink()
+            retained.unlink()
+            git('checkout', '--', 'control.py', 'capture.raw')
+            self.assertEqual(source.read_bytes(), committed)
+            self.assertEqual(retained.read_bytes(), b'retained\r\nbytes\r\n')
+            self.assertEqual(git('status', '--porcelain'), b'')
+            source.write_bytes(committed + b'# changed\n')
+            self.assertNotEqual(source.read_bytes(), committed)
 
     def test_harness_keeps_inputs_fixed_and_limits_unexecuted_qualification(self):
         source = Path(consumer.__file__).read_text()

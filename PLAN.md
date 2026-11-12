@@ -2,6 +2,16 @@
 
 ## Existing desktop candidate consumers — 13 November 2026
 
+The [first packaged-consumer run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43309558037)
+passed both Linux targets and macOS. Windows stopped before artifact download or
+compilation because the controller's worktree byte hash differed from its Git
+blob. A focused Git fixture reproduces this with `core.autocrlf=true`: the
+checkout is clean but Python source becomes CRLF. The Windows job now configures
+`core.autocrlf=false` and `core.eol=lf` before all three source checkouts. Raw-byte
+identity and complete-tree cleanliness checks remain strict. The regression
+restores exact source bytes while preserving explicitly byte-pinned CRLF fixture
+data. This correction has not been rerun on a hosted Windows worker.
+
 The manual-only `desktop-ocr-candidate-consumer.yml` adopts the existing
 [desktop producer 43302121233](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43302121233),
 workflow/tooling `841179b848f8d3aa15e44dd2d5aea65070c82f71` and runtime
