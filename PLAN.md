@@ -482,7 +482,9 @@ finds exact Q/K normalization and preceding cache, with the first measured
 difference at source RoPE versus reconstructed native RoPE. The [direct native
 observer and same-input operator replay](tools/rope-operator-probe/README.md)
 confirmed the native reconstruction and source-exact GGML RoPE on these inputs;
-decoded quality and any separately gated runtime correction remain unqualified.
+the separately gated candidate passed [source-fed component controls](tools/physical-rope-validation/README.md)
+with all 76 captured stage/cache comparisons exact. Whole-decoder fixture controls
+were compiled but not executed; decoded quality remains unqualified.
 
 ## Local kernel configuration privacy — 12 November 2026
 
