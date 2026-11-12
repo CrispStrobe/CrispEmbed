@@ -23,8 +23,10 @@ so nothing could hit. The bench also had no committed `kernel-metadata.json`.
 - The `ce-ccache-bootstrap` block in all 59 kernels now also finds clones under `/tmp` and two levels deep.
   Before this, kernels that cloned into `/tmp/<x>/CrispEmbed` or `/kaggle/temp/<x>/CrispEmbed` skipped the
   cache. The harness also warms from `crispembed-ccache` before `crispasr-ccache` when both are attached.
-- Smoke runs of the bootstrap block. The bootstrap ran and warmed in every kernel that reached it:
-  `moedern-quant` and `unlimited-ocr2-native` (CPU) completed, and so did `crispembed-cuda-diag` (GPU).
+- Smoke runs of the bootstrap block. The bootstrap ran and warmed in every kernel whose log could be
+  read: `moedern-quant` and `unlimited-ocr2-native` (CPU), the seed and the OvisOCR2 bench (GPU).
+  `crispembed-cuda-diag` (GPU) completed, but its log cannot be fetched: the kernel leaves a full CrispASR
+  tree in its output, which pushes the log past the CLI's 500-file page.
   `minicpm-ocr-graph` failed at link time in its own `tests/minicpm-graph` project, which lacks the
   `lighton4b_physical_*` sources. That failure is independent of ccache. These CPU kernels build their own
   CMake projects with other flags, and on Kaggle's CPU image they had 0-7% hits.
