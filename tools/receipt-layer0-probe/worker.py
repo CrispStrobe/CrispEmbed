@@ -21,6 +21,9 @@ def compare(x,y):
  r=delta(x,y);indices=np.flatnonzero(x.view('u4').reshape(-1)!=y.view('u4').reshape(-1));r['first_different_flat_index']=int(indices[0])if len(indices)else None
  r['different_rows']=np.flatnonzero(np.any(x.view('u4')!=y.view('u4'),axis=1)).tolist();return r
 
+def source_identity(root):
+ return subprocess.check_output(['git','-C',str(root),'rev-parse','HEAD'],text=True).strip()
+
 def main():
  import numpy as np
  require(Path('/kaggle/input').is_dir()and np.__version__=='2.3.5'and not list(Path('/dev').glob('nvidia[0-9]*')),'hosted CPU/pinned arrays')
@@ -37,7 +40,7 @@ def main():
  def locate(name,digest):
   paths=[p for p in Path('/kaggle/input').rglob(name)if p.is_file()and p.stat().st_size<4<<20 and sha(p)==digest];require(len(paths)==1,'one exact '+name);return paths[0],json.loads(paths[0].read_text())
  try:
-  require(subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()==CFG['candidate_source'],'exact production candidate checkout');r['candidate_source']=CFG['candidate_source'];r['tools_source']=os.environ['LIGHTON4B_TOOLS_SOURCE']
+  require(source_identity(ROOT)==CFG['candidate_source'],'exact production candidate checkout');r['candidate_source']=CFG['candidate_source'];r['tools_source']=os.environ['LIGHTON4B_TOOLS_SOURCE']
   mem=int(next(x.split()[1]for x in Path('/proc/meminfo').read_text().splitlines()if x.startswith('MemAvailable:')))*1024;cap=Path('/sys/fs/cgroup/memory.max').read_text().strip()
   if cap!='max':mem=min(mem,int(cap)-int(Path('/sys/fs/cgroup/memory.current').read_text()))
   r['capacity']=dict(available_bytes=mem,scratch_free=shutil.disk_usage(work).free,output_free=shutil.disk_usage(out).free,load=os.getloadavg());require(mem>=6<<30 and r['capacity']['scratch_free']>=6<<30 and r['capacity']['output_free']>=2<<30,'bounded component resource admission')
@@ -54,7 +57,13 @@ def main():
   build=work/'build';run('configure',['cmake','-S',HERE,'-B',build,'-DCRISPEMBED_SOURCE='+str(ROOT),'-DCMAKE_BUILD_TYPE=Release',*[f'-D{k}={v}'for k,v in FLAGS.items()]])
   cache=(build/'CMakeCache.txt').read_text().splitlines();require(all(f'{k}:BOOL={v}'in cache for k,v in FLAGS.items()),'same exact candidate CPU build profile');shutil.copy2(build/'CMakeCache.txt',out/'CMakeCache.txt')
   run('baseline',[sys.executable,ROOT/'scripts/check-cpu-baseline.py',build]);run('build',['cmake','--build',build,'--target','receipt-layer0-component','receipt-projection-component','--parallel','2'],limit=1500)
-  program=build/'receipt-layer0-component';proj=build/'receipt-projection-component';run('arity-layer0',[program],expected=1);run('arity-projection',[proj],expected=1)
+  program=build/'receipt-layer0-component';proj=build/'receipt-projection-component'
+  bundle=out/'runtime';(bundle/'bin').mkdir(parents=True);(bundle/'lib').mkdir()
+  for executable in [program,proj]:shutil.copy2(executable,bundle/'bin'/executable.name)
+  for library in build.rglob('libggml*.so*'):
+   if library.is_file():shutil.copy2(library,bundle/'lib'/library.name)
+  r['component_bundle']={str(p.relative_to(bundle)):dict(bytes=p.stat().st_size,sha256=sha(p))for p in bundle.rglob('*')if p.is_file()};require(0<sum(v['bytes']for v in r['component_bundle'].values())<=256<<20,'bounded retained component bundle')
+  run('arity-layer0',[program],expected=1);run('arity-projection',[proj],expected=1)
   z=work/'zero.q4';z.write_bytes(bytes(2560//256*144*32));zx=work/'zero-input.f32';np.ones((10,2560),dtype='<f4').tofile(zx);run('supported-zero-repack',[proj,z,zx,12,2560,32,10,'repack',work/'zero']);require(not np.any(np.fromfile(work/'zero.f32',dtype='<f4')),'actual preferred Q4 zero-matrix control')
   weights=work/'weights';weights.mkdir();raw_paths={}
   for row in rows:
@@ -87,5 +96,5 @@ def main():
   r['same_input_preferred_projection_interventions']=projection_results;r['status']='measured_receipt_layer0_same_input';r['limits']=['One production layer0 replay on existing exact receipt embeddings; no model loader, decoder, source forward, recipe or runtime change.','Source and native projection head order is canonicalized before every comparison.','Source-input projection interventions establish local batch-route effects only; full-model decoded causality and qualification remain unresolved.','All fixed receipt/observed BF16 failures and default-off gates remain binding.']
  except BaseException as e:r.update(error_type=type(e).__name__,error=str(e));raise
  finally:
-  deadline.close();r['seconds']=time.monotonic()-started;r['artifacts']={str(p.relative_to(out)):dict(bytes=p.stat().st_size,sha256=sha(p))for p in out.rglob('*')if p.is_file()and p.name!='receipt-layer0.json'};save()
+  deadline.close();r['seconds']=time.monotonic()-started;closed_logs={name+'.log'for name in r['commands']}|{'CMakeCache.txt'};projection_names=tuple(stage+'-'for stage in ['z','alpha','beta','ffn_gate','ffn_up']);r['artifacts']={str(p.relative_to(out)):dict(bytes=p.stat().st_size,sha256=sha(p))for p in out.rglob('*')if p.is_file()and(p.parent!=out or p.name in closed_logs or p.name.startswith(projection_names))};save()
 if __name__=='__main__':main()

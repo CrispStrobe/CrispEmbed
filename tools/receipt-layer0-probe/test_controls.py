@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Model-free controls for layout and uneven preferred projection input geometry."""
-import importlib.util,json,unittest
+import importlib.util,json,unittest,tempfile,subprocess,os
 from pathlib import Path
 import numpy as np
 HERE=Path(__file__).parent
@@ -18,4 +18,10 @@ class Controls(unittest.TestCase):
  def test_layout_errors_cannot_masquerade_as_numeric_drift(self):
   source=np.arange(4*32,dtype='<f4').reshape(4,32);native=source[:,w.permutation('a',32)]
   self.assertFalse(w.compare(native,source)['bit_exact']);self.assertTrue(w.compare(native,source[:,w.permutation('a',32)])['bit_exact'])
+ def test_checkout_identity_from_unrelated_cwd(self):
+  with tempfile.TemporaryDirectory()as folder:
+   repo=Path(folder)/'repo';repo.mkdir();subprocess.run(['git','init','-q',str(repo)],check=True);subprocess.run(['git','-C',str(repo),'-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-q','--allow-empty','-m','fixture'],check=True)
+   expected=subprocess.check_output(['git','-C',str(repo),'rev-parse','HEAD'],text=True).strip();original=Path.cwd()
+   try:os.chdir(folder);self.assertEqual(w.source_identity(repo),expected)
+   finally:os.chdir(original)
 if __name__=='__main__':unittest.main()
