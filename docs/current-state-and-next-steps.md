@@ -37,8 +37,9 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   retained 21/21 CPU consumer report was reviewed against the exact release/app
   pin ([receipt](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/releases/crispsorter-01719-consumer.json));
   this does not establish other platform parity.
-  [Model manager PR 55](https://github.com/CrispStrobe/CrispSorter/pull/55) remains
-  open; its [focused follow-up 58](https://github.com/CrispStrobe/CrispSorter/pull/58)
+  [Model manager PR 55](https://github.com/CrispStrobe/CrispSorter/pull/55) merged
+  as `87cf0b447e7b94d1c464e8cb0ee5e1af6bb5d221`; its
+  [focused follow-up 58](https://github.com/CrispStrobe/CrispSorter/pull/58)
   was incorporated, addressing build and installer-integrity failures. At the
   earlier source `8138f0b8`, hosted Linux [controls](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/crispsorter-model-manager-live-20261112.json)
   passed 29 model-manager and eight Paddle tests, plus a separate live install,
@@ -46,7 +47,11 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   passed the same 29 manager, eight Paddle and one live test at `b34c6f83`;
   the next PR commit changes Android smoke utilities and documentation only.
   [App typecheck](https://github.com/CrispStrobe/CrispSorter/actions/runs/43295346396)
-  passed at `98331a43`; later Android and merged-base evidence remain separate.
+  passed at `98331a43`; a later [typecheck](https://github.com/CrispStrobe/CrispSorter/actions/runs/43303387596)
+  passed its app job at `a7fc4e75`. [Receipt contracts](https://github.com/CrispStrobe/CrispSorter/actions/runs/43305456011)
+  passed 15 Linux and two Windows controls at `a63a9676`, with non-Unix receipt
+  operations failing closed. The separately dispatched current-source Android
+  gate check remains pending; no physical-device coverage is claimed.
   [Provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52)
   merged after a targeted vendored-source conformance run. [Follow-up 56](https://github.com/CrispStrobe/CrispSorter/pull/56)
   merged as `7d6032bd15aded92bebb5c59b5f83f441d68ad64` using the reviewed
