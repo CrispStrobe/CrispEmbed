@@ -43,7 +43,11 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   release-version metadata. Explicit chained amendments preserve the original
   values and budgets; [focused controls](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/release-version-guard-controls-20261112.json)
   passed 54/54 on a full clone and 32 with 22 skips on a shallow clone at
-  `8174d039`. This is model-free evidence, not runtime quality qualification.
+  `8174d039`. A [whole-suite replay](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/plain-pytest-fixed-guards-20261112.json)
+  at that source passed: pytest reported 2,124 passes and 233 skips in a full
+  clone, and 2,050 passes and 307 skips in a shallow clone, with no failures.
+  The receipt separately records JUnit testcase counts. This is model-free
+  evidence, not runtime quality qualification.
   The [initial GitHub dispatch](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43228796357)
   failed before collection because its checkout was shallow; its queued retry
   was cancelled in favor of the bounded remote CPU audit.

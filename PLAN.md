@@ -1,5 +1,9 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Second-architecture admission — 12 November 2026
+
+Second-architecture admission at executor `33ec2e250` did not allocate the requested L4: the device query returned no GPU, so the worker stopped before cloning, building or model acquisition. The [admission receipt](tests/results/qwen35-ocr/ovisocr2-l4-admission-20261112.json) has SHA-256 `256ad51c7a7de71cf2513cd04945b6de7fa24afdd2147d1da876422d73487ba3`. This is a resource-availability result, not an inference or quality result. Retain the GPU gate default-off; a second-architecture backend with actual device placement and complete decoded comparisons remains open.
+
 ## Plain release-source guard audit — 12 November 2026
 
 The [full/plain receipt](tests/results/plain-pytest-v01719-20261112.json) at
@@ -13,7 +17,7 @@ against the previous exact pin; each successor is chained, not substituted.
 The [focused replay](tests/results/release-version-guard-controls-20261112.json)
 at `8174d03916994ad765f2daade6d9da9c6a485bae` passes 54/54 full-clone controls
 and 32 controls with 22 skips in a shallow clone. This is model-free test evidence;
-no runtime, decoded quality, frozen numerical budget or release status changes.
+no runtime, decoded quality, frozen numerical budget or release status changes. The subsequent [whole-suite replay](tests/results/plain-pytest-fixed-guards-20261112.json) at the same source passed: pytest reported 2,124 passes and 233 skips in a full clone, and 2,050 passes and 307 skips in a shallow clone, with no failures; the receipt retains separate JUnit testcase counts.
 
 ## PR219 review corrections — 12 November 2026
 
