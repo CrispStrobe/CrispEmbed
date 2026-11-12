@@ -23,9 +23,9 @@ def configured():
     spec.loader.exec_module(module)
     module.ENV, module.DONE = ENV, DONE
     helper = module.HELPER
-    if helper.count("n==31") != 1 or helper.count("8u<<20") != 1 or helper.count("128u<<20") != 1:
+    if helper.count("n==31") != 1 or helper.count("bytes>(8u<<20)") != 1 or helper.count("128u<<20") != 1:
         raise ValueError("reviewed helper substitution anchors drifted")
-    module.HELPER = helper.replace("n==31", "n==405").replace("8u<<20", "16u<<20").replace("128u<<20", "256u<<20")
+    module.HELPER = helper.replace("n==31", "n==405").replace("bytes>(8u<<20)", "bytes>(16u<<20)").replace("128u<<20", "256u<<20")
     return module
 
 
