@@ -1,0 +1,132 @@
+{
+  "schema": "lighton4b-same-input-rope-independent-small-audit/v1",
+  "status": "pass",
+  "operator_receipt_sha256": "849fccf591651fd6b3c8d1c512ef733f96d220b4bc64e6e1cc4ba67d693657ef",
+  "capture_receipt_sha256": "f26070189c1fe71074a149814d6e90607d7fb31c7bbea03e79eb3447edb576ba",
+  "retained_native_receipt_sha256": "c6669e6c2eb7f3f3d57f95ee9f21d37556731e8a281eea37997498d25e89498d",
+  "operator_source_identity_pairs": 16,
+  "operator_float_comparisons": 2723840,
+  "all_source_layouts_contiguous_and_complete": true,
+  "source_magnitude_metrics_exact_to_stage_receipt": true,
+  "native_observer_stage_cache_identity_pairs": 22,
+  "direct_native_qk_equal_reconstruction": true,
+  "identities": [
+    {
+      "backend": "upstream",
+      "graph": 1,
+      "role": "q",
+      "elements": 16384,
+      "sha256": "6288e7aa0e91d3b0bba7d5b3a6d366e956dade8c85228cbc4c6d78bb350d4971"
+    },
+    {
+      "backend": "upstream",
+      "graph": 1,
+      "role": "k",
+      "elements": 4096,
+      "sha256": "8a467080ddade1578a4c988490bec3d6266f5db2f1f00f36a6db173ef7577f3b"
+    },
+    {
+      "backend": "upstream",
+      "graph": 2,
+      "role": "q",
+      "elements": 1032192,
+      "sha256": "2bc21fdb6c5ad81189ca082be1cbda5b981cf6b4f07409a4269bccaa4d97b954"
+    },
+    {
+      "backend": "upstream",
+      "graph": 2,
+      "role": "k",
+      "elements": 258048,
+      "sha256": "7687b3d597a82dbebe7c4987c749d5c7c01e68b4a9cf3a85aea9b26cc53acf8e"
+    },
+    {
+      "backend": "upstream",
+      "graph": 3,
+      "role": "q",
+      "elements": 24576,
+      "sha256": "338ef9abbfcaba691550836b56ed04b4bbf0aebd0f9ea0185d622c2eabdfeed4"
+    },
+    {
+      "backend": "upstream",
+      "graph": 3,
+      "role": "k",
+      "elements": 6144,
+      "sha256": "2db165a8c25dc646c2297611c10a5b12ea4001bf9c7014c6bbf5fbdaf19bfa21"
+    },
+    {
+      "backend": "upstream",
+      "graph": 4,
+      "role": "q",
+      "elements": 16384,
+      "sha256": "e48e9eaaf9f8b5e2a307edab168204584ec7172f7851677eb120cd1b31891f3b"
+    },
+    {
+      "backend": "upstream",
+      "graph": 4,
+      "role": "k",
+      "elements": 4096,
+      "sha256": "8b1305e8b8719e2107d7a256429621a79f927f2eb1b9ba95943d52d0dc05e22b"
+    },
+    {
+      "backend": "native",
+      "graph": 1,
+      "role": "q",
+      "elements": 16384,
+      "sha256": "6288e7aa0e91d3b0bba7d5b3a6d366e956dade8c85228cbc4c6d78bb350d4971"
+    },
+    {
+      "backend": "native",
+      "graph": 1,
+      "role": "k",
+      "elements": 4096,
+      "sha256": "8a467080ddade1578a4c988490bec3d6266f5db2f1f00f36a6db173ef7577f3b"
+    },
+    {
+      "backend": "native",
+      "graph": 2,
+      "role": "q",
+      "elements": 1032192,
+      "sha256": "2bc21fdb6c5ad81189ca082be1cbda5b981cf6b4f07409a4269bccaa4d97b954"
+    },
+    {
+      "backend": "native",
+      "graph": 2,
+      "role": "k",
+      "elements": 258048,
+      "sha256": "7687b3d597a82dbebe7c4987c749d5c7c01e68b4a9cf3a85aea9b26cc53acf8e"
+    },
+    {
+      "backend": "native",
+      "graph": 3,
+      "role": "q",
+      "elements": 24576,
+      "sha256": "338ef9abbfcaba691550836b56ed04b4bbf0aebd0f9ea0185d622c2eabdfeed4"
+    },
+    {
+      "backend": "native",
+      "graph": 3,
+      "role": "k",
+      "elements": 6144,
+      "sha256": "2db165a8c25dc646c2297611c10a5b12ea4001bf9c7014c6bbf5fbdaf19bfa21"
+    },
+    {
+      "backend": "native",
+      "graph": 4,
+      "role": "q",
+      "elements": 16384,
+      "sha256": "e48e9eaaf9f8b5e2a307edab168204584ec7172f7851677eb120cd1b31891f3b"
+    },
+    {
+      "backend": "native",
+      "graph": 4,
+      "role": "k",
+      "elements": 4096,
+      "sha256": "8b1305e8b8719e2107d7a256429621a79f927f2eb1b9ba95943d52d0dc05e22b"
+    }
+  ],
+  "scope": "Independent small-report SHA, layout, complete source/output identity and metric invariant review. No independent raw-vector rehash or numerical reduction; producer raw SHA checks remain separately recorded.",
+  "model_forward_executed": false,
+  "source_capture_repeated": false,
+  "raw_vectors_downloaded": false,
+  "qualified": false
+}
