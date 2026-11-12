@@ -43,7 +43,7 @@ def compare_derived(actual,expected):
 def safe_score(score):
  return {k:v for k,v in score.items()if k in ['policy','complete','raw','characters','lines','parse_ok','content','table_gold_available','content_exact','table','exact_quality','expected_table_shape','table_shape_valid']}
 def actual_summary(s,ids,cap,expected_n=None,expected_eos=None):
- require(s['generated_tokens']==len(ids)and 1<=len(ids)<=cap and s['cap']==cap and s['eos']==(ids[-1]in[248044,248046])and(s['eos']or len(ids)==cap),'actual count/EOS/cap')
+ require(s['generated_tokens']==len(ids)and 1<=len(ids)<=cap and s['cap']==cap and s['eos']==(ids[-1]in[248044,248046])and(s['eos']or len(ids)==cap),'actual count/EOS/cap');require(not any(token in[248044,248046]for token in ids[:-1]),'no ignored earlier EOS row')
  if expected_n is not None:require(len(ids)==expected_n and s['eos']is expected_eos,'historical exact count/stop')
  require(s['upstream_physical']and not s['source_fed_vision']and s['teacher_positions']==1 and s['physical_source_prefill_chunks']and s['physical_q6_tiled']and s['physical_q4_repack'],'actual pixel/planner/quantized mode');require(s['physical_repack_entries']==216 and 0<s['physical_repack_bytes']<=2<<30 and s['converted_f32_weight_entries']==s['converted_f32_weight_bytes']==0,'bounded quantized-only cache');require(1<=s['prompt_tokens']<=512 and 0<s['image_tokens']<=256 and s['prompt_tokens']+cap<=2048,'actual context/image bounds')
 

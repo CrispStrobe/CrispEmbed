@@ -38,4 +38,9 @@ class AuditControls(unittest.TestCase):
   with self.assertRaises(ValueError):audit.compare_derived(actual,expected)
   actual=dict(expected);actual['max_abs']+=math.ulp(2.)
   with self.assertRaises(ValueError):audit.compare_derived(actual,expected)
+ def test_no_ignored_earlier_eos(self):
+  s=dict(generated_tokens=2,cap=1536,eos=True,upstream_physical=True,source_fed_vision=False,teacher_positions=1,physical_source_prefill_chunks=True,physical_q6_tiled=True,physical_q4_repack=True,physical_repack_entries=216,physical_repack_bytes=1662861312,converted_f32_weight_entries=0,converted_f32_weight_bytes=0,prompt_tokens=86,image_tokens=72)
+  audit.actual_summary(s,[7,248046],1536)
+  s['generated_tokens']=3
+  with self.assertRaises(ValueError):audit.actual_summary(s,[248046,7,248046],1536)
 if __name__=='__main__':unittest.main()
