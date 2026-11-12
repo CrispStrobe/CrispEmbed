@@ -1,5 +1,61 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Existing desktop candidate consumers — 13 November 2026
+
+The manual-only `desktop-ocr-candidate-consumer.yml` adopts the existing
+[desktop producer 43302121233](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43302121233),
+workflow/tooling `841179b848f8d3aa15e44dd2d5aea65070c82f71` and runtime
+`2d2ab3275022e095f4a8f580e276bb2e3aa3f59c`. It selects one desktop target
+(Linux x86_64 by default) or all four; it does not dispatch producers, rebuild
+native libraries, publish, or run mobile/WASM/model batches. The existing PR228
+validator runs from the exact producer-tooling checkout against a separate exact
+runtime checkout. The controller revision is separately retained; only the
+validator child receives the producer-tooling checkout's `GITHUB_SHA` identity.
+Both complete source trees are revalidated after the controls.
+
+The bounded controls link the real packaged C library and compile the actual
+source-pinned Rust wrapper using external outputs and a locked dependency set.
+They exercise missing-model native failure, failed-plus-legacy-empty rejection,
+non-NULL legacy empty compatibility, and native NULL-request to empty recovery.
+Rust prebuilt link metadata must name the verified package. No native function
+is mocked. These sources have not been compiled/executed in this preparation;
+hosted execution is pending. A recognized blank page, decoded OCR, GPU execution,
+and the full CrispSorter application/error/export boundary remain unexecuted.
+The legacy empty control is not evidence of positive blank-page recognition.
+
+The new workflow needs normal default-branch registration before manual dispatch.
+The ten focused source-only controls pass; their files remain under
+`tools/ci-heavy` so this preparation does not request the ordinary build matrix.
+
+## Next immutable release version synchronization — preparation only
+
+After qualification, select the next unused version and update `VERSION`, then
+run `python scripts/sync-version.py` on the final release source. It updates
+`crispembed/Cargo.toml` (package and crispembed-sys dependency),
+`crispembed-sys/Cargo.toml`, `python/pyproject.toml` and
+`flutter/crispembed/pubspec.yaml`. The optional JavaScript manifest is absent.
+The two workspace package versions in `Cargo.lock` also need synchronization,
+preserving the locked libc version/checksum. CMake reads `VERSION` directly;
+Gradle and both podspecs derive their versions from the Flutter pubspec.
+`CRISPEMBED_SOVERSION` stays 0 for this additive diagnostic change.
+
+Manual version metadata currently outside the sync script includes
+`CRISPEMBED_VERSION_STR` in `.github/workflows/ocr-render.yml`,
+`.github/workflows/ocr-stream-writer.yml` and
+`tests/windows_utf8_paths/CMakeLists.txt`. The Python `__version__` in
+`python/crispembed/__init__.py` still says `0.3.2` despite its current tracking
+comment; reconcile that export and the sync procedure before a Python package
+release. Add the new Flutter changelog heading and versioned release notes with
+the actual qualification limits. Keep frozen historical receipts and pinned
+consumer fixtures unchanged.
+
+Do not run `scripts/bump-version.sh` during preparation: it also commits and
+creates an annotated tag. No version or release tag is changed here. Existing
+v0.17.19 assets stay immutable. Current candidate binaries embed the old version
+and source identity; they cannot be relabeled as a new release. Once gates close,
+seal the final version-synchronized source and produce only its required release
+matrix once, with fresh hashes and consumer readbacks before any app lock repin.
+
 ## Desktop candidate archive preparation — 12 November 2026
 
 The release workflow has an explicit default-off `desktop_only` dispatch option

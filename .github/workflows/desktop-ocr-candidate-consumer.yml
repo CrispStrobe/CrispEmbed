@@ -1,0 +1,92 @@
+name: Existing desktop OCR candidate consumers
+
+# Manual adoption of one already-built producer. No native rebuilds or models.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        type: choice
+        description: 'Desktop package to exercise from producer 43302121233'
+        options: [linux-x86_64, linux-arm64, macos-arm64, windows-x86_64, all]
+        default: linux-x86_64
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+
+jobs:
+  inputs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate the existing producer and select desktop consumers
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ inputs.target || 'linux-x86_64' }}
+        run: python tools/ci-heavy/desktop_ocr_candidate_consumer.py plan --target "$TARGET" >> "$GITHUB_OUTPUT"
+
+  consumer:
+    needs: inputs
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.inputs.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out this consumer controller
+        uses: actions/checkout@v4
+        with:
+          path: controller
+      - name: Check out exact producer workflow and validator
+        uses: actions/checkout@v4
+        with:
+          ref: 841179b848f8d3aa15e44dd2d5aea65070c82f71
+          path: producer-tooling
+          submodules: recursive
+      - name: Check out exact runtime and binding sources
+        uses: actions/checkout@v4
+        with:
+          ref: 2d2ab3275022e095f4a8f580e276bb2e3aa3f59c
+          path: runtime
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+      - name: Validate existing archives and run actual native and Rust boundaries
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CARGO_BUILD_JOBS: '1'
+        run: |
+          python controller/tools/ci-heavy/desktop_ocr_candidate_consumer.py consume \
+            --target '${{ matrix.artifact }}' --workflow-source producer-tooling \
+            --runtime-source runtime --output "$RUNNER_TEMP/desktop-ocr-consumer"
+      - name: Retain bounded source and execution evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-ocr-candidate-consumer-${{ matrix.artifact }}
+          path: |
+            ${{ runner.temp }}/desktop-ocr-consumer/consumer.json
+            ${{ runner.temp }}/desktop-ocr-consumer/boundary.json
+            ${{ runner.temp }}/desktop-ocr-consumer/logs/
+            ${{ runner.temp }}/desktop-ocr-consumer/native-control.c
+            ${{ runner.temp }}/desktop-ocr-consumer/rust/Cargo.lock
+            ${{ runner.temp }}/desktop-ocr-consumer/rust/src/main.rs
+          if-no-files-found: error
+          retention-days: 30
