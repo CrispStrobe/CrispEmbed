@@ -479,8 +479,10 @@ hidden-state difference at the first full-attention block, layer 3, on the
 252-row image chunk. Earlier layer outputs match on all captured chunks. This
 is a boundary for further stage attribution. The [layer-3 probe](tools/attention252-probe/README.md)
 finds exact Q/K normalization and preceding cache, with the first measured
-difference at source RoPE versus reconstructed native RoPE; a direct native
-observer and same-input operator replay remain necessary before assigning cause.
+difference at source RoPE versus reconstructed native RoPE. The [direct native
+observer and same-input operator replay](tools/rope-operator-probe/README.md)
+confirmed the native reconstruction and source-exact GGML RoPE on these inputs;
+decoded quality and any separately gated runtime correction remain unqualified.
 
 ## Local kernel configuration privacy — 12 November 2026
 
