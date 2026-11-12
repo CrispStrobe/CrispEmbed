@@ -10,4 +10,3 @@ add_executable(receipt-aligned-component component.cpp)
 target_compile_options(receipt-aligned-component PRIVATE -ffp-contract=off)
 target_include_directories(receipt-aligned-component PRIVATE "${CRISPEMBED_SOURCE}/src")
 target_link_libraries(receipt-aligned-component PRIVATE crispembed-qwen35-delta crispembed-core)
-
