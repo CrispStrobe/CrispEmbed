@@ -1,5 +1,42 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Combined OCR candidate qualification — 12 November 2026
+
+Reviewed native integration `9d2c876d0bf694c95174cb9e87950c3362399ed6` is based on
+public main `97592ff9943f0ac98f0831195cdcb864de322bcc`. It combines the gated
+DBNet gutter fix, OCR failure/unknown-state propagation, complete Python/Dart
+result ABI mirrors, the real production binding native-memory harness, and
+reported HTTP failure propagation. Both independent evidence sets below remain
+source-specific; their earlier results do not automatically qualify this tree.
+Versions, release/app pins and the default-off native gutter gate are unchanged.
+
+One authorized bounded private CPU job was submitted for this exact tree
+`ed50688fa27e7289de0a4a70b5afbf6af619544e`. Sealed patch SHA-256 is
+`aebecf8e98b3ebd0b7b6b62e489c6a334eec03ef3879ec7cb3f5116f2cca30a9`;
+executor source SHA-256 is
+`ad8a72aaf75e09d5d5eab2aadf581067bfc336b042f6fa337a8aae96b9ec1a1c`.
+Source/privacy readback passed. Admission requires 8 GiB available RAM and
+12 GiB scratch, compilation uses two jobs with a 2700-second shared-build bound,
+and the entire run is limited to 4500 seconds. The job includes linked native
+controls, actual complete production Python/Dart native-memory read/render
+controls with a pinned/hash-checked Dart SDK, a compiled production server and
+live reported-failure/legacy-blank HTTP checks, and six Tesseract fixture calls
+(gate off/on; same retained two-column, single-column and blank inputs). Immutable
+baseline observations/hashes are reused rather than rerunning a broader panel.
+Candidate binaries remain remotely retained; only reports/needed images are
+retrieved. This run is pending and does not authorize publication.
+
+Latest app source `ecb5a802` contains the separate `87f5181f` CC-before-recognition
+crop path. It can preempt the native DBNet grouping stage, so neither the earlier
+native/reading-order A/B nor this native integration job qualifies that new app
+path. Its completeness for text missed by CC is unproven; it needs a separate
+explicit default-off app profile and actual source-bound app execution. Preserve
+that work and its independent limitations. The next Android proposal uses the
+immutable app runtime with native gutter gate off and clearly records whether
+whole-page or explicit app crop recognition executed. Do not infer native-gate
+success from an app crop path that bypassed it. No Android dispatch is included
+in this CPU submission.
+
 ## Active work in flight — Tesseract DBNet column gutters, 12 November 2026
 
 | Bounded lane | State | Acceptance |
