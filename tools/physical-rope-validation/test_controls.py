@@ -15,8 +15,8 @@ class Controls(unittest.TestCase):
   needed={s+'-3'for s in ['attn_norm','Qcur_full','Kcur_raw','Vcur_raw','Qcur_normed','Kcur_normed','Qcur','Kcur','gate_reshaped','attn_gated','attn_output','attn_residual','attn_post_norm','ffn_gate','ffn_up','ffn_swiglu','ffn_out','l_out']}
   for g in range(1,5):self.assertTrue(needed<={r['name']for r in d['source_graph_indexes'][g]['records']})
  def test_component_mode_and_identity_contract(self):
-  source=(HERE/'component.cpp').read_text();self.assertIn('b.cache.physical_rope==mode',source);self.assertIn('actual context mode toggle rejected',source);self.assertIn('actual cache recovery after rejected toggle',source);self.assertIn('OFF frozen native layer3 byte closure',source);self.assertIn('ON source-exact Q/K RoPE',source)
-  worker=(HERE/'worker.py').read_text();self.assertIn("r['passed']=r['all_source_stages_exact']",worker);self.assertIn("'test-lighton4b-decoder-compose'",worker);self.assertNotIn('n_predict',worker)
+  source=(HERE/'component.cpp').read_text();self.assertIn('b.cache.physical_rope==mode',source);self.assertIn('actual context mode toggle rejected',source);self.assertIn('actual cache recovery after rejected toggle',source);self.assertIn('OFF frozen native layer3 byte closure',source);self.assertIn('ON source-exact Q/K RoPE',source);self.assertIn('attention_config config;config.query_heads=16;config.kv_heads=4;',source)
+  worker=(HERE/'worker.py').read_text();self.assertIn("r['passed']=r['all_source_stages_exact']",worker);self.assertIn("'test-lighton4b-decoder-compose'",worker);self.assertNotIn('n_predict',worker);self.assertIn("owned(cp.parent,'source/on/graph-%d.%s-3.bin'%(g,stage),capture['artifacts']);reference=source_array",worker)
   cmake=(HERE/'CMakeLists.txt').read_text();self.assertIn('physical-rope-wasm-guard',cmake);self.assertIn('-ffp-contract=off',cmake)
 
 if __name__=='__main__':unittest.main()

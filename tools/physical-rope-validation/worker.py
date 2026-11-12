@@ -71,7 +71,7 @@ def main():
   pairs=[('attn_norm','input_norm',2560),('Qcur_full','q_full',8192),('Kcur_raw','k_raw',1024),('Vcur_raw','v_raw',1024),('Qcur_normed','q_norm',4096),('Kcur_normed','k_norm',1024),('Qcur','q_rope',4096),('Kcur','k_rope',1024),('gate_reshaped','attn_gate',4096),('attn_gated','pooled',4096),('attn_output','attention',2560),('attn_residual','attention_residual',2560),('attn_post_norm','post_norm',2560),('ffn_gate','ffn_gate',9216),('ffn_up','ffn_up',9216),('ffn_swiglu','activation',9216),('ffn_out','down',2560),('l_out','hidden',2560)]
   for g,count in zip(range(1,5),[4,252,6,4]):
    for stage,suffix,width in pairs:
-    reference=source_array(cp.parent/'source/on',capture['source_graph_indexes'][g],stage+'-3').reshape(count,width);candidate=np.fromfile(out/'on'/(suffix+'.f32'),dtype='<f4').reshape(266,width)[offset:offset+count];rows.append(dict(graph=g,stage=stage,**delta(candidate,reference)))
+    owned(cp.parent,'source/on/graph-%d.%s-3.bin'%(g,stage),capture['artifacts']);reference=source_array(cp.parent/'source/on',capture['source_graph_indexes'][g],stage+'-3').reshape(count,width);candidate=np.fromfile(out/'on'/(suffix+'.f32'),dtype='<f4').reshape(266,width)[offset:offset+count];rows.append(dict(graph=g,stage=stage,**delta(candidate,reference)))
    offset+=count
   for g,tag,count in [(1,'cache4',4),(2,'cache256',256)]:
    index=capture['source_graph_indexes'][g]

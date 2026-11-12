@@ -102,7 +102,7 @@ static int run(int argc, char ** argv) try {
             }return x;
         };
         if(mode){
-            attention_config config;std::vector<float>q,k;
+            attention_config config;config.query_heads=16;config.kv_heads=4;std::vector<float>q,k;
             require(lighton4b_physical_rope_cpu(b.q_norm,config,positions.data(),n,16,4,q)&&lighton4b_physical_rope_cpu(b.k_norm,config,positions.data(),n,4,4,k),"actual candidate source operator");
             require(!std::memcmp(q.data(),sourceq.data()+size_t(offset)*4096,q.size()*4)&&!std::memcmp(k.data(),sourcek.data()+size_t(offset)*1024,k.size()*4),"ON source-exact Q/K RoPE");
             append("q_rope",q);append("k_rope",k);
