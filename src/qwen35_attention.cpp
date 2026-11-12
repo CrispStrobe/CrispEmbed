@@ -63,12 +63,14 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
         !lighton4b_physical_f16_attention_valid(w.upstream_physical))
         return false;
     const bool physical_rope = lighton4b_physical_rope_mode(w.upstream_physical);
-    if (!lighton4b_physical_rope_valid(w.upstream_physical) ||
-        (previous && previous->physical_rope != physical_rope)) return false;
+    if (!lighton4b_physical_rope_valid(w.upstream_physical) || (previous && previous->physical_rope != physical_rope))
+        return false;
     const bool physical_f16 = lighton4b_physical_f16_attention_mode(w.upstream_physical);
     const bool source_chunks = lighton4b_source_prefill_chunks_mode(w.upstream_physical);
+    const bool source_aligned = lighton4b_source_prefill_aligned_mode(w.upstream_physical);
     if (!lighton4b_source_prefill_chunks_valid(w.upstream_physical) ||
-        (previous && previous->physical_source_prefill_chunks != source_chunks))
+        (previous && (previous->physical_source_prefill_chunks != source_chunks ||
+                      previous->physical_source_prefill_aligned != source_aligned)))
         return false;
     const bool q6_tiled = lighton4b_physical_q6_tiled_mode(w.upstream_physical);
     if (!lighton4b_physical_q6_tiled_valid(w.upstream_physical) ||
@@ -122,7 +124,8 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
     auto queries = output.q_norm, keys = output.k_norm;
     if (physical_rope) {
         if (!lighton4b_physical_rope_cpu(output.q_norm, c, positions, tokens, qh, threads, queries) ||
-            !lighton4b_physical_rope_cpu(output.k_norm, c, positions, tokens, kh, threads, keys)) return false;
+            !lighton4b_physical_rope_cpu(output.k_norm, c, positions, tokens, kh, threads, keys))
+            return false;
     } else {
         for (int bt = 0; bt < count; ++bt) {
             for (int h = 0; h < qh; ++h) rotate(queries.data() + (size_t(bt) * qh + h) * d, c, positions, bt, count);
@@ -137,6 +140,7 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
     cache.physical_q4_repack = repack;
     cache.physical_q6_tiled = q6_tiled;
     cache.physical_source_prefill_chunks = source_chunks;
+    cache.physical_source_prefill_aligned = source_aligned;
     cache.batch = batch;
     cache.heads = kh;
     cache.tokens = total;

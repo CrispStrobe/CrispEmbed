@@ -23,6 +23,7 @@ struct lighton4b_linear_cache {
     bool physical_gdn_source_ops = false;
     bool physical_q6_tiled = false;
     bool physical_source_prefill_chunks = false;
+    bool physical_source_prefill_aligned = false;
     bool physical_swiglu = false;
 };
 struct lighton4b_linear_block_outputs {
@@ -46,8 +47,10 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     const bool bf16 = lighton4b_bf16_linear_enabled();
     const bool repack = lighton4b_physical_q4_repack_mode(w.upstream_physical);
     const bool source_chunks = lighton4b_source_prefill_chunks_mode(w.upstream_physical);
+    const bool source_aligned = lighton4b_source_prefill_aligned_mode(w.upstream_physical);
     if (!lighton4b_source_prefill_chunks_valid(w.upstream_physical) ||
-        (previous && previous->physical_source_prefill_chunks != source_chunks))
+        (previous && (previous->physical_source_prefill_chunks != source_chunks ||
+                      previous->physical_source_prefill_aligned != source_aligned)))
         return false;
     const bool fused_swiglu = lighton4b_physical_swiglu_mode(w.upstream_physical);
     if (previous && previous->physical_swiglu != fused_swiglu) return false;
@@ -165,6 +168,7 @@ inline bool lighton4b_linear_block_cpu(const decoder_layer_weights & w, const fl
     candidate.cache.physical_gdn_source_ops = source_gdn;
     candidate.cache.physical_q6_tiled = q6_tiled;
     candidate.cache.physical_source_prefill_chunks = source_chunks;
+    candidate.cache.physical_source_prefill_aligned = source_aligned;
     candidate.cache.conv = std::move(linear.core.conv_history);
     candidate.cache.recurrent = std::move(linear.core.state);
     output = std::move(candidate);

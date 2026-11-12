@@ -2,6 +2,8 @@
 #include "lighton4b_linear_block.h"
 #include "core/clean_exit.h"
 #include "lighton4b_attention_block.h"
+#include "lighton4b_decoder_compose.h"
+#include <cstdint>
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include <algorithm>
@@ -157,6 +159,93 @@ static void planner_controls(size_t & checks) {
          "out-of-range position slice");
     ++checks;
 }
+static void aligned_planner_controls(size_t & checks) {
+    uint64_t digest = UINT64_C(14695981039346656037);
+    auto hash = [&](int value) {
+        for (int byte = 0; byte < 4; ++byte) {
+            digest ^= (uint32_t(value) >> (8 * byte)) & 255;
+            digest *= UINT64_C(1099511628211);
+        }
+    };
+    for (int total = 1; total <= 512; ++total)
+        for (int period : { 1, 2, 5, 7, 8, 15, 16, 17 }) {
+            std::vector<int> mods(total);
+            for (int row = 0; row < total; ++row) mods[row] = (row / period) % 2;
+            std::vector<lighton4b_prefill_chunk> legacy, aligned;
+            need(lighton4b_source_prefill_plan(mods, legacy) && lighton4b_source_prefill_plan(mods, aligned, true),
+                 "both generic plans admitted");
+            hash(total);
+            hash(period);
+            hash(int(legacy.size()));
+            for (const auto & chunk : legacy) {
+                hash(chunk.offset);
+                hash(chunk.tokens);
+                hash(chunk.logical_offset);
+                hash(chunk.logical_tokens);
+            }
+            int end = 0;
+            for (const auto & chunk : aligned) {
+                need(chunk.offset == end && chunk.tokens >= 1 && chunk.tokens <= 16,
+                     "aligned contiguous bounded coverage");
+                need(chunk.logical_tokens < 8 ? chunk.tokens == chunk.logical_tokens : chunk.tokens >= 8,
+                     "source Q6 large-batch threshold retained");
+                for (int row = 0; row < chunk.tokens; ++row) {
+                    const int logical = chunk.offset - chunk.logical_offset + row;
+                    need(logical >= 0 && logical < chunk.logical_tokens &&
+                             mods[chunk.offset + row] == mods[chunk.offset],
+                         "logical media/checkpoint boundaries unchanged");
+                    need((row < chunk.tokens - chunk.tokens % 4) ==
+                             (logical < chunk.logical_tokens - chunk.logical_tokens % 4),
+                         "every source GEMM versus scalar-tail row classification preserved");
+                }
+                bool same_logical = false;
+                for (const auto & old : legacy)
+                    same_logical |=
+                        old.logical_offset == chunk.logical_offset && old.logical_tokens == chunk.logical_tokens;
+                need(same_logical, "exact original logical batch metadata");
+                end += chunk.tokens;
+            }
+            need(end == total, "all rows covered exactly once");
+            std::vector<float> positions(size_t(total) * 3), reconstructed(positions.size());
+            for (int axis = 0; axis < 3; ++axis)
+                for (int row = 0; row < total; ++row)
+                    positions[size_t(axis) * total + row] = float(axis * 1024 + row * (axis + 1));
+            positions[0] = -0.0f;
+            for (const auto & chunk : aligned) {
+                std::vector<float> sliced;
+                need(lighton4b_prefill_chunk_positions(positions.data(), total, chunk, sliced),
+                     "aligned original axes slice");
+                for (int axis = 0; axis < 3; ++axis)
+                    std::copy_n(sliced.data() + axis * chunk.tokens, chunk.tokens,
+                                reconstructed.data() + size_t(axis) * total + chunk.offset);
+            }
+            need(!std::memcmp(positions.data(), reconstructed.data(), positions.size() * sizeof(float)),
+                 "aligned all axis bits unchanged");
+            ++checks;
+        }
+    // Frozen FNV1a journal of all4096 plans produced by the original a8 source.
+    need(digest == UINT64_C(0xa3a081480e04bae8), "all original default-off plans unchanged");
+    ++checks;
+    const char * flag = "CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL_ALIGNED";
+    unsetenv(flag);
+    need(!lighton4b_source_prefill_aligned_mode(true), "aligned planner default off");
+    ++checks;
+    for (const char * value : { "0", "false", "off", "no", "FaLsE", "OFF" }) {
+        setenv(flag, value, 1);
+        need(!lighton4b_source_prefill_aligned_mode(true), "aligned false aliases");
+        ++checks;
+    }
+    for (const char * value : { "1", "true", "on", "yes" }) {
+        setenv(flag, value, 1);
+        need(lighton4b_source_prefill_aligned_mode(true) && !lighton4b_source_prefill_aligned_mode(false),
+             "aligned physical owner scope");
+        ++checks;
+    }
+    setenv("CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL", "0", 1);
+    need(!lighton4b_source_prefill_chunks_valid(true), "aligned requires original source planner");
+    ++checks;
+    setenv(flag, "0", 1);
+}
 static int crispembed_test_main() {
     try {
         for (const char * key :
@@ -176,6 +265,7 @@ static int crispembed_test_main() {
         const char * flag = "CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED";
         size_t checks = 0;
         planner_controls(checks);
+        aligned_planner_controls(checks);
         unsetenv(flag);
         need(!lighton4b_physical_q6_tiled_mode(true), "default source operators off");
         ++checks;
@@ -383,6 +473,126 @@ static int crispembed_test_main() {
         need(attention_off.cache.tokens == 1 && !attention_off.cache.physical_source_prefill_chunks &&
                  attention_on.cache.tokens == 1 && attention_on.cache.physical_source_prefill_chunks,
              "previous attention caches immutable");
+        ++checks;
+        // Actual block caches bind the separate aligned schedule, even when
+        // a one-row arithmetic operation itself is unchanged.
+        const char * aligned_flag = "CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL_ALIGNED";
+        setenv(scheduler, "1", 1);
+        setenv(aligned_flag, "1", 1);
+        need(!lighton4b_linear_block_cpu(w, input.data(), 1, 4, &schedule_on.cache, rejected) &&
+                 rejected.hidden.empty(),
+             "old-to-aligned linear cache rejected");
+        ++checks;
+        lighton4b_linear_block_outputs aligned_linear, aligned_next;
+        need(lighton4b_linear_block_cpu(w, input.data(), 1, 4, nullptr, aligned_linear) &&
+                 aligned_linear.cache.physical_source_prefill_aligned,
+             "actual aligned linear cache");
+        ++checks;
+        need(lighton4b_linear_block_cpu(w, input.data(), 1, 4, &aligned_linear.cache, aligned_next) &&
+                 aligned_next.cache.tokens == 2,
+             "same aligned linear continuation");
+        ++checks;
+        setenv(aligned_flag, "0", 1);
+        need(!lighton4b_linear_block_cpu(w, input.data(), 1, 4, &aligned_linear.cache, rejected) &&
+                 rejected.hidden.empty(),
+             "aligned-to-old linear rejected");
+        ++checks;
+        need(!schedule_on.cache.physical_source_prefill_aligned && schedule_on.cache.tokens == 1 &&
+                 aligned_linear.cache.physical_source_prefill_aligned && aligned_linear.cache.tokens == 1,
+             "linear cache identities preserved after rejection");
+        ++checks;
+        setenv(aligned_flag, "1", 1);
+        need(!lighton4b_attention_block_cpu(aw, input.data(), position1, 1, 4, &attention_on.cache,
+                                            attention_rejected) &&
+                 attention_rejected.hidden.empty(),
+             "old-to-aligned attention cache rejected");
+        ++checks;
+        lighton4b_attention_block_outputs aligned_attention, aligned_attention_next;
+        need(lighton4b_attention_block_cpu(aw, input.data(), position0, 1, 4, nullptr, aligned_attention) &&
+                 aligned_attention.cache.physical_source_prefill_aligned,
+             "actual aligned attention cache");
+        ++checks;
+        need(lighton4b_attention_block_cpu(aw, input.data(), position1, 1, 4, &aligned_attention.cache,
+                                           aligned_attention_next) &&
+                 aligned_attention_next.cache.tokens == 2,
+             "same aligned attention continuation");
+        ++checks;
+        setenv(aligned_flag, "0", 1);
+        need(!lighton4b_attention_block_cpu(aw, input.data(), position1, 1, 4, &aligned_attention.cache,
+                                            attention_rejected) &&
+                 attention_rejected.hidden.empty(),
+             "aligned-to-old attention cache rejected");
+        ++checks;
+        need(!attention_on.cache.physical_source_prefill_aligned && attention_on.cache.tokens == 1 &&
+                 aligned_attention.cache.physical_source_prefill_aligned && aligned_attention.cache.tokens == 1,
+             "attention caches preserved after rejection");
+        ++checks;
+        decoder_weights decoder;
+        decoder.upstream_physical = true;
+        decoder.norm = w.input_norm;
+        for (int layer = 0; layer < 32; ++layer) decoder.layers.push_back(layer % 4 == 3 ? aw : w);
+        setenv("CRISPEMBED_LIGHTON4B_DECODER_COMPOSE", "1", 1);
+        lighton4b_decoder_outputs outer_old, outer_aligned, outer_next, outer_rejected;
+        need(lighton4b_decoder_hidden_cpu(decoder, input.data(), position0, 1, 4, nullptr, outer_old) &&
+                 !outer_old.cache.physical_source_prefill_aligned,
+             "actual old outer32 cache");
+        ++checks;
+        setenv(aligned_flag, "1", 1);
+        need(!lighton4b_decoder_hidden_cpu(decoder, input.data(), position1, 1, 4, &outer_old.cache, outer_rejected) &&
+                 outer_rejected.cache.layers.empty(),
+             "old-to-aligned outer rejected");
+        ++checks;
+        need(lighton4b_decoder_hidden_cpu(decoder, input.data(), position0, 1, 4, nullptr, outer_aligned) &&
+                 outer_aligned.cache.physical_source_prefill_aligned,
+             "actual aligned outer32 cache");
+        ++checks;
+        for (int layer = 0; layer < 32; ++layer) {
+            const auto & cache = outer_aligned.cache.layers[layer];
+            need(layer % 4 == 3 ? cache.attention.physical_source_prefill_aligned
+                                : cache.linear.physical_source_prefill_aligned,
+                 "all actual outer nested cache identities");
+        }
+        auto corrupted = outer_aligned.cache;
+        corrupted.layers[0].linear.physical_source_prefill_aligned = false;
+        need(!lighton4b_decoder_hidden_cpu(decoder, input.data(), position1, 1, 4, &corrupted, outer_rejected) &&
+                 outer_rejected.cache.layers.empty(),
+             "active nested linear mismatch rejected");
+        ++checks;
+        corrupted = outer_aligned.cache;
+        corrupted.layers[3].attention.physical_source_prefill_aligned = false;
+        need(!lighton4b_decoder_hidden_cpu(decoder, input.data(), position1, 1, 4, &corrupted, outer_rejected) &&
+                 outer_rejected.cache.layers.empty(),
+             "active nested attention mismatch rejected");
+        ++checks;
+        corrupted = outer_aligned.cache;
+        corrupted.layers[3].linear.physical_source_prefill_aligned = true;
+        need(!lighton4b_decoder_hidden_cpu(decoder, input.data(), position1, 1, 4, &corrupted, outer_rejected) &&
+                 outer_rejected.cache.layers.empty(),
+             "inactive linear cache contamination rejected");
+        ++checks;
+        corrupted = outer_aligned.cache;
+        corrupted.layers[0].attention.physical_source_prefill_aligned = true;
+        need(!lighton4b_decoder_hidden_cpu(decoder, input.data(), position1, 1, 4, &corrupted, outer_rejected) &&
+                 outer_rejected.cache.layers.empty(),
+             "inactive attention cache contamination rejected");
+        ++checks;
+        need(lighton4b_decoder_hidden_cpu(decoder, input.data(), position1, 1, 4, &outer_aligned.cache, outer_next) &&
+                 outer_next.cache.tokens == 2,
+             "actual aligned outer continuation recovers");
+        ++checks;
+        setenv(aligned_flag, "0", 1);
+        need(!lighton4b_decoder_hidden_cpu(decoder, input.data(), position1, 1, 4, &outer_aligned.cache,
+                                           outer_rejected) &&
+                 outer_rejected.cache.layers.empty(),
+             "aligned-to-old outer rejected");
+        ++checks;
+        need(lighton4b_decoder_hidden_cpu(decoder, input.data(), position1, 1, 4, &outer_old.cache, outer_next) &&
+                 outer_next.cache.tokens == 2,
+             "old outer continuation recovers");
+        ++checks;
+        need(outer_old.cache.tokens == 1 && !outer_old.cache.physical_source_prefill_aligned &&
+                 outer_aligned.cache.tokens == 1 && outer_aligned.cache.physical_source_prefill_aligned,
+             "all actual outer original caches immutable");
         ++checks;
         std::printf("SOURCE_PREFILL_CHUNKS_CONTROLS PASS checks=%zu model_payload=0 decoded=0\n", checks);
         return 0;

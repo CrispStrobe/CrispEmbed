@@ -296,9 +296,18 @@ mid-stream toggle. The scalar/BF16 alternatives and quantized weights stay
 intact. Same-input component agreement does not establish decoded quality;
 observed-document A/B and unchanged same-weight OFF controls remain required.
 
+`CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL_ALIGNED=1` opts the physical
+source-prefill planner into source row-group alignment. It requires the existing
+source-prefill gate and its supported CPU/Q6 route. Nonfinal physical chunks
+preserve four-row preferred-Q4 groups while all chunks of a logical batch of
+at least eight rows keep the Q6 large-batch route. Logical modality/checkpoint
+boundaries and position axes are unchanged. Linear, attention and outer decoder
+caches reject mixed aligned modes. The original planner remains default; this
+operator candidate has no decoded-quality or release qualification.
+
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-494 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+495 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -833,6 +842,7 @@ observed-document A/B and unchanged same-weight OFF controls remain required.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_source_prefill_chunks.h` | else |
+| `CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL_ALIGNED` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_source_prefill_chunks.h` | else |
 
 ### lighton4b_tokenizer
 

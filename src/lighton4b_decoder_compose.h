@@ -22,6 +22,7 @@ struct lighton4b_decoder_cache {
     bool physical_gdn_source_ops = false;
     bool physical_q6_tiled = false;
     bool physical_source_prefill_chunks = false;
+    bool physical_source_prefill_aligned = false;
     bool physical_swiglu = false;
     bool physical_rope = false;
 };
@@ -52,14 +53,17 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
         return false;
     const bool physical_rope = lighton4b_physical_rope_mode(weights.upstream_physical);
     if (!lighton4b_physical_rope_valid(weights.upstream_physical) ||
-        (previous && previous->physical_rope != physical_rope)) return false;
+        (previous && previous->physical_rope != physical_rope))
+        return false;
     const bool physical_f16 = lighton4b_physical_f16_attention_mode(weights.upstream_physical);
     const bool repack = lighton4b_physical_q4_repack_mode(weights.upstream_physical);
     const bool fused_swiglu = lighton4b_physical_swiglu_mode(weights.upstream_physical);
     if (previous && previous->physical_swiglu != fused_swiglu) return false;
     const bool source_chunks = lighton4b_source_prefill_chunks_mode(weights.upstream_physical);
+    const bool source_aligned = lighton4b_source_prefill_aligned_mode(weights.upstream_physical);
     if (!lighton4b_source_prefill_chunks_valid(weights.upstream_physical) ||
-        (previous && previous->physical_source_prefill_chunks != source_chunks))
+        (previous && (previous->physical_source_prefill_chunks != source_chunks ||
+                      previous->physical_source_prefill_aligned != source_aligned)))
         return false;
     const bool q6_tiled = lighton4b_physical_q6_tiled_mode(weights.upstream_physical);
     if (!lighton4b_physical_q6_tiled_valid(weights.upstream_physical) ||
@@ -91,7 +95,8 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
     auto empty_attention = [](const attention_cache & c) {
         return !c.batch && !c.heads && !c.tokens && !c.width && !c.upstream_physical && !c.physical_native_ops &&
                !c.physical_f16_attention && !c.physical_q4_repack && !c.physical_q6_tiled &&
-               !c.physical_source_prefill_chunks && !c.physical_rope && !c.physical_swiglu && c.keys.empty() && c.values.empty();
+               !c.physical_source_prefill_chunks && !c.physical_source_prefill_aligned && !c.physical_rope &&
+               !c.physical_swiglu && c.keys.empty() && c.values.empty();
     };
     auto finite = [](const std::vector<float> & v) {
         return std::all_of(v.begin(), v.end(), [](float x) { return std::isfinite(x); });
@@ -112,6 +117,7 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
             if (full) {
                 if (c.attention.physical_rope != physical_rope || c.attention.physical_swiglu != fused_swiglu ||
                     c.attention.physical_source_prefill_chunks != source_chunks ||
+                    c.attention.physical_source_prefill_aligned != source_aligned ||
                     c.attention.physical_q6_tiled != q6_tiled || c.attention.physical_q4_repack != repack ||
                     c.attention.physical_f16_attention != physical_f16 || c.attention.tokens != past ||
                     c.attention.batch != 1 || c.attention.heads != 4 || c.attention.width != 256 ||
@@ -120,11 +126,12 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
                     !finite(c.attention.values) || c.linear.tokens || c.linear.bf16_activations ||
                     c.linear.upstream_physical || c.linear.physical_native_ops || c.linear.hf_tiled_out ||
                     c.linear.physical_q4_repack || c.linear.physical_gdn_source_ops || c.linear.physical_q6_tiled ||
-                    c.linear.physical_source_prefill_chunks || c.linear.physical_swiglu || !c.linear.conv.empty() ||
-                    !c.linear.recurrent.empty())
+                    c.linear.physical_source_prefill_chunks || c.linear.physical_source_prefill_aligned ||
+                    c.linear.physical_swiglu || !c.linear.conv.empty() || !c.linear.recurrent.empty())
                     return false;
             } else if (c.linear.physical_swiglu != fused_swiglu ||
                        c.linear.physical_source_prefill_chunks != source_chunks ||
+                       c.linear.physical_source_prefill_aligned != source_aligned ||
                        c.linear.physical_q6_tiled != q6_tiled || c.linear.physical_gdn_source_ops != source_gdn ||
                        c.linear.physical_q4_repack != repack || c.linear.tokens != past ||
                        c.linear.conv.size() != 32768 || c.linear.recurrent.size() != 524288 || !finite(c.linear.conv) ||
@@ -145,6 +152,7 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
     candidate.cache.physical_gdn_source_ops = source_gdn;
     candidate.cache.physical_q6_tiled = q6_tiled;
     candidate.cache.physical_source_prefill_chunks = source_chunks;
+    candidate.cache.physical_source_prefill_aligned = source_aligned;
     std::vector<float> hidden(input, input + size_t(tokens) * 2560);
     for (size_t i = 0; i < 32; ++i) {
         const auto & w = weights.layers[i];

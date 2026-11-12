@@ -105,7 +105,9 @@ static int run(int argc, char ** argv) {
     std::vector<int> chunk_sizes;
     if (lighton4b_source_prefill_chunks_mode(model.text.decoder.upstream_physical)) {
         std::vector<lighton4b_prefill_chunk> plan;
-        if (!lighton4b_source_prefill_plan(mods, plan)) return 2;
+        if (!lighton4b_source_prefill_plan(mods, plan,
+                                           lighton4b_source_prefill_aligned_mode(model.text.decoder.upstream_physical)))
+            return 2;
         for (const auto & chunk : plan) chunk_sizes.push_back(chunk.tokens);
     } else
         for (int offset = 0; offset < int(ids.size()); offset += 16)
@@ -258,6 +260,8 @@ static int run(int argc, char ** argv) {
         summary << ",\"physical_rope\":" << (greedy_cache.physical_rope ? "true" : "false");
         summary << ",\"physical_source_prefill_chunks\":"
                 << (greedy_cache.physical_source_prefill_chunks ? "true" : "false");
+        summary << ",\"physical_source_prefill_aligned\":"
+                << (greedy_cache.physical_source_prefill_aligned ? "true" : "false");
         summary << ",\"physical_q4_repack\":" << (model.text.decoder.physical_q4_repack ? "true" : "false")
                 << ",\"physical_repack_entries\":" << (cache ? cache->physical_repack_entries() : 0)
                 << ",\"physical_repack_bytes\":" << (cache ? cache->physical_repack_bytes() : 0)
