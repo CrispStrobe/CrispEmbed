@@ -1,0 +1,159 @@
+{
+  "schema": "combined-ocr-http-fixture-failure-v1",
+  "source_commit": "9d2c876d0bf694c95174cb9e87950c3362399ed6",
+  "base_commit": "97592ff9943f0ac98f0831195cdcb864de322bcc",
+  "tree": "ed50688fa27e7289de0a4a70b5afbf6af619544e",
+  "ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "patch_sha256": "aebecf8e98b3ebd0b7b6b62e489c6a334eec03ef3879ec7cb3f5116f2cca30a9",
+  "checks": [
+    {
+      "label": "python-deps",
+      "returncode": 0
+    },
+    {
+      "label": "source-init",
+      "returncode": 0
+    },
+    {
+      "label": "source-fetch",
+      "returncode": 0
+    },
+    {
+      "label": "source-checkout",
+      "returncode": 0
+    },
+    {
+      "label": "source-patch",
+      "returncode": 0
+    },
+    {
+      "label": "source-tree",
+      "returncode": 0
+    },
+    {
+      "label": "submodule",
+      "returncode": 0
+    },
+    {
+      "label": "ggml-pin",
+      "returncode": 0
+    },
+    {
+      "label": "configure",
+      "returncode": 0
+    },
+    {
+      "label": "build",
+      "returncode": 0
+    },
+    {
+      "label": "ffi-abi-build",
+      "returncode": 0
+    },
+    {
+      "label": "ffi-native-abi",
+      "returncode": 0
+    },
+    {
+      "label": "controls-test_ocr_pipeline_failure_binding",
+      "returncode": 0
+    },
+    {
+      "label": "controls-test_ocr_result_abi",
+      "returncode": 0
+    },
+    {
+      "label": "controls-test_ocr_result_dart_contract",
+      "returncode": 0
+    },
+    {
+      "label": "compile-easyocr_layout",
+      "returncode": 0
+    },
+    {
+      "label": "native-easyocr_layout",
+      "returncode": 0
+    },
+    {
+      "label": "compile-ocr_orchestrator",
+      "returncode": 0
+    },
+    {
+      "label": "native-ocr_orchestrator",
+      "returncode": 0
+    },
+    {
+      "label": "compile-ocr_review",
+      "returncode": 0
+    },
+    {
+      "label": "native-ocr_review",
+      "returncode": 0
+    },
+    {
+      "label": "compile-production-server",
+      "returncode": 0
+    },
+    {
+      "label": "live-http-failure-control",
+      "returncode": 1
+    }
+  ],
+  "candidate_qualified": false,
+  "threshold": 0.25,
+  "admission": {
+    "available_ram_bytes": 32669249536,
+    "scratch_free_bytes": 1038218969088,
+    "compile_jobs": 2,
+    "overall_seconds": 4500
+  },
+  "candidate_library_sha256": "335a9ceee44494dca7747f76b83da5a3e27db3f0b07ccbed10a498dce71acec8",
+  "ffi_native_abi": {
+    "result_size": 48,
+    "result_text_offset": 24,
+    "result_orientation_angle_offset": 40,
+    "result_orientation_confidence_offset": 44,
+    "stage_size": 168,
+    "stage_cleanup_offset": 40,
+    "stage_detprob_offset": 100,
+    "cleanup_size": 60
+  },
+  "retained_candidate_native_bundle": {
+    "name": "candidate-native-bundle.tar.gz",
+    "sha256": "c7563984bf590b4fa6746b330aff7986f36fbc511a6733b1d001f21b439e118c",
+    "bytes": 6424694
+  },
+  "retained_baseline_source": {
+    "source": "c364feb974b91e14cbf328c6949f3df36e89ce81",
+    "kernel_sha256": "4f9346e5531c1fa58e69269a35281ea1bcf10aeebfb1f4eba67396d272614f48",
+    "report_sha256": "cae131fe2ddacd9cad55700620351d9685a1a0fb3836a2521972f6fa960c0c55"
+  },
+  "baseline_library_sha256": "4f184bda22ec3f75d0d013571bea712d3cc15e8f3e9a6c8624c2c3e637702a1a",
+  "server_link_profile": "production server translation unit linked exact candidate shared library",
+  "error_type": "AssertionError",
+  "completed": false,
+  "status": "incomplete_harness_startup_failure",
+  "raw_report_sha256": "6d823c29f3a779e6ea02c666fb21a4dc35941f8f439cd68aad9d655285d34064",
+  "kernel_sha256": "ad8a72aaf75e09d5d5eab2aadf581067bfc336b042f6fa337a8aae96b9ec1a1c",
+  "native_orchestrator_controls": {
+    "passed": 107,
+    "failed": 0
+  },
+  "wrapper_declaration_status_controls": {
+    "passed": 9,
+    "failed": 0
+  },
+  "http_observation": {
+    "actual_status": 503,
+    "expected_status": 500,
+    "error": "OCR orchestrator not loaded (use --ocr-pipeline --ocr-det MODEL --ocr-rec MODEL)",
+    "cause": "Fixture omitted --ocr-pipeline, so the server never entered the intended lazy-initialization failure path."
+  },
+  "unreached": [
+    "production Python/Dart native-memory execution",
+    "six combined-source model calls"
+  ],
+  "corrective_source": "3767483fc",
+  "runtime_binary_change_required": false,
+  "large_native_bundle_downloaded": false
+}

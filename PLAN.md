@@ -24,7 +24,24 @@ live reported-failure/legacy-blank HTTP checks, and six Tesseract fixture calls
 (gate off/on; same retained two-column, single-column and blank inputs). Immutable
 baseline observations/hashes are reused rather than rerunning a broader panel.
 Candidate binaries remain remotely retained; only reports/needed images are
-retrieved. This run is pending and does not authorize publication.
+retrieved. That run stopped at an [HTTP fixture startup failure](tests/results/dbnet-line-gutters/2026-11-12/combined-http-fixture-initial.json),
+not a native quality result: source/tree/ggml checks, the shared build, header ABI,
+nine wrapper declaration/status controls, 107 orchestrator controls, layout/review
+controls and production server compilation passed. The fixture omitted
+`--ocr-pipeline`, so the first request returned the server's existing 503 unloaded
+response before reaching the intended 500 lazy-load error. Production binding
+native-memory execution and six model calls were not reached.
+
+Reviewed test-only correction `3767483fc` supplies that missing startup flag.
+No compiled runtime source changed: subsequent differences are documentation and
+the HTTP fixture. A corrected bounded continuation can verify and reuse the
+remotely retained native bundle (source `9d2c876d0`, library SHA-256
+`335a9ceee44494dca7747f76b83da5a3e27db3f0b07ccbed10a498dce71acec8`,
+bundle SHA-256 `c7563984bf590b4fa6746b330aff7986f36fbc511a6733b1d001f21b439e118c`)
+without recompiling the engines. Recompile the small server translation unit,
+then execute corrected live HTTP, production Python/Dart memory controls and all
+six previously unreached model arms. Preserve both runtime and harness source
+identities. No publication or Android dispatch follows from this partial run.
 
 Latest app source `ecb5a802` contains the separate `87f5181f` CC-before-recognition
 crop path. It can preempt the native DBNet grouping stage, so neither the earlier
