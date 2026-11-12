@@ -1,0 +1,33 @@
+{
+  "schema": "lighton4b-book-text-trace/v1",
+  "case": "two-column-page",
+  "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "historical_reference_receipt_sha256": "9b88195d5a8058dea4fab87472009d3826bc1fa3b5d0575aa2e33698316d5722",
+  "source_generated_tokens": 654,
+  "same_prefix_tokens": 405,
+  "capture_sample_counts": [0, 405],
+  "max_graphs": 16,
+  "max_tensor_bytes": 16777216,
+  "max_trace_bytes": 268435456,
+  "context": 2048,
+  "request_cap": 1536,
+  "threads": 4,
+  "build_threads": 2,
+  "worker_seconds": 6000,
+  "source_arm_seconds": 1200,
+  "native_arm_seconds": 2400,
+  "original_bf16_forward_allowed": false,
+  "full_f32_model_allowed": false,
+  "runtime_fix_allowed": false,
+  "qualified": false,
+  "acceptance": [
+    "Authenticate original prepared PNG/RGB, exact prompt IDs/modalities/grid/three position axes and empty OCR template before forward.",
+    "Source observer OFF and ON independently reproduce historical all654 IDs, raw text, probabilities, EOS, prompt count and vision bytes.",
+    "Compare all654 source OFF/ON complete score hashes and actual dispatch inventory; neutrality failure rejects capture.",
+    "Authenticate native plannerON historical prefix at least406 full score rows before interpreting new observations.",
+    "Source/native first405 generated IDs must match before row405 stage comparison; no teacher-forcing mismatched contexts.",
+    "Index exact stage shapes,strides,types,operations and capture statuses; unsupported arrays remain explicit failures/limits.",
+    "Map physical V-head storage to native grouped order only using existing authenticated permutation; compare absolute errors and magnitudes per layer.",
+    "Preserve all negative baselines and source guards; do not change recipes, prompts, caps, scorers or defaults."
+  ]
+}
