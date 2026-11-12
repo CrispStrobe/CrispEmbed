@@ -16,7 +16,7 @@ def raw_archive(root,record,ids,known):
  with zipfile.ZipFile(p)as z:
   names=[f'greedy.{i}.logits.f32'for i in range(len(ids))];require(len(z.infolist())==len(names)and set(z.namelist())==set(names),'closed raw ZIP members')
   for i,(name,row,token)in enumerate(zip(names,rows,ids)):
-   require(row['position']==i and row['bytes']==VOCAB*4 and row['argmax']==token and type(token)is int and 0<=token<VOCAB,'frozen actual row identity');b=z.read(name);require(len(b)==VOCAB*4 and hashlib.sha256(b).hexdigest()==row['sha256'],'all archived row SHA');x=np.frombuffer(b,dtype='<f4');require(np.isfinite(x).all()and int(x.argmax())==token,'all finite actual greedy argmaxes');chain.update(bytes.fromhex(row['sha256']))
+   require(row['position']==i and row['bytes']==VOCAB*4 and row['argmax']==token and type(token)is int and 0<=token<VOCAB,'frozen actual row identity');info=z.getinfo(name);require(info.file_size==VOCAB*4 and info.compress_type==zipfile.ZIP_STORED,'bounded lossless actual vocabulary member');b=z.read(name);require(len(b)==VOCAB*4 and hashlib.sha256(b).hexdigest()==row['sha256'],'all archived row SHA');x=np.frombuffer(b,dtype='<f4');require(np.isfinite(x).all()and int(x.argmax())==token,'all finite actual greedy argmaxes');chain.update(bytes.fromhex(row['sha256']))
  return dict(rows=len(ids),archive_sha256=a['sha256'],ordered_row_sha256=chain.hexdigest())
 def edit_count(a,b):
  if not a:return len(b)
