@@ -19,6 +19,11 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   evidence remain open before any broader default decision. A second-architecture
   [admission attempt](https://github.com/CrispStrobe/CrispEmbed/pull/222) allocated
   no GPU and stopped before model work; it is not a quality result.
+- **Desktop runtime tooling:** [PR 228](https://github.com/CrispStrobe/CrispEmbed/pull/228)
+  merged as `548597d787e79a23488f595b58ff38b45cabf217` after 40
+  source-sealed hosted fixture tests passed. Its explicit desktop candidate mode
+  does not publish releases; actual desktop archive builds and consumer execution
+  remain unqualified.
 - **Ovis application path:** the [bounded comparison](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/crispsorter-ovis-comparison-20261112.json)
   returned blank Ovis output on seven admitted real pages. A
   [direct diagnostic](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/crispsorter-ovis-diagnostic-20261112.json)
