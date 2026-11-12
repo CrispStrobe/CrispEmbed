@@ -1,0 +1,226 @@
+{
+  "schema": "lighton4b-book-image-layer0-second-probe/v1",
+  "status": "measured_cache_closed_image_layer0_trace",
+  "controller_source": "3b4b5d9cbe01d548a55d97304809f21989aa341d",
+  "generated_driver": {
+    "driver_sha256": "0df342fc94146817b817e050e8dd2959ce93d1a5d520caf345d57bc87a5fa99a",
+    "target": "lighton4b-book-image-layer0-second-probe"
+  },
+  "native_binary_sha256": "67e7586f175bf2f970f8dbd0e8852b6910978e02023828b3987aec56c4ea31c8",
+  "elapsed_seconds": 279.550448553,
+  "decoded_generation_executed": false,
+  "original_forward_executed": false,
+  "full_f32_text_model_instantiated": false,
+  "native_prefill_executed": true,
+  "capture": {
+    "schema": "lighton4b-book-image-layer0-capture/v1",
+    "tokens": 16,
+    "offset": 20,
+    "cache_before_tokens": 20,
+    "cache_after_tokens": 36,
+    "all_layer0_tiles_hidden_exact": true,
+    "final_layer0_cache_exact": true,
+    "previous_caches_immutable": true,
+    "core_replay_attn_state_conv_exact": true,
+    "decoded_quality_qualified": false
+  },
+  "all_historical_prefill_vision_stage_hashes_exact": 82,
+  "comparisons": [
+    {
+      "stage": "model.input_embed",
+      "elements": 40960,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.18954655047063768,
+      "source_rms": 0.18954655047063768,
+      "native_max_abs": 6.213057041168213,
+      "source_max_abs": 6.213057041168213
+    },
+    {
+      "stage": "attn_norm-0",
+      "elements": 40960,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 1.3479209730344,
+      "source_rms": 1.3479209730344,
+      "native_max_abs": 62.2650032043457,
+      "source_max_abs": 62.2650032043457
+    },
+    {
+      "stage": "linear_attn_qkv_mixed-0",
+      "elements": 131072,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 1.2780711919023384,
+      "source_rms": 1.2780711919023384,
+      "native_max_abs": 19.14745330810547,
+      "source_max_abs": 19.14745330810547
+    },
+    {
+      "stage": "z-0",
+      "elements": 65536,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 1.1180697847462155,
+      "source_rms": 1.1180697847462155,
+      "native_max_abs": 12.064453125,
+      "source_max_abs": 12.064453125
+    },
+    {
+      "stage": "alpha-0",
+      "elements": 512,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 3.3951433636461936,
+      "source_rms": 3.3951433636461936,
+      "native_max_abs": 10.588611602783203,
+      "source_max_abs": 10.588611602783203
+    },
+    {
+      "stage": "beta-0",
+      "elements": 512,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 1.9816550067189913,
+      "source_rms": 1.9816550067189913,
+      "native_max_abs": 6.024646282196045,
+      "source_max_abs": 6.024646282196045
+    },
+    {
+      "stage": "final_output-0",
+      "elements": 65536,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.1071568108184257,
+      "source_rms": 0.10715681081842568,
+      "native_max_abs": 11.068501472473145,
+      "source_max_abs": 11.068501472473145
+    },
+    {
+      "stage": "linear_attn_out-0",
+      "elements": 40960,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.07574084732225424,
+      "source_rms": 0.07574084732225424,
+      "native_max_abs": 6.053213119506836,
+      "source_max_abs": 6.053213119506836
+    },
+    {
+      "stage": "attn_residual-0",
+      "elements": 40960,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.22656864617202851,
+      "source_rms": 0.22656864617202851,
+      "native_max_abs": 11.802361488342285,
+      "source_max_abs": 11.802361488342285
+    },
+    {
+      "stage": "attn_post_norm-0",
+      "elements": 40960,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.6216726772861881,
+      "source_rms": 0.6216726772861881,
+      "native_max_abs": 6.408174991607666,
+      "source_max_abs": 6.408174991607666
+    },
+    {
+      "stage": "ffn_gate-0",
+      "elements": 147456,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.39815753384173724,
+      "source_rms": 0.39815753384173724,
+      "native_max_abs": 3.4082846641540527,
+      "source_max_abs": 3.4082846641540527
+    },
+    {
+      "stage": "ffn_up-0",
+      "elements": 147456,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.290090778658238,
+      "source_rms": 0.290090778658238,
+      "native_max_abs": 2.886766195297241,
+      "source_max_abs": 2.886766195297241
+    },
+    {
+      "stage": "ffn_swiglu-0",
+      "elements": 147456,
+      "bit_exact": false,
+      "error_rms": 2.67390735954575e-09,
+      "error_max_abs": 1.1920928955078125e-07,
+      "native_rms": 0.05243854966523442,
+      "source_rms": 0.05243855007909797,
+      "native_max_abs": 2.373706817626953,
+      "source_max_abs": 2.373706817626953
+    },
+    {
+      "stage": "ffn_out-0",
+      "elements": 40960,
+      "bit_exact": false,
+      "error_rms": 4.2173990541717645e-06,
+      "error_max_abs": 8.720159530639648e-05,
+      "native_rms": 0.05260875476163596,
+      "source_rms": 0.05260877541160493,
+      "native_max_abs": 2.991558074951172,
+      "source_max_abs": 2.991558074951172
+    },
+    {
+      "stage": "l_out-0",
+      "elements": 40960,
+      "bit_exact": false,
+      "error_rms": 4.217493137885009e-06,
+      "error_max_abs": 8.720159530639648e-05,
+      "native_rms": 0.21769916842512455,
+      "source_rms": 0.21769911430920327,
+      "native_max_abs": 10.198426246643066,
+      "source_max_abs": 10.198426246643066
+    }
+  ],
+  "earliest_recorded_difference": {
+    "stage": "ffn_swiglu-0",
+    "elements": 147456,
+    "bit_exact": false,
+    "error_rms": 2.67390735954575e-09,
+    "error_max_abs": 1.1920928955078125e-07,
+    "native_rms": 0.05243854966523442,
+    "source_rms": 0.05243855007909797,
+    "native_max_abs": 2.373706817626953,
+    "source_max_abs": 2.373706817626953
+  },
+  "test_overlay_sha256": {
+    "prepare.py": "351bcb5df623e7a5444b86091e38b841ee00121b3d5e61c7ff1473dc96d39484",
+    "worker.py": "c47d3e896f6690921dbef8466741a1444d786a25313cf07e004c6f2e6f2e23d1",
+    "protocol.json": "fb7db2da9bbf900da2a8ee532b3a194bd644da4a686ccb92d143c427c175e97a",
+    "test_controls.py": "6c5c3899d63f540f59b2ec553f79325124b085ceed3b47e69fd3baa1fe4300b1"
+  },
+  "limits": [
+    "One frozen book second image chunk (image rows16..31), no decoded generation or quality claim.",
+    "Actual main tile/final cache and core replay close bitwise; source persistent cache layout remains unverified and is not compared.",
+    "Source image graph252 versus native16; differing subsequent inputs preclude unique operator attribution without replay."
+  ],
+  "service": "Kaggle",
+  "kernel_id": 144617617,
+  "version": 1,
+  "raw_report_bytes": 33872,
+  "raw_report_sha256": "d6501901252b1297b8f0293bf844cee4d1e477f320c99f8a926d3fc1c7736dbc",
+  "test_overlay_commit": "b6c86e63f",
+  "compiled_runtime_source": "a6164205620c71427a39c97ab386591406c4ca73",
+  "ggml_source": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "qualified": false
+}
