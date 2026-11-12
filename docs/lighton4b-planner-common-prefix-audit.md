@@ -16,7 +16,7 @@ The [reusable hosted consumer](../tools/ci-heavy/lighton4b_planner_common_prefix
 
 ## Actual upstream row comparison
 
-A second independent [source/native row audit](../tests/results/qwen35-ocr/lightonocr3-4b-planner-common-prefix/v1/source-audit.json) authenticates the retained upstream654-row archive and compares each native mode only through its first differing source decision. OFF shares92 prior tokens with source; ON shares405. Thus the native ON/OFF winner swap at92 follows source, and cannot by itself be described as the cause of the later completion failure. No later different-prefix rows enter these pairwise comparisons.
+A second independent [source/native row audit](../tests/results/qwen35-ocr/lightonocr3-4b-planner-common-prefix/v1/source-audit.json) authenticates every consumed row from the retained upstream654-row archive and compares each native mode only through its first differing source decision. OFF shares92 prior tokens with source; ON shares405. Thus the native ON/OFF winner swap at92 follows source, and cannot by itself be described as the cause of the later completion failure. No later different-prefix rows enter these pairwise comparisons.
 
 Source first-score RMS error worsens from OFF0.128943635 to ON0.143885652, despite the longer token agreement. At source/ON decision405 the RMS error is0.193178752/max1.027262449, versus source/native RMS magnitudes3.28200801/3.34058588. Source prefers its winner by0.374729156; native chooses the other by0.011495590. Source scores are17.96349335/17.58876419, native18.08433342/18.09582901. This identifies a narrow native winner swap at the first source/native decision divergence; it does not isolate the responsible hidden operator or explain all subsequent repetition.
 
