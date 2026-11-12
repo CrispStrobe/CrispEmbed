@@ -58,7 +58,29 @@ Fewer than 20 compilations count as no evidence, and the seed is kept.
 (source SHA, time, reasons, CUDA arch), which the next warm-up reads.
 CPU and CUDA objects share one cache and one tar. The seed is copied in whole
 before a build, so a CPU-only kernel that refreshes it keeps the CUDA entries.
-CUDA entries hit only for the same arch: the seed kernel builds for a T4 (75).
+CUDA entries hit only for the same arch. The seed kernel builds a CUDA tree
+for the detected arch and one per other entry of `CE_CCACHE_SEED_ARCHS`
+(default `75,60`: T4 and P100; nvcc needs no matching GPU), each for
+`crispembed-cli`, `test-ovisocr2-quality-run` and `test-qwen35-profile`.
+
+## Kaggle image (the #216 miss)
+
+`CCACHE_COMPILERCHECK=content` hashes the compiler binaries, so a seed made on
+one Kaggle image misses every object on another. An existing kernel keeps the
+image of its first push unless told otherwise. The seed kernel stayed on an image
+with GCC 11.4 / CUDA 12.8 while the newly created OvisOCR2 GPU bench got GCC
+13.3 / CUDA 13.0, so its build had 0/193 hits despite a warm seed attached.
+Two guards:
+
+- `kpush.py` sets `docker_image_pinning_type: "latest"` unless the metadata pins
+  something, so the seed and its consumers run on the same current image.
+- The seed records `toolchain` (first `c++ --version` and `nvcc --version`
+  release lines). At warm-up the harness prints a warning when this image
+  differs and marks the seed stale, so the kernel exports a fresh one.
+
+CPU-only kernels run on Kaggle's CPU image, and kernels that build their own
+small CMake projects (`tests/<name>`) use other flags and layouts; both mostly
+miss the GPU-image seed. Their export adds their objects to the same tar.
 
 Versioning the dataset happens on the pushing machine (no GitHub workflow):
 
