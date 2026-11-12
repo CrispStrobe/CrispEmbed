@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 3.16)
+project(lighton4b_receipt_aligned LANGUAGES C CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if(NOT DEFINED CRISPEMBED_SOURCE)
+ message(FATAL_ERROR "Exact candidate source required")
+endif()
+add_subdirectory("${CRISPEMBED_SOURCE}" product EXCLUDE_FROM_ALL)
+add_executable(receipt-aligned-component component.cpp)
+target_compile_options(receipt-aligned-component PRIVATE -ffp-contract=off)
+target_include_directories(receipt-aligned-component PRIVATE "${CRISPEMBED_SOURCE}/src")
+target_link_libraries(receipt-aligned-component PRIVATE crispembed-qwen35-delta crispembed-core)
+

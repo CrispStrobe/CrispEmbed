@@ -1,0 +1,26 @@
+{
+  "schema": "lighton4b-receipt-aligned-planner-controls/v1",
+  "candidate_source": "f8bffd1217fa41a958047d88dafb782a4b1cd989",
+  "ggml_source": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "trace_sha256": "5e175a971d703eeb0811631f01ea920dc6f5e91cfb88b87d5a700f71938ca2fc",
+  "source_report_sha256": "9761e11b911ebc8a51ab3e4e49d286d43a697794d62131beecc64277591db25c",
+  "fixed_sha256": "8001a29fab5abc3481e601168e10ca4383d10060ad7e4356a9110eb345c0b56a",
+  "source_prompt_rows": [
+    4,
+    242,
+    6,
+    4
+  ],
+  "worker_seconds": 3000,
+  "maximum_parameter_bytes": 115343360,
+  "model_forward_allowed": false,
+  "source_capture_allowed": false,
+  "full_f32_model_allowed": false,
+  "runtime_changes_allowed": false,
+  "source_model_url": "https://huggingface.co/richardyoung/LightOnOCR-3-4B-GGUF/resolve/8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01/LightOnOCR-3-4B-Q4_K_M.gguf",
+  "source_model_bytes": 2708804576,
+  "previous_candidate_source": "a8a22749ab0b757ae1f317b6fa5b84ffd148b939",
+  "operator_receipt_sha256": "eace978c3675c91002ea1ed68fe8d763b7da4a44021c6b5390c77501568cee70",
+  "changed_gate": "CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL_ALIGNED",
+  "original_legacy_plan_fnv1a64": "a3a081480e04bae8"
+}
