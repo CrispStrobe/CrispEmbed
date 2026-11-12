@@ -14,7 +14,10 @@ statuses for exactly that SHA, keeps the newest run per check name, and
 requires the branch-protection required contexts to be present when the API
 exposes them.
 
-Green means: at least one check exists, and every check is success or skipped.
+Green means: at least one check exists, and every check run, commit status and
+GitHub Actions workflow run for that SHA is success or skipped. Workflow runs
+count because a run can stay queued or pending without having created any
+check run yet.
 queued / in_progress / pending / waiting keep it waiting. cancelled, failure,
 timed_out, action_required, neutral, stale and startup_failure fail at once.
 Once everything is green it waits --settle seconds and checks again, so late
@@ -88,6 +91,20 @@ def checks_for(repo: str, sha: str) -> dict[str, str]:
             ident = name if suite is None else f"{name} [suite {suite}]"
             if ident not in out or key > out[ident][0]:
                 out[ident] = (key, state)
+    # A workflow run can sit in queued/pending (runner queue, concurrency group)
+    # before it has created any check run, so check runs alone can look green
+    # while whole workflows have not started. Count every Actions run for the SHA.
+    runs = gh_api(f"repos/{repo}/actions/runs?head_sha={sha}&per_page=100", paginate=True)
+    newest: dict[str, tuple] = {}
+    for page in runs:
+        for wr in page.get("workflow_runs", []):
+            key = wr.get("run_attempt") or 0, wr.get("created_at") or "", wr.get("id") or 0
+            wf = f"workflow {wr.get('name') or wr.get('workflow_id')} [{wr.get('event')}]"
+            if wf not in newest or key > newest[wf][0]:
+                state = wr.get("conclusion") if wr.get("status") == "completed" else wr.get("status")
+                newest[wf] = (key, state)
+    for wf, (_, state) in newest.items():
+        out[wf] = (("", 0), state)
     status = gh_api(f"repos/{repo}/commits/{sha}/status?per_page=100")
     for st in status.get("statuses", []):  # newest first per the API
         name = st["context"]

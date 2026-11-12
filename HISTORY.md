@@ -29,8 +29,8 @@ so nothing could hit. The bench also had no committed `kernel-metadata.json`.
   `lighton4b_physical_*` sources. That failure is independent of ccache. These CPU kernels build their own
   CMake projects with other flags, and on Kaggle's CPU image they had 0-7% hits.
 - `tools/kaggle/kv-cache-test/kv_cache_test.py` compiles again (stray indentation).
-- **Merge guard.** `tools/ci/wait_required_checks.py` waits on every check for one pinned PR head SHA. It
-  fails if the head moves and treats queued, pending, cancelled and neutral as not green. It exits 0 only
+- **Merge guard.** `tools/ci/wait_required_checks.py` waits on every check run, status and Actions
+  workflow run for one pinned PR head SHA. It fails if the head moves and treats queued, pending, cancelled and neutral as not green. It exits 0 only
   when every check is success or skipped, and only after a settle period. CLAUDE.md now requires it, followed
   by `gh pr merge --match-head-commit`. This follows CrispSorter #49, which was merged on a stale poll. The
   same script went to CrispSorter.
