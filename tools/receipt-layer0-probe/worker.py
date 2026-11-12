@@ -35,7 +35,7 @@ def main():
   try:
    try:command(args,out/(label+'.log'),min(limit,CFG['worker_seconds']-(time.monotonic()-started)),r['commands'][label],cwd=ROOT,env=env)
    except subprocess.CalledProcessError as e:require(e.returncode==expected,'expected bounded control exit')
-   require(r['commands'][label]['returncode']==expected,'actual command return code')
+   require(r['commands'][label]['returncode']==expected,'actual command return code');r['commands'][label].update(expected_returncode=expected,accepted_expected_returncode=True)
   finally:save()
  def locate(name,digest):
   paths=[p for p in Path('/kaggle/input').rglob(name)if p.is_file()and p.stat().st_size<4<<20 and sha(p)==digest];require(len(paths)==1,'one exact '+name);return paths[0],json.loads(paths[0].read_text())

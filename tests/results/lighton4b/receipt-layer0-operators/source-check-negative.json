@@ -1,0 +1,20 @@
+{
+  "schema": "lighton4b-receipt-layer0-source-check-negative/v1",
+  "status": "setup_negative",
+  "candidate_source": "a8a22749ab0b757ae1f317b6fa5b84ffd148b939",
+  "tools_source": "d81783b4f",
+  "bootstrap_sha256": "c4cbcbe92f66d3dbb956b9ee31a4b028beea628200e5f2220b9b779cd86750fa",
+  "child_receipt_sha256": "5fcaaf075db511a07f085fa4f8069fafc2a30b37d8a13a96e7eaafa7e629084d",
+  "submitted_source_sha256": "e11f04e273d322d0b737d2005b0a0d0e3a694c07ed49ad73b20d759be135dc30",
+  "failure": "Child source-identity Git command inherited an unrelated working directory and exited128 before build/parameter acquisition.",
+  "artifact_only_window_report_sha256": "be6d78e0b4d6008b6d4c370576be179a6aad2602d80281300d0b2864af521e99",
+  "hosted_small_controls_passed": 4,
+  "native_build_executed": false,
+  "parameter_ranges_acquired": false,
+  "operator_execution_attempted": false,
+  "model_forward_executed": false,
+  "source_capture_repeated": false,
+  "qualified": false,
+  "correction_scope": "Explicit git -C authenticated checkout, cwd-independent Git fixture, closed child-owned artifact census and retained component executable/libraries. Operator arithmetic/source inputs, protocol and numerical gates unchanged.",
+  "provenance_limit": "Initial failed child census included its parent bootstrap and worker log while still mutable; their listed intermediate hashes are retained as recorded, not claimed to equal the finalized wrappers."
+}

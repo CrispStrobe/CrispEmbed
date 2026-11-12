@@ -19,7 +19,7 @@ The hosted CPU-only worker has a2400-second limit, two build threads, four
 operator threads, cgroup-aware6GiB RAM/6GiB scratch/2GiB output admission, and
 at most110MiB of parameter ranges. It loads no model, repeats no source forward
 or full decode, creates no F32 model or weight cache, and changes no production
-sources, defaults, release or application pin. Large vectors stay remote.
+sources, defaults, release or application pin. Large vectors and the exact built component executables/libraries stay remote. Reusing the retained executables requires the retained `runtime/lib` directory on the dynamic loader library path.
 Receipt floor failures and observed BF16 regressions remain binding.
 
 Small controls: `python3 tools/receipt-layer0-probe/test_controls.py`.
