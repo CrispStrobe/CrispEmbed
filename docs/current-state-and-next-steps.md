@@ -27,16 +27,17 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   this does not establish other platform parity.
   [Model manager PR 55](https://github.com/CrispStrobe/CrispSorter/pull/55) remains
   open; its [focused follow-up 58](https://github.com/CrispStrobe/CrispSorter/pull/58)
-  addresses build and installer-integrity failures. [Provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52)
+  was incorporated, addressing build and installer-integrity failures. [Provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52)
   merged after a targeted vendored-source conformance run; [follow-up 56](https://github.com/CrispStrobe/CrispSorter/pull/56)
-  remains open with Windows application test failures and a narrow retry queued.
+  remains open after Windows application test failures; the Windows-only retry is running.
 - **CrispMath:** source `2b9d0982a3fd780deb2ffd67835da3ce658dce27` sets
   `1.2.1+28` and retains its immutable CrispEmbed 0.17.15 pin. The
   [10 November inspection](https://github.com/CrispStrobe/CrispMath/actions/runs/42870085016)
-  recorded build 28 as valid and awaiting external beta review; it did not claim
-  App Store submission. A later [inspection](https://github.com/CrispStrobe/CrispMath/actions/runs/43229069857)
-  failed before any jobs started; the read-only [retry](https://github.com/CrispStrobe/CrispMath/actions/runs/43232521219)
-  is queued, so no newer store state is established. Physical-device coverage remains separate.
+  recorded build 28 as valid and awaiting external beta review. The read-only
+  [12 November verification](https://github.com/CrispStrobe/CrispMath/actions/runs/43232521219)
+  confirms the same source and valid build, with beta review approved and an
+  app-store-eligible audience type. It submitted nothing; it does not establish
+  App Review submission or physical-device coverage.
 - **Test hygiene:** the [release-source audit](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/plain-pytest-v01719-20261112.json)
   at `c364feb97` recorded 2,099 passes, 168 skips and seven source-guard failures;
   the shallow clone passed 2,032 with 242 skips. The first differences trace to
