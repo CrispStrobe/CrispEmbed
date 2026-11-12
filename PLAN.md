@@ -614,8 +614,10 @@ The [cache-closed first-image capture](docs/lighton4b-book-image-layer0.md)
 reproduces all historical prefill/vision hashes and matches upstream through
 FFN gate/up on the first sixteen image rows. SwiGLU is the first recorded
 difference there as well. An [artifact-only window audit](docs/lighton4b-book-image-windows.md)
-locates the first larger layer-0 spike at image row 23; a cache-closed capture
-of that second image chunk is running to identify its earliest differing operator.
+locates the first larger layer-0 spike at image row 23. The [second-chunk capture](docs/lighton4b-book-second-image-layer0.md)
+finds exact upstream/native inputs through gate/up, tiny SwiGLU differences,
+then the larger down-projection error. A same-input quantizer replay is needed
+to establish whether a quantization threshold accounts for that amplification.
 
 The [artifact-only repetition/EOS audit](docs/lighton4b-book-repetition-eos.md)
 finds repeated longer windows in the capped planner-on trajectory, with no EOS
