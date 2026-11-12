@@ -17,7 +17,7 @@ def configured():
  assert h.count('n==0||n==31')==1
  h=h.replace('n==0||n==31','n==0').replace('else if(!ggml_is_contiguous(t))status="unsupported-strides";','')
  h=h.replace('t->type!=GGML_TYPE_F32&&t->type!=GGML_TYPE_I32','t->type!=GGML_TYPE_F32&&t->type!=GGML_TYPE_I32&&t->type!=GGML_TYPE_F16')
- h=h.replace('bytes>(8u<<20)','bytes>(16u<<20)').replace('128u<<20','512u<<20')
+ h=h.replace('bytes>(8u<<20)','bytes>(16u<<20)').replace('128u<<20','768u<<20')
  old='bool wanted=crisp_text_trace_wanted(t->name);if(ask)return wanted;if(wanted)crisp_text_trace_dump(t);return true;'
  new='''bool wanted=crisp_text_trace_wanted(t->name);if(ask)return wanted;if(wanted){
  crisp_text_trace_dump(t);

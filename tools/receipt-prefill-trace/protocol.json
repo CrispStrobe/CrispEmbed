@@ -21,5 +21,6 @@
   "full_decode_allowed": false,
   "native_model_forward_allowed": false,
   "full_f32_model_allowed": false,
-  "total_timeout_seconds": 4200
+  "total_timeout_seconds": 4200,
+  "maximum_capture_bytes": 805306368
 }

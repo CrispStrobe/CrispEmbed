@@ -16,7 +16,7 @@ class Controls(unittest.TestCase):
    bad=dict(r);bad[key]=value
    with self.assertRaises(RuntimeError):source.validate_response(bad,frozen)
  def test_observer_names_and_bounded_prefill(self):
-  self.assertEqual(len(patch.STAGES),len(set(patch.STAGES)));m=patch.configured();self.assertIn('(n==0)',m.HELPER);self.assertNotIn('n==31',m.HELPER);self.assertIn('512u<<20',m.HELPER)
+  self.assertEqual(len(patch.STAGES),len(set(patch.STAGES)));m=patch.configured();self.assertIn('(n==0)',m.HELPER);self.assertNotIn('n==31',m.HELPER);self.assertIn('768u<<20',m.HELPER);self.assertEqual(json.loads((HERE/'protocol.json').read_text())['maximum_capture_bytes'],768<<20)
   for layer in range(3):self.assertIn('linear_attn_qkv_mixed-'+str(layer),patch.STAGES)
   anchor='    cb(Qcur_full, "Qcur_full", il);\n    cb(Kcur, "Kcur", il);\n    cb(Vcur, "Vcur", il);';original=anchor+'\ncb(Kcur, "Kcur", il);cb(Vcur, "Vcur", il);';actual=patch.disambiguate(original);self.assertEqual(actual.replace('"Kcur_raw"','"Kcur"').replace('"Vcur_raw"','"Vcur"'),original)
  def test_exact_and_nonexact_magnitudes(self):

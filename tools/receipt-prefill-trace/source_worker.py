@@ -21,7 +21,7 @@ def main():
  import numpy as np
  from PIL import Image
  require(np.__version__=='2.3.5'and sys.byteorder=='little'and platform.system()=='Linux'and platform.machine().lower()in['x86_64','amd64']and Path('/kaggle/input').is_dir()and not list(Path('/dev').glob('nvidia[0-9]*')),'pinned CPU/array profile')
- cfg=json.loads((Path(__file__).parent/'protocol.json').read_text());require(cfg['schema']=='lighton4b-receipt-prefill/v1','closed stage capture')
+ cfg=json.loads((Path(__file__).parent/'protocol.json').read_text());require(cfg['schema']=='lighton4b-receipt-prefill/v1'and cfg['maximum_capture_bytes']==768<<20,'closed bounded stage capture')
  out=Path(os.environ['HEAVY_OUT']);out.mkdir(exist_ok=True);work=Path(os.environ['HEAVY_SCRATCH'])/'receipt-prefill-source';work.mkdir();started=time.monotonic();active=None;arm_end=[None];deadline=Deadline(3600);deadline.__enter__()
  report={'schema':'lighton4b-receipt-prefill-source/v1','status':'failed','commands':{},'arms':{},'native_forward_executed':False,'original_bf16_forward_executed':False,'f32_model_instantiated':False,'quality_qualified':False}
  def save():(out/'receipt-prefill-source.json').write_text(json.dumps(report,indent=2,sort_keys=True,ensure_ascii=False)+'\n')
