@@ -1,0 +1,29 @@
+{
+  "schema": "lighton4b-rope-operator-setup-negative/v1",
+  "status": "failed-before-operator-execution",
+  "diagnostic_source": "58158434371aadf41339a3e0d1c552f1e0cf01ad",
+  "runtime_source": "519c3d9765c234cd93e9069d5efdc239e3cad3f2",
+  "retained_report_sha256": "f57edc25119700d39ee964536ae7f0f7edfa8e5f3881ec43ef7dcad24176a6e9",
+  "error_type": "CalledProcessError",
+  "error": "Command '['git', 'rev-parse', 'HEAD']' returned non-zero exit status 128.",
+  "elapsed_seconds": 0.0034162549999905423,
+  "worker_commands_executed": 0,
+  "quantized_tensor_transfer_executed": false,
+  "build_executed": false,
+  "model_forward_executed": false,
+  "source_capture_repeated": false,
+  "numerical_result_claimed": false,
+  "qualified": false,
+  "fix_source": "daca4e17f426474dc12579700d758991b55db691",
+  "fix": "Pin both repository identity commands with git -C ROOT; regression control checks every rev-parse command.",
+  "outer_worker_log": {
+    "final_bytes": 1603,
+    "final_sha256": "c6ea29f23b39043a43ac127eda471410de7f6deb3ca862ccedd7bcb456da177d",
+    "inner_receipt_snapshot": {
+      "bytes": 247,
+      "sha256": "79fd44ecfb72e6a328be3f39e4dbca4e1d7dc594e7c3ad6caf17bfd2b4486611"
+    },
+    "original_inner_snapshot_bytes_retained": false,
+    "scope": "Exception traceback appended after the inner failure receipt. Final outer bytes and inner snapshot identity remain distinct; no all-original-log claim."
+  }
+}
