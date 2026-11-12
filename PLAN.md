@@ -1,5 +1,18 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Windows full-text repair follow-up — 12 November 2026
+
+CrispSorter run [43235808370](https://github.com/CrispStrobe/CrispSorter/actions/runs/43235808370)
+at `a113b4d1896bb1e20b4d9bd86ead6cf2eb1dabbe` reproduced an access-denied error
+in Tantivy commit across independent index fixtures. An initial instrumented run
+changed buffering and did not reproduce; it is not a fix. The subsequent
+[paired stress run](https://github.com/CrispStrobe/CrispSorter/actions/runs/43253065385)
+at `01b27b0e2a3183e915ac52fb0bc17f3ab17a82d1` preserved the production control
+and used a single-buffer tracing arm: each completed 120 independent indexes
+with zero real-index failures, and the tracing-equivalence checks passed. The
+labeled injected errors in the trace are synthetic controls. The original
+failure remains unexplained; no production fix or Windows-wide quality claim.
+
 ## Local kernel configuration privacy — 12 November 2026
 
 At source `4914f2df1`, all 77 tracked legacy metadata templates use account
@@ -9,6 +22,8 @@ the MoEdern public contract owns a metadata SHA-256, four recipe/packing control
 read the legacy names, and six staging tools copy them directly. Renaming these
 templates requires a separately reviewed compatibility migration and exact source
 amendments; historical evidence and closures must not be rewritten to pass it.
+
+The [hosted secret scan](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43249035071) passed at `98a78b151bbf05a8604f6bc9ab7fee3d9896b2ad`.
 
 The credential guard previously globbed ignored local configuration and could
 print private references on failure. It now inspects only tracked metadata and

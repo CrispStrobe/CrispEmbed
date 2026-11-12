@@ -33,8 +33,9 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   upstream provider source. The earlier Windows application suite had two
   full-text repair I/O failures. A [narrow Windows reproduction](https://github.com/CrispStrobe/CrispSorter/actions/runs/43235808370)
   at `a113b4d1` independently reproduced the same access-denied error during
-  Tantivy commit; a diagnostic-only Windows trace is queued. The cause and fix
-  remain unverified.
+  Tantivy commit. Subsequent [paired stress controls](https://github.com/CrispStrobe/CrispSorter/actions/runs/43253065385)
+  at `01b27b0e` completed 120 independent indexes per arm with no real-index
+  failures. This is bounded nonreproduction, not a repair; the cause remains open.
 - **CrispMath:** source `2b9d0982a3fd780deb2ffd67835da3ce658dce27` sets
   `1.2.1+28` and retains its immutable CrispEmbed 0.17.15 pin. The
   [10 November inspection](https://github.com/CrispStrobe/CrispMath/actions/runs/42870085016)
