@@ -1,5 +1,5 @@
 """Small independent raw-audit corruption and privacy controls; no model data."""
-import hashlib,importlib.util,json,random,tempfile,unittest,zipfile
+import hashlib,importlib.util,json,math,random,tempfile,unittest,zipfile
 from pathlib import Path
 import numpy as np
 import audit
@@ -32,4 +32,10 @@ class AuditControls(unittest.TestCase):
   path=Path(__file__).resolve().parents[1]/'ci-heavy/qwen35_quant_calibration.py';spec=importlib.util.spec_from_file_location('frozen_distance',path);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);rng=random.Random(0)
   for _ in range(100):
    left=''.join(rng.choices('abcأعé',k=rng.randrange(65)));right=''.join(rng.choices('abcأعé',k=rng.randrange(65)));self.assertEqual(audit.edit_count(left,right),module.distance(left,right))
+ def test_only_derived_rms_roundoff_is_bounded(self):
+  expected={'rms':1.,'max_abs':2.,'source_rms_magnitude':1.};actual=dict(expected);actual['rms']+=8*math.ulp(1.);self.assertEqual(audit.compare_derived(actual,expected),8.)
+  actual['rms']+=math.ulp(1.)
+  with self.assertRaises(ValueError):audit.compare_derived(actual,expected)
+  actual=dict(expected);actual['max_abs']+=math.ulp(2.)
+  with self.assertRaises(ValueError):audit.compare_derived(actual,expected)
 if __name__=='__main__':unittest.main()
