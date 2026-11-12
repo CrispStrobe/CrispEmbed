@@ -49,6 +49,11 @@ def main():
   for library in build.rglob('libggml*.so*'):
    if library.is_file():shutil.copy2(library,bundle/'lib'/library.name)
   r['runtime_bundle']={str(p.relative_to(bundle)):dict(bytes=p.stat().st_size,sha256=sha(p))for p in bundle.rglob('*')if p.is_file()};require(0<sum(row['bytes']for row in r['runtime_bundle'].values())<=256<<20,'bounded retained exact runtime bundle')
+  env=dict(os.environ);env.update({k:'0'for k in env if k.startswith('CRISPEMBED_')});env.update(f['gates']['on']);r['base_gates']=f['gates']['on']
+  for mode in ['off','on']:
+   env[GATE]='0'if mode=='off'else'1'
+   for cap,flag in [(512,'--observed-composed-cap512'),(1536,'--provisional-heldout-cap1536')]:
+    run('cli-'+mode+'-'+str(cap),[executable('lighton4b-native-document'),work/'missing.gguf',work/'missing.rgb',1,1,work/'missing.ids',out,cap,4,'greedy-full',flag],env,30,4)
   weights=work/'weights';weights.mkdir()
   for row in rows:
    begin,size=row['source_offset'],row['bytes'];request=urllib.request.Request(CFG['source_model_url']+'?download=true&aligned_range=%d-%d'%(begin,begin+size-1),headers={'Range':'bytes=%d-%d'%(begin,begin+size-1),'Accept-Encoding':'identity'})
