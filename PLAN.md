@@ -53,6 +53,30 @@ box absolute errors and decoded equality are separate controls. Admission requir
 bound, and the entire batch is capped at 4500 seconds. Results are pending;
 this submission itself does not qualify the candidate.
 
+That initial batch is now retained as [invalid harness evidence](tests/results/dbnet-line-gutters/2026-11-12/hosted-initial-invalid.json).
+Source/tree/ggml/model checks and the native shared build passed, but the probe's
+Python stage constructor left detector thresholds at zero, unlike the app's
+explicit `0.3`/`0.5`/736 defaults. Its full-page DBNet result is not a valid
+baseline. The next multi-region child exited SIGSEGV; a header-only ABI check
+also found the pinned production Python result mirror has stride 40 bytes versus
+48 native bytes, omitting trailing orientation fields. That independent binding
+repair belongs to its owner and is not proven by a corrected probe struct.
+
+One reviewed corrected rerun was submitted with identical native sources,
+models, PNGs, gold and quality threshold. Kernel SHA-256 is
+`4f9346e5531c1fa58e69269a35281ea1bcf10aeebfb1f4eba67396d272614f48`;
+exact app configuration proof SHA-256 is
+`f75d556fff93ca3f611091d066929fdfc33fb430db082b5502aac6a5793f9787`.
+It explicitly mirrors source type auto, native thread auto, detector defaults,
+cleanup and remaining Rust C-stage fields; a compiled header check verifies
+result/stage/cleanup sizes and offsets before inference. Its direct ctypes
+result reader is a probe-only workaround, not production Python evidence.
+Each case preserves progress, raw native JSON and crash traces before later
+checks; failures are collected across all arms and final failed comparisons
+exit nonzero. The candidate native library is retained remotely for follow-up
+without repeating the build. The corrected run remains pending; no candidate
+quality/default/app-pin promotion follows from either submission.
+
 Android integration after review and successful decoded evidence:
 
 1. Review exact detector/crop geometry and final decoded text/CER on both arms;

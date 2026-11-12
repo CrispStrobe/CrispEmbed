@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "status": "invalid_harness_evidence_not_quality_qualified",
+  "candidate_source": "8a40b7b0b7950dab636d4ad9b70f08837884d376",
+  "base_source": "c364feb974b91e14cbf328c6949f3df36e89ce81",
+  "sealed_tree": "6935dcdee9ed4fad928e1754c71ace9ad922da19",
+  "kernel_sha256": "7c7e38894127499ae96f4d7acd419e99ce4d1d297bd6211747015dea68a4abbb",
+  "source_tree_ggml_proofs_passed": true,
+  "native_shared_build_passed": true,
+  "candidate_library_sha256": "ff5a8332710378ebf36ea7939bafafa5dce9b55b7259e92655689094ba110bab",
+  "admission": {
+    "available_ram_bytes": 32640667648,
+    "scratch_free_bytes": 1038218964992,
+    "compile_jobs": 2,
+    "build_timeout_seconds": 2700,
+    "overall_timeout_seconds": 4500
+  },
+  "invalidating_defects": [
+    {
+      "kind": "probe_parameter_mismatch",
+      "fields": {
+        "det_prob_threshold": {
+          "initial": 0.0,
+          "app": 0.3
+        },
+        "det_box_threshold": {
+          "initial": 0.0,
+          "app": 0.5
+        },
+        "det_target_short": {
+          "initial": 0,
+          "app": 736
+        },
+        "source_type": {
+          "initial": 1,
+          "app": 0
+        },
+        "n_threads": {
+          "initial": 2,
+          "app": 0
+        }
+      },
+      "observed_consequence": "Two-column baseline detector returned one full-page box instead of the Android run’s 24 fragments; decoded Z a is not a valid matched-settings baseline."
+    },
+    {
+      "kind": "existing_python_result_abi_mismatch",
+      "native_source": "src/crispembed.h:905",
+      "python_source": "python/crispembed/_binding.py:2173",
+      "native_size_bytes": 48,
+      "python_size_bytes": 40,
+      "missing_fields": {
+        "orientation_angle_offset": 40,
+        "orientation_confidence_offset": 44
+      },
+      "observed_consequence": "Single-column child exited SIGSEGV (-11) while handling multiple regions; candidate arms were not executed."
+    }
+  ],
+  "corrected_rerun": {
+    "kernel_sha256": "4f9346e5531c1fa58e69269a35281ea1bcf10aeebfb1f4eba67396d272614f48",
+    "app_config_proof_sha256": "f75d556fff93ca3f611091d066929fdfc33fb430db082b5502aac6a5793f9787",
+    "dispatches": 1,
+    "status": "submitted_results_pending",
+    "complete_header_verified_probe_result_size": 48,
+    "native_stage_size": 168,
+    "native_cleanup_size": 60,
+    "probe_only_binding_not_production_binding_evidence": true,
+    "all_case_failures_preserved_and_other_arms_continue": true,
+    "quality_threshold": 0.25,
+    "same_fixture_gold_and_model_hashes": true,
+    "candidate_native_bundle_retained_remotely": true
+  },
+  "runtime_default_changed": false,
+  "app_pin_changed": false
+}
