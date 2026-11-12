@@ -251,6 +251,10 @@ def _warm_ccache_from_dataset(ccache_dir: Path) -> None:
                         search_paths.extend(s for s in owner.iterdir() if s.is_dir())
             else:
                 search_paths.append(sub)  # /kaggle/input/<slug>
+    # Kaggle's long mount layout (/kaggle/input/datasets/<owner>/<slug>) lists in
+    # filesystem order; a kernel that also attaches crispasr-ccache must still warm
+    # from the CrispEmbed seed, so probe crispembed-ccache first, crispasr-ccache last.
+    search_paths.sort(key=lambda p: 0 if p.name == "crispembed-ccache" else 2 if p.name == "crispasr-ccache" else 1)
     for base in search_paths:
         tar_path = base / "ccache.tar"
         if tar_path.exists():
