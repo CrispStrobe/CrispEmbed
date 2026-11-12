@@ -8404,3 +8404,6 @@ The [preserved partial audit](docs/lighton4b-swiglu-fixed-partial.md) checks4,34
 ## Physical RoPE observed output limits (12 November 2026)
 
 The [independent small audit](docs/lighton4b-physical-rope-observed-audit.md) verifies ON source token/text equality for table282, form170 and Arabic6 tokens. Against original BF16 outputs, table edits worsen20→348 characters/6→97 words and form175→189/45→46; Arabic0/0 remains exact. ON first-score RMS falls to6.068e-7/6.549e-7/5.779e-7, but this is source-fidelity evidence, not decoded-quality or speed qualification. All six arms reach EOS; full raw-inventory rehash remains outside this small audit.
+## Physical RoPE fixed decoded limits (12 November 2026)
+
+The [raw-audited fixed panel](docs/lighton4b-physical-rope-fixed-audit.md) changes book1536/noEOS→654/EOS, content CER/WER1.2089902717/1.75→.1764508554/.2625899281. Receipt465→468/EOS worsens .03125/.125→.0325520833/.1319444444 and loses its source floor; inventory248/EOS remains content0/0. All ON arms complete with2/3 provisional floors. Receipt first-score RMS worsens .1221114823→.2213878489 while book/inventory ON RMS falls to6.633e-7/3.431e-7. All paired native first differences are layer3. The296.518-second audit time is artifact analysis, not inference speed; no broad decoded-quality qualification.

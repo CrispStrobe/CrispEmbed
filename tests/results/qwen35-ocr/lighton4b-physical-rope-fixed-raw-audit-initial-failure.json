@@ -1,0 +1,7 @@
+{
+  "status": "failed",
+  "model_forward_executed": false,
+  "qualified": false,
+  "error_type": "ValueError",
+  "elapsed_seconds": 38.95591455599998
+}

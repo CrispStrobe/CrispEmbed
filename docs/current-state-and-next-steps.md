@@ -104,6 +104,12 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   The [initial GitHub dispatch](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43228796357)
   failed before collection because its checkout was shallow; its queued retry
   was cancelled in favor of the bounded remote CPU audit.
+## Physical RoPE fixed panel — 12 November 2026
+
+The [independent fixed raw audit](lighton4b-physical-rope-fixed-audit.md) closes all six book-first arms at candidate `a8a22749ab0b757ae1f317b6fa5b84ffd148b939`: 578 current artifacts/4,812,973,943 bytes and all3,619 current,849 reused-observed and2,249 prior-baseline raw rows verified remotely. Book1536/noEOS→654/EOS and inventory248/EOS meet their unchanged provisional source floors; receipt465→468/EOS regresses and fails its floor. All ON arms complete; only2/3 floors pass. The initial artifact-only failure and all three missing-log/binary/intermediate-bootstrap limitations remain explicit. No quality/default/release/app promotion.
+
+Next bounded work is attribution of the remaining receipt difference using exact source/native stage inputs; paired native differences begin at layer3. Preserve the fixed producer, capped book OFF, receipt negative and earlier observed BF16 regressions. Do not repeat completed model forwards for report-only checks; the raw audit already closes their inventories.
+
 
 ## Current cross-repository checkpoint — 12 November 2026
 

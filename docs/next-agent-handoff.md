@@ -1,5 +1,12 @@
 # Executable next-agent handoff
 
+## Physical RoPE fixed panel — 12 November 2026
+
+The [independent fixed raw audit](lighton4b-physical-rope-fixed-audit.md) closes all six book-first arms at candidate `a8a22749ab0b757ae1f317b6fa5b84ffd148b939`: 578 current artifacts/4,812,973,943 bytes and all3,619 current,849 reused-observed and2,249 prior-baseline raw rows verified remotely. Book1536/noEOS→654/EOS and inventory248/EOS meet their unchanged provisional source floors; receipt465→468/EOS regresses and fails its floor. All ON arms complete; only2/3 floors pass. The initial artifact-only failure and all three missing-log/binary/intermediate-bootstrap limitations remain explicit. No quality/default/release/app promotion.
+
+Next bounded work is attribution of the remaining receipt difference using exact source/native stage inputs; paired native differences begin at layer3. Preserve the fixed producer, capped book OFF, receipt negative and earlier observed BF16 regressions. Do not repeat completed model forwards for report-only checks; the raw audit already closes their inventories.
+
+
 ## Current cross-repository checkpoint — 12 November 2026
 
 CrispEmbed [v0.17.19](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.19) is published at tag source `c364feb974b91e14cbf328c6949f3df36e89ce81`; the release lists 16 uploaded native/WASM assets. This is a release listing, not an independent asset readback or app-consumer qualification. CrispMath main `2b9d0982a3fd780deb2ffd67835da3ce658dce27` pins CrispEmbed 0.17.15 in `pubspec.lock`; its 1.2.1+28 commit is a TestFlight build, while the latest GitHub release remains 1.2.0. A newer vendor release does not update the app automatically. Recheck release and distribution status before acting.
