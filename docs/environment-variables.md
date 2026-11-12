@@ -282,7 +282,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-492 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+493 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -1035,6 +1035,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_TESSERACT_CROP_PAD` | value | unset | value | tuning / config | `src/ocr_orchestrator.cpp` |  |
 | `CRISPEMBED_TESSERACT_CROP_TRIM_INK` | on | off | bool | default-off experimental / opt-in | `src/ocr_orchestrator.cpp` |  |
 | `CRISPEMBED_TESSERACT_CROP_TRIM_THRESHOLD` | value | unset | int | tuning / config | `src/ocr_orchestrator.cpp` |  |
+| `CRISPEMBED_TESSERACT_DBNET_GUTTERS` | on | off | bool | default-off experimental / opt-in | `src/ocr_orchestrator.cpp` |  |
 | `CRISPEMBED_TESSERACT_MIN_REC_CONFIDENCE` | value | unset | float | tuning / config | `src/ocr_orchestrator.cpp` |  |
 | `CRISPEMBED_TESSERACT_PAGESEG` | on | off | bool | default-off experimental / opt-in | `src/ocr_orchestrator.cpp` |  |
 | `CRISPEMBED_TESSERACT_PAGESEG_CLEANUP` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/ocr_orchestrator.cpp` |  |

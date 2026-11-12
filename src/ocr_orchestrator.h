@@ -161,7 +161,13 @@ config default_config();
 // binarization can erase thin Fraktur strokes and long-s forms.
 stage tesseract_fraktur_stage();
 
+// Unknown preserves legacy adapters that expose only text, not recognition status.
+enum class recognition_outcome { unknown, success, failure };
+
 struct result {
+    recognition_outcome outcome = recognition_outcome::unknown;
+    // Native recognition failure, distinct from a successful blank/EOS-only page.
+    std::string error;
     int page_width = 0;
     int page_height = 0;
     std::vector<ocr_pipeline::ocr_result> regions; // reading-order regions
@@ -212,6 +218,15 @@ struct result {
     bool super_resolution_applied = false;
     bool coordinates_valid_for_input = false;
     bool accepted = false;
+};
+
+// Shared by run_file and model-free selection controls. An unknown empty stage
+// cannot prove recognition success or erase a reported native failure.
+struct fallback_selection {
+    bool has_success = false;
+    std::string last_error;
+    void consider(result & best, result candidate);
+    void finish(result & best) const;
 };
 
 struct context;

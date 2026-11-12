@@ -849,6 +849,9 @@ extern "C" {
     /// call. Returns 0.0 if no recognition has been performed yet.
     pub fn crispembed_ocr_model_mean_confidence(ctx: *const OcrModelContext) -> c_float;
 
+    /// Optional additive Qwen3.5/Ovis native diagnostic accessor.
+    pub fn crispembed_ocr_model_last_error(ctx: *const OcrModelContext) -> *const c_char;
+
     /// Override the generation budget of a VLM OCR engine (no-op otherwise).
     pub fn crispembed_ocr_model_set_max_tokens(ctx: *mut OcrModelContext, max_tokens: c_int);
 
@@ -966,6 +969,9 @@ extern "C" {
         out_full_text: *mut *const c_char,
         out_mean_confidence: *mut c_float,
     ) -> *const CrispembedOcrResult;
+
+    /// Optional additive diagnostic accessor in newer native runtimes.
+    pub fn crispembed_ocr_pipeline_last_error(ctx: *mut c_void) -> *const c_char;
 
     pub fn crispembed_ocr_pipeline_reading_order(
         ctx: *mut c_void,

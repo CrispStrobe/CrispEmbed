@@ -2109,6 +2109,30 @@ class CrispLightOnOcr {
 // General OCR Pipeline (text detection + recognition)
 // ---------------------------------------------------------------------------
 
+// Mirror the complete public C record. dart:ffi supplies pointer alignment and
+// array stride for each ABI; manual byte offsets omit padding on 64-bit targets.
+final class _NativeOcrResult extends Struct {
+  @Float()
+  external double x;
+  @Float()
+  external double y;
+  @Float()
+  external double w;
+  @Float()
+  external double h;
+  @Float()
+  external double confidence;
+  external Pointer<Utf8> text;
+  @Int32()
+  external int textLen;
+  @Int32()
+  external int orientationCorrected;
+  @Int32()
+  external int orientationAngle;
+  @Float()
+  external double orientationConfidence;
+}
+
 /// Result from the general OCR pipeline (one detected text region).
 class OcrResult {
   final String text;
@@ -2187,32 +2211,18 @@ class CrispOcrPipeline {
 
     if (ptr == nullptr || n <= 0) return [];
 
-    // The C API returns crispembed_ocr_result structs:
-    //   float x, y, w, h, confidence; const char* text; int text_len; int orientation_corrected;
     final results = <OcrResult>[];
-    final structSize =
-        sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>() * 2;
+    final native = ptr.cast<_NativeOcrResult>();
     for (var i = 0; i < n; i++) {
-      final base = ptr.cast<Uint8>() + i * structSize;
-      final floats = base.cast<Float>();
-      final x = floats[0];
-      final y = floats[1];
-      final w = floats[2];
-      final h = floats[3];
-      final confidence = floats[4];
-      // text pointer is at offset 5 * sizeof(float)
-      final textPtrAddr = (base + 5 * sizeOf<Float>()).cast<Pointer<Utf8>>();
-      final textPtr = textPtrAddr.value;
-      final text = textPtr != nullptr ? textPtr.toDartString() : '';
-      final orientation = (base + 5 * sizeOf<Float>() + sizeOf<Pointer>() + sizeOf<Int32>()).cast<Int32>().value != 0;
+      final row = (native + i).ref;
       results.add(OcrResult(
-        text: text,
-        x: x,
-        y: y,
-        w: w,
-        h: h,
-        confidence: confidence,
-        orientationCorrected: orientation,
+        text: row.text != nullptr ? row.text.toDartString() : '',
+        x: row.x,
+        y: row.y,
+        w: row.w,
+        h: row.h,
+        confidence: row.confidence,
+        orientationCorrected: row.orientationCorrected != 0,
       ));
     }
     return results;
@@ -4321,6 +4331,16 @@ class CrispOcrOrchestrator {
 
     _runFn(_ctx, pathPtr, outN, outText, outConf);
 
+    final failed = outText.value == nullptr;
+    var error = 'OCR pipeline recognition failed';
+    if (failed && _lib.providesSymbol('crispembed_ocr_pipeline_last_error')) {
+      final lastError = _lib.lookupFunction<Pointer<Utf8> Function(Pointer<Void>),
+          Pointer<Utf8> Function(Pointer<Void>)>('crispembed_ocr_pipeline_last_error');
+      final detail = lastError(_ctx);
+      if (detail != nullptr && detail.toDartString().isNotEmpty) {
+        error = detail.toDartString();
+      }
+    }
     final n = outN.value;
     final text = outText.value != nullptr ? outText.value.toDartString() : '';
     final conf = outConf.value;
@@ -4330,6 +4350,7 @@ class CrispOcrOrchestrator {
     calloc.free(outText);
     calloc.free(outConf);
 
+    if (failed) throw StateError(error);
     return (text: text, nRegions: n, meanConfidence: conf);
   }
 
@@ -4713,28 +4734,24 @@ String? ocrRender(DynamicLibrary lib, List<OcrResult> results, int pageWidth,
       lib.lookupFunction<CrispembedOcrRenderNative, CrispembedOcrRenderDart>(
           'crispembed_ocr_render');
 
-  // Build the C result array. crispembed_ocr_result layout:
-  // 5 floats (x,y,w,h,conf) + pointer (text) + two int32 fields
-  final structSize = sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>() * 2;
-  final arr = calloc<Uint8>(results.length * structSize);
+  final arr = calloc<_NativeOcrResult>(results.length);
   final textPtrs = <Pointer<Utf8>>[];
 
   for (var i = 0; i < results.length; i++) {
     final r = results[i];
-    final base = arr + i * structSize;
-    final floats = base.cast<Float>();
-    floats[0] = r.x.toDouble();
-    floats[1] = r.y.toDouble();
-    floats[2] = r.w.toDouble();
-    floats[3] = r.h.toDouble();
-    floats[4] = r.confidence.toDouble();
+    final row = (arr + i).ref;
+    row.x = r.x;
+    row.y = r.y;
+    row.w = r.w;
+    row.h = r.h;
+    row.confidence = r.confidence;
     final textPtr = r.text.toNativeUtf8();
     textPtrs.add(textPtr);
-    (base + sizeOf<Float>() * 5).cast<Pointer<Utf8>>()[0] = textPtr;
-    (base + sizeOf<Float>() * 5 + sizeOf<Pointer>()).cast<Int32>()[0] =
-        r.text.length;
-    (base + sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>()).cast<Int32>()[0] =
-        r.orientationCorrected ? 1 : 0;
+    row.text = textPtr;
+    row.textLen = utf8.encode(r.text).length;
+    row.orientationCorrected = r.orientationCorrected ? 1 : 0;
+    row.orientationAngle = 0;
+    row.orientationConfidence = 0;
   }
 
   final fmtPtr = format.toNativeUtf8();

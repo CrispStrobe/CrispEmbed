@@ -1,0 +1,266 @@
+{
+  "schema": "ocr-error-propagation-hosted-v1",
+  "source_commit": "458458b2a308a1e6e7d3e55f7276a47761d487fa",
+  "base_commit": "97592ff9943f0ac98f0831195cdcb864de322bcc",
+  "tree": "03cce54001ccfeb79c7c2f558150d48881fe305a",
+  "ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "profile": "Linux T4/SM75 CUDA shared, portable CPU backend, no BLAS/Metal/Vulkan; unpublished prototype",
+  "checks": [
+    {
+      "label": "compiler-version",
+      "exit_code": 0,
+      "seconds": 0.077
+    },
+    {
+      "label": "nvcc-admission",
+      "exit_code": 0,
+      "seconds": 0.055
+    },
+    {
+      "label": "gpu-admission",
+      "exit_code": 0,
+      "seconds": 0.038
+    },
+    {
+      "label": "small-python-deps",
+      "exit_code": 0,
+      "seconds": 8.812
+    },
+    {
+      "label": "source-init",
+      "exit_code": 0,
+      "seconds": 0.16
+    },
+    {
+      "label": "source-remote",
+      "exit_code": 0,
+      "seconds": 0.018
+    },
+    {
+      "label": "source-fetch",
+      "exit_code": 0,
+      "seconds": 5.915
+    },
+    {
+      "label": "source-checkout",
+      "exit_code": 0,
+      "seconds": 1.531
+    },
+    {
+      "label": "candidate-apply",
+      "exit_code": 0,
+      "seconds": 1.113
+    },
+    {
+      "label": "candidate-tree",
+      "exit_code": 0,
+      "seconds": 0.023
+    },
+    {
+      "label": "ggml-init",
+      "exit_code": 0,
+      "seconds": 3.016
+    },
+    {
+      "label": "ggml-pin",
+      "exit_code": 0,
+      "seconds": 0.003
+    },
+    {
+      "label": "wrapper-controls",
+      "exit_code": 0,
+      "seconds": 0.194
+    },
+    {
+      "label": "native-configure",
+      "exit_code": 0,
+      "seconds": 9.322
+    },
+    {
+      "label": "native-shared-build",
+      "exit_code": 0,
+      "seconds": 1739.317
+    },
+    {
+      "label": "compile-ocr_orchestrator",
+      "exit_code": 0,
+      "seconds": 1.361
+    },
+    {
+      "label": "run-ocr_orchestrator",
+      "exit_code": 0,
+      "seconds": 4.66
+    },
+    {
+      "label": "compile-ocr_review",
+      "exit_code": 0,
+      "seconds": 1.439
+    },
+    {
+      "label": "run-ocr_review",
+      "exit_code": 0,
+      "seconds": 0.011
+    },
+    {
+      "label": "rustup-fetch",
+      "exit_code": 0,
+      "seconds": 0.117
+    },
+    {
+      "label": "rust-toolchain",
+      "exit_code": 0,
+      "seconds": 11.642
+    },
+    {
+      "label": "rust-version",
+      "exit_code": 0,
+      "seconds": 0.017
+    },
+    {
+      "label": "rust-semantic-check",
+      "exit_code": 0,
+      "seconds": 2.044
+    },
+    {
+      "label": "rust-consumer-build",
+      "exit_code": 0,
+      "seconds": 3.123
+    },
+    {
+      "label": "candidate-native-dev-hello",
+      "exit_code": 0,
+      "seconds": 6.22
+    },
+    {
+      "label": "candidate-native-en-prose-constitution-13",
+      "exit_code": 0,
+      "seconds": 3.1
+    },
+    {
+      "label": "rust-actual-pipeline-and-fallback",
+      "exit_code": 0,
+      "seconds": 6.521
+    },
+    {
+      "label": "python-actual-pipeline-status",
+      "exit_code": 0,
+      "seconds": 4.398
+    },
+    {
+      "label": "rust-old-immutable-link",
+      "exit_code": 0,
+      "seconds": 0.006
+    }
+  ],
+  "candidate_qualified": false,
+  "admission": {
+    "available_ram_bytes": 32481230848,
+    "scratch_free_bytes": 20940414976,
+    "cpu_count": 4,
+    "compile_jobs": 2,
+    "overall_seconds": 4500
+  },
+  "compiler": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "cuda_toolchain": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2025 NVIDIA Corporation\nBuilt on Wed_Aug_20_01:58:59_PM_PDT_2025\nCuda compilation tools, release 13.0, V13.0.88\nBuild cuda_13.0.r13.0/compiler.36424714_0\n",
+  "gpu_admission": {
+    "devices": [
+      "Tesla T4, 7.5, 580.178.04, 15360 MiB",
+      "Tesla T4, 7.5, 580.178.04, 15360 MiB"
+    ],
+    "architecture": "75",
+    "strict_gpu": true
+  },
+  "native_model_free_positive": true,
+  "retained_native_bundle": {
+    "file": "candidate-native-bundle.tar.gz",
+    "bytes": 47641671,
+    "sha256": "5b07fc3eec22698a841c31cceb860b171ea2124a3faa26652b9b17c9e53e8044",
+    "members": [
+      {
+        "path": "lib/libcrispembed.so.0.17.19",
+        "bytes": 12733128,
+        "sha256": "4f7d9cf79c6d16169de493c6af18ea22ece94cb82ee02335db5001abac645235"
+      },
+      {
+        "path": "lib/libggml-cpu.so.0.17.0",
+        "bytes": 1158056,
+        "sha256": "0e9a56c0c670b80b08e8b98a13792b04aaebb18d216c054884a8472b9377d1ee"
+      },
+      {
+        "path": "lib/libggml.so.0.17.0",
+        "bytes": 56016,
+        "sha256": "76b4983f92453a2372d02fd8d62e6e7d603715fde5609c0f5e06f56b6a78a66b"
+      },
+      {
+        "path": "lib/libggml-base.so.0.17.0",
+        "bytes": 917880,
+        "sha256": "ca4ef2bd00a56c10d4c4d2277b16bd7e974a15a814e25e50f5f209c5b3a848f9"
+      },
+      {
+        "path": "lib/libggml-cuda.so.0.17.0",
+        "bytes": 65157360,
+        "sha256": "7d629b1b93b9baffe161544270482328034e4caf8c02bf3bbad8d31986bfe616"
+      },
+      {
+        "path": "bin/test-ocr_orchestrator",
+        "bytes": 275136,
+        "sha256": "90e412fda7a83651dc18ae2f175d471dcd3373abf824568fe26eeeb829b17f9d"
+      },
+      {
+        "path": "bin/test-ocr_review",
+        "bytes": 270048,
+        "sha256": "a7892554df2ba8ede24d9996a81af63b23bfcce3e6a4c00da7cc37142834a859"
+      },
+      {
+        "path": "bin/bounded_ocr_consumer",
+        "bytes": 6266456,
+        "sha256": "28677b10cabaad76c0393a9c054fe17b41b41fe615491f1acc0430fbb256b2f6"
+      }
+    ],
+    "contains_model": false
+  },
+  "dev-hello": {
+    "kind": "native-gpu",
+    "init_ok": true,
+    "init_s": 2.482122587000049,
+    "default_max_tokens": 2048,
+    "output_pointer_nonnull": true,
+    "text": "Hello OCR\n\n12345",
+    "bytes": 16,
+    "ids": [
+      9419,
+      77796,
+      271,
+      16,
+      17,
+      18,
+      19,
+      20,
+      248046
+    ],
+    "stop": 1,
+    "last_error": "",
+    "recognize_s": 0.6859452130001955,
+    "rgb_sha256": "e0a4678c944c538986c7ad68367cacded7abf72c8f4a133ac52e57cd058cdb27",
+    "width": 448,
+    "height": 448
+  },
+  "en-prose-constitution-13": {
+    "kind": "native-gpu",
+    "init_ok": true,
+    "init_s": 2.3962596530000155,
+    "default_max_tokens": 2048,
+    "output_pointer_nonnull": false,
+    "text": null,
+    "bytes": 0,
+    "ids": [],
+    "stop": 4,
+    "last_error": "image exceeds native patch bound",
+    "recognize_s": 5.016100021748571e-05,
+    "rgb_sha256": "517e949048e7eba7e228d1e42973d6212670c5b03bf0b7a0cdc4b0ab3a77e7b3",
+    "width": 1280,
+    "height": 2077
+  },
+  "bounded_cuda_candidate_positive": true,
+  "elapsed_seconds": 1842.736
+}

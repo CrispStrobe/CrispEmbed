@@ -2180,6 +2180,8 @@ class _CrispOcrResult(ctypes.Structure):
         ("text", ctypes.c_char_p),
         ("text_len", ctypes.c_int),
         ("orientation_corrected", ctypes.c_int),
+        ("orientation_angle", ctypes.c_int),
+        ("orientation_confidence", ctypes.c_float),
     ]
 
 
@@ -4309,6 +4311,11 @@ def _setup_ocr_orchestrator_signatures(lib):
     ]
     lib.crispembed_ocr_pipeline_run.restype = ctypes.POINTER(_CrispOcrResult)
 
+    error = getattr(lib, "crispembed_ocr_pipeline_last_error", None)
+    if error is not None:
+        error.argtypes = [ctypes.c_void_p]
+        error.restype = ctypes.c_char_p
+
     lib.crispembed_ocr_pipeline_free.argtypes = [ctypes.c_void_p]
     lib.crispembed_ocr_pipeline_free.restype = None
 
@@ -4422,6 +4429,11 @@ class CrispOcrOrchestrator:
         ptr = self._lib.crispembed_ocr_pipeline_run(
             self._ctx, str(image_path).encode("utf-8"),
             ctypes.byref(n), ctypes.byref(full_text), ctypes.byref(mean_conf))
+        if full_text.value is None:
+            error = getattr(self._lib, "crispembed_ocr_pipeline_last_error", None)
+            detail = error(self._ctx) if error is not None else None
+            raise RuntimeError(detail.decode("utf-8", "replace") if detail else
+                               "OCR pipeline recognition failed")
 
         regions = []
         for i in range(n.value):

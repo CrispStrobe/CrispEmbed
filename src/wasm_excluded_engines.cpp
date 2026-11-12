@@ -624,6 +624,11 @@ void qwen35_ocr_free(qwen35_ocr_context * ctx) {
     (void)ctx;
 }
 
+const char * qwen35_ocr_last_error(const qwen35_ocr_context * ctx) {
+    (void)ctx;
+    return "Qwen3.5 OCR is not available in the WASM build";
+}
+
 int qwen35_ocr_get_max_tokens(const qwen35_ocr_context * ctx) {
     (void)ctx;
     return 0;

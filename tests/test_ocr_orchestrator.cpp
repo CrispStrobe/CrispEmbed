@@ -23,6 +23,7 @@ extern "C" int stbi_write_png(char const * filename, int w, int h, int comp, con
 #include <chrono>
 #include <string>
 #include <vector>
+#include <utility>
 
 static int n_pass = 0, n_fail = 0;
 #define CHECK(cond, msg)                                                                                               \
@@ -257,14 +258,8 @@ static void test_accept_gate() {
         ocr_orchestrator::free(ctx);
     }
 
-    // Zero min_chars, zero min_confidence → gate should pass even for empty
-    // ... except empty text has size 0 which is < min_chars=0? Let's check.
-    // passes_gate: size >= min_chars (0 >= 0 = true) && (0 > 0? no → skip) = true
-    // But text is still empty because no engine runs. Actually even min_chars=0
-    // would pass for empty text. But the engine still produces no regions.
-    // run_file returns best result, which has empty text anyway.
-    // The gate logic is tested implicitly: if stages_tried matches the
-    // number of stages, the gate failed for all of them.
+    // A legacy unknown blank retains permissive zero-threshold behavior unless
+    // accepting it would mask an earlier reported failure (tested below).
 
     // Two-stage chain: both fail → stages_tried == 2
     {
@@ -566,8 +561,9 @@ static void test_c_api() {
         const crispembed_ocr_result * res =
             crispembed_ocr_pipeline_run(ctx, path.c_str(), &n_res, &full_text, &mean_conf);
         CHECK(n_res == 0, "C API run with no models → 0 regions");
-        // full_text may be NULL or empty
-        CHECK(!full_text || full_text[0] == '\0' || n_res == 0, "C API run → empty text");
+        CHECK(full_text && full_text[0] == '\0', "valid no-text result retains non-NULL empty text");
+        CHECK(std::strcmp(crispembed_ocr_pipeline_last_error(ctx), "") == 0,
+              "no-text result is distinct from a reported native failure");
         int n_metrics = -1;
         const crispembed_ocr_stage_metric * metrics = crispembed_ocr_pipeline_stage_metrics(ctx, &n_metrics);
         CHECK(n_metrics >= 0, "C API stage metrics query succeeds");
@@ -918,6 +914,147 @@ static void test_punctuation() {
     crispembed_punct_free(pctx);
 }
 
+// Actual lazy-load failure must not pass a permissive accept gate or become a
+// successful blank result at the C boundary. No model or inference is needed.
+static void test_unified_failure_status() {
+    printf("── unified native failure status ──\n");
+    CHECK(std::strcmp(crispembed_ocr_pipeline_last_error(nullptr), "") == 0, "NULL diagnostic context is safe");
+    crispembed_ocr_stage stage{};
+    stage.engine = 14;
+    stage.model_a = "missing-ocr-status-fixture.gguf";
+    stage.min_chars = 0;
+    stage.min_confidence = 0;
+    void * ctx =
+        crispembed_ocr_pipeline_init_stages(0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, &stage, 1, 1);
+    CHECK(ctx != nullptr, "unified failure fixture initializes lazily");
+    if (!ctx) return;
+    CHECK(std::strcmp(crispembed_ocr_pipeline_last_error(ctx), "") == 0, "error is empty before recognition");
+    std::vector<uint8_t> pixels(32 * 32 * 3, 255);
+    const std::string path = write_temp(pixels, 32, 32, 3, "unified_status");
+    int count = 99;
+    const char * text = "stale";
+    float confidence = 1;
+    CHECK(crispembed_ocr_pipeline_run(ctx, path.c_str(), &count, &text, &confidence) == nullptr,
+          "missing unified model returns NULL results");
+    CHECK(count == 0 && text == nullptr && confidence == 0, "failure clears outputs and preserves NULL text sentinel");
+    CHECK(std::strstr(crispembed_ocr_pipeline_last_error(ctx), "initialization failed") != nullptr,
+          "native failure reason survives the C boundary");
+    int length = 99;
+    CHECK(crispembed_ocr_pipeline_review_json(ctx, &length) == nullptr && length == 0,
+          "failed recognition cannot expose a successful review snapshot");
+    crispembed_ocr_pipeline_run(ctx, nullptr, &count, &text, &confidence);
+    CHECK(std::strcmp(crispembed_ocr_pipeline_last_error(ctx), "OCR image path is NULL") == 0,
+          "next invalid request replaces the previous failure");
+    crispembed_ocr_pipeline_free(ctx);
+
+    // Real run_file/C boundary: a permissive unknown empty second stage must
+    // not short-circuit the reported failure from the first unified stage.
+    crispembed_ocr_stage mixed_stages[2] = { stage, {} };
+    mixed_stages[1].engine = 0; // legacy DBNet without models => unknown empty
+    mixed_stages[1].min_chars = 0;
+    mixed_stages[1].min_confidence = 0;
+    ctx = crispembed_ocr_pipeline_init_stages(0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, mixed_stages, 2,
+                                              1);
+    CHECK(ctx != nullptr, "mixed status fixture initializes");
+    if (ctx) {
+        crispembed_ocr_pipeline_run(ctx, path.c_str(), &count, &text, &confidence);
+        CHECK(text == nullptr && count == 0 && *crispembed_ocr_pipeline_last_error(ctx),
+              "reported failure plus unknown empty remains failure at the C API");
+        int metrics_count = 0;
+        crispembed_ocr_pipeline_stage_metrics(ctx, &metrics_count);
+        CHECK(metrics_count == 2, "unknown empty cannot pass a permissive gate after reported failure");
+        crispembed_ocr_pipeline_free(ctx);
+    }
+    // Backward compatibility: the same unknown legacy empty result alone keeps
+    // its numeric zero-threshold acceptance and never becomes a new error.
+    ctx = crispembed_ocr_pipeline_init_stages(0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, mixed_stages + 1,
+                                              1, 1);
+    CHECK(ctx != nullptr, "standalone legacy unknown fixture initializes");
+    if (ctx) {
+        crispembed_ocr_pipeline_run(ctx, path.c_str(), &count, &text, &confidence);
+        CHECK(text && *text == '\0' && count == 0 && !*crispembed_ocr_pipeline_last_error(ctx),
+              "standalone unknown blank retains non-NULL empty success without new error");
+        int metrics_count = 0;
+        const auto * metrics = crispembed_ocr_pipeline_stage_metrics(ctx, &metrics_count);
+        CHECK(metrics && metrics_count == 1 && metrics[0].accepted == 1,
+              "legacy unknown blank preserves permissive numeric acceptance without prior failure");
+        crispembed_ocr_pipeline_free(ctx);
+    }
+    std::remove(path.c_str());
+}
+
+static void test_reported_fallback_outcomes() {
+    printf("── reported fallback outcomes ──\n");
+    using namespace ocr_orchestrator;
+    result failure;
+    failure.outcome = recognition_outcome::failure;
+    failure.error = "image exceeds native patch bound";
+    result unknown_empty;
+    {
+        fallback_selection selection;
+        result best;
+        selection.consider(best, failure);
+        selection.consider(best, unknown_empty);
+        selection.finish(best);
+        CHECK(best.outcome == recognition_outcome::failure && best.error == failure.error,
+              "unknown empty cannot mask a reported failure");
+    }
+    {
+        fallback_selection selection;
+        result best;
+        result blank;
+        blank.outcome = recognition_outcome::success;
+        blank.used_engine = engine::unified;
+        blank.selected_stage = 7;
+        blank.recognition_width = 448;
+        selection.consider(best, blank);
+        selection.consider(best, failure);
+        selection.finish(best);
+        CHECK(best.error.empty() && best.outcome == recognition_outcome::success && best.full_text.empty(),
+              "positively recognized blank survives a later failure");
+        CHECK(best.selected_stage == 7 && best.used_engine == engine::unified && best.recognition_width == 448,
+              "blank fallback retains actual stage and geometry provenance");
+    }
+    {
+        fallback_selection selection;
+        result best;
+        selection.consider(best, failure);
+        result text;
+        text.outcome = recognition_outcome::success;
+        text.full_text = "Hello OCR";
+        text.selected_stage = 2;
+        selection.consider(best, std::move(text));
+        text.full_text = "changed after selection";
+        selection.finish(best);
+        CHECK(best.error.empty() && best.full_text == "Hello OCR" && best.selected_stage == 2,
+              "successful fallback owns its text and replaces failure");
+    }
+    {
+        fallback_selection selection;
+        result best;
+        selection.consider(best, unknown_empty);
+        selection.finish(best);
+        CHECK(best.error.empty() && best.full_text.empty() && best.outcome == recognition_outcome::unknown,
+              "legacy unknown-only no-text behavior stays distinct from reported failure");
+        result legacy_text;
+        legacy_text.full_text = "legacy text";
+        selection.consider(best, legacy_text);
+        selection.consider(best, failure);
+        selection.finish(best);
+        CHECK(best.error.empty() && best.full_text == "legacy text" && best.outcome == recognition_outcome::success,
+              "nonempty legacy output is positive fallback evidence");
+    }
+    {
+        fallback_selection selection;
+        result best;
+        result owned_failure = failure;
+        selection.consider(best, owned_failure);
+        owned_failure.error = "overwritten native diagnostic";
+        selection.finish(best);
+        CHECK(best.error == failure.error, "failure diagnostic is owned beyond the stage lifetime");
+    }
+}
+
 static int crispembed_test_main() {
     test_default_config();
     test_fraktur_stage_profile();
@@ -929,6 +1066,8 @@ static int crispembed_test_main() {
     test_per_stage_config();
     test_chain_selection();
     test_c_api();
+    test_unified_failure_status();
+    test_reported_fallback_outcomes();
     test_edge_cases();
     test_tesseract_regression();
     test_tesseract_fraktur_regression();

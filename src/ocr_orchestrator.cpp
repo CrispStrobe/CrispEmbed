@@ -329,6 +329,8 @@ namespace ocr_orchestrator {
 
 struct context {
     config cfg;
+    std::string stage_error;
+    recognition_outcome stage_outcome = recognition_outcome::unknown;
     int n_threads = 1;
     // Lazily-loaded engine + cleanup handles (loaded on first use).
     ocr_pipeline::context * dbnet = nullptr;        // DBNet detection + TrOCR recognition
@@ -1407,9 +1409,14 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         std::vector<easyocr_layout::region> detected_regions;
         detected_regions.reserve(boxes.size());
         for (const auto & box : boxes) detected_regions.push_back({ box.x, box.y, box.w, box.h, box.score });
+        // Default-off candidate: only split DBNet row crops when the router
+        // independently established multiple columns. Preserve the historical
+        // CRNN/single-column path until decoded-output A/B qualifies this gate.
+        const float max_dbnet_gap =
+            router_columns > 1 && core_env::on("CRISPEMBED_TESSERACT_DBNET_GUTTERS") ? 2.5f : 0.0f;
         const auto line_regions = (classical_pageseg || ppdet_line_boxes)
                                       ? detected_regions
-                                      : easyocr_layout::group_dbnet_lines(detected_regions);
+                                      : easyocr_layout::group_dbnet_lines(detected_regions, max_dbnet_gap);
         const bool pageseg_debug = classical_pageseg && std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG");
         // Opt-in recognition-confidence floor (pageseg round 5): ornament,
         // seal, and noise-band crops decode as garbage at mean char
@@ -1824,6 +1831,11 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         int len = 0;
         const char * t = qwen35_ocr_recognize_raw(
             selected, img, w, h, 3, st.params.vlm_prompt.empty() ? nullptr : st.params.vlm_prompt.c_str(), &len);
+        ctx->stage_outcome = t ? recognition_outcome::success : recognition_outcome::failure;
+        if (!t) {
+            const char * error = qwen35_ocr_last_error(selected);
+            ctx->stage_error = error && *error ? error : "qwen35 OCR recognition failed";
+        }
         int nconf = 0;
         const float * conf = qwen35_ocr_confidences(selected, &nconf);
         auto out = wrap_fulltext(t, w, h, conf, nconf, qwen35_ocr_mean_confidence(selected));
@@ -1882,6 +1894,11 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         int len = 0;
         const char * t = qwen35_ocr_recognize_raw(
             selected, img, w, h, 3, st.params.vlm_prompt.empty() ? nullptr : st.params.vlm_prompt.c_str(), &len);
+        ctx->stage_outcome = t ? recognition_outcome::success : recognition_outcome::failure;
+        if (!t) {
+            const char * error = qwen35_ocr_last_error(selected);
+            ctx->stage_error = error && *error ? error : "qwen35 OCR recognition failed";
+        }
         int nconf = 0;
         const float * conf = qwen35_ocr_confidences(selected, &nconf);
         auto out = wrap_fulltext(t, w, h, conf, nconf, qwen35_ocr_mean_confidence(selected));
@@ -1985,11 +2002,13 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
     case engine::unified: {
         if (!ctx->unified) {
             if (st.model_a.empty()) {
+                ctx->stage_error = "unified OCR stage missing model_a";
                 fprintf(stderr, "ocr_orchestrator: unified OCR stage missing model_a\n");
                 return {};
             }
             ctx->unified = crispembed_ocr_model_init(st.model_a.c_str(), ctx->n_threads);
             if (!ctx->unified) {
+                ctx->stage_error = "unified OCR model initialization failed";
                 fprintf(stderr, "ocr_orchestrator: unified OCR model load failed: %s\n", st.model_a.c_str());
                 return {};
             }
@@ -2009,6 +2028,12 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (!img) return {};
         int len = 0;
         const char * t = crispembed_ocr_model_recognize(ctx->unified, img, w, h, 3, &len);
+        ctx->stage_outcome = t ? recognition_outcome::success : recognition_outcome::failure;
+        if (!t) {
+            const char * error = crispembed_ocr_model_last_error(ctx->unified);
+            ctx->stage_error = error && *error ? error : "unified OCR recognition failed";
+            fprintf(stderr, "ocr_orchestrator: %s\n", ctx->stage_error.c_str());
+        }
         int nconf = 0;
         const float * conf = crispembed_ocr_model_confidences(ctx->unified, &nconf);
         auto out = wrap_fulltext(t, w, h, conf, nconf, crispembed_ocr_model_mean_confidence(ctx->unified));
@@ -2209,7 +2234,30 @@ static void build_markdown(result & r) {
     }
 }
 
-static bool passes_gate(const result & r, const accept_gate & g) {
+void fallback_selection::consider(result & best, result candidate) {
+    if (!candidate.error.empty() || candidate.outcome == recognition_outcome::failure) {
+        last_error = candidate.error.empty() ? "OCR recognition failed" : candidate.error;
+        return;
+    }
+    // Nonempty legacy text is positive evidence; an unknown empty result is not.
+    if (candidate.outcome == recognition_outcome::unknown && candidate.full_text.empty()) return;
+    candidate.outcome = recognition_outcome::success;
+    if (!has_success || candidate.full_text.size() > best.full_text.size()) best = std::move(candidate);
+    has_success = true;
+}
+
+void fallback_selection::finish(result & best) const {
+    if (!has_success && !last_error.empty()) {
+        best.error = last_error;
+        best.outcome = recognition_outcome::failure;
+    }
+}
+
+static bool passes_gate(const result & r, const accept_gate & g, bool prior_reported_failure) {
+    if (!r.error.empty() || r.outcome == recognition_outcome::failure) return false;
+    // Preserve legacy permissive-blank gates unless they would mask an actual
+    // earlier failure. Unknown is not positive evidence of recognition success.
+    if (prior_reported_failure && r.outcome == recognition_outcome::unknown && r.full_text.empty()) return false;
     if ((int)r.full_text.size() < g.min_chars) return false;
     if (g.min_confidence > 0.0f && r.mean_confidence < g.min_confidence) return false;
     return true;
@@ -2495,6 +2543,7 @@ static void postprocess(context * ctx, result & r) {
 
 result run_file(context * ctx, const char * image_path) {
     result best;
+    fallback_selection fallback;
     if (!ctx || !image_path) return best;
     int input_width = 0, input_height = 0, input_channels = 0;
     stbi_info(image_path, &input_width, &input_height, &input_channels);
@@ -2636,7 +2685,12 @@ result run_file(context * ctx, const char * image_path) {
             loaded_px = stbi_load(ocr_path, &img_w, &img_h, &img_c, 3);
             img_px = loaded_px;
         }
+        ctx->stage_error.clear();
+        ctx->stage_outcome = recognition_outcome::unknown;
         result r = assemble(run_engine(ctx, s, ocr_path, img_px, img_w, img_h), s.eng, st);
+        r.error = ctx->stage_error;
+        r.outcome = r.error.empty() ? ctx->stage_outcome : recognition_outcome::failure;
+        if (r.outcome == recognition_outcome::unknown && !r.full_text.empty()) r.outcome = recognition_outcome::success;
         r.page_width = page_width;
         r.page_height = page_height;
         r.input_width = input_width;
@@ -2667,7 +2721,7 @@ result run_file(context * ctx, const char * image_path) {
 
         const float stage_ms =
             (float)std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_stage).count();
-        bool passed = passes_gate(r, s.accept);
+        bool passed = passes_gate(r, s.accept, !fallback.last_error.empty());
         r.accepted = passed;
         stage_metrics.push_back({ tried, engine_name(s.eng), stage_ms, stage_cleanup.enabled, passed,
                                   (int)r.full_text.size(), r.mean_confidence });
@@ -2714,10 +2768,13 @@ result run_file(context * ctx, const char * image_path) {
             }
             return r;
         }
-        if (r.full_text.size() > best.full_text.size()) best = std::move(r);
+        fallback.consider(best, std::move(r));
     }
     if (!sr_path.empty()) std::remove(sr_path.c_str());
     best.stage_metrics = std::move(stage_metrics);
+    // Preserve a positively recognized blank and its provenance; unknown empty
+    // legacy stages cannot suppress a reported failure.
+    fallback.finish(best);
 
     if (verbose)
         fprintf(stderr, "ocr_orchestrator: all %d stages failed gate, returning best (%d chars)\n", tried,

@@ -1,5 +1,242 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Combined OCR candidate qualification — 12 November 2026
+
+Reviewed native integration `9d2c876d0bf694c95174cb9e87950c3362399ed6` now has
+bounded Linux consumer evidence and is based on
+public main `97592ff9943f0ac98f0831195cdcb864de322bcc`. It combines the gated
+DBNet gutter fix, OCR failure/unknown-state propagation, complete Python/Dart
+result ABI mirrors, the real production binding native-memory harness, and
+reported HTTP failure propagation. Both independent evidence sets below remain
+source-specific; their earlier results do not automatically qualify this tree.
+Versions, release/app pins and the default-off native gutter gate are unchanged.
+
+One authorized bounded private CPU job was submitted for this exact tree
+`ed50688fa27e7289de0a4a70b5afbf6af619544e`. Sealed patch SHA-256 is
+`aebecf8e98b3ebd0b7b6b62e489c6a334eec03ef3879ec7cb3f5116f2cca30a9`;
+executor source SHA-256 is
+`ad8a72aaf75e09d5d5eab2aadf581067bfc336b042f6fa337a8aae96b9ec1a1c`.
+Source/privacy readback passed. Admission requires 8 GiB available RAM and
+12 GiB scratch, compilation uses two jobs with a 2700-second shared-build bound,
+and the entire run is limited to 4500 seconds. The job includes linked native
+controls, actual complete production Python/Dart native-memory read/render
+controls with a pinned/hash-checked Dart SDK, a compiled production server and
+live reported-failure/legacy-blank HTTP checks, and six Tesseract fixture calls
+(gate off/on; same retained two-column, single-column and blank inputs). Immutable
+baseline observations/hashes are reused rather than rerunning a broader panel.
+Candidate binaries remain remotely retained; only reports/needed images are
+retrieved. That run stopped at an [HTTP fixture startup failure](tests/results/dbnet-line-gutters/2026-11-12/combined-http-fixture-initial.json),
+not a native quality result: source/tree/ggml checks, the shared build, header ABI,
+nine wrapper declaration/status controls, 107 orchestrator controls, layout/review
+controls and production server compilation passed. The fixture omitted
+`--ocr-pipeline`, so the first request returned the server's existing 503 unloaded
+response before reaching the intended 500 lazy-load error. Production binding
+native-memory execution and six model calls were not reached.
+
+Reviewed test-only correction `3767483fc` supplies that missing startup flag.
+No compiled runtime source changed: subsequent differences are documentation and
+the HTTP fixture. A corrected bounded continuation can verify and reuse the
+remotely retained native bundle (source `9d2c876d0`, library SHA-256
+`335a9ceee44494dca7747f76b83da5a3e27db3f0b07ccbed10a498dce71acec8`,
+bundle SHA-256 `c7563984bf590b4fa6746b330aff7986f36fbc511a6733b1d001f21b439e118c`)
+without recompiling the engines. Recompile the small server translation unit,
+then execute corrected live HTTP, production Python/Dart memory controls and all
+six previously unreached model arms. Preserve both runtime and harness source
+identities. No publication or Android dispatch follows from this partial run.
+
+The first reuse continuation passed source/tree/ggml and all ten unchanged-code
+object checks, then stopped at [retained-input admission](tests/results/dbnet-line-gutters/2026-11-12/combined-retained-input-initial.json).
+The service readback contained zero kernel inputs despite one requested input;
+the failed build session's committed-output list was empty, while its separate
+latest-session output list contained 25 files including the bundle. A bounded
+range read confirmed the gzip header and exact 6,424,694-byte object size without
+downloading the runtime locally. No corrected HTTP/binding/model controls ran.
+
+A reviewed direct-transfer retry is now submitted with the same harness source
+`c08b9c0dd660217dc40a19285dfc113e7fd3a784` and compiled runtime source `9d2c876d0`.
+Its executor SHA-256 is
+`eed8611455b849a5f60836c2c990f2886d0ea12b39ebe220c2004e53780d2090`.
+It retrieves the one private session artifact remotely, requires exact size and
+SHA-256 before extraction/loading, and checks the native binary and build-report
+hashes plus unchanged source objects. The temporary transfer reference remains
+only in private staging. There is no native engine rebuild or platform input
+attachment. Admission is 4 GiB RAM/8 GiB scratch with an 1800-second total bound
+and six model calls maximum. Independent HTTP/binding failures preserve their
+evidence and still allow the model arms to finish; final failed comparisons exit
+nonzero. The [corrected continuation completed successfully](tests/results/dbnet-line-gutters/2026-11-12/combined-linux-consumers.json):
+full remote transfer size/hash matched before loading; ten compiled-code objects
+matched runtime source `9d2c876d0`. Corrected live HTTP controls returned 500 for
+reported lazy/review/document failure and retained 200 for legacy unknown blank.
+Actual complete production Python three-record reads, owned-output/error-recovery,
+and complete production Dart three-record reads/native hOCR packing passed on
+Linux x64 (Dart 3.9.4; native record 48 bytes). This supersedes the earlier
+unexecuted binding scope without erasing the failed harness evidence.
+
+All six actual production-Python model calls passed. Candidate-off matches the
+immutable baseline decoded strings/counts with maximum box absolute error `0.0`.
+Candidate-on retains nine crops and, after the exact historical app order replay,
+CER `0.0` with four regions per column; the unchanged app quality assessment
+passed. Single-column CER `0.0`/blank-empty and crop geometry are unchanged.
+The composition also matches the earlier pinned-source candidate's decoded
+strings and boxes exactly. Twenty newly retrieved crop hashes were verified;
+large native binaries stayed remote. The initial build's 107 native controls and
+nine declaration/status controls were reused via verified unchanged bytes,
+rather than repeating their engines. Runtime source is `9d2c876d0`, harness source
+`c08b9c0dd`; the receipt seals source/blob/binary/log hashes. Native raw sequence
+remains row-major (CER `0.48` before the historical app ordering). These results
+do not qualify the newer app-side crop path or a combined-source GPU run.
+Versions, default gates, releases and application pins remain unchanged.
+
+Latest app source `ecb5a802` contains the separate `87f5181f` CC-before-recognition
+crop path. It can preempt the native DBNet grouping stage, so neither the earlier
+native/reading-order A/B nor this native integration job qualifies that new app
+path. Its completeness for text missed by CC is unproven; it needs a separate
+explicit default-off app profile and actual source-bound app execution. Preserve
+that work and its independent limitations. The next Android proposal uses the
+immutable app runtime with native gutter gate off and clearly records whether
+whole-page or explicit app crop recognition executed. Do not infer native-gate
+success from an app crop path that bypassed it. No Android dispatch is included
+in this CPU submission.
+
+## Active work in flight — Tesseract DBNet column gutters, 12 November 2026
+
+| Bounded lane | State | Acceptance |
+| --- | --- | --- |
+| `fix/dbnet-line-gutters-20261112`, exact app runtime `c364feb974b91e14cbf328c6949f3df36e89ce81` | Default-off candidate; pinned-source decoded A/B passed; current-main integration pending review | Exact crop/box and decoded-text A/B; retain single-column controls; immutable minimal release before app repin |
+
+The [retained Android flow](https://github.com/CrispStrobe/CrispSorter/actions/runs/43275466921)
+used app `81ef8036` and harness `bfb6bbf9`. It passed sandbox identity/import and
+German accents but failed the English two-column fixture at Unicode CER
+`0.5028571428571429` (88 edits / 175 reference characters; unchanged limit `0.25`).
+Native logs show the structural column detector correctly chose two columns,
+ink coverage `1.0000` and DBNet fallback with 24 boxes; only five review regions
+reached the app. In this exact native source, `group_dbnet_lines` delegates to
+vertical-band grouping without a horizontal-gap check. It combines both body
+columns into four recognition crops. The final decoded rows contain both columns
+and spurious gutter characters, so a later reading-order permutation cannot
+restore the intended strings. The column-major fixture gold remains correct.
+
+The default-off `CRISPEMBED_TESSERACT_DBNET_GUTTERS` candidate splits same-baseline
+DBNet fragments at gaps above 2.5 region heights only when the existing router
+independently reports multiple columns. Existing CRNN callers, single-column
+routing and the explicit-off path retain historical grouping. A focused standalone
+model-free C++ control reproduced 24 synthetic fixture-like fragments becoming
+five legacy crops versus nine candidate crops. A body crop shrank from 1440 pixels
+wide to separate 500/480-pixel crops, preserving the spanning heading, connected
+fragments and normal spaces. This is geometry evidence, not decoded-quality proof.
+
+[Source-bound observations and limits](tests/results/dbnet-line-gutters/2026-11-12/reproduction.json)
+preserve the failed decoded output separately from synthetic geometry. The old
+harness did not retain raw failed quality JSON, so individual real detector boxes
+remain unavailable. Next: hosted baseline/candidate boxes, crops, IDs and decoded
+output against unchanged CER/reading-order gates plus single-column controls.
+Coordinate the eventual minimal release with the independent GPU comparison
+repair; no release/version promotion, app repin or publication is part of this
+candidate checkpoint. Unrelated vendor and backend work remains untouched.
+
+One bounded private hosted Linux CPU job was submitted from a sealed patch over
+public base `c364feb974b91e14cbf328c6949f3df36e89ce81`, candidate
+`8a40b7b0b7950dab636d4ad9b70f08837884d376`. Remote source readback matches kernel
+SHA-256 `7c7e38894127499ae96f4d7acd419e99ce4d1d297bd6211747015dea68a4abbb`;
+CPU-only/private settings were verified. Source patch SHA-256 is
+`b7b685817ac592dadc68f652dc809e539bf184c195859a8a007b7e06f7a8b2f6`.
+The exact retained two-column PNG hash is
+`f404697c7cd511545be60b64a66e62687b281078661d0c6387fa79f0acbb4be4`.
+The batch runs immutable Linux v0.17.19, candidate-off and candidate-on against
+that PNG, the exact retained single-column PNG and a blank control (nine native
+runs maximum). It retains native review JSON/crops, decoded text, CER and
+geometry plus the exact application reading-order module replay. Baseline/off
+box absolute errors and decoded equality are separate controls. Admission requires
+8 GiB available RAM/12 GiB scratch; compilation uses two jobs with a 2700-second
+bound, and the entire batch is capped at 4500 seconds. Results are pending;
+this submission itself does not qualify the candidate.
+
+That initial batch is now retained as [invalid harness evidence](tests/results/dbnet-line-gutters/2026-11-12/hosted-initial-invalid.json).
+Source/tree/ggml/model checks and the native shared build passed, but the probe's
+Python stage constructor left detector thresholds at zero, unlike the app's
+explicit `0.3`/`0.5`/736 defaults. Its full-page DBNet result is not a valid
+baseline. The next multi-region child exited SIGSEGV; a header-only ABI check
+also found the pinned production Python result mirror has stride 40 bytes versus
+48 native bytes, omitting trailing orientation fields. That independent binding
+repair belongs to its owner and is not proven by a corrected probe struct.
+
+One reviewed corrected rerun was submitted with identical native sources,
+models, PNGs, gold and quality threshold. Kernel SHA-256 is
+`4f9346e5531c1fa58e69269a35281ea1bcf10aeebfb1f4eba67396d272614f48`;
+exact app configuration proof SHA-256 is
+`f75d556fff93ca3f611091d066929fdfc33fb430db082b5502aac6a5793f9787`.
+It explicitly mirrors source type auto, native thread auto, detector defaults,
+cleanup and remaining Rust C-stage fields; a compiled header check verifies
+result/stage/cleanup sizes and offsets before inference. Its direct ctypes
+result reader is a probe-only workaround, not production Python evidence.
+Each case preserves progress, raw native JSON and crash traces before later
+checks; failures are collected across all arms and final failed comparisons
+exit nonzero. The candidate native library is retained remotely for follow-up
+without repeating the build. The corrected run completed successfully; its scope remains bounded and does
+not by itself authorize a default, release or app-pin promotion.
+
+[Final source-bound decoded A/B](tests/results/dbnet-line-gutters/2026-11-12/hosted-decoded-ab.json)
+reproduced the Android failure exactly on released Linux v0.17.19 and candidate
+explicit-off: five regions, CER `0.5028571428571429`. Across all three controls,
+released baseline versus candidate-off decoded text and region counts matched,
+with maximum box absolute error `0.0`. Candidate-on produced nine crops. The
+first body row's legacy width `1346.9008` became separate `387.5813`/`386.0809`
+recognition crops; the spanning heading stayed identical. Final text after the
+exact existing application reading-order module matched all 175 reference
+characters, CER `0.0`, with four left/four right body regions and ALPHA/OMEGA
+preserved. The unchanged application `assessQualityFixture` passed directly on
+those retained native regions and the exact permutation; its `0.25` threshold,
+gutter, per-column order and token checks were not modified.
+
+The native raw region sequence remains row-major (candidate CER `0.48` before
+application ordering); do not claim generic native plain-text reading-order
+qualification. Single-column recognition remains exact at CER `0.0`, including
+identical crop hashes/geometry, and blank remains empty. Candidate-on versus
+released control box absolute errors are also `0.0`. All nine child runs passed.
+The source-built library hash is
+`ff5a8332710378ebf36ea7939bafafa5dce9b55b7259e92655689094ba110bab`;
+the 6,423,447-byte native bundle remains remotely retained under SHA-256
+`97a9c88b7849586c627da38d0efdd2dde4def21b5ae7a3d3eb4b7c9f457628fc`.
+Only reports and needed crop images were downloaded. The earlier invalid batch
+and the independent production Python ABI defect remain separately recorded.
+Next: review integration with the qualified comparison/error-propagation repairs,
+validate the exact combined source, then rebuild and test actual Android before
+version/release/app-pin changes. The experimental gutter gate remains off.
+
+Android integration after review and successful decoded evidence:
+
+1. Integrate only the reviewed gutter, native status/error propagation and
+   production Python ABI repairs onto current public main in an isolated source
+   candidate. Preserve both evidence sets, the gated alternatives, and the
+   unchanged runtime version/app pin.
+2. Independently review the exact combined tree, then propose one bounded hosted
+   CPU shared build with the repaired production Python ABI/multi-region/status
+   controls, linked native controls and the same gate-off/on three-fixture decoded
+   replay. Use the retained immutable baseline to avoid repeating a broader panel.
+   No next dispatch is implied by this plan.
+3. Build a source-bound experimental Android x86_64 debug APK against the exact
+   combined candidate runtime without repinning production. To exercise the
+   default-off gate before publication, Android supports a debug-only process
+   startup [wrap script](https://developer.android.com/ndk/guides/wrap-script)
+   on API 27 and later. A test-only `resources/lib/x86_64/wrap.sh` can enable
+   `CRISPEMBED_TESSERACT_DBNET_GUTTERS=1` while preserving the native default;
+   packaging requires legacy native-library extraction. Record the wrapper,
+   native libraries, source tree and APK hashes. Keep the wrapper out of release
+   artifacts and leave app permissions/security unchanged.
+4. Execute the complete existing WebView flow against that rebuilt debug APK,
+   preserving pre-assertion quality JSON and unchanged CER `0.25`, geometry,
+   model-hash, save/export, recovery and memory gates. Record actual Android
+   observations separately from Linux native/reading-order replay. The old
+   retained APK contains the old native implementation and cannot qualify this fix.
+5. After all required source/platform gates and independent review, decide any
+   default promotion while retaining explicit-off legacy behavior, follow the
+   repository version/release procedure, publish the qualified immutable minimal
+   runtime, then repin/rebuild the app with source/artifact receipts. Any default
+   or version change advances the source identity and needs its declared final
+   acceptance checks. No release, version bump or app pin change is authorized
+   by this candidate checkpoint. Physical-device/provider/camera and diverse
+   corpus qualification remain open.
+
 ## CrispSorter Ovis application-path control — 12 November 2026
 
 The [comparison receipt](tests/results/crispsorter-ovis-comparison-20261112.json)
@@ -14,6 +251,20 @@ conflates this error with a blank result. GPU initialization alone is not proof
 of inference. These results do not qualify Ovis real-page decoded quality or speed;
 the input gate remains unchanged. A separately declared image preparation protocol
 and correct native error propagation are required before repeating the panel.
+
+The bounded [error propagation candidate](docs/ovisocr2-error-propagation.md) now
+passes [hosted CPU controls](tests/results/qwen35-ocr/ovisocr2-error-propagation.json)
+at `458458b2a308a1e6e7d3e55f7276a47761d487fa`: 27 commands, 107 native
+orchestrator checks, review tests, Rust semantic/build and actual Rust/Python
+mixed/standalone-blank/fallback/recovery controls; old immutable-runtime link also
+passes. Explicit stage outcomes preserve known blank/fallback provenance and
+prevent unknown legacy emptiness from masking a reported failure, while retaining
+prior-error-free permissive blank behavior. The raw initial CPU receipt remains
+separate. One bounded T4/SM75 CUDA compile/replay is running, with no result claimed.
+CLI and other native/platform checks, browser error propagation and final merged
+runtime/release/immutable-consumer qualification remain open. No source push,
+release/version change, image resize or patch-bound waiver follows from this
+bounded result. The application pin remains unchanged.
 
 ## CrispSorter model-manager current source control — 12 November 2026
 
@@ -4646,3 +4897,32 @@ The individually negative global repack and physical GDN alternatives remain off
 - Scoped Q6 tiled integration: preserve source00c5 arithmetic and hosted8fc structural/decoded harness bytes, current main, old gates and public no-ship fences. Source-fed68-case/full140 proof and38 structural checks pass; observed table/form floors pass with opposing form WER/score changes documented in [runtime scope](docs/lighton4b-q6-tiled-runtime.md). Arabic now preserves exact six-ID/text/EOS output, but the corrected frozen receipt still fails: 25/768 content character edits and 19/144 word edits versus source 24/768 and 18/144. The unchanged frozen panel is complete with two of three provisional case floors met: two-column 297/2981 character edits and 87/556 word edits versus source 526/146; authored inventory zero edits and 15 cells exact. Preserve the receipt failure and all three independent raw audits (1398 files, 7,439,126,325 bytes, 5168 rows); default off, no aggregate waiver or alias/release promotion. Reference tools remain excluded from production installation.
 
 - Final scheduler-only frozen panel: receipt468EOS retains25/768 character and19/144 word edits versus source24/18; inventory248EOS remains exact. The separately budgeted two-column replay reproduces all1054 retained rows and82 stages, then hits cap1536 without EOS (capped3716/2981 characters,955/556 words versus complete source526/146). Artifact-only audit closes98 files/1,745,200,955 bytes/1536 rows; the scheduler panel meets only1/3 provisional completion/content floors, distinct from prior no-planner2/3. Preserve timeout and cap negatives, provisional labels and private book outputs. [Immutable evidence](https://github.com/CrispStrobe/CrispEmbed/blob/b80c4c7824e11cf4a8d3cc24d8f6a53e675e74c3/docs/lighton4b-planner-heldout-provisional-results.md); all experimental gates default-off, no ship, no tuning/aggregate waiver or code/default/release changes.
+
+### OCR reported-failure and result-layout candidate — 12 November 2026
+
+The [bounded API evidence](docs/ovisocr2-error-propagation.md) preserves the
+unchanged native patch bound and distinguishes reported failure, proven blank
+success and legacy unknown emptiness. Source `458458b2a` passed hosted CPU
+27/27 commands (107 native controls) and T4/SM75 CUDA 29/29 commands, with the
+same synthetic nine IDs/EOS and real-page rejection before vision. This repairs
+false successful blank reporting; it does not establish large-page model quality.
+Subsequent Python/Dart complete-result mirrors and model-free production
+three-region/read/render controls await one combined-source hosted batch. Dart
+32-bit and other native platforms remain unqualified. No release, version, app
+immutable pin, size gate or model-quality policy changes; retained native bundles
+remain remote, and private configuration remains outside Git.
+
+### OCR HTTP reported-failure follow-up — 12 November 2026
+
+Independent combined-source review at `5839a35ef` found that `/ocr/pipeline`
+and `/ocr/document` still converted the new NULL-text failure sentinel into a
+successful empty response. The bounded server correction returns HTTP 500 JSON
+with the copied native diagnostic, preserves non-NULL blank success, and frees
+request-owned rendering/image/temporary resources on document failure. Existing
+context locks and response formats on success remain unchanged. The
+[model-free production-server control](tests/ocr_server_failure_status.py)
+checks repeated real lazy unified load failure, ordinary/review/document errors,
+and legacy non-NULL blank success without models or inference. Python syntax and
+changed-line clang-format 18 checks pass; compiled server execution remains a
+hosted combined-source gate. Browser serialization and legacy engines without
+explicit outcomes remain separately unqualified. No release/default/app pin change.
