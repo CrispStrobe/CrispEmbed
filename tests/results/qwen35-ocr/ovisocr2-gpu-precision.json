@@ -1,0 +1,373 @@
+{
+ "schema": "ovisocr2-gpu-precision-bisect-v1",
+ "source_commit": "26cd56a88165b098a5b3f5292b5b187178dfc167",
+ "note": "Kaggle runs 2026-11-12; the P100 request was served on a Tesla T4. conf_max_abs is vs the frozen CPU receipt.",
+ "runs": {
+  "t4-request": {
+   "gpu": "Tesla T4, 15360 MiB, 580.178.04",
+   "cuda_arch": "75",
+   "build_s": 1686.7,
+   "rows": [
+    {
+     "arm": "ggml-cpu",
+     "case": "inventory-table",
+     "tokens": 174,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 8.349999999213154e-07,
+     "conf_mean_abs": 6.5114942524769815e-09,
+     "recognize_s": 30.0325697
+    },
+    {
+     "arm": "ggml-cpu",
+     "case": "two-column-page",
+     "tokens": 697,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 6.783099999996267e-05,
+     "conf_mean_abs": 6.561457675751462e-07,
+     "recognize_s": 81.2073261
+    },
+    {
+     "arm": "ggml-cpu",
+     "case": "historical-receipt",
+     "tokens": 882,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 1.1743000000064008e-05,
+     "conf_mean_abs": 1.8781065759579404e-07,
+     "recognize_s": 98.7591487
+    },
+    {
+     "arm": "gpu",
+     "case": "inventory-table",
+     "tokens": 174,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 4.8398999999976766e-05,
+     "conf_mean_abs": 5.929712643662775e-07,
+     "recognize_s": 2.97373713
+    },
+    {
+     "arm": "gpu",
+     "case": "two-column-page",
+     "tokens": 697,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0014910100000000703,
+     "conf_mean_abs": 8.847704720229622e-05,
+     "recognize_s": 10.0767484
+    },
+    {
+     "arm": "gpu",
+     "case": "historical-receipt",
+     "tokens": 882,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0011507570000000023,
+     "conf_mean_abs": 2.9437198412698285e-05,
+     "recognize_s": 12.7591498
+    },
+    {
+     "arm": "gpu-f32v",
+     "case": "inventory-table",
+     "tokens": 174,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 4.8398999999976766e-05,
+     "conf_mean_abs": 5.929712643662775e-07,
+     "recognize_s": 2.79971348
+    },
+    {
+     "arm": "gpu-f32v",
+     "case": "two-column-page",
+     "tokens": 697,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0014910100000000703,
+     "conf_mean_abs": 8.847704720229622e-05,
+     "recognize_s": 10.1549695
+    },
+    {
+     "arm": "gpu-f32v",
+     "case": "historical-receipt",
+     "tokens": 882,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0011507570000000023,
+     "conf_mean_abs": 2.9437198412698285e-05,
+     "recognize_s": 12.9655049
+    },
+    {
+     "arm": "gpu-f32d",
+     "case": "inventory-table",
+     "tokens": 174,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 1.072899999998711e-05,
+     "conf_mean_abs": 7.776436781551747e-08,
+     "recognize_s": 3.44957132
+    },
+    {
+     "arm": "gpu-f32d",
+     "case": "two-column-page",
+     "tokens": 697,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0011091229999999896,
+     "conf_mean_abs": 8.672530272597646e-06,
+     "recognize_s": 12.9811122
+    },
+    {
+     "arm": "gpu-f32d",
+     "case": "historical-receipt",
+     "tokens": 882,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0001249309999999948,
+     "conf_mean_abs": 1.5026882086159526e-06,
+     "recognize_s": 16.5045003
+    },
+    {
+     "arm": "gpu-f32vd",
+     "case": "inventory-table",
+     "tokens": 174,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 1.072899999998711e-05,
+     "conf_mean_abs": 7.776436781551747e-08,
+     "recognize_s": 3.49690859
+    },
+    {
+     "arm": "gpu-f32vd",
+     "case": "two-column-page",
+     "tokens": 697,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0011091229999999896,
+     "conf_mean_abs": 8.672530272597646e-06,
+     "recognize_s": 13.0774196
+    },
+    {
+     "arm": "gpu-f32vd",
+     "case": "historical-receipt",
+     "tokens": 882,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0001249309999999948,
+     "conf_mean_abs": 1.5026882086159526e-06,
+     "recognize_s": 16.6555358
+    },
+    {
+     "arm": "cpu-default",
+     "case": "inventory-table",
+     "tokens": 174,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 6.559999999877775e-07,
+     "conf_mean_abs": 7.534482758642741e-09,
+     "recognize_s": 34.1788146
+    }
+   ]
+  },
+  "p100-request": {
+   "gpu": "Tesla T4, 15360 MiB, 580.178.04",
+   "cuda_arch": "75",
+   "build_s": 1578.9,
+   "rows": [
+    {
+     "arm": "ggml-cpu",
+     "case": "inventory-table",
+     "tokens": 174,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 8.349999999213154e-07,
+     "conf_mean_abs": 6.5114942524769815e-09,
+     "recognize_s": 28.8148929
+    },
+    {
+     "arm": "ggml-cpu",
+     "case": "two-column-page",
+     "tokens": 697,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 6.783099999996267e-05,
+     "conf_mean_abs": 6.561457675751462e-07,
+     "recognize_s": 78.3149191
+    },
+    {
+     "arm": "ggml-cpu",
+     "case": "historical-receipt",
+     "tokens": 882,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 1.1743000000064008e-05,
+     "conf_mean_abs": 1.8781065759579404e-07,
+     "recognize_s": 94.6895038
+    },
+    {
+     "arm": "gpu",
+     "case": "inventory-table",
+     "tokens": 174,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 4.8398999999976766e-05,
+     "conf_mean_abs": 5.929712643662775e-07,
+     "recognize_s": 2.84956451
+    },
+    {
+     "arm": "gpu",
+     "case": "two-column-page",
+     "tokens": 697,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0014910100000000703,
+     "conf_mean_abs": 8.847704720229622e-05,
+     "recognize_s": 9.92034863
+    },
+    {
+     "arm": "gpu",
+     "case": "historical-receipt",
+     "tokens": 882,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0011507570000000023,
+     "conf_mean_abs": 2.9437198412698285e-05,
+     "recognize_s": 12.5525272
+    },
+    {
+     "arm": "gpu-f32v",
+     "case": "inventory-table",
+     "tokens": 174,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 4.8398999999976766e-05,
+     "conf_mean_abs": 5.929712643662775e-07,
+     "recognize_s": 2.73178932
+    },
+    {
+     "arm": "gpu-f32v",
+     "case": "two-column-page",
+     "tokens": 697,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0014910100000000703,
+     "conf_mean_abs": 8.847704720229622e-05,
+     "recognize_s": 10.0818468
+    },
+    {
+     "arm": "gpu-f32v",
+     "case": "historical-receipt",
+     "tokens": 882,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0011507570000000023,
+     "conf_mean_abs": 2.9437198412698285e-05,
+     "recognize_s": 12.7757766
+    },
+    {
+     "arm": "gpu-f32d",
+     "case": "inventory-table",
+     "tokens": 174,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 1.072899999998711e-05,
+     "conf_mean_abs": 7.776436781551747e-08,
+     "recognize_s": 3.4352001
+    },
+    {
+     "arm": "gpu-f32d",
+     "case": "two-column-page",
+     "tokens": 697,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0011091229999999896,
+     "conf_mean_abs": 8.672530272597646e-06,
+     "recognize_s": 12.7458465
+    },
+    {
+     "arm": "gpu-f32d",
+     "case": "historical-receipt",
+     "tokens": 882,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0001249309999999948,
+     "conf_mean_abs": 1.5026882086159526e-06,
+     "recognize_s": 16.1982952
+    },
+    {
+     "arm": "gpu-f32vd",
+     "case": "inventory-table",
+     "tokens": 174,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 1.072899999998711e-05,
+     "conf_mean_abs": 7.776436781551747e-08,
+     "recognize_s": 3.42516553
+    },
+    {
+     "arm": "gpu-f32vd",
+     "case": "two-column-page",
+     "tokens": 697,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0011091229999999896,
+     "conf_mean_abs": 8.672530272597646e-06,
+     "recognize_s": 12.9225726
+    },
+    {
+     "arm": "gpu-f32vd",
+     "case": "historical-receipt",
+     "tokens": 882,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 0.0001249309999999948,
+     "conf_mean_abs": 1.5026882086159526e-06,
+     "recognize_s": 16.2039579
+    },
+    {
+     "arm": "cpu-default",
+     "case": "inventory-table",
+     "tokens": 174,
+     "ids_exact": true,
+     "text_exact": true,
+     "stop_exact": true,
+     "conf_max_abs": 6.559999999877775e-07,
+     "conf_mean_abs": 7.534482758642741e-09,
+     "recognize_s": 32.4872461
+    }
+   ]
+  }
+ }
+}
