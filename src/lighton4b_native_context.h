@@ -28,10 +28,10 @@ inline bool lighton4b_quant_recipe_matches(const decoder_weights & decoder, ligh
         return false;
     auto type = [](const ggml_tensor * t, ggml_type expected) { return t && t->type == expected; };
     if (recipe == lighton4b_quant_recipe::upstream_physical_q4km)
-        return lighton4b_physical_q6_tiled_valid(true) && lighton4b_q6_enabled() &&
-               lighton4b_upstream_physical_mode_valid(true) && lighton4b_physical_f16_attention_valid(true) &&
-               lighton4b_physical_f16_vision_valid(true) && lighton4b_physical_q4_repack_valid(true) &&
-               lighton4b_q4km_types_match(decoder, GGML_TYPE_Q6_K);
+        return lighton4b_source_prefill_chunks_valid(true) && lighton4b_physical_q6_tiled_valid(true) &&
+               lighton4b_q6_enabled() && lighton4b_upstream_physical_mode_valid(true) &&
+               lighton4b_physical_f16_attention_valid(true) && lighton4b_physical_f16_vision_valid(true) &&
+               lighton4b_physical_q4_repack_valid(true) && lighton4b_q4km_types_match(decoder, GGML_TYPE_Q6_K);
     const bool tiled = recipe == lighton4b_quant_recipe::hf_tiled_out_q4km;
     if (tiled && !lighton4b_hf_tiled_out_mode_valid(true, false)) return false;
     const bool q6head = recipe == lighton4b_quant_recipe::imatrix_q4km_q6head || tiled;
@@ -197,20 +197,34 @@ public:
 
 // Chunked prefill retains the existing <=16-token component contract. Caches
 // remain immutable inputs and independent of the caller's previous cache.
+// The opt-in source schedule requires explicit 0=text/1=image modalities.
 inline bool lighton4b_prefill_cpu(const decoder_weights & weights, const float * hidden, const float * positions,
                                   int tokens, int threads, const lighton4b_decoder_cache * previous,
-                                  lighton4b_decoder_outputs & output) {
+                                  lighton4b_decoder_outputs & output, const std::vector<int> * modalities = nullptr) {
     output = {};
     if (!core_env::on("CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT") || !hidden || !positions || tokens < 1 || tokens > 4096 ||
         (previous && (previous->tokens < 1 || previous->tokens > 4096 - tokens)))
         return false;
+    const bool source_chunks = lighton4b_source_prefill_chunks_mode(weights.upstream_physical);
+    std::vector<lighton4b_prefill_chunk> plan;
+    if (!lighton4b_source_prefill_chunks_valid(weights.upstream_physical) ||
+        (source_chunks && (!lighton4b_source_prefill_budget(tokens, previous ? previous->tokens : 0) || !modalities ||
+                           modalities->size() != size_t(tokens) ||
+                           !lighton4b_source_prefill_plan(
+                               *modalities, plan, lighton4b_source_prefill_aligned_mode(weights.upstream_physical)))))
+        return false;
     lighton4b_decoder_outputs candidate;
     lighton4b_decoder_cache cache;
-    for (int offset = 0; offset < tokens; offset += 16) {
-        const int count = std::min(16, tokens - offset);
+    for (int offset = 0, part = 0; offset < tokens; ++part) {
+        const int count = source_chunks ? plan[size_t(part)].tokens : std::min(16, tokens - offset);
         std::vector<float> chunk_positions(size_t(3 * count));
-        for (int axis = 0; axis < 3; ++axis)
-            std::copy_n(positions + size_t(axis) * tokens + offset, count, chunk_positions.data() + axis * count);
+        if (source_chunks) {
+            if (plan[size_t(part)].offset != offset ||
+                !lighton4b_prefill_chunk_positions(positions, tokens, plan[size_t(part)], chunk_positions))
+                return false;
+        } else
+            for (int axis = 0; axis < 3; ++axis)
+                std::copy_n(positions + size_t(axis) * tokens + offset, count, chunk_positions.data() + axis * count);
         lighton4b_decoder_outputs chunk;
         if (!lighton4b_decoder_hidden_cpu(weights, hidden + size_t(offset) * 2560, chunk_positions.data(), count,
                                           threads, offset ? &cache : previous, chunk))
@@ -220,6 +234,7 @@ inline bool lighton4b_prefill_cpu(const decoder_weights & weights, const float *
             candidate.hidden[i].insert(candidate.hidden[i].end(), chunk.hidden[i].begin(), chunk.hidden[i].end());
         candidate.norm.insert(candidate.norm.end(), chunk.norm.begin(), chunk.norm.end());
         cache = std::move(chunk.cache);
+        offset += count;
     }
     candidate.cache = std::move(cache);
     output = std::move(candidate);

@@ -22247,3 +22247,24 @@ MoEdern-Q4/Josev/UltraBERT accept14 or12 via `known_q4_k`; MoEdern-Q8/UltraBERT-
 require7; MI-GAN/latent-inpaint only test0 (F32); the LightOn4B Q4_K_M/Q6 recipe
 gates require15, but those files come from the upstream llama.cpp mixed-M recipe,
 not this writer. Python bindings and CrispSorter do not read the key.
+
+### 12 November 2026 — closed second-image SwiGLU/Q8 attribution
+
+The [bounded operator replay](docs/lighton4b-book-second-swiglu-quant.md) reproduces
+actual native scalar/source fused activations and both corresponding Q6 down
+outputs exactly. One integer rounding change at image23 accompanies98 Q8 scale
+changes;12 forced-output closures pass and57 selected artifacts are rehashed.
+Initial pre-build orchestration failure is preserved. No runtime or decoded
+quality change; all prior negatives remain binding.
+
+### 12 November 2026 — fixed SwiGLU producer preserved and partially audited
+
+The [artifact-only partial audit](docs/lighton4b-swiglu-fixed-partial.md) rehashed all590 declared artifacts (5,443,427,617 bytes) and all4,340 raw vocabulary rows from the immutable failed producer. Both observed controls and receipt/book pairs close their historical and unchanged scoring contracts. Receipt ON465/EOS meets its provisional source floor; book OFF/ON1536/noEOS remains negative. Inventory has no model arm: the original resource/seal preflight failure is retained. No forward, build, qualification, default or release change; original candidate source.log bytes remain unavailable as explicitly recorded.
+
+- 12 November2026: [audited SwiGLU inventory continuation](docs/lighton4b-swiglu-fixed-inventory.md) executes only the two unrun arms after preserved original resource/seal failure. Both248EOS/identical text+IDs/zero content edits/all15cells exact; all historical OFF anchors close. Independent audit80c59b63 verifies496newrows and links4340priorrows,4836total. Receipt/source-floor improvement and book1536/noEOS negative yield2/3 provisional floors; no qualification. Initial reader KeyError and overwritten candidate git-rev log-byte limit remain explicit; no model repeat, default/release/alias/app change.
+### 12 November 2026 — independent physical RoPE observed small audit
+
+The [independent observed audit](docs/lighton4b-physical-rope-observed-audit.md) recomputes all decoded/source metrics, rehashes six native plus three source firstscores and closes eight selected source form arrays. ON matches all three quantized source outputs exactly, while table BF16 character/word edits worsen20→348/6→97 and form175→189/45→46; Arabic remains exact. All six arms reach EOS. The full raw inventories remain remote and are not independently rehashed by this small audit. No quality, speed, held-out, default or release promotion.
+### 12 November 2026 — physical RoPE fixed panel fully raw-audited
+
+The [book-first six-arm raw audit](docs/lighton4b-physical-rope-fixed-audit.md) verifies578 current artifacts/4,812,973,943 bytes,3,619 current raw rows,849 reused observed rows,2,249 prior baseline rows and96 paired native layers on the hosted CPU. Book ON654/EOS and inventory248/EOS pass provisional source floors; receipt ON468/EOS regresses and fails its floor. All ON arms complete; only2/3 floors pass. The initial audit journal collision/failure and corrected artifact-only retry are preserved, with original source-log, metadata-binary and intermediate-bootstrap limitations explicit. No model/source rerun during auditing, quality/default/release or app promotion.

@@ -1,0 +1,46 @@
+{
+  "schema": "lighton4b-source-aligned-fixed-independent-audit/v1",
+  "candidate_source": "f8bffd1217fa41a958047d88dafb782a4b1cd989",
+  "fixed_protocol_sha256": "96e7b520ae5b7b14982a0db24470aeefa08a17b02111df2bbd68ce122de11038",
+  "observed_sha256": "68c94b15b247527685108ce3871714cc08b8e29ccb4253a60885ac1c8cbc5435",
+  "controls_sha256": "2d0d4131b12c6392bb92e494644e9f7d4900b17ba6c7389beaa96baae2a91305",
+  "baseline_sha256": "8001a29fab5abc3481e601168e10ca4383d10060ad7e4356a9110eb345c0b56a",
+  "prior_audit_sha256": "d0bf3b45fa69e8197452a9846bd7f77dfddda28d93549a0c8a063e12aed68a28",
+  "legacy_audit_helper_sha256": "3fb754d6745798f6909cdeb33d51ce2409234ecc4bbb17b043c67e4f0fad43e4",
+  "observed_safe_sha256": "fd6f2216cad774d6af16b16c59635b1bc3c31d956821a667424db82adf900335",
+  "total_timeout_seconds": 2400,
+  "expected_observed_rows": 916,
+  "expected_baseline_rows": 1370,
+  "numpy_version": "2.3.5",
+  "model_forward_allowed": false,
+  "source_forward_allowed": false,
+  "network_allowed": false,
+  "raw_local_download_allowed": false,
+  "helper_pins": {
+    "tools/heldout/execution.py": "82f5adc352c79e0779478261ce2a56e90e0df05bdca2d232386527b4a440ee06",
+    "tools/heldout/lighton4b_prepare.py": "6eef63020be662caa87b6a904df4f0ae7e1fcdb21caa605d8ecc056bbcfc0891"
+  },
+  "metadata_profile": {
+    "CRISPEMBED_NATIVE": "OFF",
+    "GGML_NATIVE": "OFF",
+    "GGML_AVX2": "ON",
+    "GGML_AVX512": "OFF",
+    "GGML_FMA": "ON",
+    "GGML_F16C": "ON",
+    "GGML_LLAMAFILE": "ON",
+    "GGML_CPU_REPACK": "ON",
+    "GGML_BLAS": "OFF",
+    "GGML_OPENMP": "OFF",
+    "GGML_CUDA": "OFF",
+    "GGML_VULKAN": "OFF",
+    "GGML_BACKEND_DL": "OFF",
+    "GGML_METAL": "OFF",
+    "CRISPEMBED_BUILD_SHARED": "OFF"
+  },
+  "metadata_source_pins": {
+    "tests/lighton4b_native_case_preflight.cpp": "2cf633f776a5627512ae557bd1cb7a9e7bc684d80096ae017e15f43e5c2a9ddd",
+    "src/lighton4b_tokenizer.cpp": "38b0e336aa058cf984a078fe901dee1214cd57d43f28bb96b8d07869b370cc93",
+    "src/lighton4b_source_prefill_chunks.h": "584bdda5019b375ec5ba87204ba61ff286e1a84b659c99dc14535a691198431d",
+    "CMakeLists.txt": "8eaa99c62356e8b6d9844d4f02fe1cacee63ae921ed5a1d48eea3885f414dbde"
+  }
+}

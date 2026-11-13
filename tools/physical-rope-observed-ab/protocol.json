@@ -1,0 +1,55 @@
+{
+  "schema": "lighton4b-physical-rope-observed-ab/v1",
+  "controller_source": "eb2d04219f7a8567803e77b3ff5bbaa398b16629",
+  "cases": [
+    "simple_table",
+    "simple_form",
+    "arabic_printed_line"
+  ],
+  "historical_off_tokens": [
+    218,
+    167,
+    6
+  ],
+  "gate": "CRISPEMBED_LIGHTON4B_PHYSICAL_ROPE",
+  "fixed_scheduler": "1",
+  "cap": 512,
+  "threads": 4,
+  "arm_seconds": 900,
+  "worker_seconds": 7200,
+  "model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "model_f32_text_allowed": false,
+  "heldout_data_allowed": false,
+  "source_reference_forward_allowed": false,
+  "runtime_rebuild_allowed": false,
+  "quality_qualified": false,
+  "candidate_source": "a8a22749ab0b757ae1f317b6fa5b84ffd148b939",
+  "source_form_probe_receipt_sha256": "2723be06d2b1a4836d51b75d50a23f61a07972127c907e01d0505c778dcf7260",
+  "historical_fused_receipt_sha256": "67ff19db0230ddc329300cc3f6a0256eb85b3cdbbcf06a578b23eb93c2688ba1",
+  "fixed_swiglu": "1",
+  "baseline_scope": "Frozen complete fusedON producer report and raw-array identity manifests authenticated before weights. Fresh OFF must reproduce every retained raw vocabulary row and stage SHA; original raw files are not reread.",
+  "acceptance": [
+    "Actual source-bound supported/unsupported/WASM/cache controls and full source-fed layer3 equality must pass before model acquisition.",
+    "One exact tested candidate executable/libs/physical quantized checkpoint; only new physical RoPE changes0\u21921, SwiGLU stays1.",
+    "All3 original observed inputs, original/BF16 scoring and pinned actual upstream responses/firstscores remain unchanged.",
+    "Six actual fresh independent greedy arms at cap512/threads4/900s perarm; OFF complete IDs/text/EOS, all old summary fields and raw-stage hashes must equal frozen fusedON218/167/6 before ON interpreted.",
+    "ON vision/embeddings/positions/schedule and layers0\u20132 exact to OFF; source form first4 fused activation/down exact in both arms.",
+    "Record all raw vocabulary rows, decoded scores/EOS/cap and later-layer magnitudes; component equality never substitutes for decoded quality.",
+    "No heldout images/golds/IDs or full F32/BF16 text model; no source reference or runtime rebuild."
+  ],
+  "controller_dependencies": {
+    "tools/q6-tiled-full-ab/worker.py": "5b5249fddaf60f0fe98828f16b6ae9b057095621a77fd3f3a67f315a4e4a9359",
+    "tools/kaggle/lighton4b_upstream_physical_decode.py": "2789cd83124265e0a53ec031cc417f05f8bc4a80ceed8acaec0f52f5264e0a21",
+    "tools/kaggle/lighton4b_physical_f16_full_form.py": "fd417f272f522e63d103f091589952f43a14c36a8c7068edee33a19cc2202c86",
+    "tools/physical-f16-attention-probe/runtime_guard.py": "30aa63e5a51fdd4d66f8202f0222426fe5e964a6c07d43389501901df40452c4",
+    "tools/lighton4b_upstream_physical_pack.py": "0f86cd619b1b25c419bd643a549786cc35d0c546b0bcab382e2efb77e3b24910",
+    "tools/lighton4b_q6_convert.py": "eb5f8bae51a808cfcd589d534a36da13106369e0c3b8da36bba8a68b04a8d4d1",
+    "tools/gguf_file_type_canonicalize.py": "838a90879879ce6cbb6262cedac159abda5579e32e66ac13c11a751d2b75d9d7",
+    "tools/ci-heavy/lighton4b_upstream_physical_audit.py": "99e1457b32a47bf5b1e81a3d77e075881eeb7e227331a3ef64f81aaf00ae4712",
+    "docs/lighton4b-upstream-physical-decode-v1.json": "c41eb3d8cb7edd7d33f8561461c61f78182df960bf2630c41ae952c1e7dee14d",
+    "docs/lighton4b-composed-form-vision-v1.json": "bfc3fbb1d856c36525c7a11bddb68184d92114c5f1a051786fc7bf0988753d90",
+    "tests/regression/images/cc0/simple_form.png": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+    "tests/regression/images/cc0/simple_table.jpg": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8",
+    "tests/regression/images/cc0/arabic_printed_line.png": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789"
+  }
+}

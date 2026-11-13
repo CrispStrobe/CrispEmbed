@@ -458,6 +458,43 @@ The launcher captures service output and reports generic failure categories; cac
 version messages are fixed text, and only an explicit missing-dataset response
 permits creation. This does not migrate the legacy templates below or test a live
 cache upload.
+## LightOn4B physical RoPE and receipt trace — 12 November 2026
+
+The [independently raw-audited fixed panel](docs/lighton4b-physical-rope-fixed-audit.md) completes all ON arms and meets two of three provisional source floors: book now reaches EOS in 654 tokens and matches the pinned source IDs, inventory passes, and receipt regresses to 25 character/19 word edits versus the source floor of 24/18. The observed panel also retains BF16-relative table and form regressions. Both experimental arithmetic gates remain default-off; this is not decoded-quality or release qualification.
+
+The [neutral receipt prefill trace](tests/results/lighton4b/receipt-prefill-trace/README.md) reproduces the frozen source first score, sample, vision output, positions and dispatch, with source/native input embeddings and positions exact. Its first compared hidden difference is image-prefill layer 0, row 232, before the layer 3 RoPE operation (RMS 9.7245843916e-7, maximum 7.8201293945e-5). The first differing operator has not yet been established. Next compare the actual source/native layer-0 operations and authenticated inputs, including the different chunk boundaries, before changing arithmetic; preserve observer limits, the initial capture-budget failure and all decoded negatives.
+## Active receipt layer0 operator attribution — 13 November 2026
+
+The source-neutral receipt trace pins candidate `a8a22749ab0b757ae1f317b6fa5b84ffd148b939` and finds the first unequal source/native hidden boundary at image graph2 layer0, image row232, despite exact embeddings/positions. The reference-only `tools/receipt-layer0-probe` replays exactly that single production block with authenticated unchanged quantized parameter ranges and requires all256 retained native hidden rows and duplicate GDN/cache closure before stage attribution. Separately frozen source-input preferred Q4 projections compare source242 rows with actual native16/10/8 batches to test the uneven-tile route hypothesis; the completed interventions below establish that local route effect. Source/native head permutations are canonicalized. The first hosted bootstrap stopped before checkout/build/parameter acquisition because its1MiB small-report bound excluded the authenticated1,071,524-byte fixed report; [initial admission negative](tests/results/lighton4b/receipt-layer0-operators/initial-admission-negative.json) is preserved. The bootstrap-only retry admits the unchanged exact report under4MiB, matching the child, and completes the [artifact-only window context](tests/results/lighton4b/receipt-layer0-operators/artifact-window-context.json); its child then stops before native build/parameters on an unrelated working directory in the Git source check. The [second setup negative](tests/results/lighton4b/receipt-layer0-operators/source-check-negative.json) is retained. An explicit checkout identity check, cwd-independent Git fixture and closed child-owned artifact census repair the harness; the exact component bundle is retained by the next attempt. The corrected [same-input operator evidence](docs/lighton4b-receipt-layer0-attribution.md) closes all256 actual native hidden0 rows, duplicate GDN/cache and source incoming state/FIFO; image inputnorm/Q6QKV are exact. First differing Q4 Z/alpha/beta rows232/233/240/241 are reproduced by same-input10/8 preferred-buffer interventions, while all source242 and16-row interventions are source-bit-exact. Raw inventory remains remote; independent review is small-report scoped. Prepared separately gated `PHYSICAL_SOURCE_PREFILL_ALIGNED`: only a legacy nonfinal balancing tile not divisible4 is moved after an eight-row tile; all existing aligned plans, source Q6>=8 routes, logical boundaries and position axes remain. Explicit linear/attention/outer+active/inactive cache identities reject mode mixing. The updated C++ control checks4096 exact frozen legacy plans and4096 independent per-row aligned classifications, plus actual model-free cache lifecycle. Hosted candidate `f8bffd1217fa41a958047d88dafb782a4b1cd989` now [passes exact source controls](tests/results/lighton4b/receipt-layer0-operators/aligned-source-controls.json): all22 legacyOFF arrays and56 sourceON comparisons/endstate/FIFO exact,8295 actual planner/cache checks plus four other supported units, four512/1536 CLI admissions. Exact tested native-document/libs are retained remotely. No model/source forward occurred;69 raw/binary artifacts remain outside the independent small-report review. The [fresh six-arm observed panel](tests/results/lighton4b/receipt-layer0-operators/aligned-observed.json) now closes all old RoPEON OFF rows/stages/summary/chunk plans; alignedON preserves282/170/6 IDs/text/EOS, all96 paired hidden layers and458 paired greedy-row hashes. All3 quantized-source floors pass, while original BF16 table348/97 and form189/46 edit regressions remain. The exact quantized model is retained remotely. Frozen observed receipt68c94b15 binds receipt-first fixed OFF/ON, then book and inventory; all original source/labels/seals/scorer/caps/floors remain. The [receipt-first fixed panel](tests/results/lighton4b/receipt-layer0-operators/aligned-fixed.json) now completes all6 EOS arms, preserving all historical OFF rows/stages/stops. Receipt ON465 exactly matches original quantized-source IDs/text and repairs the provisional floor24/18 versus OFF25/19; first-score RMS falls0.2213878489→6.2318687882e-7. Book654 and inventory248 stay source-exact, including all64 paired hidden layers. All3 fixed source floors pass; source-fed hidden0 closure and decoded receipt parity are measured separately. Safe projection SHA c9cf3f7b binds producer91944ec7/outer85eadb24; the [independent raw audit](docs/lighton4b-source-aligned-fixed-audit.md) verifies all2737 new rows and 5023 linked rows in total, with its source-comparison limits documented. Private book payloads remain remote. No new reference/source forward, model acquisition, full F32 model, default/release/application-pin promotion or quality qualification.
+
+
+## LightOn4B fixed-panel negative — 12 November 2026
+
+The source-pinned SwiGLU panel completed receipt OFF/ON and book OFF/ON, then
+stopped before inventory inference on a combined memory, free-space and seal
+guard. The individual readings were not recorded, so the failing predicate is
+unknown. The receipt ON met its frozen source floor (24 character and 18 word
+edits); book ON reached 1,536 tokens without EOS and failed the completion floor.
+The book's capped CER improved but WER worsened, and its source-matching token
+prefix fell from 405 to 85. An [independent partial raw audit](docs/lighton4b-swiglu-fixed-partial.md)
+verified all 4,340 recorded rows and preserved the incomplete scope; no default,
+release or quality promotion follows. The [inventory-only continuation](docs/lighton4b-swiglu-fixed-inventory.md)
+subsequently passed its unchanged floor in both modes and was independently
+audited. The original admission failure remains unclassified; the completed
+fixed panel passes two of three provisional floors, with the book still failing.
+
+The [post-fused source trace](tools/post-fused-source-trace/README.md) checks
+identical full prompt embeddings and positions and finds the first recorded
+hidden-state difference at the first full-attention block, layer 3, on the
+252-row image chunk. Earlier layer outputs match on all captured chunks. This
+is a boundary for further stage attribution. The [layer-3 probe](tools/attention252-probe/README.md)
+finds exact Q/K normalization and preceding cache, with the first measured
+difference at source RoPE versus reconstructed native RoPE. The [direct native
+observer and same-input operator replay](tools/rope-operator-probe/README.md)
+confirmed the native reconstruction and source-exact GGML RoPE on these inputs;
+the separately gated candidate passed [source-fed component controls](tools/physical-rope-validation/README.md)
+with all 76 captured stage/cache comparisons exact. Whole-decoder fixture controls
+were compiled but not executed; decoded quality remains unqualified.
 
 ## Local kernel configuration privacy — 12 November 2026
 
@@ -548,6 +585,103 @@ Both OCR fixtures have CER 0; native/app licence refusal and per-model consent
 controls pass. This is bounded Linux CPU consumer evidence, not broad OCR quality.
 New private kernel configuration remains ignored; no private execution configuration is
 required for reviewing the CPU consumer source and retained evidence.
+## LightOn4B fused SwiGLU candidate — 12 November 2026
+
+The source-bound [operator attribution](docs/lighton4b-swiglu-source-probe-results.md)
+finds fused native GGML exact against upstream, while scalar activation differs
+by at most 1.19209e-7 on its frozen cases; changed Q8 integer codes remain zero.
+The [shared-prefix book comparison](docs/lighton4b-book-prefill-stage-compare.md)
+identifies a tiny first SwiGLU difference, without decoded causality. The
+separate default-off `CRISPEMBED_LIGHTON4B_PHYSICAL_SWIGLU` candidate replaces only
+physical FFN activation arithmetic with `ggml_swiglu_split`; scalar/BF16 paths,
+quantized projections, source-prefill policy and existing caches remain. New
+cache identity rejects toggles across linear/attention/whole-decoder streams.
+No F32 model is involved.
+
+Pending acceptance: hosted Kaggle compile and model-free
+`test-lighton4b-physical-swiglu` (six independent GGML same-input arms plus gate,
+scope, malformed/finite controls), existing source-prefill/cache controls, then
+source-matched OFF reproduction and full observed form/table/Arabic OFF/ON
+outputs against the unchanged same-weight upstream baselines. Preserve all
+negative 3x3/held-out evidence, do not fit the held-out book, and retain large
+artifacts remotely. No GitHub CI, PR, default flip, runtime release, alias or
+decoded-quality claim follows from preparing this candidate.
+
+
+## Documentation checkpoint — 12 November 2026
+
+The current cross-repository release and LightOn4B provisional failure evidence, exact sources and preservation constraints are summarized in [the current state](docs/current-state-and-next-steps.md). The Q6 corrected and planner-only panels remain negative; neither warrants default, alias or release promotion. Main retains the planner helper and historical test but omits their runtime hooks and cache fields; an isolated restoration passed model-free controls, with model replay pending. Historical planner evidence remains bound to its original source. This documentation checkpoint changes no runtime version.
+
+## LightOn4B second-image FFN continuation — 12 November 2026
+
+The [closed operator replay](docs/lighton4b-book-second-swiglu-quant.md) reproduces
+actual native/source activation and down outputs exactly on identical gate/up.
+Scalar→fused SwiGLU changes98 Q8_K scale words and one integer code (image23,
+feature2703,10→11), reproducing down RMS4.217399e-6/max8.720160e-5. All12
+forced-code closures pass;57 selected small artifacts are independently rehashed.
+The initial controller-directory failure is preserved, before any operator work.
+No runtime change or full-model/decode forward. Any separate default-off fused
+candidate still needs disabled-path identity, exact source-fed stage/cache gates
+and unchanged decoded completion/content floors; existing negative evidence binds.
+
+## LightOn4B source-prefill integration repair — 12 November 2026
+
+Current `c364feb97` retains historical planner helper/tests but lacks the runtime
+modality schedule, cache-policy identity and CMake targets present at `a61642056`.
+The isolated repair restores those exact hooks, preserving subsequent Ovis GPU
+sources and the current iOS build guard. The probe now exits through
+`core_util::clean_exit`. At source `7340a6366b57c64c39b746ef53f2a2cb550ded64`,
+Kaggle built all three targeted executables and passed 4,165 source-prefill
+synthetic controls, with the required F16 ABI; the [sanitized receipt](tests/results/qwen35-ocr/lightonocr3-4b-planner-restoration-controls/v1/receipt.json) retains the original receipt hash and command log hashes. Gate remains default-off;
+historical decoded receipts qualify their historical sources only. No model
+replay, default, release or decoded-parity claim follows from these controls.
+
+Private retained-result metadata for the two-column case shows the planner-off
+and planner-on greedy choices first diverge at zero-based output row 92, after
+92 matching choices; rows 0–92 therefore have the same input prefix. Planner-off
+completes at 660 tokens/EOS, while planner-on reaches 1,536 without EOS. The
+subsequent [artifact-only audit](docs/lighton4b-planner-common-prefix-audit.md)
+authenticated and compared the 93 same-prefix score rows and aligned prefill
+stages. Planner-on follows the upstream choices through 405 tokens, versus 92
+for planner-off; neither observation alone explains the capped completion.
+Preserve private document text and IDs; compare source and native at the same
+prefix before claiming parity.
+
+The [source trace](tests/results/qwen35-ocr/lightonocr3-4b-book-source405/v1/receipt.json)
+at `e3164d09de4578370082e42c5954a77a6cd643e3` has completed on Kaggle: all
+654 historical source score rows, outputs and vision artifacts match with the
+observer both off and on. It captures one auxiliary two-token graph, four actual
+prompt graphs and one row-405 graph; the auxiliary graph is not prompt data.
+The [native trace](tests/results/qwen35-ocr/lightonocr3-4b-book-native405/v1/receipt.json)
+also reproduced all 1,536 previous planner-on rows and outputs with its observer
+enabled. The [aligned 185-stage comparison](docs/lighton4b-planner-common-prefix-audit.md)
+finds the first recorded difference in SwiGLU at both first-chunk prefill and
+row 405, but no matching native image-chunk operators or persistent caches were
+captured. Neither capture nor this comparison qualifies the model.
+
+The [cache-closed first-image capture](docs/lighton4b-book-image-layer0.md)
+reproduces all historical prefill/vision hashes and matches upstream through
+FFN gate/up on the first sixteen image rows. SwiGLU is the first recorded
+difference there as well. An [artifact-only window audit](docs/lighton4b-book-image-windows.md)
+locates the first larger layer-0 spike at image row 23. The [second-chunk capture](docs/lighton4b-book-second-image-layer0.md)
+finds exact upstream/native inputs through gate/up, tiny SwiGLU differences,
+then the larger down-projection error. A same-input quantizer replay is needed
+to establish whether a quantization threshold accounts for that amplification.
+
+The [artifact-only repetition/EOS audit](docs/lighton4b-book-repetition-eos.md)
+finds repeated longer windows in the capped planner-on trajectory, with no EOS
+decision in 1,536 rows. At shared-prefix row 405 the source and native EOS
+probabilities are both small; later divergent-prefix differences do not prove an
+EOS defect. Trace the actual shared-prefix hidden states before selecting a fix.
+
+## LightOn4B newer graph applicability — 12 November 2026
+
+The [source assessment](docs/lighton4b-qwen35-graph-applicability.md) at
+`c364feb97` finds incompatible grouped heads, physical norms/decay and tiled
+output layout. Existing rejection/defaults remain. Next bounded lane: separately
+gated grouped-GDN standard-op component with original-module stage/cache replay
+on Kaggle before full decoder integration or decoded-quality claims. No inference
+or runtime release follows from this documentation review.
 
 ## OvisOCR2 speed follow-ups — 11 November 2026
 
@@ -5069,3 +5203,42 @@ and legacy non-NULL blank success without models or inference. Python syntax and
 changed-line clang-format 18 checks pass; compiled server execution remains a
 hosted combined-source gate. Browser serialization and legacy engines without
 explicit outcomes remain separately unqualified. No release/default/app pin change.
+### Planner retained common-prefix attribution —12 November2026
+
+Artifact-only [93-row audit](docs/lighton4b-planner-common-prefix-audit.md) finds first different decision row92 after identical prior tokens. Input/inputnorm exact; first retained difference is layer0 Q6 QKV RMS2.23094e-7/max3.81470e-6, with batch16 versus4. Drift grows to layer31 RMS0.0575813; row92 winner changes with ON margin0.0591183. Complete OFF660EOS versus ON1536/noEOS remains negative. No model forward, tuning or default/release change. Next, if authorized, use a separately frozen source-fed operator/state intervention before attributing unique causality or proposing arithmetic changes; keep later different-prefix logits out of same-input claims. Reusable consumer is an unexecuted CLI adapter of the exact executed worker, with original source/report SHA retained.
+
+The subsequent artifact-only actual-source comparison places first source/OFF divergence92 and source/ON405. ON's92 decision follows source; firstscore numerical RMS nevertheless worsens0.128943635→0.143885652. At405 source/native RMS0.193178752/max1.027262449 and native winner margin0.011495590. No source hidden book stages exist in the retained capture. Next bounded neutral original/native same-prefix405 trace must reproduce admitted outputs before interpreting new stages; no heldout tuning or completion waiver follows.
+
+
+### Physical fused SwiGLU observed continuation — 12 November 2026
+
+The [complete observed A/B](docs/lighton4b-swiglu-observed-results.md) preserves initial postprocessor negative and authenticates the same candidate519c3d/tested bundle, all996 retained files and unchanged physical model. Three completed arms are reused; only formON/ArabicOFF/ArabicON execute. All historical OFF rows/stages close; all three upstream floors pass. Table character/word edits321/92→20/6 improve, form165/43→175/45 regress, Arabic0/0 unchanged; allEOS. Actual form first4 ON fused activation/down are source-bit-exact, while table score max and Arabic score RMS worsen. Independent small review recomputes decoded metrics and eight source-bound arrays; no independent full-raw audit or qualification claim. Keep gateOFF, old alternatives and receipt hashes. Next separately prepare fixed receipt/book/inventory regression replay with unchanged labels, weights, caps and floors; source controls and frozen historical baseline admission precede any dispatch. No tuning, default/release/alias/app change.
+
+
+### Fixed SwiGLU panel — audited bounded result, 12 November 2026
+
+[Final inventory continuation and complete ledger](docs/lighton4b-swiglu-fixed-inventory.md) close all six planned fixed forwards across the preserved original producer and only the two previously unrun inventory arms. Candidate519c/controllera616/model843e66, original provisional labels/scorer, cap1536/context2048/threads4 and1200-second inventory arms remain unchanged; tested bundle reused, no C++ rebuild or completed-arm/source-feature/source-model repeats. All historical OFF rows/stages/stops close. Receipt improves25/19→24/18 edits and meets source floor; inventory remains248EOS/zero edits/all15 cells exact; book remains1536/noEOS with3716/955→3604/973 capped content edits versus complete source526/146. Combined ON passes2/3 provisional floors, remains unqualified/default-off.
+
+Original sourcec723 stops before inventory at an unclassified joint resource/seal guard with individual readings unavailable. Successful private relay preserves616files/5,444,674,895bytes once; independent partial audit199e7791 closes590declaredfiles/5,443,427,617bytes/all4340rows. Fresh unchanged inventory guards record RAM17.97/22.73GB, output20.93/20.51GB and exact seal, without explaining the earlier cause. New modela88b5341 and corrected inventory audit80c59b63 close207files/849,114,811bytes/496newrows, linking4836rows total. Initial reader KeyError is retained; scoped-field correction repeats only artifacts, no inference/data/scorer/gate/budget changes. Original candidate git-rev log bytes are unavailable/never independently rehashed; pinned source files, tested bundle and20other logs verify. First-score RMS improves while max error worsens; timing remains diagnostic. Preserve book failure, observed-form regression, source-trace limits and every initial negative. No qualification, aggregate waiver, tuning, default/release/alias/app change; no CI, push or PR from this lane.
+### Physical LightOn4B source RoPE candidate (prepared; unqualified)
+
+A separate `CRISPEMBED_LIGHTON4B_PHYSICAL_ROPE` default-off path preserves the
+legacy scalar rotations and all existing experimental gates. The source-fed
+operator proof at `ca50e78dc` establishes native/upstream GGML IMROPE byte equality
+on actual normalized Q/K and positions; it does not establish decoded quality.
+The candidate uses the pinned source partial64/256 IMROPE with sections11/11/10,
+three explicit integer position axes and a reserved zero fourth axis. Exact
+physical CPU/profile admission and attention/outer decoder cache identities
+reject mixed-mode continuation. No model weights or F32 weight cache are added.
+
+Pending acceptance: authorized Kaggle builds and model-free source-node/chunk/
+position/cache controls, then separately frozen observed table/form/Arabic A/B
+with legacy score/stage closure before independent full greedy ON decoding.
+Preserve all source negatives, floor failures, EOS/caps and component magnitude
+errors. No held-out tuning, release/default change, qualification or promotion.
+## Physical RoPE observed audit limits — 12 November 2026
+
+The [independent small-artifact audit](docs/lighton4b-physical-rope-observed-audit.md) binds runtime `a8a22749ab0b757ae1f317b6fa5b84ffd148b939`, controls `855471a734c3188fcf6e83b93eeaac7ba6f101a51728ff838b5b04e6babf8d2e` and observed producer `aaf5298b944cea3d53d7e6e4ce88da78c58c3cec6a651733c5aff993fa4c6ffc`. Exact ON quantized-source outputs do not resolve table/form regressions against original BF16 outputs. Any adoption remains dependent on separately authorized actual decoded-quality/platform/cache gates; no held-out or default promotion is justified. Complete raw-inventory rehash is outside this17-vector audit. Preserve the immutable producer, prior controls/build-only decoder-compose limit and all historical negatives; do not repeat model forwards for report-only verification.
+## Physical RoPE receipt attribution after fixed raw closure — 12 November 2026
+
+The [completed independent fixed audit](docs/lighton4b-physical-rope-fixed-audit.md) binds candidate `a8a22749ab0b757ae1f317b6fa5b84ffd148b939`, producer `8001a29fab5abc3481e601168e10ca4383d10060ad7e4356a9110eb345c0b56a` and raw proof `d0bf3b45fa69e8197452a9846bd7f77dfddda28d93549a0c8a063e12aed68a28`. Pending: attribute the remaining receipt ON stage/decoded regression with exact source/native inputs, absolute errors and magnitudes before proposing any new arithmetic candidate. Book and inventory source-floor improvements do not waive receipt failure or earlier observed BF16 regressions. Preserve original failed artifact audit and three provenance limitations; no model rerun for already-closed raw inventories, held-out tuning, qualification/default/release/app promotion.

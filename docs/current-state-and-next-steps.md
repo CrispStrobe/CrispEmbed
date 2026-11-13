@@ -104,7 +104,28 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   The [initial GitHub dispatch](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43228796357)
   failed before collection because its checkout was shallow; its queued retry
   was cancelled in favor of the bounded remote CPU audit.
+## Source-aligned fixed raw audit — 13 November 2026
 
+The [independent artifact audit](lighton4b-source-aligned-fixed-audit.md) passes at candidate `f8bffd1217fa41a958047d88dafb782a4b1cd989`. All six receipt-first arms close; all three aligned ON outputs match their quantized source IDs/text, reach EOS and pass the unchanged provisional source floors. Receipt improves from 468 to 465 generated IDs and 25/19 to 24/18 character/word edits; book654 and inventory248 remain exact. All 581 current artifacts and 5,023 current/reused/baseline vocabulary rows were rehashed remotely, including the tested runtime, retained quantized model and metadata preflight executable.
+
+Next bounded work is review of this frozen evidence and selection of a separately declared quality lane. Preserve the earlier receipt failure, capped book OFF and BF16 table/form regressions. The audit does not recompute the source component comparisons or reread the original observed-source responses; it reads only three original source first-score vectors, not full source decode row inventories. No quality qualification, default/release/app promotion or performance claim. Do not repeat completed model forwards for report-only checks.
+
+## Prior physical RoPE fixed panel — 12 November 2026
+
+The [independent fixed raw audit](lighton4b-physical-rope-fixed-audit.md) closes all six book-first arms at candidate `a8a22749ab0b757ae1f317b6fa5b84ffd148b939`: 578 current artifacts/4,812,973,943 bytes and all3,619 current,849 reused-observed and2,249 prior-baseline raw rows verified remotely. Book1536/noEOS→654/EOS and inventory248/EOS meet their unchanged provisional source floors; receipt465→468/EOS regresses and fails its floor. All ON arms complete; only2/3 floors pass. The initial artifact-only failure and all three missing-log/binary/intermediate-bootstrap limitations remain explicit. No quality/default/release/app promotion.
+
+This prior receipt failure led to the source-aligned attribution and fixed audit above; its initial negatives and evidence limits remain preserved.
+
+
+## Current cross-repository checkpoint — 12 November 2026
+
+CrispEmbed [v0.17.19](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.19) is published at tag source `c364feb974b91e14cbf328c6949f3df36e89ce81`; the release lists 16 uploaded native/WASM assets. This is a release listing, not an independent asset readback or app-consumer qualification. CrispMath main `2b9d0982a3fd780deb2ffd67835da3ce658dce27` pins CrispEmbed 0.17.15 in `pubspec.lock`; its 1.2.1+28 commit is a TestFlight build, while the latest GitHub release remains 1.2.0. A newer vendor release does not update the app automatically. Recheck release and distribution status before acting.
+
+The fixed [LightOn4B Q6 provisional replay](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/lighton4b-q6-heldout-provisional-results.md) at `52e1cfcec` passes two of three frozen case floors but the receipt misses upstream: 25 versus 24 character edits and 19 versus 18 word edits. The [planner-only replay](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/lighton4b-planner-heldout-provisional-results.md) at `a6164205620c71427a39c97ab386591406c4ca73` retains that receipt failure; inventory passes, and the extended book reaches 1,536 tokens without EOS. Thus only one of three planner floors passes. The labels are provisional, cases were previously observed, and the capped book is incomplete. Preserve the initial timeout, wrapper failure and independent artifact audits; keep experimental gates off and do not promote an alias or claim decoded qualification.
+
+At CrispEmbed main `c364feb974b91e14cbf328c6949f3df36e89ce81`, the standalone source-prefill planner helper and its historical test remain, but the runtime hooks and cache fields exercised by that test are absent. The historical planner results above belong to their pinned source, not current main. An isolated restoration at `7340a6366` passed 4,165 Kaggle synthetic controls, but decoded model replay remains pending; keep the gate off and preserve source-bound evidence before any qualification.
+
+Choose a bounded lane from [CrispEmbed PLAN](https://github.com/CrispStrobe/CrispEmbed/blob/main/PLAN.md) and its [executable handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/next-agent-handoff.md). Bind exact sources and retained artifacts, trace the earliest differing inference stage with magnitudes and absolute errors, and compare final decoded output under frozen gates. Large artifacts stay remote. Recheck current owner branches and evidence before dispatch; historical checkpoints below describe their dated state and do not override this section.
 
 ## PDF Craft adoption — 9 November 2026, feature branch
 

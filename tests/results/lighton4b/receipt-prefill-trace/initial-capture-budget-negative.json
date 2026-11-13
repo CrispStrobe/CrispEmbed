@@ -1,0 +1,27 @@
+{
+  "schema": "lighton4b-receipt-prefill-initial-negative/v1",
+  "diagnostic_source": "9d21d2ff2cf122e0619c35ef9a1b60357acebc69",
+  "candidate_source": "a8a22749ab0b757ae1f317b6fa5b84ffd148b939",
+  "status": "observer_capture_budget_exceeded",
+  "initial_bootstrap_sha256": "cc2f66f864d2e356bd07d06eb87f3af4b4e4c4ac2e8af5e52f5fd814f9c230c1",
+  "outer_report_sha256": "8ee2f7c4762db5b138198cc4fbecc61e815eec701cd962b1f64cd84860ef0e37",
+  "trace_report_sha256": "d92122afdaa63e98c7ba14ad7053dc7989123ed75ec99850eb28a2a343353c70",
+  "source_report_sha256": "092afc5263053b488e8220e394b549e4c8009cb292f01dc04de8d5eccb670343",
+  "error_log_sha256": "d1011adbb706bb84ff11c826ace7154c2c8dc5a6676f92ae912ea9c9ee4e1acd",
+  "elapsed_seconds": 654.642828065,
+  "off_first_sample_score_vision_positions_frozen_exact": true,
+  "on_observer_complete": false,
+  "on_retained_stage_files": 477,
+  "on_retained_stage_bytes": 534981332,
+  "initial_maximum_capture_bytes": 536870912,
+  "corrected_maximum_capture_bytes": 805306368,
+  "native_model_forward_executed": false,
+  "full_decode_executed": false,
+  "full_f32_model_instantiated": false,
+  "earliest_difference_supported": false,
+  "limits": [
+    "Observer cap failure occurred during trailer graph3; a partial image trace does not establish completed ON neutrality.",
+    "Only the diagnostic cumulative capture limit changes; source graph arithmetic, model, inputs, first-score identity and decoded floors remain frozen.",
+    "Corrected source OFF/ON prefill-plus-one-token controls are required before attribution."
+  ]
+}

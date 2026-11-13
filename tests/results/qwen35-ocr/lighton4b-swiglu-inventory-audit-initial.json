@@ -1,0 +1,7 @@
+{
+  "status": "failed",
+  "model_forward_executed": false,
+  "qualified": false,
+  "error_type": "KeyError",
+  "elapsed_seconds": 18.10289865599998
+}

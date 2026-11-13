@@ -1,0 +1,685 @@
+{
+  "schema": "lighton4b-book-second-swiglu-quant-review/v1",
+  "status": "measured_closed_second_image_swiglu_quant_replay",
+  "controller_source": "3b4b5d9cbe01d548a55d97304809f21989aa341d",
+  "hosted_execution_version": 2,
+  "worker_seconds": 157.73321671999997,
+  "worker_report_sha256": "23ac8a832bbeaf76331b4f7eaf88af79a4ad37ab04c1e183c359e9eeb241138d",
+  "test_overlay_sha256": {
+    "CMakeLists.txt": "00b6e5a201404bbba9d3a17db081b81b61d6659540b2f515cef2fe623c0be08d",
+    "protocol.json": "89687e1057b12d9852770ad8cd1996645c72b8e9d93334f2aa2ac07e1ac057bd",
+    "worker.py": "3a045f6a9a0cab267b5806dd2bfd5e5f4cdeda406dec24d53a8a9fee70697b94",
+    "main.cpp": "3939f2f5fbc6bb0023541d463905448a0dfe2e92166cf44626ac7fba1ade0a4f"
+  },
+  "protocol": {
+    "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+    "native_ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+    "source_url": "https://huggingface.co/richardyoung/LightOnOCR-3-4B-GGUF/resolve/8406c78c9f35b0a4d6c9cc5f69dff0e14e93ce01/LightOnOCR-3-4B-Q4_K_M.gguf",
+    "source_bytes": 2708804576,
+    "source_sha256": "b1dd753e6f7d7d7ee3e86134337dd1ae7b08e2ed181989ae8264aa670d8ccc26",
+    "weights": [
+      {
+        "physical_name": "blk.0.ffn_down.weight",
+        "source_offset": 555561952,
+        "bytes": 19353600,
+        "source_packed_sha256": "ecaa1f50a85afde1ccc0bba5aefe5afd8de851698a02430ed770265941a9c11f",
+        "source_shape": [
+          9216,
+          2560
+        ],
+        "type": 14,
+        "sha256": "ecaa1f50a85afde1ccc0bba5aefe5afd8de851698a02430ed770265941a9c11f",
+        "whole_rows_permuted": 0,
+        "quant_blocks_unchanged": true,
+        "role": "down",
+        "file": "down.quant"
+      }
+    ],
+    "pack_receipt": {
+      "bytes": 483048,
+      "sha256": "920b4d5db276414bdd743fcc80a7ed1033ed1c0ca3b76859ef922aa667de9dee"
+    },
+    "schema": "lighton4b-book-second-swiglu-quant/v1",
+    "native_receipt_sha256": "d6501901252b1297b8f0293bf844cee4d1e477f320c99f8a926d3fc1c7736dbc",
+    "source_receipt_sha256": "4a9776508758866dbdcf02f41dfec94844230c7e215f72ef1061142834992dc4",
+    "historical_source": "a6164205620c71427a39c97ab386591406c4ca73",
+    "tokens": 16,
+    "image_rows": [
+      16,
+      32
+    ],
+    "total_timeout_seconds": 1800,
+    "model_forward_allowed": false,
+    "decoded_generation_allowed": false,
+    "adapter_hashes": {
+      "main.cpp": "3939f2f5fbc6bb0023541d463905448a0dfe2e92166cf44626ac7fba1ade0a4f",
+      "CMakeLists.txt": "00b6e5a201404bbba9d3a17db081b81b61d6659540b2f515cef2fe623c0be08d"
+    },
+    "helper_hashes": {
+      "lighton4b_physical_q6_tiled.cpp": "097955fe71ef054741bd946c7c94129b71ad820d6a18902d4db8034edc29b898",
+      "lighton4b_physical_q6_tiled.h": "bf965a7ddbf92a94ceb74a01d5f9c63ed26566e5507fd85e456f78198e2f2951",
+      "core/env_gate.h": "2370e31636ea25bc1e5ca63e1e606f4cd3c07c65e0f4d1347b2ec6daf57eaa0e"
+    }
+  },
+  "actual_comparisons": {
+    "gate": {
+      "elements": 147456,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.39815753384173724,
+      "source_rms": 0.39815753384173724,
+      "native_max_abs": 3.4082846641540527,
+      "source_max_abs": 3.4082846641540527
+    },
+    "up": {
+      "elements": 147456,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.290090778658238,
+      "source_rms": 0.290090778658238,
+      "native_max_abs": 2.886766195297241,
+      "source_max_abs": 2.886766195297241
+    },
+    "activation": {
+      "elements": 147456,
+      "bit_exact": false,
+      "error_rms": 2.67390735954575e-09,
+      "error_max_abs": 1.1920928955078125e-07,
+      "native_rms": 0.05243854966523442,
+      "source_rms": 0.05243855007909797,
+      "native_max_abs": 2.373706817626953,
+      "source_max_abs": 2.373706817626953
+    },
+    "down": {
+      "elements": 40960,
+      "bit_exact": false,
+      "error_rms": 4.2173990541717645e-06,
+      "error_max_abs": 8.720159530639648e-05,
+      "native_rms": 0.05260875476163596,
+      "source_rms": 0.05260877541160493,
+      "native_max_abs": 2.991558074951172,
+      "source_max_abs": 2.991558074951172
+    }
+  },
+  "activation": {
+    "scalar": {
+      "vs_native": {
+        "elements": 147456,
+        "bit_exact": true,
+        "different_f32_words": 0,
+        "rms": 0.0,
+        "max_abs": 0.0,
+        "reference_rms_magnitude": 0.05243854966523442,
+        "candidate_rms_magnitude": 0.05243854966523442,
+        "reference_max_abs": 2.373706817626953
+      },
+      "vs_source": {
+        "elements": 147456,
+        "bit_exact": false,
+        "different_f32_words": 38695,
+        "rms": 2.67390735954575e-09,
+        "max_abs": 1.1920928955078125e-07,
+        "reference_rms_magnitude": 0.05243855007909797,
+        "candidate_rms_magnitude": 0.05243854966523442,
+        "reference_max_abs": 2.373706817626953
+      }
+    },
+    "native-fused": {
+      "vs_native": {
+        "elements": 147456,
+        "bit_exact": false,
+        "different_f32_words": 38695,
+        "rms": 2.67390735954575e-09,
+        "max_abs": 1.1920928955078125e-07,
+        "reference_rms_magnitude": 0.05243854966523442,
+        "candidate_rms_magnitude": 0.05243855007909797,
+        "reference_max_abs": 2.373706817626953
+      },
+      "vs_source": {
+        "elements": 147456,
+        "bit_exact": true,
+        "different_f32_words": 0,
+        "rms": 0.0,
+        "max_abs": 0.0,
+        "reference_rms_magnitude": 0.05243855007909797,
+        "candidate_rms_magnitude": 0.05243855007909797,
+        "reference_max_abs": 2.373706817626953
+      }
+    },
+    "source-fused": {
+      "vs_native": {
+        "elements": 147456,
+        "bit_exact": false,
+        "different_f32_words": 38695,
+        "rms": 2.67390735954575e-09,
+        "max_abs": 1.1920928955078125e-07,
+        "reference_rms_magnitude": 0.05243854966523442,
+        "candidate_rms_magnitude": 0.05243855007909797,
+        "reference_max_abs": 2.373706817626953
+      },
+      "vs_source": {
+        "elements": 147456,
+        "bit_exact": true,
+        "different_f32_words": 0,
+        "rms": 0.0,
+        "max_abs": 0.0,
+        "reference_rms_magnitude": 0.05243855007909797,
+        "candidate_rms_magnitude": 0.05243855007909797,
+        "reference_max_abs": 2.373706817626953
+      }
+    }
+  },
+  "required_actual_closures": {
+    "native_scalar_tiled": true,
+    "upstream_fused_raw": true,
+    "native_fused_tiled": true
+  },
+  "forced_code_closures": {
+    "scalar-native-tiled-forced": {
+      "elements": 40960,
+      "bit_exact": true,
+      "different_f32_words": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.05260875476163596,
+      "candidate_rms_magnitude": 0.05260875476163596,
+      "reference_max_abs": 2.991558074951172
+    },
+    "scalar-native-raw-forced": {
+      "elements": 40960,
+      "bit_exact": true,
+      "different_f32_words": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.05260875530507908,
+      "candidate_rms_magnitude": 0.05260875530507908,
+      "reference_max_abs": 2.991558074951172
+    },
+    "scalar-upstream-tiled-forced": {
+      "elements": 40960,
+      "bit_exact": true,
+      "different_f32_words": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.05260875476163596,
+      "candidate_rms_magnitude": 0.05260875476163596,
+      "reference_max_abs": 2.991558074951172
+    },
+    "scalar-upstream-raw-forced": {
+      "elements": 40960,
+      "bit_exact": true,
+      "different_f32_words": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.05260875476163596,
+      "candidate_rms_magnitude": 0.05260875476163596,
+      "reference_max_abs": 2.991558074951172
+    },
+    "native-fused-native-tiled-forced": {
+      "elements": 40960,
+      "bit_exact": true,
+      "different_f32_words": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.05260877541160493,
+      "candidate_rms_magnitude": 0.05260877541160493,
+      "reference_max_abs": 2.991558074951172
+    },
+    "native-fused-native-raw-forced": {
+      "elements": 40960,
+      "bit_exact": true,
+      "different_f32_words": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.05260877586692876,
+      "candidate_rms_magnitude": 0.05260877586692876,
+      "reference_max_abs": 2.991558074951172
+    },
+    "native-fused-upstream-tiled-forced": {
+      "elements": 40960,
+      "bit_exact": true,
+      "different_f32_words": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.05260877541160493,
+      "candidate_rms_magnitude": 0.05260877541160493,
+      "reference_max_abs": 2.991558074951172
+    },
+    "native-fused-upstream-raw-forced": {
+      "elements": 40960,
+      "bit_exact": true,
+      "different_f32_words": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.05260877541160493,
+      "candidate_rms_magnitude": 0.05260877541160493,
+      "reference_max_abs": 2.991558074951172
+    },
+    "source-fused-native-tiled-forced": {
+      "elements": 40960,
+      "bit_exact": true,
+      "different_f32_words": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.05260877541160493,
+      "candidate_rms_magnitude": 0.05260877541160493,
+      "reference_max_abs": 2.991558074951172
+    },
+    "source-fused-native-raw-forced": {
+      "elements": 40960,
+      "bit_exact": true,
+      "different_f32_words": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.05260877586692876,
+      "candidate_rms_magnitude": 0.05260877586692876,
+      "reference_max_abs": 2.991558074951172
+    },
+    "source-fused-upstream-tiled-forced": {
+      "elements": 40960,
+      "bit_exact": true,
+      "different_f32_words": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.05260877541160493,
+      "candidate_rms_magnitude": 0.05260877541160493,
+      "reference_max_abs": 2.991558074951172
+    },
+    "source-fused-upstream-raw-forced": {
+      "elements": 40960,
+      "bit_exact": true,
+      "different_f32_words": 0,
+      "rms": 0.0,
+      "max_abs": 0.0,
+      "reference_rms_magnitude": 0.05260877541160493,
+      "candidate_rms_magnitude": 0.05260877541160493,
+      "reference_max_abs": 2.991558074951172
+    }
+  },
+  "outputs": {
+    "scalar": {
+      "native-raw": {
+        "vs_native": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 37705,
+          "rms": 1.6442715891155686e-08,
+          "max_abs": 3.5762786865234375e-07,
+          "reference_rms_magnitude": 0.05260875476163596,
+          "candidate_rms_magnitude": 0.05260875530507908,
+          "reference_max_abs": 2.991558074951172
+        },
+        "vs_source": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 37928,
+          "rms": 4.217525343788373e-06,
+          "max_abs": 8.722394704818726e-05,
+          "reference_rms_magnitude": 0.05260877541160493,
+          "candidate_rms_magnitude": 0.05260875530507908,
+          "reference_max_abs": 2.991558074951172
+        }
+      },
+      "native-tiled": {
+        "vs_native": {
+          "elements": 40960,
+          "bit_exact": true,
+          "different_f32_words": 0,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_rms_magnitude": 0.05260875476163596,
+          "candidate_rms_magnitude": 0.05260875476163596,
+          "reference_max_abs": 2.991558074951172
+        },
+        "vs_source": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 25173,
+          "rms": 4.2173990541717645e-06,
+          "max_abs": 8.720159530639648e-05,
+          "reference_rms_magnitude": 0.05260877541160493,
+          "candidate_rms_magnitude": 0.05260875476163596,
+          "reference_max_abs": 2.991558074951172
+        }
+      },
+      "upstream-raw": {
+        "vs_native": {
+          "elements": 40960,
+          "bit_exact": true,
+          "different_f32_words": 0,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_rms_magnitude": 0.05260875476163596,
+          "candidate_rms_magnitude": 0.05260875476163596,
+          "reference_max_abs": 2.991558074951172
+        },
+        "vs_source": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 25173,
+          "rms": 4.2173990541717645e-06,
+          "max_abs": 8.720159530639648e-05,
+          "reference_rms_magnitude": 0.05260877541160493,
+          "candidate_rms_magnitude": 0.05260875476163596,
+          "reference_max_abs": 2.991558074951172
+        }
+      },
+      "upstream-tiled": {
+        "vs_native": {
+          "elements": 40960,
+          "bit_exact": true,
+          "different_f32_words": 0,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_rms_magnitude": 0.05260875476163596,
+          "candidate_rms_magnitude": 0.05260875476163596,
+          "reference_max_abs": 2.991558074951172
+        },
+        "vs_source": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 25173,
+          "rms": 4.2173990541717645e-06,
+          "max_abs": 8.720159530639648e-05,
+          "reference_rms_magnitude": 0.05260877541160493,
+          "candidate_rms_magnitude": 0.05260875476163596,
+          "reference_max_abs": 2.991558074951172
+        }
+      }
+    },
+    "native-fused": {
+      "native-raw": {
+        "vs_native": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 37946,
+          "rms": 4.217369660149367e-06,
+          "max_abs": 8.719414472579956e-05,
+          "reference_rms_magnitude": 0.05260875476163596,
+          "candidate_rms_magnitude": 0.05260877586692876,
+          "reference_max_abs": 2.991558074951172
+        },
+        "vs_source": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 37615,
+          "rms": 1.644316388172815e-08,
+          "max_abs": 3.5762786865234375e-07,
+          "reference_rms_magnitude": 0.05260877541160493,
+          "candidate_rms_magnitude": 0.05260877586692876,
+          "reference_max_abs": 2.991558074951172
+        }
+      },
+      "native-tiled": {
+        "vs_native": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 25173,
+          "rms": 4.2173990541717645e-06,
+          "max_abs": 8.720159530639648e-05,
+          "reference_rms_magnitude": 0.05260875476163596,
+          "candidate_rms_magnitude": 0.05260877541160493,
+          "reference_max_abs": 2.991558074951172
+        },
+        "vs_source": {
+          "elements": 40960,
+          "bit_exact": true,
+          "different_f32_words": 0,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_rms_magnitude": 0.05260877541160493,
+          "candidate_rms_magnitude": 0.05260877541160493,
+          "reference_max_abs": 2.991558074951172
+        }
+      },
+      "upstream-raw": {
+        "vs_native": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 25173,
+          "rms": 4.2173990541717645e-06,
+          "max_abs": 8.720159530639648e-05,
+          "reference_rms_magnitude": 0.05260875476163596,
+          "candidate_rms_magnitude": 0.05260877541160493,
+          "reference_max_abs": 2.991558074951172
+        },
+        "vs_source": {
+          "elements": 40960,
+          "bit_exact": true,
+          "different_f32_words": 0,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_rms_magnitude": 0.05260877541160493,
+          "candidate_rms_magnitude": 0.05260877541160493,
+          "reference_max_abs": 2.991558074951172
+        }
+      },
+      "upstream-tiled": {
+        "vs_native": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 25173,
+          "rms": 4.2173990541717645e-06,
+          "max_abs": 8.720159530639648e-05,
+          "reference_rms_magnitude": 0.05260875476163596,
+          "candidate_rms_magnitude": 0.05260877541160493,
+          "reference_max_abs": 2.991558074951172
+        },
+        "vs_source": {
+          "elements": 40960,
+          "bit_exact": true,
+          "different_f32_words": 0,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_rms_magnitude": 0.05260877541160493,
+          "candidate_rms_magnitude": 0.05260877541160493,
+          "reference_max_abs": 2.991558074951172
+        }
+      }
+    },
+    "source-fused": {
+      "native-raw": {
+        "vs_native": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 37946,
+          "rms": 4.217369660149367e-06,
+          "max_abs": 8.719414472579956e-05,
+          "reference_rms_magnitude": 0.05260875476163596,
+          "candidate_rms_magnitude": 0.05260877586692876,
+          "reference_max_abs": 2.991558074951172
+        },
+        "vs_source": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 37615,
+          "rms": 1.644316388172815e-08,
+          "max_abs": 3.5762786865234375e-07,
+          "reference_rms_magnitude": 0.05260877541160493,
+          "candidate_rms_magnitude": 0.05260877586692876,
+          "reference_max_abs": 2.991558074951172
+        }
+      },
+      "native-tiled": {
+        "vs_native": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 25173,
+          "rms": 4.2173990541717645e-06,
+          "max_abs": 8.720159530639648e-05,
+          "reference_rms_magnitude": 0.05260875476163596,
+          "candidate_rms_magnitude": 0.05260877541160493,
+          "reference_max_abs": 2.991558074951172
+        },
+        "vs_source": {
+          "elements": 40960,
+          "bit_exact": true,
+          "different_f32_words": 0,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_rms_magnitude": 0.05260877541160493,
+          "candidate_rms_magnitude": 0.05260877541160493,
+          "reference_max_abs": 2.991558074951172
+        }
+      },
+      "upstream-raw": {
+        "vs_native": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 25173,
+          "rms": 4.2173990541717645e-06,
+          "max_abs": 8.720159530639648e-05,
+          "reference_rms_magnitude": 0.05260875476163596,
+          "candidate_rms_magnitude": 0.05260877541160493,
+          "reference_max_abs": 2.991558074951172
+        },
+        "vs_source": {
+          "elements": 40960,
+          "bit_exact": true,
+          "different_f32_words": 0,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_rms_magnitude": 0.05260877541160493,
+          "candidate_rms_magnitude": 0.05260877541160493,
+          "reference_max_abs": 2.991558074951172
+        }
+      },
+      "upstream-tiled": {
+        "vs_native": {
+          "elements": 40960,
+          "bit_exact": false,
+          "different_f32_words": 25173,
+          "rms": 4.2173990541717645e-06,
+          "max_abs": 8.720159530639648e-05,
+          "reference_rms_magnitude": 0.05260875476163596,
+          "candidate_rms_magnitude": 0.05260877541160493,
+          "reference_max_abs": 2.991558074951172
+        },
+        "vs_source": {
+          "elements": 40960,
+          "bit_exact": true,
+          "different_f32_words": 0,
+          "rms": 0.0,
+          "max_abs": 0.0,
+          "reference_rms_magnitude": 0.05260877541160493,
+          "candidate_rms_magnitude": 0.05260877541160493,
+          "reference_max_abs": 2.991558074951172
+        }
+      }
+    }
+  },
+  "code_differences": {
+    "native": {
+      "scope": "Public Q8_K converter intervention; forced-output closure required; no captured internal buffer or vocabulary IDs.",
+      "different_scales": 98,
+      "different_qs": 1,
+      "different_bsums": 1
+    },
+    "upstream": {
+      "scope": "Public Q8_K converter intervention; forced-output closure required; no captured internal buffer or vocabulary IDs.",
+      "different_scales": 98,
+      "different_qs": 1,
+      "different_bsums": 1
+    }
+  },
+  "integer_code_change": {
+    "local_row": 7,
+    "image_row": 23,
+    "block": 10,
+    "lane": 143,
+    "feature": 2703,
+    "scalar": {
+      "activation": 0.02059226669371128,
+      "scale": 0.0019611683674156666,
+      "code": 10,
+      "reconstructed": 0.019611683674156666
+    },
+    "source-fused": {
+      "activation": 0.02059226855635643,
+      "scale": 0.001961168134585023,
+      "code": 11,
+      "reconstructed": 0.021572849480435252
+    }
+  },
+  "row23_output_differences": {
+    "native-raw": {
+      "local_row": 7,
+      "image_row": 23,
+      "elements": 2560,
+      "bit_exact": false,
+      "error_rms": 1.686973311918269e-05,
+      "error_max_abs": 8.721649646759033e-05,
+      "native_rms": 0.0555581934630566,
+      "source_rms": 0.05555850036474463,
+      "native_max_abs": 0.8687005043029785,
+      "source_max_abs": 0.8687509298324585
+    },
+    "native-tiled": {
+      "local_row": 7,
+      "image_row": 23,
+      "elements": 2560,
+      "bit_exact": false,
+      "error_rms": 1.686959033422452e-05,
+      "error_max_abs": 8.720159530639648e-05,
+      "native_rms": 0.05555819393479992,
+      "source_rms": 0.055558500283757514,
+      "native_max_abs": 0.8687005639076233,
+      "source_max_abs": 0.8687509298324585
+    },
+    "upstream-raw": {
+      "local_row": 7,
+      "image_row": 23,
+      "elements": 2560,
+      "bit_exact": false,
+      "error_rms": 1.686959033422452e-05,
+      "error_max_abs": 8.720159530639648e-05,
+      "native_rms": 0.05555819393479992,
+      "source_rms": 0.055558500283757514,
+      "native_max_abs": 0.8687005639076233,
+      "source_max_abs": 0.8687509298324585
+    },
+    "upstream-tiled": {
+      "local_row": 7,
+      "image_row": 23,
+      "elements": 2560,
+      "bit_exact": false,
+      "error_rms": 1.686959033422452e-05,
+      "error_max_abs": 8.720159530639648e-05,
+      "native_rms": 0.05555819393479992,
+      "source_rms": 0.055558500283757514,
+      "native_max_abs": 0.8687005639076233,
+      "source_max_abs": 0.8687509298324585
+    }
+  },
+  "selected_artifact_audit": {
+    "files_rehashed": 57,
+    "independently_recomputed_code_differences": {
+      "scales": 98,
+      "qs": 1,
+      "bsums": 1
+    },
+    "scope": "Selected small reports/logs and four actual operator arrays; no complete remote raw-artifact audit or full model readback."
+  },
+  "initial_failure": {
+    "version": 1,
+    "report_sha256": "2ad6f2df1a9fb02b39bb932e61837a180122f2e385dd18ad9f0adf426c32d3e2",
+    "stage": "controller source admission",
+    "cause": "Direct read-only git query inherited worker directory; explicit repository path added.",
+    "build_executed": false,
+    "parameter_transfer_executed": false,
+    "operator_compute_executed": false
+  },
+  "model_forward_executed": false,
+  "original_forward_executed": false,
+  "decoded_generation_executed": false,
+  "runtime_changed": false,
+  "quality_qualified": false,
+  "limits": [
+    "Frozen second image tile only, no runtime change or decoded quality claim.",
+    "Codes are public converter outputs with forced-output equivalence, not directly captured internal buffers.",
+    "Historical native tiled helper and upstream raw graph must independently reproduce actual down outputs.",
+    "No decoded continuation or whole-model causal/quality claim; preserve prior cap and EOS negatives."
+  ]
+}

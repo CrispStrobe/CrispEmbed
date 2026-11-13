@@ -1,0 +1,26 @@
+{
+  "source_function_sha256": {
+    "src/llama-graph.cpp": "cf2e6b6574737cf0f038922d8e12bf8950ee2058c6d9417315c2b1ba49ee9159",
+    "src/llama-kv-cache.cpp": "7f7bdb698d6db40b9a57cfa6be7f40396efdd8ea76e2fbce8b1f54d5f9142f6b",
+    "src/models/qwen35.cpp": "3387cf23a95ca71d2a38fac4b32708d6424fc9888273148ff6b4db5e510c9406"
+  },
+  "upstream_commit": "6c01da6278ab6c69ed67d9124806b50d2b299ba7",
+  "native_ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "schema": "lighton4b-receipt-prefill/v1",
+  "candidate_source": "a8a22749ab0b757ae1f317b6fa5b84ffd148b939",
+  "controller_source": "a6164205620c71427a39c97ab386591406c4ca73",
+  "fixed_receipt_sha256": "8001a29fab5abc3481e601168e10ca4383d10060ad7e4356a9110eb345c0b56a",
+  "reference_sha256": "8bf1ebbdf12b9dd2b20603c11a9b7d4c990e97e7f37a2f5aca3fb3324b3c8dfc",
+  "source_prompt_rows": [
+    4,
+    242,
+    6,
+    4
+  ],
+  "source_generated_tokens": 465,
+  "full_decode_allowed": false,
+  "native_model_forward_allowed": false,
+  "full_f32_model_allowed": false,
+  "total_timeout_seconds": 4200,
+  "maximum_capture_bytes": 805306368
+}

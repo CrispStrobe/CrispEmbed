@@ -1,0 +1,24 @@
+{
+  "schema": "lighton4b-native-book405-trace/v1",
+  "controller_source": "4a32434e822ac6c8fd69ad77252a59a2cd4d5950",
+  "compiled_source": "a6164205620c71427a39c97ab386591406c4ca73",
+  "worker_sha256": "743048ee9a93137a16aece6ad42db958fc4b9b36083a73863735b3e02f4aa072",
+  "runtime_manifest_sha256": "540aa9983faf570e46e9e6708f745dbd3cbd5f8354276f3fddb301e7fe9e65d7",
+  "original_capped_receipt_sha256": "d2ea232376c2fa4697613d615d33b8b10a4dc0d5ab987fdac7d1ed3d99561760",
+  "trace_position": 405,
+  "cap": 1536,
+  "threads": 4,
+  "model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43",
+  "runtime_rebuilt": false,
+  "reference_forward_executed": false,
+  "quality_qualified": false,
+  "acceptance": [
+    "Authenticate original frozen source/input/binary/profile/gate tuple before new inference.",
+    "Only test-executable GREEDY_TRACE=1 and GREEDY_TRACE_POSITION=405 differ from old nativeON arm.",
+    "Reproduce all1536 retained full score rows, entire capped IDs/text and all82 earlier prefill/vision stages.",
+    "Capture32 native405 layer outputs, norm/input/positions and layer0 operator arrays; missing source state is not inferred.",
+    "Native/source first405 prior IDs must match before new stage comparison; all protected outputs remain private."
+  ],
+  "status": "measured-neutral-capture-small-report-reviewed",
+  "producer_receipt_sha256": "0a6830da47d49062af62df3ff882a3c895acb36a2fb7c4f75856dbf7bb4d0dc2"
+}

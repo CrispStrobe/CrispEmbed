@@ -1,0 +1,14 @@
+{
+  "status": "failed",
+  "artifact_only": true,
+  "model_forward_executed": false,
+  "reference_forward_executed": false,
+  "runtime_rebuilt": false,
+  "qualified": false,
+  "diagnostic_source": "b1094905e4df134de366459f775d74d5257e4540",
+  "producer_receipt_sha256": "8001a29fab5abc3481e601168e10ca4383d10060ad7e4356a9110eb345c0b56a",
+  "producer_bootstrap_sha256": "e49ec255fddbb22faf8770b339fe0023d9b490437c778d7271d6d1e1c60e2091",
+  "phase": "artifact-audit",
+  "error_type": "RuntimeError",
+  "elapsed_seconds": 58.32557412999995
+}

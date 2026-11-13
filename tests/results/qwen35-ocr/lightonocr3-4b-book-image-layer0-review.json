@@ -1,0 +1,227 @@
+{
+  "schema": "lighton4b-book-image-layer0-selected-review/v1",
+  "service": "Kaggle",
+  "kernel_id": 144613166,
+  "version": 1,
+  "status": "measured_cache_closed_image_layer0_trace",
+  "raw_report_sha256": "f7cf3b00bac5bab2931e86bd60ae9b8fd8473e0d1e06026e2487fb5eebdc7b21",
+  "raw_report_bytes": 33438,
+  "controller_source": "3b4b5d9cbe01d548a55d97304809f21989aa341d",
+  "compiled_runtime_source": "a6164205620c71427a39c97ab386591406c4ca73",
+  "ggml_source": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "generated_driver": {
+    "driver_sha256": "295a041ad9fc81eaf4de699adaeaa806cda1b09b28a2553307161bfb0c60ee53",
+    "target": "lighton4b-book-image-layer0-probe"
+  },
+  "native_binary_sha256": "7953d22b4e065e7f258a520af086d31fc3bfcbcebf8c770bcc9a98ebd9d1cd8f",
+  "elapsed_seconds": 351.016771846,
+  "gpu_session": true,
+  "gpu_computation": false,
+  "decoded_generation_executed": false,
+  "full_f32_text_model_instantiated": false,
+  "original_forward_executed": false,
+  "native_prefill_executed": true,
+  "qualified": false,
+  "all_historical_prefill_vision_stage_hashes_exact": 82,
+  "capture": {
+    "schema": "lighton4b-book-image-layer0-capture/v1",
+    "tokens": 16,
+    "offset": 4,
+    "cache_before_tokens": 4,
+    "cache_after_tokens": 20,
+    "all_layer0_tiles_hidden_exact": true,
+    "final_layer0_cache_exact": true,
+    "previous_caches_immutable": true,
+    "core_replay_attn_state_conv_exact": true,
+    "decoded_quality_qualified": false
+  },
+  "comparisons": [
+    {
+      "stage": "model.input_embed",
+      "elements": 40960,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.1887450967352668,
+      "source_rms": 0.1887450967352668,
+      "native_max_abs": 6.390467643737793,
+      "source_max_abs": 6.390467643737793
+    },
+    {
+      "stage": "attn_norm-0",
+      "elements": 40960,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 1.3225279824724332,
+      "source_rms": 1.3225279824724332,
+      "native_max_abs": 59.66427993774414,
+      "source_max_abs": 59.66427993774414
+    },
+    {
+      "stage": "linear_attn_qkv_mixed-0",
+      "elements": 131072,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 1.202966657196976,
+      "source_rms": 1.202966657196976,
+      "native_max_abs": 19.02117347717285,
+      "source_max_abs": 19.02117347717285
+    },
+    {
+      "stage": "z-0",
+      "elements": 65536,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 1.0741875287130391,
+      "source_rms": 1.0741875287130391,
+      "native_max_abs": 11.25200080871582,
+      "source_max_abs": 11.25200080871582
+    },
+    {
+      "stage": "alpha-0",
+      "elements": 512,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 3.6432593501178094,
+      "source_rms": 3.6432593501178094,
+      "native_max_abs": 10.52942180633545,
+      "source_max_abs": 10.52942180633545
+    },
+    {
+      "stage": "beta-0",
+      "elements": 512,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 1.8970373888511691,
+      "source_rms": 1.8970373888511691,
+      "native_max_abs": 5.79775857925415,
+      "source_max_abs": 5.79775857925415
+    },
+    {
+      "stage": "final_output-0",
+      "elements": 65536,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.09839345497123207,
+      "source_rms": 0.09839345497123207,
+      "native_max_abs": 7.325491905212402,
+      "source_max_abs": 7.325491905212402
+    },
+    {
+      "stage": "linear_attn_out-0",
+      "elements": 40960,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.06607969197165339,
+      "source_rms": 0.06607969197165339,
+      "native_max_abs": 4.688304901123047,
+      "source_max_abs": 4.688304901123047
+    },
+    {
+      "stage": "attn_residual-0",
+      "elements": 40960,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.21956839268062658,
+      "source_rms": 0.21956839268062658,
+      "native_max_abs": 11.07877254486084,
+      "source_max_abs": 11.07877254486084
+    },
+    {
+      "stage": "attn_post_norm-0",
+      "elements": 40960,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.6696397492267436,
+      "source_rms": 0.6696397492267436,
+      "native_max_abs": 6.964622497558594,
+      "source_max_abs": 6.964622497558594
+    },
+    {
+      "stage": "ffn_gate-0",
+      "elements": 147456,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.4304190870127498,
+      "source_rms": 0.4304190870127498,
+      "native_max_abs": 4.681849002838135,
+      "source_max_abs": 4.681849002838135
+    },
+    {
+      "stage": "ffn_up-0",
+      "elements": 147456,
+      "bit_exact": true,
+      "error_rms": 0.0,
+      "error_max_abs": 0.0,
+      "native_rms": 0.31502971076533065,
+      "source_rms": 0.31502971076533065,
+      "native_max_abs": 3.338560104370117,
+      "source_max_abs": 3.338560104370117
+    },
+    {
+      "stage": "ffn_swiglu-0",
+      "elements": 147456,
+      "bit_exact": false,
+      "error_rms": 3.047939580737043e-09,
+      "error_max_abs": 1.1920928955078125e-07,
+      "native_rms": 0.05957940417486233,
+      "source_rms": 0.05957940476383066,
+      "native_max_abs": 2.5370659828186035,
+      "source_max_abs": 2.5370659828186035
+    },
+    {
+      "stage": "ffn_out-0",
+      "elements": 40960,
+      "bit_exact": false,
+      "error_rms": 3.862779990988984e-09,
+      "error_max_abs": 4.470348358154297e-08,
+      "native_rms": 0.0585933434270298,
+      "source_rms": 0.058593343963168065,
+      "native_max_abs": 2.1865737438201904,
+      "source_max_abs": 2.1865737438201904
+    },
+    {
+      "stage": "l_out-0",
+      "elements": 40960,
+      "bit_exact": false,
+      "error_rms": 5.508062106773008e-09,
+      "error_max_abs": 1.1920928955078125e-07,
+      "native_rms": 0.2125310006387966,
+      "source_rms": 0.2125310008033272,
+      "native_max_abs": 9.067296028137207,
+      "source_max_abs": 9.067296028137207
+    }
+  ],
+  "earliest_recorded_difference": {
+    "stage": "ffn_swiglu-0",
+    "elements": 147456,
+    "bit_exact": false,
+    "error_rms": 3.047939580737043e-09,
+    "error_max_abs": 1.1920928955078125e-07,
+    "native_rms": 0.05957940417486233,
+    "source_rms": 0.05957940476383066,
+    "native_max_abs": 2.5370659828186035,
+    "source_max_abs": 2.5370659828186035
+  },
+  "limits": [
+    "One frozen book image chunk, no decoded generation or quality claim.",
+    "Actual main tile/final cache and core replay close bitwise; source persistent cache layout remains unverified and is not compared.",
+    "Source image graph252 versus native16; differing subsequent inputs preclude unique operator attribution without replay."
+  ],
+  "provenance": {
+    "historical_native_receipt_sha256": "f231ab48c9bff411a1f9c96cfb79eda084f2f0b7cee46f9ea747ccc734d5f8e6",
+    "neutral_source_receipt_sha256": "4a9776508758866dbdcf02f41dfec94844230c7e215f72ef1061142834992dc4",
+    "input_seal_sha256": "cbdc21be0e226c58cd3cb44341cc640616f4aa29ae42ffde16d664e20a6a4ed1",
+    "model_sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43"
+  }
+}

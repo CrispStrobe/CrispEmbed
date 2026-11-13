@@ -1,0 +1,14 @@
+{
+  "schema": "lighton4b-planner-book-extended/v1",
+  "status": "measured_neutral_native405_book_trace",
+  "source_sha": "4a32434e822ac6c8fd69ad77252a59a2cd4d5950",
+  "neutrality_reference_sha256": "d2ea232376c2fa4697613d615d33b8b10a4dc0d5ab987fdac7d1ed3d99561760",
+  "all1536_rows_ids_text_observer_neutral": true,
+  "trace_position": 405,
+  "native_trace_layers": 32,
+  "strict_1054_prefix_and_stages_reproduced": true,
+  "elapsed_seconds": 2335.166110441,
+  "phase": "planner-on-extended",
+  "raw_report_sha256": "0a6830da47d49062af62df3ff882a3c895acb36a2fb7c4f75856dbf7bb4d0dc2",
+  "qualified": false
+}

@@ -8386,3 +8386,24 @@ max1.09219897/2.61007118, RMS0.200536951/0.545669734 and
 cosine0.996400595/0.978054762. All fail unchanged strict gates and retain
 Q8 `<figure`/Q4 `<table>` two-token prefixes. These source-pinned smoke paths
 are not full decoded parity or model qualification; both gates remain off.
+
+### 12 November 2026 — second-image FFN operator attribution
+
+The [closed replay](docs/lighton4b-book-second-swiglu-quant.md) measures scalar/fused
+activation RMS2.67390736e-9/max1.19209290e-7, amplified through public Q8_K rounding
+to actual Q6 down RMS4.21739905e-6/max8.72015953e-5 (source RMS0.05260878).
+Image23 down RMS is1.68695903e-5, source RMS0.05555850. Hosted157.733 seconds
+include two builds and bounded transport; no inference-speed or decoded-quality
+claim follows. All actual activation/down and12 forced-output closures pass.
+
+## Fixed SwiGLU partial diagnostic (12 November 2026)
+
+The [preserved partial audit](docs/lighton4b-swiglu-fixed-partial.md) checks4,340 rows without model execution in119.609 seconds; this is artifact-audit time, not inference performance. Receipt content CER/WER changes .0325520833/.1319444444→.03125/.125 with468→465 EOS tokens and source-floor false→true. Book CER/WER changes1.2465615565/1.7176258993→1.2089902717/1.75; both arms remain1536/noEOS and fail their source floor. Inventory is unmeasured. No panel completion, speed or broad decoded-quality claim is supported.
+
+- 12 November2026 [fixed SwiGLU inventory continuation](docs/lighton4b-swiglu-fixed-inventory.md): same tested CPU bundle/threads4, OFF258.47s versus ON254.25s with identical248EOS IDs/text/all15cells. One sequential pair is diagnostic, not a speed qualification. First-score RMS0.175423626→0.114570998 improves while max0.801771879→0.930949211 worsens; first paired native layer0 RMS8.32628e-7/max3.86611e-5 at magnitude~0.152612. Fresh unchanged admission telemetry passes; original failed guard cause remains unclassified. Book remains capped/floor-negative, aggregate2/3 provisional floors does not qualify shipping.
+## Physical RoPE observed output limits (12 November 2026)
+
+The [independent small audit](docs/lighton4b-physical-rope-observed-audit.md) verifies ON source token/text equality for table282, form170 and Arabic6 tokens. Against original BF16 outputs, table edits worsen20→348 characters/6→97 words and form175→189/45→46; Arabic0/0 remains exact. ON first-score RMS falls to6.068e-7/6.549e-7/5.779e-7, but this is source-fidelity evidence, not decoded-quality or speed qualification. All six arms reach EOS; full raw-inventory rehash remains outside this small audit.
+## Physical RoPE fixed decoded limits (12 November 2026)
+
+The [raw-audited fixed panel](docs/lighton4b-physical-rope-fixed-audit.md) changes book1536/noEOS→654/EOS, content CER/WER1.2089902717/1.75→.1764508554/.2625899281. Receipt465→468/EOS worsens .03125/.125→.0325520833/.1319444444 and loses its source floor; inventory248/EOS remains content0/0. All ON arms complete with2/3 provisional floors. Receipt first-score RMS worsens .1221114823→.2213878489 while book/inventory ON RMS falls to6.633e-7/3.431e-7. All paired native first differences are layer3. The296.518-second audit time is artifact analysis, not inference speed; no broad decoded-quality qualification.

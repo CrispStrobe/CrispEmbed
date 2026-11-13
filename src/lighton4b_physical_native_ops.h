@@ -3,6 +3,7 @@
 #include "lighton4b_physical_f16_attention.h"
 #include "qwen35_weight_cache.h"
 #include "lighton4b_physical_q6_tiled.h"
+#include "lighton4b_source_prefill_chunks.h"
 #include "ggml.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -53,6 +54,11 @@ inline bool lighton4b_physical_q6_tiled_valid(bool physical) {
     return !lighton4b_physical_q6_tiled_mode(physical) ||
            (lighton4b_physical_native_component(physical, 1) && lighton4b_physical_f16_attention_available() &&
             lighton4b_physical_q6_tiled_available());
+}
+inline bool lighton4b_source_prefill_chunks_valid(bool physical) {
+    return lighton4b_source_prefill_aligned_valid(physical) &&
+           (!lighton4b_source_prefill_chunks_mode(physical) ||
+            (lighton4b_physical_q6_tiled_mode(physical) && lighton4b_physical_q6_tiled_valid(physical)));
 }
 // Borrow original quant storage, or retain explicitly owned Q4 repacked bytes.
 // No F32 weight materialization/cache and no shared trait mutation.

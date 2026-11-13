@@ -23,7 +23,7 @@ static int crispembed_test_main() {
             setenv(key, "1", 1);
         for (const char * key : { "CRISPEMBED_LIGHTON4B_BF16_LINEAR", "CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS",
                                   "CRISPEMBED_LIGHTON4B_HEAD_BF16", "CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK",
-                                  "CRISPEMBED_QWEN35_PRECISE_RMS" })
+                                  "CRISPEMBED_QWEN35_PRECISE_RMS", "CRISPEMBED_LIGHTON4B_PHYSICAL_SWIGLU" })
             setenv(key, "0", 1);
         setenv("CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION", "all", 1);
         const char * flag = "CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS";
@@ -127,6 +127,33 @@ static int crispembed_test_main() {
         need(off.cache.tokens == 1 && !off.cache.physical_gdn_source_ops && on.cache.tokens == 1 &&
                  on.cache.physical_gdn_source_ops,
              "previous caches remain immutable");
+        ++checks;
+        // The independently gated FFN arithmetic must bind the actual recurrent
+        // stream even when its zero-matrix analytic hidden output is unchanged.
+        const char * swiglu = "CRISPEMBED_LIGHTON4B_PHYSICAL_SWIGLU";
+        setenv(swiglu, "1", 1);
+        rejected.hidden = { 123 };
+        need(!lighton4b_linear_block_cpu(w, input.data(), 1, 4, &off.cache, rejected) && rejected.hidden.empty(),
+             "SwiGLU off-to-on cache rejected");
+        ++checks;
+        lighton4b_linear_block_outputs fused, fused_next;
+        need(lighton4b_linear_block_cpu(w, input.data(), 1, 4, nullptr, fused) && fused.cache.physical_swiglu,
+             "fused synthetic full block binds cache");
+        good(fused, false, 1);
+        need(lighton4b_linear_block_cpu(w, input.data(), 1, 4, &fused.cache, fused_next) &&
+                 fused_next.cache.physical_swiglu,
+             "same-mode fused cache continues");
+        good(fused_next, false, 2);
+        setenv(swiglu, "0", 1);
+        rejected.hidden = { 123 };
+        need(!lighton4b_linear_block_cpu(w, input.data(), 1, 4, &fused.cache, rejected) && rejected.hidden.empty(),
+             "SwiGLU on-to-off cache rejected");
+        ++checks;
+        need(lighton4b_linear_block_cpu(w, input.data(), 1, 4, &off.cache, next) && !next.cache.physical_swiglu,
+             "SwiGLU original cache recovers");
+        good(next, false, 2);
+        need(!off.cache.physical_swiglu && fused.cache.physical_swiglu && fused.cache.tokens == 1,
+             "SwiGLU previous caches immutable");
         ++checks;
         std::printf("PHYSICAL_GDN_SOURCE_OPS_CONTROLS PASS checks=%zu model_payload=0 decoded=0\n", checks);
         return 0;

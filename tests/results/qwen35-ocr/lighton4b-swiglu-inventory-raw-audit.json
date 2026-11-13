@@ -1,0 +1,533 @@
+{
+  "schema": "lighton4b-swiglu-inventory-continuation-raw-audit/v1",
+  "status": "inventory_continuation_audit_complete",
+  "receipt_sha256": "a88b5341afabe2c685f1037dfe40bf8dce0345e7fa5cea5b2bb942b4e595afe1",
+  "owned_artifacts": 207,
+  "owned_artifact_bytes": 849114811,
+  "all_owned_artifact_hashes": true,
+  "all_raw_finite_argmax_sha": true,
+  "candidate_controls_sha256": "6c1fc8ea188d39e49ccc37b2ac7a6d6d7a6fe210e84e198630a6fb1c37ec5938",
+  "source_feature_forward_executed": false,
+  "model_forward_executed": false,
+  "qualified": false,
+  "rights": "Book recognized text and token IDs remain private; audit publishes counts, metrics and hashes only.",
+  "derived_statistics_scope": "Independent RMS/magnitudes may differ by at most eight double ULPs across hosted CPU reductions. Raw SHA, argmax, maximum errors, IDs/text, score/floor fields and stop states remain exact; no numerical or quality budget changes.",
+  "observed": {},
+  "cases": {
+    "inventory-table": {
+      "reference_score": {
+        "policy": "crispembed-ocr-quality-v1",
+        "complete": true,
+        "raw": {
+          "cer": 1.7818181818181817,
+          "wer": 1.03125
+        },
+        "characters": 459,
+        "lines": 34,
+        "parse_ok": true,
+        "content": {
+          "cer": 0.0,
+          "wer": 0.0
+        },
+        "table_gold_available": true,
+        "content_exact": true,
+        "table": {
+          "expected": 1,
+          "actual": 1,
+          "expected_cells": 15,
+          "cell_errors": 0,
+          "exact": true
+        },
+        "exact_quality": true,
+        "expected_table_shape": [
+          [
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        ],
+        "table_shape_valid": true
+      },
+      "reference_independent_edits": {
+        "raw": {
+          "character_edits": 294,
+          "reference_codepoints": 165,
+          "word_edits": 33,
+          "reference_words": 32
+        },
+        "content": {
+          "character_edits": 0,
+          "reference_codepoints": 165,
+          "word_edits": 0,
+          "reference_words": 32
+        }
+      },
+      "arms": {
+        "off": {
+          "tokens": 248,
+          "eos": true,
+          "score": {
+            "policy": "crispembed-ocr-quality-v1",
+            "complete": true,
+            "raw": {
+              "cer": 1.7818181818181817,
+              "wer": 1.03125
+            },
+            "characters": 459,
+            "lines": 34,
+            "parse_ok": true,
+            "content": {
+              "cer": 0.0,
+              "wer": 0.0
+            },
+            "table_gold_available": true,
+            "content_exact": true,
+            "table": {
+              "expected": 1,
+              "actual": 1,
+              "expected_cells": 15,
+              "cell_errors": 0,
+              "exact": true
+            },
+            "exact_quality": true,
+            "expected_table_shape": [
+              [
+                3,
+                3,
+                3,
+                3,
+                3
+              ]
+            ],
+            "table_shape_valid": true
+          },
+          "independent_edits": {
+            "raw": {
+              "character_edits": 294,
+              "reference_codepoints": 165,
+              "word_edits": 33,
+              "reference_words": 32
+            },
+            "content": {
+              "character_edits": 0,
+              "reference_codepoints": 165,
+              "word_edits": 0,
+              "reference_words": 32
+            }
+          },
+          "source_floor": true,
+          "raw": {
+            "rows": 248,
+            "archive_sha256": "48e36986fa203daf089b5acb0d6469a5ee5a7076d6c34b61322025a154e7d8b5",
+            "ordered_row_sha256": "279026a26b2a639336bf68f58c4e1289895cea526ed7b7e2f82043169f320ad5"
+          },
+          "firstscore": {
+            "rms": 0.17542362596857944,
+            "max_abs": 0.801771879196167,
+            "candidate_rms_magnitude": 2.2984116286325333,
+            "source_rms_magnitude": 2.246865113972659
+          },
+          "derived_rms_max_ulps_from_producer": 0.0
+        },
+        "on": {
+          "tokens": 248,
+          "eos": true,
+          "score": {
+            "policy": "crispembed-ocr-quality-v1",
+            "complete": true,
+            "raw": {
+              "cer": 1.7818181818181817,
+              "wer": 1.03125
+            },
+            "characters": 459,
+            "lines": 34,
+            "parse_ok": true,
+            "content": {
+              "cer": 0.0,
+              "wer": 0.0
+            },
+            "table_gold_available": true,
+            "content_exact": true,
+            "table": {
+              "expected": 1,
+              "actual": 1,
+              "expected_cells": 15,
+              "cell_errors": 0,
+              "exact": true
+            },
+            "exact_quality": true,
+            "expected_table_shape": [
+              [
+                3,
+                3,
+                3,
+                3,
+                3
+              ]
+            ],
+            "table_shape_valid": true
+          },
+          "independent_edits": {
+            "raw": {
+              "character_edits": 294,
+              "reference_codepoints": 165,
+              "word_edits": 33,
+              "reference_words": 32
+            },
+            "content": {
+              "character_edits": 0,
+              "reference_codepoints": 165,
+              "word_edits": 0,
+              "reference_words": 32
+            }
+          },
+          "source_floor": true,
+          "raw": {
+            "rows": 248,
+            "archive_sha256": "255a8a875d20ec2a917013dd296fd4e3217a46685714355525ed5bb298c9fa2e",
+            "ordered_row_sha256": "accf7b2a7b258e59d62b3a0b6a076d76b84996ef600da55bf98a46f1d33c0c0a"
+          },
+          "firstscore": {
+            "rms": 0.11457099769921551,
+            "max_abs": 0.9309492111206055,
+            "candidate_rms_magnitude": 2.2445456681166465,
+            "source_rms_magnitude": 2.246865113972659
+          },
+          "derived_rms_max_ulps_from_producer": 0.0
+        }
+      },
+      "paired_native_layers": {
+        "derived_rms_max_ulps_from_producer": 0.0,
+        "scope": "Same-source native OFF/ON, not actual source hidden states.",
+        "first_different_layer": 0,
+        "layers": [
+          {
+            "layer": 0,
+            "bit_exact": false,
+            "rms": 8.326279589997488e-07,
+            "max_abs": 3.8661062717437744e-05,
+            "off_rms_magnitude": 0.15261163259817095,
+            "on_rms_magnitude": 0.1526116299540366
+          },
+          {
+            "layer": 1,
+            "bit_exact": false,
+            "rms": 0.00020296156717559738,
+            "max_abs": 0.004947662353515625,
+            "off_rms_magnitude": 0.16473077243250794,
+            "on_rms_magnitude": 0.16472957679220768
+          },
+          {
+            "layer": 2,
+            "bit_exact": false,
+            "rms": 0.0007761063066001074,
+            "max_abs": 0.03010249137878418,
+            "off_rms_magnitude": 0.1647312357652389,
+            "on_rms_magnitude": 0.16473545294768185
+          },
+          {
+            "layer": 3,
+            "bit_exact": false,
+            "rms": 0.001303728646733503,
+            "max_abs": 0.03357672691345215,
+            "off_rms_magnitude": 0.18647474430637437,
+            "on_rms_magnitude": 0.18647466719615605
+          },
+          {
+            "layer": 4,
+            "bit_exact": false,
+            "rms": 0.0018177255736690182,
+            "max_abs": 0.03592061996459961,
+            "off_rms_magnitude": 0.18928527497198855,
+            "on_rms_magnitude": 0.18930287715765656
+          },
+          {
+            "layer": 5,
+            "bit_exact": false,
+            "rms": 0.002457480148374727,
+            "max_abs": 0.04100298881530762,
+            "off_rms_magnitude": 0.1976230760114231,
+            "on_rms_magnitude": 0.19764595628565076
+          },
+          {
+            "layer": 6,
+            "bit_exact": false,
+            "rms": 0.003481906632892583,
+            "max_abs": 0.06243753433227539,
+            "off_rms_magnitude": 0.2346760560885189,
+            "on_rms_magnitude": 0.2347306578372242
+          },
+          {
+            "layer": 7,
+            "bit_exact": false,
+            "rms": 0.004170054678295863,
+            "max_abs": 0.07249331474304199,
+            "off_rms_magnitude": 0.23397903762917616,
+            "on_rms_magnitude": 0.2340341421954434
+          },
+          {
+            "layer": 8,
+            "bit_exact": false,
+            "rms": 0.004386146091243257,
+            "max_abs": 0.07327938079833984,
+            "off_rms_magnitude": 0.22455329147808406,
+            "on_rms_magnitude": 0.2246276687566136
+          },
+          {
+            "layer": 9,
+            "bit_exact": false,
+            "rms": 0.004737461347258271,
+            "max_abs": 0.08110713958740234,
+            "off_rms_magnitude": 0.22575330079252226,
+            "on_rms_magnitude": 0.22579995598202007
+          },
+          {
+            "layer": 10,
+            "bit_exact": false,
+            "rms": 0.005238952330079418,
+            "max_abs": 0.08801031112670898,
+            "off_rms_magnitude": 0.23029056224452793,
+            "on_rms_magnitude": 0.23034751693947797
+          },
+          {
+            "layer": 11,
+            "bit_exact": false,
+            "rms": 0.00578706389297351,
+            "max_abs": 0.0830531120300293,
+            "off_rms_magnitude": 0.22911821303615446,
+            "on_rms_magnitude": 0.2291369320081753
+          },
+          {
+            "layer": 12,
+            "bit_exact": false,
+            "rms": 0.005821082299872539,
+            "max_abs": 0.10950899124145508,
+            "off_rms_magnitude": 0.22204543365721346,
+            "on_rms_magnitude": 0.22200958060263906
+          },
+          {
+            "layer": 13,
+            "bit_exact": false,
+            "rms": 0.006056247983346351,
+            "max_abs": 0.08983850479125977,
+            "off_rms_magnitude": 0.22566869013035712,
+            "on_rms_magnitude": 0.22564869307919908
+          },
+          {
+            "layer": 14,
+            "bit_exact": false,
+            "rms": 0.006491748338873959,
+            "max_abs": 0.14977741241455078,
+            "off_rms_magnitude": 0.23880239558381214,
+            "on_rms_magnitude": 0.23876597947995176
+          },
+          {
+            "layer": 15,
+            "bit_exact": false,
+            "rms": 0.0074542042670268744,
+            "max_abs": 0.3000030517578125,
+            "off_rms_magnitude": 0.29029066661678543,
+            "on_rms_magnitude": 0.29032795396040184
+          },
+          {
+            "layer": 16,
+            "bit_exact": false,
+            "rms": 0.007759190701902881,
+            "max_abs": 0.215911865234375,
+            "off_rms_magnitude": 0.2919174775656135,
+            "on_rms_magnitude": 0.29201051131673283
+          },
+          {
+            "layer": 17,
+            "bit_exact": false,
+            "rms": 0.008557656689771886,
+            "max_abs": 0.18687057495117188,
+            "off_rms_magnitude": 0.28476712427626016,
+            "on_rms_magnitude": 0.2848513115136316
+          },
+          {
+            "layer": 18,
+            "bit_exact": false,
+            "rms": 0.009894569292103887,
+            "max_abs": 0.6895351409912109,
+            "off_rms_magnitude": 0.28811193235242344,
+            "on_rms_magnitude": 0.2882794190855431
+          },
+          {
+            "layer": 19,
+            "bit_exact": false,
+            "rms": 0.013897819161348248,
+            "max_abs": 0.33650970458984375,
+            "off_rms_magnitude": 0.3460701382933894,
+            "on_rms_magnitude": 0.3457967510230621
+          },
+          {
+            "layer": 20,
+            "bit_exact": false,
+            "rms": 0.015436970942012542,
+            "max_abs": 0.6041722297668457,
+            "off_rms_magnitude": 0.36716132155307624,
+            "on_rms_magnitude": 0.3667455873950956
+          },
+          {
+            "layer": 21,
+            "bit_exact": false,
+            "rms": 0.017172646223062957,
+            "max_abs": 0.663510799407959,
+            "off_rms_magnitude": 0.40212465357231303,
+            "on_rms_magnitude": 0.4017448078698605
+          },
+          {
+            "layer": 22,
+            "bit_exact": false,
+            "rms": 0.019323821523713904,
+            "max_abs": 1.4027099609375,
+            "off_rms_magnitude": 0.44689283193426765,
+            "on_rms_magnitude": 0.4462945794574845
+          },
+          {
+            "layer": 23,
+            "bit_exact": false,
+            "rms": 0.02181660940690989,
+            "max_abs": 1.3616175651550293,
+            "off_rms_magnitude": 0.4805783468360067,
+            "on_rms_magnitude": 0.48011730717848533
+          },
+          {
+            "layer": 24,
+            "bit_exact": false,
+            "rms": 0.023256705789346743,
+            "max_abs": 1.7138586044311523,
+            "off_rms_magnitude": 0.5057663242441961,
+            "on_rms_magnitude": 0.5052732464930569
+          },
+          {
+            "layer": 25,
+            "bit_exact": false,
+            "rms": 0.025181988831936845,
+            "max_abs": 1.6426901817321777,
+            "off_rms_magnitude": 0.5336219357139989,
+            "on_rms_magnitude": 0.5331078317943876
+          },
+          {
+            "layer": 26,
+            "bit_exact": false,
+            "rms": 0.02881060418421918,
+            "max_abs": 2.7086944580078125,
+            "off_rms_magnitude": 0.5908265322112017,
+            "on_rms_magnitude": 0.5901512915437561
+          },
+          {
+            "layer": 27,
+            "bit_exact": false,
+            "rms": 0.0337787393416108,
+            "max_abs": 1.8221569061279297,
+            "off_rms_magnitude": 0.6647501319059604,
+            "on_rms_magnitude": 0.6646757607533895
+          },
+          {
+            "layer": 28,
+            "bit_exact": false,
+            "rms": 0.038332019731536056,
+            "max_abs": 1.9336013793945312,
+            "off_rms_magnitude": 0.7339075216363683,
+            "on_rms_magnitude": 0.7339535270282711
+          },
+          {
+            "layer": 29,
+            "bit_exact": false,
+            "rms": 0.04563958609042901,
+            "max_abs": 2.085643768310547,
+            "off_rms_magnitude": 0.8193766000377778,
+            "on_rms_magnitude": 0.8193578021490547
+          },
+          {
+            "layer": 30,
+            "bit_exact": false,
+            "rms": 0.05478914909716658,
+            "max_abs": 1.268643856048584,
+            "off_rms_magnitude": 0.8577135922400886,
+            "on_rms_magnitude": 0.8576106884394619
+          },
+          {
+            "layer": 31,
+            "bit_exact": false,
+            "rms": 0.06927129605001084,
+            "max_abs": 2.5261452198028564,
+            "off_rms_magnitude": 0.9553468991510261,
+            "on_rms_magnitude": 0.9545782816592646
+          }
+        ]
+      }
+    }
+  },
+  "model_free_command_log_retention": {
+    "retained_log_hashes_verified": 20,
+    "overwritten_logs": [
+      {
+        "file": "source.log",
+        "original_candidate_log_sha256": "251693a7135dc2e207bb2133012c71f87f1ed56c2971bfad8889a36cbacd29a9",
+        "retained_controller_log_sha256": "c6b600c89014718b9acb45a97596d7cac06756a8d35c2476616d5964e695ab6d"
+      }
+    ],
+    "original_candidate_git_rev_log_bytes_available": false,
+    "original_candidate_git_rev_log_independently_rehashed": false,
+    "pinned_source_file_hashes_and_tested_runtime_bundle_verified": true,
+    "scope": "The model worker overwrote root source.log with the controller revision. Original candidate git-rev log bytes were not retained or independently rehashed. Its recorded hash remains in the immutable control receipt; pinned source files, tested bundle and other retained command logs are checked. No claim that all original control logs were rehashed."
+  },
+  "admissions": {
+    "inventory-table-off": {
+      "memory": {
+        "MemAvailable": 17971757056,
+        "SwapTotal": 0,
+        "SwapFree": 0,
+        "cgroup_observed": 1,
+        "finite_cgroup_bounds": 1
+      },
+      "output_free_bytes": 20927254528,
+      "seal_sha256": "2b684e94fbd978ce8212e3c57e8e8db001e9b11f39dcd01a6e836df6e1e001d0",
+      "expected_seal_sha256": "2b684e94fbd978ce8212e3c57e8e8db001e9b11f39dcd01a6e836df6e1e001d0",
+      "checks": {
+        "memory": true,
+        "output": true,
+        "seal": true
+      },
+      "failed_predicates": []
+    },
+    "inventory-table-on": {
+      "memory": {
+        "MemAvailable": 22733180928,
+        "SwapTotal": 0,
+        "SwapFree": 0,
+        "cgroup_observed": 1,
+        "finite_cgroup_bounds": 1
+      },
+      "output_free_bytes": 20509097984,
+      "seal_sha256": "2b684e94fbd978ce8212e3c57e8e8db001e9b11f39dcd01a6e836df6e1e001d0",
+      "expected_seal_sha256": "2b684e94fbd978ce8212e3c57e8e8db001e9b11f39dcd01a6e836df6e1e001d0",
+      "checks": {
+        "memory": true,
+        "output": true,
+        "seal": true
+      },
+      "failed_predicates": []
+    }
+  },
+  "prior_partial_receipt_sha256": "c723dd349d5e3bdce449d2c0fa5bf8daffb34ab1be24eb2a58a6eaa9a21250f1",
+  "prior_partial_audit_sha256": "36456a67426621655c3896ef321dc686e9cdec4fc1debac1a3c5c04830dfe362",
+  "prior_raw_rows_verified_by_linked_audit": 4340,
+  "new_raw_rows": 496,
+  "closed_raw_row_total": 4836,
+  "prior_book_capped_negative": true,
+  "original_failure_cause": "Unclassified: individual original predicate readings were not retained. Fresh continuation telemetry does not establish the earlier cause.",
+  "controls_reused_without_rebuild": true,
+  "raw_rows": 496,
+  "all_on_complete": true,
+  "on_source_floors_passed": 1,
+  "combined_on_source_floors_passed": 2,
+  "combined_expected_cases": 3,
+  "combined_on_complete": false,
+  "elapsed_seconds": 48.86073552300002
+}

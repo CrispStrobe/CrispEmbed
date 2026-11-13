@@ -1,0 +1,16 @@
+{
+  "schema": "lighton4b-physical-rope-independent-small-audit/v1",
+  "status": "pass",
+  "retained_report_sha256": "855471a734c3188fcf6e83b93eeaac7ba6f101a51728ff838b5b04e6babf8d2e",
+  "candidate_source": "a8a22749ab0b757ae1f317b6fa5b84ffd148b939",
+  "source_stage_cache_comparisons": 76,
+  "all_zero_errors_and_source_magnitudes_verified": true,
+  "off_original_stage_cache_identity_pairs": 22,
+  "unchanged_cache_identity_pairs": 3,
+  "unit_supported_outputs": 8,
+  "whole_decoder_fixture_executed": false,
+  "scope": "Independent authenticated small-report identity and metric-invariant review; no independent raw-vector rehash or numerical reduction. Producer source/raw checks remain separate.",
+  "model_forward_executed": false,
+  "raw_vectors_downloaded": false,
+  "qualified": false
+}
