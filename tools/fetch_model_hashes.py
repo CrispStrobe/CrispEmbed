@@ -39,6 +39,7 @@ import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections import OrderedDict
 from pathlib import Path
@@ -133,6 +134,51 @@ class TransientFetchError(Exception):
 _TRANSIENT_STATUS = {408, 425, 429, 500, 502, 503, 504}
 
 
+class TreePaginationError(RuntimeError):
+    """An incomplete/invalid tree must never become a partially pinned header."""
+
+
+def _is_hub_https(url: str) -> bool:
+    parsed = urllib.parse.urlsplit(url)
+    return parsed.scheme == "https" and parsed.netloc == "huggingface.co" and not parsed.fragment
+
+
+class _TreeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # urllib copies Authorization into redirected requests. Reject an
+        # external target before constructing or sending that request.
+        if not _is_hub_https(newurl):
+            raise TreePaginationError("tree redirect escaped the HTTPS Hub origin")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_TREE_OPENER = urllib.request.build_opener(_TreeRedirectHandler())
+
+
+def _next_tree_page(link: str, current: str) -> str | None:
+    """Read Hub Link pagination, retaining the exact authenticated tree scope."""
+    if not link:
+        return None
+    next_url = None
+    for part in re.split(r",(?=\s*<)", link):
+        match = re.fullmatch(r'\s*<([^<>\s]+)>((?:\s*;\s*[\w-]+=(?:"[^"]*"|[^;\s,]+))*)\s*', part)
+        if not match:
+            raise TreePaginationError("malformed tree pagination link")
+        relations = re.findall(r';\s*rel=(?:"([^"]*)"|([^;\s,]+))', match[2])
+        if len(relations) != 1:
+            raise TreePaginationError("missing or duplicate pagination relation")
+        if "next" not in (relations[0][0] or relations[0][1]).split():
+            continue
+        if next_url is not None:
+            raise TreePaginationError("duplicate next tree page")
+        next_url = urllib.parse.urljoin(current, match[1])
+        parsed = urllib.parse.urlsplit(next_url)
+        expected = urllib.parse.urlsplit(current)
+        if not _is_hub_https(next_url) or parsed.path != expected.path:
+            raise TreePaginationError("tree pagination escaped its HTTPS endpoint")
+    return next_url
+
+
 def fetch_tree(owner: str, repo: str, rev: str, attempts: int = 4) -> dict:
     """path -> (sha256, size_bytes), for LFS-backed files only.
 
@@ -150,32 +196,50 @@ def fetch_tree(owner: str, repo: str, rev: str, attempts: int = 4) -> dict:
         headers["Authorization"] = f"Bearer {token}"
 
     entries: list = []
-    delay = 2.0
-    for attempt in range(1, attempts + 1):
-        req = urllib.request.Request(url, headers=headers)
-        try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                entries = json.load(resp)
-            break
-        except urllib.error.HTTPError as exc:
-            if exc.code not in _TRANSIENT_STATUS:
-                raise
-            if attempt == attempts:
-                raise TransientFetchError(f"HTTP {exc.code} after {attempts} attempts") from exc
-            # Respect Retry-After when HF sends one; cap it so a long hint
-            # cannot stall the job past its timeout.
-            hinted = exc.headers.get("Retry-After") if exc.headers else None
+    visited: set[str] = set()
+    while url:
+        if url in visited:
+            raise TreePaginationError("cyclic tree pagination")
+        visited.add(url)
+        delay = 2.0
+        for attempt in range(1, attempts + 1):
+            req = urllib.request.Request(url, headers=headers)
             try:
-                wait = float(hinted) if hinted else delay
-            except ValueError:
-                wait = delay
-            time.sleep(min(wait, 30.0))
-            delay *= 2
-        except (urllib.error.URLError, TimeoutError) as exc:
-            if attempt == attempts:
-                raise TransientFetchError(f"{exc} after {attempts} attempts") from exc
-            time.sleep(delay)
-            delay *= 2
+                with _TREE_OPENER.open(req, timeout=60) as resp:
+                    try:
+                        page = json.load(resp)
+                    except (ValueError, UnicodeError) as exc:
+                        raise TreePaginationError("invalid JSON tree page") from exc
+                    link = resp.headers.get("Link", "")
+                    page_url = resp.geturl()
+                    if not _is_hub_https(page_url):
+                        raise TreePaginationError("tree response escaped the HTTPS Hub origin")
+                break
+            except urllib.error.HTTPError as exc:
+                if exc.code not in _TRANSIENT_STATUS:
+                    if len(visited) > 1:
+                        raise TreePaginationError(f"HTTP {exc.code} on continuation page") from exc
+                    raise
+                if attempt == attempts:
+                    raise TransientFetchError(f"HTTP {exc.code} after {attempts} attempts") from exc
+                # Respect Retry-After when HF sends one; cap it so a long hint
+                # cannot stall the job past its timeout.
+                hinted = exc.headers.get("Retry-After") if exc.headers else None
+                try:
+                    wait = float(hinted) if hinted else delay
+                except ValueError:
+                    wait = delay
+                time.sleep(min(wait, 30.0))
+                delay *= 2
+            except (urllib.error.URLError, TimeoutError) as exc:
+                if attempt == attempts:
+                    raise TransientFetchError(f"{exc} after {attempts} attempts") from exc
+                time.sleep(delay)
+                delay *= 2
+        if not isinstance(page, list):
+            raise TreePaginationError("tree page is not a JSON array")
+        entries.extend(page)
+        url = _next_tree_page(link, page_url)
     return {
         e["path"]: (e["lfs"]["oid"], int(e["lfs"].get("size") or e.get("size") or 0))
         for e in entries

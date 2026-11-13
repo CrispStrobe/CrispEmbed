@@ -37,6 +37,20 @@ so nothing could hit. The bench also had no committed `kernel-metadata.json`.
   by `gh pr merge --match-head-commit`. This follows CrispSorter #49, which was merged on a stale poll. The
   same script went to CrispSorter.
 
+## 13 November 2026 — complete registry tree reads
+
+The registry pin/size resolver now follows every Hub tree API page instead of
+silently treating later-page LFS models as missing. An offline two-page fixture
+fails against original source `ebbe3ee70` with the second model's digest/size
+absent, then passes after correction. Eleven focused model-free controls pass:
+full existing pin identity, adjacent URLs, later-page hash/size resolution,
+page-local retry, unsafe/malformed links, cycles, relative links, invalid or
+missing pages, exhausted transient continuation and redirect credential scope.
+Only complete trees are accepted; transient failure retains the existing
+unreachable classification and rewrite refusal. The existing scheduled live
+scan and hosted PR regression remain separate evidence. No header regeneration,
+model quality, runtime version or publication follows from this tooling repair.
+
 ## 12 November 2026 — v0.17.19 released; CrispSorter pinned
 
 - **Release.** PR #217 bumped the versions in the same files as v0.17.18 and added
