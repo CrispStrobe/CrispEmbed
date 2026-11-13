@@ -1,5 +1,21 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Authored full-Q6 versus Q4 quality screen — 13 November 2026
+
+Bounded lane `feat/full-q6-authored-quality-20261113` adds three newly authored,
+MIT-licensed clean printed pages: prose, a 16-cell invoice, and an accented
+French/German/Portuguese dispatch note. All actual PNGs were visually checked
+against their explicit reading-order transcriptions/cells before model outputs.
+The [worker](tools/full-q6-authored-quality/README.md) reuses the retained full-Q6
+runtime and quantized Q6/Q4 models on Kaggle CPU, with four threads and a fixed
+512-token greedy cap. It changes only the precision profile and the appropriate
+Q4 repacking gate, continues all six arms after quality negatives, and reports
+raw/content CER/WER, cells, EOS/caps and paired saved-stage absolute errors and
+magnitudes. No observed-case replay, model import, original/BF16 forward or
+runtime build is needed. Execution is pending. This small Latin-script synthetic
+screen cannot establish representative OCR, Arabic, source-operator, platform,
+performance or release qualification. Defaults, aliases and app pins stay fixed.
+
 ## CI selection invariant repair — 13 November 2026
 
 Bounded test-only lane `fix/ci-selection-pr232-20261113` starts from merged
