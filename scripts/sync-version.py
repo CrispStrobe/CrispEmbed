@@ -53,6 +53,10 @@ if __name__ == "__main__":
         (r'^version = "[^"]+"', 'version = "{version}"')
     ], version)
 
+    update_file('python/crispembed/__init__.py', [
+        (r'^__version__ = "[^"]+"', '__version__ = "{version}"')
+    ], version)
+
     # Dart/Flutter
     update_file('flutter/crispembed/pubspec.yaml', [
         (r'^version: [^\n]+', 'version: {version}')

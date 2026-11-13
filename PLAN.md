@@ -127,8 +127,8 @@ The ten focused source-only controls pass; their files remain under
 After qualification, select the next unused version and update `VERSION`, then
 run `python scripts/sync-version.py` on the final release source. It updates
 `crispembed/Cargo.toml` (package and crispembed-sys dependency),
-`crispembed-sys/Cargo.toml`, `python/pyproject.toml` and
-`flutter/crispembed/pubspec.yaml`. The optional JavaScript manifest is absent.
+`crispembed-sys/Cargo.toml`, `python/pyproject.toml`,
+`python/crispembed/__init__.py` and `flutter/crispembed/pubspec.yaml`. The optional JavaScript manifest is absent.
 The two workspace package versions in `Cargo.lock` also need synchronization,
 preserving the locked libc version/checksum. CMake reads `VERSION` directly;
 Gradle and both podspecs derive their versions from the Flutter pubspec.
@@ -137,10 +137,12 @@ Gradle and both podspecs derive their versions from the Flutter pubspec.
 Manual version metadata currently outside the sync script includes
 `CRISPEMBED_VERSION_STR` in `.github/workflows/ocr-render.yml`,
 `.github/workflows/ocr-stream-writer.yml` and
-`tests/windows_utf8_paths/CMakeLists.txt`. The Python `__version__` in
-`python/crispembed/__init__.py` still says `0.3.2` despite its current tracking
-comment; reconcile that export and the sync procedure before a Python package
-release. Add the new Flutter changelog heading and versioned release notes with
+`tests/windows_utf8_paths/CMakeLists.txt`. The Python `__version__` export in
+`python/crispembed/__init__.py` now matches `VERSION`; `sync-version.py` updates
+it and `bump-version.sh` includes it in the release commit. Three model-free
+regressions cover the current export, future synchronization/idempotence and
+the actual bump commit in a disposable repository. Add the new Flutter changelog
+heading and versioned release notes with
 the actual qualification limits. Keep frozen historical receipts and pinned
 consumer fixtures unchanged.
 

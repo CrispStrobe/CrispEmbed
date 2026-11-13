@@ -23,6 +23,7 @@ git add VERSION
 for f in \
     bindings/javascript/package.json \
     python/pyproject.toml \
+    python/crispembed/__init__.py \
     crispembed/Cargo.toml \
     crispembed-sys/Cargo.toml \
     flutter/crispembed/pubspec.yaml; do

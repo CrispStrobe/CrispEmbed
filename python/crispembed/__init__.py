@@ -44,4 +44,4 @@ __all__ = [
 ]
 # Tracks /VERSION (the C library version). Wheel CI copies the freshly built
 # libcrispembed.{so,dylib,dll} + ggml siblings alongside this file.
-__version__ = "0.3.2"
+__version__ = "0.17.19"
