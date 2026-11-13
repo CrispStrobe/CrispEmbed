@@ -145,6 +145,5 @@ inference reuses the tested native binary/libraries without rebuild. No new
 model acquisition or reference/source forward occurred. The3880.50-second whole
 worker time is not an inference benchmark. All2737 new vocabulary rows, model
 bytes and book strings/token sequences remain remote. This public JSON is the
-reviewed producer-side metrics/hash projection; independent full artifact audit
-is pending. All gates stay default-off, with no release, application pin or
+reviewed producer-side metrics/hash projection. The [independent raw audit](lighton4b-source-aligned-fixed-audit.md) verifies the retained artifacts and score rows, with its source-comparison limits documented. All gates stay default-off, with no release, application pin or
 quality qualification change.

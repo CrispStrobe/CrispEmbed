@@ -1,0 +1,1307 @@
+{
+  "schema": "lighton4b-source-aligned-fixed-independent-audit/v1",
+  "status": "complete",
+  "receipt_sha256": "91944ec7fcf2df0b23463c78fb6d80bc1ff0de616528da979051fbb15f1b35e3",
+  "bootstrap_sha256": "85eadb24afa32781749ee34f85f46b597cce256e34dbe28d95e6c30befda4bff",
+  "safe_projection_sha256": "c9cf3f7bbd4fc5db34be9de505b25209f7e996fda1f36879c3af1d820f18a263",
+  "candidate_source": "f8bffd1217fa41a958047d88dafb782a4b1cd989",
+  "all_owned_artifact_hashes": true,
+  "all_raw_finite_argmax_sha": true,
+  "owned_artifacts": 581,
+  "owned_artifact_bytes": 3937315279,
+  "observed_raw_rows_rehashed": 916,
+  "observed_owned_artifacts_rehashed": 1467,
+  "controls_owned_artifacts_rehashed": 69,
+  "tested_runtime_bundle_rehashed": true,
+  "retained_quantized_model_rehashed": true,
+  "metadata_preflight_binary_independently_rehashed": true,
+  "control_source_comparisons_recomputed": false,
+  "raw_scope": "All new fixed rows,916observed rows,1370baseline rows; only the3original source first-score vectors, not full source decode row inventories.",
+  "observed_source_screen_scope": "Actual observed payloads/916rows rehashed; source metrics tied to the independently reviewed immutable public small receipt, not reread original observed-source responses.",
+  "model_forward_executed": false,
+  "reference_forward_executed": false,
+  "qualified": false,
+  "rights": "Counts, metrics and hashes only; book text and ID sequences remain remote.",
+  "cases": {
+    "historical-receipt": {
+      "reference_score": {
+        "policy": "crispembed-ocr-quality-v1",
+        "complete": true,
+        "raw": {
+          "cer": 0.13411458333333334,
+          "wer": 0.125
+        },
+        "characters": 843,
+        "lines": 43,
+        "parse_ok": true,
+        "content": {
+          "cer": 0.03125,
+          "wer": 0.125
+        },
+        "table_gold_available": false,
+        "content_exact": false,
+        "table": null,
+        "exact_quality": null
+      },
+      "reference_independent_edits": {
+        "raw": {
+          "character_edits": 103,
+          "reference_codepoints": 768,
+          "word_edits": 18,
+          "reference_words": 144
+        },
+        "content": {
+          "character_edits": 24,
+          "reference_codepoints": 768,
+          "word_edits": 18,
+          "reference_words": 144
+        }
+      },
+      "baseline_raw_rows_rehashed": {
+        "rows": 468,
+        "archive_sha256": "42d88ef91aa0701a4b55dc4fc017ab8683e64b1ebc9a9b775e87cb94c45e6bd5",
+        "ordered_row_sha256": "49418fe8c33ac55ab83318afbb7559ef6a599e3dd65af6133754362ef44ff0f0"
+      },
+      "arms": {
+        "off": {
+          "tokens": 468,
+          "eos": true,
+          "score": {
+            "policy": "crispembed-ocr-quality-v1",
+            "complete": true,
+            "raw": {
+              "cer": 0.13541666666666666,
+              "wer": 0.13194444444444445
+            },
+            "characters": 844,
+            "lines": 43,
+            "parse_ok": true,
+            "content": {
+              "cer": 0.032552083333333336,
+              "wer": 0.13194444444444445
+            },
+            "table_gold_available": false,
+            "content_exact": false,
+            "table": null,
+            "exact_quality": null
+          },
+          "independent_edits": {
+            "raw": {
+              "character_edits": 104,
+              "reference_codepoints": 768,
+              "word_edits": 19,
+              "reference_words": 144
+            },
+            "content": {
+              "character_edits": 25,
+              "reference_codepoints": 768,
+              "word_edits": 19,
+              "reference_words": 144
+            }
+          },
+          "source_floor": false,
+          "source_output_ids_equal": false,
+          "source_output_text_equal": false,
+          "raw": {
+            "rows": 468,
+            "archive_sha256": "a83055920e28694a5b2f30609730f66a3472d0af3e7fb6873b1d9651d734e06c",
+            "ordered_row_sha256": "49418fe8c33ac55ab83318afbb7559ef6a599e3dd65af6133754362ef44ff0f0"
+          },
+          "firstscore": {
+            "rms": 0.22138784887772267,
+            "max_abs": 1.3122177124023438,
+            "candidate_rms_magnitude": 2.1158763929911872,
+            "source_rms_magnitude": 2.0429065904774064
+          },
+          "derived_rms_max_ulps_from_producer": 0.0
+        },
+        "on": {
+          "tokens": 465,
+          "eos": true,
+          "score": {
+            "policy": "crispembed-ocr-quality-v1",
+            "complete": true,
+            "raw": {
+              "cer": 0.13411458333333334,
+              "wer": 0.125
+            },
+            "characters": 843,
+            "lines": 43,
+            "parse_ok": true,
+            "content": {
+              "cer": 0.03125,
+              "wer": 0.125
+            },
+            "table_gold_available": false,
+            "content_exact": false,
+            "table": null,
+            "exact_quality": null
+          },
+          "independent_edits": {
+            "raw": {
+              "character_edits": 103,
+              "reference_codepoints": 768,
+              "word_edits": 18,
+              "reference_words": 144
+            },
+            "content": {
+              "character_edits": 24,
+              "reference_codepoints": 768,
+              "word_edits": 18,
+              "reference_words": 144
+            }
+          },
+          "source_floor": true,
+          "source_output_ids_equal": true,
+          "source_output_text_equal": true,
+          "raw": {
+            "rows": 465,
+            "archive_sha256": "8d2d85b92b2b6de2bc443adce9a6ae63c56c02156bdc2ee08d477585a6b2b676",
+            "ordered_row_sha256": "e557c84c6ea66ad192bfa94c3446c81182d097615e4863dfddfdbbcc530f5eaa"
+          },
+          "firstscore": {
+            "rms": 6.231868788194192e-07,
+            "max_abs": 3.814697265625e-06,
+            "candidate_rms_magnitude": 2.042906443423829,
+            "source_rms_magnitude": 2.0429065904774064
+          },
+          "derived_rms_max_ulps_from_producer": 0.0
+        }
+      },
+      "paired_native_layers": {
+        "first_different_layer": 0,
+        "layers": [
+          {
+            "layer": 0,
+            "bit_exact": false,
+            "rms": 9.918281865262306e-07,
+            "max_abs": 7.82012939453125e-05,
+            "off_rms_magnitude": 0.19092990221341233,
+            "on_rms_magnitude": 0.19092990444518587
+          },
+          {
+            "layer": 1,
+            "bit_exact": false,
+            "rms": 9.106371629584549e-05,
+            "max_abs": 0.003461599349975586,
+            "off_rms_magnitude": 0.18823251052002976,
+            "on_rms_magnitude": 0.18823278220816864
+          },
+          {
+            "layer": 2,
+            "bit_exact": false,
+            "rms": 0.0002919156304918573,
+            "max_abs": 0.02664041519165039,
+            "off_rms_magnitude": 0.17538486142609597,
+            "on_rms_magnitude": 0.17538410008086536
+          },
+          {
+            "layer": 3,
+            "bit_exact": false,
+            "rms": 0.000448138497042803,
+            "max_abs": 0.029112815856933594,
+            "off_rms_magnitude": 0.19320826065373667,
+            "on_rms_magnitude": 0.19320590000120474
+          },
+          {
+            "layer": 4,
+            "bit_exact": false,
+            "rms": 0.0006250537041716356,
+            "max_abs": 0.05385851860046387,
+            "off_rms_magnitude": 0.20333538920811295,
+            "on_rms_magnitude": 0.20333166084545964
+          },
+          {
+            "layer": 5,
+            "bit_exact": false,
+            "rms": 0.0008349087483791895,
+            "max_abs": 0.04754447937011719,
+            "off_rms_magnitude": 0.20642708701592463,
+            "on_rms_magnitude": 0.20642354585620656
+          },
+          {
+            "layer": 6,
+            "bit_exact": false,
+            "rms": 0.001027912575527296,
+            "max_abs": 0.041463375091552734,
+            "off_rms_magnitude": 0.22477338290412816,
+            "on_rms_magnitude": 0.22477215251404048
+          },
+          {
+            "layer": 7,
+            "bit_exact": false,
+            "rms": 0.0012205685506726982,
+            "max_abs": 0.043799400329589844,
+            "off_rms_magnitude": 0.22470871793852037,
+            "on_rms_magnitude": 0.2247021667244727
+          },
+          {
+            "layer": 8,
+            "bit_exact": false,
+            "rms": 0.0013302954942007509,
+            "max_abs": 0.06875300407409668,
+            "off_rms_magnitude": 0.22755057512907517,
+            "on_rms_magnitude": 0.2275420126361892
+          },
+          {
+            "layer": 9,
+            "bit_exact": false,
+            "rms": 0.0014514746057551979,
+            "max_abs": 0.054431915283203125,
+            "off_rms_magnitude": 0.23061416747089408,
+            "on_rms_magnitude": 0.23059963047369797
+          },
+          {
+            "layer": 10,
+            "bit_exact": false,
+            "rms": 0.0015801167811494243,
+            "max_abs": 0.06961584091186523,
+            "off_rms_magnitude": 0.23624474724076996,
+            "on_rms_magnitude": 0.23623001940920982
+          },
+          {
+            "layer": 11,
+            "bit_exact": false,
+            "rms": 0.0017801671714530029,
+            "max_abs": 0.1242523193359375,
+            "off_rms_magnitude": 0.2426808576039818,
+            "on_rms_magnitude": 0.24266311039653574
+          },
+          {
+            "layer": 12,
+            "bit_exact": false,
+            "rms": 0.0018152075055757277,
+            "max_abs": 0.08976101875305176,
+            "off_rms_magnitude": 0.24061099485845072,
+            "on_rms_magnitude": 0.2405989502237528
+          },
+          {
+            "layer": 13,
+            "bit_exact": false,
+            "rms": 0.0019729308888605636,
+            "max_abs": 0.08777356147766113,
+            "off_rms_magnitude": 0.24212891134663425,
+            "on_rms_magnitude": 0.2421200692260306
+          },
+          {
+            "layer": 14,
+            "bit_exact": false,
+            "rms": 0.0021770737573377254,
+            "max_abs": 0.12403655052185059,
+            "off_rms_magnitude": 0.2599538238939308,
+            "on_rms_magnitude": 0.25995053093057413
+          },
+          {
+            "layer": 15,
+            "bit_exact": false,
+            "rms": 0.002414129826692137,
+            "max_abs": 0.10434770584106445,
+            "off_rms_magnitude": 0.2806430055635098,
+            "on_rms_magnitude": 0.28063791395911536
+          },
+          {
+            "layer": 16,
+            "bit_exact": false,
+            "rms": 0.002644418714553747,
+            "max_abs": 0.09855771064758301,
+            "off_rms_magnitude": 0.30296850373654033,
+            "on_rms_magnitude": 0.3029668063331008
+          },
+          {
+            "layer": 17,
+            "bit_exact": false,
+            "rms": 0.002824548138091782,
+            "max_abs": 0.12216520309448242,
+            "off_rms_magnitude": 0.3201504961561122,
+            "on_rms_magnitude": 0.3201527579459531
+          },
+          {
+            "layer": 18,
+            "bit_exact": false,
+            "rms": 0.00307161129532681,
+            "max_abs": 0.1443425416946411,
+            "off_rms_magnitude": 0.3188614940643828,
+            "on_rms_magnitude": 0.31886044994559115
+          },
+          {
+            "layer": 19,
+            "bit_exact": false,
+            "rms": 0.0036572309925754654,
+            "max_abs": 0.1585097312927246,
+            "off_rms_magnitude": 0.3971816516677674,
+            "on_rms_magnitude": 0.39715730009029276
+          },
+          {
+            "layer": 20,
+            "bit_exact": false,
+            "rms": 0.004146908593991544,
+            "max_abs": 0.3665342330932617,
+            "off_rms_magnitude": 0.424386270623181,
+            "on_rms_magnitude": 0.42436336976344136
+          },
+          {
+            "layer": 21,
+            "bit_exact": false,
+            "rms": 0.004962515772316329,
+            "max_abs": 0.5358514785766602,
+            "off_rms_magnitude": 0.472520512866343,
+            "on_rms_magnitude": 0.47249598188304626
+          },
+          {
+            "layer": 22,
+            "bit_exact": false,
+            "rms": 0.00583070336303054,
+            "max_abs": 0.48276710510253906,
+            "off_rms_magnitude": 0.49905283209396256,
+            "on_rms_magnitude": 0.4990256272569907
+          },
+          {
+            "layer": 23,
+            "bit_exact": false,
+            "rms": 0.006785482555524263,
+            "max_abs": 0.6493825912475586,
+            "off_rms_magnitude": 0.5339381035663693,
+            "on_rms_magnitude": 0.5338954080714271
+          },
+          {
+            "layer": 24,
+            "bit_exact": false,
+            "rms": 0.00779552592503016,
+            "max_abs": 1.1495461463928223,
+            "off_rms_magnitude": 0.5693381850970293,
+            "on_rms_magnitude": 0.569300325839534
+          },
+          {
+            "layer": 25,
+            "bit_exact": false,
+            "rms": 0.0088960267209393,
+            "max_abs": 1.1126708984375,
+            "off_rms_magnitude": 0.5923095468918067,
+            "on_rms_magnitude": 0.5922552523257892
+          },
+          {
+            "layer": 26,
+            "bit_exact": false,
+            "rms": 0.01045915259723477,
+            "max_abs": 0.7884998321533203,
+            "off_rms_magnitude": 0.6032789744737845,
+            "on_rms_magnitude": 0.6032630660307041
+          },
+          {
+            "layer": 27,
+            "bit_exact": false,
+            "rms": 0.012424125245693701,
+            "max_abs": 0.49106502532958984,
+            "off_rms_magnitude": 0.64462914620845,
+            "on_rms_magnitude": 0.6444828068483844
+          },
+          {
+            "layer": 28,
+            "bit_exact": false,
+            "rms": 0.01471187733244066,
+            "max_abs": 0.6654224395751953,
+            "off_rms_magnitude": 0.7151417923331779,
+            "on_rms_magnitude": 0.7150258624766586
+          },
+          {
+            "layer": 29,
+            "bit_exact": false,
+            "rms": 0.01824013390870318,
+            "max_abs": 1.008026123046875,
+            "off_rms_magnitude": 0.8003845248830131,
+            "on_rms_magnitude": 0.8002761081850103
+          },
+          {
+            "layer": 30,
+            "bit_exact": false,
+            "rms": 0.022724940580271705,
+            "max_abs": 1.7963104248046875,
+            "off_rms_magnitude": 0.8401994328410376,
+            "on_rms_magnitude": 0.8401201299341424
+          },
+          {
+            "layer": 31,
+            "bit_exact": false,
+            "rms": 0.02872283543871946,
+            "max_abs": 2.1866321563720703,
+            "off_rms_magnitude": 1.009342250608729,
+            "on_rms_magnitude": 1.0093283685389547
+          }
+        ],
+        "derived_rms_max_ulps_from_producer": 0.0,
+        "scope": "Native OFF/ON, not actual source hidden."
+      }
+    },
+    "two-column-page": {
+      "reference_score": {
+        "policy": "crispembed-ocr-quality-v1",
+        "complete": true,
+        "raw": {
+          "cer": 0.19724924521972492,
+          "wer": 0.26618705035971224
+        },
+        "characters": 2842,
+        "lines": 17,
+        "parse_ok": true,
+        "content": {
+          "cer": 0.17645085541764507,
+          "wer": 0.26258992805755393
+        },
+        "table_gold_available": false,
+        "content_exact": false,
+        "table": null,
+        "exact_quality": null
+      },
+      "reference_independent_edits": {
+        "raw": {
+          "character_edits": 588,
+          "reference_codepoints": 2981,
+          "word_edits": 148,
+          "reference_words": 556
+        },
+        "content": {
+          "character_edits": 526,
+          "reference_codepoints": 2981,
+          "word_edits": 146,
+          "reference_words": 556
+        }
+      },
+      "baseline_raw_rows_rehashed": {
+        "rows": 654,
+        "archive_sha256": "a81e711a919ebf36b568156c727166dc380c3e5d2aa3fd5790ab567d16a24612",
+        "ordered_row_sha256": "e46d0994129c2fc3beedb592d0138d0711af0b693b13144256b6cd02b3d24c10"
+      },
+      "arms": {
+        "off": {
+          "tokens": 654,
+          "eos": true,
+          "score": {
+            "policy": "crispembed-ocr-quality-v1",
+            "complete": true,
+            "raw": {
+              "cer": 0.19724924521972492,
+              "wer": 0.26618705035971224
+            },
+            "characters": 2842,
+            "lines": 17,
+            "parse_ok": true,
+            "content": {
+              "cer": 0.17645085541764507,
+              "wer": 0.26258992805755393
+            },
+            "table_gold_available": false,
+            "content_exact": false,
+            "table": null,
+            "exact_quality": null
+          },
+          "independent_edits": {
+            "raw": {
+              "character_edits": 588,
+              "reference_codepoints": 2981,
+              "word_edits": 148,
+              "reference_words": 556
+            },
+            "content": {
+              "character_edits": 526,
+              "reference_codepoints": 2981,
+              "word_edits": 146,
+              "reference_words": 556
+            }
+          },
+          "source_floor": true,
+          "source_output_ids_equal": true,
+          "source_output_text_equal": true,
+          "raw": {
+            "rows": 654,
+            "archive_sha256": "41af8b724bdc4296c03142c708314ae361766653ce76d3d3694d94579a2dec42",
+            "ordered_row_sha256": "e46d0994129c2fc3beedb592d0138d0711af0b693b13144256b6cd02b3d24c10"
+          },
+          "firstscore": {
+            "rms": 6.632568953903414e-07,
+            "max_abs": 3.814697265625e-06,
+            "candidate_rms_magnitude": 1.9516175668882327,
+            "source_rms_magnitude": 1.9516177905276242
+          },
+          "derived_rms_max_ulps_from_producer": 0.0
+        },
+        "on": {
+          "tokens": 654,
+          "eos": true,
+          "score": {
+            "policy": "crispembed-ocr-quality-v1",
+            "complete": true,
+            "raw": {
+              "cer": 0.19724924521972492,
+              "wer": 0.26618705035971224
+            },
+            "characters": 2842,
+            "lines": 17,
+            "parse_ok": true,
+            "content": {
+              "cer": 0.17645085541764507,
+              "wer": 0.26258992805755393
+            },
+            "table_gold_available": false,
+            "content_exact": false,
+            "table": null,
+            "exact_quality": null
+          },
+          "independent_edits": {
+            "raw": {
+              "character_edits": 588,
+              "reference_codepoints": 2981,
+              "word_edits": 148,
+              "reference_words": 556
+            },
+            "content": {
+              "character_edits": 526,
+              "reference_codepoints": 2981,
+              "word_edits": 146,
+              "reference_words": 556
+            }
+          },
+          "source_floor": true,
+          "source_output_ids_equal": true,
+          "source_output_text_equal": true,
+          "raw": {
+            "rows": 654,
+            "archive_sha256": "8488ffe4d3d2e2b0c02b85bac0a65aeeb8f27eb3463c5fd094de352f92798ab0",
+            "ordered_row_sha256": "e46d0994129c2fc3beedb592d0138d0711af0b693b13144256b6cd02b3d24c10"
+          },
+          "firstscore": {
+            "rms": 6.632568953903414e-07,
+            "max_abs": 3.814697265625e-06,
+            "candidate_rms_magnitude": 1.9516175668882327,
+            "source_rms_magnitude": 1.9516177905276242
+          },
+          "derived_rms_max_ulps_from_producer": 0.0
+        }
+      },
+      "paired_native_layers": {
+        "first_different_layer": null,
+        "layers": [
+          {
+            "layer": 0,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.24897825340629304,
+            "on_rms_magnitude": 0.24897825340629304
+          },
+          {
+            "layer": 1,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.25192388181998154,
+            "on_rms_magnitude": 0.25192388181998154
+          },
+          {
+            "layer": 2,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.24637245349587023,
+            "on_rms_magnitude": 0.24637245349587023
+          },
+          {
+            "layer": 3,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.27260511108642854,
+            "on_rms_magnitude": 0.27260511108642854
+          },
+          {
+            "layer": 4,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.2839418412120834,
+            "on_rms_magnitude": 0.2839418412120834
+          },
+          {
+            "layer": 5,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.2804888190926486,
+            "on_rms_magnitude": 0.2804888190926486
+          },
+          {
+            "layer": 6,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.28859093925304474,
+            "on_rms_magnitude": 0.28859093925304474
+          },
+          {
+            "layer": 7,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.30471357430209356,
+            "on_rms_magnitude": 0.30471357430209356
+          },
+          {
+            "layer": 8,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.3068560656001124,
+            "on_rms_magnitude": 0.3068560656001124
+          },
+          {
+            "layer": 9,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.30084473641357196,
+            "on_rms_magnitude": 0.30084473641357196
+          },
+          {
+            "layer": 10,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.29396512042962863,
+            "on_rms_magnitude": 0.29396512042962863
+          },
+          {
+            "layer": 11,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.30614697703638927,
+            "on_rms_magnitude": 0.30614697703638927
+          },
+          {
+            "layer": 12,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.3033219601698955,
+            "on_rms_magnitude": 0.3033219601698955
+          },
+          {
+            "layer": 13,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.2995467325009126,
+            "on_rms_magnitude": 0.2995467325009126
+          },
+          {
+            "layer": 14,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.31095086744899975,
+            "on_rms_magnitude": 0.31095086744899975
+          },
+          {
+            "layer": 15,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.3416589277081632,
+            "on_rms_magnitude": 0.3416589277081632
+          },
+          {
+            "layer": 16,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.37338044254699476,
+            "on_rms_magnitude": 0.37338044254699476
+          },
+          {
+            "layer": 17,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.3872376445048389,
+            "on_rms_magnitude": 0.3872376445048389
+          },
+          {
+            "layer": 18,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.37922078438927537,
+            "on_rms_magnitude": 0.37922078438927537
+          },
+          {
+            "layer": 19,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.47388296992019235,
+            "on_rms_magnitude": 0.47388296992019235
+          },
+          {
+            "layer": 20,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.5017687570409777,
+            "on_rms_magnitude": 0.5017687570409777
+          },
+          {
+            "layer": 21,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.54168408588343,
+            "on_rms_magnitude": 0.54168408588343
+          },
+          {
+            "layer": 22,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.5679354138008096,
+            "on_rms_magnitude": 0.5679354138008096
+          },
+          {
+            "layer": 23,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.6263091561096233,
+            "on_rms_magnitude": 0.6263091561096233
+          },
+          {
+            "layer": 24,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.6678559916290888,
+            "on_rms_magnitude": 0.6678559916290888
+          },
+          {
+            "layer": 25,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.6908858150145841,
+            "on_rms_magnitude": 0.6908858150145841
+          },
+          {
+            "layer": 26,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.672312573587954,
+            "on_rms_magnitude": 0.672312573587954
+          },
+          {
+            "layer": 27,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.7264841725772317,
+            "on_rms_magnitude": 0.7264841725772317
+          },
+          {
+            "layer": 28,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.8099109689106574,
+            "on_rms_magnitude": 0.8099109689106574
+          },
+          {
+            "layer": 29,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.8639506830902984,
+            "on_rms_magnitude": 0.8639506830902984
+          },
+          {
+            "layer": 30,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.8951020123205025,
+            "on_rms_magnitude": 0.8951020123205025
+          },
+          {
+            "layer": 31,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 1.0364244087225551,
+            "on_rms_magnitude": 1.0364244087225551
+          }
+        ],
+        "derived_rms_max_ulps_from_producer": 0.0,
+        "scope": "Native OFF/ON, not actual source hidden."
+      }
+    },
+    "inventory-table": {
+      "reference_score": {
+        "policy": "crispembed-ocr-quality-v1",
+        "complete": true,
+        "raw": {
+          "cer": 1.7818181818181817,
+          "wer": 1.03125
+        },
+        "characters": 459,
+        "lines": 34,
+        "parse_ok": true,
+        "content": {
+          "cer": 0.0,
+          "wer": 0.0
+        },
+        "table_gold_available": true,
+        "content_exact": true,
+        "table": {
+          "expected": 1,
+          "actual": 1,
+          "expected_cells": 15,
+          "cell_errors": 0,
+          "exact": true
+        },
+        "exact_quality": true,
+        "expected_table_shape": [
+          [
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        ],
+        "table_shape_valid": true
+      },
+      "reference_independent_edits": {
+        "raw": {
+          "character_edits": 294,
+          "reference_codepoints": 165,
+          "word_edits": 33,
+          "reference_words": 32
+        },
+        "content": {
+          "character_edits": 0,
+          "reference_codepoints": 165,
+          "word_edits": 0,
+          "reference_words": 32
+        }
+      },
+      "baseline_raw_rows_rehashed": {
+        "rows": 248,
+        "archive_sha256": "fe0c13b6bd9de791d9419ca4768413b7b77949e9a42f2c681473491032e8837e",
+        "ordered_row_sha256": "a567b07500d756c5d896193fab5f6e976decac14ddf2702151e2b8cc66848daa"
+      },
+      "arms": {
+        "off": {
+          "tokens": 248,
+          "eos": true,
+          "score": {
+            "policy": "crispembed-ocr-quality-v1",
+            "complete": true,
+            "raw": {
+              "cer": 1.7818181818181817,
+              "wer": 1.03125
+            },
+            "characters": 459,
+            "lines": 34,
+            "parse_ok": true,
+            "content": {
+              "cer": 0.0,
+              "wer": 0.0
+            },
+            "table_gold_available": true,
+            "content_exact": true,
+            "table": {
+              "expected": 1,
+              "actual": 1,
+              "expected_cells": 15,
+              "cell_errors": 0,
+              "exact": true
+            },
+            "exact_quality": true,
+            "expected_table_shape": [
+              [
+                3,
+                3,
+                3,
+                3,
+                3
+              ]
+            ],
+            "table_shape_valid": true
+          },
+          "independent_edits": {
+            "raw": {
+              "character_edits": 294,
+              "reference_codepoints": 165,
+              "word_edits": 33,
+              "reference_words": 32
+            },
+            "content": {
+              "character_edits": 0,
+              "reference_codepoints": 165,
+              "word_edits": 0,
+              "reference_words": 32
+            }
+          },
+          "source_floor": true,
+          "source_output_ids_equal": true,
+          "source_output_text_equal": true,
+          "raw": {
+            "rows": 248,
+            "archive_sha256": "ce32d716c5d1ebb2f21fcaadeb4b19947255d071ad74897d6c7a9fb603d097e4",
+            "ordered_row_sha256": "a567b07500d756c5d896193fab5f6e976decac14ddf2702151e2b8cc66848daa"
+          },
+          "firstscore": {
+            "rms": 3.430781852544004e-07,
+            "max_abs": 1.9073486328125e-06,
+            "candidate_rms_magnitude": 2.246865083342758,
+            "source_rms_magnitude": 2.246865113972659
+          },
+          "derived_rms_max_ulps_from_producer": 0.0
+        },
+        "on": {
+          "tokens": 248,
+          "eos": true,
+          "score": {
+            "policy": "crispembed-ocr-quality-v1",
+            "complete": true,
+            "raw": {
+              "cer": 1.7818181818181817,
+              "wer": 1.03125
+            },
+            "characters": 459,
+            "lines": 34,
+            "parse_ok": true,
+            "content": {
+              "cer": 0.0,
+              "wer": 0.0
+            },
+            "table_gold_available": true,
+            "content_exact": true,
+            "table": {
+              "expected": 1,
+              "actual": 1,
+              "expected_cells": 15,
+              "cell_errors": 0,
+              "exact": true
+            },
+            "exact_quality": true,
+            "expected_table_shape": [
+              [
+                3,
+                3,
+                3,
+                3,
+                3
+              ]
+            ],
+            "table_shape_valid": true
+          },
+          "independent_edits": {
+            "raw": {
+              "character_edits": 294,
+              "reference_codepoints": 165,
+              "word_edits": 33,
+              "reference_words": 32
+            },
+            "content": {
+              "character_edits": 0,
+              "reference_codepoints": 165,
+              "word_edits": 0,
+              "reference_words": 32
+            }
+          },
+          "source_floor": true,
+          "source_output_ids_equal": true,
+          "source_output_text_equal": true,
+          "raw": {
+            "rows": 248,
+            "archive_sha256": "e6f08e47cace041b8b68086e54876ccb672a3e7b530be1deed77493c8ded3e2f",
+            "ordered_row_sha256": "a567b07500d756c5d896193fab5f6e976decac14ddf2702151e2b8cc66848daa"
+          },
+          "firstscore": {
+            "rms": 3.430781852544004e-07,
+            "max_abs": 1.9073486328125e-06,
+            "candidate_rms_magnitude": 2.246865083342758,
+            "source_rms_magnitude": 2.246865113972659
+          },
+          "derived_rms_max_ulps_from_producer": 0.0
+        }
+      },
+      "paired_native_layers": {
+        "first_different_layer": null,
+        "layers": [
+          {
+            "layer": 0,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.1526116299540366,
+            "on_rms_magnitude": 0.1526116299540366
+          },
+          {
+            "layer": 1,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.16472957679220768,
+            "on_rms_magnitude": 0.16472957679220768
+          },
+          {
+            "layer": 2,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.16473545294768185,
+            "on_rms_magnitude": 0.16473545294768185
+          },
+          {
+            "layer": 3,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.1864747137066174,
+            "on_rms_magnitude": 0.1864747137066174
+          },
+          {
+            "layer": 4,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.18930388751283087,
+            "on_rms_magnitude": 0.18930388751283087
+          },
+          {
+            "layer": 5,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.197636182657358,
+            "on_rms_magnitude": 0.197636182657358
+          },
+          {
+            "layer": 6,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.2347252920069441,
+            "on_rms_magnitude": 0.2347252920069441
+          },
+          {
+            "layer": 7,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.23404596498237615,
+            "on_rms_magnitude": 0.23404596498237615
+          },
+          {
+            "layer": 8,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.22467078261264292,
+            "on_rms_magnitude": 0.22467078261264292
+          },
+          {
+            "layer": 9,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.22583295030473732,
+            "on_rms_magnitude": 0.22583295030473732
+          },
+          {
+            "layer": 10,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.2303434486696108,
+            "on_rms_magnitude": 0.2303434486696108
+          },
+          {
+            "layer": 11,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.22920012044883217,
+            "on_rms_magnitude": 0.22920012044883217
+          },
+          {
+            "layer": 12,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.22211244512679132,
+            "on_rms_magnitude": 0.22211244512679132
+          },
+          {
+            "layer": 13,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.2257361551272032,
+            "on_rms_magnitude": 0.2257361551272032
+          },
+          {
+            "layer": 14,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.2388561572236179,
+            "on_rms_magnitude": 0.2388561572236179
+          },
+          {
+            "layer": 15,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.29037509888580737,
+            "on_rms_magnitude": 0.29037509888580737
+          },
+          {
+            "layer": 16,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.29211934302455167,
+            "on_rms_magnitude": 0.29211934302455167
+          },
+          {
+            "layer": 17,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.2849888308851399,
+            "on_rms_magnitude": 0.2849888308851399
+          },
+          {
+            "layer": 18,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.2883377059277147,
+            "on_rms_magnitude": 0.2883377059277147
+          },
+          {
+            "layer": 19,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.3459026730669086,
+            "on_rms_magnitude": 0.3459026730669086
+          },
+          {
+            "layer": 20,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.3668706851905418,
+            "on_rms_magnitude": 0.3668706851905418
+          },
+          {
+            "layer": 21,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.4019509865628193,
+            "on_rms_magnitude": 0.4019509865628193
+          },
+          {
+            "layer": 22,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.4464925738825403,
+            "on_rms_magnitude": 0.4464925738825403
+          },
+          {
+            "layer": 23,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.480395654672694,
+            "on_rms_magnitude": 0.480395654672694
+          },
+          {
+            "layer": 24,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.505577327278389,
+            "on_rms_magnitude": 0.505577327278389
+          },
+          {
+            "layer": 25,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.5333852719536994,
+            "on_rms_magnitude": 0.5333852719536994
+          },
+          {
+            "layer": 26,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.589778216253068,
+            "on_rms_magnitude": 0.589778216253068
+          },
+          {
+            "layer": 27,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.6644938889330083,
+            "on_rms_magnitude": 0.6644938889330083
+          },
+          {
+            "layer": 28,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.7336551146491458,
+            "on_rms_magnitude": 0.7336551146491458
+          },
+          {
+            "layer": 29,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.8192145862958761,
+            "on_rms_magnitude": 0.8192145862958761
+          },
+          {
+            "layer": 30,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.8573978206334499,
+            "on_rms_magnitude": 0.8573978206334499
+          },
+          {
+            "layer": 31,
+            "bit_exact": true,
+            "rms": 0.0,
+            "max_abs": 0.0,
+            "off_rms_magnitude": 0.954913063743178,
+            "on_rms_magnitude": 0.954913063743178
+          }
+        ],
+        "derived_rms_max_ulps_from_producer": 0.0,
+        "scope": "Native OFF/ON, not actual source hidden."
+      }
+    }
+  },
+  "raw_rows": 2737,
+  "baseline_raw_rows_rehashed": 1370,
+  "all_on_complete": true,
+  "on_source_floors_passed": 3,
+  "elapsed_seconds": 327.710465442
+}

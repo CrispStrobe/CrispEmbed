@@ -104,15 +104,17 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   The [initial GitHub dispatch](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43228796357)
   failed before collection because its checkout was shallow; its queued retry
   was cancelled in favor of the bounded remote CPU audit.
-## LightOn4B source-aligned planner — 13 November 2026
+## Source-aligned fixed raw audit — 13 November 2026
 
-The separately gated candidate `f8bffd1217fa41a958047d88dafb782a4b1cd989` fixes a measured Q4 row-group mismatch at the receipt image chunk boundary. [Source-stage controls](../tests/results/lighton4b/receipt-layer0-operators/aligned-source-controls.json) close 56 compared stages and final recurrent state/FIFO exactly; the legacy controls remain exact. The [observed panel](../tests/results/lighton4b/receipt-layer0-operators/aligned-observed.json) matches source IDs/text on all three cases. The [fixed panel](../tests/results/lighton4b/receipt-layer0-operators/aligned-fixed.json) reaches EOS on all arms and meets all three provisional source floors: receipt ON 465 tokens and 24 character/18 word edits matches the quantized source, while book 654 and inventory 248 remain source-exact. Its independent raw-artifact audit is running; the safe report is not a full raw audit. Earlier observed BF16-relative table and form regressions remain, so all experimental gates stay default-off and no broad quality or release claim follows. Retain previous negative receipts and provenance limits.
+The [independent artifact audit](lighton4b-source-aligned-fixed-audit.md) passes at candidate `f8bffd1217fa41a958047d88dafb782a4b1cd989`. All six receipt-first arms close; all three aligned ON outputs match their quantized source IDs/text, reach EOS and pass the unchanged provisional source floors. Receipt improves from 468 to 465 generated IDs and 25/19 to 24/18 character/word edits; book654 and inventory248 remain exact. All 581 current artifacts and 5,023 current/reused/baseline vocabulary rows were rehashed remotely, including the tested runtime, retained quantized model and metadata preflight executable.
 
-## Physical RoPE fixed panel — 12 November 2026
+Next bounded work is review of this frozen evidence and selection of a separately declared quality lane. Preserve the earlier receipt failure, capped book OFF and BF16 table/form regressions. The audit does not recompute the source component comparisons or reread the original observed-source responses; it reads only three original source first-score vectors, not full source decode row inventories. No quality qualification, default/release/app promotion or performance claim. Do not repeat completed model forwards for report-only checks.
+
+## Prior physical RoPE fixed panel — 12 November 2026
 
 The [independent fixed raw audit](lighton4b-physical-rope-fixed-audit.md) closes all six book-first arms at candidate `a8a22749ab0b757ae1f317b6fa5b84ffd148b939`: 578 current artifacts/4,812,973,943 bytes and all3,619 current,849 reused-observed and2,249 prior-baseline raw rows verified remotely. Book1536/noEOS→654/EOS and inventory248/EOS meet their unchanged provisional source floors; receipt465→468/EOS regresses and fails its floor. All ON arms complete; only2/3 floors pass. The initial artifact-only failure and all three missing-log/binary/intermediate-bootstrap limitations remain explicit. No quality/default/release/app promotion.
 
-Next bounded work is attribution of the remaining receipt difference using exact source/native stage inputs; paired native differences begin at layer3. Preserve the fixed producer, capped book OFF, receipt negative and earlier observed BF16 regressions. Do not repeat completed model forwards for report-only checks; the raw audit already closes their inventories.
+This prior receipt failure led to the source-aligned attribution and fixed audit above; its initial negatives and evidence limits remain preserved.
 
 
 ## Current cross-repository checkpoint — 12 November 2026
