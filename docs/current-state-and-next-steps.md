@@ -66,7 +66,9 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   opt-in and still needs actual app/runtime and representative decoded-quality
   qualification. Its security and release controls retain documented filesystem
   race, provider CAS, TLS integration and signed-device limits. The replacement
-  SMB fixture compilation check was queued at merge, not yet confirmed passing.
+  [SMB fixture and app typecheck](https://github.com/CrispStrobe/CrispSorter/actions/runs/43320512232)
+  subsequently passed after the fixture repair; this is not a live-provider or
+  representative OCR-quality result.
   [Provider PR 52](https://github.com/CrispStrobe/CrispSorter/pull/52)
   merged after a targeted vendored-source conformance run. [Follow-up 56](https://github.com/CrispStrobe/CrispSorter/pull/56)
   merged as `7d6032bd15aded92bebb5c59b5f83f441d68ad64` using the reviewed

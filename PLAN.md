@@ -1,5 +1,24 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Registry tree pagination — 13 November 2026
+
+Bounded tooling lane `fix/model-hash-pagination-20261113` starts from
+`ebbe3ee70`. The original `tools/fetch_model_hashes.py` reads only one tree
+page: a two-page offline fixture reproduces the missing second-file hash and
+size. The corrected reader follows the Hub's `Link` continuation convention,
+retries each page independently and returns a tree only after all pages succeed.
+Continuation links must retain the same HTTPS Hub endpoint after resolving legitimate repository redirects; malformed links,
+duplicate next relations, cycles, invalid JSON/pages and permanent continuation
+failures abort rather than produce a partial header. Authenticated redirects
+also require the HTTPS Hub origin before constructing the next request.
+
+All eleven focused `tests/test_registry_pin_contract.py` controls pass, including
+existing complete registry/pin identity checks and canonical repository redirects. The existing OCR regression
+Tier 0 job already runs this file; hosted PR execution and a live scheduled
+registry scan remain pending. No live tree scan, pin regeneration, model
+transfer, runtime/release/default or workflow change belongs to this lane.
+The pagination contract follows the [upstream Hub reader](https://github.com/huggingface/huggingface_hub/blob/main/src/huggingface_hub/utils/_pagination.py).
+
 ## Existing desktop candidate consumers — 13 November 2026
 
 The [first packaged-consumer run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43309558037)
