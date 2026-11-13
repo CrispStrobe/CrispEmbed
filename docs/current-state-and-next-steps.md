@@ -106,6 +106,18 @@ below. Recheck live PR heads and hosted jobs before dispatching work.
   The [initial GitHub dispatch](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43228796357)
   failed before collection because its checkout was shallow; its queued retry
   was cancelled in favor of the bounded remote CPU audit.
+## Full-Q6 observed controls — 13 November 2026
+
+[PR 234](https://github.com/CrispStrobe/CrispEmbed/pull/234) merged the separately
+gated physical full-Q6 profile as `1d9a9f2cfc0bc7260142e92d1f4078caa321140c`.
+The three previously observed cases matched upstream Q6 IDs, text and EOS. Against
+the same BF16 outputs, table character/word edits improved from 348/97 to 0/0,
+form from 189/46 to 154/31, and Arabic remained 0/0. Ten native and 13 Python
+controls passed; independent review passed ten controller and three packer tests.
+The gate remains default-off. Representative quality, numerical/operator parity,
+source-vision parity and broader platforms are not qualified. No release or app
+pin change follows. See the [observed results](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/lighton4b-full-q6-observed.md).
+
 ## Source-aligned fixed raw audit — 13 November 2026
 
 The [independent artifact audit](lighton4b-source-aligned-fixed-audit.md) passes at candidate `f8bffd1217fa41a958047d88dafb782a4b1cd989`. All six receipt-first arms close; all three aligned ON outputs match their quantized source IDs/text, reach EOS and pass the unchanged provisional source floors. Receipt improves from 468 to 465 generated IDs and 25/19 to 24/18 character/word edits; book654 and inventory248 remain exact. All 581 current artifacts and 5,023 current/reused/baseline vocabulary rows were rehashed remotely, including the tested runtime, retained quantized model and metadata preflight executable.
