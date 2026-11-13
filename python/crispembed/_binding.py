@@ -3140,24 +3140,26 @@ class CrispTbsrnSr:
         Returns:
             Tuple of (output_ndarray uint8 shape (out_h, out_w, 3), out_w, out_h).
         """
-        flat = np.asarray(pixels, dtype=np.uint8).flatten()
+        flat = _restoration_rgb_pixels(pixels, width, height)
         px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
-
         out_ptr = ctypes.POINTER(ctypes.c_uint8)()
         out_w = ctypes.c_int(0)
         out_h = ctypes.c_int(0)
-
-        rc = self._lib.crispembed_tbsrn_sr_process(
-            self._ctx, px_ptr, width, height,
-            ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
-        )
-        if rc != 0 or not out_ptr:
-            raise RuntimeError("TBSRN SR processing failed")
-
-        ow, oh = out_w.value, out_h.value
-        buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
-        self._lib.crispembed_tbsrn_sr_free_image(out_ptr)
-        return buf.reshape(oh, ow, 3), ow, oh
+        try:
+            rc = self._lib.crispembed_tbsrn_sr_process(
+                self._ctx, px_ptr, width, height,
+                ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
+            )
+            if rc != 0 or not out_ptr:
+                raise RuntimeError("TBSRN SR processing failed")
+            ow, oh = out_w.value, out_h.value
+            if ow <= 0 or oh <= 0:
+                raise RuntimeError("TBSRN SR returned invalid output dimensions")
+            buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
+            return buf.reshape(oh, ow, 3), ow, oh
+        finally:
+            if out_ptr:
+                self._lib.crispembed_tbsrn_sr_free_image(out_ptr)
 
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
@@ -3660,13 +3662,6 @@ def _setup_safmn_sr_signatures(lib):
     lib.crispembed_safmn_sr_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
     lib.crispembed_safmn_sr_free_image.restype = None
 
-    lib.crispembed_tbsrn_sr_process.restype = ctypes.c_int
-
-    lib.crispembed_tbsrn_sr_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
-    lib.crispembed_tbsrn_sr_free_image.restype = None
-
-
-
 
 class CrispSafmnSr:
     """SAFMN super-resolution  - lightweight upscaling with SAFM+CCM AttBlocks.
@@ -3698,48 +3693,40 @@ class CrispSafmnSr:
         """Upscale an image.
 
         Args:
-            pixels: uint8 numpy array, flattened or shaped (H, W, C).
+            pixels: uint8 numpy array, flattened or shaped (H, W, 3).
             width: source image width in pixels.
             height: source image height in pixels.
-            tile_size: tile size for tiled inference (0 = full image).
-            tile_overlap: overlap between tiles in pixels.
+            tile_size: forwarded for ABI compatibility; native SAFMN uses
+                CRISPEMBED_SAFMN_TILE to choose tile size.
+            tile_overlap: forwarded for ABI compatibility; native SAFMN
+                currently uses its fixed overlap.
 
         Returns:
             Tuple of (output_ndarray uint8 shape (out_h, out_w, 3), out_w, out_h).
         """
-        flat = np.asarray(pixels, dtype=np.uint8).flatten()
+        flat = _restoration_rgb_pixels(pixels, width, height)
         px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
-
         out_ptr = ctypes.POINTER(ctypes.c_uint8)()
         out_w = ctypes.c_int(0)
         out_h = ctypes.c_int(0)
-
-        rc = self._lib.crispembed_tbsrn_sr_process(
-            self._ctx, px_ptr, width, height,
-            ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
-        )
-        if rc != 0 or not out_ptr:
-            raise RuntimeError("TBSRN SR processing failed")
-
-        ow, oh = out_w.value, out_h.value
-        buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
-        self._lib.crispembed_tbsrn_sr_free_image(out_ptr)
-        rc = self._lib.crispembed_safmn_sr_process(
-            self._ctx, px_ptr, width, height,
-            tile_size, tile_overlap,
-            ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
-        )
-        if rc != 0 or not out_ptr:
-            raise RuntimeError("SAFMN SR processing failed")
-
-        ow, oh = out_w.value, out_h.value
-        buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
-        self._lib.crispembed_safmn_sr_free_image(out_ptr)
-        return buf.reshape(oh, ow, 3), ow, oh
+        try:
+            rc = self._lib.crispembed_safmn_sr_process(
+                self._ctx, px_ptr, width, height, tile_size, tile_overlap,
+                ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
+            )
+            if rc != 0 or not out_ptr:
+                raise RuntimeError("SAFMN SR processing failed")
+            ow, oh = out_w.value, out_h.value
+            if ow <= 0 or oh <= 0:
+                raise RuntimeError("SAFMN SR returned invalid output dimensions")
+            buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
+            return buf.reshape(oh, ow, 3), ow, oh
+        finally:
+            if out_ptr:
+                self._lib.crispembed_safmn_sr_free_image(out_ptr)
 
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
-            self._lib.crispembed_tbsrn_sr_free(self._ctx)
             self._lib.crispembed_safmn_sr_free(self._ctx)
             self._ctx = None
 

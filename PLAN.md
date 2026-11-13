@@ -1,5 +1,29 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Python SAFMN and TBSRN restoration dispatch — 13 November 2026
+
+Bounded lane `fix/restoration-input-validation-20261113` starts from
+`c380f7a77b86b050e1dcc1f23eeaba489e5d6e69`. SAFMN signature setup accessed
+TBSRN symbols, processing passed a SAFMN context into TBSRN before SAFMN,
+and destruction freed the same context through both engines. Two isolated,
+typed-ctypes SAFMN controls reproduce the initial setup failures; the TBSRN
+valid-path control passes before the repair.
+
+The fix confines SAFMN setup, processing and deallocation to its own C ABI.
+Both wrappers validate positive C-int dimensions and exact RGB element counts,
+reject invalid returned dimensions before reading native storage, return owned
+copies and free native images after copy failures or non-null error outputs.
+TBSRN retains its distinct seven-argument ABI and reported fixed text-line
+output dimensions; SAFMN retains its nine-argument ABI and scale query.
+The SAFMN docstring now describes its actual environment-controlled tiling.
+
+All 13 model-free restoration controls pass, including the prior SwinIR/SCUNet
+controls and engine-isolated SAFMN/TBSRN callbacks. Eight existing OCR binding
+controls and all 54 CI-selection controls also pass, and an independent source
+review/focused rerun found no blocking issues. The existing controls workflow
+already executes this test file. Hosted execution and real model inference remain separate; no native implementation, image-quality claim,
+release, default or consumer pin change belongs to this Python dispatch repair.
+
 ## Python SwinIR and SCUNet restoration wrappers — 13 November 2026
 
 Bounded product lane `fix/python-restoration-wrappers-20261113` starts from
@@ -334,6 +358,7 @@ in this CPU submission.
 
 | Bounded lane | State | Acceptance |
 | --- | --- | --- |
+| `fix/restoration-input-validation-20261113`, base `c380f7a77` | SAFMN/TBSRN Python dispatch and ownership repair; 13 focused controls and independent review pass; hosted execution pending | Matching C ABI and single context free; validated RGB input and owned output; no native/default/release changes |
 | `fix/python-restoration-wrappers-20261113`, base `6ef1ac806` | Python wrappers integrated; 10 focused ctypes controls and independent source review pass; hosted execution pending | Correct native dispatch, tiling/dimensions, owned outputs, errors and matching cleanup; no model/default/release changes |
 | `fix/dbnet-line-gutters-20261112`, exact app runtime `c364feb974b91e14cbf328c6949f3df36e89ce81` | Default-off candidate; pinned-source decoded A/B passed; current-main integration pending review | Exact crop/box and decoded-text A/B; retain single-column controls; immutable minimal release before app repin |
 
