@@ -3627,8 +3627,14 @@ pub fn ocr_render(results: &[OcrRegion], page_w: i32, page_h: i32, format: &str)
     if ptr.is_null() {
         return None;
     }
+    struct OwnedRenderOutput(*mut std::ffi::c_char);
+    impl Drop for OwnedRenderOutput {
+        fn drop(&mut self) {
+            unsafe { crispembed_sys::crispembed_ocr_render_free(self.0) };
+        }
+    }
+    let _owned = OwnedRenderOutput(ptr);
     let s = unsafe { std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned() };
-    unsafe { libc::free(ptr as *mut std::ffi::c_void) };
     Some(s)
 }
 

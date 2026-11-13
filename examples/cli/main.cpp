@@ -1751,7 +1751,7 @@ static int cli_main(int argc, char ** argv) {
             char * rendered = crispembed_ocr_render(res, n_res, pw, ph, output_format.c_str());
             if (rendered) {
                 printf("%s", rendered);
-                free(rendered);
+                crispembed_ocr_render_free(rendered);
             }
         } else if (json_output) {
             float lang_conf = 0.0f;

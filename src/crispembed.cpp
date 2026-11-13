@@ -7126,6 +7126,10 @@ extern "C" char * crispembed_ocr_render(const crispembed_ocr_result * results, i
     return out;
 }
 
+extern "C" void crispembed_ocr_render_free(char * output) {
+    free(output);
+}
+
 // ---------------------------------------------------------------------------
 // Classical Preprocessing — C API wrappers
 // ---------------------------------------------------------------------------

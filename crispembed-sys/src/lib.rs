@@ -1517,6 +1517,7 @@ extern "C" {
         page_height: c_int,
         format: *const c_char,
     ) -> *mut c_char;
+    pub fn crispembed_ocr_render_free(output: *mut c_char);
 
     // ── Classical preprocessing ──
     /// PDF DPI profiling — analyse embedded images in a PDF page.

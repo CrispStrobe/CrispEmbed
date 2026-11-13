@@ -1,5 +1,27 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## One-shot OCR renderer allocator ownership — 13 November 2026
+
+Bounded fix `fix/ocr-render-result-ownership-20261113` starts from `19dd173c7`.
+Python's successful render attempted to load Linux libc even on other platforms;
+a controlled missing-libc replay reproduces the exception and unreleased native
+output. Dart/Rust/CLI/server also freed the library's output through caller-side
+allocators. The new `crispembed_ocr_render_free` keeps that allocation with its
+owner. All native consumers use it; dynamic bindings fail before rendering on
+older libraries without the export. Python no longer requires unrelated pipeline
+symbols, and output copies/decode failures run matching cleanup.
+
+Nine focused controls pass with exact production C wrappers/public headers,
+a deterministic renderer-backend stub and actual Python/Rust methods. They cover
+Unicode three-region packing, format dispatch, empty output/input, renderer and
+allocation failures, decode/copy errors and old-runtime behavior. These test the
+interface and allocation lifecycle, not backend rendering quality. Direct Dart
+3.9.4 Linux x64 execution passes all 14 equivalent cases, including supplementary
+Unicode, the complete 48-byte record layout and invalid-UTF8 exception cleanup.
+Existing eight CC, five preprocessing, 13 restoration and 12 ABI/OCR controls pass;
+independent source/test review found no blocking issues. No model build/inference,
+release, default or consumer pin change belongs to this fix.
+
 ## CC result allocator ownership — 13 November 2026
 
 Bounded fix `fix/python-cc-result-ownership-20261113` starts from `fb2177558`.

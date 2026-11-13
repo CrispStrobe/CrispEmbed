@@ -3563,7 +3563,7 @@ int main(int argc, char ** argv) {
             content_type = "application/pdf";
 
         res.set_content(rendered, content_type);
-        free(rendered);
+        crispembed_ocr_render_free(rendered);
     });
 
     // POST /text/sr — text image super-resolution (upscale low-DPI text before OCR)

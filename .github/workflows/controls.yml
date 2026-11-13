@@ -22,6 +22,8 @@ on:
       - 'tests/test_restoration_bindings.py'
       - 'tests/test_preprocess_bindings.py'
       - 'tests/test_cc_detect_ownership.py'
+      - 'tests/test_ocr_render_ownership.py'
+      - 'src/ocr_render.h'
       - 'src/crispembed.h'
       - 'src/crispembed.cpp'
       - 'src/cc_detect.h'
@@ -173,6 +175,8 @@ on:
       - 'tests/test_restoration_bindings.py'
       - 'tests/test_preprocess_bindings.py'
       - 'tests/test_cc_detect_ownership.py'
+      - 'tests/test_ocr_render_ownership.py'
+      - 'src/ocr_render.h'
       - 'src/crispembed.h'
       - 'src/crispembed.cpp'
       - 'src/cc_detect.h'
@@ -401,6 +405,10 @@ jobs:
       - name: CC detector native-interface allocation ownership
         if: ${{ !cancelled() }}
         run: python tests/test_cc_detect_ownership.py -v
+
+      - name: One-shot OCR renderer native-interface allocation ownership
+        if: ${{ !cancelled() }}
+        run: python tests/test_ocr_render_ownership.py -v
 
       - name: TeleOCR synthetic GGUF conversion and inherited license metadata
         if: ${{ !cancelled() }}

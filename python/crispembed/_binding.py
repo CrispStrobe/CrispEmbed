@@ -5010,13 +5010,19 @@ def ocr_render(results: list, page_w: int, page_h: int, format: str = "text",
     Returns:
         Rendered string (or PDF bytes as string for "pdf" format).
     """
-    lib = _load_library(lib_path)
-    _setup_ocr_render_signatures(lib)
-    _setup_ocr_pipeline_signatures(lib)  # for _CrispOcrResult
-
     n = len(results)
     if n == 0:
         return ""
+    lib = _load_library(lib_path)
+    try:
+        free_output = lib.crispembed_ocr_render_free
+    except AttributeError:
+        raise RuntimeError(
+            "OCR rendering requires a native library with crispembed_ocr_render_free; "
+            "update the native library") from None
+    free_output.argtypes = [ctypes.c_void_p]
+    free_output.restype = None
+    _setup_ocr_render_signatures(lib)
 
     # Build C-compatible result array
     arr = (_CrispOcrResult * n)()
@@ -5037,6 +5043,7 @@ def ocr_render(results: list, page_w: int, page_h: int, format: str = "text",
     ptr = lib.crispembed_ocr_render(arr, n, page_w, page_h, fmt)
     if not ptr:
         return ""
-    result = ctypes.cast(ptr, ctypes.c_char_p).value.decode("utf-8", errors="replace")
-    ctypes.cdll.LoadLibrary("libc.so.6").free(ptr)
-    return result
+    try:
+        return ctypes.cast(ptr, ctypes.c_char_p).value.decode("utf-8", errors="replace")
+    finally:
+        free_output(ptr)

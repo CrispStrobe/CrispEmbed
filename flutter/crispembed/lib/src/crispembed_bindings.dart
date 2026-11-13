@@ -576,6 +576,9 @@ typedef CrispembedOcrRenderNative = Pointer<Utf8> Function(
 typedef CrispembedOcrRenderDart = Pointer<Utf8> Function(Pointer<Void> results,
     int nResults, int pageWidth, int pageHeight, Pointer<Utf8> format);
 
+typedef CrispembedOcrRenderFreeNative = Void Function(Pointer<Utf8> output);
+typedef CrispembedOcrRenderFreeDart = void Function(Pointer<Utf8> output);
+
 // --- Punctuation Restoration ---
 typedef CrispembedPunctInitNative = Pointer<Void> Function(
     Pointer<Utf8> modelPath, Int32 nThreads);

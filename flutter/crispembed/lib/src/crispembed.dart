@@ -4744,41 +4744,47 @@ class CrispRestormer {
 String? ocrRender(DynamicLibrary lib, List<OcrResult> results, int pageWidth,
     int pageHeight, String format) {
   if (results.isEmpty) return null;
+  if (!lib.providesSymbol('crispembed_ocr_render_free')) {
+    throw StateError(
+        'OCR rendering requires a native library with crispembed_ocr_render_free; update the native library');
+  }
+  final freeOutput = lib.lookupFunction<CrispembedOcrRenderFreeNative,
+      CrispembedOcrRenderFreeDart>('crispembed_ocr_render_free');
   final renderFn =
       lib.lookupFunction<CrispembedOcrRenderNative, CrispembedOcrRenderDart>(
           'crispembed_ocr_render');
-
-  final arr = calloc<_NativeOcrResult>(results.length);
+  Pointer<_NativeOcrResult> arr = nullptr;
+  Pointer<Utf8> fmtPtr = nullptr;
+  Pointer<Utf8> ptr = nullptr;
   final textPtrs = <Pointer<Utf8>>[];
-
-  for (var i = 0; i < results.length; i++) {
-    final r = results[i];
-    final row = (arr + i).ref;
-    row.x = r.x;
-    row.y = r.y;
-    row.w = r.w;
-    row.h = r.h;
-    row.confidence = r.confidence;
-    final textPtr = r.text.toNativeUtf8();
-    textPtrs.add(textPtr);
-    row.text = textPtr;
-    row.textLen = utf8.encode(r.text).length;
-    row.orientationCorrected = r.orientationCorrected ? 1 : 0;
-    row.orientationAngle = 0;
-    row.orientationConfidence = 0;
+  try {
+    arr = calloc<_NativeOcrResult>(results.length);
+    for (var i = 0; i < results.length; i++) {
+      final r = results[i];
+      final row = (arr + i).ref;
+      row.x = r.x;
+      row.y = r.y;
+      row.w = r.w;
+      row.h = r.h;
+      row.confidence = r.confidence;
+      final textPtr = r.text.toNativeUtf8();
+      textPtrs.add(textPtr);
+      row.text = textPtr;
+      row.textLen = utf8.encode(r.text).length;
+      row.orientationCorrected = r.orientationCorrected ? 1 : 0;
+      row.orientationAngle = 0;
+      row.orientationConfidence = 0;
+    }
+    fmtPtr = format.toNativeUtf8();
+    ptr = renderFn(arr.cast<Void>(), results.length, pageWidth, pageHeight, fmtPtr);
+    if (ptr == nullptr) return null;
+    return ptr.toDartString();
+  } finally {
+    if (ptr != nullptr) freeOutput(ptr);
+    calloc.free(fmtPtr);
+    for (final tp in textPtrs) {
+      calloc.free(tp);
+    }
+    calloc.free(arr);
   }
-
-  final fmtPtr = format.toNativeUtf8();
-  final ptr =
-      renderFn(arr.cast<Void>(), results.length, pageWidth, pageHeight, fmtPtr);
-  calloc.free(fmtPtr);
-  for (final tp in textPtrs) {
-    calloc.free(tp);
-  }
-  calloc.free(arr);
-
-  if (ptr == nullptr) return null;
-  final result = ptr.toDartString();
-  calloc.free(ptr);
-  return result;
 }

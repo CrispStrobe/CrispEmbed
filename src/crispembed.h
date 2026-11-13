@@ -1609,11 +1609,13 @@ CRISPEMBED_API const char * crispembed_punct_process(void * ctx, const char * te
 
 /// Render OCR results (from crispembed_ocr_pipeline_run) to a format string.
 /// format: "text" | "hocr" | "alto" | "pdf"
-/// Returns a newly allocated string (caller frees with free()), or null on failure.
+/// Returns a newly allocated string (caller frees with crispembed_ocr_render_free()), or null on failure.
 /// PDF here is text-only and ASCII-encoded. For image-bearing or multi-page
 /// output use the binary-safe ocr_render.h lifecycle; do not concatenate PDFs/XML.
 CRISPEMBED_API char * crispembed_ocr_render(const crispembed_ocr_result * results, int n_results, int page_width,
                                             int page_height, const char * format);
+/// Free a one-shot rendered string in its allocating library. NULL is accepted.
+CRISPEMBED_API void crispembed_ocr_render_free(char * output);
 
 // ---------------------------------------------------------------------------
 // Classical Preprocessing — dewarp, CC detect, deskew, adaptive binarize
