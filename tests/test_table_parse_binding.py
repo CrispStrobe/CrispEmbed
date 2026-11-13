@@ -18,24 +18,27 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class TableParseBindingTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+    @staticmethod
+    def build_fixture(directory):
         compiler = shutil.which("c++") or shutil.which("g++")
         if not compiler:
             raise unittest.SkipTest("C++ compiler required for tiny interface fixture")
-        cls.temp = tempfile.TemporaryDirectory(prefix="table-parse-interface-")
-        cls.addClassCleanup(cls.temp.cleanup)
         source = (ROOT / "src/crispembed.cpp").read_text()
         wrappers = "\n".join(extract_function(source, prefix) for prefix in (
             'extern "C" void * crispembed_table_parse_init(',
             'extern "C" void crispembed_table_parse_free(',
             'extern "C" char * crispembed_table_parse_to_html(',
-            'extern "C" void crispembed_table_parse_free_string('))
+            'extern "C" void crispembed_table_parse_free_string(',
+            'extern "C" int crispembed_table_parse_detect_grid('))
         real_free = extract_function((ROOT / "src/table_parse.cpp").read_text(),
                                      "void table_parse_free_string(")
+        grid = extract_function((ROOT / "src/table_parse.cpp").read_text(), "struct Grid {") + ";"
+        real_grid = extract_function((ROOT / "src/table_parse.cpp").read_text(),
+                                     "int table_parse_detect_grid(")
         harness = r'''
 #include "crispembed.h"
 #include "table_parse.h"
+#include <algorithm>
 #include <climits>
 #include <cstdlib>
 #include <cstring>
@@ -74,12 +77,26 @@ static void audited_free(void * pointer) {
 }
 #define free audited_free
 '''
-        directory = Path(cls.temp.name)
+        grid_sink = r'''
+static Grid detect_grid(const uint8_t * pixels,int w,int h) {
+    ++calls; Grid grid;
+    if (w<=0 || h<=0 || w>INT_MAX-31 || w>INT_MAX/h || length<w*h || mode==1) return grid;
+    seen.assign(pixels,pixels+w*h);
+    grid.row_bounds={0,1,2}; grid.col_bounds={0,1,2,3}; return grid;
+}
+'''
+        directory = Path(directory)
         cpp, library = directory / "native.cpp", directory / "native.so"
-        cpp.write_text(harness + real_free + '\n#undef free\n' + wrappers)
+        cpp.write_text(harness + real_free + '\n#undef free\n' + grid + grid_sink + real_grid + wrappers)
         subprocess.run([compiler, "-std=c++17", "-fPIC", "-shared", "-I", str(ROOT / "src"),
                         str(cpp), "-o", str(library)], check=True, text=True, timeout=30)
-        cls.lib = ctypes.CDLL(str(library))
+        return library
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temp = tempfile.TemporaryDirectory(prefix="table-parse-interface-")
+        cls.addClassCleanup(cls.temp.cleanup)
+        cls.lib = ctypes.CDLL(str(cls.build_fixture(cls.temp.name)))
         cls.lib.test_reset.argtypes = [ctypes.c_int, ctypes.c_int]
         cls.lib.test_byte.argtypes = [ctypes.c_int]
 

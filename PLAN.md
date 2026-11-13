@@ -1,5 +1,25 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Rust table parser input and status contract — 13 November 2026
+
+Bounded fix `fix/rust-table-parser-buffer-safety-20261113` starts from `bed5ed994`.
+Both safe Rust table APIs forwarded short grayscale slices to native grid reads.
+They now share the existing grayscale preflight plus checked native `width+31`
+word padding before FFI, retaining all valid extra-byte prefixes. HTML cleanup
+has a matching RAII owner before the unchanged lossy UTF-8 copy. The public C
+header now correctly describes grid status as 0 success/-1 no grid; implementation,
+ABI and Rust return handling are unchanged.
+
+The focused actual-class test reuses the Python table fixture, including actual
+public wrappers, matching free and the internal grid status implementation with
+a guarded detector. It checks input/overflow rejection with no calls, prefix
+bytes, Unicode/empty/null/lossy output ownership, constructor/context lifetime and
+native/Rust grid success/failure. The matrix and 110 related/CI-selection controls
+pass; independent review and focused reruns found no blocking issues. No large
+boundary allocations, models, new dependencies, Pix2Struct ownership,
+release/default or consumer pin change belong
+here.
+
 ## Python table parser inputs and HTML cleanup — 13 November 2026
 
 Bounded fix `fix/python-table-parser-buffer-safety-20261113` starts from `bba18cc30`.

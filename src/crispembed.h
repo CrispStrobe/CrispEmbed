@@ -1711,7 +1711,7 @@ CRISPEMBED_API void crispembed_table_parse_free_string(char * str);
 
 /// Detect the grid structure of a table image without running OCR.
 /// Sets *out_n_rows and *out_n_cols to the number of rows and columns found.
-/// Returns the total number of cells (rows * cols), or 0 on failure.
+/// Returns 0 on success, or -1 if no grid is detected.
 CRISPEMBED_API int crispembed_table_parse_detect_grid(const uint8_t * gray, int width, int height, int * out_n_rows,
                                                       int * out_n_cols);
 

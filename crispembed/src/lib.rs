@@ -3386,6 +3386,12 @@ pub fn cc_detect(gray: &[u8], width: i32, height: i32) -> Vec<OcrRegion> {
     regions
 }
 
+fn table_parse_image_len(gray: &[u8], width: i32, height: i32) -> Option<usize> {
+    // Native morphology rounds each row to words using signed (width + 31).
+    width.checked_add(31)?;
+    grayscale_image_len(gray, width, height).ok()
+}
+
 /// Table structure recognition — parse a table image into HTML (rule-based
 /// morphological line detection + per-cell OCR).
 pub struct CrispTableParse {
@@ -3407,21 +3413,32 @@ impl CrispTableParse {
     }
 
     /// Parse a grayscale table image (row-major `height × width`) into an HTML
-    /// `<table>` string. Returns `None` on failure.
+    /// `<table>` string. Uses the first width*height bytes, ignoring extras.
+    /// Invalid dimensions, native index overflow or short buffers return `None`
+    /// without calling the parser.
     pub fn to_html(&self, gray: &[u8], width: i32, height: i32) -> Option<String> {
+        table_parse_image_len(gray, width, height)?;
         let ptr = unsafe {
             crispembed_sys::crispembed_table_parse_to_html(self.ctx, gray.as_ptr(), width, height)
         };
         if ptr.is_null() {
             return None;
         }
+        struct OwnedTableHtml(*mut std::ffi::c_char);
+        impl Drop for OwnedTableHtml {
+            fn drop(&mut self) {
+                unsafe { crispembed_sys::crispembed_table_parse_free_string(self.0) };
+            }
+        }
+        let _owned = OwnedTableHtml(ptr);
         let s = unsafe { std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned() };
-        unsafe { crispembed_sys::crispembed_table_parse_free_string(ptr) };
         Some(s)
     }
 
     /// Detect the grid dimensions (rows, cols) of a table image without OCR.
+    /// Input follows [`Self::to_html`]; invalid input returns `None` before FFI.
     pub fn detect_grid(gray: &[u8], width: i32, height: i32) -> Option<(i32, i32)> {
+        table_parse_image_len(gray, width, height)?;
         let mut rows: i32 = 0;
         let mut cols: i32 = 0;
         let rc = unsafe {
