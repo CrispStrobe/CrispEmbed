@@ -3,6 +3,7 @@ import hashlib
 import io
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 import lighton4b_upstream_q6_physical_pack as pack
 
@@ -47,6 +48,42 @@ class PhysicalQ6Controls(unittest.TestCase):
             old['tensors']['quant0']['stored_shape'] = [128, 2]
             with self.assertRaisesRegex(ValueError, 'tensor geometry'):
                 pack.validate_small_identity(a, up, b, old)
+
+    def test_report_aliases_cannot_overwrite_models_or_candidate(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            sources = [root / name for name in ('base', 'upstream', 'q4')]
+            for i, path in enumerate(sources):
+                path.write_bytes(bytes([i]) * 32)
+            output = root / 'candidate'
+            partial = root / 'candidate.partial'
+            # Missing candidate paths matter too: report==output would otherwise
+            # overwrite the fully converted model with JSON on success.
+            for report in [*sources, output, partial, root / '.' / 'candidate']:
+                with self.subTest(report=report.name), patch.object(pack, 'digest') as digest:
+                    with self.assertRaisesRegex(ValueError, 'must not alias'):
+                        pack.convert(*sources[:2], output, report, sources[2])
+                    digest.assert_not_called()
+                self.assertFalse(output.exists())
+                self.assertFalse(partial.exists())
+                for i, path in enumerate(sources):
+                    self.assertEqual(path.read_bytes(), bytes([i]) * 32)
+            for link_type in ('symlink', 'hardlink'):
+                for i, source in enumerate(sources):
+                    alias = root / f'{link_type}-{i}'
+                    if link_type == 'symlink':
+                        alias.symlink_to(source)
+                    else:
+                        alias.hardlink_to(source)
+                    with self.subTest(link_type=link_type, source=source.name):
+                        with self.assertRaisesRegex(ValueError, 'must not alias'):
+                            pack.convert(*sources[:2], output, alias, sources[2])
+                        self.assertEqual(source.read_bytes(), bytes([i]) * 32)
+            # Keep ordinary failed-conversion diagnostics when paths are safe.
+            report = root / 'report.json'
+            with self.assertRaisesRegex(ValueError, 'whole protected source identity'):
+                pack.convert(*sources[:2], output, report, sources[2])
+            self.assertEqual(pack.json.loads(report.read_text())['status'], 'failed')
 
     def test_whole_q6_row_transport_and_inverse(self):
         raw = b''.join(bytes([i]) * 420 for i in range(4))

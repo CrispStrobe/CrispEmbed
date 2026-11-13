@@ -5298,3 +5298,17 @@ outputs were reused. A unit-fixture convolution-rank error was corrected before
 model transfer and the normal retry passed. Representative input quality and
 broader platforms remain follow-ups; form still differs from BF16. No default,
 model publication, release or application-pin change.
+
+### Physical Q6 importer destination alias repair — 13 November 2026
+
+Bounded source: merged full-Q6 importer at `40544f7d3`. A model-free sentinel
+reproduced an actual destructive error: `--report` aliasing an input replaces it
+with failure JSON even when source identity fails; aliasing the candidate also
+allows the final report to replace the converted model. The importer now rejects
+source/destination and destination/destination aliases before any report write,
+including resolved symlinks and existing hardlinks. Ordinary distinct-path
+failure reports remain available. Four targeted model-free tests pass, covering
+source preservation and absent output/partial aliases as well as prior descriptor,
+small-parameter and row-transport controls. No model forward or native build is
+needed for this Python-only repair; runtime bytes, quantization and default gates
+are unchanged. Representative Q6 quality and platform follow-ups above remain.

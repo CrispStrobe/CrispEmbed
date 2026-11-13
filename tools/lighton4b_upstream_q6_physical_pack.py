@@ -92,8 +92,19 @@ def validate_small_identity(up_path, up, q4_path, q4):
  require(len(result)==177 and sum(r['type']==14 for r in up['tensors'].values())==249,'exact177small/249Q6 profile')
  return result
 
+def validate_paths(sources, output, partial, report):
+ # Validate before entering the exception handler: even failure reports write.
+ # resolve() covers lexical/symlink aliases; samefile() also covers hardlinks.
+ def aliases(a,b):
+  return a.resolve()==b.resolve() or (a.exists() and b.exists() and a.samefile(b))
+ destinations=[output,partial,report]
+ for i,path in enumerate(destinations):
+  require(not any(aliases(path,other) for other in [*sources,*destinations[:i]]),
+          'import destinations must not alias sources or each other')
+
 def convert(base_path,up_path,output,report_path,q4_control):
  base_path=Path(base_path);up_path=Path(up_path);q4_control=Path(q4_control);output=Path(output);report_path=Path(report_path);partial=output.with_name(output.name+'.partial');report={'schema':'lighton4b-upstream-full-q6-physical-import/v1','status':'failed','recipe':RECIPE,'original_forward_executed':False,'model_inference_executed':False,'requantization_executed':False,'full_f32_model_created':False,'quality_qualified':False,'tensors':[]}
+ validate_paths([base_path,up_path,q4_control],output,partial,report_path)
  def save():report_path.write_text(json.dumps(report,indent=2)+'\n')
  try:
   require(not output.exists()and not partial.exists(),'task target exists');require(base_path.stat().st_size==4030957952 and digest(base_path)==BASE_SHA,'whole protected source identity');require(up_path.stat().st_size==3464055776 and digest(up_path)==UP_SHA,'whole physical upstream identity');base=parse(base_path,TYPES);up=parse(up_path,TYPES);require(q4_control.stat().st_size==2708804576 and digest(q4_control)==Q4_SHA,'whole historical Q4M source identity');q4=parse(q4_control,TYPES);report['small_source_tensors']=validate_small_identity(up_path,up,q4_control,q4);require(len(base['tensors'])==723 and len(up['tensors'])==426,'exact source inventories');report['tokenizer_equivalence']=tokenizer_equivalence(base,up,base_path,up_path);header,layout,size,changed=prepare_header(base,up,base_path,report['tokenizer_equivalence']);report.update(candidate_bytes=size,header_bytes=len(header));save()
