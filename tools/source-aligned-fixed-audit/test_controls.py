@@ -39,6 +39,11 @@ class Controls(unittest.TestCase):
   with self.assertRaises(ValueError):a.compare_derived(dict(rms=1.,max_abs=2.),dict(rms=1.,max_abs=math.nextafter(2.,3.)))
  def test_safe_score_drops_private_payload(self):
   text='PRIVATE_BOOK_SENTINEL';score=dict(policy='frozen',raw_text=text,parsed_text=text,parsed_tables=[[text]],raw=dict(cer=0.,wer=0.),content=dict(cer=0.,wer=0.));self.assertNotIn(text,json.dumps(a.safe_score(score)))
+ def test_safe_projection_altered_floor_hash_plan_rejected(self):
+  av=dict(summary=dict(eos=True),chunk_sizes=[4],firstscore=dict(rms=0.),raw_rows=dict(archive=dict(sha256='a'*64)));actual=dict(tokens=1,score={},independent_edits={},source_output_ids_equal=True,source_output_text_equal=True,source_floor=True,raw=dict(ordered_row_sha256='b'*64));p=dict(summary=av['summary'],chunk_sizes=[4],score={},independent_edits={},source_output_ids_equal=True,source_output_text_equal=True,meets_provisional_source_floor=True,firstscore=av['firstscore'],generated_ids_sha256='c'*64,decoded_utf8_sha256='d'*64,raw_rows=dict(count=1,archive=av['raw_rows']['archive'],ordered_row_sha256='b'*64));a.check_projected_arm(p,av,actual,'c'*64,'d'*64)
+  for key,value in [('meets_provisional_source_floor',False),('generated_ids_sha256','e'*64),('chunk_sizes',[3]),('firstscore',dict(rms=1.))]:
+   changed=copy.deepcopy(p);changed[key]=value
+   with self.assertRaises(ValueError):a.check_projected_arm(changed,av,actual,'c'*64,'d'*64)
  def test_closed_owned_path(self):
   with tempfile.TemporaryDirectory()as directory:
    root=Path(directory);(root/'ok').write_text('x');self.assertEqual(a.owned(root,'ok'),root/'ok')
