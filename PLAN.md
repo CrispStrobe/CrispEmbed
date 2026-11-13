@@ -1,5 +1,31 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Python SwinIR and SCUNet restoration wrappers — 13 November 2026
+
+Bounded product lane `fix/python-restoration-wrappers-20261113` starts from
+`6ef1ac806`. `CrispSwinirSr(model_path)` failed immediately because its exported
+class was empty. `CrispScunet.process` called the SwinIR function with undefined
+tiling arguments instead of its own five-argument C ABI; displaced SwinIR methods
+and unreachable SCUNet code had been combined in the SCUNet class.
+
+The repair restores each existing native API to its matching Python class,
+including SwinIR scale/tiling and output dimensions, same-size SCUNet RGB output,
+correct load diagnostics and matching context/image deallocation. Both wrappers
+reject nonpositive/out-of-C-int dimensions and incorrect RGB element counts
+before native reads. Returned arrays own copies and native images are freed even
+on copy errors, malformed SwinIR dimensions or reported native failure.
+
+The initial seven focused controls reproduced one failure and eleven subcase
+errors. All ten final `tests/test_restoration_bindings.py` controls pass using
+typed ctypes callbacks that expose only the selected engine's symbols, check
+actual argument arity and invalidate freed storage. Eight existing OCR binding
+controls and all 54 CI-selection controls also pass. An independent source review
+and focused test rerun found no blocking issues. The existing model-free controls
+workflow now runs these tests when the binding or test changes; its concurrency
+is unchanged. Feature integration and hosted execution remain pending. No model
+inference, image-quality claim, native ABI/default, release or consumer pin change
+belongs to this Python dispatch repair.
+
 ## Authored full-Q6 versus Q4 quality screen — 13 November 2026
 
 The [completed six-arm Kaggle screen](docs/lighton4b-authored-q6-q4-quality.md)
@@ -308,6 +334,7 @@ in this CPU submission.
 
 | Bounded lane | State | Acceptance |
 | --- | --- | --- |
+| `fix/python-restoration-wrappers-20261113`, base `6ef1ac806` | Python wrappers repaired; 10 focused ctypes controls and independent source review pass; feature integration pending | Correct native dispatch, tiling/dimensions, owned outputs, errors and matching cleanup; no model/default/release changes |
 | `fix/dbnet-line-gutters-20261112`, exact app runtime `c364feb974b91e14cbf328c6949f3df36e89ce81` | Default-off candidate; pinned-source decoded A/B passed; current-main integration pending review | Exact crop/box and decoded-text A/B; retain single-column controls; immutable minimal release before app repin |
 
 The [retained Android flow](https://github.com/CrispStrobe/CrispSorter/actions/runs/43275466921)

@@ -3940,10 +3940,71 @@ def _setup_swinir_sr_signatures(lib):
     lib.crispembed_swinir_sr_free_image.restype = None
 
 
+def _restoration_rgb_pixels(pixels, width, height):
+    """Validate the RGB buffer before an unbounded native pointer read."""
+    int_max = (1 << (ctypes.sizeof(ctypes.c_int) * 8 - 1)) - 1
+    if any(not isinstance(value, (int, np.integer)) or
+           value <= 0 or value > int_max for value in (width, height)):
+        raise ValueError("width and height must be positive C int dimensions")
+    flat = np.asarray(pixels, dtype=np.uint8).flatten()
+    if flat.size != int(width) * int(height) * 3:
+        raise ValueError("pixels must contain exactly width * height * 3 RGB values")
+    return flat
+
+
 class CrispSwinirSr:
     """SwinIR-light super-resolution -- Swin Transformer whole-image upscaling."""
-    pass  # TODO: wire SwinIR Python class methods
 
+    def __init__(self, model_path: str, n_threads: int = 4,
+                 lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_swinir_sr_signatures(self._lib)
+        self._ctx = self._lib.crispembed_swinir_sr_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load SwinIR SR model: {model_path}")
+
+    @property
+    def scale(self) -> int:
+        """Return the scale factor (e.g. 2, 3, 4) reported by the model."""
+        return self._lib.crispembed_swinir_sr_scale(self._ctx)
+
+    def process(self, pixels: np.ndarray, width: int, height: int,
+                tile_size: int = 0, tile_overlap: int = 0
+                ) -> Tuple[np.ndarray, int, int]:
+        """Upscale RGB pixels, returning (uint8 HWC array, out_width, out_height).
+
+        Input may be flat or shaped (height, width, 3). Zero tile size/overlap
+        select the native defaults.
+        """
+        flat = _restoration_rgb_pixels(pixels, width, height)
+        px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+        out_ptr = ctypes.POINTER(ctypes.c_uint8)()
+        out_w = ctypes.c_int(0)
+        out_h = ctypes.c_int(0)
+        try:
+            rc = self._lib.crispembed_swinir_sr_process(
+                self._ctx, px_ptr, width, height, tile_size, tile_overlap,
+                ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
+            )
+            if rc != 0 or not out_ptr:
+                raise RuntimeError("SwinIR SR processing failed")
+            ow, oh = out_w.value, out_h.value
+            if ow <= 0 or oh <= 0:
+                raise RuntimeError("SwinIR SR returned invalid output dimensions")
+            buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
+            return buf.reshape(oh, ow, 3), ow, oh
+        finally:
+            if out_ptr:
+                self._lib.crispembed_swinir_sr_free_image(out_ptr)
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_swinir_sr_free(self._ctx)
+            self._ctx = None
+
+
+# ---------------------------------------------------------------------------
 # SCUNet Image Denoising (Swin-Conv-UNet, Apache-2.0)
 # ---------------------------------------------------------------------------
 
@@ -3981,81 +4042,28 @@ class CrispScunet:
         self._ctx = self._lib.crispembed_scunet_init(
             model_path.encode("utf-8"), n_threads)
         if not self._ctx:
-            raise RuntimeError(f"Failed to load SwinIR SR model: {model_path}")
-
-    @property
-    def scale(self) -> int:
-        """Return the scale factor (e.g. 2, 3, 4) reported by the model."""
-        return self._lib.crispembed_swinir_sr_scale(self._ctx)
-
-    def process(self, pixels: np.ndarray, width: int, height: int,
-                tile_size: int = 0, tile_overlap: int = 0
-                ) -> Tuple[np.ndarray, int, int]:
-        """Upscale an image.
-
-        Args:
-            pixels: uint8 numpy array, flattened or shaped (H, W, C).
-            width: source image width in pixels.
-            height: source image height in pixels.
-            tile_size: tile size for tiled inference (0 = auto).
-            tile_overlap: overlap between tiles in pixels (0 = auto).
-
-        Returns:
-            Tuple of (output_ndarray uint8 shape (out_h, out_w, 3), out_w, out_h).
-        """
-        # TODO: implement SwinIR process method
-        raise NotImplementedError("CrispSwinirSr.process not yet implemented")
-
-    def __del__(self):
-        if hasattr(self, '_ctx') and self._ctx:
-            self._lib.crispembed_swinir_sr_free(self._ctx)
+            raise RuntimeError(f"Failed to load SCUNet model: {model_path}")
 
     def process(self, pixels: np.ndarray, width: int, height: int
                 ) -> np.ndarray:
-        """Denoise an image (same resolution output).
+        """Denoise RGB pixels, returning a uint8 array shaped (height, width, 3).
 
-        Args:
-            pixels: uint8 numpy array, flattened or shaped (H, W, 3).
-            width: source image width in pixels.
-            height: source image height in pixels.
-
-        Returns:
-            output_ndarray uint8 shape (height, width, 3).
+        Input may be flat or shaped (height, width, 3).
         """
-        flat = np.asarray(pixels, dtype=np.uint8).flatten()
+        flat = _restoration_rgb_pixels(pixels, width, height)
         px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
-
         out_ptr = ctypes.POINTER(ctypes.c_uint8)()
-        out_w = ctypes.c_int(0)
-        out_h = ctypes.c_int(0)
-
-        rc = self._lib.crispembed_swinir_sr_process(
-            self._ctx, px_ptr, width, height,
-            tile_size, tile_overlap,
-            ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
-        )
-        if rc != 0 or not out_ptr:
-            raise RuntimeError("SwinIR SR processing failed")
-
-        ow, oh = out_w.value, out_h.value
-        buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
-        self._lib.crispembed_swinir_sr_free_image(out_ptr)
-        return buf.reshape(oh, ow, 3), ow, oh
-
-    def __del__(self):
-        if hasattr(self, '_ctx') and self._ctx:
-            self._lib.crispembed_swinir_sr_free(self._ctx)
-
-        rc = self._lib.crispembed_scunet_process(
-            self._ctx, px_ptr, width, height,
-            ctypes.byref(out_ptr),
-        )
-        if rc != 0 or not out_ptr:
-            raise RuntimeError("SCUNet denoising failed")
-
-        buf = np.ctypeslib.as_array(out_ptr, shape=(height * width * 3,)).copy()
-        self._lib.crispembed_scunet_free_image(out_ptr)
-        return buf.reshape(height, width, 3)
+        try:
+            rc = self._lib.crispembed_scunet_process(
+                self._ctx, px_ptr, width, height, ctypes.byref(out_ptr),
+            )
+            if rc != 0 or not out_ptr:
+                raise RuntimeError("SCUNet denoising failed")
+            buf = np.ctypeslib.as_array(out_ptr, shape=(int(height) * int(width) * 3,)).copy()
+            return buf.reshape(height, width, 3)
+        finally:
+            if out_ptr:
+                self._lib.crispembed_scunet_free_image(out_ptr)
 
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
