@@ -16,6 +16,9 @@ class PhysicalQ6Controls(unittest.TestCase):
             shape = list(map(int, shape))
             while len(shape) > 1 and shape[-1] == 1:
                 shape.pop()
+            if name.endswith('.linear_attn.conv1d.weight'):
+                self.assertEqual(shape, [4, 1, 8192])
+                shape = [4, 8192]
             rows[pack.mapping.physical_name(name)] = {'native_name': name, 'type': int(kind), 'upstream_shape': shape}
         self.assertEqual(len(rows), 426)
         self.assertEqual(sum(r['type'] == 14 for r in rows.values()), 249)
