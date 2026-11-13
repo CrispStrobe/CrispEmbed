@@ -1,5 +1,8 @@
 # Authored physical Q6 versus Q4 document screen
 
+[Completed result](../../docs/lighton4b-authored-q6-q4-quality.md): both profiles
+produce identical IDs/text/EOS on all three pages; no Q6 quality gain observed.
+
 Three new MIT-licensed clean printed pages have explicit authored transcriptions:
 a field report, a 16-cell invoice and an accented French/German/Portuguese dispatch
 note. The final 512×512 PNGs use directly rendered 14-pixel body text and 19-pixel
