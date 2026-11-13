@@ -1,5 +1,24 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Native table parser metadata guards — 13 November 2026
+
+Bounded fix `fix/native-table-parser-metadata-20261113` starts from `3f4c911d6`.
+A guarded baseline replay shows NULL grid input and overflowing HTML dimensions
+reaching the detector. Both native entrypoints now reject NULL pixels, nonpositive
+axes, signed area/word-padding overflow and unsafe vertical-window indexing before
+processing. Grid failures clear each supplied count and retain the existing
+0-success/-1-failure contract. Projection centers use algebraically equivalent
+subtraction-based midpoints to avoid overflowing index sums.
+
+Four focused controls reuse the tiny table fixture with actual HTML entry,
+escape/trim, grid-status and midpoint code, plus guarded detector/OCR sinks.
+They check internal/public rejection without detector calls, optional/failed
+counts, valid escaped HTML/grid results and exact scalar limits near INT_MAX
+without large allocations. All four and 111 related/CI-selection controls pass;
+independent source/test review found no blocking issues. The raw-pointer API still
+requires callers to supply the full image buffer; it cannot validate backing length. No models, dependencies,
+ABI, Pix2Struct ownership, release/default or consumer pin change belongs here.
+
 ## Rust table parser input and status contract — 13 November 2026
 
 Bounded fix `fix/rust-table-parser-buffer-safety-20261113` starts from `bed5ed994`.

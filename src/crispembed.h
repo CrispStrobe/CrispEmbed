@@ -1701,7 +1701,8 @@ CRISPEMBED_API void * crispembed_table_parse_init(const char * ocr_model_path, i
 CRISPEMBED_API void crispembed_table_parse_free(void * ctx);
 
 /// Parse a grayscale table image into an HTML string.
-/// gray: uint8 grayscale pixels, row-major [height × width].
+/// gray: readable uint8 grayscale pixels, row-major [height × width].
+/// NULL pixels or invalid native dimensions return NULL before image processing.
 /// Returns a newly allocated HTML string — caller must free with
 /// crispembed_table_parse_free_string(). Returns NULL on failure.
 CRISPEMBED_API char * crispembed_table_parse_to_html(void * ctx, const uint8_t * gray, int width, int height);
@@ -1711,7 +1712,8 @@ CRISPEMBED_API void crispembed_table_parse_free_string(char * str);
 
 /// Detect the grid structure of a table image without running OCR.
 /// Sets *out_n_rows and *out_n_cols to the number of rows and columns found.
-/// Returns 0 on success, or -1 if no grid is detected.
+/// Returns 0 on success, or -1 for invalid image metadata or no detected grid.
+/// Clears each supplied count on failure. The caller supplies width*height bytes.
 CRISPEMBED_API int crispembed_table_parse_detect_grid(const uint8_t * gray, int width, int height, int * out_n_rows,
                                                       int * out_n_cols);
 

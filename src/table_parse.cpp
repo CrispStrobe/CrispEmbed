@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -55,6 +56,11 @@ static std::vector<int> v_projection(const uint32_t * bits, int w, int h, int wp
     return proj;
 }
 
+// Indices are nonnegative and ordered; avoid overflowing their sum near INT_MAX.
+static int projection_midpoint(int begin, int end) {
+    return begin + (end - begin) / 2;
+}
+
 // Find positions where projection exceeds threshold (line candidates)
 static std::vector<int> find_line_positions(const std::vector<int> & proj, int length, float min_fraction) {
     int thresh = (int)(length * min_fraction);
@@ -65,7 +71,7 @@ static std::vector<int> find_line_positions(const std::vector<int> & proj, int l
             // Find center of this line cluster
             int start = i;
             while (i < (int)proj.size() && proj[i] >= thresh) i++;
-            positions.push_back((start + i - 1) / 2);
+            positions.push_back(projection_midpoint(start, i - 1));
         } else {
             i++;
         }
@@ -86,7 +92,7 @@ static std::vector<int> find_boundaries_from_valleys(const std::vector<int> & pr
             while (i < (int)proj.size() && proj[i] == 0) i++;
             int gap_len = i - start;
             if (gap_len >= min_gap) {
-                bounds.push_back((start + i) / 2);
+                bounds.push_back(projection_midpoint(start, i));
             }
         } else {
             i++;
@@ -306,10 +312,17 @@ static std::string trim(const std::string & s) {
     return s.substr(start, end - start + 1);
 }
 
+static bool valid_table_image(const uint8_t * gray, int width, int height) {
+    if (!gray || width <= 0 || height <= 0 || width > INT_MAX - 31 || width > INT_MAX / height) return false;
+    // Vertical morphology uses y + half_window, including the minimum 31px SE.
+    const int vertical_radius = (std::max(31, height / 4) | 1) / 2;
+    return height - 1 <= INT_MAX - vertical_radius;
+}
+
 // ── Public API ────────────────────────────────────────────────────────
 
 char * table_parse_to_html(table_parse_context * ctx, const uint8_t * gray, int width, int height) {
-    if (!ctx || !gray || width <= 0 || height <= 0) return nullptr;
+    if (!ctx || !valid_table_image(gray, width, height)) return nullptr;
 
     const bool bench = ctx->bench;
     auto t_total = std::chrono::steady_clock::now();
@@ -374,8 +387,12 @@ void table_parse_free_string(char * str) {
 }
 
 int table_parse_detect_grid(const uint8_t * gray, int width, int height, int * out_n_rows, int * out_n_cols) {
+    if (out_n_rows) *out_n_rows = 0;
+    if (out_n_cols) *out_n_cols = 0;
+    if (!valid_table_image(gray, width, height)) return -1;
     Grid grid = detect_grid(gray, width, height);
+    if (grid.n_rows() < 1 || grid.n_cols() < 1) return -1;
     if (out_n_rows) *out_n_rows = grid.n_rows();
     if (out_n_cols) *out_n_cols = grid.n_cols();
-    return (grid.n_rows() > 0 && grid.n_cols() > 0) ? 0 : -1;
+    return 0;
 }

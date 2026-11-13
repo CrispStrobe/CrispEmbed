@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class TableParseBindingTests(unittest.TestCase):
     @staticmethod
-    def build_fixture(directory):
+    def build_fixture(directory, actual_html=False):
         compiler = shutil.which("c++") or shutil.which("g++")
         if not compiler:
             raise unittest.SkipTest("C++ compiler required for tiny interface fixture")
@@ -30,19 +30,29 @@ class TableParseBindingTests(unittest.TestCase):
             'extern "C" char * crispembed_table_parse_to_html(',
             'extern "C" void crispembed_table_parse_free_string(',
             'extern "C" int crispembed_table_parse_detect_grid('))
-        real_free = extract_function((ROOT / "src/table_parse.cpp").read_text(),
+        table_source = (ROOT / "src/table_parse.cpp").read_text()
+        real_free = extract_function(table_source,
                                      "void table_parse_free_string(")
-        grid = extract_function((ROOT / "src/table_parse.cpp").read_text(), "struct Grid {") + ";"
-        real_grid = extract_function((ROOT / "src/table_parse.cpp").read_text(),
-                                     "int table_parse_detect_grid(")
+        grid = extract_function(table_source, "struct Grid {") + ";"
+        real_grid = extract_function(table_source, "int table_parse_detect_grid(")
+        geometry = "\n".join(extract_function(table_source, prefix) for prefix in (
+            "static bool valid_table_image(", "static int projection_midpoint(",
+            "static std::vector<int> find_line_positions(",
+            "static std::vector<int> find_boundaries_from_valleys("))
         harness = r'''
 #include "crispembed.h"
 #include "table_parse.h"
 #include <algorithm>
 #include <climits>
+#include <chrono>
+#include <cstdio>
+#include <sstream>
+#include <string>
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+struct table_parse_context { bool bench=false; };
+static table_parse_context context;
 static int calls=0, length=0, mode=0, frees=0, context_frees=0, null_model=0;
 static void * outstanding=nullptr;
 static std::vector<uint8_t> seen;
@@ -58,7 +68,7 @@ extern "C" int test_null_model() { return null_model; }
 extern "C" int test_byte(int index) { return seen.at(index); }
 int ce_resolve_threads(int threads) { return threads; }
 extern "C" table_parse_context * table_parse_init(const char * path,int) {
-    null_model=path==nullptr; return reinterpret_cast<table_parse_context *>(1);
+    null_model=path==nullptr; return &context;
 }
 extern "C" void table_parse_free(table_parse_context *) { ++context_frees; }
 extern "C" char * table_parse_to_html(table_parse_context *,const uint8_t * pixels,int w,int h) {
@@ -80,14 +90,43 @@ static void audited_free(void * pointer) {
         grid_sink = r'''
 static Grid detect_grid(const uint8_t * pixels,int w,int h) {
     ++calls; Grid grid;
-    if (w<=0 || h<=0 || w>INT_MAX-31 || w>INT_MAX/h || length<w*h || mode==1) return grid;
+    if (!pixels || w<=0 || h<=0 || w>INT_MAX-31 || w>INT_MAX/h || length<w*h || mode==1) return grid;
     seen.assign(pixels,pixels+w*h);
-    grid.row_bounds={0,1,2}; grid.col_bounds={0,1,2,3}; return grid;
+    if (mode!=4) grid.row_bounds={0,1,2};
+    grid.col_bounds={0,1,2,3}; return grid;
+}
+'''
+        actual_body = ""
+        if actual_html:
+            harness = harness.replace(extract_function(harness, 'extern "C" char * table_parse_to_html('), "")
+            actual_body = "\n".join(extract_function(table_source, prefix) for prefix in (
+                "static std::string html_escape(", "static std::string trim("))
+            actual_body += r'''
+static std::string ocr_cell(table_parse_context *,const uint8_t *,int,int,int,int,int,int) {
+    return "cell & <";
+}
+static void * audited_malloc(size_t size) {
+    if (outstanding) std::abort();
+    return outstanding=std::malloc(size);
+}
+#define malloc audited_malloc
+'''
+            actual_body += extract_function(table_source, "char * table_parse_to_html(")
+            actual_body += "\n#undef malloc\n"
+        probes = r'''
+extern "C" int test_metadata_valid(const uint8_t * pixels,int w,int h) {
+    return valid_table_image(pixels,w,h);
+}
+extern "C" int test_midpoint(int begin,int end) { return projection_midpoint(begin,end); }
+extern "C" int test_projection_helpers() {
+    return find_line_positions({0,1,1,0},2,0.5f)==std::vector<int>{1} &&
+           find_boundaries_from_valleys({1,0,0,1},2,2)==std::vector<int>{0,2,4};
 }
 '''
         directory = Path(directory)
         cpp, library = directory / "native.cpp", directory / "native.so"
-        cpp.write_text(harness + real_free + '\n#undef free\n' + grid + grid_sink + real_grid + wrappers)
+        cpp.write_text(harness + real_free + '\n#undef free\n' + geometry + grid + grid_sink +
+                       real_grid + actual_body + probes + wrappers)
         subprocess.run([compiler, "-std=c++17", "-fPIC", "-shared", "-I", str(ROOT / "src"),
                         str(cpp), "-o", str(library)], check=True, text=True, timeout=30)
         return library

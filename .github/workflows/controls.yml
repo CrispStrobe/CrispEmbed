@@ -30,6 +30,7 @@ on:
       - 'tests/test_scan_cleanup_binding.py'
       - 'tests/test_table_parse_binding.py'
       - 'tests/test_rust_table_parse_safety.py'
+      - 'tests/test_table_parse_native_metadata.py'
       - 'src/table_parse.h'
       - 'src/table_parse.cpp'
       - 'src/scan_cleanup.h'
@@ -194,6 +195,7 @@ on:
       - 'tests/test_scan_cleanup_binding.py'
       - 'tests/test_table_parse_binding.py'
       - 'tests/test_rust_table_parse_safety.py'
+      - 'tests/test_table_parse_native_metadata.py'
       - 'src/table_parse.h'
       - 'src/table_parse.cpp'
       - 'src/scan_cleanup.h'
@@ -459,6 +461,10 @@ jobs:
       - name: Rust table parser input and native status controls
         if: ${{ !cancelled() }}
         run: python tests/test_rust_table_parse_safety.py -v
+
+      - name: Native table parser metadata and arithmetic controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_table_parse_native_metadata.py -v
 
       - name: TeleOCR synthetic GGUF conversion and inherited license metadata
         if: ${{ !cancelled() }}

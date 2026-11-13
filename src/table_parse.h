@@ -38,7 +38,8 @@ void table_parse_free(table_parse_context * ctx);
 void table_parse_set_ocr(table_parse_context * ctx, table_cell_ocr_fn fn, void * user_data);
 
 // Parse a table image into HTML.
-// Input: grayscale uint8 [height, width].
+// Input: readable grayscale uint8 [height, width]. Dimensions/index arithmetic
+// must fit native signed bounds; invalid metadata returns NULL before reading.
 // Returns: allocated HTML string (caller frees with table_parse_free_string).
 // Returns NULL on failure.
 char * table_parse_to_html(table_parse_context * ctx, const uint8_t * gray, int width, int height);
@@ -46,7 +47,8 @@ char * table_parse_to_html(table_parse_context * ctx, const uint8_t * gray, int 
 void table_parse_free_string(char * str);
 
 // Intermediate: detect grid structure without OCR.
-// Returns number of rows and columns found.
+// Returns 0 on success, -1 for invalid image metadata or no grid.
+// Clears each supplied count on failure; the caller supplies width*height bytes.
 int table_parse_detect_grid(const uint8_t * gray, int width, int height, int * out_n_rows, int * out_n_cols);
 
 #ifdef __cplusplus
