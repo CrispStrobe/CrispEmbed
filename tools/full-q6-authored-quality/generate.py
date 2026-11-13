@@ -61,34 +61,34 @@ def main():
         annotation='New text authored for this evaluation before any model outputs; synthetic clean pages.',
         renderer=dict(pillow=__version__, font_sha256=sha(FONT), bold_font_sha256=sha(BOLD)), cases=[])
     for case in cases:
-        image = Image.new('RGB', (1000, 1000), 'white')
+        image = Image.new('RGB', (512, 512), 'white')
         draw = ImageDraw.Draw(image)
-        font = ImageFont.truetype(str(FONT), 25)
-        titlefont = ImageFont.truetype(str(BOLD), 32)
-        draw.text((60, 50), case['title'], fill='black', font=titlefont)
-        y = 125
+        font = ImageFont.truetype(str(FONT), 14)
+        titlefont = ImageFont.truetype(str(BOLD), 19)
+        draw.text((30, 25), case['title'], fill='black', font=titlefont)
+        y = 70
         for line in case['lines']:
             if line:
-                assert draw.textbbox((60,y),line,font=font)[2] < 940, line
-                draw.text((60,y), line, fill='black', font=font)
-            y += 40
+                assert draw.textbbox((30,y),line,font=font)[2] < 482, line
+                draw.text((30,y), line, fill='black', font=font)
+            y += 23
         text = case['title'] + '\n' + '\n'.join(case['lines'])
         if case['tables']:
-            y += 25
-            xs = [60, 420, 540, 730, 940]
+            y += 10
+            xs = [30, 213, 277, 378, 482]
             grid = case['tables'][0]
             for ri, row in enumerate(grid):
-                top = y + ri * 64
+                top = y + ri * 36
                 for ci, cell in enumerate(row):
-                    draw.rectangle((xs[ci], top, xs[ci+1], top+64), outline='black', width=2)
-                    draw.text((xs[ci]+12, top+17), cell, fill='black', font=font)
-            y += len(grid)*64 + 45
+                    draw.rectangle((xs[ci], top, xs[ci+1], top+36), outline='black', width=1)
+                    draw.text((xs[ci]+6, top+9), cell, fill='black', font=font)
+            y += len(grid)*36 + 23
             text += '\n' + '\n'.join(' '.join(row) for row in grid)
             for line in case['footer']:
-                draw.text((60,y), line, fill='black', font=font)
-                y += 40
+                draw.text((30,y), line, fill='black', font=font)
+                y += 23
             text += '\n' + '\n'.join(case['footer'])
-        assert y < 960
+        assert y < 492
         png = HERE/(case['id']+'.png')
         image.save(png, optimize=False)
         manifest['cases'].append(dict(id=case['id'], image=png.name, width=image.width, height=image.height,

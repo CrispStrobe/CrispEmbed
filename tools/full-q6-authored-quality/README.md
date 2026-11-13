@@ -2,7 +2,8 @@
 
 Three new MIT-licensed clean printed pages have explicit authored transcriptions:
 a field report, a 16-cell invoice and an accented French/German/Portuguese dispatch
-note. The generated PNGs were visually inspected against the gold before model
+note. The final 512×512 PNGs use directly rendered 14-pixel body text and 19-pixel
+headings, within the existing native 1,024-patch bound. The PNGs were visually inspected against the gold before model
 execution. Workers consume these frozen PNGs, never rerender them. The generator
 records font and renderer identities; another font/renderer can produce different
 bytes. This panel covers Latin script and synthetic clean print only.
@@ -32,3 +33,9 @@ The worker needs 10 GiB available RAM and 12 GiB output disk. It uses the existi
 full-Q6 runtime/profile evidence as practical artifact metadata, with ordinary
 transport/setup retries allowed. It does not require prior panel pass statuses,
 baseline inference, source-capture repetition or an approval acknowledgement.
+
+The first attempt at source `1fed3673a` stopped at preprocessing (return 6)
+before vision/decode because the original 1000×1000 render exceeded that bound.
+The normal retry directly rerenders the unchanged authored text at 512×512;
+all three revised images were inspected again. No arithmetic or runtime limit
+was changed, and the initial failure is retained separately.

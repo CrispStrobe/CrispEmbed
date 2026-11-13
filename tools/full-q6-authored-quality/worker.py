@@ -107,6 +107,8 @@ def main():
                 require(sha(HERE/case['image'])==case['png_sha256'],'frozen PNG '+case['id'])
                 image=Image.open(HERE/case['image']).convert('RGB')
                 require(image.size==(case['width'],case['height']),'frozen geometry')
+                require(image.width%32==image.height%32==0 and image.width*image.height<=262144,
+                        'supported native 1024-patch bound before model call')
                 rgb=work/(case['id']+'.rgb')
                 rgb.write_bytes(image.tobytes())
                 require(sha(rgb)==case['rgb_sha256'],'frozen actual RGB')
