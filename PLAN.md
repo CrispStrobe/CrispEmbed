@@ -1,5 +1,25 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Python grayscale preprocessing buffers — 13 November 2026
+
+Bounded product lane `fix/python-preproc-input-20261113` starts from
+`45fa452ec`. All seven grayscale `CrispPreprocess` methods passed NumPy data
+pointers directly to contiguous `uint8_t*` native APIs, ignoring strides and
+dtype. Two ordinary strided/transposed views reproduce 14 wrong-pixel subcases.
+The repair normalizes logical pixels to contiguous uint8, validates positive
+C-int dimensions and exact grayscale element counts before native calls, and
+bounds dewarp's reported output geometry by its caller-owned `w*h` allocation.
+Failure fallbacks return owned normalized images. Five focused controls cover
+all seven methods, negative strides, conversion, unchanged caller storage,
+invalid buffers and bounded output geometry. All five pass, as do 13 restoration,
+eight existing OCR binding and 54 CI-selection controls. Independent review and
+a focused rerun pass; the existing model-free controls workflow includes the new
+test. Native pointer/capacity semantics were checked in `src/crispembed.h` and
+`src/dewarp.cpp`; no local native build or model inference was needed.
+This is a Python interface fix; no native algorithm, image-quality, release or
+default change. The existing
+Linux-specific CC result deallocator is a separate issue outside this lane.
+
 ## Python SAFMN and TBSRN restoration dispatch — 13 November 2026
 
 Bounded lane `fix/restoration-input-validation-20261113` starts from
@@ -360,6 +380,7 @@ in this CPU submission.
 | --- | --- | --- |
 | `fix/restoration-input-validation-20261113`, base `c380f7a77` | SAFMN/TBSRN Python dispatch and ownership repair; 13 focused controls and independent review pass; hosted execution pending | Matching C ABI and single context free; validated RGB input and owned output; no native/default/release changes |
 | `fix/python-restoration-wrappers-20261113`, base `6ef1ac806` | Python wrappers integrated; 10 focused ctypes controls and independent source review pass; hosted execution pending | Correct native dispatch, tiling/dimensions, owned outputs, errors and matching cleanup; no model/default/release changes |
+| `fix/python-preproc-input-20261113`, base `45fa452ec` | Python grayscale input fix; focused controls and independent review pass; feature integration pending | All seven native pointer inputs match logical pixels, invalid buffers reject before reads, output geometry fits allocation |
 | `fix/dbnet-line-gutters-20261112`, exact app runtime `c364feb974b91e14cbf328c6949f3df36e89ce81` | Default-off candidate; pinned-source decoded A/B passed; current-main integration pending review | Exact crop/box and decoded-text A/B; retain single-column controls; immutable minimal release before app repin |
 
 The [retained Android flow](https://github.com/CrispStrobe/CrispSorter/actions/runs/43275466921)
