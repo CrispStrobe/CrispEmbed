@@ -1,5 +1,25 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Python Pix2Struct RGB input safety — 13 November 2026
+
+Bounded fix `fix/python-pix2struct-rgb-safety-20261113` starts from `4f610a0b4`.
+`generate_raw` forwarded a two-byte buffer for a three-byte RGB pixel and used
+buffer element count instead of byte count: a nine-element uint16 view copied
+only nine of its eighteen bytes. The binding now checks positive C-int dimensions,
+signed RGB index bounds and sufficient byte count before native access. Valid
+oversized-buffer prefix behavior is preserved, and noncontiguous views are copied
+in logical order. Five typed-native controls cover these cases plus unchanged
+Unicode/null/empty results and token-limit forwarding. All five pass; 36 related
+native-interface/binding and 54 CI-selection controls also pass. Independent
+review and focused rerun found no blocking issues. Native code, output signatures,
+legacy output handling, release/default and consumer pins are unchanged.
+
+Separate follow-up: Pix2Struct's public malloc-owned output description disagrees
+with its actual shared static string and no-op free. A safe ownership redesign
+needs separately named owned generate/free APIs and compatibility tests; changing
+the legacy free in place would endanger older Python bindings. That redesign and
+per-context/thread result lifetime remain outside this bounded input fix.
+
 ## Rust grayscale buffer validation — 13 November 2026
 
 Bounded fix `fix/rust-grayscale-buffer-safety-20261113` starts from `6d45a6725`.

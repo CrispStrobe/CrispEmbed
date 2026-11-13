@@ -4793,7 +4793,9 @@ class CrispPix2Struct:
         """Generate text from raw RGB pixel bytes.
 
         Args:
-            image_bytes: Raw RGB pixel data (row-major, length = width*height*3).
+            image_bytes: RGB bytes-like data in row-major order. At least
+                         width*height*3 bytes are required; extra bytes are ignored.
+                         Noncontiguous buffer views are copied in logical order.
             width:  Image width in pixels.
             height: Image height in pixels.
             max_tokens: Maximum number of tokens to generate.
@@ -4801,7 +4803,19 @@ class CrispPix2Struct:
         Returns:
             The generated text string, or empty string on failure.
         """
-        buf = (ctypes.c_uint8 * len(image_bytes)).from_buffer_copy(image_bytes)
+        int_max = (1 << (ctypes.sizeof(ctypes.c_int) * 8 - 1)) - 1
+        if any(not isinstance(value, (int, np.integer)) or value <= 0 or value > int_max
+               for value in (width, height)):
+            raise ValueError("width and height must be positive C int dimensions")
+        count = int(width) * int(height) * 3
+        if count > int_max:
+            raise ValueError("image dimensions exceed the native RGB index range")
+        view = memoryview(image_bytes)
+        if view.nbytes < count:
+            raise ValueError("image_bytes must contain at least width * height * 3 RGB bytes")
+        if not view.c_contiguous:
+            view = view.tobytes()
+        buf = (ctypes.c_uint8 * count).from_buffer_copy(view)
         ptr = self._lib.crispembed_pix2struct_generate(
             self._ctx, buf, width, height, max_tokens)
         if not ptr:
