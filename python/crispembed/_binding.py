@@ -4548,11 +4548,24 @@ def _setup_preproc_signatures(lib):
     lib.crispembed_ocr_render.restype = ctypes.c_void_p
 
 
+def _preprocess_gray_pixels(gray, w, h):
+    """Make the native w*h byte image agree with NumPy's logical pixels."""
+    int_max = (1 << (ctypes.sizeof(ctypes.c_int) * 8 - 1)) - 1
+    if any(not isinstance(value, (int, np.integer)) or value <= 0 or value > int_max
+           for value in (w, h)):
+        raise ValueError("width and height must be positive C int dimensions")
+    pixels = np.asarray(gray, dtype=np.uint8)
+    if pixels.size != int(w) * int(h):
+        raise ValueError("grayscale pixels must contain exactly width * height values")
+    return np.ascontiguousarray(pixels).reshape(int(h), int(w))
+
+
 class CrispPreprocess:
     """Classical document preprocessing  - model-free, CPU-only.
 
     Provides dewarp, deskew, adaptive binarization, background normalization,
-    and despeckle on grayscale uint8 images.
+    and despeckle on grayscale images. Inputs are converted to contiguous uint8
+    pixels; flat arrays and NumPy views are accepted with matching w*h values.
 
     Usage::
 
@@ -4587,7 +4600,8 @@ class CrispPreprocess:
 
     def dewarp(self, gray: np.ndarray, w: int, h: int) -> np.ndarray:
         """Dewarp a grayscale page image. Returns dewarped uint8 array."""
-        out = np.zeros(w * h, dtype=np.uint8)
+        gray = _preprocess_gray_pixels(gray, w, h)
+        out = np.zeros(int(w) * int(h), dtype=np.uint8)
         ow, oh = ctypes.c_int(0), ctypes.c_int(0)
         ret = self._lib.crispembed_dewarp(
             gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
@@ -4596,11 +4610,15 @@ class CrispPreprocess:
             ctypes.byref(ow), ctypes.byref(oh))
         if ret != 0:
             return gray.copy()
-        return out.reshape(oh.value, ow.value)
+        ow, oh = ow.value, oh.value
+        if ow <= 0 or oh <= 0 or ow * oh > out.size:
+            raise RuntimeError("Dewarp returned invalid output dimensions")
+        return out[:ow * oh].reshape(oh, ow)
 
     def tps_dewarp(self, gray: np.ndarray, w: int, h: int, model_path: str) -> np.ndarray:
         """TPS auto-dewarp using a learned localizer model (GGUF). Returns dewarped uint8 array."""
-        out = np.zeros(w * h, dtype=np.uint8)
+        gray = _preprocess_gray_pixels(gray, w, h)
+        out = np.zeros(int(w) * int(h), dtype=np.uint8)
         ret = self._lib.crispembed_tps_auto_dewarp(
             gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
             w, h,
@@ -4612,6 +4630,7 @@ class CrispPreprocess:
 
     def find_skew(self, gray: np.ndarray, w: int, h: int) -> tuple:
         """Find skew angle in degrees. Returns (angle, confidence)."""
+        gray = _preprocess_gray_pixels(gray, w, h)
         angle, conf = ctypes.c_float(0), ctypes.c_float(0)
         self._lib.crispembed_find_skew(
             gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
@@ -4620,7 +4639,8 @@ class CrispPreprocess:
 
     def adaptive_binarize(self, gray: np.ndarray, w: int, h: int) -> np.ndarray:
         """Adaptive Otsu binarization. Returns uint8 array (0/255)."""
-        out = np.zeros(w * h, dtype=np.uint8)
+        gray = _preprocess_gray_pixels(gray, w, h)
+        out = np.zeros(int(w) * int(h), dtype=np.uint8)
         self._lib.crispembed_adaptive_binarize(
             gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
             w, h, out.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)))
@@ -4628,7 +4648,8 @@ class CrispPreprocess:
 
     def background_norm(self, gray: np.ndarray, w: int, h: int) -> np.ndarray:
         """Normalize background (handle gradients/shadows). Returns uint8."""
-        out = np.zeros(w * h, dtype=np.uint8)
+        gray = _preprocess_gray_pixels(gray, w, h)
+        out = np.zeros(int(w) * int(h), dtype=np.uint8)
         self._lib.crispembed_background_norm(
             gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
             w, h, out.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)))
@@ -4637,7 +4658,8 @@ class CrispPreprocess:
     def despeckle(self, gray: np.ndarray, w: int, h: int,
                   max_w: int = 5, max_h: int = 5) -> np.ndarray:
         """Remove small noise components. Returns uint8 (0/255)."""
-        out = np.zeros(w * h, dtype=np.uint8)
+        gray = _preprocess_gray_pixels(gray, w, h)
+        out = np.zeros(int(w) * int(h), dtype=np.uint8)
         self._lib.crispembed_despeckle(
             gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
             w, h, max_w, max_h,
@@ -4647,6 +4669,7 @@ class CrispPreprocess:
     def cc_detect(self, gray: np.ndarray, w: int, h: int) -> list:
         """Detect text lines using connected components (model-free).
         Returns list of dicts with x, y, w, h keys."""
+        gray = _preprocess_gray_pixels(gray, w, h)
         self._lib.crispembed_cc_detect.argtypes = [
             ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
             ctypes.POINTER(ctypes.c_int)]
