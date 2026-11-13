@@ -59,9 +59,9 @@ execution. Five hosted small controls pass on the corrected attempt. The
 is separately preserved. Small-report review does not claim independent rehash
 of the102 remote raw/binary artifacts.
 
-Next is a separately gated generic planner candidate that keeps nonfinal tiles
-aligned with source row groups while retaining the legacy planner exactly.
-Source-stage controls and frozen decoded panels remain acceptance gates.
+The separately gated generic planner candidate keeps nonfinal tiles aligned
+with source row groups while retaining the legacy planner exactly. Its
+source-stage controls and frozen decoded panels are recorded below.
 [The failed fixed receipt floor](lighton4b-physical-rope-fixed-audit.md) and
 [observed BF16 regressions](lighton4b-physical-rope-observed-audit.md) remain
 binding. All experimental gates stay default-off; no release, alias, application
@@ -88,7 +88,7 @@ all4096 frozen legacy plans remain unchanged. Hosted controls verify4096
 aligned classifications, actual linear/attention caches and a32-layer decoder
 using shared synthetic quantized weights, including mode-toggle recovery and
 active/inactive nested cache contamination. These are model-free controls.
-Fresh frozen observed/fixed decoded A/B remains pending; component equality
+The fresh frozen decoded panels below test that candidate; component equality
 does not waive either earlier decoded negative or provisional-label limits.
 
 The [fresh observed decoded panel](../tests/results/lighton4b/receipt-layer0-operators/aligned-observed.json)
@@ -110,3 +110,41 @@ no new full raw/model inventory audit is claimed. The1239.34-second worker is
 not inference-performance evidence. The next fixed panel is declared receipt
 OFF/ON first, then book OFF/ON and inventory OFF/ON, with original references,
 seals, scorer, caps and floors. Only its exact observed receipt binding is new.
+
+The [receipt-first fixed decoded panel](../tests/results/lighton4b/receipt-layer0-operators/aligned-fixed.json)
+now completes all six arms on the same tested runtime and retained model, at
+producer receipt `91944ec7fcf2df0b23463c78fb6d80bc1ff0de616528da979051fbb15f1b35e3`,
+outer receipt `85eadb24afa32781749ee34f85f46b597cce256e34dbe28d95e6c30befda4bff`
+and safe-projection SHA256
+`c9cf3f7bbd4fc5db34be9de505b25209f7e996fda1f36879c3af1d820f18a263`.
+All three fresh OFF arms reproduce the old RoPEON rows, stages, summaries and
+stops exactly, including the negative468-EOS receipt baseline. The gate moves
+only its final image10+8 balance to8+10.
+
+| Fixed case | OFF tokens/EOS | ON tokens/EOS | ON source IDs/text | Content edits OFF → ON | ON source floor |
+|---|---|---|---|---|---|
+| Receipt | 468/yes | 465/yes | Exact | 25/19 → 24/18 | Pass |
+| Book | 654/yes | 654/yes | Exact | 526/146 → 526/146 | Pass |
+| Inventory | 248/yes | 248/yes | Exact | 0/0 → 0/0 | Pass |
+
+Edit pairs are character/word edits against the unchanged provisional labels.
+Receipt ON now matches the original quantized-source decoded IDs and text; its
+first-score RMS error falls from0.2213878489 to6.2318687882e-7 and maximum absolute
+error from1.3122177124 to3.8146972656e-6. Source RMS magnitude is2.0429065905;
+ON magnitude is2.0429064434. This is decoded parity for this frozen source/case,
+not an exact score-vector claim. Receipt paired native OFF/ON first differs at
+layer0, RMS9.9182818653e-7/max7.8201293945e-5 over the full prompt, with
+OFF/ON RMS magnitudes0.1909299022/0.1909299044. The source-fed component had
+already closed actual source hidden0 bytes; paired native boundaries are a
+different comparison. All64 paired book/inventory hidden layers remain exact.
+
+All three original fixed source floors now pass, while the original BF16
+observed regressions and provisional-label limits remain. The source-identical
+metadata preflight executable, build profile and source provenance are retained;
+inference reuses the tested native binary/libraries without rebuild. No new
+model acquisition or reference/source forward occurred. The3880.50-second whole
+worker time is not an inference benchmark. All2737 new vocabulary rows, model
+bytes and book strings/token sequences remain remote. This public JSON is the
+reviewed producer-side metrics/hash projection; independent full artifact audit
+is pending. All gates stay default-off, with no release, application pin or
+quality qualification change.
