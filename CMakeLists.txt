@@ -1877,6 +1877,8 @@ target_include_directories(lighton4b-upstream-dequant-audit PRIVATE src)
 target_link_libraries(lighton4b-upstream-dequant-audit PRIVATE ggml)
 
 # Physical upstream import semantics and model-free closed admission controls.
+add_executable(test-lighton4b-upstream-full-q6 EXCLUDE_FROM_ALL tests/test_lighton4b_upstream_full_q6.cpp)
+target_link_libraries(test-lighton4b-upstream-full-q6 PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-lighton4b-upstream-physical EXCLUDE_FROM_ALL tests/test_lighton4b_upstream_physical.cpp)
 target_link_libraries(test-lighton4b-upstream-physical PRIVATE crispembed-qwen35-delta crispembed-core)
 

@@ -5242,3 +5242,20 @@ The [independent small-artifact audit](docs/lighton4b-physical-rope-observed-aud
 ## Physical RoPE receipt attribution after fixed raw closure — 12 November 2026
 
 The [completed independent fixed audit](docs/lighton4b-physical-rope-fixed-audit.md) binds candidate `a8a22749ab0b757ae1f317b6fa5b84ffd148b939`, producer `8001a29fab5abc3481e601168e10ca4383d10060ad7e4356a9110eb345c0b56a` and raw proof `d0bf3b45fa69e8197452a9846bd7f77dfddda28d93549a0c8a063e12aed68a28`. Pending: attribute the remaining receipt ON stage/decoded regression with exact source/native inputs, absolute errors and magnitudes before proposing any new arithmetic candidate. Book and inventory source-floor improvements do not waive receipt failure or earlier observed BF16 regressions. Preserve original failed artifact audit and three provenance limitations; no model rerun for already-closed raw inventories, held-out tuning, qualification/default/release/app promotion.
+
+### Whole-decoder physical Q6 observed lane — 13 November 2026
+
+Prepare a distinct default-off `lighton4b-upstream-q6-physical-v1` profile from
+publisher `8406c78c` full Q6 file `290e2b46…`. The authenticated header contains
+177 F32 and 249 Q6_K tensors. Reuse the physical mapping with a separately pinned
+type descriptor, preserve all 297 protected vision payloads, inverse 96 whole-row
+permutations and retain 24 tiled-column out projections without requantization.
+All 177 small source parameters must independently equal the authenticated prior
+Q4_K_M source before reuse of its direct gamma/A semantics. The existing Q4_K_M
+profile stays strict; a new gate, exact tag/type/provenance checks and decoder
+cache precision identity admit only the new profile. Q4 repacking is rejected
+for the all-Q6 model. Model-free source admission and old native observed raw
+closure precede fixed form/table/Arabic full generation; prior upstream Q6
+decoded references are reused and contain no full-vocabulary stage trace.
+Python transport/admission controls pass; hosted compilation, actual parameter
+closure and decoded comparison remain pending. No new release or qualification.

@@ -24,6 +24,7 @@ struct decoder_weights {
     ggml_tensor * head = nullptr;
     bool upstream_physical = false;
     bool hf_tiled_out = false;
+    bool physical_full_q6 = false;
     bool physical_q4_repack = false;
     std::shared_ptr<converted_weight_cache> physical_weights_cache;
 };
