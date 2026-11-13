@@ -3207,6 +3207,24 @@ impl Drop for CrispOcrPipeline {
     }
 }
 
+fn grayscale_image_len(gray: &[u8], width: i32, height: i32) -> Result<usize, String> {
+    if width <= 0 || height <= 0 {
+        return Err("grayscale width and height must be positive".into());
+    }
+    // The native image routines also multiply dimensions as signed C ints.
+    let count = width
+        .checked_mul(height)
+        .ok_or_else(|| "grayscale dimensions exceed the native image size limit".to_string())?
+        as usize;
+    if gray.len() < count {
+        return Err(format!(
+            "grayscale buffer needs at least {count} bytes, got {}",
+            gray.len()
+        ));
+    }
+    Ok(count)
+}
+
 // ── Classical Preprocessing ────────────────────────────────────────
 
 /// PDF DPI profiling -- analyse embedded images in a PDF page.
@@ -3225,9 +3243,11 @@ pub fn pdf_page_dpi(path: &str, page: i32) -> Result<(f32, i32), String> {
 }
 
 /// Dewarp a grayscale page image (straighten curved text lines).
-/// Returns the dewarped image as a Vec<u8>, or Err if dewarping failed.
+/// Uses the first width*height grayscale bytes; extra input bytes are ignored.
+/// Returns the dewarped image, or Err for invalid input/output sizes or dewarping failure.
 pub fn dewarp(gray: &[u8], width: i32, height: i32) -> Result<(Vec<u8>, i32, i32), String> {
-    let mut out = vec![0u8; (width * height) as usize];
+    let count = grayscale_image_len(gray, width, height)?;
+    let mut out = vec![0u8; count];
     let mut ow: i32 = 0;
     let mut oh: i32 = 0;
     let ret = unsafe {
@@ -3243,19 +3263,27 @@ pub fn dewarp(gray: &[u8], width: i32, height: i32) -> Result<(Vec<u8>, i32, i32
     if ret != 0 {
         return Err("dewarping failed (too few textlines?)".into());
     }
+    let output_count = ow
+        .checked_mul(oh)
+        .filter(|count| ow > 0 && oh > 0 && *count > 0 && (*count as usize) <= out.len())
+        .ok_or_else(|| "dewarping returned invalid output dimensions".to_string())?
+        as usize;
+    out.truncate(output_count);
     Ok((out, ow, oh))
 }
 
 /// TPS auto-dewarp using a learned localizer model (GGUF).
-/// Returns the dewarped image as a Vec<u8>, or Err if dewarping failed.
+/// Uses the first width*height grayscale bytes; extra input bytes are ignored.
+/// Returns the dewarped image, or Err for invalid input sizes or dewarping failure.
 pub fn tps_auto_dewarp(
     gray: &[u8],
     width: i32,
     height: i32,
     model_path: &str,
 ) -> Result<Vec<u8>, String> {
+    let count = grayscale_image_len(gray, width, height)?;
     let c_path = std::ffi::CString::new(model_path).map_err(|e| e.to_string())?;
-    let mut out = vec![0u8; (width * height) as usize];
+    let mut out = vec![0u8; count];
     let ret = unsafe {
         crispembed_sys::crispembed_tps_auto_dewarp(
             gray.as_ptr(),
@@ -3272,7 +3300,12 @@ pub fn tps_auto_dewarp(
 }
 
 /// Detect text line regions using connected components (model-free, GPU-free).
+/// Uses the first width*height grayscale bytes, ignoring extras. Invalid dimensions
+/// or a short buffer return an empty list without calling the native detector.
 pub fn cc_detect(gray: &[u8], width: i32, height: i32) -> Vec<OcrRegion> {
+    if grayscale_image_len(gray, width, height).is_err() {
+        return vec![];
+    }
     struct OwnedCcResults(*mut crispembed_sys::CrispembedOcrResult);
     impl Drop for OwnedCcResults {
         fn drop(&mut self) {
@@ -3571,7 +3604,10 @@ impl Drop for CrispKie {
 }
 
 /// Find the skew angle of a document image (degrees).
+/// Uses the first width*height grayscale bytes, ignoring extras. Invalid dimensions
+/// or a short buffer return Err without calling the native routine.
 pub fn find_skew(gray: &[u8], width: i32, height: i32) -> Result<(f32, f32), String> {
+    grayscale_image_len(gray, width, height)?;
     let mut angle: f32 = 0.0;
     let mut conf: f32 = 0.0;
     let ret = unsafe {

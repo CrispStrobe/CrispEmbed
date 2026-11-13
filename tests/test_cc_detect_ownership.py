@@ -206,7 +206,8 @@ class CcDetectOwnershipTests(unittest.TestCase):
         region = extract_function(safe, "pub struct OcrResult {")
         region += "\n" + next(line for line in safe.splitlines()
                                 if line.startswith("pub type OcrRegion ="))
-        method = extract_function(safe, "pub fn cc_detect(")
+        method = extract_function(safe, "fn grayscale_image_len(") + "\n" + \
+                 extract_function(safe, "pub fn cc_detect(")
         decl_start = raw.index("    pub fn crispembed_cc_detect(")
         decl_end = raw.index(";", raw.index("pub fn crispembed_cc_detect_free", decl_start)) + 1
         declarations = raw[decl_start:decl_end]

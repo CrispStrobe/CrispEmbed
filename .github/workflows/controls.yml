@@ -23,6 +23,7 @@ on:
       - 'tests/test_preprocess_bindings.py'
       - 'tests/test_cc_detect_ownership.py'
       - 'tests/test_ocr_render_ownership.py'
+      - 'tests/test_rust_grayscale_safety.py'
       - 'src/ocr_render.h'
       - 'src/crispembed.h'
       - 'src/crispembed.cpp'
@@ -176,6 +177,7 @@ on:
       - 'tests/test_preprocess_bindings.py'
       - 'tests/test_cc_detect_ownership.py'
       - 'tests/test_ocr_render_ownership.py'
+      - 'tests/test_rust_grayscale_safety.py'
       - 'src/ocr_render.h'
       - 'src/crispembed.h'
       - 'src/crispembed.cpp'
@@ -409,6 +411,10 @@ jobs:
       - name: One-shot OCR renderer native-interface allocation ownership
         if: ${{ !cancelled() }}
         run: python tests/test_ocr_render_ownership.py -v
+
+      - name: Rust grayscale native-input safety
+        if: ${{ !cancelled() }}
+        run: python tests/test_rust_grayscale_safety.py -v
 
       - name: TeleOCR synthetic GGUF conversion and inherited license metadata
         if: ${{ !cancelled() }}

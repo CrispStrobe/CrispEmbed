@@ -1,5 +1,24 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Rust grayscale buffer validation — 13 November 2026
+
+Bounded fix `fix/rust-grayscale-buffer-safety-20261113` starts from `6d45a6725`.
+The safe Rust dewarp/TPS/skew/CC APIs passed undersized slices to native image
+routines and multiplied signed dimensions without validation. A guarded baseline
+fixture confirms all four call native code with five bytes for a six-pixel image.
+The shared preflight now rejects nonpositive dimensions, signed pixel-count
+overflow and short buffers before allocations or FFI. Existing return types and
+valid oversized-buffer prefix behavior remain. Dewarp validates returned geometry
+against allocated capacity and truncates a valid smaller result consistently.
+
+The focused test compiles the actual Rust helper/methods and raw declarations
+against production C wrappers with guarded lower routines. It checks zero native
+calls for invalid inputs, exact/prefix valid inputs, native failure behavior,
+malformed output dimensions and smaller outputs. The full matrix, eight CC,
+nine renderer and 54 CI-selection controls pass. Independent source/test review
+found no blocking issues. No model build or inference, new native ABI, release,
+default or consumer pin change belongs to this fix.
+
 ## One-shot OCR renderer allocator ownership — 13 November 2026
 
 Bounded fix `fix/ocr-render-result-ownership-20261113` starts from `19dd173c7`.
