@@ -596,16 +596,42 @@ class WorkflowInvariantTests(unittest.TestCase):
             with self.subTest(target=target):
                 self.assertIn(target, targeted.split())
 
-    def test_main_docs_push_cannot_cancel_an_earlier_native_build(self):
-        for filename in ("build.yml", "build-wasm.yml", "build-wasm-embed.yml", "rust-crates.yml", "inpaint-cli.yml"):
+    def test_ordinary_workflows_cancel_only_superseded_push_or_pr_runs(self):
+        # Main now shares a workflow/ref group. Tags and manual dispatches
+        # cannot cancel running jobs; docs-only pushes are excluded by paths.
+        expected_cancel = "github.ref_type != 'tag' && (github.event_name == 'push' || github.event_name == 'pull_request')"
+        for filename in ORDINARY:
+            workflow = (ROOT / ".github/workflows" / filename).read_text()
+            concurrency = workflow.split("\nconcurrency:\n", 1)[1].split("\njobs:", 1)[0]
             with self.subTest(workflow=filename):
-                workflow = (ROOT / ".github/workflows" / filename).read_text()
-                group = next(line for line in workflow.splitlines() if line.startswith("  group:"))
-                self.assertIn("github.run_id", group)
-                self.assertIn("refs/heads/main", group)
-                self.assertIn("workflow_dispatch", group)
+                self.assertIn("  group: ${{ github.workflow }}-${{ github.ref }}", concurrency.splitlines())
+                cancel = next(line.removeprefix("  cancel-in-progress: ") for line in concurrency.splitlines()
+                              if line.startswith("  cancel-in-progress: "))
+                self.assertEqual(cancel, "${{ " + expected_cancel + " }}")
+                # Evaluate only the pinned, simple boolean expression above.
+                # Exercise the actual workflow condition over all event/ref pairs.
+                for event in ("push", "pull_request", "workflow_dispatch", "schedule", "release"):
+                    for ref_type in ("branch", "tag"):
+                        expression = cancel[3:-3].replace("github.event_name", repr(event)).replace("github.ref_type", repr(ref_type))
+                        expression = expression.replace("&&", "and").replace("||", "or")
+                        with self.subTest(event=event, ref_type=ref_type):
+                            self.assertEqual(eval(expression, {"__builtins__": {}}),
+                                             ref_type != "tag" and event in ("push", "pull_request"))
                 self.assertNotIn("paths-ignore:", workflow)
                 self.assertIn("    if: always()", workflow)
+
+    def test_docs_only_pushes_are_filtered_before_concurrency(self):
+        # The final Markdown exclusion must beat earlier contract re-inclusions.
+        docs = ("README.md", "PLAN.md", "docs/inpaint-new-contract.md", "docs/migan-new-contract.md",
+                "docs/teleocr-new-contract.md", "tests/results/migan/new.md", "nested/README.md")
+        for filename in ORDINARY:
+            patterns = workflow_paths(filename)["push"]
+            with self.subTest(workflow=filename):
+                self.assertEqual(patterns[-1], "!**.md")
+                self.assertFalse(any(workflow_filter_includes(patterns, path) for path in docs))
+                # A docs+code push must still start the workflow.
+                self.assertTrue(any(workflow_filter_includes(patterns, path) for path in (*docs, "src/glm_ocr.cpp")))
+                self.assertTrue(workflow_filter_includes(patterns, "docs/inpaint-new-contract.json"))
 
     def test_cli_only_targets_are_not_mobile_or_wasm_library_dependencies(self):
         # This protects the small routing exception from future CMake rewiring.
