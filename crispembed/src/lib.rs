@@ -4442,9 +4442,13 @@ impl CrispPix2Struct {
         Ok(Self { ctx })
     }
 
-    /// Generate text from a raw RGB/RGBA image buffer.
+    /// Generate text from a raw RGB image buffer.
     ///
-    /// - `image`      — row-major pixel bytes (RGB or RGBA).
+    /// Uses the first width*height*3 bytes; extra bytes are ignored. Channel count
+    /// is never inferred from length. Use [`Self::generate_rgba`] to drop alpha
+    /// from RGBA input, including buffers whose length is exactly width*height*4.
+    ///
+    /// - `image`      — row-major RGB pixel bytes.
     /// - `width`      — image width in pixels.
     /// - `height`     — image height in pixels.
     /// - `max_tokens` — maximum number of tokens to generate.
@@ -4458,6 +4462,13 @@ impl CrispPix2Struct {
         height: i32,
         max_tokens: i32,
     ) -> Option<String> {
+        if width <= 0 || height <= 0 {
+            return None;
+        }
+        let rgb_count = width.checked_mul(height)?.checked_mul(3)? as usize;
+        if image.len() < rgb_count {
+            return None;
+        }
         let ptr = unsafe {
             crispembed_sys::crispembed_pix2struct_generate(
                 self.ctx,
@@ -4476,6 +4487,34 @@ impl CrispPix2Struct {
             .to_string();
         unsafe { crispembed_sys::crispembed_pix2struct_free_text(ptr) };
         Some(s)
+    }
+
+    /// Generate text from RGBA pixels, ignoring alpha without compositing.
+    ///
+    /// Uses the first width*height*4 bytes and ignores any extras. Invalid
+    /// dimensions, native RGB-index overflow or a short buffer return None before
+    /// allocation or inference. Token limits and output behavior match [`Self::generate`].
+    pub fn generate_rgba(
+        &mut self,
+        image: &[u8],
+        width: i32,
+        height: i32,
+        max_tokens: i32,
+    ) -> Option<String> {
+        if width <= 0 || height <= 0 {
+            return None;
+        }
+        let area = width.checked_mul(height)?;
+        let rgb_count = area.checked_mul(3)? as usize;
+        let rgba_count = (area as usize).checked_mul(4)?;
+        if image.len() < rgba_count {
+            return None;
+        }
+        let mut rgb = Vec::with_capacity(rgb_count);
+        for pixel in image[..rgba_count].chunks_exact(4) {
+            rgb.extend_from_slice(&pixel[..3]);
+        }
+        self.generate(&rgb, width, height, max_tokens)
     }
 
     /// Encode image patches to hidden-state embeddings.

@@ -1,5 +1,25 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Rust Pix2Struct RGB and explicit RGBA inputs — 13 November 2026
+
+Bounded fix `fix/rust-pix2struct-rgba-input-20261113` starts from `a16d1cfbc`.
+The Rust generator advertised RGBA but passed its bytes to an RGB-only native
+API: a two-pixel fixture sent alpha as the second pixel's red channel. Existing
+`generate` now documents RGB and validates positive dimensions, signed RGB index
+bounds and sufficient bytes before FFI; every valid RGB-prefix case remains,
+including buffers whose size could also describe RGBA. The explicit new
+`generate_rgba` drops alpha without compositing, then delegates with a live local
+RGB buffer. Both methods ignore trailing bytes according to their named format.
+
+A focused actual-method/public-C-wrapper test checks distinct native pixel bytes,
+ambiguous and oversized RGB prefixes, explicit RGBA/extras, one-pixel inputs,
+invalid/overflow/short inputs with no FFI, token forwarding and native failure.
+The matrix and 77 related/CI-selection controls pass; independent source/test
+review found no blocking issues. No model build or inference, native ABI/ownership,
+release/default or consumer
+pin change belongs to this input fix; the separate owned-output design remains
+outside it.
+
 ## Python Pix2Struct RGB input safety — 13 November 2026
 
 Bounded fix `fix/python-pix2struct-rgb-safety-20261113` starts from `4f610a0b4`.
