@@ -1,5 +1,27 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## CI selection invariant repair — 13 November 2026
+
+Bounded test-only lane `fix/ci-selection-pr232-20261113` starts from merged
+PR232 source `d317fc3b1b89b46d6325d3d888fc126cc5f8229d`.
+The [Build static guards](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43389616193/job/131766140662)
+and [OCR WASM selector](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43389616189/job/131766140512)
+fail the same obsolete concurrency invariant in all five ordinary workflows.
+Commit `0905f3b38` added final Markdown path exclusions; `4914f2df1` subsequently
+changed workflow grouping to workflow/ref and cancellation to non-tag push/PR
+runs, while the test still required the previous per-run main/manual grouping.
+This deterministic failure is unrelated to the registry pagination change.
+
+The repaired invariant checks the existing exact group and cancellation
+condition, all ten event/ref combinations per workflow, ordered Markdown
+exclusions including re-included contract paths, and mixed docs/code admission.
+All five failures reproduce before the repair; all 54 selection/routing/filter/
+aggregate tests pass afterward. Workflow files and concurrency remain unchanged.
+Hosted validation of the corrected test commit remains pending; retrying the
+old source cannot fix this failure. No build/model batch, runtime release,
+default, registry pin or consumer version changes belong to this lane.
+
+
 ## Registry tree pagination — 13 November 2026
 
 Bounded tooling lane `fix/model-hash-pagination-20261113` starts from
