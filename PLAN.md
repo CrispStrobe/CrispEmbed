@@ -5312,3 +5312,10 @@ source preservation and absent output/partial aliases as well as prior descripto
 small-parameter and row-transport controls. No model forward or native build is
 needed for this Python-only repair; runtime bytes, quantization and default gates
 are unchanged. Representative Q6 quality and platform follow-ups above remain.
+
+The sibling Q4M importer has the same verified failure: a tiny source sentinel
+was overwritten by its failure JSON when `--report` named that source. It now
+uses the same pre-write resolved-path/hardlink rejection. Five Q4M controls and
+four full-Q6 controls pass, including independent report-alias preservation
+cases for both importers. The Q4M header/type/transport controls remain unchanged;
+no model rerun, native build or production-runtime change is needed.

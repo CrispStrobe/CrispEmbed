@@ -76,8 +76,19 @@ def transport_tensor(source,target,source_offset,target_offset,count,order,kind)
    b=source.read(min(remaining,4*1024**2));require(bool(b),'source span complete');target.write(b);h.update(b);remaining-=len(b)
  return h.hexdigest(),permuted
 
+def validate_paths(sources, output, partial, report):
+ # Validate before entering the exception handler: even failure reports write.
+ # resolve() covers lexical/symlink aliases; samefile() also covers hardlinks.
+ def aliases(a,b):
+  return a.resolve()==b.resolve() or (a.exists() and b.exists() and a.samefile(b))
+ destinations=[output,partial,report]
+ for i,path in enumerate(destinations):
+  require(not any(aliases(path,other) for other in [*sources,*destinations[:i]]),
+          'import destinations must not alias sources or each other')
+
 def convert(base_path,up_path,output,report_path):
  base_path=Path(base_path);up_path=Path(up_path);output=Path(output);report_path=Path(report_path);partial=output.with_name(output.name+'.partial');report={'schema':'lighton4b-upstream-physical-import/v1','status':'failed','recipe':RECIPE,'original_forward_executed':False,'model_inference_executed':False,'requantization_executed':False,'full_f32_model_created':False,'quality_qualified':False,'tensors':[]}
+ validate_paths([base_path,up_path],output,partial,report_path)
  def save():report_path.write_text(json.dumps(report,indent=2)+'\n')
  try:
   require(not output.exists()and not partial.exists(),'task target exists');require(base_path.stat().st_size==4030957952 and digest(base_path)==BASE_SHA,'whole protected source identity');require(up_path.stat().st_size==2708804576 and digest(up_path)==UP_SHA,'whole physical upstream identity');base=parse(base_path,TYPES);up=parse(up_path,TYPES);require(len(base['tensors'])==723 and len(up['tensors'])==426,'exact source inventories');report['tokenizer_equivalence']=tokenizer_equivalence(base,up,base_path,up_path);header,layout,size,changed=prepare_header(base,up,base_path,report['tokenizer_equivalence']);report.update(candidate_bytes=size,header_bytes=len(header));save()
