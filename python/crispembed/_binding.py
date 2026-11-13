@@ -3768,9 +3768,13 @@ class CrispTableParse:
 
     def __init__(self, ocr_model_path: Optional[str] = None, n_threads: int = 4,
                  lib_path: Optional[str] = None):
+        path_bytes = os.fspath(ocr_model_path) if ocr_model_path else None
+        if isinstance(path_bytes, str):
+            path_bytes = path_bytes.encode("utf-8")
+        if path_bytes is not None and b"\0" in path_bytes:
+            raise ValueError("ocr_model_path must not contain NUL bytes")
         self._lib = _load_library(lib_path)
         _setup_table_parse_signatures(self._lib)
-        path_bytes = ocr_model_path.encode("utf-8") if ocr_model_path else None
         self._ctx = self._lib.crispembed_table_parse_init(path_bytes, n_threads)
         if not self._ctx:
             raise RuntimeError(
@@ -3783,7 +3787,8 @@ class CrispTableParse:
 
         Args:
             gray_pixels: uint8 numpy array of grayscale pixel values,
-                         flattened or shaped (height, width).
+                         flattened or shaped (height, width). Extra values are
+                         ignored; noncontiguous inputs follow logical pixel order.
             width: image width in pixels.
             height: image height in pixels.
 
@@ -3793,20 +3798,31 @@ class CrispTableParse:
         Raises:
             RuntimeError: if parsing fails.
         """
-        flat = np.asarray(gray_pixels, dtype=np.uint8).flatten()
+        int_max = (1 << (ctypes.sizeof(ctypes.c_int) * 8 - 1)) - 1
+        if (any(not isinstance(value, (int, np.integer)) or value <= 0 or value > int_max
+                for value in (width, height)) or int(width) > int_max - 31
+                or int(width) * int(height) > int_max):
+            raise ValueError("width and height must fit the positive native image range")
+        count = int(width) * int(height)
+        array = np.asarray(gray_pixels, dtype=np.uint8)
+        if array.size < count:
+            raise ValueError("gray_pixels must contain at least width * height values")
+        flat = array.flatten()
         px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
 
         raw = self._lib.crispembed_table_parse_to_html(self._ctx, px_ptr, width, height)
         if not raw:
             raise RuntimeError("Table parsing failed")
 
-        html = ctypes.cast(raw, ctypes.c_char_p).value.decode("utf-8")
-        self._lib.crispembed_table_parse_free_string(raw)
-        return html
+        try:
+            return ctypes.cast(raw, ctypes.c_char_p).value.decode("utf-8")
+        finally:
+            self._lib.crispembed_table_parse_free_string(raw)
 
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
             self._lib.crispembed_table_parse_free(self._ctx)
+            self._ctx = None
 # Real-ESRGAN Whole-Image Super-Resolution (SRVGGNetCompact, BSD-3)
 # ---------------------------------------------------------------------------
 

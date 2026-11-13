@@ -1,5 +1,25 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Python table parser inputs and HTML cleanup — 13 November 2026
+
+Bounded fix `fix/python-table-parser-buffer-safety-20261113` starts from `bba18cc30`.
+A short grayscale buffer reached native parsing; strict UTF-8 decoding failures
+retained the allocated HTML, and repeated destructor calls freed the same context
+twice. The binding now validates positive dimensions, signed area and native
+`width+31` padding bounds before conversion/FFI, rejects short inputs and preserves
+oversized prefixes and logical uint8/stride behavior. HTML release runs in a
+`finally` block, context destruction is idempotent, and NUL model paths reject
+before loading while optional/Path model inputs retain their intended behavior.
+
+Six focused controls compile the existing public wrappers and actual matching
+string-free implementation against a guarded tiny parser sink. They cover actual
+pixel prefixes, Unicode/null/empty HTML, malformed UTF-8 and output-copy exceptions,
+no-call invalid metadata and constructor/destructor behavior. All six and 104
+related/CI-selection controls pass; independent review and focused rerun found no
+blocking issues. No dependencies, model build/inference, native algorithms/ABI,
+Pix2Struct ownership, release/default
+or consumer pin change belongs to this fix.
+
 ## Python scan cleanup images and error cleanup — 13 November 2026
 
 Bounded fix `fix/python-scan-cleanup-input-output-20261113` starts from `e1ced558c`.
