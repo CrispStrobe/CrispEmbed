@@ -18,6 +18,7 @@ struct lighton4b_decoder_cache {
     uint8_t physical_native_ops = 0;
     bool physical_f16_attention = false;
     bool hf_tiled_out = false;
+    bool physical_full_q6 = false;
     bool physical_q4_repack = false;
     bool physical_gdn_source_ops = false;
     bool physical_q6_tiled = false;
@@ -31,6 +32,11 @@ struct lighton4b_decoder_outputs {
     std::vector<float> norm;
     lighton4b_decoder_cache cache;
 };
+inline bool lighton4b_physical_precision_matches(const decoder_weights & weights,
+                                                 const lighton4b_decoder_cache * previous) {
+    return weights.physical_full_q6 == (weights.upstream_physical && lighton4b_upstream_physical_q6_enabled()) &&
+           (!previous || previous->physical_full_q6 == weights.physical_full_q6);
+}
 // Hidden-state component only, batch1, exact32-layer LLLF schedule. Weight
 // lifetime stays with caller. No embedding reads, logits, GGUF/profile admission
 // or recognition. Each previous cache is immutable and belongs to one layer.
@@ -47,6 +53,7 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
     if (!norm || norm->type != GGML_TYPE_F32 || !norm->data || !ggml_is_contiguous(norm) || norm->ne[0] != 2560 ||
         norm->ne[1] != 1 || norm->ne[2] != 1 || norm->ne[3] != 1)
         return false;
+    if (!lighton4b_physical_precision_matches(weights, previous)) return false;
     const bool bf16_quant_weights = lighton4b_bf16_dequant_weights_mode();
     if (!lighton4b_hf_tiled_out_mode_valid(weights.hf_tiled_out, weights.upstream_physical) ||
         (previous && previous->hf_tiled_out != weights.hf_tiled_out))
@@ -146,6 +153,7 @@ inline bool lighton4b_decoder_hidden_cpu(const decoder_weights & weights, const 
     candidate.cache.hf_tiled_out = weights.hf_tiled_out;
     candidate.cache.bf16_quant_weights = bf16_quant_weights;
     candidate.cache.upstream_physical = weights.upstream_physical;
+    candidate.cache.physical_full_q6 = weights.physical_full_q6;
     candidate.cache.physical_native_ops = lighton4b_physical_native_ops_mode(weights.upstream_physical);
     candidate.cache.physical_f16_attention = physical_f16;
     candidate.cache.physical_q4_repack = repack;

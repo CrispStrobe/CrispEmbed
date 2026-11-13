@@ -16,6 +16,7 @@ enum class lighton4b_quant_recipe {
     gdn_out_q6,
     imatrix_q4km_q6head,
     upstream_physical_q4km,
+    upstream_physical_q6,
     hf_tiled_out_q4km
 };
 // Exact storage policy, separate from shape/source ownership and payload admission.
@@ -24,14 +25,22 @@ inline bool lighton4b_quant_recipe_matches(const decoder_weights & decoder, ligh
         recipe != lighton4b_quant_recipe::attention_q8_ffn_q4 && recipe != lighton4b_quant_recipe::q4km_q6_q8head &&
         recipe != lighton4b_quant_recipe::gdn_out_q8 && recipe != lighton4b_quant_recipe::gdn_out_q6 &&
         recipe != lighton4b_quant_recipe::imatrix_q4km_q6head &&
-        recipe != lighton4b_quant_recipe::upstream_physical_q4km && recipe != lighton4b_quant_recipe::hf_tiled_out_q4km)
+        recipe != lighton4b_quant_recipe::upstream_physical_q4km &&
+        recipe != lighton4b_quant_recipe::upstream_physical_q6 && recipe != lighton4b_quant_recipe::hf_tiled_out_q4km)
         return false;
     auto type = [](const ggml_tensor * t, ggml_type expected) { return t && t->type == expected; };
-    if (recipe == lighton4b_quant_recipe::upstream_physical_q4km)
-        return lighton4b_source_prefill_chunks_valid(true) && lighton4b_physical_q6_tiled_valid(true) &&
+    if (recipe == lighton4b_quant_recipe::upstream_physical_q6)
+        return lighton4b_upstream_physical_q6_enabled() && !lighton4b_physical_q4_repack_mode(true) &&
+               lighton4b_source_prefill_chunks_valid(true) && lighton4b_physical_q6_tiled_valid(true) &&
                lighton4b_q6_enabled() && lighton4b_upstream_physical_mode_valid(true) &&
                lighton4b_physical_f16_attention_valid(true) && lighton4b_physical_f16_vision_valid(true) &&
-               lighton4b_physical_q4_repack_valid(true) && lighton4b_q4km_types_match(decoder, GGML_TYPE_Q6_K);
+               lighton4b_full_q6_types_match(decoder);
+    if (recipe == lighton4b_quant_recipe::upstream_physical_q4km)
+        return !lighton4b_upstream_physical_q6_enabled() && lighton4b_source_prefill_chunks_valid(true) &&
+               lighton4b_physical_q6_tiled_valid(true) && lighton4b_q6_enabled() &&
+               lighton4b_upstream_physical_mode_valid(true) && lighton4b_physical_f16_attention_valid(true) &&
+               lighton4b_physical_f16_vision_valid(true) && lighton4b_physical_q4_repack_valid(true) &&
+               lighton4b_q4km_types_match(decoder, GGML_TYPE_Q6_K);
     const bool tiled = recipe == lighton4b_quant_recipe::hf_tiled_out_q4km;
     if (tiled && !lighton4b_hf_tiled_out_mode_valid(true, false)) return false;
     const bool q6head = recipe == lighton4b_quant_recipe::imatrix_q4km_q6head || tiled;
@@ -68,6 +77,7 @@ inline bool lighton4b_quant_recipe_matches(const decoder_weights & decoder, ligh
 inline bool lighton4b_select_recipe(const decoder_weights & decoder, const std::string & tag,
                                     lighton4b_quant_recipe & recipe) {
     const bool physical = lighton4b_upstream_physical_enabled();
+    if (core_env::on("CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL_Q6") && !physical) return false;
     const bool tiled = lighton4b_hf_tiled_out_enabled();
     const bool mixed = core_env::on("CRISPEMBED_LIGHTON4B_MIXED_ATTN_Q8_FFN_Q4");
     const bool out8 = core_env::on("CRISPEMBED_LIGHTON4B_MIXED_GDN_OUT_Q8");
@@ -78,10 +88,13 @@ inline bool lighton4b_select_recipe(const decoder_weights & decoder, const std::
         if (tag != lighton4b_hf_tiled_out_recipe || !lighton4b_hf_tiled_out_mode_valid(true, false)) return false;
         recipe = lighton4b_quant_recipe::hf_tiled_out_q4km;
     } else if (physical) {
-        if (tag != lighton4b_upstream_physical_recipe || !lighton4b_physical_native_ops_valid(true) ||
-            !lighton4b_physical_f16_attention_valid(true) || !lighton4b_physical_f16_vision_valid(true))
+        const bool full_q6 = lighton4b_upstream_physical_q6_enabled();
+        if (tag != (full_q6 ? lighton4b_upstream_physical_q6_recipe : lighton4b_upstream_physical_recipe) ||
+            !lighton4b_physical_native_ops_valid(true) || !lighton4b_physical_f16_attention_valid(true) ||
+            !lighton4b_physical_f16_vision_valid(true))
             return false;
-        recipe = lighton4b_quant_recipe::upstream_physical_q4km;
+        recipe =
+            full_q6 ? lighton4b_quant_recipe::upstream_physical_q6 : lighton4b_quant_recipe::upstream_physical_q4km;
     } else if (tag == lighton4b_imatrix_q4km_recipe) {
         if (!lighton4b_imatrix_q4km_enabled() || mixed || out8 || out6) return false;
         recipe = lighton4b_quant_recipe::imatrix_q4km_q6head;
@@ -139,7 +152,9 @@ public:
         if (recipe == lighton4b_quant_recipe::q4km_q6_q8head && !header->q6_profile_header()) return nullptr;
         if (recipe == lighton4b_quant_recipe::imatrix_q4km_q6head && !header->imatrix_q4km_profile_header())
             return nullptr;
-        if (recipe == lighton4b_quant_recipe::upstream_physical_q4km && !header->upstream_physical_profile_header())
+        if ((recipe == lighton4b_quant_recipe::upstream_physical_q4km ||
+             recipe == lighton4b_quant_recipe::upstream_physical_q6) &&
+            !header->upstream_physical_profile_header())
             return nullptr;
         if (recipe == lighton4b_quant_recipe::hf_tiled_out_q4km && !header->hf_tiled_out_profile_header())
             return nullptr;
@@ -157,9 +172,11 @@ public:
             for (auto & layer : weights.layers)
                 if (!layer.full_attention) layer.linear.hf_tiled_out = true;
         }
-        if (recipe == lighton4b_quant_recipe::upstream_physical_q4km) {
+        if (recipe == lighton4b_quant_recipe::upstream_physical_q4km ||
+            recipe == lighton4b_quant_recipe::upstream_physical_q6) {
             auto & weights = candidate->model_.text.decoder;
             weights.upstream_physical = true;
+            weights.physical_full_q6 = recipe == lighton4b_quant_recipe::upstream_physical_q6;
             weights.physical_q4_repack = lighton4b_physical_q4_repack_mode(true);
             if (weights.physical_q4_repack) {
                 if (!lighton4b_physical_q4_repack_valid(true)) return nullptr;

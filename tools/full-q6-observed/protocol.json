@@ -1,0 +1,76 @@
+{
+  "schema": "lighton4b-full-q6-observed/v1",
+  "cases": [
+    "simple_table",
+    "simple_form",
+    "arabic_printed_line"
+  ],
+  "old_q4_cap": 512,
+  "full_q6_cap": 256,
+  "threads": 4,
+  "arm_seconds": 1200,
+  "worker_seconds": 9000,
+  "minimum_memory_gib": 10,
+  "minimum_scratch_gib": 30,
+  "minimum_output_gib": 12,
+  "heldout_allowed": false,
+  "source_forward_allowed": false,
+  "original_forward_allowed": false,
+  "full_f32_model_allowed": false,
+  "quality_qualified": false,
+  "source_report_path": "tests/results/qwen35-ocr/lightonocr3-4b-independent-llama/independent-llama.json",
+  "control_targets": {
+    "test-lighton4b-upstream-full-q6": {
+      "arguments": [
+        "tests/fixtures/lightonocr3-4b-source/upstream-q6-physical-schema.tsv"
+      ],
+      "marker": "PHYSICAL_FULL_Q6 controls="
+    },
+    "test-lighton4b-upstream-physical": {
+      "arguments": [
+        "tools/full-q6-observed/q4-control-schema.tsv"
+      ],
+      "marker": "PHYSICAL controls="
+    },
+    "test-lighton4b-source-prefill-chunks": {
+      "arguments": [],
+      "marker": "SOURCE_PREFILL_CHUNKS_CONTROLS PASS"
+    },
+    "test-lighton4b-physical-q6-tiled": {
+      "arguments": [],
+      "marker": "PHYSICAL_Q6_TILED_CONTROLS PASS"
+    },
+    "test-lighton4b-physical-q4-repack": {
+      "arguments": [],
+      "marker": "PHYSICAL_Q4_REPACK PASS"
+    },
+    "test-lighton4b-physical-gdn-source-ops": {
+      "arguments": [],
+      "marker": "PHYSICAL_GDN_SOURCE_OPS_CONTROLS PASS"
+    },
+    "test-lighton4b-physical-f16-attention": {
+      "arguments": [],
+      "marker": "PHYSICAL_F16_ATTENTION PASS"
+    },
+    "test-lighton4b-physical-rope": {
+      "arguments": [],
+      "marker": "PHYSICAL_ROPE source-node/chunk/tail/position/profile controls PASS"
+    },
+    "test-lighton4b-physical-swiglu": {
+      "arguments": [],
+      "marker": "physical SwiGLU: gate aliases, physical/BF16 scope, six GGML exact arms, finite/geometry controls pass"
+    },
+    "test-lighton4b-physical-native-ops": {
+      "arguments": [],
+      "marker": "PHYSICAL_NATIVE_OPS pass=1"
+    }
+  },
+  "limits": [
+    "Observed three cases only; no new heldout inputs, reference forward, default, publication, release or app-pin promotion.",
+    "Publisher Q6 IDs/text/EOS are the runtime comparison. BF16 outputs are separate quality denominators, not human OCR truth; source form182 still has154 character/31 word edits against BF16 form177.",
+    "Existing source Q6 references omit full-vocabulary scores and hidden states. Native raw rows/layers are retained, but decoded equality is not numerical or operator parity.",
+    "Native matrices retain source quantized storage; no F32 model or F32 text-weight cache. Existing Q4 negatives remain historical and are not waived.",
+    "Preserve actual decoded failures, cap and setup errors; continue the fixed observed cases after decoded negatives without tuning. Ordinary setup/transport retries are allowed.",
+    "New full-Q6 projection-role arithmetic is exercised by actual decoding and generic Q6 controls, not a new same-input upstream operator proof. Source Q6 vision-byte parity remains unmeasured."
+  ]
+}

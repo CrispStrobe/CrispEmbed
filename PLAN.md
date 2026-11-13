@@ -5283,3 +5283,18 @@ The [independent small-artifact audit](docs/lighton4b-physical-rope-observed-aud
 ## Physical RoPE receipt attribution after fixed raw closure — 12 November 2026
 
 The [completed independent fixed audit](docs/lighton4b-physical-rope-fixed-audit.md) binds candidate `a8a22749ab0b757ae1f317b6fa5b84ffd148b939`, producer `8001a29fab5abc3481e601168e10ca4383d10060ad7e4356a9110eb345c0b56a` and raw proof `d0bf3b45fa69e8197452a9846bd7f77dfddda28d93549a0c8a063e12aed68a28`. Pending: attribute the remaining receipt ON stage/decoded regression with exact source/native inputs, absolute errors and magnitudes before proposing any new arithmetic candidate. Book and inventory source-floor improvements do not waive receipt failure or earlier observed BF16 regressions. Preserve original failed artifact audit and three provenance limitations; no model rerun for already-closed raw inventories, held-out tuning, qualification/default/release/app promotion.
+
+### Whole-decoder physical Q6 observed result — 13 November 2026
+
+The default-off physical full-Q6 profile completes all three observed cases at
+source `0b576d0e3`: table 222/form 182/Arabic 6 tokens, all EOS and exact pinned
+upstream Q6 IDs/text. Against the same BF16 outputs, character/word edits improve
+from historical Q4 table 348/97 to 0/0 and form 189/46 to 154/31; Arabic remains 0/0.
+Ten native controls and 13 Python tests pass. The lossless 249 Q6/474 F32 import
+preserves 177 source small parameters and 297 vision tensors; Q4 repacking and F32
+text-weight caches are absent. [Result and scope](docs/lighton4b-full-q6-observed.md).
+Only the three native Q6 cases were forwarded; historical Q4 and source/BF16
+outputs were reused. A unit-fixture convolution-rank error was corrected before
+model transfer and the normal retry passed. Representative input quality and
+broader platforms remain follow-ups; form still differs from BF16. No default,
+model publication, release or application-pin change.

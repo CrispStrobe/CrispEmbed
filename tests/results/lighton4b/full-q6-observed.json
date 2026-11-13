@@ -1,0 +1,122 @@
+{
+  "schema": "lighton4b-full-q6-observed-result/v1",
+  "status": "measured_full_q6_observed",
+  "executed_source": "0b576d0e34218bb934b1f147b916b0224e857605",
+  "recipe": "lighton4b-upstream-q6-physical-v1",
+  "model": {
+    "file": "full-q6-physical.gguf",
+    "bytes": 4797156960,
+    "sha256": "f491ed0ae1e78d0c4a7c54655158f1fba502df8c56eff06da5287f79cb9a3272",
+    "retained_remotely": true
+  },
+  "storage_census": {
+    "0": 474,
+    "14": 249
+  },
+  "actual_small_source_parameters_equal": 177,
+  "protected_vision_tensors": 297,
+  "native_controls_passed": 10,
+  "python_tests_passed": 13,
+  "elapsed_seconds": 1016.3919299909999,
+  "independent_small_output_review": "IDs/text/EOS and separate character/word edit distances recomputed; no inconsistency found.",
+  "cases": {
+    "simple_table": {
+      "tokens": 222,
+      "eos": true,
+      "cap": 256,
+      "composed_vision": true,
+      "same_q6_source_ids_exact": true,
+      "same_q6_source_text_exact": true,
+      "vs_bf16": {
+        "ids_exact": true,
+        "text_exact": true,
+        "matching_prefix_ids": 222,
+        "character_edits": 0,
+        "reference_codepoints": 607,
+        "word_edits": 0,
+        "reference_words": 106
+      },
+      "historical_q4_vs_bf16": {
+        "raw_ids_exact": false,
+        "decoded_exact": false,
+        "matching_prefix_ids": 37,
+        "character_edits": 348,
+        "reference_codepoints": 607,
+        "word_edits": 97,
+        "reference_words": 106
+      },
+      "converted_f32_weight_entries": 0,
+      "converted_f32_weight_bytes": 0,
+      "q4_repack_entries": 0,
+      "checked_vocabulary_rows": 222
+    },
+    "simple_form": {
+      "tokens": 182,
+      "eos": true,
+      "cap": 256,
+      "composed_vision": true,
+      "same_q6_source_ids_exact": true,
+      "same_q6_source_text_exact": true,
+      "vs_bf16": {
+        "ids_exact": false,
+        "text_exact": false,
+        "matching_prefix_ids": 44,
+        "character_edits": 154,
+        "reference_codepoints": 656,
+        "word_edits": 31,
+        "reference_words": 90
+      },
+      "historical_q4_vs_bf16": {
+        "raw_ids_exact": false,
+        "decoded_exact": false,
+        "matching_prefix_ids": 9,
+        "character_edits": 189,
+        "reference_codepoints": 656,
+        "word_edits": 46,
+        "reference_words": 90
+      },
+      "converted_f32_weight_entries": 0,
+      "converted_f32_weight_bytes": 0,
+      "q4_repack_entries": 0,
+      "checked_vocabulary_rows": 182
+    },
+    "arabic_printed_line": {
+      "tokens": 6,
+      "eos": true,
+      "cap": 256,
+      "composed_vision": true,
+      "same_q6_source_ids_exact": true,
+      "same_q6_source_text_exact": true,
+      "vs_bf16": {
+        "ids_exact": true,
+        "text_exact": true,
+        "matching_prefix_ids": 6,
+        "character_edits": 0,
+        "reference_codepoints": 12,
+        "word_edits": 0,
+        "reference_words": 2
+      },
+      "historical_q4_vs_bf16": {
+        "raw_ids_exact": true,
+        "decoded_exact": true,
+        "matching_prefix_ids": 6,
+        "character_edits": 0,
+        "reference_codepoints": 12,
+        "word_edits": 0,
+        "reference_words": 2
+      },
+      "converted_f32_weight_entries": 0,
+      "converted_f32_weight_bytes": 0,
+      "q4_repack_entries": 0,
+      "checked_vocabulary_rows": 6
+    }
+  },
+  "limits": [
+    "Observed three cases only; no new heldout inputs, reference forward, default, publication, release or app-pin promotion.",
+    "Publisher Q6 IDs/text/EOS are the runtime comparison. BF16 outputs are separate quality denominators, not human OCR truth; source form182 still has154 character/31 word edits against BF16 form177.",
+    "Existing source Q6 references omit full-vocabulary scores and hidden states. Native raw rows/layers are retained, but decoded equality is not numerical or operator parity.",
+    "Native matrices retain source quantized storage; no F32 model or F32 text-weight cache. Existing Q4 negatives remain historical and are not waived.",
+    "Preserve actual decoded failures, cap and setup errors; continue the fixed observed cases after decoded negatives without tuning. Ordinary setup/transport retries are allowed.",
+    "New full-Q6 projection-role arithmetic is exercised by actual decoding and generic Q6 controls, not a new same-input upstream operator proof. Source Q6 vision-byte parity remains unmeasured."
+  ]
+}

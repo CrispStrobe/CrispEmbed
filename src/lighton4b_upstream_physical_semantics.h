@@ -14,6 +14,9 @@ inline bool lighton4b_upstream_physical_enabled() {
     return core_env::on("CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL");
 #endif
 }
+inline bool lighton4b_upstream_physical_q6_enabled() {
+    return lighton4b_upstream_physical_enabled() && core_env::on("CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL_Q6");
+}
 inline bool lighton4b_upstream_physical_mode_valid(bool physical) {
     return !physical || (lighton4b_upstream_physical_enabled() && !core_env::on("CRISPEMBED_LIGHTON4B_BF16_LINEAR") &&
                          !core_env::on("CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS") &&
