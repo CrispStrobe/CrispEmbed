@@ -1983,8 +1983,6 @@ target_link_libraries(test-lighton4b-source-prefill-chunks PRIVATE crispembed-qw
 add_executable(lighton4b-source-prefill-probe EXCLUDE_FROM_ALL tools/source-prefill-probe/probe.cpp)
 target_link_libraries(lighton4b-source-prefill-probe PRIVATE crispembed-qwen35-delta crispembed-core)
 
-endif() # NOT iOS: LightOn4B/Qwen3.5 validation executables
-
 # Default-off physical FFN fused arithmetic controls; no model payload or install.
 add_executable(test-lighton4b-physical-swiglu EXCLUDE_FROM_ALL tests/test_lighton4b_physical_swiglu.cpp)
 target_include_directories(test-lighton4b-physical-swiglu PRIVATE src ggml/include)
@@ -1993,3 +1991,5 @@ target_link_libraries(test-lighton4b-physical-swiglu PRIVATE crispembed-qwen35-d
 add_executable(test-lighton4b-physical-rope EXCLUDE_FROM_ALL tests/test_lighton4b_physical_rope.cpp)
 target_include_directories(test-lighton4b-physical-rope PRIVATE src ggml/include)
 target_link_libraries(test-lighton4b-physical-rope PRIVATE crispembed-qwen35-delta crispembed-core)
+
+endif() # NOT iOS: LightOn4B/Qwen3.5 validation executables
