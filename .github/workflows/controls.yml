@@ -18,6 +18,8 @@ on:
       - 'scripts/bump-version.sh'
       - 'python/pyproject.toml'
       - 'python/crispembed/__init__.py'
+      - 'python/crispembed/_binding.py'
+      - 'tests/test_restoration_bindings.py'
       - 'tests/test_version_sync.py'
       - 'models/convert-teleocr-to-gguf.py'
       - 'tests/test_teleocr_converter.py'
@@ -160,6 +162,8 @@ on:
       - 'scripts/bump-version.sh'
       - 'python/pyproject.toml'
       - 'python/crispembed/__init__.py'
+      - 'python/crispembed/_binding.py'
+      - 'tests/test_restoration_bindings.py'
       - 'tests/test_version_sync.py'
       - 'models/convert-teleocr-to-gguf.py'
       - 'tests/test_teleocr_converter.py'
@@ -371,6 +375,10 @@ jobs:
       - name: Install small numerical-control dependency
         if: ${{ !cancelled() }}
         run: python -m pip install numpy==2.3.5
+
+      - name: Python SwinIR and SCUNet restoration API controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_restoration_bindings.py -v
 
       - name: TeleOCR synthetic GGUF conversion and inherited license metadata
         if: ${{ !cancelled() }}
