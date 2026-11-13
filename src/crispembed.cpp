@@ -7189,6 +7189,7 @@ extern "C" int crispembed_tps_auto_dewarp(const uint8_t * gray, int w, int h, co
 }
 
 extern "C" crispembed_ocr_result * crispembed_cc_detect(const uint8_t * gray, int w, int h, int * out_n) {
+    if (out_n) *out_n = 0;
     int n = 0;
     cc_text_region * regions = cc_detect_lines(gray, w, h, &n);
     if (!regions || n <= 0) {
@@ -7197,7 +7198,11 @@ extern "C" crispembed_ocr_result * crispembed_cc_detect(const uint8_t * gray, in
         return nullptr;
     }
     // Convert to crispembed_ocr_result
-    auto * results = (crispembed_ocr_result *)malloc(n * sizeof(crispembed_ocr_result));
+    auto * results = (crispembed_ocr_result *)calloc((size_t)n, sizeof(crispembed_ocr_result));
+    if (!results) {
+        cc_detect_free(regions);
+        return nullptr;
+    }
     for (int i = 0; i < n; i++) {
         results[i].x = (float)regions[i].x;
         results[i].y = (float)regions[i].y;
@@ -7213,6 +7218,10 @@ extern "C" crispembed_ocr_result * crispembed_cc_detect(const uint8_t * gray, in
     cc_detect_free(regions);
     if (out_n) *out_n = n;
     return results;
+}
+
+extern "C" void crispembed_cc_detect_free(crispembed_ocr_result * results) {
+    free(results);
 }
 
 extern "C" int crispembed_find_skew(const uint8_t * gray, int w, int h, float * angle, float * confidence) {

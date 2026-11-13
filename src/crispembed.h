@@ -1656,8 +1656,11 @@ CRISPEMBED_API int crispembed_tps_auto_dewarp(const uint8_t * gray, int w, int h
                                               uint8_t * out);
 
 /// Detect text line regions using connected components (model-free).
-/// Returns array of {x,y,w,h} regions, caller frees with free().
+/// Returns array of {x,y,w,h} regions, caller frees with crispembed_cc_detect_free().
+/// Returns NULL and sets *out_n to zero for no regions or allocation failure.
 CRISPEMBED_API crispembed_ocr_result * crispembed_cc_detect(const uint8_t * gray, int w, int h, int * out_n);
+/// Free a CC region array in the library that allocated it. NULL is accepted.
+CRISPEMBED_API void crispembed_cc_detect_free(crispembed_ocr_result * results);
 
 /// Find skew angle (degrees) of a document image.
 /// Returns 0 on success; *angle is the rotation needed to deskew.

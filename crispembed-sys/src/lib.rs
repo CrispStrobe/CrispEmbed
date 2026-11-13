@@ -1563,6 +1563,8 @@ extern "C" {
         out_n: *mut c_int,
     ) -> *mut CrispembedOcrResult;
 
+    pub fn crispembed_cc_detect_free(results: *mut CrispembedOcrResult);
+
     pub fn crispembed_find_skew(
         gray: *const u8,
         w: c_int,

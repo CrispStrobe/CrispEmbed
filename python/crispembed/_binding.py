@@ -4668,8 +4668,18 @@ class CrispPreprocess:
 
     def cc_detect(self, gray: np.ndarray, w: int, h: int) -> list:
         """Detect text lines using connected components (model-free).
-        Returns list of dicts with x, y, w, h keys."""
+        Returns list of dicts with x, y, w, h keys.
+        Requires a native library exposing crispembed_cc_detect_free.
+        """
         gray = _preprocess_gray_pixels(gray, w, h)
+        try:
+            free_results = self._lib.crispembed_cc_detect_free
+        except AttributeError:
+            raise RuntimeError(
+                "CC detection requires a native library with crispembed_cc_detect_free; "
+                "update the native library") from None
+        free_results.argtypes = [ctypes.POINTER(_CrispOcrResult)]
+        free_results.restype = None
         self._lib.crispembed_cc_detect.argtypes = [
             ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
             ctypes.POINTER(ctypes.c_int)]
@@ -4678,13 +4688,17 @@ class CrispPreprocess:
         ptr = self._lib.crispembed_cc_detect(
             gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
             w, h, ctypes.byref(n))
-        results = []
-        for i in range(n.value):
-            r = ptr[i]
-            results.append({"x": r.x, "y": r.y, "w": r.w, "h": r.h})
-        if ptr and n.value > 0:
-            ctypes.cdll.LoadLibrary("libc.so.6").free(ptr)
-        return results
+        try:
+            if n.value < 0 or (n.value > 0 and not ptr):
+                raise RuntimeError("CC detection returned invalid result count")
+            results = []
+            for i in range(n.value):
+                r = ptr[i]
+                results.append({"x": r.x, "y": r.y, "w": r.w, "h": r.h})
+            return results
+        finally:
+            if ptr:
+                free_results(ptr)
 
 
 def _setup_ocr_render_signatures(lib):

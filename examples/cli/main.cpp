@@ -799,7 +799,7 @@ static int cli_main(int argc, char ** argv) {
             for (int i = 0; i < n; i++)
                 printf("  [%d] (%.0f, %.0f) %.0fx%.0f\n", i, regions[i].x, regions[i].y, regions[i].w, regions[i].h);
         }
-        if (regions) free(regions);
+        crispembed_cc_detect_free(regions);
         return 0;
     }
     if (!oxr_doc_pages.empty()) {

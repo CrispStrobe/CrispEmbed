@@ -1,5 +1,29 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## CC result allocator ownership — 13 November 2026
+
+Bounded fix `fix/python-cc-result-ownership-20261113` starts from `fb2177558`.
+CC result arrays were allocated in the native library, then freed through
+Python's hard-coded Linux libc, Dart's allocator or Rust's libc. The new public
+`crispembed_cc_detect_free` keeps deallocation with the allocating library;
+Python, Dart, Rust, CLI and server callers use it. Dynamic bindings resolve it
+only when CC detection is invoked and fail before detection on older libraries,
+leaving unrelated preprocessing usable. Dart also reads the complete native
+result struct instead of its incorrect manual stride. Native result allocation
+failure now releases intermediate regions and leaves the output count zero.
+
+Focused tests compile the exact production C wrappers against public headers,
+substitute the lower detector/allocator, and exercise actual Python and Rust
+methods with three regions, empty/error/allocation failure and matching cleanup.
+All eight ownership controls pass, including the actual Rust method linked to
+the same C fixture. Direct Dart 3.9.4 Linux x64 execution passes nine cases:
+three exact regions with 48-byte stride, matching deallocation/owned output,
+empty/failure modes, input copy exception and older-runtime rejection. An initial
+fixture-extraction compile error was corrected without changing production code.
+Five preprocessing, 13 restoration, 12 ABI/OCR binding and 54 CI-selection controls
+also pass; independent review found no blocking issues. No model build or
+inference, release, default, model or consumer pin change belongs to this fix.
+
 ## Python grayscale preprocessing buffers — 13 November 2026
 
 Bounded product lane `fix/python-preproc-input-20261113` starts from

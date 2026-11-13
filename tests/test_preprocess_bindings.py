@@ -71,6 +71,7 @@ class NativePreprocess:
                lambda gray, w, h, out: copy("background_norm", gray, w, h, out))
         export("despeckle", None, [U8P, INT, INT, INT, INT, U8P], despeckle)
         export("cc_detect", ctypes.c_void_p, [U8P, INT, INT, INTP], cc)
+        export("cc_detect_free", None, [ctypes.c_void_p], lambda ptr: None)
         export("pdf_page_dpi", INT, [ctypes.c_char_p, INT, FLOATP, INTP],
                lambda *args: 0)
         export("ocr_render", ctypes.c_void_p,

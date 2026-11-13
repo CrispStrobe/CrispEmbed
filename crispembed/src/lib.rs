@@ -3273,8 +3273,15 @@ pub fn tps_auto_dewarp(
 
 /// Detect text line regions using connected components (model-free, GPU-free).
 pub fn cc_detect(gray: &[u8], width: i32, height: i32) -> Vec<OcrRegion> {
+    struct OwnedCcResults(*mut crispembed_sys::CrispembedOcrResult);
+    impl Drop for OwnedCcResults {
+        fn drop(&mut self) {
+            unsafe { crispembed_sys::crispembed_cc_detect_free(self.0) };
+        }
+    }
     let mut n: i32 = 0;
     let ptr = unsafe { crispembed_sys::crispembed_cc_detect(gray.as_ptr(), width, height, &mut n) };
+    let _owned = OwnedCcResults(ptr);
     if ptr.is_null() || n <= 0 {
         return vec![];
     }
@@ -3291,7 +3298,6 @@ pub fn cc_detect(gray: &[u8], width: i32, height: i32) -> Vec<OcrRegion> {
             orientation_corrected: r.orientation_corrected != 0,
         });
     }
-    unsafe { libc::free(ptr as *mut std::ffi::c_void) };
     regions
 }
 

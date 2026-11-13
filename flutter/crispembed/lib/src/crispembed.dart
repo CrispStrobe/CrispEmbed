@@ -4534,31 +4534,45 @@ class CrispPreprocess {
   /// Returns list of bounding boxes {x, y, w, h}.
   List<({int x, int y, int w, int h})> ccDetect(
       Uint8List gray, int width, int height) {
-    final inp = calloc<Uint8>(width * height);
-    inp.asTypedList(width * height).setAll(0, gray);
-    final outN = calloc<Int32>();
-    final ptr = _ccDetectFn(inp, width, height, outN);
-    final n = outN.value;
-    calloc.free(inp);
-    calloc.free(outN);
-    if (ptr == nullptr || n <= 0) return [];
-    // Parse crispembed_ocr_result structs (same layout as OcrResult)
-    final structSize =
-        sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>() * 2;
-    final results = <({int x, int y, int w, int h})>[];
-    for (var i = 0; i < n; i++) {
-      final base = ptr.cast<Uint8>() + i * structSize;
-      final floats = base.cast<Float>();
-      results.add((
-        x: floats[0].toInt(),
-        y: floats[1].toInt(),
-        w: floats[2].toInt(),
-        h: floats[3].toInt(),
-      ));
+    // Resolve before allocation, preserving unrelated preprocessing on older
+    // runtimes without guessing a system allocator for their returned memory.
+    if (!_lib.providesSymbol('crispembed_cc_detect_free')) {
+      throw StateError(
+          'CC detection requires a native library with crispembed_cc_detect_free; update the native library');
     }
-    calloc.free(ptr);
-    return results;
+    final freeResults = _lib.lookupFunction<CrispembedCcDetectFreeNative,
+        CrispembedCcDetectFreeDart>('crispembed_cc_detect_free');
+    Pointer<Uint8> inp = nullptr;
+    Pointer<Int32> outN = nullptr;
+    Pointer<Void> ptr = nullptr;
+    try {
+      inp = calloc<Uint8>(width * height);
+      outN = calloc<Int32>();
+      inp.asTypedList(width * height).setAll(0, gray);
+      ptr = _ccDetectFn(inp, width, height, outN);
+      final n = outN.value;
+      if (n < 0 || (ptr == nullptr && n > 0)) {
+        throw StateError('CC detection returned invalid result count');
+      }
+      final results = <({int x, int y, int w, int h})>[];
+      final regions = ptr.cast<_NativeOcrResult>();
+      for (var i = 0; i < n; i++) {
+        final region = regions[i];
+        results.add((
+          x: region.x.toInt(),
+          y: region.y.toInt(),
+          w: region.w.toInt(),
+          h: region.h.toInt(),
+        ));
+      }
+      return results;
+    } finally {
+      if (ptr != nullptr) freeResults(ptr);
+      calloc.free(inp);
+      calloc.free(outN);
+    }
   }
+
 }
 
 // ---------------------------------------------------------------------------

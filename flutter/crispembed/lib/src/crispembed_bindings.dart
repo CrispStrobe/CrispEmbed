@@ -563,6 +563,9 @@ typedef CrispembedCcDetectNative = Pointer<Void> Function(
 typedef CrispembedCcDetectDart = Pointer<Void> Function(
     Pointer<Uint8> gray, int w, int h, Pointer<Int32> outN);
 
+typedef CrispembedCcDetectFreeNative = Void Function(Pointer<Void> results);
+typedef CrispembedCcDetectFreeDart = void Function(Pointer<Void> results);
+
 // --- OCR Rendering ---
 typedef CrispembedOcrRenderNative = Pointer<Utf8> Function(
     Pointer<Void> results,

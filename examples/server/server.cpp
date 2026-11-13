@@ -3475,7 +3475,7 @@ int main(int argc, char ** argv) {
                << ",\"h\":" << regions[i].h << "}";
         }
         js << "]}";
-        if (regions) free(regions);
+        crispembed_cc_detect_free(regions);
         res.set_content(js.str(), "application/json");
     });
 
