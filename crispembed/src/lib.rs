@@ -1972,6 +1972,34 @@ impl Drop for CrispNER {
 // Scan Cleanup
 // ---------------------------------------------------------------------------
 
+fn scan_cleanup_input_count(
+    pixels: &[u8],
+    width: i32,
+    height: i32,
+    channels: i32,
+) -> Result<usize, String> {
+    if width <= 0 || height <= 0 || !matches!(channels, 1 | 3 | 4) {
+        return Err("scan cleanup requires positive dimensions and 1, 3 or 4 channels".into());
+    }
+    let area = width
+        .checked_mul(height)
+        .ok_or_else(|| "scan cleanup dimensions exceed the native image size limit".to_string())?;
+    // Native conversion indexes the input and allocates RGB output with signed ints.
+    area.checked_mul(3)
+        .ok_or_else(|| "scan cleanup dimensions exceed the native RGB size limit".to_string())?;
+    let count = area
+        .checked_mul(channels)
+        .ok_or_else(|| "scan cleanup input exceeds the native image size limit".to_string())?
+        as usize;
+    if pixels.len() < count {
+        return Err(format!(
+            "scan cleanup needs at least {count} bytes, got {}",
+            pixels.len()
+        ));
+    }
+    Ok(count)
+}
+
 /// Document scan preprocessing (deskew, crop, whiten, denoise).
 ///
 /// Tier 1 (classical): no model needed — pass `None` for model_path.
@@ -1991,7 +2019,10 @@ impl CrispScanCleanup {
     /// Create a scan cleanup context.
     /// model_path: None for tier-1 only, Some("nafnet.gguf") for tier 2.
     pub fn new(model_path: Option<&str>, n_threads: i32) -> Result<Self, String> {
-        let c_path = model_path.map(|p| std::ffi::CString::new(p).unwrap());
+        let c_path = model_path
+            .map(std::ffi::CString::new)
+            .transpose()
+            .map_err(|error| format!("invalid scan cleanup model path: {error}"))?;
         let ptr = c_path.as_ref().map_or(std::ptr::null(), |p| p.as_ptr());
         let ctx = unsafe { crispembed_sys::crispembed_scan_cleanup_init(ptr, n_threads) };
         if ctx.is_null() {
@@ -2000,7 +2031,9 @@ impl CrispScanCleanup {
         Ok(Self { ctx })
     }
 
-    /// Process a scan image. Input: RGB uint8 pixels (h * w * channels).
+    /// Process tightly packed uint8 gray/RGB/RGBA pixels (channels 1/3/4).
+    /// Extra input bytes are ignored. Invalid dimensions, native byte-count overflow
+    /// or a short buffer return Err before calling native code.
     /// Returns cleaned RGB pixels and (width, height).
     pub fn process(
         &self,
@@ -2009,6 +2042,7 @@ impl CrispScanCleanup {
         height: i32,
         channels: i32,
     ) -> Result<(Vec<u8>, i32, i32), String> {
+        scan_cleanup_input_count(pixels, width, height, channels)?;
         let params = unsafe { crispembed_sys::crispembed_scan_cleanup_defaults() };
         self.process_with_params(pixels, width, height, channels, params)
     }
@@ -2022,6 +2056,7 @@ impl CrispScanCleanup {
         channels: i32,
         params: crispembed_sys::ScanCleanupParams,
     ) -> Result<(Vec<u8>, i32, i32), String> {
+        scan_cleanup_input_count(pixels, width, height, channels)?;
         let mut out_ptr: *mut u8 = std::ptr::null_mut();
         let mut ow: i32 = 0;
         let mut oh: i32 = 0;
@@ -2040,19 +2075,33 @@ impl CrispScanCleanup {
             )
         };
 
+        struct OwnedCleanupImage(*mut u8);
+        impl Drop for OwnedCleanupImage {
+            fn drop(&mut self) {
+                if !self.0.is_null() {
+                    unsafe { crispembed_sys::crispembed_scan_cleanup_free_image(self.0) };
+                }
+            }
+        }
+        let _owned = OwnedCleanupImage(out_ptr);
         if rc != 0 || out_ptr.is_null() {
             return Err("Scan cleanup failed".into());
         }
 
-        let len = (ow * oh * 3) as usize;
+        let len = ow
+            .checked_mul(oh)
+            .and_then(|area| area.checked_mul(3))
+            .filter(|count| ow > 0 && oh > 0 && *count > 0)
+            .ok_or_else(|| "scan cleanup returned invalid output dimensions".to_string())?
+            as usize;
         let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
-        unsafe { crispembed_sys::crispembed_scan_cleanup_free_image(out_ptr) };
 
         Ok((result, ow, oh))
     }
 
     /// Detect a two-up (double-page) book spread. Returns the gutter column to
-    /// split at, or `None` for a single page.
+    /// split at, or `None` for a single page or invalid input. Input follows
+    /// [`Self::process`], including channel and minimum-buffer requirements.
     pub fn detect_page_split(
         &self,
         pixels: &[u8],
@@ -2060,6 +2109,7 @@ impl CrispScanCleanup {
         height: i32,
         channels: i32,
     ) -> Option<i32> {
+        scan_cleanup_input_count(pixels, width, height, channels).ok()?;
         let sx = unsafe {
             crispembed_sys::crispembed_scan_cleanup_detect_page_split(
                 pixels.as_ptr(),
@@ -2076,7 +2126,8 @@ impl CrispScanCleanup {
     }
 
     /// Detect the printed content bounding box (trims blank margins). Returns
-    /// `(x0, y0, x1, y1)` with x1/y1 exclusive, or `None` for a blank page.
+    /// `(x0, y0, x1, y1)` with x1/y1 exclusive, or `None` for a blank page or
+    /// invalid input. Input follows [`Self::process`].
     pub fn content_bbox(
         &self,
         pixels: &[u8],
@@ -2084,6 +2135,7 @@ impl CrispScanCleanup {
         height: i32,
         channels: i32,
     ) -> Option<(i32, i32, i32, i32)> {
+        scan_cleanup_input_count(pixels, width, height, channels).ok()?;
         let (mut x0, mut y0, mut x1, mut y1) = (0i32, 0i32, 0i32, 0i32);
         let rc = unsafe {
             crispembed_sys::crispembed_scan_cleanup_content_bbox(

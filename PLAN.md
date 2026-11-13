@@ -1,5 +1,27 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Rust scan cleanup buffer and error handling — 13 November 2026
+
+Bounded fix `fix/rust-scan-cleanup-buffer-safety-20261113` starts from `f3de37557`.
+All four Rust image methods forwarded unsupported two-channel data to native code;
+the native grayscale conversion reads three values for non-grayscale input.
+Short slices and signed byte-count overflow were also unchecked. The class now
+validates positive dimensions, channels 1/3/4, signed input/RGB counts and minimum
+buffer lengths before FFI, retaining valid extra-byte prefixes. NUL-containing
+model paths return `Err` instead of panicking before initialization.
+
+Image output has matching RAII cleanup even on reported failure or malformed
+geometry. Checked returned RGB dimensions reject invalid sizes before reading,
+while valid growth after deskew remains allowed. A focused actual-class/public-C
+wrapper test covers real parameter conversion/layout, supported channels and
+prefixes, invalid input with no native calls, constructor errors, copied outputs,
+error pointers, malformed geometry and enlarged output. The matrix and 78
+related/CI-selection controls pass; independent source/test review and focused
+rerun found no blocking issues. Native algorithms and parameter semantics are
+unchanged; this interface work is not a complete internal
+arithmetic audit. No model build/inference, native ABI, release/default, consumer
+pin or Pix2Struct ownership change belongs to this fix.
+
 ## Rust Pix2Struct RGB and explicit RGBA inputs — 13 November 2026
 
 Bounded fix `fix/rust-pix2struct-rgba-input-20261113` starts from `a16d1cfbc`.

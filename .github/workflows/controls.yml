@@ -26,6 +26,9 @@ on:
       - 'tests/test_rust_grayscale_safety.py'
       - 'tests/test_pix2struct_raw_binding.py'
       - 'tests/test_rust_pix2struct_input.py'
+      - 'tests/test_rust_scan_cleanup_safety.py'
+      - 'src/scan_cleanup.h'
+      - 'src/scan_cleanup.cpp'
       - 'src/ocr_render.h'
       - 'src/crispembed.h'
       - 'src/crispembed.cpp'
@@ -182,6 +185,9 @@ on:
       - 'tests/test_rust_grayscale_safety.py'
       - 'tests/test_pix2struct_raw_binding.py'
       - 'tests/test_rust_pix2struct_input.py'
+      - 'tests/test_rust_scan_cleanup_safety.py'
+      - 'src/scan_cleanup.h'
+      - 'src/scan_cleanup.cpp'
       - 'src/ocr_render.h'
       - 'src/crispembed.h'
       - 'src/crispembed.cpp'
@@ -427,6 +433,10 @@ jobs:
       - name: Rust Pix2Struct RGB and explicit RGBA input controls
         if: ${{ !cancelled() }}
         run: python tests/test_rust_pix2struct_input.py -v
+
+      - name: Rust scan cleanup buffer and output ownership controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_rust_scan_cleanup_safety.py -v
 
       - name: TeleOCR synthetic GGUF conversion and inherited license metadata
         if: ${{ !cancelled() }}
