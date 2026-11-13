@@ -1,0 +1,115 @@
+{
+  "schema": "lighton4b-authored-q6-q4-quality/v1",
+  "cases": [
+    "field_report",
+    "invoice_grid",
+    "accented_dispatch"
+  ],
+  "arms": [
+    "q4",
+    "q6"
+  ],
+  "cap": 512,
+  "threads": 4,
+  "arm_seconds": 1800,
+  "worker_seconds": 14000,
+  "runtime_source": "0b576d0e34218bb934b1f147b916b0224e857605",
+  "runtime_bundle": {
+    "bin/lighton4b-native-document": {
+      "bytes": 862560,
+      "sha256": "ebf3d8b7864e15bf293fc3403868f480a16506d2beff414778fce46dea96ccb1"
+    },
+    "lib/libggml-base.so": {
+      "bytes": 917880,
+      "sha256": "8a5b8bca916122ce632e253b2c5b2b5c6ee805e66673badf99ffa0e639d26ee9"
+    },
+    "lib/libggml-cpu.so": {
+      "bytes": 1158056,
+      "sha256": "5ff29ec8a2f7b553914c451158969761c92c0200960edb9f41aa175bb6f7cc61"
+    },
+    "lib/libggml-base.so.0": {
+      "bytes": 917880,
+      "sha256": "8a5b8bca916122ce632e253b2c5b2b5c6ee805e66673badf99ffa0e639d26ee9"
+    },
+    "lib/libggml.so.0": {
+      "bytes": 56376,
+      "sha256": "9054684fbac74de422d77de54ea62496945ab1bf8627d21c0af48124f0347dc9"
+    },
+    "lib/libggml-cpu.so.0": {
+      "bytes": 1158056,
+      "sha256": "5ff29ec8a2f7b553914c451158969761c92c0200960edb9f41aa175bb6f7cc61"
+    },
+    "lib/libggml.so.0.17.0": {
+      "bytes": 56376,
+      "sha256": "9054684fbac74de422d77de54ea62496945ab1bf8627d21c0af48124f0347dc9"
+    },
+    "lib/libggml.so": {
+      "bytes": 56376,
+      "sha256": "9054684fbac74de422d77de54ea62496945ab1bf8627d21c0af48124f0347dc9"
+    },
+    "lib/libggml-base.so.0.17.0": {
+      "bytes": 917880,
+      "sha256": "8a5b8bca916122ce632e253b2c5b2b5c6ee805e66673badf99ffa0e639d26ee9"
+    },
+    "lib/libggml-cpu.so.0.17.0": {
+      "bytes": 1158056,
+      "sha256": "5ff29ec8a2f7b553914c451158969761c92c0200960edb9f41aa175bb6f7cc61"
+    }
+  },
+  "q6_model": {
+    "file": "full-q6-physical.gguf",
+    "bytes": 4797156960,
+    "sha256": "f491ed0ae1e78d0c4a7c54655158f1fba502df8c56eff06da5287f79cb9a3272"
+  },
+  "q4_model": {
+    "file": "physical-model.gguf",
+    "sha256": "843e66c31e5516cd6597cf20de544906f75ba024bbcbbab3f2c9085a61e79d43"
+  },
+  "q6_gates": {
+    "CRISPEMBED_BUILD_MODE": "0",
+    "CRISPEMBED_LIGHTON4B_NATIVE_CONTEXT": "1",
+    "CRISPEMBED_LIGHTON4B_QUANT": "1",
+    "CRISPEMBED_QWEN35_QUANT": "1",
+    "CRISPEMBED_LIGHTON4B_GGUF_INSPECTION": "1",
+    "CRISPEMBED_QWEN35_LIGHTON4B_MODEL_OWNER": "1",
+    "CRISPEMBED_QWEN35_LIGHTON4B_TEXT_OWNER": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_OWNER": "1",
+    "CRISPEMBED_QWEN35_OCR": "1",
+    "CRISPEMBED_LIGHTON4B_DECODER_COMPOSE": "1",
+    "CRISPEMBED_LIGHTON4B_LINEAR_BLOCK": "1",
+    "CRISPEMBED_LIGHTON4B_ATTENTION_BLOCK": "1",
+    "CRISPEMBED_QWEN35_GDN_GROUPED_HEADS": "1",
+    "CRISPEMBED_QWEN35_STREAM_PROJECTION": "1",
+    "CRISPEMBED_LIGHTON4B_IMAGE_COMPOSE": "1",
+    "CRISPEMBED_LIGHTON4B_FRONTEND": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_NORM": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_FMA_NORM": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_LINEAR": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_CONV": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_ATTENTION": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_SOFTMAX_AVX2": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_GELU_AVX2": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_MERGER_ERF_AVX2": "1",
+    "CRISPEMBED_LIGHTON4B_VISION_BF16_ROTARY_TABLE": "1",
+    "CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL": "1",
+    "CRISPEMBED_LIGHTON4B_Q6_K": "1",
+    "CRISPEMBED_LIGHTON4B_PARALLEL_DEQUANT": "1",
+    "CRISPEMBED_LIGHTON4B_HEAD_BF16": "0",
+    "CRISPEMBED_LIGHTON4B_BF16_LINEAR": "0",
+    "CRISPEMBED_LIGHTON4B_BF16_QUANT_WEIGHTS": "0",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_NATIVE_OPS_ABLATION": "all",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_F16_ATTENTION": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_PILLOW_RESIZE": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_F16_VISION": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_Q4_REPACK": "0",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_GDN_SOURCE_OPS": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_Q6_TILED": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_SWIGLU": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_ROPE": "1",
+    "CRISPEMBED_LIGHTON4B_PHYSICAL_SOURCE_PREFILL_ALIGNED": "1",
+    "CRISPEMBED_LIGHTON4B_UPSTREAM_PHYSICAL_Q6": "1"
+  }
+}

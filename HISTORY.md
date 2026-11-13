@@ -1,3 +1,16 @@
+## 13 November 2026 — Fresh authored Q4/Q6 document comparison
+
+The [Kaggle six-arm quality screen](docs/lighton4b-authored-q6-q4-quality.md)
+completes at `90914b674` without builds, imports, originals or old-case replay.
+Both profiles return identical IDs/text, all EOS (182/296/199 tokens), exact
+invoice 16/16 cells and 1,354 checked vocabulary rows. Frozen v1 prose/dispatch
+residuals are presentation markup; independent actual-image/gold/output review
+finds no transcription error. Primary scores remain unchanged. Earliest saved
+cross-precision differences begin at decoder layer 0 despite exact final text.
+The initial 1000px setup rejection and 512px correction before any model output
+are retained. No Q6 quality/speed gain, representative/platform qualification,
+default change or release follows; large arrays stay remote.
+
 ## 12 November 2026 — Kaggle ccache: image pinning, warm OvisOCR2 GPU bench, merge guard
 
 **Why the #216 OvisOCR2 GPU bench built cold.** The seed was attached and warmed (1,385 files), yet the

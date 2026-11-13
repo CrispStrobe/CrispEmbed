@@ -1,0 +1,75 @@
+{
+  "schema": "lighton4b-authored-quality-fixtures/v1",
+  "license": "MIT",
+  "annotation": "New text authored for this evaluation before any model outputs; synthetic clean pages.",
+  "renderer": {
+    "pillow": "12.3.0",
+    "font_sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280",
+    "bold_font_sha256": "5c1247acef7f2b8522a31742c76d6adcb5569bacc0be7ceaa4dc39dd252ce895"
+  },
+  "cases": [
+    {
+      "id": "field_report",
+      "image": "field_report.png",
+      "width": 512,
+      "height": 512,
+      "png_sha256": "b6c6105ebab4aac398502a374baaf981afdf31d63fe540806548fe71fdbf07ec",
+      "rgb_sha256": "a4f594b670c3d17043b937050d048ba31e0c6ebe8087cfe94b7b6503188d0df0",
+      "gold": {
+        "text": "FIELD REPORT 47\nStation: North Quay    Date: 13 November 2026\n\nAt 07:35 the survey team opened the east gate.\nThree blue crates stood beside the loading ramp.\nCrate A17 held 24 brass fittings; crate B09 held 18.\nThe final crate was empty and its seal was intact.\n\nMira checked the gauge twice: 12.8 kPa at 08:10\nand 12.6 kPa at 08:25. No leak was observed.\nThe team replaced one worn washer, tightened\nfour bolts, and marked the panel READY.\n\nNext inspection: 20 November 2026 at 09:00.\nKeep the west door closed during the pressure test.",
+        "tables": []
+      }
+    },
+    {
+      "id": "invoice_grid",
+      "image": "invoice_grid.png",
+      "width": 512,
+      "height": 512,
+      "png_sha256": "dd2b177b58df62a9b6534327373afff009a778a39bb18f5d49379442f715fc66",
+      "rgb_sha256": "65e2d09a5b42697bbb5b6cb7e2c44747bc47b125fef888550aeff7b1b9b2216e",
+      "gold": {
+        "text": "HARBOUR SUPPLY INVOICE\nInvoice: HS-0719    Date: 13 November 2026\nCustomer: North Quay Workshop\nItem Qty Unit EUR Total EUR\nBrass fitting 24 3.50 84.00\nSteel washer 18 0.25 4.50\nSafety label 6 1.20 7.20\nSubtotal: EUR 95.70\nDelivery: EUR 4.30\nAmount due: EUR 100.00\nPayment reference: HS-0719",
+        "tables": [
+          [
+            [
+              "Item",
+              "Qty",
+              "Unit EUR",
+              "Total EUR"
+            ],
+            [
+              "Brass fitting",
+              "24",
+              "3.50",
+              "84.00"
+            ],
+            [
+              "Steel washer",
+              "18",
+              "0.25",
+              "4.50"
+            ],
+            [
+              "Safety label",
+              "6",
+              "1.20",
+              "7.20"
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "accented_dispatch",
+      "image": "accented_dispatch.png",
+      "width": 512,
+      "height": 512,
+      "png_sha256": "21e6195dc3146d1e021bd2863f2e7833c36fbf60153bbb089172b25e94661a97",
+      "rgb_sha256": "44119225fea150860f6869d960a30c965cb93f8c0920da873b9f7441884cc900",
+      "gold": {
+        "text": "EXPÉDITION 28\nDestinataire: Chloé Martin\nAdresse: 18 rue des Érables, 69002 Lyon\nRéférence: FR-028-731\n\nContenu: café moulu, thé vert et cacao.\nQuantité: 12 boîtes; poids net: 8,75 kg.\nDépart prévu: 16 novembre 2026 à 14 h 30.\n\nEmpfänger: Jürgen Weiß\nStraße: Große Allee 7, 10115 Berlin\nHinweis: Kühl und trocken lagern.\nPrüfung: Größe M; Stückzahl 12; Maß 30 cm.\n\nEntrega: São Luís, código BR-024.\nObservação: açúcar, limão e maçã.",
+        "tables": []
+      }
+    }
+  ]
+}

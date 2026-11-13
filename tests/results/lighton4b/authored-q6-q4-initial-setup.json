@@ -1,0 +1,16 @@
+{
+  "schema": "lighton4b-authored-quality-setup/v1",
+  "source": "1fed3673a84529ce5092a757b7c3410f6d529ff5",
+  "status": "preprocessing_rejected_before_decode",
+  "first_arm": "field_report/q4",
+  "returncode": 6,
+  "image_dimensions": [
+    1000,
+    1000
+  ],
+  "native_max_patches": 1024,
+  "model_imported": false,
+  "runtime_rebuilt": false,
+  "decode_outputs": [],
+  "correction": "Directly render unchanged text/gold at512x512 with14px body font and19px headings; inspect all final PNGs before retry."
+}

@@ -1,5 +1,25 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Authored full-Q6 versus Q4 quality screen — 13 November 2026
+
+The [completed six-arm Kaggle screen](docs/lighton4b-authored-q6-q4-quality.md)
+at `90914b674` reuses the exact observed runtime and retained Q4/Q6 models.
+Both profiles produce identical 182/296/199 token lists/text and all EOS on the
+three new authored 512×512 pages; the invoice has 16/16 cells exact. No Q6 quality
+gain is observed. Frozen v1 content edits remain 12/4 for prose, 0/0 invoice and
+56/15 accented dispatch; independent decoded/image review attributes the
+prose/dispatch residuals to added Markdown presentation markers, not wrong
+transcribed text. The post-hoc formatting diagnostic does not replace the
+unchanged primary scores or create a new acceptance gate. All 1,354 vocabulary
+rows pass actual finite/greedy checks. Earlier saved vision/input stages match;
+first saved decoder-layer 0 differences have RMS 0.003982–0.004267 and max absolute
+0.201206–0.224107. The initial unsupported-size setup failure remains retained.
+
+Next separately bounded quality work requires representative licensed scans;
+source/operator parity and public-consumer/platform coverage remain independent.
+Do not repeat these completed forwards for report checks or infer qualification,
+speed, default, alias, release or app-pin promotion from this clean-print tie.
+
 ## CI selection invariant repair — 13 November 2026
 
 Bounded test-only lane `fix/ci-selection-pr232-20261113` starts from merged
