@@ -1,5 +1,25 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Python scan cleanup images and error cleanup — 13 November 2026
+
+Bounded fix `fix/python-scan-cleanup-input-output-20261113` starts from `e1ced558c`.
+All three Python image methods forwarded two-channel arrays to native code that
+reads three values for non-grayscale pixels; a guarded replay reproduces those
+calls. A failed NumPy output copy also left the native image allocated. The class
+now shares one grayscale/RGB/RGBA loader with signed byte-count checks before
+copy/FFI, preserves uint8 and logical-stride behavior, accepts Path inputs and
+rejects NUL model paths before library initialization. Native images are released
+on errors or malformed geometry as well as copy failures; valid output growth is
+preserved.
+
+Seven focused Python controls reuse the prior tiny native fixture and check
+actual pointer bytes, channels, metadata, params, optional Pillow file loading,
+no-call invalid paths and output ownership. All seven and 97 related/CI-selection
+controls pass; independent review and focused rerun found no blocking issues.
+The existing Rust fixture only gains a reusable builder. Native algorithms, ABI
+and Pix2Struct ownership are unchanged;
+no model build, dependencies, release/default or consumer pin change belongs here.
+
 ## Rust scan cleanup buffer and error handling — 13 November 2026
 
 Bounded fix `fix/rust-scan-cleanup-buffer-safety-20261113` starts from `f3de37557`.

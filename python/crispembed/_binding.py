@@ -2866,9 +2866,13 @@ class CrispScanCleanup:
 
     def __init__(self, model_path: str = None, n_threads: int = 4,
                  lib_path: Optional[str] = None):
+        mp = os.fspath(model_path) if model_path else None
+        if isinstance(mp, str):
+            mp = mp.encode("utf-8")
+        if mp is not None and b"\0" in mp:
+            raise ValueError("model_path must not contain NUL bytes")
         self._lib = _load_library(lib_path)
         _setup_scan_cleanup_signatures(self._lib)
-        mp = model_path.encode("utf-8") if model_path else None
         self._ctx = self._lib.crispembed_scan_cleanup_init(mp, n_threads)
         if not self._ctx:
             raise RuntimeError("Failed to init scan cleanup")
@@ -2883,7 +2887,8 @@ class CrispScanCleanup:
         """Process a scan image.
 
         Args:
-            image: file path (str), PIL Image, or numpy uint8 array (H, W, C).
+            image: file path (str/Path), PIL Image, or numpy grayscale/RGB/RGBA
+                   array. Array values are converted to uint8 in logical order.
             deskew: correct skew angle (default True).
             crop_borders: remove dark scanner borders (default True).
             whiten_background: flatten uneven lighting (default True).
@@ -2893,24 +2898,7 @@ class CrispScanCleanup:
         Returns:
             numpy uint8 array (H, W, 3)  - cleaned RGB image.
         """
-        import numpy as np
-
-        # Load image from various sources
-        if isinstance(image, str):
-            from PIL import Image
-            img = np.array(Image.open(image).convert("RGB"))
-        elif hasattr(image, "convert"):
-            img = np.array(image.convert("RGB"))
-        else:
-            img = np.asarray(image)
-
-        if img.ndim == 2:
-            h, w = img.shape
-            ch = 1
-        else:
-            h, w, ch = img.shape
-
-        pixels = img.flatten().astype(np.uint8)
+        pixels, w, h, ch = self._load_px(image)
         px_ptr = pixels.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
 
         params = self._lib.crispembed_scan_cleanup_defaults()
@@ -2934,32 +2922,44 @@ class CrispScanCleanup:
         out_w = ctypes.c_int(0)
         out_h = ctypes.c_int(0)
 
-        rc = self._lib.crispembed_scan_cleanup_process(
-            self._ctx, px_ptr, w, h, ch, params,
-            ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
-        )
-        if rc != 0 or not out_ptr:
-            raise RuntimeError("Scan cleanup failed")
-
-        ow, oh = out_w.value, out_h.value
-        buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
-        self._lib.crispembed_scan_cleanup_free_image(out_ptr)
-        return buf.reshape(oh, ow, 3)
+        try:
+            rc = self._lib.crispembed_scan_cleanup_process(
+                self._ctx, px_ptr, w, h, ch, params,
+                ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
+            )
+            if rc != 0 or not out_ptr:
+                raise RuntimeError("Scan cleanup failed")
+            ow, oh = out_w.value, out_h.value
+            count = int(ow) * int(oh) * 3
+            int_max = (1 << (ctypes.sizeof(ctypes.c_int) * 8 - 1)) - 1
+            if ow <= 0 or oh <= 0 or count > int_max:
+                raise RuntimeError("Scan cleanup returned invalid output dimensions")
+            buf = np.ctypeslib.as_array(out_ptr, shape=(count,)).copy()
+            return buf.reshape(oh, ow, 3)
+        finally:
+            if out_ptr:
+                self._lib.crispembed_scan_cleanup_free_image(out_ptr)
 
     @staticmethod
     def _load_px(image):
-        import numpy as np
-        if isinstance(image, str):
+        if isinstance(image, (str, os.PathLike)):
             from PIL import Image
-            img = np.array(Image.open(image).convert("RGB"))
+            with Image.open(image) as opened:
+                img = np.array(opened.convert("RGB"))
         elif hasattr(image, "convert"):
             img = np.array(image.convert("RGB"))
         else:
             img = np.asarray(image)
         if img.ndim == 2:
-            h, w, ch = img.shape[0], img.shape[1], 1
-        else:
+            h, w = img.shape
+            ch = 1
+        elif img.ndim == 3 and img.shape[2] in (1, 3, 4):
             h, w, ch = img.shape
+        else:
+            raise ValueError("expected a grayscale, RGB or RGBA image")
+        int_max = (1 << (ctypes.sizeof(ctypes.c_int) * 8 - 1)) - 1
+        if w <= 0 or h <= 0 or int(w) * int(h) * max(ch, 3) > int_max:
+            raise ValueError("image dimensions exceed the native image size range")
         pixels = img.flatten().astype(np.uint8)
         return pixels, w, h, ch
 

@@ -12,10 +12,10 @@ from test_cc_detect_ownership import extract_function
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def run_consumer(directory, rust_source):
-    cxx, rustc = shutil.which("c++") or shutil.which("g++"), shutil.which("rustc")
-    if not cxx or not rustc:
-        raise unittest.SkipTest("C++ and Rust compilers required for focused interface test")
+def native_fixture(directory):
+    cxx = shutil.which("c++") or shutil.which("g++")
+    if not cxx:
+        raise unittest.SkipTest("C++ compiler required for focused interface test")
     native = (ROOT / "src/crispembed.cpp").read_text()
     wrappers = "\n".join(extract_function(native, prefix) for prefix in (
         'static scan_cleanup_params to_cleanup(',
@@ -101,6 +101,15 @@ extern "C" int scan_cleanup_content_bbox(const uint8_t *,int w,int h,int ch,int 
     cpp.write_text(harness + wrappers)
     subprocess.run([cxx, "-std=c++17", "-fPIC", "-shared", "-I", str(ROOT / "src"),
                     str(cpp), "-o", str(library)], check=True, text=True, timeout=30)
+    return library
+
+
+def run_consumer(directory, rust_source):
+    rustc = shutil.which("rustc")
+    if not rustc:
+        raise unittest.SkipTest("Rust compiler required for focused interface test")
+    library = native_fixture(directory)
+    directory = Path(directory)
     source, binary = directory / "consumer.rs", directory / "consumer"
     source.write_text(rust_source)
     subprocess.run([rustc, "--edition=2021", str(source), "-o", str(binary),
