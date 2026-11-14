@@ -3535,22 +3535,34 @@ class CrispDatSr:
     def process(self, pixels: np.ndarray, width: int, height: int,
                 tile_w: int = 0, tile_h: int = 0
                 ) -> Tuple[np.ndarray, int, int]:
-        flat = np.asarray(pixels, dtype=np.uint8).flatten()
+        """Upscale packed RGB values and return (array, native_width, native_height).
+
+        At least width*height*3 values are required; extra values are ignored.
+        Inputs are converted to uint8 in logical row-major order. Tile dimensions
+        are forwarded unchanged (nonpositive selects native automatic sizing).
+        """
+        flat = _restoration_rgb_pixels(pixels, width, height, allow_extra=True)
         px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
         out_ptr = ctypes.POINTER(ctypes.c_uint8)()
         out_w = ctypes.c_int(0)
         out_h = ctypes.c_int(0)
-        rc = self._lib.crispembed_dat_sr_process(
-            self._ctx, px_ptr, width, height,
-            tile_w, tile_h,
-            ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
-        )
-        if rc != 0 or not out_ptr:
-            raise RuntimeError("DAT SR processing failed")
-        ow, oh = out_w.value, out_h.value
-        buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
-        self._lib.crispembed_dat_sr_free_image(out_ptr)
-        return buf.reshape(oh, ow, 3), ow, oh
+        try:
+            rc = self._lib.crispembed_dat_sr_process(
+                self._ctx, px_ptr, width, height,
+                tile_w, tile_h,
+                ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
+            )
+            if rc != 0 or not out_ptr:
+                raise RuntimeError("DAT SR processing failed")
+            ow, oh = out_w.value, out_h.value
+            int_max = (1 << (ctypes.sizeof(ctypes.c_int) * 8 - 1)) - 1
+            if ow <= 0 or oh <= 0 or ow * oh * 3 > int_max:
+                raise RuntimeError("DAT SR returned invalid output dimensions")
+            buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
+            return buf.reshape(oh, ow, 3), ow, oh
+        finally:
+            if out_ptr:
+                self._lib.crispembed_dat_sr_free_image(out_ptr)
 
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:

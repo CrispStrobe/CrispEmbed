@@ -1,5 +1,27 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Python DAT RGB buffers and output lifetime — 14 November 2026
+
+Bounded fix `fix/python-dat-buffer-lifetime-20261114` starts from `419a42280`.
+An independent baseline probe through the actual DAT process/public wrapper
+allocates an output but calls its matching free zero times after a NumPy copy
+exception. A guarded short-input probe also passes three RGB values for an
+18-value image. The Python method now reuses positive-dimension/signed-RGB/minimum
+input validation, checks positive returned dimensions and signed RGB output count
+before array views, and frees every returned pointer in `finally`.
+
+The existing DAT fixture now tracks actual output malloc/free and public init/free
+wrappers. Eleven controls retain the five native gate/oracle tests and add six
+Python controls: variable returned scales, oversized RGB prefixes, dtype/strides,
+invalid input before FFI, malformed/error/NULL/allocation-failure results,
+view/copy/reshape cleanup, tile forwarding and context free idempotence. Returned
+geometry is native-provided, never assumed to be 2x. The blend gate/default/model
+graph is unchanged; no additional model-quality or native exception qualification
+follows from these model-free binding controls. All 11 and 74 related/CI-selection
+controls pass, with all 255 workflow pins intact; independent review reran the
+11 focused controls successfully. No ABI, Pix2Struct ownership,
+dependency, release/default or consumer pin change belongs here.
+
 ## DAT tiled blend coverage candidate — 14 November 2026
 
 Bounded fix `fix/dat-tiled-blend-coverage-20261114` starts from `e0de0885d`.

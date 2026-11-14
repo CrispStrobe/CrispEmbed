@@ -462,7 +462,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: python tests/test_pix2struct_raw_binding.py -v
 
-      - name: Native DAT gated tiled blend coverage controls
+      - name: DAT tiled blend and Python buffer ownership controls
         if: ${{ !cancelled() }}
         run: python tests/test_dat_tile_blending.py -v
 

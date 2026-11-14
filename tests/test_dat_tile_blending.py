@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Actual DAT tiling/preprocess/output with a model-free nearest-neighbor oracle."""
+"""Actual DAT tiling/output and Python ownership with a nearest-neighbor oracle."""
 
 import ctypes as C
 import os
@@ -8,7 +8,10 @@ import shutil
 import subprocess
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+from types import SimpleNamespace
+
+from test_preprocess_bindings import BINDING
 
 import numpy as np
 
@@ -49,6 +52,8 @@ class DatTileBlendTests(unittest.TestCase):
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <set>
 #include <utility>
 #include <vector>
 #ifndef M_PI
@@ -58,6 +63,22 @@ struct dat_sr_context { bool bench=false; int upscale=2; int split_size[2]={8,32
 static dat_sr_context ctx;
 static int forward_calls=0, zero_weights=0, small_weights=0;
 static float min_weight=0;
+static std::set<void *> output_live;
+static int output_allocs=0, output_frees=0, image_free_calls=0, context_frees=0;
+static bool fail_alloc=false;
+static int ce_resolve_threads(int n) { return n; }
+dat_sr_context * dat_sr_init(const char *,int) { return &ctx; }
+void dat_sr_free(dat_sr_context *) { ++context_frees; }
+static void * test_alloc(size_t count) {
+    if (fail_alloc) return nullptr;
+    void * p=std::malloc(count); if (!p) std::abort();
+    output_live.insert(p); ++output_allocs; return p;
+}
+static void test_release(void * p) {
+    if (!p) return;
+    if (output_live.erase(p)!=1) std::abort();
+    ++output_frees; std::memset(p,255,3); std::free(p);
+}
 static void dat_forward(dat_sr_context * c,const float * in,int h,int w,float * out) {
     ++forward_calls;
     int r=c->upscale;
@@ -65,13 +86,23 @@ static void dat_forward(dat_sr_context * c,const float * in,int h,int w,float * 
         out[ch*h*r*w*r+y*w*r+x]=in[ch*h*w+(y/r)*w+x/r];
 }
 extern "C" void * test_context(int scale,int split) {
+    if (!output_live.empty()) std::abort();
+    output_allocs=output_frees=image_free_calls=context_frees=0; fail_alloc=false;
     ctx.upscale=scale; ctx.split_size[0]=std::min(8,split); ctx.split_size[1]=split;
     forward_calls=zero_weights=small_weights=0; min_weight=0; return &ctx;
 }
+extern "C" int test_allocations() { return output_allocs; }
+extern "C" int test_frees() { return output_frees; }
+extern "C" int test_live() { return int(output_live.size()); }
+extern "C" int test_image_frees() { return image_free_calls; }
+extern "C" int test_context_frees() { return context_frees; }
+extern "C" void test_fail_alloc(int value) { fail_alloc=value; }
 extern "C" int test_calls() { return forward_calls; }
 extern "C" int test_zero_weights() { return zero_weights; }
 extern "C" int test_small_weights() { return small_weights; }
 extern "C" float test_min_weight() { return min_weight; }
+#define malloc test_alloc
+#define free test_release
 '''
         probes = r'''
 extern "C" float test_axis(int i,int n,int origin,int image,int overlap) {
@@ -83,13 +114,18 @@ extern "C" float test_legacy_axis(int i,int n) {
 extern "C" int test_round(int64_t value,int split) { return dat_round_extent(value,split); }
 '''
         wrappers = "\n".join(extract_function(public, prefix) for prefix in (
+            'extern "C" void * crispembed_dat_sr_init(',
+            'extern "C" void crispembed_dat_sr_free(',
             'extern "C" int crispembed_dat_sr_process(',
             'extern "C" void crispembed_dat_sr_free_image('))
+        wrappers = wrappers.replace('void crispembed_dat_sr_free_image(uint8_t * pixels) {',
+                                    'void crispembed_dat_sr_free_image(uint8_t * pixels) { ++image_free_calls;')
         cpp, library = Path(cls.temp.name)/"native.cpp", Path(cls.temp.name)/"native.so"
-        cpp.write_text(harness+helpers+process+extract_function(native, "void dat_sr_free_image(")+probes+wrappers)
+        cpp.write_text(harness+helpers+process+extract_function(native, "void dat_sr_free_image(")+"\n#undef malloc\n#undef free\n"+probes+wrappers)
         subprocess.run([compiler, "-std=c++17", "-shared", "-fPIC", "-I", str(ROOT / "src"),
                         str(cpp), "-o", str(library)], check=True, timeout=30)
         cls.lib = C.CDLL(str(library))
+        cls.lib.test_fail_alloc.argtypes = [C.c_int]
         cls.lib.test_context.argtypes = [C.c_int, C.c_int]
         cls.lib.test_context.restype = C.c_void_p
         cls.lib.test_min_weight.restype = C.c_float
@@ -101,6 +137,17 @@ extern "C" int test_round(int64_t value,int split) { return dat_round_extent(val
         cls.lib.crispembed_dat_sr_process.argtypes = [C.c_void_p, C.POINTER(C.c_uint8), C.c_int, C.c_int,
             C.c_int, C.c_int, C.POINTER(C.POINTER(C.c_uint8)), C.POINTER(C.c_int), C.POINTER(C.c_int)]
         cls.lib.crispembed_dat_sr_free_image.argtypes = [C.POINTER(C.c_uint8)]
+
+    def tearDown(self):
+        self.assertEqual(self.lib.test_live(), 0)
+        self.assertEqual(self.lib.test_allocations(), self.lib.test_frees())
+
+    def create_python(self, scale=2):
+        self.lib.test_context(scale, 32)
+        with patch.object(BINDING, "_load_library", return_value=self.lib):
+            model = BINDING.CrispDatSr("fixture.gguf")
+        self.addCleanup(model.__del__)
+        return model
 
     def run_image(self, image, scale=2, split=32, tile=(0, 0), gate="1"):
         height, width, _ = image.shape
@@ -120,6 +167,110 @@ extern "C" int test_round(int64_t value,int split) { return dat_round_extent(val
         finally:
             if out:
                 self.lib.crispembed_dat_sr_free_image(out)
+
+    def test_python_rgb_prefix_dtype_strides_and_returned_scale(self):
+        base = np.arange(36, dtype=np.int16).reshape(2,6,3)-4
+        arrays = (np.arange(18, dtype=np.uint8), np.arange(23, dtype=np.uint8),
+                  np.arange(24, dtype=np.uint8).reshape(2,3,4), base[:,::2], base[::-1,::-2])
+        for scale in (1,2,3,4):
+            for pixels in arrays:
+                with self.subTest(scale=scale, shape=pixels.shape, strides=pixels.strides):
+                    model = self.create_python(scale)
+                    before = pixels.copy()
+                    out, width, height = model.process(pixels,3,2)
+                    expected = pixels.astype(np.uint8).flatten()[:18].reshape(2,3,3)
+                    np.testing.assert_array_equal(out, expected.repeat(scale,0).repeat(scale,1))
+                    self.assertEqual((width,height,out.dtype), (3*scale,2*scale,np.uint8))
+                    self.assertEqual(self.lib.test_image_frees(),1)
+                    np.testing.assert_array_equal(pixels,before)
+
+    def test_python_invalid_input_precedes_conversion_and_native_call(self):
+        model = self.create_python()
+        invalid = ((0,1),(1,0),(-1,1),(1,-1),(-1,-1),(2**31,1),(1,2**31),
+                   (2**30,1),(65536,65536),(1.5,1),(1,1.5))
+        with patch.object(self.lib,"crispembed_dat_sr_process", side_effect=AssertionError("native before guard")):
+            for width,height in invalid:
+                with patch.object(BINDING.np,"asarray",side_effect=AssertionError("conversion before guard")):
+                    with self.assertRaises(ValueError):
+                        model.process([],width,height)
+            for count in (0,1,17):
+                with self.assertRaises(ValueError):
+                    model.process(np.zeros(count,dtype=np.uint8),3,2)
+        self.assertEqual(self.lib.test_calls(),0)
+
+    def test_python_native_errors_null_and_malformed_output_dimensions(self):
+        for dimensions in ((0,4),(-1,-1),(6,0),(2**31-1,2),(1,2**31-1)):
+            model = self.create_python()
+            native = self.lib.crispembed_dat_sr_process
+            def malformed(*args):
+                self.assertEqual(native(*args),0)
+                C.cast(args[-2],C.POINTER(C.c_int))[0] = dimensions[0]
+                C.cast(args[-1],C.POINTER(C.c_int))[0] = dimensions[1]
+                return 0
+            with patch.object(self.lib,"crispembed_dat_sr_process",malformed), patch.object(
+                    np.ctypeslib,"as_array",side_effect=AssertionError("view before geometry guard")) as read:
+                with self.assertRaisesRegex(RuntimeError,"invalid output dimensions"):
+                    model.process(np.zeros(18,dtype=np.uint8),3,2)
+                read.assert_not_called()
+            self.assertEqual(self.lib.test_image_frees(),1)
+        model = self.create_python()
+        native = self.lib.crispembed_dat_sr_process
+        def allocated_error(*args):
+            self.assertEqual(native(*args),0)
+            return -1
+        with patch.object(self.lib,"crispembed_dat_sr_process",allocated_error):
+            with self.assertRaisesRegex(RuntimeError,"DAT SR processing failed"):
+                model.process(np.zeros(18,dtype=np.uint8),3,2)
+        self.assertEqual(self.lib.test_image_frees(),1)
+        model = self.create_python()
+        self.lib.test_fail_alloc(1)
+        with self.assertRaises(RuntimeError):
+            model.process(np.zeros(18,dtype=np.uint8),3,2)
+        self.assertEqual(self.lib.test_image_frees(),0)
+        model = self.create_python()
+        with patch.object(self.lib,"crispembed_dat_sr_process",return_value=0):
+            with self.assertRaises(RuntimeError):
+                model.process(np.zeros(18,dtype=np.uint8),3,2)
+        self.assertEqual(self.lib.test_image_frees(),0)
+
+    def test_python_matching_free_on_view_copy_and_reshape_errors(self):
+        for stage in ("view","copy","reshape"):
+            model = self.create_python()
+            if stage=="view":
+                args = {"side_effect":MemoryError("view")}
+            elif stage=="copy":
+                args = {"return_value":SimpleNamespace(copy=Mock(side_effect=MemoryError("copy")))}
+            else:
+                args = {"return_value":SimpleNamespace(copy=lambda:SimpleNamespace(
+                    reshape=Mock(side_effect=MemoryError("reshape"))))}
+            with patch.object(np.ctypeslib,"as_array",**args):
+                with self.assertRaises(MemoryError):
+                    model.process(np.zeros(18,dtype=np.uint8),3,2)
+            self.assertEqual(self.lib.test_image_frees(),1)
+            self.assertEqual(self.lib.test_live(),0)
+
+    def test_python_tile_arguments_and_idempotent_context_free(self):
+        for tile in ((0,0),(-1,-2),(32,64),(1,1)):
+            model = self.create_python()
+            native = self.lib.crispembed_dat_sr_process
+            with patch.object(self.lib,"crispembed_dat_sr_process",wraps=native) as call:
+                model.process(np.zeros(18,dtype=np.uint8),3,2,tile_w=tile[0],tile_h=tile[1])
+                self.assertEqual(call.call_args.args[4:6],tile)
+            model.__del__(); model.__del__()
+            self.assertEqual(self.lib.test_context_frees(),1)
+
+    def test_python_preserves_gated_tiled_output(self):
+        pixels = np.full((64,96,3),200,dtype=np.uint8)
+        for gate,errors in ((None,1920),("0",1920),("1",0)):
+            model = self.create_python()
+            with patch.dict(os.environ):
+                os.environ.pop(GATE,None)
+                if gate is not None:
+                    os.environ[GATE] = gate
+                out,width,height = model.process(pixels,96,64)
+            self.assertEqual((width,height),(192,128))
+            self.assertEqual(np.count_nonzero(out!=200),errors)
+            self.assertEqual(self.lib.test_image_frees(),1)
 
     def test_legacy_default_and_off_values_preserve_reproduced_failure(self):
         image = np.full((64, 96, 3), 200, dtype=np.uint8)
