@@ -20,6 +20,7 @@ on:
       - 'python/crispembed/__init__.py'
       - 'python/crispembed/_binding.py'
       - 'tests/test_restoration_bindings.py'
+      - 'tests/test_same_size_restoration_bindings.py'
       - 'tests/test_preprocess_bindings.py'
       - 'tests/test_cc_detect_ownership.py'
       - 'tests/test_ocr_render_ownership.py'
@@ -191,6 +192,7 @@ on:
       - 'python/crispembed/__init__.py'
       - 'python/crispembed/_binding.py'
       - 'tests/test_restoration_bindings.py'
+      - 'tests/test_same_size_restoration_bindings.py'
       - 'tests/test_preprocess_bindings.py'
       - 'tests/test_cc_detect_ownership.py'
       - 'tests/test_ocr_render_ownership.py'
@@ -453,6 +455,10 @@ jobs:
       - name: Python Pix2Struct raw RGB buffer controls
         if: ${{ !cancelled() }}
         run: python tests/test_pix2struct_raw_binding.py -v
+
+      - name: Python Restormer and AdaIR buffer and output ownership controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_same_size_restoration_bindings.py -v
 
       - name: Python Granite and LightOn raw buffer controls
         if: ${{ !cancelled() }}

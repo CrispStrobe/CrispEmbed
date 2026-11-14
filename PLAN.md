@@ -1,5 +1,28 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Python Restormer/AdaIR RGB buffers — 14 November 2026
+
+Bounded fix `fix/python-restormer-adair-buffers-20261114` starts from `5309789f0`.
+Guarded baseline probes show both methods pass short RGB buffers into native
+processing and leave one malloc image live after a NumPy copy failure. Both now
+check positive C-int dimensions, signed RGB count and minimum array size, and
+release returned images in `finally` on native error or view/copy/reshape failure.
+Existing dtype conversion, logical strides, oversized RGB prefixes and same-size
+output remain; other restoration methods retain their exact-size input policy.
+Restormer documentation now describes native automatic tile defaults (128/16),
+while zero/negative/explicit values continue to be forwarded unchanged.
+
+Six focused controls use actual public wrappers and tracked model-free lower
+sinks. They distinguish AdaIR's internal lower-error cleanup from Restormer's
+returned error allocation, check defensive nonnull error pointers, verify owned
+output copies and preserve the existing 13 restoration controls. This qualifies
+binding input and matching-free behavior, not inference quality or all native
+tile/padded-geometry arithmetic and exception paths. All six and 77 related/CI-
+selection controls pass, as do all 255 workflow pins; independent review reran
+the six new and 13 existing restoration controls successfully.
+No Pix2Struct ownership, native ABI, model, dependency, release/default or consumer
+pin change belongs here.
+
 ## Rust vision OCR raw buffers — 14 November 2026
 
 Bounded fix `fix/rust-vision-raw-buffers-20261114` starts from `fdb681547`.

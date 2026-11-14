@@ -3605,31 +3605,35 @@ class CrispRestormer:
         """Restore an image (denoise / deblur / derain).
 
         Args:
-            pixels: uint8 numpy array, flattened or shaped (H, W, C).
+            pixels: RGB array, flattened or shaped (H, W, 3). At least
+                    width*height*3 values; extras are ignored. Converted to uint8.
             width: source image width in pixels.
             height: source image height in pixels.
-            tile_size: tile size for tiled inference (0 = full image).
-            tile_overlap: overlap between tiles in pixels.
+            tile_size: tile size for tiled inference (nonpositive = automatic 128).
+            tile_overlap: overlap between tiles in pixels (nonpositive = automatic 16).
 
         Returns:
             Restored image as uint8 numpy array shaped (H, W, 3).
         """
-        flat = np.asarray(pixels, dtype=np.uint8).flatten()
+        flat = _restoration_rgb_pixels(pixels, width, height, allow_extra=True)
         px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
 
         out_ptr = ctypes.POINTER(ctypes.c_uint8)()
 
-        rc = self._lib.crispembed_restormer_process(
-            self._ctx, px_ptr, width, height,
-            tile_size, tile_overlap,
-            ctypes.byref(out_ptr),
-        )
-        if rc != 0 or not out_ptr:
-            raise RuntimeError("Restormer processing failed")
+        try:
+            rc = self._lib.crispembed_restormer_process(
+                self._ctx, px_ptr, width, height,
+                tile_size, tile_overlap,
+                ctypes.byref(out_ptr),
+            )
+            if rc != 0 or not out_ptr:
+                raise RuntimeError("Restormer processing failed")
 
-        buf = np.ctypeslib.as_array(out_ptr, shape=(height * width * 3,)).copy()
-        self._lib.crispembed_restormer_free_image(out_ptr)
-        return buf.reshape(height, width, 3)
+            buf = np.ctypeslib.as_array(out_ptr, shape=(height * width * 3,)).copy()
+            return buf.reshape(height, width, 3)
+        finally:
+            if out_ptr:
+                self._lib.crispembed_restormer_free_image(out_ptr)
 
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
@@ -3943,14 +3947,20 @@ def _setup_swinir_sr_signatures(lib):
     lib.crispembed_swinir_sr_free_image.restype = None
 
 
-def _restoration_rgb_pixels(pixels, width, height):
+def _restoration_rgb_pixels(pixels, width, height, *, allow_extra=False):
     """Validate the RGB buffer before an unbounded native pointer read."""
     int_max = (1 << (ctypes.sizeof(ctypes.c_int) * 8 - 1)) - 1
     if any(not isinstance(value, (int, np.integer)) or
            value <= 0 or value > int_max for value in (width, height)):
         raise ValueError("width and height must be positive C int dimensions")
+    count = int(width) * int(height) * 3
+    if count > int_max:
+        raise ValueError("image dimensions exceed the native RGB index range")
     flat = np.asarray(pixels, dtype=np.uint8).flatten()
-    if flat.size != int(width) * int(height) * 3:
+    if allow_extra:
+        if flat.size < count:
+            raise ValueError("pixels must contain at least width * height * 3 RGB values")
+    elif flat.size != count:
         raise ValueError("pixels must contain exactly width * height * 3 RGB values")
     return flat
 
@@ -4209,28 +4219,32 @@ class CrispAdaIR:
         """Restore an image (same resolution output).
 
         Args:
-            pixels: uint8 numpy array, flattened or shaped (H, W, 3).
+            pixels: RGB array, flattened or shaped (H, W, 3). At least
+                    width*height*3 values; extras are ignored. Converted to uint8.
             width: source image width in pixels.
             height: source image height in pixels.
 
         Returns:
             output_ndarray uint8 shape (height, width, 3).
         """
-        flat = np.asarray(pixels, dtype=np.uint8).flatten()
+        flat = _restoration_rgb_pixels(pixels, width, height, allow_extra=True)
         px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
 
         out_ptr = ctypes.POINTER(ctypes.c_uint8)()
 
-        rc = self._lib.crispembed_adair_process(
-            self._ctx, px_ptr, width, height,
-            ctypes.byref(out_ptr),
-        )
-        if rc != 0 or not out_ptr:
-            raise RuntimeError("AdaIR restoration failed")
+        try:
+            rc = self._lib.crispembed_adair_process(
+                self._ctx, px_ptr, width, height,
+                ctypes.byref(out_ptr),
+            )
+            if rc != 0 or not out_ptr:
+                raise RuntimeError("AdaIR restoration failed")
 
-        buf = np.ctypeslib.as_array(out_ptr, shape=(height * width * 3,)).copy()
-        self._lib.crispembed_adair_free_image(out_ptr)
-        return buf.reshape(height, width, 3)
+            buf = np.ctypeslib.as_array(out_ptr, shape=(height * width * 3,)).copy()
+            return buf.reshape(height, width, 3)
+        finally:
+            if out_ptr:
+                self._lib.crispembed_adair_free_image(out_ptr)
 
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
