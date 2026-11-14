@@ -23,6 +23,8 @@
 #include <algorithm>
 #include <cassert>
 #include <chrono>
+#include <climits>
+#include <cstdint>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -1419,32 +1421,55 @@ dat_sr_context * dat_sr_init(const char * model_path, int n_threads) {
     return ctx;
 }
 
+// Preserve positive legacy Hann weights. Only uncovered image endpoints,
+// degenerate overlaps and float-rounded interior zeros need correction.
+static float dat_tile_axis_weight(int index, int length, int origin, int image_length, int overlap) {
+    if (length <= 1 || overlap <= 1) return 1.0f;
+    if ((index == 0 && origin == 0) || (index == length - 1 && origin == image_length - length)) return 1.0f;
+    const float weight = 0.5f * (1.0f - cosf(2.0f * (float)M_PI * index / (length - 1)));
+    if (weight > 0.0f || index == 0 || index == length - 1) return weight;
+    // The interior Hann value is mathematically positive; avoid cosf cancellation.
+    const double sine = std::sin(M_PI * static_cast<double>(index) / (length - 1));
+    return static_cast<float>(sine * sine);
+}
+
+static int dat_round_extent(int64_t value, int split) {
+    if (value <= 0 || value > INT_MAX || split <= 0) return 0;
+    const int64_t rounded = ((value + split - 1) / split) * split;
+    return rounded <= INT_MAX ? static_cast<int>(rounded) : 0;
+}
+
 int dat_sr_process(dat_sr_context * ctx, const uint8_t * pixels, int w, int h, int tile_w, int tile_h, uint8_t ** out,
                    int * out_w, int * out_h) {
-    if (!ctx || !pixels || w <= 0 || h <= 0) return -1;
+    if (!ctx || !pixels || !out || !out_w || !out_h || w <= 0 || h <= 0) return -1;
 
     const bool bench = ctx->bench;
     using ms_f = std::chrono::duration<double, std::milli>;
     auto t_total = std::chrono::steady_clock::now();
 
     int r = ctx->upscale;
-    int oW = w * r, oH = h * r;
     int max_sp = std::max(ctx->split_size[0], ctx->split_size[1]);
+    if (r <= 0 || ctx->split_size[0] <= 0 || ctx->split_size[1] <= 0) return -1;
+    const bool positive_blend = core_env::on("CRISPEMBED_DAT_POSITIVE_TILE_BLEND");
 
-    // Default tile size: must be multiple of max_split_size
-    if (tile_w <= 0) tile_w = max_sp * 2; // 64 for [8,32]
-    if (tile_h <= 0) tile_h = max_sp * 2;
-    // Round tile size up to multiple of max_sp
-    tile_w = ((tile_w + max_sp - 1) / max_sp) * max_sp;
-    tile_h = ((tile_h + max_sp - 1) / max_sp) * max_sp;
+    // Round in widened arithmetic before using signed image/CHW indices.
+    tile_w = dat_round_extent(tile_w <= 0 ? 2LL * max_sp : tile_w, max_sp);
+    tile_h = dat_round_extent(tile_h <= 0 ? 2LL * max_sp : tile_h, max_sp);
+    int pad_w = dat_round_extent(w, max_sp);
+    int pad_h = dat_round_extent(h, max_sp);
+    if (!tile_w || !tile_h || !pad_w || !pad_h || pad_w > INT_MAX / r || pad_h > INT_MAX / r) return -1;
+    int pad_oW = pad_w * r, pad_oH = pad_h * r;
+    if (pad_oW > INT_MAX / pad_oH / 3) return -1;
+    int oW = w * r, oH = h * r;
 
-    int overlap = 8;
-    int step_w = tile_w - overlap;
-    int step_h = tile_h - overlap;
+    // Keep the legacy 8px overlap unless the corrected path is explicitly enabled.
+    int overlap_w = positive_blend ? std::min(8, tile_w - 1) : 8;
+    int overlap_h = positive_blend ? std::min(8, tile_h - 1) : 8;
+    int step_w = tile_w - overlap_w;
+    int step_h = tile_h - overlap_h;
 
-    // Pad image to multiple of max_sp
-    int pad_w = ((w + max_sp - 1) / max_sp) * max_sp;
-    int pad_h = ((h + max_sp - 1) / max_sp) * max_sp;
+    const bool single_tile = pad_w <= tile_w && pad_h <= tile_h;
+    if (!single_tile && (step_w <= 0 || step_h <= 0)) return -1;
 
     // Convert uint8 RGB to float CHW [0,1] with padding
     auto t_pre = std::chrono::steady_clock::now();
@@ -1476,12 +1501,10 @@ int dat_sr_process(dat_sr_context * ctx, const uint8_t * pixels, int w, int h, i
         fprintf(stderr, "[dat_sr-bench] preprocess: %.1f ms\n", ms_f(t_pre_end - t_pre).count());
     }
 
-    int pad_oW = pad_w * r, pad_oH = pad_h * r;
     std::vector<float> accum(3 * pad_oH * pad_oW, 0.0f);
     std::vector<float> weight(pad_oH * pad_oW, 0.0f);
 
     // If the padded image fits in one tile, skip tiling entirely
-    bool single_tile = (pad_w <= tile_w && pad_h <= tile_h);
 
     if (single_tile) {
         fprintf(stderr, "dat_sr: %dx%d → %dx%d (%dx), single pass\n", w, h, oW, oH, r);
@@ -1496,8 +1519,8 @@ int dat_sr_process(dat_sr_context * ctx, const uint8_t * pixels, int w, int h, i
             fprintf(stderr, "[dat_sr-bench] tile 0,0: %.1f ms\n", ms_f(t_tile_end - t_tile).count());
         }
     } else {
-        int n_tiles_x = (pad_w + step_w - 1) / step_w;
-        int n_tiles_y = (pad_h + step_h - 1) / step_h;
+        int n_tiles_x = 1 + (pad_w - 1) / step_w;
+        int n_tiles_y = 1 + (pad_h - 1) / step_h;
         fprintf(stderr, "dat_sr: %dx%d → %dx%d (%dx), tiles=%dx%d (%dx%d)\n", w, h, oW, oH, r, n_tiles_x, n_tiles_y,
                 tile_w, tile_h);
 
@@ -1527,10 +1550,19 @@ int dat_sr_process(dat_sr_context * ctx, const uint8_t * pixels, int w, int h, i
                 }
 
                 int ox0 = x0 * r, oy0 = y0 * r;
+                std::vector<float> blend_x, blend_y;
+                if (positive_blend) {
+                    blend_x.resize(otw);
+                    blend_y.resize(oth);
+                    for (int x = 0; x < otw; x++) blend_x[x] = dat_tile_axis_weight(x, otw, ox0, pad_oW, overlap_w * r);
+                    for (int y = 0; y < oth; y++) blend_y[y] = dat_tile_axis_weight(y, oth, oy0, pad_oH, overlap_h * r);
+                }
                 for (int y = 0; y < oth; y++) {
                     for (int x = 0; x < otw; x++) {
-                        float wy = 0.5f * (1.0f - cosf(2.0f * (float)M_PI * y / (oth - 1)));
-                        float wx = 0.5f * (1.0f - cosf(2.0f * (float)M_PI * x / (otw - 1)));
+                        float wy =
+                            positive_blend ? blend_y[y] : 0.5f * (1.0f - cosf(2.0f * (float)M_PI * y / (oth - 1)));
+                        float wx =
+                            positive_blend ? blend_x[x] : 0.5f * (1.0f - cosf(2.0f * (float)M_PI * x / (otw - 1)));
                         float wt = wy * wx;
                         int dy = oy0 + y, dx = ox0 + x;
                         for (int c = 0; c < 3; c++)
@@ -1549,7 +1581,7 @@ int dat_sr_process(dat_sr_context * ctx, const uint8_t * pixels, int w, int h, i
     for (int y = 0; y < oH; y++)
         for (int x = 0; x < oW; x++) {
             float w_val = weight[y * pad_oW + x];
-            if (w_val < 1e-6f) w_val = 1.0f;
+            if (positive_blend ? w_val <= 0.0f : w_val < 1e-6f) w_val = 1.0f;
             for (int c = 0; c < 3; c++) {
                 float v = accum[c * pad_oH * pad_oW + y * pad_oW + x] / w_val * 255.0f;
                 (*out)[(y * oW + x) * 3 + c] = (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));

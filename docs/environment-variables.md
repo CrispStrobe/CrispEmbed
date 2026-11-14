@@ -250,6 +250,15 @@ backend, and Tesseract-LSTM has its own recode/DAWG/page-segmentation gates
 (see `CLAUDE.md`). Legacy non-prefixed `<ENGINE>_FORCE_CPU` and `*_DEBUG`
 switches are listed at the end of the inventory.
 
+## Image restoration
+
+`CRISPEMBED_DAT_POSITIVE_TILE_BLEND=1` enables an experimental DAT tiled-blend
+coverage correction. It preserves positive Hann interior weights, covers outer
+image boundaries and degenerate overlaps, and normalizes small positive totals.
+The default remains the legacy blend; unset, empty and off words preserve it.
+Single-tile inference is unchanged. Model-free pixel-oracle controls pass, but
+learned-model visual quality and upstream chop parity remain untested.
+
 ## Inpainting
 
 `CRISPEMBED_MIGAN`, `CRISPEMBED_MIGAN512`, `CRISPEMBED_MOEBIUS`,
@@ -307,7 +316,7 @@ operator candidate has no decoded-quality or release qualification.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-497 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+498 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -449,6 +458,7 @@ operator candidate has no decoded-quality or release qualification.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
+| `CRISPEMBED_DAT_POSITIVE_TILE_BLEND` | on | off | bool | default-off experimental / opt-in | `src/dat_sr.cpp` |  |
 | `CRISPEMBED_DAT_SR_BENCH` | on | off | bool | debug | `src/dat_sr.cpp` |  |
 
 ### decoder_embed

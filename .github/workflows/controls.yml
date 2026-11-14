@@ -21,6 +21,9 @@ on:
       - 'python/crispembed/_binding.py'
       - 'tests/test_restoration_bindings.py'
       - 'tests/test_same_size_restoration_bindings.py'
+      - 'tests/test_dat_tile_blending.py'
+      - 'src/dat_sr.cpp'
+      - 'src/dat_sr.h'
       - 'tests/test_preprocess_bindings.py'
       - 'tests/test_cc_detect_ownership.py'
       - 'tests/test_ocr_render_ownership.py'
@@ -193,6 +196,9 @@ on:
       - 'python/crispembed/_binding.py'
       - 'tests/test_restoration_bindings.py'
       - 'tests/test_same_size_restoration_bindings.py'
+      - 'tests/test_dat_tile_blending.py'
+      - 'src/dat_sr.cpp'
+      - 'src/dat_sr.h'
       - 'tests/test_preprocess_bindings.py'
       - 'tests/test_cc_detect_ownership.py'
       - 'tests/test_ocr_render_ownership.py'
@@ -455,6 +461,10 @@ jobs:
       - name: Python Pix2Struct raw RGB buffer controls
         if: ${{ !cancelled() }}
         run: python tests/test_pix2struct_raw_binding.py -v
+
+      - name: Native DAT gated tiled blend coverage controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_dat_tile_blending.py -v
 
       - name: Python Restormer, AdaIR and InstructIR buffer ownership controls
         if: ${{ !cancelled() }}

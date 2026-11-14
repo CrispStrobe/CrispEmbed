@@ -1,5 +1,37 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## DAT tiled blend coverage candidate — 14 November 2026
+
+Bounded fix `fix/dat-tiled-blend-coverage-20261114` starts from `e0de0885d`.
+The actual DAT process, with a nearest-neighbor forward oracle, turns constant-200
+96x64 input into a tiled 192x128 image with 1,920 wrong channel values (max absolute
+error 200; mean 5.2083). The earliest stitch divergence is 636 zero-weight pixels
+and four positive totals below the legacy normalization floor. The single-pass
+path preserves the oracle. The [pinned upstream DAT reference](https://github.com/zhengchen1999/DAT/blob/1645c64fad7c94d94abd090bd1319eec1f26f7cc/basicsr/models/dat_model.py)
+uses direct forward or context-crop chop stitching, not this native Hann blend.
+
+Per CLAUDE, the corrected path is default-off behind
+`CRISPEMBED_DAT_POSITIVE_TILE_BLEND=1`; unset/empty/off words keep legacy output.
+It retains positive legacy Hann interior weights, covers true outer endpoints,
+uses uniform weights for degenerate output overlaps, recovers float-rounded
+interior zeros and normalizes any positive total. The oracle then has zero wrong
+channels/max/mean error; zero-weight count is zero, minimum weight 7.4855e-7.
+Per-axis overlap preserves every prior positive-step schedule. Widened rounding
+and signed padded-RGB bounds reject unsafe geometry before image processing;
+legacy tiled configurations with nonpositive steps return an error, avoiding
+zero-step division. Single-tile arithmetic/model forward remains unchanged.
+
+Five tiny actual-process/public-wrapper controls cover gate-off byte preservation,
+72 constant/gradient oracle arms over scales 1–4, odd/padded/one-axis/tiny inputs,
+fixture-only small splits, interior-weight equality, cancellation and geometry
+boundaries without giant allocations. All five and 54 CI-selection controls pass,
+with 498 documented variables and 255 toolchain pins intact; independent review
+reran the five focused controls successfully. No model-specific visual quality, upstream
+chop parity, all model-feature arithmetic or native exception behavior is qualified.
+TODO before any default promotion: real DAT image/ground-truth A/B with retained
+legacy output and visual/numerical evidence. No model graph, ABI, Pix2Struct
+ownership, dependency, release/default or consumer pin change belongs here.
+
 ## Python InstructIR RGB buffers — 14 November 2026
 
 Bounded fix `fix/python-instructir-buffers-20261114` starts from `553461332`.
