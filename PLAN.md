@@ -1,5 +1,27 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Python vision OCR raw buffers — 14 November 2026
+
+Bounded fix `fix/python-vision-raw-buffers-20261114` starts from `8a6a4639e`.
+Granite Vision and LightOnOCR copied the supplied byte length while their native
+backends index the declared image size. Guarded baseline calls pass three bytes
+for an 18-byte image. Both raw methods now validate positive C-int dimensions,
+channels 1/3/4, the native signed index bound and minimum buffer byte size before
+copying the required prefix. LightOn additionally checks its RGB intermediate
+size for grayscale input; Granite retains its grayscale sample-only bound.
+Oversized data and bytes-like typed/strided views preserve logical byte order.
+
+Five focused controls reuse the existing binding/test helpers and a tiny public-C
+wrapper fixture with model-free lower sinks. They cover supported channels,
+exact/excess prefixes, typed/positive/negative-stride views, invalid/short/overflow
+rejection before native calls, Granite prompt forwarding and unchanged borrowed
+Unicode/null/empty/strict UTF-8 behavior. This qualifies binding input/ABI behavior,
+not inference quality or every native preprocessing arithmetic intermediate.
+All five and 64 related/CI-selection controls pass, as do all 255 workflow pins;
+independent review reran the five focused controls successfully.
+No Pix2Struct ownership, native ABI, model, dependency, release/default or consumer
+pin change belongs here.
+
 ## Morphology scratch allocation failures — 14 November 2026
 
 Bounded fix `fix/morph-scratch-allocation-failure-20261114` starts from `fd1873731`.

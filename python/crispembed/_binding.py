@@ -4858,6 +4858,27 @@ class CrispPix2Struct:
             self._ctx = None
 
 
+def _vision_raw_pixels(image_bytes, width, height, channels, *, rgb_intermediate=False):
+    """Copy the required logical bytes after checking native image indexing."""
+    int_max = (1 << (ctypes.sizeof(ctypes.c_int) * 8 - 1)) - 1
+    if any(not isinstance(value, (int, np.integer)) or value <= 0 or value > int_max
+           for value in (width, height)):
+        raise ValueError("width and height must be positive C int dimensions")
+    if not isinstance(channels, (int, np.integer)) or channels not in (1, 3, 4):
+        raise ValueError("channels must be 1 (grayscale), 3 (RGB), or 4 (RGBA)")
+    area = int(width) * int(height)
+    index_channels = max(int(channels), 3) if rgb_intermediate else int(channels)
+    if area * index_channels > int_max:
+        raise ValueError("image dimensions exceed the native pixel index range")
+    count = area * int(channels)
+    view = memoryview(image_bytes)
+    if view.nbytes < count:
+        raise ValueError("image_bytes must contain at least width * height * channels bytes")
+    if not view.c_contiguous:
+        view = view.tobytes()
+    return (ctypes.c_uint8 * count).from_buffer_copy(view)
+
+
 def _setup_granite_vision_signatures(lib):
     """Register ctypes signatures for crispembed_granite_vision_* functions."""
     lib.crispembed_granite_vision_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
@@ -4920,16 +4941,18 @@ class CrispGraniteVision:
         """Recognize text from raw pixel bytes.
 
         Args:
-            image_bytes: Raw RGB(A) pixel data (row-major).
+            image_bytes: Row-major grayscale/RGB/RGBA bytes-like data. At least
+                         width*height*channels bytes are required; extras are ignored.
+                         Noncontiguous views are copied in logical order.
             width:  Image width in pixels.
             height: Image height in pixels.
-            channels: Number of channels (3=RGB, 4=RGBA).
+            channels: Number of channels (1=grayscale, 3=RGB, 4=RGBA).
             prompt: Optional prompt (None for default OCR prompt).
 
         Returns:
             The recognized text string, or empty string on failure.
         """
-        buf = (ctypes.c_uint8 * len(image_bytes)).from_buffer_copy(image_bytes)
+        buf = _vision_raw_pixels(image_bytes, width, height, channels)
         out_len = ctypes.c_int(0)
         prompt_bytes = prompt.encode("utf-8") if prompt else None
         ptr = self._lib.crispembed_granite_vision_recognize(
@@ -5005,15 +5028,17 @@ class CrispLightOnOCR:
         """Recognize text from raw pixel bytes.
 
         Args:
-            image_bytes: Raw RGB(A) pixel data (row-major).
+            image_bytes: Row-major grayscale/RGB/RGBA bytes-like data. At least
+                         width*height*channels bytes are required; extras are ignored.
+                         Noncontiguous views are copied in logical order.
             width:  Image width in pixels.
             height: Image height in pixels.
-            channels: Number of channels (3=RGB, 4=RGBA).
+            channels: Number of channels (1=grayscale, 3=RGB, 4=RGBA).
 
         Returns:
             The recognized text string, or empty string on failure.
         """
-        buf = (ctypes.c_uint8 * len(image_bytes)).from_buffer_copy(image_bytes)
+        buf = _vision_raw_pixels(image_bytes, width, height, channels, rgb_intermediate=True)
         out_len = ctypes.c_int(0)
         ptr = self._lib.crispembed_lightonocr_recognize(
             self._ctx, buf, width, height, channels, ctypes.byref(out_len))
