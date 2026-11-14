@@ -1,5 +1,26 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Table morphology allocation failures — 14 November 2026
+
+Bounded fix `fix/native-table-parser-morph-allocation-20261114` starts from `f233b3be5`.
+Horizontal/vertical erosion can return NULL on scratch allocation failure, but
+the table detector passed those results directly into projections. Guarded
+baseline replays reproduce both NULL projection paths. The detector now stops
+on either failure and owns all returned masks with the matching morphology free;
+line masks are still released before borderless dilation.
+
+Three focused controls reuse the existing tiny fixture with the actual detector,
+projections, morphology source and HTML entry. Each actual calloc position is
+faulted across ruled/borderless grid and HTML calls: currently 40 failure arms
+cover nine/eleven positions, with no NULL projection or live allocation left.
+Valid 2x2/4x4 outputs and the pre-dilation mask lifetime are preserved. A caught
+projection exception also releases masks already returned to table code; this
+does not qualify exception safety inside morphology's own C++ allocations.
+All three focused and 65 related/CI-selection controls pass; independent review
+reran the focused controls successfully, and all 255 workflow toolchain pins pass.
+No models, dependencies, ABI, Pix2Struct ownership, release/default or consumer
+pin change belongs here.
+
 ## Native table parser metadata guards — 13 November 2026
 
 Bounded fix `fix/native-table-parser-metadata-20261113` starts from `3f4c911d6`.

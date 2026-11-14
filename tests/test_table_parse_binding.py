@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class TableParseBindingTests(unittest.TestCase):
     @staticmethod
-    def build_fixture(directory, actual_html=False):
+    def build_fixture(directory, actual_html=False, detector_support=None):
         compiler = shutil.which("c++") or shutil.which("g++")
         if not compiler:
             raise unittest.SkipTest("C++ compiler required for tiny interface fixture")
@@ -96,6 +96,8 @@ static Grid detect_grid(const uint8_t * pixels,int w,int h) {
     grid.col_bounds={0,1,2,3}; return grid;
 }
 '''
+        if detector_support is not None:
+            grid_sink = "\n" + detector_support + extract_function(table_source, "static Grid detect_grid(")
         actual_body = ""
         if actual_html:
             harness = harness.replace(extract_function(harness, 'extern "C" char * table_parse_to_html('), "")

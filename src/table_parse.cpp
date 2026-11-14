@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -114,6 +115,7 @@ struct Grid {
 
 static Grid detect_grid(const uint8_t * gray, int w, int h) {
     Grid grid;
+    using MorphBuffer = std::unique_ptr<uint32_t, decltype(&morph_free)>;
 
     // Binarize (foreground = dark pixels = 1).
     // For table images the foreground (lines/text) is dark and the background
@@ -123,24 +125,26 @@ static Grid detect_grid(const uint8_t * gray, int w, int h) {
     // Use half-way between Otsu and white — ensures dark pixels are foreground
     uint8_t bin_thresh = (uint8_t)std::min(254, std::max((int)otsu_t + 1, ((int)otsu_t + 255) / 2));
     int wpl = 0;
-    uint32_t * bits = morph_u8_to_1bit(gray, w, h, bin_thresh, &wpl);
+    MorphBuffer bits(morph_u8_to_1bit(gray, w, h, bin_thresh, &wpl), morph_free);
     if (!bits) return grid;
 
     // Try to detect ruled lines first
     // Horizontal lines: erode with wide horizontal SE (keeps only long h-runs)
     int h_se_w = std::max(31, w / 4) | 1; // odd, at least 1/4 image width
-    uint32_t * h_lines = morph_erode_brick(bits, w, h, wpl, h_se_w, 1);
+    MorphBuffer h_lines(morph_erode_brick(bits.get(), w, h, wpl, h_se_w, 1), morph_free);
+    if (!h_lines) return grid;
 
     // Vertical lines: erode with tall vertical SE
     int v_se_h = std::max(31, h / 4) | 1;
-    uint32_t * v_lines = morph_erode_brick(bits, w, h, wpl, 1, v_se_h);
+    MorphBuffer v_lines(morph_erode_brick(bits.get(), w, h, wpl, 1, v_se_h), morph_free);
+    if (!v_lines) return grid;
 
     // Project h_lines onto Y axis → row boundaries
-    auto h_proj = h_projection(h_lines, w, h, wpl);
+    auto h_proj = h_projection(h_lines.get(), w, h, wpl);
     auto row_lines = find_line_positions(h_proj, w, 0.15f);
 
     // Project v_lines onto X axis → column boundaries
-    auto v_proj = v_projection(v_lines, w, h, wpl);
+    auto v_proj = v_projection(v_lines.get(), w, h, wpl);
     auto col_lines = find_line_positions(v_proj, h, 0.15f);
 
     if (core_env::on("CRISPEMBED_TABLE_DEBUG")) {
@@ -156,8 +160,8 @@ static Grid detect_grid(const uint8_t * gray, int w, int h) {
         fprintf(stderr, "table_parse: row_lines=%zu, col_lines=%zu\n", row_lines.size(), col_lines.size());
     }
 
-    morph_free(h_lines);
-    morph_free(v_lines);
+    h_lines.reset();
+    v_lines.reset();
 
     bool has_ruled_lines = row_lines.size() >= 2 && col_lines.size() >= 2;
 
@@ -175,10 +179,10 @@ static Grid detect_grid(const uint8_t * gray, int w, int h) {
     } else {
         // Borderless table: use projection-based splitting
         // Dilate text to merge characters, then project
-        uint32_t * dilated = morph_dilate_brick(bits, w, h, wpl, 5, 3);
+        MorphBuffer dilated(morph_dilate_brick(bits.get(), w, h, wpl, 5, 3), morph_free);
         if (dilated) {
-            auto h_text = h_projection(dilated, w, h, wpl);
-            auto v_text = v_projection(dilated, w, h, wpl);
+            auto h_text = h_projection(dilated.get(), w, h, wpl);
+            auto v_text = v_projection(dilated.get(), w, h, wpl);
 
             // Row boundaries from horizontal gaps
             int min_row_gap = std::max(3, h / 40);
@@ -187,12 +191,10 @@ static Grid detect_grid(const uint8_t * gray, int w, int h) {
             // Column boundaries from vertical gaps
             int min_col_gap = std::max(3, w / 20);
             grid.col_bounds = find_boundaries_from_valleys(v_text, h, min_col_gap);
-
-            morph_free(dilated);
         }
     }
 
-    morph_free(bits);
+    bits.reset();
 
     // Validate: need at least 2 rows and 2 columns
     if (grid.n_rows() < 1 || grid.n_cols() < 1) {
