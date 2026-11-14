@@ -22,6 +22,7 @@ on:
       - 'tests/test_restoration_bindings.py'
       - 'tests/test_same_size_restoration_bindings.py'
       - 'tests/test_dat_tile_blending.py'
+      - 'tests/test_rust_dat_buffer_safety.py'
       - 'src/dat_sr.cpp'
       - 'src/dat_sr.h'
       - 'tests/test_preprocess_bindings.py'
@@ -197,6 +198,7 @@ on:
       - 'tests/test_restoration_bindings.py'
       - 'tests/test_same_size_restoration_bindings.py'
       - 'tests/test_dat_tile_blending.py'
+      - 'tests/test_rust_dat_buffer_safety.py'
       - 'src/dat_sr.cpp'
       - 'src/dat_sr.h'
       - 'tests/test_preprocess_bindings.py'
@@ -461,6 +463,10 @@ jobs:
       - name: Python Pix2Struct raw RGB buffer controls
         if: ${{ !cancelled() }}
         run: python tests/test_pix2struct_raw_binding.py -v
+
+      - name: Rust DAT input, output geometry and ownership controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_rust_dat_buffer_safety.py -v
 
       - name: DAT tiled blend and Python buffer ownership controls
         if: ${{ !cancelled() }}

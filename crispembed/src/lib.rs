@@ -2680,6 +2680,9 @@ impl CrispDatSr {
         Ok(Self { ctx })
     }
 
+    /// Upscale a packed RGB slice; extra bytes after width*height*3 are ignored.
+    /// Invalid dimensions or short input return an error before native processing.
+    /// Tile values are forwarded unchanged, and output dimensions come from native.
     pub fn process(
         &self,
         pixels: &[u8],
@@ -2688,7 +2691,23 @@ impl CrispDatSr {
         tile_w: i32,
         tile_h: i32,
     ) -> Result<(Vec<u8>, i32, i32), String> {
-        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let count = vision_image_len(width, height, 3, false)
+            .ok_or_else(|| "DAT SR input dimensions exceed the native RGB range".to_string())?;
+        if pixels.len() < count {
+            return Err(format!(
+                "DAT SR needs at least {count} RGB bytes, got {}",
+                pixels.len()
+            ));
+        }
+        struct OwnedDatImage(*mut u8);
+        impl Drop for OwnedDatImage {
+            fn drop(&mut self) {
+                if !self.0.is_null() {
+                    unsafe { crispembed_sys::crispembed_dat_sr_free_image(self.0) };
+                }
+            }
+        }
+        let mut output = OwnedDatImage(std::ptr::null_mut());
         let mut ow: i32 = 0;
         let mut oh: i32 = 0;
         let rc = unsafe {
@@ -2699,17 +2718,17 @@ impl CrispDatSr {
                 height,
                 tile_w,
                 tile_h,
-                &mut out_ptr,
+                &mut output.0,
                 &mut ow,
                 &mut oh,
             )
         };
-        if rc != 0 || out_ptr.is_null() {
+        if rc != 0 || output.0.is_null() {
             return Err("DAT SR processing failed".into());
         }
-        let len = (ow * oh * 3) as usize;
-        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
-        unsafe { crispembed_sys::crispembed_dat_sr_free_image(out_ptr) };
+        let len = vision_image_len(ow, oh, 3, false)
+            .ok_or_else(|| "DAT SR returned invalid output dimensions".to_string())?;
+        let result = unsafe { std::slice::from_raw_parts(output.0, len).to_vec() };
         Ok((result, ow, oh))
     }
 }

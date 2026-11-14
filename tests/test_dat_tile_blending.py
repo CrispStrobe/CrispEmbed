@@ -22,18 +22,21 @@ GATE = "CRISPEMBED_DAT_POSITIVE_TILE_BLEND"
 
 
 class DatTileBlendTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+    @staticmethod
+    def build_fixture(directory):
         compiler = shutil.which("c++") or shutil.which("g++")
         if not compiler:
             raise unittest.SkipTest("C++ compiler unavailable")
-        cls.temp = tempfile.TemporaryDirectory(prefix="dat-tile-oracle-")
-        cls.addClassCleanup(cls.temp.cleanup)
         native = (ROOT / "src/dat_sr.cpp").read_text()
         public = (ROOT / "src/crispembed.cpp").read_text()
         helpers = "\n".join(extract_function(native, prefix) for prefix in (
             "static float dat_tile_axis_weight(", "static int dat_round_extent("))
         process = extract_function(native, "int dat_sr_process(")
+        process = process.replace("{", """{
+    ++entry_calls; tile_width_seen=tile_w; tile_height_seen=tile_h;
+    // Optional test guard: safely detect missing Rust slice preflight.
+    if (input_length>=0 && (w<=0 || h<=0 || w>INT_MAX/h || w*h>INT_MAX/3 || input_length<w*h*3)) return -1;
+""", 1)
         process = process.replace("    // Normalize and convert to uint8", """
     zero_weights=small_weights=0;
     min_weight=*std::min_element(weight.begin(),weight.end());
@@ -42,6 +45,12 @@ class DatTileBlendTests(unittest.TestCase):
         if (value>0 && value<1e-6f) ++small_weights;
     }
     // Normalize and convert to uint8""", 1)
+        process = process.rsplit("    return 0;", 1)
+        process = process[0] + """
+    if (result_mode==1) return -1; // Test-only nonnull error result.
+    if (result_mode==2) { dat_sr_free_image(*out); *out=nullptr; }
+    if (result_mode==3) { *out_w=result_width; *out_h=result_height; }
+    return 0;""" + process[1]
         harness = r'''
 #include "crispembed.h"
 #include "dat_sr.h"
@@ -61,8 +70,9 @@ class DatTileBlendTests(unittest.TestCase):
 #endif
 struct dat_sr_context { bool bench=false; int upscale=2; int split_size[2]={8,32}; };
 static dat_sr_context ctx;
-static int forward_calls=0, zero_weights=0, small_weights=0;
+static int forward_calls=0, zero_weights=0, small_weights=0, entry_calls=0, input_length=-1;
 static float min_weight=0;
+static int result_mode=0, result_width=0, result_height=0, tile_width_seen=0, tile_height_seen=0;
 static std::set<void *> output_live;
 static int output_allocs=0, output_frees=0, image_free_calls=0, context_frees=0;
 static bool fail_alloc=false;
@@ -87,10 +97,16 @@ static void dat_forward(dat_sr_context * c,const float * in,int h,int w,float * 
 }
 extern "C" void * test_context(int scale,int split) {
     if (!output_live.empty()) std::abort();
-    output_allocs=output_frees=image_free_calls=context_frees=0; fail_alloc=false;
+    output_allocs=output_frees=image_free_calls=context_frees=entry_calls=0; fail_alloc=false; input_length=-1;
+    result_mode=0;
     ctx.upscale=scale; ctx.split_size[0]=std::min(8,split); ctx.split_size[1]=split;
     forward_calls=zero_weights=small_weights=0; min_weight=0; return &ctx;
 }
+extern "C" void test_result(int mode,int width,int height) { result_mode=mode; result_width=width; result_height=height; }
+extern "C" int test_tile_width() { return tile_width_seen; }
+extern "C" int test_tile_height() { return tile_height_seen; }
+extern "C" void test_input_length(int length) { input_length=length; }
+extern "C" int test_entries() { return entry_calls; }
 extern "C" int test_allocations() { return output_allocs; }
 extern "C" int test_frees() { return output_frees; }
 extern "C" int test_live() { return int(output_live.size()); }
@@ -120,11 +136,17 @@ extern "C" int test_round(int64_t value,int split) { return dat_round_extent(val
             'extern "C" void crispembed_dat_sr_free_image('))
         wrappers = wrappers.replace('void crispembed_dat_sr_free_image(uint8_t * pixels) {',
                                     'void crispembed_dat_sr_free_image(uint8_t * pixels) { ++image_free_calls;')
-        cpp, library = Path(cls.temp.name)/"native.cpp", Path(cls.temp.name)/"native.so"
+        cpp, library = Path(directory)/"native.cpp", Path(directory)/"native.so"
         cpp.write_text(harness+helpers+process+extract_function(native, "void dat_sr_free_image(")+"\n#undef malloc\n#undef free\n"+probes+wrappers)
         subprocess.run([compiler, "-std=c++17", "-shared", "-fPIC", "-I", str(ROOT / "src"),
                         str(cpp), "-o", str(library)], check=True, timeout=30)
-        cls.lib = C.CDLL(str(library))
+        return library
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temp = tempfile.TemporaryDirectory(prefix="dat-tile-oracle-")
+        cls.addClassCleanup(cls.temp.cleanup)
+        cls.lib = C.CDLL(str(cls.build_fixture(cls.temp.name)))
         cls.lib.test_fail_alloc.argtypes = [C.c_int]
         cls.lib.test_context.argtypes = [C.c_int, C.c_int]
         cls.lib.test_context.restype = C.c_void_p

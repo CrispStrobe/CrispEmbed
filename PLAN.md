@@ -1,5 +1,27 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Rust DAT RGB buffers and output ownership — 14 November 2026
+
+Bounded fix `fix/rust-dat-buffer-safety-20261114` starts from `a4996aebe`.
+The unchanged safe Rust method passes a three-byte slice for an 18-byte image
+into the actual native/public process; a test-only length guard reproduces the
+entry without performing an out-of-bounds read. It now checks positive signed
+RGB dimensions and minimum slice length before FFI, validates native-provided
+output dimensions/count before slice creation, and holds a matching-free RAII
+owner before the native call, including nonnull error outputs.
+
+One focused actual-Rust control reuses the DAT fixture and real sys declarations.
+It covers 48 valid scale/prefix/tile arms, zero-entry invalid/short/overflow cases,
+malformed returned geometry, allocation/NULL/nonnull-error ownership, immutable
+inputs/owned output copies and unchanged legacy/opt-in blend results. Existing
+native/Python controls remain enabled. Output scale is never assumed to be 2x;
+Result/tile/default/gate/ABI behavior is retained. No learned-model quality or
+native exception qualification follows; aborting Rust allocation failure is not
+made recoverable. The focused control and 67 related/CI-selection controls pass,
+with all 255 workflow pins intact; independent review reran the Rust and 11
+shared DAT/Python controls successfully. No Pix2Struct ownership, dependency, release/default or consumer
+pin change belongs here.
+
 ## Python DAT RGB buffers and output lifetime — 14 November 2026
 
 Bounded fix `fix/python-dat-buffer-lifetime-20261114` starts from `419a42280`.
