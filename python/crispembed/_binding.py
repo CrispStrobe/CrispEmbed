@@ -4141,7 +4141,8 @@ class CrispInstructIR:
         """Restore an image with the specified task.
 
         Args:
-            pixels: uint8 numpy array, flattened or shaped (H, W, 3).
+            pixels: RGB array, flattened or shaped (H, W, 3). At least
+                    width*height*3 values; extras are ignored. Converted to uint8.
             width: source image width in pixels.
             height: source image height in pixels.
             task: restoration task ID (0-6).
@@ -4149,21 +4150,24 @@ class CrispInstructIR:
         Returns:
             output_ndarray uint8 shape (height, width, 3).
         """
-        flat = np.asarray(pixels, dtype=np.uint8).flatten()
+        flat = _restoration_rgb_pixels(pixels, width, height, allow_extra=True)
         px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
 
         out_ptr = ctypes.POINTER(ctypes.c_uint8)()
 
-        rc = self._lib.crispembed_instructir_process(
-            self._ctx, task, px_ptr, width, height,
-            ctypes.byref(out_ptr),
-        )
-        if rc != 0 or not out_ptr:
-            raise RuntimeError("InstructIR processing failed")
+        try:
+            rc = self._lib.crispembed_instructir_process(
+                self._ctx, task, px_ptr, width, height,
+                ctypes.byref(out_ptr),
+            )
+            if rc != 0 or not out_ptr:
+                raise RuntimeError("InstructIR processing failed")
 
-        buf = np.ctypeslib.as_array(out_ptr, shape=(height * width * 3,)).copy()
-        self._lib.crispembed_instructir_free_image(out_ptr)
-        return buf.reshape(height, width, 3)
+            buf = np.ctypeslib.as_array(out_ptr, shape=(height * width * 3,)).copy()
+            return buf.reshape(height, width, 3)
+        finally:
+            if out_ptr:
+                self._lib.crispembed_instructir_free_image(out_ptr)
 
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:

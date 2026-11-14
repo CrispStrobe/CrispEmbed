@@ -1,5 +1,26 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Python InstructIR RGB buffers — 14 November 2026
+
+Bounded fix `fix/python-instructir-buffers-20261114` starts from `553461332`.
+Independent guarded baseline probes through the actual public wrapper show a
+three-byte RGB input reaching an 18-byte native image call and one native image
+remaining live after a NumPy copy exception. InstructIR now reuses the checked
+positive-dimension/signed-RGB/minimum-buffer guard and frees returned output in
+`finally`. Oversized RGB prefixes, uint8 conversion and logical strides remain.
+
+The existing same-size restoration fixture now includes the actual InstructIR
+public wrappers, n_tasks query and tracked model-free lower sink. Seven controls
+cover input/error/copy/reshape cleanup, owned outputs, all seven task values and
+unchanged forwarding/native error behavior for invalid task IDs. Native lower
+errors free the wrapper allocation internally; Python only frees pointers actually
+returned to it. This qualifies the binding contract, not model quality, all padded
+feature arithmetic or native C++ allocation/exception behavior. All seven and
+77 related/CI-selection controls pass, as do all 255 workflow pins; independent
+review reran the seven focused controls successfully.
+No Pix2Struct ownership, native ABI, model, dependency, release/default or consumer
+pin change belongs here.
+
 ## Python Restormer/AdaIR RGB buffers — 14 November 2026
 
 Bounded fix `fix/python-restormer-adair-buffers-20261114` starts from `5309789f0`.

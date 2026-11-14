@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restormer/AdaIR RGB input and matching-free controls using public C wrappers."""
+"""Same-size restoration RGB input and matching-free controls using public C wrappers."""
 
 import ctypes as C
 from pathlib import Path
@@ -16,7 +16,8 @@ from test_cc_detect_ownership import extract_function
 from test_preprocess_bindings import BINDING
 
 ROOT = Path(__file__).resolve().parents[1]
-ENGINES = (("restormer", BINDING.CrispRestormer), ("adair", BINDING.CrispAdaIR))
+ENGINES = (("restormer", BINDING.CrispRestormer), ("adair", BINDING.CrispAdaIR),
+           ("instructir", BINDING.CrispInstructIR))
 
 
 class SameSizeRestorationTests(unittest.TestCase):
@@ -29,13 +30,14 @@ class SameSizeRestorationTests(unittest.TestCase):
         cls.addClassCleanup(cls.temp.cleanup)
         native = (ROOT / "src/crispembed.cpp").read_text()
         wrappers = []
-        for family in ("restormer", "adair"):
+        for family in ("restormer", "adair", "instructir"):
             for result, suffix in (("void *", "init"), ("void", "free"),
                                    ("int", "process"), ("void", "free_image")):
                 body = extract_function(native, f'extern "C" {result} crispembed_{family}_{suffix}(')
                 if suffix == "free_image":
                     body = body.replace("{", "{ ++image_free_calls;", 1)
                 wrappers.append(body)
+        wrappers.append(extract_function(native, 'extern "C" int crispembed_instructir_n_tasks('))
         harness = r'''
 #include "crispembed.h"
 #include <algorithm>
@@ -46,15 +48,20 @@ class SameSizeRestorationTests(unittest.TestCase):
 #include <vector>
 struct restormer_context {};
 struct adair_context {};
+struct instructir_context {};
 static restormer_context restormer;
 static adair_context adair;
+static instructir_context instructir;
 static std::set<void *> live;
 static std::vector<uint8_t> seen;
 static int mode=0, calls=0, allocations=0, frees=0, image_free_calls=0, context_frees=0;
-static int tile_seen=0, overlap_seen=0, input_length=0;
+static int tile_seen=0, overlap_seen=0, input_length=0, task_seen=0;
 static int ce_resolve_threads(int n) { return n; }
 static restormer_context * restormer_init(const char *,int) { return &restormer; }
 static adair_context * adair_init(const char *,int) { return &adair; }
+static instructir_context * instructir_init(const char *,int) { return &instructir; }
+static int instructir_get_n_tasks(const instructir_context *) { return 7; }
+static void instructir_free(instructir_context *) { ++context_frees; }
 static void restormer_free(restormer_context *) { ++context_frees; }
 static void adair_free(adair_context *) { ++context_frees; }
 static void * test_alloc(size_t count) {
@@ -88,6 +95,12 @@ static int adair_process(adair_context *,const uint8_t * p,int w,int h,uint8_t *
     for (int i=0;i<w*h*3;++i) out[i]=uint8_t(i);
     return 0;
 }
+static int instructir_process(instructir_context *,int task,const uint8_t * p,int w,int h,uint8_t * out) {
+    task_seen=task;
+    if (task<0 || task>=7) { ++calls; return -1; }
+    return adair_process(&adair,p,w,h,out);
+}
+extern "C" int test_task() { return task_seen; }
 extern "C" void test_reset(int length,int value) {
     if (!live.empty()) std::abort();
     calls=allocations=frees=image_free_calls=context_frees=0; seen.clear();
@@ -174,7 +187,7 @@ extern "C" int test_overlap() { return overlap_seen; }
         self.assertEqual(self.lib.test_image_frees(), 0)
 
     def test_defensive_nonnull_error_result_uses_matching_free(self):
-        # AdaIR currently frees lower-error output internally. Inject a changed
+        # AdaIR/InstructIR currently free lower-error output internally. Inject a changed
         # status after public success to also check defensive Python cleanup.
         for family, constructor in ENGINES:
             model = self.create(constructor)
@@ -206,6 +219,23 @@ extern "C" int test_overlap() { return overlap_seen; }
                             model.process(np.zeros(18, dtype=np.uint8), 3, 2)
                     self.assertEqual(self.lib.test_image_frees(), 1)
                     self.assertEqual(self.lib.test_live(), 0)
+
+    def test_instructir_tasks_and_native_invalid_task_behavior_are_preserved(self):
+        for task in range(7):
+            model = self.create(BINDING.CrispInstructIR)
+            self.assertEqual(model.n_tasks, 7)
+            out = model.process(np.zeros(18, dtype=np.uint8), 3, 2, task=task)
+            self.assertEqual(self.lib.test_task(), task)
+            np.testing.assert_array_equal(out.flatten(), np.arange(18, dtype=np.uint8))
+            self.assertEqual(self.lib.test_image_frees(), 1)
+        for task in (-1, 7):
+            model = self.create(BINDING.CrispInstructIR)
+            with self.assertRaisesRegex(RuntimeError, "InstructIR processing failed"):
+                model.process(np.zeros(18, dtype=np.uint8), 3, 2, task=task)
+            self.assertEqual(self.lib.test_task(), task)
+            self.assertEqual(self.lib.test_calls(), 1)
+            self.assertEqual(self.lib.test_image_frees(), 0)
+            self.assertEqual(self.lib.test_frees(), 1)
 
     def test_restormer_tile_values_are_forwarded_unchanged(self):
         for tile, overlap in ((0, 0), (-1, -2), (64, 8), (1, 1)):
