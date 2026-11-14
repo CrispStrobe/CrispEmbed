@@ -117,6 +117,9 @@ static Grid detect_grid(const uint8_t * gray, int w, int h) {
     Grid grid;
     using MorphBuffer = std::unique_ptr<uint32_t, decltype(&morph_free)>;
 
+    // A uniform page contains no discernible table lines or text.
+    if (std::all_of(gray + 1, gray + w * h, [gray](uint8_t value) { return value == gray[0]; })) return grid;
+
     // Binarize (foreground = dark pixels = 1).
     // For table images the foreground (lines/text) is dark and the background
     // is light. Compute Otsu then use the midpoint between the Otsu threshold
@@ -127,6 +130,8 @@ static Grid detect_grid(const uint8_t * gray, int w, int h) {
     int wpl = 0;
     MorphBuffer bits(morph_u8_to_1bit(gray, w, h, bin_thresh, &wpl), morph_free);
     if (!bits) return grid;
+    // Empty foreground has no table structure; whole-image valleys would invent cells.
+    if (std::none_of(bits.get(), bits.get() + wpl * h, [](uint32_t word) { return word != 0; })) return grid;
 
     // Try to detect ruled lines first
     // Horizontal lines: erode with wide horizontal SE (keeps only long h-runs)

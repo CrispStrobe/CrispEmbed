@@ -73,11 +73,17 @@ static std::vector<int> v_projection(const uint32_t * pointer,int w,int h,int wp
     return v_projection_impl(pointer,w,h,wpl);
 }
 extern "C" int test_catch_projection_failure() {
-    uint8_t pixels[4096]={};
+    uint8_t pixels[4096]={}; pixels[0]=255;
     try { detect_grid(pixels,64,64); } catch (const std::bad_alloc &) { return 1; }
     return 0;
 }
 '''
+    otsu = extract_function((ROOT / "src/core/cpu_ops.h").read_text(),
+                            "static inline uint8_t otsu_threshold(")
+    prelude = prelude.replace(
+        "static uint8_t otsu_threshold(const uint8_t *,int,int) { ++calls; return 127; }",
+        otsu.replace("otsu_threshold(", "scalar_otsu_threshold(", 1) +
+        "\nstatic uint8_t otsu_threshold(const uint8_t * p,int w,int h) { ++calls; return scalar_otsu_threshold(p,w*h); }")
     return prelude + morphology + '\n#undef calloc\n#undef free\n' + projections + suffix
 
 class TableParseMorphFailureTests(unittest.TestCase):
@@ -117,9 +123,9 @@ class TableParseMorphFailureTests(unittest.TestCase):
         self.assertEqual(self.lib.test_morph_live(), 0)
         self.assertEqual(self.lib.test_live(), 0)
 
-    def grid(self):
+    def grid(self, width=64, height=64):
         rows, cols = C.c_int(99), C.c_int(88)
-        status = self.lib.crispembed_table_parse_detect_grid(self.pixels, 64, 64, C.byref(rows), C.byref(cols))
+        status = self.lib.crispembed_table_parse_detect_grid(self.pixels, width, height, C.byref(rows), C.byref(cols))
         return status, rows.value, cols.value
 
     def test_every_actual_calloc_failure_returns_error_and_releases_successful_allocations(self):
@@ -161,6 +167,68 @@ class TableParseMorphFailureTests(unittest.TestCase):
                     self.lib.crispembed_table_parse_free_string(pointer)
                 self.assertEqual(self.lib.test_morph_live(), 0)
                 self.assertEqual(self.lib.test_morph_frees(), allocations)
+
+    def test_uniform_pages_return_no_grid_or_html(self):
+        for level in (0, 128, 190, 191, 192, 254, 255):
+            for width, height in ((1, 1), (1, 64), (64, 1), (6, 6), (64, 64)):
+                with self.subTest(level=level, width=width, height=height):
+                    for html in (False, True):
+                        self.reset()
+                        for i in range(4096):
+                            self.pixels[i] = level
+                        if html:
+                            self.assertFalse(self.lib.crispembed_table_parse_to_html(
+                                self.ctx, self.pixels, width, height))
+                        else:
+                            self.assertEqual(self.grid(width, height), (-1, 0, 0))
+                        self.assertEqual(self.lib.test_morph_allocations(), 0)
+                        self.assertEqual(self.lib.test_morph_frees(), 0)
+                        self.assertEqual(self.lib.test_morph_projections(), 0)
+
+    def test_nonuniform_empty_foreground_returns_no_grid_or_html(self):
+        for html in (False, True):
+            self.reset()
+            for i in range(4096):
+                self.pixels[i] = 254 + i % 2
+            if html:
+                self.assertFalse(self.lib.crispembed_table_parse_to_html(self.ctx, self.pixels, 64, 64))
+            else:
+                self.assertEqual(self.grid(), (-1, 0, 0))
+            self.assertEqual(self.lib.test_morph_allocations(), 1)
+            self.assertEqual(self.lib.test_morph_frees(), 1)
+            self.assertEqual(self.lib.test_morph_projections(), 0)
+
+    def test_faint_nonempty_ruled_and_borderless_content_is_preserved(self):
+        for level in (225, 250):
+            for pattern, size in ((0, 2), (1, 4)):
+                with self.subTest(level=level, pattern=pattern):
+                    self.reset(pattern=pattern)
+                    for i in range(4096):
+                        if self.pixels[i] == 0:
+                            self.pixels[i] = level
+                    self.assertEqual(self.grid(), (0, size, size))
+                    pointer = self.lib.crispembed_table_parse_to_html(self.ctx, self.pixels, 64, 64)
+                    self.assertTrue(pointer)
+                    try:
+                        self.assertEqual(C.string_at(pointer).count(b"cell &amp; &lt;"), size*size)
+                    finally:
+                        self.lib.crispembed_table_parse_free_string(pointer)
+
+    def test_single_faint_component_is_not_suppressed(self):
+        for blob in (False, True):
+            self.reset()
+            for i in range(4096):
+                self.pixels[i] = 255
+            for y in range(30, 34) if blob else (32,):
+                for x in range(30, 34) if blob else (32,):
+                    self.pixels[y*64+x] = 250
+            status, rows, cols = self.grid()
+            self.assertEqual(status, 0)
+            self.assertGreater(rows, 0)
+            self.assertGreater(cols, 0)
+            pointer = self.lib.crispembed_table_parse_to_html(self.ctx, self.pixels, 64, 64)
+            self.assertTrue(pointer)
+            self.lib.crispembed_table_parse_free_string(pointer)
 
     def test_projection_exception_releases_buffers_already_returned_to_table_code(self):
         # This checks table-owned buffers only, not exception safety inside morphology.

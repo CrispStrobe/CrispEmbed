@@ -1,5 +1,24 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Blank table images — 14 November 2026
+
+Bounded fix `fix/native-table-parser-blank-input-20261114` starts from `30583195e`.
+The actual detector creates a 2x2 grid/HTML from a white page because whole-image
+projection valleys become cell boundaries; uniform dark pages similarly produce
+an invented 1x1 table. It now rejects exactly uniform grayscale images before
+thresholding and empty packed foreground before morphology. Nonuniform content
+keeps the existing threshold/geometry rules; this is not a general table-quality gate.
+
+The existing tiny morphology fixture now uses the actual scalar Otsu body too.
+Seven focused controls cover uniform dark/light levels and tiny/normal axes,
+nonuniform empty foreground, faint single components and 225/250-level ruled/borderless content,
+actual calloc failures and scoped mask cleanup. Existing nonuniform all-foreground
+heuristics are retained. All seven and 65 related/CI-selection controls pass;
+independent review reran the seven controls successfully. All 255 workflow
+toolchain pins pass.
+No ABI, Pix2Struct ownership,
+model, dependency, release/default or consumer pin changes belong here.
+
 ## Table morphology allocation failures — 14 November 2026
 
 Bounded fix `fix/native-table-parser-morph-allocation-20261114` starts from `f233b3be5`.
