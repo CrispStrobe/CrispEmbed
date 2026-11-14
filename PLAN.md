@@ -1,5 +1,27 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Rust vision OCR raw buffers — 14 November 2026
+
+Bounded fix `fix/rust-vision-raw-buffers-20261114` starts from `fdb681547`.
+The safe Granite Vision/LightOnOCR recognition methods passed arbitrary slice
+pointers into native image loops. Guarded baseline probes confirm both pass a
+three-byte slice for an 18-byte image. A shared checked-count helper now rejects
+nonpositive dimensions, unsupported channels, signed index overflow and short
+slices before FFI. Native grayscale/RGB/RGBA and all oversized prefixes remain
+supported; only LightOn applies the additional grayscale-to-RGB count bound.
+
+The focused actual-Rust control reuses the Python lane's tiny public-C wrapper
+fixture with guarded lower sinks and the real sys declarations. It covers
+invalid/short/overflow no-FFI cases, pure scalar count boundaries without giant
+allocations, exact/excess prefixes, channel bytes, source immutability, prompts
+and unchanged borrowed text copying/UTF-8/NULL/empty results. This qualifies binding
+input and ABI behavior, not inference quality or all native resize intermediates.
+The focused control and 61 related/CI-selection controls pass, with all 255
+workflow pins intact. Independent review reran the Rust and five Python controls
+successfully.
+No Pix2Struct ownership, native ABI, model, dependency, release/default or consumer
+pin change belongs here.
+
 ## Python vision OCR raw buffers — 14 November 2026
 
 Bounded fix `fix/python-vision-raw-buffers-20261114` starts from `8a6a4639e`.

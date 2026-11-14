@@ -4632,6 +4632,23 @@ impl Drop for CrispPix2Struct {
 // Granite Vision OCR — LLaVA-Next (OCRBench 852)
 // ======================================================================
 
+fn vision_image_len(
+    width: i32,
+    height: i32,
+    channels: i32,
+    rgb_intermediate: bool,
+) -> Option<usize> {
+    if width <= 0 || height <= 0 || !matches!(channels, 1 | 3 | 4) {
+        return None;
+    }
+    let area = width.checked_mul(height)?;
+    let count = area.checked_mul(channels)?;
+    if rgb_intermediate {
+        area.checked_mul(3)?;
+    }
+    Some(count as usize)
+}
+
 /// Granite Vision OCR model (SigLIP ViT + Granite-3.1-2B decoder).
 ///
 /// Not `Sync` — do not share between threads. Each thread should hold its
@@ -4668,11 +4685,14 @@ impl CrispGraniteVision {
 
     /// Recognize text from raw pixel bytes.
     ///
-    /// - `pixels`   — row-major RGB(A) bytes.
+    /// - `pixels`   — row-major grayscale/RGB/RGBA bytes, at least width*height*channels.
+    ///                Extra bytes are ignored.
     /// - `width`    — image width in pixels.
     /// - `height`   — image height in pixels.
-    /// - `channels` — 3 (RGB) or 4 (RGBA).
+    /// - `channels` — 1 (grayscale), 3 (RGB) or 4 (RGBA).
     /// - `prompt`   — optional prompt; `None` for default OCR prompt.
+    ///
+    /// Invalid dimensions, unsupported channels, or short buffers return `None` before native code.
     pub fn recognize(
         &mut self,
         pixels: &[u8],
@@ -4681,6 +4701,9 @@ impl CrispGraniteVision {
         channels: i32,
         prompt: Option<&str>,
     ) -> Option<String> {
+        if pixels.len() < vision_image_len(width, height, channels, false)? {
+            return None;
+        }
         let prompt_c = prompt.map(|p| CString::new(p).ok()).flatten();
         let prompt_ptr = prompt_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
         let mut out_len: i32 = 0;
@@ -4747,10 +4770,13 @@ impl CrispLightOnOcr {
 
     /// Recognize text from raw pixel bytes.
     ///
-    /// - `pixels`   — row-major RGB(A) bytes.
+    /// - `pixels`   — row-major grayscale/RGB/RGBA bytes, at least width*height*channels.
+    ///                Extra bytes are ignored.
     /// - `width`    — image width in pixels.
     /// - `height`   — image height in pixels.
-    /// - `channels` — 3 (RGB) or 4 (RGBA).
+    /// - `channels` — 1 (grayscale), 3 (RGB) or 4 (RGBA).
+    ///
+    /// Invalid dimensions, unsupported channels, or short buffers return `None` before native code.
     pub fn recognize(
         &mut self,
         pixels: &[u8],
@@ -4758,6 +4784,9 @@ impl CrispLightOnOcr {
         height: i32,
         channels: i32,
     ) -> Option<String> {
+        if pixels.len() < vision_image_len(width, height, channels, true)? {
+            return None;
+        }
         let mut out_len: i32 = 0;
         let ptr = unsafe {
             crispembed_sys::crispembed_lightonocr_recognize(

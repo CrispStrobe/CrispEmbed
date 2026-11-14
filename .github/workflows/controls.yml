@@ -26,6 +26,7 @@ on:
       - 'tests/test_rust_grayscale_safety.py'
       - 'tests/test_pix2struct_raw_binding.py'
       - 'tests/test_vision_raw_bindings.py'
+      - 'tests/test_rust_vision_raw_safety.py'
       - 'tests/test_rust_pix2struct_input.py'
       - 'tests/test_rust_scan_cleanup_safety.py'
       - 'tests/test_scan_cleanup_binding.py'
@@ -196,6 +197,7 @@ on:
       - 'tests/test_rust_grayscale_safety.py'
       - 'tests/test_pix2struct_raw_binding.py'
       - 'tests/test_vision_raw_bindings.py'
+      - 'tests/test_rust_vision_raw_safety.py'
       - 'tests/test_rust_pix2struct_input.py'
       - 'tests/test_rust_scan_cleanup_safety.py'
       - 'tests/test_scan_cleanup_binding.py'
@@ -455,6 +457,10 @@ jobs:
       - name: Python Granite and LightOn raw buffer controls
         if: ${{ !cancelled() }}
         run: python tests/test_vision_raw_bindings.py -v
+
+      - name: Rust Granite and LightOn raw buffer controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_rust_vision_raw_safety.py -v
 
       - name: Rust Pix2Struct RGB and explicit RGBA input controls
         if: ${{ !cancelled() }}

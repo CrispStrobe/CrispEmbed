@@ -20,13 +20,11 @@ FAMILIES = (("granite_vision", BINDING.CrispGraniteVision),
 
 
 class VisionRawBindingTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+    @staticmethod
+    def build_fixture(directory):
         compiler = shutil.which("c++") or shutil.which("g++")
         if not compiler:
             raise unittest.SkipTest("C++ compiler unavailable")
-        cls.temp = tempfile.TemporaryDirectory(prefix="vision-raw-interface-")
-        cls.addClassCleanup(cls.temp.cleanup)
         source = (ROOT / "src/crispembed.cpp").read_text()
         wrappers = "\n".join(extract_function(source, prefix) for prefix in (
             'extern "C" crispembed_granite_vision_context * crispembed_granite_vision_init(',
@@ -38,12 +36,13 @@ class VisionRawBindingTests(unittest.TestCase):
         harness = r'''
 #include "crispembed.h"
 #include <string>
+#include <climits>
 #include <vector>
 struct granite_vision_context {};
 struct lightonocr_context {};
 static granite_vision_context granite;
 static lightonocr_context lighton;
-static int calls=0, channels_seen=0, width_seen=0, height_seen=0, mode=0;
+static int calls=0, channels_seen=0, width_seen=0, height_seen=0, mode=0, input_length=-1;
 static std::vector<uint8_t> seen;
 static std::string prompt_seen;
 static int ce_resolve_threads(int n) { return n; }
@@ -53,6 +52,10 @@ static void granite_vision_free(granite_vision_context *) {}
 static void lightonocr_free(lightonocr_context *) {}
 static const char * recognize(const uint8_t * p,int w,int h,int ch,const char * prompt,int * out_len) {
     ++calls; width_seen=w; height_seen=h; channels_seen=ch;
+    if (out_len) *out_len=0;
+    // Guard test process against a future wrapper regression before reading pixels.
+    if (!p || w<=0 || h<=0 || (ch!=1 && ch!=3 && ch!=4) || w>INT_MAX/h ||
+        w*h>INT_MAX/ch || (input_length>=0 && input_length<w*h*ch)) return nullptr;
     seen.assign(p,p+w*h*ch); prompt_seen=prompt?prompt:"";
     const char * text=mode==1?nullptr:mode==2?"":mode==3?"\xff":"\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e \xe2\x82\xac";
     if (out_len) *out_len=text?int(std::char_traits<char>::length(text)):0;
@@ -65,7 +68,8 @@ static const char * granite_vision_recognize(granite_vision_context *,const uint
 static const char * lightonocr_recognize_raw(lightonocr_context *,const uint8_t * p,int w,int h,int ch,int * out_len) {
     return recognize(p,w,h,ch,nullptr,out_len);
 }
-extern "C" void test_reset(int value) { calls=0; mode=value; seen.clear(); prompt_seen.clear(); }
+extern "C" void test_reset(int value) { calls=0; mode=value; input_length=-1; seen.clear(); prompt_seen.clear(); }
+extern "C" void test_input_length(int length) { input_length=length; }
 extern "C" int test_calls() { return calls; }
 extern "C" int test_width() { return width_seen; }
 extern "C" int test_height() { return height_seen; }
@@ -74,12 +78,18 @@ extern "C" int test_count() { return int(seen.size()); }
 extern "C" int test_byte(int at) { return seen.at(at); }
 extern "C" const char * test_prompt() { return prompt_seen.c_str(); }
 '''
-        cpp = Path(cls.temp.name) / "native.cpp"
-        library = Path(cls.temp.name) / "native.so"
+        cpp = Path(directory) / "native.cpp"
+        library = Path(directory) / "native.so"
         cpp.write_text(harness + wrappers)
         subprocess.run([compiler, "-std=c++17", "-shared", "-fPIC", "-I", str(ROOT / "src"),
                         str(cpp), "-o", str(library)], check=True, timeout=30)
-        cls.lib = C.CDLL(str(library))
+        return library
+
+    @classmethod
+    def setUpClass(cls):
+        cls.temp = tempfile.TemporaryDirectory(prefix="vision-raw-interface-")
+        cls.addClassCleanup(cls.temp.cleanup)
+        cls.lib = C.CDLL(str(cls.build_fixture(cls.temp.name)))
         cls.lib.test_reset.argtypes = [C.c_int]
         cls.lib.test_byte.argtypes = [C.c_int]
         cls.lib.test_prompt.restype = C.c_char_p
