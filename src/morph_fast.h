@@ -43,6 +43,8 @@ uint32_t * morph_u8_to_1bit(const uint8_t * gray, int w, int h, uint8_t threshol
 uint32_t * morph_erode_brick(const uint32_t * src, int w, int h, int wpl, int hsize, int vsize);
 
 /// Binary dilation with brick SE. Returns new allocated image.
+/// Returns NULL on mask allocation failure; with C++ exceptions enabled, also
+/// returns NULL on scratch std::bad_alloc. Other exceptions are not translated.
 uint32_t * morph_dilate_brick(const uint32_t * src, int w, int h, int wpl, int hsize, int vsize);
 
 /// Morphological opening (erode then dilate). Returns new allocated image.

@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
+#include <new>
 #include <vector>
 
 // ---------------------------------------------------------------------------
@@ -265,9 +266,20 @@ uint32_t * morph_dilate_brick(const uint32_t * src, int w, int h, int wpl, int h
         return nullptr;
     }
 
-    // Separable: horiz then vert
-    dilate_horiz(src, tmp, w, h, wpl, hsize);
-    dilate_vert(tmp, dst, w, h, wpl, vsize);
+    // Large horizontal kernels allocate vector scratch storage after the masks.
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+    try {
+#endif
+        // Separable: horiz then vert
+        dilate_horiz(src, tmp, w, h, wpl, hsize);
+        dilate_vert(tmp, dst, w, h, wpl, vsize);
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+    } catch (const std::bad_alloc &) {
+        free(tmp);
+        free(dst);
+        return nullptr;
+    }
+#endif
 
     free(tmp);
     return dst;

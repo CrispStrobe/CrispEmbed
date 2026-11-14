@@ -1,5 +1,26 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Morphology scratch allocation failures — 14 November 2026
+
+Bounded fix `fix/morph-scratch-allocation-failure-20261114` starts from `fd1873731`.
+The three large-horizontal-kernel scratch vectors can throw after raw morphology
+masks are allocated. Guarded baseline probes show escaped `std::bad_alloc` and
+two/three leaked masks through dilation/erosion/opening/closing. Dilation now
+releases its two masks and returns NULL on that exception, allowing existing
+caller cleanup and table no-grid status handling to run.
+
+The existing tiny actual-morphology fixture injects each scratch vector allocator
+boundary: 18 direct-operation and six table grid/HTML failure arms, plus prior
+calloc failures, unchanged source bytes, small-kernel success and geometry checks.
+This only translates scratch `std::bad_alloc`; it does not contain every C++
+exception or qualify other table vector allocations. Compile-only controls cover
+normal and `-fno-exceptions` syntax. All 11 focused and 65 related/CI-selection
+controls pass, with all 255 workflow pins intact; independent source/test review
+found no blocking issues. Exception-disabled builds retain their prior
+vector OOM behavior, and browser/runtime OOM recovery is not qualified.
+No ABI, Pix2Struct ownership, model, dependency, release/default or consumer pin
+change belongs here.
+
 ## Blank table images — 14 November 2026
 
 Bounded fix `fix/native-table-parser-blank-input-20261114` starts from `30583195e`.

@@ -3,6 +3,8 @@
 
 import ctypes as C
 from pathlib import Path
+import shutil
+import subprocess
 import tempfile
 import unittest
 
@@ -18,6 +20,9 @@ def detector_support():
                             for prefix, name in (("static std::vector<int> h_projection(", "h_projection"),
                                                  ("static std::vector<int> v_projection(", "v_projection")))
     morphology = (ROOT / "src/morph_fast.cpp").read_text()
+    # Keep the actual vector bodies, injecting failures only at their allocator boundary.
+    morphology = morphology.replace("std::vector<uint32_t>", "std::vector<uint32_t, ScratchAllocator<uint32_t>>")
+    morphology = morphology.replace("std::vector<uint32_t *>", "std::vector<uint32_t *, ScratchAllocator<uint32_t *>>")
     dilation = extract_function(morphology, "uint32_t * morph_dilate_brick(")
     morphology = morphology.replace(dilation, dilation.replace(
         "{", "{\n    if (hsize==5 && vsize==3) live_at_dilate=int(morph_live.size());", 1), 1)
@@ -28,12 +33,36 @@ def detector_support():
 #include <set>
 static std::set<uint32_t *> morph_live;
 static int allocation_call=0, fail_allocation=0, mask_frees=0;
+static int scratch_attempts=0, scratch_fail=0, scratch_live=0, escaped_bad_alloc=0, scratch_kernel=31, source_changed=0;
+template<class T> struct ScratchAllocator {
+    using value_type=T;
+    ScratchAllocator()=default;
+    template<class U> ScratchAllocator(const ScratchAllocator<U> &) {}
+    T * allocate(size_t count) {
+        if (++scratch_attempts==scratch_fail) throw std::bad_alloc();
+        T * pointer=std::allocator<T>{}.allocate(count);
+        ++scratch_live; return pointer;
+    }
+    void deallocate(T * pointer,size_t count) {
+        --scratch_live; std::allocator<T>{}.deallocate(pointer,count);
+    }
+};
+template<class T,class U> bool operator==(const ScratchAllocator<T> &,const ScratchAllocator<U> &) { return true; }
+template<class T,class U> bool operator!=(const ScratchAllocator<T> &,const ScratchAllocator<U> &) { return false; }
+extern "C" void test_scratch_kernel(int size) { scratch_kernel=size; }
+extern "C" int test_scratch_source_changed() { return source_changed; }
+extern "C" void test_scratch_fail(int at) { scratch_fail=at; }
+extern "C" int test_scratch_attempts() { return scratch_attempts; }
+extern "C" int test_scratch_live() { return scratch_live; }
+extern "C" int test_scratch_escaped() { return escaped_bad_alloc; }
 static int projection_calls=0, null_projections=0, peak_masks=0, live_at_dilate=-1, throw_projection=0;
 static Grid detect_grid(const uint8_t *,int,int);
 namespace core_env { static bool on(const char *) { return false; } }
 static uint8_t otsu_threshold(const uint8_t *,int,int) { ++calls; return 127; }
 extern "C" void test_morph_reset(int fail,int,int throw_at_projection) {
     if (!morph_live.empty()) std::abort();
+    if (scratch_live) std::abort();
+    scratch_attempts=scratch_fail=escaped_bad_alloc=source_changed=0; scratch_kernel=31;
     allocation_call=mask_frees=projection_calls=null_projections=peak_masks=0;
     fail_allocation=fail; live_at_dilate=-1; throw_projection=throw_at_projection;
 }
@@ -61,6 +90,20 @@ static void test_mask_free(void * pointer) {
 #define free test_mask_free
 '''
     suffix = r'''
+extern "C" uint32_t * test_scratch_operation(int operation) {
+    uint32_t bits[128]; std::fill(bits,bits+128,0xff00ff00u);
+    uint32_t * result=nullptr;
+    try {
+        switch (operation) {
+        case 0: result=morph_dilate_brick(bits,64,64,2,scratch_kernel,3); break;
+        case 1: result=morph_erode_brick(bits,64,64,2,scratch_kernel,3); break;
+        case 2: result=morph_open_brick(bits,64,64,2,scratch_kernel,3); break;
+        default: result=morph_close_brick(bits,64,64,2,scratch_kernel,3); break;
+        }
+    } catch (const std::bad_alloc &) { escaped_bad_alloc=1; }
+    source_changed=!std::all_of(bits,bits+128,[](uint32_t word) { return word==0xff00ff00u; });
+    return result;
+}
 static std::vector<int> h_projection(const uint32_t * pointer,int w,int h,int wpl) {
     ++projection_calls;
     if (throw_projection) throw std::bad_alloc();
@@ -93,6 +136,11 @@ class TableParseMorphFailureTests(unittest.TestCase):
         cls.addClassCleanup(cls.temp.cleanup)
         cls.lib = C.CDLL(str(table_fixture.TableParseBindingTests.build_fixture(
             cls.temp.name, actual_html=True, detector_support=detector_support())))
+        cls.lib.test_scratch_operation.argtypes = [C.c_int]
+        cls.lib.test_scratch_operation.restype = C.c_void_p
+        cls.lib.test_scratch_fail.argtypes = [C.c_int]
+        cls.lib.test_scratch_kernel.argtypes = [C.c_int]
+        cls.lib.morph_free.argtypes = [C.c_void_p]
         cls.lib.test_reset.argtypes = [C.c_int, C.c_int]
         cls.lib.test_morph_reset.argtypes = [C.c_int, C.c_int, C.c_int]
         cls.lib.crispembed_table_parse_init.argtypes = [C.c_char_p, C.c_int]
@@ -121,6 +169,7 @@ class TableParseMorphFailureTests(unittest.TestCase):
 
     def tearDown(self):
         self.assertEqual(self.lib.test_morph_live(), 0)
+        self.assertEqual(self.lib.test_scratch_live(), 0)
         self.assertEqual(self.lib.test_live(), 0)
 
     def grid(self, width=64, height=64):
@@ -229,6 +278,61 @@ class TableParseMorphFailureTests(unittest.TestCase):
             pointer = self.lib.crispembed_table_parse_to_html(self.ctx, self.pixels, 64, 64)
             self.assertTrue(pointer)
             self.lib.crispembed_table_parse_free_string(pointer)
+
+    def test_morphology_compiles_with_exceptions_enabled_or_disabled(self):
+        # Compile compatibility only: disabled exceptions cannot recover vector OOM.
+        compiler = shutil.which("c++") or shutil.which("g++")
+        if not compiler:
+            self.skipTest("C++ compiler unavailable")
+        for flags in ([], ["-fno-exceptions"]):
+            with self.subTest(flags=flags):
+                subprocess.run([compiler, "-std=c++17", "-fsyntax-only", *flags,
+                                str(ROOT / "src/morph_fast.cpp")], check=True, timeout=30)
+
+    def test_each_vector_scratch_failure_returns_null_through_all_morph_operations(self):
+        for operation in range(4):
+            self.reset()
+            pointer = self.lib.test_scratch_operation(operation)
+            self.assertTrue(pointer)
+            self.lib.morph_free(pointer)
+            self.assertEqual(self.lib.test_scratch_source_changed(), 0)
+            attempts = self.lib.test_scratch_attempts()
+            self.assertGreater(attempts, 0)
+            for failure in range(1, attempts+1):
+                with self.subTest(operation=operation, scratch_allocation=failure):
+                    self.reset()
+                    self.lib.test_scratch_fail(failure)
+                    self.assertFalse(self.lib.test_scratch_operation(operation))
+                    self.assertEqual(self.lib.test_scratch_escaped(), 0)
+                    self.assertEqual(self.lib.test_scratch_source_changed(), 0)
+                    self.assertEqual(self.lib.test_scratch_live(), 0)
+                    self.assertEqual(self.lib.test_morph_live(), 0)
+                    self.assertEqual(self.lib.test_morph_frees(), self.lib.test_morph_allocations())
+
+    def test_small_kernels_keep_no_vector_scratch_path(self):
+        for operation in range(4):
+            self.reset()
+            self.lib.test_scratch_kernel(5)
+            self.lib.test_scratch_fail(1)
+            pointer = self.lib.test_scratch_operation(operation)
+            self.assertTrue(pointer)
+            self.lib.morph_free(pointer)
+            self.assertEqual(self.lib.test_scratch_attempts(), 0)
+            self.assertEqual(self.lib.test_scratch_source_changed(), 0)
+            self.assertEqual(self.lib.test_scratch_escaped(), 0)
+            self.assertEqual(self.lib.test_morph_frees(), self.lib.test_morph_allocations())
+
+    def test_vector_scratch_failure_reaches_table_status_without_escaping(self):
+        for failure in range(1, 4):
+            for html in (False, True):
+                self.reset()
+                self.lib.test_scratch_fail(failure)
+                if html:
+                    self.assertFalse(self.lib.crispembed_table_parse_to_html(self.ctx, self.pixels, 64, 64))
+                else:
+                    self.assertEqual(self.grid(), (-1, 0, 0))
+                self.assertEqual(self.lib.test_scratch_live(), 0)
+                self.assertEqual(self.lib.test_morph_live(), 0)
 
     def test_projection_exception_releases_buffers_already_returned_to_table_code(self):
         # This checks table-owned buffers only, not exception safety inside morphology.
