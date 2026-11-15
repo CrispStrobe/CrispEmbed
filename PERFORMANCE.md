@@ -1,5 +1,13 @@
 ## Worksheet cleanup and binary PDF (15 November 2026)
 
+The subsequent ruled-photo mode 2 corrects position-dependent line tilt with a
+single projective warp. Independent camera/shear-grid controls measure output
+horizontal/vertical 90th-percentile angles of 0/0, 0/0 and 0.147/0 degrees;
+three negative/no-op controls retain their original frame. The synthetic detector
+is OpenCV; production uses only native C++ and analysis bounded to 1200 pixels.
+This is a ruled-photo geometry screen, not OCR or arbitrary curved-page
+qualification. Ordinary consensus mode 1 and the previous parameter ABI remain.
+
 Focused candidate components at `6ffeaa41d`, linked to unchanged released 0.17.19
 components, replay six private photographic worksheets. Legacy opt-outs reproduce
 every released prepared pixel. Matched Otsu cleanup reduces the PDF from 688,307

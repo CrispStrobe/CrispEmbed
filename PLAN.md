@@ -15,6 +15,15 @@ prepared pixels. Hosted Linux/macOS full builds remain pending. No learned model
 bounded-deskew default promotion or app runtime repin is included. CrispSorter
 has a coordinated model-free preparation preset using its existing native API.
 
+The follow-up straightness review adds explicitly requested ruled-photo geometry
+(`deskew_consensus=2`), with bounded line-family detection, robust fitting,
+edge-pixel refinement and full-frame projective sampling. Mode 1 stays unchanged;
+older libraries treat mode 2 as ordinary consensus. Three independently generated
+camera/shear grids pass the strict 0.35-degree horizontal/vertical line check;
+aligned, blank and unsupported horizontal-only pages are unchanged. Private page
+replay is perspective-corrected and every 1-bit PDF raster matches its prepared
+image. This corrects planar perspective, not arbitrary curved-paper deformation.
+
 ## Rust DAT RGB buffers and output ownership — 14 November 2026
 
 Bounded fix `fix/rust-dat-buffer-safety-20261114` starts from `a4996aebe`.

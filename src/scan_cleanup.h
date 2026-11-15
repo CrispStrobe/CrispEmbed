@@ -42,7 +42,10 @@ typedef struct {
     int blackfilter;          // 1 = clear large SOLID dark regions (scanner-edge
                               //     shadow, photocopy edge, blobs) (default: 1)
     float blackfilter_thresh; // dark-pixel threshold 0..1, default 0.20
-    int deskew_consensus;     // 1 = cross-check the Hough angle against the
+    int deskew_consensus;     // 2 = confidence-gated ruled-photo rectification,
+                              //     falling back to consensus rotation. Older
+                              //     libraries treat 2 as ordinary consensus.
+                              // 1 = cross-check the Hough angle against the
                               //     differential-square-sum detector and only
                               //     rotate when both agree (default: 1)
 } scan_cleanup_params;
@@ -88,6 +91,12 @@ float scan_cleanup_detect_angle_consensus(const float * gray, int w, int h, floa
 // Explicit bounded RGB/gray analysis, independent of process-global gates.
 // Same detected-skew sign and zero/unknown semantics as the consensus detector.
 float scan_cleanup_detect_angle_rgb_bounded(const uint8_t * pixels, int w, int h, int channels, float max_angle_deg);
+
+// Rectify a photographed ruled page from two independently measured line
+// families. Returns 1 with an allocated float image, 0 when evidence is too
+// weak (caller should use ordinary deskew), or -1 for invalid input.
+// Analysis is bounded; sampling retains the full resolution and entire frame.
+int scan_cleanup_rectify_rules(const float * gray, int w, int h, float ** out, int * out_w, int * out_h);
 
 // Detect skew on a decoded color/gray uint8 image (channels 1, 3 or 4) via the
 // consensus detector and, when skewed, rotate to correct (bilinear, white

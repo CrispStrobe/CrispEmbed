@@ -48,6 +48,11 @@ jobs:
           ./build-worksheet/test-ocr-render | tee build-worksheet/artifacts/render.txt
           ./build-worksheet/test-ocr-photo self | tee build-worksheet/artifacts/photo.json
           python tests/test_env_vars_documented.py
+      - name: Independent camera homography and no-warp controls
+        run: |
+          python -m pip install 'numpy==2.2.6' 'opencv-python-headless==4.12.0.88'
+          if [ "${{ runner.os }}" = "macOS" ]; then library=build-worksheet/libcrispembed.dylib; else library=build-worksheet/libcrispembed.so; fi
+          python tests/test_scan_rule_geometry.py --library "$library" --artifacts build-worksheet/artifacts/geometry
       - name: Retain exact native libraries for local private-image replay
         if: success()
         run: |

@@ -12,6 +12,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <array>
 #include <cstring>
 #include <algorithm>
 #include <deque>
@@ -190,6 +191,248 @@ static std::vector<float> sobel_edges(const float * gray, int w, int h) {
         }
     }
     return edges;
+}
+
+namespace {
+struct ruled_line {
+    double m, b, weight;
+};
+struct ruled_family {
+    double a = 0, k = 0;
+    int count = 0;
+    bool projective = false;
+};
+
+// Long directional edges, rather than the single strongest whole-page angle.
+// Two observations at opposite ends of a perspective page need different tilts.
+static std::vector<ruled_line> ruled_lines(const std::vector<float> & gray, int w, int h, double minimum) {
+    constexpr int angles = 201;
+    const int diag = int(std::hypot(w, h)) + 2, bins = 2 * diag;
+    std::array<double, angles> sine{}, cosine{};
+    for (int a = 0; a < angles; ++a) {
+        double rad = (a * .1 - 10) * M_PI / 180;
+        sine[a] = std::sin(rad);
+        cosine[a] = std::cos(rad);
+    }
+    std::vector<int> votes(size_t(angles) * bins, 0);
+    std::vector<uint8_t> edge(gray.size(), 0);
+    for (int y = 3; y < h - 3; ++y)
+        for (int x = 3; x < w - 3; ++x) {
+            const double gy = gray[(y + 1) * w + x] - gray[(y - 1) * w + x];
+            const double gx = gray[y * w + x + 1] - gray[y * w + x - 1];
+            if (!std::isfinite(gy) || !std::isfinite(gx) || std::abs(gy) < .08 || std::abs(gy) < std::abs(gx) * 1.5)
+                continue;
+            edge[size_t(y) * w + x] = 1;
+            for (int a = 0; a < angles; ++a) {
+                const int rho = int(std::lround(-x * sine[a] + y * cosine[a])) + diag;
+                if (rho >= 0 && rho < bins) ++votes[size_t(a) * bins + rho];
+            }
+        }
+    struct peak {
+        int a, rho, score;
+    };
+    std::vector<peak> peaks;
+    const int threshold = std::max(25, int(w * minimum));
+    for (int a = 1; a < angles - 1; ++a)
+        for (int rho = 1; rho < bins - 1; ++rho) {
+            const int score = votes[size_t(a) * bins + rho];
+            if (score < threshold) continue;
+            bool maximum = true;
+            for (int da = -1; da <= 1; ++da)
+                for (int dr = -1; dr <= 1; ++dr)
+                    if (votes[size_t(a + da) * bins + rho + dr] > score) maximum = false;
+            if (maximum) peaks.push_back({ a, rho, score });
+        }
+    std::sort(peaks.begin(), peaks.end(), [](const peak & a, const peak & b) {
+        if (a.score != b.score) return a.score > b.score;
+        if (a.a != b.a) return a.a < b.a;
+        return a.rho < b.rho;
+    });
+    std::vector<ruled_line> lines;
+    for (const auto & peak : peaks) {
+        const double slope = sine[peak.a] / cosine[peak.a];
+        const double m = slope * w / h;
+        const double b = ((peak.rho - diag) / cosine[peak.a] + slope * (w - 1) * .5 - (h - 1) * .5) / h;
+        if (b < -.55 || b > .55) continue;
+        bool duplicate = false;
+        for (const auto & line : lines)
+            if (std::abs(line.b - b) < .004 && std::abs(line.m - m) < .004) duplicate = true;
+        if (!duplicate) lines.push_back({ m, b, double(peak.score) / w });
+        if (lines.size() >= 160) break;
+    }
+    // Hough bins seed a line; they must not quantize the final geometry. Thick
+    // rules can have equally high bins on either side of the correct angle.
+    // Refit the actual directional edge pixels around each seed, then merge
+    // duplicate observations of the same physical rule.
+    std::vector<ruled_line> refined;
+    for (auto line : lines) {
+        double slope = line.m * h / w;
+        double intercept = line.b * h - slope * (w - 1) * .5 + (h - 1) * .5;
+        for (int iteration = 0; iteration < 3; ++iteration) {
+            const double band = iteration == 0 ? 4.0 : 2.5;
+            double count = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
+            for (int x = 3; x < w - 3; ++x) {
+                const double prediction = slope * x + intercept;
+                const int lo = std::max(3, int(std::ceil(prediction - band)));
+                const int hi = std::min(h - 4, int(std::floor(prediction + band)));
+                for (int y = lo; y <= hi; ++y)
+                    if (edge[size_t(y) * w + x]) {
+                        count += 1;
+                        sx += x;
+                        sy += y;
+                        sxx += double(x) * x;
+                        sxy += double(x) * y;
+                    }
+            }
+            const double denominator = count * sxx - sx * sx;
+            if (count < threshold || denominator < 1e-9) break;
+            slope = (count * sxy - sx * sy) / denominator;
+            intercept = (sy - slope * sx) / count;
+        }
+        line.m = slope * w / h;
+        line.b = (intercept + slope * (w - 1) * .5 - (h - 1) * .5) / h;
+        bool duplicate = false;
+        for (const auto & other : refined)
+            if (std::abs(line.b - other.b) < .003 && std::abs(line.m - other.m) < .002) duplicate = true;
+        if (!duplicate) refined.push_back(line);
+    }
+    return refined;
+}
+
+static ruled_family fit_rules(const std::vector<ruled_line> & lines) {
+    ruled_family result;
+    if (lines.empty()) return result;
+    std::vector<double> slopes;
+    for (const auto & line : lines) slopes.push_back(line.m);
+    std::sort(slopes.begin(), slopes.end());
+    result.a = slopes[slopes.size() / 2];
+    result.count = int(lines.size());
+    const auto fallback = result;
+    double best_score = -1;
+    std::vector<bool> mask;
+    for (size_t i = 0; i < lines.size(); ++i)
+        for (size_t j = 0; j < i; ++j) {
+            if (std::abs(lines[i].b - lines[j].b) < .25) continue;
+            const double k = (lines[i].m - lines[j].m) / (lines[i].b - lines[j].b);
+            const double a = lines[i].m - k * lines[i].b;
+            if (std::abs(k) > .25) continue;
+            double score = 0, lo = 1, hi = -1;
+            int count = 0;
+            std::vector<bool> candidate(lines.size());
+            for (size_t p = 0; p < lines.size(); ++p) {
+                candidate[p] = std::abs(lines[p].m - a - k * lines[p].b) < .0025;
+                if (candidate[p]) {
+                    score += std::min(.8, lines[p].weight);
+                    ++count;
+                    lo = std::min(lo, lines[p].b);
+                    hi = std::max(hi, lines[p].b);
+                }
+            }
+            if (count >= 4 && hi - lo >= .35 && score > best_score) {
+                best_score = score;
+                mask = std::move(candidate);
+            }
+        }
+    if (mask.empty()) return result;
+    for (int iteration = 0; iteration < 3; ++iteration) {
+        double sw = 0, sb = 0, sm = 0, sbb = 0, sbm = 0;
+        for (size_t i = 0; i < lines.size(); ++i)
+            if (mask[i]) {
+                const double weight = std::min(.8, lines[i].weight), b = lines[i].b, m = lines[i].m;
+                sw += weight;
+                sb += weight * b;
+                sm += weight * m;
+                sbb += weight * b * b;
+                sbm += weight * b * m;
+            }
+        const double denominator = sw * sbb - sb * sb;
+        if (denominator < 1e-9) return fallback;
+        result.k = (sw * sbm - sb * sm) / denominator;
+        result.a = (sm - result.k * sb) / sw;
+        result.count = 0;
+        for (size_t i = 0; i < lines.size(); ++i) {
+            mask[i] = std::abs(lines[i].m - result.a - result.k * lines[i].b) < .0025;
+            result.count += mask[i];
+        }
+    }
+    double lo = 1, hi = -1;
+    for (size_t i = 0; i < lines.size(); ++i)
+        if (mask[i]) {
+            lo = std::min(lo, lines[i].b);
+            hi = std::max(hi, lines[i].b);
+        }
+    if (result.count < 4 || hi - lo < .35 || std::abs(result.k) > .25) return fallback;
+    result.projective = true;
+    return result;
+}
+} // namespace
+
+int scan_cleanup_rectify_rules(const float * gray, int w, int h, float ** out, int * out_w, int * out_h) {
+    if (out) *out = nullptr;
+    if (out_w) *out_w = w;
+    if (out_h) *out_h = h;
+    if (!out || !out_w || !out_h || !valid_skew_input(gray, w, h, 15)) return -1;
+    int aw = w, ah = h;
+    std::vector<float> analysis = std::max(w, h) > 1200 ? skew_analysis_image(gray, w, h, &aw, &ah)
+                                                        : std::vector<float>(gray, gray + size_t(w) * h);
+    auto horizontal_lines = ruled_lines(analysis, aw, ah, .20);
+    std::vector<float> transpose(analysis.size());
+    for (int y = 0; y < ah; ++y)
+        for (int x = 0; x < aw; ++x) transpose[size_t(x) * ah + y] = analysis[size_t(y) * aw + x];
+    auto vertical_lines = ruled_lines(transpose, ah, aw, .075);
+    auto horizontal = fit_rules(horizontal_lines), vertical = fit_rules(vertical_lines);
+    if (!horizontal.projective || horizontal.count < 6 || vertical_lines.size() < 3) return 0;
+    const double m = horizontal.a, k = horizontal.k, n = vertical.a, j = vertical.projective ? vertical.k : 0;
+    const double determinant = 1 - m * n;
+    if (determinant < .8) return 0;
+    const double p = (k - m * j) / determinant, q = (j - k * n) / determinant;
+    if (std::abs(p) + std::abs(q) > .4 || std::abs(m * h / w) > .18 || std::abs(n * w / h) > .18) return 0;
+    const double horizontal_tilt = std::max(std::abs(m - k * .5), std::abs(m + k * .5)) * h / w;
+    const double vertical_tilt = std::max(std::abs(n - j * .5), std::abs(n + j * .5)) * w / h;
+    if (std::max(horizontal_tilt, vertical_tilt) < std::tan(.08 * M_PI / 180)) return 0;
+    const double scale = 1 / std::sqrt(determinant), cx = (w - 1) * .5, cy = (h - 1) * .5;
+    // H sends the fitted horizontal/vertical vanishing points to infinity and
+    // aligns both axes. Its inverse is used once, at full input resolution.
+    const double a = scale, b = -n * scale, d = -m * scale, e = scale;
+    const double det = a * e - b * d;
+    const double inv[9] = {
+        e / det, -b / det, 0, -d / det, a / det, 0, (d * q - e * p) / det, (b * p - a * q) / det, 1
+    };
+    double min_x = 1e9, min_y = 1e9, max_x = -1e9, max_y = -1e9;
+    for (int y : { 0, h - 1 })
+        for (int x : { 0, w - 1 }) {
+            const double u = (x - cx) / w, v = (y - cy) / h, denominator = 1 + p * u + q * v;
+            const double ox = w * (a * u + b * v) / denominator + cx;
+            const double oy = h * (d * u + e * v) / denominator + cy;
+            min_x = std::min(min_x, ox);
+            max_x = std::max(max_x, ox);
+            min_y = std::min(min_y, oy);
+            max_y = std::max(max_y, oy);
+        }
+    const int ow = int(std::ceil(max_x - min_x + 1)), oh = int(std::ceil(max_y - min_y + 1));
+    if (ow < 3 || oh < 3 || ow > 32768 || oh > 32768 || size_t(ow) * oh > 64u * 1024u * 1024u) return 0;
+    auto * dst = static_cast<float *>(std::malloc(size_t(ow) * oh * sizeof(float)));
+    if (!dst) return -1;
+    std::fill(dst, dst + size_t(ow) * oh, 1.0f);
+    for (int y = 0; y < oh; ++y)
+        for (int x = 0; x < ow; ++x) {
+            const double u = (x + min_x - cx) / w, v = (y + min_y - cy) / h;
+            const double denominator = inv[6] * u + inv[7] * v + 1;
+            const double sx = w * (inv[0] * u + inv[1] * v) / denominator + cx;
+            const double sy = h * (inv[3] * u + inv[4] * v) / denominator + cy;
+            if (sx < 0 || sy < 0 || sx > w - 1 || sy > h - 1) continue;
+            const int ix = int(sx), iy = int(sy), nx = std::min(ix + 1, w - 1), ny = std::min(iy + 1, h - 1);
+            const double fx = sx - ix, fy = sy - iy;
+            dst[size_t(y) * ow + x] = float((gray[iy * w + ix] * (1 - fx) + gray[iy * w + nx] * fx) * (1 - fy) +
+                                            (gray[ny * w + ix] * (1 - fx) + gray[ny * w + nx] * fx) * fy);
+        }
+    if (core_env::on("CRISPEMBED_SCAN_CLEANUP_BENCH"))
+        fprintf(stderr, "[scan_cleanup-bench] ruled geometry: h=%d v=%d m=%.6f k=%.6f n=%.6f j=%.6f\n",
+                horizontal.count, vertical.count, m, k, n, j);
+    *out = dst;
+    *out_w = ow;
+    *out_h = oh;
+    return 1;
 }
 
 float scan_cleanup_detect_angle(const float * gray, int w, int h, float max_angle_deg) {
@@ -958,7 +1201,19 @@ int scan_cleanup_process(scan_cleanup_ctx * ctx, const uint8_t * pixels, int wid
     // 1. Deskew
     if (params.deskew) {
         auto t0 = std::chrono::steady_clock::now();
-        float angle = params.deskew_consensus
+        float * rectified = nullptr;
+        int rw = 0, rh = 0;
+        const bool ruled = std::isfinite(params.deskew_max_angle) && params.deskew_max_angle >= 15 &&
+                           (params.deskew_consensus == 2 || core_env::on("CRISPEMBED_SCAN_RULE_GEOMETRY")) &&
+                           scan_cleanup_rectify_rules(gray.data(), w, h, &rectified, &rw, &rh) == 1;
+        if (ruled) {
+            gray.assign(rectified, rectified + size_t(rw) * rh);
+            w = rw;
+            h = rh;
+            free(rectified);
+        }
+        float angle = ruled ? 0.0f
+                      : params.deskew_consensus
                           ? scan_cleanup_detect_angle_consensus(gray.data(), w, h, params.deskew_max_angle)
                           : scan_cleanup_detect_angle(gray.data(), w, h, params.deskew_max_angle);
         if (fabsf(angle) > 0.1f) {

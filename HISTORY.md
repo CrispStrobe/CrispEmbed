@@ -1,5 +1,16 @@
 ## 15 November 2026 — Worksheet cleanup component validation
 
+The straightness follow-up replaces the single-angle assumption for explicitly
+requested ruled-photo cleanup. Two robust line families determine a homography;
+edge-pixel refinement removes Hough-bin bias, and an angular deadband retains
+already aligned grids. Three independent camera/shear controls and three
+no-warp controls pass. Initial coarse-bin and no-op drift failures are retained
+in the bounded execution evidence; the tests' error ceiling was not relaxed.
+The six private output rasters and packed PDF are retained outside Git. The
+native component remains a candidate, not a new release or broad OCR claim.
+The existing independent PDF reader probe now locates Mach-O/Windows binaries as
+well as ELF; the corrected PDFium scalar/streamed replay passes on macOS.
+
 PR235 corrects centered whitening, preserves connected one-pixel rules during
 despeckling, selects the identical edge percentile without a full sort, and
 packs binary PDF rasters losslessly. Focused native components at `6ffeaa41d`
