@@ -440,6 +440,8 @@ static void test_centered_whitening() {
         CHECK(error < 1e-6f, "both lighting directions whiten identically in the ramp interior");
     }
     // Preserve old output for explicit false spellings, never presence-check gates.
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) input[y * w + x] = .3f + .6f * float(w - 1 - x) / (w - 1);
     std::vector<float> legacy(input.size());
     cleanup_gate("CRISPEMBED_SCAN_CENTERED_WHITEN", "0");
     scan_cleanup_whiten(input.data(), w, h, 11, legacy.data());
