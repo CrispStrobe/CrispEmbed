@@ -685,6 +685,8 @@ static void max_pool_2d(const float * src, int w, int h, int k, float * dst) {
 }
 
 void scan_cleanup_whiten(const float * gray, int w, int h, int kernel_size, float * dst) {
+    if (!gray || !dst || w <= 0 || h <= 0) return;
+    kernel_size = std::max(1, kernel_size);
     if (kernel_size % 2 == 0) kernel_size++;
 
     int n = w * h;
