@@ -283,7 +283,7 @@ class ArtifactTests(unittest.TestCase):
                         os.environ.pop(gate, None)
                     else:
                         os.environ[gate] = state
-                    path = self.render(f"binary-{width}-{state}.pdf", [{"image": image, "points": source.size,
+                    path = self.render(f"archival-binary-{width}-{state}.pdf", [{"image": image, "points": source.size,
                         "width": width, "height": source.height, "regions": []}], pdfa=True)
                     reader = PdfReader(path)
                     obj = reader.pages[0]["/Resources"]["/XObject"]["/Im1"].get_object()
