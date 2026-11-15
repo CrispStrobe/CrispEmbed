@@ -633,8 +633,7 @@ static void slide_1d(const float * in, float * out, int len, int k, bool is_min)
         for (int i = 0; i < len; ++i) {
             const int right = std::min(len - 1, i + half);
             while (next <= right) {
-                while (!dq.empty() && (is_min ? in[dq.back()] >= in[next] : in[dq.back()] <= in[next]))
-                    dq.pop_back();
+                while (!dq.empty() && (is_min ? in[dq.back()] >= in[next] : in[dq.back()] <= in[next])) dq.pop_back();
                 dq.push_back(next++);
             }
             while (!dq.empty() && dq.front() < i - half) dq.pop_front();

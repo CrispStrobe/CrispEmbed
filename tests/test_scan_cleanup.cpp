@@ -387,8 +387,10 @@ static void cleanup_gate(const char * name, const char * value) {
 #ifdef _WIN32
     _putenv_s(name, value ? value : "");
 #else
-    if (value) setenv(name, value, 1);
-    else unsetenv(name);
+    if (value)
+        setenv(name, value, 1);
+    else
+        unsetenv(name);
 #endif
 }
 
@@ -398,13 +400,14 @@ static std::vector<float> reference_whiten(const std::vector<float> & input, int
     const int half = kernel / 2;
     auto extremum = [&](const std::vector<float> & src, bool minimum) {
         std::vector<float> dst(src.size());
-        for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
-            float value = minimum ? 1.0f : 0.0f;
-            for (int yy = std::max(0, y - half); yy <= std::min(h - 1, y + half); ++yy)
-                for (int xx = std::max(0, x - half); xx <= std::min(w - 1, x + half); ++xx)
-                    value = minimum ? std::min(value, src[yy * w + xx]) : std::max(value, src[yy * w + xx]);
-            dst[y * w + x] = value;
-        }
+        for (int y = 0; y < h; ++y)
+            for (int x = 0; x < w; ++x) {
+                float value = minimum ? 1.0f : 0.0f;
+                for (int yy = std::max(0, y - half); yy <= std::min(h - 1, y + half); ++yy)
+                    for (int xx = std::max(0, x - half); xx <= std::min(w - 1, x + half); ++xx)
+                        value = minimum ? std::min(value, src[yy * w + xx]) : std::max(value, src[yy * w + xx]);
+                dst[y * w + x] = value;
+            }
         return dst;
     };
     auto bg = extremum(extremum(input, false), true);
@@ -416,23 +419,24 @@ static void test_centered_whitening() {
     printf("\n=== Centered whitening reference and mirrored lighting ===\n");
     const int w = 43, h = 37;
     std::vector<float> input(w * h), output(input.size());
-    for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x)
-        input[y * w + x] = ((x * 37 + y * 71) % 223 + 20) / 255.0f;
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) input[y * w + x] = ((x * 37 + y * 71) % 223 + 20) / 255.0f;
     for (int kernel : { 1, 3, 20, 51, 101 }) {
         cleanup_gate("CRISPEMBED_SCAN_CENTERED_WHITEN", nullptr);
         scan_cleanup_whiten(input.data(), w, h, kernel, output.data());
         const auto expected = reference_whiten(input, w, h, kernel);
         float error = 0;
         for (size_t i = 0; i < output.size(); ++i) error = std::max(error, fabsf(output[i] - expected[i]));
-        CHECK(error < 1e-6f, "whitening matches independent centered closing, including boundaries and oversized windows");
+        CHECK(error < 1e-6f,
+              "whitening matches independent centered closing, including boundaries and oversized windows");
     }
     for (int direction : { -1, 1 }) {
-        for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x)
-            input[y * w + x] = .3f + .6f * float(direction == 1 ? x : w - 1 - x) / (w - 1);
+        for (int y = 0; y < h; ++y)
+            for (int x = 0; x < w; ++x) input[y * w + x] = .3f + .6f * float(direction == 1 ? x : w - 1 - x) / (w - 1);
         scan_cleanup_whiten(input.data(), w, h, 11, output.data());
         float error = 0;
-        for (int y = 10; y < h - 10; ++y) for (int x = 10; x < w - 10; ++x)
-            error = std::max(error, fabsf(output[y * w + x] - 1.0f));
+        for (int y = 10; y < h - 10; ++y)
+            for (int x = 10; x < w - 10; ++x) error = std::max(error, fabsf(output[y * w + x] - 1.0f));
         CHECK(error < 1e-6f, "both lighting directions whiten identically in the ramp interior");
     }
     // Preserve old output for explicit false spellings, never presence-check gates.

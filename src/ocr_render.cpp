@@ -711,12 +711,11 @@ static int pdf_image(pdf_document & doc, const stored_page & page) {
     std::string().swap(raster);
     std::string encoded(reinterpret_cast<char *>(compressed.get()), size_t(compressed_size));
     compressed.reset();
-    return doc.stream(std::move(encoded),
-                      "/Type /XObject /Subtype /Image /Width " + std::to_string(width) + " /Height " +
-                          std::to_string(height) +
-                          (binary ? " /ColorSpace /DeviceGray /BitsPerComponent 1" :
-                                    " /ColorSpace /DeviceRGB /BitsPerComponent 8") +
-                          " /Interpolate false /Filter /FlateDecode");
+    return doc.stream(
+        std::move(encoded),
+        "/Type /XObject /Subtype /Image /Width " + std::to_string(width) + " /Height " + std::to_string(height) +
+            (binary ? " /ColorSpace /DeviceGray /BitsPerComponent 1" : " /ColorSpace /DeviceRGB /BitsPerComponent 8") +
+            " /Interpolate false /Filter /FlateDecode");
 }
 
 static void pdf_word(std::string & content, const stored_word & word, int page_height,
