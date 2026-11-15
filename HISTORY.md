@@ -1,3 +1,18 @@
+## 15 November 2026 — Worksheet cleanup component validation
+
+PR235 corrects centered whitening, preserves connected one-pixel rules during
+despeckling, selects the identical edge percentile without a full sort, and
+packs binary PDF rasters losslessly. Focused native components at `6ffeaa41d`
+pass 39 cleanup and 70 renderer controls plus photo geometry. An independent
+centered-closing oracle covers oversized windows and both gradient directions;
+the initial legacy test used the wrong ramp direction and was corrected without
+changing the production result. Independent odd-width PDF reader checks pass.
+Private six-page replay retains exact released pixels under legacy opt-outs and
+verifies every candidate PDF against its prepared pixels. The initial broader
+artifact attempt lacked PDFium; its setup failure is retained for the corrected
+reader replay. Full hosted builds remain queued. No model inference, app pin
+change or release publication follows from the component evidence.
+
 ## 13 November 2026 — Fresh authored Q4/Q6 document comparison
 
 The [Kaggle six-arm quality screen](docs/lighton4b-authored-q6-q4-quality.md)

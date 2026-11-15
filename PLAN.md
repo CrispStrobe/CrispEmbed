@@ -7,8 +7,11 @@ the complete cleanup/export correction after a six-page photographic worksheet
 audit. Scope: centered closing with retained legacy replay, one-pixel rule
 preservation during despeckling, exact-rank edge percentile selection, and
 lossless binary PDF rasters. Synthetic reference morphology, thin-rule/dust,
-odd-width PDF reader and existing OCR/PDF controls are acceptance gates. Hosted
-Linux/macOS builds and private local-photo replay are pending. No learned model,
+odd-width PDF reader and existing OCR/PDF controls are acceptance gates. A bounded
+component build at `6ffeaa41d` passes 39 cleanup checks, 70 native renderer checks,
+photo geometry, and the new independent odd-width PDF pixel test. Private replay
+matches all six released legacy images exactly; all candidate PDFs decode to the
+prepared pixels. Hosted Linux/macOS full builds remain pending. No learned model,
 bounded-deskew default promotion or app runtime repin is included. CrispSorter
 has a coordinated model-free preparation preset using its existing native API.
 

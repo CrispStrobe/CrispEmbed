@@ -1,3 +1,20 @@
+## Worksheet cleanup and binary PDF (15 November 2026)
+
+Focused candidate components at `6ffeaa41d`, linked to unchanged released 0.17.19
+components, replay six private photographic worksheets. Legacy opt-outs reproduce
+every released prepared pixel. Matched Otsu cleanup reduces the PDF from 688,307
+released bytes to 175,650 bytes with intact thin answer rules; the worksheet
+Sauvola recipe produces 186,108 bytes. Every PDF raster independently decodes to
+the prepared pixels, with six 1-bit candidate images versus six 8-bit RGB legacy
+images. Input content remains private and is not a public accuracy corpus.
+
+Under changing heavy host load, the worksheet recipe's decode/cleanup/PNG/PDF
+stages sum to 1.361 seconds for six pages; cleanup sums to 0.585 seconds using
+per-page medians of three repeats. Sequential legacy/fixed Otsu stage sums are
+12.397/5.331 seconds, but cold-start and load differences prevent a controlled
+speedup claim. This component replay does not qualify a full app/release or OCR
+CER/WER. Hosted full builds and independent platform qualification remain open.
+
 ## Reviewed PDF export qualification (9 November 2026)
 
 The final immutable [writer source `9c44a69`](tests/results/ocr-render/writer-9c44a69.json)
