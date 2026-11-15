@@ -205,8 +205,11 @@ float scan_cleanup_detect_angle(const float * gray, int w, int h, float max_angl
 
     // Edge threshold: top 5% of edge magnitudes (generous to catch skewed lines)
     std::vector<float> sorted_edges(edges);
-    std::sort(sorted_edges.begin(), sorted_edges.end());
-    float edge_thresh = sorted_edges[(int)(sorted_edges.size() * 0.95f)];
+    const size_t percentile = size_t(sorted_edges.size() * 0.95f);
+    // Only the 95th percentile is consumed; preserve its exact rank without
+    // sorting every edge on a full-resolution page.
+    std::nth_element(sorted_edges.begin(), sorted_edges.begin() + percentile, sorted_edges.end());
+    float edge_thresh = sorted_edges[percentile];
     if (edge_thresh < 0.01f) edge_thresh = 0.01f;
 
     // 3. Hough transform for lines near horizontal
@@ -623,6 +626,23 @@ void scan_cleanup_find_content_rect(const float * gray, int w, int h, float bord
 static void slide_1d(const float * in, float * out, int len, int k, bool is_min) {
     int half = k / 2;
     std::deque<int> dq; // indices of candidates
+    if (!core_env::explicitly_off("CRISPEMBED_SCAN_CENTERED_WHITEN")) {
+        // Include BOTH halves before emitting each centered sample. The old
+        // trailing window shifted the closing and darkened lighting gradients.
+        int next = 0;
+        for (int i = 0; i < len; ++i) {
+            const int right = std::min(len - 1, i + half);
+            while (next <= right) {
+                while (!dq.empty() && (is_min ? in[dq.back()] >= in[next] : in[dq.back()] <= in[next]))
+                    dq.pop_back();
+                dq.push_back(next++);
+            }
+            while (!dq.empty() && dq.front() < i - half) dq.pop_front();
+            out[i] = in[dq.front()];
+        }
+        return;
+    }
+    // Explicit opt-out retains the old trailing-window result for A/B replay.
     for (int i = 0; i < len; i++) {
         // Remove elements outside the window
         while (!dq.empty() && dq.front() < i - half) dq.pop_front();
@@ -782,6 +802,7 @@ int scan_cleanup_content_bbox(const uint8_t * pixels, int w, int h, int channels
 static void scan_cleanup_despeckle(std::vector<float> & gray, int w, int h, float thresh) {
     if (w < 3 || h < 3) return;
     std::vector<float> out(gray);
+    const bool preserve_rules = !core_env::explicitly_off("CRISPEMBED_SCAN_PRESERVE_RULES");
     for (int y = 1; y < h - 1; y++) {
         for (int x = 1; x < w - 1; x++) {
             float win[9];
@@ -790,6 +811,20 @@ static void scan_cleanup_despeckle(std::vector<float> & gray, int w, int h, floa
                 for (int dx = -1; dx <= 1; dx++) win[k++] = gray[(y + dy) * w + (x + dx)];
             std::nth_element(win, win + 4, win + 9);
             float med = win[4];
+            if (preserve_rules && fabsf(gray[y * w + x] - med) > thresh) {
+                // A one-pixel rule/stroke has a background median but two
+                // matching opposite neighbours. It is not an isolated speck.
+                const float center = gray[y * w + x];
+                bool stroke = false;
+                for (const int delta : { 1, w, w - 1, w + 1 }) {
+                    if (fabsf(gray[y * w + x - delta] - center) < thresh &&
+                        fabsf(gray[y * w + x + delta] - center) < thresh) {
+                        stroke = true;
+                        break;
+                    }
+                }
+                if (stroke) continue;
+            }
             if (fabsf(gray[y * w + x] - med) > thresh) out[y * w + x] = med;
         }
     }

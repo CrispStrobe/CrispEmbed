@@ -12,6 +12,7 @@ import ctypes as C
 import hashlib
 from io import BytesIO
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -264,6 +265,54 @@ class ArtifactTests(unittest.TestCase):
                         checked += 1
         self.assertGreater(checked, 0)
         return checked
+
+    def test_binary_rasters_preserve_exact_pixels_and_row_padding(self):
+        gate = "CRISPEMBED_PDF_PACK_BINARY"
+        previous = os.environ.pop(gate, None)
+        try:
+            for width in (1, 7, 8, 9, 17, 321):
+                source = Image.new("RGB", (width, 13), "white")
+                for y in range(source.height):
+                    for x in range(width):
+                        if (x + y * 3) % 5 < 2:
+                            source.putpixel((x, y), (0, 0, 0))
+                image = self.root / f"binary-{width}.png"
+                source.save(image)
+                for state in (None, "0", "false", "OFF", "no"):
+                    if state is None:
+                        os.environ.pop(gate, None)
+                    else:
+                        os.environ[gate] = state
+                    path = self.render(f"binary-{width}-{state}.pdf", [{"image": image, "points": source.size,
+                        "width": width, "height": source.height, "regions": []}], pdfa=True)
+                    reader = PdfReader(path)
+                    obj = reader.pages[0]["/Resources"]["/XObject"]["/Im1"].get_object()
+                    packed = state is None
+                    self.assertEqual(obj["/BitsPerComponent"], 1 if packed else 8)
+                    self.assertEqual(obj["/ColorSpace"], "/DeviceGray" if packed else "/DeviceRGB")
+                    data = obj.get_data()
+                    self.assertEqual(len(data), ((width + 7) // 8 if packed else width * 3) * source.height)
+                    decoded = Image.frombytes("1" if packed else "RGB", source.size, data).convert("RGB")
+                    self.assertEqual(decoded.tobytes(), source.tobytes())
+                    # Independent PDF renderer, including odd row widths and PDF/A.
+                    with fitz.open(path) as document:
+                        pix = document[0].get_pixmap(alpha=False)
+                        self.assertEqual((pix.width, pix.height), source.size)
+                        self.assertEqual(pix.samples, source.tobytes())
+            # A near-white tone is not binary and must never be thresholded.
+            os.environ.pop(gate, None)
+            source.putpixel((0, 0), (254, 254, 254))
+            source.save(image)
+            path = self.render("near-white.pdf", [{"image": image, "points": source.size,
+                "width": source.width, "height": source.height, "regions": []}])
+            obj = PdfReader(path).pages[0]["/Resources"]["/XObject"]["/Im1"].get_object()
+            self.assertEqual(obj["/BitsPerComponent"], 8)
+            self.assertEqual(obj.get_data(), source.tobytes())
+        finally:
+            if previous is None:
+                os.environ.pop(gate, None)
+            else:
+                os.environ[gate] = previous
 
     def test_raster_images_and_physical_size(self):
         for filename in ("rgb.png", "gray.png", "alpha.png", "palette.png", "rgb.jpg"):

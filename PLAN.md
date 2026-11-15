@@ -1,5 +1,17 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Worksheet cleanup and binary PDF — 15 November 2026
+
+Owner: `fix/worksheet-cleanup-20261115`, based on `b34a132c6`. The user requested
+the complete cleanup/export correction after a six-page photographic worksheet
+audit. Scope: centered closing with retained legacy replay, one-pixel rule
+preservation during despeckling, exact-rank edge percentile selection, and
+lossless binary PDF rasters. Synthetic reference morphology, thin-rule/dust,
+odd-width PDF reader and existing OCR/PDF controls are acceptance gates. Hosted
+Linux/macOS builds and private local-photo replay are pending. No learned model,
+bounded-deskew default promotion or app runtime repin is included. CrispSorter
+has a coordinated model-free preparation preset using its existing native API.
+
 ## Rust DAT RGB buffers and output ownership — 14 November 2026
 
 Bounded fix `fix/rust-dat-buffer-safety-20261114` starts from `a4996aebe`.
