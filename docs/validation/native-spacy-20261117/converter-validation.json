@@ -1,0 +1,69 @@
+{
+  "additional_checks": {
+    "git_diff_check": "passed",
+    "resource_review": [
+      "Parser class order reconstructed using descending (frequency,label), including tie semantics.",
+      "Malformed self-consistent morphology labels rejected.",
+      "Boolean/integer substitutions in attribute-ruler rules rejected.",
+      "Shared edit-tree children admitted; cycles, out-of-range references and depth above64 rejected."
+    ]
+  },
+  "real_model": {
+    "command": "\"$SPACY_REFERENCE_PYTHON\" tests/test_spacy_converter.py --real-model --wheel \"$SPACY_SOURCE_WHEEL\"",
+    "exit_code": 0,
+    "retention_note": "Qualification compared two independent temporary exports. Their file identities above allow a separately retained final bundle/manifest to be matched exactly.",
+    "stdout_json": {
+      "byte_identical_files": 5,
+      "files": {
+        "LICENSE": {
+          "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012",
+          "size_bytes": 1056
+        },
+        "LICENSES_SOURCES": {
+          "sha256": "0c3ab78745569d848b7c83a486183bce42b9643561084d6d6f67eb0229c79869",
+          "size_bytes": 13470
+        },
+        "manifest.json": {
+          "sha256": "d599768375de3dc56abcca5cf1d49da0015857f9d3a10640aebb5317ef5d427e",
+          "size_bytes": 23762
+        },
+        "model.gguf": {
+          "sha256": "fae2e6ab8d6c611d7a9dddd4b3259a871a1d2f95cacc8259f49c1e4ff31ff6cd",
+          "size_bytes": 7383104
+        },
+        "resources.json": {
+          "sha256": "b42496cc373ada57a67ed2f4c2c25f8d22f80c08db5841a7cdb91c8a6e18562a",
+          "size_bytes": 1404948
+        }
+      },
+      "independent_exports": 2,
+      "resource_schema": "passed",
+      "scope": "actual model conversion/reproducibility only; no native inference claim",
+      "source_wheel_sha256": "fec69fec52b1780f2d269d5af7582a5e28028738bd3190532459aeb473bfa3e7",
+      "tensor_readbacks": 39,
+      "verbatim_notices": 2
+    },
+    "temporary_exports_removed_after_success": true
+  },
+  "schema_version": 1,
+  "scope": "Developer converter/model-bundle admission and deterministic export; no native linguistic inference, correction, editor or device qualification.",
+  "sources": {
+    "docs/validation/native-spacy-20261117/environment.json": "ed610600c6ac3945c19120820d37f4d9b044216e7a47369a8f5c189bc64e11d7",
+    "models/convert-spacy-to-gguf.py": "ab719cb5145a94797f14c2350f7e0da0431c5bb087581d4dc52b3d00859eeed5",
+    "models/spacy_bundle.py": "142171d33f06dfc67322e2ca813bf433953112e78222b81ed826103063ce4fb6",
+    "tests/test_spacy_converter.py": "e989a63ecfa9a3ce655966ac833aeaf6312f78794e2efcfe235bc73e3a8d44dd",
+    "tools/spacy/requirements-reference.in": "ac91b3a1c6b11a4c87ebedf2ea5fbbf1327aa20c2ad60bf36c69367e7f0617d0",
+    "tools/spacy/requirements-reference.txt": "e1bd56aef4aba0c45135fb2b51961c0d94c3be99a785be71a46c698cd22cc98a"
+  },
+  "status": "pass",
+  "unit_tests": {
+    "command": "\"$SPACY_REFERENCE_PYTHON\" tests/test_spacy_converter.py",
+    "errors": 0,
+    "exit_code": 0,
+    "failures": 0,
+    "reported_seconds": 0.553,
+    "scope": "Synthetic model-free controls, including explicit failure of required real-model command with absent wheel arguments or missing wheel files.",
+    "skips": 0,
+    "tests": 33
+  }
+}

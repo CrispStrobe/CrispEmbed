@@ -4,7 +4,7 @@
 
 | Lane | Owner/branch | Current boundary | Next gate |
 | --- | --- | --- | --- |
-| German spaCy CPU/F32 | `feat/native-spacy-20261117`; one coordinator for schema/ABI/Git, separate reference and numeric owners | W0 refreshed current main and source refs; [input snapshot](docs/validation/native-spacy-20261117/README.md) | W1 actual converted bundle and frozen oracle checkpoint before numerical port |
+| German spaCy CPU/F32 | `feat/native-spacy-20261117`; one coordinator for schema/ABI/Git, separate reference and numeric owners | W1 exact 39-tensor conversion, resource contract and paired full oracle saved; [evidence](docs/validation/native-spacy-20261117/README.md) | CPU/F32 prepared-feature numerical parity; lexical/decoder/app stages remain pending |
 
 The user requires incremental remote checkpoints and local validation without
 querying or waiting for Actions. Preserve all unrelated paths/defaults. This

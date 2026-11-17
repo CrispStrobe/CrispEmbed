@@ -45,3 +45,29 @@ contract, hash-bound reference environment, and nonempty full-analysis fixtures.
 Numerical porting follows that remote checkpoint. Missing fixtures must fail
 qualification. No native analysis, grammar, mobile, or distribution readiness
 is claimed by this source checkpoint.
+
+## W1 converted bundle and reference checkpoint
+
+[converter-validation.json](converter-validation.json) records 33 passing
+model-free controls and two independent actual conversions: all five output
+files match byte-for-byte, all 39 trained F32 tensors pass independent GGUF
+readback, and both model notices match the wheel verbatim. The separately
+retained final export matches the same manifest SHA-256:
+`d599768375de3dc56abcca5cf1d49da0015857f9d3a10640aebb5317ef5d427e`.
+
+The 7,383,104-byte model GGUF is
+`fae2e6ab8d6c611d7a9dddd4b3259a871a1d2f95cacc8259f49c1e4ff31ff6cd`.
+The complete [bundle manifest](bundle-manifest.json) binds tensor layouts,
+resource hashes, source files, capabilities, versions, and limits.
+[environment.json](environment.json) records two matching hash-locked Linux
+reference installs, including 4,181 verified installed RECORD entries each.
+The full contract and reproduction commands are in
+[tools/spacy](../../../tools/spacy/README.md).
+
+The paired Quds reference checkpoint is
+[`dcf2ec9b4d6fba05fa5eec2634c6654266332cc9`](https://github.com/CrispStrobe/quds_office_suite/commit/dcf2ec9b4d6fba05fa5eec2634c6654266332cc9).
+Its complete nonempty development captures are stored remotely before numerical
+porting: 16 cases, 113 tokens, 1,201 numerical stages, and 244 parser transitions.
+Acceptance inputs remain untouched. No native inference, full analysis, grammar,
+mobile, or shipping claim follows from this checkpoint. Original third-party
+notices retain their exact bytes, including upstream trailing whitespace.
