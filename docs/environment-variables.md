@@ -17,6 +17,19 @@ need it, then run `python tools/list_env_vars.py --write`. See the
 
 ## Semantics
 
+### Prepared German GECToR
+
+`CRISPEMBED_GECTOR=1` opts into the standalone prepared-ID German grammar
+backend built from `tools/gector`. It defaults off and uses the shared
+value-parsed boolean semantics below. Model loading and inference both check
+the gate. It admits the pinned Proofbird source profile, a single unpadded
+sequence and an all-ones mask; it does not enable automatic checking, model
+downloads, a registry alias or the general embedding/OCR runtime.
+
+See [the standalone target](../tools/gector/README.md) for its C API and build
+boundary. The opt-in gate is an experimental admission switch, not a numerical
+or application-quality qualification.
+
 | Kind | Reader | Unset | `=` (empty) | `=0` / `false` / `off` / `no` | Any other non-empty value |
 |---|---|---|---|---|---|
 | `on` | `core_env::on` | off | off | off | on |
@@ -316,7 +329,7 @@ operator candidate has no decoded-quality or release qualification.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-498 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+499 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -521,6 +534,12 @@ operator candidate has no decoded-quality or release qualification.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_FIREREDPUNC_HF_TOK` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/fireredpunc.cpp` |  |
 | `CRISPEMBED_FIREREDPUNC_SEP` | on | off | bool | default-off experimental / opt-in | `src/fireredpunc.cpp` |  CRISPEMBED_FIREREDPUNC_SEP=1 restores the old shape for bisection. |
+
+### gector
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_GECTOR` | on | off | bool | default-off experimental / opt-in | `src/gector.cpp` | Default-off prepared-input German grammar experiment; never a model alias. |
 
 ### gemma_decision
 
