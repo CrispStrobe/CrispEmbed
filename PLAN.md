@@ -5852,8 +5852,10 @@ Branch: `feat/german-gector-proofing`.
 Scope and decision order:
 [German GECToR proofing roadmap](docs/roadmaps/german-gector-proofing.md).
 
-This bounded lane prepares a native fallback for Quds Office after qualification
-of onnx_runtime_dart. Native implementation waits for that source-bound decision.
+This bounded lane is selected for native implementation/qualification after the
+two measured onnx_runtime_dart hypotheses. The optimized short-input forward
+p95 remains above the complete-check target; native conversion and execution
+are the next implementation work, not an already qualified backend.
 Quds owns shared tokenization, first-subword alignment, edit decoding, guards and
 UTF-16 source offsets.
 
@@ -5863,7 +5865,7 @@ Frozen model: proofbird/gector-bert-de v2.1.0, revision
 Preserve the Quds manifest, Apache LICENSE/NOTICE, original runner and recorded
 quality limitations. A later model revision is a separate experiment.
 
-If activated, implement exact ONNX-to-GGUF encoder/dual-head conversion and a
+Implement exact ONNX-to-GGUF encoder/dual-head conversion and a
 documented default-off prepared-ID inference adapter. Initially validate one
 unpadded sequence with an all-ones mask; current raw batch-one execution does not
 provide arbitrary masked inference. Prefer Q4_K mixed with protected F16/Q8_0
@@ -5876,5 +5878,14 @@ and RSS. Apply [precision policy](docs/precision-acceptance.md) separately from
 Quds task-quality gates; retain strict stage diagnostics and rejected recipes.
 An unquantized control supports attribution, not automatic deployment selection.
 
-State: roadmap and source feasibility only. No native model/runtime/release,
-registry alias or application dependency upgrade is qualified by this entry.
+Decision evidence: Quds run 44062093617 at source
+`69d153c0f81596af894e48e21880f0957b963994`, Dart source
+`b10258682d459847b63e012eaaba58a528e93956`. On that run, Dart INT4 forward
+median/p95 was 463/546 ms versus native ORT INT4 15.8/17.1 ms; both retained
+the same frozen-probe decisions. Preserve the original baseline separately:
+its AMD runner differs from the optimized run's Intel runner.
+
+State: native lane selected; converter/prepared-ID runtime and minimal native
+target remain implementation work. Source feasibility is recorded, but no
+GGUF artifact, native runtime, release, registry alias or application dependency
+upgrade is qualified by this entry.

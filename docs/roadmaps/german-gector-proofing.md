@@ -1,7 +1,7 @@
 # German GECToR: conditional Q4_K backend
 
 Date: 2026-11-17. Branch: `feat/german-gector-proofing`.
-Status: roadmap only; native implementation waits for Dart qualification.
+Status: selected for the next native implementation/qualification slice; native backend not yet qualified.
 Base: `b34a132c6c204b71f5c58ba8bc1705b8769edb9b`.
 
 The [canonical Quds roadmap](https://github.com/CrispStrobe/quds_office_suite/blob/feat/german-gector-proofing/docs/roadmaps/german-gector-proofing.md) owns the frozen model,
@@ -55,8 +55,9 @@ Dart source `0b49ca47fa056e6fc122ffe0192a9abb05627622`. Its native ORT
 controls are promising; no CrispEmbed or Q4_K model was executed. Keep the
 Dart optimization result and the native activation decision separate.
 The full [hosted qualification run](https://github.com/CrispStrobe/quds_office_suite/actions/runs/44053903485)
-has started; complete evidence and independent review remain pending. The
-immutable baseline retains its earlier queued-at-capture status.
+completed successfully; the later optimized result and backend decision are
+recorded below. The immutable local baseline retains its earlier
+queued-at-capture status.
 
 ### Observed model and mapping
 
@@ -164,3 +165,33 @@ numerical and performance receipts. Review the chosen platform/toolchain and
 any prebuilt components separately. Preparing this source boundary establishes
 neither a permissive binary inventory nor successful native runtime
 qualification.
+
+## Backend decision after the bounded Dart round
+
+The [optimized hosted run 44062093617](https://github.com/CrispStrobe/quds_office_suite/actions/runs/44062093617)
+used Quds `69d153c0f81596af894e48e21880f0957b963994` and
+Dart `b10258682d459847b63e012eaaba58a528e93956`. Both original and
+INT4 models passed all 30 cases / 40 saved passes, with declared experiment
+metadata checked. INT4 retained the same nine fixes and the same Swiss
+clean-control false edit.
+
+On that run's Intel CPU, optimized Dart INT4 first-forward median/p95 was
+463/546 ms and peak RSS was 487,698,432 bytes. The native ONNX INT4 control
+was 15.8/17.1 ms per forward and 33.2 ms p95 for the unguarded complete
+reference correction. The original hosted baseline ran on an AMD CPU;
+do not attribute differences between those jobs solely to the patch.
+
+The optimized forward alone misses the provisional 500 ms complete-check
+budget on these 5..12-token inputs. Longer inputs, guards and the full Dart
+loop remain unqualified. The initial two runtime hypotheses are complete.
+
+Activate this Q4_K lane as the next implementation/qualification target:
+authenticated fine-tuned ONNX-to-GGUF conversion, both trained heads,
+a small prepared-ID native target with controlled dependencies, F32 control
+parity, then the declared mixed Q4_K candidate and downstream correction gates.
+Keep shared word preparation, decoding and source offsets in Dart. Native
+ONNX through Rust remains the fallback if this Q4_K path fails its gates.
+
+This is an engineering direction backed by measured Dart limits and a fast
+native control. It is not evidence that GGUF conversion, native GECToR
+execution, Q4_K quality or application integration has already been implemented.
