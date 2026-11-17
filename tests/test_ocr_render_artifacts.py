@@ -278,12 +278,15 @@ class ArtifactTests(unittest.TestCase):
                             source.putpixel((x, y), (0, 0, 0))
                 image = self.root / f"binary-{width}.png"
                 source.save(image)
+                # PDF/A page boundaries must be at least 3 points, even when
+                # the embedded image exercises a single-pixel packed row.
+                page_points = (max(3, width), source.height)
                 for state in (None, "0", "false", "OFF", "no"):
                     if state is None:
                         os.environ.pop(gate, None)
                     else:
                         os.environ[gate] = state
-                    path = self.render(f"archival-binary-{width}-{state}.pdf", [{"image": image, "points": source.size,
+                    path = self.render(f"archival-binary-{width}-{state}.pdf", [{"image": image, "points": page_points,
                         "width": width, "height": source.height, "regions": []}], pdfa=True)
                     reader = PdfReader(path)
                     obj = reader.pages[0]["/Resources"]["/XObject"]["/Im1"].get_object()
@@ -296,7 +299,9 @@ class ArtifactTests(unittest.TestCase):
                     self.assertEqual(decoded.tobytes(), source.tobytes())
                     # Independent PDF renderer, including odd row widths and PDF/A.
                     with fitz.open(path) as document:
-                        pix = document[0].get_pixmap(alpha=False)
+                        self.assertEqual(tuple(document[0].rect)[2:], page_points)
+                        matrix = fitz.Matrix(width / page_points[0], 1)
+                        pix = document[0].get_pixmap(matrix=matrix, alpha=False)
                         self.assertEqual((pix.width, pix.height), source.size)
                         self.assertEqual(pix.samples, source.tobytes())
             # A near-white tone is not binary and must never be thresholded.

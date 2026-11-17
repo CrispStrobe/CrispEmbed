@@ -1,5 +1,27 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## PR235/PR236 owner closure — 17 November 2026
+
+Bounded ownership covers only worksheet PR235 and native spaCy PR236. Existing
+OCR/benchmark and ASR/Pix2Struct lanes remain with their owners. PR235 starts
+at `0eca8e35`, base `b34a132c`: 41 passing, two failing and two skipped checks.
+The blocking veraPDF failure in [43718649913](https://github.com/CrispStrobe/CrispEmbed/actions/runs/43718649913)
+is five one-point-wide PDF/A fixture pages, below the three-point minimum.
+Keep the one-pixel raster and unchanged pixel assertions, use valid page points,
+and render at the original raster dimensions. Preserve non-blocking reader-limit
+failures and all worksheet/renderer evidence. Apply pinned clang-format 18.1.8;
+the 188 violations are inherited from `src/lighton4b_physical_f16_attention.cpp`.
+Its formatting repair preserves every C++ token/comment, gates and algorithms;
+historical source-pinned protocols are unchanged and remain historical evidence.
+Exact-head hosted checks and merged-tree verification remain the closure gates.
+No release, app pin or model distribution is authorized.
+
+PR236 retains its separately frozen Linux x86-64/AVX2 acceptance. Local artifact
+and source validation only; no Actions query, wait or rerun, no held-out replay
+or new model matrix. Main protection and applicable branch rules report no
+required checks. Undraft/owner merge depends on valid retained local evidence;
+W6, other platforms/mobile and distribution remain outside this closure.
+
 ## Worksheet cleanup and binary PDF — 15 November 2026
 
 Owner: `fix/worksheet-cleanup-20261115`, based on `b34a132c6`. The user requested
