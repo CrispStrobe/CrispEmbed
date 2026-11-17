@@ -316,7 +316,7 @@ operator candidate has no decoded-quality or release qualification.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-498 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+499 `CRISPEMBED_*` variables and 227 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -1337,6 +1337,12 @@ operator candidate has no decoded-quality or release qualification.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_SMOLDOCLING_BENCH` | on | off | bool | debug | `src/smoldocling_ocr.cpp` |  |
 | `CRISPEMBED_SMOLDOCLING_SCALAR_PATCH` | on | off | bool | default-off experimental / opt-in | `src/smoldocling_ocr.cpp` |  |
+
+### spacy_pipeline
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_SPACY` | on | off | bool | default-off experimental / opt-in | `src/spacy_pipeline.cpp` |  |
 
 ### surya_det
 

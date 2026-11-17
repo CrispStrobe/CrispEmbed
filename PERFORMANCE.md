@@ -8407,3 +8407,51 @@ The [independent small audit](docs/lighton4b-physical-rope-observed-audit.md) ve
 ## Physical RoPE fixed decoded limits (12 November 2026)
 
 The [raw-audited fixed panel](docs/lighton4b-physical-rope-fixed-audit.md) changes book1536/noEOS→654/EOS, content CER/WER1.2089902717/1.75→.1764508554/.2625899281. Receipt465→468/EOS worsens .03125/.125→.0325520833/.1319444444 and loses its source floor; inventory248/EOS remains content0/0. All ON arms complete with2/3 provisional floors. Receipt first-score RMS worsens .1221114823→.2213878489 while book/inventory ON RMS falls to6.633e-7/3.431e-7. All paired native first differences are layer3. The296.518-second audit time is artifact analysis, not inference speed; no broad decoded-quality qualification.
+
+
+## Native spaCy F32 numerical baseline — 17 November 2026
+
+[The prepared-feature development comparison](docs/validation/native-spacy-20261117/native-summary.json)
+compares 1,406,553 values over 1,201 stages / 16 cases / 113 tokens. Maximum absolute
+error is 3.814697265625e-5; weighted mean absolute error is 1.2902550612e-6.
+All 339 classifier choices and 244 legal choices on reference-supplied parser
+states match exactly. The unchanged elementwise budget is 2e-4 plus 2e-5 times
+the reference magnitude. Fifteen nonempty embedding concatenations are bit-exact;
+affine reduction order introduces small scalar-versus-BLIS differences.
+
+This is scalar C++ F32 arithmetic with ggml loading/ownership, not an optimized
+ggml graph. Linux x86-64 instrumented timings remain diagnostic in the raw
+receipts; they are not full-analysis latency, mobile budgets, or speedup claims.
+Native tokenization, transition decoding, lemma application, complete annotations
+and independent acceptance still need qualification. No quantized/GPU path or
+production default is selected by this baseline.
+
+
+## Native spaCy raw-text development candidate — 17 November 2026
+
+[The composed summary](docs/validation/native-spacy-20261117/text-summary.json)
+records exact annotations for 113 tokens and 22 sentences, 244 native actions and
+339 classifier choices from original UTF-8. All 1,201 numerical stages and
+1,406,553 elements satisfy
+the original 2e-4+2e-5*abs(reference) budget; maximum absolute error remains
+3.814697265625e-5. These are 16 development documents, reused across stage and
+composed gates, not extra unique cases. Timings include trace copying in one
+Linux process on these small inputs and are diagnostic only. The 1 MiB/2,048-token
+limits are engineering admission bounds, not measured device latency/RSS budgets.
+PCRE2 adds a native dependency. Mobile/performance/grammar qualification remains
+open; no default or release promotion follows from development parity.
+
+## Native spaCy frozen held-out parity — 17 November 2026
+
+[The first held-out result](docs/validation/native-spacy-20261117/acceptance-summary.json)
+at `2176c89` covers eight cases, 98 tokens and 13 sentences. All 201 native
+parser transitions and 294 classifier choices match; all 851 numerical stages /
+1,068,891 F32 elements pass the unchanged `2e-4 + 2e-5*abs(reference)` budget,
+with zero violating elements and maximum absolute error `5.340576171875e-5`.
+Original-source spans and all retained linguistic annotations match exactly.
+
+This is one frozen Linux x86-64/AVX2 CPU/F32 execution with PCRE2 10.46. The
+subsequent artifact audit reuses the saved report and is not an additional
+qualification run. Instrumented times include trace copying and do not establish
+worker/editor latency, mobile RSS budgets, a speedup or grammar benefit. Those
+measurements and platform qualification remain separate from model parity.

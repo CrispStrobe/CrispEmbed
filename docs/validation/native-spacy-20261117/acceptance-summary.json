@@ -1,0 +1,153 @@
+{
+  "artifacts": {
+    "acceptance-assets-after.json": {
+      "bytes": 17854,
+      "sha256": "38c6c0819929510824724430cfefa55a686f46ddaf76948476a3fbd3a964f98a"
+    },
+    "acceptance-first.json.gz": {
+      "bytes": 66401,
+      "sha256": "967593d587acf51557a4c27fb1cc813d3c348b91af2413a3a6453e83b5819caa",
+      "uncompressed_bytes": 1085786,
+      "uncompressed_sha256": "5b9c42ffc6d25b1c747ed005361b8834084f6e42e65aff50adfeb584282a77d7"
+    },
+    "acceptance-publication-order.json": {
+      "bytes": 5365,
+      "sha256": "49ae4cb77b3ba894495bffc4e27c72ae203cdeac4e17cf61e31761265048aca3"
+    }
+  },
+  "candidate_archive_commit": "84327ac9af9f8925ff1f0723e027d6b76b2a2dc2",
+  "candidate_commit": "51c2ac328ef40b00f18eb9b03130fb67c3f11313",
+  "candidate_tuned_after_acceptance": false,
+  "case_results": [
+    {
+      "classifier_decisions": 45,
+      "discrete_differences": 0,
+      "float_elements": 156745,
+      "id": "holdout-relative",
+      "max_absolute_error": 3.814697265625e-05,
+      "numeric_stages": 121,
+      "parser_steps": 30,
+      "passed": true,
+      "sentences": 1,
+      "tokens": 15
+    },
+    {
+      "classifier_decisions": 36,
+      "discrete_differences": 0,
+      "float_elements": 131284,
+      "id": "holdout-ambiguity",
+      "max_absolute_error": 3.814697265625e-05,
+      "numeric_stages": 103,
+      "parser_steps": 24,
+      "passed": true,
+      "sentences": 1,
+      "tokens": 12
+    },
+    {
+      "classifier_decisions": 42,
+      "discrete_differences": 0,
+      "float_elements": 148587,
+      "id": "holdout-quotes",
+      "max_absolute_error": 3.814697265625e-05,
+      "numeric_stages": 118,
+      "parser_steps": 29,
+      "passed": true,
+      "sentences": 2,
+      "tokens": 14
+    },
+    {
+      "classifier_decisions": 48,
+      "discrete_differences": 0,
+      "float_elements": 166548,
+      "id": "holdout-unicode",
+      "max_absolute_error": 3.0517578125e-05,
+      "numeric_stages": 139,
+      "parser_steps": 36,
+      "passed": true,
+      "sentences": 4,
+      "tokens": 16
+    },
+    {
+      "classifier_decisions": 36,
+      "discrete_differences": 0,
+      "float_elements": 131284,
+      "id": "holdout-spaces",
+      "max_absolute_error": 3.4332275390625e-05,
+      "numeric_stages": 103,
+      "parser_steps": 24,
+      "passed": true,
+      "sentences": 1,
+      "tokens": 12
+    },
+    {
+      "classifier_decisions": 33,
+      "discrete_differences": 0,
+      "float_elements": 122797,
+      "id": "holdout-parenthesis",
+      "max_absolute_error": 5.340576171875e-05,
+      "numeric_stages": 97,
+      "parser_steps": 22,
+      "passed": true,
+      "sentences": 1,
+      "tokens": 11
+    },
+    {
+      "classifier_decisions": 27,
+      "discrete_differences": 0,
+      "float_elements": 105823,
+      "id": "holdout-negation",
+      "max_absolute_error": 2.6702880859375e-05,
+      "numeric_stages": 85,
+      "parser_steps": 18,
+      "passed": true,
+      "sentences": 1,
+      "tokens": 9
+    },
+    {
+      "classifier_decisions": 27,
+      "discrete_differences": 0,
+      "float_elements": 105823,
+      "id": "holdout-boundaries",
+      "max_absolute_error": 2.288818359375e-05,
+      "numeric_stages": 85,
+      "parser_steps": 18,
+      "passed": true,
+      "sentences": 2,
+      "tokens": 9
+    }
+  ],
+  "ci_endpoints_queried": false,
+  "complete_denominators": true,
+  "counts": {
+    "cases": 8,
+    "classifier_decisions": 294,
+    "float_elements": 1068891,
+    "numeric_stages": 851,
+    "parser_steps": 201,
+    "sentences": 13,
+    "tokens": 98
+  },
+  "discrete_differences": 0,
+  "first_native_report_completed_at": "2026-11-17T20:43:58.460350+00:00",
+  "inputs_or_goldens_or_budgets_changed": false,
+  "library_sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977",
+  "max_absolute_error": 5.340576171875e-05,
+  "native_acceptance_executions": 1,
+  "numerical_budget": {
+    "absolute_tolerance": 0.0002,
+    "relative_tolerance": 2e-05
+  },
+  "passed": true,
+  "protocol_publication_commit": "8fac62023e257ccf431e3daee25e6b2f15f182c8",
+  "protocol_sha256": "78c17652ebce834d853209927bf24493eb1b362de99a0115a55b5202fcef2d92",
+  "recorded_at": "2026-11-17T20:46:03.067225+00:00",
+  "reference_commit": "4ae8e9e0e9b83b1a01176485bae55d9595e99b1c",
+  "reference_completed_and_saved_before_native_load": true,
+  "reference_data_supplied_to_native": false,
+  "reference_manifest_sha256": "1b60f2e99ebacfe0a5795548482d6210f6a1e2c9b0543cf7d7192eebee2c8b25",
+  "reference_repo_path": "tools/proofing/spacy/fixtures/acceptance",
+  "schema": "crispembed.spacy.acceptance.summary.v1",
+  "scope": "Parity to the original frozen German model on eight held-out cases; no grammar benefit, Dart/editor, mobile or release qualification.",
+  "target": "Linux x86-64, AVX2 CPU/F32, PCRE2 10.46",
+  "violating_float_elements": 0
+}

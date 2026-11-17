@@ -1,0 +1,64 @@
+{
+  "acceptance_candidate_executed": false,
+  "acceptance_reference_exported": false,
+  "api_controls": {
+    "errors": 0,
+    "failures": 0,
+    "skips": 0,
+    "status": "pass",
+    "tests_run": 21
+  },
+  "artifacts": {
+    "acceptance-protocol.json": {
+      "bytes": 5189,
+      "sha256": "78c17652ebce834d853209927bf24493eb1b362de99a0115a55b5202fcef2d92"
+    },
+    "resume-build-logs.tar.gz": {
+      "bytes": 5200,
+      "sha256": "32870f2d6933e5599dd7d407d292e85eb99696b724dbbf2155e19818d9a2ab88"
+    },
+    "resume-build.json": {
+      "bytes": 16129,
+      "sha256": "091772f76525290b45c304b75a84399c23801b193c60cbe05db7f5f4b1db4692"
+    },
+    "resume-development-api.json": {
+      "bytes": 11949,
+      "sha256": "8c53a2703505918512f4153700e99f75e69948fcb07bd799fe4a5fb672ab9456"
+    },
+    "resume-development-text.json.gz": {
+      "bytes": 90140,
+      "sha256": "c73755b6a2ed1943a65154c6e22e9c10dd3c90f69fb51f71b52c76e1f2f54323",
+      "uncompressed_sha256": "07dd85dfbea188608f71dd657b80d0c97e8bfd4b9eb0da3d3b5aebbcb63e3739"
+    },
+    "resume-environment.json": {
+      "bytes": 33579,
+      "sha256": "750f5d3d0ffcf3cb2328089fc448ff440ccbc99c44b5c0024fb4ae3a8f07520b"
+    }
+  },
+  "candidate_commit": "51c2ac328ef40b00f18eb9b03130fb67c3f11313",
+  "candidate_runtime_sources_changed": false,
+  "candidate_tree": "0f8e034f12686fa587690da2064d755d0320bc12",
+  "ci_endpoints_queried": false,
+  "counts": {
+    "cases": 16,
+    "classifier_decisions": 339,
+    "float_elements": 1406553,
+    "numeric_stages": 1201,
+    "parser_steps": 244,
+    "sentences": 22,
+    "tokens": 113
+  },
+  "created_at": "2026-11-17T20:36:40.479888+00:00",
+  "crispembed_current_main": "b34a132c6c204b71f5c58ba8bc1705b8769edb9b",
+  "development_passed": true,
+  "frozen_input_bytes_changed": false,
+  "library_sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977",
+  "max_absolute_error": 3.814697265625e-05,
+  "oracle_commit": "dcf2ec9b4d6fba05fa5eec2634c6654266332cc9",
+  "prior_quds_head": "e87494ada0729878981dc0cc60fdb07bcd5116d4",
+  "protocol_sha256": "78c17652ebce834d853209927bf24493eb1b362de99a0115a55b5202fcef2d92",
+  "publication_order": "Save and verify this protocol checkpoint remotely before original acceptance export; save and verify the full reference before native acceptance.",
+  "quds_current_main": "2c47165d01d01cc883135a434ac9f6591ce6e770",
+  "schema": "crispembed.spacy.recovery_freeze.v1",
+  "scope": "Restored installed Linux x86-64 candidate; repeated development evidence, not extra unique cases."
+}
