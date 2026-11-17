@@ -11,7 +11,10 @@ admission, and the frozen development oracle are complete for the recorded
 Linux environment. The W3 numerical stage now runs through the compiled C ABI:
 hash embeddings, shared CNN, three classifier heads, and parser-state scoring.
 It passes all 1,201 frozen stages and exact decisions on 16 development cases.
-Tokenization, linguistic decoders, full analysis, Dart/editor integration,
+The W2 lexical core now also passes exact frozen development comparison; see
+the [lexical checkpoint](../../docs/validation/native-spacy-20261117/lexical-parity-w2.json).
+Its standalone developer probe tests tokens, features and original source spans.
+Public raw-text ABI integration, linguistic decoders, full analysis, Dart/editor integration,
 grammar qualification, mobile packaging, and production release remain separate
 gates. The eight acceptance inputs have not been used during development.
 
@@ -132,8 +135,8 @@ implemented Dart worker or editor cancellation protocol.
 
 ## Next implementation steps
 
-1. W2: port German tokenizer, lexical features, string IDs and exact original
-   source spans using the exported resources and frozen lexical fixtures.
+1. Integrate the remotely saved W2 tokenizer/lexical core into an owned text
+   C ABI. Preserve exact source spans, input bounds and authenticated resources.
 2. W4: implement parser state/validity/transitions/deprojection, edit-tree
    application/fallback, morph/POS decoding and final attribute rules.
 3. Qualify complete raw-text annotations and only then connect the optional

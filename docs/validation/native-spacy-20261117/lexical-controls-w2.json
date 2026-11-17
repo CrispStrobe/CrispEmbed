@@ -1,0 +1,44 @@
+{
+  "acceptance_inputs_used": false,
+  "build": "c++ -std=c++17 -O2 -Isrc tests/test_spacy_lexical.cpp src/spacy_lexical.cpp -lpcre2-8 -o /path/to/test-spacy-lexical",
+  "runs": [
+    {
+      "exit_code": 0,
+      "name": "model_free",
+      "stderr": "",
+      "stdout": "SPACY_LEXICAL_CONTROLS model_free_assertions=28 resource_assertions=0 trained_inference=0 acceptance_inputs=0"
+    },
+    {
+      "exit_code": 0,
+      "name": "authenticated_resources",
+      "stderr": "",
+      "stdout": "SPACY_LEXICAL_CONTROLS model_free_assertions=28 resource_assertions=12 trained_inference=0 acceptance_inputs=0"
+    },
+    {
+      "exit_code": 0,
+      "name": "pinned_lexical_data_reproduction",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "name": "missing_probe_fails_before_qualification",
+      "report_written": false,
+      "stderr": "LEXICAL_PARITY_FAILED: Required asset is missing: missing-lexical-probe",
+      "stdout": ""
+    }
+  ],
+  "schema": "crispembed-spacy-lexical-controls-v1",
+  "source_sha256": {
+    "src/core/clean_exit.h": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6",
+    "src/core/json_value.h": "f6af418a13cc5285f977fd29c5644d7fc2cf957f5c4b6d31a3bf0c33243dacf4",
+    "src/spacy_lexical.cpp": "f28bd5360a43623961e1eed3b4f9d6edba8eadc93350007c2851b0a28443860e",
+    "src/spacy_lexical.h": "92233750306fd516acc3695531aff2dfec7a1d4d1f77c85a182017ed89ab26f4",
+    "src/spacy_lexical_data.h": "0972867a8dd92355ee4895f9f00c1437a3135b1e21e02e96edbce56fc5c9ffe4",
+    "tests/test_spacy_lexical.cpp": "118e4404f5f2e01a0278278462eaffcb4cd7e170bf4105b69da2a2f2f60bf5e5",
+    "tools/spacy/generate_lexical_data.py": "c636699860954ac4f4c43a4056c93688a60e51b0bdad319e210ef983f0e23f4f"
+  },
+  "test_binary_sha256": "8adea823d51d49bb2eb74404cb19e8343d6d3a14cfc1708c23d5504287442faf",
+  "trained_inference": false
+}

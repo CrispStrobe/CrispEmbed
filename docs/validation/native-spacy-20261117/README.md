@@ -113,7 +113,44 @@ converter reproduce them. Native/model release artifacts are not published yet.
 
 ## Remaining work
 
-W2 lexical processing and W4 linguistic decoding are the next dependencies.
+## W2 lexical core continuation checkpoint
+
+The native tokenizer and lexical core now implement the original German model
+resources, spaCy reserved string symbols and MurmurHash64A IDs, source-compatible
+normalization and shape, and original UTF-8/scalar/UTF-16 spans. The source text
+is never normalized before alignment. Python remains developer-only. The PCRE2
+regex engine is a new native dependency; its shorthand character classes are
+translated using the pinned CPython 3.12.14 / Unicode 15 data to avoid host-table
+drift. The generated supplement includes contextual-final-sigma classes and
+reserved symbols absent from the original bundle; the bundle bytes are unchanged.
+
+[lexical-parity-w2.json](lexical-parity-w2.json) records 16 cases, 113 tokens and
+2,260 exact field comparisons through the separately compiled developer probe.
+The [controls](lexical-controls-w2.json) record 28 model-free checks, 12
+resource-backed checks, generated-data reproduction and explicit missing-probe
+failure. [The first receipt](lexical-parity-first.json) retains its earlier
+formatting/test-census source hashes; it is the same corpus, not extra cases.
+Reproduction commands and exact probe/resource/source hashes are in the receipt.
+The developer probe is not installed into the runtime.
+
+This W2 checkpoint precedes composed raw-text analysis. The public ABI at this
+checkpoint still exposes prepared numerical inputs; the separately owned text
+API and W4 decoders are the next integration. Input bounds are 1 MiB of UTF-8
+and 2,048 tokens, with explicit malformed/over-limit rejection, no truncation
+and cancellation. Other platforms and broader tokenizer behavior remain to
+qualify. The eight acceptance inputs remain unused.
+
+The paired Quds handoff is now saved at
+[`e87494ada0729878981dc0cc60fdb07bcd5116d4`](https://github.com/CrispStrobe/quds_office_suite/commit/e87494ada0729878981dc0cc60fdb07bcd5116d4),
+[draft PR #139](https://github.com/CrispStrobe/quds_office_suite/pull/139). It
+incorporates current Quds main `d6010059644b34accd6f188e0e2a4863ab63e318`,
+including incoming Office/proofing changes, and restores the exact earlier W3
+handoff. CrispEmbed main remains `b34a132c6c204b71f5c58ba8bc1705b8769edb9b` and
+is already an ancestor. Remote source refs were refreshed without CI endpoints.
+
+## Remaining work after W2
+
+Owned text integration and W4 linguistic decoding are the next dependencies.
 The frozen eight-case acceptance input set remains unused. After complete
 raw-text analysis parity, W5 may add the optional Dart worker/analysis UI. W6
 requires incremental grammar benefit over current deterministic rules; W7/W8
