@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-11-17T20:17:33.869216+00:00",
+  "purpose": "Verbatim upstream notice provenance for the native spaCy lexical continuation. This records file identities, without a distribution-clearance or legal-compatibility conclusion.",
+  "artifacts": [
+    {
+      "file": "PCRE2-LICENCE.md",
+      "project": "PCRE2",
+      "version": "10.46",
+      "source_url": "https://github.com/PCRE2Project/pcre2/blob/b2bd4254b379b9d7dc9a3dda060a7e27009ccdff/LICENCE.md",
+      "source_tag": "pcre2-10.46",
+      "source_commit": "b2bd4254b379b9d7dc9a3dda060a7e27009ccdff",
+      "source_git_blob": "f58ceb75a63e5f958631932f83d0786ee7593485",
+      "copy": "Complete upstream file; local Git blob equals upstream blob.",
+      "size_bytes": 3867,
+      "sha256": "9cf7ac6976099a1d856826d3ef1b093bd6b84489dc6100628ac79e740cf9885a"
+    },
+    {
+      "file": "CPython-LICENSE",
+      "project": "CPython",
+      "version": "3.12.14",
+      "source_url": "https://github.com/python/cpython/blob/2abcf904b8dac8c999d2b3aac76681abb333798a/LICENSE",
+      "source_tag": "v3.12.14",
+      "source_commit": "2abcf904b8dac8c999d2b3aac76681abb333798a",
+      "source_git_blob": "f26bcf4d2de6eb136e31006ca3ab447d5e488adf",
+      "copy": "Complete upstream file; local Git blob equals upstream blob.",
+      "size_bytes": 13936,
+      "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+    },
+    {
+      "file": "Unicode-LICENSE.txt",
+      "project": "Unicode",
+      "source_url": "https://www.unicode.org/license.txt",
+      "notice_title": "UNICODE LICENSE V3",
+      "notice_copyright_years": "1991-2026",
+      "copy": "Complete bytes retrieved from the canonical official notice URL at capture time. This is a current notice snapshot, not a claim about the contents of the URL in 2022.",
+      "size_bytes": 1995,
+      "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+    },
+    {
+      "file": "Unicode-15.0.0-ReadMe.txt",
+      "project": "Unicode Character Database",
+      "version": "15.0.0",
+      "source_url": "https://www.unicode.org/Public/15.0.0/ucd/ReadMe.txt",
+      "source_date": "2022-09-02",
+      "copy": "Complete official release ReadMe, including its copyright and terms-of-use reference.",
+      "size_bytes": 635,
+      "sha256": "53672c0d0b5185e3cf04c8e970d544c3af81ae7c8eeba0b9cf6d355aa954ae1f"
+    }
+  ]
+}

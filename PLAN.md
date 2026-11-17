@@ -20,7 +20,9 @@ No release, app pin or model distribution is authorized.
 PR236 retains its separately frozen Linux x86-64/AVX2 acceptance. Local artifact
 and source validation only; no Actions query, wait or rerun, no held-out replay
 or new model matrix. Main protection and applicable branch rules report no
-required checks. Undraft/owner merge depends on valid retained local evidence;
+required checks. PR236 is owner-merged at `04e8445823d82591120203e953365582d7ba33be`
+from head `05fe9a0ce`; merged tree `26f1d71e8d0f8da9e411e52f31bef03439f86fac`
+exactly matches the reviewed head.
 W6, other platforms/mobile and distribution remain outside this closure.
 
 ## Worksheet cleanup and binary PDF — 15 November 2026
@@ -46,6 +48,54 @@ camera/shear grids pass the strict 0.35-degree horizontal/vertical line check;
 aligned, blank and unsupported horizontal-only pages are unchanged. Private page
 replay is perspective-corrected and every 1-bit PDF raster matches its prepared
 image. This corrects planar perspective, not arbitrary curved-paper deformation.
+
+## PR236 owner merge review — 17 November 2026
+
+The [retained-evidence review](docs/validation/native-spacy-20261117/owner-merge-review.json)
+validates all 22 frozen source files, all 15 installed archive files, report and
+protocol hashes, eight original-reference case hashes, exact annotations/spans
+and all 201 parser actions/features/masks. Saved stage metrics aggregate to
+851 stages / 1,068,891 values with maximum absolute error 5.340576171875e-5;
+there is no new native acceptance execution. Six model-free admission controls
+and 499 documented environment entries pass locally. Main protection returns
+`Branch not protected`; applicable branch rules are empty, so required checks
+and approvals are both zero. No Actions/status query, wait or rerun is used.
+The concurrent documentation-only W6 checkpoint `5831aa02` is preserved; this
+owner closure performs no W6 work. PR236 is merged at `04e84458` from reviewed
+head `05fe9a0ce`; merged tree exactly matches that head. Scope remains frozen Linux x86-64/AVX2 with PCRE2 10.46;
+release, app pins, mobile and model distribution remain separate.
+
+## Active work in flight — native spaCy, 17 November 2026
+
+| Lane | Owner/branch | Current boundary | Next gate |
+| --- | --- | --- | --- |
+| German spaCy CPU/F32 | `feat/native-spacy-20261117`; paired Quds `feat/native-spacy-reference-20261117` | W0–W4 frozen first acceptance passes at `2176c89`; W5 optional Dart worker and manual Studio analysis pass their bounded Linux x86-64/AVX2 gates with the same native binary and original UTF-16 offsets; [W5 evidence](https://github.com/CrispStrobe/quds_office_suite/tree/e7c67f29b34f1c1909e51aa25997fc774bb8ac80/docs/validation/native-spacy-w5-20261117) | W6 incremental grammar benefit against latest deterministic Quds main; W7/platform packaging and release/distribution remain separate gates |
+
+The user requires incremental remote checkpoints and local validation without
+querying or waiting for Actions. Preserve all unrelated paths/defaults. This
+optional standalone NLP lane does not change runtime releases or app pins.
+The [W5 source refresh](docs/validation/native-spacy-20261117/resume-w5-source-snapshot.json)
+inventories all fetched branch/PR heads and independently audits the retained
+acceptance artifacts. Preserve the first acceptance result; no rerun or tuning
+on the consumed split is needed to continue Dart/editor work.
+The later Quds main refresh to `4b2b4e78` brings four commits for ODS icon sets
+and reconciled Office/German controls. No spaCy fixture or W5 source path
+changed; only `docs/PROOFING.md` overlaps. Remote merge `8d89e4f7` passes all
+29 package tests, 22 UI controls, 75 proofing regressions, the actual-native
+widget gate and static analysis with source/runtime bytes unchanged.
+
+W6 continuation is active on the same paired branches. The new
+[grammar protocol and 86-case panel](https://github.com/CrispStrobe/quds_office_suite/tree/846fc0371b23bf4a84542db7a3f24eee2d8609dd/docs/validation/native-spacy-w6-20261117)
+were published before inspecting candidate outputs. Current main remains
+`b34a132c` here and `4b2b4e78` in Quds. A fresh full branch/PR inventory found
+late Office union repairs absent from Quds main; these are preserved at
+[Quds `ec4aeefe`](https://github.com/CrispStrobe/quds_office_suite/commit/ec4aeefe1be6ce1868ee7eebf004c07b25d4108a),
+with unchanged deterministic German proofing inputs. The exact accepted native
+archive, six dependencies and five-file model bundle are restored. The work
+is a pure Dart guarded agreement experiment; it does not rebuild native code,
+reopen native acceptance, or activate grammar before a separate benefit and
+editor gate. Preserve a negative outcome if the new candidate fails.
+
 
 ## Rust DAT RGB buffers and output ownership — 14 November 2026
 

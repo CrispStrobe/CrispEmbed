@@ -1,0 +1,370 @@
+{
+  "schema_version": 1,
+  "scope": "real-model authored counted-text C ABI and ownership controls; no acceptance inputs or grammar quality claims",
+  "status": "pass",
+  "tests_run": 21,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "elapsed_seconds": 0.6146632930001488,
+  "python_version": "3.12.14",
+  "platform": "Linux",
+  "machine": "x86_64",
+  "library_sha256": "5d9119c277d0a48aa8d10cc192cafabbfadff03a5310ac8ad798daa5fc8e6ef4",
+  "bundle_manifest_sha256": "d599768375de3dc56abcca5cf1d49da0015857f9d3a10640aebb5317ef5d427e",
+  "model_sha256": "fae2e6ab8d6c611d7a9dddd4b3259a871a1d2f95cacc8259f49c1e4ff31ff6cd",
+  "resources_sha256": "b42496cc373ada57a67ed2f4c2c25f8d22f80c08db5841a7cdb91c8a6e18562a",
+  "source_sha256": {
+    "tests/test_spacy_text_api.py": "d1e4599baeec25adf99369d28671321bf2e647203bfa42b652ddfb82accf185b",
+    "src/spacy_decode.h": "b4441442893d85cc12a3957c5853951deac7e7793e4bd20fb8501f87ce6189da",
+    "src/spacy_lexical.h": "92233750306fd516acc3695531aff2dfec7a1d4d1f77c85a182017ed89ab26f4",
+    "src/spacy_lexical_data.h": "0972867a8dd92355ee4895f9f00c1437a3135b1e21e02e96edbce56fc5c9ffe4",
+    "src/spacy_numeric.h": "399b16063d02705ecae36eeed77a6533a716c6c267445547ba4d0d0aa8cf2ae7",
+    "src/spacy_pipeline.h": "756c25b664b38d26d1da13264d47417d9914f8dd805c588a539fe6f3681f7e62",
+    "src/spacy_decode.cpp": "9e0701faea26b6eae1e89c6bf829b2129135371ab3b051effaa088a28ca021fc",
+    "src/spacy_lexical.cpp": "48170ac748f1697855ae526b16fe5d7a6d1b147b1edbf26e076ef99deacf8c2c",
+    "src/spacy_numeric.cpp": "664ab23f4169706d1a79299ff062d381889bc207fd7addccd047d4d1587fa9d0",
+    "src/spacy_pipeline.cpp": "9725a3e16ed04ccb2fe34fc6d2a10390427303bf1b6391d20aa53260ce3bcde1"
+  },
+  "results": [
+    {
+      "test": "__main__.TextAPITests.test_admission_hashes_and_missing_resources (case=0)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_admission_hashes_and_missing_resources (case=1)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_admission_hashes_and_missing_resources (case=2)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_admission_hashes_and_missing_resources (case=3)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_admission_hashes_and_missing_resources",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_cancellation_after_work_begins",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_cancellation_and_recovery (analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_cancellation_and_recovery (analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_cancellation_and_recovery",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_corrupt_and_oversized_resources_rejected (case='changed_same_size')",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_corrupt_and_oversized_resources_rejected (case='truncated')",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_corrupt_and_oversized_resources_rejected (case='oversized')",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_corrupt_and_oversized_resources_rejected",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_counted_nul_and_original_offsets (case=0, analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_counted_nul_and_original_offsets (case=0, analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_counted_nul_and_original_offsets (case=1, analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_counted_nul_and_original_offsets (case=1, analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_counted_nul_and_original_offsets (case=2, analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_counted_nul_and_original_offsets (case=2, analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_counted_nul_and_original_offsets",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_disabled_gate_on_contexts_and_calls (analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_disabled_gate_on_contexts_and_calls (analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_disabled_gate_on_contexts_and_calls",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_document_lifetime_after_context",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_empty_counted_and_null_empty (null=False, analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_empty_counted_and_null_empty (null=False, analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_empty_counted_and_null_empty (null=True, analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_empty_counted_and_null_empty (null=True, analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_empty_counted_and_null_empty",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_error_buffer_capacity (capacity=0)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_error_buffer_capacity (capacity=1)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_error_buffer_capacity (capacity=4)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_error_buffer_capacity",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_immutable_document_concurrent_readers",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_input_buffer_is_not_borrowed",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_invalid_document_views_are_cleared (null=True, index=0)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_invalid_document_views_are_cleared (null=False, index=1)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_invalid_document_views_are_cleared (null=False, index=18446744073709551615)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_invalid_document_views_are_cleared",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_legacy_context_rejects_text (analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_legacy_context_rejects_text (analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_legacy_context_rejects_text",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=0, analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=0, analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=1, analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=1, analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=2, analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=2, analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=3, analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=3, analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=4, analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=4, analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=5, analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=5, analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=6, analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=6, analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=7, analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=7, analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=8, analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset (case=8, analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_malformed_utf8_and_output_reset",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_null_argument_combinations (analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_null_argument_combinations (analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_null_argument_combinations",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_resources_owned_after_open",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_same_context_concurrent_calls",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_text_byte_boundary (analyze=False)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_text_byte_boundary (analyze=True)",
+      "status": "pass",
+      "subtest": true
+    },
+    {
+      "test": "__main__.TextAPITests.test_text_byte_boundary",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_token_count_boundary",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_trace_abort_and_recovery",
+      "status": "pass"
+    },
+    {
+      "test": "__main__.TextAPITests.test_versions_and_capabilities",
+      "status": "pass"
+    }
+  ]
+}

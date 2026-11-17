@@ -1,0 +1,44 @@
+{
+  "acceptance_inputs_used": false,
+  "build": "c++ -std=c++17 -O2 -Isrc tests/test_spacy_lexical.cpp src/spacy_lexical.cpp -lpcre2-8 -o /path/to/test-spacy-lexical",
+  "change": "Poll cancellation before each bounded infix-regex search; no token/feature semantics changed.",
+  "old_lexical_source_commit": "b5add9c32d3ff4bea106d7181b9e2fe7567a5947",
+  "old_lexical_source_sha256": "f28bd5360a43623961e1eed3b4f9d6edba8eadc93350007c2851b0a28443860e",
+  "runs": [
+    {
+      "binary_sha256": "bad421bd2dbd33f8fb820f4ba9065f49e4436e7fb15139933336a73e6f6b9835",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "name": "model_free",
+      "stderr": "",
+      "stdout": "SPACY_LEXICAL_CONTROLS model_free_assertions=28 resource_assertions=0 trained_inference=0 acceptance_inputs=0"
+    },
+    {
+      "binary_sha256": "bad421bd2dbd33f8fb820f4ba9065f49e4436e7fb15139933336a73e6f6b9835",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "name": "final_resources",
+      "stderr": "",
+      "stdout": "SPACY_LEXICAL_CONTROLS model_free_assertions=28 resource_assertions=14 trained_inference=0 acceptance_inputs=0"
+    },
+    {
+      "binary_sha256": "0da3e231c5890af96d2b7151d097acf9d0af3bdbecdbc22a7ae1971c58d3ae32",
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "name": "old_runtime_new_cancellation_control",
+      "stderr": "SPACY_LEXICAL_CONTROLS FAILED: Tokenizer infix match count exceeds bound",
+      "stdout": ""
+    }
+  ],
+  "schema": "crispembed-spacy-lexical-controls-v2",
+  "source_sha256": {
+    "src/core/clean_exit.h": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6",
+    "src/core/json_value.h": "f6af418a13cc5285f977fd29c5644d7fc2cf957f5c4b6d31a3bf0c33243dacf4",
+    "src/spacy_lexical.cpp": "48170ac748f1697855ae526b16fe5d7a6d1b147b1edbf26e076ef99deacf8c2c",
+    "src/spacy_lexical.h": "92233750306fd516acc3695531aff2dfec7a1d4d1f77c85a182017ed89ab26f4",
+    "src/spacy_lexical_data.h": "0972867a8dd92355ee4895f9f00c1437a3135b1e21e02e96edbce56fc5c9ffe4",
+    "src/spacy_numeric.h": "399b16063d02705ecae36eeed77a6533a716c6c267445547ba4d0d0aa8cf2ae7",
+    "tests/test_spacy_lexical.cpp": "7bc6ae99bd460789f5bbf77b01bac8bfbb7484eb5a4f7274eca0f6423b7bc5e2"
+  },
+  "trained_inference": false
+}

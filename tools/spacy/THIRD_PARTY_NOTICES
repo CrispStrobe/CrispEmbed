@@ -1,0 +1,36 @@
+Native spaCy development target — source and model notices
+
+CrispEmbed: MIT, see repository LICENSE.
+ggml at 3a27b6c665b191cb230be367db5c52d81dd3e2ac: MIT, notices/ggml-LICENSE.
+spaCy at 43311999028032fd81bef77a75fdb4fa96803c98: MIT, notices/spaCy-LICENSE.
+Thinc at e617de4ea2530c7091ea2110e011807c33c366f0: MIT, notices/Thinc-LICENSE.
+Numeric semantics and the specialized Murmur embedding hash are ported from
+the pinned Thinc sources; retain their source attribution with modifications.
+MurmurHash3's original Austin Appleby implementation is public domain.
+MurmurHash64A string IDs and tokenizer/parser/edit-tree semantics follow the
+same pinned spaCy sources; native modifications retain source attribution.
+
+PCRE2 10.46 at b2bd4254b379b9d7dc9a3dda060a7e27009ccdff provides the native
+regular-expression engine. Its complete upstream notice is
+notices/PCRE2-LICENCE.md. The qualified Linux build links the system PCRE2-8
+library dynamically; platform packages must supply this runtime dependency.
+
+The generated lexical supplement records CPython 3.12.14 / Unicode 15.0
+character properties and spaCy 3.8.18 reserved symbols. CPython's complete
+notice is notices/CPython-LICENSE. notices/Unicode-15.0.0-ReadMe.txt preserves
+the original data-version notice and terms URL; notices/Unicode-LICENSE.txt
+is the current canonical Unicode license snapshot. Exact provenance, versions,
+file digests and the distinction between these snapshots are retained in
+notices/continuation-notice-sources.json.
+
+de_core_news_sm 3.8.0: notices/de_core_news_sm-LICENSE and
+notices/de_core_news_sm-LICENSES_SOURCES are copied verbatim from the
+SHA-256-authenticated official wheel. Preserve both with converted models.
+The model is published as MIT; its training/source notices include TIGER,
+Tiger2Dep, and WikiNER. These notices do not grant distribution rights to
+the original training corpora.
+
+Python/spaCy/Thinc/NumPy/gguf and the hash-locked Python environment are
+developer conversion/reference tools; no Python runtime is a native target
+dependency. Platform compiler/system runtime inventories are recorded with
+actual builds. This notice inventory is not mobile distribution qualification.

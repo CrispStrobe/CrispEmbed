@@ -1,0 +1,122 @@
+{
+  "acceptance_inputs_used": false,
+  "bundle_manifest_sha256": "d599768375de3dc56abcca5cf1d49da0015857f9d3a10640aebb5317ef5d427e",
+  "case_results": [
+    {
+      "exact": true,
+      "id": "empty",
+      "tokens": 0
+    },
+    {
+      "exact": true,
+      "id": "single",
+      "tokens": 1
+    },
+    {
+      "exact": true,
+      "id": "agreement",
+      "tokens": 6
+    },
+    {
+      "exact": true,
+      "id": "ambiguity",
+      "tokens": 10
+    },
+    {
+      "exact": true,
+      "id": "sentences",
+      "tokens": 11
+    },
+    {
+      "exact": true,
+      "id": "punctuation",
+      "tokens": 8
+    },
+    {
+      "exact": true,
+      "id": "whitespace",
+      "tokens": 11
+    },
+    {
+      "exact": true,
+      "id": "unicode",
+      "tokens": 10
+    },
+    {
+      "exact": true,
+      "id": "lexical",
+      "tokens": 10
+    },
+    {
+      "exact": true,
+      "id": "addresses",
+      "tokens": 8
+    },
+    {
+      "exact": true,
+      "id": "hyphens",
+      "tokens": 7
+    },
+    {
+      "exact": true,
+      "id": "repeated",
+      "tokens": 9
+    },
+    {
+      "exact": true,
+      "id": "syntax",
+      "tokens": 11
+    },
+    {
+      "exact": true,
+      "id": "scripts",
+      "tokens": 7
+    },
+    {
+      "exact": true,
+      "id": "nul",
+      "tokens": 3
+    },
+    {
+      "exact": true,
+      "id": "long-token",
+      "tokens": 1
+    }
+  ],
+  "cases": 16,
+  "exact_field_comparisons": 2260,
+  "failures": [],
+  "full_analysis_qualified": false,
+  "machine": "x86_64",
+  "passed": true,
+  "pcre2": "10.46 2025-08-27",
+  "platform": "Linux",
+  "probe_sha256": "7c9fb806d951f7484b403fe94706da553c9c9ac14b393aa10b57c0707265177e",
+  "python": "3.12.14",
+  "reference_manifest_sha256": "9a3bb6bae6114adcf579840834ddcb64dea4e0aaa8361718dc7a551d663c8f7c",
+  "reproduction": [
+    "c++ -std=c++17 -O2 -Isrc tools/spacy/lexical_probe.cpp src/spacy_lexical.cpp -lpcre2-8 -o /path/to/lexical-probe",
+    "python tests/spacy_lexical_parity.py --probe /path/to/lexical-probe --bundle /path/to/bundle --quds-root /path/to/quds --report /path/to/new-report.json"
+  ],
+  "resources_sha256": "b42496cc373ada57a67ed2f4c2c25f8d22f80c08db5841a7cdb91c8a6e18562a",
+  "schema": "crispembed-spacy-lexical-parity-v1",
+  "scope": "Native tokenizer, lexical strings/IDs/features and original byte/scalar/UTF16 spans",
+  "source_sha256": {
+    "src/core/clean_exit.h": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6",
+    "src/core/json.h": "7e72a6359897e9397e5bee3edf7563476fc4bd41516bf5245a16df50dc54c589",
+    "src/core/json_value.h": "f6af418a13cc5285f977fd29c5644d7fc2cf957f5c4b6d31a3bf0c33243dacf4",
+    "src/spacy_lexical.cpp": "f28bd5360a43623961e1eed3b4f9d6edba8eadc93350007c2851b0a28443860e",
+    "src/spacy_lexical.h": "92233750306fd516acc3695531aff2dfec7a1d4d1f77c85a182017ed89ab26f4",
+    "src/spacy_lexical_data.h": "0972867a8dd92355ee4895f9f00c1437a3135b1e21e02e96edbce56fc5c9ffe4",
+    "src/spacy_numeric.h": "399b16063d02705ecae36eeed77a6533a716c6c267445547ba4d0d0aa8cf2ae7",
+    "tests/spacy_lexical_parity.py": "3b1d0b4aa84839f33fde33f952ab981f06694f646e46f35978dd7fe8cd6483c8",
+    "tests/spacy_parity.py": "e83495dadcf199e068259e1cca30e65256bf76263a405bc6299765779fd77e32",
+    "tests/test_spacy_lexical.cpp": "118e4404f5f2e01a0278278462eaffcb4cd7e170bf4105b69da2a2f2f60bf5e5",
+    "tools/spacy/generate_lexical_data.py": "c636699860954ac4f4c43a4056c93688a60e51b0bdad319e210ef983f0e23f4f",
+    "tools/spacy/lexical_probe.cpp": "3c451d4e25f6605fd8fe25530f209310837626ec32fb78096cc9a45f60bfa6f6"
+  },
+  "split": "development",
+  "tokens": 113,
+  "trained_inference": false,
+  "wall_seconds_including_probe_start": 0.02382457900000645
+}

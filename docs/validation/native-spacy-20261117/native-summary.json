@@ -1,0 +1,34 @@
+{
+  "atol": 0.0002,
+  "bit_exact_stages": 19,
+  "classifier_choices_exact": true,
+  "counts": {
+    "cases": 16,
+    "classifier_decisions": 339,
+    "float_elements": 1406553,
+    "parser_states": 244,
+    "tokens": 113,
+    "trace_stages": 1201
+  },
+  "final_source_hashes_match": true,
+  "first_and_final_runs_are_same_cases_not_additive": true,
+  "independent_review": "Separate numeric and contract reviewers recomputed counts and inspected loader, arithmetic, comparator, ownership, and scope; no blocking issue for the stated numeric boundary.",
+  "maximum_absolute_error": 3.814697265625e-05,
+  "not_qualified": [
+    "native tokenization",
+    "native parser transitions",
+    "native lemma decoding",
+    "full linguistic analysis",
+    "Dart/editor integration",
+    "grammar quality",
+    "mobile targets",
+    "shipping distribution"
+  ],
+  "passed": true,
+  "rtol": 2e-05,
+  "schema_version": 1,
+  "scope": "prepared-feature CPU/F32 numerical parity and scorer replay on reference parser states",
+  "source_state_action_choices_exact": true,
+  "violating_elements": 0,
+  "weighted_mean_absolute_error": 1.2902550611980629e-06
+}

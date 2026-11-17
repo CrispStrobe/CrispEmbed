@@ -22321,3 +22321,73 @@ The [independent observed audit](docs/lighton4b-physical-rope-observed-audit.md)
 ### 12 November 2026 — physical RoPE fixed panel fully raw-audited
 
 The [book-first six-arm raw audit](docs/lighton4b-physical-rope-fixed-audit.md) verifies578 current artifacts/4,812,973,943 bytes,3,619 current raw rows,849 reused observed rows,2,249 prior baseline rows and96 paired native layers on the hosted CPU. Book ON654/EOS and inventory248/EOS pass provisional source floors; receipt ON468/EOS regresses and fails its floor. All ON arms complete; only2/3 floors pass. The initial audit journal collision/failure and corrected artifact-only retry are preserved, with original source-log, metadata-binary and intermediate-bootstrap limitations explicit. No model/source rerun during auditing, quality/default/release or app promotion.
+
+
+## Native German spaCy numerical foundation — 17 November 2026
+
+Implemented the optional standalone `tools/spacy` target, authenticated exact
+39-tensor model conversion/admission, a versioned prepared-feature C ABI, and
+scalar CPU/F32 hash embeddings, shared CNN, classifier heads and parser scorer.
+[Retained local evidence](docs/validation/native-spacy-20261117/README.md) passes
+16 cases/113 tokens/1,201 stages/1,406,553 values with exact 339 classifier
+choices and 244 choices on reference parser states. The numerical gate is not
+full text analysis. W2/W4 and all app/grammar/mobile qualification remain open.
+Both native control executables, converter 33 controls, reference 17 controls,
+independent bundle/reference exports, and the recorded numeric sanitizer check
+pass. Initial temporary-directory/install setup outcomes remain documented.
+`CRISPEMBED_SPACY` stays default off; no runtime/app release or model publication.
+All checkpoints are saved remotely without querying/waiting for Actions.
+
+
+## Native German spaCy raw-text development analysis — 17 November 2026
+
+The optional CPU/F32 lane now composes tokenizer/lexical features, the shared
+CNN and classifier heads, native parser transitions/deprojection, edit-tree
+lemmas, morphology/POS and whitespace rules through an owned counted-text C ABI.
+[Installed evidence](docs/validation/native-spacy-20261117/text-summary.json)
+matches 16 development cases, 113 tokens, 22 sentences, 244 native transitions and 339
+classifier choices, plus all 1,201 numerical stages and 1,406,553 F32 elements. Separate
+expanded lexical, sanitizer and 21 real-model API-control evidence is retained in
+[the continuation receipt](docs/validation/native-spacy-20261117/README.md).
+Cancellation-loop findings and initial setup failures are preserved. PCRE2 is a
+new native dependency with installed notices. The untouched eight-case acceptance
+split has a separate source/binary-frozen gate. Linux evidence does not qualify
+mobile, app integration or grammar benefit. The gate stays off; no release,
+model alias or application pin changed. Local tests only; no CI queries/waits.
+
+## Native German spaCy first held-out acceptance — 17 November 2026
+
+The frozen raw-text CPU/F32 candidate passes all eight held-out cases on its
+first native execution. [The retained result](docs/validation/native-spacy-20261117/acceptance-summary.json)
+at `2176c89` covers 98 tokens, 13 sentences, 201 parser transitions, 294
+classifier choices and 851 numerical stages / 1,068,891 elements. All discrete
+annotations/spans and parser records match; maximum absolute error is
+`5.340576171875e-5` under the unchanged budget. The protocol, exact installed
+binary and complete original reference were saved remotely before execution.
+No tuning or reference/budget change followed acceptance.
+
+[Recovery and source reconciliation](docs/validation/native-spacy-20261117/resume-w5-source-snapshot.json)
+verify the original report/archive/source hashes and saved exact outputs without
+rerunning the consumed acceptance split. W5 Dart/editor analysis is next;
+grammar benefit, mobile/platform packaging and release qualification remain
+open. The native gate stays off. No runtime/model publication, app-pin change
+or GitHub Actions query/wait follows from this milestone.
+
+## Native German spaCy W5 Dart and Studio analysis — 17 November 2026
+
+[Quds W5](https://github.com/CrispStrobe/quds_office_suite/tree/e7c67f29b34f1c1909e51aa25997fc774bb8ac80/docs/validation/native-spacy-w5-20261117) qualifies the optional counted-string Dart
+binding, bounded persistent worker and manual Studio analysis on Linux
+x86-64/AVX2 with the unchanged accepted native binary. Direct and actual-worker
+replays each match the same 16 development cases / 113 tokens / 22 sentences /
+2,571 exposed fields, plus ten controls; their document counts are not added.
+Twenty-nine package tests, 20 compiled malformed-FFI controls (30 frees, zero
+live objects), 22 UI controls, one actual-native widget gate and 75 existing
+proofing regressions pass. Web imports report explicit unavailability.
+
+The manual view preserves source offsets and snapshot/locale ownership; logical
+cancellation retains native-call ownership through safe shutdown. No grammar
+provider or default is activated, and held-out acceptance is not rerun. The
+newer Quds main `4b2b4e78` changes no spaCy fixture or W5 source; all package,
+UI, real-native widget, proofing and static-analysis checks pass on saved merge
+`8d89e4f7`, with unchanged source/runtime bytes. W6 incremental grammar benefit,
+other-platform packaging and release remain open. No CI query or wait.

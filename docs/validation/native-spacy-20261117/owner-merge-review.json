@@ -1,0 +1,40 @@
+{
+  "actions_queried_waited_or_rerun": false,
+  "annotations_spans_and_parser_steps_equal": true,
+  "candidate_commit": "51c2ac328ef40b00f18eb9b03130fb67c3f11313",
+  "counts": {
+    "cases": 8,
+    "classifier_decisions": 294,
+    "float_elements": 1068891,
+    "numeric_stages": 851,
+    "parser_steps": 201,
+    "sentences": 13,
+    "tokens": 98
+  },
+  "environment_documentation_entries": 499,
+  "fresh_native_acceptance_executions": 0,
+  "installed_files": 15,
+  "library_sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977",
+  "limitations": [
+    "Linux x86-64/AVX2 with PCRE2 10.46 only",
+    "Numerical aggregate audited from saved stage metrics; native arrays not recomputed",
+    "Concurrent 5831aa02 W6 documentation preserved; no W6 work performed",
+    "No release, app pin, mobile or model distribution"
+  ],
+  "max_absolute_error": 5.340576171875e-05,
+  "model_free_admission_controls": 6,
+  "model_matrix_executed": false,
+  "passed": true,
+  "recorded_at": "2026-11-17T22:12:21.875744+00:00",
+  "reference_case_hashes_verified": 8,
+  "reference_commit": "4ae8e9e0e9b83b1a01176485bae55d9595e99b1c",
+  "repository_merge_requirements": {
+    "applicable_branch_rules": [],
+    "main_protection": "404 Branch not protected",
+    "required_approvals": 0,
+    "required_checks": 0
+  },
+  "reviewed_head": "5831aa02761b55e8dbff10c93ed8491a3ba1d38b",
+  "schema": "crispembed.spacy.owner_retained_evidence_review.v1",
+  "source_files": 22
+}

@@ -1,0 +1,53 @@
+{
+  "acceptance_inputs_executed": false,
+  "analysis_seconds_with_trace_copy": 0.12315019400011806,
+  "bundle_manifest_sha256": "d599768375de3dc56abcca5cf1d49da0015857f9d3a10640aebb5317ef5d427e",
+  "complete_report": {
+    "path": "text-parity-final.json.gz",
+    "sha256": "3af9ec5070e1a1c5788363733011099d82297b83219cbc8f91cc8f6a7fdd066b",
+    "uncompressed_sha256": "56d54ba6ee2edba57aeb9a42cbeb35a74397698a86938976187f421db13808d8"
+  },
+  "counts": {
+    "cases": 16,
+    "classifier_decisions": 339,
+    "float_elements": 1406553,
+    "numeric_stages": 1201,
+    "parser_steps": 244,
+    "sentences": 22,
+    "tokens": 113
+  },
+  "discrete_differences": 0,
+  "library_sha256": "5d9119c277d0a48aa8d10cc192cafabbfadff03a5310ac8ad798daa5fc8e6ef4",
+  "max_absolute_error": 3.814697265625e-05,
+  "missing_or_extra_stages": 0,
+  "passed": true,
+  "reference_manifest_sha256": "9a3bb6bae6114adcf579840834ddcb64dea4e0aaa8361718dc7a551d663c8f7c",
+  "schema": "crispembed.spacy.text_summary.v1",
+  "scope": "Original UTF-8 through native tokenizer, numeric graph and greedy linguistic decoders",
+  "source_sha256": {
+    "src/core/env_gate.h": "2370e31636ea25bc1e5ca63e1e606f4cd3c07c65e0f4d1347b2ec6daf57eaa0e",
+    "src/core/gguf_loader.cpp": "04b2c87b90f80fef04713c0572f3a7e823ba1c22e7c89ebc925a3d1ea56a6a8a",
+    "src/core/gguf_loader.h": "d191f61843db3aaf4a9a653c29debb70fbd8f1e2f2d47d63e85966e737a08936",
+    "src/core/json.h": "7e72a6359897e9397e5bee3edf7563476fc4bd41516bf5245a16df50dc54c589",
+    "src/core/json_value.h": "f6af418a13cc5285f977fd29c5644d7fc2cf957f5c4b6d31a3bf0c33243dacf4",
+    "src/core/sha256.h": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f",
+    "src/spacy_decode.cpp": "9e0701faea26b6eae1e89c6bf829b2129135371ab3b051effaa088a28ca021fc",
+    "src/spacy_decode.h": "b4441442893d85cc12a3957c5853951deac7e7793e4bd20fb8501f87ce6189da",
+    "src/spacy_lexical.cpp": "48170ac748f1697855ae526b16fe5d7a6d1b147b1edbf26e076ef99deacf8c2c",
+    "src/spacy_lexical.h": "92233750306fd516acc3695531aff2dfec7a1d4d1f77c85a182017ed89ab26f4",
+    "src/spacy_lexical_data.h": "0972867a8dd92355ee4895f9f00c1437a3135b1e21e02e96edbce56fc5c9ffe4",
+    "src/spacy_numeric.cpp": "664ab23f4169706d1a79299ff062d381889bc207fd7addccd047d4d1587fa9d0",
+    "src/spacy_numeric.h": "399b16063d02705ecae36eeed77a6533a716c6c267445547ba4d0d0aa8cf2ae7",
+    "src/spacy_pipeline.cpp": "9725a3e16ed04ccb2fe34fc6d2a10390427303bf1b6391d20aa53260ce3bcde1",
+    "src/spacy_pipeline.h": "756c25b664b38d26d1da13264d47417d9914f8dd805c588a539fe6f3681f7e62",
+    "tests/spacy_parity.py": "e83495dadcf199e068259e1cca30e65256bf76263a405bc6299765779fd77e32",
+    "tests/spacy_text_parity.py": "f5fc6c84cc9d850c78f2f5102484811ee43d4f3d40ba74e2ec97b6833a13d6a9",
+    "tests/test_spacy_text_api.py": "d1e4599baeec25adf99369d28671321bf2e647203bfa42b652ddfb82accf185b",
+    "tools/spacy/CMakeLists.txt": "cf126a32da8b8c7b0736cd3bc1770e26d0106309e28057e219a464a45c0f6684"
+  },
+  "split": "development",
+  "timing_scope": "single Linux process, development inputs, trace copying enabled; not a benchmark",
+  "tokenize_seconds": 0.003911033999884239,
+  "unique_corpus_counts": true,
+  "violating_float_elements": 0
+}
