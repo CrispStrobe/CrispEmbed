@@ -1,0 +1,156 @@
+{
+  "C_ABI_exports": [
+    "crispembed_spacy_abi_version",
+    "crispembed_spacy_capabilities",
+    "crispembed_spacy_create",
+    "crispembed_spacy_forward_features",
+    "crispembed_spacy_free",
+    "crispembed_spacy_parser_scores",
+    "crispembed_spacy_result_free",
+    "crispembed_spacy_result_matrix"
+  ],
+  "assertion_counts_not_unique_cases": {
+    "numeric": 147,
+    "pipeline": 455
+  },
+  "checks": {
+    "cpu_baseline": {
+      "exit_code": 0,
+      "output": "CPU baseline check: <workspace>/spacy-build/CMakeCache.txt (arch=x86_64)\n  CRISPEMBED_NATIVE    = OFF\n  GGML_NATIVE          = OFF\n  GGML_AMX_BF16        = OFF\n  GGML_AMX_INT8        = OFF\n  GGML_AMX_TILE        = OFF\n  GGML_AVX2            = ON\n  GGML_AVX512          = OFF\n  GGML_AVX512_BF16     = OFF\n  GGML_AVX512_VBMI     = OFF\n  GGML_AVX512_VNNI     = OFF\n  GGML_AVX_VNNI        = OFF\n\nOK: portable CPU baseline (scanned generated flags for 10 banned tokens).\n"
+    },
+    "ctest": {
+      "exit_code": 0,
+      "output": "UpdateCTestConfiguration  from :<workspace>/spacy-build/DartConfiguration.tcl\nParse Config file:<workspace>/spacy-build/DartConfiguration.tcl\nTest project <workspace>/spacy-build\nConstructing a list of tests\nDone constructing a list of tests\nUpdating test list for fixtures\nAdded 0 tests to meet fixture requirements\nChecking test dependency graph...\nChecking test dependency graph end\ntest 1\n    Start 1: spacy-pipeline-contract\n\n1: Test command: <workspace>/spacy-build/test-spacy-pipeline\n1: Working Directory: <workspace>/spacy-build\n1: Environment variables: \n1:  TMPDIR=<workspace>/spacy-build/test-tmp\n1:  TEMP=<workspace>/spacy-build/test-tmp\n1: Test timeout computed to be: 1500\n1: PASS: 455 model-free spaCy ABI/admission assertions; synthetic weights, no inference qualification\n1/2 Test #1: spacy-pipeline-contract ..........   Passed    1.86 sec\ntest 2\n    Start 2: spacy-numeric-contract\n\n2: Test command: <workspace>/spacy-build/test-spacy-numeric\n2: Working Directory: <workspace>/spacy-build\n2: Test timeout computed to be: 1500\n2: SPACY_NUMERIC_MODEL_FREE assertions=147 actual_model_fixtures=0 qualified_inference=0\n2/2 Test #2: spacy-numeric-contract ...........   Passed    0.02 sec\n\n100% tests passed out of 2\n\nTotal Test time (real) =   1.88 sec\n"
+    },
+    "environment_gate_inventory": {
+      "exit_code": 0,
+      "output": "OK\n"
+    },
+    "missing_fixture_fails": {
+      "exit_code": 1,
+      "output": "{\"error\": \"Reference manifest differs from the remotely frozen W1 development oracle\", \"error_type\": \"ValueError\", \"passed\": false, \"schema_version\": 1, \"scope\": \"native qualification failed\"}\n",
+      "receipt": {
+        "error": "Reference manifest differs from the remotely frozen W1 development oracle",
+        "error_type": "ValueError",
+        "passed": false,
+        "schema_version": 1,
+        "scope": "native qualification failed"
+      }
+    },
+    "numeric_asan_ubsan": {
+      "exit_code": 0,
+      "output": "SPACY_NUMERIC_MODEL_FREE assertions=147 actual_model_fixtures=0 qualified_inference=0\n"
+    }
+  },
+  "cmake": "cmake version 4.4.5",
+  "compiled_source_sha256": {
+    "ggml/src/ggml-alloc.c": "1274169634584af70c7492a63ed0c53dca63b759b6885f0d8839d7d4831b82c4",
+    "ggml/src/ggml-backend-dl.cpp": "acd76df8b83bcdef6807bc7b0520f57b379d61b4ff1027c04aa4d140d16ad07f",
+    "ggml/src/ggml-backend-meta.cpp": "e1482bddfdac4fe22a99c8397bb0572f7d1b4c5ac16c9abccd395d6691a79ab9",
+    "ggml/src/ggml-backend-reg.cpp": "c0a61f47e7af0359cfff41317ae8e68717960483d141983bba914733b1f68906",
+    "ggml/src/ggml-backend.cpp": "f3795438348aef30ddc8f72c41ffa47cc13828675df25b958d4a3e8145501203",
+    "ggml/src/ggml-cpu/amx/amx.cpp": "636d1e4b858a86ad6568100bbdb4bf9715d9dfb25d3831415d55e04e39acad86",
+    "ggml/src/ggml-cpu/amx/mmq.cpp": "0f95c80e0300eca3b3a3df07272042fee708425e19cd5f2c4cba7b253b26d226",
+    "ggml/src/ggml-cpu/arch/x86/quants.c": "2909f2c8d2aca218244fa6a816061647f8073fb8d1b07759779cc40240be85a6",
+    "ggml/src/ggml-cpu/arch/x86/repack.cpp": "c69735f83caf854172cac78eed2cbc022ef81c077e5f6aca55a49d3404a02331",
+    "ggml/src/ggml-cpu/binary-ops.cpp": "2df261aadce36a20f5e3bf6961d4ca27b8c2d461afc41488361ee6ad09c1730d",
+    "ggml/src/ggml-cpu/ggml-cpu.c": "9a85d2bf58f99e885106cac024d7585f079f16ba7df9a68ef0bb03d9bc860f14",
+    "ggml/src/ggml-cpu/ggml-cpu.cpp": "898063fa671f65e5cee7b9a6520e7fedf2125765015f5c16eb3675be2c79af7e",
+    "ggml/src/ggml-cpu/hbm.cpp": "3c75b5aaf9b51d17060ecfb93cb5f8b22ce3974d7eff3d76dec2156d2f194b80",
+    "ggml/src/ggml-cpu/ops.cpp": "60687e87a0fbf5a43ff5376e96c4bde5f4efcc281fcdba55382e36a552cb418e",
+    "ggml/src/ggml-cpu/quants.c": "a61f1011e49d05b5f99d352b158d5b8e36cf008294bb0db309f72bdd7f1d4e35",
+    "ggml/src/ggml-cpu/repack.cpp": "b3a1d6953fc61f2a4088337384166fb5102db617afe37a4b92f7cf07992a9f8a",
+    "ggml/src/ggml-cpu/traits.cpp": "a85bd3ff50c91cb67d14221988544664dfe5975db0811b330dc4a2f385239de4",
+    "ggml/src/ggml-cpu/unary-ops.cpp": "e63b382766f1b8c5ded1577be9704e85cb4e9cd24584f3e1474911a40146df33",
+    "ggml/src/ggml-cpu/vec.cpp": "1fe783225503cca1b27e21c6b7b7b9d479cea2daf8d6e14ae854637a8657b7c4",
+    "ggml/src/ggml-opt.cpp": "e35fd27856e37f3611d3bc6f17ee963be51bfe92bec96fad0a9fa2c7ebbe9c46",
+    "ggml/src/ggml-quants.c": "07143d7068936ae46b3c528b2f3d4bbb666e74d88992165716174d243573965d",
+    "ggml/src/ggml-threading.cpp": "13a18d885393722b7c9f42d4cf8575a4d41699926d656f78a867fa4fac9dad20",
+    "ggml/src/ggml.c": "e6f2c92680bf5d2765ba5cfa1886a6cb2dd3ee32998bd786df00017813be934e",
+    "ggml/src/ggml.cpp": "64e6b5c8d716ae8697e45481a7153540be01f721be2dc7e753aa47b36a69c753",
+    "ggml/src/gguf.cpp": "73108c5b716dd8340d7e2422456f461a68088f1b4241c8b2d09e7cd7450b9cfd",
+    "src/core/gguf_loader.cpp": "04b2c87b90f80fef04713c0572f3a7e823ba1c22e7c89ebc925a3d1ea56a6a8a",
+    "src/spacy_numeric.cpp": "664ab23f4169706d1a79299ff062d381889bc207fd7addccd047d4d1587fa9d0",
+    "src/spacy_pipeline.cpp": "44f19a1a1c3e357630b6a33361741e9b9b8d3e353abf047b04cf22fb0e179175",
+    "tests/test_spacy_numeric.cpp": "0e25df5e18058328a38963ba042ae45c8eb45236ac83116bb5c37c56af896444",
+    "tests/test_spacy_pipeline.cpp": "9cc47481208c94523e4ca354ed5ad1a08ce4c1a6dc8a772f3ec40a0d38d37157"
+  },
+  "compiler": "g++ (Debian 14.2.0-19) 14.2.0",
+  "configuration": {
+    "CRISPEMBED_NATIVE": false,
+    "GGML_NATIVE": false,
+    "arithmetic": "scalar C++ F32, fno-fast-math, ffp-contract=off; ggml model loading/CPU ownership",
+    "automatic_network": false,
+    "build_type": "Release",
+    "native_python_dependency": false,
+    "parallel_jobs": 2
+  },
+  "direct_ELF_NEEDED": [
+    "libstdc++.so.6",
+    "libm.so.6",
+    "libgcc_s.so.1",
+    "libc.so.6",
+    "ld-linux-x86-64.so.2"
+  ],
+  "ggml_revision": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "initial_install_observation": {
+    "distributed": false,
+    "observed": "initial install had root/ggml licenses only because CMake generation preceded added notice installation rules",
+    "resolution": "regenerated CMake and verified all ten installed files including the five original notices",
+    "stage": "install recipe regeneration"
+  },
+  "initial_setup_failure": {
+    "assertions_before_stop": 43,
+    "cause": "default temporary directory unwritable under workspace sandbox",
+    "message": "Cannot create private synthetic fixture",
+    "model_inference_failure": false,
+    "resolution": "CTest now uses a build-owned test-tmp directory; private random names are retained",
+    "stage": "C ABI synthetic fixture creation"
+  },
+  "installed_files": {
+    "include/spacy_pipeline.h": {
+      "sha256": "85c39b727ca84de2b18e03914d245cea1d0f73df4126635bb8dc48a1fc32bba0",
+      "size_bytes": 5397
+    },
+    "lib/libcrispembed-spacy.so": {
+      "sha256": "9df1dad23177e6db5bdec4388f6a7f1d8c31facfba680622b689aeaa4d6c4fcc",
+      "size_bytes": 1683816
+    },
+    "share/licenses/crispembed-spacy/CrispEmbed-LICENSE": {
+      "sha256": "a70d0ab5fb2dbab83d1a63071776891e6dfc7ba6e3063b3940c21274c1225a3e",
+      "size_bytes": 4739
+    },
+    "share/licenses/crispembed-spacy/THIRD_PARTY_NOTICES": {
+      "sha256": "ff8d83d7410d79c77c60b1b3cd2746006b5553211a40948e9d69b6961adda93a",
+      "size_bytes": 1250
+    },
+    "share/licenses/crispembed-spacy/ggml-LICENSE": {
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+      "size_bytes": 1078
+    },
+    "share/licenses/crispembed-spacy/notices/Thinc-LICENSE": {
+      "sha256": "d7192459f33a5d8c66358e2115ccbd3265478750f0b9d15f0c22e68e3ce6cc1e",
+      "size_bytes": 1123
+    },
+    "share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSE": {
+      "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012",
+      "size_bytes": 1056
+    },
+    "share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSES_SOURCES": {
+      "sha256": "0c3ab78745569d848b7c83a486183bce42b9643561084d6d6f67eb0229c79869",
+      "size_bytes": 13470
+    },
+    "share/licenses/crispembed-spacy/notices/ggml-LICENSE": {
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+      "size_bytes": 1078
+    },
+    "share/licenses/crispembed-spacy/notices/spaCy-LICENSE": {
+      "sha256": "3f4378e67708fecacd3e27651c8bc0f977cf20789e19da0d81a2840e7cf573a2",
+      "size_bytes": 1128
+    }
+  },
+  "native_test_executables_passed": 2,
+  "ninja": "1.13.2.git.kitware.jobserver-pipe-1",
+  "schema_version": 1,
+  "scope": "Linux x86-64 AVX2 CPU/F32 prepared-feature development build; no full analysis/mobile/release qualification"
+}

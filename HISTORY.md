@@ -22295,3 +22295,19 @@ The [independent observed audit](docs/lighton4b-physical-rope-observed-audit.md)
 ### 12 November 2026 — physical RoPE fixed panel fully raw-audited
 
 The [book-first six-arm raw audit](docs/lighton4b-physical-rope-fixed-audit.md) verifies578 current artifacts/4,812,973,943 bytes,3,619 current raw rows,849 reused observed rows,2,249 prior baseline rows and96 paired native layers on the hosted CPU. Book ON654/EOS and inventory248/EOS pass provisional source floors; receipt ON468/EOS regresses and fails its floor. All ON arms complete; only2/3 floors pass. The initial audit journal collision/failure and corrected artifact-only retry are preserved, with original source-log, metadata-binary and intermediate-bootstrap limitations explicit. No model/source rerun during auditing, quality/default/release or app promotion.
+
+
+## Native German spaCy numerical foundation — 17 November 2026
+
+Implemented the optional standalone `tools/spacy` target, authenticated exact
+39-tensor model conversion/admission, a versioned prepared-feature C ABI, and
+scalar CPU/F32 hash embeddings, shared CNN, classifier heads and parser scorer.
+[Retained local evidence](docs/validation/native-spacy-20261117/README.md) passes
+16 cases/113 tokens/1,201 stages/1,406,553 values with exact 339 classifier
+choices and 244 choices on reference parser states. The numerical gate is not
+full text analysis. W2/W4 and all app/grammar/mobile qualification remain open.
+Both native control executables, converter 33 controls, reference 17 controls,
+independent bundle/reference exports, and the recorded numeric sanitizer check
+pass. Initial temporary-directory/install setup outcomes remain documented.
+`CRISPEMBED_SPACY` stays default off; no runtime/app release or model publication.
+All checkpoints are saved remotely without querying/waiting for Actions.

@@ -71,3 +71,52 @@ porting: 16 cases, 113 tokens, 1,201 numerical stages, and 244 parser transition
 Acceptance inputs remain untouched. No native inference, full analysis, grammar,
 mobile, or shipping claim follows from this checkpoint. Original third-party
 notices retain their exact bytes, including upstream trailing whitespace.
+
+## Native numerical checkpoint (W3 development stage)
+
+The standalone C++ library now performs exact-feature hash embedding, the
+shared CNN, tagger/morphologizer/lemma-class scores, and parser scoring on
+supplied states. It uses scalar F32 arithmetic with unfused operations; ggml
+provides GGUF loading and CPU weight ownership. It does **not** implement
+raw-text tokenization, parser transitions, edit-tree application, complete
+analysis, a Dart worker, or grammar checking. Capabilities advertise only the
+implemented numerical services.
+
+| Evidence | Result |
+| --- | --- |
+| [Final installed-library parity](native-parity-final.json) | 16 development cases / 113 tokens / 1,201 stages / 1,406,553 F32 elements; all budgets pass |
+| Classifier decisions | 339 exact argmax choices |
+| Parser scorer replay | 244 exact legal action choices on reference-supplied states and masks; not native parsing |
+| Maximum absolute numerical error | 3.814697265625e-5; predeclared tolerance is 2e-4 + 2e-5 × absolute reference value |
+| [Native build/control receipt](native-validation.json) | Two native test executables pass; numeric ASan/UBSan control passes; missing reference fails explicitly |
+| Installed target | Linux x86-64 / repository AVX2 baseline; ten installed library/header/notice files verified |
+| Runtime dependencies | C/C++/math/system loader only in the inspected ELF; no Python library dependency |
+
+The [compact summary](native-summary.json) independently recomputes the final
+report denominators and maximum errors. The [first run](native-parity-first.json)
+is retained with its original source hashes. The final run binds the updated
+CMake test/install recipe and executes the installed library; both runs use the
+same cases and must not be counted as extra unique evidence. No tolerance or
+golden output changed after native inference.
+
+The initial C ABI test stopped before its synthetic fixture could be created
+in the unwritable default temporary directory. CTest now provides a build-owned
+private temporary directory, and both controls pass. The initial stale install
+recipe omitted the added notice rules; regenerating CMake and verifying the
+actual install closed that setup issue. Neither was a model inference failure;
+both observations are retained in the build receipt.
+
+[Build/API instructions](../../../tools/spacy/README.md) reproduce the exact
+boundary. `CRISPEMBED_SPACY` stays default off. Model weights remain outside
+ordinary Git; the authenticated immutable source wheel and deterministic
+converter reproduce them. Native/model release artifacts are not published yet.
+
+## Remaining work
+
+W2 lexical processing and W4 linguistic decoding are the next dependencies.
+The frozen eight-case acceptance input set remains unused. After complete
+raw-text analysis parity, W5 may add the optional Dart worker/analysis UI. W6
+requires incremental grammar benefit over current deterministic rules; W7/W8
+need actual packaging, platforms, device evidence and final qualification.
+No existing Quds provider, app pin, native model alias, or release default was
+changed. No CI endpoint was queried, polled, awaited, or rerun.

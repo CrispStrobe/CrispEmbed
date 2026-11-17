@@ -50,6 +50,7 @@ struct NumericOutput {
     Matrix lemmatizer;
     // Row 0 is learned parser padding. Row i+1 belongs to input token i.
     // Columns flatten [feature=8, hidden=64, maxout_piece=2], in that order.
+    // Empty input short-circuits inference and leaves this matrix with no rows.
     Matrix parser_cache;
 };
 
@@ -74,6 +75,8 @@ public:
     // Feature IDs must be -1 (learned padding) or valid zero-based token IDs,
     // ordered B0,B1,S0,S1,S2,L(B0,1),L(S0,1),R(S0,1). This method does not
     // decide action legality or implement dependency transitions.
+    // Trace names are parser.sum, parser.hidden and parser.scores; a caller
+    // recording a sequence supplies its own step number. Empty caches reject.
     std::vector<float> parser_scores(const Matrix & cache, const std::array<std::int32_t, 8> & feature_ids,
                                      const TraceSink & trace = {}, const CancelCheck & cancelled = {}) const;
 
