@@ -46,3 +46,83 @@ all failures, earliest differing stages, corrected text, latency and RSS.
 No release, model publication, registry default, consumer pin or main merge is
 part of roadmap publication. PLAN records open work; HISTORY/PERFORMANCE receive
 completed evidence. Existing source guards and unrelated lanes stay intact.
+
+## Verified native follow-up — 17 November 2026
+
+The [Quds two-case baseline](https://github.com/CrispStrobe/quds_office_suite/blob/feat/german-gector-proofing/docs/validation/german-gector/2026-11-17-local-smoke/README.md)
+records evaluation source `6bd03365ba3b146586148658b0e03998b36bdc9d` and
+Dart source `0b49ca47fa056e6fc122ffe0192a9abb05627622`. Its native ORT
+controls are promising; no CrispEmbed or Q4_K model was executed. Keep the
+Dart optimization result and the native activation decision separate.
+The full [hosted qualification run](https://github.com/CrispStrobe/quds_office_suite/actions/runs/44053903485)
+has started; complete evidence and independent review remain pending. The
+immutable baseline retains its earlier queued-at-capture status.
+
+### Observed model and mapping
+
+Inspection of the frozen ONNX model
+`8e3b50beef7d775cedb7b876009e88bcf2e8d6af`, SHA-256
+`6d7b43b4bd95c7a00c02c8babc7569d28558df894afe4874d96c202e6ab9a464`,
+confirms 12 BERT layers, hidden width 768, FFN width 3072, 12 attention heads
+of width 64, vocabulary 31,102 and 512 absolute positions. Its 25 LayerNorm
+nodes use axis -1 and epsilon approximately 1e-12; GELU uses Erf. The graph
+has 72 encoder weight MatMuls, 24 attention products and two output heads.
+
+These structures match the available
+[BERT graph and loader](https://github.com/CrispStrobe/CrispEmbed/blob/b34a132c6c204b71f5c58ba8bc1705b8769edb9b/src/crispembed.cpp),
+not an existing ONNX import capability. The
+[current converter](https://github.com/CrispStrobe/CrispEmbed/blob/b34a132c6c204b71f5c58ba8bc1705b8769edb9b/models/convert-bert-to-gguf.py)
+loads HF checkpoints and does not implement this dual-head export.
+
+| Frozen source role | Existing/proposed GGUF tensor names | Conversion |
+| --- | --- | --- |
+| Word / position / type embeddings | `token_embd.weight`, `position_embd.weight`, `token_type_embd.weight` | Retain logical table rows; shapes [31102,768], [512,768], [2,768] |
+| Embedding LayerNorm | `embd_ln.weight/bias` | Copy |
+| Layer i query / key / value / attention output | `enc.i.attn.q/k/v/o.weight` and matching bias | Transpose each MatMul RHS; copy bias |
+| Layer i FFN up / down | `enc.i.ffn.fc1/fc2.weight` and matching bias | Transpose [768,3072] / [3072,768]; copy bias |
+| Layer i attention / output LayerNorm | `enc.i.ln1/ln2.weight/bias` | Copy |
+| Label head `onnx::MatMul_1682`, [768,5000] | Proposed `gector.labels.weight/bias` | Transpose weight; copy `m.labels_head.bias` |
+| Detection head `onnx::MatMul_1683`, [768,2] | Proposed `gector.detect.weight/bias` | Transpose weight; copy `m.detect_head.bias` |
+
+Resolve source matrices through consuming graph nodes, not numbered initializer
+order. ONNX MatMul weights are [input,output]; GGUF writer arrays must be
+[output,input]. Square attention matrices need this transpose too. Preserve
+the fine-tuned encoder; do not substitute the original German BERT backbone.
+
+Structural compatibility is not numerical parity. The ONNX export scales Q
+and K separately by 0.3535533845 before their product; the current native graph
+passes scale 0.125 to `ggml_flash_attn_ext`. Rounding order differs despite
+mathematical equivalence. The source also replaces post-softmax NaNs with zero.
+Attribute any mismatch using saved intermediate values before altering a
+general BERT path.
+
+### Conditional implementation slice
+
+1. Add an authenticated ONNX-to-GGUF converter with a complete tensor/layout
+   census. Preserve exact model/tokenizer/label identity and both heads.
+2. Extend the existing loader/graph with validated optional head tensors and
+   a default-off prepared-ID dual-output mode. A proposed C API accepts checked
+   int64 IDs/masks, batch one, 1..512 unpadded tokens and an all-ones mask; reject
+   other masks or overflow. Use zero type IDs and positions 0..T-1. Return both
+   full raw logits for qualification; preserve existing embedding modes.
+3. Add a bounded native driver and CMake target consuming the existing saved
+   IDs and reference heads. Keep tokenizer, first-subword selection, iterative
+   edits, guards and UTF-16 mapping in shared Dart. Add consumer bindings only
+   after the native model is qualified.
+
+The first deployment candidate is a declared mixed recipe: Q4_K for the 72
+encoder matrices, Q8_0 token embeddings, F16 position embeddings and both
+classifier matrices, with norms/biases/tiny type embeddings at source precision.
+All encoder contraction widths are divisible by 256. Use the existing
+[quantizer](https://github.com/CrispStrobe/CrispEmbed/blob/b34a132c6c204b71f5c58ba8bc1705b8769edb9b/tools/quantize.cpp)
+and inspect actual per-tensor types; a filename does not prove Q4_K coverage
+or exclude its Q4_0 fallback. This is a mixed Q4_K recipe, not Q4_K_M.
+
+Use an unquantized control to attribute conversion/runtime error, then test the
+candidate on identical inputs, both logits, decisions and complete corrections.
+Report the [native precision policy](https://github.com/CrispStrobe/CrispEmbed/blob/b34a132c6c204b71f5c58ba8bc1705b8769edb9b/docs/precision-acceptance.md)
+separately from Quds gates: no lost baseline fixes or new clean-control false
+edits. Preserve the known Swiss false edit. Builds and model runs remain on
+hosted CI with portable CPU flags, explicit threads, immutable artifacts and
+retained failures. No GGUF conversion, native numerical parity, Q4_K quality,
+native latency, release or app integration is qualified by this source audit.
