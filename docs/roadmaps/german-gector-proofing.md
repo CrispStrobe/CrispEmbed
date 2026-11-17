@@ -126,3 +126,41 @@ edits. Preserve the known Swiss false edit. Builds and model runs remain on
 hosted CI with portable CPU flags, explicit threads, immutable artifacts and
 retained failures. No GGUF conversion, native numerical parity, Q4_K quality,
 native latency, release or app integration is qualified by this source audit.
+
+### Dependency and packaging boundary
+
+The source-only review at CrispEmbed
+`b34a132c6c204b71f5c58ba8bc1705b8769edb9b` and ggml
+`3a27b6c665b191cb230be367db5c52d81dd3e2ac` identified no mandatory
+copyleft or non-commercial application dependency in the inspected CPU BERT
+sources. This does not certify a distributed binary or every optional feature.
+
+The [current CMake targets](https://github.com/CrispStrobe/CrispEmbed/blob/b34a132c6c204b71f5c58ba8bc1705b8769edb9b/CMakeLists.txt)
+remain monolithic: static and shared libraries compile the same broad
+OCR/document source list, with no native BERT-only switch. Runtime feature
+gates do not remove those sources. The
+[C2PA helper](https://github.com/CrispStrobe/CrispEmbed/blob/b34a132c6c204b71f5c58ba8bc1705b8769edb9b/cmake/CrispEmbedC2pa.cmake)
+auto-detects local/system libraries even when `CRISPEMBED_C2PA_FETCH=OFF`;
+CrispASR sibling audio, punctuation, language-ID and truecasing directories
+also auto-enable when present. Control these inputs explicitly. PDFium is an
+optional, explicitly selected runtime library; the
+[document license audit](https://github.com/CrispStrobe/CrispEmbed/blob/b34a132c6c204b71f5c58ba8bc1705b8769edb9b/docs/marker-license.md)
+separates permissive native code from restricted weights and build-specific
+PDFium notices. Model-catalog entries are not evidence that their assets are
+included in a grammar package.
+
+The proposed prepared-input slice should therefore include a small native
+target with a closed BERT/dual-head and GGUF-loader source set, controlled
+[MIT ggml CPU dependencies](https://github.com/CrispStrobe/ggml/blob/3a27b6c665b191cb230be367db5c52d81dd3e2ac/LICENSE),
+optional [MIT SGEMM](https://github.com/CrispStrobe/ggml/blob/3a27b6c665b191cb230be367db5c52d81dd3e2ac/src/ggml-cpu/llamafile/sgemm.cpp),
+and only the pinned Apache-2.0 Proofbird assets with their retained notices.
+Factoring the shared BERT implementation and closing its references is new
+source work; an existing flag does not provide this boundary. Keep model
+catalog/download code, PDF/OCR and C2PA outside the proposed target.
+
+Hosted qualification must record actual compiled sources, linked libraries,
+packaged assets and their applicable license/notice inventory alongside the
+numerical and performance receipts. Review the chosen platform/toolchain and
+any prebuilt components separately. Preparing this source boundary establishes
+neither a permissive binary inventory nor successful native runtime
+qualification.
