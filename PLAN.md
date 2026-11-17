@@ -5845,3 +5845,36 @@ uses the same pre-write resolved-path/hardlink rejection. Five Q4M controls and
 four full-Q6 controls pass, including independent report-alias preservation
 cases for both importers. The Q4M header/type/transport controls remain unchanged;
 no model rerun, native build or production-runtime change is needed.
+
+## German GECToR inference fallback — 17 November 2026
+
+Branch: `feat/german-gector-proofing`.
+Scope and decision order:
+[German GECToR proofing roadmap](docs/roadmaps/german-gector-proofing.md).
+
+This bounded lane prepares a native fallback for Quds Office after qualification
+of onnx_runtime_dart. Native implementation waits for that source-bound decision.
+Quds owns shared tokenization, first-subword alignment, edit decoding, guards and
+UTF-16 source offsets.
+
+Frozen model: proofbird/gector-bert-de v2.1.0, revision
+`8e3b50beef7d775cedb7b876009e88bcf2e8d6af`, ONNX SHA-256
+`6d7b43b4bd95c7a00c02c8babc7569d28558df894afe4874d96c202e6ab9a464`.
+Preserve the Quds manifest, Apache LICENSE/NOTICE, original runner and recorded
+quality limitations. A later model revision is a separate experiment.
+
+If activated, implement exact ONNX-to-GGUF encoder/dual-head conversion and a
+documented default-off prepared-ID inference adapter. Initially validate one
+unpadded sequence with an all-ones mask; current raw batch-one execution does not
+provide arbitrary masked inference. Prefer Q4_K mixed with protected F16/Q8_0
+heads and an actual tensor-type census. ONNX MatMulNBits INT4 is a different format.
+
+Hosted portable CPU qualification uses GGML_NATIVE=OFF and
+CRISPEMBED_NATIVE=OFF, immutable sources, exact IDs, both decisive logits,
+per-pass decisions, final edits/text, Unicode offsets, clean controls, latency
+and RSS. Apply [precision policy](docs/precision-acceptance.md) separately from
+Quds task-quality gates; retain strict stage diagnostics and rejected recipes.
+An unquantized control supports attribution, not automatic deployment selection.
+
+State: roadmap and source feasibility only. No native model/runtime/release,
+registry alias or application dependency upgrade is qualified by this entry.
