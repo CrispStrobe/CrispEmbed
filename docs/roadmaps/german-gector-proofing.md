@@ -190,8 +190,21 @@ authenticated fine-tuned ONNX-to-GGUF conversion, both trained heads,
 a small prepared-ID native target with controlled dependencies, F32 control
 parity, then the declared mixed Q4_K candidate and downstream correction gates.
 Keep shared word preparation, decoding and source offsets in Dart. Native
-ONNX through Rust remains the fallback if this Q4_K path fails its gates.
+ONNX through Rust remains an engineering fallback only if this Q4_K path fails
+its gates and the native binary can meet the strict permissive-license boundary.
 
 This is an engineering direction backed by measured Dart limits and a fast
 native control. It is not evidence that GGUF conversion, native GECToR
 execution, Q4_K quality or application integration has already been implemented.
+
+### Native ORT fallback license qualification
+
+The measured ORT 1.23.2 control has an MIT top-level license, but its
+[pinned third-party notices](https://github.com/microsoft/onnxruntime/blob/a83fc4d58cb48eb68890dd689f94f28288cf2278/ThirdPartyNotices.txt)
+include Eigen under MPL-2.0. Treat those timings as a development oracle, not
+approval to distribute that runtime under the feature's strict permissive
+allowlist. The Rust fallback needs an exact API-24-compatible runtime and its
+own complete dependency/license qualification. No such shipping binary has
+been qualified here. This reinforces the controlled ggml source boundary above;
+it does not remove that target's own compiled-source, linked-library and
+packaged-asset audit.
