@@ -16,12 +16,20 @@ See the [complete analysis summary](../../docs/validation/native-spacy-20261117/
 Separate lexical/decoder replays isolate failures; they are not additional
 unique development documents. An expanded lexical panel covers 4,658 inputs.
 
-The eight acceptance inputs remain unused while this development candidate is
-frozen. Its separate acceptance gate requires a remotely saved candidate and
-protocol, then a complete original reference saved before native execution.
-Dart/editor integration, incremental grammar benefit, mobile packaging and
-production release remain separate gates. NER and other model/locale profiles
-are not part of this target.
+The frozen candidate also passes its first eight-case held-out acceptance run:
+98 tokens, 13 sentences, 201 native parser transitions, 294 classifier choices,
+and all 851 numerical stages / 1,068,891 F32 elements. Annotations and source
+spans match exactly; maximum absolute error is `5.340576171875e-5` under the
+unchanged `2e-4 + 2e-5*abs(reference)` budget. The protocol and complete original
+reference were saved remotely before native execution, and the complete result
+is saved at [`2176c89`](https://github.com/CrispStrobe/CrispEmbed/commit/2176c896dc6bb8c832a9d03b04fd07c7c991fdc5).
+See the [acceptance summary](../../docs/validation/native-spacy-20261117/acceptance-summary.json)
+and [publication order](../../docs/validation/native-spacy-20261117/acceptance-publication-order.json).
+This split is now consumed; preserve the first result without tuning on it.
+
+W5 Dart/editor analysis is next. Incremental grammar benefit, mobile packaging
+and production release remain separate gates. NER and other model/locale
+profiles are not part of this target.
 
 The implementation starts with CPU/F32 and a scalar numerical reference path
 using ggml's GGUF/CPU weight ownership. Each source operation has been compared
@@ -72,7 +80,8 @@ The Quds branch [feat/native-spacy-reference-20261117](https://github.com/CrispS
 owns authored inputs, full annotations, exact lexical IDs, padded intermediate
 traces, parser decisions, and fail-closed fixture validation. Empty input is
 an explicit fixture; it cannot substitute for nonempty inference. Acceptance
-inputs are frozen separately and stay untouched during numerical development.
+inputs were frozen separately and stayed untouched during numerical development;
+their completed first-run result is retained separately from development evidence.
 
 Local verification is required for this lane. The user explicitly prohibits
 querying, polling, awaiting, or rerunning GitHub Actions. Commits are saved
@@ -178,12 +187,11 @@ implemented Dart worker or editor cancellation protocol.
 
 ## Next implementation steps
 
-1. Freeze this candidate remotely, publish a protocol, export/save the original
-   acceptance reference, and run the eight untouched cases with
-   `tests/spacy_acceptance.py`. Keep failures and never tune on this split.
-2. W5: connect the optional Dart worker and analysis UI using counted strings,
+1. W5: connect the optional Dart worker and analysis UI using counted strings,
    immutable results, original UTF-16 offsets and lifecycle/cancellation guards.
-3. Measure grammar benefit against current deterministic Quds context rules
+   Preserve the frozen native candidate and first acceptance result; adapter
+   validation uses development and separately authored lifecycle controls.
+2. Measure grammar benefit against current deterministic Quds context rules
    before activation. Complete platform/device packaging and model/native
    distribution evidence separately.
 

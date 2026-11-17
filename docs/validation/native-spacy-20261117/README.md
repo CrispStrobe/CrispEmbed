@@ -1,5 +1,38 @@
 # Native spaCy implementation — 17 November 2026
 
+## Current checkpoint: frozen acceptance complete; W5 next
+
+The complete first held-out native result is saved at
+[`2176c896dc6bb8c832a9d03b04fd07c7c991fdc5`](https://github.com/CrispStrobe/CrispEmbed/commit/2176c896dc6bb8c832a9d03b04fd07c7c991fdc5).
+All eight cases pass: 98 tokens, 13 sentences, 201 native parser transitions,
+294 classifier choices and 851 numerical stages / 1,068,891 F32 elements.
+Annotations, original-source spans, parser features, legal masks and actions
+match exactly. Maximum absolute numerical error is `5.340576171875e-5` under
+the unchanged `2e-4 + 2e-5*abs(reference)` elementwise budget.
+
+The [complete first result](acceptance-first.json.gz),
+[summary](acceptance-summary.json), [protocol](acceptance-protocol.json) and
+[pre-execution remote verification](acceptance-publication-order.json) preserve
+the gate and publication sequence. The eight-case split is consumed. No
+candidate, reference, input or budget was tuned after that first execution.
+The [W5 recovery audit and source inventory](resume-w5-source-snapshot.json)
+rehashes the retained artifacts, checks all 15 archived installed files and 22
+candidate source files, and independently compares saved annotations/parser
+traces with the retained reference. It recomputes counts and aggregate stage
+metrics from the saved report without rerunning native acceptance.
+
+The next bounded work is W5: an optional Dart worker and analysis UI with
+counted strings, immutable results, original UTF-16 offsets and lifecycle/
+cancellation guards. Current Quds main `16e2477f` is merged into its spaCy branch at remotely
+verified `4471324a`; the source inventory retains the exact merge parents and
+tree. Deterministic Quds grammar remains the baseline.
+Grammar benefit, mobile/other-platform qualification, model/native distribution
+and production activation remain open. `CRISPEMBED_SPACY` stays default off.
+
+The sections below preserve the chronological checkpoints. Statements that
+acceptance was unused or decoding unfinished describe their original cutoffs;
+the current status is the completed acceptance above.
+
 ## Source reconciliation (W0)
 
 This implementation starts from current CrispEmbed `b34a132c6c204b71f5c58ba8bc1705b8769edb9b`
@@ -262,3 +295,33 @@ This preserves the protocol's exact binary across workspace loss. It contains
 the library, header and notices; models and system dependencies are not bundled.
 The archive is Linux x86-64/AVX2 validation evidence, not a runtime release or a
 consumer package. Its library hash is the frozen hash above.
+
+## First held-out acceptance and durable handoff
+
+The frozen source is `51c2ac328ef40b00f18eb9b03130fb67c3f11313` and the installed
+binary remains
+`ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977`.
+The protocol was saved at `8fac62023e257ccf431e3daee25e6b2f15f182c8`, the exact
+installed archive at `84327ac9af9f8925ff1f0723e027d6b76b2a2dc2`, and the complete
+original reference in Quds at
+[`4ae8e9e0e9b83b1a01176485bae55d9595e99b1c`](https://github.com/CrispStrobe/quds_office_suite/commit/4ae8e9e0e9b83b1a01176485bae55d9595e99b1c).
+Remote source/tree/file verification preceded the single native execution;
+the original UTF-8 was the only native inference input. The first full result
+was then saved at `2176c89`, with [unchanged-asset evidence](acceptance-assets-after.json).
+
+The compressed first-result SHA-256 is
+`967593d587acf51557a4c27fb1cc813d3c348b91af2413a3a6453e83b5819caa`;
+its uncompressed JSON SHA-256 is
+`5b9c42ffc6d25b1c747ed005361b8834084f6e42e65aff50adfeb584282a77d7`.
+The reference manifest is
+`1b60f2e99ebacfe0a5795548482d6210f6a1e2c9b0543cf7d7192eebee2c8b25`.
+The later recovery audit verifies those identities, all 851 reference trace
+segments and the retained exact annotations/parser records. It aggregates the
+recorded numerical comparisons; it does not claim a new model execution or
+recompute native numerical arrays. The original first run remains authoritative.
+
+This is parity to the pinned German model on eight authored held-out cases.
+It does not establish grammar correction benefit, broader linguistic quality,
+device performance, Dart/editor behavior or a release. Continue W5 with the
+current source reconciliation and keep those later gates explicit. No Actions,
+checks or status endpoints were queried or awaited during recovery.

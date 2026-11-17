@@ -4,11 +4,15 @@
 
 | Lane | Owner/branch | Current boundary | Next gate |
 | --- | --- | --- | --- |
-| German spaCy CPU/F32 | `feat/native-spacy-20261117`; one coordinator for schema/ABI/Git, separate lexical and decoder owners | W0–W4 compose from raw UTF-8: 16 cases/113 tokens/22 sentences, 244 native transitions, 339 classifier choices and 1,201 stages pass; [evidence](docs/validation/native-spacy-20261117/README.md) | Freeze/publish candidate and protocol, then untouched eight-case acceptance; W5 app integration and platform/grammar gates remain |
+| German spaCy CPU/F32 | `feat/native-spacy-20261117`; paired Quds `feat/native-spacy-reference-20261117` | W0–W4 raw-text analysis passes development and the frozen first eight-case acceptance: 98 tokens/13 sentences, 201 native transitions, 294 classifier choices and 851 stages; [saved result](docs/validation/native-spacy-20261117/acceptance-summary.json) at `2176c89` | W5 optional Dart worker/analysis UI with original UTF-16 offsets and lifecycle/cancellation controls; grammar benefit, platform packaging and release remain separate gates |
 
 The user requires incremental remote checkpoints and local validation without
 querying or waiting for Actions. Preserve all unrelated paths/defaults. This
 optional standalone NLP lane does not change runtime releases or app pins.
+The [W5 source refresh](docs/validation/native-spacy-20261117/resume-w5-source-snapshot.json)
+inventories all fetched branch/PR heads and independently audits the retained
+acceptance artifacts. Preserve the first acceptance result; no rerun or tuning
+on the consumed split is needed to continue Dart/editor work.
 
 
 ## Rust DAT RGB buffers and output ownership — 14 November 2026

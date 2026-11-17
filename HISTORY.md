@@ -22328,3 +22328,21 @@ new native dependency with installed notices. The untouched eight-case acceptanc
 split has a separate source/binary-frozen gate. Linux evidence does not qualify
 mobile, app integration or grammar benefit. The gate stays off; no release,
 model alias or application pin changed. Local tests only; no CI queries/waits.
+
+## Native German spaCy first held-out acceptance — 17 November 2026
+
+The frozen raw-text CPU/F32 candidate passes all eight held-out cases on its
+first native execution. [The retained result](docs/validation/native-spacy-20261117/acceptance-summary.json)
+at `2176c89` covers 98 tokens, 13 sentences, 201 parser transitions, 294
+classifier choices and 851 numerical stages / 1,068,891 elements. All discrete
+annotations/spans and parser records match; maximum absolute error is
+`5.340576171875e-5` under the unchanged budget. The protocol, exact installed
+binary and complete original reference were saved remotely before execution.
+No tuning or reference/budget change followed acceptance.
+
+[Recovery and source reconciliation](docs/validation/native-spacy-20261117/resume-w5-source-snapshot.json)
+verify the original report/archive/source hashes and saved exact outputs without
+rerunning the consumed acceptance split. W5 Dart/editor analysis is next;
+grammar benefit, mobile/platform packaging and release qualification remain
+open. The native gate stays off. No runtime/model publication, app-pin change
+or GitHub Actions query/wait follows from this milestone.

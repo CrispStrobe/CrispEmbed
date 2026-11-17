@@ -8440,3 +8440,18 @@ Linux process on these small inputs and are diagnostic only. The 1 MiB/2,048-tok
 limits are engineering admission bounds, not measured device latency/RSS budgets.
 PCRE2 adds a native dependency. Mobile/performance/grammar qualification remains
 open; no default or release promotion follows from development parity.
+
+## Native spaCy frozen held-out parity — 17 November 2026
+
+[The first held-out result](docs/validation/native-spacy-20261117/acceptance-summary.json)
+at `2176c89` covers eight cases, 98 tokens and 13 sentences. All 201 native
+parser transitions and 294 classifier choices match; all 851 numerical stages /
+1,068,891 F32 elements pass the unchanged `2e-4 + 2e-5*abs(reference)` budget,
+with zero violating elements and maximum absolute error `5.340576171875e-5`.
+Original-source spans and all retained linguistic annotations match exactly.
+
+This is one frozen Linux x86-64/AVX2 CPU/F32 execution with PCRE2 10.46. The
+subsequent artifact audit reuses the saved report and is not an additional
+qualification run. Instrumented times include trace copying and do not establish
+worker/editor latency, mobile RSS budgets, a speedup or grammar benefit. Those
+measurements and platform qualification remain separate from model parity.
