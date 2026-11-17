@@ -57,3 +57,5 @@ endif()
 
 install(TARGETS crispembed-gector LIBRARY DESTINATION lib RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
 install(FILES "${CRISPEMBED_ROOT}/src/gector.h" DESTINATION include)
+install(FILES "${CRISPEMBED_ROOT}/LICENSE" "${CMAKE_CURRENT_LIST_DIR}/THIRD_PARTY_NOTICES"
+        DESTINATION share/licenses/crispembed-gector)

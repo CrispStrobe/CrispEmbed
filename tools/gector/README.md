@@ -35,6 +35,13 @@ must also record linked system libraries, toolchain, model/notice files and
 their applicable licenses for the chosen platform. This source boundary does
 not by itself qualify every distributed binary or platform.
 
+The install target includes the CrispEmbed license and the ggml/llamafile
+[third-party notices](THIRD_PARTY_NOTICES). The initial GNU/Linux build resolves
+system libstdc++ and libgcc with the GCC Runtime Library Exception, and GNU
+libc/libm/loader with their own LGPL/component notices. They are not bundled by
+this target and are not MIT dependencies. A policy excluding those system
+runtimes as well needs a separately qualified toolchain/platform build.
+
 Targets:
 
 - `crispembed-gector`: the small shared C API library.
@@ -63,6 +70,10 @@ Capacities count float elements, not bytes. Output ranges must not overlap,
 and errors leave them untouched. Calls on one context serialize; destroy a
 context only after its users stop. Reusing a context retains loaded weights and
 a graph workspace for the most recent sequence length and diagnostic mode.
+The shared GGUF loader can map model pages directly. Keep the model file
+immutable for the entire context lifetime; replacing it requires closing the
+old context and loading a verified new artifact. Never truncate or modify a
+file still used by a live context.
 
 `crispembed_gector_forward_trace` can deliver the normalized embedding, all
 12 encoder-layer outputs, and both heads to a callback. These temporary views
