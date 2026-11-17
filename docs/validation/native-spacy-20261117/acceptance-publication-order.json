@@ -1,0 +1,114 @@
+{
+  "ci_endpoints_queried": false,
+  "native_acceptance_executed": false,
+  "repositories": {
+    "CrispEmbed-spacy": {
+      "branch": "feat/native-spacy-20261117",
+      "commit": "84327ac9af9f8925ff1f0723e027d6b76b2a2dc2",
+      "repository": "CrispStrobe/CrispEmbed",
+      "reviewed_index_matches_remote": true,
+      "tree": "3a26270dff82bdd342d5a18d7a4d833ac7f2385e",
+      "verified_files": {
+        "docs/validation/native-spacy-20261117/acceptance-candidate-linux-x86_64.tar.gz": {
+          "bytes": 825745,
+          "sha256": "b0cd3ae4d47af442d32a6d2382143c36f8b019470cff7c509f97e4682b67489b"
+        },
+        "docs/validation/native-spacy-20261117/acceptance-protocol.json": {
+          "bytes": 5189,
+          "sha256": "78c17652ebce834d853209927bf24493eb1b362de99a0115a55b5202fcef2d92"
+        }
+      }
+    },
+    "quds": {
+      "branch": "feat/native-spacy-reference-20261117",
+      "commit": "4ae8e9e0e9b83b1a01176485bae55d9595e99b1c",
+      "repository": "CrispStrobe/quds_office_suite",
+      "reviewed_index_matches_remote": true,
+      "tree": "a50853fcef6ef3b141328a0d8cb03001f98027a4",
+      "verified_files": {
+        "tools/proofing/spacy/fixtures/acceptance/LICENSE": {
+          "bytes": 1056,
+          "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/LICENSES_SOURCES": {
+          "bytes": 13470,
+          "sha256": "0c3ab78745569d848b7c83a486183bce42b9643561084d6d6f67eb0229c79869"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-ambiguity/case.json": {
+          "bytes": 127380,
+          "sha256": "9faef7d16e49f69d0002202d0440122e2ff7c7eb3ab2474bcff0e608e6eaca16"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-ambiguity/traces.f32": {
+          "bytes": 525136,
+          "sha256": "3e2b22ff243996babc17d9fe0d59deceaed33a7340f1f16ff981d9535ac07878"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-boundaries/case.json": {
+          "bytes": 95578,
+          "sha256": "a9aa596121905c3c625f0bfda0af6c0f64affe98d4c992a9b5343517ceceb233"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-boundaries/traces.f32": {
+          "bytes": 423292,
+          "sha256": "76973bad3a6168826afc883f1a175530d10eaeeb90d1037eeb70d7c6bb25cda3"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-negation/case.json": {
+          "bytes": 95980,
+          "sha256": "efdab7289007def1dd9980b2ca547efd82eadca8c4104c525f4b69e57f6c442c"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-negation/traces.f32": {
+          "bytes": 423292,
+          "sha256": "fb43652862b3832a7dda8c7c2b9407a52a93729c5a9a0deb9484add5839ed772"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-parenthesis/case.json": {
+          "bytes": 117318,
+          "sha256": "e020f9388c60f2dc8acd98c1951ce9081d56ec89adb3ca0a6b4df029e69ccbf9"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-parenthesis/traces.f32": {
+          "bytes": 491188,
+          "sha256": "b0e19e2d4f08405e376bfeafcad7dda4e9194ddcb32d0e555791bf46d319813d"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-quotes/case.json": {
+          "bytes": 154981,
+          "sha256": "551c8db4a54b27ede25385fa98e448a7aabcfc2cda9602e9941fa7f3796069e7"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-quotes/traces.f32": {
+          "bytes": 594348,
+          "sha256": "caf1e3ee1d1643e2071dc13b0ec8eb0f0927e947928a1ab09a15e427e542cc87"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-relative/case.json": {
+          "bytes": 161951,
+          "sha256": "6ae3a7ad3acff3b499ed15337fe50150242526ac3baef922108fd67c4134a807"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-relative/traces.f32": {
+          "bytes": 626980,
+          "sha256": "c6eb3ff40c80bc93cc89c7eb37d0f8b4ec19274bce4bc0d86e7a0263e405ee99"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-spaces/case.json": {
+          "bytes": 128416,
+          "sha256": "02c317fc78d83aa15513c80cb74e410f26664da00d29184017fbf7192369b6a7"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-spaces/traces.f32": {
+          "bytes": 525136,
+          "sha256": "7c8e256f506021f6726c8ed3cee93d49cc19804234dd616ba5ec528d6367b31b"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-unicode/case.json": {
+          "bytes": 190063,
+          "sha256": "2718ced57d6c325c935ec607194d938146b45feb38c0a4db6e8ca22dbeb2cb63"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/holdout-unicode/traces.f32": {
+          "bytes": 666192,
+          "sha256": "55d80156a41a5aa691eb74b031a05935dc1d1472efc2ad2aa6b29c357ffd1267"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/manifest.json": {
+          "bytes": 71516,
+          "sha256": "1b60f2e99ebacfe0a5795548482d6210f6a1e2c9b0543cf7d7192eebee2c8b25"
+        },
+        "tools/proofing/spacy/fixtures/acceptance/requirements-reference.txt": {
+          "bytes": 106951,
+          "sha256": "e1bd56aef4aba0c45135fb2b51961c0d94c3be99a785be71a46c698cd22cc98a"
+        }
+      }
+    }
+  },
+  "schema": "spacy.acceptance.preexecution_remote_verification.v1",
+  "verified_at": "2026-11-17T20:43:51.230657+00:00"
+}
