@@ -1,53 +1,117 @@
-# German GECToR: conditional Q4_K backend
+# German GECToR: prepared-input native backend
 
 Date: 2026-11-17. Branch: `feat/german-gector-proofing`.
-Status: selected for the next native implementation/qualification slice; native backend not yet qualified.
-Base: `b34a132c6c204b71f5c58ba8bc1705b8769edb9b`.
+Status: exact converter and native F32/mixed Q4_K bounded qualification complete;
+guarded application, broader quality, device and distribution gates remain separate.
+Planning base: `b34a132c6c204b71f5c58ba8bc1705b8769edb9b`.
 
-The [canonical Quds roadmap](https://github.com/CrispStrobe/quds_office_suite/blob/feat/german-gector-proofing/docs/roadmaps/german-gector-proofing.md) owns the frozen model,
-backend decision, acceptance criteria and application integration.
-Coordinate this bounded lane through PLAN.md; follow AGENTS.md/CLAUDE.md.
+The [canonical Quds roadmap](https://github.com/CrispStrobe/quds_office_suite/blob/feat/german-gector-proofing/docs/roadmaps/german-gector-proofing.md)
+owns model identity, backend selection and application integration. PLAN retains
+open work; HISTORY and PERFORMANCE record the completed native slice.
 
-## Activation and scope
+## Implemented scope and activation
 
-First benchmark onnx_runtime_dart and its separately named ONNX INT4 candidate.
-Activate this native lane when measured latency/memory or model-distribution
-requirements justify it. Reuse the shared Dart word preparation, alignment,
-edit decoder and guards. Implement only inference and exact conversion here.
+The native lane was activated after the bounded onnx_runtime_dart optimization
+round below. The [standalone CPU target](../../tools/gector/README.md) now loads
+the exact fine-tuned Proofbird encoder and both trained classifiers. Its small
+source closure uses `src/gector.cpp`, the existing GGUF loader and pinned ggml;
+it does not configure the monolithic parent target or change general BERT
+production behavior.
 
-- Convert the pinned Proofbird v2.1 fine-tuned BERT encoder and BOTH trained
-  heads: logits_labels[1,T,5000] and logits_d[1,T,2].
-- Start from exact source tensors, preserving transpose/layout, tokenizer,
-  special positions, layer normalization and GELU behavior.
-- Expose prepared IDs with explicit sequence/mask semantics. Existing single
-  sequence BERT raw execution assumes unpadded input; validate all-ones masks
-  unless proper masking is implemented.
-- Reuse run_encoder_raw and ggml matrix multiplication for both classifiers.
-  Preserve raw/debug outputs for parity; return compact predictions normally.
-- Add a default-off value-parsed core_env gate and document it if runtime code
-  is introduced. Keep existing inference paths unchanged.
+`CRISPEMBED_GECTOR` is a default-off value-parsed gate checked at creation and
+forward execution. The prepared C API accepts one int64 ID sequence of 1–512
+tokens and a same-length all-ones mask, with explicit ID/capacity validation,
+zero type IDs and positions `0..T-1`. It returns caller-owned full label logits
+`[T,5000]` and detection logits `[T,2]`; optional hidden output and 15 trace stages
+support diagnostics. Tokenization, first-subword selection, bounded iterative
+edits, guards, language policy and UTF-16 offsets remain in Quds. Immutable model
+files are required while a mapped context is live.
 
-## Q4_K recipe and gates
+The [ONNX converter](../../models/convert-gector-onnx-to-gguf.py) authenticates the
+pinned source bundle, maps all 201 trained tensors by their graph consumers and
+verifies exact GGUF readback. Each trained MatMul matrix is transposed from
+source `[input,output]` to writer `[output,input]`, including square attention
+matrices; embedding tables retain their source row layout.
+The native graph reproduces word-plus-type then position addition, source
+LayerNorm epsilon, Erf GELU, separate Q/K scaling and post-softmax NaN-to-zero
+behavior. Both trained heads directly consume final encoder states.
 
-Q4_K is the preferred candidate for eligible encoder matrices. The existing
-native quantizer supports it and tensor-type overrides. Preserve sensitive
-embeddings, normalization/bias tensors and the two output heads at F16 or Q8_0
-when required; record every tensor's actual precision. ONNX MatMulNBits is a
-different format and is not a Q4_K import path.
+The owner explicitly requested bounded local execution and incremental remote
+checkpoints because GitHub Actions was starved. This slice used local portable
+CPU builds and model probes; no Actions job was dispatched, polled or awaited.
+The earlier hosted-execution planning below is historical, not a prerequisite
+for continuing this authorized work.
 
-First prove an exact F32/F16 conversion against frozen original ONNX inputs,
-both heads and final decoded corrections. Then compare Q4_K/mixed precision
-against that control with no new clean-control edits or lost baseline fixes.
-Do not qualify from cosine, file size or tokenizer identity alone.
+## Completed native qualification
 
-Run builds/model batches on hosted CI in accordance with repository guidance.
-Keep large GGUF/raw reference artifacts remote and retain small hashed receipts,
-all failures, earliest differing stages, corrected text, latency and RSS.
-No release, model publication, registry default, consumer pin or main merge is
-part of roadmap publication. PLAN records open work; HISTORY/PERFORMANCE receive
-completed evidence. Existing source guards and unrelated lanes stay intact.
+The [retained protocol-v2 evidence](https://github.com/CrispStrobe/quds_office_suite/tree/feat/german-gector-proofing/docs/validation/german-gector/2026-11-17-native) binds model bytes, actual tensor
+precisions, native source dependencies and library SHA-256
+`9b0b7bcc0a5f19288d5ec3772594c6e64339becb56204276530d48e45c512604`.
+The measured source is present at CrispEmbed
+`853a1ce6089e5d5486e37307f37051ad6a928745`, with ggml
+`3a27b6c665b191cb230be367db5c52d81dd3e2ac`. Both native-build mode flags are off.
 
-## Verified native follow-up — 17 November 2026
+| Artifact | Actual tensor census | GGUF bytes |
+| --- | --- | ---: |
+| Exact F32 control | 201 F32 | 453,355,328 |
+| Declared mixed Q4_K candidate | 72 Q4_K encoder matrices, 1 Q8_0 token table, 3 F16 position/head matrices, 125 F32 norms/biases/type-table tensors | 82,756,896 |
+
+Each arm passes all 30 frozen cases and 40 saved passes, with exact input
+alignment, both raw head argmaxes, selected labels, corrected text and UTF-16
+suggestions against the original runner. Both retain nine baseline fixes and
+the same known Swiss clean-control false edit. F32 maximum absolute errors on
+the saved heads are 1.90735e-5 for labels and 5.72205e-6 for detection. The mixed
+head minimum token cosines are 0.99894685 and 0.99399707. Required synthetic
+64/128/256-token probes also pass both head shape and precision gates.
+
+The [precision policy](../precision-acceptance.md) and frozen correction gates
+are reported separately. Mixed absolute-error diagnostics still fail the
+0.002 budget: the first saved strict difference occurs at the embedding, while
+the worst intermediate token cosine is 0.98112354 at layer 11. Those comparisons
+use the same-binary native F32 control, not original ONNX hidden-state dumps.
+Exact final corrections do not establish broader German quality.
+
+Protocol v2 adds explicit required-long-probe gates, exact mixed-parent/F32
+control binding, and before/after hashes for the qualifier and its imported
+policy helpers. Both arms were rerun with unchanged native binary/model bytes.
+The archive retains the earlier successful protocol-v1 reports, gate-lifetime
+and source-drift failures, manifests, source censuses and all timing samples.
+Local checks passed 46 converter tests, 50 native contract checks and 38
+qualifier tests with 136 subtests. An independent read-only audit recomputed
+both final acceptance results and verified the source/binary/parent linkage.
+
+On the observed AMD EPYC 9V74 host with two native threads, one warmup and three
+measurements, the mixed short first-forward median/p95 was 19.477/35.037 ms;
+complete unguarded reference correction was 25.255/54.892 ms. The latter includes
+Python tokenization/iteration/decoding and excludes Quds guards, dictionaries,
+worker transport and editor work. [PERFORMANCE](../../PERFORMANCE.md) retains
+F32, longer-input and process-memory measurements. The mixed 256-token forward
+already exceeded 500 ms; neither short timing nor GGUF size qualifies the
+complete guarded checker on an intended device.
+
+## Remaining application and distribution gates
+
+Quds owns the optional provider, manual/F7 integration and its separate
+application receipts. Preserve explicit de-DE support and unavailable de-AT /
+de-CH until locale policy is qualified. Broader held-out quality, benefit over
+existing deterministic rules, target-device latency/memory, cancellation and
+editor responsiveness remain deployment work.
+
+The actual build receipt inventories 31 translation units, installed license
+files and five resolved system libraries. Native source components are MIT;
+model assets retain Apache-2.0 LICENSE/NOTICE. The measured GNU/Linux binary
+also resolves libstdc++/libgcc under the GCC Runtime Library Exception and
+libc/libm/loader under their LGPL/component notices. These unbundled system
+runtimes are not MIT components, and the strict shipping-license policy remains
+a separate platform/toolchain decision. The source closure does not approve
+an arbitrary binary, optional backend or distributable model pack. No default
+promotion, release, registry alias, consumer pin or main merge follows.
+
+## Historical source audit — before implementation
+
+The following planning and source audit records why the native lane was chosen.
+Its statements about unimplemented conversion or hosted execution describe
+that earlier checkpoint; the completed local results above supersede them.
 
 The [Quds two-case baseline](https://github.com/CrispStrobe/quds_office_suite/blob/feat/german-gector-proofing/docs/validation/german-gector/2026-11-17-local-smoke/README.md)
 records evaluation source `6bd03365ba3b146586148658b0e03998b36bdc9d` and
@@ -166,7 +230,7 @@ any prebuilt components separately. Preparing this source boundary establishes
 neither a permissive binary inventory nor successful native runtime
 qualification.
 
-## Backend decision after the bounded Dart round
+## Historical backend decision after the bounded Dart round
 
 The [optimized hosted run 44062093617](https://github.com/CrispStrobe/quds_office_suite/actions/runs/44062093617)
 used Quds `69d153c0f81596af894e48e21880f0957b963994` and

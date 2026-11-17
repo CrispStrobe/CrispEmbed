@@ -1,3 +1,65 @@
+## German GECToR native CPU — 17 November 2026, bounded local qualification
+
+[Complete protocol-v2 evidence](https://github.com/CrispStrobe/quds_office_suite/tree/feat/german-gector-proofing/docs/validation/german-gector/2026-11-17-native) uses Linux x86-64 on AMD EPYC
+9V74 (nine visible logical CPUs), GCC 14.2.0 and pinned ggml
+`3a27b6c665b191cb230be367db5c52d81dd3e2ac`. The standalone target forces
+`GGML_NATIVE=OFF` / `CRISPEMBED_NATIVE=OFF`, with a fixed AVX2/FMA/F16C baseline,
+two native threads, one warmup and three measured repetitions per input.
+The host observation was captured separately from the timings. These are local
+shared-host measurements; no Actions job was launched or awaited.
+
+Both arms use library SHA-256
+`9b0b7bcc0a5f19288d5ec3772594c6e64339becb56204276530d48e45c512604` and source
+checkpoint `853a1ce6089e5d5486e37307f37051ad6a928745`. The original ONNX is
+`proofbird/gector-bert-de` revision `8e3b50beef7d775cedb7b876009e88bcf2e8d6af`,
+SHA-256 `6d7b43b4bd95c7a00c02c8babc7569d28558df894afe4874d96c202e6ab9a464`.
+
+| Protocol-v2 result | F32 control | Mixed Q4_K |
+| --- | ---: | ---: |
+| GGUF bytes | 453,355,328 | 82,756,896 |
+| Actual tensor census | 201 F32 | 72 Q4_K, 1 Q8_0, 3 F16, 125 F32 |
+| Short first-forward median / p95 | 26.326 / 43.383 ms | 19.477 / 35.037 ms |
+| Complete unguarded correction median / p95 | 31.283 / 65.109 ms | 25.255 / 54.892 ms |
+| Process peak before the ONNX long-probe oracle | 515.23 MiB | 163.28 MiB |
+| Later process peak including ONNX and long probes | 1,081.13 MiB | 735.12 MiB |
+| Worst label-head absolute error, 40 saved passes | 1.90735e-5 | 1.23307 |
+| Worst detection-head absolute error, 40 saved passes | 5.72205e-6 | 0.758199 |
+| Minimum token cosine, label / detection heads, 40 passes | >0.999999999999 / >0.999999999999 | 0.99894685 / 0.99399707 |
+| Raw head argmax / selected tags / corrected text and UTF-16 edits | Exact | Exact |
+
+Short aggregates contain 90 samples per arm over 30 cases, with first-pass
+lengths of 5–12 wordpieces. Complete correction includes the unchanged original
+Python runner's tokenization, iterative forwards and editing; it excludes Quds
+guards, dictionary checks, worker transport and editor work. RSS includes Python,
+validation and mapped model pages. These figures are not application memory or
+complete guarded-checker latency. The candidate clears the 160 MiB preference
+for the GGUF alone; the complete distributable includes sidecars and notices.
+
+| Prepared tokens | F32 forward median / p95 | Mixed forward median / p95 |
+| --- | ---: | ---: |
+| 64 | 144.548 / 168.755 ms | 159.687 / 166.504 ms |
+| 128 | 232.057 / 310.383 ms | 290.053 / 338.480 ms |
+| 256 | 692.974 / 844.132 ms | 667.567 / 679.986 ms |
+
+Long probes repeat prepared IDs and test shapes, numerical behavior and forward
+cost; they are not long-document linguistic-quality or complete-correction
+measurements. Each long p95 is the maximum of three samples. Both heads pass
+at every required length, with zero raw argmax mismatches. Mixed minimum token
+cosines across these probes are 0.99866270 for labels and 0.99333985 for detection.
+Shared-host variation is visible; the mixed recipe is not uniformly faster.
+The 256-token forward already exceeds 500 ms in this run.
+
+The mixed recipe passes the [precision policy](docs/precision-acceptance.md)
+bar of >0.94 and retains all nine frozen baseline fixes, with no new clean edits
+and the same pre-existing Swiss false edit. The strict 0.002 absolute diagnostic
+remains failed. The first saved comparison already differs at the embedding
+stage (`verb-du`, pass 1, maximum error 0.0293574); the worst intermediate token
+cosine is 0.98112354 at `participle`, pass 1, layer 11. Intermediate comparisons
+use this same-binary native F32 control, not ONNX hidden-state dumps. Final text
+agreement does not remove those recorded differences or establish broader
+German quality, target-device performance, guarded application budgets or
+shipping-license approval. Earlier runs and failures remain separate receipts.
+
 ## Reviewed PDF export qualification (9 November 2026)
 
 The final immutable [writer source `9c44a69`](tests/results/ocr-render/writer-9c44a69.json)

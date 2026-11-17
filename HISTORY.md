@@ -1,3 +1,38 @@
+## 17 November 2026 — German GECToR native F32 and mixed Q4_K qualification
+
+The exact Proofbird encoder and both trained heads now run through the
+standalone [prepared-input CPU target](tools/gector/README.md), default-off
+behind `CRISPEMBED_GECTOR=1`. The converter authenticates the pinned ONNX and
+sidecars, resolves all 201 trained tensors through their graph consumers,
+transposes matrices and verifies GGUF readback. The graph preserves source
+embedding order, LayerNorm epsilon, Erf GELU and separate Q/K scaling without
+changing the general BERT path. Fifty native contract checks and 46 converter
+tests pass; the target builds locally with pinned ggml and portable CPU flags.
+
+The [Quds protocol-v2 evidence](https://github.com/CrispStrobe/quds_office_suite/tree/feat/german-gector-proofing/docs/validation/german-gector/2026-11-17-native) records the same native library
+for both precisions. Each arm passes 30 cases / 40 saved passes with both raw
+head argmaxes, selected tags, final corrected text and UTF-16 edits exact against
+the frozen original runner. Required 64/128/256-token prepared probes pass both
+head shape and cosine gates. F32 has 201 F32 tensors; the 82,756,896-byte mixed
+artifact has exactly 72 Q4_K, one Q8_0, three F16 and 125 F32 tensors. Both retain
+the original nine fixes and known Swiss clean-control false edit. Quantized
+absolute-error diagnostics remain failed and visible despite passing the
+precision policy and frozen task gates; see PERFORMANCE for stage details.
+
+The final harness binds the mixed model to its exact F32 parent, gates every
+required long probe and hashes the qualifier plus imported policy helpers.
+Thirty-eight qualifier tests and 136 subtests pass. Earlier gate-lifetime and
+source-drift failures, original successful reports and the complete corrected
+reruns remain archived. No GitHub Actions job was launched or awaited, following
+the owner's explicit instruction.
+
+The recorded build closure and installed notices cover the small native target,
+ggml and llamafile source. Model assets retain Apache-2.0 LICENSE/NOTICE. The
+measured GNU/Linux system runtimes have separate GCC exception and LGPL/component
+licenses; no universal permissive-binary or shipping approval follows. Broader
+German quality, guarded application/device budgets and distribution remain open
+in PLAN; no default, registry, release, consumer pin or main merge changed.
+
 ## 13 November 2026 — Fresh authored Q4/Q6 document comparison
 
 The [Kaggle six-arm quality screen](docs/lighton4b-authored-q6-q4-quality.md)

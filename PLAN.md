@@ -5846,53 +5846,40 @@ four full-Q6 controls pass, including independent report-alias preservation
 cases for both importers. The Q4M header/type/transport controls remain unchanged;
 no model rerun, native build or production-runtime change is needed.
 
-## German GECToR inference fallback — 17 November 2026
+## German GECToR deployment follow-up — 17 November 2026
 
-Branch: `feat/german-gector-proofing`.
-Scope and decision order:
-[German GECToR proofing roadmap](docs/roadmaps/german-gector-proofing.md).
+Branch: `feat/german-gector-proofing`. The exact converter, default-off
+prepared-input native target and bounded F32/mixed Q4_K qualification are
+complete. See [HISTORY](HISTORY.md), [PERFORMANCE](PERFORMANCE.md), the
+[feature roadmap](docs/roadmaps/german-gector-proofing.md) and the
+[retained Quds evidence](https://github.com/CrispStrobe/quds_office_suite/tree/feat/german-gector-proofing/docs/validation/german-gector/2026-11-17-native). Quds owns tokenization, first-subword
+alignment, iterative edits, guards, UTF-16 source offsets and manual/F7 scheduling.
 
-This bounded lane is selected for native implementation/qualification after the
-two measured onnx_runtime_dart hypotheses. The optimized short-input forward
-p95 remains above the complete-check target; native conversion and execution
-are the next implementation work, not an already qualified backend.
-Quds owns shared tokenization, first-subword alignment, edit decoding, guards and
-UTF-16 source offsets.
+Remaining work before wider deployment:
 
-Frozen model: proofbird/gector-bert-de v2.1.0, revision
-`8e3b50beef7d775cedb7b876009e88bcf2e8d6af`, ONNX SHA-256
-`6d7b43b4bd95c7a00c02c8babc7569d28558df894afe4874d96c202e6ab9a464`.
-Preserve the Quds manifest, Apache LICENSE/NOTICE, original runner and recorded
-quality limitations. A later model revision is a separate experiment.
+- Qualify the complete guarded Quds checker on intended desktop hardware,
+  including cold setup, warm checks up to 64 wordpieces, longer 128/256-token
+  inputs, cancellation and editor responsiveness. Prepared-forward or Python
+  correction timing does not establish the provisional 500 ms p95 / 768 MiB
+  complete-check budgets. Retain the separate application integration receipts.
+- Expand held-out German quality and incremental-benefit evaluation beyond the
+  30-case synthetic panel and deterministic rules. Native F32 and mixed Q4_K
+  retain nine baseline fixes and the same known Swiss false edit; they do not
+  establish general grammar accuracy. Keep de-AT/de-CH unavailable in the
+  application until explicit locale policy and controls pass.
+- Qualify the exact distributed model/sidecar pack, native binary and platform
+  dependency closure against the strict shipping-license policy. The measured
+  GNU/Linux build resolves GCC runtime-exception libraries and glibc LGPL/
+  component notices; it is not an all-MIT binary. The source closure and
+  install notices do not waive that system-runtime boundary or qualify a
+  different platform/toolchain.
+- Preserve exact artifact/library hashes, immutable mapped model files,
+  source/label/tokenizer identity and source notices in any packaging work.
+  A different model revision or tensor recipe needs separate qualification.
 
-Implement exact ONNX-to-GGUF encoder/dual-head conversion and a
-documented default-off prepared-ID inference adapter. Initially validate one
-unpadded sequence with an all-ones mask; current raw batch-one execution does not
-provide arbitrary masked inference. Prefer Q4_K mixed with protected F16/Q8_0
-heads and an actual tensor-type census. ONNX MatMulNBits INT4 is a different format.
-
-Hosted portable CPU qualification uses GGML_NATIVE=OFF and
-CRISPEMBED_NATIVE=OFF, immutable sources, exact IDs, both decisive logits,
-per-pass decisions, final edits/text, Unicode offsets, clean controls, latency
-and RSS. Apply [precision policy](docs/precision-acceptance.md) separately from
-Quds task-quality gates; retain strict stage diagnostics and rejected recipes.
-An unquantized control supports attribution, not automatic deployment selection.
-
-Decision evidence: Quds run 44062093617 at source
-`69d153c0f81596af894e48e21880f0957b963994`, Dart source
-`b10258682d459847b63e012eaaba58a528e93956`. On that run, Dart INT4 forward
-median/p95 was 463/546 ms versus native ORT INT4 15.8/17.1 ms; both retained
-the same frozen-probe decisions. Preserve the original baseline separately:
-its AMD runner differs from the optimized run's Intel runner.
-
-Execution checkpoint (17 November 2026): converter and prepared-ID native
-implementation are active in the isolated feature worktree. The owner explicitly
-requested incremental remote checkpoints and no waiting on the starved GitHub
-Actions queue. Use bounded local CPU builds and synthetic/model probes with
-resource checks; record actual tools, threads, model identities and limitations.
-Do not dispatch or poll Actions as a prerequisite.
-
-State: converter/prepared-ID runtime and minimal native target are in progress;
-F32 numerical parity and the mixed Q4_K candidate are not yet qualified. Source feasibility is recorded, but no
-GGUF artifact, native runtime, release, registry alias or application dependency
-upgrade is qualified by this entry.
+The native experiment remains default-off behind `CRISPEMBED_GECTOR=1`.
+No default promotion, registry alias, consumer pin, release or main merge is
+part of this lane. The owner requested incremental remote checkpoints and no
+waiting on the starved GitHub Actions queue: continue bounded local portable
+CPU work with recorded resources and outcomes; do not dispatch or poll Actions
+as a prerequisite.
