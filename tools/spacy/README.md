@@ -27,9 +27,16 @@ See the [acceptance summary](../../docs/validation/native-spacy-20261117/accepta
 and [publication order](../../docs/validation/native-spacy-20261117/acceptance-publication-order.json).
 This split is now consumed; preserve the first result without tuning on it.
 
-W5 Dart/editor analysis is next. Incremental grammar benefit, mobile packaging
-and production release remain separate gates. NER and other model/locale
-profiles are not part of this target.
+W5 now adds an optional Dart FFI binding, bounded persistent worker and manual
+Studio analysis view, qualified on Linux x86-64/AVX2 using this same frozen
+binary. [The Quds W5 receipts](https://github.com/CrispStrobe/quds_office_suite/tree/e7c67f29b34f1c1909e51aa25997fc774bb8ac80/docs/validation/native-spacy-w5-20261117)
+cover counted-string ownership, exact original UTF-16 navigation, snapshot and
+locale validation, stale/cancel/close/retry paths and explicit browser
+unavailability. Analysis starts only on the user's action; it registers no
+grammar provider. Final checks on merge `8d89e4f7` also pass after Quds main
+`4b2b4e78`, with source/runtime bytes unchanged. Incremental grammar benefit, other-platform packaging and
+production release remain separate gates. NER and other model/locale profiles
+are not part of this target.
 
 The implementation starts with CPU/F32 and a scalar numerical reference path
 using ggml's GGUF/CPU weight ownership. Each source operation has been compared
@@ -182,18 +189,20 @@ remain valid until their result/document is freed. The context keeps no document
 text after the call. Cooperative cancellation covers lexical loops, numerical
 stages, parser transitions and dependency reconstruction; PCRE2 searches also
 have work limits. Failed calls return explicit status and publish no successful
-partial output. These are C ABI guarantees, not an
-implemented Dart worker or editor cancellation protocol.
+partial output. The Dart worker adds logical cancellation and timeout: callers
+settle promptly, but the active slot and native context remain owned until the
+actual native reply and safe cleanup. It never kills an isolate during FFI;
+prompt interruption of native compute through Dart is not claimed.
 
 ## Next implementation steps
 
-1. W5: connect the optional Dart worker and analysis UI using counted strings,
-   immutable results, original UTF-16 offsets and lifecycle/cancellation guards.
-   Preserve the frozen native candidate and first acceptance result; adapter
-   validation uses development and separately authored lifecycle controls.
-2. Measure grammar benefit against current deterministic Quds context rules
-   before activation. Complete platform/device packaging and model/native
-   distribution evidence separately.
+1. W6: measure incremental grammar benefit against the latest deterministic
+   Quds main, including the newly reconciled bounded German controls, before
+   enabling any grammar provider. Freeze a separate evaluation; preserve the
+   native candidate and consumed first acceptance result.
+2. W7/platform work: qualify target-specific packaging, model/native
+   distribution, notices and device behavior separately from the Linux W5
+   validation. Production activation and release remain explicit later gates.
 
 The [native receipts](../../docs/validation/native-spacy-20261117/README.md)
 retain the first and final numerical runs, negative setup evidence, dependency

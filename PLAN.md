@@ -4,7 +4,7 @@
 
 | Lane | Owner/branch | Current boundary | Next gate |
 | --- | --- | --- | --- |
-| German spaCy CPU/F32 | `feat/native-spacy-20261117`; paired Quds `feat/native-spacy-reference-20261117` | W0–W4 raw-text analysis passes development and the frozen first eight-case acceptance: 98 tokens/13 sentences, 201 native transitions, 294 classifier choices and 851 stages; [saved result](docs/validation/native-spacy-20261117/acceptance-summary.json) at `2176c89` | W5 optional Dart worker/analysis UI with original UTF-16 offsets and lifecycle/cancellation controls; grammar benefit, platform packaging and release remain separate gates |
+| German spaCy CPU/F32 | `feat/native-spacy-20261117`; paired Quds `feat/native-spacy-reference-20261117` | W0–W4 frozen first acceptance passes at `2176c89`; W5 optional Dart worker and manual Studio analysis pass their bounded Linux x86-64/AVX2 gates with the same native binary and original UTF-16 offsets; [W5 evidence](https://github.com/CrispStrobe/quds_office_suite/tree/e7c67f29b34f1c1909e51aa25997fc774bb8ac80/docs/validation/native-spacy-w5-20261117) | W6 incremental grammar benefit against latest deterministic Quds main; W7/platform packaging and release/distribution remain separate gates |
 
 The user requires incremental remote checkpoints and local validation without
 querying or waiting for Actions. Preserve all unrelated paths/defaults. This
@@ -13,6 +13,11 @@ The [W5 source refresh](docs/validation/native-spacy-20261117/resume-w5-source-s
 inventories all fetched branch/PR heads and independently audits the retained
 acceptance artifacts. Preserve the first acceptance result; no rerun or tuning
 on the consumed split is needed to continue Dart/editor work.
+The later Quds main refresh to `4b2b4e78` brings four commits for ODS icon sets
+and reconciled Office/German controls. No spaCy fixture or W5 source path
+changed; only `docs/PROOFING.md` overlaps. Remote merge `8d89e4f7` passes all
+29 package tests, 22 UI controls, 75 proofing regressions, the actual-native
+widget gate and static analysis with source/runtime bytes unchanged.
 
 
 ## Rust DAT RGB buffers and output ownership — 14 November 2026

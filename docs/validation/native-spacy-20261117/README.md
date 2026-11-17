@@ -1,6 +1,6 @@
 # Native spaCy implementation — 17 November 2026
 
-## Current checkpoint: frozen acceptance complete; W5 next
+## Current checkpoint: frozen acceptance and Linux W5 analysis complete
 
 The complete first held-out native result is saved at
 [`2176c896dc6bb8c832a9d03b04fd07c7c991fdc5`](https://github.com/CrispStrobe/CrispEmbed/commit/2176c896dc6bb8c832a9d03b04fd07c7c991fdc5).
@@ -21,17 +21,22 @@ candidate source files, and independently compares saved annotations/parser
 traces with the retained reference. It recomputes counts and aggregate stage
 metrics from the saved report without rerunning native acceptance.
 
-The next bounded work is W5: an optional Dart worker and analysis UI with
-counted strings, immutable results, original UTF-16 offsets and lifecycle/
-cancellation guards. Current Quds main `16e2477f` is merged into its spaCy branch at remotely
-verified `4471324a`; the source inventory retains the exact merge parents and
-tree. Deterministic Quds grammar remains the baseline.
-Grammar benefit, mobile/other-platform qualification, model/native distribution
-and production activation remain open. `CRISPEMBED_SPACY` stays default off.
+W5 now qualifies the optional Dart worker and manual Studio analysis on Linux
+x86-64/AVX2; [the cross-repository evidence](https://github.com/CrispStrobe/quds_office_suite/tree/e7c67f29b34f1c1909e51aa25997fc774bb8ac80/docs/validation/native-spacy-w5-20261117)
+and the final section below record its separate adapter and editor controls.
+Quds main `16e2477f` was merged at remotely verified `4471324a` before this work;
+the original source inventory remains unchanged. The newer main `4b2b4e78`
+adds four ODS/Office/German commits without changing spaCy fixtures or W5
+source; only `docs/PROOFING.md` overlaps. Remote merge `8d89e4f7` passes the
+package, UI, real-native widget, existing proofing and static-analysis gates
+with source/runtime bytes unchanged. Deterministic Quds grammar remains the
+baseline. W6 grammar
+benefit, mobile/other-platform qualification, model/native distribution and
+production activation remain open. `CRISPEMBED_SPACY` stays default off.
 
 The sections below preserve the chronological checkpoints. Statements that
 acceptance was unused or decoding unfinished describe their original cutoffs;
-the current status is the completed acceptance above.
+the current status is the completed acceptance and bounded Linux W5 work above.
 
 ## Source reconciliation (W0)
 
@@ -325,3 +330,38 @@ It does not establish grammar correction benefit, broader linguistic quality,
 device performance, Dart/editor behavior or a release. Continue W5 with the
 current source reconciliation and keep those later gates explicit. No Actions,
 checks or status endpoints were queried or awaited during recovery.
+
+## W5: optional Dart worker and manual Studio analysis
+
+[The Quds W5 evidence](https://github.com/CrispStrobe/quds_office_suite/tree/e7c67f29b34f1c1909e51aa25997fc774bb8ac80/docs/validation/native-spacy-w5-20261117) is saved on
+`feat/native-spacy-reference-20261117`, with the UI checkpoint at `b5b1fa99`
+and the complete indexed evidence/handoff at `e7c67f29`.
+The same frozen binary `ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977`
+and model run through a counted-string binding and a persistent isolate worker.
+No native source or held-out reference changed, and acceptance was not rerun.
+
+Direct FFI and actual-worker replays each pass the same 16 development cases,
+113 tokens, 22 sentences and 2,571 exposed-field comparisons with zero
+differences, plus ten authored controls each. These executions do not increase
+the unique development-document count. Twenty-nine package tests cover source
+mapping, bundle admission and worker lifecycle. A compiled malformed-native
+fixture passes 20 real-FFI controls with 30 document frees and zero live
+documents/contexts; that fixture does not perform trained inference.
+
+Twenty-two Studio snapshot/widget controls and one actual-native widget gate
+pass. The actual gate analyzes a selection with nonzero UTF-16 origin and
+navigates its token back to the exact original paragraph without editing it.
+Seventy-five existing proofing regressions pass. Package and Studio browser
+imports compile and return explicit unavailability without loading FFI.
+
+The view requires a manual action and validates original text, document/story,
+locale and configuration before displaying or navigating results. Cancellation
+and timeout settle the caller while the physical worker slot remains owned
+until native completion; disposal joins safe cleanup. No grammar provider is
+registered and defaults remain off. These are bounded Linux adapter/editor
+results; final checks on merge `8d89e4f7` also pass with incoming main
+`4b2b4e78`. All 29 package tests, 22 UI controls, 75 existing proofing
+regressions, the real-native widget gate and static analysis pass. The rendered
+panel is byte-identical to the earlier reviewed UI image.
+W6 must establish incremental grammar benefit against the latest deterministic
+baseline. Other platforms, distribution and release remain separate gates.

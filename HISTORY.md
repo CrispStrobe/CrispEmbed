@@ -22346,3 +22346,22 @@ rerunning the consumed acceptance split. W5 Dart/editor analysis is next;
 grammar benefit, mobile/platform packaging and release qualification remain
 open. The native gate stays off. No runtime/model publication, app-pin change
 or GitHub Actions query/wait follows from this milestone.
+
+## Native German spaCy W5 Dart and Studio analysis — 17 November 2026
+
+[Quds W5](https://github.com/CrispStrobe/quds_office_suite/tree/e7c67f29b34f1c1909e51aa25997fc774bb8ac80/docs/validation/native-spacy-w5-20261117) qualifies the optional counted-string Dart
+binding, bounded persistent worker and manual Studio analysis on Linux
+x86-64/AVX2 with the unchanged accepted native binary. Direct and actual-worker
+replays each match the same 16 development cases / 113 tokens / 22 sentences /
+2,571 exposed fields, plus ten controls; their document counts are not added.
+Twenty-nine package tests, 20 compiled malformed-FFI controls (30 frees, zero
+live objects), 22 UI controls, one actual-native widget gate and 75 existing
+proofing regressions pass. Web imports report explicit unavailability.
+
+The manual view preserves source offsets and snapshot/locale ownership; logical
+cancellation retains native-call ownership through safe shutdown. No grammar
+provider or default is activated, and held-out acceptance is not rerun. The
+newer Quds main `4b2b4e78` changes no spaCy fixture or W5 source; all package,
+UI, real-native widget, proofing and static-analysis checks pass on saved merge
+`8d89e4f7`, with unchanged source/runtime bytes. W6 incremental grammar benefit,
+other-platform packaging and release remain open. No CI query or wait.
