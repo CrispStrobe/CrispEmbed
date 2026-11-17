@@ -10,7 +10,8 @@ is five one-point-wide PDF/A fixture pages, below the three-point minimum.
 Keep the one-pixel raster and unchanged pixel assertions, use valid page points,
 and render at the original raster dimensions. Preserve non-blocking reader-limit
 failures and all worksheet/renderer evidence. Apply pinned clang-format 18.1.8;
-the 188 violations are inherited from `src/lighton4b_physical_f16_attention.cpp`.
+the 188 violations are inherited from `src/lighton4b_physical_f16_attention.cpp`,
+`src/lighton4b_physical_rope.h` and `tests/test_lighton4b_physical_rope.cpp`.
 Its formatting repair preserves every C++ token/comment, gates and algorithms;
 historical source-pinned protocols are unchanged and remain historical evidence.
 Exact-head hosted checks and merged-tree verification remain the closure gates.

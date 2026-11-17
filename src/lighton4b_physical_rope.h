@@ -18,6 +18,6 @@ inline bool lighton4b_physical_rope_valid(bool physical) {
 // after a complete finite CPU result. Identical normalized/output objects or
 // overlapping live positions/output storage reject before mutation.
 bool lighton4b_physical_rope_cpu(const std::vector<float> & normalized, const attention_config & config,
-                                  const float * positions, int tokens, int heads, int threads,
-                                  std::vector<float> & rotated);
+                                 const float * positions, int tokens, int heads, int threads,
+                                 std::vector<float> & rotated);
 } // namespace qwen35_ocr
