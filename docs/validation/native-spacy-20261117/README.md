@@ -365,3 +365,15 @@ regressions, the real-native widget gate and static analysis pass. The rendered
 panel is byte-identical to the earlier reviewed UI image.
 W6 must establish incremental grammar benefit against the latest deterministic
 baseline. Other platforms, distribution and release remain separate gates.
+
+## PR236 owner review — 17 November 2026
+
+[The owner merge review](owner-merge-review.json) independently rehashes all 22
+frozen sources and 15 installed archive files, verifies eight original-reference
+case files at `4ae8e9e0`, and compares every retained annotation/source span and
+all parser actions/features/masks. The original eight-case/851-stage result and
+unchanged budgets pass retained-record review; six model-free admission controls
+also pass. No native acceptance, new model matrix or W6 work was executed.
+Main has no protection or applicable branch rules, hence zero required checks
+or approvals. This local review uses no Actions/status query, wait or rerun.
+The later W6 documentation checkpoint is preserved as separate pending work.

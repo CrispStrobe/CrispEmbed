@@ -1,5 +1,21 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## PR236 owner merge review — 17 November 2026
+
+The [retained-evidence review](docs/validation/native-spacy-20261117/owner-merge-review.json)
+validates all 22 frozen source files, all 15 installed archive files, report and
+protocol hashes, eight original-reference case hashes, exact annotations/spans
+and all 201 parser actions/features/masks. Saved stage metrics aggregate to
+851 stages / 1,068,891 values with maximum absolute error 5.340576171875e-5;
+there is no new native acceptance execution. Six model-free admission controls
+and 499 documented environment entries pass locally. Main protection returns
+`Branch not protected`; applicable branch rules are empty, so required checks
+and approvals are both zero. No Actions/status query, wait or rerun is used.
+The concurrent documentation-only W6 checkpoint `5831aa02` is preserved; this
+owner closure performs no W6 work. Undraft and exact-head owner merge are the
+remaining actions. Scope remains frozen Linux x86-64/AVX2 with PCRE2 10.46;
+release, app pins, mobile and model distribution remain separate.
+
 ## Active work in flight — native spaCy, 17 November 2026
 
 | Lane | Owner/branch | Current boundary | Next gate |
