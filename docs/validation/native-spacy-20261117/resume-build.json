@@ -1,0 +1,431 @@
+{
+  "acceptance_gate_controls": {
+    "acceptance_inputs_executed": false,
+    "passed": 6
+  },
+  "acceptance_inputs_executed": false,
+  "build_config": {
+    "CRISPEMBED_NATIVE": "OFF",
+    "GGML_ACCELERATE": "OFF",
+    "GGML_ALL_WARNINGS": "ON",
+    "GGML_ALL_WARNINGS_3RD_PARTY": "OFF",
+    "GGML_AMX_BF16": "OFF",
+    "GGML_AMX_INT8": "OFF",
+    "GGML_AMX_TILE": "OFF",
+    "GGML_AVAILABLE_BACKENDS": "ggml-cpu",
+    "GGML_AVX": "ON",
+    "GGML_AVX2": "ON",
+    "GGML_AVX512": "OFF",
+    "GGML_AVX512_BF16": "OFF",
+    "GGML_AVX512_VBMI": "OFF",
+    "GGML_AVX512_VNNI": "OFF",
+    "GGML_AVX_VNNI": "OFF",
+    "GGML_BACKEND_DIR": "",
+    "GGML_BACKEND_DL": "OFF",
+    "GGML_BIN_INSTALL_DIR": "bin",
+    "GGML_BLAS": "OFF",
+    "GGML_BLAS_VENDOR": "Generic",
+    "GGML_BMI2": "ON",
+    "GGML_BUILD_EXAMPLES": "OFF",
+    "GGML_BUILD_TESTS": "OFF",
+    "GGML_CANN": "OFF",
+    "GGML_CCACHE": "ON",
+    "GGML_CCACHE_FOUND": "GGML_CCACHE_FOUND-NOTFOUND",
+    "GGML_CPU": "ON",
+    "GGML_CPU_ALL_VARIANTS": "OFF",
+    "GGML_CPU_ARM_ARCH": "",
+    "GGML_CPU_HBM": "OFF",
+    "GGML_CPU_KLEIDIAI": "OFF",
+    "GGML_CPU_POWERPC_CPUTYPE": "",
+    "GGML_CPU_REPACK": "OFF",
+    "GGML_CUDA": "OFF",
+    "GGML_CUDA_COMPRESSION_MODE": "size",
+    "GGML_CUDA_COMPRESSION_MODE-STRINGS": "none;speed;balance;size",
+    "GGML_CUDA_CRISPASR_FA_PERHEAD_MASK": "OFF",
+    "GGML_CUDA_FA": "ON",
+    "GGML_CUDA_FA_ALL_QUANTS": "OFF",
+    "GGML_CUDA_FORCE_CUBLAS": "OFF",
+    "GGML_CUDA_FORCE_MMQ": "OFF",
+    "GGML_CUDA_GRAPHS": "ON",
+    "GGML_CUDA_NCCL": "ON",
+    "GGML_CUDA_NO_PEER_COPY": "OFF",
+    "GGML_CUDA_NO_VMM": "OFF",
+    "GGML_CUDA_PEER_MAX_BATCH_SIZE": "128",
+    "GGML_ET": "OFF",
+    "GGML_ET_SYSEMU": "OFF",
+    "GGML_F16C": "ON",
+    "GGML_FATAL_WARNINGS": "OFF",
+    "GGML_FMA": "ON",
+    "GGML_GPROF": "OFF",
+    "GGML_HEXAGON": "OFF",
+    "GGML_HIP": "OFF",
+    "GGML_HIP_EXPORT_METRICS": "OFF",
+    "GGML_HIP_GRAPHS": "ON",
+    "GGML_HIP_MMQ_MFMA": "ON",
+    "GGML_HIP_NO_VMM": "ON",
+    "GGML_HIP_RCCL": "OFF",
+    "GGML_HIP_ROCWMMA_FATTN": "OFF",
+    "GGML_INCLUDE_INSTALL_DIR": "include",
+    "GGML_LASX": "ON",
+    "GGML_LIB_INSTALL_DIR": "lib",
+    "GGML_LLAMAFILE": "OFF",
+    "GGML_LSX": "ON",
+    "GGML_LTO": "OFF",
+    "GGML_METAL": "OFF",
+    "GGML_METAL_EMBED_LIBRARY": "OFF",
+    "GGML_METAL_MACOSX_VERSION_MIN": "",
+    "GGML_METAL_NDEBUG": "OFF",
+    "GGML_METAL_SHADER_DEBUG": "OFF",
+    "GGML_METAL_STD": "",
+    "GGML_MUSA": "OFF",
+    "GGML_MUSA_GRAPHS": "OFF",
+    "GGML_MUSA_MUDNN_COPY": "OFF",
+    "GGML_NATIVE": "OFF",
+    "GGML_OPENCL": "OFF",
+    "GGML_OPENCL_EMBED_KERNELS": "ON",
+    "GGML_OPENCL_PROFILING": "OFF",
+    "GGML_OPENCL_TARGET_VERSION": "300",
+    "GGML_OPENCL_USE_ADRENO_KERNELS": "ON",
+    "GGML_OPENMP": "OFF",
+    "GGML_OPENMP_ENABLED": "OFF",
+    "GGML_OPENVINO": "OFF",
+    "GGML_RPC": "OFF",
+    "GGML_RVV": "ON",
+    "GGML_RV_ZFH": "ON",
+    "GGML_RV_ZICBOP": "ON",
+    "GGML_RV_ZIHINTPAUSE": "ON",
+    "GGML_RV_ZVFBFWMA": "OFF",
+    "GGML_RV_ZVFH": "ON",
+    "GGML_SANITIZE_ADDRESS": "OFF",
+    "GGML_SANITIZE_THREAD": "OFF",
+    "GGML_SANITIZE_UNDEFINED": "OFF",
+    "GGML_SCCACHE_FOUND": "GGML_SCCACHE_FOUND-NOTFOUND",
+    "GGML_SCHED_MAX_COPIES": "4",
+    "GGML_SCHED_NO_REALLOC": "OFF",
+    "GGML_SSE42": "ON",
+    "GGML_STATIC": "OFF",
+    "GGML_SYCL": "OFF",
+    "GGML_SYCL_DEVICE_ARCH": "",
+    "GGML_SYCL_DNN": "ON",
+    "GGML_SYCL_F16": "OFF",
+    "GGML_SYCL_GRAPH": "ON",
+    "GGML_SYCL_HOST_MEM_FALLBACK": "ON",
+    "GGML_SYCL_SUPPORT_LEVEL_ZERO_API": "ON",
+    "GGML_SYCL_TARGET": "INTEL",
+    "GGML_VIRTGPU": "OFF",
+    "GGML_VIRTGPU_BACKEND": "OFF",
+    "GGML_VULKAN": "OFF",
+    "GGML_VULKAN_CHECK_RESULTS": "OFF",
+    "GGML_VULKAN_DEBUG": "OFF",
+    "GGML_VULKAN_MEMORY_DEBUG": "OFF",
+    "GGML_VULKAN_RUN_TESTS": "OFF",
+    "GGML_VULKAN_SHADERS_GEN_TOOLCHAIN": "",
+    "GGML_VULKAN_SHADER_DEBUG_INFO": "OFF",
+    "GGML_VULKAN_VALIDATE": "OFF",
+    "GGML_VXE": "OFF",
+    "GGML_WEBGPU": "OFF",
+    "GGML_WEBGPU_CPU_PROFILE": "OFF",
+    "GGML_WEBGPU_DEBUG": "OFF",
+    "GGML_WEBGPU_GPU_PROFILE": "OFF",
+    "GGML_WEBGPU_JSPI": "ON",
+    "GGML_XTHEADVECTOR": "OFF",
+    "GGML_ZDNN": "OFF",
+    "GGML_ZENDNN": "OFF"
+  },
+  "build_config_matches_saved_candidate": true,
+  "bundle_manifest_sha256": "d599768375de3dc56abcca5cf1d49da0015857f9d3a10640aebb5317ef5d427e",
+  "bundle_matches_saved_manifest_bytes": true,
+  "ci_endpoints_queried": false,
+  "cmake": "cmake version 4.4.5",
+  "commands": [
+    "python3 -m venv \"$SPACY_RESUME/reference-env\"",
+    "\"$SPACY_RESUME/reference-env/bin/python\" -m pip install --require-hashes --only-binary=:all: -r tools/spacy/requirements-reference.txt",
+    "git submodule update --init ggml",
+    "\"$SPACY_RESUME/reference-env/bin/python\" models/convert-spacy-to-gguf.py --wheel \"$SPACY_WHEEL\" --output \"$SPACY_RESUME/bundle\"",
+    "cmake -S tools/spacy -B \"$SPACY_RESUME/build\" -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON",
+    "cmake --build \"$SPACY_RESUME/build\" --parallel 2",
+    "ctest --test-dir \"$SPACY_RESUME/build\" --output-on-failure",
+    "python3 scripts/check-cpu-baseline.py \"$SPACY_RESUME/build\"",
+    "python3 tests/test_env_vars_documented.py",
+    "cmake --install \"$SPACY_RESUME/build\" --prefix \"$SPACY_RESUME/install\"",
+    "\"$SPACY_RESUME/reference-env/bin/python\" tests/test_spacy_acceptance_gate.py"
+  ],
+  "compiler": "g++ (Debian 14.2.0-19) 14.2.0",
+  "cpu_baseline_check": "passed: native OFF, AVX2, no AVX512/AMX/VNNI flags",
+  "ctest": {
+    "failed": 0,
+    "names": [
+      "spacy-pipeline-contract",
+      "spacy-numeric-contract",
+      "spacy-lexical-contract",
+      "spacy-decode-contract"
+    ],
+    "passed": 4
+  },
+  "environment_documentation_guard": {
+    "documented_variables": 499,
+    "passed": true
+  },
+  "environment_receipt": {
+    "path": "environment-restored.json",
+    "sha256": "750f5d3d0ffcf3cb2328089fc448ff440ccbc99c44b5c0024fb4ae3a8f07520b"
+  },
+  "ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "ggml_tracked_tree_clean": true,
+  "installed_file_count": 15,
+  "installed_files": [
+    {
+      "bytes": 10045,
+      "path": "include/spacy_pipeline.h",
+      "sha256": "756c25b664b38d26d1da13264d47417d9914f8dd805c588a539fe6f3681f7e62"
+    },
+    {
+      "bytes": 1959256,
+      "path": "lib/libcrispembed-spacy.so",
+      "sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977"
+    },
+    {
+      "bytes": 4739,
+      "path": "share/licenses/crispembed-spacy/CrispEmbed-LICENSE",
+      "sha256": "a70d0ab5fb2dbab83d1a63071776891e6dfc7ba6e3063b3940c21274c1225a3e"
+    },
+    {
+      "bytes": 2188,
+      "path": "share/licenses/crispembed-spacy/THIRD_PARTY_NOTICES",
+      "sha256": "9386f6a62a3220da9c082dfceea4a018d2a73c1a0dbd03e28e1804912cf0115f"
+    },
+    {
+      "bytes": 1078,
+      "path": "share/licenses/crispembed-spacy/ggml-LICENSE",
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d"
+    },
+    {
+      "bytes": 13936,
+      "path": "share/licenses/crispembed-spacy/notices/CPython-LICENSE",
+      "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+    },
+    {
+      "bytes": 3867,
+      "path": "share/licenses/crispembed-spacy/notices/PCRE2-LICENCE.md",
+      "sha256": "9cf7ac6976099a1d856826d3ef1b093bd6b84489dc6100628ac79e740cf9885a"
+    },
+    {
+      "bytes": 1123,
+      "path": "share/licenses/crispembed-spacy/notices/Thinc-LICENSE",
+      "sha256": "d7192459f33a5d8c66358e2115ccbd3265478750f0b9d15f0c22e68e3ce6cc1e"
+    },
+    {
+      "bytes": 635,
+      "path": "share/licenses/crispembed-spacy/notices/Unicode-15.0.0-ReadMe.txt",
+      "sha256": "53672c0d0b5185e3cf04c8e970d544c3af81ae7c8eeba0b9cf6d355aa954ae1f"
+    },
+    {
+      "bytes": 1995,
+      "path": "share/licenses/crispembed-spacy/notices/Unicode-LICENSE.txt",
+      "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+    },
+    {
+      "bytes": 2408,
+      "path": "share/licenses/crispembed-spacy/notices/continuation-notice-sources.json",
+      "sha256": "2f71d905ddbb8ea162a13c89e4e1d4e1f9858fcb4f82c967911912c79c4bf62f"
+    },
+    {
+      "bytes": 1056,
+      "path": "share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSE",
+      "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012"
+    },
+    {
+      "bytes": 13470,
+      "path": "share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSES_SOURCES",
+      "sha256": "0c3ab78745569d848b7c83a486183bce42b9643561084d6d6f67eb0229c79869"
+    },
+    {
+      "bytes": 1078,
+      "path": "share/licenses/crispembed-spacy/notices/ggml-LICENSE",
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d"
+    },
+    {
+      "bytes": 1128,
+      "path": "share/licenses/crispembed-spacy/notices/spaCy-LICENSE",
+      "sha256": "3f4378e67708fecacd3e27651c8bc0f977cf20789e19da0d81a2840e7cf573a2"
+    }
+  ],
+  "installed_headers_and_notices_match_saved_candidate": true,
+  "library_matches_saved_binary": false,
+  "library_sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977",
+  "logs": [
+    {
+      "bytes": 1039,
+      "path": "sanitized-logs/acceptance-controls-corrected.log",
+      "sha256": "efae0bc254af19566c2cac149f7755cc549bf1d09104556ca083cc8c8bfa1db2"
+    },
+    {
+      "bytes": 108,
+      "path": "sanitized-logs/acceptance-controls.log",
+      "sha256": "e70fec2825d9bf206d27463a792768195039599cb39bcca66339f47283f84cce"
+    },
+    {
+      "bytes": 681,
+      "path": "sanitized-logs/build-tools-install.log",
+      "sha256": "69805911ecb2854315a57256f24ec5192c30c87435b93e71b1a15a8c81759f17"
+    },
+    {
+      "bytes": 561,
+      "path": "sanitized-logs/build-tools-ninja-match.log",
+      "sha256": "a37eb257e8f0b97e32b18589df61c1fb98ca89251d61a21cf041053cec4469de"
+    },
+    {
+      "bytes": 3687,
+      "path": "sanitized-logs/build.log",
+      "sha256": "3a605c0fec02db207cece93e45cd900666954f30863bd93b691eaa75bd47da87"
+    },
+    {
+      "bytes": 1221,
+      "path": "sanitized-logs/configure.log",
+      "sha256": "0364dd810a6ad9a0a990fbee1e19c02efb44c0f517bdaf4864996e6cae38a0b0"
+    },
+    {
+      "bytes": 169,
+      "path": "sanitized-logs/conversion.log",
+      "sha256": "c65f19db7bf69a1031e2f925535d8664f59d8de5a0db91ba7d1f3e2911f1978c"
+    },
+    {
+      "bytes": 462,
+      "path": "sanitized-logs/cpu-baseline.log",
+      "sha256": "306ec8725c552b7806b602ab6af6d939b7700f4131fe56ce95ebea2d93c36aae"
+    },
+    {
+      "bytes": 518,
+      "path": "sanitized-logs/ctest.log",
+      "sha256": "e36757439d4398e8267061ee88fb05dfaa59fe12e024169463cbd059ef3f85ac"
+    },
+    {
+      "bytes": 42,
+      "path": "sanitized-logs/env-documentation.log",
+      "sha256": "733e6b0bcb0f30d2d63e075118b58a34620b266895e1d9166b9cf45defccba1a"
+    },
+    {
+      "bytes": 633,
+      "path": "sanitized-logs/environment-verify.log",
+      "sha256": "6f2c16095e4f3d6ac64628e827e93718c0e6456e5fae0f5f28054c397ce57454"
+    },
+    {
+      "bytes": 204,
+      "path": "sanitized-logs/ggml-restore.log",
+      "sha256": "1f1a6656e364cae68019bf2dd2f6876aaa5593ad663341d0e417603fb2b79495"
+    },
+    {
+      "bytes": 1478,
+      "path": "sanitized-logs/install.log",
+      "sha256": "f2cbb4e7279b7b930e84dc33b6488f75b7a28d3bcd12d38e5295a7f948d7b373"
+    },
+    {
+      "bytes": 1345,
+      "path": "sanitized-logs/model-wheel-download.log",
+      "sha256": "330c66484ada6319c0ef9462866dbd44c4dc88aedea5efaf32e2edabba27d58b"
+    },
+    {
+      "bytes": 10133,
+      "path": "sanitized-logs/reference-install.log",
+      "sha256": "6aa91196c25475c1fb5580354aab1fb86dd8b6b337ade893eb41136f2119fe52"
+    }
+  ],
+  "new_development_validation_required": true,
+  "ninja": "1.13.2.git.kitware.jobserver-pipe-1",
+  "pcre2": "10.46",
+  "platform": {
+    "libc": [
+      "glibc",
+      "2.41"
+    ],
+    "machine": "x86_64",
+    "system": "Linux"
+  },
+  "prior_library_sha256": "5d9119c277d0a48aa8d10cc192cafabbfadff03a5310ac8ad798daa5fc8e6ef4",
+  "production_default_changed": false,
+  "runtime_dependencies": [
+    {
+      "bytes": 711216,
+      "resolved_filename": "libpcre2-8.so.0.14.0",
+      "sha256": "92e9b4167f9bbc237ca8f5526d82ee99ec9f8dbd0270ef1dd0ab24e2217f48e3",
+      "soname": "libpcre2-8.so.0"
+    },
+    {
+      "bytes": 2497768,
+      "resolved_filename": "libstdc++.so.6.0.33",
+      "sha256": "972bb2a18b71140dab0240f8a1f68ab3fb1d56bcd4c4f824a91b70888faf5a00",
+      "soname": "libstdc++.so.6"
+    },
+    {
+      "bytes": 977112,
+      "resolved_filename": "libm.so.6",
+      "sha256": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3",
+      "soname": "libm.so.6"
+    },
+    {
+      "bytes": 182856,
+      "resolved_filename": "libgcc_s.so.1",
+      "sha256": "30c61ab012a4241bed033725a09b61f5fdd3bb7df95ee852d0b096520524c7af",
+      "soname": "libgcc_s.so.1"
+    },
+    {
+      "bytes": 1995216,
+      "resolved_filename": "libc.so.6",
+      "sha256": "9792e3cbb541c8f44c7acf5f14f4022ea62998ecc787d326bed4d8b6547dfd92",
+      "soname": "libc.so.6"
+    },
+    {
+      "bytes": 225672,
+      "resolved_filename": "ld-linux-x86-64.so.2",
+      "sha256": "c8438e4fde1934e61c88311633f00949ff645d5c04cdb8671fa3d78164d2f307",
+      "soname": "ld-linux-x86-64.so.2"
+    }
+  ],
+  "runtime_needed": [
+    "libpcre2-8.so.0",
+    "libstdc++.so.6",
+    "libm.so.6",
+    "libgcc_s.so.1",
+    "libc.so.6",
+    "ld-linux-x86-64.so.2"
+  ],
+  "runtime_python_dependency": false,
+  "schema": "crispembed.spacy.build_restoration.v1",
+  "scope": "Rebuilt installed Linux x86-64 candidate before new development validation and heldout acceptance.",
+  "setup_observations": [
+    {
+      "check": "build tools",
+      "observation": "Initial setup installed Ninja 1.13.0; corrected to the recorded 1.13.2 before any CMake configuration or compilation."
+    },
+    {
+      "check": "acceptance model-free controls",
+      "command": "python -m unittest discover -s tests -p test_spacy_acceptance.py -v",
+      "correction": "python tests/test_spacy_acceptance_gate.py; six controls pass.",
+      "exit_code": 5,
+      "result": "NO TESTS RAN; the pattern omitted _gate; not counted as a pass."
+    }
+  ],
+  "source_commit": "51c2ac328ef40b00f18eb9b03130fb67c3f11313",
+  "source_matches_saved_candidate": true,
+  "source_sha256": {
+    "src/core/env_gate.h": "2370e31636ea25bc1e5ca63e1e606f4cd3c07c65e0f4d1347b2ec6daf57eaa0e",
+    "src/core/gguf_loader.cpp": "04b2c87b90f80fef04713c0572f3a7e823ba1c22e7c89ebc925a3d1ea56a6a8a",
+    "src/core/gguf_loader.h": "d191f61843db3aaf4a9a653c29debb70fbd8f1e2f2d47d63e85966e737a08936",
+    "src/core/json.h": "7e72a6359897e9397e5bee3edf7563476fc4bd41516bf5245a16df50dc54c589",
+    "src/core/json_value.h": "f6af418a13cc5285f977fd29c5644d7fc2cf957f5c4b6d31a3bf0c33243dacf4",
+    "src/core/sha256.h": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f",
+    "src/spacy_decode.cpp": "9e0701faea26b6eae1e89c6bf829b2129135371ab3b051effaa088a28ca021fc",
+    "src/spacy_decode.h": "b4441442893d85cc12a3957c5853951deac7e7793e4bd20fb8501f87ce6189da",
+    "src/spacy_lexical.cpp": "48170ac748f1697855ae526b16fe5d7a6d1b147b1edbf26e076ef99deacf8c2c",
+    "src/spacy_lexical.h": "92233750306fd516acc3695531aff2dfec7a1d4d1f77c85a182017ed89ab26f4",
+    "src/spacy_lexical_data.h": "0972867a8dd92355ee4895f9f00c1437a3135b1e21e02e96edbce56fc5c9ffe4",
+    "src/spacy_numeric.cpp": "664ab23f4169706d1a79299ff062d381889bc207fd7addccd047d4d1587fa9d0",
+    "src/spacy_numeric.h": "399b16063d02705ecae36eeed77a6533a716c6c267445547ba4d0d0aa8cf2ae7",
+    "src/spacy_pipeline.cpp": "9725a3e16ed04ccb2fe34fc6d2a10390427303bf1b6391d20aa53260ce3bcde1",
+    "src/spacy_pipeline.h": "756c25b664b38d26d1da13264d47417d9914f8dd805c588a539fe6f3681f7e62",
+    "tests/spacy_parity.py": "e83495dadcf199e068259e1cca30e65256bf76263a405bc6299765779fd77e32",
+    "tests/spacy_text_parity.py": "f5fc6c84cc9d850c78f2f5102484811ee43d4f3d40ba74e2ec97b6833a13d6a9",
+    "tests/test_spacy_text_api.py": "d1e4599baeec25adf99369d28671321bf2e647203bfa42b652ddfb82accf185b",
+    "tools/spacy/CMakeLists.txt": "cf126a32da8b8c7b0736cd3bc1770e26d0106309e28057e219a464a45c0f6684"
+  }
+}

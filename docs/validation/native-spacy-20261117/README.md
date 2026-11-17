@@ -222,3 +222,35 @@ grammar benefit over current deterministic rules; W7/W8 need actual packaging,
 platforms, device evidence and final application qualification. No existing
 Quds provider, app pin, native model alias or release default was changed. No
 CI endpoint was queried, polled, awaited or rerun.
+
+## Recovered candidate and acceptance freeze
+
+The integrated code and development evidence were recovered from remote commit
+`51c2ac328ef40b00f18eb9b03130fb67c3f11313` after the previous session ended.
+The source is unchanged. [The rebuild receipt](resume-build.json) and
+[environment verification](resume-environment.json) reproduce the pinned
+CPython, 46 package payloads / 4,181 RECORD entries, 24 blueprint files, native
+toolchain, five bundle files and 15 installed files. All four CTests, six
+acceptance admission controls, CPU baseline and environment documentation checks
+pass. The receipt retains the initial zero-test invocation and its correction;
+only the actual six-control execution counts as success. Sanitized full build
+logs are retained in [the log archive](resume-build-logs.tar.gz).
+
+The rebuilt binary has SHA-256
+`ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977`.
+It differs from the historical binary because source paths are embedded, so
+it was independently revalidated before freezing. [The complete rerun](resume-development-text.json.gz)
+passes the same 16 cases / 113 tokens / 22 sentences / 244 transitions /
+339 classifier choices / 1,201 numerical stages, with unchanged maximum
+absolute error `3.814697265625e-5`. [All 21 API groups](resume-development-api.json)
+also pass. These repeat the existing development panel, not additional cases.
+
+[The frozen acceptance protocol](acceptance-protocol.json) binds this installed
+binary, exact remote candidate sources, original oracle, bundle, input bytes
+and unchanged policy. [The freeze receipt](resume-freeze.json) binds the
+protocol and development evidence; the build receipt additionally records the
+six resolved runtime dependency binary hashes, including PCRE2. At this
+checkpoint no acceptance reference has been exported and no native acceptance
+case has run. Save and verify this checkpoint remotely before the original
+export, then save and verify the complete original reference before native
+execution. The previous candidate/receipts remain intact.
