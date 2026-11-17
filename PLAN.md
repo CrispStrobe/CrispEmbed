@@ -5885,7 +5885,14 @@ median/p95 was 463/546 ms versus native ORT INT4 15.8/17.1 ms; both retained
 the same frozen-probe decisions. Preserve the original baseline separately:
 its AMD runner differs from the optimized run's Intel runner.
 
-State: native lane selected; converter/prepared-ID runtime and minimal native
-target remain implementation work. Source feasibility is recorded, but no
+Execution checkpoint (17 November 2026): converter and prepared-ID native
+implementation are active in the isolated feature worktree. The owner explicitly
+requested incremental remote checkpoints and no waiting on the starved GitHub
+Actions queue. Use bounded local CPU builds and synthetic/model probes with
+resource checks; record actual tools, threads, model identities and limitations.
+Do not dispatch or poll Actions as a prerequisite.
+
+State: converter/prepared-ID runtime and minimal native target are in progress;
+F32 numerical parity and the mixed Q4_K candidate are not yet qualified. Source feasibility is recorded, but no
 GGUF artifact, native runtime, release, registry alias or application dependency
 upgrade is qualified by this entry.
