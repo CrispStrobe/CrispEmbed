@@ -254,3 +254,11 @@ checkpoint no acceptance reference has been exported and no native acceptance
 case has run. Save and verify this checkpoint remotely before the original
 export, then save and verify the complete original reference before native
 execution. The previous candidate/receipts remain intact.
+
+The exact 15-file installed candidate is also retained in
+[a deterministic validation archive](acceptance-candidate-linux-x86_64.tar.gz),
+with [its provenance and extraction verification](acceptance-candidate-linux-x86_64.json).
+This preserves the protocol's exact binary across workspace loss. It contains
+the library, header and notices; models and system dependencies are not bundled.
+The archive is Linux x86-64/AVX2 validation evidence, not a runtime release or a
+consumer package. Its library hash is the frozen hash above.

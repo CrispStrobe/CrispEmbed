@@ -1,0 +1,148 @@
+{
+  "archive": {
+    "path": "acceptance-candidate-linux-x86_64.tar.gz",
+    "sha256": "b0cd3ae4d47af442d32a6d2382143c36f8b019470cff7c509f97e4682b67489b",
+    "size_bytes": 825745,
+    "uncompressed_tar_sha256": "1e6f6b554b626570530e3de91e2fb2dbef6183210c028b66d316221e34dc8e88",
+    "uncompressed_tar_size_bytes": 2037760
+  },
+  "format": {
+    "compression": "gzip",
+    "compression_level": 9,
+    "entry_order": "lexical repository-relative install paths",
+    "file_permissions": "preserved from installed candidate",
+    "gid": 0,
+    "gzip_filename": "empty",
+    "owner_names": "empty",
+    "tar": "USTAR",
+    "timestamp": 0,
+    "uid": 0
+  },
+  "ggml_commit": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+  "installed_file_count": 15,
+  "installed_files": [
+    {
+      "bytes": 10045,
+      "mode": 420,
+      "path": "include/spacy_pipeline.h",
+      "sha256": "756c25b664b38d26d1da13264d47417d9914f8dd805c588a539fe6f3681f7e62"
+    },
+    {
+      "bytes": 1959256,
+      "mode": 420,
+      "path": "lib/libcrispembed-spacy.so",
+      "sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977"
+    },
+    {
+      "bytes": 4739,
+      "mode": 420,
+      "path": "share/licenses/crispembed-spacy/CrispEmbed-LICENSE",
+      "sha256": "a70d0ab5fb2dbab83d1a63071776891e6dfc7ba6e3063b3940c21274c1225a3e"
+    },
+    {
+      "bytes": 2188,
+      "mode": 420,
+      "path": "share/licenses/crispembed-spacy/THIRD_PARTY_NOTICES",
+      "sha256": "9386f6a62a3220da9c082dfceea4a018d2a73c1a0dbd03e28e1804912cf0115f"
+    },
+    {
+      "bytes": 1078,
+      "mode": 420,
+      "path": "share/licenses/crispembed-spacy/ggml-LICENSE",
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d"
+    },
+    {
+      "bytes": 13936,
+      "mode": 420,
+      "path": "share/licenses/crispembed-spacy/notices/CPython-LICENSE",
+      "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+    },
+    {
+      "bytes": 3867,
+      "mode": 420,
+      "path": "share/licenses/crispembed-spacy/notices/PCRE2-LICENCE.md",
+      "sha256": "9cf7ac6976099a1d856826d3ef1b093bd6b84489dc6100628ac79e740cf9885a"
+    },
+    {
+      "bytes": 1123,
+      "mode": 420,
+      "path": "share/licenses/crispembed-spacy/notices/Thinc-LICENSE",
+      "sha256": "d7192459f33a5d8c66358e2115ccbd3265478750f0b9d15f0c22e68e3ce6cc1e"
+    },
+    {
+      "bytes": 635,
+      "mode": 420,
+      "path": "share/licenses/crispembed-spacy/notices/Unicode-15.0.0-ReadMe.txt",
+      "sha256": "53672c0d0b5185e3cf04c8e970d544c3af81ae7c8eeba0b9cf6d355aa954ae1f"
+    },
+    {
+      "bytes": 1995,
+      "mode": 420,
+      "path": "share/licenses/crispembed-spacy/notices/Unicode-LICENSE.txt",
+      "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+    },
+    {
+      "bytes": 2408,
+      "mode": 420,
+      "path": "share/licenses/crispembed-spacy/notices/continuation-notice-sources.json",
+      "sha256": "2f71d905ddbb8ea162a13c89e4e1d4e1f9858fcb4f82c967911912c79c4bf62f"
+    },
+    {
+      "bytes": 1056,
+      "mode": 420,
+      "path": "share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSE",
+      "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012"
+    },
+    {
+      "bytes": 13470,
+      "mode": 420,
+      "path": "share/licenses/crispembed-spacy/notices/de_core_news_sm-LICENSES_SOURCES",
+      "sha256": "0c3ab78745569d848b7c83a486183bce42b9643561084d6d6f67eb0229c79869"
+    },
+    {
+      "bytes": 1078,
+      "mode": 420,
+      "path": "share/licenses/crispembed-spacy/notices/ggml-LICENSE",
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d"
+    },
+    {
+      "bytes": 1128,
+      "mode": 420,
+      "path": "share/licenses/crispembed-spacy/notices/spaCy-LICENSE",
+      "sha256": "3f4378e67708fecacd3e27651c8bc0f977cf20789e19da0d81a2840e7cf573a2"
+    }
+  ],
+  "library_sha256": "ea89842ebf22c08508aff1cfbf18d78a107118af320523009616ff62b6e42977",
+  "limitations": [
+    "The frozen library retains embedded transient source-path strings from compilation. Its bytes are intentionally unchanged.",
+    "The archive contains only the 15-file install tree: library, C header, and original notices. Authenticated model/resources and the separately identified compatible system dependencies are required to load and run it.",
+    "Packaging, other platforms, application consumption, model/native release, and grammar benefit require their own gates."
+  ],
+  "model_bundled": false,
+  "production_default_changed": false,
+  "protocol_commit": "8fac62023e257ccf431e3daee25e6b2f15f182c8",
+  "protocol_path": "acceptance-protocol.json",
+  "protocol_sha256": "78c17652ebce834d853209927bf24493eb1b362de99a0115a55b5202fcef2d92",
+  "runtime_dependency_inventory": {
+    "path": "resume-build.json",
+    "scope": "Hashes of dynamically resolved dependencies, including PCRE2, are retained with build evidence.",
+    "sha256": "091772f76525290b45c304b75a84399c23801b193c60cbe05db7f5f4b1db4692"
+  },
+  "schema": "crispembed.spacy.frozen_candidate_archive.v1",
+  "scope": "Exact installed frozen candidate retained as Linux x86-64/AVX2 validation evidence; not a runtime release or consumer distribution.",
+  "source_commit": "51c2ac328ef40b00f18eb9b03130fb67c3f11313",
+  "system_dependencies_bundled": false,
+  "target": {
+    "cpu_baseline": "AVX2; native architecture probing disabled",
+    "machine": "x86_64",
+    "system": "Linux"
+  },
+  "verification": {
+    "frozen_library_sha256_matches_protocol": true,
+    "independent_reserialization_bytes_equal": true,
+    "inference_executed": false,
+    "reextracted_files_match_manifest": true,
+    "reextracted_modes_match_installed_modes": true,
+    "runtime_executed": false
+  }
+}
