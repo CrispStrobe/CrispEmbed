@@ -19,6 +19,18 @@ changed; only `docs/PROOFING.md` overlaps. Remote merge `8d89e4f7` passes all
 29 package tests, 22 UI controls, 75 proofing regressions, the actual-native
 widget gate and static analysis with source/runtime bytes unchanged.
 
+W6 continuation is active on the same paired branches. The new
+[grammar protocol and 86-case panel](https://github.com/CrispStrobe/quds_office_suite/tree/846fc0371b23bf4a84542db7a3f24eee2d8609dd/docs/validation/native-spacy-w6-20261117)
+were published before inspecting candidate outputs. Current main remains
+`b34a132c` here and `4b2b4e78` in Quds. A fresh full branch/PR inventory found
+late Office union repairs absent from Quds main; these are preserved at
+[Quds `ec4aeefe`](https://github.com/CrispStrobe/quds_office_suite/commit/ec4aeefe1be6ce1868ee7eebf004c07b25d4108a),
+with unchanged deterministic German proofing inputs. The exact accepted native
+archive, six dependencies and five-file model bundle are restored. The work
+is a pure Dart guarded agreement experiment; it does not rebuild native code,
+reopen native acceptance, or activate grammar before a separate benefit and
+editor gate. Preserve a negative outcome if the new candidate fails.
+
 
 ## Rust DAT RGB buffers and output ownership — 14 November 2026
 
