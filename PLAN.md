@@ -1,5 +1,16 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
+## Active work in flight — native spaCy, 17 November 2026
+
+| Lane | Owner/branch | Current boundary | Next gate |
+| --- | --- | --- | --- |
+| German spaCy CPU/F32 | `feat/native-spacy-20261117`; one coordinator for schema/ABI/Git, separate reference and numeric owners | W0 refreshed current main and source refs; [input snapshot](docs/validation/native-spacy-20261117/README.md) | W1 actual converted bundle and frozen oracle checkpoint before numerical port |
+
+The user requires incremental remote checkpoints and local validation without
+querying or waiting for Actions. Preserve all unrelated paths/defaults. This
+optional standalone NLP lane does not change runtime releases or app pins.
+
+
 ## Rust DAT RGB buffers and output ownership — 14 November 2026
 
 Bounded fix `fix/rust-dat-buffer-safety-20261114` starts from `a4996aebe`.
