@@ -25,13 +25,18 @@ if(NOT EXISTS "${CRISPEMBED_ROOT}/ggml/CMakeLists.txt")
 endif()
 add_subdirectory("${CRISPEMBED_ROOT}/ggml" "${CMAKE_CURRENT_BINARY_DIR}/ggml" EXCLUDE_FROM_ALL)
 find_package(Threads REQUIRED)
+find_path(SPACY_PCRE2_INCLUDE_DIR NAMES pcre2.h REQUIRED)
+find_library(SPACY_PCRE2_LIBRARY NAMES pcre2-8 REQUIRED)
 
 add_library(crispembed-spacy SHARED
     "${CRISPEMBED_ROOT}/src/spacy_pipeline.cpp"
     "${CRISPEMBED_ROOT}/src/spacy_numeric.cpp"
+    "${CRISPEMBED_ROOT}/src/spacy_lexical.cpp"
+    "${CRISPEMBED_ROOT}/src/spacy_decode.cpp"
     "${CRISPEMBED_ROOT}/src/core/gguf_loader.cpp")
 target_include_directories(crispembed-spacy PUBLIC "${CRISPEMBED_ROOT}/src")
-target_link_libraries(crispembed-spacy PRIVATE ggml ggml-cpu Threads::Threads)
+target_include_directories(crispembed-spacy PRIVATE "${SPACY_PCRE2_INCLUDE_DIR}")
+target_link_libraries(crispembed-spacy PRIVATE ggml ggml-cpu Threads::Threads "${SPACY_PCRE2_LIBRARY}")
 target_compile_definitions(crispembed-spacy PRIVATE CRISPEMBED_SPACY_BUILD PUBLIC CRISPEMBED_SPACY_SHARED)
 if(MSVC)
     target_compile_options(crispembed-spacy PRIVATE /W4 /fp:strict /utf-8)
@@ -59,6 +64,19 @@ if(BUILD_TESTING)
         endif()
         add_test(NAME spacy-numeric-contract COMMAND test-spacy-numeric)
     endif()
+    foreach(component lexical decode)
+        if(EXISTS "${CRISPEMBED_ROOT}/tests/test_spacy_${component}.cpp")
+            add_executable(test-spacy-${component}
+                "${CRISPEMBED_ROOT}/tests/test_spacy_${component}.cpp"
+                "${CRISPEMBED_ROOT}/src/spacy_${component}.cpp")
+            target_include_directories(test-spacy-${component} PRIVATE "${CRISPEMBED_ROOT}/src")
+            if(component STREQUAL "lexical")
+                target_include_directories(test-spacy-${component} PRIVATE "${SPACY_PCRE2_INCLUDE_DIR}")
+                target_link_libraries(test-spacy-${component} PRIVATE "${SPACY_PCRE2_LIBRARY}")
+            endif()
+            add_test(NAME spacy-${component}-contract COMMAND test-spacy-${component})
+        endif()
+    endforeach()
 endif()
 
 install(TARGETS crispembed-spacy LIBRARY DESTINATION lib RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)

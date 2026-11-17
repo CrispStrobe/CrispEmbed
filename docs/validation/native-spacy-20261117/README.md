@@ -111,8 +111,6 @@ boundary. `CRISPEMBED_SPACY` stays default off. Model weights remain outside
 ordinary Git; the authenticated immutable source wheel and deterministic
 converter reproduce them. Native/model release artifacts are not published yet.
 
-## Remaining work
-
 ## W2 lexical core continuation checkpoint
 
 The native tokenizer and lexical core now implement the original German model
@@ -150,10 +148,77 @@ is already an ancestor. Remote source refs were refreshed without CI endpoints.
 
 ## Remaining work after W2
 
-Owned text integration and W4 linguistic decoding are the next dependencies.
-The frozen eight-case acceptance input set remains unused. After complete
-raw-text analysis parity, W5 may add the optional Dart worker/analysis UI. W6
-requires incremental grammar benefit over current deterministic rules; W7/W8
-need actual packaging, platforms, device evidence and final qualification.
-No existing Quds provider, app pin, native model alias, or release default was
-changed. No CI endpoint was queried, polled, awaited, or rerun.
+At the W2 cutoff, owned text integration and W4 linguistic decoding were the
+next dependencies. The following section records their later completion for
+the development panel; the earlier lexical checkpoint remains source-bound.
+
+## W2–W4 composed raw-text development candidate
+
+The installed native library now accepts only the original counted UTF-8 text
+and generates its own tokens, feature IDs, parser states, legal masks and greedy
+actions. It returns original byte/scalar/UTF-16 spans, fine and coarse POS,
+morphology, lemmas, dependency heads/labels and sentence boundaries. No reference
+tokens, states, masks or scores are supplied to the analyzer. The separate
+prepared-feature API remains available unchanged, and the gate stays default off.
+
+| Evidence | Result |
+| --- | --- |
+| [Composed summary](text-summary.json) and [complete installed comparison](text-parity-final.json.gz) | 16 cases / 113 tokens / 22 sentences, exact annotations and source spans |
+| Native decisions | All 244 transitions, 33,428 legal-mask fields and 339 classifier choices match |
+| Numerical stages | All 1,201 stages / 1,406,553 F32 elements pass; maximum absolute error `3.814697265625e-5` under the unchanged budget |
+| [Expanded lexical comparison](lexical-extended-final.json) | 4,658 inputs / 13,689 token instances / 273,780 exact field comparisons |
+| [Decoder isolation and sanitizers](decoder-validation-final.json) | 61 model-free assertions plus full frozen-score replay; ASan/UBSan/leak checks pass |
+| [Text API controls](text-api-final.json) | 21 real-model control groups, zero failures/errors/skips |
+| [Build/dependency/install receipt](text-validation.json) | Four CTest executables, CPU baseline, gate documentation, and 15 installed files verified |
+
+The expanded lexical cases cover all 417 tokenizer exceptions in six contexts,
+all 457 reserved symbols, all 1,433 scalar lowercase entries with sigma context,
+16 explicit Unicode controls and 250 deterministic authored mixtures. These
+test lexical implementation parity; they are not 4,658 full linguistic analyses
+or a grammar-quality corpus. The original 16 development documents remain the
+same documents across lexical, isolated decoder and composed repeats.
+
+The new additive C ABI authenticates both GGUF and resources before parsing,
+uses counted strings (including embedded NUL), and owns immutable documents
+independently of contexts. Legacy contexts report numeric capabilities only;
+resource-aware contexts report complete analysis. Controls cover wrong assets,
+malformed UTF-8, byte/token limits, disabled gates, cancellation, trace abortion,
+concurrency, failed-output reset and document lifetime after context destruction.
+
+Independent review found cancellation gaps in infix iteration and dependency
+reconstruction. Both now poll within those loops; authored regression controls
+prove cancellation and recovery. [The lexical controls](lexical-controls-final.json)
+retain the old implementation's negative. [The first decoder receipt](decoder-validation.json)
+and its [exact original source archive](decoder-first-source.tar.gz) remain intact.
+The [first composed run](text-parity-first.json.gz) passed before this hardening;
+the installed final run confirms unchanged annotations and numerical output.
+The [first API receipt](text-api-first.json) remains separately source-bound.
+
+The expanded lexical harness initially split raw U+2028/U+2029 inside JSON with
+Python `splitlines()`; literal LF framing corrected that setup failure without
+changing native output. An initial attempt to invoke the environment-documentation
+script through unittest discovered zero tests and was not counted as success;
+its direct executable invocation passes all 499 documented variable entries.
+
+PCRE2 10.46 is the added native runtime dependency. The inspected ELF links
+PCRE2, C/C++/math/system libraries and no Python library. All five original model
+bundle files remain byte-identical. Installed notices now include PCRE2,
+CPython and Unicode provenance in addition to the existing model/source notices.
+The build is Linux x86-64 with the repository AVX2 baseline; other platforms and
+mobile distribution are not qualified by these results.
+
+## Acceptance sequence and remaining application work
+
+The eight frozen acceptance inputs remain unused at this candidate checkpoint.
+`tests/spacy_acceptance.py` freezes the exact remote source commit, installed
+binary, model, inputs, original exporter, numerical budgets and gate sources.
+Six model-free admission controls verify that mutable or missing source/assets
+cannot reach native execution. Publish the candidate and protocol, export and
+save the original acceptance reference, then run the frozen candidate exactly
+once for qualification. Preserve failures without tuning on this split.
+
+W5 may then add the optional Dart worker/analysis UI. W6 requires incremental
+grammar benefit over current deterministic rules; W7/W8 need actual packaging,
+platforms, device evidence and final application qualification. No existing
+Quds provider, app pin, native model alias or release default was changed. No
+CI endpoint was queried, polled, awaited or rerun.

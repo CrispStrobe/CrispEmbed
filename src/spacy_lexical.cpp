@@ -258,11 +258,12 @@ public:
         return { bounds[0], bounds[1], true };
     }
 
-    std::vector<Match> find_all(std::string_view text) const {
+    std::vector<Match> find_all(std::string_view text, const CancelCheck & cancelled) const {
         std::vector<Match> matches;
         std::size_t offset = 0;
         std::uint32_t flags = 0;
         while (offset <= text.size()) {
+            check_cancel(cancelled);
             const auto match = search(text, offset, flags);
             if (!match.found) {
                 if (!flags || offset == text.size()) break;
@@ -478,7 +479,7 @@ struct LexicalModel::Impl {
                 push(out, { start, end, false, nullptr });
             } else {
                 std::size_t offset = 0;
-                for (const auto & match : infix.find_all(current)) {
+                for (const auto & match : infix.find_all(current, cancelled)) {
                     check_cancel(cancelled);
                     if (match.start == 0) continue;
                     if (match.start != offset) push(out, { start + offset, start + match.start, false, nullptr });

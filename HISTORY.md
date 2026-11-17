@@ -22311,3 +22311,20 @@ independent bundle/reference exports, and the recorded numeric sanitizer check
 pass. Initial temporary-directory/install setup outcomes remain documented.
 `CRISPEMBED_SPACY` stays default off; no runtime/app release or model publication.
 All checkpoints are saved remotely without querying/waiting for Actions.
+
+
+## Native German spaCy raw-text development analysis — 17 November 2026
+
+The optional CPU/F32 lane now composes tokenizer/lexical features, the shared
+CNN and classifier heads, native parser transitions/deprojection, edit-tree
+lemmas, morphology/POS and whitespace rules through an owned counted-text C ABI.
+[Installed evidence](docs/validation/native-spacy-20261117/text-summary.json)
+matches 16 development cases, 113 tokens, 22 sentences, 244 native transitions and 339
+classifier choices, plus all 1,201 numerical stages and 1,406,553 F32 elements. Separate
+expanded lexical, sanitizer and 21 real-model API-control evidence is retained in
+[the continuation receipt](docs/validation/native-spacy-20261117/README.md).
+Cancellation-loop findings and initial setup failures are preserved. PCRE2 is a
+new native dependency with installed notices. The untouched eight-case acceptance
+split has a separate source/binary-frozen gate. Linux evidence does not qualify
+mobile, app integration or grammar benefit. The gate stays off; no release,
+model alias or application pin changed. Local tests only; no CI queries/waits.

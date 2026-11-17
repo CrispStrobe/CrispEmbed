@@ -101,7 +101,31 @@ Version 1's engineering bounds are 32 MiB per bundle/model admission and
 2,048 prepared tokens per document. They are not measured mobile budgets.
 No hidden truncation, download, daemon, Python runtime, quantization, or GPU
 fallback is permitted. Empty input produces explicitly empty numeric outputs
-without pretending that nonempty inference ran. The first numeric API accepts
-prepared features only; a raw-text analysis API must wait for lexical and
-decoder qualification. It must eventually validate original UTF-8 byte spans
-before any Dart UTF-16 mapping or correction.
+without pretending that nonempty inference ran. The original numeric API still
+accepts prepared features. The additive text ABI now performs tokenization and
+greedy decoding from counted UTF-8, with qualified development spans in original
+bytes, scalars and UTF-16 units. It requires the separately authenticated
+`resources.json` whose hash is already bound by this GGUF profile.
+
+## Text extension without a bundle change
+
+The original five bundle files remain byte-identical. The native source includes
+a reproducible lexical supplement generated from the pinned CPython 3.12.14 /
+Unicode 15.0 and spaCy 3.8.18 environment: reserved string symbols, contextual
+lowercase properties and Python regex character classes. PCRE2 executes the
+translated patterns with bounded work; its Unicode shorthand tables do not
+substitute for these frozen properties.
+
+Text inputs are limited to 1 MiB and 2,048 tokens, with no truncation. The parser
+allows at most `8*n+32` transitions; edit trees have depth 64, 65,536 visits per
+token and a 1 MiB output bound. Cooperative cancellation covers lexical loops,
+numerical stages, parsing and dependency reconstruction. A failed call returns
+no successful partial document. Owned immutable documents may outlive contexts,
+and borrowed counted-string views expire when the document is freed.
+
+The text ABI version is 1. Legacy numeric capability queries retain mask 3;
+resource-aware context queries additionally advertise tokenizer/analyzer bits,
+for mask 15. NER, other locales/profiles, app integration and mobile deployment
+are outside this profile. See the source-bound
+[development analysis summary](../../docs/validation/native-spacy-20261117/text-summary.json)
+and the separate frozen acceptance protocol before broader qualification claims.

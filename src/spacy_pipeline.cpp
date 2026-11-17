@@ -1,5 +1,4 @@
-// Closed CPU/F32 numeric development backend for de_core_news_sm 3.8.0.
-// Tokenization and linguistic decoding are deliberately outside this ABI.
+// Closed CPU/F32 backend for de_core_news_sm 3.8.0.
 #include "spacy_pipeline.h"
 
 #include "core/env_gate.h"
@@ -7,6 +6,8 @@
 #include "core/sha256.h"
 #include "ggml-cpu.h"
 #include "spacy_numeric.h"
+#include "spacy_lexical.h"
+#include "spacy_decode.h"
 
 #include <algorithm>
 #include <array>
@@ -243,6 +244,25 @@ std::vector<uint8_t> read_model(const char * path) {
     return bytes;
 }
 
+std::string read_resources(const char * path, const char * expected_sha256) {
+    require(path && *path && valid_sha(expected_sha256),
+            "Explicit resource path and trusted lowercase SHA-256 required");
+    require(std::strcmp(expected_sha256, k_resources_sha) == 0,
+            "Resource hash differs from the admitted model profile");
+    std::ifstream stream(path, std::ios::binary | std::ios::ate);
+    require(static_cast<bool>(stream), "Cannot open spaCy resources file");
+    const auto length = stream.tellg();
+    require(length > 0 && length <= static_cast<std::streamoff>(k_max_model_bytes),
+            "Resource file size outside admitted bounds");
+    std::string bytes(static_cast<size_t>(length), '\0');
+    stream.seekg(0);
+    stream.read(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+    require(static_cast<bool>(stream) && stream.peek() == std::char_traits<char>::eof(),
+            "Cannot read complete spaCy resources");
+    require(core_sha256::bytes(bytes.data(), bytes.size()) == expected_sha256, "Resource SHA-256 mismatch");
+    return bytes;
+}
+
 class TraceAborted : public std::runtime_error {
 public:
     TraceAborted() : std::runtime_error("spaCy trace callback requested abortion") {}
@@ -272,6 +292,8 @@ struct crispembed_spacy_context {
     ggml_backend_t backend = nullptr;
     core_gguf::WeightLoad weights;
     std::unique_ptr<crispembed::spacy::NumericModel> model;
+    std::unique_ptr<crispembed::spacy::LexicalModel> lexical;
+    std::unique_ptr<crispembed::spacy::DecodeResources> decoder;
 
     ~crispembed_spacy_context() {
         model.reset();
@@ -285,6 +307,12 @@ struct crispembed_spacy_result {
     crispembed::spacy::NumericOutput output;
 };
 
+struct crispembed_spacy_document {
+    std::vector<crispembed::spacy::LexicalToken> tokens;
+    crispembed::spacy::DecodeOutput annotations;
+    bool analyzed = false;
+};
+
 extern "C" {
 
 uint32_t crispembed_spacy_abi_version(void) {
@@ -293,6 +321,17 @@ uint32_t crispembed_spacy_abi_version(void) {
 
 uint32_t crispembed_spacy_capabilities(void) {
     return CRISPEMBED_SPACY_PREPARED_FEATURE_SCORES | CRISPEMBED_SPACY_PARSER_STATE_SCORES;
+}
+
+uint32_t crispembed_spacy_text_abi_version(void) {
+    return CRISPEMBED_SPACY_TEXT_ABI_VERSION;
+}
+
+uint32_t crispembed_spacy_context_capabilities(const crispembed_spacy_context * context) {
+    if (!context) return 0;
+    return crispembed_spacy_capabilities() |
+           (context->lexical ? static_cast<uint32_t>(CRISPEMBED_SPACY_TOKENIZE_UTF8) : 0u) |
+           (context->lexical && context->decoder ? static_cast<uint32_t>(CRISPEMBED_SPACY_ANALYZE_UTF8) : 0u);
 }
 
 crispembed_spacy_context * crispembed_spacy_create(const char * model_path, const char * expected_sha256, char * error,
@@ -354,6 +393,208 @@ crispembed_spacy_context * crispembed_spacy_create(const char * model_path, cons
 
 void crispembed_spacy_free(crispembed_spacy_context * context) {
     delete context;
+}
+
+crispembed_spacy_context * crispembed_spacy_create_with_resources(const char * model_path,
+                                                                  const char * expected_model_sha256,
+                                                                  const char * resources_path,
+                                                                  const char * expected_resources_sha256, char * error,
+                                                                  size_t error_capacity) {
+    error_text(error, error_capacity, "");
+    if (error_capacity && !error) return nullptr;
+    try {
+        if (!core_env::on("CRISPEMBED_SPACY")) {
+            error_text(error, error_capacity, "Native spaCy backend is disabled; set CRISPEMBED_SPACY=1");
+            return nullptr;
+        }
+        // Authenticate resource bytes before either resource parser sees them.
+        const auto resources = read_resources(resources_path, expected_resources_sha256);
+        std::unique_ptr<crispembed_spacy_context> context(
+            crispembed_spacy_create(model_path, expected_model_sha256, error, error_capacity));
+        if (!context) return nullptr;
+        context->lexical = std::make_unique<crispembed::spacy::LexicalModel>(resources);
+        context->decoder = std::make_unique<crispembed::spacy::DecodeResources>(
+            crispembed::spacy::DecodeResources::from_json(resources));
+        return context.release();
+    } catch (const std::bad_alloc &) {
+        error_text(error, error_capacity, "Cannot allocate spaCy text resources");
+    } catch (const std::exception & exception) {
+        error_text(error, error_capacity, exception.what());
+    } catch (...) {
+        error_text(error, error_capacity, "Unknown spaCy text resource admission error");
+    }
+    return nullptr;
+}
+
+int crispembed_spacy_tokenize_utf8(crispembed_spacy_context * context, const char * text, size_t text_bytes,
+                                   crispembed_spacy_document ** document, crispembed_spacy_cancel_callback cancel,
+                                   void * cancel_user, char * error, size_t error_capacity) {
+    if (document) *document = nullptr;
+    error_text(error, error_capacity, "");
+    if (!context || !document || (error_capacity && !error) || (text_bytes && !text) ||
+        text_bytes > CRISPEMBED_SPACY_MAX_TEXT_BYTES || !context->lexical) {
+        error_text(error, error_capacity, "Invalid text pointers/length or context without admitted text resources");
+        return CRISPEMBED_SPACY_INVALID_ARGUMENT;
+    }
+    try {
+        if (!core_env::on("CRISPEMBED_SPACY")) {
+            error_text(error, error_capacity, "Native spaCy backend is disabled");
+            return CRISPEMBED_SPACY_DISABLED;
+        }
+        std::lock_guard<std::mutex> lock(context->mutex);
+        const auto cancelled = cancellation(cancel, cancel_user);
+        check_cancel(cancelled);
+        auto owned = std::make_unique<crispembed_spacy_document>();
+        owned->tokens = context->lexical->tokenize(std::string_view(text ? text : "", text_bytes), cancelled);
+        check_cancel(cancelled);
+        *document = owned.release();
+        return CRISPEMBED_SPACY_OK;
+    } catch (const crispembed::spacy::NumericCancelled & exception) {
+        error_text(error, error_capacity, exception.what());
+        return CRISPEMBED_SPACY_CANCELLED;
+    } catch (const std::invalid_argument & exception) {
+        error_text(error, error_capacity, exception.what());
+        return CRISPEMBED_SPACY_INVALID_ARGUMENT;
+    } catch (const std::bad_alloc &) {
+        error_text(error, error_capacity, "Cannot allocate spaCy tokenization resources");
+        return CRISPEMBED_SPACY_ALLOCATION_ERROR;
+    } catch (const std::exception & exception) {
+        error_text(error, error_capacity, exception.what());
+        return CRISPEMBED_SPACY_RUNTIME_ERROR;
+    } catch (...) {
+        error_text(error, error_capacity, "Unknown spaCy tokenization error");
+        return CRISPEMBED_SPACY_RUNTIME_ERROR;
+    }
+}
+
+int crispembed_spacy_analyze_utf8(crispembed_spacy_context * context, const char * text, size_t text_bytes,
+                                  crispembed_spacy_document ** document, crispembed_spacy_trace_callback trace,
+                                  void * trace_user, crispembed_spacy_cancel_callback cancel, void * cancel_user,
+                                  char * error, size_t error_capacity) {
+    if (document) *document = nullptr;
+    error_text(error, error_capacity, "");
+    if (!context || !document || (error_capacity && !error) || (text_bytes && !text) ||
+        text_bytes > CRISPEMBED_SPACY_MAX_TEXT_BYTES || !context->lexical || !context->decoder) {
+        error_text(error, error_capacity,
+                   "Invalid text pointers/length or context without admitted analysis resources");
+        return CRISPEMBED_SPACY_INVALID_ARGUMENT;
+    }
+    try {
+        if (!core_env::on("CRISPEMBED_SPACY")) {
+            error_text(error, error_capacity, "Native spaCy backend is disabled");
+            return CRISPEMBED_SPACY_DISABLED;
+        }
+        std::lock_guard<std::mutex> lock(context->mutex);
+        const auto cancelled = cancellation(cancel, cancel_user);
+        check_cancel(cancelled);
+        auto owned = std::make_unique<crispembed_spacy_document>();
+        owned->tokens = context->lexical->tokenize(std::string_view(text ? text : "", text_bytes), cancelled);
+        std::vector<crispembed::spacy::FeatureRow> features;
+        std::vector<crispembed::spacy::DecodeToken> tokens;
+        features.reserve(owned->tokens.size());
+        tokens.reserve(owned->tokens.size());
+        for (const auto & token : owned->tokens) {
+            features.push_back(token.features);
+            tokens.push_back({ token.text, token.is_space, {} });
+        }
+        const auto sink = trace_sink(trace, trace_user);
+        const auto numeric = context->model->run(features, CRISPEMBED_SPACY_MAX_TOKENS, sink, cancelled);
+        const crispembed::spacy::ParserScorer scorer = [&](const std::array<int32_t, 8> & ids, size_t step) {
+            crispembed::spacy::TraceSink parser_sink;
+            if (sink) {
+                parser_sink = [&](const std::string & name, const crispembed::spacy::TensorView & view) {
+                    require(name.rfind("parser.", 0) == 0, "Invalid parser trace stage");
+                    sink("parser.step." + std::to_string(step) + "." + name.substr(7), view);
+                };
+            }
+            return context->model->parser_scores(numeric.parser_cache, ids, parser_sink, cancelled);
+        };
+        crispembed::spacy::ParserTrace parser_trace;
+        if (sink) {
+            parser_trace = [&](const crispembed::spacy::ParserStep & step) {
+                const auto prefix = "parser.step." + std::to_string(step.step) + ".state.";
+                const std::vector<float> ids(step.features.begin(), step.features.end());
+                const std::vector<float> mask(step.valid_actions.begin(), step.valid_actions.end());
+                const float choice = static_cast<float>(step.chosen_action);
+                sink(prefix + "features", { { ids.size() }, ids.data(), ids.size() });
+                sink(prefix + "valid_actions", { { mask.size() }, mask.data(), mask.size() });
+                sink(prefix + "chosen_action", { { 1 }, &choice, 1 });
+            };
+        }
+        owned->annotations =
+            crispembed::spacy::decode_annotations(*context->decoder, numeric, tokens, scorer, parser_trace, cancelled);
+        require(owned->annotations.tokens.size() == owned->tokens.size(), "Incomplete spaCy annotation output");
+        check_cancel(cancelled);
+        owned->analyzed = true;
+        *document = owned.release();
+        return CRISPEMBED_SPACY_OK;
+    } catch (const crispembed::spacy::NumericCancelled & exception) {
+        error_text(error, error_capacity, exception.what());
+        return CRISPEMBED_SPACY_CANCELLED;
+    } catch (const TraceAborted & exception) {
+        error_text(error, error_capacity, exception.what());
+        return CRISPEMBED_SPACY_TRACE_ERROR;
+    } catch (const std::invalid_argument & exception) {
+        error_text(error, error_capacity, exception.what());
+        return CRISPEMBED_SPACY_INVALID_ARGUMENT;
+    } catch (const std::bad_alloc &) {
+        error_text(error, error_capacity, "Cannot allocate spaCy text analysis resources");
+        return CRISPEMBED_SPACY_ALLOCATION_ERROR;
+    } catch (const std::exception & exception) {
+        error_text(error, error_capacity, exception.what());
+        return CRISPEMBED_SPACY_RUNTIME_ERROR;
+    } catch (...) {
+        error_text(error, error_capacity, "Unknown spaCy text analysis error");
+        return CRISPEMBED_SPACY_RUNTIME_ERROR;
+    }
+}
+
+size_t crispembed_spacy_document_token_count(const crispembed_spacy_document * document) {
+    return document ? document->tokens.size() : 0;
+}
+
+int crispembed_spacy_document_is_analyzed(const crispembed_spacy_document * document) {
+    return document && document->analyzed ? 1 : 0;
+}
+
+int crispembed_spacy_document_token(const crispembed_spacy_document * document, size_t index,
+                                    crispembed_spacy_token_view * token) {
+    if (token) *token = {};
+    if (!document || !token || index >= document->tokens.size()) return CRISPEMBED_SPACY_INVALID_ARGUMENT;
+    const auto & value = document->tokens[index];
+    token->text = { value.text.data(), value.text.size() };
+    token->norm = { value.norm.data(), value.norm.size() };
+    token->prefix = { value.prefix.data(), value.prefix.size() };
+    token->suffix = { value.suffix.data(), value.suffix.size() };
+    token->shape = { value.shape.data(), value.shape.size() };
+    token->byte_start = value.byte_start;
+    token->byte_end = value.byte_end;
+    token->scalar_start = value.scalar_start;
+    token->scalar_end = value.scalar_end;
+    token->utf16_start = value.utf16_start;
+    token->utf16_end = value.utf16_end;
+    token->orth_id = value.orth_id;
+    std::copy(value.features.begin(), value.features.end(), token->features);
+    token->head = -1;
+    token->flags = (value.space_after ? static_cast<uint32_t>(CRISPEMBED_SPACY_SPACE_AFTER) : 0u) |
+                   (value.is_space ? static_cast<uint32_t>(CRISPEMBED_SPACY_IS_SPACE) : 0u);
+    if (document->analyzed) {
+        const auto & annotation = document->annotations.tokens[index];
+        token->lemma = { annotation.lemma.data(), annotation.lemma.size() };
+        token->tag = { annotation.tag.data(), annotation.tag.size() };
+        token->pos = { annotation.pos.data(), annotation.pos.size() };
+        token->morph = { annotation.morph.data(), annotation.morph.size() };
+        token->dependency = { annotation.dep.data(), annotation.dep.size() };
+        token->head = annotation.head;
+        if (annotation.is_sent_start) token->flags |= CRISPEMBED_SPACY_SENTENCE_START;
+        if (index + 1 == document->tokens.size() || document->annotations.tokens[index + 1].is_sent_start)
+            token->flags |= CRISPEMBED_SPACY_SENTENCE_END;
+    }
+    return CRISPEMBED_SPACY_OK;
+}
+
+void crispembed_spacy_document_free(crispembed_spacy_document * document) {
+    delete document;
 }
 
 int crispembed_spacy_forward_features(crispembed_spacy_context * context, const uint64_t * features, size_t token_count,

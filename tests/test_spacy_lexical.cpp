@@ -57,6 +57,12 @@ int run(int argc, char ** argv) {
         require(model.tokenize("").empty(), "Explicit empty tokenization");
         rejects<NumericCancelled>([&] { model.tokenize("Ein Haus.", [] { return true; }); }, "Cancellation accepted");
         require(model.tokenize("Ein Haus.").size() == 3, "Cancellation recovery");
+        std::string infixes = "a";
+        for (unsigned i = 0; i < 10000; ++i) infixes += ",a";
+        unsigned cancel_calls = 0;
+        rejects<NumericCancelled>([&] { model.tokenize(infixes, [&] { return ++cancel_calls == 100; }); },
+                                  "Infix collection must cancel before exhausting its match-count limit");
+        require(model.tokenize("Ein Haus.").size() == 3, "Infix cancellation recovery");
         rejects<std::invalid_argument>([&] { model.tokenize(std::string(1024 * 1024 + 1, 'a')); },
                                        "Byte bound ignored");
         std::string many;

@@ -8425,3 +8425,18 @@ receipts; they are not full-analysis latency, mobile budgets, or speedup claims.
 Native tokenization, transition decoding, lemma application, complete annotations
 and independent acceptance still need qualification. No quantized/GPU path or
 production default is selected by this baseline.
+
+
+## Native spaCy raw-text development candidate — 17 November 2026
+
+[The composed summary](docs/validation/native-spacy-20261117/text-summary.json)
+records exact annotations for 113 tokens and 22 sentences, 244 native actions and
+339 classifier choices from original UTF-8. All 1,201 numerical stages and
+1,406,553 elements satisfy
+the original 2e-4+2e-5*abs(reference) budget; maximum absolute error remains
+3.814697265625e-5. These are 16 development documents, reused across stage and
+composed gates, not extra unique cases. Timings include trace copying in one
+Linux process on these small inputs and are diagnostic only. The 1 MiB/2,048-token
+limits are engineering admission bounds, not measured device latency/RSS budgets.
+PCRE2 adds a native dependency. Mobile/performance/grammar qualification remains
+open; no default or release promotion follows from development parity.

@@ -38,7 +38,9 @@ def native(probe, resources, texts):
     result = subprocess.run([str(probe.resolve()), str(resources.resolve())], input=request,
                             text=True, encoding="utf-8", capture_output=True, timeout=120)
     require(result.returncode == 0, f"Native lexical probe failed ({result.returncode}): {result.stderr}")
-    outputs = [json.loads(line) for line in result.stdout.splitlines()]
+    # U+2028/U+2029 are valid unescaped JSON string contents, not records.
+    # str.splitlines() incorrectly splits them (and other Unicode separators).
+    outputs = [json.loads(line) for line in result.stdout.split("\n") if line]
     require(len(outputs) == len(texts), "Native lexical output census mismatch")
     return outputs
 

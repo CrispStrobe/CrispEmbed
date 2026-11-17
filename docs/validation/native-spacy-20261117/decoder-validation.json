@@ -1,0 +1,211 @@
+{
+  "binaries": {
+    "test_spacy_decode": {
+      "sha256": "01b94725615ba298e707a164f67d98f1cd64dd287afcc0a02dc04d9bc26662fd",
+      "size_bytes": 197408
+    },
+    "test_spacy_decode_asan": {
+      "sha256": "edc1a7a112780b5ba82cdb1dd2e9f94cf6c4447ca0f2ed681ccd7ad44ce20ad3",
+      "size_bytes": 8854928
+    }
+  },
+  "command_path_note": "Only absolute task-owned workspace argument prefixes are replaced with <artifacts>, <bundle>, and <quds>; flags and source paths are the executed commands.",
+  "commands": [
+    "tools/format.sh --fix src/spacy_decode.h src/spacy_decode.cpp tests/test_spacy_decode.cpp",
+    "g++ -std=c++17 -O2 -Wall -Wextra -Werror -Isrc src/spacy_decode.cpp tests/test_spacy_decode.cpp -o <artifacts>/test_spacy_decode",
+    "<artifacts>/test_spacy_decode",
+    "<artifacts>/test_spacy_decode <bundle>/resources.json <quds>/tools/proofing/spacy/fixtures/development",
+    "g++ -std=c++17 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc src/spacy_decode.cpp tests/test_spacy_decode.cpp -o <artifacts>/test_spacy_decode_asan",
+    "ASAN_OPTIONS=detect_leaks=1 <artifacts>/test_spacy_decode_asan <bundle>/resources.json <quds>/tools/proofing/spacy/fixtures/development",
+    "tools/format.sh --check src/spacy_decode.h src/spacy_decode.cpp tests/test_spacy_decode.cpp"
+  ],
+  "date": "2026-11-17",
+  "environment": {
+    "architecture": "x86_64",
+    "compiler": "g++ (Debian 14.2.0-19) 14.2.0",
+    "cplusplus": "C++17",
+    "formatter": "clang-format 18.1.8",
+    "os": "Linux",
+    "runtime_python_dependency": false
+  },
+  "initial_setup_failures": [
+    {
+      "failure": "ArcEager constructor rejects unsupported actions keyword",
+      "resolution": "Use documented labels_by_action positional argument; source probe completed.",
+      "stage": "upstream helper probe"
+    },
+    {
+      "failure": "Range-loop copied a std::pair",
+      "resolution": "Use const reference.",
+      "stage": "first warning-as-error compile"
+    },
+    {
+      "failure": "GCC reported a possible dangling reference through a test JSON accessor whose string key was a temporary",
+      "resolution": "Accessor takes const char*; returned reference still points into the fixture DOM. No score/fixture change.",
+      "stage": "second warning-as-error compile"
+    },
+    {
+      "failure": "No binary existed because prior compile failed",
+      "resolution": "Successful clean compilation precedes all passing recorded runs.",
+      "stage": "premature executable invocation"
+    }
+  ],
+  "limits": {
+    "deployment_or_release_change": false,
+    "github_actions_accessed": false,
+    "grammar_quality": false,
+    "intermediate_arc_label_ids_compared": false,
+    "intermediate_arc_label_note": "State arc endpoints and all chosen action labels are checked; hashed intermediate label IDs are not recomputed by this isolated scorer replay. Final dependency labels match exactly.",
+    "mobile_qualification": false,
+    "model_or_reference_bytes_changed": false,
+    "native_model_forward": false,
+    "new_acceptance_qualification": false,
+    "numeric_tolerance_changed": false,
+    "raw_text_analysis": false
+  },
+  "logs": {
+    "decoder-replay.log": {
+      "sha256": "581ef0caab4aafe0c134358a07236d850f163d24822e15e5a5d922d7c60903d2",
+      "size_bytes": 267,
+      "text": "SPACY_DECODE_FROZEN_SCORE_REPLAY cases=16 tokens=113 parser_steps=244 mask_decisions=33428 sentences=22 whitespace_tokens=5 lemma_fallbacks=7 native_model_forward=0 raw_text_analysis=0 acceptance_used=0\nSPACY_DECODE_CONTROLS assertions=53509 actual_model_inference=0\n"
+    },
+    "decoder-sanitized.log": {
+      "sha256": "581ef0caab4aafe0c134358a07236d850f163d24822e15e5a5d922d7c60903d2",
+      "size_bytes": 267,
+      "text": "SPACY_DECODE_FROZEN_SCORE_REPLAY cases=16 tokens=113 parser_steps=244 mask_decisions=33428 sentences=22 whitespace_tokens=5 lemma_fallbacks=7 native_model_forward=0 raw_text_analysis=0 acceptance_used=0\nSPACY_DECODE_CONTROLS assertions=53509 actual_model_inference=0\n"
+    },
+    "decoder-unit.log": {
+      "sha256": "3943bc7015de4951ca239917bdf7245a4ff72d99e5a7208bf9b87f3ad6416df8",
+      "size_bytes": 61,
+      "text": "SPACY_DECODE_CONTROLS assertions=51 actual_model_inference=0\n"
+    }
+  },
+  "negative_controls": {
+    "missing_fixture_directory": {
+      "exit_code": 1,
+      "failure": "Missing decoder fixture: <missing-fixtures>/manifest.json",
+      "qualification": false
+    }
+  },
+  "reference": {
+    "acceptance_inputs_used": false,
+    "all_manifest_file_hashes_verified": true,
+    "all_used_score_range_hashes_verified": true,
+    "manifest": {
+      "sha256": "9a3bb6bae6114adcf579840834ddcb64dea4e0aaa8361718dc7a551d663c8f7c",
+      "size_bytes": 75955
+    },
+    "quds_commit": "dcf2ec9b4d6fba05fa5eec2634c6654266332cc9",
+    "resources": {
+      "sha256": "b42496cc373ada57a67ed2f4c2c25f8d22f80c08db5841a7cdb91c8a6e18562a",
+      "size_bytes": 1404948
+    }
+  },
+  "results": {
+    "compiler_warnings_as_errors": true,
+    "development_cases": 16,
+    "exact_fields": [
+      "parser features",
+      "legal actions",
+      "chosen actions and names",
+      "stack",
+      "queue",
+      "arc endpoints (multiset)",
+      "tag",
+      "POS",
+      "morphology",
+      "lemma class/tree/applicability/application/fallback",
+      "dependency head",
+      "dependency label",
+      "sentence starts and token ranges"
+    ],
+    "format_check": "passed",
+    "legal_action_boolean_comparisons": 33428,
+    "lemma_fallbacks": 7,
+    "model_free_assertions": 51,
+    "parser_transitions": 244,
+    "sanitized_replay_exit_code": 0,
+    "sanitizers": [
+      "address",
+      "undefined behavior",
+      "leak detection"
+    ],
+    "sentences": 22,
+    "state_feature_indices": 1952,
+    "tokens": 113,
+    "total_replay_assertions": 53509,
+    "whitespace_tokens": 5
+  },
+  "schema": "crispembed-spacy-decoder-validation-v1",
+  "scope": "Native parser/annotation decoder isolated replay on authenticated retained development scores; no new neural forward or tokenizer execution.",
+  "source_algorithm": {
+    "files": {
+      "_state.pxd": {
+        "sha256": "f6329efb8dd76151dc80602866b3823b253049ee235c575461b1bed10ab6be05",
+        "size_bytes": 13059
+      },
+      "arc_eager.pyx": {
+        "sha256": "007f02370a9a971ed45285437190737d43f725a08b4a52fe81db35d8c83f9246",
+        "size_bytes": 30648
+      },
+      "doc.pyx": {
+        "sha256": "c4f1ea3f0b1f7aaf9ec8a6f87771eb11713b566416a7152ef8d18d2d50697e67",
+        "size_bytes": 83338
+      },
+      "edit_tree_lemmatizer.py": {
+        "sha256": "0465e0e9374cbe3a8691aa833397f3b309cdd3b3a0ee1797fcde75216e9e063c",
+        "size_bytes": 14783
+      },
+      "edit_trees.pyx": {
+        "sha256": "b5a58f3fd48e915d552b42ed170e82d950117222be91013def75f22c3aeba8c9",
+        "size_bytes": 10663
+      },
+      "nonproj.pyx": {
+        "sha256": "41e99bb4c7e77585d9dc19cdc9e5cabe4997cc48cfe2d228ad95eaa74557c8d4",
+        "size_bytes": 8661
+      },
+      "token.pyx": {
+        "sha256": "5c2872ed7cce3e9e933700234ec7a7e2f1f3de0c837e2ee65a0b42c58781155a",
+        "size_bytes": 33403
+      }
+    },
+    "license": "MIT",
+    "notice": "tools/spacy/notices/spaCy-LICENSE",
+    "observed_source_nuance": "Direct StateClass.add_arc probe retains old non-last bucket entry on replacement. Native bucket logic preserves this source behavior. No ordinary valid transition fixture is claimed to exercise this helper-only edge.",
+    "repository": "https://github.com/explosion/spaCy",
+    "revision": "43311999028032fd81bef77a75fdb4fa96803c98",
+    "version": "3.8.18"
+  },
+  "source_base": "7f387f094528b01ba153d7cc5858344db16dd077",
+  "source_files": {
+    "src/core/clean_exit.h": {
+      "sha256": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6",
+      "size_bytes": 1716
+    },
+    "src/core/json_value.h": {
+      "sha256": "f6af418a13cc5285f977fd29c5644d7fc2cf957f5c4b6d31a3bf0c33243dacf4",
+      "size_bytes": 9017
+    },
+    "src/core/sha256.h": {
+      "sha256": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f",
+      "size_bytes": 5024
+    },
+    "src/spacy_decode.cpp": {
+      "sha256": "0ecceb53885ed88de1f8f9dbe8a08b1ecee9e59c85f296f19bca38918546f4ce",
+      "size_bytes": 35459
+    },
+    "src/spacy_decode.h": {
+      "sha256": "f316fee0ee28c76df042fd7fe29b725fe7eb37261b95eef379d073f11be569e0",
+      "size_bytes": 6416
+    },
+    "src/spacy_numeric.h": {
+      "sha256": "399b16063d02705ecae36eeed77a6533a716c6c267445547ba4d0d0aa8cf2ae7",
+      "size_bytes": 3546
+    },
+    "tests/test_spacy_decode.cpp": {
+      "sha256": "3e63cfaf300c7d00c7e25e5686f68aecad0135f8907eb06028243584d2778792",
+      "size_bytes": 19107
+    }
+  },
+  "status": "passed"
+}

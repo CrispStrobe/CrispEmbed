@@ -4,7 +4,7 @@
 
 | Lane | Owner/branch | Current boundary | Next gate |
 | --- | --- | --- | --- |
-| German spaCy CPU/F32 | `feat/native-spacy-20261117`; one coordinator for schema/ABI/Git, separate lexical and decoder owners | W0/W1 + native F32 scores pass 16 cases/1,201 stages; W2 lexical core passes 113 tokens/2,260 exact fields; [evidence](docs/validation/native-spacy-20261117/README.md) | Owned text ABI and W4 transitions/edit trees; composed raw-text analysis and app stages pending |
+| German spaCy CPU/F32 | `feat/native-spacy-20261117`; one coordinator for schema/ABI/Git, separate lexical and decoder owners | W0–W4 compose from raw UTF-8: 16 cases/113 tokens/22 sentences, 244 native transitions, 339 classifier choices and 1,201 stages pass; [evidence](docs/validation/native-spacy-20261117/README.md) | Freeze/publish candidate and protocol, then untouched eight-case acceptance; W5 app integration and platform/grammar gates remain |
 
 The user requires incremental remote checkpoints and local validation without
 querying or waiting for Actions. Preserve all unrelated paths/defaults. This
