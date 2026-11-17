@@ -22365,3 +22365,22 @@ newer Quds main `4b2b4e78` changes no spaCy fixture or W5 source; all package,
 UI, real-native widget, proofing and static-analysis checks pass on saved merge
 `8d89e4f7`, with unchanged source/runtime bytes. W6 incremental grammar benefit,
 other-platform packaging and release remain open. No CI query or wait.
+
+## Native German spaCy W6 guarded agreement — 17 November 2026
+
+The [first sealed W6 result](https://github.com/CrispStrobe/quds_office_suite/blob/3a8bca4f8f8744bbb0fbd6809a700b5768d5ceba/docs/validation/native-spacy-w6-20261117/qualification-first.json)
+passes against Quds main `6245a695`: baseline 5/30 exact errors, native and
+combined 22/30 (+17), with zero findings on 42 valid and ten guard inputs and
+four explicit unsupported locales. All 22 corrected rechecks have no further
+finding; 18 preserve a compatible lexical reading and four abstain. Eight
+misses remain. This authored finite panel supports bounded agreement benefit.
+
+The baseline protocol amendment precedes source `da18e29c`, seal `84b4120c`
+and first execution; original panel/thresholds remain unchanged. The
+[W6 handoff](docs/validation/native-spacy-w6-20261117/README.md) retains 73 package,
+869 German, 75 editor-proofing, 36 editor-integration, one run-edit, ten actual
+native editor and nine icon-rendering checks, plus three earlier browser
+controls. The accepted native/model bytes are unchanged and the consumed
+eight-case native acceptance was not rerun. The manual provider API remains
+default off with no automatic Studio registration. W7 packaging, devices and
+distribution are next; no release, app pin or GitHub Actions query/wait/rerun.

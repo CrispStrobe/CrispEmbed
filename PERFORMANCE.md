@@ -8455,3 +8455,25 @@ subsequent artifact audit reuses the saved report and is not an additional
 qualification run. Instrumented times include trace copying and do not establish
 worker/editor latency, mobile RSS budgets, a speedup or grammar benefit. Those
 measurements and platform qualification remain separate from model parity.
+
+## Native spaCy W6 bounded grammar benefit — 17 November 2026
+
+The [first sealed grammar result](https://github.com/CrispStrobe/quds_office_suite/blob/3a8bca4f8f8744bbb0fbd6809a700b5768d5ceba/docs/validation/native-spacy-w6-20261117/qualification-first.json)
+uses the unchanged accepted Linux x86-64/AVX2 CPU/F32 native/model bytes and
+Quds main `6245a695` as its updated deterministic baseline. Exact error
+corrections are **5/30 baseline, 22/30 native and 22/30 combined**, adding
+**17**. The native/combined groups are **11/12 prepositional-phrase, 6/12
+inversion and 5/6 overlap**. All 42 valid and ten guard inputs have zero
+findings; four unsupported locales report explicit status. Eight errors
+remain missed and preserved in the original report.
+
+All 22 corrected rechecks produce no further finding. Eighteen retain a
+compatible lexical reading; four conservatively abstain (three finite-analysis,
+one clause/reference). This assistant-authored finite panel is a bounded
+benefit result, not a population estimate or proof that every corrected parse
+was affirmatively accepted. Rechecks and repeated editor controls add no
+independent linguistic cases. No latency, RSS, mobile or speedup qualification
+follows. The [W6 handoff](docs/validation/native-spacy-w6-20261117/README.md)
+retains the unchanged panel/thresholds, pre-execution baseline amendment and
+source seal. The manual API stays default off; W7 packaging, device behavior
+and distribution remain open. No native acceptance rerun or CI query/wait.

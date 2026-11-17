@@ -1,6 +1,6 @@
 # Native spaCy implementation — 17 November 2026
 
-## Current checkpoint: frozen acceptance and Linux W5 analysis complete
+## Current checkpoint: frozen native acceptance and bounded W6 grammar complete
 
 The complete first held-out native result is saved at
 [`2176c896dc6bb8c832a9d03b04fd07c7c991fdc5`](https://github.com/CrispStrobe/CrispEmbed/commit/2176c896dc6bb8c832a9d03b04fd07c7c991fdc5).
@@ -24,19 +24,29 @@ metrics from the saved report without rerunning native acceptance.
 W5 now qualifies the optional Dart worker and manual Studio analysis on Linux
 x86-64/AVX2; [the cross-repository evidence](https://github.com/CrispStrobe/quds_office_suite/tree/e7c67f29b34f1c1909e51aa25997fc774bb8ac80/docs/validation/native-spacy-w5-20261117)
 and the final section below record its separate adapter and editor controls.
-Quds main `16e2477f` was merged at remotely verified `4471324a` before this work;
-the original source inventory remains unchanged. The newer main `4b2b4e78`
-adds four ODS/Office/German commits without changing spaCy fixtures or W5
-source; only `docs/PROOFING.md` overlaps. Remote merge `8d89e4f7` passes the
-package, UI, real-native widget, existing proofing and static-analysis gates
-with source/runtime bytes unchanged. Deterministic Quds grammar remains the
-baseline. W6 grammar
-benefit, mobile/other-platform qualification, model/native distribution and
-production activation remain open. `CRISPEMBED_SPACY` stays default off.
+
+The [W6 handoff](../native-spacy-w6-20261117/README.md) records the separate
+first guarded-agreement qualification against Quds main `6245a695`, including
+its German phrase-completion and editor-formatting updates. The protocol was
+amended before qualification with the original panel and thresholds unchanged.
+The [immutable first W6 result](https://github.com/CrispStrobe/quds_office_suite/blob/3a8bca4f8f8744bbb0fbd6809a700b5768d5ceba/docs/validation/native-spacy-w6-20261117/qualification-first.json)
+passes: baseline 5/30, native and combined 22/30 exact errors (+17), with zero
+findings on 42 valid inputs and ten guards. Four unsupported locales are
+explicit. All 22 corrected rechecks have no further finding; 18 preserve a
+compatible lexical reading and four abstain. Eight missed errors remain in
+the report. This authored finite panel supports bounded incremental benefit.
+
+Native/model bytes and the consumed native acceptance remain unchanged. The
+optional manual grammar provider API defaults off, and Studio does not
+register it automatically. W7 target packaging, device qualification,
+model/native distribution and production activation remain open.
+`CRISPEMBED_SPACY` stays default off; no GitHub Actions query, wait or rerun
+was used for W6.
 
 The sections below preserve the chronological checkpoints. Statements that
 acceptance was unused or decoding unfinished describe their original cutoffs;
-the current status is the completed acceptance and bounded Linux W5 work above.
+the current status is the completed native acceptance, Linux W5 analysis and
+bounded W6 grammar work above.
 
 ## Source reconciliation (W0)
 

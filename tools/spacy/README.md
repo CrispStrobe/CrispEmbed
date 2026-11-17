@@ -34,9 +34,17 @@ cover counted-string ownership, exact original UTF-16 navigation, snapshot and
 locale validation, stale/cancel/close/retry paths and explicit browser
 unavailability. Analysis starts only on the user's action; it registers no
 grammar provider. Final checks on merge `8d89e4f7` also pass after Quds main
-`4b2b4e78`, with source/runtime bytes unchanged. Incremental grammar benefit, other-platform packaging and
-production release remain separate gates. NER and other model/locale profiles
-are not part of this target.
+`4b2b4e78`, with source/runtime bytes unchanged.
+
+The separate [W6 guarded-agreement qualification](../../docs/validation/native-spacy-w6-20261117/README.md)
+now passes against the newer Quds `6245a695` deterministic baseline: 5/30 exact
+errors become 22/30 with the guarded native planner, with zero findings on 42 valid
+and ten guard inputs. Its manual provider API stays default off; Studio does
+not register it automatically. Eight misses and four conservative corrected
+recheck abstentions remain explicit. The native/model bytes are unchanged,
+and the consumed native acceptance was not rerun. Other-platform packaging,
+device qualification and production release remain separate gates. NER and
+other model/locale profiles are not part of this target.
 
 The implementation starts with CPU/F32 and a scalar numerical reference path
 using ggml's GGUF/CPU weight ownership. Each source operation has been compared
@@ -196,15 +204,21 @@ prompt interruption of native compute through Dart is not claimed.
 
 ## Next implementation steps
 
-1. W6: measure incremental grammar benefit against the latest deterministic
-   Quds main, including the newly reconciled bounded German controls, before
-   enabling any grammar provider. Freeze a separate evaluation; preserve the
-   native candidate and consumed first acceptance result.
-2. W7/platform work: qualify target-specific packaging, model/native
-   distribution, notices and device behavior separately from the Linux W5
-   validation. Production activation and release remain explicit later gates.
+1. W7 packaging: prepare target-specific native/model packages with exact
+   identities, native dependency closure and notices. Preserve the accepted
+   native candidate and both consumed first qualification results.
+2. W7 device qualification: verify actual loading, offline operation, worker
+   cleanup/cancellation and resource budgets on each intended target. The
+   bounded Linux x86-64/AVX2, de-DE, CPU/F32 evidence does not qualify other
+   platforms or mobile devices.
+3. W7 distribution: qualify immutable release artifacts and consumer readback
+   before deployment. Production activation remains a separate decision; the
+   manual provider API stays default off, with no automatic Studio registration.
 
 The [native receipts](../../docs/validation/native-spacy-20261117/README.md)
 retain the first and final numerical runs, negative setup evidence, dependency
-inventory, installed notices and exact source hashes. No model alias, runtime
-release, app pin, or grammar provider was enabled.
+inventory, installed notices and exact source hashes. The
+[W6 receipts](../../docs/validation/native-spacy-w6-20261117/README.md) retain
+the first grammar result, misses and source-bound local controls. No model
+alias, runtime release, app pin or production default changed. No GitHub
+Actions endpoint was queried, awaited or rerun for W6.
