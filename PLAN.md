@@ -12,8 +12,9 @@ and 499 documented environment entries pass locally. Main protection returns
 `Branch not protected`; applicable branch rules are empty, so required checks
 and approvals are both zero. No Actions/status query, wait or rerun is used.
 The concurrent documentation-only W6 checkpoint `5831aa02` is preserved; this
-owner closure performs no W6 work. Undraft and exact-head owner merge are the
-remaining actions. Scope remains frozen Linux x86-64/AVX2 with PCRE2 10.46;
+owner closure performs no W6 work. The owner subsequently completed PR #236
+at main `04e8445823d82591120203e953365582d7ba33be`; this continuation branch
+includes that merge and its `05fe9a0c` review. Scope remains frozen Linux x86-64/AVX2 with PCRE2 10.46;
 release, app pins, mobile and model distribution remain separate.
 
 ## Active work in flight — native spaCy, 17 November 2026
@@ -35,10 +36,16 @@ changed; only `docs/PROOFING.md` overlaps. Remote merge `8d89e4f7` passes all
 29 package tests, 22 UI controls, 75 proofing regressions, the actual-native
 widget gate and static analysis with source/runtime bytes unchanged.
 
-W6 continuation is active on the same paired branches. The new
+W6 continuation is active on the same paired branches. The
+[current checkpoint](docs/validation/native-spacy-w6-20261117/README.md) records
+the later main refresh (`04e84458` here, `23f3b420` in Quds), a first 34-case
+native development comparison with five added exact corrections, ten real
+editor controls and the unchanged deterministic baseline. The candidate still
+needs its source-sealed one-shot qualification; grammar stays default off.
+The new
 [grammar protocol and 86-case panel](https://github.com/CrispStrobe/quds_office_suite/tree/846fc0371b23bf4a84542db7a3f24eee2d8609dd/docs/validation/native-spacy-w6-20261117)
-were published before inspecting candidate outputs. Current main remains
-`b34a132c` here and `4b2b4e78` in Quds. A fresh full branch/PR inventory found
+were published before inspecting candidate outputs. The initial main pins were
+`b34a132c` here and `4b2b4e78` in Quds. The first full branch/PR inventory found
 late Office union repairs absent from Quds main; these are preserved at
 [Quds `ec4aeefe`](https://github.com/CrispStrobe/quds_office_suite/commit/ec4aeefe1be6ce1868ee7eebf004c07b25d4108a),
 with unchanged deterministic German proofing inputs. The exact accepted native
