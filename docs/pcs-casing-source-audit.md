@@ -108,3 +108,26 @@ provenance. Analyze capture independently; it cannot replace or turn a failed
 decoded gate green. Original same-input numerical head/conditioning evidence
 is still needed to attribute an earlier numerical cause. No new default,
 quality/performance qualification, release, app pin or model distribution follows.
+
+## Authorized native control — 18 November 2026
+
+The [actual frozen native run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44272906599)
+at `e6cfda21df2e0f4ab759ccbf954b4286cb62c82a` compiles and links both
+drivers with exported compile commands. Original versus diagnostic OFF and
+OFF versus ON match all four head dumps and decoded bytes exactly. The
+[receipt](../tests/results/pcs/frozen-native-control-20261118.json) retains
+artifact identity, every row-37 casing F32 bit/margin and the actual mapping.
+All six requests/67 token IDs and pieces align; request 3 is one 11-token chunk.
+
+GNU 15.2.0 native Release on Intel Xeon 6975P-C passes post/pre/seg/casing
+67/67 each and decoded 6/6. Row 37's `o` logit is `0x3d1ff79e`,
++0.0390545055270195; `k` is +0.39889898896217346. The preceding SBD hard
+and threshold decisions are both false, and sentence-start conditioning is false.
+The immutable model revision is `27f17edbd7e33949f42a9a4fe4322b5af8172e6b`,
+SHA-256 `faee4bf8469a502362b5967a2cfeb7a1732539fbd999c63b489d00efff3531da`.
+
+This is a positive control, **not reproduction or repair** of the retained
+66/67, 5/6 failure. Production PCS, references and acceptance checks remain
+byte-identical. The [declared AVX2/original-graph follow-up](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44273793050)
+is pending; no CPU-specific cause, production fix, fullstop or main closure
+is established by this positive result.
