@@ -29,6 +29,11 @@ PINS = {
 def main():
     assert os.environ.get('GITHUB_ACTIONS') == 'true'
     assert os.environ.get('GITHUB_REPOSITORY') == 'CrispStrobe/CrispEmbed'
+    assert os.environ.get('SPACY_W7_RETAIN_ONLY') == '1'
+    assert os.environ.get('SPACY_W7_RETAIN_ARGS', '') == ''
+    assert os.environ.get('SPACY_W7_RETAIN_PIP', '') == ''
+    assert os.environ.get('SPACY_W7_RETAIN_RUNNER') == 'ubuntu-latest'
+    assert os.environ.get('SPACY_W7_RETAIN_MODE') == 'portable'
     scratch = Path(os.environ['HEAVY_SCRATCH']) / 'w7-report-retention'
     scratch.mkdir()
     payload = scratch / 'payload'
