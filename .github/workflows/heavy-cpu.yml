@@ -94,6 +94,7 @@ jobs:
       KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
       HF_TOKEN_2: ${{ secrets.HF_TOKEN_2 }}
       HF_PUBLISH_TOKEN: ${{ startsWith(inputs.script, 'tools/ci-heavy/spacy_w7_') && secrets.HF_PUBLISH_TOKEN || '' }}
+      GH_TOKEN: ${{ inputs.script == 'tools/ci-heavy/spacy_w7_retain_reports.py' && github.token || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
