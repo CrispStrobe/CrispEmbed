@@ -1,3 +1,18 @@
+## W7 real CUDA quantization assessment — 18 November 2026
+
+Kaggle kernel145760385/version1 at `607052f90e6f11daa0925c3ed1ec307b11a24f88`
+completed real CUDA quantization and prepared graph execution on Tesla T4,
+Torch2.11.0+cu130. F32 passes all16development cases/113tokens/244reference
+parser states/1,201stages/1,406,553floats. Each compressed candidate fails1,197
+stages under unchanged2e-4/2e-5 budgets. F16 classifier/legal choices remain
+exact; Q8 changes one classifier case; Q4 changes six classifier cases and four
+legal-action cases on the frozen reference states. This is not free native
+parser/text decoding. All39GPU-produced tensor types/payloads match the prior
+rejected CPU recipes; complete archive bytes differ. Retain both source-bound
+assessments separately. No CPU build/inference, held-out replay, accepted quant
+profile, speed/default/app change or native GPU backend qualification.
+[Exact counts, errors, hashes and limits](docs/validation/native-spacy-w7-20261118/owner-execution/kaggle-cuda-assessment.json).
+
 ## W7 signed ARM64 Runner/native worker — 18 November 2026
 
 [Run44274988880](https://github.com/CrispStrobe/CrispCloud/actions/runs/44274988880)

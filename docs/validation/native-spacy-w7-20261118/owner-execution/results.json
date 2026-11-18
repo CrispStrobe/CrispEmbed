@@ -725,7 +725,13 @@
           "source": "ef8efb7943e13c4b8b0769647871647f5e20adec",
           "failure": "Actual signed sandboxed native worker reaches 3 warmups; /dev/fd capture denied. No bound or sandbox waiver."
         }
-      ]
+      ],
+      "normal_startup_followup": {
+        "source": "b01676d4",
+        "run": 44279211190,
+        "status": "DISPATCHED; exact output pending",
+        "purpose": "Runtime probe selection keeps normal GUI startup reachable in the same signed Runner; existing startup smoke after worker test, provider OFF"
+      }
     }
   },
   "limits": [
@@ -832,5 +838,16 @@
     },
     "build_or_inference": false,
     "consumed_panel_replay": false
+  },
+  "Kaggle_GPU_assessment": {
+    "kernel_id": 145760385,
+    "version": 1,
+    "source": "607052f90e6f11daa0925c3ed1ec307b11a24f88",
+    "script_sha256": "0dc1582e36369099028ec2bc6c9f31c156f421c4990d9cc3bf977ff8cad1a350",
+    "hardware": "Tesla T4, sm75, Torch2.11.0+cu130; actual device0 used",
+    "result": "CUDA F32 full prepared gate PASS; F16/Q8/Q4 each1197/1201 stages FAIL. No native/raw-text/quant/speed promotion. CPU F32 baseline unchanged.",
+    "receipt": "kaggle-cuda-assessment.json",
+    "consumed_panels_replayed": false,
+    "CPU_build_or_forward": false
   }
 }

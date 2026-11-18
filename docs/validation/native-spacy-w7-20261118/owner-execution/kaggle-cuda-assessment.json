@@ -1,0 +1,232 @@
+{
+  "schema": "crispembed.spacy.w7.kaggle-cuda-quant.v1",
+  "version": "spacy-w7-gpu-quant-v1",
+  "source": "607052f90e6f11daa0925c3ed1ec307b11a24f88",
+  "script_sha256": "0dc1582e36369099028ec2bc6c9f31c156f421c4990d9cc3bf977ff8cad1a350",
+  "execution_complete": true,
+  "conclusive": true,
+  "gpu_model_started": true,
+  "native_GPU_or_raw_text_qualified": false,
+  "qualified_native_profiles": [],
+  "F32_CPU_baseline_replaced": false,
+  "CPU_build_or_forward": false,
+  "consumed_native_W6_W7_heldout_replayed": false,
+  "speed_claim": false,
+  "nvidia_smi": "Tesla T4, 580.178.04, 15360 MiB, 7.5\nTesla T4, 580.178.04, 15360 MiB, 7.5\n",
+  "torch": {
+    "version": "2.11.0+cu130",
+    "cuda": "13.0",
+    "device": "Tesla T4",
+    "capability": [
+      7,
+      5
+    ],
+    "compiled_architectures": [
+      "sm_75",
+      "sm_80",
+      "sm_86",
+      "sm_90",
+      "sm_100",
+      "sm_120"
+    ],
+    "TF32": false,
+    "device_used": 0
+  },
+  "harness_source": "3b3dae4817b4ef0dded9dde8f4713178833de8d1",
+  "model": {
+    "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/659dae33997d00296ae12b76510fa4dfe26540e0/bundle/model.gguf",
+    "bytes": 7383104,
+    "sha256": "fae2e6ab8d6c611d7a9dddd4b3259a871a1d2f95cacc8259f49c1e4ff31ff6cd",
+    "fresh_empty_cache": true
+  },
+  "limits": "Actual CUDA quantization/hash/complete prepared graph. No native GPU text backend, raw-text CUDA qualification, held-out replay, accepted quant profile, speed or app/grammar promotion.",
+  "kernel_id": 145760385,
+  "version_number": 1,
+  "service_status": "COMPLETE",
+  "profile_results": [
+    {
+      "recipe": "f32",
+      "counts": {
+        "cases": 16,
+        "tokens": 113,
+        "parser_states": 244,
+        "stages": 1201,
+        "float_elements": 1406553
+      },
+      "prepared_gate_passed": true,
+      "failed_stages": 0,
+      "classifier_mismatch_cases": [],
+      "reference_state_legal_action_mismatch_cases": [],
+      "first_numerical_failure": null,
+      "GPU_GGUF": {},
+      "report": {
+        "bytes": 663680,
+        "sha256": "2695f033192191248602dce59e49b731cd4ad183e691db99e81471a00ff413fd",
+        "fresh_service_download": true
+      }
+    },
+    {
+      "recipe": "f16",
+      "counts": {
+        "cases": 16,
+        "tokens": 113,
+        "parser_states": 244,
+        "stages": 1201,
+        "float_elements": 1406553
+      },
+      "prepared_gate_passed": false,
+      "failed_stages": 1197,
+      "classifier_mismatch_cases": [],
+      "reference_state_legal_action_mismatch_cases": [],
+      "first_numerical_failure": {
+        "case": "single",
+        "stage": "tok2vec.embed.concat",
+        "shape": [
+          1,
+          576
+        ],
+        "elements": 576,
+        "max_reference_magnitude": 1.0125958919525146,
+        "max_candidate_magnitude": 1.012786865234375,
+        "max_absolute_error": 0.00036913156509399414,
+        "mean_absolute_error": 3.038117291806783e-05,
+        "max_relative_error_nonzero_reference": 0.4143646408839779,
+        "violating_elements": 3,
+        "bit_exact": false,
+        "passed": false
+      },
+      "GPU_GGUF": {
+        "sha256": "6f2a9d95f9223c4aa494d4a5e56d8a94b4af044814625631755827f9fd3bbe23",
+        "bytes": 3699456,
+        "byte_identical_to_already_rejected_CPU_candidate": false,
+        "CPU_candidate_sha256": "d17727c4e6afe6ee9e475e7a3a57e442ffbe07d2a8be731d3af68e3c60578351",
+        "all_tensor_types_and_bytes_equal": true
+      },
+      "report": {
+        "bytes": 670198,
+        "sha256": "06733982b249fa57a6aa91bf253bc2f9476e191f5b1f55da44a9c21d0c09017e",
+        "fresh_service_download": true
+      }
+    },
+    {
+      "recipe": "q8_0",
+      "counts": {
+        "cases": 16,
+        "tokens": 113,
+        "parser_states": 244,
+        "stages": 1201,
+        "float_elements": 1406553
+      },
+      "prepared_gate_passed": false,
+      "failed_stages": 1197,
+      "classifier_mismatch_cases": [
+        "hyphens"
+      ],
+      "reference_state_legal_action_mismatch_cases": [],
+      "first_numerical_failure": {
+        "case": "single",
+        "stage": "tok2vec.embed.concat",
+        "shape": [
+          1,
+          576
+        ],
+        "elements": 576,
+        "max_reference_magnitude": 1.0125958919525146,
+        "max_candidate_magnitude": 1.0140190124511719,
+        "max_absolute_error": 0.005678743124008179,
+        "mean_absolute_error": 0.0008512374054892765,
+        "max_relative_error_nonzero_reference": 2.773480662983425,
+        "violating_elements": 410,
+        "bit_exact": false,
+        "passed": false
+      },
+      "GPU_GGUF": {
+        "sha256": "3d47c946ee750f43877defaee2da8d1b6d9a5c3bec7ddd10afb715d883090753",
+        "bytes": 1980480,
+        "byte_identical_to_already_rejected_CPU_candidate": false,
+        "CPU_candidate_sha256": "31cc15a311621e53357ffd21b89ec0adddfc90fbdbfffbbe1e32bd9bdf842280",
+        "all_tensor_types_and_bytes_equal": true
+      },
+      "report": {
+        "bytes": 665733,
+        "sha256": "9a14a31f8aa2a0f1547690f4b612789a523cc2fd8b8403d5bfce0ec8923f3c8a",
+        "fresh_service_download": true
+      }
+    },
+    {
+      "recipe": "q4_0",
+      "counts": {
+        "cases": 16,
+        "tokens": 113,
+        "parser_states": 244,
+        "stages": 1201,
+        "float_elements": 1406553
+      },
+      "prepared_gate_passed": false,
+      "failed_stages": 1197,
+      "classifier_mismatch_cases": [
+        "unicode",
+        "lexical",
+        "addresses",
+        "hyphens",
+        "repeated",
+        "scripts"
+      ],
+      "reference_state_legal_action_mismatch_cases": [
+        "sentences",
+        "punctuation",
+        "unicode",
+        "syntax"
+      ],
+      "first_numerical_failure": {
+        "case": "single",
+        "stage": "tok2vec.embed.concat",
+        "shape": [
+          1,
+          576
+        ],
+        "elements": 576,
+        "max_reference_magnitude": 1.0125958919525146,
+        "max_candidate_magnitude": 1.0140190124511719,
+        "max_absolute_error": 0.005678743124008179,
+        "mean_absolute_error": 0.0008512374054892765,
+        "max_relative_error_nonzero_reference": 2.773480662983425,
+        "violating_elements": 410,
+        "bit_exact": false,
+        "passed": false
+      },
+      "GPU_GGUF": {
+        "sha256": "483ea013512be69f94d20795f9e256a09c8c6243b7ab9b479b1740b86330a21c",
+        "bytes": 1676608,
+        "byte_identical_to_already_rejected_CPU_candidate": false,
+        "CPU_candidate_sha256": "aab70fdb8d035bb418275d7c15d1d0ce6476107f504e5398d60f747fa1be37f8",
+        "all_tensor_types_and_bytes_equal": true
+      },
+      "report": {
+        "bytes": 662724,
+        "sha256": "05704d59ef2e89e3c7dcf09586be50823b7bae8e1d282032850d3975da54a2c3",
+        "fresh_service_download": true
+      }
+    }
+  ],
+  "independent_fresh_service_model_downloads": {
+    "f16": {
+      "bytes": 3699456,
+      "sha256": "6f2a9d95f9223c4aa494d4a5e56d8a94b4af044814625631755827f9fd3bbe23",
+      "fresh_service_download": true,
+      "native_loading_qualified": false
+    },
+    "q8_0": {
+      "bytes": 1980480,
+      "sha256": "3d47c946ee750f43877defaee2da8d1b6d9a5c3bec7ddd10afb715d883090753",
+      "fresh_service_download": true,
+      "native_loading_qualified": false
+    },
+    "q4_0": {
+      "bytes": 1676608,
+      "sha256": "483ea013512be69f94d20795f9e256a09c8c6243b7ab9b479b1740b86330a21c",
+      "fresh_service_download": true,
+      "native_loading_qualified": false
+    }
+  }
+}
