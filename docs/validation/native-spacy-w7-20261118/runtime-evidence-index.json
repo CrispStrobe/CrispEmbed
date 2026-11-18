@@ -1,0 +1,72 @@
+{
+  "archive": "runtime-evidence.tar.gz",
+  "sha256": "c28b42c03d543a4755c0f5fe37a59301c41f2404fac34f86f641931912b66845",
+  "members": [
+    {
+      "path": "bundle-files.json",
+      "bytes": 661,
+      "sha256": "7163d6131373f27716f09c626b2b7ded366418ec2672a7d8adc495f597423f32"
+    },
+    {
+      "path": "conversion.log",
+      "bytes": 169,
+      "sha256": "c65f19db7bf69a1031e2f925535d8664f59d8de5a0db91ba7d1f3e2911f1978c"
+    },
+    {
+      "path": "distribution-build.json",
+      "bytes": 7666,
+      "sha256": "b42f4b346408ab3e7619e0b64f50f13734368274f52ff9229a7af358f1d449b2"
+    },
+    {
+      "path": "elf-dependencies.log",
+      "bytes": 453,
+      "sha256": "a3a812e6ab8d1e9fa9fd604934aa112eff397fe2570e0f07ade1edf9933b3247"
+    },
+    {
+      "path": "elf-dynamic.log",
+      "bytes": 1771,
+      "sha256": "d0a9fe1de2d379f14abc5ba014d398e466e2012c4c98b9fe4d7633a11923c7f7"
+    },
+    {
+      "path": "elf-header.log",
+      "bytes": 955,
+      "sha256": "b544a20ba7a41667b88ff0e1e572c68e82e8efba0ed78ae703d1a3720a097742"
+    },
+    {
+      "path": "elf-summary.json",
+      "bytes": 919,
+      "sha256": "5c5afed564a6654afd4b3e4f697c5acb030c3b85411511f430c9ba6137829c86"
+    },
+    {
+      "path": "elf-versions.log",
+      "bytes": 30701,
+      "sha256": "c3bf35c2ea6d120fe20972a91721ce40b8631c18e9380b25f8de98cbbf41a7f4"
+    },
+    {
+      "path": "model-wheel-download.json",
+      "bytes": 300,
+      "sha256": "18628b17e226355ed7a424afd7f6ca7a9a34cf8f724b564e3203fc9aa1ef284b"
+    },
+    {
+      "path": "native-context-probe.json",
+      "bytes": 171,
+      "sha256": "d7eb444c9a3d01be05c7c7fa46ed0989963b11a939fc90160ac5aac4a97c07ee"
+    },
+    {
+      "path": "native-install-files.json",
+      "bytes": 2573,
+      "sha256": "5f522fe3407f7fac5d6fc92482f299f84ab337e562c97fa1910743866c2d97b6"
+    },
+    {
+      "path": "reference-install-public.log",
+      "bytes": 10685,
+      "sha256": "de0fb8819cc0708fc9b02a34c255a9a36a14a98d19395cc8d2f4a3a58f0c9ebb"
+    },
+    {
+      "path": "runtime-dependencies.json",
+      "bytes": 2605,
+      "sha256": "e8ede35f8a1f547b7a3bb0c3a520cb4c4711151d281d568ffff373333994cbe7"
+    }
+  ],
+  "note": "Original small runtime logs are retained byte-for-byte inside this archive, including their whitespace. The public install log redacts task paths before hashing, as declared by runtime-restoration.json."
+}

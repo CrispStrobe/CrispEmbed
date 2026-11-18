@@ -17,11 +17,15 @@ at main `04e8445823d82591120203e953365582d7ba33be`; this continuation branch
 includes that merge and its `05fe9a0c` review. Scope remains frozen Linux x86-64/AVX2 with PCRE2 10.46;
 release, app pins, mobile and model distribution remain separate.
 
-## Active work in flight — native spaCy, 17 November 2026
+## Active work in flight — native spaCy, 18 November 2026
 
 | Lane | Owner/branch | Current boundary | Next gate |
 | --- | --- | --- | --- |
-| German spaCy CPU/F32 | `feat/native-spacy-20261117`; paired Quds `feat/native-spacy-reference-20261117` | W0–W5 acceptance/analysis preserved; first sealed W6 qualification passes: baseline 5/30, native and combined 22/30 exact errors (+17), zero findings on 42 valid and 10 guard inputs; [W6 evidence and limits](docs/validation/native-spacy-w6-20261117/README.md) | W7 target packaging, device qualification and immutable model/native distribution; manual provider API stays default off, with no automatic Studio registration |
+| German spaCy CPU/F32 | `feat/native-spacy-w7-20261118` in both repositories; W6 heads remain preserved | W0–W5 acceptance/analysis preserved; first sealed W6 qualification passes: baseline 5/30, native and combined 22/30 exact errors (+17), zero findings on 42 valid and 10 guard inputs; [W6 evidence and limits](docs/validation/native-spacy-w6-20261117/README.md) | W7 target packaging, device qualification and immutable model/native distribution; manual provider API stays default off, with no automatic Studio registration |
+
+The [W7 continuation](docs/validation/native-spacy-w7-20261118/README.md) now
+implements immutable Linux packaging and freezes actual dependency/loading/cleanup
+controls. It preserves the native/model bytes and both consumed panels.
 
 The user requires incremental remote checkpoints and local validation without
 querying or waiting for Actions. Preserve all unrelated paths/defaults. This
