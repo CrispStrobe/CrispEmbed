@@ -1,3 +1,18 @@
+## W7 same signed Runner: ARM64 worker and normal startup — 18 November 2026
+
+[Run44279211190](https://github.com/CrispStrobe/CrispCloud/actions/runs/44279211190)
+at `b01676d417a57b116451e3d0314ad36f0bf32cb8` passes actual signed/sandboxed
+ARM64 native-worker context/forward (3warmups/25requests), copied results after
+disposal, descriptor9/9/9 and RSSgrowth786,432bytes. A second launch of the
+same universal release Runner with probe environment absent passes the existing
+30second credential/setup UI startup smoke. Strict signatures/library validation
+and signing-material cleanup pass. Both normal startup and probe remain reachable
+in this binary. This qualifies ARM64 operational loading/startup; final Quds pin,
+Mac grammar, manual-provider UI activation, broad accuracy, comparative speed,
+leak freedom and macOS x86-64 remain separate. Provider stays OFF. Retain the
+three initial failures and earlier diagnostic-only PASS separately.
+[Exact report hashes, code identities and actual output](docs/validation/native-spacy-w7-20261118/owner-execution/signed-app-assessment.json).
+
 ## W7 real CUDA quantization assessment — 18 November 2026
 
 Kaggle kernel145760385/version1 at `607052f90e6f11daa0925c3ed1ec307b11a24f88`

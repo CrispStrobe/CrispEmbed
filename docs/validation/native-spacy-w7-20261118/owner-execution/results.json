@@ -659,7 +659,7 @@
       "current139_integrated": false
     },
     "CrispCloud": {
-      "candidate_source": "b07d1307cb807804b46f89ffc5d47e37b2eddae8",
+      "candidate_source": "b01676d417a57b116451e3d0314ad36f0bf32cb8",
       "managed_Quds_pin": "2e013f26c7d4db54ecabe2c955117cbce5379408",
       "optional_spacy_source": "2e013f26c7d4db54ecabe2c955117cbce5379408",
       "provider_default": "OFF",
@@ -671,12 +671,12 @@
       "actual_signed_app_initial_run": 44266881665,
       "actual_signed_app_initial_result": "FAIL before app build: focused analyzer finds9undefined GermanAgreementFacts references; managed engine6245a695 lacks required PR153 agreement foundation. Native library signing alone PASS. No app signature/sandbox/worker proof.",
       "managed_pin_state": "Unmerged PR153 integration candidate; all2634Office files verified by guarded sync; not final merged pin",
-      "actual_signed_app_run": 44274988880,
-      "actual_signed_app_result": "PASS diagnostic actual ARM64 signed/sandboxed Runner/native worker; normal startup/UI and Mac grammar remain UNRUN",
+      "actual_signed_app_run": 44279211190,
+      "actual_signed_app_result": "PASS actual native worker plus normal30second startup in same signed universal Runner; ARM64 execution only. Final Quds integration/activation and Mac grammar remain unqualified.",
       "main_managed_Quds_pin": "6245a6956a76a38f925e1eb18851c0086730112d",
-      "actual_signed_app_evidence_sha256": "aac6b1490d66f23dc6d7cf18b05db724f21eb48021128a49ffb46b6c4dfdafde",
-      "actual_signed_app_executable_sha256": "524efc99f5732e4c81ece1410127e74f7fcbe1b5b9e6cd0cfcaf031d962c8142",
-      "signed_library_sha256": "42605443dc1c0a5ec07494a0229fed9938078e63430fd7ffc3d1a145de825cb6",
+      "actual_signed_app_evidence_sha256": "ae0cd6967163a6806b063678cb7d5543c8189fd7993ce470790a9d5fcd3bc2a0",
+      "actual_signed_app_executable_sha256": "a83d8e2354db5a49d9803486883ab7cf2fa07a144f55dd0f4d53ba776ee8b511",
+      "signed_library_sha256": "a330a2f091d975d43d1570b49de0c0000a3c18edd5d897c69db104c7201de6b2",
       "signed_library_bytes": 2007312,
       "actual_native_worker": {
         "schema": "crispcloud.spacy.w7.signed-app-native.v1",
@@ -684,13 +684,12 @@
         "actual_Runner_entrypoint": true,
         "real_native_worker": true,
         "architecture": "macos_arm64",
-        "dart": "3.13.7 (stable) (Thu Oct 22 14:28:57 2026 -0700) on \"macos_arm64\"",
-        "signed_library_sha256": "42605443dc1c0a5ec07494a0229fed9938078e63430fd7ffc3d1a145de825cb6",
+        "signed_library_sha256": "a330a2f091d975d43d1570b49de0c0000a3c18edd5d897c69db104c7201de6b2",
         "warmups": 3,
         "measured_requests": 25,
-        "median_microseconds": 6121,
-        "rss_start": 105119744,
-        "rss_max": 107298816,
+        "median_microseconds": 6536,
+        "rss_start": 168820736,
+        "rss_max": 169607168,
         "fds": {
           "after_warmup": 9,
           "before_dispose": 9,
@@ -727,11 +726,50 @@
         }
       ],
       "normal_startup_followup": {
-        "source": "b01676d4",
+        "source": "b01676d417a57b116451e3d0314ad36f0bf32cb8",
         "run": 44279211190,
-        "status": "DISPATCHED; exact output pending",
-        "purpose": "Runtime probe selection keeps normal GUI startup reachable in the same signed Runner; existing startup smoke after worker test, provider OFF"
-      }
+        "status": "PASS actual normal30second credential/setup UI startup; probe env absent"
+      },
+      "prior_diagnostic_native_worker_PASS": {
+        "actual_signed_app_native_probe_started": true,
+        "actual_signed_app_initial_run": 44266881665,
+        "actual_signed_app_initial_result": "FAIL before app build: focused analyzer finds9undefined GermanAgreementFacts references; managed engine6245a695 lacks required PR153 agreement foundation. Native library signing alone PASS. No app signature/sandbox/worker proof.",
+        "actual_signed_app_run": 44274988880,
+        "actual_signed_app_result": "PASS diagnostic actual ARM64 signed/sandboxed Runner/native worker; normal startup/UI and Mac grammar remain UNRUN",
+        "actual_signed_app_evidence_sha256": "aac6b1490d66f23dc6d7cf18b05db724f21eb48021128a49ffb46b6c4dfdafde",
+        "actual_signed_app_executable_sha256": "524efc99f5732e4c81ece1410127e74f7fcbe1b5b9e6cd0cfcaf031d962c8142",
+        "signed_library_sha256": "42605443dc1c0a5ec07494a0229fed9938078e63430fd7ffc3d1a145de825cb6",
+        "signed_library_bytes": 2007312,
+        "actual_native_worker": {
+          "schema": "crispcloud.spacy.w7.signed-app-native.v1",
+          "passed": true,
+          "actual_Runner_entrypoint": true,
+          "real_native_worker": true,
+          "architecture": "macos_arm64",
+          "dart": "3.13.7 (stable) (Thu Oct 22 14:28:57 2026 -0700) on \"macos_arm64\"",
+          "signed_library_sha256": "42605443dc1c0a5ec07494a0229fed9938078e63430fd7ffc3d1a145de825cb6",
+          "warmups": 3,
+          "measured_requests": 25,
+          "median_microseconds": 6121,
+          "rss_start": 105119744,
+          "rss_max": 107298816,
+          "fds": {
+            "after_warmup": 9,
+            "before_dispose": 9,
+            "after_dispose": 9
+          },
+          "descriptor_capture": {
+            "method": "fcntl(F_GETFD) on this process; every rejected slot must be EBADF",
+            "inspected_range_upper_exclusive": 10240,
+            "same_range_all_samples": true
+          },
+          "copied_analysis_survives_dispose": true,
+          "provider_default": "OFF",
+          "grammar_quality_qualified": false,
+          "limits": "Diagnostic actual signed Runner/native worker operational sample; not UI/grammar accuracy or a leak proof."
+        }
+      },
+      "normal_startup_receipt": "signed-app-assessment.json"
     }
   },
   "limits": [
