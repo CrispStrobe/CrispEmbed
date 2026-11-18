@@ -1,0 +1,72 @@
+{
+ "schema": "crispembed.spacy.quant_oracle_replay.v1",
+ "gguf": "<scratch>/q/q8_0.gguf",
+ "types": [
+  "F32",
+  "Q8_0"
+ ],
+ "replay_flips": 7,
+ "replay_flipped_cases": 5,
+ "flips": [
+  {
+   "case": 2,
+   "token": 12,
+   "text": "18:30",
+   "field": "tag",
+   "oracle": "NE",
+   "replay": "FM"
+  },
+  {
+   "case": 16,
+   "token": 0,
+   "text": "Kannst",
+   "field": "tag",
+   "oracle": "VVFIN",
+   "replay": "NE"
+  },
+  {
+   "case": 37,
+   "token": 8,
+   "text": "am",
+   "field": "dep",
+   "oracle": "mo",
+   "replay": "mnr"
+  },
+  {
+   "case": 37,
+   "token": 8,
+   "text": "am",
+   "field": "head",
+   "oracle": 5,
+   "replay": 7
+  },
+  {
+   "case": 58,
+   "token": 2,
+   "text": "mussten",
+   "field": "morph",
+   "oracle": "Mood=Ind|Number=Plur|Person=3|Tense=Past|VerbForm=Fin",
+   "replay": "Mood=Sub|Number=Plur|Person=3|Tense=Past|VerbForm=Fin"
+  },
+  {
+   "case": 59,
+   "token": 0,
+   "text": "Aufgrund",
+   "field": "head",
+   "oracle": 4,
+   "replay": 11
+  },
+  {
+   "case": 59,
+   "token": 11,
+   "text": "ausverkauft",
+   "field": "dep",
+   "oracle": "pd",
+   "replay": "oc"
+  }
+ ],
+ "native_flips": 7,
+ "shared_flips": 7,
+ "native_only": [],
+ "replay_only": []
+}

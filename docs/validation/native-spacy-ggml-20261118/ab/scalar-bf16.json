@@ -1,0 +1,64 @@
+{
+ "label": "scalar-bf16",
+ "admitted": true,
+ "env": [
+  "CRISPEMBED_SPACY_QUANT=1"
+ ],
+ "model": "<scratch>/q/bf16.gguf",
+ "model_sha256": "4692f103ee7e1305654cb456f07a11c219254eea23ebf41f49e4610c57210e1d",
+ "model_bytes": 3722304,
+ "load_ms": 233.512,
+ "cases": 60,
+ "tokens": 835,
+ "tokenization_mismatch_cases": 0,
+ "exact_cases": 58,
+ "agreement": {
+  "tag": 1.0,
+  "pos": 0.998802,
+  "morph": 0.998802,
+  "lemma": 1.0,
+  "dep": 1.0,
+  "head": 1.0,
+  "sent_start": 1.0
+ },
+ "disagreements": {
+  "tag": 0,
+  "pos": 1,
+  "morph": 1,
+  "lemma": 0,
+  "dep": 0,
+  "head": 0,
+  "sent_start": 0
+ },
+ "timing": {
+  "corpus_ms_median": 782.931,
+  "long_doc_tokens": 835,
+  "long_doc_ms_median": 615.761,
+  "long_doc_tokens_per_s": 1356.0
+ },
+ "max_abs_drift_vs_reference": {
+  "tok2vec.output": 0.024304866790771484,
+  "tagger.scores": 0.05410194396972656,
+  "morphologizer.scores": 0.06648445129394531,
+  "lemmatizer.scores": 0.07830119132995605,
+  "parser.lower_cache": 0.05647468566894531
+ },
+ "differences": [
+  {
+   "case": 7,
+   "token": 0,
+   "text": "Bitte",
+   "field": "pos",
+   "oracle": "PART",
+   "native": "ADV"
+  },
+  {
+   "case": 51,
+   "token": 6,
+   "text": "die",
+   "field": "morph",
+   "oracle": "Case=Acc|Definite=Def|Gender=Fem|Number=Sing|PronType=Art",
+   "native": "Case=Nom|Definite=Def|Gender=Fem|Number=Sing|PronType=Art"
+  }
+ ]
+}

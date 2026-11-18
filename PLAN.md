@@ -108,6 +108,7 @@ release, app pins, mobile and model distribution remain separate.
 | Lane | Owner/branch | Current boundary | Next gate |
 | --- | --- | --- | --- |
 | German spaCy CPU/F32 | `feat/native-spacy-w7-20261118` in both repositories | W6 acceptance/grammar evidence preserved; bounded Linux package reproduction/install and current Python/Dart operational consumers independently audited complete | Immutable hosted publication/download readback, portable dependencies and other platforms/devices; manual provider stays default off |
+| German spaCy ggml engine/precision | `feat/spacy-ggml-20261118` | Default-off `CRISPEMBED_SPACY_GGML` engine, gated `CRISPEMBED_SPACY_QUANT` derivatives and `crispembed-spacy-diff`; [audit](docs/validation/native-spacy-ggml-20261118/README.md): F32/F16 qualified on the 60-case development corpus, BF16/Q8_0/Q5_0/Q4_0 rejected (precision loss reproduced by original spaCy, not a runtime defect) | Linux x86-64 AVX2 A/B of the engine and SGEMM build; rerun frozen acceptance/package gates at this source before any default flip; optional F16-on-disk/F32-compute storage |
 
 The [W7 continuation](docs/validation/native-spacy-w7-20261118/README.md) now
 implements immutable Linux packaging and freezes actual dependency/loading/cleanup

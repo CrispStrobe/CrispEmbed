@@ -13,10 +13,20 @@ endif()
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Static ggml dependencies" FORCE)
 set(GGML_CPU ON CACHE BOOL "CPU backend" FORCE)
-foreach(flag NATIVE BACKEND_DL CPU_ALL_VARIANTS CPU_HBM CPU_KLEIDIAI CPU_REPACK
-             OPENMP ACCELERATE BLAS LLAMAFILE CUDA HIP MUSA CANN VULKAN METAL
-             SYCL RPC OPENCL OPENVINO WEBGPU ZDNN ZENDNN VIRTGPU
-             VIRTGPU_BACKEND ET HEXAGON BUILD_TESTS BUILD_EXAMPLES)
+# CRISPEMBED_SPACY_SGEMM (default OFF) keeps ggml's portable tiled SGEMM
+# (llamafile tinyBLAS) for the opt-in CRISPEMBED_SPACY_GGML engine. It changes
+# only the F32/F16 mul_mat kernels; the scalar reference path never uses it.
+option(CRISPEMBED_SPACY_SGEMM "Enable ggml tiled SGEMM for the spaCy ggml engine" OFF)
+set(_spacy_disabled_ggml NATIVE BACKEND_DL CPU_ALL_VARIANTS CPU_HBM CPU_KLEIDIAI CPU_REPACK
+    OPENMP ACCELERATE BLAS CUDA HIP MUSA CANN VULKAN METAL
+    SYCL RPC OPENCL OPENVINO WEBGPU ZDNN ZENDNN VIRTGPU
+    VIRTGPU_BACKEND ET HEXAGON BUILD_TESTS BUILD_EXAMPLES)
+if(NOT CRISPEMBED_SPACY_SGEMM)
+    list(APPEND _spacy_disabled_ggml LLAMAFILE)
+else()
+    set(GGML_LLAMAFILE ON CACHE BOOL "Tiled SGEMM for the opt-in spaCy ggml engine" FORCE)
+endif()
+foreach(flag IN LISTS _spacy_disabled_ggml)
     set(GGML_${flag} OFF CACHE BOOL "Disabled in the closed spaCy CPU target" FORCE)
 endforeach()
 set(CRISPEMBED_NATIVE OFF CACHE BOOL "Portable numeric development build" FORCE)
@@ -31,6 +41,7 @@ find_library(SPACY_PCRE2_LIBRARY NAMES pcre2-8 REQUIRED)
 add_library(crispembed-spacy SHARED
     "${CRISPEMBED_ROOT}/src/spacy_pipeline.cpp"
     "${CRISPEMBED_ROOT}/src/spacy_numeric.cpp"
+    "${CRISPEMBED_ROOT}/src/spacy_ggml.cpp"
     "${CRISPEMBED_ROOT}/src/spacy_lexical.cpp"
     "${CRISPEMBED_ROOT}/src/spacy_decode.cpp"
     "${CRISPEMBED_ROOT}/src/core/gguf_loader.cpp")
@@ -64,6 +75,11 @@ if(BUILD_TESTING)
         endif()
         add_test(NAME spacy-numeric-contract COMMAND test-spacy-numeric)
     endif()
+    # Stage-level native vs original-spaCy diff (crispembed_diff.h reference archives
+    # from tools/spacy/dump_spacy_reference.py). Developer tool; not installed.
+    add_executable(crispembed-spacy-diff "${CMAKE_CURRENT_LIST_DIR}/spacy_diff.cpp")
+    target_include_directories(crispembed-spacy-diff PRIVATE "${CRISPEMBED_ROOT}/src")
+    target_link_libraries(crispembed-spacy-diff PRIVATE crispembed-spacy)
     foreach(component lexical decode)
         if(EXISTS "${CRISPEMBED_ROOT}/tests/test_spacy_${component}.cpp")
             add_executable(test-spacy-${component}

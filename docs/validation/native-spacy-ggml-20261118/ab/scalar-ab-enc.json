@@ -1,0 +1,56 @@
+{
+ "label": "scalar-ab-enc",
+ "admitted": true,
+ "env": [
+  "CRISPEMBED_SPACY_QUANT=1"
+ ],
+ "model": "<scratch>/q/ab-enc.gguf",
+ "model_sha256": "40419877ecb5474df0ed18d6d4ddf9d4878b21060f09b39e0004bbd040b99ab6",
+ "model_bytes": 3411264,
+ "load_ms": 269.029,
+ "cases": 60,
+ "tokens": 835,
+ "tokenization_mismatch_cases": 0,
+ "exact_cases": 59,
+ "agreement": {
+  "tag": 0.998802,
+  "pos": 1.0,
+  "morph": 1.0,
+  "lemma": 1.0,
+  "dep": 1.0,
+  "head": 1.0,
+  "sent_start": 1.0
+ },
+ "disagreements": {
+  "tag": 1,
+  "pos": 0,
+  "morph": 0,
+  "lemma": 0,
+  "dep": 0,
+  "head": 0,
+  "sent_start": 0
+ },
+ "timing": {
+  "corpus_ms_median": 758.914,
+  "long_doc_tokens": 835,
+  "long_doc_ms_median": 600.968,
+  "long_doc_tokens_per_s": 1389.4
+ },
+ "max_abs_drift_vs_reference": {
+  "tok2vec.output": 0.06061673164367676,
+  "tagger.scores": 0.10477542877197266,
+  "morphologizer.scores": 0.10335469245910645,
+  "lemmatizer.scores": 0.14705181121826172,
+  "parser.lower_cache": 0.12745189666748047
+ },
+ "differences": [
+  {
+   "case": 2,
+   "token": 12,
+   "text": "18:30",
+   "field": "tag",
+   "oracle": "NE",
+   "native": "FM"
+  }
+ ]
+}

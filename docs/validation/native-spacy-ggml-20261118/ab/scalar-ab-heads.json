@@ -1,0 +1,64 @@
+{
+ "label": "scalar-ab-heads",
+ "admitted": true,
+ "env": [
+  "CRISPEMBED_SPACY_QUANT=1"
+ ],
+ "model": "<scratch>/q/ab-heads.gguf",
+ "model_sha256": "dab117f0442117112822345b6e9ad04cae9fb74bb4735b0b62c14410184410ba",
+ "model_bytes": 3539008,
+ "load_ms": 133.239,
+ "cases": 60,
+ "tokens": 835,
+ "tokenization_mismatch_cases": 0,
+ "exact_cases": 58,
+ "agreement": {
+  "tag": 1.0,
+  "pos": 0.998802,
+  "morph": 0.998802,
+  "lemma": 1.0,
+  "dep": 1.0,
+  "head": 1.0,
+  "sent_start": 1.0
+ },
+ "disagreements": {
+  "tag": 0,
+  "pos": 1,
+  "morph": 1,
+  "lemma": 0,
+  "dep": 0,
+  "head": 0,
+  "sent_start": 0
+ },
+ "timing": {
+  "corpus_ms_median": 864.078,
+  "long_doc_tokens": 835,
+  "long_doc_ms_median": 643.997,
+  "long_doc_tokens_per_s": 1296.6
+ },
+ "max_abs_drift_vs_reference": {
+  "tok2vec.output": 0.0030221939086914062,
+  "tagger.scores": 0.12639999389648438,
+  "morphologizer.scores": 0.12792062759399414,
+  "lemmatizer.scores": 0.13547706604003906,
+  "parser.lower_cache": 0.007540702819824219
+ },
+ "differences": [
+  {
+   "case": 7,
+   "token": 0,
+   "text": "Bitte",
+   "field": "pos",
+   "oracle": "PART",
+   "native": "ADV"
+  },
+  {
+   "case": 58,
+   "token": 2,
+   "text": "mussten",
+   "field": "morph",
+   "oracle": "Mood=Ind|Number=Plur|Person=3|Tense=Past|VerbForm=Fin",
+   "native": "Mood=Sub|Number=Plur|Person=3|Tense=Past|VerbForm=Fin"
+  }
+ ]
+}

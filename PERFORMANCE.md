@@ -1,3 +1,21 @@
+## Native spaCy ggml engine and precisions (18 November 2026, macOS arm64 dev build)
+
+Long document of 835 tokens (60 development texts joined), warm, through the
+Python ctypes harness; decoded agreement against original spaCy 3.8.18.
+Details and receipts: [audit](docs/validation/native-spacy-ggml-20261118/README.md).
+
+| Configuration | GGUF | Decoded vs oracle | tok/s |
+| --- | ---: | --- | ---: |
+| scalar F32 (default, unchanged) | 7.38 MB | 60/60 exact | 1,375 |
+| ggml F32, 1 thread | 7.38 MB | 60/60 exact | 3,968 |
+| ggml F32 + SGEMM build, 1 thread | 7.38 MB | 60/60 exact | 8,900 |
+| ggml F16, 1 thread | 3.72 MB | 60/60 exact | 4,116 |
+| ggml Q8_0 | 2.01 MB | 53/60 (rejected) | 8,381 |
+
+Scalar time was ~95% in the strict-order scalar affine. With SGEMM, extra
+threads slow this small model (t4 6,293 tok/s). Unverified on Linux x86-64.
+TODO: same A/B on the frozen Linux AVX2 target before any default flip.
+
 ## Native spaCy W7 retained resource observations (18 November 2026)
 
 The source-bound [Python audit](docs/validation/native-spacy-w7-20261118/completion-20261118/python-package-audit.json)
