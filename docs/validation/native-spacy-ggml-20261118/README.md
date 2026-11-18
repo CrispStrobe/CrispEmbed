@@ -2,7 +2,10 @@
 
 Development evidence for the opt-in ggml document engine and quantized
 derivatives of the admitted `de_core_news_sm` 3.8.0 F32 GGUF
-(`fae2e6ab…`). Everything here is **default off**; the scalar F32 path, the
+(`fae2e6ab…`). **Superseded in part by the
+[continuation](#continuation-default-flip-f16-upcast-and-ner-18-november-2026):
+on 1,776 sentences the ggml engine is exact and became the default, and F16 is
+not exact.** As first recorded, everything here was **default off**; the scalar F32 path, the
 accepted W6/W7 package and its consumed panels are unchanged and were not
 rerun. Host: macOS arm64 (Apple Silicon), development build of
 `tools/spacy` (portable, `GGML_NATIVE=OFF`). Timings are single-host
@@ -91,7 +94,8 @@ Quantized GGUF without `CRISPEMBED_SPACY_QUANT=1` is rejected:
 ## Conclusions
 
 - Port correctness: both engines match original thinc modules stage by stage.
-- Qualified on this development corpus: F32 (both engines) and F16 (both).
+- Qualified on this development corpus: F32 (both engines) and F16 (both);
+  the larger continuation corpus later shows F16 changes 3/1,776 sentences.
   Rejected: BF16, Q8_0, Q5_0, Q4_0, and every Q8_0 single-group recipe.
 - Best measured configuration: ggml F32 with SGEMM, one thread —
   6.5× the scalar default with zero decoded differences.
@@ -116,3 +120,65 @@ python3 tools/spacy/dump_spacy_reference.py --wheel W --corpus C --output ref.gg
 CRISPEMBED_SPACY=1 build-spacy/crispembed-spacy-diff --ref ref.gguf --corpus C --bundle bundle [--model q8_0.gguf]
 python3 tools/spacy/quant_oracle_replay.py --wheel W --gguf q8_0.gguf --oracle oracle.json --output replay.json
 ```
+
+## Continuation: default flip, F16 upcast and NER (18 November 2026)
+
+The 60-case corpus above was too small to qualify a precision. This
+continuation uses **1,776 raw sentences (28,139 tokens) of UD German GSD
+r2.14 dev+test** (hash-pinned download; CC BY-SA 4.0 text used as input only,
+not shipped). The reference is always original spaCy 3.8.18 run on the same
+host from the authenticated wheel — never a native run. The frozen development
+gates (`tests/spacy_parity.py`, `tests/spacy_text_parity.py`: 16 cases, 1,201
+stages, atol 2e-4/rtol 2e-5) and the C ABI controls were rerun for both
+engines. The consumed acceptance split and W6/W7 grammar panels were not run.
+
+| Configuration | macOS arm64 exact | tok/s (long doc) | Linux AVX2 exact | tok/s (long doc) |
+| --- | --- | ---: | --- | ---: |
+| scalar F32 (`CRISPEMBED_SPACY_GGML=0`) | 1,776/1,776 | 2,270 | 1,776/1,776 | 1,530 |
+| **ggml F32 + SGEMM (new default)** | **1,776/1,776** | **14,343** | **1,776/1,776** | **10,689** |
+| ggml F32, `-DCRISPEMBED_SPACY_SGEMM=OFF` | 1,776/1,776 | 10,223 | 1,776/1,776 | 8,993 |
+| ggml F32 + SGEMM, 4 threads | — | — | 1,776/1,776 | 12,560 |
+| scalar F16 weights | 1,773/1,776 | 2,291 | 1,773/1,776 | 1,522 |
+| ggml F16 (F16 dot products) | 1,773/1,776 | 8,819 | 1,773/1,776 | 7,384 |
+| ggml F16 + `CRISPEMBED_SPACY_GGML_UPCAST=1` | 1,773/1,776 | 14,294 | 1,773/1,776 | 10,746 |
+
+Whole-corpus time, default vs scalar: 2.26 s vs 15.10 s (macOS), 2.90 s vs
+22.57 s (Linux, AMD EPYC 9V74, GCC 15.2; [run 44294318084](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44294318084),
+[receipt](gsd/linux-run-44294318084.json)). Linux also passes all frozen
+development gates and C ABI controls for both engines.
+
+**Default.** `CRISPEMBED_SPACY_GGML` is now default ON (`=0` keeps the scalar
+reference engine) and `CRISPEMBED_SPACY_SGEMM` defaults ON in `tools/spacy`
+(`OFF` rebuilds the previous kernel set). The scalar path and its frozen
+evidence are unchanged. The published W7 capsule is a separate immutable
+artifact built from earlier sources; it must be rebuilt and requalified before
+it carries this default.
+
+**F16 is not exact.** It changes 3 of 1,776 sentences (one lemma, one head,
+one dependency label). Original spaCy with the identical F16 weights makes the
+same 3 changes (3 shared, 0 native-only, 0 replay-only), and the scalar engine
+with F16 weights in F32 arithmetic makes them too: the cause is the weight
+rounding, not F16 arithmetic or the runtime. F16 stays gated
+(`CRISPEMBED_SPACY_QUANT`) as an optional 3.7 MB pack.
+
+**F16 speed.** F16 dot products are slower than F32 SGEMM on both hosts. The
+opt-in `CRISPEMBED_SPACY_GGML_UPCAST` expands compressed matrices to F32 once at
+load, giving F16 storage at F32 speed with exactly the scalar-F16 decisions.
+F16 arithmetic faster than F32 is not available for these 96-wide matrices
+without new kernels, and would add activation rounding on top of the weight
+rounding above.
+
+**NER.** The component has its own tok2vec (NORM, PREFIX, SUFFIX, SHAPE), a
+precomputed nF=3 parser layer and a greedy BILUO decoder (18 classes; entities
+never cross a parser sentence start or begin on whitespace). It is exported to
+a separate `ner.gguf` (6.1 MB, `models/convert-spacy-ner-to-gguf.py`) and
+attached with `crispembed_spacy_attach_ner` behind `CRISPEMBED_SPACY_NER`.
+On the 1,776 sentences: **1,776/1,776 sentences and 1,758/1,758 entities
+identical** to original spaCy (spans and labels) with both main engines; NER
+tok2vec max abs 5.7e-6 and lower cache 1.05e-5 against the original thinc
+layers on 300 texts; +31% analysis time with the default engine. Negative
+controls reject the gate off/`=0`, a wrong hash, the main model as NER, a second
+attach and a context without resources. Reports: [`gsd/`](gsd/).
+
+**senter** (disabled in this pipeline) is not ported; the parser already
+supplies sentence boundaries for every analysis.

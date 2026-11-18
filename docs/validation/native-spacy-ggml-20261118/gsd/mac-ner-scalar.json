@@ -1,0 +1,21 @@
+{
+ "schema": "crispembed.spacy.ner_ab.v1",
+ "attached": true,
+ "ner_sha256": "1b65fce5864703d971880cf038a67f2ffd1ef99cad2cd49f9dc122d7882cdaa1",
+ "oracle_sha256": "df09cba6c9cc65c516ee6431890ab5cc446377e3afa1dc851629b81b6356b697",
+ "env": [],
+ "cases": 1776,
+ "exact_entity_cases": 1776,
+ "token_mismatch_cases": 0,
+ "sentence_start_mismatch_cases": 0,
+ "oracle_entities": 1758,
+ "native_entities": 1758,
+ "matched_entities": 1758,
+ "timing": {
+  "without_ner_corpus_ms_median": 14894.091,
+  "with_ner_corpus_ms_median": 15465.344,
+  "tokens": 28139,
+  "ner_overhead_fraction": 0.0384
+ },
+ "differences": []
+}
