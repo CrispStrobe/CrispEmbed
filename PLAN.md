@@ -2,6 +2,15 @@
 
 ## PCS matched-operator continuation — 18 November 2026
 
+Final user checkpoint: stopped after selective-payload metadata inspection.
+The [causal diagnostic handoff](docs/pcs-causal-checkpoint-20261118.md) records
+completed evidence, exact target tensors and byte bounds, unrun operations and
+remaining dependencies. The original ONNX cache candidate exists but its
+content identity is not newly verified; the exact stored GGUF was absent from
+the scoped locations inspected. No payload extraction or new model run began.
+Unique tensor/conversion causality and the original decoded quality failure
+remain unresolved.
+
 Direct user authorization continues the PCS diagnostic with the established
 tools dumper and shared crispembed-diff implementation. See the
 [matched-operator contract](docs/pcs-step-diff.md). Scope is original graph/code
