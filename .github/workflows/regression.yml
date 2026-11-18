@@ -22,6 +22,11 @@ on:
   schedule:
     - cron: '0 4 * * *'   # 04:00 UTC nightly — Tier 2
   workflow_dispatch:
+    inputs:
+      pcs_capture:
+        description: 'Run only frozen PCS original/diagnostic neutrality and capture'
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths:
@@ -118,6 +123,7 @@ jobs:
   # naming, special-token injection, temporal-patch concat, merge<->export
   # inverse; SmolVLM: q/k un-permute, fc1/fc2 inversion, patch flatten).
   mmproj-interop:
+    if: inputs.pcs_capture != true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -137,6 +143,7 @@ jobs:
 
   # Tier 0: schema + parser + guard unit tests. No binary, no network.
   smoke:
+    if: inputs.pcs_capture != true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -202,6 +209,7 @@ jobs:
 
   # Tier 1: HEAD-check every pinned HF artifact the manifest references.
   preflight:
+    if: inputs.pcs_capture != true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: smoke
@@ -220,7 +228,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     needs: preflight
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: inputs.pcs_capture != true && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     steps:
       - uses: actions/checkout@v4
         with: { submodules: recursive }
@@ -286,8 +294,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     if: >-
-      github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push'
+      inputs.pcs_capture != true && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push')
     steps:
       - uses: actions/checkout@v4
         with: { submodules: recursive }
@@ -380,3 +388,46 @@ jobs:
             --image tests/regression/images/scan_page_pd.png \
             --bin build/crispembed \
             --no-unpaper --fail-on-harm
+
+  pcs-capture:
+    if: github.event_name == 'workflow_dispatch' && inputs.pcs_capture == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Freeze model and build identity
+        run: |
+          mkdir -p .pcs-models pcs-evidence
+          python -m pip install huggingface_hub
+          env -u HF_TOKEN -u HUGGING_FACE_HUB_TOKEN python tools/pcs_gate_capture.py fetch-model \
+            --repo cstr/pcs-xlmr-base-GGUF --filename pcs-xlmr-base-q4_k-imatrix.gguf \
+            --revision 27f17edbd7e33949f42a9a4fe4322b5af8172e6b \
+            --expected-sha256 faee4bf8469a502362b5967a2cfeb7a1732539fbd999c63b489d00efff3531da \
+            --output .pcs-models/pcs-xlmr-base-q4_k-imatrix.gguf
+          cat /proc/cpuinfo > pcs-evidence/cpuinfo.txt
+          c++ --version > pcs-evidence/compiler.txt
+          git rev-parse HEAD > pcs-evidence/source.txt
+          git submodule status > pcs-evidence/submodules.txt
+      - name: Native Release compile and link both drivers
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCRISPEMBED_BUILD_PCS_CAPTURE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            > pcs-evidence/configure.stdout 2> pcs-evidence/configure.stderr
+          cmake --build build --target punct-ab punct-ab-capture -j2 \
+            > pcs-evidence/build.stdout 2> pcs-evidence/build.stderr
+      - name: Original gate and required neutrality before capture analysis
+        run: python tools/pcs_capture_run.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pcs-frozen-capture
+          path: |
+            pcs-evidence/
+            build/compile_commands.json
+            build/CMakeCache.txt
+            build/pcs_gate_observed.cpp
+            .pcs-models/*.json
+          retention-days: 90
