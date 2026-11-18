@@ -19,13 +19,51 @@
         "name": "MIT",
         "text": "Model weights and data: MIT (ExplosionAI GmbH), bundle/LICENSE verbatim from the wheel. bundle/LICENSES_SOURCES retains the wheel's training-source notices verbatim: OntoNotes 5 (commercial, licensed by Explosion; no corpus text is included), ClearNLP constituent-to-dependency conversion (citation only) and WordNet 3.0 (WordNet 3.0 License, full text included). These notices grant no rights to the original corpora."
       },
-      "components": ["tok2vec", "tagger", "parser", "attribute_ruler", "lemmatizer", "ner"],
-      "entity_labels": ["CARDINAL", "DATE", "EVENT", "FAC", "GPE", "LANGUAGE", "LAW", "LOC", "MONEY", "NORP", "ORDINAL", "ORG", "PERCENT", "PERSON", "PRODUCT", "QUANTITY", "TIME", "WORK_OF_ART"],
+      "components": [
+        "tok2vec",
+        "tagger",
+        "parser",
+        "attribute_ruler",
+        "lemmatizer",
+        "ner"
+      ],
+      "entity_labels": [
+        "CARDINAL",
+        "DATE",
+        "EVENT",
+        "FAC",
+        "GPE",
+        "LANGUAGE",
+        "LAW",
+        "LOC",
+        "MONEY",
+        "NORP",
+        "ORDINAL",
+        "ORG",
+        "PERCENT",
+        "PERSON",
+        "PRODUCT",
+        "QUANTITY",
+        "TIME",
+        "WORK_OF_ART"
+      ],
       "expected_files": {
-        "model.gguf": {"sha256": "17b18871a2c1e766be4572c1dd9a9902ba01c4a46679797ccb3c4d0048d24e7d", "bytes": 12752960},
-        "resources.json": {"sha256": "d585e59b9b2f1aedfd5eb37716ff0d362969f6f8ba8535dad4ae50991567981a", "bytes": 3451396},
-        "LICENSE": {"sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012", "bytes": 1056},
-        "LICENSES_SOURCES": {"sha256": "20d9dfacd215112251f15341edd1a47b1f98bf393a212f10f194ffdc7ee98a90", "bytes": 2347}
+        "model.gguf": {
+          "sha256": "17b18871a2c1e766be4572c1dd9a9902ba01c4a46679797ccb3c4d0048d24e7d",
+          "bytes": 12752960
+        },
+        "resources.json": {
+          "sha256": "d585e59b9b2f1aedfd5eb37716ff0d362969f6f8ba8535dad4ae50991567981a",
+          "bytes": 3451396
+        },
+        "LICENSE": {
+          "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012",
+          "bytes": 1056
+        },
+        "LICENSES_SOURCES": {
+          "sha256": "20d9dfacd215112251f15341edd1a47b1f98bf393a212f10f194ffdc7ee98a90",
+          "bytes": 2347
+        }
       },
       "treebank": {
         "name": "UD English-EWT r2.14 test (raw sentence text only, CC BY-SA 4.0)",
@@ -38,7 +76,15 @@
         "Converter/runtime source: CrispEmbed PR #244 (v2 profile).",
         "macOS arm64 developer run: 2,077/2,077 UD English-EWT test texts (25,531 tokens) identical to original spaCy 3.8.18 in tag, pos, morph, lemma, dep, head and sentence starts; 1,876/1,876 entities.",
         "Hosted Linux x86-64 run 44363961502: the same result, and a byte-identical model.gguf converted on the runner."
-      ]
+      ],
+      "published": {
+        "revision": "eb659259b489593ddf29c747bc4562fbad5570f4",
+        "run": "44372635419",
+        "manifest": {
+          "sha256": "5cba3b979c67e6a6ecd2f5414bc953728cc4601c2cbe69bf89e9b62465d8dc6c",
+          "bytes": 21889
+        }
+      }
     },
     "fr_core_news_sm": {
       "repository": "cstr/crispembed-spacy-fr-core-news-sm-3.8.0",
@@ -56,13 +102,37 @@
         "name": "LGPL-LR (Lesser General Public License for Linguistic Resources)",
         "text": "The official fr_core_news_sm 3.8.0 package is licensed LGPL-LR (meta.json \"license\": \"LGPL-LR\"), not MIT. bundle/LICENSE is the wheel's LGPL-LR text verbatim; this bundle is a format conversion (a modified copy) of that linguistic resource and is distributed under the same license. bundle/LICENSES_SOURCES retains the wheel's training-source notices verbatim: UD French Sequoia v2.8 (LGPL-LR), WikiNER (CC BY 4.0) and spaCy lookups data (MIT). No training corpus text is included. The unmodified source is the pinned official wheel named below."
       },
-      "components": ["tok2vec", "morphologizer", "parser", "attribute_ruler", "lemmatizer", "ner"],
-      "entity_labels": ["LOC", "MISC", "ORG", "PER"],
+      "components": [
+        "tok2vec",
+        "morphologizer",
+        "parser",
+        "attribute_ruler",
+        "lemmatizer",
+        "ner"
+      ],
+      "entity_labels": [
+        "LOC",
+        "MISC",
+        "ORG",
+        "PER"
+      ],
       "expected_files": {
-        "model.gguf": {"sha256": "8b8f9ab4aa322191faa1735d1b7d53e0e744e18f4025290fe37242faa9a8e53e", "bytes": 12780352},
-        "resources.json": {"sha256": "bbdd7b6a51478abcc8e6d6e9cfad0d70e3a3f44a76de6ed4be4fdbb699825f8d", "bytes": 35391368},
-        "LICENSE": {"sha256": "fcfeb5f3a67aa25d659d1162b4f4a9c52a92171d4df68a11d87c52e3af982a17", "bytes": 4424},
-        "LICENSES_SOURCES": {"sha256": "21ea31093799e954757d62505687652dfd059d8685f97266d1a442f8a39fcdde", "bytes": 28874}
+        "model.gguf": {
+          "sha256": "8b8f9ab4aa322191faa1735d1b7d53e0e744e18f4025290fe37242faa9a8e53e",
+          "bytes": 12780352
+        },
+        "resources.json": {
+          "sha256": "bbdd7b6a51478abcc8e6d6e9cfad0d70e3a3f44a76de6ed4be4fdbb699825f8d",
+          "bytes": 35391368
+        },
+        "LICENSE": {
+          "sha256": "fcfeb5f3a67aa25d659d1162b4f4a9c52a92171d4df68a11d87c52e3af982a17",
+          "bytes": 4424
+        },
+        "LICENSES_SOURCES": {
+          "sha256": "21ea31093799e954757d62505687652dfd059d8685f97266d1a442f8a39fcdde",
+          "bytes": 28874
+        }
       },
       "treebank": {
         "name": "UD French-GSD r2.14 test (raw sentence text only, CC BY-SA 4.0)",
@@ -75,7 +145,15 @@
         "Converter/runtime source: CrispEmbed PR #244 (v2 profile).",
         "macOS arm64 developer run: 416/416 UD French-GSD test texts (9,786 tokens) identical to original spaCy 3.8.18 in tag, pos, morph, lemma, dep, head and sentence starts; 469/469 entities.",
         "Hosted Linux x86-64 run 44363955799: the same result, and a byte-identical model.gguf converted on the runner."
-      ]
+      ],
+      "published": {
+        "revision": "5e90593195cc4ecd20ceb864d932d7d7f5e3d762",
+        "run": "44372635419",
+        "manifest": {
+          "sha256": "986d620edc745624198c56d3494fa30f3b649786c1d93a29db76fe55196f2264",
+          "bytes": 21928
+        }
+      }
     }
   }
 }

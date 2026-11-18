@@ -1,3 +1,11 @@
+## spaCy English and French bundles published — 18 November 2026
+
+`cstr/crispembed-spacy-en-core-web-sm-3.8.0` (`eb659259`, MIT) and
+`cstr/crispembed-spacy-fr-core-news-sm-3.8.0` (`5e905931`, LGPL-LR) hold the v2
+bundles; v2 capsules from main `45b05770` load them exactly on Linux x86-64,
+Linux arm64 and macOS arm64 (EN 2,077/2,077, FR 416/416 texts incl. entities).
+[Receipts](docs/validation/native-spacy-en-fr-distribution-20261118/README.md).
+
 ## spaCy v2 profile: English and French exact — 18 November 2026
 
 Branch `feat/spacy-en-v2-20261118`. A generic spaCy 3.8 CNN converter and

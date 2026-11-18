@@ -32,7 +32,9 @@ def render(catalog: dict) -> str:
     resolve = f"https://huggingface.co/{repo}/resolve"
     front = ["---", f"license: {license_['spdx']}"]
     if license_["spdx"] == "other":
-        front += ["license_name: lgpl-lr", "license_link: bundle/LICENSE"]
+        # The Hub requires an absolute https link; pin it to the bundle commit.
+        front += ["license_name: lgpl-lr",
+                  f"license_link: https://huggingface.co/{repo}/blob/{bundle['revision']}/bundle/LICENSE"]
     front += [
         f"language: {model['language']}",
         "library_name: crispembed",

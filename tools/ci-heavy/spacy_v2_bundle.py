@@ -97,11 +97,15 @@ def publish_commit(api, repository, uploads, message, scratch):
             'fresh_readback': readback}, fresh
 
 
-def published_bundle(api, repository, pins, scratch):
-    """An existing commit whose bundle/* equals these pins, read back fresh; else None.
+def published_bundle(api, repository, pins, expected, scratch):
+    """An existing commit whose bundle content equals these pins, read back fresh; else None.
 
-    Prefers the commit that introduced the files (consumers pin the bundle
-    commit, not a later card commit); falls back to the current head.
+    Content files (model, resources, notices) must equal their pins byte for
+    byte. bundle/manifest.json also records the converter's own SHA-256, so
+    a later converter edit changes only that file; the published manifest is
+    accepted when its file pins equal the expected content pins, and its
+    actual digest is returned. Prefers the commit that introduced the files
+    (consumers pin the bundle commit, not a later card commit).
     """
     head = api.model_info(repository).sha
     if not set(pins) <= set(api.list_repo_files(repository, revision=head)):
@@ -122,12 +126,26 @@ def published_bundle(api, repository, pins, scratch):
                 if local.exists():
                     local.unlink()
                 url = f'https://huggingface.co/{repository}/resolve/{revision}/' + urllib.parse.quote(path, safe='/')
-                readback[path] = common.download(url, local, pin['sha256'], pin['bytes'])
-        except AssertionError:
+                if path == 'bundle/manifest.json':
+                    request = urllib.request.Request(url, headers={'Cache-Control': 'no-cache'})
+                    with urllib.request.urlopen(request, timeout=180) as response:
+                        local.write_bytes(response.read())
+                    manifest = json.loads(local.read_text(encoding='utf-8'))
+                    assert manifest['architecture'] == 'spacy_pipeline_v2' and manifest['format_version'] == 2
+                    for name, want in expected.items():
+                        assert manifest['files'][name] == {'sha256': want['sha256'], 'size_bytes': want['bytes']}
+                    readback[path] = {'url': url, 'sha256': common.digest(local), 'bytes': local.stat().st_size,
+                                      'http_status': 200, 'fresh_empty_cache': True,
+                                      'converter_sha256': manifest.get('converter_sha256')}
+                else:
+                    readback[path] = common.download(url, local, pin['sha256'], pin['bytes'])
+        except (AssertionError, KeyError, ValueError):
             continue
         tree = sorted(api.list_repo_files(repository, revision=revision))
         return {'repository': repository, 'revision': revision, 'head_at_check': head,
-                'reused_existing_commit': True, 'tree': tree, 'pins': pins, 'fresh_readback': readback}, fresh
+                'reused_existing_commit': True, 'tree': tree,
+                'pins': {path: {'sha256': item['sha256'], 'bytes': item['bytes']} for path, item in readback.items()},
+                'fresh_readback': readback}, fresh
     return None
 
 
@@ -142,7 +160,32 @@ def build(args, entry, out, scratch, report, run):
     python = venv / 'bin/python'
     run('reference-install', [python, '-m', 'pip', 'install', '--only-binary=:all:', '--require-hashes',
                               '-r', ROOT / 'tools/spacy/requirements-reference.txt'])
+    if args.use_published:
+        # Consumers/card for the already published bundle: no conversion (the
+        # converter may have moved on); every file is read back fresh from the
+        # tracked immutable revision and checked against the tracked pins.
+        published = entry['published']
+        payload = out / 'payload'
+        (payload / 'bundle').mkdir(parents=True)
+        pins = {f'bundle/{name}': pin for name, pin in entry['expected_files'].items()}
+        pins['bundle/manifest.json'] = published['manifest']
+        report['published_readback'] = {}
+        for path, pin in pins.items():
+            url = f"https://huggingface.co/{entry['repository']}/resolve/{published['revision']}/{path}"
+            report['published_readback'][path] = common.download(url, payload / path, pin['sha256'], pin['bytes'])
+        manifest = json.loads((payload / 'bundle/manifest.json').read_text(encoding='utf-8'))
+        for name, pin in entry['expected_files'].items():
+            assert manifest['files'][name] == {'sha256': pin['sha256'], 'size_bytes': pin['bytes']}, name
+        report['bundle_files'] = {path: {'sha256': pin['sha256'], 'bytes': pin['bytes']} for path, pin in pins.items()}
+        report['revision'] = published['revision']
+        report['publication'] = {'reused_tracked_revision': True, 'revision': published['revision'],
+                                 'published_by_run': published['run']}
+        oracle_only = True
+    else:
+        oracle_only = False
     converted = scratch / 'converted'
+    if oracle_only:
+        return oracle(args, entry, out, scratch, report, run, python, wheel)
     run('convert', [python, ROOT / 'models/convert-spacy-pipeline-to-gguf.py', '--wheel', wheel,
                     '--output', converted])
     assert sorted(p.name for p in converted.iterdir()) == sorted(BUNDLE_FILES), sorted(converted.iterdir())
@@ -167,7 +210,15 @@ def build(args, entry, out, scratch, report, run):
                                                  'bytes': (payload / 'bundle' / name).stat().st_size}
                               for name in BUNDLE_FILES}
     report['converter_sha256'] = manifest['converter_sha256']
-    # Original-spaCy oracle on the raw test-set text (input only; not redistributed).
+    oracle(args, entry, out, scratch, report, run, python, wheel)
+    if not args.publish:
+        report['dry_run'] = True
+        return
+    publish_bundle(args, entry, out, scratch, report, payload)
+
+
+def oracle(args, entry, out, scratch, report, run, python, wheel):
+    """Original-spaCy oracle on the raw test-set text (input only; not redistributed)."""
     run('pip-model', [python, '-m', 'pip', 'install', '--no-deps', wheel])
     treebank = entry['treebank']
     conllu = scratch / treebank['file']
@@ -186,18 +237,21 @@ def build(args, entry, out, scratch, report, run):
                    '--oracle', oracle / 'oracle.json', '--ner-oracle', oracle / 'ner-oracle.json'])
     report['oracle'] = {name: common.digest(oracle / name) for name in ('texts.txt', 'oracle.json', 'ner-oracle.json')}
     report['oracle_texts'] = len(texts)
-    if not args.publish:
-        report['dry_run'] = True
-        return
+
+
+def publish_bundle(args, entry, out, scratch, report, payload):
     api = hub_api()
     report['publisher'] = api.whoami()['name']
     api.create_repo(entry['repository'], repo_type='model', private=False, exist_ok=True)
-    reused = published_bundle(api, entry['repository'], report['bundle_files'], scratch)
+    reused = published_bundle(api, entry['repository'], report['bundle_files'], entry['expected_files'], scratch)
     if reused:
         # Re-runs (e.g. to add consumers once more capsules exist) keep the
-        # already published, byte-identical bundle commit instead of an
-        # empty commit; it is still read back fresh and verified.
+        # already published bundle commit with identical content instead of
+        # a new commit; it is still read back fresh and verified. Consumers
+        # then use the published manifest's actual digest.
         report['publication'], fresh = reused
+        report['converted_manifest'] = report['bundle_files']['bundle/manifest.json']
+        report['bundle_files'] = report['publication']['pins']
     else:
         report['publication'], fresh = publish_commit(
             api, entry['repository'], {path: payload / path for path in report['bundle_files']},
@@ -367,6 +421,8 @@ def main():
     parser.add_argument('--build-dir', type=Path, help='consume/card: the build step output')
     parser.add_argument('--consume-dir', type=Path, help='card: directory of consume outputs (one per platform)')
     parser.add_argument('--publish', action='store_true')
+    parser.add_argument('--use-published', action='store_true',
+                        help='build: skip conversion; read back the tracked published bundle revision')
     args = parser.parse_args()
     assert os.environ.get('GITHUB_ACTIONS') == 'true' and os.environ.get('GITHUB_REPOSITORY') == 'CrispStrobe/CrispEmbed'
     if args.publish:
