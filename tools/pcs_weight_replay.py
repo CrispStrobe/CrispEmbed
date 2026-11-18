@@ -12,6 +12,20 @@ from pathlib import Path
 import sys
 import urllib.request
 
+def gate_exit_code(report):
+    cases = report['cases']
+    return int(len(cases) != 6 or any(not c['decoded_exact'] or
+        any(value != c['tokens'] for value in c['head_counts'].values()) for c in cases))
+
+
+# Reanalysis verifies preserved outputs without another model run or imports.
+if __name__ == '__main__' and len(sys.argv) == 3 and sys.argv[1] == '--verify-report':
+    retained = json.loads(Path(sys.argv[2]).read_text())
+    code = gate_exit_code(retained)
+    print('PASS' if code == 0 else 'FAIL: retained stored-weight replay is quality-negative')
+    raise SystemExit(code)
+
+
 import gguf
 import numpy as np
 import onnx
@@ -157,7 +171,8 @@ def main():
     (out / 'capture-names.json').write_text(json.dumps(capture, indent=2))
     print(json.dumps(report, indent=2))
     # Diagnostic graph/expanded weights stay task-transient on the hosted runner.
+    return gate_exit_code(report)
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())

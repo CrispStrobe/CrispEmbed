@@ -8519,3 +8519,27 @@ follows. The [W6 handoff](docs/validation/native-spacy-w6-20261117/README.md)
 retains the unchanged panel/thresholds, pre-execution baseline amendment and
 source seal. The manual API stays default off; W7 packaging, device behavior
 and distribution remain open. No native acceptance rerun or CI query/wait.
+
+
+## PCS numerical boundary — 18 November 2026
+
+[Actual frozen reports](tests/results/pcs/original-graph-stored-weight-blocker-20261118.json)
+retain the same immutable default artifact and unchanged six-case reference.
+
+| Execution | Row37 `o` logit | Casing | Decoded |
+| --- | ---: | ---: | ---: |
+| Original uncompressed ONNX | +1.083245516 |67/67|6/6 reference |
+| Intel native Release control | +0.039054506 |67/67|6/6 |
+| AVX2 Release reproduction | −0.098158233 |66/67|5/6 |
+| Same-weight F32 matrix control | −0.238311455 |66/67|5/6 |
+| Original graph/collector with all214 stored tensors | −0.238312081 |66/67|5/6 |
+
+Post/pre/segmentation remain67/67. Native IDs/chunks and row37 conditioning
+match. Dense same-weight native versus original-graph stage max≤7.63e−6;
+all16 row37 casing logits max≤3.64e−6. The earliest compared difference from
+original uncompressed weights is embedding normalization max0.269159, while
+same-weight embeddings match within2.39e−7. All F32 bits/margins and source/model/
+compiler/ISA identities remain in the linked receipts and remote artifacts.
+These are bounded quality/numerical measurements, with no speed or release
+qualification. Exact offending tensor/conversion commit and artifact repair
+remain outside the demonstrated result; production and acceptance are unchanged.

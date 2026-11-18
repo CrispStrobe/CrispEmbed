@@ -22430,3 +22430,29 @@ controls. The accepted native/model bytes are unchanged and the consumed
 eight-case native acceptance was not rerun. The manual provider API remains
 default off with no automatic Studio registration. W7 packaging, devices and
 distribution are next; no release, app pin or GitHub Actions query/wait/rerun.
+
+
+## 18 November 2026 — PCS compiled attribution, artifact blocker remains
+
+The preserved PCS capture branch was compiled/linked on hosted CI. Actual
+[44272906599](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44272906599)
+proves original/diagnostic OFF and OFF/ON byte neutrality and an Intel native
+67/67 all-head,6/6 decoded positive control. Actual AVX2
+[44273793050](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44273793050)
+reproduces66/67 casing and5/6 decoded with aligned native IDs/chunks and correct
+conditioning; row37 `o` is −0.0981582329. The original source is +1.083245516.
+
+[F32 materialization44274761438](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44274761438)
+is retained and rejected, still66/67 and5/6. The
+[all214-tensor original-graph replay44276378964](tests/results/pcs/original-graph-stored-weight-blocker-20261118.json)
+also produces `I'm oK`, `o` −0.2383120805, through the pinned original collector.
+That collector reconstructs frozen reference predictions6/6 exactly. Dense
+same-weight native stages match within7.63e−6 and all16 row37 logits within
+3.64e−6. Initial singleton-axis preflight failure44276100741 is retained;
+report-only quality reanalysis returns1 without repeating inference.
+
+The stored-weight quality blocker is supported; the exact offending tensor and
+conversion commit are not established. Production/reference/gate bytes remain
+unchanged. No fix commit, release, repaired PR/merge, fullstop/main-green claim
+or artifact regeneration follows. PLAN records the separately authorized
+artifact-owner dependency. All heavyweight work was hosted.

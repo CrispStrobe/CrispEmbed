@@ -1,5 +1,12 @@
 # PCS blueprint reference
 
+**18 November 2026:** the unchanged default artifact is quality-negative on the
+AVX2 reproduction: casing66/67, decoded5/6 (`OK` → `oK`). Independent replay of
+all214 stored tensors in the original graph/collector reproduces it. The Intel
+native positive control does not close that failure. See the
+[actual evidence and blocker](../../../docs/pcs-casing-source-audit.md).
+The measurements below are historical; references and acceptance remain unchanged.
+
 Ground truth for the **PCS** engine (punctuation + capitalisation + sentence
 boundary, `1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase`), the third
 and last of the three punctuation engines to get one. Four registry entries

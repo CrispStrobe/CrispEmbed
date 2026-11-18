@@ -1,0 +1,454 @@
+{
+  "source_commit": "cfdcce888a349f00c8ecdad89066fd1fc36b1029",
+  "run_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/44274761438",
+  "artifact": {
+    "id": 14414960094,
+    "sha256": "e0fc58765604bd64cf26e14e242fe5a9b4e0b71bfa7087b278d9744580e3c1de",
+    "bytes": 13757876
+  },
+  "status": "REJECTED",
+  "gate_stdout": "post preds  : 67/67 tokens agree (100.00%)\npre         : 67/67 tokens agree (100.00%)\nseg         : 67/67 tokens agree (100.00%)\ncap         : 66/67 tokens agree (98.51%)\n  token 37: ref=11 ours=01\ndecoded text: 5/6 EXACT (gated \u2014 PCS truecases itself, so there is no deliberate case deviation to excuse)\n  line 3:\n    ref  I'm OK, how are you? I'm fine.\n    ours I'm oK, how are you? I'm fine.\nFAIL (2 gate(s))\n",
+  "row37_all16": [
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 0,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "beabd256",
+      "finite": true,
+      "margin_to_zero": -0.33558911085128784,
+      "absolute_magnitude": 0.33558911085128784,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 1,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": true,
+      "logit_f32_bits": "be7407eb",
+      "finite": true,
+      "margin_to_zero": -0.23831145465373993,
+      "absolute_magnitude": 0.23831145465373993,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 2,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": true,
+      "logit_f32_bits": "3dbe31d0",
+      "finite": true,
+      "margin_to_zero": 0.09286844730377197,
+      "absolute_magnitude": 0.09286844730377197,
+      "actual_bit": 1,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 3,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "beb29f2e",
+      "finite": true,
+      "margin_to_zero": -0.3488706946372986,
+      "absolute_magnitude": 0.3488706946372986,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 4,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf10d7fc",
+      "finite": true,
+      "margin_to_zero": -0.5657956600189209,
+      "absolute_magnitude": 0.5657956600189209,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 5,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf0104db",
+      "finite": true,
+      "margin_to_zero": -0.5039803385734558,
+      "absolute_magnitude": 0.5039803385734558,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 6,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf4471c5",
+      "finite": true,
+      "margin_to_zero": -0.7673609852790833,
+      "absolute_magnitude": 0.7673609852790833,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 7,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf41d6ea",
+      "finite": true,
+      "margin_to_zero": -0.7571855783462524,
+      "absolute_magnitude": 0.7571855783462524,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 8,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf455c8c",
+      "finite": true,
+      "margin_to_zero": -0.7709434032440186,
+      "absolute_magnitude": 0.7709434032440186,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 9,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf3ad492",
+      "finite": true,
+      "margin_to_zero": -0.7298060655593872,
+      "absolute_magnitude": 0.7298060655593872,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 10,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf2ff68e",
+      "finite": true,
+      "margin_to_zero": -0.6873558759689331,
+      "absolute_magnitude": 0.6873558759689331,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 11,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf45214d",
+      "finite": true,
+      "margin_to_zero": -0.7700393795967102,
+      "absolute_magnitude": 0.7700393795967102,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 12,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf04097a",
+      "finite": true,
+      "margin_to_zero": -0.5157696008682251,
+      "absolute_magnitude": 0.5157696008682251,
+      "actual_bit": 0,
+      "reference_bit": 1,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 13,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "bf7b9b87",
+      "finite": true,
+      "margin_to_zero": -0.9828419089317322,
+      "absolute_magnitude": 0.9828419089317322,
+      "actual_bit": 0,
+      "reference_bit": 0,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 14,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "c013a251",
+      "finite": true,
+      "margin_to_zero": -2.3067820072174072,
+      "absolute_magnitude": 2.3067820072174072,
+      "actual_bit": 0,
+      "reference_bit": 0,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    },
+    {
+      "request": 3,
+      "token": 3,
+      "flat_token": 37,
+      "slot": 15,
+      "native_id": 3664,
+      "native_piece": "\u2581ok",
+      "reference_id": 3664,
+      "reference_piece": "\u2581ok",
+      "significant": false,
+      "logit_f32_bits": "c0556b41",
+      "finite": true,
+      "margin_to_zero": -3.3346712589263916,
+      "absolute_magnitude": 3.3346712589263916,
+      "actual_bit": 0,
+      "reference_bit": 0,
+      "sentence_initial": 0,
+      "sbd_logit_bits": [
+        "405d439c",
+        "c0673aba"
+      ]
+    }
+  ],
+  "same_weight_original_graph_comparison": {
+    "layers": [
+      {
+        "layer": -1,
+        "materialized_vs_original_same_weights_max_absolute": 2.384185791015625e-07,
+        "legacy_vs_original_same_weights_max_absolute": 2.384185791015625e-07,
+        "original_same_weights_max_magnitude": 4.9589104652404785
+      },
+      {
+        "layer": 0,
+        "materialized_vs_original_same_weights_max_absolute": 1.9073486328125e-06,
+        "legacy_vs_original_same_weights_max_absolute": 0.11085128784179688,
+        "original_same_weights_max_magnitude": 24.010242462158203
+      },
+      {
+        "layer": 1,
+        "materialized_vs_original_same_weights_max_absolute": 3.814697265625e-06,
+        "legacy_vs_original_same_weights_max_absolute": 0.2150115966796875,
+        "original_same_weights_max_magnitude": 25.921680450439453
+      },
+      {
+        "layer": 2,
+        "materialized_vs_original_same_weights_max_absolute": 3.814697265625e-06,
+        "legacy_vs_original_same_weights_max_absolute": 0.3918952941894531,
+        "original_same_weights_max_magnitude": 25.748394012451172
+      },
+      {
+        "layer": 3,
+        "materialized_vs_original_same_weights_max_absolute": 3.814697265625e-06,
+        "legacy_vs_original_same_weights_max_absolute": 0.14955520629882812,
+        "original_same_weights_max_magnitude": 26.808319091796875
+      },
+      {
+        "layer": 4,
+        "materialized_vs_original_same_weights_max_absolute": 3.814697265625e-06,
+        "legacy_vs_original_same_weights_max_absolute": 0.4128866195678711,
+        "original_same_weights_max_magnitude": 25.637216567993164
+      },
+      {
+        "layer": 5,
+        "materialized_vs_original_same_weights_max_absolute": 5.7220458984375e-06,
+        "legacy_vs_original_same_weights_max_absolute": 0.34638023376464844,
+        "original_same_weights_max_magnitude": 25.838592529296875
+      },
+      {
+        "layer": 6,
+        "materialized_vs_original_same_weights_max_absolute": 6.67572021484375e-06,
+        "legacy_vs_original_same_weights_max_absolute": 0.2743568420410156,
+        "original_same_weights_max_magnitude": 18.08840560913086
+      },
+      {
+        "layer": 7,
+        "materialized_vs_original_same_weights_max_absolute": 4.76837158203125e-06,
+        "legacy_vs_original_same_weights_max_absolute": 0.16856956481933594,
+        "original_same_weights_max_magnitude": 18.42938995361328
+      },
+      {
+        "layer": 8,
+        "materialized_vs_original_same_weights_max_absolute": 7.62939453125e-06,
+        "legacy_vs_original_same_weights_max_absolute": 0.4449748992919922,
+        "original_same_weights_max_magnitude": 17.056547164916992
+      },
+      {
+        "layer": 9,
+        "materialized_vs_original_same_weights_max_absolute": 3.814697265625e-06,
+        "legacy_vs_original_same_weights_max_absolute": 0.48890113830566406,
+        "original_same_weights_max_magnitude": 25.017105102539062
+      },
+      {
+        "layer": 10,
+        "materialized_vs_original_same_weights_max_absolute": 5.7220458984375e-06,
+        "legacy_vs_original_same_weights_max_absolute": 0.2748379707336426,
+        "original_same_weights_max_magnitude": 23.166820526123047
+      },
+      {
+        "layer": 11,
+        "materialized_vs_original_same_weights_max_absolute": 6.079673767089844e-06,
+        "legacy_vs_original_same_weights_max_absolute": 0.29940223693847656,
+        "original_same_weights_max_magnitude": 8.525822639465332
+      }
+    ],
+    "row37_head_all16_max_absolute": 3.635883331298828e-06,
+    "row37_o_absolute_error": 6.258487701416016e-07
+  },
+  "earliest_original_model_stage_difference": {
+    "stage": "embedding norm",
+    "max_absolute": 0.2691585421562195
+  },
+  "limits": "F32 materialization is a diagnostic alternative only; never adopted into production."
+}

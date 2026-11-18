@@ -131,3 +131,53 @@ This is a positive control, **not reproduction or repair** of the retained
 byte-identical. The [declared AVX2/original-graph follow-up](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44273793050)
 is pending; no CPU-specific cause, production fix, fullstop or main closure
 is established by this positive result.
+
+## Actual failure and independent stored-weight blocker
+
+The [AVX2 reproduction](../tests/results/pcs/frozen-avx2-failure-20261118.json)
+confirms the same67/67 post/pre/seg,66/67 casing and5/6 decoded failure, with
+original/diagnostic OFF/ON byte neutrality. IDs/pieces and chunks align;
+conditioning is false in native and original. Native `o` is −0.0981582329,
+`0xbdc9072f`, not zero, padding or NaN. The pinned original uncompressed ONNX
+is +1.083245516. The exact model revision/hash are in both receipts.
+
+Avoiding extra activation loss via same-weight F32 matrix materialization does
+not repair it: [actual rejected control](../tests/results/pcs/rejected-f32-matrix-control-20261118.json)
+still produces `I'm oK`, `o` −0.2383114547. Preserve this test-only alternative.
+
+[Independent original-graph replay](../tests/results/pcs/original-graph-stored-weight-blocker-20261118.json)
+maps every one of214 immutable GGUF tensors into the pinned original ONNX graph,
+shape-checks each replacement, and executes the unmodified original collector
+at `e0723a4f5dfe5f4fac8571a916ea03571b87edd3`. It also produces `I'm oK`,
+`o` −0.2383120805, casing66/67 and decoded5/6. The collector independently
+reconstructs all six reference lines exactly from frozen reference predictions.
+No artifact was modified or published; the expanded diagnostic graph was hosted
+and transient. Its graph operators and reconstruction come from the original.
+
+Against that independent same-weight computation, the native F32 control differs
+by at most7.63e−6 across the13 captured encoder stages and3.64e−6 on all16
+row37 logits (`o` absolute error6.26e−7). The earliest compared difference from
+the original uncompressed model is already embedding normalization: max0.269159.
+Same-weight original/native embedding max error is2.39e−7. Thus the stored
+artifact itself is quality-negative independently of this PCS implementation;
+the positive native ISA control does not make that artifact reliable.
+
+This is a precise **artifact-quality blocker**, not a production fix. Repairing
+or replacing/qualifying model artifacts is outside this PCS-only lane's explicit
+exclusion of model/quantization work. No special casing rule, margin adjustment,
+reference update or tolerance change is justified. Production bytes remain intact.
+No fix commit, repaired PR/merge, passing fullstop or green-main closure exists.
+An authorized model/artifact owner must supply an independently qualified repair;
+then the unchanged full PCS/fullstop and exact-head/merged-main gates must pass.
+
+Replay44276100741 stopped before inference because GGUF omitted a singleton
+embedding axis; its original log is retained.44276378964 completed and collected
+the negative report. Its original script did not propagate quality negatives to
+exit status; report-only reanalysis now returns1, and the diagnostic is corrected
+to fail on those same unchanged comparisons without another model run.
+
+This localizes the quality failure to the immutable stored-weight set. The exact
+offending tensor, conversion operation and conversion commit are **not proven**;
+no artifact repair or regeneration is authorized by this handoff. The next owner
+and artifact work require separate scope/authorization. Existing raw receipts
+suffice for bounded review; no unchanged model execution is requested.

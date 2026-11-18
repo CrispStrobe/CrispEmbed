@@ -1,30 +1,54 @@
 # CrispEmbed plan — open work (updated 9 November 2026)
 
-## PCS main failure: active frozen execution and root-cause repair — 18 November 2026
+## PCS main failure: confirmed stored-weight quality blocker — 18 November 2026
 
-PR235 owner-merged as `be20e497` from reviewed `7ab522d6` after 43 passing
-checks and two expected skips; its merged tree is identical. Main's separate
-push-only [PCS gate](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44247044277/job/134608391665)
-fails casing 66/67 and decoded text 5/6 (`OK` → `oK`). Preserve that failure;
-main is not CI green. PR236 remains merged at `04e84458`.
+Dedicated PCS ownership continued the preserved `7d9a952f` diagnostic branch.
+The retained main `be20e497` push failure remains open: post/pre/segmentation
+67/67, casing 66/67, decoded 5/6 (`OK` → `oK`); fullstop was not reached.
+No production PCS, original driver, corpus, reference, scorer, threshold or
+acceptance tolerance was changed. No release, waiver or main-green claim.
 
-The [source audit](docs/pcs-casing-source-audit.md) traces the first retained
-discrete difference to comparison row 37, original significant cap slot 1.
-Native token mapping, logit/margin and historical model/binary identity are
-missing; reference IDs alone do not prove native alignment. Historical PCS/core
-sources and the ggml pin are unchanged. GNU 15.2.0/native code generation is
-recorded, but neither it nor model drift is uniquely attributable.
+Actual [Intel native control](tests/results/pcs/frozen-native-control-20261118.json)
+44272906599 passes 67/67 all heads, decoded 6/6; actual
+[AVX2 reproduction](tests/results/pcs/frozen-avx2-failure-20261118.json)
+44273793050 reproduces the exact negative. Original versus diagnostic OFF and
+OFF versus ON match all four existing head dumps and decoded bytes exactly.
+Actual native IDs/pieces and chunk mappings align. Row 37 is ID3664, `▁ok`,
+request3/local3, one 11-token chunk, conditioning false. Native AVX2 `o` logit
+is −0.09815823286771774 (`0xbdc9072f`); the pinned original ONNX gives
++1.0832455158233643 with the same conditioning. All16 logits/bits are retained.
+Model revision `27f17edbd7e33949f42a9a4fe4322b5af8172e6b`, SHA-256
+`faee4bf8469a502362b5967a2cfeb7a1732539fbd999c63b489d00efff3531da`.
 
-Dedicated PCS owner continues the preserved `7d9a952f` capture branch with
-explicit execution authority. Production PCS, reference, corpus and acceptance
-gate remain unchanged pending actual attribution. Hosted native Release builds
-export compile commands; original/diagnostic-OFF and diagnostic OFF/ON must
-preserve every existing head dump and decoded byte before trace interpretation.
-Frozen Hub revision `27f17edbd7e33949f42a9a4fe4322b5af8172e6b`, model
-SHA-256 `faee4bf8469a502362b5967a2cfeb7a1732539fbd999c63b489d00efff3531da`.
-Next: actual reproduction, neutral capture, earliest numerical/conditioning
-attribution, production fix, unchanged PCS/fullstop gates, exact-head owner merge
-and push-only main verification. No baseline/tolerance change or waiver.
+The [same-weight F32 matrix alternative](tests/results/pcs/rejected-f32-matrix-control-20261118.json)
+44274761438 is **rejected**, still 66/67 and 5/6 (`o` −0.2383114547).
+The [independent stored-weight replay](tests/results/pcs/original-graph-stored-weight-blocker-20261118.json)
+44276378964 maps all214 native tensors into the immutable original ONNX graph
+and executes the pinned original collector. It independently produces `I'm oK`
+with `o` −0.2383120805, casing66/67 and decoded5/6. Original collector reference
+reconstruction passes6/6. Dense native versus same-weight original max error
+is ≤7.63e−6 across13 encoder stages and3.64e−6 across all16 row37 logits.
+The earliest compared difference from original uncompressed weights is embedding
+normalization, max0.2691585422; same-weight original/native embeddings match
+within2.39e−7. The immutable artifact remains quality-negative when PCS runtime
+is bypassed. Changing source arithmetic to hide this result is not a repair.
+
+The exact offending tensor, conversion operation and conversion commit are not
+proven. No artifact regeneration or additional owner is authorized here.
+
+**External dependency:** an authorized model/artifact owner must repair and
+independently qualify the stored-weight artifact; model/quantization changes are
+excluded from this PCS lane. No PCS production fix or fix commit is claimed.
+After an authorized repaired artifact: run the unchanged PCS gate to67/67 on
+every head and6/6 decoded, reach/pass fullstop, then normal repair PR/exact-head
+checks/owner merge and push-only main verification. Do not repeat completed
+native builds/captures for checkpoints. All large model/expanded graphs stayed
+on hosted runners; reports and immutable artifact identities are retained.
+
+Initial replay44276100741's singleton-axis shape failure is preserved. Corrected
+44276378964's execution was successful but quality negative; the report-only
+verifier returns1. The diagnostic now propagates negative comparisons to its
+process exit without changing any outputs or repeating model inference.
 
 ## W7 completion ownership — 18 November 2026
 
