@@ -3,9 +3,9 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/env_gate.h"
 #include "ggml.h"
 #ifdef CRISPEMBED_SPACY_BLAS
-#include "core/env_gate.h"
 #include "ggml-blas.h"
 #endif
 
@@ -151,6 +151,93 @@ struct TransformerPipeline::Impl {
         ggml_backend_tensor_get(x, output.data(), 0, output.size() * sizeof(float));
         return output;
     }
+
+    // Opt-in CRISPEMBED_SPACY_TRF_FUSED: the same encoder as one batched graph
+    // for B equal-length spans, Q/K/V from row views of the fused weight (no
+    // activation copies) and ggml_flash_attn_ext (CrispEmbed's encoder pattern).
+    std::vector<std::vector<float>> encode_batch(const std::vector<std::vector<int>> & batch,
+                                                 const CancelCheck & cancelled) const {
+        const int64_t B = static_cast<int64_t>(batch.size());
+        const int64_t T = static_cast<int64_t>(batch.front().size());
+        for (const auto & span : batch) require(static_cast<int64_t>(span.size()) == T, "Unequal span batch");
+        const int64_t W = config.width, H = config.heads, D = W / H, TB = T * B;
+        ggml_init_params params{};
+        params.mem_size = ggml_tensor_overhead() * 4096 + ggml_graph_overhead_custom(8192, false);
+        params.no_alloc = true;
+        std::unique_ptr<ggml_context, ContextDeleter> owned(ggml_init(params));
+        if (!owned) throw std::bad_alloc();
+        ggml_context * ctx = owned.get();
+        ggml_tensor * tokens = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, TB);
+        ggml_set_input(tokens);
+        ggml_tensor * positions = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, TB);
+        ggml_set_input(positions);
+        auto layer_norm = [&](ggml_tensor * x, const std::string & prefix) {
+            x = ggml_norm(ctx, x, config.layer_norm_eps);
+            return ggml_add(ctx, ggml_mul(ctx, x, weight(prefix + ".weight")), weight(prefix + ".bias"));
+        };
+        auto linear = [&](ggml_tensor * x, const std::string & prefix) {
+            return ggml_add(ctx, ggml_mul_mat(ctx, weight(prefix + ".weight"), x), weight(prefix + ".bias"));
+        };
+        ggml_tensor * x = ggml_get_rows(ctx, weight("trf.embed.word"), tokens);
+        x = ggml_add(ctx, x, ggml_reshape_1d(ctx, weight("trf.embed.type"), W));
+        x = ggml_add(ctx, x, ggml_get_rows(ctx, weight("trf.embed.position"), positions));
+        x = layer_norm(x, "trf.embed.norm");
+        const float scale = 1.0f / std::sqrt(static_cast<float>(D));
+        for (int layer = 0; layer < config.layers; ++layer) {
+            const auto p = "trf.layer." + std::to_string(layer) + ".";
+            ggml_tensor * w = weight(p + "qkv.weight");
+            ggml_tensor * b = weight(p + "qkv.bias");
+            auto project = [&](int64_t index) {
+                // Rows [index*W, (index+1)*W) of the fused [3W, W] weight are contiguous.
+                ggml_tensor * wv = ggml_view_2d(ctx, w, W, W, w->nb[1], index * W * w->nb[1]);
+                ggml_tensor * bv = ggml_view_1d(ctx, b, W, index * W * ggml_element_size(b));
+                ggml_tensor * out = ggml_add(ctx, ggml_mul_mat(ctx, wv, x), bv);             // [W, TB]
+                return ggml_permute(ctx, ggml_reshape_4d(ctx, out, D, H, T, B), 0, 2, 1, 3); // [D, T, H, B]
+            };
+            ggml_tensor * q = project(0);
+            ggml_tensor * k = project(1);
+            ggml_tensor * v = project(2);
+            ggml_tensor * attended = ggml_flash_attn_ext(ctx, q, k, v, nullptr, scale, 0.0f, 0.0f);
+            ggml_flash_attn_ext_set_prec(attended, GGML_PREC_F32);
+            attended = ggml_reshape_2d(ctx, attended, W, TB); // [D, H, T, B] -> [W, TB]
+            ggml_tensor * attention = layer_norm(ggml_add(ctx, x, linear(attended, p + "attn_out")), p + "attn_norm");
+            ggml_tensor * ffn = ggml_gelu_erf(ctx, linear(attention, p + "ffn_in"));
+            x = layer_norm(ggml_add(ctx, attention, linear(ffn, p + "ffn_out")), p + "ffn_norm");
+        }
+        ggml_set_output(x);
+        ggml_cgraph * graph = ggml_new_graph_custom(ctx, 8192, false);
+        ggml_build_forward_expand(graph, x);
+        if (sched) {
+            ggml_backend_sched_reset(sched);
+            if (!ggml_backend_sched_alloc_graph(sched, graph)) throw std::bad_alloc();
+        } else if (!ggml_gallocr_alloc_graph(allocator, graph)) {
+            throw std::bad_alloc();
+        }
+        std::vector<int32_t> token_ids, position_ids;
+        token_ids.reserve(static_cast<size_t>(TB));
+        position_ids.reserve(static_cast<size_t>(TB));
+        for (const auto & span : batch)
+            for (int64_t t = 0; t < T; ++t) {
+                token_ids.push_back(span[static_cast<size_t>(t)]);
+                position_ids.push_back(static_cast<int32_t>(t + config.padding_idx + 1));
+            }
+        ggml_backend_tensor_set(tokens, token_ids.data(), 0, token_ids.size() * sizeof(int32_t));
+        ggml_backend_tensor_set(positions, position_ids.data(), 0, position_ids.size() * sizeof(int32_t));
+        if (sched) {
+            check_cancelled(cancelled);
+            if (ggml_backend_sched_graph_compute(sched, graph) != GGML_STATUS_SUCCESS)
+                throw std::runtime_error("spaCy transformer graph computation failed");
+            check_cancelled(cancelled);
+        } else {
+            compute(graph, cancelled);
+        }
+        std::vector<float> all(static_cast<size_t>(TB * W));
+        ggml_backend_tensor_get(x, all.data(), 0, all.size() * sizeof(float));
+        std::vector<std::vector<float>> outputs;
+        for (int64_t i = 0; i < B; ++i) outputs.emplace_back(all.begin() + i * T * W, all.begin() + (i + 1) * T * W);
+        return outputs;
+    }
+    bool fused = false;
 };
 
 TransformerPipeline::TransformerPipeline(TransformerConfig config, std::map<std::string, ggml_tensor *> weights,
@@ -176,6 +263,7 @@ TransformerPipeline::TransformerPipeline(TransformerConfig config, std::map<std:
     require(status.ok(), "Invalid SentencePiece model: " + status.ToString());
     m.allocator = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
     if (!m.allocator) throw std::bad_alloc();
+    m.fused = core_env::on("CRISPEMBED_SPACY_TRF_FUSED");
 #ifdef CRISPEMBED_SPACY_BLAS
     if (core_env::on("CRISPEMBED_SPACY_TRF_BLAS")) {
         m.blas = ggml_backend_blas_init();
@@ -230,12 +318,29 @@ NumericOutput TransformerPipeline::run(const std::vector<LexicalToken> & tokens,
     // with_strided_spans: spans data[i*stride : i*stride+window] while data remains.
     std::vector<std::vector<float>> spans;
     std::vector<size_t> span_lengths;
-    for (size_t offset = 0; offset < L; offset += stride) {
-        check_cancelled(cancelled);
-        const size_t length = std::min(window, L - offset);
-        spans.push_back(
-            m.encode_span(std::vector<int>(doc.begin() + offset, doc.begin() + offset + length), cancelled));
-        span_lengths.push_back(length);
+    for (size_t offset = 0; offset < L; offset += stride) span_lengths.push_back(std::min(window, L - offset));
+    if (m.fused) {
+        // Batch consecutive spans of equal length (all full windows, then the tail).
+        for (size_t first = 0; first < span_lengths.size();) {
+            size_t last = first;
+            while (last + 1 < span_lengths.size() && span_lengths[last + 1] == span_lengths[first] &&
+                   last + 1 - first < 32)
+                ++last;
+            std::vector<std::vector<int>> batch;
+            for (size_t i = first; i <= last; ++i)
+                batch.emplace_back(doc.begin() + static_cast<std::ptrdiff_t>(i * stride),
+                                   doc.begin() + static_cast<std::ptrdiff_t>(i * stride + span_lengths[i]));
+            for (auto & out : m.encode_batch(batch, cancelled)) spans.push_back(std::move(out));
+            first = last + 1;
+        }
+    } else {
+        for (size_t i = 0; i < span_lengths.size(); ++i) {
+            check_cancelled(cancelled);
+            spans.push_back(
+                m.encode_span(std::vector<int>(doc.begin() + static_cast<std::ptrdiff_t>(i * stride),
+                                               doc.begin() + static_cast<std::ptrdiff_t>(i * stride + span_lengths[i])),
+                              cancelled));
+        }
     }
     // _apply_to_overlaps(_average_arrays): pairwise in-place averages.
     {
