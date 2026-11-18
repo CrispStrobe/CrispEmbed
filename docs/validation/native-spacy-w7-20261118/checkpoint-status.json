@@ -1,7 +1,7 @@
 {
   "schema": "crispembed.quds.spacy.w7.continuation_status.v1",
   "recorded_date": "2026-11-18",
-  "status": "package_controls_passed_consumer_execution_blocked_by_workspace_enospc",
+  "status": "package_controls_passed_consumer_execution_blocked_by_unavailable_local_runtime",
   "branch": "feat/native-spacy-w7-20261118",
   "source_checkpoints": {
     "CrispEmbed": {
@@ -91,14 +91,22 @@
     }
   },
   "blocker": {
-    "kind": "shared filesystem exhaustion during execution sandbox setup",
+    "kind": "local runtime unavailable after observed filesystem exhaustion",
     "observed_error": "bwrap: Can't create file WORKSPACE/.git: No space left on device",
     "path_redacted": true,
     "local_commands_and_edits_unavailable": true,
     "prior_task_owned_cleanup": "Approximately 440 MB reclaimed from the temporary converter environment, redundant fetched Git blobs and downloaded model wheel before later exhaustion.",
     "cleanup_escalation": "Narrow task-owned cleanup outside the sandbox was rejected before execution because sandbox approvals are disabled.",
     "no_unrelated_files_deleted": true,
-    "required_recovery": "Restore workspace capacity or use a fresh writable workspace; preserve uncommitted local differences before replacing old checkouts."
+    "required_recovery": "Restore a functioning writable execution workspace with capacity. Fetch the saved remote branches; preserve and compare any recoverable old local differences.",
+    "latest_read_only_probe": {
+      "observed_at": "2026-11-18 05:44:28 UTC",
+      "intended_check": "Current working directory and available filesystem bytes",
+      "executed": false,
+      "error": "Failed to create unified exec process: exec-server rejected request (-32603): No such file or directory (os error 2)",
+      "interpretation": "The command did not start. Current workspace mounting, file contents and free capacity cannot be verified; this error alone does not establish deletion.",
+      "remote_source_and_handoff_readback": "Both repositories verified independently before this probe"
+    }
   },
   "github_actions_queries_waits_reruns_dispatches": 0,
   "app_defaults_native_source_model_and_consumed_panels_changed": false,

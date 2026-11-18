@@ -24,6 +24,8 @@ lanes retain their independent ownership.
 
 Local execution is blocked by filesystem exhaustion during sandbox startup. Even task-owned cleanup commands could no longer launch. Approximately 440 MB of reproducible task files had already been removed before the later exhaustion. GitHub connector saves and readback remained available.
 
+A later read-only workspace probe also failed before execution: the execution service returned `No such file or directory`. Current local mounting, contents and free capacity cannot be verified. This does not establish that files were deleted; use the independently verified remote branches as the recovery source.
+
 Follow [CONTINUE.md](CONTINUE.md) and [checkpoint-status.json](checkpoint-status.json) from a workspace with capacity. The latest remote source can be newer than the local checkouts. Package/model binaries were not uploaded to ordinary Git, and some raw local preflight/SDK logs could not be reread after exhaustion; these preservation limits are explicit in the checkpoints.
 
 ## Bounded work

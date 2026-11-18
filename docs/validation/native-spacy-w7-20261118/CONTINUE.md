@@ -2,6 +2,8 @@
 
 Status on 18 November 2026: packaging controls and the real package build/install passed. Both new consumers are saved source; their current execution is pending. The workspace filled, and even a cleanup command could not start because sandbox setup returned ENOSPC. This is an execution blocker, not a completed W7 qualification.
 
+A later read-only workspace probe also failed before execution: the execution service returned `No such file or directory`. Current local mounting, contents and free capacity cannot be verified. This does not establish that files were deleted; use the independently verified remote branches as the recovery source.
+
 ## Authoritative source
 
 Both repositories use `feat/native-spacy-w7-20261118`. Fetch the branch before continuing. The source checkpoints below precede this documentation-only handoff:
