@@ -1,0 +1,34 @@
+{
+  "all_five_exact": true,
+  "files": {
+    "LICENSE": {
+      "matches_frozen": true,
+      "sha256": "3933c176979b68bc6d0bcc902c7d6c130f1d127f476f17ba5cdba8d99cfd0012",
+      "size_bytes": 1056
+    },
+    "LICENSES_SOURCES": {
+      "matches_frozen": true,
+      "sha256": "0c3ab78745569d848b7c83a486183bce42b9643561084d6d6f67eb0229c79869",
+      "size_bytes": 13470
+    },
+    "manifest.json": {
+      "matches_frozen": true,
+      "sha256": "d599768375de3dc56abcca5cf1d49da0015857f9d3a10640aebb5317ef5d427e",
+      "size_bytes": 23762
+    },
+    "model.gguf": {
+      "matches_frozen": true,
+      "sha256": "fae2e6ab8d6c611d7a9dddd4b3259a871a1d2f95cacc8259f49c1e4ff31ff6cd",
+      "size_bytes": 7383104
+    },
+    "resources.json": {
+      "matches_frozen": true,
+      "sha256": "b42496cc373ada57a67ed2f4c2c25f8d22f80c08db5841a7cdb91c8a6e18562a",
+      "size_bytes": 1404948
+    }
+  },
+  "inference_executed": false,
+  "python": "3.12.14",
+  "schema": "crispembed.spacy.w7.resume_bundle.v1",
+  "status": "passed"
+}

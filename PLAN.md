@@ -27,6 +27,14 @@ The [W7 continuation](docs/validation/native-spacy-w7-20261118/README.md) now
 implements immutable Linux packaging and freezes actual dependency/loading/cleanup
 controls. It preserves the native/model bytes and both consumed panels.
 
+The [18 November fresh-workspace continuation](docs/validation/native-spacy-w7-20261118/resume-20261118/source-refresh.json)
+has fetched all available origin branch and PR heads in both repositories;
+both current mains are already included and all 342 sealed W6 source blobs
+remain unchanged. The corrected Python consumer now passes its 21 controls,
+and its printed protocol matches the frozen bytes. Exact-input package
+reproduction and the first Python/Dart operational consumers are in progress;
+these checks do not rerun either consumed linguistic panel.
+
 The user requires incremental remote checkpoints and local validation without
 querying or waiting for Actions. Preserve all unrelated paths/defaults. This
 optional standalone NLP lane does not change runtime releases or app pins.

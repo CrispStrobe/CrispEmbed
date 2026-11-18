@@ -1,0 +1,22 @@
+{
+  "both_match_original_frozen_archive_sha256": true,
+  "comparison_to_original": "Complete SHA-256 and byte length identity with the retained frozen original package receipt; two new full-input builds also compared byte for byte.",
+  "complete_bytes_equal": true,
+  "first_restored_build": {
+    "filename": "distribution-build-a.tar.gz",
+    "sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+    "size_bytes": 7808129
+  },
+  "inference_executed": false,
+  "native_library_loaded": false,
+  "native_rebuilt": false,
+  "original_frozen_archive_sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+  "original_prior_workspace_archive_available": false,
+  "schema": "crispembed.spacy.w7.full_input_rebuild.v1",
+  "second_restored_build": {
+    "filename": "distribution-build-b.tar.gz",
+    "sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+    "size_bytes": 7808129
+  },
+  "status": "passed"
+}
