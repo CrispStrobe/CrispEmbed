@@ -2,17 +2,24 @@
 
 ## W7 completion ownership — 18 November 2026
 
-Owner `owner/spacy-w7-finish-20261118` continues PR237 from `f22662cf` and
-paired Quds PR153 from `2e013f26`, preserving the consumed native and W6 panels.
-The retained Linux audit passes all 1,031 assertions and the 25 archive/installer
-controls pass locally. Focused exact-head model-free CI is added before owner
-merge; Linux packaging is not held for macOS. Next execute immutable hosted
-publication with empty-cache hash/tree/install readback, real macOS ARM64 and
-signed-app worker controls, default-OFF CrispCloud settings/provider wiring,
-separately frozen additional grammar cases, and separately gated quantization
-and optimized execution. Keep accepted F32, all failures and old evidence intact.
-Publication/other-platform/quantized/grammar claims require actual source-bound
-runs. No runtime/app release or default activation follows from preparatory work.
+Remaining W7 work is paired integration and actual signed-app qualification.
+Quds139 has three actual Office failures; Quds153 is its unmerged W7 descendant.
+Do not merge failed139 or call its sealed historical evidence current integration.
+CrispCloud settings/manual registration stay default OFF. Signing preflight
+passes; first actual app44266881665 stops at the missing paired agreement API.
+Guarded source sync fixes that exact dependency at `a7c773c1`; actual signed
+Runner/native-worker run44268579009 is pending. Inspect actual outcomes and fix
+only actual defects, then normally integrate/merge153 and pin the merged source
+after139's blockers are resolved. Mac grammar, accelerated quantized execution,
+releases and provider activation remain unqualified.
+
+Completed Linux publication, unsigned ARM64 component, separately consumed
+96-case coverage and rejected F16/Q8/Q4 assessments are in [HISTORY](HISTORY.md),
+[PERFORMANCE](PERFORMANCE.md) and the
+[source-bound execution receipt](docs/validation/native-spacy-w7-20261118/owner-execution/results.json).
+Preserve original W6 5/30,22/30/eight misses and the new panel's16 misses. Never
+rerun either consumed grammar panel or the consumed native acceptance split.
+F32 remains accepted; no runtime/app release or activation is implied.
 
 ## PR235 post-OOM owner repair — 18 November 2026
 

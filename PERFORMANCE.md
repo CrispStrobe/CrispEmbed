@@ -1,3 +1,21 @@
+## Native spaCy W7 ARM64 component sample (18 November 2026)
+
+[Real Mac44262399612](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44262399612),
+source`1d4f433a`, records an Apple M1 ARM64 guest, Apple clang17/Xcode16.4 and
+the exact accepted F32 model. After three warmups,25 context/open/analyze/copy/
+free pairs on one authored operational input have a151.122 ms median. Maximum
+sampled post-warmup RSS growth is11,304,960 bytes under the unchanged32MiB bound;
+descriptor counts start/end at11. This short component sample is neither a
+general leak proof nor a cross-host Linux/app speed comparison.
+
+The [quantization assessment](docs/validation/native-spacy-w7-20261118/owner-execution/results.json)
+records F16=3,699,456 bytes, Q8_0=1,980,480 and mixed protected Q4_0=1,676,608,
+against accepted F32=7,383,104. All three candidates fail unchanged numerical
+gates; Q8/Q4 also change discrete outputs. Their private alternate loader expands
+compressed storage into F32 and retains compressed buffers. It is not an
+accelerated quantized compute path, and these sizes establish no accepted speed,
+resident-memory or grammar improvement. Accepted F32 remains unchanged.
+
 ## Native spaCy W7 retained resource observations (18 November 2026)
 
 The source-bound [Python audit](docs/validation/native-spacy-w7-20261118/completion-20261118/python-package-audit.json)

@@ -24,7 +24,7 @@ def main():
     scratch = Path(os.environ['HEAVY_SCRATCH']) / 'w7-new-coverage'
     scratch.mkdir()
     out = Path(os.environ['HEAVY_OUT'])
-    fixture = ROOT / 'tools/spacy/w7-coverage'
+    fixture = ROOT / 'docs/validation/native-spacy-w7-20261118/owner-execution/coverage-freeze'
     freeze = json.loads((fixture / 'freeze.json').read_text())
     for name, sha in freeze['new_files_sha256'].items():
         assert common.digest(fixture / name) == sha

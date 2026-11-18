@@ -10,6 +10,8 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
+DIFF_SOURCE = '// Development-only bridge to the actual header; no replacement cosine scorer.\n#include "crispembed_diff.h"\n\nextern "C" int spacy_diff(const char * reference, const char * name, const float * values, size_t count,\n                           double * metrics) {\n    crispembed_diff::Ref ref;\n    if (!ref.load(reference)) return 1;\n    const auto report = ref.compare(name, values, count);\n    if (!report.found || report.n_elem != count) return 2;\n    metrics[0] = report.max_abs;\n    metrics[1] = report.mean_abs;\n    metrics[2] = report.rms;\n    metrics[3] = report.cos_min;\n    metrics[4] = report.cos_global;\n    metrics[5] = report.mine_norm;\n    metrics[6] = report.ref_norm;\n    return 0;\n}\n'
+
 PIPELINE_SHA = '9725a3e16ed04ccb2fe34fc6d2a10390427303bf1b6391d20aa53260ce3bcde1'
 
 
@@ -111,6 +113,7 @@ def generate(root, destination):
     root, destination = Path(root).resolve(), Path(destination).resolve()
     destination.mkdir(exist_ok=False)
     (destination / 'spacy_pipeline.cpp').write_text(pipeline((root / 'src/spacy_pipeline.cpp').read_text()))
+    (destination / 'quantized_diff.cpp').write_text(DIFF_SOURCE)
     quantizer = (root / 'tools/quantize.cpp').read_text()
     # spaCy's rank-four parser cache is not a convolution: preserve its shape.
     quantizer = replace_once(quantizer, '!patch_f16[i] && !is_oxr) {',
@@ -124,7 +127,7 @@ def generate(root, destination):
                          '"${CMAKE_CURRENT_LIST_DIR}/spacy_pipeline.cpp"')
     cmake += '\nadd_executable(crispembed-quantize "${CMAKE_CURRENT_LIST_DIR}/quantize.cpp")\n'
     cmake += 'target_link_libraries(crispembed-quantize PRIVATE ggml ggml-cpu)\n'
-    cmake += 'add_library(spacy-diff SHARED "${CRISPEMBED_ROOT}/tools/spacy/quantized_diff.cpp")\n'
+    cmake += 'add_library(spacy-diff SHARED "${CMAKE_CURRENT_LIST_DIR}/quantized_diff.cpp")\n'
     cmake += 'target_include_directories(spacy-diff PRIVATE "${CRISPEMBED_ROOT}/src")\n'
     (destination / 'CMakeLists.txt').write_text(cmake)
     return {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in destination.iterdir()}

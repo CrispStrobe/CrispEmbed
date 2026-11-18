@@ -1,3 +1,43 @@
+## 18 November 2026 — W7 hosted publication, Mac component and bounded assessments
+
+PR237 is owner-merged at `73f8a91e` from `fa964043` after12 PASS/10 SKIP.
+[Publication44258325121](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44258325121)
+publishes the unchanged Linux x86-64/AVX2 F32 capsule to Hub revision
+`659dae33997d00296ae12b76510fa4dfe26540e0`; all11 payload files have fresh
+HTTP hash/length verification, complete-tree checking and immutable installation.
+An independent fresh readback verifies the three principal artifacts and installer.
+Exact URLs, sizes and SHA-256 values are in the
+[execution receipt](docs/validation/native-spacy-w7-20261118/owner-execution/results.json).
+
+[Actual ARM64 Mac44262399612](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44262399612)
+passes16 development cases/1,201 stages/1,406,553 floats,244 parser states and21
+native API controls. Static PCRE2/native dependency construction, ARM64-only
+binary inspection and finite lifecycle controls pass. Its unsigned native
+candidate and reports are hosted with fresh readback at `a0455e70740688161b3a494e553f09bbc783ecc9`.
+Initial unsupported macos-14 and unavailable ARM64 Python3.12.14 attempts remain
+preserved; the actual successful run records macOS15.8.2/Python3.12.10. This
+component result is distinct from signing, sandbox, app and Mac grammar gates.
+
+The new96-case panel was frozen before outputs at `0dc3cef7` and consumed once
+by [44262982569](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44262982569):
+40 errors,40 valid cases,12 guards and4 unsupported-language cases. The baseline
+corrects14/40 errors, combined24/40, leaving16 misses. Valid/guard findings are
+zero,24 corrected rechecks are clean, and the source map is unchanged. The exact
+original result/seal and initial quantization failures are durably retained and
+freshly downloaded at `4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23`.
+Original W6 5/30,22/30 and eight misses remain unchanged. Neither consumed panel
+is rerun; these authored samples do not establish broad grammar accuracy.
+
+[Quantization44265895817](https://github.com/CrispStrobe/CrispEmbed/actions/runs/44265895817)
+completes F16/Q8/Q4 storage admission,18 actual OFF-gate controls and7,200 calls
+to the real crispembed-diff stage comparator. All candidates are rejected by
+unchanged element budgets:1,197/1,201 prepared stages fail in each. F16 retains
+16/16 discrete outputs, Q8 15/16, and Q4 7/16 with incomplete raw-text parser/
+stage denominators. High cosine does not waive these failures. All three
+diagnostic models/reports are immutable and fresh-readback verified at
+`8ee4b35366003654a043c80f616d6ba77fd4e746`. The default F32 production sources,
+model and package remain unchanged; no quantized profile or speed win is qualified.
+
 ## 18 November 2026 — Native spaCy Linux package and worker evidence closed
 
 The [paired W7 completion](docs/validation/native-spacy-w7-20261118/completion-20261118/paired-completion.json)

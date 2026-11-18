@@ -1,0 +1,783 @@
+{
+  "schema": "crispembed.spacy.w7.owner.execution.v1",
+  "PR237": {
+    "reviewed_head": "fa9640434d3ab5a18ede87eb852de0c6a2ca0681",
+    "merge": "73f8a91ea19473d5ab784e3c3c1520efac6e1edc",
+    "check_counts": {
+      "PASS": 12,
+      "SKIP": 10,
+      "FAIL": 0
+    },
+    "retained_audit_assertions": 1031,
+    "packaging_controls": 25,
+    "consumer_controls": 21
+  },
+  "Linux_publication": {
+    "source": "1fe545732a209378ad1893625e9aae4f12eb1a5f",
+    "run": 44258325121,
+    "immutable_revision": "659dae33997d00296ae12b76510fa4dfe26540e0",
+    "hosted_fresh_files": 11,
+    "complete_install_payloads": 20,
+    "independent_local_fresh_downloads": 3,
+    "independent_local_install": "PASS",
+    "scope": "Exact accepted Linux x86-64/AVX2 F32 capsule; declared dependency identities remain bounded. Transport is not new inference or broad portability.",
+    "artifacts": {
+      "bundle/model.gguf": {
+        "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/659dae33997d00296ae12b76510fa4dfe26540e0/bundle/model.gguf",
+        "sha256": "fae2e6ab8d6c611d7a9dddd4b3259a871a1d2f95cacc8259f49c1e4ff31ff6cd",
+        "bytes": 7383104,
+        "http_status": 200,
+        "response_repo_commit": null,
+        "fresh_empty_cache": true
+      },
+      "native-linux-x86_64-avx2-f32.tar.gz": {
+        "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/659dae33997d00296ae12b76510fa4dfe26540e0/native-linux-x86_64-avx2-f32.tar.gz",
+        "sha256": "b0cd3ae4d47af442d32a6d2382143c36f8b019470cff7c509f97e4682b67489b",
+        "bytes": 825745,
+        "http_status": 200,
+        "response_repo_commit": null,
+        "fresh_empty_cache": true
+      },
+      "spacy-de_core_news_sm-3.8.0-linux-x86_64-avx2-f32.tar.gz": {
+        "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/659dae33997d00296ae12b76510fa4dfe26540e0/spacy-de_core_news_sm-3.8.0-linux-x86_64-avx2-f32.tar.gz",
+        "sha256": "4e3b627a614cd21851e6e354335e2e08adeb4cedd4d7778df0cc68c1ce2edf01",
+        "bytes": 7808129,
+        "http_status": 200,
+        "response_repo_commit": null,
+        "fresh_empty_cache": true
+      }
+    }
+  },
+  "Mac_component": {
+    "run": 44262399612,
+    "source": "1d4f433a90e4f372253fcb600d012bad5f5594d4",
+    "passed": true,
+    "architecture": "arm64",
+    "system": "macOS-15.8.2-arm64-arm-64bit",
+    "cpu": "Apple M1 (Virtual)",
+    "compiler": "Apple clang version 17.0.0 (clang-1700.0.13.5)",
+    "xcode": "Xcode 16.4",
+    "library_sha256": "5cb67f0092f3659653773b8687fe7448dc3c235144b01c80a6fae54c103ca4e5",
+    "library_bytes": 1989032,
+    "development_parity_counts": {
+      "cases": 16,
+      "tokens": 113,
+      "stages": 1201,
+      "float_elements": 1406553,
+      "parser_states": 244,
+      "classifier_decisions": 339
+    },
+    "API_controls_pass": 21,
+    "lifecycle": {
+      "warmups": 3,
+      "measured_pairs": 25,
+      "median_seconds": 0.15112170800000513,
+      "rss_growth_bytes": 11304960,
+      "fd_first_last": [
+        11,
+        11
+      ]
+    },
+    "hosted": {
+      "passed": true,
+      "revision": "a0455e70740688161b3a494e553f09bbc783ecc9",
+      "files": {
+        "text-api.json": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/a0455e70740688161b3a494e553f09bbc783ecc9/macos-candidates/1d4f433a90e4f372253fcb600d012bad5f5594d4/text-api.json",
+          "sha256": "95c76ed127734a77fb5909913a4ca19648e9924442d90a6cc01746af6f44a7a1",
+          "bytes": 11951,
+          "http_status": 200,
+          "response_repo_commit": "a0455e70740688161b3a494e553f09bbc783ecc9",
+          "fresh_empty_cache": true
+        },
+        "prepared-parity.json": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/a0455e70740688161b3a494e553f09bbc783ecc9/macos-candidates/1d4f433a90e4f372253fcb600d012bad5f5594d4/prepared-parity.json",
+          "sha256": "9e1576eb5bd8c5aa586bb0dcceaf4554ad8379042eec72964d6acb321800d837",
+          "bytes": 664398,
+          "http_status": 200,
+          "response_repo_commit": "a0455e70740688161b3a494e553f09bbc783ecc9",
+          "fresh_empty_cache": true
+        },
+        "spacy-native-macos-arm64-f32-unsigned.tar.gz": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/a0455e70740688161b3a494e553f09bbc783ecc9/macos-candidates/1d4f433a90e4f372253fcb600d012bad5f5594d4/spacy-native-macos-arm64-f32-unsigned.tar.gz",
+          "sha256": "f2b7cbc9d9d127459964fcefb510378c390c0991ad3e0595876034355eca149f",
+          "bytes": 827200,
+          "http_status": 200,
+          "response_repo_commit": null,
+          "fresh_empty_cache": true
+        },
+        "macos-component.json": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/a0455e70740688161b3a494e553f09bbc783ecc9/macos-candidates/1d4f433a90e4f372253fcb600d012bad5f5594d4/macos-component.json",
+          "sha256": "2f30dd43bb08cee07cd61c47fc6fd8ab08733a19907ec4c9ad58ec876cb1cf1a",
+          "bytes": 8358,
+          "http_status": 200,
+          "response_repo_commit": "a0455e70740688161b3a494e553f09bbc783ecc9",
+          "fresh_empty_cache": true
+        },
+        "text-parity.json": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/a0455e70740688161b3a494e553f09bbc783ecc9/macos-candidates/1d4f433a90e4f372253fcb600d012bad5f5594d4/text-parity.json",
+          "sha256": "45bde424c2e44eeae6ebf44bd69cfd1aef9a2d01a6a44d5292318b935ab6498a",
+          "bytes": 1409292,
+          "http_status": 200,
+          "response_repo_commit": "a0455e70740688161b3a494e553f09bbc783ecc9",
+          "fresh_empty_cache": true
+        }
+      },
+      "signed_app_qualified": false
+    },
+    "signed_app_qualified": false,
+    "Mac_grammar_qualified": false
+  },
+  "grammar_extension": {
+    "run": 44262982569,
+    "source": "0dc3cef74179cf452d92ec8cf3b75d85c324b5a8",
+    "quds_source": "2e013f26c7d4db54ecabe2c955117cbce5379408",
+    "panel_sha256": "92338ceb27d2877a6b0cfbfd1218440f53db6509d80571f85d34cfb0d0118ecd",
+    "result_sha256": "a6546bb627c997a9e05771030d303cb627dded996b340e256e909ea55829cdaf",
+    "consumed_once": true,
+    "summary": {
+      "completed_cases": 96,
+      "error_cases": 40,
+      "valid_cases": 40,
+      "guard_cases": 12,
+      "unsupported_cases": 4,
+      "baseline_exact_errors": 14,
+      "model_exact_errors": 24,
+      "combined_exact_errors": 24,
+      "combined_missed_errors": 16,
+      "additional_exact_errors": 10,
+      "baseline_exact_lost": 0,
+      "baseline_valid_flagged": 0,
+      "model_valid_flagged": 0,
+      "combined_valid_flagged": 0,
+      "model_guard_flagged": 0,
+      "baseline_changed_valid": 0,
+      "model_changed_valid": 0,
+      "combined_changed_valid": 0,
+      "added_changed_valid": 0,
+      "operational_failures": 0,
+      "model_proposals": 24,
+      "merge_suppressed_proposals": 14,
+      "model_abstentions_or_compatible_cases": 68,
+      "recheck_executions": 24,
+      "recheck_model_findings": 0
+    },
+    "gates": {
+      "minimum_incremental_exact": true,
+      "no_baseline_exact_loss": true,
+      "no_native_valid_findings": true,
+      "no_native_guard_findings": true,
+      "no_added_changed_valid": true,
+      "no_operational_failures": true,
+      "clean_corrected_recheck": true
+    },
+    "source_unchanged": true,
+    "original_W6_historical": {
+      "baseline": 5,
+      "combined": 22,
+      "errors": 30,
+      "misses": 8,
+      "rerun": false
+    },
+    "broad_grammar_qualified": false,
+    "immutable_raw_result": {
+      "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23/retained-w7-evidence/14a0da47db8e144e09e8d261f937e972f78387e3/44262982569/new-panel-result.json",
+      "sha256": "a6546bb627c997a9e05771030d303cb627dded996b340e256e909ea55829cdaf",
+      "bytes": 1182716,
+      "http_status": 200,
+      "response_repo_commit": "4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23",
+      "fresh_empty_cache": true
+    }
+  },
+  "quantization": {
+    "run": 44265895817,
+    "source": "868dc0587435de053f930a1fcafb184f008078c5",
+    "execution_passed": true,
+    "qualified_candidates": [],
+    "candidates": [
+      {
+        "recipe": "f16",
+        "source_f32_sha256": "fae2e6ab8d6c611d7a9dddd4b3259a871a1d2f95cacc8259f49c1e4ff31ff6cd",
+        "candidate_sha256": "d17727c4e6afe6ee9e475e7a3a57e442ffbe07d2a8be731d3af68e3c60578351",
+        "candidate_bytes": 3699456,
+        "quantizer_binary_sha256": "8ecf3923a9739ec986504dc2d513bbee9a8c1fa629e1aa0fd1776bd65361867e",
+        "quantizer_generated_source_sha256": "d60246780cba2fcab2b9fcb8ddb2bbf7061ace9c337d02ee516e15fade224c56",
+        "experimental_generated_loader_sha256": "61799e14cbba9bc55232d32fcb65f96472bce182be5a77736b690cbb4abb0733",
+        "production_loader_sha256": "9725a3e16ed04ccb2fe34fc6d2a10390427303bf1b6391d20aa53260ce3bcde1",
+        "source_commit": "868dc0587435de053f930a1fcafb184f008078c5",
+        "reports": {
+          "prepared": {
+            "passed": false,
+            "counts": {
+              "cases": 16,
+              "tokens": 113,
+              "classifier_decisions": 339,
+              "parser_states": 244,
+              "trace_stages": 1201,
+              "float_elements": 1406553
+            }
+          },
+          "text": {
+            "passed": false,
+            "counts": {
+              "cases": 16,
+              "tokens": 113,
+              "sentences": 22,
+              "parser_steps": 244,
+              "classifier_decisions": 339,
+              "numeric_stages": 1201,
+              "float_elements": 1406553
+            }
+          }
+        },
+        "crispembed_diff_calls": 2402,
+        "qualified": false,
+        "acceptance_or_W6_replayed": false,
+        "gate_OFF_controls_passed": 6
+      },
+      {
+        "recipe": "q8_0",
+        "source_f32_sha256": "fae2e6ab8d6c611d7a9dddd4b3259a871a1d2f95cacc8259f49c1e4ff31ff6cd",
+        "candidate_sha256": "31cc15a311621e53357ffd21b89ec0adddfc90fbdbfffbbe1e32bd9bdf842280",
+        "candidate_bytes": 1980480,
+        "quantizer_binary_sha256": "8ecf3923a9739ec986504dc2d513bbee9a8c1fa629e1aa0fd1776bd65361867e",
+        "quantizer_generated_source_sha256": "d60246780cba2fcab2b9fcb8ddb2bbf7061ace9c337d02ee516e15fade224c56",
+        "experimental_generated_loader_sha256": "61799e14cbba9bc55232d32fcb65f96472bce182be5a77736b690cbb4abb0733",
+        "production_loader_sha256": "9725a3e16ed04ccb2fe34fc6d2a10390427303bf1b6391d20aa53260ce3bcde1",
+        "source_commit": "868dc0587435de053f930a1fcafb184f008078c5",
+        "reports": {
+          "prepared": {
+            "passed": false,
+            "counts": {
+              "cases": 16,
+              "tokens": 113,
+              "classifier_decisions": 339,
+              "parser_states": 244,
+              "trace_stages": 1201,
+              "float_elements": 1406553
+            }
+          },
+          "text": {
+            "passed": false,
+            "counts": {
+              "cases": 16,
+              "tokens": 113,
+              "sentences": 22,
+              "parser_steps": 244,
+              "classifier_decisions": 339,
+              "numeric_stages": 1201,
+              "float_elements": 1406553
+            }
+          }
+        },
+        "crispembed_diff_calls": 2402,
+        "qualified": false,
+        "acceptance_or_W6_replayed": false,
+        "gate_OFF_controls_passed": 6
+      },
+      {
+        "recipe": "q4_0",
+        "source_f32_sha256": "fae2e6ab8d6c611d7a9dddd4b3259a871a1d2f95cacc8259f49c1e4ff31ff6cd",
+        "candidate_sha256": "aab70fdb8d035bb418275d7c15d1d0ce6476107f504e5398d60f747fa1be37f8",
+        "candidate_bytes": 1676608,
+        "quantizer_binary_sha256": "8ecf3923a9739ec986504dc2d513bbee9a8c1fa629e1aa0fd1776bd65361867e",
+        "quantizer_generated_source_sha256": "d60246780cba2fcab2b9fcb8ddb2bbf7061ace9c337d02ee516e15fade224c56",
+        "experimental_generated_loader_sha256": "61799e14cbba9bc55232d32fcb65f96472bce182be5a77736b690cbb4abb0733",
+        "production_loader_sha256": "9725a3e16ed04ccb2fe34fc6d2a10390427303bf1b6391d20aa53260ce3bcde1",
+        "source_commit": "868dc0587435de053f930a1fcafb184f008078c5",
+        "reports": {
+          "prepared": {
+            "passed": false,
+            "counts": {
+              "cases": 16,
+              "tokens": 113,
+              "classifier_decisions": 339,
+              "parser_states": 244,
+              "trace_stages": 1201,
+              "float_elements": 1406553
+            }
+          },
+          "text": {
+            "passed": false,
+            "counts": {
+              "cases": 16,
+              "tokens": 113,
+              "sentences": 22,
+              "parser_steps": 242,
+              "classifier_decisions": 339,
+              "numeric_stages": 1195,
+              "float_elements": 1405895
+            }
+          }
+        },
+        "crispembed_diff_calls": 2396,
+        "qualified": false,
+        "acceptance_or_W6_replayed": false,
+        "gate_OFF_controls_passed": 6
+      }
+    ],
+    "first_divergences": [
+      {
+        "recipe": "f16",
+        "strict_failed_prepared_stages": 1197,
+        "first_failed_case": "single",
+        "first_failed_stage": {
+          "stage": "tok2vec.embed.concat",
+          "shape": [
+            1,
+            576
+          ],
+          "elements": 576,
+          "max_reference_magnitude": 1.0125958919525146,
+          "max_candidate_magnitude": 1.012786865234375,
+          "max_absolute_error": 0.00036913156509399414,
+          "mean_absolute_error": 3.038117291806783e-05,
+          "max_relative_error_nonzero_reference": 0.4143646408839779,
+          "violating_elements": 3,
+          "bit_exact": false,
+          "passed": false,
+          "crispembed_diff": {
+            "max_abs": 0.00036913156509399414,
+            "mean_abs": 3.0381172109628096e-05,
+            "rms": 4.955203621648252e-05,
+            "cos_min": 1.0,
+            "cos_global": 1.0,
+            "actual_norm": 5.793403148651123,
+            "reference_norm": 5.79337215423584
+          }
+        },
+        "raw_text_discrete_mismatch_cases": []
+      },
+      {
+        "recipe": "q8_0",
+        "strict_failed_prepared_stages": 1197,
+        "first_failed_case": "single",
+        "first_failed_stage": {
+          "stage": "tok2vec.embed.concat",
+          "shape": [
+            1,
+            576
+          ],
+          "elements": 576,
+          "max_reference_magnitude": 1.0125958919525146,
+          "max_candidate_magnitude": 1.0140190124511719,
+          "max_absolute_error": 0.005678743124008179,
+          "mean_absolute_error": 0.0008512374054892765,
+          "max_relative_error_nonzero_reference": 2.773480662983425,
+          "violating_elements": 410,
+          "bit_exact": false,
+          "passed": false,
+          "crispembed_diff": {
+            "max_abs": 0.005678743124008179,
+            "mean_abs": 0.0008512373897247016,
+            "rms": 0.0013411848340183496,
+            "cos_min": 0.9999845623970032,
+            "cos_global": 0.9999845623970032,
+            "actual_norm": 5.792077541351318,
+            "reference_norm": 5.79337215423584
+          }
+        },
+        "raw_text_discrete_mismatch_cases": [
+          {
+            "id": "hyphens",
+            "first_difference": {
+              "field": "analysis.tokens[0].tag",
+              "expected": "PWAV",
+              "actual": "KOKOM"
+            },
+            "difference_count": 2
+          }
+        ]
+      },
+      {
+        "recipe": "q4_0",
+        "strict_failed_prepared_stages": 1197,
+        "first_failed_case": "single",
+        "first_failed_stage": {
+          "stage": "tok2vec.embed.concat",
+          "shape": [
+            1,
+            576
+          ],
+          "elements": 576,
+          "max_reference_magnitude": 1.0125958919525146,
+          "max_candidate_magnitude": 1.0140190124511719,
+          "max_absolute_error": 0.005678743124008179,
+          "mean_absolute_error": 0.0008512374054892765,
+          "max_relative_error_nonzero_reference": 2.773480662983425,
+          "violating_elements": 410,
+          "bit_exact": false,
+          "passed": false,
+          "crispembed_diff": {
+            "max_abs": 0.005678743124008179,
+            "mean_abs": 0.0008512373897247016,
+            "rms": 0.0013411848340183496,
+            "cos_min": 0.9999845623970032,
+            "cos_global": 0.9999845623970032,
+            "actual_norm": 5.792077541351318,
+            "reference_norm": 5.79337215423584
+          }
+        },
+        "raw_text_discrete_mismatch_cases": [
+          {
+            "id": "sentences",
+            "first_difference": {
+              "field": "parser.step.0.state.chosen_action[0]",
+              "expected": 136,
+              "actual": 0.0
+            },
+            "difference_count": 1055
+          },
+          {
+            "id": "punctuation",
+            "first_difference": {
+              "field": "parser.step.7.state.chosen_action[0]",
+              "expected": 115,
+              "actual": 136.0
+            },
+            "difference_count": 1158
+          },
+          {
+            "id": "unicode",
+            "first_difference": {
+              "field": "analysis.tokens[2].dep",
+              "expected": "mnr",
+              "actual": "mo"
+            },
+            "difference_count": 7
+          },
+          {
+            "id": "lexical",
+            "first_difference": {
+              "field": "analysis.tokens[4].lemma",
+              "expected": "Gr\u00fc\u00df",
+              "actual": "Gr\u00fc\u00dfe"
+            },
+            "difference_count": 2
+          },
+          {
+            "id": "addresses",
+            "first_difference": {
+              "field": "analysis.tokens[3].lemma",
+              "expected": "mail@beispiel.de",
+              "actual": "Mail@beispiel.de"
+            },
+            "difference_count": 4
+          },
+          {
+            "id": "hyphens",
+            "first_difference": {
+              "field": "analysis.tokens[0].morph",
+              "expected": "PronType=Int",
+              "actual": ""
+            },
+            "difference_count": 5
+          },
+          {
+            "id": "repeated",
+            "first_difference": {
+              "field": "analysis.tokens[4].morph",
+              "expected": "Case=Acc|Gender=Neut|Number=Sing",
+              "actual": "Case=Nom|Gender=Neut|Number=Sing"
+            },
+            "difference_count": 2
+          },
+          {
+            "id": "syntax",
+            "first_difference": {
+              "field": "analysis.tokens[9].head",
+              "expected": 1,
+              "actual": 2
+            },
+            "difference_count": 23
+          },
+          {
+            "id": "scripts",
+            "first_difference": {
+              "field": "analysis.tokens[0].morph",
+              "expected": "Case=Nom|Number=Sing",
+              "actual": "Case=Dat|Number=Sing"
+            },
+            "difference_count": 6
+          }
+        ]
+      }
+    ],
+    "hosted_diagnostics": {
+      "revision": "8ee4b35366003654a043c80f616d6ba77fd4e746",
+      "files": {
+        "q8_0-text.json": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/8ee4b35366003654a043c80f616d6ba77fd4e746/quantization-attempts/868dc0587435de053f930a1fcafb184f008078c5/q8_0-text.json",
+          "sha256": "5409757c572efca1fb2f8a2437bb93788800ec5bc4b4028794f568f89da93c90",
+          "bytes": 1836967,
+          "http_status": 200,
+          "response_repo_commit": "8ee4b35366003654a043c80f616d6ba77fd4e746",
+          "fresh_empty_cache": true
+        },
+        "q4_0-prepared.json": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/8ee4b35366003654a043c80f616d6ba77fd4e746/quantization-attempts/868dc0587435de053f930a1fcafb184f008078c5/q4_0-prepared.json",
+          "sha256": "b580be555a4dde85d43d10a044ae4abc61f5ec5d8158019d1d62c69ed256e7ad",
+          "bytes": 1084430,
+          "http_status": 200,
+          "response_repo_commit": "8ee4b35366003654a043c80f616d6ba77fd4e746",
+          "fresh_empty_cache": true
+        },
+        "README.md": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/8ee4b35366003654a043c80f616d6ba77fd4e746/quantization-attempts/868dc0587435de053f930a1fcafb184f008078c5/README.md",
+          "sha256": "6dc0cda76746992c019e04e0eb74835ef1252bd73377069cb55f53ee00f66e72",
+          "bytes": 214,
+          "http_status": 200,
+          "response_repo_commit": "8ee4b35366003654a043c80f616d6ba77fd4e746",
+          "fresh_empty_cache": true
+        },
+        "q4_0.gguf": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/8ee4b35366003654a043c80f616d6ba77fd4e746/quantization-attempts/868dc0587435de053f930a1fcafb184f008078c5/q4_0.gguf",
+          "sha256": "aab70fdb8d035bb418275d7c15d1d0ce6476107f504e5398d60f747fa1be37f8",
+          "bytes": 1676608,
+          "http_status": 200,
+          "response_repo_commit": null,
+          "fresh_empty_cache": true
+        },
+        "q4_0-text.json": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/8ee4b35366003654a043c80f616d6ba77fd4e746/quantization-attempts/868dc0587435de053f930a1fcafb184f008078c5/q4_0-text.json",
+          "sha256": "d1873a203eb20c5c92e5150a0705546de2636783aa22ff0ca128310ad86d5c10",
+          "bytes": 2115721,
+          "http_status": 200,
+          "response_repo_commit": "8ee4b35366003654a043c80f616d6ba77fd4e746",
+          "fresh_empty_cache": true
+        },
+        "q8_0.gguf": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/8ee4b35366003654a043c80f616d6ba77fd4e746/quantization-attempts/868dc0587435de053f930a1fcafb184f008078c5/q8_0.gguf",
+          "sha256": "31cc15a311621e53357ffd21b89ec0adddfc90fbdbfffbbe1e32bd9bdf842280",
+          "bytes": 1980480,
+          "http_status": 200,
+          "response_repo_commit": null,
+          "fresh_empty_cache": true
+        },
+        "q8_0-summary.json": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/8ee4b35366003654a043c80f616d6ba77fd4e746/quantization-attempts/868dc0587435de053f930a1fcafb184f008078c5/q8_0-summary.json",
+          "sha256": "8f74e2f7cd325d1277c343300678fb3047c5b113990d7c1f0c53c34c9ad1184b",
+          "bytes": 655,
+          "http_status": 200,
+          "response_repo_commit": "8ee4b35366003654a043c80f616d6ba77fd4e746",
+          "fresh_empty_cache": true
+        },
+        "q8_0-prepared.json": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/8ee4b35366003654a043c80f616d6ba77fd4e746/quantization-attempts/868dc0587435de053f930a1fcafb184f008078c5/q8_0-prepared.json",
+          "sha256": "15634f2a557ef9087f858fa773bf33cf8de914a71c7aabd856548d6ba14c99c2",
+          "bytes": 1091022,
+          "http_status": 200,
+          "response_repo_commit": "8ee4b35366003654a043c80f616d6ba77fd4e746",
+          "fresh_empty_cache": true
+        },
+        "f16-summary.json": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/8ee4b35366003654a043c80f616d6ba77fd4e746/quantization-attempts/868dc0587435de053f930a1fcafb184f008078c5/f16-summary.json",
+          "sha256": "f3791686024ffdaa792f09eb387a0add579ad7c3fd4a6e292083ee1c531281de",
+          "bytes": 654,
+          "http_status": 200,
+          "response_repo_commit": "8ee4b35366003654a043c80f616d6ba77fd4e746",
+          "fresh_empty_cache": true
+        },
+        "quantization-assessment.json": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/8ee4b35366003654a043c80f616d6ba77fd4e746/quantization-attempts/868dc0587435de053f930a1fcafb184f008078c5/quantization-assessment.json",
+          "sha256": "489accb62afdd0d853fe29d97b65029d7576bc4cea34283a8e55049d06b1bd0c",
+          "bytes": 9351,
+          "http_status": 200,
+          "response_repo_commit": "8ee4b35366003654a043c80f616d6ba77fd4e746",
+          "fresh_empty_cache": true
+        },
+        "f16-prepared.json": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/8ee4b35366003654a043c80f616d6ba77fd4e746/quantization-attempts/868dc0587435de053f930a1fcafb184f008078c5/f16-prepared.json",
+          "sha256": "d21cd5afa9cbc9b27d8b4cdbfbcc91e432b1f2c398c23b8d5c128779a6c65d1d",
+          "bytes": 1084084,
+          "http_status": 200,
+          "response_repo_commit": "8ee4b35366003654a043c80f616d6ba77fd4e746",
+          "fresh_empty_cache": true
+        },
+        "f16-text.json": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/8ee4b35366003654a043c80f616d6ba77fd4e746/quantization-attempts/868dc0587435de053f930a1fcafb184f008078c5/f16-text.json",
+          "sha256": "5098fab1d6a74fb5a1426d758035db2c77e03826ecafdc68995119659922fd31",
+          "bytes": 1829685,
+          "http_status": 200,
+          "response_repo_commit": "8ee4b35366003654a043c80f616d6ba77fd4e746",
+          "fresh_empty_cache": true
+        },
+        "q4_0-summary.json": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/8ee4b35366003654a043c80f616d6ba77fd4e746/quantization-attempts/868dc0587435de053f930a1fcafb184f008078c5/q4_0-summary.json",
+          "sha256": "eb8e87002f1884cdff69f8a25f2837e89feff8b137de83b1ce64191808d18042",
+          "bytes": 655,
+          "http_status": 200,
+          "response_repo_commit": "8ee4b35366003654a043c80f616d6ba77fd4e746",
+          "fresh_empty_cache": true
+        },
+        "f16.gguf": {
+          "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/8ee4b35366003654a043c80f616d6ba77fd4e746/quantization-attempts/868dc0587435de053f930a1fcafb184f008078c5/f16.gguf",
+          "sha256": "d17727c4e6afe6ee9e475e7a3a57e442ffbe07d2a8be731d3af68e3c60578351",
+          "bytes": 3699456,
+          "http_status": 200,
+          "response_repo_commit": null,
+          "fresh_empty_cache": true
+        }
+      }
+    },
+    "F32_baseline_replaced": false,
+    "optimized_execution_qualified": false,
+    "Kaggle_kernel_IDs": [],
+    "Kaggle_used": false,
+    "reason_no_Kaggle": "This closed CPU backend has no real GPU inference path; no CPU build farm.",
+    "initial_failure_runs": [
+      {
+        "run": 44264083664,
+        "source": "7a4c6502638a4c4c2aadc9dc416fd8bd6ebcc73f",
+        "stage": "f16-parity",
+        "failure": "Canonical leading-unit-axis rank admission; no candidate forward."
+      },
+      {
+        "run": 44265244322,
+        "source": "95f4ef264",
+        "stage": "q4_0-parity",
+        "failure": "Protected Q8 embed.* tensors not admitted by first closed Q4 profile; F16/Q8 numerical rejections retained."
+      }
+    ]
+  },
+  "integration": {
+    "Quds139": {
+      "head": "6df76a0dff0051312faa04317af41d479dd94162",
+      "state": "OPEN/DRAFT",
+      "checks": {
+        "FAIL": 3,
+        "PASS": 2
+      },
+      "blocker": "Word footer PAGE flag assertion and seven editor raster goldens; no waiver, no merge."
+    },
+    "Quds153": {
+      "head": "2e013f26c7d4db54ecabe2c955117cbce5379408",
+      "state": "OPEN/DRAFT",
+      "registered_checks": [],
+      "base_branch": "feat/native-spacy-reference-20261117",
+      "frozen_parent_139_head": "20026ff49ac37391e2a1fd0947560a587f2f7332",
+      "current139_integrated": false
+    },
+    "CrispCloud": {
+      "candidate_source": "a7c773c1",
+      "managed_Quds_pin": "2e013f26c7d4db54ecabe2c955117cbce5379408",
+      "optional_spacy_source": "2e013f26c7d4db54ecabe2c955117cbce5379408",
+      "provider_default": "OFF",
+      "signing_preflight_run": 44265076128,
+      "signing_preflight_source": "5f131ef482302c7ff3a2cd724cb5f9927202cb62",
+      "signing_preflight_and_cleanup": "PASS",
+      "source_wiring": "Manual Linux grammar only; separate ARM64 component adapter and diagnostic actual Runner/native worker. No store/release upload.",
+      "actual_signed_app_native_probe_started": false,
+      "actual_signed_app_initial_run": 44266881665,
+      "actual_signed_app_initial_result": "FAIL before app build: focused analyzer finds9undefined GermanAgreementFacts references; managed engine6245a695 lacks required PR153 agreement foundation. Native library signing alone PASS. No app signature/sandbox/worker proof.",
+      "managed_pin_state": "Unmerged PR153 integration candidate; all2634Office files verified by guarded sync; not final merged pin",
+      "actual_signed_app_run": 44268579009,
+      "actual_signed_app_result": "PENDING exact actual Runner result; no app/sandbox/worker success claim"
+    }
+  },
+  "limits": [
+    "No consumed native acceptance or W6 grammar replay. New W7 96-case panel consumed once, never rerun.",
+    "Mac component development parity is distinct from signing, sandbox, app and grammar qualification.",
+    "F16/Q8/Q4 candidate admission and workflow completion do not waive failed unchanged numerical/decoded gates.",
+    "No runtime release, app activation or default-on provider.",
+    "PCS main failure and pure diagnostic controls are separate from W7."
+  ],
+  "original_failure_retention": {
+    "schema": "crispembed.spacy.w7.report-retention.v1",
+    "passed": true,
+    "source": "14a0da47db8e144e09e8d261f937e972f78387e3",
+    "revision": "4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23",
+    "files": {
+      "README.md": {
+        "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23/retained-w7-evidence/14a0da47db8e144e09e8d261f937e972f78387e3/README.md",
+        "sha256": "95d431f06ecbd160f1f49c15107ece65ac5c9b12c552b6163cff636021a9fdca",
+        "bytes": 259,
+        "http_status": 200,
+        "response_repo_commit": "4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23",
+        "fresh_empty_cache": true
+      },
+      "44265244322/q4_0-proof.json": {
+        "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23/retained-w7-evidence/14a0da47db8e144e09e8d261f937e972f78387e3/44265244322/q4_0-proof.json",
+        "sha256": "ca3f9ab3923e1d06dc920e80c3cf23beb597793dec280d42a99daf252ccc5901",
+        "bytes": 709,
+        "http_status": 200,
+        "response_repo_commit": "4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23",
+        "fresh_empty_cache": true
+      },
+      "44265244322/quantization-assessment.json": {
+        "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23/retained-w7-evidence/14a0da47db8e144e09e8d261f937e972f78387e3/44265244322/quantization-assessment.json",
+        "sha256": "d6789fb6db1648406d8df571224489644b4bdca9c8124e1eb3205624da596ff7",
+        "bytes": 8541,
+        "http_status": 200,
+        "response_repo_commit": "4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23",
+        "fresh_empty_cache": true
+      },
+      "44265244322/q4_0-parity.log": {
+        "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23/retained-w7-evidence/14a0da47db8e144e09e8d261f937e972f78387e3/44265244322/q4_0-parity.log",
+        "sha256": "498432fa94a5205cfaf0e0d6edac077b5b6d3779ae16d4436cbe842a056865f0",
+        "bytes": 1019,
+        "http_status": 200,
+        "response_repo_commit": "4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23",
+        "fresh_empty_cache": true
+      },
+      "44262982569/coverage-execution.json": {
+        "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23/retained-w7-evidence/14a0da47db8e144e09e8d261f937e972f78387e3/44262982569/coverage-execution.json",
+        "sha256": "7b1e24ee0f114909b884ff6ff49e9eb7fda7f150d28a8556b3e75da56d76f2e8",
+        "bytes": 3999,
+        "http_status": 200,
+        "response_repo_commit": "4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23",
+        "fresh_empty_cache": true
+      },
+      "44262982569/new-panel-result.json": {
+        "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23/retained-w7-evidence/14a0da47db8e144e09e8d261f937e972f78387e3/44262982569/new-panel-result.json",
+        "sha256": "a6546bb627c997a9e05771030d303cb627dded996b340e256e909ea55829cdaf",
+        "bytes": 1182716,
+        "http_status": 200,
+        "response_repo_commit": "4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23",
+        "fresh_empty_cache": true
+      },
+      "44262982569/new-panel-seal.json": {
+        "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23/retained-w7-evidence/14a0da47db8e144e09e8d261f937e972f78387e3/44262982569/new-panel-seal.json",
+        "sha256": "99a4707fb070d67a6fe9407001088a2a6c17e4da05d1e05692a185bd864b8eb7",
+        "bytes": 48761,
+        "http_status": 200,
+        "response_repo_commit": "4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23",
+        "fresh_empty_cache": true
+      },
+      "44262982569/new-panel-freeze.json": {
+        "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23/retained-w7-evidence/14a0da47db8e144e09e8d261f937e972f78387e3/44262982569/new-panel-freeze.json",
+        "sha256": "12dca1cd6b980ca6c8528d9145b9319bfc5d5eac3dd7ede9e6b5df36b656b20f",
+        "bytes": 1211,
+        "http_status": 200,
+        "response_repo_commit": "4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23",
+        "fresh_empty_cache": true
+      },
+      "44264083664/f16-proof.json": {
+        "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23/retained-w7-evidence/14a0da47db8e144e09e8d261f937e972f78387e3/44264083664/f16-proof.json",
+        "sha256": "608030643e0976f016031674c0b9a23a4725ef5e82084c6d8907b176e37ae339",
+        "bytes": 708,
+        "http_status": 200,
+        "response_repo_commit": "4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23",
+        "fresh_empty_cache": true
+      },
+      "44264083664/quantization-assessment.json": {
+        "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23/retained-w7-evidence/14a0da47db8e144e09e8d261f937e972f78387e3/44264083664/quantization-assessment.json",
+        "sha256": "4dbe4cea1bf8e5e13f620363d61ae33e94901face22a68d5e57d9094f13e253f",
+        "bytes": 5466,
+        "http_status": 200,
+        "response_repo_commit": "4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23",
+        "fresh_empty_cache": true
+      },
+      "44264083664/f16-parity.log": {
+        "url": "https://huggingface.co/cstr/crispembed-spacy-de-core-news-sm-3.8.0/resolve/4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23/retained-w7-evidence/14a0da47db8e144e09e8d261f937e972f78387e3/44264083664/f16-parity.log",
+        "sha256": "1d2b3ed6fa14d05825581eae093bee86a2e95eca552b6af78be0ba963551ec52",
+        "bytes": 995,
+        "http_status": 200,
+        "response_repo_commit": "4d3f24b39c70f1f6f2b70c0eaed3c3b1dbc0af23",
+        "fresh_empty_cache": true
+      }
+    },
+    "build_or_inference": false,
+    "consumed_panel_replay": false
+  }
+}
